@@ -1,0 +1,150 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Tail Plane",
+  "description": "8192 m2 of wing, 128 m of span. Join them along their span; a wing's lift is the sum of its segments, each at its own angle.",
+  "group": "Capital",
+  "section": "Wings",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 524288.0,
+  "health": 188263,
+  "armour": 10,
+  "material": "steel",
+  "color": "#b8bec6",
+  "attachSeconds": 16.0,
+  "surface": {
+    "area": 8192,
+    "at": [
+      0,
+      0,
+      -16.0
+    ],
+    "lift": "+y",
+    "forward": "-z",
+    "aspect": 4,
+    "cl0": 0.0,
+    "stall": 14,
+    "cd0": 0.018
+  },
+  "boxes": [
+    {
+      "min": [
+        -64.0,
+        -3.84,
+        -32.0
+      ],
+      "max": [
+        64.0,
+        3.84,
+        32.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -64.0,
+        -3.5328,
+        -19.2
+      ],
+      "max": [
+        64.0,
+        3.5328,
+        16.0
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        -63.99,
+        -2.9184,
+        -32.0
+      ],
+      "max": [
+        63.99,
+        2.9184,
+        -17.6
+      ],
+      "detail": true,
+      "shape": "rounded",
+      "radius": 0.5,
+      "edges": "long"
+    },
+    {
+      "min": [
+        -63.99,
+        -2.304,
+        14.4
+      ],
+      "max": [
+        63.99,
+        2.304,
+        32.0
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0.1
+      ],
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        64.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -64.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        3.84,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -3.84,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        32.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -32.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

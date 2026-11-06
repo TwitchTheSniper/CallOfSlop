@@ -27,7 +27,7 @@ public enum CBodyKind : byte
     Reading, // protocol 153: displays and keypads that changed: (id, part, f32) each (LogicDisplays.cs)
     Terminal, // protocol 142: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
     NoCollide, // protocol 154: the no-collide pairs, the whole list: u16 count, each u16 body, u16 part, u16 body, u16 part, u8 flags (ConstructNet.WriteNoCollides)
-    Flight, // protocol 173: what a stabilizer commands, for Flight Diagnostic Panels (ConstructFlight.WriteDiagnostic)
+    Flight, // protocol 174: what a stabilizer commands, for Flight Diagnostic Panels (ConstructFlight.WriteDiagnostic)
 }
 
 /// <summary>
@@ -1398,7 +1398,61 @@ public static class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0);
+    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 2 + Math.Min(c.RotorCount + c.ControlCount, PoseAir);
+
+    /// <summary>Rotors and control surfaces a pose carries at most: a window that turns (protocol 120).</summary>
+    public const int PoseAir = 24;
+
+    private static void WriteAir(PacketWriter w, Construct c)
+    {
+        var total = c.RotorCount + c.ControlCount;
+        var n = Math.Min(total, PoseAir);
+        var first = total <= PoseAir ? 0 : c.PoseAirAt % total;
+        w.U8((byte)first).U8((byte)n);
+        for (var k = 0; k < n; k++)
+        {
+            var at = (first + k) % total;
+            if (at < c.RotorCount)
+            {
+                ref var r = ref c.Rotors[at];
+                var share = r.Part < c.PartCount && c.Parts[r.Part].D.Rotor is { } d ? r.Omega / d.RatedOmega : 0;
+                w.U8((byte)Math.Clamp(MathF.Round(share * 100), 0, 255));
+            }
+            else
+            {
+                ref var s = ref c.Surfaces[c.Controls[at - c.RotorCount]];
+                var most = s.Part < c.PartCount && c.Parts[s.Part].D.Surface is { } d ? d.Control : 1;
+                w.U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(s.Deflect / most * 127), -127, 127)));
+            }
+        }
+        c.PoseAirAt = (first + n) % Math.Max(1, total);
+    }
+
+    private static void ReadAir(ref PacketReader r, Construct? c)
+    {
+        int first = r.U8();
+        int n = r.U8();
+        for (var k = 0; k < n; k++)
+        {
+            var b = r.U8();
+            var total = c == null ? 0 : c.RotorCount + c.ControlCount;
+            if (c == null || total == 0)
+                continue;
+            var at = (first + k) % total;
+            if (at < c.RotorCount)
+            {
+                ref var ro = ref c.Rotors[at];
+                if (ro.Part < c.PartCount && c.Parts[ro.Part].D.Rotor is { } d)
+                    ro.Omega = b / 100f * d.RatedOmega;
+            }
+            else
+            {
+                ref var s = ref c.Surfaces[c.Controls[at - c.RotorCount]];
+                if (s.Part < c.PartCount && c.Parts[s.Part].D.Surface is { } d)
+                    s.Deflect = (sbyte)b / 127f * d.Control;
+            }
+        }
+    }
 
     /// <summary>A turn rate in thousandths of a radian a second (+-32 rad/s).</summary>
     private static short Mrad(float v) => (short)Math.Clamp(MathF.Round(v * 1000), short.MinValue, short.MaxValue);
@@ -1430,6 +1484,7 @@ public static class ConstructNet
                 .U8(OverByte(c.Joints[j].Over)); // (protocol 91: its load against its rating, for the configure panel's bar and the tint)
         }
         c.PoseJointAt = (js + jn) % Math.Max(1, c.JointCount);
+        WriteAir(w, c);
         // The signal parts' values, in part order (only with logic: the client knows which parts they are): the first
         // ordinal (u16) and how many (u16): all of them, or a window that turns (protocol 117).
         var at = w.Length;
@@ -1523,6 +1578,7 @@ public static class ConstructNet
                     c.Joints[j].Vel = v;
                 }
             }
+            ReadAir(ref r, c != null && !stale ? c : null);
             int signalFrom = r.U16();
             int signals = r.U16();
             var si = 0;
@@ -1819,6 +1875,11 @@ public static class ConstructNet
                 ref var wh = ref c.Wheels[k];
                 // (a track runs at its side's speed, the turn's share too: in a skid turn the sides run opposite ways)
                 wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(wh.Track || c.SkidDrive ? c.PointVel(c.ToWorld(wh.Centre)) : c.Vel, fwd) / wh.Radius * dt;
+            }
+            for (var k = 0; k < c.RotorCount; k++)
+            {
+                ref var ro = ref c.Rotors[k];
+                ro.Angle = ro.Omega > 0 ? (ro.Angle + ro.Sense * ro.Omega * dt) % MathF.Tau : 0; // (drawn turning, from its speed in the pose)
             }
         }
         ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)

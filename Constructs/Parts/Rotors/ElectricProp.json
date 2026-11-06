@@ -1,0 +1,118 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Electric Prop",
+  "description": "1 m across, on its own 24 kW motor: no shaft, it runs off the circuit.",
+  "group": "Small",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "mass": 9.7,
+  "health": 80,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 0.5,
+    "ratedKw": 24,
+    "ratedRpm": 4200,
+    "blades": 2,
+    "bladeHealth": 40,
+    "chord": 0.06,
+    "spool": 0.6,
+    "topSpeed": 95,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.07
+    ],
+    "axis": "+z",
+    "forward": "+y",
+    "motorKw": 24,
+    "shaft": false
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.08,
+        -0.08,
+        0.0
+      ],
+      "max": [
+        0.08,
+        0.08,
+        0.14
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.02,
+        0.05
+      ],
+      "max": [
+        0.5,
+        0.02,
+        0.09
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.02,
+        -0.5,
+        0.05
+      ],
+      "max": [
+        0.02,
+        0.5,
+        0.09
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.08,
+        -0.03,
+        0.058
+      ],
+      "max": [
+        0.5,
+        0.03,
+        0.082
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.08,
+        -0.08,
+        0.01
+      ],
+      "max": [
+        0.08,
+        0.08,
+        0.14
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

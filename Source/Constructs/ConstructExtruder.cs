@@ -180,6 +180,8 @@ public static class ConstructExtruder
             return RoundMaskOf(profile, ConstructConfig.Get(p, d, CfgKey.Width, 0.25f), ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f));
         if (profile < Extrusion.Presets.Length)
             return Extrusion.Presets[profile].Mask;
+        if (profile >= Extrusion.AirfoilProfile(0) && profile - Extrusion.AirfoilProfile(0) < ExtrusionTable.Current.Airfoils.Length)
+            return ExtrusionTable.Current.Airfoils[profile - Extrusion.AirfoilProfile(0)].Mask;
         return (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskA, 0) | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskB, 0) << 16
             | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskC, 0) << 32 | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskD, 0) << 48;
     }
@@ -204,8 +206,10 @@ public static class ConstructExtruder
         var asked = (p.State & CutPending) != 0;
         p.State &= unchecked((byte)~CutPending); // (one that met no piece goes unused)
         var len = product >= 0 ? c.Parts[product].D.ExKey.L : 0;
-        var depth = d.IsWheelFormer && ByDepth(p, d);
+        var depth = d.IsWheelFormer && (d.IsFanFormer || ByDepth(p, d));
         p.Out = p.OutNext = product < 0 ? 0 : (d.IsWheelFormer ? depth ? c.Parts[product].D.ExKey.H : c.Parts[product].D.ExKey.W : len) / 100f; // (its output: the length so far, a wheel's size in this mode)
+        if (d.IsFanFormer && product >= 0 && c.Parts[product].D.ExKey.H >= FanTargetCm(p, d))
+            asked = true; // (a Fan Former parts a prop off when it reaches the size asked)
         if (product >= 0 && !p.Broken && (asked || CutLengthCm(p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part))
         {
             if (!d.IsWheelFormer && ConstructPress.ChutesToPress(world, c, part))
@@ -227,7 +231,7 @@ public static class ConstructExtruder
             SetStall(world, st, ExtrudeStall.None);
             return false;
         }
-        var why = d.IsWheelFormer ? GrowWheel(world, query, c, part, st, product, depth) : Grow(world, query, c, part, st, product, len);
+        var why = d.IsFanFormer ? GrowFan(world, query, c, part, st, product) : d.IsWheelFormer ? GrowWheel(world, query, c, part, st, product, depth) : Grow(world, query, c, part, st, product, len);
         SetStall(world, st, why);
         ConstructGatherer.SetBusy(world, st, why == ExtrudeStall.None);
         return false;
@@ -439,6 +443,106 @@ public static class ConstructExtruder
         return ExtrudeStall.None;
     }
 
+    /// <summary>How far across a Fan Former's settings ask for, on the 5 cm step, inside the machine.</summary>
+    private static int FanTargetCm(in CPart p, ConstructPartDef d)
+    {
+        var most = (int)MathF.Round(d.ExtWheelMax.Y * 100);
+        var asked = (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.FanDiameter, d.ExtWheelMax.Y) * 20) * Extrusion.StepCm;
+        return Math.Clamp(asked, (int)MathF.Round(d.ExtWheelStart.Y * 100), most);
+    }
+
+    /// <summary>
+    /// A step of a Fan Former: the whole prop at its machine's first size, then bigger across with the material the added blade
+    /// takes, until it reaches the size asked (<see cref="Work"/> parts it off then). Its kind and blades are set when it starts.
+    /// </summary>
+    private static ExtrudeStall GrowFan(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, int product)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        if (!ConstructRecycler.Powered(world, c, part))
+            return ExtrudeStall.NoPower;
+        var fresh = product < 0;
+        ExtrusionKey key, next;
+        Vector3 origin;
+        byte rot;
+        if (fresh)
+        {
+            if (st.Amount <= 0)
+                return ExtrudeStall.NoMaterial;
+            if (ExtrusionTable.Current.FindFan(st.Material) == null)
+                return ExtrudeStall.BadMaterial;
+            key = default;
+            var wall = Extrusion.FanWall((int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0), (int)ConstructConfig.Get(p, d, CfgKey.FanBlades, 2));
+            next = new ExtrusionKey(0, 0, (ushort)MathF.Round(d.ExtWheelStart.Y * 100), 0, st.Material, true, ExShape.Fan, wall);
+            origin = ConstructWorld.Quantise(p.Pos + Rot24.Apply(p.Rot, d.ExtDieAt));
+            rot = p.Rot;
+        }
+        else
+        {
+            ref var pp = ref c.Parts[product];
+            key = next = pp.D.ExKey;
+            origin = pp.Pos;
+            rot = pp.Rot;
+            if (st.Amount > 0 && st.Material != key.Material)
+                return ExtrudeStall.Mixed;
+        }
+        var row = ExtrusionTable.Current.FindFan(next.Material);
+        if (row == null)
+            return ExtrudeStall.BadMaterial;
+        var limit = Math.Min(Extrusion.MaxFanCm, FanTargetCm(p, d));
+        st.JobTicks += (int)(d.ExtSpeed * Every / World.TickRate * 1000);
+        var steps = st.JobTicks / StepMm;
+        if (steps == 0)
+            return st.Amount > 0 ? ExtrudeStall.None : ExtrudeStall.NoMaterial;
+        if (!fresh)
+        {
+            steps = Math.Min(steps, (limit - key.H) / Extrusion.StepCm);
+            if (steps <= 0)
+                return ExtrudeStall.AtCap;
+            next = next with { H = (ushort)(key.H + steps * Extrusion.StepCm) };
+        }
+        var owed = (long)((Extrusion.FanVolume(next) - (fresh ? 0 : Extrusion.FanVolume(key))) * row.UnitsPerM3 * Milli) + st.JobAmount;
+        var units = (int)(owed / Milli);
+        if (units > st.Amount)
+        {
+            st.JobTicks = StepMm - 1;
+            return ExtrudeStall.NoMaterial;
+        }
+        if (Extrusion.Def(next) is not { } grown)
+            return ExtrudeStall.BadShape;
+        if (fresh && c.PartCount >= Construct.MaxParts)
+            return ExtrudeStall.Blocked;
+        switch (WheelClear(query, world, c, product, grown, origin, rot, p.Seg, d.ExtPush))
+        {
+            case Path.Blocked:
+                st.JobTicks = StepMm - 1;
+                return ExtrudeStall.Blocked;
+            case Path.Pushing:
+                st.JobTicks = StepMm - 1;
+                if (st.JobMaterial < PushTries)
+                {
+                    st.JobMaterial++;
+                    return ExtrudeStall.None;
+                }
+                return ExtrudeStall.TooHeavy;
+        }
+        st.JobMaterial = 0;
+        st.JobTicks -= steps * StepMm;
+        st.JobAmount = (int)(owed - units * (long)Milli);
+        if (units > 0)
+            world.Withdraw(c, part, units);
+        if (fresh)
+        {
+            var i = world.AddPart(c, grown, origin, rot, p.Seg);
+            if (i < 0)
+                return ExtrudeStall.Blocked;
+            world.AddLink(c, part, d.ExtDieSocket, i, 0);
+            return ExtrudeStall.None;
+        }
+        Resize(world, c, product, grown);
+        return ExtrudeStall.None;
+    }
+
     private enum Path : byte { Clear, Blocked, Pushing }
 
     /// <summary>Is the room a wheel's new size takes free? As <see cref="PathClear"/>, over its whole boxes: a free body is pushed out from the hub.</summary>
@@ -608,7 +712,7 @@ public static class ConstructExtruder
             return Program.HeldLook;
         var d = c.Parts[part].D;
         var wheel = d.IsWheelFormer;
-        var takes = wheel ? ExtrusionTable.Current.TakesWheels() : ExtrusionTable.Current.Takes();
+        var takes = d.IsFanFormer ? ExtrusionTable.Current.TakesFans() : wheel ? ExtrusionTable.Current.TakesWheels() : ExtrusionTable.Current.Takes();
         var round = Extrusion.ShapeOf((int)ConstructConfig.Get(c.Parts[part], d, CfgKey.Profile, 0)) != ExShape.Section;
         return (ExtrudeStall)st.Refused switch
         {
@@ -637,7 +741,10 @@ public static class ConstructExtruder
             sb.Append(' ').Append(names.NameOf(st.Material));
         if (d.IsWheelFormer)
         {
-            sb.Append(ByDepth(p, d) ? ", Depth mode" : ", Width mode");
+            if (d.IsFanFormer)
+                sb.Append($", to {FanTargetCm(p, d) / 100f:0.##} m");
+            else
+                sb.Append(ByDepth(p, d) ? ", Depth mode" : ", Width mode");
             if (product >= 0 && c.Parts[product].D is { IsExtrusion: true } on)
                 sb.Append(", ").Append(Extrusion.Label(on.ExKey));
             sb.Append(Status(c, part, st));
@@ -720,7 +827,7 @@ public static class ConstructExtruderParts
         const System.Text.Json.JsonValueKind Obj = System.Text.Json.JsonValueKind.Object;
         if (b.ValueKind != Obj || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsExtruder)
             throw new ConstructPartException($"{file}: storage \"wheel\" is an object (speed, at, maxWidth, maxDiameter, startWidth, startDiameter, pushForce) on a bin: what feeds it");
-        ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxDiameter", "startWidth", "startDiameter", "pushForce"], $"{bw}.wheel");
+        ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxDiameter", "startWidth", "startDiameter", "pushForce", "fan"], $"{bw}.wheel");
         if (d.BulkMaterial != ConstructStorage.Any)
             throw new ConstructPartException($"{file}: a Wheel Former's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
         float Size(string key, float min, float max)
@@ -740,7 +847,8 @@ public static class ConstructExtruderParts
         ConstructParts.Range(d.ExtPush, 0, 1000000, file, "storage.wheel.pushForce");
         Socket(d, file);
         d.IsExtruder = d.IsWheelFormer = true;
-        d.DataIn = [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName];
+        d.IsFanFormer = ConstructParts.Opt(b, "fan") is { ValueKind: System.Text.Json.JsonValueKind.True };
+        d.DataIn = d.IsFanFormer ? [ConstructGatherer.RunPort, ConstructExtruder.CutName] : [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName];
     }
 
     private static void Socket(ConstructPartDef d, string file)

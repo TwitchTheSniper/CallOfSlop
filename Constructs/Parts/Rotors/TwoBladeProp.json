@@ -1,0 +1,124 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Two-Blade Prop",
+  "description": "1.8 m across. Bolt it to an engine's Drive out, or link a shaft to it. Its hub is geared to run at its rated speed at the engine's peak.",
+  "group": "Small",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "mass": 14.3,
+  "health": 80,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 0.9,
+    "ratedKw": 110,
+    "ratedRpm": 2400,
+    "blades": 2,
+    "bladeHealth": 70,
+    "chord": 0.108,
+    "spool": 1.5,
+    "topSpeed": 95,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.07
+    ],
+    "axis": "+z",
+    "forward": "+y"
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.108,
+        -0.108,
+        0.0
+      ],
+      "max": [
+        0.108,
+        0.108,
+        0.14
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.9,
+        -0.0324,
+        0.0376
+      ],
+      "max": [
+        0.9,
+        0.0324,
+        0.1024
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.0324,
+        -0.9,
+        0.0376
+      ],
+      "max": [
+        0.0324,
+        0.9,
+        0.1024
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.108,
+        -0.054,
+        0.058
+      ],
+      "max": [
+        0.9,
+        0.054,
+        0.082
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.108,
+        -0.108,
+        0.01
+      ],
+      "max": [
+        0.108,
+        0.108,
+        0.14
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

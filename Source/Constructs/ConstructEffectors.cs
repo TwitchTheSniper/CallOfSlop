@@ -12,6 +12,7 @@ public enum EffectorKind : byte
     Surface,
     Wing, // a surface that lifts: Auto picks plane keys
     Gyro,
+    Cyclic, // a helicopter rotor's disc tipping
 }
 
 /// <summary>One thing a stabilizer can command: a throttle, one axis of a nozzle, a flap. Its force and where it acts at a whole unit of command, body frame.</summary>
@@ -51,7 +52,7 @@ public sealed class FlightEffectors
     public readonly float[] A = new float[Max * Rows], P = new float[Max * Rows]; // what a unit does to each row (scaled), and the share of each row each takes
     public readonly float[] Scale = new float[Rows]; // what a whole row is, N or N m (0: nothing answers it)
     public readonly float[] Low = new float[Max], High = new float[Max], U = new float[Max];
-    public int Thrusters, Gimbals, Repulsors, Rotors, Surfaces, Burners, Vents;
+    public int Thrusters, Gimbals, Cyclics, Repulsors, Rotors, Surfaces, Burners, Vents;
     public bool Wings;
     public ulong AliveA, AliveB; // what the mix was fitted to
     public Vector3 ComFitted;
@@ -60,7 +61,7 @@ public sealed class FlightEffectors
     public void Clear()
     {
         Count = 0;
-        Thrusters = Gimbals = Repulsors = Rotors = Surfaces = Burners = Vents = 0;
+        Thrusters = Gimbals = Cyclics = Repulsors = Rotors = Surfaces = Burners = Vents = 0;
         Wings = false;
         Can = 0;
         AliveA = AliveB = ulong.MaxValue;
@@ -75,11 +76,30 @@ public sealed class FlightEffectors
         {
             case EffectorKind.Thruster: Thrusters++; break;
             case EffectorKind.Gimbal: Gimbals++; break;
+            case EffectorKind.Cyclic: Cyclics++; break;
             case EffectorKind.Repulsor: Repulsors++; break;
             case EffectorKind.Rotor: Rotors++; break;
             case EffectorKind.Surface: Surfaces++; break;
             case EffectorKind.Wing: Surfaces++; Wings = true; break;
         }
+    }
+
+    /// <summary>Would a plane's keys suit it: wings, and its push is mostly forward (a helicopter's tail fin doesn't count).</summary>
+    public bool Winged(Quaternion inv)
+    {
+        if (!Wings)
+            return false;
+        float front = 0, up = 0;
+        for (var k = 0; k < Count; k++)
+        {
+            ref var e = ref Items[k];
+            if (e.Kind is not (EffectorKind.Thruster or EffectorKind.Rotor))
+                continue;
+            var f = Vector3.Transform(e.Force, inv);
+            front += MathF.Max(0, -f.Z);
+            up += MathF.Max(0, f.Y);
+        }
+        return front >= up;
     }
 
     public bool CanDo(int row) => (Can & 1 << row) != 0;
@@ -88,7 +108,7 @@ public sealed class FlightEffectors
 public static class ConstructEffectors
 {
     /// <summary>Every family (add a line). A source's index goes in <see cref="CEffector.Source"/>.</summary>
-    public static readonly IEffectorSource[] Sources = [new ThrusterEffectors(), new GyroEffector()];
+    public static readonly IEffectorSource[] Sources = [new ThrusterEffectors(), new RotorEffectors(), new SurfaceEffectors(), new GyroEffector()];
 
     /// <summary>Looks over the construct: the structure changed.</summary>
     public static void Scan(Construct c, FlightEffectors found)
@@ -119,6 +139,94 @@ public static class ConstructEffectors
     }
 }
 
+/// <summary>Rotors and props on the body or a welded piece (one on a joint is left to its wires: it tilts). Throttle or collective, and a helicopter rotor's cyclic: the disc tips its push and its head turns the craft.</summary>
+public sealed class RotorEffectors : IEffectorSource
+{
+    public void List(Construct c, FlightEffectors found, byte source)
+    {
+        var stab = c.StabCount > 0 ? c.Stabs[0].Part : -1;
+        for (var k = 0; k < c.RotorCount; k++)
+        {
+            ref var r = ref c.Rotors[k];
+            r.Scanned = false;
+            if (r.Part >= c.PartCount || c.Parts[r.Part].D.Rotor is not { } d || !c.Rigid(r.Seg) || ThrusterEffectors.WiredByHand(c, r.Part, stab, 0))
+                continue;
+            r.Scanned = true;
+            ConstructRotor.Effector(c, k, out var at, out var dir, out var force, out var twist);
+            found.Add(source, EffectorKind.Rotor, r.Part, 0, 0, 1, dir * force, at, twist);
+            if (!d.Heli)
+                continue;
+            var tan = MathF.Tan(d.Cyclic);
+            var fwd = -r.Fwd * tan;
+            var right = r.Right * tan;
+            found.Add(source, EffectorKind.Cyclic, r.Part, 1, -1, 1, fwd * force, at, Vector3.Cross(dir, fwd) * (force * d.Radius * d.HubMoment));
+            found.Add(source, EffectorKind.Cyclic, r.Part, 2, -1, 1, right * force, at, Vector3.Cross(dir, right) * (force * d.Radius * d.HubMoment));
+        }
+    }
+
+    public float Authority(Construct c, in CEffector e)
+    {
+        var k = ConstructRotor.Of(c, e.Part);
+        if (k < 0 || !ConstructRotor.Live(c, k))
+            return 0;
+        var density = ConstructAir.Density(c.WorldCom);
+        if (e.Channel == 0)
+            return density;
+        return MathF.Abs(c.Rotors[k].Thrust) / MathF.Max(1, ConstructRotor.FullPush(c, k));
+    }
+
+    public void Command(Construct c, in CEffector e, float value)
+    {
+        var k = ConstructRotor.Of(c, e.Part);
+        if (k < 0)
+            return;
+        ref var r = ref c.Rotors[k];
+        if (e.Channel == 0)
+            r.Command = c.Parts[e.Part].D.Rotor!.Heli ? value : MathF.Sqrt(MathF.Max(0, value)); // (a prop's push goes with the square of what it is asked)
+        else if (e.Channel == 1)
+            r.CommandX = value;
+        else
+            r.CommandY = value;
+    }
+}
+
+/// <summary>Control surfaces, by what a full signal does at the speed they are listed at, and the square of the air speed from there. Wings that only lift aren't commanded; they count for picking the keys.</summary>
+public sealed class SurfaceEffectors : IEffectorSource
+{
+    private const float ListSpeed = 40f;
+
+    public void List(Construct c, FlightEffectors found, byte source)
+    {
+        var stab = c.StabCount > 0 ? c.Stabs[0].Part : -1;
+        for (var k = 0; k < c.SurfaceCount; k++)
+        {
+            ref var s = ref c.Surfaces[k];
+            s.Scanned = false;
+            if (!s.Control)
+            {
+                found.Wings |= s.Cl0 > 0 || s.Area > 2;
+                continue;
+            }
+            if (s.Part >= c.PartCount || !c.Rigid(s.Seg) || ThrusterEffectors.WiredByHand(c, s.Part, stab, 0) || !ConstructAero.Effector(c, k, ListSpeed, out var at, out var dir, out var force))
+                continue;
+            s.Scanned = true;
+            found.Add(source, EffectorKind.Surface, s.Part, k, -1, 1, dir * force, at);
+        }
+    }
+
+    public float Authority(Construct c, in CEffector e)
+    {
+        var rel = (c.Vel - ConstructAir.Wind(c.WorldCom)).LengthSquared();
+        return MathF.Min(16, rel / (ListSpeed * ListSpeed)) * ConstructAir.Density(c.WorldCom);
+    }
+
+    public void Command(Construct c, in CEffector e, float value)
+    {
+        if (e.Channel < c.SurfaceCount)
+            c.Surfaces[e.Channel].Command = value;
+    }
+}
+
 /// <summary>Thrusters, the two axes of a nozzle, repulsors. One a wire from anything but its stabilizer sets is left to that wire. Solid boosters can't be commanded.</summary>
 public sealed class ThrusterEffectors : IEffectorSource
 {
@@ -145,7 +253,7 @@ public sealed class ThrusterEffectors : IEffectorSource
         }
     }
 
-    private static bool WiredByHand(Construct c, int part, int stab, int port)
+    public static bool WiredByHand(Construct c, int part, int stab, int port)
     {
         for (var w = 0; w < c.WireCount; w++)
             if (c.Wires[w].To == part && c.Wires[w].ToPort == port && c.Wires[w].From != stab)

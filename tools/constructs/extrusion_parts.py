@@ -23,7 +23,8 @@ BLUEPRINT = os.path.join("Constructs", "Blueprints", "ExtruderLine.json")
 SECTION = "Extrusion"
 BODY, TRIM, DARK, GOLD = "#55606b", "#3f4750", "#23272c", "#c8a13a"
 
-PROFILES = ["Solid bar", "Plate", "Wall", "Hollow box", "I-beam", "C-channel", "L-angle", "T-bar", "Cross", "Custom", "Round", "Pipe"]
+PROFILES = ["Solid bar", "Plate", "Wall", "Hollow box", "I-beam", "C-channel", "L-angle", "T-bar", "Cross", "Custom", "Round", "Pipe", "Airfoil", "Symmetric foil", "Thin foil"]
+FAN_KINDS = ["Propeller", "Electric prop", "Helicopter rotor", "Ducted fan", "Tail rotor"]  # (Extrusion.json's "fanKinds", in order)
 
 # (class, die across, longest piece, m/s, N of push, bin units, W, kg, health, cells x y z)
 EXTRUDERS = [
@@ -38,6 +39,15 @@ FORMERS = [
     (MEDIUM, 6, 12, 0.5, 2, 0.2, 24000, 2000, 3600, 18000, 6000, (5, 14, 4), 6),
     (LARGE, 12, 24, 1, 4, 0.4, 96000, 8000, 14400, 200000, 40000, (3, 6, 3), 3),
     (CAPITAL, 20, 48, 2, 8, 0.8, 384000, 32000, 57600, 1800000, 240000, (3, 3, 2), 1),
+]
+
+
+# A Fan Former: (class, biggest across, first across, m/s across, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
+FAN_FORMERS = [
+    (SMALL, 3, 0.5, 0.1, 6000, 400, 900, 520, 700, None, None),
+    (MEDIUM, 12, 2, 0.2, 24000, 2000, 3600, 18000, 6000, (5, 14, 4), 6),
+    (LARGE, 24, 4, 0.4, 96000, 8000, 14400, 200000, 40000, (3, 6, 3), 3),
+    (CAPITAL, 32, 8, 0.8, 384000, 32000, 57600, 1800000, 240000, (3, 3, 2), 1),
 ]
 
 
@@ -148,10 +158,26 @@ def extruder(row):
     return with_screen(p)
 
 
-def former(row):
-    c, width, across, w0, d0, speed, push, units, power, mass, health, cells, hub_row = row
-    desc = f"Builds a wheel up on its hub: wider, or bigger across, up to {width:g} m wide and {across:g} m across. A Cut signal parts it off. Needs power."
-    p = Part(name_of(c, "Wheel Former"), c, SECTION, desc, role="storage", group="Production", color=BODY)
+def fan_config(across, start):
+    return [
+        {"key": "fanKind", "type": "choice", "label": "Makes", "group": "Prop", "options": FAN_KINDS, "default": 0,
+         "tooltip": "What it makes. A prop runs on a shaft, an electric one or a ducted fan on its own motor, a helicopter rotor takes collective and cyclic."},
+        {"key": "fanBlades", "label": "Blades", "group": "Prop", "min": 2, "max": 6, "step": 1, "default": 3,
+         "tooltip": "How many blades. Each has its own health: more is steadier when one goes."},
+        {"key": "fanDiameter", "label": "Across", "group": "Prop", "unit": "m", "min": start, "max": across, "step": 0.05, "default": start,
+         "tooltip": "How far across. It parts off by itself at this size. Power and speed follow from the size."},
+    ]
+
+
+def former(row, fan=False):
+    if fan:
+        c, across, d0, speed, push, units, power, mass, health, cells, hub_row = row
+        width, w0 = 0.05, 0.05
+        desc = f"Makes a whole prop on its hub from its settings, up to {across:g} m across: a propeller, a rotor or a ducted fan. It parts it off when it is done. Needs power."
+    else:
+        c, width, across, w0, d0, speed, push, units, power, mass, health, cells, hub_row = row
+        desc = f"Builds a wheel up on its hub: wider, or bigger across, up to {width:g} m wide and {across:g} m across. A Cut signal parts it off. Needs power."
+    p = Part(name_of(c, "Fan Former" if fan else "Wheel Former"), c, SECTION, desc, role="storage", group="Production", color=BODY)
     if c is SMALL:
         p.add(box((-0.6, 0, -0.75), (0.6, 2.05, 0.75)))
         p.add(box((-0.6, 2.05, -0.05), (0.6, 2.2, 0.75)))
@@ -180,10 +206,10 @@ def former(row):
         block_sockets(p, nx, ny, nz, limit={d: (3, 3) for d in ("+x", "-x", "+y", "-y", "-z")}, skip=("+z",))
         p.sock("die", hub, "+z", kind="die")
         p.stats(mass, health, c.armour)
-    p.set(power=power, storage={
-        "bulk": bulk,
-        "wheel": {"speed": speed, "at": list(hub), "maxWidth": width, "maxDiameter": across, "startWidth": w0, "startDiameter": d0, "pushForce": push},
-    }, config=former_config(), collider="boxes")  # (the hub is a look: its cylinder must never become a hull)
+    wheel = {"speed": speed, "at": list(hub), "maxWidth": width, "maxDiameter": across, "startWidth": w0, "startDiameter": d0, "pushForce": push}
+    if fan:
+        wheel["fan"] = True
+    p.set(power=power, storage={"bulk": bulk, "wheel": wheel}, config=fan_config(across, d0) if fan else former_config(), collider="boxes")  # (the hub is a look: its cylinder must never become a hull)
     return with_screen(p)
 
 
@@ -221,6 +247,7 @@ def main():
     parts = [("", extruder_small())]
     parts += [("", extruder(r)) for r in EXTRUDERS]
     parts += [("", former(r)) for r in FORMERS]
+    parts += [("", former(r, fan=True)) for r in FAN_FORMERS]
     parts.append(("", die_frame("Die Frame", 0.25, 0.5, "Attach it to an Extruder to widen the die, up to 6 x 6 m.", 90, 300, 6, 3, 0.3)))
     parts.append(("", die_frame("Large Die Frame", 0.5, 1, "Attach it to an Extruder: 1 x 2 m more die.", 280, 700, 8, 5, 0.6)))
     code = write_parts(OUT, parts)

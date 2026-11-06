@@ -1,0 +1,125 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Prop",
+  "description": "76 m across, 6 blades: it carries a city.",
+  "group": "Capital",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 71743.7,
+  "health": 18740,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 38,
+    "ratedKw": 700000,
+    "ratedRpm": 70,
+    "blades": 6,
+    "bladeHealth": 80000,
+    "chord": 4.56,
+    "spool": 20,
+    "topSpeed": 120,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      2.66
+    ],
+    "axis": "+z",
+    "forward": "+y"
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -4.56,
+        -4.56,
+        0.0
+      ],
+      "max": [
+        4.56,
+        4.56,
+        5.32
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -38.0,
+        -1.368,
+        1.292
+      ],
+      "max": [
+        38.0,
+        1.368,
+        4.028
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.368,
+        -38.0,
+        1.292
+      ],
+      "max": [
+        1.368,
+        38.0,
+        4.028
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        4.56,
+        -2.28,
+        2.3864
+      ],
+      "max": [
+        38.0,
+        2.28,
+        2.9336
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -4.56,
+        -4.56,
+        0.01
+      ],
+      "max": [
+        4.56,
+        4.56,
+        5.32
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

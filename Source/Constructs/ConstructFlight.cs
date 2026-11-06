@@ -188,7 +188,7 @@ public static partial class ConstructFlight
         if (set != FlightPattern.Auto)
             return set;
         var f = c.Effectors;
-        return f == null ? FlightPattern.Rotorcraft : f.Wings ? FlightPattern.Plane : f.Gimbals > 0 ? FlightPattern.Rocket : FlightPattern.Rotorcraft;
+        return f == null ? FlightPattern.Rotorcraft : f.Winged(Quaternion.Conjugate(Rot24.Quat(p.Rot))) ? FlightPattern.Plane : f.Gimbals > 0 ? FlightPattern.Rocket : FlightPattern.Rotorcraft;
     }
 
     /// <summary>
@@ -214,7 +214,7 @@ public static partial class ConstructFlight
         for (var k = 0; k < n; k++)
         {
             ref var e = ref f.Items[k];
-            var live = e.Auth > 0 || e.Kind == EffectorKind.Gimbal; // (a nozzle has no authority until it is lit, and is no less there)
+            var live = e.Auth > 0 || e.Kind is EffectorKind.Gimbal or EffectorKind.Cyclic or EffectorKind.Surface; // (a nozzle has no authority until it is lit, a surface until it moves, and they are no less there)
             if (live)
             {
                 if (k < 64)
@@ -235,8 +235,7 @@ public static partial class ConstructFlight
             if (e.Kind is EffectorKind.Thruster or EffectorKind.Repulsor or EffectorKind.Rotor && live)
             {
                 upForce += MathF.Max(0, force.Y);
-                if (c.Parts[e.Part].D.Role == PartRole.Thruster)
-                    s.Spool = MathF.Max(s.Spool, c.Parts[e.Part].D.ThrustSpool);
+                s.Spool = MathF.Max(s.Spool, c.Parts[e.Part].D.Rotor is { } rotor ? rotor.Spool : c.Parts[e.Part].D.ThrustSpool);
             }
             if (e.Kind == EffectorKind.Repulsor && live)
             {
@@ -524,7 +523,7 @@ public static partial class ConstructFlight
         {
             ref var it = ref f.Items[e];
             it.Auth = ConstructEffectors.Sources[it.Source].Authority(c, it);
-            if (look && it.Kind != EffectorKind.Gimbal)
+            if (look && it.Kind is not (EffectorKind.Gimbal or EffectorKind.Cyclic or EffectorKind.Surface))
                 stale |= (it.Auth > 0) != ((e < 64 ? f.AliveA >> e : f.AliveB >> (e - 64)) % 2 != 0);
         }
         if (stale || look && Vector3.DistanceSquared(c.Com, f.ComFitted) > 0.04f)
@@ -669,7 +668,7 @@ public static partial class ConstructFlight
             maxTilt = MathF.Min(maxTilt, MathF.Max(MinMargin, MathF.Acos(MathF.Min(1, 1.15f * MathF.Max(0, weight - c.LiftNow) / s.UpForce)))); // (the lean it has the thrust to hold up)
         var spool = s.Spool > 0 ? MathF.Max(0.05f, s.Spool) : 0.4f;
         var knows = (f.Can & (1 << FlightEffectors.Pitch | 1 << FlightEffectors.Roll)) != 0;
-        var loop = knows ? MathF.Min(4f, 1.2f / spool) * MathF.Min(strength, 1.5f) // (it knows what its thrusters do: as quick as they follow, and no quicker for the slider)
+        var loop = knows && pattern != FlightPattern.Plane ? MathF.Min(4f, 1.2f / spool) * MathF.Min(strength, 1.5f) // (it knows what its thrusters do: as quick as they follow, and no quicker for the slider)
             : (pattern == FlightPattern.Plane ? LoopPlane : pattern == FlightPattern.Rocket ? LoopRocket : LoopRotor) * strength;
         var ground = MathF.Min(0.8f, 0.4f * loop); // (the speed loop stays well inside the attitude loop, or a big slow craft swings about what it asks)
 

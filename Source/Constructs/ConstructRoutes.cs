@@ -1061,7 +1061,7 @@ public static partial class ConstructRoutes
         if (half && HalfShaftCross(c, hosts[0], hosts[n - 1]) is { } crossWhy)
             return crossWhy;
         if (type == RouteType.Shaft)
-            for (var i = 1; i < (half ? n - 1 : n); i++)
+            for (var i = 1; i < (half || c.Parts[hosts[n - 1]].D.Rotor != null ? n - 1 : n); i++) // (a tilting rotor's shaft ends over its joint: a flexible drive, ConstructRotor.cs)
                 if (c.MoveSeg(c.Parts[hosts[i]].Seg) != c.MoveSeg(c.Parts[hosts[0]].Seg))
                     return "a drive shaft can't cross a joint: fit a U joint or CV joint there";
         // The clipping grace (board item lg01): from where the link leaves its output (or from its junction) and up to

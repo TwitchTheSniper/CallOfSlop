@@ -625,7 +625,7 @@ public static unsafe class PanelRender
                 dir = mag > 1e-4f ? dir / mag : Vector2.Zero;
                 var amount = MathF.Abs(e.Cmd);
                 var dead = e.Auth <= 0;
-                var colour = dead ? new Vector3(0.9f, 0.15f, 0.12f) : e.Kind is EffectorKind.Surface or EffectorKind.Wing or EffectorKind.Gimbal ? (e.Cmd >= 0 ? new Vector3(0.3f, 0.7f, 1f) : new Vector3(1f, 0.6f, 0.2f)) : Vector3.Lerp(new Vector3(0.3f, 0.5f, 0.35f), new Vector3(1f, 0.95f, 0.3f), amount);
+                var colour = dead ? new Vector3(0.9f, 0.15f, 0.12f) : e.Kind is EffectorKind.Surface or EffectorKind.Wing or EffectorKind.Gimbal or EffectorKind.Cyclic ? (e.Cmd >= 0 ? new Vector3(0.3f, 0.7f, 1f) : new Vector3(1f, 0.6f, 0.2f)) : Vector3.Lerp(new Vector3(0.3f, 0.5f, 0.35f), new Vector3(1f, 0.95f, 0.3f), amount);
                 var length = (0.08f + 0.22f * (dead ? 0 : amount)) * MathF.Min(a1 - a0, y1 - y0);
                 var dot = line * (e.Kind == EffectorKind.Gimbal ? 0.7f : 1.1f);
                 for (var t = 0; t <= PlotSteps; t++)

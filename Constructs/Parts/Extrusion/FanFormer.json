@@ -1,0 +1,291 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fan Former",
+  "description": "Makes a whole prop on its hub from its settings, up to 3 m across: a propeller, a rotor or a ducted fan. It parts it off when it is done. Needs power.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "storage",
+  "tool": "welder",
+  "mass": 520.0,
+  "health": 700,
+  "armour": 6,
+  "material": "steel",
+  "color": "#55606b",
+  "attachSeconds": 4,
+  "power": 900,
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 400,
+      "min": [
+        -0.555,
+        2.055,
+        -0.705
+      ],
+      "max": [
+        0.555,
+        2.195,
+        -0.055
+      ]
+    },
+    "wheel": {
+      "speed": 0.1,
+      "at": [
+        0,
+        1.6,
+        0.75
+      ],
+      "maxWidth": 0.05,
+      "maxDiameter": 3,
+      "startWidth": 0.05,
+      "startDiameter": 0.5,
+      "pushForce": 6000,
+      "fan": true
+    }
+  },
+  "config": [
+    {
+      "key": "fanKind",
+      "type": "choice",
+      "label": "Makes",
+      "group": "Prop",
+      "options": [
+        "Propeller",
+        "Electric prop",
+        "Helicopter rotor",
+        "Ducted fan",
+        "Tail rotor"
+      ],
+      "default": 0,
+      "tooltip": "What it makes. A prop runs on a shaft, an electric one or a ducted fan on its own motor, a helicopter rotor takes collective and cyclic."
+    },
+    {
+      "key": "fanBlades",
+      "label": "Blades",
+      "group": "Prop",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 3,
+      "tooltip": "How many blades. Each has its own health: more is steadier when one goes."
+    },
+    {
+      "key": "fanDiameter",
+      "label": "Across",
+      "group": "Prop",
+      "unit": "m",
+      "min": 0.5,
+      "max": 3,
+      "step": 0.05,
+      "default": 0.5,
+      "tooltip": "How far across. It parts off by itself at this size. Power and speed follow from the size."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Screen colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what its screen shows. Black: its own colours."
+    }
+  ],
+  "collider": "boxes",
+  "panels": [
+    {
+      "source": "machine",
+      "at": [
+        -0.626,
+        1.581,
+        0.01
+      ],
+      "size": [
+        0.58,
+        0.21
+      ],
+      "face": "-x",
+      "up": "+y",
+      "rows": 4,
+      "range": 30
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        0.0,
+        -0.75
+      ],
+      "max": [
+        0.6,
+        2.05,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        -0.6,
+        2.05,
+        -0.05
+      ],
+      "max": [
+        0.6,
+        2.2,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        -0.6,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        -0.56,
+        2.2,
+        -0.05
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        0.56,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        0.6,
+        2.2,
+        -0.05
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.56,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        0.56,
+        2.2,
+        -0.71
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.61,
+        0.2,
+        -0.5
+      ],
+      "max": [
+        -0.59,
+        1.9,
+        0.5
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.59,
+        0.2,
+        -0.5
+      ],
+      "max": [
+        0.61,
+        1.9,
+        0.5
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        1.4,
+        0.74
+      ],
+      "max": [
+        0.2,
+        1.8,
+        0.77
+      ],
+      "color": "#23272c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.622,
+        1.463,
+        -0.293
+      ],
+      "max": [
+        -0.59,
+        1.699,
+        0.313
+      ],
+      "color": "#14181c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.6,
+        0.75,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.6,
+        0.75,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.2,
+        0.35
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.75,
+        -0.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "die",
+      "at": [
+        0.0,
+        1.6,
+        0.75
+      ],
+      "dir": "+z",
+      "kind": "die"
+    }
+  ]
+}

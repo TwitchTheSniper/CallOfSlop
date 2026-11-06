@@ -289,7 +289,7 @@ public static class ConstructModules
             return null;
         if (c.DriveSeat >= 0)
             return !c.Rigid(c.Parts[seat].Seg) && GunOnChain(c, seat) ? "no Turret Module: this seat doesn't work the gun" : null; // (a passenger's seat on a driven vehicle is no fault)
-        if (c.Engine >= 0 || c.HasHubMotor || c.ThrusterCount > 0 || c.WheelCount > 0)
+        if (c.Engine >= 0 || c.HasHubMotor || c.ThrusterCount > 0 || c.RotorCount > 0 || c.WheelCount > 0)
             return "no Driving Module linked: this seat controls nothing";
         return c.GunCount > 0 ? "no Turret Module linked: this seat doesn't work the guns" : null;
     }

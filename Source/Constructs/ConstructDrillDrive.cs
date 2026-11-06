@@ -230,7 +230,7 @@ public static class ConstructDrillDrive
     /// <summary>The torque the drills take off the engine this tick at <paramref name="rpm"/> (<see cref="Construct.ShaftShare"/>: how much of it the engine can carry).</summary>
     public static float Carry(Construct c, ConstructPartDef e, float rpm, float amount)
     {
-        var load = c.ShaftLoad + c.RailLoad + c.HydLoad;
+        var load = c.ShaftLoad + c.RailLoad + c.HydLoad + c.RotorLoad;
         if (load <= 0)
         {
             c.ShaftShare = 1;
@@ -255,6 +255,8 @@ public static class ConstructDrillDrive
         }
         var demand = MathF.Abs(throttle);
         var want = (e.IdleRpm + demand * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare;
+        if (c.RpmGovern > 0)
+            want = MathF.Min(want, c.RpmGovern); // (a rotor's hub: ConstructRotor.cs)
         c.Rpm += Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);
         var amount = demand;
         if (e.SpoolSeconds > 0)
