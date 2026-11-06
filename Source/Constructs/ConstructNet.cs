@@ -28,7 +28,7 @@ public enum CBodyKind : byte
     Terminal, // protocol 142: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
     NoCollide, // protocol 154: the no-collide pairs, the whole list: u16 count, each u16 body, u16 part, u16 body, u16 part, u8 flags (ConstructNet.WriteNoCollides)
     Flight, // protocol 174: what a stabilizer commands, for Flight Diagnostic Panels (ConstructFlight.WriteDiagnostic)
-    WebState, // protocol 180: one Browser Screen's page: u16 body, u16 part, u8 lead, u16 scroll, u8 inner, u32 tick, f32 seconds (ConstructMedia.cs)
+    WebState, // protocol 181: one Browser Screen's page: u16 body, u16 part, u8 lead, u16 scroll, u8 inner, u32 tick, f32 seconds (ConstructMedia.cs)
 }
 
 /// <summary>

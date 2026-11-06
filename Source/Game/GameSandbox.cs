@@ -71,7 +71,7 @@ public enum CActKind : byte
     Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
     PanelTouch, // u16 body, u16 part, u8 panel, u8 button: a finger on a display panel's button (protocol 167; PanelTouch.cs)
     Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq (Seek: milliseconds), text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
-    WebState, // u16 body, u16 part, u16 scroll, u8 inner, f32 seconds: a Browser Screen's leading page (protocol 180; ConstructMedia.cs)
+    WebState, // u16 body, u16 part, u16 scroll, u8 inner, f32 seconds: a Browser Screen's leading page (protocol 181; ConstructMedia.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
     Ordnance, // u32 length, text: build this design at the Ordnance Bench in reach (protocol 180; GameSandboxOrdnance.cs)
