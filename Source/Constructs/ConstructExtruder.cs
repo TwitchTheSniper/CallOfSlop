@@ -472,7 +472,7 @@ public static class ConstructExtruder
             if (ExtrusionTable.Current.FindFan(st.Material) == null)
                 return ExtrudeStall.BadMaterial;
             key = default;
-            var wall = Extrusion.FanWall((int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0), (int)ConstructConfig.Get(p, d, CfgKey.FanBlades, 2));
+            var wall = Extrusion.FanWall((int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0), (int)ConstructConfig.Get(p, d, CfgKey.BladeStyle, 0), (int)ConstructConfig.Get(p, d, CfgKey.FanBlades, 3));
             next = new ExtrusionKey(0, 0, (ushort)MathF.Round(d.ExtWheelStart.Y * 100), 0, st.Material, true, ExShape.Fan, wall);
             origin = ConstructWorld.Quantise(p.Pos + Rot24.Apply(p.Rot, d.ExtDieAt));
             rot = p.Rot;
@@ -830,6 +830,7 @@ public static class ConstructExtruderParts
         ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxDiameter", "startWidth", "startDiameter", "pushForce", "fan"], $"{bw}.wheel");
         if (d.BulkMaterial != ConstructStorage.Any)
             throw new ConstructPartException($"{file}: a Wheel Former's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
+        var fan = ConstructParts.Opt(b, "fan") is { ValueKind: System.Text.Json.JsonValueKind.True };
         float Size(string key, float min, float max)
         {
             var v = ConstructParts.Num(ConstructParts.Need(b, key, $"{bw}.wheel"), file, "storage.wheel." + key);
@@ -841,13 +842,13 @@ public static class ConstructExtruderParts
         d.ExtSpeed = ConstructParts.Num(ConstructParts.Need(b, "speed", $"{bw}.wheel"), file, "storage.wheel.speed");
         ConstructParts.Range(d.ExtSpeed, 0.02f, 4, file, "storage.wheel.speed");
         d.ExtDieAt = ConstructParts.Vec(ConstructParts.Need(b, "at", $"{bw}.wheel"), file, "storage.wheel.at");
-        d.ExtWheelMax = new Vector2(Size("maxWidth", Extrusion.MinWheelWidthCm / 100f, Extrusion.MaxWheelWidthCm / 100f), Size("maxDiameter", Extrusion.MinWheelCm / 100f, Extrusion.MaxWheelCm / 100f));
+        d.ExtWheelMax = new Vector2(Size("maxWidth", Extrusion.MinWheelWidthCm / 100f, Extrusion.MaxWheelWidthCm / 100f), Size("maxDiameter", Extrusion.MinWheelCm / 100f, (fan ? Extrusion.MaxFanCm : Extrusion.MaxWheelCm) / 100f));
         d.ExtWheelStart = new Vector2(Size("startWidth", Extrusion.MinWheelWidthCm / 100f, d.ExtWheelMax.X), Size("startDiameter", Extrusion.MinWheelCm / 100f, d.ExtWheelMax.Y));
         d.ExtPush = ConstructParts.Num(ConstructParts.Need(b, "pushForce", $"{bw}.wheel"), file, "storage.wheel.pushForce");
         ConstructParts.Range(d.ExtPush, 0, 1000000, file, "storage.wheel.pushForce");
         Socket(d, file);
         d.IsExtruder = d.IsWheelFormer = true;
-        d.IsFanFormer = ConstructParts.Opt(b, "fan") is { ValueKind: System.Text.Json.JsonValueKind.True };
+        d.IsFanFormer = fan;
         d.DataIn = d.IsFanFormer ? [ConstructGatherer.RunPort, ConstructExtruder.CutName] : [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName];
     }
 

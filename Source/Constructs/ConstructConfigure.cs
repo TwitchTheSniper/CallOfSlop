@@ -95,7 +95,7 @@ public sealed partial class ConstructEdits
             ConstructFluid.Refresh(c);
         if (d.IsSizedBox)
             c.SealWait = 2; // (a box being dragged or typed: no penalties until it has stood half a second)
-        if (d.HasJoint || d.IsSizedBox)
+        if (d.HasJoint || d.IsSizedBox || d.Rotor != null)
             c.Dirty = true; // (the joint's limits, speed and strength are rebuilt from the settings; a Storage Volume's load sits in its new box)
         world.StructureDirty.Add(c.Id);
         c.Wake();

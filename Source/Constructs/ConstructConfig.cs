@@ -133,9 +133,10 @@ public enum CfgKey : byte
     Pusher, // rotor: it pushes back towards its mount
     TorqueMix, // rotor: it adds what cancels the other rotors' torque (a tail rotor)
     BladeLost, // rotor: the blades gone, a bit each (not on the panel; ConstructRotor.cs)
-    Blade0, Blade1, Blade2, Blade3, Blade4, Blade5, // rotor: each blade's health, a share of full (not on the panel)
+    Blade0, Blade1, Blade2, Blade3, // rotor: its blades' wear, four blades a setting, 4 bits each (not on the panel; ConstructRotor.Wear)
+    Blade4, Blade5, // (no longer used: their numbers stay)
     FanKind, // Fan Former: what it makes
-    FanBlades, // Fan Former: how many blades
+    FanBlades, // Fan Former, rotor: how many blades
     FanDiameter, // Fan Former: how far across, m
     Keys, // Flight Stabilizer: what its keys mean (FlightPattern; ConstructFlight.cs)
     MaxTilt, // Flight Stabilizer: the most it leans, degrees (0: its pattern's)
@@ -154,6 +155,7 @@ public enum CfgKey : byte
     WaypointZ,
     HomeX, // Flight Stabilizer: where it took off from (not on the panel)
     HomeZ,
+    BladeStyle, // Fan Former, rotor: which blade (Air.json's "bladeStyles")
     InvertPitch, // Flight Stabilizer: W lifts the nose
     Grain, // solid booster: seconds of it burnt (not on the panel; ConstructBoost.cs)
     COUNT,
@@ -515,8 +517,11 @@ public static class ConstructConfig
         if (d.Rotor.Heli)
             list.Add(new CConfigDef { Key = KeyName(CfgKey.TorqueMix), Id = CfgKey.TorqueMix, Type = CfgType.Toggle, Label = "Torque mix", Group = "Rotor", Tooltip = "A tail rotor: it adds the collective that cancels the other rotors' torque by itself." });
         list.Add(new CConfigDef { Key = KeyName(CfgKey.BladeLost), Id = CfgKey.BladeLost, Type = CfgType.Mask, Hidden = true, Label = "Blades lost", Group = "Rotor", Tooltip = "Not on the panel." });
-        for (var k = 0; k < d.Rotor!.Blades; k++)
-            list.Add(new CConfigDef { Key = KeyName((CfgKey)((int)CfgKey.Blade0 + k)), Id = (CfgKey)((int)CfgKey.Blade0 + k), Type = CfgType.Number, Hidden = true, Min = 0, Max = 1, Default = 1, Label = "Blade health", Group = "Rotor", Tooltip = "Not on the panel." });
+        for (var k = 0; k < ConstructRotor.WearSlots; k++)
+            list.Add(new CConfigDef { Key = KeyName((CfgKey)((int)CfgKey.Blade0 + k)), Id = (CfgKey)((int)CfgKey.Blade0 + k), Type = CfgType.Mask, Hidden = true, Label = "Blade wear", Group = "Rotor", Tooltip = "Not on the panel." });
+        // (a made prop carries these from its Fan Former; in creative any rotor changes them here)
+        list.Add(new CConfigDef { Key = KeyName(CfgKey.FanBlades), Id = CfgKey.FanBlades, Type = CfgType.Number, Label = "Blades", Group = "Blades", Min = 2, Max = ConstructRotor.MaxBlades, Step = 1, Default = d.Rotor!.Blades, CreativeOnly = true, Tooltip = "How many blades. More take a little more power and push a little harder, and one lost matters less." });
+        list.Add(new CConfigDef { Key = KeyName(CfgKey.BladeStyle), Id = CfgKey.BladeStyle, Type = CfgType.Choice, Label = "Blade style", Group = "Blades", Options = AirTable.Current.BladeStyles.Select(x => x.Label).ToArray(), Default = d.Rotor.Style, CreativeOnly = true, Tooltip = "The blade's shape: a small trade of push, power and top speed." });
     }
 
     /// <summary>Every wheel, track and tyre has the tyre's settings, each starting at what its part file says; a part file only lists one to change its range or text.</summary>
@@ -685,8 +690,10 @@ public static class ConstructConfig
                 CfgKey.Hole => d.IsEnvelope,
                 CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null,
                 CfgKey.Trim => d.Surface is { Control: > 0 },
-                CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade5) => d.Rotor != null,
-                CfgKey.FanKind or CfgKey.FanBlades or CfgKey.FanDiameter => d.IsFanFormer,
+                CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade3) => d.Rotor != null,
+                CfgKey.BladeStyle => d.Rotor != null || d.IsFanFormer,
+                CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
+                CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
                 (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Mode => d.Logic == CLogic.Delay,

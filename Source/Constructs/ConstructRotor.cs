@@ -7,11 +7,14 @@ public struct CRotor
 {
     public ushort Part;
     public byte Seg; // what it hangs on: a joint tilts it
+    public byte Blades; // how many it has (its setting)
+    public byte Style; // a row of Air.json's "bladeStyles"
     public byte Alive; // blades left
     public short Feed; // its entry in the shaft feeds, or -1
     public ushort Lost; // the blades gone, a bit each
     public Vector3 At, Dir, Fwd, Right; // the segment's frame: its disc's middle, its push, which way cyclic tilts it
     public float Sense; // 1 right hand about its push, -1 left
+    public float PowerScale, PushScale, TopScale; // what its blades make of its part's numbers: their style, and how many
     public float Reduction; // shaft speed over its speed
     public float Omega; // rad/s now (the pose carries it to clients)
     public float Angle; // radians, drawn
@@ -51,7 +54,10 @@ public sealed partial class Construct
 /// </summary>
 public static class ConstructRotor
 {
-    public const int MaxBlades = 6;
+    public const int MaxBlades = 16; // CfgKey.BladeLost and the wear settings are 16-bit masks; past this a disc is near solid anyway
+    public const int WearSlots = MaxBlades / 4; // (four blades a setting: a rotor's settings stay few, and a tick never reads them)
+    private const int WearLevels = 16;
+    private const float CountPower = 0.3f, CountPush = 0.1f; // power and push go with (blades / its base count) to these
     private const float SeaAir = 1.225f;
     private const float TrimRate = 0.4f; // a second, the driver's setting
     private const float Translift = 1.3f; // the most forward speed adds to a disc's push on the same power
@@ -83,7 +89,10 @@ public static class ConstructRotor
             var dir = Rot24.Apply(p.Rot, d.Axis);
             var fwd = Rot24.Apply(p.Rot, d.Forward);
             var pusher = ConstructConfig.Get(p, p.D, CfgKey.Pusher, 0) >= 0.5f;
-            var lost = (ushort)ConstructConfig.Get(p, p.D, CfgKey.BladeLost, 0);
+            var blades = Math.Clamp((int)ConstructConfig.Get(p, p.D, CfgKey.FanBlades, d.Blades), 2, MaxBlades);
+            var lost = (ushort)((int)ConstructConfig.Get(p, p.D, CfgKey.BladeLost, 0) & (1 << blades) - 1);
+            var style = StyleOf(in p, p.D);
+            var more = (float)blades / d.BaseBlades;
             ref var r = ref c.Rotors[c.RotorCount++];
             r = new CRotor
             {
@@ -95,7 +104,12 @@ public static class ConstructRotor
                 Right = Vector3.Cross(fwd, dir),
                 Sense = ConstructConfig.Get(p, p.D, CfgKey.Hand, 0) >= 0.5f ? -1 : 1,
                 Lost = lost,
-                Alive = (byte)Math.Max(0, d.Blades - BitOperations.PopCount(lost)),
+                Blades = (byte)blades,
+                Style = (byte)Array.IndexOf(AirTable.Current.BladeStyles, style),
+                PowerScale = style.Power * MathF.Pow(more, CountPower),
+                PushScale = style.Push * MathF.Pow(more, CountPush),
+                TopScale = style.Top,
+                Alive = (byte)Math.Max(0, blades - BitOperations.PopCount(lost)),
                 Feed = (short)ConstructDrillDrive.FeedOf(c, i),
                 Reduction = 1,
             };
@@ -119,6 +133,13 @@ public static class ConstructRotor
                 }
             }
         }
+    }
+
+    /// <summary>A rotor's blade style, from its setting.</summary>
+    public static BladeStyleRow StyleOf(in CPart p, ConstructPartDef d)
+    {
+        var rows = AirTable.Current.BladeStyles;
+        return rows[Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.BladeStyle, d.Rotor?.Style ?? 0), 0, rows.Length - 1)];
     }
 
     /// <summary>The rotor of a part, or -1.</summary>
@@ -215,16 +236,16 @@ public static class ConstructRotor
             }
             var pitch = d.Heli ? MathF.Abs(cmd) : working ? 1f : 0f;
             var share = r.Omega / rated;
-            var blades = r.Alive / (float)d.Blades;
+            var blades = r.Alive / (float)r.Blades;
             var work = pitch * MathF.Sqrt(pitch);
             var cube = share * share * share;
-            var full = d.RatedKw * 1000f * density * cube;
+            var full = d.RatedKw * r.PowerScale * 1000f * density * cube;
             var ind = full * (1 - t.RotorProfile) * work * blades;
             var prof = full * t.RotorProfile * blades;
             if (electric)
             {
                 var cap = d.MotorKw * 1000f;
-                var most = d.RatedKw * 1000f * density * ((1 - t.RotorProfile) * work + t.RotorProfile) * blades;
+                var most = d.RatedKw * r.PowerScale * 1000f * density * ((1 - t.RotorProfile) * work + t.RotorProfile) * blades;
                 if (most > cap)
                     want = MathF.Min(want, rated * MathF.Cbrt(cap / most)); // (more than its motor has: it holds a lower speed)
             }
@@ -258,9 +279,9 @@ public static class ConstructRotor
             var axial = Vector3.Dot(rel, dir);
             var edge2 = MathF.Max(0, rel.LengthSquared() - axial * axial);
             var push = Push(ref r, d, ind * eff * t.RotorFigure, MathF.Max(0, axial), edge2, SeaAir * density);
-            var bite = axial / MathF.Max(1, d.TopSpeed * share);
+            var bite = axial / MathF.Max(1, d.TopSpeed * r.TopScale * share);
             var fade = axial <= 0 ? 1f : 1 - bite * bite;
-            push *= MathF.Max(0, fade) * d.Duct * blades;
+            push *= MathF.Max(0, fade) * d.Duct * blades * r.PushScale;
             if (d.Heli && cmd < 0)
                 push = -push;
             r.Thrust = push;
@@ -291,13 +312,13 @@ public static class ConstructRotor
             c.AngVel += Construct.Mul(invI, twist * dt);
             if (!mix)
                 reaction += Vector3.Transform(twist, back);
-            if (r.Alive < d.Blades)
+            if (r.Alive < r.Blades)
             {
                 // Out of balance: a hard shake across the disc, and worse the faster it turns.
                 var phase = ConstructPhysics.WarmTick * (ShakeHz * MathF.Tau / World.TickRate) + k;
                 var across = Vector3.Normalize(Vector3.Cross(bodyDir, MathF.Abs(bodyDir.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX));
                 var side = Vector3.Cross(bodyDir, across);
-                var shake = (across * MathF.Cos(phase) + side * MathF.Sin(phase)) * (MathF.Abs(push) * t.RotorShake * (d.Blades - r.Alive) * dt);
+                var shake = (across * MathF.Cos(phase) + side * MathF.Sin(phase)) * (MathF.Abs(push) * t.RotorShake * (r.Blades - r.Alive) * 2f / r.Blades * dt);
                 c.Vel += shake * c.InvMass;
                 c.AngVel += Construct.Mul(invI, Vector3.Cross(arm, shake));
             }
@@ -329,8 +350,9 @@ public static class ConstructRotor
         if (r.Part >= c.PartCount || c.Parts[r.Part].D.Rotor is not { } d)
             return 0;
         var t = AirTable.Current;
-        var power = d.RatedKw * 1000f * (1 - t.RotorProfile) * t.RotorFigure * r.Alive / d.Blades;
-        return MathF.Pow(power, 2f / 3f) * MathF.Cbrt(2 * SeaAir * MathF.PI * d.Radius * d.Radius) * d.Duct * r.Alive / d.Blades;
+        var share = r.Alive / (float)r.Blades;
+        var power = d.RatedKw * r.PowerScale * 1000f * (1 - t.RotorProfile) * t.RotorFigure * share;
+        return MathF.Pow(power, 2f / 3f) * MathF.Cbrt(2 * SeaAir * MathF.PI * d.Radius * d.Radius) * d.Duct * share * r.PushScale;
     }
 
     /// <summary>The torque a rotor turns the craft with flat out (N m, rest frame): what a stabilizer's mix counts on a corner.</summary>
@@ -339,7 +361,7 @@ public static class ConstructRotor
         ref var r = ref c.Rotors[k];
         if (r.Part >= c.PartCount || c.Parts[r.Part].D.Rotor is not { } d)
             return Vector3.Zero;
-        return r.Dir * (-r.Sense * d.RatedKw * 1000f / d.RatedOmega);
+        return r.Dir * (-r.Sense * d.RatedKw * r.PowerScale * 1000f / d.RatedOmega);
     }
 
     /// <summary>Can it turn now: a working rotor with its power? (A stabilizer maps what can answer it.)</summary>
@@ -417,13 +439,15 @@ public static class ConstructRotor
         var radius = off.Length();
         if (radius > d.Radius || radius < d.Radius * 0.08f)
             return false;
-        var angle = MathF.Atan2(Vector3.Dot(off, r.Fwd), Vector3.Dot(off, r.Right)) - r.Angle; // (a blade's box lies along Right at no angle, and turns towards Fwd, as drawn)
-        var slice = MathF.Tau / d.Blades;
+        var style = AirTable.Current.BladeStyles[r.Style];
+        var station = style.Stations[Math.Clamp((int)(radius / d.Radius * 4), 0, 3)]; // (its shape where the ray crosses: a swept blade lies off its radius)
+        var angle = MathF.Atan2(Vector3.Dot(off, r.Fwd), Vector3.Dot(off, r.Right)) - r.Angle - station.Y * d.Radius / radius; // (a blade's box lies along Right at no angle, and turns towards Fwd, as drawn)
+        var slice = MathF.Tau / r.Blades;
         var turn = angle / slice;
         var near = (int)MathF.Round(turn);
         var away = MathF.Abs(turn - near) * slice;
-        var reach = MathF.Max(d.Chord * 0.5f / radius, r.Omega > 1 ? AirTable.Current.RotorHit * slice * 0.5f : 0);
-        var at = (near % d.Blades + d.Blades) % d.Blades;
+        var reach = MathF.Max(d.Chord * station.X * 0.5f / radius, r.Omega > 1 ? AirTable.Current.RotorHit * style.Area * slice * 0.5f : 0);
+        var at = (near % r.Blades + r.Blades) % r.Blades;
         if (away > reach || (r.Lost >> at & 1) != 0)
             return false;
         best = t;
@@ -442,24 +466,36 @@ public static class ConstructRotor
         ref var p = ref c.Parts[part];
         var d = p.D;
         var rd = d.Rotor!;
+        var count = Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.FanBlades, rd.Blades), 2, MaxBlades);
         var lost = (int)ConstructConfig.Get(p, d, CfgKey.BladeLost, 0);
         var blade = aim;
-        if (blade < 0 || blade >= rd.Blades || (lost >> blade & 1) != 0)
+        if (blade < 0 || blade >= count || (lost >> blade & 1) != 0)
         {
             blade = -1;
-            var pick = (int)(ConstructPhysics.WarmTick * 2654435761u >> 16) % rd.Blades;
-            for (var k = 0; k < rd.Blades && blade < 0; k++)
-                if ((lost >> (pick + k) % rd.Blades & 1) == 0)
-                    blade = (pick + k) % rd.Blades;
+            var pick = (int)((ConstructPhysics.WarmTick * 2654435761u >> 16) % (uint)count);
+            for (var k = 0; k < count && blade < 0; k++)
+                if ((lost >> (pick + k) % count & 1) == 0)
+                    blade = (pick + k) % count;
             if (blade < 0)
                 return 1;
         }
-        var key = (CfgKey)((int)CfgKey.Blade0 + blade);
-        var left = ConstructConfig.Get(p, d, key, 1) - dealt / rd.BladeHealth;
-        ConstructConfig.Put(ref p, d, key, MathF.Max(0, left));
-        if (left <= 0)
+        if (Wear(ref p, d, blade, dealt / rd.BladeHealth))
             Lose(world, c, part, blade, lost);
-        return 0.1f;
+        return 0.3f / count; // (the hub takes a share by how many blades share the blow: more of them don't wreck it sooner)
+    }
+
+    /// <summary>
+    /// One blade's wear goes up by this share of its health; true when it is gone. Four bits a blade in the hidden wear settings, so they ride saves and CBody, however
+    /// many blades there are, and only a hit touches them: the tick reads none of it. Every hit counts for at least a step.
+    /// </summary>
+    private static bool Wear(ref CPart p, ConstructPartDef d, int blade, float share)
+    {
+        var key = (CfgKey)((int)CfgKey.Blade0 + blade / 4);
+        var shift = blade % 4 * 4;
+        var bits = (int)ConstructConfig.Get(p, d, key, 0);
+        var worn = (bits >> shift & 15) + Math.Max(1, (int)MathF.Ceiling(share * WearLevels));
+        ConstructConfig.Put(ref p, d, key, bits & ~(15 << shift) | Math.Min(15, worn) << shift);
+        return worn >= WearLevels;
     }
 
     /// <summary>A blade goes: the rotor rebuilds with one fewer, every client hears, and the blade flies off along its turn.</summary>
@@ -477,14 +513,14 @@ public static class ConstructRotor
             return;
         ref var r = ref c.Rotors[k];
         c.WorldFrame(r.Seg, out var q, out var o);
-        var angle = r.Angle + blade * MathF.Tau / rd.Blades;
+        var angle = r.Angle + blade * MathF.Tau / r.Blades;
         var fwd = Vector3.Transform(r.Fwd, q);
         var right = Vector3.Transform(r.Right, q);
         var dir = Vector3.Transform(r.Dir, q);
         var out_ = right * MathF.Cos(angle) + fwd * MathF.Sin(angle);
         var at = o + Vector3.Transform(r.At, q) + out_ * (rd.Radius * 0.55f);
-        var name = rd.Radius < 2f ? "Loose Blade" : rd.Radius < 8f ? "Medium Loose Blade" : rd.Radius < 24f ? "Large Loose Blade" : "Capital Loose Blade";
-        if (ConstructParts.Find(name) is not { } piece || ConstructEdits.DropLoose(world, piece, at, q) is not { } body)
+        var material = d.IsExtrusion ? d.ExKey.Material : RecyclingTable.Current.IdOf("metal");
+        if (Extrusion.Blade(rd.Radius, rd.Chord, r.Style, material) is not { } piece || ConstructEdits.DropLoose(world, piece, at, q * Quaternion.CreateFromAxisAngle(r.Dir, angle)) is not { } body)
             return;
         body.Owner = c.Owner;
         body.Wreck = true;
@@ -501,7 +537,8 @@ public static class ConstructRotor
         ref var r = ref c.Rotors[k];
         var d = c.Parts[part].D.Rotor!;
         var source = r.Feed >= 0 ? "on the shaft" : d.MotorKw > 0 ? "electric" : "no shaft linked";
-        var blades = r.Alive < d.Blades ? $"{r.Alive} of {d.Blades} blades, out of balance" : $"{d.Blades} blades";
+        var label = AirTable.Current.BladeStyles[r.Style].Label.ToLowerInvariant();
+        var blades = r.Alive < r.Blades ? $"{r.Alive} of {r.Blades} {label} blades, out of balance" : $"{r.Blades} {label} blades";
         return $"{blades}, {r.Omega * ConstructDrive.RpmPerRadS:0} of {d.RatedOmega * ConstructDrive.RpmPerRadS:0} rpm, {source}";
     }
 

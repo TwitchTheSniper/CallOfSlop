@@ -1,14 +1,14 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Fan Former",
-  "description": "Makes a whole prop on its hub from its settings, up to 24 m across: a propeller, a rotor or a ducted fan. It parts it off when it is done. Needs power.",
+  "description": "Makes a whole prop on its hub from its settings, up to 48 m across: a propeller, a rotor or a ducted fan. It parts it off when it is done. Needs power.",
   "group": "Production",
   "section": "Extrusion",
   "role": "storage",
   "tool": "welder",
   "sizeClass": "large",
-  "mass": 200000.0,
-  "health": 40000,
+  "mass": 240000.0,
+  "health": 48000,
   "armour": 32,
   "material": "steel",
   "color": "#55606b",
@@ -20,24 +20,24 @@
       "capacity": 8000,
       "min": [
         -1.58,
-        20.02,
+        28.02,
         -1.58
       ],
       "max": [
         9.58,
-        21.98,
+        29.98,
         1.98
       ]
     },
     "wheel": {
-      "speed": 0.4,
+      "speed": 0.8,
       "at": [
         4.0,
-        12.0,
+        24.0,
         10.0
       ],
       "maxWidth": 0.05,
-      "maxDiameter": 24,
+      "maxDiameter": 48,
       "startWidth": 0.05,
       "startDiameter": 4,
       "pushForce": 96000,
@@ -65,10 +65,25 @@
       "label": "Blades",
       "group": "Prop",
       "min": 2,
-      "max": 6,
+      "max": 16,
       "step": 1,
       "default": 3,
-      "tooltip": "How many blades. Each has its own health: more is steadier when one goes."
+      "tooltip": "How many blades, 2 to 16. Each has its own health: more take a little more power, push a little harder, and are steadier when one goes."
+    },
+    {
+      "key": "bladeStyle",
+      "type": "choice",
+      "label": "Blade style",
+      "group": "Prop",
+      "options": [
+        "Straight",
+        "Scimitar",
+        "Broad paddle",
+        "Swept",
+        "Narrow"
+      ],
+      "default": 0,
+      "tooltip": "The blade's shape: a small trade of push, power and top speed. The prop keeps it."
     },
     {
       "key": "fanDiameter",
@@ -76,7 +91,7 @@
       "group": "Prop",
       "unit": "m",
       "min": 4,
-      "max": 24,
+      "max": 48,
       "step": 0.05,
       "default": 4,
       "tooltip": "How far across. It parts off by itself at this size. Power and speed follow from the size."
@@ -96,7 +111,7 @@
       "source": "machine",
       "at": [
         -2.1227,
-        3.4328,
+        2.5565,
         4.04
       ],
       "size": [
@@ -118,31 +133,31 @@
       ],
       "max": [
         10.0,
-        20.0,
+        28.0,
         10.0
       ]
     },
     {
       "min": [
         -2.0,
-        20.0,
+        28.0,
         2.0
       ],
       "max": [
         10.0,
-        22.0,
+        30.0,
         10.0
       ]
     },
     {
       "min": [
         -2.0,
-        20.0,
+        28.0,
         -2.0
       ],
       "max": [
         -1.6,
-        22.0,
+        30.0,
         2.0
       ],
       "color": "#3f4750"
@@ -150,12 +165,12 @@
     {
       "min": [
         9.6,
-        20.0,
+        28.0,
         -2.0
       ],
       "max": [
         10.0,
-        22.0,
+        30.0,
         2.0
       ],
       "color": "#3f4750"
@@ -163,12 +178,12 @@
     {
       "min": [
         -1.6,
-        20.0,
+        28.0,
         -2.0
       ],
       "max": [
         9.6,
-        22.0,
+        30.0,
         -1.6
       ],
       "color": "#3f4750"
@@ -181,7 +196,7 @@
       ],
       "max": [
         -2.0,
-        19.6,
+        27.6,
         9.6
       ],
       "color": "#c8a13a",
@@ -195,7 +210,7 @@
       ],
       "max": [
         10.08,
-        19.6,
+        27.6,
         9.6
       ],
       "color": "#c8a13a",
@@ -204,12 +219,12 @@
     {
       "min": [
         2.4,
-        10.4,
+        22.4,
         9.96
       ],
       "max": [
         5.6,
-        13.6,
+        25.6,
         10.08
       ],
       "color": "#23272c",
@@ -220,12 +235,12 @@
     {
       "min": [
         -2.1187,
-        2.7108,
+        1.8345,
         2.163
       ],
       "max": [
         -2.0284,
-        4.1548,
+        3.2785,
         5.917
       ],
       "color": "#14181c",
@@ -261,55 +276,55 @@
       "dir": "-x"
     },
     {
-      "name": "-x.2.0",
+      "name": "-x.4.0",
       "at": [
         -2.0,
-        8.0,
+        16.0,
         0.0
       ],
       "dir": "-x"
     },
     {
-      "name": "-x.2.1",
+      "name": "-x.4.1",
       "at": [
         -2.0,
-        8.0,
+        16.0,
         4.0
       ],
       "dir": "-x"
     },
     {
-      "name": "-x.2.2",
+      "name": "-x.4.2",
       "at": [
         -2.0,
-        8.0,
+        16.0,
         8.0
       ],
       "dir": "-x"
     },
     {
-      "name": "-x.5.0",
+      "name": "-x.7.0",
       "at": [
         -2.0,
-        20.0,
+        28.0,
         0.0
       ],
       "dir": "-x"
     },
     {
-      "name": "-x.5.1",
+      "name": "-x.7.1",
       "at": [
         -2.0,
-        20.0,
+        28.0,
         4.0
       ],
       "dir": "-x"
     },
     {
-      "name": "-x.5.2",
+      "name": "-x.7.2",
       "at": [
         -2.0,
-        20.0,
+        28.0,
         8.0
       ],
       "dir": "-x"
@@ -342,55 +357,55 @@
       "dir": "+x"
     },
     {
-      "name": "+x.2.0",
+      "name": "+x.4.0",
       "at": [
         10.0,
-        8.0,
+        16.0,
         0.0
       ],
       "dir": "+x"
     },
     {
-      "name": "+x.2.1",
+      "name": "+x.4.1",
       "at": [
         10.0,
-        8.0,
+        16.0,
         4.0
       ],
       "dir": "+x"
     },
     {
-      "name": "+x.2.2",
+      "name": "+x.4.2",
       "at": [
         10.0,
-        8.0,
+        16.0,
         8.0
       ],
       "dir": "+x"
     },
     {
-      "name": "+x.5.0",
+      "name": "+x.7.0",
       "at": [
         10.0,
-        20.0,
+        28.0,
         0.0
       ],
       "dir": "+x"
     },
     {
-      "name": "+x.5.1",
+      "name": "+x.7.1",
       "at": [
         10.0,
-        20.0,
+        28.0,
         4.0
       ],
       "dir": "+x"
     },
     {
-      "name": "+x.5.2",
+      "name": "+x.7.2",
       "at": [
         10.0,
-        20.0,
+        28.0,
         8.0
       ],
       "dir": "+x"
@@ -480,7 +495,7 @@
       "name": "+y.0.0",
       "at": [
         0.0,
-        22.0,
+        30.0,
         0.0
       ],
       "dir": "+y"
@@ -489,7 +504,7 @@
       "name": "+y.0.1",
       "at": [
         0.0,
-        22.0,
+        30.0,
         4.0
       ],
       "dir": "+y"
@@ -498,7 +513,7 @@
       "name": "+y.0.2",
       "at": [
         0.0,
-        22.0,
+        30.0,
         8.0
       ],
       "dir": "+y"
@@ -507,7 +522,7 @@
       "name": "+y.1.0",
       "at": [
         4.0,
-        22.0,
+        30.0,
         0.0
       ],
       "dir": "+y"
@@ -516,7 +531,7 @@
       "name": "+y.1.1",
       "at": [
         4.0,
-        22.0,
+        30.0,
         4.0
       ],
       "dir": "+y"
@@ -525,7 +540,7 @@
       "name": "+y.1.2",
       "at": [
         4.0,
-        22.0,
+        30.0,
         8.0
       ],
       "dir": "+y"
@@ -534,7 +549,7 @@
       "name": "+y.2.0",
       "at": [
         8.0,
-        22.0,
+        30.0,
         0.0
       ],
       "dir": "+y"
@@ -543,7 +558,7 @@
       "name": "+y.2.1",
       "at": [
         8.0,
-        22.0,
+        30.0,
         4.0
       ],
       "dir": "+y"
@@ -552,7 +567,7 @@
       "name": "+y.2.2",
       "at": [
         8.0,
-        22.0,
+        30.0,
         8.0
       ],
       "dir": "+y"
@@ -567,19 +582,19 @@
       "dir": "-z"
     },
     {
-      "name": "-z.0.2",
+      "name": "-z.0.4",
       "at": [
         0.0,
-        8.0,
+        16.0,
         -2.0
       ],
       "dir": "-z"
     },
     {
-      "name": "-z.0.5",
+      "name": "-z.0.7",
       "at": [
         0.0,
-        20.0,
+        28.0,
         -2.0
       ],
       "dir": "-z"
@@ -594,19 +609,19 @@
       "dir": "-z"
     },
     {
-      "name": "-z.1.2",
+      "name": "-z.1.4",
       "at": [
         4.0,
-        8.0,
+        16.0,
         -2.0
       ],
       "dir": "-z"
     },
     {
-      "name": "-z.1.5",
+      "name": "-z.1.7",
       "at": [
         4.0,
-        20.0,
+        28.0,
         -2.0
       ],
       "dir": "-z"
@@ -621,19 +636,19 @@
       "dir": "-z"
     },
     {
-      "name": "-z.2.2",
+      "name": "-z.2.4",
       "at": [
         8.0,
-        8.0,
+        16.0,
         -2.0
       ],
       "dir": "-z"
     },
     {
-      "name": "-z.2.5",
+      "name": "-z.2.7",
       "at": [
         8.0,
-        20.0,
+        28.0,
         -2.0
       ],
       "dir": "-z"
@@ -642,7 +657,7 @@
       "name": "die",
       "at": [
         4.0,
-        12.0,
+        24.0,
         10.0
       ],
       "dir": "+z",

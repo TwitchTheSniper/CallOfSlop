@@ -64,10 +64,25 @@
       "label": "Blades",
       "group": "Prop",
       "min": 2,
-      "max": 6,
+      "max": 16,
       "step": 1,
       "default": 3,
-      "tooltip": "How many blades. Each has its own health: more is steadier when one goes."
+      "tooltip": "How many blades, 2 to 16. Each has its own health: more take a little more power, push a little harder, and are steadier when one goes."
+    },
+    {
+      "key": "bladeStyle",
+      "type": "choice",
+      "label": "Blade style",
+      "group": "Prop",
+      "options": [
+        "Straight",
+        "Scimitar",
+        "Broad paddle",
+        "Swept",
+        "Narrow"
+      ],
+      "default": 0,
+      "tooltip": "The blade's shape: a small trade of push, power and top speed. The prop keeps it."
     },
     {
       "key": "fanDiameter",

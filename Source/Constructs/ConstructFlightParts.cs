@@ -45,6 +45,8 @@ public sealed class RotorDef
     public float MotorKw; // an electric motor in its hub (0: only a shaft turns it)
     public bool Shaft = true; // it takes a drive shaft
     public int Blades = 2;
+    public int BaseBlades = 2; // the count its numbers are for: more blades than this take more power and push harder
+    public int Style; // a row of Air.json's "bladeStyles": the one it comes with
     public float BladeHealth = 60;
     public float Chord = 0.15f; // m: a blade's width
     public float Spool = 1.5f; // s from stopped to its rated speed
@@ -116,7 +118,7 @@ public static partial class ConstructParts
     /// <summary>A rotor's block (role <c>rotor</c>; ConstructRotor.cs).</summary>
     private static void ParseRotor(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["radius", "ratedKw", "ratedRpm", "motorKw", "shaft", "blades", "bladeHealth", "chord", "spool", "topSpeed", "duct", "heli", "cyclic", "hubMoment", "at", "axis", "forward"], bw);
+        Known(b, ["radius", "ratedKw", "ratedRpm", "motorKw", "shaft", "blades", "style", "bladeHealth", "chord", "spool", "topSpeed", "duct", "heli", "cyclic", "hubMoment", "at", "axis", "forward"], bw);
         var r = new RotorDef
         {
             Radius = Num(Need(b, "radius", bw), file, "rotor.radius"),
@@ -132,6 +134,14 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: a rotor runs on a shaft or on its \"motorKw\"");
         r.Blades = Opt(b, "blades") is { } bl ? (int)Num(bl, file, "rotor.blades") : 2;
         Range(r.Blades, 2, ConstructRotor.MaxBlades, file, "rotor.blades");
+        r.BaseBlades = r.Blades;
+        if (Opt(b, "style") is { } sty)
+        {
+            var id = Str(sty, file, "rotor.style");
+            r.Style = Array.FindIndex(AirTable.Current.BladeStyles, x => x.Id == id);
+            if (r.Style < 0)
+                throw new ConstructPartException($"{file}: rotor.style \"{id}\" isn't a row of Air.json's \"bladeStyles\"");
+        }
         r.BladeHealth = Opt(b, "bladeHealth") is { } bh ? Num(bh, file, "rotor.bladeHealth") : 60f;
         Range(r.BladeHealth, 1, 1_000_000, file, "rotor.bladeHealth");
         r.Chord = Opt(b, "chord") is { } ch ? Num(ch, file, "rotor.chord") : r.Radius * 0.12f;
