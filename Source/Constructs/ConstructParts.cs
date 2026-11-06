@@ -690,6 +690,7 @@ public sealed class ConstructPartDef
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
     public bool RemoteReceiver, IsCamera; // ConstructRemote.cs
     public bool IsMedia; // a Video Screen or Music Player (ConstructMedia.cs)
+    public bool MediaPipes; // a Pipe Box: it plays its list while its construct is driven (ConstructPipes.cs)
     public bool IsWeb; // a Browser Screen: IsMedia, and its one line is a web address (ConstructMedia.cs)
     public bool IsSpeaker; // a speaker (ConstructSpeakers.cs)
     public float SpeakerNear; // metres it holds full level

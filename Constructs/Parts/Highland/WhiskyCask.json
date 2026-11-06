@@ -1,0 +1,235 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Whisky Cask",
+  "description": "A cask stood on end, ageing. What's inside is loot, and older than you.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 30.0,
+  "health": 160,
+  "armour": 2,
+  "material": "steel",
+  "color": "#6b4527",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.188,
+          0.056,
+          -0.188
+        ],
+        "max": [
+          0.188,
+          0.48,
+          0.188
+        ],
+        "label": "cask"
+      },
+      {
+        "min": [
+          -0.188,
+          0.49,
+          -0.188
+        ],
+        "max": [
+          0.188,
+          0.9039999999999999,
+          0.188
+        ],
+        "label": "cask"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.26,
+        0.0,
+        -0.26
+      ],
+      "max": [
+        0.26,
+        0.95,
+        0.26
+      ],
+      "color": "#6b4527",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "taper": [
+        0.9,
+        0.9
+      ],
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.264,
+        0.08,
+        -0.264
+      ],
+      "max": [
+        0.264,
+        0.105,
+        0.264
+      ],
+      "color": "#3a3532",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.264,
+        0.463,
+        -0.264
+      ],
+      "max": [
+        0.264,
+        0.488,
+        0.264
+      ],
+      "color": "#3a3532",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.264,
+        0.84,
+        -0.264
+      ],
+      "max": [
+        0.264,
+        0.865,
+        0.264
+      ],
+      "color": "#3a3532",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.03,
+        0.948,
+        -0.02
+      ],
+      "max": [
+        0.03,
+        0.964,
+        0.04
+      ],
+      "color": "#4a2f1a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.234,
+        0.0,
+        -0.234
+      ],
+      "max": [
+        0.234,
+        0.05,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.234,
+        0.91,
+        -0.234
+      ],
+      "max": [
+        0.234,
+        0.95,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.234,
+        0.052,
+        -0.234
+      ],
+      "max": [
+        -0.194,
+        0.908,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.192,
+        0.052,
+        -0.234
+      ],
+      "max": [
+        0.192,
+        0.908,
+        -0.194
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.194,
+        0.052,
+        -0.234
+      ],
+      "max": [
+        0.234,
+        0.908,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.192,
+        0.052,
+        0.194
+      ],
+      "max": [
+        0.192,
+        0.908,
+        0.234
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

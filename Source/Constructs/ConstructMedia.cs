@@ -43,6 +43,8 @@ public sealed class CMedia
     public uint Seq; // goes up when another track starts, or this one starts again: a report of its end names it
     public float PausedAt; // seconds into the track, while paused
     public byte Mark; // goes up on a seek: every peer's page follows at once, not at its next drift check
+    internal bool PipesDriven; // a Pipe Box's construct had a driver at the last check (ConstructPipes.cs; the server's own, never sent or saved)
+    internal byte PipesIdle; // seconds since its driver left, while it plays
 
     public string? Entry => Index < List.Length ? List[Index] : null;
 
@@ -72,8 +74,9 @@ public static class ConstructMedia
     {
         if (ConstructParts.Opt(root, "media") is not { } m)
             return;
-        ConstructParts.Known(m, ["hear", "near", "width", "height", "web"], $"{file}, media");
+        ConstructParts.Known(m, ["hear", "near", "width", "height", "web", "pipes"], $"{file}, media");
         d.IsMedia = true;
+        d.MediaPipes = ConstructParts.Opt(m, "pipes") is { ValueKind: JsonValueKind.True }; // (a Pipe Box: ConstructPipes.cs)
         d.IsWeb = ConstructParts.Opt(m, "web") is { ValueKind: JsonValueKind.True };
         d.MediaHear = ConstructParts.Num(ConstructParts.Need(m, "hear", $"{file}, media"), file, "media.hear");
         d.MediaNear = ConstructParts.Num(ConstructParts.Need(m, "near", $"{file}, media"), file, "media.near");
@@ -177,7 +180,7 @@ public static class ConstructMedia
     // ---- The server -------------------------------------------------------------------------------------------
 
     /// <summary>Starts a line from the top.</summary>
-    private static void Start(CMedia m, int line, byte by, uint tick)
+    internal static void Start(CMedia m, int line, byte by, uint tick)
     {
         m.Index = (byte)line;
         m.State = MediaState.Playing;
@@ -198,7 +201,7 @@ public static class ConstructMedia
             Halt(m);
     }
 
-    private static void Halt(CMedia m)
+    internal static void Halt(CMedia m)
     {
         m.State = MediaState.Stopped;
         m.Index = 0;

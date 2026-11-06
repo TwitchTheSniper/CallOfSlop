@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wee Keg",
+  "description": "A wee keg on a stand, strapped down. Strictly for the radiator.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 9.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#6b4527",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.03,
+        0.1
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        -0.15,
+        0.032,
+        -0.15
+      ],
+      "max": [
+        0.15,
+        0.392,
+        0.15
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.15,
+        0.032,
+        -0.15
+      ],
+      "max": [
+        0.15,
+        0.392,
+        0.15
+      ],
+      "color": "#6b4527",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "taper": [
+        0.86,
+        0.86
+      ],
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.154,
+        0.07,
+        -0.154
+      ],
+      "max": [
+        0.154,
+        0.092,
+        0.154
+      ],
+      "color": "#3a3532",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.154,
+        0.332,
+        -0.154
+      ],
+      "max": [
+        0.154,
+        0.354,
+        0.154
+      ],
+      "color": "#3a3532",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

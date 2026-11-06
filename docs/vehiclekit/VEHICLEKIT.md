@@ -183,6 +183,12 @@ The IT Department (`Styles.It`, group "IT Department"), a parody of modern offic
 
 **More dressing (`Vehicle.Kit`).** A style with a `"mast"` slot gets a last pass of its own (its own fork, so nothing else of a seed moves, and a style without the slot never rolls it): masts on the rooms' roofs and the cab, spikes down the rooms' outer walls, and its `"gear"` standing on open beds and porches. The IT style's masts are dishes and antennas, its gear reels, switches, monitors and dishes.
 
+### The Highland style
+
+The Clan MacSlop (`Styles.Highland`, group "Clan MacSlop"), a Highland clan on wheels and the loudest faction on the map. Tartan reds, hunting green, navy and tweed on the panels, Saltire blue and white on the hoods, war paint in pillar-box red, lion-rampant yellow, white and black; plates a little crooked (well loved, not neglected). `tools/constructs/highland_parts.py` writes its parts (`Constructs/Parts/Highland`): Saltire Flags on the roofs (masts), Thistles, a Haggis on a Post and a Coo Heid as trophies, Wee Cabers down the flanks as spikes, Wee Kegs on the beds, and Whisky Casks in the rooms (two loot slots each). Rooms are a bothy, a distillery, a ceilidh hall or a kit room. Guns are named for the glen: the Claymore (a pump gun), the Sgian Dubh (a carbine), the Highland Charge (a machine gun) and the Caber Toss (the harpoon). Loot rolls from the `highland` table: tier 1 and 2 drive parts, pump guns and carbines, and the odd Pipe Box.
+
+**The Pipe Box (`Vehicle.Piper`).** A style with a `"piper"` slot stands exactly one on every vehicle with a seat, before the trophies take the sockets: on the hood, else the cab, a room's roof, the bed, a porch, the headboard or a flank. Its own fork, so nothing else of a seed moves, and a seed with nowhere to stand one throws, so the sweep skips it. A trailer has no seat and gets none. The box strikes up the pipes while someone drives (docs/sandbox/MEDIA.md, "Pipe Boxes"), so you hear the clan coming.
+
 @@SHIPPED@@
 
 

@@ -9,6 +9,7 @@ public enum MusicStyle
     DrumAndBass, // 170-175 BPM: two-step breaks, a long wobbling reese bass
     Darksynth, // 155-160 BPM metal-flavoured synth: double kicks, chugging distorted bass, fuzz lead
     Hardbass, // 145-165 BPM (and one 200 BPM monster): clipped pounding kick, bouncy pumping off-beat bass, chants, hoovers and screeches
+    Pipes, // the Highland bagpipe and a pipe band's drums (MusicPipes.cs): never in All, so no playlist or frenzy pool has one
 }
 
 /// <summary>The lead sound of a hardbass track (it can change for the later drops).</summary>
@@ -121,6 +122,9 @@ public sealed class MusicTrack
     }
 
     private readonly WeirdFlavor? _weird;
+
+    /// <summary>A pipe tune's notes (<see cref="MusicStyle.Pipes"/>: <see cref="PipeRenderer"/> plays it, not the sequencer), else null.</summary>
+    public PipeTune? Pipes { get; init; }
 
     /// <summary>Bar lengths and tempos of a weird track (null for the others, whose bars are all <see cref="SecondsPerBar"/>).</summary>
     public WeirdTimeline? Timeline { get; private init; }
