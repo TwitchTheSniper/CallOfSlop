@@ -19,7 +19,7 @@ public enum CActKind : byte
     Wire, // u16 body, u8 from part, u8 to part, u16 to body (the linking tool; milestone 2; protocol 83: the to body, 0 the same construct)
     Unwire, // u16 body, u8 part: cut every wire on it
     Setting, // u16 body, u8 part: a logic part's next setting
-    SeatKeys, // u8: seated, the fire / aim / reload keys held (input readers)
+    SeatKeys, // u8: seated, the fire / aim / reload / roll left / roll right keys held (input readers)
     Blueprint, // u8 blueprint index: the debug parts menu builds it in front of the player (protocol 79)
     SeatLook, // i16: seated, the look's yaw relative to the seat's facing (x pi / 32767), unreliable, up to ~30 Hz (protocol 80)
     Join, // u16 body, u8 part: the welder joins the construct this part touches into this one (protocol 84)
@@ -305,6 +305,7 @@ public sealed partial class Game
                 c.Driver = p.Id;
                 c.DriverSeat = seat;
                 ConstructEdits.DriveInput(c, b, World.TickDt);
+                c.RollInput = ConstructEdits.RollOf(h.SeatKeys);
             }
             else if (c.Driver == p.Id)
                 SandboxHands.StopDriving(c); // (the link from their seat to the drivetrain went)
@@ -943,7 +944,7 @@ public sealed partial class Game
             case CActKind.Configure:
                 return SandboxConfigureAct(p, ref r, eye);
             case CActKind.SeatKeys:
-                hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
+                hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 31) << 8);
                 return null;
             case CActKind.StoreIn:
             case CActKind.TakeStored:
@@ -1221,6 +1222,8 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or host): the attach tool patches a lift cell (ConstructLift.cs).</summary>
+    public bool SandboxSeatedHere => SandboxOn && LocalId != byte.MaxValue && SandboxHands.Hand(LocalId).Seated;
+
     public void SandboxSendPatchCell(ushort body, int part)
     {
         var w = SbW;

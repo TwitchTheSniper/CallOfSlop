@@ -1214,7 +1214,7 @@ public static unsafe partial class Program
         var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen || _webTyping; // typing in the chat suspends the game controls
         for (var i = 0; i < _down.Length; i++)
             _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
-        Keybinds.Resolve(_settings.Binds, _session != null && _game is { SandboxOn: true }, _down); // (per-mode keys; a Shift chord hides its plain key)
+        Keybinds.Resolve(_settings.Binds, _session != null && _game is { SandboxOn: true }, _down, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
     }
 
     private static void UpdateLocalPlayer(double now)

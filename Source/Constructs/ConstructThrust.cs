@@ -8,7 +8,7 @@ public struct CThruster
     public ushort Part;
     public byte Seg; // the segment it hangs on: a thruster on a turntable or a hinge vectors its push
     public Vector3 At, Dir; // the segment's frame: where it pushes, and which way (away from its exhaust)
-    public float MixForward, MixYaw; // how much of the driver's throttle and steering it takes (-1..1)
+    public float MixForward, MixYaw, MixRoll; // how much of the driver's throttle, steering and roll it takes (-1..1)
     public bool Lifts; // it pushes up the body: the hover hold works it
     public bool Fed; // on fuel: a tank reaches it
     public float Level; // 0..1 (it follows what it is asked over its spool)
@@ -29,6 +29,7 @@ public sealed partial class Construct
     public bool HubSkid; // hub motors and no steered wheel: the steering drives the sides against each other
     public bool HasHubMotor;
     public float LiftInput; // the driver's sprint (up) and crouch (down), -1..1
+    public float RollInput; // the seat's roll keys, -1 left, 1 right
     public bool HoverOn; // the hover hold: every lifting thruster holds the construct level at HoverY (it stays on with nobody at the controls: a carrier's crew can leave the seat)
     public float HoverY; // the height it holds its centre of mass at (world Y; on a planet, the distance from its centre: ConstructPhysics.HoldHeight)
     public Vector3 TiltHold; // on a planet: the level hold's integral (world axis x rad s), so a steady twist (a lifter a little off) can't leave it leaning
@@ -74,6 +75,7 @@ public sealed partial class Construct
         }
         ThrusterCount = 0;
         var most = 1e-3f;
+        var mostRoll = 1e-3f;
         var fwd = SeatForward();
         for (var i = 0; i < PartCount && ThrusterCount < MaxThrusters; i++)
         {
@@ -88,19 +90,25 @@ public sealed partial class Construct
             t.MixForward = Vector3.Dot(dir, fwd);
             t.MixYaw = Vector3.Cross(at - Com, dir).Y * d.ThrustForce; // (made a share below)
             most = MathF.Max(most, MathF.Abs(t.MixYaw));
+            t.MixRoll = Vector3.Dot(Vector3.Cross(at - Com, dir), fwd) * d.ThrustForce; // (a roll to the right turns about the way it faces, clockwise from behind)
+            mostRoll = MathF.Max(mostRoll, MathF.Abs(t.MixRoll));
             for (var k = 0; k < old; k++)
                 if (keepPart[k] == i)
                     t.Level = keep[k];
             ThrusterCount++;
         }
         for (var k = 0; k < ThrusterCount; k++)
+        {
             Thrusters[k].MixYaw = -Thrusters[k].MixYaw / most; // (a turn to the right is a clockwise turn from above)
+            Thrusters[k].MixRoll /= mostRoll;
+        }
     }
 }
 
 public static partial class ConstructPhysics
 {
     public const float HoverRate = 3f; // m/s up or down the driver moves the height it holds
+    public const float HoverRoll = 0.3f; // holding a height, the roll keys lean the lifters this share of what each carries, either way
     public const float HoverLand = 3f; // sinking on, this far above the height asked (it is resting on something): the hover lets go
     public const float FlightDrag = 0.02f; // a lit construct's speed dies this much a second as well as by the air drag
     public const float FlightTurnDrag = 0.5f; // its turning, a second
@@ -153,7 +161,7 @@ public static partial class ConstructPhysics
         var up = HoldUp(com);
         var height = HoldHeight(com);
         if (c.Driver == 255)
-            c.LiftInput = 0;
+            c.LiftInput = c.RollInput = 0;
         c.LiftHeld = c.LiftInput != 0 ? c.LiftHeld + dt : 0;
         // The hold: the driver's sprint starts it, or a height wired into a thruster.
         if (c.LiftInput > 0 && !c.HoverOn)
@@ -256,10 +264,10 @@ public static partial class ConstructPhysics
                         a += 0.5f * tiltKp * Vector3.Dot(Vector3.Cross(rel, up), c.TiltHold);
                     }
                     var off = new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) - mid;
-                    want = Math.Clamp(hoverShare * (1 + a / g + Vector2.Dot(trim, off)) + Vector2.Dot(counter, off), 0, 1);
+                    want = Math.Clamp(hoverShare * (1 + a / g + Vector2.Dot(trim, off) + HoverRoll * t.MixRoll * c.RollInput) + Vector2.Dot(counter, off), 0, 1);
                 }
                 else if (c.Driver != 255)
-                    want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput, 0, 1);
+                    want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput + t.MixRoll * c.RollInput, 0, 1);
             }
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);

@@ -71,7 +71,7 @@ public static class SandboxKeys
             GameAction.CrouchHold => "Left Ctrl", GameAction.Sprint or GameAction.FreeRouting => "Left Shift", GameAction.Interact => "F", GameAction.Fire => "LMB",
             GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3",
             GameAction.BuildMirror => "M", GameAction.BuildLine => "O", GameAction.BuildReplace => "P", GameAction.BuildGantry => "U", GameAction.BuildPlaneUp => "Page Up", GameAction.BuildPlaneDown => "Page Down", GameAction.GantryOrbit => "Left Alt",
-            GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SelectTool => ".", GameAction.SnapSwitch => "K", _ => "?",
+            GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SelectTool => ".", GameAction.SeatRollLeft => "Q", GameAction.SeatRollRight => "E", GameAction.SnapSwitch => "K", _ => "?",
         };
         Use = K(GameAction.Interact);
         Fire = K(GameAction.Fire);
@@ -101,7 +101,7 @@ public static class SandboxKeys
         Drive = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: drive, {steer}, {brake}, {GetOut}";
         DriveStart = $"{K(GameAction.MoveForward)}: start, {K(GameAction.MoveBack)}: reverse, {steer}, {brake}, {GetOut}";
         DriveShift = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: drive, {steer}, {brake}, {Reload}: gear up, {Sprint}: gear down, {GetOut}";
-        Fly = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: thrust, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: turn, {Sprint}: up and hold, {K(GameAction.CrouchHold)}: down, {GetOut}";
+        Fly = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: thrust, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: turn, {K(GameAction.SeatRollLeft)}/{K(GameAction.SeatRollRight)}: roll, {Sprint}: up and hold, {K(GameAction.CrouchHold)}: down, {GetOut}";
         Gunner = $"{Fire}: shoot, {GetOut}";
         GunnerTurrets = $"{Fire}: shoot, {Aim}: next turret, {GetOut}";
         const string spin = "mouse or wheel: spin (Shift: free, Ctrl: 5 deg)";

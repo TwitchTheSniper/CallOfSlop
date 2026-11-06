@@ -52,7 +52,10 @@ public sealed partial class Game
         d.Driver = p.Id;
         d.DriverSeat = rx;
         if (rx == d.DriveSeat)
+        {
             ConstructEdits.DriveInput(d, keys, World.TickDt);
+            d.RollInput = live ? ConstructEdits.RollOf(h.SeatKeys) : 0;
+        }
         if (live)
             d.Wake();
     }

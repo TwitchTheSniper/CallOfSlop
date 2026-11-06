@@ -151,8 +151,8 @@ public static unsafe partial class Program
         {
             if (!LeverSeated(g, me, in h, now) && Pressed(GameAction.Interact)) // (an Analog Lever in reach takes the key: Program.SandboxLever.cs)
                 g.SandboxSend(CActKind.Stand);
-            // The keys a seat's input readers can read besides the movement keys: fire, aim, reload.
-            var keys = (Down(GameAction.Fire) ? 1 : 0) | (Down(GameAction.Aim) ? 2 : 0) | (Down(GameAction.Reload) ? 4 : 0);
+            // The keys a seat's input readers can read besides the movement keys: fire, aim, reload, roll.
+            var keys = (Down(GameAction.Fire) ? 1 : 0) | (Down(GameAction.Aim) ? 2 : 0) | (Down(GameAction.Reload) ? 4 : 0) | (Down(GameAction.SeatRollLeft) ? 8 : 0) | (Down(GameAction.SeatRollRight) ? 16 : 0);
             if (keys != _sbSeatKeys)
             {
                 _sbSeatKeys = keys;

@@ -4951,6 +4951,7 @@ Its other outputs are the same controls one by one, for a builder who wires by h
 | `handbrake` | 1 on Jump only |
 | `run` | 1 while someone sits (an engine's run port) |
 | `gear up`, `gear down` | 1 while Reload, Sprint is held (a Gear Selector's input) |
+| `roll` | -1 to 1: the seat's roll keys, Q and E (left, right; rebindable, and only in a seat). Unwired thrusters take it too, by how they sit about the seat's forward axis; holding a height, it leans the lifters |
 | `lift` | -1..1: Sprint, Crouch |
 | `left`, `right` | Each side's drive for skid steering, -1..1 (a hub motor's input) |
 

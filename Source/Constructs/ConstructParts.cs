@@ -1040,7 +1040,7 @@ public static partial class ConstructParts
         ("left", (ushort)Buttons.Left), ("right", (ushort)Buttons.Right), ("jump", (ushort)Buttons.Jump), ("sprint", (ushort)Buttons.Sprint),
     ];
 
-    public const ushort KeyFire = 0x100, KeyAim = 0x200, KeyReload = 0x400;
+    public const ushort KeyFire = 0x100, KeyAim = 0x200, KeyReload = 0x400, KeyRollLeft = 0x800, KeyRollRight = 0x1000;
 
     /// <summary>Parses one part file's text. Throws <see cref="ConstructPartException"/> with the reason for anything wrong.</summary>
     public static ConstructPartDef Parse(string json, string file)

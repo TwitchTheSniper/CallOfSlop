@@ -23,9 +23,9 @@ public static class ConstructModules
     public const float InUse = -0.2f; // a Turret Module's "guns" output while it is the seat's turret and isn't firing (never a trigger, and clients see which is in use)
     public const int MaxTurretMods = 32;
 
-    public static readonly string[] DrivePorts = [Bus, "steer", "throttle", "brake", "reverse", "handbrake", "run", "gear up", "gear down", "lift", "left", "right"];
+    public static readonly string[] DrivePorts = [Bus, "steer", "throttle", "brake", "reverse", "handbrake", "run", "gear up", "gear down", "lift", "left", "right", "roll"]; // (add at the end: a link names its port by index)
     public static readonly string[] TurretPorts = ["guns", "fire", "yaw", "pitch", "aim", "reload"];
-    private const int PortThrottle = 2, PortBrake = 3, PortReverse = 4, PortHandbrake = 5, PortRun = 6, PortUp = 7, PortDown = 8, PortLift = 9, PortLeft = 10, PortRight = 11;
+    private const int PortThrottle = 2, PortBrake = 3, PortReverse = 4, PortHandbrake = 5, PortRun = 6, PortUp = 7, PortDown = 8, PortLift = 9, PortLeft = 10, PortRight = 11, PortRoll = 12;
     private const int PortYaw = 2, PortPitch = 3, PortAim = 4, PortReload = 5;
 
     /// <summary>The input port a drive link ends at on this part, or -1: it isn't part of a drivetrain.</summary>
@@ -205,6 +205,7 @@ public static class ConstructModules
             PortLift => (Has(keys, Buttons.Sprint) ? 1 : 0) - (Has(keys, Buttons.Crouch) ? 1 : 0),
             PortLeft => Math.Clamp(throttle + steer, -1, 1),
             PortRight => Math.Clamp(throttle - steer, -1, 1),
+            PortRoll => ConstructEdits.RollOf(keys),
             _ => 0,
         };
     }
