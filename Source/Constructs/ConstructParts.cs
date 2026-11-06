@@ -621,6 +621,9 @@ public sealed class ConstructPartDef
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
     public bool RemoteReceiver, IsCamera; // ConstructRemote.cs
+    public bool IsMedia; // a Video Screen or Music Player (ConstructMedia.cs)
+    public float MediaHear, MediaNear; // metres: where its sound is gone, and how far it stays at full level
+    public int MediaWidth, MediaHeight; // the page its browser shows, pixels
     public OfficeKind Office; // a Fax Machine or a Computer: the IT Department's lines (OfficeParts.cs)
     public bool CameraScreen => Array.Exists(Panels, x => x.Source == "camera");
     public float RemoteRange, CameraFov;
@@ -1441,6 +1444,7 @@ public static partial class ConstructParts
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
+        ConstructMedia.Parse(d, root, file);
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))

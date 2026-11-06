@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Video Screen",
+  "description": "Plays YouTube links and the game's own tracks: paste a link with the configure tool. Seen from 25 m, heard to 40 m.",
+  "group": "Logic",
+  "section": "Media",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 6.0,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 1,
+  "power": 40,
+  "config": [
+    {
+      "key": "volume",
+      "label": "Volume",
+      "group": "General",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "default": 0.8,
+      "tooltip": "How loud it plays, before distance."
+    },
+    {
+      "key": "loop",
+      "label": "Loop the list",
+      "group": "General",
+      "type": "toggle",
+      "default": 0,
+      "tooltip": "After the last track it starts again from the top."
+    }
+  ],
+  "centreSockets": false,
+  "media": {
+    "hear": 40,
+    "near": 4
+  },
+  "panels": [
+    {
+      "source": "media",
+      "at": [
+        0,
+        0,
+        -0.007
+      ],
+      "size": [
+        0.976,
+        0.549
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 3,
+      "range": 25
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.3,
+        0.0
+      ],
+      "max": [
+        0.5,
+        0.3,
+        0.05
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.05
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.3,
+        0.025
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.3,
+        0.025
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.025
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.025
+      ],
+      "dir": "+x"
+    }
+  ]
+}

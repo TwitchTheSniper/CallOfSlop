@@ -388,6 +388,7 @@ public sealed partial class Ui
             }
 
             SandboxConfigText(game, c, _cfPart, d);
+            SandboxConfigMedia(game, c, _cfPart, d);
             // The settings, group by group.
             var lockedAny = false;
             foreach (var group in _cfGroups)

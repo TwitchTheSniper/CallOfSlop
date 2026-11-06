@@ -73,6 +73,22 @@ public static partial class Program
         }
     }
 
+    private static int _mlKey;
+    private static string _mlText = "";
+
+    /// <summary>A Video Screen or Music Player under the crosshair: what it plays here, or why it can't. It is run from the configure tool's panel.</summary>
+    private static void MediaLook(Game g, Construct c, int part, ConstructPartDef d, ConstructTool tool)
+    {
+        var word = MediaDirector.Look(c, part);
+        var key = HashCode.Combine(d.Name, word, tool == ConstructTool.Configure);
+        if (key != _mlKey)
+        {
+            _mlKey = key;
+            _mlText = tool == ConstructTool.Configure ? $"{d.Name}: {word}" : $"{d.Name}: {word} (configure tool: list and play)";
+        }
+        g.SandboxLookText = _mlText;
+    }
+
     /// <summary>One frame of a key or sign under the crosshair. True when the use key's press went to it.</summary>
     private static bool ControlFrame(Game g, Player me, in SandboxHand h, bool aimed, in ConstructHit hit, bool join)
     {
@@ -82,6 +98,11 @@ public static partial class Program
         var d = c.DefOf(hit.Part);
         ref var p = ref c.Parts[hit.Part];
         var keyed = d.Logic is CLogic.Numpad or CLogic.CodeLock;
+        if (d.IsMedia)
+        {
+            MediaLook(g, c, hit.Part, d, h.Tool);
+            return false;
+        }
         if (p.Broken || !keyed && d.TextSlots == 0 || h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)
             return false;
         var box = keyed ? LogicInputs.KeyAt(c, hit.Part, hit.Point) : -1;

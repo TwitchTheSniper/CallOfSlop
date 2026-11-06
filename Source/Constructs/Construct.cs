@@ -54,6 +54,8 @@ public struct CPart
     public float Mem; // what a logic block keeps from tick to tick (never saved: a Code Lock's entry, a Damage Sensor's last health)
     public ushort Watch; // a Level or Damage Sensor: the part its watch link ends at, plus one (rebuilt with the links)
     public string? Text, Text2; // a sign's messages, a lamp bank's labels (LogicText.cs)
+    public CMedia? Media; // a Video Screen's or Music Player's list and what it plays (ConstructMedia.cs)
+    public System.Text.StringBuilder? MediaLoad; // a world file's list as its chunks come in (ConstructMedia.LoadChunk)
     public float[]? Trace; // a Graph Screen's last 30 s on this peer, oldest at TraceAt (LogicDisplays.cs)
     public byte TraceAt;
     public float LeverShown; // an Analog Lever: where its handle is drawn on this PC, easing towards its value (negative: not drawn yet)
@@ -347,6 +349,7 @@ public sealed partial class Construct
     public bool HasPress; // a Press or Die Lathe: its step looks at this body (ConstructPress.cs)
     public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
     public ushort[] CameraParts = []; // cameras (ConstructRemote.cs)
+    public ushort[] MediaParts = []; // Video Screens and Music Players (ConstructMedia.cs)
     public int Receiver = -1; // the first Drone Receiver: this body can be flown from afar
     public ushort[] ReadingParts = [], GraphParts = [], RadioParts = []; // displays and keypads; Graph Screens; wireless senders (LogicDisplays.cs, ConstructRadio.cs)
     public int[] PortBase = []; // per part (only with a part of WidePorts): where its ports start in PortIn and PortOut, or -1
@@ -1409,6 +1412,19 @@ public sealed partial class Construct
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
+        }
+        var media = 0;
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].D.IsMedia)
+                media++;
+        if (MediaParts.Length != media)
+            MediaParts = media == 0 ? [] : new ushort[media];
+        if (media > 0)
+        {
+            media = 0;
+            for (var i = 0; i < PartCount; i++)
+                if (Parts[i].D.IsMedia)
+                    MediaParts[media++] = (ushort)i;
         }
         if (CameraParts.Length != cameras)
             CameraParts = cameras == 0 ? [] : new ushort[cameras];

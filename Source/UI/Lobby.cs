@@ -969,6 +969,15 @@ public sealed partial class Ui
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Music volume"u8, ref s.MusicVolume, 0f, 1f, "%.2f"u8))
                 audio.Music.Volume = s.MusicVolume;
+            ImGui.SetNextItemWidth(w);
+            if (ImGui.SliderFloat("Screens volume"u8, ref s.MediaVolume, 0f, 1f, "%.2f"u8))
+                MediaDirector.Level = s.MediaVolume;
+            if (ImGui.IsItemHovered())
+                ImGui.SetItemTooltip("Video Screens and Music Players in the world, on top of each one's own Volume."u8);
+            if (ImGui.Checkbox("Play other players' videos"u8, ref s.MediaOthers))
+                MediaDirector.Others = s.MediaOthers;
+            if (ImGui.IsItemHovered())
+                ImGui.SetItemTooltip("Off: links other players start stay dark and silent on this PC. The game's own tracks still play."u8);
             var musicStyle = (int)s.MusicChoice;
             ImGui.Text("Music style"u8);
             ImGui.SameLine();
