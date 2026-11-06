@@ -33,6 +33,7 @@ public static partial class ConstructRender
     public static int AimPart = -1;
     public static bool AimRefused; // the held tool would be refused on it (hr01): the outline is red (the reason is on the look line)
     public static int AimKeyBox = -1; // a keypad: the key under the crosshair (only it glows)
+    public static bool AimOnPage; // Hands are the mouse on a screen: no glow over what the player is looking at (Program.SandboxPointer.cs)
     public static bool AimHands; // hands can work it (SandboxAim.Touch): it glows yellow, on what they work (a tool's own action lights nothing)
     public static int AimSlot = -1; // ... a stored part: the slot it lies in
     // The welder's freeform preview (board item fw01; Program.SandboxFreeform.cs): the two parts outlined, the bead at their
@@ -138,6 +139,7 @@ public static partial class ConstructRender
         AimBody = null;
         AimPart = -1;
         AimRefused = false;
+        AimOnPage = false;
         AimHands = false;
         AimKeyBox = -1;
         AimSlot = -1;
@@ -1116,7 +1118,7 @@ public static partial class ConstructRender
         DrawSelection(gfx, pulse);
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
-            if (AimRefused || AimHands)
+            if ((AimRefused || AimHands) && !AimOnPage)
                 DrawAimGlow(gfx, ab, AimPart);
             if (JointSides.IsJoint(ab, AimPart, out var aj))
                 DrawJointSides(gfx, ab, aj, now, pulse);
