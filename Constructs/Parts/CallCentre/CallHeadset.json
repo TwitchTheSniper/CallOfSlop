@@ -1,0 +1,144 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Call Headset",
+  "description": "A headset on a stand. The microphone has heard every script ever written.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 2.0,
+  "health": 20,
+  "armour": 0,
+  "material": "steel",
+  "color": "#25272a",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.02,
+        0.0,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.2,
+        0.02
+      ],
+      "color": "#25272a"
+    },
+    {
+      "min": [
+        -0.12,
+        0.2,
+        -0.02
+      ],
+      "max": [
+        0.12,
+        0.23,
+        0.02
+      ],
+      "color": "#8e9296"
+    },
+    {
+      "min": [
+        -0.12,
+        0.232,
+        -0.025
+      ],
+      "max": [
+        0.12,
+        0.45,
+        0.025
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.12,
+        0.232,
+        -0.025
+      ],
+      "max": [
+        0.12,
+        0.45,
+        0.025
+      ],
+      "color": "#25272a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z"
+    },
+    {
+      "min": [
+        -0.15,
+        0.22,
+        -0.06
+      ],
+      "max": [
+        -0.11,
+        0.32,
+        0.06
+      ],
+      "color": "#5f7f8f",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.11,
+        0.22,
+        -0.06
+      ],
+      "max": [
+        0.15,
+        0.32,
+        0.06
+      ],
+      "color": "#5f7f8f",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.12,
+        0.24,
+        -0.16
+      ],
+      "max": [
+        0.135,
+        0.255,
+        -0.06
+      ],
+      "color": "#25272a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.115,
+        0.23,
+        -0.19
+      ],
+      "max": [
+        0.14,
+        0.265,
+        -0.162
+      ],
+      "color": "#d8322a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

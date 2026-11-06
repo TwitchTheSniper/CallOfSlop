@@ -71,8 +71,10 @@ public enum CActKind : byte
     Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
     PanelTouch, // u16 body, u16 part, u8 panel, u8 button: a finger on a display panel's button (protocol 167; PanelTouch.cs)
     Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq (Seek: milliseconds), text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
+    WebState, // u16 body, u16 part, u16 scroll, u8 inner, f32 seconds: a Browser Screen's leading page (protocol 181; ConstructMedia.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
+    Ordnance, // u32 length, text: build this design at the Ordnance Bench in reach (protocol 180; GameSandboxOrdnance.cs)
 }
 
 /// <summary>
@@ -343,6 +345,7 @@ public sealed partial class Game
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxTerminalTick(); // (Smart Terminals: pulls under way and what each player stands at, GameSandboxTerminal.cs)
         SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
+        SandboxScamTick(now); // (the Scammers' adverts: GameSandboxScams.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
@@ -755,6 +758,8 @@ public sealed partial class Game
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
             case CActKind.Bench:
                 return SandboxBenchAct(p, ref r);
+            case CActKind.Ordnance:
+                return SandboxOrdnanceBuild(p, ReadLong(ref r));
             case CActKind.Sculpt:
                 return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:
@@ -892,6 +897,22 @@ public sealed partial class Game
                 var panel = r.U8();
                 var region = r.U8();
                 return hands.PanelTouched(Constructs, p.Id, eye, body, part, panel, region, ServerTick, Constructs.Get(body) is { } tc2 ? SandboxConfigRefusal(tc2, p.Id) : null);
+            }
+            case CActKind.WebState:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var scroll = r.U16();
+                var inner = r.U8();
+                var at = r.F32();
+                // (the configure tool's rule, without its reach: the leader may have walked off. Refused quietly: this comes four times a second)
+                if (Constructs.Get(body) is { } wc && part < wc.PartCount && wc.DefOf(part).IsWeb && wc.Parts[part].Media is { } wm && hands.Contested(wc, p.Id) == null && SandboxConfigRefusal(wc, p.Id) == null
+                    && ConstructMedia.WebState(wm, p.Id, scroll, inner, at, ServerTick))
+                {
+                    ConstructMedia.WriteWeb(_sbWeb, body, part, wm);
+                    Net.Broadcast(_sbWeb.Span, PacketReliability.ReliableOrdered);
+                }
+                return null;
             }
             case CActKind.Media:
             {
@@ -1182,9 +1203,30 @@ public sealed partial class Game
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
     }
 
+    private readonly PacketWriter _sbWeb = new();
+
+    /// <summary>Client (or the host itself): where this peer's page is, when it leads a Browser Screen.</summary>
+    public void SandboxWebState(ushort body, int part, ushort scroll, byte inner, float at)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.WebState).U16(body).U16((ushort)part).U16(scroll).U8(inner).F32(at);
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                SandboxActGuarded(me, ref r);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
     /// <summary>Client (or the host itself): a finger on a panel's button. The server checks it as the configure tool's.</summary>
     public void SandboxPanelTouch(ushort body, int part, int panel, int region)
     {
+        if (Constructs.Get(body) is { } tc && part < tc.PartCount && tc.Parts[part].D.Office == OfficeKind.Computer)
+            OfficeParts.Clicked(tc, part, region); // (an advert: this screen shows the scam: GameSandboxScams.cs)
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.PanelTouch).U16(body).U16((ushort)part).U8((byte)panel).U8((byte)region);
         if (IsServer)

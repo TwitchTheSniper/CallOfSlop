@@ -95,7 +95,7 @@ if ($Step -ne "zip") {
     }
 
     # Belt and braces: no personal or debug files in the shared copy.
-    $personal = @("settings.txt", "progress*.txt", "loadout*.txt", "workbench.txt", "blueprints.txt", "audio_mix.json", "appearance.txt", "portable.txt", "update_check.txt", "update.log", ".callofslop-build",
+    $personal = @("settings.txt", "progress*.txt", "loadout*.txt", "workbench.txt", "blueprints.txt", "ordnance.txt", "audio_mix.json", "appearance.txt", "portable.txt", "update_check.txt", "update.log", ".callofslop-build",
                   "*.bak", "*.tmp", "*.corrupt", "*.log", "smoke_*.bmp", "selftest.log", "stuck-spots*.json",
                   "crash.txt", "breadcrumb*", "crash-*.dmp", "crash-*.json", # crash logs and dumps (CrashLog.cs, CrashDumps.cs)
                   "steam_appid.txt") # a developer's Steam file (Source/Platform/Steam): never shipped

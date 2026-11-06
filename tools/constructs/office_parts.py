@@ -138,8 +138,13 @@ def server_rack():
     return "", p
 
 
+# The adverts on a computer's screen (OfficeParts.FillComputer picks their words; Story/Office/Scammers.json): two banners under the text.
+ADVERTS = [{"action": "office.advert", "at": [0.02, 0.2, 0.98, 0.36], "label": "AD"},
+           {"action": "office.advert2", "at": [0.02, 0.03, 0.98, 0.19], "label": "AD"}]
+
+
 def computer():
-    p = Part("Computer", SMALL, OFFICE, "A beige computer on a desk. Plug it into a battery's circuit, stand at it and type in chat: it emails the IT Department.", role="panel", tool="wrench", color=BEIGE, group="Logic")
+    p = Part("Computer", SMALL, OFFICE, "A beige computer on a desk. Plug it into a battery's circuit, stand at it and type in chat: it emails the IT Department. Don't click the adverts.", role="panel", tool="wrench", color=BEIGE, group="Logic")
     top = 0.74
     p.add(box((-0.4, top, -0.3), (0.4, top + 0.03, 0.3), "#6e6a60"))  # (the desk top)
     for sx in (-1, 1):
@@ -161,7 +166,7 @@ def computer():
     feet(p, (-0.25, 0.25), (0.0,))
     p.stats(22, 60, 1, 2.0)
     p.set(power=60, office="computer", centreSockets=False,
-          panels=[{"source": "office.computer", "at": [0, round(t + 0.18, 3), 0.056], "size": [0.33, 0.25], "face": "+z", "up": "+y", "rows": 4, "range": 10}])
+          panels=[{"source": "office.computer", "at": [0, round(t + 0.18, 3), 0.056], "size": [0.33, 0.25], "face": "+z", "up": "+y", "rows": 8, "range": 10, "touch": ADVERTS}])
     return "", p
 
 

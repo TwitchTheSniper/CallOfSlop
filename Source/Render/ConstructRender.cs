@@ -71,6 +71,9 @@ public static partial class ConstructRender
 
     /// <summary>Where the local gunner's shell gun lands as it points now (<see cref="Game.ArtilleryHudLine"/> sets it each frame).</summary>
     public static bool GunnerMarked;
+    public static bool SnapGhost, SnapOk; // the hook a held bomb is near (Game.SandboxPhysGunHint)
+    public static Vector3 SnapAt, SnapSize;
+    public static Quaternion SnapRot;
     public static Vector3 GunnerMark;
 
     /// <summary>Shells in the air, and the local gunner's marker on the ground.</summary>
@@ -84,9 +87,7 @@ public static partial class ConstructRender
             if (s.Kind == ShellKind.Bomb)
             {
                 // A bomb looks its size, and lies where it hit until its fuse runs out.
-                var d = ConstructParts.Def(s.Def);
-                var size = d.BoundsMax - d.BoundsMin;
-                gfx.Draw(Matrix4x4.CreateScale(size) * way * Matrix4x4.CreateTranslation(s.Landed ? s.Pos : Vector3.Lerp(s.Prev, s.Pos, alpha)), new Vector3(0.29f, 0.33f, 0.19f));
+                gfx.Draw(Matrix4x4.CreateScale(s.Size) * way * Matrix4x4.CreateTranslation(s.Landed ? s.Pos : Vector3.Lerp(s.Prev, s.Pos, alpha)), new Vector3(0.29f, 0.33f, 0.19f));
                 n++;
                 continue;
             }
@@ -98,6 +99,23 @@ public static partial class ConstructRender
             else
                 gfx.Draw(Matrix4x4.CreateScale(0.14f, 0.14f, s.Kind >= ShellKind.Rocket ? 1.1f : 0.5f) * way * Matrix4x4.CreateTranslation(at), new Vector3(0.75f, 0.68f, 0.5f));
             n++;
+        }
+        if (SnapGhost)
+        {
+            // The hook's ghost: the held bomb's box in lines, green when it will go on, red when it won't.
+            var colour = SnapOk ? new Vector3(0.3f, 1f, 0.4f) : new Vector3(1f, 0.25f, 0.2f);
+            var turn = Matrix4x4.CreateFromQuaternion(SnapRot);
+            var h = SnapSize * 0.5f;
+            const float t = 0.03f;
+            for (var a = -1; a <= 1; a += 2)
+                for (var b = -1; b <= 1; b += 2)
+                {
+                    gfx.Draw(Matrix4x4.CreateScale(SnapSize.X, t, t) * Matrix4x4.CreateTranslation(0, a * h.Y, b * h.Z) * turn * Matrix4x4.CreateTranslation(SnapAt), colour);
+                    gfx.Draw(Matrix4x4.CreateScale(t, SnapSize.Y, t) * Matrix4x4.CreateTranslation(a * h.X, 0, b * h.Z) * turn * Matrix4x4.CreateTranslation(SnapAt), colour);
+                    gfx.Draw(Matrix4x4.CreateScale(t, t, SnapSize.Z) * Matrix4x4.CreateTranslation(a * h.X, b * h.Y, 0) * turn * Matrix4x4.CreateTranslation(SnapAt), colour);
+                    n += 3;
+                }
+            SnapGhost = false; // (set again each frame while it lasts)
         }
         if (GunnerMarked)
         {

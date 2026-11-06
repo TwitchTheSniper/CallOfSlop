@@ -110,7 +110,15 @@ builds has one (docs/vehiclekit/VEHICLEKIT.md, "The Highland style"). A speaker 
 
 Browser Screen, Medium and Large are a real Chromium tab on a part. Address bar, Back, Forward, Reload and Close are on the configure panel. Hands work as on a video, and Enter on the picture gives the page the keyboard until Esc (or the crosshair leaves): the game's keys are off meanwhile. It shares the 4 pages, its sound takes the same path, and speakers work. Windows only.
 
-**Shared:** the address typed, and the address links lead to, without the query or fragment, which can hold a login's token. So a page behind a query can look different on another peer. **Not shared:** clicks, typing and logins. Each peer has its own page, and keys never go on the wire.
+**One page leads, the others follow.** Whoever used the page last leads: a click, wheel or key on a peer's page takes the lead, as does typing an address. Each peer still runs its own page; nothing about a picture goes on the wire.
+
+**Shared:**
+
+- **The address, with its query and fragment,** so a search or a watch page opens the same. Back, Forward, links and in-page changes (pushState, hash) follow, because the leader's address is what goes out. A follower never reports, so its own redirects or language stay on its page. Secret-looking parameters are taken out first (`Source/Media/WebScrub.cs`, compiled into the game and the helper): names with words like token, auth, session, sid, key, code, sig, password, state or jwt, and values shaped like a JWT. This goes by names, so a secret under an innocent name gets through, and a page that needs a stripped parameter won't open the same elsewhere.
+- **How far down the page is,** as a share of the main scroller, at most 4 times a second (`CBodyKind.WebState`, so scrolling doesn't send the body). The main scroller is the document's, or failing that a likely main element.
+- **The page's main video or audio:** play, pause and time, on a clock in `CMedia` that joiners read, with the same drift correction as YouTube links (2.5 s, a seek at most every 5 s). Only elements in the top frame are seen: a player inside another site's frame isn't. An advert playing in the element counts as the element.
+
+**Not shared:** clicks, unless they navigate, typing and logins. Keys never go on the wire, and neither does anything from a form. A page that looks different per viewer, such as a logged-in one, stays different: a shared scroll share then lands somewhere else.
 
 Safety, since the address can come from another player (`tools/browser/WebPage.cs`, its own class, handlers and request context, so none of this touches the locked YouTube page):
 

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Twin Bomb Rack",
-  "description": "Two bombs side by side. While its input is on it lets them go in turn, if its own construct leaves the way down clear.",
+  "description": "Two bombs side by side. While its input is on it lets them go in turn, if its own construct leaves the way down clear. Rated for 600 kg.",
   "group": "Weapons",
   "section": "Bombs",
   "role": "logic",
@@ -13,7 +13,8 @@
   "color": "#2a2c26",
   "attachSeconds": 1.5,
   "logic": {
-    "kind": "bombrack"
+    "kind": "bombrack",
+    "load": 600
   },
   "boxes": [
     {

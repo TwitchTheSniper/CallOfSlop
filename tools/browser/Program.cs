@@ -11,8 +11,8 @@ namespace SlopBrowser;
 /// Pictures and sound go to the game through one shared memory block a page; commands come in on stdin, reports go out on stdout.
 /// Stdin closing, which is also what the game crashing looks like, ends the process.
 /// <code>
-/// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP ADS | web SLOT URL WIDTH HEIGHT MAP ADS | ads SLOT ON | go SLOT URL | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
-/// out: ready | fail REASON | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE | u SLOT ADDRESS (no query)
+/// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP ADS | web SLOT URL WIDTH HEIGHT MAP ADS | ads SLOT ON | go SLOT URL | wscroll SLOT SHARE | wplay SLOT | wpause SLOT | wseek SLOT SECONDS | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
+/// out: ready | fail REASON | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE | u SLOT ADDRESS (secrets out) | w SLOT SCROLL HASMEDIA PAUSED TIME
 /// </code>
 /// </summary>
 internal static class Program
@@ -123,6 +123,18 @@ internal static class Program
                 break;
             case "go" when a.Length == 3:
                 (Pages[slot] as WebPage)?.Go(a[2]);
+                break;
+            case "wscroll" when a.Length == 3:
+                (Pages[slot] as WebPage)?.Scroll(Math.Min(1, Num(a[2])));
+                break;
+            case "wplay":
+                (Pages[slot] as WebPage)?.Play();
+                break;
+            case "wpause":
+                (Pages[slot] as WebPage)?.Pause();
+                break;
+            case "wseek" when a.Length == 3:
+                (Pages[slot] as WebPage)?.Seek(Num(a[2]));
                 break;
             case "back":
                 (Pages[slot] as WebPage)?.Back();

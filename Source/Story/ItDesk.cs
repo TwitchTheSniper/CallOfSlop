@@ -18,8 +18,15 @@ public sealed class ItDesk
     public (string[] Words, string[] Lines)[] Replies = [];
     public string Sent = "", NoFax = "";
 
-    /// <summary>A page by its id: the story's pages first, then the replies. Null past the end.</summary>
-    public string[]? Page(int id) => id < 0 ? null : id < Pages.Length ? Pages[id] : id - Pages.Length < Replies.Length ? Replies[id - Pages.Length].Lines : null;
+    /// <summary>What IT faxes when one of its computers has been hooked by the scammers' adverts (<see cref="ScamDesk"/>); null: nothing.</summary>
+    public string[]? Malware;
+
+    /// <summary>The malware notice's page id (past the story's pages and the replies).</summary>
+    public int MalwarePage => Pages.Length + Replies.Length;
+
+    /// <summary>A page by its id: the story's pages first, then the replies, then the malware notice. Null past the end.</summary>
+    public string[]? Page(int id) =>
+        id < 0 ? null : id < Pages.Length ? Pages[id] : id - Pages.Length < Replies.Length ? Replies[id - Pages.Length].Lines : id == MalwarePage ? Malware : null;
 
     /// <summary>The reply to an email, as a page id: the first rule with a word in it, else the last rule with no words. -1: none.</summary>
     public int ReplyTo(string email)
@@ -100,7 +107,7 @@ public sealed class ItDesk
             var root = doc.RootElement;
             var desk = new ItDesk();
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "about" or "from" or "first" or "every" or "pages" or "replyIn" or "replies" or "sent" or "noFax"))
+                if (p.Name is not ("format" or "about" or "from" or "first" or "every" or "pages" or "replyIn" or "replies" or "sent" or "noFax" or "malware"))
                     throw new StoryException($"{where}: unknown key \"{p.Name}\"");
             if (root.TryGetProperty("from", out var from))
                 desk.From = Text(from, $"{where}: from");
@@ -115,6 +122,8 @@ public sealed class ItDesk
                     var words = r.TryGetProperty("if", out var w) ? w.EnumerateArray().Select(x => Text(x, $"{where}: replies[{i}].if")).ToArray() : [];
                     return (words, Lines(r, $"{where}: replies[{i}]"));
                 }).ToArray();
+            if (root.TryGetProperty("malware", out var malware))
+                desk.Malware = Lines(malware, $"{where}: malware");
             if (desk.Pages.Length + desk.Replies.Length > MaxPages)
                 throw new StoryException($"{where}: {desk.Pages.Length + desk.Replies.Length} pages and replies, at most {MaxPages} (a fax keeps its page in a byte)");
             desk.Sent = root.TryGetProperty("sent", out var s) ? Text(s, $"{where}: sent") : "Email sent.";
@@ -123,7 +132,7 @@ public sealed class ItDesk
         }
     }
 
-    private static (double, double) Span(JsonElement root, string key, string where, double a, double b)
+    internal static (double, double) Span(JsonElement root, string key, string where, double a, double b)
     {
         if (!root.TryGetProperty(key, out var e))
             return (a, b);
@@ -136,14 +145,14 @@ public sealed class ItDesk
         return (lo, hi);
     }
 
-    private static string[] Lines(JsonElement e, string where)
+    internal static string[] Lines(JsonElement e, string where)
     {
         if (!e.TryGetProperty("lines", out var lines) || lines.ValueKind != JsonValueKind.Array || lines.GetArrayLength() is 0 or > MaxLines)
             throw new StoryException($"{where}: \"lines\" is 1 to {MaxLines} lines");
         return lines.EnumerateArray().Select((l, i) => Text(l, $"{where}.lines[{i}]")).ToArray();
     }
 
-    private static string Text(JsonElement e, string where)
+    internal static string Text(JsonElement e, string where)
     {
         var s = e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : throw new StoryException($"{where} is text");
         if (s.Length == 0 || s.Length > MaxLine || s.Any(c => c < 32 || c > 126))

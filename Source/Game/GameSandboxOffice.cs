@@ -150,10 +150,14 @@ public sealed partial class Game
     /// </summary>
     private bool SandboxEmail(Player from, string text, double now)
     {
-        if (!SandboxOn || from.Bot != null || ItDesk.Script is not { } desk)
+        if (!SandboxOn || from.Bot != null)
             return false;
         var (pc, pi) = NearestOffice(OfficeKind.Computer, from.Position, ComputerReach);
         if (pc == null)
+            return false;
+        if (pc.Parts[pi].State > 0 && ScamEmail(from, pc, pi, text, now))
+            return true; // (a hooked computer: the scammers read your email now, GameSandboxScams.cs)
+        if (ItDesk.Script is not { } desk)
             return false;
         var at = OfficePartAt(pc, pi);
         ItEmailsSent++;
