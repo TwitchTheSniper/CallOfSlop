@@ -53,7 +53,7 @@ line, it gets three goes a session, and game tracks don't notice. Self-tests and
 ## Hands on a screen
 
 `Program.SandboxPointer.cs`. With Hands out and empty, in use reach, the crosshair on a live page's picture is a mouse in the browser, with a cursor drawn on the screen. Hover shows YouTube's controls, LMB clicks and drags, and the wheel scrolls.
-RMB takes the mouse off that part until the crosshair leaves it. F does what it always did, because the mouse never reads it. The mouse doesn't type: no key reaches the page.
+RMB takes the mouse off that part until the crosshair leaves it. F does what it always did, because the mouse never reads it. It works on a loose screen too: LMB on the picture goes to the page, and to pick one up, use its case or border, or RMB first. The mouse doesn't type: no key reaches the page.
 
 - **Events** go through a small ring in the shared block's header (`MediaBlock.Mouse`), read every 8 ms by a thread on the page, so a moving crosshair allocates nothing.
 - **The page can't leave.** Popups are closed, so "watch on YouTube" and the logo open nothing. In the top frame nothing but the page's own address loads, and a click inside a frame can only go to `/embed/`. Navigation without a gesture stays free, so adverts load as usual.

@@ -13,7 +13,7 @@ public static partial class Program
     private static int _scrPart = -1, _scrPanel, _scrPage = -1, _scrSentX = -1, _scrSentY = -1, _scrOffPart = -1;
     private static ushort _scrOffBody;
     private static long _scrStamp, _scrLookKey;
-    private static bool _scrDown;
+    private static bool _scrDown, _scrTook;
     private static string _scrLook = "";
 
     /// <summary>The wheel's notches while the crosshair is a mouse.</summary>
@@ -39,7 +39,7 @@ public static partial class Program
         PanelRender.ClearPointer();
     }
 
-    /// <summary>One frame. True when LMB went to a screen.</summary>
+    /// <summary>One frame. True while the crosshair is a mouse or a finger: LMB and RMB are the screen's, and Hands don't pick up or drop with them. RMB, then LMB, picks up a loose screen that is playing.</summary>
     private static bool PointerFrame(Game g, Player me, in SandboxHand h, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit, double now)
     {
         // A drag holds on past the panel's edge, until the button comes up or the part is gone.
@@ -58,7 +58,7 @@ public static partial class Program
             return true;
         }
         _scrDown = false;
-        var usable = aimed && h.Tool == ConstructTool.Hands && !h.Seated && h.Held == ConstructParts.None && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0 && !hit.Body.Loose
+        var usable = aimed && h.Tool == ConstructTool.Hands && !h.Seated && h.Held == ConstructParts.None && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
             && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && hit.Body.DefOf(hit.Part).Panels.Length > 0 && !hit.Body.Parts[hit.Part].Broken;
         if (!usable || PanelTouch.Find(hit.Body, hit.Part, eye, dir, out var spot) is not (>= 0 and var n))
         {
@@ -85,6 +85,11 @@ public static partial class Program
             return false;
         }
         var onPicture = page >= 0 && region < 0 && PanelRender.InPicture(def, spot);
+        if (!onPicture && region < 0)
+        {
+            PointerOff(); // (the case or the border: a loose screen is picked up there, as anything is)
+            return false;
+        }
         if (_scrBody != c.Id || _scrPart != part || _scrPanel != n || _scrPage != (onPicture ? page : -1))
             PointerOff();
         _scrBody = c.Id;
@@ -98,7 +103,7 @@ public static partial class Program
             _scrPage = page;
             PointerMove(c, part, def, spot, now);
             PanelRender.SetPointer(key, spot, -1);
-            PointerSay(g, d, null, "LMB: click, RMB: mouse off");
+            PointerSay(g, d, null, "LMB: click, RMB: mouse off (then LMB picks up a loose one)");
             if (Pressed(GameAction.Aim))
             {
                 _scrOffBody = c.Id;
