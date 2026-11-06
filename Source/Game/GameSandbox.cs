@@ -755,7 +755,7 @@ public sealed partial class Game
             case CActKind.Sculpt:
                 return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:
-                return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
+                return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()), Constructs, eye, p.Yaw);
             case CActKind.NudgeBegin:
             case CActKind.NudgeSteer:
             case CActKind.NudgeEnd:
@@ -1126,8 +1126,8 @@ public sealed partial class Game
                 w.U16(body).U16(part).U16(socket).U8(flags); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go)
                 break;
         }
-        if (kind == CActKind.Tool)
-            SandboxHands.Hand(LocalId).Tool = (ConstructTool)part; // (shown at once; the server follows)
+        if (kind == CActKind.Tool && !IsServer)
+            SandboxToolAsked((ConstructTool)part); // (shown at once; the server follows. The host's own request goes straight to SetTool, which must see the change)
         if (IsServer)
         {
             if (Local is { } me)
@@ -1140,6 +1140,22 @@ public sealed partial class Game
         }
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
     }
+
+    /// <summary>Client: a tool change shows at once, the part it puts away with it (ConstructEdits.SetTool decides the same).</summary>
+    private void SandboxToolAsked(ConstructTool tool)
+    {
+        ref var h = ref SandboxHands.Hand(LocalId);
+        if (h.Held != ConstructParts.None && (h.Tool != tool || tool == ConstructTool.None) && !ConstructEdits.KeepsHeld(tool, ConstructParts.Get(h.Held)))
+        {
+            h.HeldGone = h.Held;
+            h.HeldGoneUntil = SandboxNow + SandboxToolLag;
+            h.Held = ConstructParts.None;
+        }
+        h.Tool = tool;
+        h.ToolAskedAt = SandboxNow;
+    }
+
+    public const double SandboxToolLag = 1.0; // seconds: a client's own tool change stands this long before the server's word overrides it
 
     private static Vector3 ReadCm(ref PacketReader r) => r.CmVec();
 
