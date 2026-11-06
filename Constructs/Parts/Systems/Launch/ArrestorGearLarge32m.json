@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Arrestor Gear Large 32 m",
-  "description": "Stops up to 200 t at 12 m/s2 on a deck.",
+  "description": "Catches up to 200 t landing on it, or 12 m either end of it, at 35 m/s2. No hook needed.",
   "group": "Large",
   "section": "Launch and landing",
   "role": "logic",
@@ -17,10 +17,11 @@
     "kind": "arrest"
   },
   "launch": {
-    "width": 16,
-    "height": 8,
-    "accel": 12,
-    "maxMass": 200000
+    "width": 32,
+    "height": 16,
+    "accel": 35,
+    "maxMass": 200000,
+    "reach": 12
   },
   "walk": "floor",
   "power": 2000,

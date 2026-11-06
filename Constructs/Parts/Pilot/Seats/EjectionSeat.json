@@ -1,0 +1,76 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ejection Seat",
+  "description": "A seat with a handle: the key or a signal throws its rider clear on a parachute.",
+  "group": "Seats",
+  "section": "Seats and helms",
+  "role": "seat",
+  "tool": "wrench",
+  "mass": 40.0,
+  "health": 120,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.5,
+  "seat": {
+    "at": [
+      0,
+      0.25,
+      0
+    ],
+    "eject": true
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.25,
+        0.25,
+        0.3
+      ]
+    },
+    {
+      "min": [
+        -0.25,
+        0.25,
+        0.15
+      ],
+      "max": [
+        0.25,
+        1.05,
+        0.3
+      ],
+      "color": "#2f343a",
+      "use": true
+    },
+    {
+      "min": [
+        -0.1,
+        1.05,
+        0.18
+      ],
+      "max": [
+        0.1,
+        1.15,
+        0.27
+      ],
+      "color": "#d8b020",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

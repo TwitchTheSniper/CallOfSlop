@@ -199,6 +199,8 @@ public sealed class PlayerRig
         var gunPose = (seated ? ThirdPersonArms.SeatedGun(p) : Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt)) * upper;
         if (BackpackRender.Wears(p, out _packDraw.Pack))
             _packDraw.Frame = BackpackRender.OnBack(p) * upper;
+        _packDraw.Canopy = seated ? (byte)0 : p.Sim.Canopy;
+        _packDraw.BodyFrame = upper;
         var tool = ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame);
         _tool.Visible = tool;
         Gun.Root.Visible = !tool;

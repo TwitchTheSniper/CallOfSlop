@@ -1,0 +1,76 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Mooring Mast",
+  "description": "Ropes any balloon that drifts within 14 m of its top. F or a signal off casts it off.",
+  "group": "Ship systems",
+  "section": "Launch and landing",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 90.0,
+  "health": 30,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5a4a36",
+  "attachSeconds": 2.5,
+  "logic": {
+    "kind": "mooring"
+  },
+  "mooring": {
+    "reach": 14,
+    "rope": 2
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.075,
+        -0.125,
+        -0.075
+      ],
+      "max": [
+        0.075,
+        4.875,
+        0.075
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        4.725,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        4.825,
+        0.12
+      ],
+      "color": "#b8902e",
+      "detail": true,
+      "use": true
+    },
+    {
+      "min": [
+        -0.125,
+        -0.123,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        -0.075,
+        0.125
+      ],
+      "color": "#3d4248",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

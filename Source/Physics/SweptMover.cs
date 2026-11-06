@@ -137,7 +137,7 @@ public sealed class SweptMover : IMover
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl) // staggered by a blast: the push carries you
-            : s.Grounded ? 14f : s.RideFree == NoclipMove.Flung ? NoclipMove.FlungControl : s.RideFree > 0 ? Knockback.StaggerAirControl : 3f;
+            : s.Canopy != 0 ? 0f : s.Grounded ? 14f : s.RideFree == NoclipMove.Flung ? NoclipMove.FlungControl : s.RideFree > 0 ? Knockback.StaggerAirControl : 3f;
         var target = wish * speed;
         // On terrain (the feet just above it, as high as the capsule's round bottom rests on that slope): the slope rules'
         // uphill speed and slide steering.

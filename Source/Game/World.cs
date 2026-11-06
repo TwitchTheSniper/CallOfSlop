@@ -105,6 +105,13 @@ public struct MoveState
     public Vector3 RideVel; // their own velocity in the segment's frame
     public Vector3 RideUpW; // RideUp in the world, as the frame last put them down (not sent)
 
+    // What they wear (PilotGear.cs): only ever set in Sandbox, so everything else pays one test.
+    public byte Gear; // the backpack's parachute, glider and jetpack (bits; the server's)
+    public byte Canopy; // open now, or burning
+    public byte GearDelay; // ticks until an ejection seat's parachute opens
+    public ushort JetFuel;
+    public bool GearJump; // the jump key last tick
+
     public bool Noclip; // flying with no collision (NoclipMove.cs; creative Sandbox)
     public bool NoclipExit; // just left it: the shared step after the move finds room (Game.NoclipLeft; never sent)
 }
@@ -299,7 +306,11 @@ public static partial class World
         else if (s.RideUp != Vector3.Zero && ConstructRide.Step(ref s, cmd))
             return; // contraption space: this tick happened in the construct's frame (ConstructRideMove.cs)
         else
+        {
+            if ((s.Gear | s.Canopy | s.GearDelay) != 0)
+                PilotGear.Step(ref s, cmd); // a pilot's parachute, glider or jetpack
             (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, cmd); // a planet always uses the capsule mover (any "up")
+        }
     }
 
     public const float MantleReach = 1.7f; // highest ledge you can climb, above your feet
@@ -714,6 +725,7 @@ public sealed class Player
     {
         NoclipWanted = false;
         Sim.Noclip = Sim.NoclipExit = false;
+        Sim.Gear = Sim.Canopy = Sim.GearDelay = 0;
         SbSpawned = false;
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;

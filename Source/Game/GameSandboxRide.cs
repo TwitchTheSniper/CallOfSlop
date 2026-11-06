@@ -244,4 +244,42 @@ public sealed partial class Game
         _rideCamWas = shown;
         return shown;
     }
+
+    /// <summary>What this player wears from the backpack (PilotGear.cs). In a creative world, all of it: its backpack holds nothing.</summary>
+    private byte SandboxWorn(Player p)
+    {
+        if (p.Bot != null)
+            return 0;
+        if (SandboxInfiniteParts)
+            return PilotGear.Chute | PilotGear.Glider | PilotGear.Jet;
+        var pack = SandboxHands.Pack(p.Id);
+        byte gear = 0;
+        for (var k = 0; k < pack.SlotCount; k++)
+            if (pack.Count[k] > 0 && ConstructParts.Def(pack.Def[k]) is { } d)
+                gear |= d.Wear;
+        return gear;
+    }
+
+    /// <summary>An ejection seat fires: the rider goes straight up out of the craft at its speed plus the seat's kick, and a parachute opens on its own.</summary>
+    private void SandboxEject(Player p, Construct c, int seat)
+    {
+        var feet = ConstructEdits.SeatFeet(c, seat);
+        var vel = ConstructRide.SurfaceVel(c, c.Parts[seat].Seg, feet);
+        c.WorldFrame(c.Parts[seat].Seg, out var q, out _);
+        var up = Vector3.Transform(Rot24.Apply(c.Parts[seat].Rot, Vector3.UnitY), q);
+        SandboxStand(p, teleport: false);
+        var spot = feet + up * EjectClear;
+        p.Teleport(World.ClampToArena(spot));
+        p.Sim.RideBody = 0;
+        p.Sim.RideUp = default;
+        p.Sim.RideAir = p.Sim.RideClimb = 0;
+        p.Sim.Velocity = vel + up * EjectKick;
+        p.Sim.Grounded = false;
+        p.Sim.RideFree = ConstructRide.FreeTicks; // (the craft's speed carries them until the parachute takes over)
+        p.Sim.Canopy = 0;
+        p.Sim.GearDelay = PilotGear.EjectDelay;
+        Constructs.Events.Add($"construct {c.Id}: {p.Name} ejected");
+    }
+
+    private const float EjectClear = 2.2f, EjectKick = 24f; // m above the seat, m/s
 }

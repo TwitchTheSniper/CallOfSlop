@@ -441,6 +441,7 @@ public static partial class SelfTest
         var fast = LsOver(LsCar(wa, "Buggy", at + new Vector3(0, 1.3f, -1), 0), at.X, at.Z - 2);
         LsTicks(wa, 60);
         fast.Vel = new Vector3(0, 0, -20);
+        fast.ArrestFree = 0; // (it stood on the gear: left alone to drive off, and here it comes in from outside)
         fast.Wake();
         LsTicks(wa, 60);
         want(fast.Vel.Length() < 8f, $"arrestor gear slows a fast car ({fast.Vel.Length():0.0} m/s after 1 s, Out {ar.Parts[0].Out})");

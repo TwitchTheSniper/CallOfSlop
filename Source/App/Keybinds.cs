@@ -81,6 +81,8 @@ public enum GameAction
     FactionWindow, // binds version 21: Sandbox, the faction window (found, invite, join, give; Source/UI/UiFactions.cs) on F2
     SeatRollLeft, // binds version 22: in a seat, roll left and right (the seat's Roll axis: ConstructParts.KeyRollLeft); on Q and E, which do this only in a seat (see Resolve)
     SeatRollRight,
+    SeatHook, // binds version 23: in a seat, hook to a launch rail, launch, undock (ConstructCarrier.cs)
+    SeatEject, // ...and an ejection seat's handle (PilotGear.cs)
     COUNT,
 }
 
@@ -127,7 +129,7 @@ public static class Keybinds
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
                 or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
-            GameAction.SeatRollLeft or GameAction.SeatRollRight => BindContext.Seat,
+            GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject => BindContext.Seat,
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
         };
@@ -178,7 +180,7 @@ public static class Keybinds
             if (down[i] && !ActiveIn((GameAction)i, sandbox, seated))
                 down[i] = false;
         if (sandbox && seated)
-            for (var i = (int)GameAction.SeatRollLeft; i <= (int)GameAction.SeatRollRight; i++)
+            for (var i = (int)GameAction.SeatRollLeft; i <= (int)GameAction.SeatEject; i++)
             {
                 if (!down[i])
                     continue;
@@ -274,6 +276,8 @@ public static class Keybinds
         Key(GlfwKey.F2), // Faction window (Sandbox): binds version 21
         Key(GlfwKey.Q), // Roll left, in a seat: binds version 22 (shares Swap weapon's Q: Overlap)
         Key(GlfwKey.E), // Roll right, in a seat (shares Equipment's E)
+        Key(GlfwKey.G), // Hook, launch, undock, in a seat: binds version 23
+        Key(GlfwKey.L), // Eject, in an ejection seat
     ];
 
     /// <summary>
@@ -297,7 +301,7 @@ public static class Keybinds
     /// 20: the Story window (Sandbox) on F4 added (same rule). 21: the Faction window (Sandbox) on F2 added (same rule).
     /// 22: roll left and right in a seat on Q and E added (same rule; they share those keys, see <see cref="Overlap"/> and <see cref="Resolve"/>).
     /// </summary>
-    public const int DefaultsVersion = 22;
+    public const int DefaultsVersion = 23;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -354,6 +358,8 @@ public static class Keybinds
         (21, GameAction.FactionWindow, Unbound, Key(GlfwKey.F2)),
         (22, GameAction.SeatRollLeft, Unbound, Key(GlfwKey.Q)),
         (22, GameAction.SeatRollRight, Unbound, Key(GlfwKey.E)),
+        (23, GameAction.SeatHook, Unbound, Key(GlfwKey.G)),
+        (23, GameAction.SeatEject, Unbound, Key(GlfwKey.L)),
     ];
 
     /// <summary>
@@ -518,6 +524,8 @@ public static class Keybinds
             GameAction.FactionWindow => "Faction window (Sandbox: found or join a faction, share and give what you own)",
             GameAction.SeatRollLeft => "Roll left (in a seat)",
             GameAction.SeatRollRight => "Roll right (in a seat)",
+            GameAction.SeatHook => "Hook, launch or undock (in a seat)",
+            GameAction.SeatEject => "Eject (in an ejection seat)",
             _ => a.ToString(),
         };
 

@@ -4,8 +4,8 @@ using static Brutal.OpenGlApi.OpenGl;
 namespace CallOfSlop;
 
 /// <summary>
-/// A compute program on the 4.6 path (<see cref="RenderCaps.Compute"/>; docs/render/OPENGL46.md "Compute"): the hook
-/// for GPU skinning of the horde and for GPU culling, neither of which is written yet. The source goes through the
+/// A compute program on the 4.6 path (<see cref="RenderCaps.Compute"/>; docs/render/OPENGL46.md "Compute"): the particles' step
+/// (Source/Render/Fx/FxGpu.cs), and the hook for GPU skinning of the horde and for GPU culling, neither of which is written yet. The source goes through the
 /// shader prelude like every other shader (so it starts with <c>#version 410 core</c> and compiles as 460; the 4.1
 /// path never compiles it: <see cref="Create"/> returns null there). Storage buffers bind with
 /// <see cref="BindStorage"/> (a <c>layout(std430, binding = N) buffer</c> block in the source), the work runs with

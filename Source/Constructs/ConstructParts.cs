@@ -200,6 +200,7 @@ public enum CLogic : byte
     FlightStabilizer, // a seat's axes in, mixed channels out, with its own sensors and autopilot (ConstructFlight.cs)
     Decoupler, // a rising input splits the construct here into two live bodies (ConstructBoost.cs)
     AntiGrav, // on power cancels a share of its construct's weight, within its radius (ConstructBoost.cs)
+    Mooring, // a mast: on (unwired: always), it ropes a balloon in reach; off or Interact casts it off (ConstructCarrier.cs)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -263,6 +264,29 @@ public enum SocketKind : byte
 /// </summary>
 public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0, bool Glow = false, float Pump = 0, bool Spin = false, bool Roll = false)
 {
+    private readonly ushort _look = BoxLooks.Of(Color, Tone, 0); // (its colour, tone and material: one row of a shared table, BoxLooks)
+
+    /// <summary>The box's own colour, read through its look.</summary>
+    public Vector3 Color
+    {
+        get => BoxLooks.Get(_look).Color;
+        init => _look = BoxLooks.Of(value, BoxLooks.Get(_look).Tone, BoxLooks.Get(_look).Surface);
+    }
+
+    /// <summary>Its colour's tone against the part's main colour (see <see cref="ConstructPaint.ToneOf"/>).</summary>
+    public float Tone
+    {
+        get => BoxLooks.Get(_look).Tone;
+        init => _look = BoxLooks.Of(BoxLooks.Get(_look).Color, value, BoxLooks.Get(_look).Surface);
+    }
+
+    /// <summary>Its shared material: a row of <see cref="Surfaces"/> (SurfaceRules gives it at load; 0: none yet).</summary>
+    public byte Surface
+    {
+        get => BoxLooks.Get(_look).Surface;
+        init => _look = BoxLooks.Of(BoxLooks.Get(_look).Color, BoxLooks.Get(_look).Tone, value);
+    }
+
     public bool IsGlass => Glass > 0;
 
     public byte Front { get; init; }
@@ -378,6 +402,7 @@ public sealed class ConstructPartDef
     public float Health;
     public float Armour; // flat damage taken off every hit
     public string Material = "steel";
+    public byte SurfaceOverride; // "finish" in the file: the shared material of all its boxes (Surfaces.cs; else the rules in Materials/Surfaces.json)
     public bool PhysicsOnly; // decision 21: never an item (no hands, backpack or storage slot): welder-fitted, heavier than ConstructParts.HandCarryLimit, or "physicsOnly": true in its file
     public string PhysicsWhy = ""; // why ("structural", "heavy: 120 kg", "bulky"; empty for an item)
     public bool Core; // a construct core ("core": true): the starter block of a new construct (never a loose part; the root after seats and foundations)
@@ -477,6 +502,7 @@ public sealed class ConstructPartDef
     public float RepulsorRange; // repulsor: metres it reaches
     public byte ThrustDir; // thruster: the way its exhaust leaves (a direction index): the push is the other way
     public Vector3 ThrustAt; // thruster: where the push acts, and the exhaust starts (part frame)
+    public FlameDef[] Flames = []; // "flame" (one or a list): flames drawn by data (ConstructRenderFlames.cs); a thruster or burner that gives none gets one of its own
     public Vector3 SmokeAt; // "smoke": the top of the stack (part frame)
     public float SmokeSize; // "smoke": the puffs' size (m); 0: no smoke
     public HitchKind Hitch; // hitch
@@ -610,6 +636,12 @@ public sealed class ConstructPartDef
     public float DockSide, DockSettle = ConstructCargo.SettleSpeed, DockMaxMass = float.MaxValue, DockCharge, DockFuel; // a docking clamp or magnetic lock ("dock"): its longest box side, the speed it catches under, the heaviest body, kW and litres a second into what it holds
     public bool DockChute; // ...and its bins unload into the bins of the construct it is docked to
     public bool IsDock => DockSide > 0;
+    public float DockPull, DockEject; // a dock's tractor reach past its box (m), and how fast it throws what it lets go along its front (m/s): ConstructCarrier.cs
+    public float MastReach = 12; // a mooring mast: how far from its top it ties (m)
+    public byte MastRope = 2; // ...and the rope's size
+    public bool SeatEject; // an ejection seat ("seat"."eject"): a key or signal throws its rider clear on a parachute (PilotGear.cs)
+    public byte Wear; // worn from the backpack ("wear"): PilotGear's bit
+    public float LaunchSpeed, LaunchReach; // a launch rail's speed off it over the deck (0: its accel runs to the end of the rail), and how far past its ends an arrestor catches
     public float LaunchWidth, LaunchHeight, LaunchAccel, LaunchMaxMass = float.MaxValue; // a catapult or arrestor ("launch"): its zone over its top, m/s2, the heaviest body it takes
     public float JumpRange, JumpCharge, JumpEnergy; // a jump drive ("jump"): its reach (light-years), seconds to charge, kJ a tonne of ship a light-year
     public bool IsJumpDrive => Logic == CLogic.JumpDrive;
@@ -702,6 +734,7 @@ public sealed class ConstructPartDef
         PartRole.Differential => Diff is DiffKind.Lockable or DiffKind.Steering ? 1 : 0, // locks it; steers it (-1 to 1: 1 is right)
         PartRole.Suspension => MotorTorque > 0 ? 2 : ActiveSuspension ? 1 : 0, // its ride height; a hub motor's throttle and a Driving Module's drive link
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
+        PartRole.Seat => SeatEject ? 1 : 0, // an ejection seat's signal
         PartRole.Thruster => 4, // throttle, hold height
         PartRole.Rotor => 4, // throttle or collective, cyclic pitch and roll
         PartRole.FluidTank => IsEnvelope ? 1 : 0, // a lift cell's vent
@@ -766,9 +799,80 @@ public static partial class ConstructParts
     public const float DefaultGlass = 0.3f;
 
     private static readonly List<string> _refused = new();
-    private static readonly Lazy<ConstructPartDef[]> _all = new(() => PressTable.Attach(AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused))), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => WithSurfaces(PressTable.Attach(AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused)))), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
+
+    /// <summary>Every box gets its shared material (Materials/Surfaces.json), from the part it is on: nothing in the part files has to say.</summary>
+    /// <summary>
+    /// A part's "flame": an object or a list of them, with "at" and "dir" (where it starts and the way it leaves, the part's frame), "radius"
+    /// and "length" (m), "kind" (flame, jet, rocket), "source" (thrust, burner, engine, signal, always) and "colour" ("#rrggbb"). All but
+    /// "at" and "dir" are optional. This is the whole of what a new burning part needs.
+    /// </summary>
+    private static void ReadFlames(JsonElement root, ConstructPartDef d, string file)
+    {
+        if (Opt(root, "flame") is not { } block)
+            return;
+        var list = new List<FlameDef>();
+        foreach (var e in block.ValueKind == JsonValueKind.Array ? block.EnumerateArray().ToArray() : [block])
+        {
+            Known(e, ["at", "dir", "radius", "length", "kind", "source", "colour"], $"{file}, flame");
+            var f = new FlameDef
+            {
+                At = Vec(Need(e, "at", $"{file}, flame"), file, "flame.at"),
+                Dir = DirOf(Str(Need(e, "dir", $"{file}, flame"), file, "flame.dir"), file, "flame.dir"),
+            };
+            if (Opt(e, "radius") is { } r)
+                f.Radius = Num(r, file, "flame.radius");
+            if (Opt(e, "length") is { } l)
+                f.Length = Num(l, file, "flame.length");
+            Range(f.Radius, 0.01f, 64, file, "flame.radius");
+            Range(f.Length, 0.05f, 400, file, "flame.length");
+            if (Opt(e, "kind") is { } k)
+                f.Kind = EnumOf<FxKind>(Str(k, file, "flame.kind"), file, "flame.kind");
+            if (Opt(e, "source") is { } s)
+                f.Source = EnumOf<FlameSource>(Str(s, file, "flame.source"), file, "flame.source");
+            else
+                f.Source = d.Role == PartRole.Burner ? FlameSource.Burner : FlameSource.Thrust;
+            if (Opt(e, "colour") is { } c)
+                f.Tint = Fx.Tint(Colour(c, file, "flame.colour"));
+            list.Add(f);
+        }
+        d.Flames = list.ToArray();
+    }
+
+    /// <summary>A thruster or burner with no "flame" of its own: one from its numbers, as wide as its force asks for, or across its top.</summary>
+    private static void DefaultFlame(ConstructPartDef d)
+    {
+        if (d.Flames.Length > 0)
+            return;
+        if (d.Role == PartRole.Thruster)
+        {
+            var r = MathF.Sqrt(d.ThrustForce) * 0.002f + 0.05f;
+            d.Flames = [new FlameDef { At = d.ThrustAt, Dir = d.ThrustDir, Radius = r, Length = r * 6.5f, Kind = d.ThrustFuel == EngineFuel.Electric ? FxKind.Jet : FxKind.Rocket, Source = FlameSource.Thrust }];
+        }
+        else if (d.Role == PartRole.Burner)
+        {
+            var size = d.BoundsMax - d.BoundsMin;
+            var mouth = ((d.BoundsMin + d.BoundsMax) * 0.5f) with { Y = d.BoundsMax.Y };
+            var r = MathF.Max(0.08f, MathF.Min(size.X, size.Z) * 0.3f);
+            d.Flames = [new FlameDef { At = mouth, Dir = 2, Radius = r, Length = MathF.Min(r * 7f, MathF.Max(1.2f, d.FlameReach * 0.3f)), Kind = FxKind.Flame, Source = FlameSource.Burner }];
+        }
+    }
+
+    private static byte SurfaceByName(JsonElement e, string file, string where) => Surfaces.File.ByName.TryGetValue(Str(e, file, where + ".finish"), out var row)
+        ? row
+        : throw new ConstructPartException($"{file}: {where}.finish: no such material in Materials/Surfaces.json");
+
+    private static ConstructPartDef[] WithSurfaces(ConstructPartDef[] all)
+    {
+        foreach (var d in all)
+        {
+            SurfaceRules.Apply(d);
+            DefaultFlame(d);
+        }
+        return all;
+    }
 
     /// <summary>The hand-made parts, then one generated def for every other weapon builder part (ConstructWeaponParts.cs).</summary>
     public static ConstructPartDef[] WithWeaponParts(ConstructPartDef[] files, List<string> refused)
@@ -1047,10 +1151,10 @@ public static partial class ConstructParts
 
     private static readonly string[] TopKeys =
     [
-        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
+        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
+        "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1064,7 +1168,7 @@ public static partial class ConstructParts
         ("left", (ushort)Buttons.Left), ("right", (ushort)Buttons.Right), ("jump", (ushort)Buttons.Jump), ("sprint", (ushort)Buttons.Sprint),
     ];
 
-    public const ushort KeyFire = 0x100, KeyAim = 0x200, KeyReload = 0x400, KeyRollLeft = 0x800, KeyRollRight = 0x1000;
+    public const ushort KeyFire = 0x100, KeyAim = 0x200, KeyReload = 0x400, KeyRollLeft = 0x800, KeyRollRight = 0x1000, KeyHook = 0x2000, KeyEject = 0x4000;
 
     /// <summary>Parses one part file's text. Throws <see cref="ConstructPartException"/> with the reason for anything wrong.</summary>
     public static ConstructPartDef Parse(string json, string file)
@@ -1122,6 +1226,8 @@ public static partial class ConstructParts
         d.Armour = Opt(root, "armour") is { } arm ? Num(arm, file, "armour") : 0f;
         Range(d.Armour, 0f, 1000f, file, "armour");
         d.Material = Opt(root, "material") is { } mat ? Str(mat, file, "material") : "steel";
+        if (Opt(root, "finish") is { } partFinish)
+            d.SurfaceOverride = SurfaceByName(partFinish, file, "the part");
         d.Friction = Opt(root, "friction") is { } fr ? Num(fr, file, "friction") : d.Material == "rubber" ? 1.0f : 0.6f;
         Range(d.Friction, 0f, 2f, file, "friction");
         if (Opt(root, "collider") is { } coll)
@@ -1169,7 +1275,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1239,6 +1345,8 @@ public static partial class ConstructParts
                 throw new ConstructPartException($"{file}: {where}: only a detail box may \"roll\"");
             var made = new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, pump, turns, roll);
             made = made with { Use = Opt(b, "use") is { ValueKind: JsonValueKind.True } };
+            if (Opt(b, "finish") is { } boxFinish)
+                made = made with { Surface = SurfaceByName(boxFinish, file, where) };
             if (Opt(b, "key") is { } keyBox)
                 made = made with { Key = Str(keyBox, file, where + ".key") is { Length: 1 } one ? one[0] : throw new ConstructPartException($"{file}: {where}.key is one character") };
             list.Add(Opt(b, "rig") is { } rg ? ParseRig(made, b, rg, file, where) : made);
@@ -1251,6 +1359,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: every box is hidden: at least one must be drawn");
         // Solid boxes first (the physics walks those), details after.
         d.Boxes = list.Where(x => !x.Detail).Concat(list.Where(x => x.Detail)).ToArray();
+        ReadFlames(root, d, file);
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide).ToArray(); // (an Analog Lever's rig is its handle)
@@ -1381,9 +1490,12 @@ public static partial class ConstructParts
                 }
                 break;
             case PartRole.Seat:
-                Known(block!.Value, ["at", "helm"], bw);
+                Known(block!.Value, ["at", "helm", "eject"], bw);
                 d.SeatAt = Vec(Need(block.Value, "at", bw), file, "seat.at");
                 d.Helm = Opt(block.Value, "helm") is { ValueKind: JsonValueKind.True };
+                d.SeatEject = Opt(block.Value, "eject") is { ValueKind: JsonValueKind.True };
+                if (d.SeatEject)
+                    d.DataIn = ["eject"];
                 break;
             case PartRole.Hinge:
                 d.DataIn = ["Lock", "Push"]; // (a signal locks it; Push, wired, says whether a player can swing it: ConstructDoor.PushOpens)

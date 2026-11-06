@@ -40,6 +40,7 @@ public sealed partial class Construct
     public float LiftSeen; // what it lifted when it last slept, kg: a change wakes it
     public Vector3 WindSeen; // the wind then
     public bool LiftNear; // a player is near: cells work one by one
+    public float BurnShow; // how hard its hottest burner burns (server; clients get it as the pose's smoke share, so their flames match)
     public float BurnTrim; // the driver's burner setting, 0..1 (Shift raises it, Ctrl lowers it; below zero Ctrl vents)
 }
 
@@ -255,6 +256,9 @@ public static partial class ConstructLift
         var wide = false;
         for (var k = 0; k < c.BurnerCount; k++)
             wide |= BurnerStep(c, query, ref c.Burners[k], air, dt);
+        c.BurnShow = 0;
+        for (var k = 0; k < c.BurnerCount; k++)
+            c.BurnShow = MathF.Max(c.BurnShow, c.Burners[k].Level);
         var venting = drive < 0 && c.BurnTrim <= 0;
         var changed = wide;
         for (var k = 0; k < c.CellCount; k++)
@@ -320,7 +324,8 @@ public static partial class ConstructLift
             c.GroundHeight = query.Raycast(from, -Vector3.UnitY, reachDown, QueryFilter.All, out var under) ? under.Distance : 1e6f;
         }
         // The cheap paths: is a player near enough for cell by cell, and has anything changed for a craft asleep?
-        c.LiftNear = false;
+        // (A stabilizer at work steers by its surfaces, watched or not.)
+        c.LiftNear = c.StabCount > 0 && c.SurfaceCount > 0 && c.Stabs[0].Part < c.PartCount && (c.Parts[c.Stabs[0].Part].State & 1) != 0;
         var reach = near + c.Radius;
         var com = c.WorldCom;
         for (var k = 0; k < world.PlayerSpotCount && !c.LiftNear; k++)

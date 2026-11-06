@@ -157,20 +157,22 @@ def gate(c):
     return p
 
 
-CATAPULTS = {  # cells long, accel m/s2, kg, zone width, zone height, W
-    MEDIUM: (16, 25, 20000, 6, 6, 500),
-    LARGE: (8, 25, 200000, 16, 16, 5000),
-    CAPITAL: (4, 25, 2000000, 40, 32, 50000),
+CATAPULTS = {  # cells long, m/s off the rail over the deck, kg, zone width, zone height, W (its push comes from the speed and the rail: fun first, the pilot takes it)
+    SMALL: (32, 55, 6000, 10, 5, 100),
+    MEDIUM: (16, 60, 20000, 12, 6, 500),
+    LARGE: (8, 70, 200000, 24, 16, 5000),
+    CAPITAL: (4, 80, 2000000, 48, 32, 50000),
 }
-ARRESTORS = {  # cells long, decel m/s2, kg, zone width, zone height, W
-    MEDIUM: (16, 12, 20000, 6, 4, 200),
-    LARGE: (8, 12, 200000, 16, 8, 2000),
-    CAPITAL: (4, 12, 2000000, 40, 16, 20000),
+ARRESTORS = {  # cells long, decel m/s2, kg, zone width, zone height, W, m it reaches past each end
+    SMALL: (32, 60, 6000, 12, 6, 50, 3),
+    MEDIUM: (16, 45, 20000, 16, 8, 200, 6),
+    LARGE: (8, 35, 200000, 32, 16, 2000, 12),
+    CAPITAL: (4, 25, 2000000, 64, 32, 20000, 24),
 }
 
 
-def rail(c, name, desc, kind, n, accel, mass, width, height, power):
-    p = Part(name, c, "Launch and landing", desc, role="logic", color=DARK)
+def rail(c, name, desc, kind, n, accel, mass, width, height, power, speed=0, reach=0):
+    p = Part(name, c, "Launch and landing", desc, role="logic", color=DARK, group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
     x = c.half
     z0, z1 = -c.hi(n - 1) - c.cell, c.half  # forward (-z) from its cell 0
     t = 0.1 * c.cell
@@ -184,25 +186,40 @@ def rail(c, name, desc, kind, n, accel, mass, width, height, power):
     p.sock("-x", (-x, 0, 0), "-x")
     area = (z1 - z0) * 2 * x
     p.stats(plate_mass(c, area) * 2, plate_health(c, area), c.armour)
-    p.set(logic={"kind": kind}, launch={"width": width, "height": height, "accel": accel, "maxMass": mass}, walk="floor", power=power, centreSockets=False)
+    launch = {"width": width, "height": height, "accel": accel, "maxMass": mass}
+    if speed:
+        launch["speed"] = speed
+    if reach:
+        launch["reach"] = reach
+    p.set(logic={"kind": kind}, launch=launch, walk="floor", power=power, centreSockets=False)
     return p
 
 
 def catapult(c):
-    n, a, m, w, h, pw = CATAPULTS[c]
-    return rail(c, f"Catapult {c.name} {fmt(n * c.cell)} m", f"Launches up to {m // 1000} t at {a} m/s2 on a signal. Needs batteries.", "launch", n, a, m, w, h, pw)
+    n, v, m, w, h, pw = CATAPULTS[c]
+    a = round(v * v / (1.6 * n * c.cell))  # (what gets it to speed in most of the rail: a rail hooks a craft at its back end)
+    name = f"Launch Rail {fmt(n * c.cell)} m" if c is SMALL else f"Catapult {c.name} {fmt(n * c.cell)} m"
+    return rail(c, name, f"Roll on, press the pilot's key to hook, again to fling up to {m // 1000} t off at {v} m/s over the deck. Or a signal. Needs batteries.", "launch", n, a, m, w, h, pw, speed=v)
 
 
 def arrestor(c):
-    n, a, m, w, h, pw = ARRESTORS[c]
-    return rail(c, f"Arrestor Gear {c.name} {fmt(n * c.cell)} m", f"Stops up to {m // 1000} t at {a} m/s2 on a deck.", "arrest", n, a, m, w, h, pw)
+    n, a, m, w, h, pw, reach = ARRESTORS[c]
+    name = f"Arrestor Strip {fmt(n * c.cell)} m" if c is SMALL else f"Arrestor Gear {c.name} {fmt(n * c.cell)} m"
+    return rail(c, name, f"Catches up to {m // 1000} t landing on it, or {reach} m either end of it, at {a} m/s2. No hook needed.", "arrest", n, a, m, w, h, pw, reach=reach)
 
 
-DOCKS = {  # box (w, h, l), longest side, kg, settle m/s, kW, l/s
-    MEDIUM: ((8, 4, 8), 32, 30000, 2.0, 50, 2),
-    LARGE: ((24, 12, 24), 96, 300000, 3.0, 500, 10),
-    CAPITAL: ((64, 32, 64), 128, 3000000, 4.0, 5000, 50),
+DOCKS = {  # box (w, h, l), longest side, kg, settle m/s, kW, l/s, tractor reach past the box m
+    SMALL: ((3, 2.5, 3), 8, 6000, 1.5, 20, 1, 16),
+    MEDIUM: ((8, 4, 8), 32, 30000, 2.0, 50, 2, 24),
+    LARGE: ((24, 12, 24), 96, 300000, 3.0, 500, 10, 48),
+    CAPITAL: ((64, 32, 64), 128, 3000000, 4.0, 5000, 50, 96),
 }
+BAYS = {  # box (w, h, l), kg, kW, l/s, m/s thrown out along its front
+    SMALL: ((10, 4, 10), 6000, 20, 1, 10),
+    MEDIUM: ((16, 6, 20), 30000, 50, 2, 12),
+    LARGE: ((40, 16, 48), 300000, 500, 10, 15),
+}
+MASTS = {SMALL: (20, 14, 2, 90), MEDIUM: (8, 24, 3, 1200)}  # cells tall, reach m, rope size, kg
 
 
 def box_config(side, size, y):
@@ -218,8 +235,9 @@ def box_config(side, size, y):
 
 
 def dock(c):
-    size, side, mass, settle, kw, fuel = DOCKS[c]
-    p = Part(f"Docking Clamp {c.name}", c, "Launch and landing", f"Holds a vehicle up to {mass // 1000} t, charges and refuels it, unloads its bins.", role="logic", color=DARK)
+    size, side, mass, settle, kw, fuel, pull = DOCKS[c]
+    name = f"Docking Clamp {c.name}" if c.name else "Docking Clamp"
+    p = Part(name, c, "Launch and landing", f"Armed, it draws in a craft up to {mass // 1000} t from {pull} m off and holds it, charges and refuels it, unloads its bins. The pilot's key lets go.", role="logic", color=DARK, group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
     h = c.half
     p.add(box((-h, -h, -h), (h, h * 0.2, h)))
     p.add(box((-h * 0.8, h * 0.2, -h * 0.8), (-h * 0.3, h, h * 0.8), HAZARD, detail=True, use=True))
@@ -230,8 +248,47 @@ def dock(c):
     p.sock("+z", (0, 0, h), "+z")
     p.sock("-z", (0, 0, -h), "-z")
     p.stats(c.cell * c.cell * c.kg_m2 * 6, c.cell * c.cell * c.health_m2 * 3, c.armour)
-    p.set(logic={"kind": "cargo"}, dock={"side": side, "settle": settle, "maxMass": mass, "charge": kw, "refuel": fuel, "chute": True}, power=kw * 20,
+    p.set(logic={"kind": "cargo"}, dock={"side": side, "settle": settle, "maxMass": mass, "charge": kw, "refuel": fuel, "chute": True, "pull": pull}, power=kw * 20,
           config=box_config(side, size, size[1] / 2 + h * 0.2))
+    return p
+
+
+def bay(c):
+    """A dock without the tractor, with room for a craft and a throw: a cargo volume that takes its crew along. Doors are the builder's."""
+    size, mass, kw, fuel, eject = BAYS[c]
+    side = max(size) * 2
+    name = f"Hangar Bay {c.name}" if c.name else "Hangar Bay"
+    p = Part(name, c, "Launch and landing", f"Holds craft up to {mass // 1000} t that park in its box, charges and refuels them. Signal off or the pilot's key: out along its front at {eject} m/s.", role="logic", color=DARK, group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
+    n = 2 if c is SMALL else 1
+    h = n * c.cell / 2
+    y = c.half
+    p.add(box((-h, -y, -h), (h, y * 0.4, h)))
+    p.add(box((-h * 0.8, y * 0.4, -h * 0.9), (h * 0.8, y * 0.7, -h * 0.5), HAZARD, detail=True, use=True))
+    p.sock("-y", (0, -y, 0), "-y")
+    p.sock("+x", (h, 0, 0), "+x")
+    p.sock("-x", (-h, 0, 0), "-x")
+    p.sock("+z", (0, 0, h), "+z")
+    p.sock("-z", (0, 0, -h), "-z")
+    p.stats(c.cell * c.cell * c.kg_m2 * 4, c.cell * c.cell * c.health_m2 * 3, c.armour)
+    config = box_config(side, size, size[1] / 2 + y * 0.4)
+    config[0] = dict(config[0], default=True, label="Starts holding")
+    p.set(logic={"kind": "cargo"}, dock={"side": side, "settle": 3.0, "maxMass": mass, "charge": kw, "refuel": fuel, "eject": eject}, power=kw * 20, config=config)
+    return p
+
+
+def mast(c):
+    cells, reach, rope, mass = MASTS[c]
+    name = f"Mooring Mast {c.name}" if c.name else "Mooring Mast"
+    p = Part(name, c, "Launch and landing", f"Ropes any balloon that drifts within {reach} m of its top. F or a signal off casts it off.", role="logic", color="#5a4a36",
+             group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
+    h = c.half * 0.6
+    top = c.lo() + cells * c.cell
+    p.add(box((-h, c.lo(), -h), (h, top, h)))
+    p.add(box((-h * 1.6, top - c.cell * 0.6, -h * 1.6), (h * 1.6, top - c.cell * 0.2, h * 1.6), HAZARD, detail=True, use=True))
+    p.add(box((-c.half, c.lo(), -c.half), (c.half, c.lo() + c.cell * 0.2, c.half), DARK, detail=True))
+    p.sock("-y", (0, c.lo(), 0), "-y")
+    p.stats(mass, c.cell * c.cell * c.health_m2 * 4, c.armour)
+    p.set(logic={"kind": "mooring"}, mooring={"reach": reach, "rope": rope})
     return p
 
 
@@ -761,6 +818,7 @@ def everything():
         out.append(("Moving", conveyor(c)))
         out.append(("Weapons", magazine(c)))
         out.append(("Weapons", hoist(c)))
+    out += [("Launch", x) for x in (catapult(SMALL), arrestor(SMALL), dock(SMALL), bay(SMALL), bay(MEDIUM), bay(LARGE), mast(SMALL), mast(MEDIUM))]
     for c in (SMALL, MEDIUM):
         out.append(("Launch", mag_lock(c)))
         out.append(("Lights", lantern(c)))

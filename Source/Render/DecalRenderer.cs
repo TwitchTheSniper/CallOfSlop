@@ -270,7 +270,7 @@ public sealed unsafe class DecalRenderer
                 if (blend == DecalBlend.Multiply)
                     BlendFunc(GL_DST_COLOR, GL_ZERO);
                 else
-                    BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                    Renderer.BlendDefault();
                 Native.glUniform1f(_sLocMultiply, blend == DecalBlend.Multiply ? 1f : 0f);
                 int runStart = -1, runCount = 0;
                 foreach (var c in mesh.Chunks)
@@ -307,7 +307,7 @@ public sealed unsafe class DecalRenderer
         var impacts = pool.HighWater;
         if (impacts > 0)
         {
-            BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            Renderer.BlendDefault();
             _impact.Use();
             Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
             Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
@@ -325,7 +325,7 @@ public sealed unsafe class DecalRenderer
         }
 
         Native.glDisable(GlCapability.PolygonOffsetFill);
-        BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        Renderer.BlendDefault();
         Native.glDisable(GlCapability.Blend);
         DepthMask(true);
         _timer?.EndPass(0);

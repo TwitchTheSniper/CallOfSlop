@@ -75,7 +75,7 @@ public sealed class ClassicMover : IMover
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl) // staggered by a blast: the push carries you
-            : s.Grounded ? 14f : s.RideFree == NoclipMove.Flung ? NoclipMove.FlungControl : s.RideFree > 0 ? Knockback.StaggerAirControl : 3f; // snappy on the ground, floaty in the air
+            : s.Canopy != 0 ? 0f : s.Grounded ? 14f : s.RideFree == NoclipMove.Flung ? NoclipMove.FlungControl : s.RideFree > 0 ? Knockback.StaggerAirControl : 3f; // snappy on the ground, floaty in the air
         var targetX = wish.X * speed;
         var targetZ = wish.Z * speed;
         if (map.TerrainCollision?.Layer(s.Position.Y) is { } ground && s.Position.Y - ground.HeightAt(s.Position.X, s.Position.Z) < SlopeRules.OnGround)

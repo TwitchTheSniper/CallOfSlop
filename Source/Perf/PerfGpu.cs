@@ -16,7 +16,10 @@ public enum PerfGpuPass : byte
     Sky,
     Bodies,
     Entities,
+    Occlusion,
     Effects,
+    Particles,
+    PostFx,
     ViewModel,
     Hud,
     Ui,
@@ -40,7 +43,7 @@ public sealed class PerfGpu
     public const int Count = (int)PerfGpuPass.COUNT;
 
     public static readonly string[] Names =
-        ["Buildings", "Terrain", "Props", "Meshes", "Foliage", "Decals", "Empty (timer check)", "Sky", "Players", "Entities, zombies", "Effects", "View model", "HUD (2D)", "UI (ImGui)"];
+        ["Buildings", "Terrain", "Props", "Meshes", "Foliage", "Decals", "Empty (timer check)", "Sky", "Players", "Entities, zombies", "Ambient occlusion", "Effects", "Particles", "Bloom, heat haze", "View model", "HUD (2D)", "UI (ImGui)"];
 
     private readonly Func<int, IGpuStamps?> _make;
     private GpuStampRing? _ring;
