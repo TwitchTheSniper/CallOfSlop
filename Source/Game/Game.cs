@@ -345,13 +345,23 @@ public sealed partial class Game : IDisposable
         LookFrame = me.Position;
     }
 
+    /// <summary>The local player's move speed: the gun's, or the Sandbox's tools' own (full, whatever gun is slung), times what slows anyone.</summary>
+    internal float LocalMoveSpeed(WeaponDef def)
+    {
+        var tool = SandboxOn && Local is { } me && SandboxHands.Hand(me.Id).Tool != ConstructTool.None; // (the attach, link and paint tools, the physics gun: the gun's away)
+        return Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, tool ? 1f : FrenzyBuffs.Mobility(Local, def), Aiming && !tool) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
+    }
+
+    /// <summary>The fastest a client's input may ask for: its fastest gun, and full in the Sandbox, where a tool can be out (it isn't tied to the tool, so a switch on its way doesn't pull the player back).</summary>
+    internal byte MaxMoveSpeed(Player p) => (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(SandboxOn ? 1f : 0f, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary)))), false) * ZombieMoveMult(p) * 100), 1, 200);
+
     private InputCmd SampleLocalInput(uint seq)
     {
         RideLookSync(); // (before the planet's transport: a look change since the last frame counts in the construct's frame)
         TransportLook();
         RideLookRead();
         var def = Active.Def;
-        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
+        var speed = LocalMoveSpeed(def);
         var ride = RideInput(); // contraption space: the look in the construct's frame (GameSandboxRide.cs)
         return ZombieInput(Local, new InputCmd // downed in Zombies: a slow crawl (ZombieBots.cs)
         {
@@ -1923,7 +1933,7 @@ public sealed partial class Game : IDisposable
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
                     break;
                 int count = Math.Min((int)r.U8(), 16);
-                var maxSpeed = (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary))), false) * ZombieMoveMult(p) * 100), 1, 200); // (Lightweight lifts a slow pair of guns; the LMG frenzy buff, FrenzyServer.cs)
+                var maxSpeed = MaxMoveSpeed(p); // (Lightweight lifts a slow pair of guns; the LMG frenzy buff, FrenzyServer.cs)
                 Span<InputCmd> cmds = stackalloc InputCmd[count];
                 var read = 0;
                 for (; read < count && r.Has(15); read++)

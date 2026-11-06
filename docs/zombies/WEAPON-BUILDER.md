@@ -451,7 +451,7 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | Fire types: belts and hoppers need an action that pulls them | "Belt Box needs full auto, chain or rotary action; the Workhorse Receiver's Three-Round Burst Group is 3-round burst." |
 | Splitters stack at most 2 deep (offsets, one output, don't count) | "Splitters only stack 2 deep: the shot gets too thin." |
 | Barrels per receiver (default 12, the Hellwheel takes 3-6) | "Too many barrels on the Workhorse Receiver: 13; it handles at most 12." |
-| Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull | "Too many projectiles per trigger pull: 256; the most is 240." |
+| Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull (the Sandbox has none of these but the projectiles, no splitter depth and no carry weight refusal: a build there is held by 240 projectiles a pull, a 1 MB text and 256 nested parts) | "Too many projectiles per trigger pull: 256; the most is 240." |
 | Weight: a grip carries up to 2x its carry weight (plus weight relief) | "Too heavy: 10.8 kg; the Pistol Grip can't carry more than 10 kg." |
 | Shared feed capacity and bores | "Workhorse Receiver needs a feed (the Manifold Hopper can't feed it: it feeds 3 receivers at most)." |
 | Melee and gun parts don't mix | "Wooden Handle is a hilt you build a melee weapon on: start a melee build with it instead." |

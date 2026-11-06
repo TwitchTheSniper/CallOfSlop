@@ -51,6 +51,22 @@ public static partial class SelfTest
         Spawn();
         var build = StandardBuilds.All.Select(b => b.Build()).First(b => b.Kind == BuildKind.Gun && b.Receivers.Count == 1).ToText();
         var hp = server.Local!;
+        // A tool has its own speed, not the slow gun's, and the server lets it.
+        var heavy = StandardBuilds.All.Select(b => b.Build()).Where(b => b.Kind == BuildKind.Gun).OrderBy(b => BuildStats.Compute(b, out _)?.Mobility ?? 9f).First().ToText();
+        server.SandboxBench(sp, Game.BenchSpawn, 0, heavy);
+        Pump(server, [a], 0.6, ref now, clock);
+        var gunSpeed = a.LocalMoveSpeed(a.Slots[0].Def);
+        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.PhysicsGun);
+        a.SandboxHands.Hand(a.LocalId).Tool = ConstructTool.PhysicsGun;
+        Pump(server, [a], 0.4, ref now, clock);
+        var toolSpeed = a.LocalMoveSpeed(a.Slots[0].Def);
+        var cap = server.MaxMoveSpeed(sp);
+        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
+        a.SandboxHands.Hand(a.LocalId).Tool = ConstructTool.None;
+        Pump(server, [a], 0.3, ref now, clock);
+        Line($"speed: {a.Slots[0].Def.Name} {gunSpeed:0.00}, the physics gun {toolSpeed:0.00}, the server's cap {cap}%");
+        if (gunSpeed >= 0.99f || MathF.Abs(toolSpeed - 1f) > 0.001f || cap < 100)
+            Fail($"built gun after death: a tool's speed: gun {gunSpeed:0.00}, tool {toolSpeed:0.00}, cap {cap}");
         server.SandboxBench(sp, Game.BenchSpawn, 0, build);
         server.SandboxBench(hp, Game.BenchSpawn, 0, build);
         Pump(server, [a], 0.6, ref now, clock);
