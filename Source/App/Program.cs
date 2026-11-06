@@ -224,6 +224,14 @@ public static unsafe partial class Program
             MediaDirector.Level = _settings.MediaVolume;
             MediaDirector.Others = _settings.MediaOthers;
             MediaDirector.OthersWeb = _settings.MediaOthersWeb;
+            MediaDirector.BlockAds = _settings.MediaBlockAds;
+            MediaDirector.BlockWebAds = _settings.MediaBlockWebAds;
+            Ui.MediaAdsChanged = () =>
+            {
+                _settings.MediaBlockAds = MediaDirector.BlockAds;
+                _settings.MediaBlockWebAds = MediaDirector.BlockWebAds;
+                _settings.Save();
+            };
             MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;

@@ -45,9 +45,9 @@ public sealed class MusicEntry
 public static class MusicCatalogue
 {
     public const string GroupMenu = "Menu tracks", GroupLobby = "Lobby tracks", GroupHardbass = "Hardbass", GroupHarder = "Harder hardbass",
-        GroupWeird = "Weird hardbass", GroupFrenzy = "Kill frenzy (pick a level below)";
+        GroupWeird = "Weird hardbass", GroupPipes = "Pipe tunes (Clan MacSlop)", GroupFrenzy = "Kill frenzy (pick a level below)";
 
-    private static readonly string[] Groups = [GroupMenu, GroupLobby, GroupHardbass, GroupHarder, GroupWeird, GroupFrenzy];
+    private static readonly string[] Groups = [GroupMenu, GroupLobby, GroupHardbass, GroupHarder, GroupWeird, GroupPipes, GroupFrenzy];
 
     /// <summary>The list, in order, group by group.</summary>
     public static MusicEntry[] Build()
@@ -63,6 +63,20 @@ public static class MusicCatalogue
                 Bpm = t.Bpm.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture),
                 Length = Time(t.Seconds),
                 Key = t.Key,
+                Track = t,
+            });
+
+        foreach (var t in PipeTunes.Tracks)
+            list.Add(new MusicEntry
+            {
+                Group = GroupPipes,
+                Name = t.Name,
+                Style = $"Bagpipes, {t.Pipes!.Kind}",
+                Mode = "Sandbox",
+                Bpm = t.Pipes.Bpm.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture),
+                Length = Time(t.Seconds),
+                Key = t.Key,
+                About = t.Pipes.Drums ? "The Clan MacSlop's pipes and drums. Their Pipe Boxes play it while someone drives." : "The Clan MacSlop's pipes alone. Their Pipe Boxes play it while someone drives.",
                 Track = t,
             });
 

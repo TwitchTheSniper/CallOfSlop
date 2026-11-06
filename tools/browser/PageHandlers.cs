@@ -75,3 +75,15 @@ internal sealed class PageSound(SharedBlock block, int slot) : IAudioHandler
 
     public void Dispose() { }
 }
+
+/// <summary>The ad list on a page's requests, with its switch off a pass-through. It cancels or lets go, so it adds no way out of a page's rules.</summary>
+internal sealed class AdResources(AdSwitch ads) : CefSharp.Handler.ResourceRequestHandler
+{
+    protected override CefReturnValue OnBeforeResourceLoad(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IRequestCallback callback)
+    {
+        if (!ads.On || !AdFilter.Blocks(request.Url))
+            return CefReturnValue.Continue;
+        Interlocked.Increment(ref ads.Refused);
+        return CefReturnValue.Cancel;
+    }
+}

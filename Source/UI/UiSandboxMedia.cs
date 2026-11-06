@@ -15,6 +15,24 @@ public sealed partial class Ui
     private string _cmWhy = "";
     private string _cmHeard = "";
 
+    /// <summary>Told when a panel's ad blocking box changes: the setting is this PC's and is saved there.</summary>
+    public Action? MediaAdsChanged;
+
+    private void AdsBox(bool web)
+    {
+        var on = web ? MediaDirector.BlockWebAds : MediaDirector.BlockAds;
+        if (ImGui.Checkbox("Block ads on this PC"u8, ref on))
+        {
+            if (web)
+                MediaDirector.BlockWebAds = on;
+            else
+                MediaDirector.BlockAds = on;
+            MediaAdsChanged?.Invoke();
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip("Only you: other players aren't told and aren't affected. Refuses known ad and tracking servers, hides overlays and presses skip buttons. Against YouTube's terms, and it won't stop every advert. If a page breaks, turn it off: the page reloads.");
+    }
+
     private ImInputString? _cwAddress;
     private long _cwKey = -1;
     private string _cwSeen = "";
@@ -66,6 +84,7 @@ public sealed partial class Ui
         if (_cmWhy.Length > 0)
             ImGuiSafe.TextColored(new float4(1f, 0.6f, 0.3f, 1f), _cmWhy);
         ImGuiSafe.TextWrapped(MediaDirector.Look(c, part));
+        AdsBox(web: true);
         ImGui.SeparatorText("Private page"u8);
         ImGui.TextWrapped("Nothing is saved to disk. Logins, cookies and history end when the game closes."u8);
         ImGui.TextWrapped("Shared: the address, and where links take the page (without anything after a ? in it). Other players only load it if they turn on Show other players' web pages."u8);
@@ -103,6 +122,7 @@ public sealed partial class Ui
         if (look != _cmHeard)
             _cmHeard = look;
         ImGuiSafe.TextWrapped(_cmHeard);
+        AdsBox(web: false);
 
         // A link.
         _cmLink ??= new ImInputString(512);

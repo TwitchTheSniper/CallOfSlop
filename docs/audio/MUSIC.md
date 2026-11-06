@@ -511,6 +511,30 @@ lines against a track that works; a large gap in one band is the thing to look a
 10% (measured: 0.46-0.53 either side). This probe doesn't check drop-to-drop correlation or the frenzy. Send the
 user a WAV only if they ask.
 
+## Pipe tunes
+
+The Clan MacSlop's bagpipes (`MusicPipes.cs`, added 2026-11-06). Not a `MusicRenderer` style: a `PipeTune` is written out note by note, as
+pipers write tunes, and `PipeRenderer` plays it. `MusicTrack.Pipes` holds the tune, and `MusicRenderer.Load` hands such a track to its own
+`PipeRenderer` (`_pipeOn`), so the media voice, the menu's music player and a joiner's seek work unchanged. The tracks are
+`PipeTunes.Tracks`, **never in `MusicTracks.All`**: no menu or lobby playlist, no frenzy pool and no "Music" rule sees them (they are not
+hardbass and have no build or drop). `MediaEntry.Track` and `MusicCatalogue` look in both lists.
+
+| Voice | What it is |
+| --- | --- |
+| Drones | Two tenors an octave under low A (0.04% apart, so they beat) and a bass two octaves under: squares with some saw, darkened. They strike in rising from 0.82x pitch with a 17 Hz growl, and once the bag is empty they sag 30% and fade over 0.9 s |
+| Chanter | Low G to high A just against the drones (7/8, 1, 9/8, 5/4, 4/3, 3/2, 5/3, 7/4, 2 over low A at 477 Hz), a saw and a 30% pulse through a 300 Hz high-pass and a peak near 1.7 kHz. It never stops: notes change in a 1.5 ms glide, and grace notes (24 ms) separate them |
+| Snare, bass drum | A pipe band's: flams, taps and buzz rolls by the metre's patterns, the bass drum on every beat. The first time through only the bass drum plays, on the bar and softly, with the roll into the second time. A slow air has none |
+
+**Notation** (`PipeTune` constructor): the chanter's letters `G A B c d e f g a`, a digit after a note for its length in units (the tune's
+`UnitsPerBeat` to a beat), `|` for bar lines (each bar must add up, or the tune throws on load). `^` before a note is a doubling, `~` a birl on
+low A, `!` no grace. Every other note on a beat, and every repeated note, gets a G grace note by itself. A tune is: two bars of drones and the
+long E, the form (`"AABB"` by default) played `times` times (2), low A held for a bar, then the drones die in the tail bar. Its `MusicTrack`'s
+bars are the tune's bars (its "BPM" is 240 / bar seconds), so `BarAt` and `Seconds` are right for the media clock.
+
+**Measured** (the probe above, which works on pipe tracks): 6-8 ms per second of audio (Tracksuit Tactical: 10), peak 0.74-0.85, RMS about
+0.3 (a hardbass track is 0.45), no NaN, nothing above 0.99, no allocation in `Load` or `Render`. Nobody here has heard them: whether they sound
+like pipes is the user's call.
+
 ## Giving Sandbox music
 
 Not built, and whether to is a user decision. The code shows what would have to change (the design around it is inferred):

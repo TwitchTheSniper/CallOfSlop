@@ -22,6 +22,8 @@ internal sealed class Page : IDisposable
     private readonly SharedBlock _block;
     private readonly ChromiumWebBrowser _web;
     private readonly PageSound _audioHandler;
+    private readonly AdSwitch _ads;
+    private long _nextAdStep, _adsSaid;
     private string _title = "";
     private string _sound = "";
     private long _playingSince, _nextProbe;
@@ -29,16 +31,17 @@ internal sealed class Page : IDisposable
     private volatile bool _closing;
     private bool _handsOn;
 
-    public Page(int slot, string id, double seconds, int width, int height, string block)
+    public Page(int slot, string id, double seconds, int width, int height, string block, bool ads)
     {
         _slot = slot;
+        _ads = new AdSwitch(ads);
         _block = new SharedBlock(block, width, height);
         var html = Html(id, seconds, width, height);
         _web = new ChromiumWebBrowser(Address, automaticallyCreateBrowser: false)
         {
             RenderHandler = new Painter(_block),
             AudioHandler = _audioHandler = new PageSound(_block, slot),
-            RequestHandler = new Requests(html),
+            RequestHandler = new Requests(html, new AdResources(_ads)),
             LifeSpanHandler = new NoPopups(),
             DisplayHandler = new Console_(this),
             DialogHandler = null,
@@ -82,6 +85,69 @@ internal sealed class Page : IDisposable
         }
         Program.Say($"s {_slot} {body}");
         Probe(body);
+        AdStep();
+    }
+
+    /// <summary>Turns ad blocking on or off, and starts the page again so that what it held back comes in. The game seeks it back to its place.</summary>
+    public void Ads(bool on)
+    {
+        if (_ads.On == on)
+            return;
+        _ads.On = on;
+        Program.Log($"page {_slot}: ad blocking {(on ? "on" : "off")}, reloading");
+        if (_web.IsBrowserInitialized)
+            _web.GetBrowser()?.Reload(true);
+    }
+
+    /// <summary>
+    /// An advert that got through plays from the same servers as the video, so it can't be refused. Once a second this hides its overlays and presses its skip button when it has one: a real mouse click,
+    /// since the player ignores a script's. An unskippable advert plays.
+    /// </summary>
+    private void AdStep()
+    {
+        var now = Environment.TickCount64;
+        if (!_ads.On || now < _nextAdStep || _web.GetBrowser() is not { } browser)
+            return;
+        _nextAdStep = now + 1000;
+        var refused = Interlocked.Read(ref _ads.Refused);
+        if (refused / 50 != _adsSaid)
+        {
+            _adsSaid = refused / 50;
+            Program.Log($"page {_slot}: {refused} requests refused");
+        }
+        foreach (var frame in browser.GetAllFrames())
+            if (frame.Url.Contains("/embed/", StringComparison.Ordinal))
+                _ = AdFrame(frame);
+    }
+
+    private const string AdScript = """
+        (function () {
+          document.querySelectorAll('.ytp-ad-overlay-container, .ytp-ad-image-overlay, .ytp-ad-text-overlay').forEach(function (e) { e.style.display = 'none'; });
+          var b = document.querySelector('.ytp-skip-ad-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern');
+          if (!b) return '';
+          var r = b.getBoundingClientRect();
+          return r.width > 1 && r.height > 1 ? Math.round(r.left + r.width / 2) + ' ' + Math.round(r.top + r.height / 2) : '';
+        })()
+        """;
+
+    private async Task AdFrame(IFrame frame)
+    {
+        try
+        {
+            var r = await frame.EvaluateScriptAsync(AdScript);
+            if (!_ads.On || !r.Success || r.Result is not string { Length: > 0 } at || !_web.IsBrowserInitialized || _web.GetBrowserHost() is not { } host)
+                return;
+            var xy = at.Split(' ');
+            var e = new MouseEvent(int.Parse(xy[0], CultureInfo.InvariantCulture), int.Parse(xy[1], CultureInfo.InvariantCulture), CefEventFlags.None);
+            host.SendMouseMoveEvent(e, false);
+            host.SendMouseClickEvent(e, MouseButtonType.Left, false, 1);
+            host.SendMouseClickEvent(e, MouseButtonType.Left, true, 1);
+            Program.Log($"page {_slot}: pressed an advert's skip button");
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            Program.Log($"page {_slot}: advert step failed: {e.Message}");
+        }
     }
 
     /// <summary>
@@ -200,7 +266,7 @@ internal sealed class Page : IDisposable
         """);
 
     /// <summary>Answers the page's own address, and keeps the top frame on it. A click inside the player can't leave the embed either, and adverts still load: only a gesture is held to it.</summary>
-    private sealed class Requests(string html) : RequestHandler
+    private sealed class Requests(string html, IResourceRequestHandler ads) : RequestHandler
     {
         private readonly byte[] _body = Encoding.UTF8.GetBytes(html);
 
@@ -211,7 +277,7 @@ internal sealed class Page : IDisposable
             Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Scheme == "https" && u.Host is "www.youtube-nocookie.com" or "www.youtube.com" && u.AbsolutePath.StartsWith("/embed/", StringComparison.Ordinal);
 
         protected override IResourceRequestHandler? GetResourceRequestHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool isNavigation, bool isDownload, string requestInitiator, ref bool disableDefaultHandling) =>
-            request.Url.StartsWith(Address, StringComparison.Ordinal) ? new Local(_body) : null;
+            request.Url.StartsWith(Address, StringComparison.Ordinal) ? new Local(_body) : ads;
     }
 
     private sealed class Local(byte[] body) : ResourceRequestHandler

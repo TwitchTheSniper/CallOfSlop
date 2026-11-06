@@ -48,7 +48,7 @@ line, it gets three goes a session, and game tracks don't notice. Self-tests and
 - **Pictures and sound** go through a shared memory block per page (`MediaBlock.cs`, `tools/browser/SharedBlock.cs`: keep the two layouts the same). Three frames, so a frame is written beside the one being read. No side waits for the other and the
   game allocates nothing. `VideoFeeds` copies at most one frame a render, and only for a page a panel asked for, so a screen behind you or out of sight costs no picture.
 - **The page.** YouTube's official iframe player, from `youtube-nocookie.com`, in a small page the browser serves itself at `https://callofslop.invalid/player.html`. It needs a real https page: since 2025 the player refuses to run without a Referer
-  (error 153), which rules out `file:` and `data:` URLs. Top-level navigation away is refused, popups are closed, no input reaches the page. Nothing is kept on disk. Its picture is shown as it comes, with nothing drawn over it, adverts included.
+  (error 153), which rules out `file:` and `data:` URLs. Top-level navigation away is refused, popups are closed, no input reaches the page. Nothing is kept on disk. Its picture is shown as it comes, with nothing drawn over it, adverts included, unless this viewer turned on ad blocking.
 
 ## Hands on a screen
 
@@ -91,6 +91,21 @@ The hops log to `callofslop.log`, each on a 5 s throttle while something plays; 
 | 6 | Same line, `OpenAL (hop 6)` | `Playing`, gain above 0 | The source is stopped or silent |
 | 7 | `[media] level voice 0 (hop 7)` | Every factor above 0 | That factor is the zero |
 
+## Pipe Boxes
+
+The Clan MacSlop's Music Player (`tools/constructs/highland_parts.py`, `Constructs/Parts/Highland`): a box with the Music Player's small screen and
+a set of bagpipes on its lid, heard to 150 m (full level to 10 m), with Loop on by default and no power needed (it has lungs). Its part file's
+`"media"` key has `"pipes": true`, and that is all that differs: it plays links, game tracks and speakers as any Music Player does.
+
+**It strikes up by itself** (`ConstructPipes.cs`, once a second on the server, beside `ConstructMedia.Tick`): when its construct gets a driver
+with the engine running and it is stopped, it plays, from a line the clock picks so a convoy's boxes don't start together; an empty list is
+filled with every pipe tune first (docs/audio/MUSIC.md, "Pipe tunes"). It goes on for 20 s after the driver leaves or the engine stops, then
+stops. A player may stop or change it at the panel as usual; it strikes up again the next time someone takes the wheel. Only the server's word
+changes (`CMedia.PipesDriven`, `PipesIdle` are the server's own, never sent or saved), so nothing new goes on the wire.
+
+As for every game track, a peer renders only the nearest one, so in a convoy you hear the lead piper. Every Highland vehicle the vehicle kit
+builds has one (docs/vehiclekit/VEHICLEKIT.md, "The Highland style"). A speaker on a data cable carries it further, as for a Music Player.
+
 ## Browser Screens
 
 Browser Screen, Medium and Large are a real Chromium tab on a part. Address bar, Back, Forward, Reload and Close are on the configure panel. Hands work as on a video, and Enter on the picture gives the page the keyboard until Esc (or the crosshair leaves): the game's keys are off meanwhile. It shares the 4 pages, its sound takes the same path, and speakers work. Windows only.
@@ -123,3 +138,16 @@ Checked in the container with a stock CEF (120, Linux, from NuGet, offscreen), t
 
 Not checked, because youtube.com can't be reached from the container: that a real video plays. Stock CEF has no H.264 or AAC, so anything YouTube offers only in those won't play, and some live streams may be among them. Stock CEF has no Widevine, so paid films won't.
 Uploaders can refuse embedding (error 101 or 150), which the panel says. Ads may run, as on any embed; the clock waits and then seeks.
+
+## Ad blocking
+
+A box on the Video Screen, Music Player and Browser Screen panels, off by default (`media_block_ads`, `media_block_web_ads` in the settings: one for YouTube links, one for Browser Screens). It is each viewer's own: it isn't sent to the server or other peers, and their pages are untouched. Changing it reloads the page, which comes back to the clock, so no restart is needed: turning it off is the way out if it breaks playback.
+
+**The terms risk.** Blocking YouTube's ads breaks YouTube's API terms, which this project otherwise keeps to. The user chose this as an opt-in knowing that. It's a risk to the project's standing with YouTube if it ships, and it's why it is off by default and never on for anyone who didn't tick it.
+
+What it does (`tools/browser/AdFilter.cs`, `adhosts.txt` beside the exe, read when the browser starts):
+
+- **Requests:** a page refuses hosts on the list, and on YouTube's own hosts, paths on the list. It can only refuse a request, so it adds no way out of a page's rules. The list is a few dozen lines, nothing like a real ad blocker's.
+- **Adverts that get through:** once a second it hides advert overlays in the player's frame and presses a skip button if there is one, with a real mouse click at its place, since the player ignores a script's. If the button goes between looking and clicking, the click lands on the video and may pause it; the clock then starts it again.
+
+**How well it works, honestly:** expect banners, trackers and overlays to go. Expect in-stream adverts mostly to stay. They come from the same servers as the video, so nothing here can tell them apart, an unskippable one plays in full, and the player's page changes often, which can break the skip button's names without warning. Refusing YouTube's tracking calls may also make the player complain or stall: that's what the off switch is for.

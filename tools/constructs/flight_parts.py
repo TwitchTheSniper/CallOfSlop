@@ -36,8 +36,23 @@ def choice(key, label, group, options, default, tip):
     return {"key": key, "type": "choice", "label": label, "group": group, "options": options, "default": default, "tooltip": tip}
 
 
+def adv(*a, **k):
+    return number(*a, advanced=True, **k)
+
+
+def axis(name, label, rate):
+    out = [adv(f"{name}Rate", "Rate limit", label, "deg/s", 0, 720, 5, 0, "The fastest it turns this way. 0: Max turn.")] if rate else []
+    return out + [
+        adv(f"{name}Response", "Response (P)", label, "%", 0, 400, 5, 0, "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto."),
+        adv(f"{name}Damping", "Damping (D)", label, "%", 0, 400, 5, 0, "How hard it stops. Up: less overshoot; too much shakes. 0: auto."),
+        adv(f"{name}Hold", "Hold (I)", label, "%", 0, 400, 5, 0, "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto."),
+        adv(f"{name}Expo", "Expo", label, "%", 0, 100, 5, 0, "Soft around the middle of a wired stick. A key is all or nothing."),
+    ]
+
+
 CONFIG = [
     choice("keys", "Keys", "Control", KEYS, 0, "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."),
+    choice("flightPreset", "Preset", "Control", ["Normal", "Docile", "Sport"], 0, "What auto means below: gentle, as it comes, or lively. Anything you set yourself stays."),
     number("strength", "Strength", "Control", "%", 10, 300, 5, 100, "How hard it corrects. Lower it if the craft shakes."),
     toggle("level", "Stabilise level", "Control", True, "Off: the keys ask for turning, and it stays at whatever angle you leave it."),
     toggle("mouseAim", "Mouse aim", "Control", False, "It flies where the seat looks."),
@@ -46,6 +61,7 @@ CONFIG = [
     number("maxTurn", "Max turn", "Limits", "deg/s", 0, 360, 5, 0, "The fastest it turns. 0: the pattern's own."),
     number("maxClimb", "Max climb", "Limits", "m/s", 0, 200, 0.5, 0, "The fastest it climbs. 0: the pattern's own."),
     number("maxSpeed", "Max speed", "Limits", "m/s", 0, 1000, 1, 0, "The speed the keys ask for. 0: the pattern's own."),
+    number("maxDescent", "Max descent", "Limits", "m/s", 0, 200, 0.5, 0, "The fastest it comes down. 0: as Max climb."),
     number("trimPitch", "Trim, nose up", "Trim", "deg", -30, 30, 0.5, 0, "What it counts as level, nose up."),
     number("trimRoll", "Trim, right wing down", "Trim", "deg", -30, 30, 0.5, 0, "What it counts as level, right wing down."),
     toggle("autopilot", "Autopilot", "Autopilot", False, "On: it holds what the mode says. Its input and the Flight Panel set this too."),
@@ -54,6 +70,19 @@ CONFIG = [
     number("targetHeading", "Heading", "Autopilot", "deg", -1, 360, 1, -1, "The heading held, clockwise from north. -1: where it pointed when engaged."),
     number("waypointX", "Waypoint x", "Autopilot", "m", -100000, 100000, 1, 0, "The point it flies to, world x."),
     number("waypointZ", "Waypoint z", "Autopilot", "m", -100000, 100000, 1, 0, "The point it flies to, world z."),
+    *axis("pitch", "Pitch", True),
+    *axis("roll", "Roll", True),
+    *axis("yaw", "Yaw", True),
+    *axis("climb", "Climb", False),
+    adv("throttleCurve", "Throttle curve", "Feel", "%", -100, 100, 5, 0, "Above 0: finer low down. Below 0: finer high up."),
+    adv("maxBank", "Max bank", "Feel", "deg", 0, 85, 1, 0, "The most it banks. 0: Max lean."),
+    adv("maxPitchAngle", "Max pitch", "Feel", "deg", 0, 85, 1, 0, "The most it pitches. 0: Max lean."),
+    adv("turnCoord", "Turn coordination", "Feel", "%", 0, 200, 5, 0, "How much the rudder follows a bank. 0: auto, all of it."),
+    adv("autoLevel", "Auto-level", "Feel", "%", 0, 400, 5, 0, "How hard it comes level when let go. 0: auto."),
+    adv("windHold", "Wind hold", "Feel", "%", 0, 400, 5, 0, "How fast it leans into a steady drift. 0: auto."),
+    adv("landingAssist", "Landing assist", "Feel", "m", 0, 100, 1, 0, "Below this height it comes down gently. 0: off."),
+    adv("collectiveRange", "Collective range", "Feel", "%", 0, 100, 5, 0, "The most of its rotors' push it uses. 0: all of it."),
+    adv("thrustLimit", "Thrust limit", "Feel", "%", 0, 100, 5, 0, "The most of its thrusters' push it uses. 0: all of it."),
     {"key": "homeX", "hidden": True, "unit": "m", "min": -100000, "max": 100000, "default": 0},
     {"key": "homeZ", "hidden": True, "unit": "m", "min": -100000, "max": 100000, "default": 0},
 ]

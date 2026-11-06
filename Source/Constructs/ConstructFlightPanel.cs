@@ -191,6 +191,10 @@ public static partial class ConstructFlight
         card.Value = sum;
         card.Add(0, f.Thrusters + f.Repulsors + f.Rotors).Add(0, " push, ").Add(0, f.Gimbals + f.Cyclics).Add(0, " gimbal, ").Add(0, f.Surfaces).Add(0, " surf");
         AddMissing(card, 1, miss);
+        // The loops' errors, to tune by: each in tenths, so the card is laid out again only when one moves.
+        var err = c.StabErr;
+        card.Value += MathF.Round(err.X * 10) * 1.1f + MathF.Round(err.Y * 10) * 1.3f + MathF.Round(err.Z * 10) * 1.7f + MathF.Round(err.W * 10) * 1.9f;
+        card.Add(2, "err p ").Add(2, (int)MathF.Round(err.X)).Add(2, " r ").Add(2, (int)MathF.Round(err.Y)).Add(2, " y ").Add(2, (int)MathF.Round(err.Z)).Add(2, " c ").Add(2, (int)MathF.Round(err.W));
     }
 
     /// <summary>What it commands, to clients, four times a second while it is at work and a Flight Diagnostic Panel is on the construct: u16 body, u8 n, then (i8 command, u8 authority) each.</summary>
@@ -201,6 +205,7 @@ public static partial class ConstructFlight
         c.DiagSent = c.StabLive;
         var n = Math.Min(f.Count, 200);
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Flight).U16(c.Id).U8((byte)n);
+        w.F32(c.StabErr.X).F32(c.StabErr.Y).F32(c.StabErr.Z).F32(c.StabErr.W);
         for (var k = 0; k < n; k++)
             w.U8((byte)(sbyte)Math.Clamp(MathF.Round(f.Items[k].Cmd * 127), -127, 127)).U8((byte)Math.Clamp(MathF.Round(f.Items[k].Auth * 200), 0, 255));
         return true;
@@ -210,7 +215,11 @@ public static partial class ConstructFlight
     {
         var id = r.U16();
         var n = r.U8();
-        var f = world.Get(id)?.Effectors;
+        var err = new Vector4(r.F32(), r.F32(), r.F32(), r.F32());
+        var body = world.Get(id);
+        var f = body?.Effectors;
+        if (body != null)
+            body.StabErr = err;
         for (var k = 0; k < n; k++)
         {
             var cmd = (sbyte)r.U8();

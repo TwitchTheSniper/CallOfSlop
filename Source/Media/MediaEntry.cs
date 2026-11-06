@@ -35,6 +35,9 @@ public static class MediaEntry
         foreach (var t in MusicTracks.All)
             if (entry.AsSpan(Game.Length).SequenceEqual(t.Name))
                 return t;
+        foreach (var t in PipeTunes.Tracks)
+            if (entry.AsSpan(Game.Length).SequenceEqual(t.Name))
+                return t;
         return null;
     }
 

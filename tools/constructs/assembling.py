@@ -180,6 +180,9 @@ HAND = [
     rec("Prize Wheel", 3, m={"planks": 2, "laminate": 1}),
     rec("Loudhailer", 3, 2, m={"steel": 1, "copper": 1}),
     rec("Phone Mast", 4, 2, m={"steel": 2, "copper": 1}),
+    # The Clan MacSlop's (tools/constructs/highland_parts.py): pipes are wood and a bag, a cask is staves and hoops.
+    rec("Pipe Box", 8, 2, m={"planks": 4, "rubber": 2}, p={"Bearing": 1}),
+    rec("Whisky Cask", 5, m={"planks": 10, "steel": 2}),
     # Air weapons (tools/constructs/air_weapons_parts.py): a rack and a bomb early, what steers itself late.
     rec("Light Bomb", 3, 2, m={"steel": 6, "concrete": 2}),
     rec("Bomb Rack", 4, 2, m={"steel": 5}),
