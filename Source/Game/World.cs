@@ -475,6 +475,11 @@ public static partial class World
     /// <summary>Would a player standing at <paramref name="feet"/> overlap any box (terrain ignored)?</summary>
     public static bool BlockedByBoxes(Vector3 feet, float height = PlayerHeight) => Physics.BlockedByBoxes(feet, height);
 
+    /// <summary>Sandbox: no sky limit 60 m up (a body put back under it lands inside anything built taller, and is pushed out of it). The game sets it each tick.</summary>
+    public static bool OpenSky;
+
+    public const float OpenSkyTop = 8000f;
+
     public static Vector3 ClampToArena(Vector3 feet)
     {
         if (GravityFrames.Point is { } planet)
@@ -486,11 +491,11 @@ public static partial class World
         if (Map.TerrainCollision is { } terrain)
         {
             // Never below the ground: nobody falls out of a terrain map.
-            feet.Y = Math.Clamp(feet.Y, terrain.Data.LowestGround - 5, terrain.Data.HighestGround + 60);
+            feet.Y = Math.Clamp(feet.Y, terrain.Data.LowestGround - 5, OpenSky ? OpenSkyTop : terrain.Data.HighestGround + 60);
             feet.Y = MathF.Max(feet.Y, terrain.GroundBelow(feet.X, feet.Z, feet.Y)); // (in a cave: its floor)
         }
         else
-            feet.Y = Math.Clamp(feet.Y, -5, 60);
+            feet.Y = Math.Clamp(feet.Y, -5, OpenSky ? OpenSkyTop : 60);
         return feet;
     }
 

@@ -259,6 +259,8 @@ public static partial class ConstructRide
             else if (faceUp != Vector3.Zero && Vector3.Dot(faceUp, up) < World.MinWalkNormalY)
                 up = faceUp; // (not a face that lies across the construct's up: the surface under the feet decides)
             s.Grounded = true;
+            if (standing.Anchored && standing.MoveSeg(standSeg) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(up, QuatOf(standing, standSeg))), worldUp) >= AnchoredLevel)
+                return; // (the end of a tall frozen thing: its up is its long side, but this floor is level: the world's)
             Join(ref s, standing, standSeg, up, rel);
             return;
         }

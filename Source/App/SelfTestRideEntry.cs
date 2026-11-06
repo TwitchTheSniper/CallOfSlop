@@ -54,7 +54,56 @@ public static partial class SelfTest
             if (s.RideBody != c.Id)
                 Fail($"ride entry: a {part} turned {turn:0.0} rad didn't take a body coming down {past} m past its edge from {drop} m (feet {s.Position}, its centre {com})");
         }
+        RideTall();
         RideNoRunOver(yard);
+    }
+
+    /// <summary>Tall things: the top of a leaning 40 m bar and of a column over the old sky limit, frozen and free; a jump inside a hollow tube stays in it.</summary>
+    private static void RideTall()
+    {
+        var metal = RecyclingTable.Current.IdOf("metal");
+        World.OpenSky = true;
+        var bar = Extrusion.Def(new ExtrusionKey(Extrusion.Presets[0].Mask, 100, 100, 4000, metal, false))!;
+        var tube = Extrusion.Def(new ExtrusionKey(Extrusion.Presets[3].Mask, 300, 300, 2000, metal, false))!;
+        var column = ConstructParts.Need("Capital Column 128 m");
+        foreach (var frozen in new[] { true, false })
+        {
+            foreach (var (def, turn, end) in new[] { (bar, -MathF.PI / 2 + 0.2f, 40f), (column, -MathF.PI / 2, 120f) })
+            {
+                var w = new ConstructWorld();
+                var c = ConstructBuild.PlaceNew(w, def, ConstructWorld.Ground(World.Query, -6, -6), 0)!;
+                c.Rebuild();
+                var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitX, turn);
+                RidePose(w, c, c.Pos + new Vector3(0, 9f, 0), rot, Vector3.Zero, Vector3.Zero);
+                var top = c.ToWorld(new Vector3(0.2f, 0, end));
+                var s = new MoveState { Position = top + new Vector3(0, 0.6f, 0) };
+                for (var t = 0; t < 100; t++)
+                {
+                    RidePose(w, c, c.Pos, rot, Vector3.Zero, Vector3.Zero);
+                    c.Anchored = frozen;
+                    RideTick(w, ref s);
+                }
+                if (Vector3.Distance(s.Position, top) > 0.1f || !s.Grounded)
+                    Fail($"ride entry: {def.Name} (frozen {frozen}, top {top}): a body on its top ended at {s.Position}, up {s.RideUp}, grounded {s.Grounded}");
+            }
+            var w2 = new ConstructWorld();
+            var hull = ConstructBuild.PlaceNew(w2, tube, ConstructWorld.Ground(World.Query, -6, -6), 0)!;
+            hull.Rebuild();
+            RidePose(w2, hull, hull.Pos + new Vector3(0, 2f, 0), hull.Rot, Vector3.Zero, Vector3.Zero);
+            var feet = new MoveState { Position = hull.ToWorld(new Vector3(0, -1.1f, 10f)) };
+            for (var t = 0; t < 200; t++)
+            {
+                RidePose(w2, hull, hull.Pos, hull.Rot, Vector3.Zero, Vector3.Zero);
+                hull.Anchored = frozen;
+                RideTick(w2, ref feet, t % 50 == 40 ? Buttons.Jump : Buttons.None);
+                if (MathF.Abs(hull.ToLocal(feet.Position).X) > 0.1f)
+                {
+                    Fail($"ride entry: a jump under a hollow hull's roof put the body out through its side (frozen {frozen}, local {hull.ToLocal(feet.Position)})");
+                    break;
+                }
+            }
+        }
+        World.OpenSky = false;
     }
 
     /// <summary>A heavy deck drives through someone who just rode it (pushed, unhurt), then through them again later (hurt).</summary>

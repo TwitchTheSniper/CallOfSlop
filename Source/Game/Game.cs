@@ -903,6 +903,7 @@ public sealed partial class Game : IDisposable
         me.PrevPosition = me.Position;
         (me.PrevRideBody, me.PrevRideSeg, me.PrevRideLocal) = (me.Sim.RideBody, me.Sim.RideSeg, me.Sim.RideLocal); // (drawn in the construct's frame: GameSandbox.cs)
         ConstructRide.Bodies = Constructs;
+        World.OpenSky = SandboxOn;
         ZBlockBuild(client: true); // the zombie bodies as last heard (ZombieBlock.cs)
         _sepAtTick = cmd.Tick;
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
@@ -959,6 +960,7 @@ public sealed partial class Game : IDisposable
         var predicted = me.Position;
         var state = server;
         ConstructRide.Bodies = Constructs;
+        World.OpenSky = SandboxOn;
         SandboxRideAdopt(ref state); // a rider's replay starts where the construct as we have it puts them (GameSandbox.cs)
         if (alive)
         {
@@ -1164,6 +1166,7 @@ public sealed partial class Game : IDisposable
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)
         ConstructRide.Bodies = Constructs;
+        World.OpenSky = SandboxOn;
         foreach (var p in Players.Values)
         {
             p.PrevPosition = p.Position;
@@ -2308,6 +2311,7 @@ public sealed partial class Game : IDisposable
 
     public void Dispose()
     {
+        World.OpenSky = false; // (the next thing to move anyone sets its own)
         ClosePlaces(); // free travel: the planetoids running beside it saved into the world first (GameTravel.cs)
         World.Enter(Place); // (its last save and goodbyes run in its own world)
         WorldOnExit(); // a saved world's last save, finished before anything closes (GameWorldSave.cs)

@@ -353,13 +353,14 @@ public static partial class ConstructRide
         var r = World.PlayerRadius;
         var face = centre[ax] + sign * half[ax];
         var dist = (lf[ax] - face) * sign;
-        if (dist > r + 0.15f || dist < -World.StepHeight)
+        // (the feet at this face, not inside a thick bar: a tall thing's long side is its up, and a body coming down on its end isn't boarding that)
+        if (dist > r + 0.15f || dist < -MathF.Min(World.StepHeight, half[ax] * 0.5f))
             return false;
         var at = lf;
         for (var a = 0; a < 3; a++)
             if (a != ax)
             {
-                if (MathF.Abs(lf[a] - centre[a]) > half[a] + r)
+                if (MathF.Abs(lf[a] - centre[a]) > half[a] + (dist < 0 ? 0 : r))
                     return false;
                 at[a] = SafeMath.Clamp(lf[a], centre[a] - half[a], centre[a] + half[a]);
             }

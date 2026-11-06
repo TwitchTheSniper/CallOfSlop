@@ -1292,6 +1292,16 @@ public sealed partial class ConstructWorld
                         if (upLocal.Y < 0.9995f && TopAt(Vector3.Transform(wclosest - t, iq), centre, half, upLocal, t, q, feet) is { } under && under <= feet.Y + 0.06f)
                             continue;
                         var inside = Vector3.DistanceSquared(closest, lp) < 1e-8f;
+                        // Straight under it (a ceiling, a roof, a lintel): it stops the head. Never out sideways through the walls of a hull.
+                        if (!inside && wclosest.Y > probe.Y + 0.01f && (c == ride || c.Anchored || c.Asleep || c.Vel.LengthSquared() < 1f))
+                        {
+                            if (!s.Grounded)
+                                s.Position.Y = MathF.Min(s.Position.Y, wclosest.Y - height);
+                            if (s.Velocity.Y > 0)
+                                s.Velocity.Y = 0;
+                            pushed = true;
+                            continue;
+                        }
                         float nx, nz, depth;
                         if (inside || d2 < 1e-8f)
                         {
