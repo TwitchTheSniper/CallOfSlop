@@ -170,6 +170,7 @@ public static partial class ConstructRender
         PanelRender.Begin();
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
+        gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)
         foreach (var c in world.Bodies)
         {
             if (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0)
@@ -232,6 +233,7 @@ public static partial class ConstructRender
             gfx.Relative = false;
             n += DrawWheel(gfx, c, alpha, blendTicks); // (from the seat's world pose)
         }
+        gfx.EndBatch();
         BatchSweep(gfx, world);
         LastCulled = culled;
         LastLod = lod;
@@ -1482,18 +1484,17 @@ public static partial class ConstructRender
     }
 
     /// <summary>The wheels' springs on a client (or the host's drawing between ticks): where each wheel meets the ground now.</summary>
-    public static void FitWheels(ConstructWorld world, IWorldQuery query, Vector3 viewer)
+    public static void FitWheels(ConstructWorld world, IWorldQuery query, Vector3 viewer, double now)
     {
-        _fitFrame++;
         foreach (var c in world.Bodies)
         {
-            if (c.WheelCount == 0)
+            if (c.WheelCount == 0 || now < c.FitAt)
                 continue;
-            // Rays every frame only for a wheel that's moving and close enough for it to show.
-            var every = c.Pos == c.PrevPos && c.Rot == c.PrevRot ? FitStillEvery
-                : Vector3.DistanceSquared(viewer, c.Pos) > FitNear * FitNear ? FitFarEvery : 1;
-            if ((_fitFrame + c.Id) % every != 0)
-                continue;
+            // Rays as fast as the ticks only for a wheel that's moving and close enough for it to show (by the clock, so a
+            // faster frame rate doesn't buy more of them); bodies take their turns by id.
+            var gap = c.Pos == c.PrevPos && c.Rot == c.PrevRot ? FitStillGap
+                : Vector3.DistanceSquared(viewer, c.Pos) > FitNear * FitNear ? FitFarGap : 1.0 / World.TickRate;
+            c.FitAt = now + gap * (1 + (c.Id & 3) * 0.02);
             var up = Vector3.Transform(Vector3.UnitY, c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
                 ConstructPhysics.FitWheel(c, query, k, up);
@@ -1501,8 +1502,7 @@ public static partial class ConstructRender
     }
 
     private const float FitNear = 60f;
-    private const int FitStillEvery = 16, FitFarEvery = 6;
-    private static uint _fitFrame;
+    private const double FitStillGap = 0.25, FitFarGap = 0.1;
 }
 
 /// <summary>A suspension's moving boxes at one moment: the hub's move, the arm's axis and angle (<see cref="ConstructRender.RigOf"/>).</summary>

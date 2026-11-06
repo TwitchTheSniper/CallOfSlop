@@ -1120,12 +1120,14 @@ public static unsafe partial class Program
         var fb = _window.FramebufferSize;
         Gfx.SetCamera(Matrix4x4.Identity, Sights.ViewModelProjection(fb.X / (float)Math.Max(fb.Y, 1)));
         var o = new ToolGfxOut(Gfx);
+        Gfx.BeginBatch();
         ToolRender.Emit(ref o, _sbTool);
         _vmAnim.Right.Solve(_sbTool.Right, Matrix4x4.Identity, Vector3.Zero);
         _vmAnim.Left.Solve(_sbTool.Left, Matrix4x4.Identity, Vector3.Zero);
         var armColors = ArmColors.For(me.Color * 0.5f + new Vector3(0.06f));
         _vmAnim.Right.Draw(Gfx, armColors);
         _vmAnim.Left.Draw(Gfx, armColors);
+        Gfx.EndBatch();
         if (Matrix4x4.Invert(_worldView, out var camToWorld))
             ToolRender.NoteViewTip(_sbTool, camToWorld); // (the welder's light, next frame)
         DrawToolCard(g, me, in h, shown, now);

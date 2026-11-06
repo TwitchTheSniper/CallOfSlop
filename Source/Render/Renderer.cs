@@ -228,6 +228,8 @@ public sealed unsafe partial class Renderer
     /// </summary>
     public void SetCameraAt(Vector3 origin, Matrix4x4 viewFromOrigin, Matrix4x4 proj)
     {
+        if (_batching)
+            FlushBatch();
         Origin = origin;
         Relative = false;
         _viewProjRel = viewFromOrigin * proj;
@@ -307,7 +309,8 @@ public sealed unsafe partial class Renderer
 
     private readonly float[] _batch = new float[BatchMax * BatchFloats];
     private int _batchCount;
-    private bool _batching, _blendOn, _instReady, _instBroken;
+    private bool _batching, _batchBlended, _blendOn, _instReady, _instBroken;
+    private int _batchDepth;
     private GlProgram _instProgram;
     private GlVertexArray _instVao;
     private GlBuffer _instVbo;
@@ -319,23 +322,33 @@ public sealed unsafe partial class Renderer
     /// <summary>
     /// Until <see cref="EndBatch"/>, opaque <see cref="Draw"/> calls (no blood, no blending) are collected and drawn as
     /// one instanced draw per <see cref="BatchMax"/> boxes with the same shader maths (an instanced copy of the box
-    /// shader). Anything else flushes the batch first, so the order never changes. Used for a zombie horde: hundreds of
-    /// bodies of a dozen boxes each. Nothing happens headless (recording) or if the instanced shader couldn't be made.
+    /// shader). A blended box or blood flushes the batch first, so what can show the order keeps it; a contoured box goes
+    /// straight out past the batch, which the depth buffer doesn't mind. Used for a zombie horde and the constructs:
+    /// hundreds of bodies of a dozen boxes each. With <paramref name="blended"/> (blending on before this call) the boxes
+    /// are blended too, in the order given (the tracers). Batches nest: the outermost one's end draws. Nothing happens
+    /// headless (recording) or if the instanced shader couldn't be made.
     /// </summary>
-    public void BeginBatch()
+    public void BeginBatch(bool blended = false)
     {
-        if (Recorder != null || _instBroken || _batching)
+        if (Recorder != null || _instBroken)
             return;
+        if (_batching)
+        {
+            _batchDepth++;
+            return;
+        }
         if (!_instReady && !InitInstanced())
             return;
         _batching = true;
+        _batchBlended = blended;
+        _batchDepth = 1;
         _batchCount = 0;
     }
 
     /// <summary>Draws what the batch collected and goes back to drawing each box at once.</summary>
     public void EndBatch()
     {
-        if (!_batching)
+        if (!_batching || --_batchDepth > 0)
             return;
         FlushBatch();
         _batching = false;
@@ -617,7 +630,12 @@ public sealed unsafe partial class Renderer
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _texture);
     }
 
-    public void ClearDepthBuffer() => Clear(GlClearBit.Depth);
+    public void ClearDepthBuffer()
+    {
+        if (_batching)
+            FlushBatch();
+        Clear(GlClearBit.Depth);
+    }
 
     /// <summary>Restrict drawing to a rectangle of the framebuffer (pixels, origin bottom-left).</summary>
     public void SetViewport(int x, int y, int w, int h)
@@ -628,6 +646,8 @@ public sealed unsafe partial class Renderer
 
     public void SetDepthTest(bool on)
     {
+        if (_batching)
+            FlushBatch();
         if (on)
             Enable(GlCapability.DepthTest);
         else
@@ -788,9 +808,9 @@ public sealed unsafe partial class Renderer
         var m = FromOrigin(model);
         if (_batching)
         {
-            if (!_bloodOn && !_blendOn && alpha >= 1f && shape == 0)
+            if (!_bloodOn && shape == 0 && (_batchBlended || !_blendOn))
             {
-                // Batched (a zombie horde): one instanced draw per few thousand boxes instead of one draw each.
+                // Batched: one instanced draw per few thousand boxes instead of one draw each.
                 var o = _batchCount * BatchFloats;
                 var b = _batch;
                 // (m: relative to the render origin, as the batch's shader takes it)
@@ -804,7 +824,8 @@ public sealed unsafe partial class Renderer
                     FlushBatch();
                 return;
             }
-            FlushBatch(); // keep the order: everything batched so far goes first
+            if (_bloodOn || _blendOn)
+                FlushBatch(); // keep the order: everything batched so far goes first
         }
         Native.glUniform1f(_locLayer, (float)material);
         var mvp = m * _viewProjRel;

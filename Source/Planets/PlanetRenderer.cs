@@ -43,7 +43,7 @@ public sealed unsafe partial class PlanetRenderer
     private const int MaxLevels = 16;
     private const int MaxInstances = 4096;
     private const int FloatsPerInstance = 8;
-    private const int UploadsPerFrame = 8;
+    private const int UploadsPerFrame = 4; // (two 135 KB textures a page: at 60 frames a second still 240 pages a second)
     private const int MaxPending = 64;
     private const double LowestSpare = 40; // metres under the lowest ground the top pages found: the pits they missed (BelowHorizon)
     private const int PosUnit = 10, NrmUnit = 11; // texture units (0: the box texture array, 12-14: the light grid)
@@ -360,8 +360,11 @@ public sealed unsafe partial class PlanetRenderer
             var width = (float)((PageCells << l) * _cell);
             // At least a level's own diagonal past the level before: whatever is drawn at l - 1 ends inside this range.
             _range[l] = l == 0 ? RangeScale * width : MathF.Max(FarRangeScale * width, _range[l - 1] + 1.5f * width * 0.5f);
-            // (A vertex stays on its own grid out past the finer level's range, where the two levels meet.)
-            _morph[l] = new Vector2(l == 0 ? _range[l] * 0.6f : MathF.Max(_range[l - 1] * 1.02f, _range[l] * 0.67f), _range[l] * 0.9f);
+            // A vertex stays on its own grid out past the finer level's nodes, which reach about a node's diagonal beyond
+            // that level's range (they meet this level there, and turn into it there), so the morph runs in what's left.
+            var finer = l == 0 ? 0f : _range[l - 1] + width * 0.5f * 1.414f;
+            _morph[l] = l == 0 ? new Vector2(_range[l] * 0.6f, _range[l] * 0.9f)
+                : new Vector2(MathF.Max(_range[l - 1] * 1.02f, MathF.Min(finer, _range[l] * 0.8f)), _range[l] * 0.95f);
         }
         // The top two levels now, on this thread (30 pages): there's always ground, from the first frame. They also sample
         // the whole world (Planetoid.MinHeight is the features' limit, which no ground reaches: 1.6 km too low on the Dev map).
@@ -802,6 +805,7 @@ public sealed unsafe partial class PlanetRenderer
         Native.glActiveTexture(GL_TEXTURE0);
         _vao.Bind();
         Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
+        Native.glBufferData(GL_ARRAY_BUFFER, MaxInstances * FloatsPerInstance * sizeof(float), null, GL_DYNAMIC_DRAW); // (orphan: never waits for a frame still drawing from it)
         fixed (float* p = _inst)
             Native.glBufferSubData(GL_ARRAY_BUFFER, 0, (nint)_instances * FloatsPerInstance * sizeof(float), p);
         PerfCounters.Draw(_indexCount * _instances);
