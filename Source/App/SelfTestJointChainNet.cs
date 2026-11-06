@@ -247,6 +247,77 @@ public static partial class SelfTest
         }, holder: true);
         a.SandboxLetGo(freeze: false);
         w.Remove(held);
+        // The user's first report: springs on a client didn't act as on the host. A spring and a rope, each between two bodies, a spring
+        // on a frozen contraption's free slider, and a held body pulling another by a spring: compared with the host's by tick, as above.
+        void Soft(int k)
+        {
+            if (k < 0)
+                return;
+            w.Connectors[k].Stiffness = 300; // (slow enough to see: a new spring's own is stiff, and settles in a tenth of a second)
+            w.Connectors[k].Damping = 12;
+            w.TouchConnector(k);
+        }
+        ConnectorEnd End(Construct c, int part, Vector3 local) => new() { Tag = c.Parts[part].Tag, Body = c.Id, Part = (ushort)part, Local = local };
+        var hook = Base(feet + new Vector3(4, 16, 8), true);
+        var bob = Base(feet + new Vector3(4, 11, 8), false);
+        var swing = Base(feet + new Vector3(10, 16, 8), false);
+        var spring = w.AddConnector(World.Query, ConnectorKind.Spring, 1, End(hook, 0, Vector3.Zero), End(bob, 0, Vector3.Zero));
+        var rope = w.AddConnector(World.Query, ConnectorKind.Rope, 1, End(hook, 0, Vector3.Zero), End(swing, 0, Vector3.Zero));
+        if (spring < 0 || rope < 0)
+            problems.Add("the spring or the rope wouldn't tie");
+        Soft(spring);
+        Pump(server, clients, 0.3, ref now, clock);
+        if (a.Constructs.ConnectorCount != 2 || b.Constructs.ConnectorCount != 2)
+            problems.Add($"the clients have {a.Constructs.ConnectorCount} and {b.Constructs.ConnectorCount} connectors, not 2");
+        bob.Vel = new Vector3(0, -8, 0);
+        bob.Wake();
+        swing.Wake();
+        Run("a block bouncing on a spring", bob, 0, 3, null);
+        if (bob.Asleep)
+            problems.Add("the block on the spring stopped too soon to compare");
+        Run("a block swinging on a rope", swing, 0, 3, null);
+        w.Remove(hook);
+        w.Remove(bob);
+        w.Remove(swing);
+        var rail = Base(feet + new Vector3(0, 7, 8), true);
+        var slider = FitTurned(w, rail, 0, "+x", "Free Slider 2x2 4 m", "base", _ => true);
+        var carriage = slider < 0 ? -1 : FitTurned(w, rail, slider, "top", "Frame Beam", "end-", _ => true);
+        var post = Base(feet + new Vector3(5, 7, 8), true);
+        if (carriage < 0)
+            problems.Add("the slider doesn't build");
+        else
+        {
+            rail.Rebuild();
+            Soft(w.AddConnector(World.Query, ConnectorKind.Spring, 1, End(rail, carriage, Vector3.Zero), End(post, 0, Vector3.Zero)));
+            Pump(server, clients, 0.3, ref now, clock);
+            rail.Wake();
+            rail.Joints[0].Vel = 3;
+            Run("a free slider's carriage on a spring, frozen base", rail, carriage, 3, null);
+        }
+        w.Remove(rail);
+        w.Remove(post);
+        var lead = Base(feet + new Vector3(4, 2, 0), false);
+        var towed = Base(feet + new Vector3(4, 2, 3), false);
+        Soft(w.AddConnector(World.Query, ConnectorKind.Spring, 1, End(lead, 0, Vector3.Zero), End(towed, 0, Vector3.Zero)));
+        Pump(server, clients, 0.8, ref now, clock);
+        to = lead.WorldCom - a.Local!.RenderEye;
+        yaw0 = MathF.Atan2(to.X, -to.Z);
+        pitch0 = MathF.Asin(Math.Clamp(to.Y / to.Length(), -1f, 1f));
+        a.LookYaw = yaw0;
+        a.LookPitch = pitch0;
+        a.SandboxGrab(lead.Id, lead.Com);
+        Pump(server, clients, 0.5, ref now, clock);
+        dist = server.SandboxHands.Hand(a.LocalId).GrabDist;
+        rel = server.SandboxHands.Hand(a.LocalId).GrabRel;
+        Run("a block towed by a spring from a held block", towed, 0, 4, t =>
+        {
+            a.LookYaw = yaw0 + 0.6f * MathF.Sin((float)t * 2.5f);
+            a.LookPitch = pitch0 + 0.15f * MathF.Sin((float)t * 4f);
+            a.SandboxSteer(dist, rel, now);
+        });
+        a.SandboxLetGo(freeze: false);
+        w.Remove(lead);
+        w.Remove(towed);
         // The user's report ("all further physics seems to now be desynced for the client"): a joint added to a body whose
         // poses had filled the client's history threw in every pose after it (the joint rows were shifted at the old size),
         // and each dropped packet took every body after that one with it, for good.

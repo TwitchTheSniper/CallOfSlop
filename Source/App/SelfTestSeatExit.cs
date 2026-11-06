@@ -283,6 +283,8 @@ public static partial class SelfTest
         Case("a turret's seat and a seat off grid", TurretDeck(1), Straight, onDeck: true, turret: true);
         if (BareSeats(15) is { } hostBare)
             Case("over the side", BareSeats(8), Straight, onDeck: false, hostBody: hostBare.Item1);
+        RideLandOnWire(server, a, clients, sp, clock, ref now, -30);
+        RideTallOnWire(server, a, clients, sp, clock, ref now, 14);
         hostPeer.SimulateBadNetwork(0, 0, 0);
         peerA.SimulateBadNetwork(0, 0, 0);
         peerB.SimulateBadNetwork(0, 0, 0);

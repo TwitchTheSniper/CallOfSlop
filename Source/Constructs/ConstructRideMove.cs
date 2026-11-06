@@ -353,13 +353,14 @@ public static partial class ConstructRide
         var r = World.PlayerRadius;
         var face = centre[ax] + sign * half[ax];
         var dist = (lf[ax] - face) * sign;
-        if (dist > r + 0.15f || dist < -World.StepHeight)
+        // (the feet at this face, not inside a thick bar: a tall thing's long side is its up, and a body coming down on its end isn't boarding that)
+        if (dist > r + 0.15f || dist < -MathF.Min(World.StepHeight, half[ax] * 0.5f))
             return false;
         var at = lf;
         for (var a = 0; a < 3; a++)
             if (a != ax)
             {
-                if (MathF.Abs(lf[a] - centre[a]) > half[a] + r)
+                if (MathF.Abs(lf[a] - centre[a]) > half[a] + (dist < 0 ? 0 : r))
                     return false;
                 at[a] = SafeMath.Clamp(lf[a], centre[a] - half[a], centre[a] + half[a]);
             }
@@ -530,9 +531,9 @@ public static partial class ConstructRide
         if (s.RideClimb > 0)
             return true; // (a climb moves them, in the construct step)
         var worldUp = GravityFrames.UpAt(s.Position);
-        if (c.Anchored && c.MoveSeg(s.RideSeg) == 0 && !Leaning(c, worldUp))
+        if (c.Anchored && c.MoveSeg(s.RideSeg) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(s.RideUp, q)), worldUp) >= AnchoredLevel)
         {
-            LeaveFrame(ref s, c); // (a level frozen floor is the world's: frozen under them, or climbed onto)
+            LeaveFrame(ref s, c); // (a level frozen floor is the world's: frozen under them, or climbed onto; level by their own up: frozen upside down, they stay on it)
             return false;
         }
         var up = Vector3.Normalize(s.RideUp);
