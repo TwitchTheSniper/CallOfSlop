@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Missile Fuel Tank",
+  "description": "Fuel for the liquid, hybrid and air motors of its stage.",
+  "group": "Weapons",
+  "section": "Ordnance sections",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 6.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 1.0,
+  "ordnance": {
+    "slot": "fuel",
+    "length": 0.5,
+    "settings": [
+      {
+        "key": "fuel",
+        "label": "Fuel load",
+        "unit": "kg",
+        "min": 2,
+        "max": 60,
+        "step": 1,
+        "default": 15
+      }
+    ],
+    "numbers": {
+      "mass_fuel": 1
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.25
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.25
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.25
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.1263,
+        -0.1263,
+        -0.125
+      ],
+      "max": [
+        0.1263,
+        0.1263,
+        -0.075
+      ],
+      "color": "#3a4c68",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    }
+  ]
+}

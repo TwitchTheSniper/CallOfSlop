@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Liquid Motor",
+  "description": "Burns what its stage's tanks hold, and gimbals while it burns.",
+  "group": "Weapons",
+  "section": "Ordnance sections",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 18.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 1.0,
+  "ordnance": {
+    "slot": "motor",
+    "length": 0.6,
+    "kind": "liquid",
+    "settings": [
+      {
+        "key": "class",
+        "label": "Thrust class",
+        "unit": "",
+        "min": 1,
+        "max": 5,
+        "step": 1,
+        "default": 1
+      }
+    ],
+    "numbers": {
+      "thrust": 6000,
+      "use": 1.0,
+      "gimbal": 30,
+      "mass_class": 4
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.3
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.3
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.3
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.1062,
+        -0.1062,
+        0.18
+      ],
+      "max": [
+        0.1062,
+        0.1062,
+        0.306
+      ],
+      "color": "#2a2c26",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "taper": [
+        0.6,
+        0.6
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.3
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.3
+      ],
+      "dir": "+z"
+    }
+  ]
+}

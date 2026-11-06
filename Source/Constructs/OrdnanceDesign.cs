@@ -10,6 +10,7 @@ public enum OrdKind : byte
 {
     Bomb,
     Missile,
+    Spent, // a stage dropped in flight: its sections, nothing in them (OrdnanceFlight.cs)
 }
 
 /// <summary>A setting on a section ("configured pieces"): its value rides in the design's key.</summary>
@@ -95,6 +96,7 @@ public sealed class OrdStats
     public float Mass, Length, Diameter, Payload, Blast, Damage, Crater, Fuse;
     public int Sections, Items; // lines, and section parts it takes in survival
     public string Problem = ""; // why it won't be built ("" when it will)
+    public readonly OrdFlightStats Flight = new(); // stages, steering, seeker, fuses and charges (OrdnanceFlight.cs)
 }
 
 /// <summary>
@@ -118,7 +120,7 @@ public sealed class OrdnanceDesign
     /// <summary>The key as text.</summary>
     public string Key()
     {
-        var sb = new StringBuilder(Ordnance.Prefix).Append(Kind == OrdKind.Bomb ? 'B' : 'M').Append(DiameterCm.ToString(CultureInfo.InvariantCulture)).Append(':');
+        var sb = new StringBuilder(Ordnance.Prefix).Append(Kind switch { OrdKind.Bomb => 'B', OrdKind.Missile => 'M', _ => 'S' }).Append(DiameterCm.ToString(CultureInfo.InvariantCulture)).Append(':');
         for (var i = 0; i < Pieces.Count; i++)
         {
             var p = Pieces[i];
@@ -151,12 +153,12 @@ public sealed class OrdnanceDesign
             return null;
         }
         var letter = char.ToUpperInvariant(key[Ordnance.Prefix.Length]);
-        if (letter is not ('B' or 'M'))
+        if (letter is not ('B' or 'M' or 'S'))
         {
             why = "neither a bomb nor a missile";
             return null;
         }
-        var d = new OrdnanceDesign { Kind = letter == 'B' ? OrdKind.Bomb : OrdKind.Missile, DiameterCm = cm };
+        var d = new OrdnanceDesign { Kind = letter switch { 'B' => OrdKind.Bomb, 'M' => OrdKind.Missile, _ => OrdKind.Spent }, DiameterCm = cm };
         foreach (var token in key[(head + 1)..].Split('+', StringSplitOptions.RemoveEmptyEntries))
         {
             var text = token;
@@ -207,7 +209,7 @@ public sealed class OrdnanceDesign
         foreach (var p in Pieces)
         {
             var o = p.Section.Ord!;
-            mass += p.Section.Mass * p.Count * cube;
+            mass += (p.Section.Mass + OrdFlightStats.SettingMass(p)) * p.Count * cube;
             st.Length += o.Length * p.Count * s;
             st.Items += p.Count * Math.Max(1, (int)MathF.Ceiling(cube));
             if (o.Payload > 0)
@@ -228,13 +230,14 @@ public sealed class OrdnanceDesign
         st.Payload = payload;
         st.Fuse = fuse;
         if (payload > 0)
-        {
-            st.Blast = BlastPerRoot * MathF.Cbrt(blastK);
-            st.Damage = DamagePerRoot * MathF.Sqrt(damageK);
-            st.Crater = st.Blast * CraterShare * (craterK / payload);
-        }
+            (st.Blast, st.Damage, st.Crater) = Charge(blastK, damageK, craterK, payload);
+        OrdFlightStats.Fill(this, st);
         if (Pieces.Count == 0)
             st.Problem = "add a section";
+        else if (Kind == OrdKind.Spent)
+            st.Problem = mass > ConstructParts.MaxPartMass ? "too heavy" : "";
+        else if (st.Flight.Problem.Length > 0)
+            st.Problem = st.Flight.Problem;
         else if (payload <= 0)
             st.Problem = "it needs a payload";
         else if (!fused)
@@ -243,6 +246,10 @@ public sealed class OrdnanceDesign
             st.Problem = "too heavy for the numbers to hold (50,000 t)";
         return st;
     }
+
+    /// <summary>A charge's blast radius, damage and crater from its filling's weighted sums (kg): the curve the bench draws.</summary>
+    public static (float Blast, float Damage, float Crater) Charge(float blastK, float damageK, float craterK, float payload) =>
+        payload <= 0 ? (0, 0, 0) : (BlastPerRoot * MathF.Cbrt(blastK), DamagePerRoot * MathF.Sqrt(damageK), BlastPerRoot * MathF.Cbrt(blastK) * CraterShare * (craterK / payload));
 
     private const float BlastPerRoot = 2.84f, DamagePerRoot = 19f, CraterShare = 0.36f; // (120 kg of filling: the Aerial Bomb's 14 m and about its 260)
 }
@@ -347,15 +354,18 @@ public static class Ordnance
             BoundsMin = new Vector3(-r, -r, -half),
             BoundsMax = new Vector3(r, r + LugHeight, half),
             Sockets = [new CSocket("lug", new Vector3(0, r + LugHeight, 0), ConstructParts.DirOf("+y", "", ""), SocketKind.Struct)],
-            Explosive = new PropBreakable { ExplodeRadius = st.Blast, ExplodeDamage = st.Damage, ExplodeFuse = MathF.Max(0.02f, st.Fuse), ExplodeCrater = st.Crater, ExplodeKnockback = 12 },
+            Explosive = d.Kind == OrdKind.Spent ? null : new PropBreakable { ExplodeRadius = st.Blast, ExplodeDamage = st.Damage, ExplodeFuse = MathF.Max(0.02f, st.Fuse), ExplodeCrater = st.Crater, ExplodeKnockback = 12 },
+            OrdDesign = d,
+            OrdStats = st,
         };
         SurfaceRules.Apply(def);
         return def;
     }
 
     /// <summary>A design in words (its look line).</summary>
-    public static string Label(OrdnanceDesign d, OrdStats st) =>
-        $"{(d.Kind == OrdKind.Bomb ? "Bomb" : "Missile")}, {st.Diameter * 100:0} cm by {st.Length:0.##} m, {st.Mass:0} kg, {st.Blast:0.#} m blast";
+    public static string Label(OrdnanceDesign d, OrdStats st) => d.Kind == OrdKind.Spent
+        ? $"A spent stage, {st.Diameter * 100:0} cm by {st.Length:0.##} m, {st.Mass:0} kg"
+        : $"{(d.Kind == OrdKind.Bomb ? "Bomb" : "Missile")}, {st.Diameter * 100:0} cm by {st.Length:0.##} m, {st.Mass:0} kg, {st.Blast:0.#} m blast{st.Flight.Label}";
 
     private static uint Fnv(string s)
     {
@@ -384,7 +394,7 @@ public static class Ordnance
     public static ushort Read(ref PacketReader r)
     {
         var kind = r.U8() - WireKind;
-        if (kind is < 0 or > 1)
+        if (kind is < 0 or > 2)
             throw new MalformedPacketException($"an ordnance design of kind {kind}");
         var d = new OrdnanceDesign { Kind = (OrdKind)kind, DiameterCm = r.U16() };
         int n = r.U16();

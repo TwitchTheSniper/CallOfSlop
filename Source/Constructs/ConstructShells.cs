@@ -36,6 +36,35 @@ public struct CShell
     public Vector3 Size; // a bomb's size (what is drawn: its part type may be this machine's own)
     public ushort Stuck; // the body a bomb landed on, and where on it (it rides along until its fuse)
     public Vector3 StuckAt;
+
+    // A designed bomb or missile (OrdnanceFlight.cs). Every PC flies these from the launch event and ShellSteer:
+    public ShellFlags Flags;
+    public float AirPush; // m/s2 of its push that breathes air (thinning with the air, none below MinSpeed)
+    public float TurnAir, TurnBurn; // radians a second its fins give at speed in thick air, and its gimbal or vanes while it burns (Turn: any time)
+    public float Drag, Lift, MinSpeed; // a share of its speed a second in thick air; the share of gravity its wings hold up at speed; an air motor's lowest speed
+    public int Wait, Deploy, Life; // ticks before it lights; its age when chutes and wings open; ticks before it is given up on (0: ShellMaxAge)
+    public Vector3 Aim; // the point it steers for (HasAim)
+    // ...and only the server's:
+    public ConstructPartDef? Design;
+    public byte Stage, Charge, Seek; // the stage burning, the charge in a series that goes off next, how it finds its target (OrdSeek)
+    public float Mass; // kg still flying (stages drop)
+    public ushort Guide; // the body that guides it (a gunner's, a camera's, a waypoint's)
+    public int GuidePart, Channel;
+    public OrdFuse Fuses;
+    public float FuseHeight, FuseDistance;
+}
+
+/// <summary>What a designed shell is and does (a wire byte).</summary>
+[Flags]
+public enum ShellFlags : byte
+{
+    None = 0,
+    Designed = 1, // off an Ordnance Bench: OrdnanceFlight.Fly flies it
+    AirMotor = 2, // some of its push breathes air
+    HasAim = 4, // it steers for Aim
+    Mine = 8, // landed, it waits for something to move near it
+    Kinetic = 16, // its damage is its speed's when it hits
+    FlareProne = 32, // a heat seeker: flares draw it
 }
 
 /// <summary>A landed shell's blast, walked a few parts a tick so that a big one on a big ship costs no one tick much.</summary>
@@ -203,8 +232,9 @@ public static class ConstructShells
 /// <summary>The world's shells (see <see cref="ConstructShells"/>).</summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxShells = 64; // in the air at once: a gun holds its fire while it is full
-    public const int ShellTestEvery = 3; // a shell looks for what it hit one tick in this many, over all of them
+    public const int MaxShells = 256; // in the air at once: a gun holds its fire while it is full (designed weapons' bomblets share it: OrdnanceFlight.cs)
+    public const int ShellTestEvery = 3; // a shell looks for what it hit one tick in this many, over all of them (more with more in the air: ShellTestsPerTick)
+    public const int ShellTestsPerTick = 22; // ...so that no tick tests many more than this
     public const int ShellPartsPerTick = 400; // parts of a blast walked a tick
     public const int ShellMaxBodies = 256; // bodies one blast reaches (the nearest the broadphase gives)
     public const int ShellMaxAge = 90 * World.TickRate; // ticks in the air before it is given up on
@@ -218,6 +248,8 @@ public sealed partial class ConstructWorld
     public int ShellsFired, ShellsLanded, ShellPartsWalked;
 
     private ushort _nextShell = 1;
+    private int _testEvery = ShellTestEvery, _shellTick;
+    public readonly List<OrdnanceFlight.StageDrop> StageDrops = new(16); // spent stages to drop after the shells' step
     private CShellBlast _blast;
     private readonly ushort[] _blastBodies = new ushort[ShellMaxBodies];
 
@@ -275,10 +307,10 @@ public sealed partial class ConstructWorld
                 continue;
             s.Prev = s.Pos;
             s.Vel += ConstructShells.GravityAt(s.Pos) * dt;
-            if (s.Kind >= ShellKind.Rocket)
-                ConstructOrdnance.Fly(this, ref s, dt); // (a rocket's push, a missile's turn, a flare's drag)
+            if (s.Kind >= ShellKind.Rocket || (s.Flags & ShellFlags.Designed) != 0)
+                ConstructOrdnance.Fly(this, ref s, dt); // (a rocket's push, a missile's turn, a flare's drag, a designed weapon's flight)
             s.Pos += s.Vel * dt;
-            if (++s.Age > ShellMaxAge)
+            if (++s.Age > (s.Life > 0 ? s.Life : ShellMaxAge))
             {
                 if (s.Kind == ShellKind.Flare)
                     FlareCount--;
@@ -293,6 +325,8 @@ public sealed partial class ConstructWorld
         if (ShellCount == 0 && !_blast.Active)
             return;
         FlyShells(dt);
+        _shellTick++;
+        _testEvery = Math.Max(ShellTestEvery, (ShellCount + ShellTestsPerTick - 1) / ShellTestsPerTick); // (a crowded sky is looked at less often, each look over a longer stretch)
         for (var k = 0; k < ShellCount; k++)
         {
             ref var s = ref Shells[k];
@@ -300,24 +334,33 @@ public sealed partial class ConstructWorld
             {
                 if (s.Delay <= 0)
                     continue;
-                s.Delay--; // (a bomb's fuse, after it hit)
+                s.Delay--; // (a bomb's fuse, after it hit; a mine's life)
                 if (s.Stuck != 0 && Get(s.Stuck) is { } on)
                     s.Pos = on.ToWorld(s.StuckAt);
+                if ((s.Flags & ShellFlags.Mine) != 0 && (_shellTick + s.Id) % _testEvery == 0 && OrdnanceFlight.MineTripped(this, ref s))
+                    s.Delay = 0;
                 continue;
             }
+            if (s.Design != null)
+                OrdnanceFlight.Step(this, ref s, query); // (stages drop, guidance moves its aim)
             if (s.Fuse > 0 && s.Age >= s.Fuse)
             {
                 Burst(ref s); // (its time)
                 continue;
             }
-            if ((s.Age + s.Id) % ShellTestEvery != 0)
+            if ((s.Age + s.Id) % _testEvery != 0)
                 continue;
             if (s.Prox > 0 && s.Age > ConstructOrdnance.ProxArm && ConstructOrdnance.Near(this, ref s))
             {
                 Burst(ref s); // (near enough)
                 continue;
             }
-            if (s.Kind == ShellKind.Missile && s.Age % ConstructOrdnance.FlareLook < ShellTestEvery)
+            if (s.Fuses != 0 && OrdnanceFlight.FuseCheck(this, ref s, query))
+            {
+                Burst(ref s); // (its altitude, its distance from its aim, its radio channel)
+                continue;
+            }
+            if (s.Kind == ShellKind.Missile && ((s.Flags & ShellFlags.Designed) == 0 || (s.Flags & ShellFlags.FlareProne) != 0) && s.Age % ConstructOrdnance.FlareLook < _testEvery)
                 ConstructOrdnance.LookForFlares(this, ref s);
             var d = s.Pos - s.Tested;
             var len = d.Length();
@@ -345,6 +388,8 @@ public sealed partial class ConstructWorld
                 s.Pos = s.Tested + d * best;
                 s.Landed = true;
                 ShellBlastsWaiting++;
+                if ((s.Flags & ShellFlags.Kinetic) != 0)
+                    OrdnanceFlight.Strike(ref s); // (a rod: its speed is its damage)
                 if (s.Delay > 0)
                 {
                     if (struck != null)
@@ -358,15 +403,27 @@ public sealed partial class ConstructWorld
             else
                 s.Tested = s.Pos;
         }
-        WalkBlast();
-        if (!_blast.Active && ShellBlastsWaiting > 0)
+        // The blasts: the one under way, then as many more as the tick's parts budget reaches (a cluster's bomblets go off together, a big blast takes ticks).
+        var budget = ShellPartsPerTick;
+        WalkBlast(ref budget);
+        for (var round = 0; round < MaxBlastsPerTick && !_blast.Active && ShellBlastsWaiting > 0 && budget > 0; round++)
+        {
+            var started = false;
             for (var k = 0; k < ShellCount; k++)
                 if (Shells[k].Landed && Shells[k].Delay <= 0)
                 {
                     StartBlast(k);
+                    started = true;
                     break;
                 }
+            if (!started)
+                break;
+            WalkBlast(ref budget);
+        }
+        OrdnanceFlight.DropStages(this);
     }
+
+    private const int MaxBlastsPerTick = 12; // (each sends its own event and walks the broadphase once)
 
     /// <summary>A shell goes off in the air: in the blast's turn, and it digs nothing.</summary>
     private void Burst(ref CShell s)
@@ -384,12 +441,16 @@ public sealed partial class ConstructWorld
         Shells[k] = Shells[--ShellCount];
         ShellBlastsWaiting--;
         ShellsLanded++;
+        if (s.Design != null)
+            OrdnanceFlight.GoOff(this, ref s); // (the next charge of a series, bomblets, mines, warheads, rods)
         AddFire(new CFireEvent { Kind = CFireKind.ShellLand, Shell = s.Id, At = s.Pos, Radius = s.Blast, Muzzle = (byte)s.Kind });
         if (s.Kind == ShellKind.Flare)
         {
             FlareCount--;
             return; // (it burnt out)
         }
+        if (s.Damage <= 0)
+            return; // (a dispenser's pop)
         var by = Get(s.Gun);
         Targets?.ShellBlast(s.Pos, s.Blast, s.Damage, s.Crater, s.Kind == ShellKind.Incendiary, by, s.GunPart);
         var near = Near(s.Pos, s.Blast + 1f, _blastNear);
@@ -400,12 +461,11 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>The blast under way, <see cref="ShellPartsPerTick"/> parts on. Walks each body's parts from the last, so one that breaks off never moves those still to come.</summary>
-    private void WalkBlast()
+    private void WalkBlast(ref int budget)
     {
         if (!_blast.Active)
             return;
         ref var b = ref _blast;
-        var budget = ShellPartsPerTick;
         DamageBy = b.By;
         while (budget > 0 && b.Body < b.BodyCount)
         {
@@ -482,6 +542,7 @@ public sealed partial class ConstructWorld
         ShellBlastsWaiting = 0;
         FlareCount = 0;
         Drops.Clear();
+        StageDrops.Clear();
         _blast = default;
     }
 }

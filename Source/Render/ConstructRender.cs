@@ -84,10 +84,10 @@ public static partial class ConstructRender
         {
             ref var s = ref world.Shells[k];
             var way = Basis(s.Vel.LengthSquared() > 1e-3f ? Vector3.Normalize(s.Vel) : Vector3.UnitY);
-            if (s.Kind == ShellKind.Bomb)
+            if (s.Kind == ShellKind.Bomb || (s.Flags & ShellFlags.Designed) != 0 && !s.Landed && s.Size.LengthSquared() > 1e-4f)
             {
-                // A bomb looks its size, and lies where it hit until its fuse runs out.
-                gfx.Draw(Matrix4x4.CreateScale(s.Size) * way * Matrix4x4.CreateTranslation(s.Landed ? s.Pos : Vector3.Lerp(s.Prev, s.Pos, alpha)), new Vector3(0.29f, 0.33f, 0.19f));
+                // A bomb looks its size, and lies where it hit until its fuse runs out; a designed missile looks its size too.
+                gfx.Draw(Matrix4x4.CreateScale(s.Size) * way * Matrix4x4.CreateTranslation(s.Landed ? s.Pos : Vector3.Lerp(s.Prev, s.Pos, alpha)), s.Kind == ShellKind.Bomb ? new Vector3(0.29f, 0.33f, 0.19f) : new Vector3(0.62f, 0.64f, 0.6f));
                 n++;
                 continue;
             }

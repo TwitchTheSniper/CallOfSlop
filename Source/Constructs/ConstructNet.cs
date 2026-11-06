@@ -253,6 +253,18 @@ public static class ConstructNet
                     w.Vec(e.Half); // (protocol 180: its size; a designed bomb's id is this machine's own)
                 if ((ShellKind)e.Muzzle >= ShellKind.Rocket)
                     w.F32(e.Thrust).F32(e.Turn).U16(e.Burn).U16(e.Target); // (protocol 178: every PC flies it alike)
+                if ((ShellKind)e.Muzzle >= ShellKind.Bomb)
+                {
+                    w.U8(e.Ext); // (protocol 183: a designed weapon's flight, OrdnanceFlight.cs)
+                    if ((e.Ext & 1) != 0)
+                    {
+                        if ((ShellKind)e.Muzzle < ShellKind.Rocket)
+                            w.F32(e.Thrust).F32(e.Turn).U16(e.Burn).U16(e.Target);
+                        if ((ShellKind)e.Muzzle != ShellKind.Bomb)
+                            w.Vec(e.Half);
+                        w.F32(e.AirPush).F32(e.TurnAir).F32(e.TurnBurn).F32(e.Drag).F32(e.Lift).F32(e.MinSpeed).U16(e.Wait).U16(e.Deploy).U8((byte)e.Flags).Vec(e.Aim).U32((uint)Math.Max(0, e.Life));
+                    }
+                }
             }
             else if (e.Kind == CFireKind.RoundOut)
                 w.Vec(e.At).Vec(e.To);
@@ -261,7 +273,13 @@ public static class ConstructNet
             else if (e.Kind == CFireKind.ShellStop)
                 w.U16(e.Shell).Vec(e.At);
             else if (e.Kind == CFireKind.ShellSteer)
-                w.U16(e.Shell).U16(e.Target).Vec(e.At).Vec(e.To);
+            {
+                w.U16(e.Shell).U16(e.Target).Vec(e.At).Vec(e.To).U8(e.Ext); // (protocol 183: an aim point, a stage, a guide)
+                if ((e.Ext & 1) != 0)
+                    w.Vec(e.Aim);
+                if ((e.Ext & 2) != 0)
+                    w.F32(e.Thrust).F32(e.AirPush).U16(e.Burn).F32(e.TurnBurn).F32(e.MinSpeed).U8((byte)e.Flags);
+            }
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
@@ -301,6 +319,35 @@ public static class ConstructNet
                     e.Burn = r.U16();
                     e.Target = r.U16();
                 }
+                if ((ShellKind)e.Muzzle >= ShellKind.Bomb)
+                {
+                    e.Ext = r.U8();
+                    if ((e.Ext & 1) != 0)
+                    {
+                        if ((ShellKind)e.Muzzle < ShellKind.Rocket)
+                        {
+                            e.Thrust = r.F32();
+                            e.Turn = r.F32();
+                            e.Burn = r.U16();
+                            e.Target = r.U16();
+                        }
+                        if ((ShellKind)e.Muzzle != ShellKind.Bomb)
+                            e.Half = r.Vec();
+                        e.AirPush = r.F32();
+                        e.TurnAir = r.F32();
+                        e.TurnBurn = r.F32();
+                        e.Drag = r.F32();
+                        e.Lift = r.F32();
+                        e.MinSpeed = r.F32();
+                        e.Wait = r.U16();
+                        e.Deploy = r.U16();
+                        e.Flags = (ShellFlags)r.U8();
+                        e.Aim = r.Vec();
+                        e.Life = (int)Math.Min(r.U32(), int.MaxValue);
+                        if (!float.IsFinite(e.AirPush + e.TurnAir + e.TurnBurn + e.Drag + e.Lift + e.MinSpeed + e.Aim.X + e.Aim.Y + e.Aim.Z))
+                            throw new MalformedPacketException("a designed shell's flight that isn't a number");
+                    }
+                }
                 if (!float.IsFinite(e.Thrust + e.Turn))
                     throw new MalformedPacketException("a shell's flight that isn't a number");
             }
@@ -311,7 +358,22 @@ public static class ConstructNet
             else if (kind == CFireKind.ShellStop)
                 e = new CFireEvent { Kind = kind, Shell = r.U16(), At = r.Vec() };
             else if (kind == CFireKind.ShellSteer)
-                e = new CFireEvent { Kind = kind, Shell = r.U16(), Target = r.U16(), At = r.Vec(), To = r.Vec() };
+            {
+                e = new CFireEvent { Kind = kind, Shell = r.U16(), Target = r.U16(), At = r.Vec(), To = r.Vec(), Ext = r.U8() };
+                if ((e.Ext & 1) != 0)
+                    e.Aim = r.Vec();
+                if ((e.Ext & 2) != 0)
+                {
+                    e.Thrust = r.F32();
+                    e.AirPush = r.F32();
+                    e.Burn = r.U16();
+                    e.TurnBurn = r.F32();
+                    e.MinSpeed = r.F32();
+                    e.Flags = (ShellFlags)r.U8();
+                }
+                if (!float.IsFinite(e.Aim.X + e.Aim.Y + e.Aim.Z + e.Thrust + e.AirPush + e.TurnBurn + e.MinSpeed))
+                    throw new MalformedPacketException("a shell's steer that isn't a number");
+            }
             else
                 throw new MalformedPacketException($"unknown construct fire event {kind}");
             if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z + e.To.X + e.To.Y + e.To.Z))

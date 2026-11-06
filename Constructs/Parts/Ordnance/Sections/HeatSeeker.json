@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Heat Seeker",
+  "description": "Locks the moving thing nearest straight ahead as it goes. Flares draw it.",
+  "group": "Weapons",
+  "section": "Ordnance sections",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 6.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#c8ccc8",
+  "attachSeconds": 1.0,
+  "ordnance": {
+    "slot": "seeker",
+    "length": 0.35,
+    "kind": "heat",
+    "numbers": {
+      "reach": 1200,
+      "cone": 25
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.175
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.175
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.175
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.175
+      ],
+      "color": "#c8ccc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "taper": [
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.075,
+        -0.075,
+        -0.1785
+      ],
+      "max": [
+        0.075,
+        0.075,
+        -0.1225
+      ],
+      "color": "#20303a",
+      "detail": true,
+      "glass": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "taper": [
+        0.4,
+        0.4
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.175
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.175
+      ],
+      "dir": "+z"
+    }
+  ]
+}
