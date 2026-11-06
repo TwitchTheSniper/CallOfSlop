@@ -10,7 +10,7 @@
     { "name": "Wheels and Suspension", "sections": ["Wheels", "Tracks", "Suspension", "Steering", "Legs"] },
     { "name": "Joints and Motion", "sections": ["Hinges", "Motor hinges", "Pistons", "Linear", "Hydraulics", "Turntables", "Free rotation", "Flexible joints", "Hitches and chains", "Cranes and lifts", "Launch and docking"] },
     { "name": "Power and Fuel", "sections": ["Fuel tanks", "Fluid tanks", "Fuel lines", "Batteries", "Alternators", "Power plants"] },
-    { "name": "Flight", "sections": ["Lift cells", "Burners", "Gas", "Flight control"] },
+    { "name": "Flight", "sections": ["Wings", "Control surfaces", "Rotors", "Lift cells", "Burners", "Gas", "Flight control"] },
     { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Workbenches"] },
     { "name": "Weapon parts", "sections": ["Receivers", "Actions", "Barrels", "Muzzles", "Magazines", "Ammo", "Grips", "Stocks", "Optics", "Utility", "Upgrades", "Melee", "Grenades"] },
     { "name": "Production", "sections": ["Drills", "Saws", "Scoops", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Presses", "Dies", "Components"] },
@@ -20,6 +20,10 @@
     { "name": "Lights and Details", "sections": ["Lights", "Body panels", "Chimneys and stacks"] }
   ],
   "rules": [
+    { "section": "Wings", "to": ["Flight", "Wings"] },
+    { "section": "Control surfaces", "to": ["Flight", "Control surfaces"] },
+    { "section": "Rotors", "to": ["Flight", "Rotors"] },
+    { "name": ["Drone Rotor", "Drone Pusher"], "to": ["Flight", "Rotors"] },
     { "group": "Weapon parts", "section": "Receiver", "to": ["Weapon parts", "Receivers"] },
     { "group": "Weapon parts", "section": "Action", "to": ["Weapon parts", "Actions"] },
     { "group": "Weapon parts", "section": ["Barrel", "Splitter"], "to": ["Weapon parts", "Barrels"] },

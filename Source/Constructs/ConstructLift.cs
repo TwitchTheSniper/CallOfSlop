@@ -241,7 +241,7 @@ public static partial class ConstructLift
         for (var n = 0; n < bodies.Count; n++)
         {
             var c = bodies[n];
-            if (c.CellCount + c.CompressorCount == 0 || c.Dirty)
+            if (c.CellCount + c.CompressorCount + c.SurfaceCount + c.RotorCount == 0 || c.Dirty)
                 continue;
             StepBody(world, query, c, near, dt);
         }
@@ -316,6 +316,13 @@ public static partial class ConstructLift
         }
         if (changed)
             ConstructFluid.Note(c);
+        if (c.SurfaceCount > 0 && !c.Asleep)
+        {
+            // How far over the ground: a wing's cushion (ConstructAero.cs). One ray, and only as low as it can matter.
+            var reachDown = c.SurfaceSpan * t.GroundEffectSpans + c.Radius;
+            var from = c.WorldCom;
+            c.GroundHeight = query.Raycast(from, -Vector3.UnitY, reachDown, QueryFilter.All, out var under) ? under.Distance : 1e6f;
+        }
         // The cheap paths: is a player near enough for cell by cell, and has anything changed for a craft asleep?
         c.LiftNear = false;
         var reach = near + c.Radius;

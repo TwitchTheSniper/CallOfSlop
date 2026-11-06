@@ -3932,7 +3932,7 @@ weighs 84,000 t and is a base to build a town on.
   banked at 10%. A plant makes a construct electrical like a battery, and holds its `buffer` (kJ). Fuel reaches it as it
   reaches an engine; a Reactor needs none.
 - **Flame** (`"flame": {"at", "dir", "radius", "length", "kind", "source", "colour"}`, or a list, any part): a flame drawn by data (docs/render/MATERIALS.md, "Flames by data"). `"at"` and `"dir"` are all it needs; a thruster or burner without one gets its own from its numbers. `"source"`: thrust, burner, engine, signal or always.
-- **Material** (`"surface"`, a part or a box): the shared material it is made of, a row of `Materials/Surfaces.json`. Parts don't need it: the file's rules give every box one by its role, material, folder and colour.
+- **Material** (`"finish"`, a part or a box): the shared material it is made of, a row of `Materials/Surfaces.json`. Parts don't need it: the file's rules give every box one by its role, material, folder and colour.
 - **Smoke** (`"smoke": {"at", "size"}`, any part): a stack puts out what a burning plant makes while one reaches it: the plant's
   own stack, a Chimney, Stack Section or Wide Funnel touching it (or touching a stack that does), or a pipe from its
   `Exhaust out` port to the stack's `Exhaust in`. An engine on fuel smokes as hard as it pulls. `Construct.SmokeLevel` goes to
@@ -3944,6 +3944,8 @@ weighs 84,000 t and is a base to build a town on.
   An engine's `starterKJ` is its own. Fuel Mains (`Fuel Main`, 7 cells) carry fuel where a link won't reach.
 
 ### Thrusters (the second route)
+
+Role `rotor` is under [Propellers and rotors](#propellers-and-rotors), a `"surface"` block under [Wings](#wings).
 
 Role `thruster`: `{"force": N, "fuel": "fuel" or "electric", "burnRate", "power": kW, "spool", "exhaust": a direction, "at"}`: a
 force at a point, away from its exhaust, on a body that is free and awake. Five sizes of **Jet** and **Lift Fan**, 8 kN to
@@ -4774,6 +4776,42 @@ other; the key is Left Shift beside Sprint without a clash.
    search goes out first, then in; the input end's adjust moves the last node (a link with no nodes can't be adjusted:
    its reason is said); the adjust's big step is Ctrl (which is also Crouch: holding it crouches); Free routing shares
    Left Shift with Sprint (holding it while routing also sprints).
+
+## Wings
+
+`ConstructAero.cs`, data in part files and `Constructs/Air.json`; generator `tools/constructs/wing_parts.py`. Every lifting surface runs through one place, reading `ConstructAir` for density and wind.
+
+A surface is any part with a `"surface"` block, so a new one is data: `area`, `at` (where it acts, the quarter chord on a wing), `lift` and `forward` (directions in the part), `aspect` and `sweep` (they set the lift slope and induced drag), `cl0`, `stall` (degrees), `cd0`, `tears` (cloth: lift goes with its health), and `control` for a surface with a hinge in the part.
+
+- **Near a player** (`Air.json` `nearMetres`, `Construct.LiftNear`, worked out four times a second) each surface finds its own velocity through the air, its own angle of attack, its lift and drag by that angle and pushes at its own centre: a straight line to the stall, a blend over 10 degrees to a flat plate past it, at any angle, flying backwards too. A badly balanced plane tumbles. Its frame is its segment's, so a wing on an ordinary hinge or joint flies by its real pose.
+- **Further off** the surfaces that lift work as one through the centre of mass, with no moment; it costs one surface. **Asleep** it costs nothing. A flying craft doesn't sleep while a rotor turns.
+- A craft with surfaces has real drag: `bodyDrag` for everything that isn't wing, and the arcade drag and speed cap (`ConstructPhysics.MaxSpeed`) stop applying while the air slows it (`Construct.AeroFlying`, up to `flightTop`).
+- The ground's cushion (`ConstructAir.GroundEffect`) reads one ray a craft at 4 Hz. Past `softWingM2` of wing lift scales kindly.
+- `ConstructAero.StallSpeed` is what the HUD and the look line use. `Construct.LiftCentre` counts every surface that lifts, the tail too, by its lift slope at 40 m/s: the point the craft balances round, so the centre of mass goes ahead of it. `ThrustCentre` counts rotors.
+- On a Flight Stabilizer S doesn't brake on the ground (it is the elevator as a plane rotates); Space does.
+
+**Control surfaces** (Aileron, Elevator, Rudder, Flap) take a data input, -1 to 1 of their `max` degrees, plus their Reverse and Trim settings. Only their wire moves them. They are made to take a Flight Stabilizer's outputs with nothing in between, on the normal layout: `pitch` into an Elevator behind the centre of mass (plus lifts the nose: `"sign": -1` in its control block), `yaw` into a Rudder behind it standing up (plus swings the nose right), `left aileron` and `right aileron` into an Aileron each (plus is trailing edge down on either side), `flaps` into a Flap. A canard, a fin hanging down or anything else the other way round takes the part's Reverse setting. The leaf is the box tagged `"side": "leaf"`, drawn turning about `hinge`; the part's solid boxes don't move. Angles ride the pose (`ConstructNet.WriteAir`).
+
+**Extruded airfoils**: the Extruder's Profile list gains the rows of `Extrusion.json`'s `"airfoils"` after Pipe. They are ordinary sections on the grid (wire, saves and blueprints need nothing new); a finished piece whose mask is one of them gets a `Surface` from its chord, length and row. Chord across x with the leading edge at -x, span along its length.
+
+## Propellers and rotors
+
+`ConstructRotor.cs`. A part of role `rotor` with a `"rotor"` block: `radius`, `ratedKw`, `ratedRpm`, `blades`, `bladeHealth`, `motorKw`, `shaft`, `heli`, `duct`, `topSpeed`, `spool`, `cyclic`, `hubMoment`, `at`, `axis` (the way it pushes), `forward`.
+
+- **Power.** A rotor with a "Drive in" port is a shaft feed like a drill: bolt it to an engine's Drive out or a gearbox's output, or link a shaft to it. Its hub is geared so it reaches its rated speed at the engine's peak (`CRotor.Reduction`), and the engine is held there (`Construct.RpmGovern`). What it takes comes off the crank (`Construct.RotorLoad`, through `ConstructDrillDrive.Carry`), so an engine it overloads is pulled down. Unwired, the driver's Shift and Ctrl set a trim (`Construct.AeroTrim`) that is the engine's throttle. A rotor with `motorKw` and no shaft linked runs off the circuit (`MotorWork`).
+- **Push.** It takes power by the cube of its speed and the air's density. Momentum theory turns that into push: T = 2 rho A vi U, P = T (V + vi), with `rotorFigure` of the power doing the work, `rotorProfile` of it pushing nothing, and fading to nothing at `topSpeed`. Forward speed helps a rotor up to a stall limit.
+- **Torque** goes into the craft about its axis, by its Hand setting. A Tail Rotor's Torque mix setting adds the collective that cancels the others' torque, as a helicopter's pedals are linked to its collective.
+- **Helicopter rotors** (`"heli": true`): inputs collective (-1..1), cyclic pitch, cyclic roll, then the drive bus. Collective is the blade pitch: at a constant speed it sets the push, and the engine is asked for full throttle. Cyclic tips the push by `cyclic` degrees and adds `hubMoment`, plus being nose up and right wing down, so a Flight Stabilizer's `lift`, `pitch` and `roll` go straight in, and `yaw` into a tail rotor's collective (Reverse collective when it pushes to the craft's right). A turning head damps pitch and roll.
+- **On a stabilizer** a rotor on `lift`, `throttle` or a corner port counts as a thruster (`ConstructFlight.MapRotor`): a wire asks for a share of its full push (`ConstructRotor.FullPush`), and on a corner its torque goes into the mix, so a quad's opposite hands give it yaw. A rotor on a joint isn't mapped yet.
+- **For a scan of the body**: `ConstructRotor.Effector` and `ConstructAero.Effector` give each one's place, direction and most force (and a rotor's torque), in its segment's frame; its inputs are its part's `DataIn`.
+- A wire into a rotor on the shaft runs the engine, with no seat (`Construct.RotorRuns`).
+- **Tilting**: on a joint its frame turns with its segment. A shaft link may end on a rotor across a joint.
+- **Blades** are one box (`"spin": true`) the renderer repeats round the hub; hidden arms are what it collides with. A ray meets the blades themselves (`ConstructRotor.Ray`): the blade as it lies when stopped, a blur when turning, where `rotorHit` of the disc counts as blade. Each blade's health is a hidden setting (`Blade0`..`Blade5`, a share of `bladeHealth`, and `BladeLost` a mask), so it rides saves and CBody. A blade lost rebuilds the rotor with less push, shakes the craft (`rotorShake`) and throws a Loose Blade off as a wreck. A blast or a crash picks a blade; a ray at the hub hits the hub.
+- A rotor's speed rides the pose as a share of its rated speed; each peer turns its own blades from that.
+
+## The Fan Former
+
+A Wheel Former whose piece is a whole rotor (`storage.wheel.fan`): `ExShape.Fan`, kept in `ConstructExtruder.GrowFan`. Its settings say what it makes (`Extrusion.json`'s `"fanKinds"`), how many blades and how far across. The prop grows from the machine's first size, paid by volume from `Extrusion.json`'s `"fans"`, and parts off by itself at the size asked; a Cut signal parts it off early. What it can take and how fast it turns follow from its size by the kind's row. In survival this is where props come from: rotor parts get no Assembler recipe (`assembling.py`); creative has the fixed sizes in the Tab menu.
 
 ## World links (board item wl01)
 

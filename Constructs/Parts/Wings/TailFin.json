@@ -1,0 +1,76 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tail Fin",
+  "description": "1.5 m2 standing up: it keeps a craft pointing the way it flies.",
+  "group": "Small",
+  "section": "Wings",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 12.0,
+  "health": 71,
+  "armour": 5,
+  "material": "steel",
+  "color": "#b8bec6",
+  "attachSeconds": 2.0,
+  "surface": {
+    "area": 1.5,
+    "lift": "+x",
+    "forward": "-z",
+    "aspect": 2,
+    "cl0": 0,
+    "stall": 16,
+    "cd0": 0.02
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        -0.75,
+        -0.5
+      ],
+      "max": [
+        0.05,
+        0.75,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.75,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.75,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

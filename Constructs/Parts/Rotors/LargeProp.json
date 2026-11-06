@@ -1,0 +1,125 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Prop",
+  "description": "24 m across, 5 blades: a flying fortress's.",
+  "group": "Large",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 4742.0,
+  "health": 3326,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 12,
+    "ratedKw": 40000,
+    "ratedRpm": 220,
+    "blades": 5,
+    "bladeHealth": 6000,
+    "chord": 1.44,
+    "spool": 8,
+    "topSpeed": 120,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.8400000000000001
+    ],
+    "axis": "+z",
+    "forward": "+y"
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.44,
+        -1.44,
+        0.0
+      ],
+      "max": [
+        1.44,
+        1.44,
+        1.68
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -12.0,
+        -0.432,
+        0.408
+      ],
+      "max": [
+        12.0,
+        0.432,
+        1.272
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.432,
+        -12.0,
+        0.408
+      ],
+      "max": [
+        0.432,
+        12.0,
+        1.272
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.44,
+        -0.72,
+        0.7536
+      ],
+      "max": [
+        12.0,
+        0.72,
+        0.9264
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -1.44,
+        -1.44,
+        0.01
+      ],
+      "max": [
+        1.44,
+        1.44,
+        1.68
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

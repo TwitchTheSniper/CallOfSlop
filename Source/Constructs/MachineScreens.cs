@@ -158,7 +158,9 @@ public static class MachineScreens
                         Say(card, PanelState.Idle, "Waiting");
                     break;
             }
-        if (wheel)
+        if (d.IsFanFormer)
+            card.Add(1, "Fan");
+        else if (wheel)
             card.Add(1, ConstructExtruder.ByDepth(p, d) ? "Depth mode" : "Width mode");
         else if (d.CfgSlot[(int)CfgKey.Profile] is >= 0 and var slot && d.Config[slot].Options.Length > 0)
             card.Add(1, d.Config[slot].Options[Math.Clamp((int)p.Cfg[slot], 0, d.Config[slot].Options.Length - 1)]);

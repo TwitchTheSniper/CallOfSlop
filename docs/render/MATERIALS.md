@@ -16,7 +16,7 @@ texture layers (`enum Material`), drawn the classic way, so a map box's `Materia
   worked out at load. Don't send or hash a row's number or a look's.
 - **One table on the GPU.** 256 rows of four vec4s (`SurfaceGpu`): a storage buffer at binding 6 on the 4.6 path, a float texture on
   unit 16 on the 4.1 path. `Surfaces.Glsl`'s `SurfRow` reads either. Changing a material is one row.
-- **Which part gets what** (`SurfaceRules`): the box's or part's own `"surface"`, an extrusion's bulk material (`"bulk"`), else the first
+- **Which part gets what** (`SurfaceRules`): the box's or part's own `"finish"`, an extrusion's bulk material (`"bulk"`), else the first
   of the file's `"rules"` that fits, on role, material, folder, name, glass, tyre, hue and brightness. No part file needs editing, and
   no generator has to know. Props go by their texture material (`"props"`); a pane or glowing part keeps the classic light.
 - **Paint is a tint over a material:** `ConstructPaint.BoxColour` as ever, and `Surfaces.OnPaint` swaps to the row's `"painted"` row, so

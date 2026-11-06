@@ -53,7 +53,7 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         var d = p.D;
         return p.Seg == 0 && d.Role is PartRole.Frame or PartRole.Panel or PartRole.Foundation && p.Store == 0 && p.Burn == 0 && !d.HasGlass
-            && c.MergeOf[i] == 0 && c.PartScale[i] <= 1 && !d.IsBeacon && !d.HasDial;
+            && c.MergeOf[i] == 0 && c.PartScale[i] <= 1 && !d.IsBeacon && !d.HasDial && d.Surface is not { Control: > 0 };
     }
 
     private static long LookKey(Construct c)

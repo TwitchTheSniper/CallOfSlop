@@ -441,7 +441,7 @@ public static class ConstructLogic
             var d = p.D;
             if (d.IsSignal)
                 hash = (hash ^ (uint)Quantise(p.Out)) * 16777619u;
-            if (d.MotorTorque > 0 && count[i] > 0 && sum[i] != 0 || d.Role == PartRole.Thruster && (count[i] > 0 && sum[i] > 0 || count1[i] > 0))
+            if (d.MotorTorque > 0 && count[i] > 0 && sum[i] != 0 || d.Role == PartRole.Thruster && (count[i] > 0 && sum[i] > 0 || count1[i] > 0) || d.Rotor != null && count[i] > 0 && sum[i] != 0)
                 c.ActiveSignal = true; // (a hub motor or a thruster asked to work: ConstructThrust.cs)
             if (d.Logic == CLogic.Brake && p.Out >= 0.5f)
                 c.BrakeSignal = MathF.Max(c.BrakeSignal, Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Strength, 100) / 100f, 0, 1)); // (its strength setting: how hard)

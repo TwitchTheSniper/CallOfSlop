@@ -1,0 +1,133 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Rudder",
+  "description": "14.4 m2. Behind the centre of mass and standing up, a plus signal swings the nose right: a Flight Stabilizer's yaw. Wire its angle, -1 to 1 of 30 degrees.",
+  "group": "Medium",
+  "section": "Control surfaces",
+  "role": "frame",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 230.4,
+  "health": 283,
+  "armour": 6,
+  "material": "steel",
+  "color": "#b8bec6",
+  "attachSeconds": 3.0,
+  "surface": {
+    "area": 14.399999999999999,
+    "at": [
+      0,
+      0,
+      1.2
+    ],
+    "lift": "-x",
+    "forward": "-z",
+    "aspect": 5,
+    "cl0": 0.0,
+    "stall": 16,
+    "cd0": 0.02,
+    "control": {
+      "max": 30,
+      "rate": 90,
+      "effect": 0.8,
+      "hinge": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "config": [
+    {
+      "key": "reverse",
+      "type": "toggle",
+      "label": "Reverse",
+      "group": "Surface",
+      "tooltip": "It turns the other way for the same signal: a pair of ailerons, one each way."
+    },
+    {
+      "key": "trim",
+      "label": "Trim",
+      "group": "Surface",
+      "unit": "deg",
+      "min": -30,
+      "max": 30,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "Where it sits with no signal."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.24,
+        -3.0,
+        0.0
+      ],
+      "max": [
+        0.24,
+        3.0,
+        2.4
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.192,
+        -2.99,
+        0.0
+      ],
+      "max": [
+        0.192,
+        2.99,
+        2.4
+      ],
+      "color": "#b8bec6",
+      "detail": true,
+      "side": "leaf"
+    },
+    {
+      "min": [
+        -0.288,
+        -3.0,
+        -0.08
+      ],
+      "max": [
+        0.288,
+        3.0,
+        0.08
+      ],
+      "color": "#30343a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hinge",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        3.0,
+        1.2
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -3.0,
+        1.2
+      ],
+      "dir": "-y"
+    }
+  ]
+}

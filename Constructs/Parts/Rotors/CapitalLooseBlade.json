@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Loose Blade",
+  "description": "A rotor blade, thrown off its hub. Scrap.",
+  "group": "Capital",
+  "section": "Rotors",
+  "role": "frame",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 12288.0,
+  "health": 1920,
+  "armour": 0,
+  "material": "steel",
+  "color": "#30343a",
+  "attachSeconds": 1,
+  "stage": true,
+  "toolOnly": true,
+  "boxes": [
+    {
+      "min": [
+        -32.0,
+        -2.56,
+        -1.28
+      ],
+      "max": [
+        32.0,
+        2.56,
+        1.28
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "root",
+      "at": [
+        -32.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

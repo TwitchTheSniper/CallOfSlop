@@ -203,6 +203,13 @@ public static partial class ConstructFlight
                 GimbalAuth(c, ref s, wire.To, port, pattern, inv);
                 continue;
             }
+            if (c.Parts[wire.To].D.Rotor != null)
+            {
+                // A rotor on a mixed port counts as a thruster (a wire asks it for push), with its own torque.
+                if (wire.ToPort == 0 && ConstructRotor.Of(c, wire.To) is var rk and >= 0 && ConstructRotor.Live(c, rk) && c.Rotors[rk].Seg == 0)
+                    MapRotor(c, ref s, rk, port, mainAxis, inv, demand);
+                continue;
+            }
             if (c.Parts[wire.To].D.Role != PartRole.Thruster || wire.ToPort != 0)
                 continue;
             var t = -1;
@@ -241,6 +248,28 @@ public static partial class ConstructFlight
         unit.Y = Inertia(c, Vector3.Transform(-Vector3.UnitZ, frame));
         unit.Z = Inertia(c, Vector3.Transform(Vector3.UnitY, frame));
         s.Inertia = unit;
+    }
+
+    private static void MapRotor(Construct c, ref CStab s, int k, int port, Vector3 mainAxis, Quaternion inv, Span<float> demand)
+    {
+        ref var r = ref c.Rotors[k];
+        var force = ConstructRotor.FullPush(c, k);
+        s.Spool = MathF.Max(s.Spool, c.Parts[r.Part].D.Rotor!.Spool);
+        var dir = Vector3.Transform(r.Dir, inv);
+        if (port == OutThrottle)
+            s.MainForce += force;
+        else if (port == OutLift)
+            s.LiftForce += force * MathF.Max(0, dir.Y);
+        if (port is < OutFrontLeft or > OutRearRight)
+            return;
+        var arm = Vector3.Transform(r.At - c.Com, inv);
+        var torque = Vector3.Cross(arm, dir * force) + Vector3.Transform(ConstructRotor.FullTwist(c, k), inv);
+        var ch = port - OutFrontLeft;
+        demand[ch] += force * Vector3.Dot(dir, mainAxis);
+        s.CornerForce += MathF.Max(0, force * Vector3.Dot(dir, mainAxis));
+        demand[4 + ch] += torque.X; // (as a thruster's: Refit)
+        demand[8 + ch] += -torque.Z;
+        demand[12 + ch] += -torque.Y;
     }
 
     /// <summary>The moment of inertia about a body-frame axis, as the physics will answer a torque about it.</summary>

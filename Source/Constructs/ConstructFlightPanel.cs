@@ -19,6 +19,12 @@ public sealed partial class Construct
             var lift = cell.LiftKg * ConstructLift.Share(cell.Mode, cell.Fill, 1);
             ConstructFlight.AddLift(ref sum, ref weight, ref kg, cell.At, lift, cell.Volume * 1e-3f);
         }
+        for (var k = 0; k < SurfaceCount; k++)
+        {
+            ref var s = ref Surfaces[k];
+            if (s.N.Y > 0.7f) // (the tail counts: this is the point it balances round in the air, not only where the wing is)
+                ConstructFlight.AddLift(ref sum, ref weight, ref kg, s.At, ConstructAero.LiftKgAt(this, in s), s.Area);
+        }
         at = weight > 0 ? sum / weight : Com;
         return weight > 0;
     }
@@ -35,6 +41,14 @@ public sealed partial class Construct
             var f = Parts[t.Part].D.ThrustForce;
             sum += t.At * f;
             push += t.Dir * f;
+            weight += f;
+        }
+        for (var k = 0; k < RotorCount; k++)
+        {
+            ref var r = ref Rotors[k];
+            var f = ConstructRotor.FullPush(this, k);
+            sum += r.At * f;
+            push += r.Dir * f;
             weight += f;
         }
         force = push.Length();
@@ -56,7 +70,7 @@ public static partial class ConstructFlight
     }
 
     /// <summary>Does this construct fly, or mean to: the balance markers show on it.</summary>
-    public static bool Flies(Construct c) => c.StabCount > 0 || c.ThrusterCount > 0 || c.CellCount > 0 || c.LiftCentre(out _, out _);
+    public static bool Flies(Construct c) => c.StabCount > 0 || c.ThrusterCount > 0 || c.RotorCount > 0 || c.CellCount > 0 || c.LiftCentre(out _, out _);
 
     private static readonly string[] ModeNames = ["ALT", "HDG", "HOVER", "WPT", "HOME"];
 

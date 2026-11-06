@@ -1,0 +1,127 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Helicopter Rotor",
+  "description": "9 m across. Inputs: collective, cyclic pitch, cyclic roll. Its torque turns the craft the other way: a tail rotor has to cancel it.",
+  "group": "Small",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "mass": 336.3,
+  "health": 764,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 4.5,
+    "ratedKw": 340,
+    "ratedRpm": 380,
+    "blades": 3,
+    "bladeHealth": 90,
+    "chord": 0.225,
+    "spool": 4,
+    "topSpeed": 200,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.31500000000000006
+    ],
+    "axis": "+z",
+    "forward": "+y",
+    "heli": true,
+    "cyclic": 5,
+    "hubMoment": 0.2
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.54,
+        -0.54,
+        0.0
+      ],
+      "max": [
+        0.54,
+        0.54,
+        0.63
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.5,
+        -0.0675,
+        0.2475
+      ],
+      "max": [
+        4.5,
+        0.0675,
+        0.3825
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.0675,
+        -4.5,
+        0.2475
+      ],
+      "max": [
+        0.0675,
+        4.5,
+        0.3825
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.54,
+        -0.1125,
+        0.3015
+      ],
+      "max": [
+        4.5,
+        0.1125,
+        0.3285
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.54,
+        -0.54,
+        0.01
+      ],
+      "max": [
+        0.54,
+        0.54,
+        0.63
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

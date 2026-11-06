@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Tail Rotor",
+  "description": "4 m across, on its own 700 kW motor, for a big helicopter's tail.",
+  "group": "Medium",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 81.5,
+  "health": 226,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 2,
+    "ratedKw": 700,
+    "ratedRpm": 900,
+    "blades": 4,
+    "bladeHealth": 200,
+    "chord": 0.1,
+    "spool": 2,
+    "topSpeed": 200,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.14
+    ],
+    "axis": "+z",
+    "forward": "+y",
+    "motorKw": 700,
+    "shaft": false,
+    "heli": true,
+    "cyclic": 5,
+    "hubMoment": 0.2
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.24,
+        -0.24,
+        0.0
+      ],
+      "max": [
+        0.24,
+        0.24,
+        0.28
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.03,
+        0.11
+      ],
+      "max": [
+        2.0,
+        0.03,
+        0.17
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        -2.0,
+        0.11
+      ],
+      "max": [
+        0.03,
+        2.0,
+        0.17
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.24,
+        -0.05,
+        0.128
+      ],
+      "max": [
+        2.0,
+        0.05,
+        0.152
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.24,
+        -0.24,
+        0.01
+      ],
+      "max": [
+        0.24,
+        0.24,
+        0.28
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

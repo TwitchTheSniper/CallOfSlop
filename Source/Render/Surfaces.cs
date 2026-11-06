@@ -424,7 +424,7 @@ public sealed class SurfaceRule
     }
 }
 
-/// <summary>Gives a part's boxes their material: by the box's or the part's own <c>"surface"</c>, an extrusion's bulk material, else the first rule that fits (Materials/Surfaces.json).</summary>
+/// <summary>Gives a part's boxes their material: by the box's or the part's own <c>"finish"</c>, an extrusion's bulk material, else the first rule that fits (Materials/Surfaces.json).</summary>
 public static class SurfaceRules
 {
     public static void Apply(ConstructPartDef d)
