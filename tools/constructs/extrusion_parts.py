@@ -24,6 +24,7 @@ SECTION = "Extrusion"
 BODY, TRIM, DARK, GOLD = "#55606b", "#3f4750", "#23272c", "#c8a13a"
 
 PROFILES = ["Solid bar", "Plate", "Wall", "Hollow box", "I-beam", "C-channel", "L-angle", "T-bar", "Cross", "Custom", "Round", "Pipe", "Airfoil", "Symmetric foil", "Thin foil"]
+BLADE_STYLES = ["Straight", "Scimitar", "Broad paddle", "Swept", "Narrow"]  # (Air.json's "bladeStyles", in order)
 FAN_KINDS = ["Propeller", "Electric prop", "Helicopter rotor", "Ducted fan", "Tail rotor"]  # (Extrusion.json's "fanKinds", in order)
 
 # (class, die across, longest piece, m/s, N of push, bin units, W, kg, health, cells x y z)
@@ -46,8 +47,8 @@ FORMERS = [
 FAN_FORMERS = [
     (SMALL, 3, 0.5, 0.1, 6000, 400, 900, 520, 700, None, None),
     (MEDIUM, 12, 2, 0.2, 24000, 2000, 3600, 18000, 6000, (5, 14, 4), 6),
-    (LARGE, 24, 4, 0.4, 96000, 8000, 14400, 200000, 40000, (3, 6, 3), 3),
-    (CAPITAL, 32, 8, 0.8, 384000, 32000, 57600, 1800000, 240000, (3, 3, 2), 1),
+    (LARGE, 48, 4, 0.8, 96000, 8000, 14400, 240000, 48000, (3, 8, 3), 6),
+    (CAPITAL, 96, 8, 1.6, 384000, 32000, 57600, 2400000, 300000, (3, 5, 2), 3),
 ]
 
 
@@ -162,8 +163,10 @@ def fan_config(across, start):
     return [
         {"key": "fanKind", "type": "choice", "label": "Makes", "group": "Prop", "options": FAN_KINDS, "default": 0,
          "tooltip": "What it makes. A prop runs on a shaft, an electric one or a ducted fan on its own motor, a helicopter rotor takes collective and cyclic."},
-        {"key": "fanBlades", "label": "Blades", "group": "Prop", "min": 2, "max": 6, "step": 1, "default": 3,
-         "tooltip": "How many blades. Each has its own health: more is steadier when one goes."},
+        {"key": "fanBlades", "label": "Blades", "group": "Prop", "min": 2, "max": 16, "step": 1, "default": 3,
+         "tooltip": "How many blades, 2 to 16. Each has its own health: more take a little more power, push a little harder, and are steadier when one goes."},
+        {"key": "bladeStyle", "type": "choice", "label": "Blade style", "group": "Prop", "options": BLADE_STYLES, "default": 0,
+         "tooltip": "The blade's shape: a small trade of push, power and top speed. The prop keeps it."},
         {"key": "fanDiameter", "label": "Across", "group": "Prop", "unit": "m", "min": start, "max": across, "step": 0.05, "default": start,
          "tooltip": "How far across. It parts off by itself at this size. Power and speed follow from the size."},
     ]

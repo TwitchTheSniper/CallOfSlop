@@ -317,7 +317,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 171: a seat's roll keys: CActKind.SeatKeys's byte gains roll left (8) and right (16), a Driving Module gains a "roll" output.
     // 172: Flight Stabilizers: CLogic.FlightStabilizer, 17 new CfgKeys, a part's settings up to 18, a Flight Panel's touch actions.
     // 173: wings and rotors (ConstructAero.cs, ConstructRotor.cs): a CPose carries rotors' speeds and control surfaces' angles after its joints, ExShape.Fan pieces in a Full's part list, new CfgKeys.
-    public const byte ProtocolVersion = 173;
+    // 174: rotors' blade counts and styles: a Fan piece's wall is kind, style and blades, ExShape.Blade pieces, CfgKey.BladeStyle, blade wear as masks.
+    public const byte ProtocolVersion = 174;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

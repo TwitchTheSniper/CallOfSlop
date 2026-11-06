@@ -3,6 +3,13 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
+/// <summary>A blade's shape (a row of Air.json's "bladeStyles"): what it does to a rotor's push, power and top speed, and four stations root to tip: width over the chord, and how far off the radius it lies, over the radius.</summary>
+public sealed record BladeStyleRow(string Id, string Label, float Push, float Power, float Top, Vector2[] Stations)
+{
+    /// <summary>Its mean width over the chord: its area, so its material and how much of the disc it fills.</summary>
+    public float Area => (Stations[0].X + Stations[1].X + Stations[2].X + Stations[3].X) / 4;
+}
+
 /// <summary>The air's numbers (Constructs/Air.json), loaded once; the defaults when the file is missing or refused.</summary>
 public sealed class AirTable
 {
@@ -20,6 +27,10 @@ public sealed class AirTable
     public float FlightTop = 140; // m/s: the most a craft flying on its surfaces goes (the arcade cap is 60)
     public float RotorProfile = 0.14f, RotorFigure = 0.75f; // the share of a rotor's power that makes no push, and how well the rest does
     public float RotorHit = 0.3f, RotorShake = 0.2f; // the share of a spinning disc a round meets a blade in; a lost blade's shake as a share of the push
+    public BladeStyleRow[] BladeStyles =
+    [
+        new("straight", "Straight", 1, 1, 1, [new(1, 0), new(1, 0), new(1, 0), new(1, 0)]),
+    ];
     public string Problem = "";
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Air.json");
@@ -50,7 +61,7 @@ public sealed class AirTable
         var root = doc.RootElement;
         if (ConstructParts.Opt(root, "format")?.GetString() != Format)
             throw new ConstructPartException($"\"format\" must be \"{Format}\"");
-        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "igniteDamage", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "dragArm", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans", "softWingM2", "bodyDrag", "flightTop", "rotorProfile", "rotorFigure", "rotorHit", "rotorShake"], "Air.json");
+        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "igniteDamage", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "dragArm", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans", "softWingM2", "bodyDrag", "flightTop", "rotorProfile", "rotorFigure", "rotorHit", "rotorShake", "bladeStyles"], "Air.json");
         var t = new AirTable();
         static float Num(JsonElement e, string key, float now, float lo, float hi)
         {
@@ -100,6 +111,21 @@ public sealed class AirTable
         t.RotorFigure = Num(root, "rotorFigure", t.RotorFigure, 0.1f, 1);
         t.RotorHit = Num(root, "rotorHit", t.RotorHit, 0, 1);
         t.RotorShake = Num(root, "rotorShake", t.RotorShake, 0, 2);
+        if (ConstructParts.Opt(root, "bladeStyles") is { } styles)
+        {
+            var rows = new List<BladeStyleRow>();
+            foreach (var e in styles.EnumerateArray())
+            {
+                ConstructParts.Known(e, ["id", "label", "push", "power", "top", "stations"], "Air.json, bladeStyles");
+                var st = e.GetProperty("stations").EnumerateArray().Select(x => new Vector2(x[0].GetSingle(), x[1].GetSingle())).ToArray();
+                if (st.Length != 4 || Array.Exists(st, x => !(x.X is >= 0.1f and <= 3 && x.Y is >= -0.5f and <= 0.5f)))
+                    throw new ConstructPartException("\"stations\" is four [width, offset] rows");
+                rows.Add(new BladeStyleRow(e.GetProperty("id").GetString() ?? "", e.GetProperty("label").GetString() ?? "", Num(e, "push", 1, 0.3f, 3), Num(e, "power", 1, 0.3f, 3), Num(e, "top", 1, 0.3f, 3), st));
+            }
+            if (rows.Count is 0 or > Extrusion.MaxBladeStyles)
+                throw new ConstructPartException($"\"bladeStyles\" lists 1 to {Extrusion.MaxBladeStyles} rows");
+            t.BladeStyles = rows.ToArray();
+        }
         return t;
     }
 }
