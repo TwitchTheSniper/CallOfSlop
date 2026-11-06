@@ -30,6 +30,8 @@ public sealed partial class Audio
         public readonly short[] Pcm = new short[MediaFrames];
         public readonly float[] Mono = new float[MediaFrames];
         public volatile MediaBlock? Block;
+        public long Got, Fills; // frames of real sound and buffers filled since the last log line
+        public float Peak;
     }
 
     private sealed record MediaTrackPlay(MusicTrack Track, uint Seed, int Bar);
@@ -43,6 +45,9 @@ public sealed partial class Audio
     private MusicRenderer? _mediaRenderer; // (the thread's)
     private MediaTrackPlay? _mediaWant, _mediaHas;
     private int _mediaTrackPaused, _mediaTrackHeld;
+    private bool _mediaSaidOff;
+    private long _mediaNextLog;
+    private const long MediaLogEvery = 5000;
 
     /// <summary>The game's track holds for the music thread: for the panel.</summary>
     public bool MediaTrackHeld => Volatile.Read(ref _mediaTrackHeld) != 0;
@@ -50,7 +55,12 @@ public sealed partial class Audio
     private bool MediaStart()
     {
         if (!Enabled)
+        {
+            if (!_mediaSaidOff)
+                Console.WriteLine("[media] no sound: this game has no audio device");
+            _mediaSaidOff = true;
             return false;
+        }
         if (_mediaThread != null)
             return true;
         try
@@ -65,12 +75,13 @@ public sealed partial class Audio
         }
         catch (Exception e)
         {
-            Console.WriteLine($"[media] no sound: {e.Message}");
+            Console.WriteLine($"[media] no sound: no OpenAL sources: {e.Message}");
             return false;
         }
         _mediaRun = true;
         _mediaThread = new Thread(MediaLoop) { IsBackground = true, Name = "Media sound", Priority = ThreadPriority.AboveNormal };
         _mediaThread.Start();
+        Console.WriteLine("[media] sound thread started");
         return true;
     }
 
@@ -160,6 +171,7 @@ public sealed partial class Audio
                     if (v.Source.State != AlSourceState.Playing)
                         v.Source.Play(); // (after an underrun)
                 }
+                MediaLog();
                 idle = Volatile.Read(ref _mediaLive) > 0 ? 0 : idle + 1;
                 if (idle > 500)
                     break; // (nothing has played for five seconds: no thread until something does)
@@ -177,8 +189,32 @@ public sealed partial class Audio
         {
             Console.WriteLine($"[media] sound stopped: {e.Message}");
         }
+        Console.WriteLine("[media] sound thread stopped");
         _mediaRun = false;
         _mediaThread = null;
+    }
+
+    /// <summary>Hop 5 and 6 on a throttle: what came out of the ring, and what OpenAL is doing with it.</summary>
+    private void MediaLog()
+    {
+        var now = Environment.TickCount64;
+        if (now < _mediaNextLog)
+            return;
+        _mediaNextLog = now + MediaLogEvery;
+        for (var i = 0; i < _media.Length; i++)
+        {
+            var v = _media[i];
+            var block = v.Block;
+            if (block != null || i == MediaTrackVoice && Volatile.Read(ref _mediaWant) != null)
+            {
+                var s = v.Source;
+                var ring = block != null ? $"ring written {block.AudioWritten} read {block.AudioRead}, " : "game track, ";
+                Console.WriteLine($"[media] sound voice {i} (hop 5): {ring}{v.Got} frames of sound in {v.Fills} buffers, peak {v.Peak:0.000}; "
+                    + $"OpenAL (hop 6): {s.State}, gain {s.Gain:0.000}, at {s.Position.X:0.0} {s.Position.Y:0.0} {s.Position.Z:0.0}, listener {_listener.X:0.0} {_listener.Y:0.0} {_listener.Z:0.0}, near {s.ReferenceDistance:0.0} far {s.MaxDistance:0.0}, master {ListenerGain:0.00}");
+            }
+            v.Got = v.Fills = 0;
+            v.Peak = 0;
+        }
     }
 
     private void MediaFill(MediaVoice v, AlBuffer buffer)
@@ -187,11 +223,19 @@ public sealed partial class Audio
         if (ReferenceEquals(v, _media[MediaTrackVoice]))
             MediaRender(mono);
         else if (v.Block is { } block)
-            mono[block.ReadAudio(mono)..].Clear();
+        {
+            var got = block.ReadAudio(mono);
+            v.Got += got;
+            mono[got..].Clear();
+        }
         else
             mono.Clear();
+        v.Fills++;
         for (var i = 0; i < mono.Length; i++)
+        {
+            v.Peak = MathF.Max(v.Peak, MathF.Abs(mono[i]));
             v.Pcm[i] = (short)(Math.Clamp(mono[i], -1f, 1f) * 32767f);
+        }
         buffer.SetData(AlFormat.Mono16, MemoryMarshal.AsBytes(v.Pcm.AsSpan()), SampleRate);
     }
 

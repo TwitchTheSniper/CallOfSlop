@@ -135,6 +135,8 @@ public static class MediaBrowser
                 RedirectStandardOutput = true,
                 WorkingDirectory = Path.GetDirectoryName(ExePath)!,
             };
+            info.ArgumentList.Add("--log-dir");
+            info.ArgumentList.Add(AppFolders.Logs);
             var process = Process.Start(info) ?? throw new InvalidOperationException("it did not start");
             var lines = new BlockingCollection<string>(64);
             _process = process;
@@ -217,6 +219,9 @@ public static class MediaBrowser
         {
             case "ready":
                 Console.WriteLine("[media] browser ready");
+                break;
+            case "log":
+                Console.WriteLine($"[media] browser: {line[Math.Min(4, line.Length)..]}");
                 break;
             case "fail":
                 Console.WriteLine($"[media] browser: {line}");

@@ -10,13 +10,16 @@ namespace SlopBrowser;
 /// </summary>
 internal sealed unsafe class SharedBlock : IDisposable
 {
-    public const int HeaderBytes = 4096, RingFrames = 1 << 17;
+    public const int HeaderBytes = 4096, RingFrames = 1 << 17, GameRate = 44100;
     private const int OffLatest = 16, OffReading = 20, OffSeq = 24, OffAudioWrite = 32;
 
     private readonly MemoryMappedFile _file;
     private readonly MemoryMappedViewAccessor _view;
     private readonly byte* _base;
     private readonly int _frameBytes;
+    private double _phase;
+    public long AudioFrames; // what has gone into the ring
+    public float AudioPeak; // the loudest sample since the last report (zero: the page is silent, or muted upstream)
     public readonly int Width, Height;
 
     public SharedBlock(string name, int width, int height)
@@ -51,20 +54,32 @@ internal sealed unsafe class SharedBlock : IDisposable
     }
 
     /// <summary>A packet of planar sound, mixed to one channel: a source in the world is a point. Runs on CEF's audio thread.</summary>
-    public void WriteAudio(IntPtr planes, int frames, int channels)
+    public void WriteAudio(IntPtr planes, int frames, int channels, int rate)
     {
+        if (planes == IntPtr.Zero || frames <= 0 || channels <= 0)
+            return;
         var ch = (float**)planes;
         var ring = (float*)(_base + HeaderBytes);
         var at = Volatile.Read(ref Long(OffAudioWrite));
-        var scale = 1f / Math.Max(1, channels);
-        for (var i = 0; i < frames; i++)
+        var scale = 1f / channels;
+        var step = rate > 0 ? rate / (double)GameRate : 1; // (CEF is asked for the game's rate; if it keeps its own, this holds the pitch)
+        var written = 0;
+        var phase = _phase;
+        for (; phase < frames; phase += step)
         {
+            var i = (int)phase;
             var sum = 0f;
             for (var c = 0; c < channels; c++)
                 sum += ch[c][i];
-            ring[(at + i) & (RingFrames - 1)] = sum * scale;
+            sum *= scale;
+            ring[(at + written) & (RingFrames - 1)] = sum;
+            written++;
+            if (MathF.Abs(sum) > AudioPeak)
+                AudioPeak = MathF.Abs(sum);
         }
-        Volatile.Write(ref Long(OffAudioWrite), at + frames);
+        _phase = phase - frames;
+        AudioFrames += written;
+        Volatile.Write(ref Long(OffAudioWrite), at + written);
     }
 
     public void Dispose()

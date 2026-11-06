@@ -36,6 +36,7 @@ public static class MediaDirector
 
     private static readonly Page[] Pages = new Page[MaxPages];
     private static readonly Near[] Closest = new Near[MaxPages];
+    private static readonly long[] NextLevelLog = new long[MaxPages + 1];
     private static int _closest, _waiting;
     private static double _nextScan, _idleSince = double.NaN;
     private static bool _trackOn;
@@ -96,7 +97,15 @@ public static class MediaDirector
             return;
         ref var p = ref c.Parts[part];
         var at = ConstructRender.DrawnPoint(c, part, Vector3.Zero, g.TickAlpha, g.IsServer);
-        audio.MediaPlace(voice, at, Level * ConstructConfig.Get(p, p.D, CfgKey.Volume, 1) * EdgeFade(Vector3.Distance(at, audio.ListenerPosition), hear), near, hear);
+        var volume = ConstructConfig.Get(p, p.D, CfgKey.Volume, 1);
+        var distance = Vector3.Distance(at, audio.ListenerPosition);
+        var fade = EdgeFade(distance, hear);
+        audio.MediaPlace(voice, at, Level * volume * fade, near, hear);
+        if (Environment.TickCount64 >= NextLevelLog[voice])
+        {
+            NextLevelLog[voice] = Environment.TickCount64 + 5000;
+            Console.WriteLine($"[media] level voice {voice} (hop 7): part volume {volume:0.00} x screens volume {Level:0.00} x edge fade {fade:0.00} x Media bus {audio.Mix.Gain(MixBus.Media):0.00}, {distance:0.0} m away, heard to {hear:0} m");
+        }
     }
 
     /// <summary>The last of a part's range: down to nothing, so the page can go without a click of silence falling on a sound still heard.</summary>
