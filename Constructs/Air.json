@@ -4,7 +4,7 @@
   "scaleHeight": 1200,
   "seaLevel": 0,
   "lift": { "hydrogen": 1.12, "helium": 1.04, "hotAir": 0.31, "vacuum": 1.225 },
-  "gasLitresPerM3": 10,
+  "gasLitresPerM3": 1,
   "softFromM3": 20000,
   "softPower": 0.35,
   "softMost": 6,

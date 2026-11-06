@@ -438,12 +438,29 @@ public static partial class ConstructLift
     {
         ref var p = ref c.Parts[part];
         var hole = ConstructConfig.Get(p, p.D, CfgKey.Hole, 0);
-        var lift = LiftKg(c) / 1000f;
-        var text = $"lifts {lift:0.##} t of {c.Mass / 1000f:0.##} t";
+        var lift = LiftKg(c);
+        var text = !ConstructAir.HasAir ? "no air here: it lifts nothing"
+            : $"lifts {Kg(lift)} of {Kg(c.Mass)}{(lift < c.Mass ? $", {Kg(FullKg(c))} when full" : "")}{(c.Anchored ? ", frozen: it can't rise" : "")}";
         return hole > 0 ? $"HOLED, {hole:0.##} m2 leaking - {text}" : text;
     }
 
-    public static long LookKey(Construct c, int part) => (long)(ConstructConfig.Get(c.Parts[part], c.Parts[part].D, CfgKey.Hole, 0) * 100) ^ (long)(LiftKg(c) / 10f) << 12;
+    private static string Kg(float kg) => kg < 10_000 ? $"{kg:0} kg" : $"{kg / 1000f:0.#} t";
+
+    /// <summary>What the construct's cells would lift full of what each holds, helium if empty, in the air here.</summary>
+    private static float FullKg(Construct c)
+    {
+        var soft = SoftScale(c.CellVolume);
+        var sum = 0f;
+        var density = ConstructAir.Density(c.WorldCom);
+        for (var k = 0; k < c.CellCount; k++)
+        {
+            ref var cell = ref c.Cells[k];
+            sum += (cell.LiftKg > 0 ? cell.LiftKg : AirTable.Current.LiftHelium * cell.Volume * soft) * (cell.Mode == 2 ? density : MathF.Min(1, density));
+        }
+        return sum;
+    }
+
+    public static long LookKey(Construct c, int part) => (long)(ConstructConfig.Get(c.Parts[part], c.Parts[part].D, CfgKey.Hole, 0) * 100) ^ (long)(LiftKg(c) / 10f) << 12 ^ (long)(c.Mass / 10f) << 34 ^ (c.Anchored ? 1L << 11 : 0);
 }
 
 public static partial class ConstructPhysics
