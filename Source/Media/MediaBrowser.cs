@@ -69,11 +69,11 @@ public static class MediaBrowser
     }
 
     /// <summary>Opens a page in slot <paramref name="page"/>. False: no browser, and <see cref="Problem"/> says why.</summary>
-    public static bool Open(int page, string videoId, float seconds, int width, int height)
+    public static bool Open(int page, string videoId, float seconds, int width, int height, bool ads)
     {
         if (!MediaEntry.IsId(videoId) || Problem != null || !Start() || !Prepare(page, width, height))
             return false;
-        Send(string.Create(CultureInfo.InvariantCulture, $"open {page} {videoId} {seconds:0.##} {width} {height} {Blocks[page]!.Name}"));
+        Send(string.Create(CultureInfo.InvariantCulture, $"open {page} {videoId} {seconds:0.##} {width} {height} {Blocks[page]!.Name} {(ads ? 1 : 0)}"));
         return true;
     }
 
@@ -103,13 +103,16 @@ public static class MediaBrowser
     }
 
     /// <summary>Opens a Browser Screen's page. The address has been through <see cref="MediaEntry.Clean"/>. Nothing here logs it.</summary>
-    public static bool OpenWeb(int page, string url, int width, int height)
+    public static bool OpenWeb(int page, string url, int width, int height, bool ads)
     {
         if (Problem != null || !Start() || !Prepare(page, width, height))
             return false;
-        Send($"web {page} {url} {width} {height} {Blocks[page]!.Name}");
+        Send($"web {page} {url} {width} {height} {Blocks[page]!.Name} {(ads ? 1 : 0)}");
         return true;
     }
+
+    /// <summary>Ad blocking on this page, this PC only: it reloads.</summary>
+    public static void Ads(int page, bool on) => Send($"ads {page} {(on ? 1 : 0)}");
 
     public static void Go(int page, string url) => Send($"go {page} {url}");
 

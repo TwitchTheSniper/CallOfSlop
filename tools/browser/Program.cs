@@ -11,7 +11,7 @@ namespace SlopBrowser;
 /// Pictures and sound go to the game through one shared memory block a page; commands come in on stdin, reports go out on stdout.
 /// Stdin closing, which is also what the game crashing looks like, ends the process.
 /// <code>
-/// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP | web SLOT URL WIDTH HEIGHT MAP | go SLOT URL | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
+/// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP ADS | web SLOT URL WIDTH HEIGHT MAP ADS | ads SLOT ON | go SLOT URL | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
 /// out: ready | fail REASON | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE | u SLOT ADDRESS (no query)
 /// </code>
 /// </summary>
@@ -66,6 +66,7 @@ internal static class Program
             return 2;
         }
 
+        Log("ad list: " + AdFilter.Load(Path.Combine(AppContext.BaseDirectory, "adhosts.txt")));
         Say("ready");
         try
         {
@@ -108,13 +109,17 @@ internal static class Program
             return true;
         switch (a[0])
         {
-            case "open" when a.Length == 7 && VideoId.IsMatch(a[2]):
-                CloseSlot(slot);
-                Pages[slot] = new Page(slot, a[2], Num(a[3]), (int)Num(a[4]), (int)Num(a[5]), a[6]);
+            case "ads" when a.Length == 3:
+                (Pages[slot] as Page)?.Ads(a[2] == "1");
+                (Pages[slot] as WebPage)?.Ads(a[2] == "1");
                 break;
-            case "web" when a.Length == 6:
+            case "open" when a.Length == 8 && VideoId.IsMatch(a[2]):
                 CloseSlot(slot);
-                Pages[slot] = new WebPage(slot, a[2], (int)Num(a[3]), (int)Num(a[4]), a[5]);
+                Pages[slot] = new Page(slot, a[2], Num(a[3]), (int)Num(a[4]), (int)Num(a[5]), a[6], a[7] == "1");
+                break;
+            case "web" when a.Length == 7:
+                CloseSlot(slot);
+                Pages[slot] = new WebPage(slot, a[2], (int)Num(a[3]), (int)Num(a[4]), a[5], a[6] == "1");
                 break;
             case "go" when a.Length == 3:
                 (Pages[slot] as WebPage)?.Go(a[2]);

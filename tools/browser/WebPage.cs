@@ -17,17 +17,19 @@ internal sealed class WebPage : IDisposable
     private readonly RequestContext _context;
     private readonly int _slot;
     private volatile bool _closing;
+    private readonly AdSwitch _ads;
 
-    public WebPage(int slot, string url, int width, int height, string block)
+    public WebPage(int slot, string url, int width, int height, string block, bool ads)
     {
         _slot = slot;
+        _ads = new AdSwitch(ads);
         _block = new SharedBlock(block, width, height);
         _context = new RequestContext(new RequestContextSettings { CachePath = "", PersistSessionCookies = false });
         _web = new ChromiumWebBrowser(WebPolicy.Allowed(url) ? url : "about:blank", requestContext: _context, automaticallyCreateBrowser: false)
         {
             RenderHandler = new Painter(_block),
             AudioHandler = new PageSound(_block, slot),
-            RequestHandler = new Requests(),
+            RequestHandler = new Requests(new Resources(_ads)),
             LifeSpanHandler = new InPlace(),
             DisplayHandler = new Quiet(),
             DownloadHandler = new NoDownloads(),
@@ -40,6 +42,15 @@ internal sealed class WebPage : IDisposable
         _web.Size = new System.Drawing.Size(width, height);
         new Thread(() => PageInput.Run(_block, _web, keys: true, () => _closing, () => { })) { IsBackground = true, Name = "Input " + slot }.Start();
         _web.CreateBrowser(null, new BrowserSettings { WindowlessFrameRate = 30 });
+    }
+
+    /// <summary>Turns ad blocking on or off, and reloads.</summary>
+    public void Ads(bool on)
+    {
+        if (_ads.On == on)
+            return;
+        _ads.On = on;
+        Reload();
     }
 
     public void Go(string url)
@@ -74,24 +85,22 @@ internal sealed class WebPage : IDisposable
         _block.Dispose();
     }
 
-    private sealed class Requests : RequestHandler
+    private sealed class Requests(IResourceRequestHandler resources) : RequestHandler
     {
         protected override bool OnBeforeBrowse(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool userGesture, bool isRedirect) =>
             !(WebPolicy.Allowed(request.Url) || request.Url == "about:blank" || !frame.IsMain && request.Url == "about:srcdoc"); // (true cancels)
 
         protected override IResourceRequestHandler GetResourceRequestHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool isNavigation, bool isDownload, string requestInitiator, ref bool disableDefaultHandling) =>
-            Resources.One;
+            resources;
 
         protected override bool GetAuthCredentials(IWebBrowser chromiumWebBrowser, IBrowser browser, string originUrl, bool isProxy, string host, int port, string realm, string scheme, IAuthCallback callback) => false;
     }
 
     /// <summary>What a page loads, as well as where it goes: a public site can't reach into the viewer's own network either.</summary>
-    private sealed class Resources : ResourceRequestHandler
+    private sealed class Resources(AdSwitch ads) : ResourceRequestHandler
     {
-        public static readonly Resources One = new();
-
         protected override CefReturnValue OnBeforeResourceLoad(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IRequestCallback callback) =>
-            WebPolicy.Resource(request.Url) ? CefReturnValue.Continue : CefReturnValue.Cancel;
+            WebPolicy.Resource(request.Url) && !(ads.On && AdFilter.Blocks(request.Url)) ? CefReturnValue.Continue : CefReturnValue.Cancel;
     }
 
     /// <summary>A popup opens in place, if a click asked for it. Anything else is dropped.</summary>
