@@ -244,6 +244,8 @@ public static partial class SelfTest
             a.LookYaw = yaw0 + 0.6f * MathF.Sin((float)t * 2.5f);
             a.LookPitch = pitch0 + 0.15f * MathF.Sin((float)t * 4f);
             a.SandboxSteer(dist, rel, now);
+            if ((int)(t * 100) % 50 == 0)
+                Line($"DIAG t {t:0.00} srv {held.Pos} {held.Rot} tip {ConstructRender.PartCentre(held, tipD)} a {a.Constructs.Get(held.Id)!.Pos} {a.Constructs.Get(held.Id)!.Rot} tip {ConstructRender.PartCentre(a.Constructs.Get(held.Id)!, tipD)} b {b.Constructs.Get(held.Id)!.Rot} tip {ConstructRender.PartCentre(b.Constructs.Get(held.Id)!, tipD)} rel {rel}");
         }, holder: true);
         a.SandboxLetGo(freeze: false);
         w.Remove(held);
