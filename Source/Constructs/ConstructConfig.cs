@@ -161,6 +161,8 @@ public enum CfgKey : byte
     WingKind, // Airframe Former: what it cuts (a row of Extrusion.json's "airframes")
     WingChord, // Airframe Former: its chord, m
     WingSpan, // Airframe Former: its span, m
+    Stabilised, // Turret Module: the seat's look stays on the point it was set on as the craft moves (Game.SandboxStabilise)
+    FuseRange, // AA Sight: metres at which its gun's shells burst with nothing locked (0: none)
     PitchRate, PitchResponse, PitchDamping, PitchHold, PitchExpo, // Flight Stabilizer: the pitch loop (0: auto; ConstructFlight.cs)
     RollRate, RollResponse, RollDamping, RollHold, RollExpo, // Flight Stabilizer: the roll loop (0: auto; ConstructFlight.cs)
     YawRate, YawResponse, YawDamping, YawHold, YawExpo, // Flight Stabilizer: the yaw loop (0: auto; ConstructFlight.cs)
@@ -708,7 +710,7 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
         CfgKey.SteerKind => "choice",
@@ -773,6 +775,8 @@ public static class ConstructConfig
                 (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Throw or CfgKey.Expo => d.Surface is { Control: > 0 } || d.ThrustGimbal > 0,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
+                CfgKey.Stabilised => d.Logic == CLogic.TurretModule,
+                CfgKey.FuseRange => d.Sight == SightKind.Lead,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,

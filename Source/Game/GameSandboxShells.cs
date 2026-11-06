@@ -46,8 +46,9 @@ public sealed partial class Game
             ref var s = ref w.Shells[k];
             if (s.Landed)
                 continue;
-            if (s.Age % 4 == 0)
-                Tracers.Add(new Tracer { From = s.Prev - s.Vel * (4 * World.TickDt), To = s.Pos, Color = new Vector3(0.85f, 0.8f, 0.7f), Width = 0.06f, Born = ConstructRender.Now, Life = 0.35f, Speed = 0 });
+            var burning = s.Kind == ShellKind.Flare || s.Burn > 0;
+            if (s.Age % 4 == 0 && s.Kind != ShellKind.Bomb)
+                Tracers.Add(new Tracer { From = s.Prev - s.Vel * (4 * World.TickDt), To = s.Pos, Color = burning ? new Vector3(1f, 0.65f, 0.25f) : new Vector3(0.85f, 0.8f, 0.7f), Width = burning ? 0.14f : 0.06f, Born = ConstructRender.Now, Life = burning ? 0.7f : 0.35f, Speed = 0 });
             if (Local is { } me && s.Age % 12 == 0 && s.Vel.Y < 0 && Vector3.DistanceSquared(me.RenderEye, s.Pos + s.Vel) < 900f)
                 Audio.Effect3D(Sfx.Whizz, s.Pos, 0.9f);
         }
@@ -55,11 +56,20 @@ public sealed partial class Game
 
     private void ShellOutFx(in CFireEvent e, double now)
     {
+        var kind = (ShellKind)e.Muzzle;
         if (!IsServer)
-            Constructs.ClientAddShell(e.Shell, (ShellKind)e.Muzzle, e.At, e.To);
+        {
+            Constructs.ClientAddShell(e.Shell, kind, e.At, e.To);
+            Constructs.ClientShellFlight(e.Shell, e);
+        }
         ConstructShotsSeen++;
+        if (kind == ShellKind.Bomb)
+        {
+            Audio.Effect3D(Sfx.Throw, e.At, 0.8f); // (a rack lets go: no flash, and e.Part is the bomb's type)
+            return;
+        }
         var dir = e.To.LengthSquared() > 1e-4f ? Vector3.Normalize(e.To) : Vector3.UnitY;
-        ConstructRender.AddFlash(e.At, dir, now, GunFx.Cannon);
+        ConstructRender.AddFlash(e.At, dir, now, kind is ShellKind.Rocket or ShellKind.Missile ? GunFx.Rocket : GunFx.Cannon);
         if (Constructs.Get(e.Body) is { } c && c.GunOf(e.Part) is var k and >= 0 && c.Guns[k].Def is { } def)
         {
             Audio.Shot(def, e.At, mergeN: c.Guns[k].MergeN);
@@ -74,9 +84,11 @@ public sealed partial class Game
     {
         if (!IsServer)
             Constructs.ClientDropShell(e.Shell);
+        var kind = (ShellKind)e.Muzzle;
+        if (kind == ShellKind.Flare)
+            return; // (it burnt out)
         ShellsLandedSeen++;
         ConstructBlastsSeen++;
-        var kind = (ShellKind)e.Muzzle;
         var r = MathF.Max(1f, e.Radius);
         if (kind == ShellKind.Smoke)
             for (var i = 0; i < 3; i++)
@@ -114,7 +126,7 @@ public sealed partial class Game
         ConstructRender.GunnerMarked = false;
         var k = ArtilleryGun(me, out var c);
         if (k < 0)
-            return "";
+            return BombHudLine(me);
         var lands = ConstructShells.Predict(c!, k, World.Query, out var land, out var secs);
         ConstructRender.GunnerMarked = lands;
         ConstructRender.GunnerMark = land;
@@ -125,12 +137,76 @@ public sealed partial class Game
         flat -= up * Vector3.Dot(flat, up);
         var range = (int)MathF.Round(flat.Length());
         var tenths = (int)(secs * 10);
-        var key = (range * 1000 + tenths) * 200 + elev + 100 + (lands ? 0 : 1 << 30) + SandboxKeys.Stamp * 7;
+        var locked = LockText(c!, k, muzzle, fwd, out var lockKey);
+        var key = (range * 1000 + tenths) * 200 + elev + 100 + (lands ? 0 : 1 << 30) + SandboxKeys.Stamp * 7 + lockKey * 131;
         if (key != _arcKey)
         {
             _arcKey = key;
-            _arcLine = SandboxKeys.Line(c!.DefOf(c.Guns[k].Part).Name, lands ? $"lands {range} m out, {tenths / 10f:0.0} s, elevation {elev}" : $"elevation {elev}", lands ? null : "lands past the map", (c.Guns[k].Effects & GunEffect.Shell) != 0 ? $"{SandboxKeys.Aim}: high arc" : null);
+            _arcLine = SandboxKeys.Line(c!.DefOf(c.Guns[k].Part).Name, lands ? $"lands {range} m out, {tenths / 10f:0.0} s, elevation {elev}" : $"elevation {elev}", lands ? null : "lands past the map", locked ?? ((c.Guns[k].Effects & GunEffect.Shell) != 0 ? $"{SandboxKeys.Aim}: high arc" : null));
         }
         return _arcLine;
+    }
+
+    private int _seekFrames;
+    private ushort _seekLock;
+
+    /// <summary>What a missile or a lead sight has now, for the gunner's line ("" for nothing yet, null for a gun with neither), and a number that changes when the line should.</summary>
+    private string? LockText(Construct c, int k, Vector3 muzzle, Vector3 fwd, out int key)
+    {
+        ref var g = ref c.Guns[k];
+        key = 0;
+        if (g.Sight == SightKind.None && !((g.Effects & GunEffect.Shell) != 0 && g.Shell == ShellKind.Missile))
+            return null;
+        Construct? t;
+        if (g.Sight == SightKind.Seeker)
+        {
+            if (_seekFrames++ % 20 == 0)
+                _seekLock = ConstructOrdnance.Seek(Constructs, c, muzzle, fwd, g.SightReach, g.SightCos, World.Query); // (a look at every body ahead: not each frame)
+            t = Constructs.Get(_seekLock);
+        }
+        else
+            t = ConstructOrdnance.Track(Constructs, c, ref g, ConstructWeapons.SeatEye(c, g.Seat), World.Forward(LookYaw, LookPitch), World.Query);
+        if (t == null)
+            return "no lock";
+        var m = (int)Vector3.Distance(t.WorldCom, muzzle) / 10 * 10;
+        key = m + 1;
+        return $"locked at {m} m";
+    }
+
+    private int _bombKey = -1;
+    private string _bombLine = "";
+
+    /// <summary>A pilot's or gunner's line for the bomb racks in their reach, and the cross where the next bomb lands as the craft flies now.</summary>
+    private string BombHudLine(Player me)
+    {
+        ref var h = ref SandboxHands.Hand(me.Id);
+        if (!h.Seated || Constructs.Get(h.SeatBody) is not { RackCount: > 0 } c || h.SeatPart != c.DriveSeat && h.SeatPart != c.ControlSeat && !ConstructModules.HasTurret(c, h.SeatPart))
+            return "";
+        var held = 0;
+        var first = -1;
+        Span<ushort> bombs = stackalloc ushort[ConstructOrdnance.MaxHeld];
+        for (var k = 0; k < c.RackCount; k++)
+        {
+            int rack = c.Racks[k].Part;
+            if (rack >= c.PartCount || ConstructOrdnance.Held(c, rack, bombs) is not (> 0 and var n))
+                continue;
+            held += n;
+            if (first < 0)
+                first = bombs[0];
+        }
+        if (first < 0)
+            return "";
+        var at = ConstructRender.PartCentre(c, first);
+        var lands = ConstructShells.Fall(at, c.PointVel(at) + c.SegPointVel(c.Parts[first].Seg, at), World.Query, out var land, out var secs);
+        ConstructRender.GunnerMarked = lands;
+        ConstructRender.GunnerMark = land;
+        var tenths = (int)(secs * 10);
+        var key = held * 1000 + tenths + (lands ? 0 : 1 << 30) + SandboxKeys.Stamp * 7;
+        if (key != _bombKey)
+        {
+            _bombKey = key;
+            _bombLine = SandboxKeys.Line(c.DefOf(first).Name, $"{held} held", lands ? $"lands in {tenths / 10f:0.0} s" : "lands past the map", null);
+        }
+        return _bombLine;
     }
 }

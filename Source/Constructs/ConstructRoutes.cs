@@ -321,12 +321,13 @@ public static partial class ConstructRoutes
 
     /// <summary>A named data port's byte in a link (<see cref="CRoute.FromPort"/>, <see cref="CRoute.ToPort"/>): port 0 is 255 (the part itself), port k is this | k.</summary>
     public const byte DataPortBase = 0x80;
+    public const int MaxDataPorts = 32; // (a part's output ports; an input port's 15 is the watch link's, WatchPort)
 
     /// <summary>The byte for data port <paramref name="k"/> (0: the part itself, 255).</summary>
     public static byte DataPortByte(int k) => k <= 0 ? (byte)255 : (byte)(DataPortBase | k);
 
     /// <summary>A data link's port byte as a port index (255: 0), or -1 for a byte that names no data port.</summary>
-    public static int DataPort(byte port) => port == 255 ? 0 : (port & DataPortBase) != 0 && (port & 0x7F) < 16 ? port & 0x7F : -1;
+    public static int DataPort(byte port) => port == 255 ? 0 : (port & DataPortBase) != 0 && (port & 0x7F) < MaxDataPorts ? port & 0x7F : -1;
 
     /// <summary>
     /// The ports of part <paramref name="part"/> a link of type <paramref name="t"/> can use (shafts: its free drive

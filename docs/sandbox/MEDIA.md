@@ -61,6 +61,8 @@ RMB takes the mouse off that part until the crosshair leaves it. F does what it 
 - **Everyone follows.** For 3 s after a click or wheel on this peer the page leads (`MediaDirector.FromPage`): a pause, a resume or a seek it reports goes to the server as a `MediaOp`, and from there to every peer. A seek also raises `CMedia.Mark`, so others seek at once. After that the server leads again.
 - **Volume stays each viewer's own.** From the first click the page stops resetting the player's volume and mute, so the slider sticks, on that PC only. This only applies to the volume inside the player: the part's Volume is shared.
 
+- **One pose.** The cursor comes from the last picture drawn: the world pass records its camera and each panel's drawn pose, and the spot is that ray on that panel (`PanelRender.DrawnSpot`). Input's own poses are a tick apart from those at speed on a host, so they only pick the panel first aimed at; staying on it asks the picture.
+
 A Music Player's picture takes the mouse too. Its buttons are panel buttons, and work on game tracks with no browser.
 
 ## Sound

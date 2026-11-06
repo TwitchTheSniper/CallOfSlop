@@ -9,6 +9,11 @@ public enum ShellKind : byte
     Siege, // a deeper crater
     Incendiary, // lights what burns in the blast
     Smoke, // a cloud where it lands
+    Bomb, // let go from a rack (ConstructOrdnance.cs)
+    Flak, // bursts near what flies, or at its sight's time
+    Rocket, // pushes itself for a while
+    Missile, // and turns towards what it was locked on to
+    Flare, // burns and sinks, and draws missiles
 }
 
 /// <summary>One artillery shell in the air, or landed and waiting for its turn to go off. Fixed pool: <see cref="ConstructWorld.Shells"/>.</summary>
@@ -24,6 +29,13 @@ public struct CShell
     public Vector3 Pos, Vel, Prev;
     public Vector3 Tested; // where its last collision test ended
     public float Blast, Damage, Crater;
+    public float Thrust, Turn, Prox; // a rocket's push (m/s2), a missile's turn (radians a second), how near a flying thing sets it off (m)
+    public int Burn, Fuse, Delay; // ticks it pushes for, its age when it bursts (0: never), ticks it lies after it hit before going off
+    public int Clear; // ticks it passes its own construct
+    public ushort Target, Decoy; // what a missile steers for: a body, or (drawn away) a flare's shell id
+    public ushort Def; // a bomb's part type (what is drawn)
+    public ushort Stuck; // the body a bomb landed on, and where on it (it rides along until its fuse)
+    public Vector3 StuckAt;
 }
 
 /// <summary>A landed shell's blast, walked a few parts a tick so that a big one on a big ship costs no one tick much.</summary>
@@ -102,14 +114,27 @@ public static class ConstructShells
     }
 
     /// <summary>Gun <paramref name="k"/> fires: a shell leaves its muzzle. False when the pool is full (it waits, the round not spent).</summary>
-    public static void Launch(ConstructWorld world, Construct c, int k, Vector3 dir)
+    public static void Launch(ConstructWorld world, Construct c, int k, Vector3 dir, IWorldQuery query)
     {
         ref var g = ref c.Guns[k];
         ConstructWeapons.MuzzleWorld(c, k, out var muzzle, out _);
-        var vel = dir * g.Speed + c.Vel;
-        var s = world.AddShell(new CShell { Kind = g.Shell, By = c.Owner, Gun = c.Id, GunPart = g.Part, Pos = muzzle, Prev = muzzle, Tested = muzzle, Vel = vel, Blast = g.Blast, Damage = g.BlastDamage, Crater = g.Crater });
+        var vel = dir * g.Speed + (g.Shell >= ShellKind.Flak ? c.PointVel(muzzle) : c.Vel);
+        var d = c.DefOf(g.Part);
+        var target = g.Shell == ShellKind.Missile ? ConstructOrdnance.Lock(world, c, ref g, muzzle, dir, query) : (ushort)0;
+        var burn = (int)(d.GunBurn * World.TickRate);
+        var fuse = g.Shell switch
+        {
+            ShellKind.Flare => burn,
+            ShellKind.Missile => burn + (int)(ConstructOrdnance.MissileCoast * World.TickRate),
+            _ => g.FuseTicks,
+        };
+        var s = world.AddShell(new CShell
+        {
+            Kind = g.Shell, By = c.Owner, Gun = c.Id, GunPart = g.Part, Pos = muzzle, Prev = muzzle, Tested = muzzle, Vel = vel, Blast = g.Blast, Damage = g.BlastDamage, Crater = g.Crater,
+            Thrust = d.GunThrust, Turn = d.GunTurn * MathF.PI / 180f, Prox = d.GunProx, Burn = burn, Fuse = fuse, Clear = ConstructWorld.ShellMuzzleClear, Target = target,
+        });
         if (s != 0)
-            world.AddFire(new CFireEvent { Kind = CFireKind.ShellOut, Body = c.Id, Part = g.Part, Shell = s, At = muzzle, To = vel, Muzzle = (byte)g.Shell });
+            world.AddFire(new CFireEvent { Kind = CFireKind.ShellOut, Body = c.Id, Part = g.Part, Shell = s, At = muzzle, To = vel, Muzzle = (byte)g.Shell, Thrust = d.GunThrust, Turn = d.GunTurn * MathF.PI / 180f, Burn = (ushort)Math.Min(burn, ushort.MaxValue), Target = target });
     }
 
     /// <summary>
@@ -121,9 +146,40 @@ public static class ConstructShells
         ref var g = ref c.Guns[k];
         ConstructWeapons.MuzzleWorld(c, k, out var p, out var fwd);
         var v = fwd * g.RoundV;
+        var push = (g.Effects & GunEffect.Shell) != 0 ? c.DefOf(g.Part).GunThrust : 0f; // (a rocket's arc is its push's, for as long as it burns)
+        var burn = push > 0 ? c.DefOf(g.Part).GunBurn : 0f;
         var step = MathF.Max(0.02f, g.MaxRange / MathF.Max(1f, g.RoundV) / 10f);
         seconds = 0;
         for (var i = 0; i < 40; i++)
+        {
+            var a = GravityAt(p);
+            if (seconds < burn && v.LengthSquared() > 1f)
+                a += Vector3.Normalize(v) * push;
+            var next = p + v * step + a * (0.5f * step * step);
+            var d = next - p;
+            var len = d.Length();
+            if (len > 1e-3f && query.Raycast(p, d / len, len, QueryFilter.Shots) is var hit && hit < len - 1e-3f)
+            {
+                land = p + d / len * hit;
+                seconds += step * hit / len;
+                return true;
+            }
+            v += a * step;
+            p = next;
+            seconds += step;
+        }
+        land = p;
+        return false;
+    }
+
+    /// <summary>Where a thing let go at <paramref name="from"/> with velocity <paramref name="vel"/> lands (the bomb-aimer's cross): as <see cref="Predict"/>, against the map.</summary>
+    public static bool Fall(Vector3 from, Vector3 vel, IWorldQuery query, out Vector3 land, out float seconds)
+    {
+        var p = from;
+        var v = vel;
+        const float step = 0.25f;
+        seconds = 0;
+        for (var i = 0; i < 120; i++)
         {
             var a = GravityAt(p);
             var next = p + v * step + a * (0.5f * step * step);
@@ -179,6 +235,8 @@ public sealed partial class ConstructWorld
             _nextShell = 1;
         Shells[ShellCount++] = s;
         ShellsFired++;
+        if (s.Kind == ShellKind.Flare)
+            FlareCount++;
         return s.Id;
     }
 
@@ -190,6 +248,8 @@ public sealed partial class ConstructWorld
         if (Shells.Length == 0)
             Shells = new CShell[MaxShells];
         Shells[ShellCount++] = new CShell { Id = id, Kind = kind, Pos = at, Prev = at, Vel = vel };
+        if (kind == ShellKind.Flare)
+            FlareCount++;
     }
 
     /// <summary>Client: its shell ended (the landing event).</summary>
@@ -198,6 +258,8 @@ public sealed partial class ConstructWorld
         for (var k = 0; k < ShellCount; k++)
             if (Shells[k].Id == id)
             {
+                if (Shells[k].Kind == ShellKind.Flare)
+                    FlareCount--;
                 Shells[k] = Shells[--ShellCount];
                 return;
             }
@@ -213,9 +275,15 @@ public sealed partial class ConstructWorld
                 continue;
             s.Prev = s.Pos;
             s.Vel += ConstructShells.GravityAt(s.Pos) * dt;
+            if (s.Kind >= ShellKind.Rocket)
+                ConstructOrdnance.Fly(this, ref s, dt); // (a rocket's push, a missile's turn, a flare's drag)
             s.Pos += s.Vel * dt;
             if (++s.Age > ShellMaxAge)
+            {
+                if (s.Kind == ShellKind.Flare)
+                    FlareCount--;
                 Shells[k] = Shells[--ShellCount];
+            }
         }
     }
 
@@ -228,8 +296,29 @@ public sealed partial class ConstructWorld
         for (var k = 0; k < ShellCount; k++)
         {
             ref var s = ref Shells[k];
-            if (s.Landed || (s.Age + s.Id) % ShellTestEvery != 0)
+            if (s.Landed)
+            {
+                if (s.Delay <= 0)
+                    continue;
+                s.Delay--; // (a bomb's fuse, after it hit)
+                if (s.Stuck != 0 && Get(s.Stuck) is { } on)
+                    s.Pos = on.ToWorld(s.StuckAt);
                 continue;
+            }
+            if (s.Fuse > 0 && s.Age >= s.Fuse)
+            {
+                Burst(ref s); // (its time)
+                continue;
+            }
+            if ((s.Age + s.Id) % ShellTestEvery != 0)
+                continue;
+            if (s.Prox > 0 && s.Age > ConstructOrdnance.ProxArm && ConstructOrdnance.Near(this, ref s))
+            {
+                Burst(ref s); // (near enough)
+                continue;
+            }
+            if (s.Kind == ShellKind.Missile && s.Age % ConstructOrdnance.FlareLook < ShellTestEvery)
+                ConstructOrdnance.LookForFlares(this, ref s);
             var d = s.Pos - s.Tested;
             var len = d.Length();
             if (len < 1e-4f)
@@ -237,22 +326,34 @@ public sealed partial class ConstructWorld
             d /= len;
             var best = query.Raycast(s.Tested, d, len, QueryFilter.Shots);
             var met = best < len - 1e-3f;
-            var skip = s.Age < ShellMuzzleClear ? Get(s.Gun) : null;
+            var skip = s.Age < s.Clear ? Get(s.Gun) : null;
+            Construct? struck = null;
             if (Raycast(s.Tested, d, best, out var hit, skip) && hit.Distance < best)
             {
                 best = hit.Distance;
                 met = true;
+                struck = hit.Body;
             }
-            if (Targets != null && Targets.RayTarget(s.Tested, d, best, s.Age < ShellMuzzleClear ? s.Gun : (ushort)0, out var td, out _) && td < best)
+            if (Targets != null && Targets.RayTarget(s.Tested, d, best, s.Age < s.Clear ? s.Gun : (ushort)0, out var td, out _) && td < best)
             {
                 best = td;
                 met = true;
+                struck = null;
             }
             if (met)
             {
                 s.Pos = s.Tested + d * best;
                 s.Landed = true;
                 ShellBlastsWaiting++;
+                if (s.Delay > 0)
+                {
+                    if (struck != null)
+                    {
+                        s.Stuck = struck.Id;
+                        s.StuckAt = struck.ToLocal(s.Pos);
+                    }
+                    AddFire(new CFireEvent { Kind = CFireKind.ShellStop, Shell = s.Id, At = s.Pos });
+                }
             }
             else
                 s.Tested = s.Pos;
@@ -260,11 +361,20 @@ public sealed partial class ConstructWorld
         WalkBlast();
         if (!_blast.Active && ShellBlastsWaiting > 0)
             for (var k = 0; k < ShellCount; k++)
-                if (Shells[k].Landed)
+                if (Shells[k].Landed && Shells[k].Delay <= 0)
                 {
                     StartBlast(k);
                     break;
                 }
+    }
+
+    /// <summary>A shell goes off in the air: in the blast's turn, and it digs nothing.</summary>
+    private void Burst(ref CShell s)
+    {
+        s.Landed = true;
+        s.Crater = 0;
+        s.Delay = 0;
+        ShellBlastsWaiting++;
     }
 
     /// <summary>A landed shell goes off: everything that happens at once (the event, the players, the ground), and the list of bodies its blast will walk.</summary>
@@ -275,6 +385,11 @@ public sealed partial class ConstructWorld
         ShellBlastsWaiting--;
         ShellsLanded++;
         AddFire(new CFireEvent { Kind = CFireKind.ShellLand, Shell = s.Id, At = s.Pos, Radius = s.Blast, Muzzle = (byte)s.Kind });
+        if (s.Kind == ShellKind.Flare)
+        {
+            FlareCount--;
+            return; // (it burnt out)
+        }
         var by = Get(s.Gun);
         Targets?.ShellBlast(s.Pos, s.Blast, s.Damage, s.Crater, s.Kind == ShellKind.Incendiary, by, s.GunPart);
         var near = Near(s.Pos, s.Blast + 1f, _blastNear);
@@ -365,6 +480,8 @@ public sealed partial class ConstructWorld
         RoundCount = 0;
         ShellCount = 0;
         ShellBlastsWaiting = 0;
+        FlareCount = 0;
+        Drops.Clear();
         _blast = default;
     }
 }

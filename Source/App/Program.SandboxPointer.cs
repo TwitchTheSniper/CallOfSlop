@@ -123,7 +123,7 @@ public static partial class Program
             if (Down(GameAction.Fire))
             {
                 var panel = held.DefOf(_scrPart).Panels[_scrPanel];
-                if (PanelTouch.Project(held, _scrPart, panel, eye, dir, out var at))
+                if (PanelRender.DrawnSpot(PanelRender.Key(_scrBody, _scrPart, _scrPanel), out var at) || PanelTouch.Project(held, _scrPart, panel, eye, dir, out at))
                     PointerMove(held, _scrPart, panel, at, now);
                 _lvWheelOk = true;
                 return true;
@@ -135,14 +135,32 @@ public static partial class Program
         _scrDown = false;
         var usable = aimed && (h.Seated ? hit.Body.StabCount > 0 && hit.Body.Id == h.SeatBody : h.Tool == ConstructTool.Hands && h.Held == ConstructParts.None) && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
             && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && hit.Body.DefOf(hit.Part).Panels.Length > 0 && !hit.Body.Parts[hit.Part].Broken;
-        if (!usable || PanelTouch.Find(hit.Body, hit.Part, eye, dir, out var spot) is not (>= 0 and var n))
+        // On a panel already, what was drawn says whether it still is: a ray from this moment's poses can fall off a panel moving at speed, and the cursor would flicker.
+        var able = h.Seated ? g.Constructs.Get(_scrBody) is { StabCount: > 0 } && _scrBody == h.SeatBody : h.Tool == ConstructTool.Hands && h.Held == ConstructParts.None;
+        Construct? c = null;
+        var part = -1;
+        var n = -1;
+        Vector2 spot = default;
+        if (able && _scrPart >= 0 && g.Constructs.Get(_scrBody) is { } was && _scrPart < was.PartCount && LinkStamp(was, _scrPart, 255, 0) == _scrStamp && !was.Parts[_scrPart].Broken
+            && PanelRender.DrawnSpot(PanelRender.Key(_scrBody, _scrPart, _scrPanel), out spot) && InPanel(was.DefOf(_scrPart).Panels[_scrPanel], spot))
+        {
+            c = was;
+            part = _scrPart;
+            n = _scrPanel;
+        }
+        else if (usable && (n = PanelTouch.Find(hit.Body, hit.Part, eye, dir, out spot)) >= 0)
+        {
+            c = hit.Body;
+            part = hit.Part;
+            if (PanelRender.DrawnSpot(PanelRender.Key(c.Id, part, n), out var drawn))
+                spot = drawn;
+        }
+        if (c == null)
         {
             _scrOffPart = -1;
             PointerOff();
             return false;
         }
-        var c = hit.Body;
-        var part = hit.Part;
         var d = c.DefOf(part);
         var def = d.Panels[n];
         var page = d.IsMedia ? MediaDirector.PageOf(c.Id, part) : -1;
@@ -172,7 +190,7 @@ public static partial class Program
         _scrPanel = n;
         _scrStamp = LinkStamp(c, part, 255, 0);
         _lvWheelOk = onPicture;
-        var key = (long)c.Id << 24 | (long)part << 8 | (uint)n;
+        var key = PanelRender.Key(c.Id, part, n);
         if (onPicture)
         {
             _scrPage = page;
@@ -200,6 +218,8 @@ public static partial class Program
             g.SandboxPanelTouch(c.Id, part, n, region);
         return true;
     }
+
+    private static bool InPanel(PanelDef panel, Vector2 at) => MathF.Abs(at.X) <= panel.Size.X * 0.5f && MathF.Abs(at.Y) <= panel.Size.Y * 0.5f;
 
     private static void PointerMove(Construct c, int part, PanelDef panel, Vector2 at, double now)
     {

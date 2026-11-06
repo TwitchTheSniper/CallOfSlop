@@ -43,6 +43,8 @@ public static unsafe class PanelRender
         public readonly PanelCard Card = new();
         public float[] Quads = new float[64 * QuadFloats];
         public int QuadCount, Hash, Seen, Stamp, Touched;
+        public Vector3 DrawnCentre, DrawnNormal, DrawnUp; // where it was drawn, from the render origin
+        public int DrawnPass;
         public double Filled;
     }
 
@@ -105,6 +107,48 @@ public static unsafe class PanelRender
         }
         """;
 
+    private static Vector3 _camEye, _camForward;
+    private static int _worldPass;
+
+    /// <summary>The world's own pass begins, seen from here (from the render origin). Panels drawn in it can be pointed at (<see cref="DrawnSpot"/>).</summary>
+    public static void BeginWorld(Vector3 eye, Vector3 forward)
+    {
+        _worldPass++;
+        _camEye = eye;
+        _camForward = forward;
+    }
+
+    /// <summary>A panel as this pass draws it.</summary>
+    public static void NoteDrawn(long key, Vector3 centre, Vector3 normal, Vector3 up)
+    {
+        if (Find(key) is not { } s)
+            return;
+        s.DrawnCentre = centre;
+        s.DrawnNormal = normal;
+        s.DrawnUp = up;
+        s.DrawnPass = _worldPass;
+    }
+
+    public static long Key(ushort body, int part, int panel) => (long)body << 24 | (long)part << 8 | (uint)panel;
+
+    /// <summary>
+    /// Where the crosshair was on a panel in the last picture drawn: metres from its centre, x to the viewer's right and y up. It takes the camera and the panel from that picture, so the answer is what the
+    /// player saw, whatever pose input, ticks or the network hold by now: at any speed, seated or riding, on a host or a client. False: the panel wasn't drawn, or faces away.
+    /// </summary>
+    public static bool DrawnSpot(long key, out Vector2 at)
+    {
+        at = default;
+        if (!_slots.TryGetValue(key, out var s) || s.DrawnPass != _worldPass)
+            return false;
+        var along = Vector3.Dot(_camForward, s.DrawnNormal);
+        if (along >= -1e-4f)
+            return false;
+        var hit = _camEye + _camForward * (Vector3.Dot(s.DrawnCentre - _camEye, s.DrawnNormal) / along);
+        var right = Vector3.Cross(s.DrawnUp, s.DrawnNormal);
+        at = new Vector2(Vector3.Dot(hit - s.DrawnCentre, right), Vector3.Dot(hit - s.DrawnCentre, s.DrawnUp));
+        return true;
+    }
+
     /// <summary>Starts a frame's panels.</summary>
     public static void Begin()
     {
@@ -152,10 +196,11 @@ public static unsafe class PanelRender
                     LastView++;
                     continue;
                 }
-                var key = (long)c.Id << 24 | (long)part << 8 | (uint)n;
+                var key = Key(c.Id, part, n);
                 if (Find(key) is not { } s)
                     continue;
                 s.Seen = _frame;
+                NoteDrawn(key, centre, normal, Vector3.TransformNormal(ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, panel.Up)), seg));
                 if (now - s.Filled >= 1 / FillHz || s.Stamp != c.RebuildStamp || s.Touched != Touch)
                     Fill(world, c, part, panel, s, now);
                 Emit(s, panel.Size.Y, centre, normal, Vector3.TransformNormal(ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, panel.Up)), seg));

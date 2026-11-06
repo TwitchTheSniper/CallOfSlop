@@ -755,7 +755,7 @@ public sealed partial class Game
             case CActKind.Sculpt:
                 return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:
-                return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
+                return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()), Constructs, eye, p.Yaw);
             case CActKind.NudgeBegin:
             case CActKind.NudgeSteer:
             case CActKind.NudgeEnd:
@@ -1126,8 +1126,8 @@ public sealed partial class Game
                 w.U16(body).U16(part).U16(socket).U8(flags); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go)
                 break;
         }
-        if (kind == CActKind.Tool)
-            SandboxHands.Hand(LocalId).Tool = (ConstructTool)part; // (shown at once; the server follows)
+        if (kind == CActKind.Tool && !IsServer)
+            SandboxToolAsked((ConstructTool)part); // (shown at once; the server follows. The host's own request goes straight to SetTool, which must see the change)
         if (IsServer)
         {
             if (Local is { } me)
@@ -1140,6 +1140,22 @@ public sealed partial class Game
         }
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
     }
+
+    /// <summary>Client: a tool change shows at once, the part it puts away with it (ConstructEdits.SetTool decides the same).</summary>
+    private void SandboxToolAsked(ConstructTool tool)
+    {
+        ref var h = ref SandboxHands.Hand(LocalId);
+        if (h.Held != ConstructParts.None && (h.Tool != tool || tool == ConstructTool.None) && !ConstructEdits.KeepsHeld(tool, ConstructParts.Get(h.Held)))
+        {
+            h.HeldGone = h.Held;
+            h.HeldGoneUntil = SandboxNow + SandboxToolLag;
+            h.Held = ConstructParts.None;
+        }
+        h.Tool = tool;
+        h.ToolAskedAt = SandboxNow;
+    }
+
+    public const double SandboxToolLag = 1.0; // seconds: a client's own tool change stands this long before the server's word overrides it
 
     private static Vector3 ReadCm(ref PacketReader r) => r.CmVec();
 
@@ -1540,6 +1556,46 @@ public sealed partial class Game
         return lim >= MathF.PI ? local : Math.Clamp(local, -lim, lim);
     }
 
+    private uint _stabSeat; // the seat whose look is held (body << 8 | part + 1; 0: none)
+    private ushort _stabBody; // the body that point is on (0: the world)
+    private Vector3 _stabAt;
+    private float _stabYaw, _stabPitch; // the look as the last frame left it: any other is the player's hand
+
+    /// <summary>
+    /// A Turret Module set to stabilised: with the mouse still, the local look stays on the point it was left on, on the ground or on a body, whatever the craft does.
+    /// The look is the only thing that changes, so the guns follow it as they follow any gunner's and the server has nothing more to do.
+    /// </summary>
+    private void SandboxStabilise(Construct c, int seat, uint key)
+    {
+        if (!ConstructModules.Stabilised(c, seat) || !c.SeatAims(seat))
+        {
+            _stabSeat = 0;
+            return;
+        }
+        var eye = ConstructWeapons.SeatEye(c, seat);
+        if (_stabSeat == key && LookYaw == _stabYaw && LookPitch == _stabPitch)
+        {
+            var to = (_stabBody != 0 && Constructs.Get(_stabBody) is { } on ? on.ToWorld(_stabAt) : _stabAt) - eye;
+            var len = to.Length();
+            if (len > 1f)
+            {
+                LookYaw = MathF.Atan2(to.X, -to.Z);
+                LookPitch = MathF.Asin(Math.Clamp(to.Y / len, -1, 1));
+            }
+            return;
+        }
+        var look = World.Forward(LookYaw, LookPitch);
+        var d = World.Query.Raycast(eye, look, ConstructOrdnance.LookReach, QueryFilter.Shots);
+        _stabSeat = key;
+        _stabBody = 0;
+        _stabAt = eye + look * d;
+        if (Constructs.Raycast(eye, look, d, out var hit, c))
+        {
+            _stabBody = hit.Body.Id;
+            _stabAt = hit.Body.ToLocal(hit.Point);
+        }
+    }
+
     private uint _sbViewSeat; // the seat the local view last turned with (body << 8 | part + 1; 0: none)
     private float _sbViewYaw;
 
@@ -1683,9 +1739,12 @@ public sealed partial class Game
                 if (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part)) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
+                SandboxStabilise(c, part, localSeat);
                 p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, lookKind);
                 LookYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
                 p.RenderYaw = LookYaw;
+                _stabYaw = LookYaw;
+                _stabPitch = LookPitch;
                 SandboxSeatLookOut(p.RenderLookYaw, now);
             }
             else
