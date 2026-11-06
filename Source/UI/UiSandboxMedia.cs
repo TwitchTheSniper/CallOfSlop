@@ -87,8 +87,9 @@ public sealed partial class Ui
         AdsBox(web: true);
         ImGui.SeparatorText("Private page"u8);
         ImGui.TextWrapped("Nothing is saved to disk. Logins, cookies and history end when the game closes."u8);
-        ImGui.TextWrapped("Shared: the address, and where links take the page (without anything after a ? in it). Other players only load it if they turn on Show other players' web pages."u8);
-        ImGui.TextWrapped("Not shared: your clicks and your typing. Each player's page is their own, and logged in or not they see their own copy."u8);
+        ImGui.TextWrapped("Shared: the address with its query, how far the page is scrolled, and its main video or audio. Whoever used it last leads. Other players only load it if they turn on Show other players' web pages."u8);
+        ImGui.TextWrapped("Taken out of the address first: parameters named like secrets (token, auth, session, key, code, sig, password, state and so on). That goes by names, so don't share a page whose address holds a secret under another name."u8);
+        ImGui.TextWrapped("Not shared: your clicks, your typing, your logins. Each player's page is their own."u8);
     }
 
     private void SandboxConfigMedia(Game game, Construct c, int part, ConstructPartDef d)

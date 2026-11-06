@@ -13,7 +13,9 @@ public sealed class MediaReport
     public volatile int Error;
     public volatile float Time, Duration;
     public volatile string Title = "";
-    public volatile string Address = ""; // a web page's, with no query
+    public volatile string Address = ""; // a web page's, secrets out
+    public volatile bool HasMedia, InnerPaused; // its main video or audio
+    public volatile float Scroll, InnerTime;
 }
 
 /// <summary>
@@ -99,6 +101,8 @@ public static class MediaBrowser
         r.Time = r.Duration = 0;
         r.Title = "";
         r.Address = "";
+        r.HasMedia = r.InnerPaused = false;
+        r.Scroll = r.InnerTime = 0;
         return true;
     }
 
@@ -113,6 +117,12 @@ public static class MediaBrowser
 
     /// <summary>Ad blocking on this page, this PC only: it reloads.</summary>
     public static void Ads(int page, bool on) => Send($"ads {page} {(on ? 1 : 0)}");
+
+    public static void WebScroll(int page, float share) => Send(string.Create(CultureInfo.InvariantCulture, $"wscroll {page} {share:0.#####}"));
+
+    public static void WebInner(int page, bool play) => Send(play ? $"wplay {page}" : $"wpause {page}");
+
+    public static void WebSeek(int page, float seconds) => Send(string.Create(CultureInfo.InvariantCulture, $"wseek {page} {seconds:0.##}"));
 
     public static void Go(int page, string url) => Send($"go {page} {url}");
 
@@ -257,6 +267,13 @@ public static class MediaBrowser
                 r.Duration = Num(a[4]);
                 r.Error = int.TryParse(a[5], out var error) ? error : 0;
                 r.State = int.TryParse(a[2], out var state) ? state : MediaReport.NotLoaded;
+                break;
+            case "w" when a.Length >= 6 && int.TryParse(a[1], out var page4) && (uint)page4 < Reports.Length:
+                var w = Reports[page4];
+                w.Scroll = Num(a[2]);
+                w.InnerTime = Num(a[5]);
+                w.InnerPaused = a[4] == "1";
+                w.HasMedia = a[3] == "1";
                 break;
             case "u" when a.Length >= 3 && int.TryParse(a[1], out var page3) && (uint)page3 < Reports.Length:
                 Reports[page3].Address = a[2]; // (never logged)

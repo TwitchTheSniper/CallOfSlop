@@ -71,6 +71,7 @@ public enum CActKind : byte
     Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
     PanelTouch, // u16 body, u16 part, u8 panel, u8 button: a finger on a display panel's button (protocol 167; PanelTouch.cs)
     Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq (Seek: milliseconds), text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
+    WebState, // u16 body, u16 part, u16 scroll, u8 inner, f32 seconds: a Browser Screen's leading page (protocol 180; ConstructMedia.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
 }
@@ -893,6 +894,22 @@ public sealed partial class Game
                 var region = r.U8();
                 return hands.PanelTouched(Constructs, p.Id, eye, body, part, panel, region, ServerTick, Constructs.Get(body) is { } tc2 ? SandboxConfigRefusal(tc2, p.Id) : null);
             }
+            case CActKind.WebState:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var scroll = r.U16();
+                var inner = r.U8();
+                var at = r.F32();
+                // (the configure tool's rule, without its reach: the leader may have walked off. Refused quietly: this comes four times a second)
+                if (Constructs.Get(body) is { } wc && part < wc.PartCount && wc.DefOf(part).IsWeb && wc.Parts[part].Media is { } wm && hands.Contested(wc, p.Id) == null && SandboxConfigRefusal(wc, p.Id) == null
+                    && ConstructMedia.WebState(wm, p.Id, scroll, inner, at, ServerTick))
+                {
+                    ConstructMedia.WriteWeb(_sbWeb, body, part, wm);
+                    Net.Broadcast(_sbWeb.Span, PacketReliability.ReliableOrdered);
+                }
+                return null;
+            }
             case CActKind.Media:
             {
                 var body = r.U16();
@@ -1176,6 +1193,25 @@ public sealed partial class Game
                 var r = new PacketReader(w.Span[1..]);
                 if (SandboxActGuarded(me, ref r) is { } why)
                     SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    private readonly PacketWriter _sbWeb = new();
+
+    /// <summary>Client (or the host itself): where this peer's page is, when it leads a Browser Screen.</summary>
+    public void SandboxWebState(ushort body, int part, ushort scroll, byte inner, float at)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.WebState).U16(body).U16((ushort)part).U16(scroll).U8(inner).F32(at);
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                SandboxActGuarded(me, ref r);
             }
             return;
         }

@@ -32,6 +32,9 @@ public static class MediaDirector
         public byte Mark;
         public bool Ads;
         public double HandsUntil; // this peer's hands were on the page: until then the page leads and the server follows
+        public string Seen; // a web page: the last address looked at
+        public double NextSend, NextScroll;
+        public ushort Scrolled; // the last scroll this page was told to follow
     }
 
     private struct Near
@@ -386,7 +389,7 @@ public static class MediaDirector
         }
         if (m.Entry is { } web && MediaEntry.IsWeb(web))
         {
-            WebSync(g, ref page, i, web, r.Address, now);
+            WebSync(g, ref page, m, i, web, r, now);
             return;
         }
         if (now < page.HandsUntil)
@@ -454,22 +457,71 @@ public static class MediaDirector
     }
 
     /// <summary>
-    /// A Browser Screen: the address is shared, and nothing else is. Where the server's address changed the page goes there, unless it is already. Where this peer's hands took the page
-    /// somewhere, the new address goes to the server, with no query or fragment: one can hold a login's token, and those stay on this PC.
+    /// A Browser Screen. One page leads, the last peer's to be used, and the others follow it: its address, how far down it is, and its main video or audio on a shared clock. Each peer still runs its own page, and
+    /// clicks and keys stay on it. A follower never reports: a redirect or a language of its own is its page's business, and it stays where it landed.
     /// </summary>
-    private static void WebSync(Game g, ref Page page, int i, string web, string address, double now)
+    private static void WebSync(Game g, ref Page page, CMedia m, int i, string web, MediaReport r, double now)
     {
+        var address = r.Address;
         var at = MediaEntry.Web + address;
         if (web != page.Entry)
         {
             page.Entry = web;
+            page.Seen = address;
             if (address.Length == 0 || !MediaEntry.SamePage(at, web))
                 MediaBrowser.Go(i, MediaEntry.WebUrl(web));
             return;
         }
-        if (now < page.HandsUntil && address.Length > 0 && !MediaEntry.SamePage(at, web) && MediaEntry.Clean(at) != null)
-            g.SandboxMedia(page.Body, page.Part, MediaOp.Go, entry: at);
+        var me = g.Local?.Id ?? 255;
+        var hands = now < page.HandsUntil;
+        if (!hands && m.Lead != me)
+        {
+            WebFollow(g, ref page, m, i, r, now);
+            return;
+        }
+        // Where the page went by itself, or by a click, a key, Back or Forward. A change, not a difference: the address may lag a Go by a second.
+        if (address != page.Seen)
+        {
+            page.Seen = address;
+            if (address.Length > 0 && !MediaEntry.SamePage(at, web) && MediaEntry.Clean(at) != null)
+            {
+                g.SandboxMedia(page.Body, page.Part, MediaOp.Go, entry: at);
+                return;
+            }
+        }
+        var scroll = (ushort)Math.Clamp(r.Scroll * 65535f, 0, 65535);
+        var inner = (byte)(!r.HasMedia ? 0 : r.InnerPaused ? 2 : 1);
+        var changed = m.Lead != me || inner != m.Inner || Math.Abs(scroll - m.Scroll) > ScrollStep || inner != 0 && MathF.Abs(r.InnerTime - m.InnerPosition(g.ServerTick)) > SeekDrift * 0.6f;
+        if (changed && now >= page.NextSend)
+        {
+            page.NextSend = now + WebSendEvery;
+            g.SandboxWebState(page.Body, page.Part, scroll, inner, r.InnerTime);
+        }
     }
+
+    private static void WebFollow(Game g, ref Page page, CMedia m, int i, MediaReport r, double now)
+    {
+        // (again a second later if it didn't take: a joiner's page may not have loaded, or grown, yet)
+        if (MathF.Abs(r.Scroll * 65535f - m.Scroll) > ScrollStep && (m.Scroll != page.Scrolled || now >= page.NextScroll))
+        {
+            page.Scrolled = m.Scroll;
+            page.NextScroll = now + 1;
+            MediaBrowser.WebScroll(i, m.Scroll / 65535f);
+        }
+        if (m.Inner == 0 || !r.HasMedia)
+            return;
+        if (r.InnerPaused != (m.Inner == 2))
+            MediaBrowser.WebInner(i, m.Inner == 1);
+        var clock = m.InnerPosition(g.ServerTick);
+        if (MathF.Abs(r.InnerTime - clock) > SeekDrift && now >= page.NextSeek)
+        {
+            page.NextSeek = now + WebSeekEvery;
+            MediaBrowser.WebSeek(i, clock);
+        }
+    }
+
+    private const int ScrollStep = 64; // of 65535: under a pixel on most pages
+    private const double WebSendEvery = 0.25, WebSeekEvery = 5;
 
     /// <summary>Back, forward or reload on this peer's page. What comes of it is shared as a click's would be.</summary>
     public static void WebCommand(ushort body, int part, string command, double now)
