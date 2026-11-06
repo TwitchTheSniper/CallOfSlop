@@ -30,7 +30,7 @@
         "Rocket"
       ],
       "default": 0,
-      "tooltip": "What the seat's keys mean. Auto: wings make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."
+      "tooltip": "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."
     },
     {
       "key": "strength",
@@ -58,6 +58,14 @@
       "group": "Control",
       "default": false,
       "tooltip": "It flies where the seat looks."
+    },
+    {
+      "key": "invertPitch",
+      "type": "toggle",
+      "label": "Invert pitch",
+      "group": "Control",
+      "default": false,
+      "tooltip": "W lifts the nose and S drops it."
     },
     {
       "key": "maxTilt",

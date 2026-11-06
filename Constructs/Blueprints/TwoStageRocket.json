@@ -57,14 +57,14 @@
    "on": 4,
    "socket": "+x",
    "by": "+y",
-   "spin": 1
+   "spin": 3
   },
   {
    "part": "Light Rocket Engine",
    "on": 4,
    "socket": "-x",
    "by": "-y",
-   "spin": 1
+   "spin": 3
   },
   {
    "part": "Seat",
@@ -76,7 +76,7 @@
    "part": "Flight Stabilizer",
    "on": 5,
    "socket": "+z",
-   "by": "-y"
+   "by": "-z"
   },
   {
    "part": "Input Reader",

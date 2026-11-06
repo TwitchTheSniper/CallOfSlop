@@ -152,7 +152,8 @@ public sealed class RotorEffectors : IEffectorSource
             if (r.Part >= c.PartCount || c.Parts[r.Part].D.Rotor is not { } d || !c.Rigid(r.Seg) || ThrusterEffectors.WiredByHand(c, r.Part, stab, 0))
                 continue;
             r.Scanned = true;
-            ConstructRotor.Effector(c, k, out var at, out var dir, out var force, out var twist);
+            ConstructRotor.Effector(c, k, out var at, out var dir, out _, out var twist);
+            var force = ConstructRotor.FullPush(c, k); // (what it has when it runs: the circuit isn't up yet when the caches are made)
             found.Add(source, EffectorKind.Rotor, r.Part, 0, 0, 1, dir * force, at, twist);
             if (!d.Heli)
                 continue;
@@ -182,7 +183,7 @@ public sealed class RotorEffectors : IEffectorSource
             return;
         ref var r = ref c.Rotors[k];
         if (e.Channel == 0)
-            r.Command = c.Parts[e.Part].D.Rotor!.Heli ? value : MathF.Sqrt(MathF.Max(0, value)); // (a prop's push goes with the square of what it is asked)
+            r.Command = value;
         else if (e.Channel == 1)
             r.CommandX = value;
         else
@@ -284,7 +285,7 @@ public sealed class ThrusterEffectors : IEffectorSource
             return air * t.Level; // (a nozzle turns what is coming out of it)
         if (d.ThrustKind == ThrustKind.Repulsor)
             return ConstructBoost.Falloff(t.Gap == float.MaxValue ? d.RepulsorRange : t.Gap, d.RepulsorRange);
-        return air;
+        return air * (1 + t.Ab * d.AbForce / d.ThrustForce); // (lit, an afterburner is that much more for each share of throttle)
     }
 
     public void Command(Construct c, in CEffector e, float value)

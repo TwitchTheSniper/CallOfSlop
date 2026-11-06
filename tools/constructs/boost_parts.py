@@ -183,10 +183,10 @@ def two_stage():
         {"part": "Decoupler", "on": 1, "socket": "+y", "by": "-y"},  # 3
         {"part": "Fluid Tank", "on": 3, "socket": "+y", "by": "-y", "config": fill("fuel")},  # 4: second stage fuel
         {"part": "Fluid Tank", "on": 4, "socket": "+y", "by": "-y", "config": fill("oxidiser")},  # 5
-        {"part": "Light Rocket Engine", "on": 4, "socket": "+x", "by": "+y", "spin": 1},  # 6
-        {"part": "Light Rocket Engine", "on": 4, "socket": "-x", "by": "-y", "spin": 1},  # 7
+        {"part": "Light Rocket Engine", "on": 4, "socket": "+x", "by": "+y", "spin": 3},  # 6
+        {"part": "Light Rocket Engine", "on": 4, "socket": "-x", "by": "-y", "spin": 3},  # 7
         {"part": "Seat", "on": 5, "socket": "+y", "by": "bottom"},  # 8
-        {"part": "Flight Stabilizer", "on": 5, "socket": "+z", "by": "-y"},  # 9
+        {"part": "Flight Stabilizer", "on": 5, "socket": "+z", "by": "-z"},  # 9
         {"part": "Input Reader", "on": 5, "socket": "-z", "by": "+x", "config": {"setting": "jump"}},  # 10
         {"part": "Toggle", "on": 5, "socket": "+x", "by": "-x"},  # 11
         {"part": "Math Block", "on": 5, "socket": "-x", "by": "+x", "config": {"operator": "multiply"}},  # 12
@@ -206,9 +206,11 @@ def hover_car():
     steps.append({"part": "Light Lift Fan", "on": 1, "socket": "-z", "by": "front"})  # 15
     steps.append({"part": "Fuel Tank", "on": 0, "socket": "-x", "by": "+x"})  # 16
     steps.append({"part": "Small Genset", "on": 16, "socket": "-x", "by": "+x"})  # 17
+    steps.append({"part": "Fuel Tank", "on": 0, "socket": "+x", "by": "-x"})  # 18
+    steps.append({"part": "Small Genset", "on": 18, "socket": "+x", "by": "-x"})  # 19
     links = []
     links += [{"type": "power", "from": 13, "to": k, "fromPort": "Power out", "toPort": "Power in"} for k in (7, 8, 9, 10, 14, 15)]
-    links.append({"type": "power", "from": 17, "to": 13, "fromPort": "Power out", "toPort": "Power in"})
+    links += [{"type": "power", "from": g, "to": 13, "fromPort": "Power out", "toPort": "Power in"} for g in (17, 19)]
     return {"format": FORMAT, "name": "Hover Car", "description": "Four repulsors and a battery. Shift lifts it off, W and S drive it, A and D turn it, Ctrl sets it down. It follows the ground.", "steps": steps, "links": links}
 
 

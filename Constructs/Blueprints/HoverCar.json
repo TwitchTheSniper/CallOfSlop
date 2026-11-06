@@ -107,6 +107,18 @@
    "on": 16,
    "socket": "-x",
    "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Small Genset",
+   "on": 18,
+   "socket": "+x",
+   "by": "-x"
   }
  ],
  "links": [
@@ -155,6 +167,13 @@
   {
    "type": "power",
    "from": 17,
+   "to": 13,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 19,
    "to": 13,
    "fromPort": "Power out",
    "toPort": "Power in"

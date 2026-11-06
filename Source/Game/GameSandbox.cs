@@ -1906,7 +1906,9 @@ public sealed partial class Game
                 var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));
                 lines.Add(new HudLine(GunLine(car, carGun), car.Guns[carGun].Problem.Length > 0 ? red : white));
             }
-            if (car.CanDrive && car.StarterFailed)
+            if (car.StabCount > 0 && !car.CanDrive)
+                lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
+            else if (car.CanDrive && car.StarterFailed)
                 lines.Add(new HudLine(car.Electrical ? "Won't start: no charged battery reaches the engine" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
             else if (car.CanDrive)
             {

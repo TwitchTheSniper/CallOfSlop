@@ -17,7 +17,7 @@ public static class SandboxKeys
     public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
 
     /// <summary>The key lines a seat shows.</summary>
-    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", Gunner = "", GunnerTurrets = "", GetOut = "";
+    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
     /// <summary>The physics gun's keys.</summary>
     public static string PhysGun = "";
@@ -102,6 +102,13 @@ public static class SandboxKeys
         DriveStart = $"{K(GameAction.MoveForward)}: start, {K(GameAction.MoveBack)}: reverse, {steer}, {brake}, {GetOut}";
         DriveShift = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: drive, {steer}, {brake}, {Reload}: gear up, {Sprint}: gear down, {GetOut}";
         Fly = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: thrust, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: turn, {K(GameAction.SeatRollLeft)}/{K(GameAction.SeatRollRight)}: roll, {Sprint}: up and hold, {K(GameAction.CrouchHold)}: down, {GetOut}";
+        var pitch = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}";
+        var sides = $"{K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}";
+        var seatRoll = $"{K(GameAction.SeatRollLeft)}/{K(GameAction.SeatRollRight)}";
+        var lift = $"{Sprint}/{K(GameAction.CrouchHold)}";
+        FlyPlane = $"{pitch}: nose down, up, {sides}: roll, {seatRoll}: yaw, {lift}: throttle, {K(GameAction.Jump)}: brake, {GetOut}";
+        FlyRotor = $"{pitch}: forward, back, {sides}: yaw, {seatRoll}: roll, {lift}: climb, descend, {GetOut}";
+        FlyRocket = $"{pitch}: lean on, back, {sides}: lean left, right, {seatRoll}: spin, {lift}: throttle, {GetOut}";
         Gunner = $"{Fire}: shoot, {GetOut}";
         GunnerTurrets = $"{Fire}: shoot, {Aim}: next turret, {GetOut}";
         const string spin = "mouse or wheel: spin (Shift: free, Ctrl: 5 deg)";

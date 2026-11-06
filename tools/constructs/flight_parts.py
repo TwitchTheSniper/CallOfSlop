@@ -37,10 +37,11 @@ def choice(key, label, group, options, default, tip):
 
 
 CONFIG = [
-    choice("keys", "Keys", "Control", KEYS, 0, "What the seat's keys mean. Auto: wings make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."),
+    choice("keys", "Keys", "Control", KEYS, 0, "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."),
     number("strength", "Strength", "Control", "%", 10, 300, 5, 100, "How hard it corrects. Lower it if the craft shakes."),
     toggle("level", "Stabilise level", "Control", True, "Off: the keys ask for turning, and it stays at whatever angle you leave it."),
     toggle("mouseAim", "Mouse aim", "Control", False, "It flies where the seat looks."),
+    toggle("invertPitch", "Invert pitch", "Control", False, "W lifts the nose and S drops it."),
     number("maxTilt", "Max lean", "Limits", "deg", 0, 80, 1, 0, "The most it leans. 0: the pattern's own."),
     number("maxTurn", "Max turn", "Limits", "deg/s", 0, 360, 5, 0, "The fastest it turns. 0: the pattern's own."),
     number("maxClimb", "Max climb", "Limits", "m/s", 0, 200, 0.5, 0, "The fastest it climbs. 0: the pattern's own."),
@@ -99,7 +100,7 @@ TOUCH = row(0.14, 0.26, ("flight.on", "AP on"), ("flight.off", "AP off"), ("flig
 
 def control(name, cls, s, mass, hp, armour, tool):
     """Telemetry over the autopilot's and the stabilizer's buttons (ConstructFlight.FillPanel; PanelTouch.cs)."""
-    return box_panel(name, cls, s, mass, hp, armour, tool, "Attitude, height, speed, the autopilot and how it is set, with buttons. For the first stabilizer on the construct. No wiring.", "flight.panel", 9, TOUCH)
+    return box_panel(name, cls, s, mass, hp, armour, tool, "Attitude, height, speed, the autopilot and how it is set, with buttons. For the first stabilizer on the construct. No wiring.", "flight.panel", 8, TOUCH)
 
 
 def diagnostic(name, cls, s, mass, hp, armour, tool):

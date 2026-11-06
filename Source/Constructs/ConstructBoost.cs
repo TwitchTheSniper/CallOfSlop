@@ -228,7 +228,7 @@ public static class ConstructBoost
     {
         if (d.AbForce > 0)
         {
-            var lit = (p.InCount2 > 0 && p.In2 >= 0.5f) && want >= d.AbBand && push > 0 && air > 0;
+            var lit = p.InCount2 > 0 && p.In2 >= 0.5f && want >= (t.Ab > 0.5f ? 0.35f * d.AbBand : d.AbBand) && push > 0 && air > 0; // (once lit a stabilizer asks for less of it, and it stays lit)
             t.Ab = Math.Clamp(t.Ab + (lit ? dt : -dt) / AbSpool, 0, 1);
             push += d.AbForce * t.Ab;
             burn += d.AbBurn * t.Ab;

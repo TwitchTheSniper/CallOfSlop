@@ -95,7 +95,7 @@ public sealed partial class Game
         if (_sbRemote.Stale(signal * 100000L + kmh + ((long)d.Id << 32) + ((long)SandboxKeys.Stamp << 50)))
             _sbRemote.Text = signal > 0 ? $"Drone: {kmh} km/h, signal {signal}%" : "Drone: signal lost - it holds where it is - get in range or check its power";
         lines.Add(new HudLine(_sbRemote.Text, signal > 0 ? white : red));
-        lines.Add(new HudLine(d.ThrusterCount > 0 ? SandboxKeys.Fly : SandboxKeys.Drive, dim));
+        lines.Add(new HudLine(d.ThrusterCount > 0 || d.StabCount > 0 ? ConstructFlight.KeyHint(d) : SandboxKeys.Drive, dim));
         return true;
     }
 }

@@ -154,6 +154,7 @@ public enum CfgKey : byte
     WaypointZ,
     HomeX, // Flight Stabilizer: where it took off from (not on the panel)
     HomeZ,
+    InvertPitch, // Flight Stabilizer: W lifts the nose
     Grain, // solid booster: seconds of it burnt (not on the panel; ConstructBoost.cs)
     COUNT,
 }
@@ -227,7 +228,7 @@ public struct CfgValues
 /// </summary>
 public static class ConstructConfig
 {
-    public const int MaxSlots = 18; // (18 since the Flight Stabilizer)
+    public const int MaxSlots = 19; // (19 since the Flight Stabilizer)
 
     /// <summary>How far away a part can be configured from (metres to the part's centre).</summary>
     public const float Reach = 8f;
@@ -686,7 +687,7 @@ public static class ConstructConfig
                 CfgKey.Trim => d.Surface is { Control: > 0 },
                 CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade5) => d.Rotor != null,
                 CfgKey.FanKind or CfgKey.FanBlades or CfgKey.FanDiameter => d.IsFanFormer,
-                (>= CfgKey.Keys and <= CfgKey.HomeZ) => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,

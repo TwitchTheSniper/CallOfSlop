@@ -202,7 +202,7 @@ public static class ConstructRotor
             if (electric)
             {
                 if (working && c.Electrical && ConstructPower.On(c, r.Part))
-                    want = d.Heli ? wired || c.Driver != 255 ? rated : 0 : MathF.Sqrt(MathF.Abs(cmd)) * rated; // (push goes with the square of its speed: a wire asks for push)
+                    want = d.Heli ? wired || scanned || c.Driver != 255 ? rated : 0 : MathF.Sqrt(MathF.Abs(cmd)) * rated; // (push goes with the square of its speed: a wire asks for push)
             }
             else if (r.Feed >= 0 && working && engineOn)
             {

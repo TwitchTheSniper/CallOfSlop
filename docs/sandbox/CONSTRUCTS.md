@@ -4670,42 +4670,57 @@ A cell has to lift itself: a soft cube needs about 3.3 m a side, an armoured one
 
 ## Flight control
 
-Stage 2 of flight. Code: `Source/Constructs/ConstructFlight.cs` (the loops, in the logic step), `ConstructFlightPanel.cs` (the Flight Panel, the balance sums), `Source/App/Program.SandboxFlight.cs` (a pilot's finger, the markers); parts and the demos **Quadcopter** and **Stabilised Airship**: `tools/constructs/flight_parts.py`.
+Code: `Source/Constructs/ConstructFlight.cs` (the loops and the mix, in the logic step), `ConstructEffectors.cs` (what a stabilizer can command), `ConstructFlightPanel.cs` (the panels, the balance sums), `Source/App/Program.SandboxFlight.cs` (a pilot's finger, the markers), `PanelRender.FlightPlot`; parts: `tools/constructs/flight_parts.py`.
 
-**A Flight Stabilizer** (small, medium, large) is a logic part with built-in sensors and no need of power. Link a seat or a Drone Receiver to its `seat` port: that seat then drives the construct, as through a Driving Module, once any output is linked. Mount it level with its arrow forward: its own frame is what it reads (+y up, -z forward). It keeps working with nobody in the seat, so a craft isn't dropped when its pilot gets up, and it lets go (disarms) when asked down and not going down for 0.6 s, or with a plane's or rocket's throttle at zero.
+**A Flight Stabilizer** (small, medium, large, capital) is a logic part with built-in sensors and no need of power. Fit one, level with its arrow forward, and it flies what it finds. **No wiring and no setup:** when the structure changes it looks over its construct for everything it can command and works out, from where each sits and which way it points, the force and torque a unit of command gives. Thrusters, jets, nozzles' gimbals, repulsors, props and rotors with a helicopter's cyclic, control surfaces and its own gyro are commanded; burners and vents are worked by a slow height trim. Each tick it turns the seat's wishes into a demand of three forces and three torques and shares it among them all by least squares, then a few rounds putting back what limits took off, attitude first. Four jets in any spacing, six, a lopsided three, a rotor and a tail rotor, a centre of mass behind the mast: all fly on the same part. A dead or empty effector leaves the mix within half a second. A row nothing can answer is left out and named; a craft leans along any way it has no two-way push for. A rotor on a joint is left to its wires.
 
-**Its ports.** Sixteen named outputs, ordinary data links; a part with a logic input can take any of them. Signs: positive `pitch` asks the nose up, positive `yaw` the nose right, positive `roll` the right wing down; `left aileron` is `roll` and `right aileron` its negative. A surface whose input runs the other way takes a Scale block of -1 on its link.
+**The seat** is the one linked to its `seat` port, else the construct's first, helm first. A Drone Receiver is a seat. It stays at work with nobody at the controls and lets go when asked down and not going down for 0.6 s, or at zero throttle on plane or rocket keys.
 
-| Output | Range | Plane | Helicopter | Quadcopter | Gimballed rocket | Hover platform | Airship |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `throttle` | 0..1 | engines | | | engines | forward jets | forward jets |
-| `reverse` | 0..1 | reverse thrust wire | | | | back jets | back jets |
-| `lift` | 0..1 | | collective | lift if no corners are linked | | lift if no corners are linked | lift jets or a burner |
-| `vent` | 0..1 | | | | | | a cell's vent, coming down |
-| `pitch`, `yaw`, `roll` | -1..1 | elevator, rudder, roll | cyclic, tail rotor, cyclic | the same, for what it can't reach | gimbal lean on `pitch` and `yaw`, spin on `roll` | as a quadcopter | surfaces, if any |
-| `left aileron`, `right aileron`, `flaps` | -1..1, 0..1 | ailerons; flaps below half its max speed | | | | | |
-| `front left`, `front right`, `rear left`, `rear right` | 0..1 | | | motors | | motors | engines: the turn is theirs (`rear left`, `rear right`) |
-| `strafe left`, `strafe right` | 0..1 | | | | | side jets | side jets |
+**Several stabilizers:** the first flies and the rest stand by, and say so on the look line.
 
-Inputs: `seat`, then axes that add to the seat's (`throttle`, `pitch`, `yaw`, `roll`, `lift`), `autopilot` (on while high), `mode` (1 to 5), `altitude`, `heading`, `waypoint x`, `waypoint z`, and `set home` (a rising edge). A wired value goes into the settings, numbers twice a second, so a panel anywhere shows it.
+**A wire overrides the scan.** A thruster, rotor or surface with a wire into it from anything but its stabilizer is left to that wire. Wires from the stabilizer into a part it has found change nothing. Its sixteen named outputs still carry the same demands for anything wired by hand: `throttle`, `reverse`, `lift`, `vent`, `pitch`, `yaw`, `roll` (-1..1: nose up, nose right, right wing down), `left aileron`, `right aileron`, `flaps`, four corners, `strafe left`, `strafe right`. Inputs: `seat`, axes that add to the seat's (`throttle`, `pitch`, `yaw`, `roll`, `lift`), `autopilot`, `mode` (1 to 5), `altitude`, `heading`, `waypoint x`, `waypoint z`, `set home`.
 
-**Keys.** Plane: W nose down, S nose up, A and D bank and the rudder follows, Q and E roll, Shift and Ctrl work a throttle that stays where it is left. Helicopter and quadcopter: W and S go forward and back, Q and E sideways, A and D turn, Shift and Ctrl climb and sink, and it holds speed zero and its height when let go. Rocket: W, S, A, D lean it, Q and E spin it, Shift and Ctrl the throttle. Hover platform: as a quadcopter, staying level, moving by its side jets. Airship: W and S the engines, A and D turn, Shift and Ctrl climb and sink.
+**Keys** (the `keys` setting; they are the seat's move and roll actions, so they rebind in the usual place, and only a stabilised craft reads them this way). Auto picks: wings and a push that is mostly forward make a plane, nozzles a rocket, anything else a rotorcraft. The old Helicopter, Quadcopter, Hover platform and Airship patterns are all Rotorcraft: the scan is what tells them apart (a craft with two-way jets stays level and slides; gas keeps a ship level).
 
-**Settings** on the configure panel: pattern; strength; stabilise level (off: the keys ask for turning, and it stays where it is left); mouse aim (it flies where the seat looks: multirotors turn to the look, planes bank to it and pitch to it, a rocket leans its nose to it, an airship turns to it); max lean, turn, climb and speed (0: the pattern's own); trim, pitch and roll, what it counts as level. A multirotor's speed loop holds it still, so a multirotor's trim only shifts where it hangs; trim is for what stays at an angle. There is one set of settings on a stabilizer, for its pattern.
+| Keys | W, S | A, D | Q, E | Shift, Ctrl | Space |
+| --- | --- | --- | --- | --- | --- |
+| Rotorcraft | forward, back | yaw | roll (sideways) | climb, descend | |
+| Plane | nose down, up | roll, the rudder follows | yaw | a held throttle, more, less | wheel brake |
+| Rocket | lean on, back | lean left, right | spin | a held throttle, more, less | |
 
-**What it knows.** Twice a second it looks at what its outputs reach (`Refit`). Corner channels that reach thrusters give their force and place, and the mix is the least squares share of lift and torque among them, so a craft whose centre of mass is off the middle, or that has lost a thruster or run out of fuel, is mixed for as it is. Nothing there needs tuning: the craft's inertia and mass turn turning asked into torque, its loops go as fast as its slowest thruster follows, and it never leans further than its spare thrust can hold up (a craft at 91% thrust in the hover gets 3 degrees). A joint on `pitch`, `yaw` or `roll` that carries a thruster is a gimbal: its authority and its sign come from the joint's axis, and it is asked for 20 degrees at most. Anything else takes `strength` as its gain, falling with the square of the speed past 40 m/s. A new kind of lifter or control output teaches `Refit` its force in one line.
+Invert pitch swaps W and S. **Settings:** keys, strength, stabilise level (off: the keys ask for turning), mouse aim (it flies where the seat looks), invert pitch, max lean, turn, climb and speed (0: their own), trim, and the autopilot's. It never leans further than its spare thrust can hold up, its loops go as fast as its slowest thruster follows (a helicopter's rotor winds up slowly, but its pitch answers at once), and a speed loop stays inside the attitude loop. A slow lean integral works off a steady side push.
 
-**The gyro.** Thrusters have no torque about their own axis, so four thrusters pushing the same way can't turn. A stabilizer has a gyro (`logic.gyro`, N m: 1,500, 400,000, 30,000,000), about its own up, on `Construct.GyroNow`. It answers yaw first; a mix that has yaw takes the rest.
+**The gyro.** Thrusters have no torque about their own axis, so four pushing the same way can't turn. A stabilizer has a gyro (`logic.gyro`, N m: 1,500, 400,000, 30,000,000, 2,000,000,000), an effector like any other about its own up.
 
-**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; set on the panel, at a Flight Panel, or by its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. Hover holds the point it was at; the pilot's keys move what is held. Waypoints are x and z, at the height held. A plane, which can't stop, circles a point.
+**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; on the configure panel, a Flight Control Panel or its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. A plane circles a point; a ship stops turning for it 25 m off.
 
-**The Flight Panel** (no wiring; it reads the first stabilizer on the construct): height, climb, speed, heading, pitch, roll and the autopilot, with touch buttons for on, off, next mode and set home. A pilot's finger reaches it from the seat on a stabilised craft.
+**Flight Control Panel** (S, M, L, capital; the old Flight Panel by name): height, climb, speed, heading, attitude, the autopilot and how it is set, whether every axis is controlled, and buttons for AP on, off, next mode, set home, level, strength, hold this altitude and hold this heading. A pilot's finger reaches it from the seat.
 
-**Balance markers.** With the attach, linking, configure or selector tool out, or a part in hand, the crosshair on a craft with a stabilizer, thrusters, cells or anything else that lifts shows the centre of mass (yellow), lift (blue) and thrust (orange, with its direction), labelled over the hull with how far ahead of the centre of mass each is. `Construct.LiftCentre` is the one sum: a new lifting thing adds itself there with `ConstructFlight.AddLift`.
+**Flight Diagnostic Panel** (S, M, L): the craft from above and from the side, an arrow at each effector the way it pushes, long and bright by what it is told, blue or orange by the sign for surfaces and gimbals, red when dead or out of fuel, up to 24 arrows. It names any axis it can't control. It redraws at the panels' 4 Hz, and clients hear the commands at 5 Hz while it is at work (`CBodyKind.Flight`).
 
-**The tick.** A stabilizer costs about 1 microsecond a tick and a look 0.35, and allocates nothing. Asleep and unarmed it clears its outputs and returns.
+**To add a family of effectors:** a class with `IEffectorSource` (`List`, `Authority`, `Command`) and a line in `ConstructEffectors.Sources`.
 
-**Choices made (the developer may change them):** the gyro; one set of settings per stabilizer, not per pattern; no airspeed or ground height sensor (height is the world's, as an Altitude Sensor reads it); an airship's level is her gas's job, so her pitch and roll go only to surfaces; a stabilizer needs no power, and a panel does.
+**Balance markers.** With the attach, linking, configure or selector tool out, or a part in hand, the crosshair on a flyer shows the centre of mass (yellow), lift (blue) and thrust (orange), labelled with how far ahead of the centre of mass each is. `Construct.LiftCentre` is the one sum: a new lifting thing adds itself with `ConstructFlight.AddLift`.
+
+## Jets, rockets and repulsors
+
+Code: `Source/Constructs/ConstructBoost.cs`; parts and demos (Jet Hover Platform, Two-Stage Rocket, Hover Car, Anti-Grav Barge): `tools/constructs/boost_parts.py`. All but Anti-Grav and the decoupler are thrusters with a `kind`.
+
+**Turbojets** (`"kind": "air"`): thrust by the air's density, a little more with speed, none below 3% of sea level or in vacuum, nothing out of the bubble. Fuel as any thruster. The old Light, Small, Medium, Large and Capital Jets stay as they are, working anywhere, since the Orbiter and Jumper climb out on them.
+
+**Afterburner** (`"afterburner": {force, burn, band}`): its input on and the throttle in its band. Turbojets: 2.5 times the thrust, six times the fuel, lit in 0.6 s. No heat damage yet.
+
+**Rockets** (`"kind": "rocket"`): fuel and oxidiser by pipe from Fluid Tanks (`Fluid.Oxidiser`; survival: a Smelter makes `oxidiser` from stone, and a Gas Compressor pipes it). Work anywhere. Propellant doesn't change their mass yet.
+
+**Gimbals** (`"gimbal": degrees`): a nozzle's own, on its `gimbal pitch` and `gimbal yaw` inputs, or commanded by the scan however the nozzle was turned when fitted. A Motor Hinge gimbal still works by wire.
+
+**Solid boosters** (`"kind": "solid"`, `burnTime`): lit once by their input, or Shift unwired; no throttle, and a stabilizer doesn't count them.
+
+**Decoupler:** a rising input and it goes, and each side flies on as a working construct with its tanks, links and seats. The side with the drive seat keeps the body. Pools of fuel and charge split by capacity. Sides part at `kick` m/s by their masses.
+
+**Repulsors** (`"kind": "repulsor"`, `range`): a push along the part's axis off the ground or a construct under it, exp(-4.6 gap / range) to none at its range, with a shock absorber per corner. On power. They look every third tick in turn. Height on a repulsor craft is the gap, so it follows the ground. Nothing pushes back on a construct underneath yet.
+
+**Anti-Grav** (`logic.kind: antigrav`, `share`, `radius`): on power it takes `share` of the weight of what lies in its radius off the whole construct, so several add up, to at most all of it. Radius grows by the lift cells' soft scale on big ships. No power, and it stops that tick. Works wherever there is gravity.
 
 ### Link type from the port (at01)
 
