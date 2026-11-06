@@ -93,7 +93,7 @@ public static partial class SelfTest
         var names = RecyclingTable.Current;
         want(refining.Find("smelter", names.IdOf("iron ore"))?.MinTier == 1 && refining.Find("smelter", names.IdOf("sand"))?.MinTier == 1 && refining.Find("sawmill", names.IdOf("wood"))?.MinTier == 1
             && refining.Find("smelter", names.IdOf("copper ore"))?.MinTier == 2 && refining.Find("smelter", names.IdOf("gold ore"))?.MinTier == 3, "the recipes' minTier");
-        want(refining.Takes("smelter", 1) == "iron ore, sand" && refining.Takes("smelter", 2) == "iron ore, copper ore, sand" && refining.Takes("smelter", 3) == "iron ore, copper ore, gold ore, sand" && refining.Takes("smelter") == refining.Takes("smelter", 5), $"what a tier takes: \"{refining.Takes("smelter", 1)}\"");
+        want(refining.Takes("smelter", 1) == "iron ore, sand, dirt" && refining.Takes("smelter", 2) == "iron ore, copper ore, sand, dirt" && refining.Takes("smelter", 3) == "iron ore, copper ore, gold ore, sand, dirt" && refining.Takes("smelter") == refining.Takes("smelter", 5), $"what a tier takes: \"{refining.Takes("smelter", 1)}\"");
     }
 
     /// <summary>A line's height as a share of its size (a module's size, a building's width): the shortest and tallest shape a tier may have. A drill's top is its shaft socket.</summary>
