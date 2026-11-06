@@ -38,6 +38,8 @@ public enum PerfArea : byte
     Bodies, //   players (and your own legs)
     Entities, //   grenades, streaks, launchers, zombies, map logic, co-op soldiers
     Effects, //   tracers, blasts, smoke, objectives, frenzy sparks
+    Particles, //   the particle pool's step and draw (Source/Render/Fx)
+    PostFx, //   bloom, heat haze, ambient occlusion (Source/Render/Fx/PostFx.cs)
     ViewModel, //   your gun
     Hud, //   the 2D HUD (crosshair, ammo, prompts)
     Ragdolls, //   ragdoll physics steps (drawn with the props' debris)
@@ -90,7 +92,7 @@ public static class Perf
         "Events", "Input", "Game update", "Net receive", "Server ticks", "Match and mode", "Zombies", "Horde", "Co-op",
         "Projectiles", "Props, logic, destruction", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
         "Frame state, sounds", "Audio, voice, frenzy", "Render (CPU)", "Buildings", "Terrain", "Props", "Meshes", "Foliage",
-        "Decals", "Sky", "Players", "Entities, zombies", "Effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
+        "Decals", "Sky", "Players", "Entities, zombies", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
         "ImGui new frame", "HUD windows", "Menus", "Dev windows", "Perf window (F9)", "ImGui draw (GL)",
         "Swap (vsync/GPU wait)", "Loading", "Frame limiter (Max FPS wait)",
     ];
@@ -112,7 +114,7 @@ public static class Perf
         Under(PerfArea.Modes, PerfArea.Zombies, PerfArea.Coop);
         Under(PerfArea.Zombies, PerfArea.Horde);
         Under(PerfArea.Render, PerfArea.Buildings, PerfArea.Terrain, PerfArea.Props, PerfArea.Meshes, PerfArea.Foliage, PerfArea.Decals, PerfArea.Sky,
-            PerfArea.Bodies, PerfArea.Entities, PerfArea.Effects, PerfArea.ViewModel, PerfArea.Hud, PerfArea.Ragdolls);
+            PerfArea.Bodies, PerfArea.Entities, PerfArea.Effects, PerfArea.Particles, PerfArea.PostFx, PerfArea.ViewModel, PerfArea.Hud, PerfArea.Ragdolls);
         Under(PerfArea.Ui, PerfArea.UiNewFrame, PerfArea.UiHud, PerfArea.UiMenus, PerfArea.UiDev, PerfArea.UiPerf, PerfArea.UiDraw);
         return p;
     }

@@ -21,20 +21,30 @@ public sealed unsafe partial class Renderer
         uniform vec3 uOrigin; // the render origin (SetCameraAt): uModel and uMVP are relative to it, so far from the map's middle nothing shakes
         out vec3 vWorld;
         out vec3 vNormal;
+        out vec3 vLocal;       // the point in the box, metres from its middle (a material's detail stays on a moving part)
+        out vec3 vLocalN;      // the box's own face normal
+        flat out vec3 vSize;   // the box's size (a material's edge wear)
         void main()
         {
             vWorld = (uModel * vec4(aPos, 1.0)).xyz + uOrigin;
             vNormal = mat3(uModel) * aNormal;
+            vSize = vec3(length(uModel[0].xyz), length(uModel[1].xyz), length(uModel[2].xyz));
+            vLocal = aPos * vSize;
+            vLocalN = aNormal;
             gl_Position = uMVP * vec4(aPos, 1.0);
         }
         """;
 
     // uMode: 0 = lit, 1 = lit + world-space texture (layer uLayer of uTex), 2 = unlit (HUD, tracers, muzzle flash)
+    // uLayer from Surfaces.FirstShaded up in mode 0: a shared material's row, with the box's wear in the fraction (Surfaces.Code).
     // Sun, ambient and fog come from Lighting.Glsl (shared with the foliage renderer).
-    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + Surfaces.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
+        in vec3 vLocal;
+        in vec3 vLocalN;
+        flat in vec3 vSize;
         uniform vec4 uColor;
         uniform float uMode;
         uniform float uLayer;
@@ -101,7 +111,10 @@ public sealed unsafe partial class Renderer
 
             // Hemisphere ambient + sun, plus a little rim light on the sides so box edges read.
             float rim = 0.12 * (1.0 - abs(n.y));
-            col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
+            if (uSurfQ.x > 0.5 && uLayer >= 7.0 && uMode < 0.5) // a shared material (Surfaces.cs); Low, the rows of the old textures and everything else: the classic light
+                col = SurfaceLit(col, n, vWorld, vLocal, vLocalN, vSize, uLayer) + col * rim * 0.5 * gLitAmb;
+            else
+                col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             // Distance haze towards the sky colour, so big maps fade out instead of ending abruptly.
             FragColor = vec4(ApplyFog(col, vWorld), uColor.a);
         }
@@ -178,7 +191,24 @@ public sealed unsafe partial class Renderer
 
         Enable(GlCapability.DepthTest);
         DepthFunc(GlFunc.LessEqual);
-        BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        BlendDefault();
+    }
+
+    /// <summary>Plain alpha blending that leaves the back buffer's alpha alone: that is the bloom's glow mark (PostFx.cs).</summary>
+    public static void BlendDefault() => Native.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+
+    /// <summary>Alpha blending that also marks what it draws as glowing, for the bloom (tracers, blasts).</summary>
+    public static void BlendGlowing() => Native.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
+
+    /// <summary>After a renderer that used its own state (Fx, PostFx): this one's shader, mesh and blending, as they were.</summary>
+    public void AfterFx()
+    {
+        BlendDefault();
+        _program.Use();
+        _vao.Bind();
+        Native.glActiveTexture(GL_TEXTURE0);
+        if (_blendOn)
+            Native.glEnable(GlCapability.Blend);
     }
 
     private int Uniform(ReadOnlySpan<byte> nameZ)
@@ -205,6 +235,7 @@ public sealed unsafe partial class Renderer
         Enable(GlCapability.DepthTest);
         Native.glDisable(GlCapability.Blend);
         _blendOn = false;
+        BlendDefault();
         LightGrid.Off(); // each frame starts with the classic light; the world pass turns a lit map's grid on (LightGrid.cs)
     }
 
@@ -395,6 +426,22 @@ public sealed unsafe partial class Renderer
         _vao.Bind();
     }
 
+    private GlProgram _bodyProgram;
+    private int _bLocViewProj, _bLocBody, _bLocOrigin, _bLocCam, _bLocFog, _bLocFogRange, _bLocGlow;
+
+    /// <summary>One box of a body batch as the GPU holds it: where and how big in the body's frame, its tint, its wear and its material's row. 32 bytes.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
+    public struct BodyBox
+    {
+        public Vector3 Centre, Size;
+        public byte R, G, B, Wear;
+        public byte Surface, Mode;
+        public ushort Pad;
+    }
+
+    /// <summary>While set, what is drawn opaque and unlit (mode 2: a lit lamp, a glowing box) marks the back buffer's alpha for the bloom (PostFx.cs).</summary>
+    public bool MarkGlow;
+
     /// <summary>A big construct's plain boxes in the body's frame, kept on the GPU between edits and drawn with one call however many they are (ConstructRender.cs).</summary>
     public sealed class BodyBatch
     {
@@ -407,8 +454,8 @@ public sealed unsafe partial class Renderer
     /// <summary>Can bodies be drawn as batches here (a real GL context and the instanced shader)?</summary>
     public bool BodyBatches => Recorder == null && !_instBroken && (_instReady || InitInstanced());
 
-    /// <summary>Puts <paramref name="count"/> boxes (<see cref="BatchFloats"/> floats each, model matrices in the body's frame) into a batch.</summary>
-    public void UploadBody(BodyBatch b, float[] data, int count)
+    /// <summary>Puts <paramref name="count"/> boxes into a batch.</summary>
+    public void UploadBody(BodyBatch b, BodyBox[] data, int count)
     {
         FlushBatch();
         if (b.Capacity == 0)
@@ -416,17 +463,17 @@ public sealed unsafe partial class Renderer
             b.Vbo = GenBuffer();
             b.Vao = GenVertexArray();
             b.Vao.Bind();
-            BoxInstanceAttributes(b.Vbo);
+            BodyInstanceAttributes(b.Vbo);
             GlDebug.Label(GL_VERTEX_ARRAY, b.Vao.Id, "Renderer.bodyBatch");
         }
         Native.glBindBuffer(GL_ARRAY_BUFFER, b.Vbo);
-        var bytes = (nint)count * BatchFloats * sizeof(float);
+        var bytes = (nint)count * sizeof(BodyBox);
         if (count > b.Capacity)
         {
             b.Capacity = count;
             Native.glBufferData(GL_ARRAY_BUFFER, bytes, null, GL_STATIC_DRAW);
         }
-        fixed (float* p = data)
+        fixed (BodyBox* p = data)
             Native.glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, p);
         b.Count = count;
         _vao.Bind();
@@ -438,16 +485,17 @@ public sealed unsafe partial class Renderer
         if (b.Count == 0)
             return;
         FlushBatch();
-        _instProgram.Use();
+        _bodyProgram.Use();
         var vp = _viewProjRel;
-        Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
-        Native.glUniform3f(_iLocOrigin, Origin.X, Origin.Y, Origin.Z);
+        Native.glUniformMatrix4fv(_bLocViewProj, 1, false, &vp.M11);
+        Native.glUniform3f(_bLocOrigin, Origin.X, Origin.Y, Origin.Z);
         var m = FromOrigin(body);
-        Native.glUniformMatrix4fv(_iLocBody, 1, false, &m.M11);
+        Native.glUniformMatrix4fv(_bLocBody, 1, false, &m.M11);
         var cam = CameraPosition;
-        Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
-        Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
-        Native.glUniform2f(_iLocFogRange, FogRange.X, FogRange.Y);
+        Native.glUniform3f(_bLocCam, cam.X, cam.Y, cam.Z);
+        Native.glUniform3f(_bLocFog, FogColor.X, FogColor.Y, FogColor.Z);
+        Native.glUniform2f(_bLocFogRange, FogRange.X, FogRange.Y);
+        Native.glUniform1f(_bLocGlow, MarkGlow ? 0f : 1f);
         PerfCounters.Draw(36, b.Count);
         b.Vao.Bind();
         Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, b.Count);
@@ -527,6 +575,59 @@ public sealed unsafe partial class Renderer
         Native.glVertexAttribDivisor(7, 1);
     }
 
+    private void MakeBodyProgram(string vsSrc, string fsSrc)
+    {
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vsSrc)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fsSrc)).Compile();
+        _bodyProgram = CreateProgram();
+        Native.glAttachShader(_bodyProgram, vs);
+        Native.glAttachShader(_bodyProgram, fs);
+        Native.glLinkProgram(_bodyProgram);
+        GlDebug.Label(GL_PROGRAM, _bodyProgram.Id, "Renderer.bodyProgram");
+        int linked;
+        Native.glGetProgramiv(_bodyProgram, GL_LINK_STATUS, &linked);
+        if (linked == 0)
+            throw new InvalidOperationException("body batch shader link failed");
+        vs.Dispose();
+        fs.Dispose();
+        Lighting.Upload(_bodyProgram);
+        int Loc(ReadOnlySpan<byte> name)
+        {
+            fixed (byte* p = name)
+                return Native.glGetUniformLocation(_bodyProgram, p);
+        }
+        _bLocViewProj = Loc("uViewProj\0"u8);
+        _bLocBody = Loc("uBody\0"u8);
+        _bLocOrigin = Loc("uOrigin\0"u8);
+        _bLocCam = Loc("uCam\0"u8);
+        _bLocFog = Loc("uFog\0"u8);
+        _bLocFogRange = Loc("uFogRange\0"u8);
+        _bLocGlow = Loc("uGlowAlpha\0"u8);
+        Native.glUniform1i(Loc("uTex\0"u8), 0);
+    }
+
+    /// <summary>A body batch VAO's attributes: the cube, then a <see cref="BodyBox"/> an instance (bound VAO).</summary>
+    private void BodyInstanceAttributes(GlBuffer instances)
+    {
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        const int stride = 6 * sizeof(float);
+        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
+        EnableVertexAttribArray(0);
+        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
+        EnableVertexAttribArray(1);
+        Native.glBindBuffer(GL_ARRAY_BUFFER, instances);
+        var s = sizeof(BodyBox);
+        Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, s, (void*)0);
+        Native.glVertexAttribPointer(3, 3, GL_FLOAT, false, s, (void*)12);
+        Native.glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, s, (void*)24);
+        Native.glVertexAttribPointer(5, 2, GL_UNSIGNED_BYTE, false, s, (void*)28);
+        for (uint a = 2; a <= 5; a++)
+        {
+            EnableVertexAttribArray(a);
+            Native.glVertexAttribDivisor(a, 1);
+        }
+    }
+
     private bool InitInstanced()
     {
         try
@@ -546,6 +647,9 @@ public sealed unsafe partial class Renderer
                 uniform vec3 uOrigin;
                 out vec3 vWorld;
                 out vec3 vNormal;
+                out vec3 vLocal;
+                out vec3 vLocalN;
+                flat out vec3 vSize;
                 out vec4 vColorI;
                 flat out float vModeI;
                 flat out float vLayerI;
@@ -555,9 +659,48 @@ public sealed unsafe partial class Renderer
                     vec4 w = model * vec4(aPos, 1.0);
                     vWorld = w.xyz + uOrigin;
                     vNormal = mat3(model) * aNormal;
+                    vSize = vec3(length(iM0.xyz), length(iM1.xyz), length(iM2.xyz));
+                    vLocal = aPos * vSize;
+                    vLocalN = aNormal;
                     vColorI = iColor;
                     vModeI = iModeLayer.x;
                     vLayerI = iModeLayer.y;
+                    gl_Position = uViewProj * w;
+                }
+                """;
+            // A body batch's boxes: no rotation of their own (Plain parts' boxes sit square in the body), so the instance is a
+            // centre, a size, a packed tint (alpha: wear) and a material row: 32 bytes, not the 88 above (BodyBox).
+            const string bodyVsSrc = """
+                #version 410 core
+                layout(location = 0) in vec3 aPos;
+                layout(location = 1) in vec3 aNormal;
+                layout(location = 2) in vec3 iCentre;
+                layout(location = 3) in vec3 iSize;
+                layout(location = 4) in vec4 iTint;
+                layout(location = 5) in vec2 iInfo;
+                uniform mat4 uViewProj;
+                uniform mat4 uBody;
+                uniform vec3 uOrigin;
+                uniform float uGlowAlpha;
+                out vec3 vWorld;
+                out vec3 vNormal;
+                out vec3 vLocal;
+                out vec3 vLocalN;
+                flat out vec3 vSize;
+                out vec4 vColorI;
+                flat out float vModeI;
+                flat out float vLayerI;
+                void main()
+                {
+                    vSize = iSize;
+                    vLocal = aPos * iSize;
+                    vLocalN = aNormal;
+                    vec4 w = uBody * vec4(iCentre + vLocal, 1.0);
+                    vWorld = w.xyz + uOrigin;
+                    vNormal = mat3(uBody) * aNormal;
+                    vModeI = iInfo.y;
+                    vColorI = vec4(iTint.rgb, iInfo.y > 1.5 ? uGlowAlpha : 1.0);
+                    vLayerI = iInfo.x + iTint.a * 0.99;
                     gl_Position = uViewProj * w;
                 }
                 """;
@@ -594,6 +737,7 @@ public sealed unsafe partial class Renderer
             fixed (byte* p = "uTex\0"u8)
                 _iLocTex = Native.glGetUniformLocation(_instProgram, p);
             Native.glUniform1i(_iLocTex, 0);
+            MakeBodyProgram(bodyVsSrc, fsSrc);
 
             _instVao = GenVertexArray();
             _instVao.Bind();
@@ -787,13 +931,13 @@ public sealed unsafe partial class Renderer
     /// Draws the unit cube transformed by <paramref name="model"/>, or with <paramref name="shape"/> &gt; 0 a weapon part's
     /// contoured shape inside it (<see cref="PartShapes"/>; uploaded into the box buffer the first time it's needed).
     /// </summary>
-    public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid, int shape = 0)
+    public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid, int shape = 0, float surface = 0)
     {
         if (_tilted)
         {
             var tilted = model * _tilt;
             _tilted = false;
-            Draw(tilted, color, alpha, mode, material, shape);
+            Draw(tilted, color, alpha, mode, material, shape, surface);
             _tilted = true;
             return;
         }
@@ -806,6 +950,9 @@ public sealed unsafe partial class Renderer
             return;
         }
         var m = FromOrigin(model);
+        var layer = surface > 0 ? surface : (float)material; // (a shared material's code, Surfaces.Code; else the old texture layer)
+        if (MarkGlow && mode == 2 && !_blendOn)
+            alpha = 0f; // (this pixel glows: PostFx reads the mark, and with blending off it changes nothing else)
         if (_batching)
         {
             if (!_bloodOn && shape == 0 && (_batchBlended || !_blendOn))
@@ -819,7 +966,7 @@ public sealed unsafe partial class Renderer
                 b[o + 8] = m.M31; b[o + 9] = m.M32; b[o + 10] = m.M33; b[o + 11] = m.M34;
                 b[o + 12] = m.M41; b[o + 13] = m.M42; b[o + 14] = m.M43; b[o + 15] = m.M44;
                 b[o + 16] = color.X; b[o + 17] = color.Y; b[o + 18] = color.Z; b[o + 19] = alpha;
-                b[o + 20] = mode; b[o + 21] = (float)material;
+                b[o + 20] = mode; b[o + 21] = layer;
                 if (++_batchCount == BatchMax)
                     FlushBatch();
                 return;
@@ -827,7 +974,7 @@ public sealed unsafe partial class Renderer
             if (_bloodOn || _blendOn)
                 FlushBatch(); // keep the order: everything batched so far goes first
         }
-        Native.glUniform1f(_locLayer, (float)material);
+        Native.glUniform1f(_locLayer, layer);
         var mvp = m * _viewProjRel;
         Native.glUniformMatrix4fv(_locMvp, 1, false, &mvp.M11);
         Native.glUniformMatrix4fv(_locModel, 1, false, &m.M11);
