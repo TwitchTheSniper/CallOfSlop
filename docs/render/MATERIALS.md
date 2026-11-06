@@ -53,7 +53,7 @@ the simulation. A frame's births go into a fixed array of 8,192 (more are droppe
 - **4.6 path** (`RenderCaps.GpuParticles`, experiment `gpufx`): births go through a persistent `StreamRing` to a compute pass that writes
   them into the pool (a storage buffer, 16,384 / 65,536 / 131,072 by setting), a second pass steps every slot and lists the living
   (`atomicAdd` on the indirect command's instance count), and one `glDrawArraysIndirect` draws the list, pulling each particle in the
-  vertex shader. The CPU touches a particle once, at its birth.
+  vertex shader. The CPU touches a particle once, at its birth. With nothing alive and nothing new no pass runs at all.
 - **4.1 path, or `--gl-no=gpufx`:** the same births, kinds and shaders. `Fx.StepCpu` moves 512 / 1,024 / 2,048 of them and they go to one
   instanced draw; only where a particle comes from differs (`FX_PULL`). It emits 30% of the density.
 - Particles are premultiplied light plus cover, in one draw with dual-source blending (core since 3.3): `glow` 1 only adds, 0 hides

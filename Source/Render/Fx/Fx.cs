@@ -65,6 +65,7 @@ public static class Fx
 
     internal static readonly FxParticle[] Births = new FxParticle[MaxBirths];
     internal static int BirthCount;
+    internal static float LongestBirth; // this frame's longest life: the pool knows when the last one is gone, and rests
 
     /// <summary>Particles asked for, and dropped for a full frame (the F9 window; a self-test can read them headless).</summary>
     public static long Emitted, Dropped;
@@ -107,6 +108,8 @@ public static class Fx
             Dropped++;
             return;
         }
+        if (life > LongestBirth)
+            LongestBirth = life;
         ref var p = ref Births[BirthCount++];
         p.Pos = pos;
         p.Age = 0;

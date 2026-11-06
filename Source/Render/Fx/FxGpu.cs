@@ -188,6 +188,8 @@ public static unsafe class FxGpu
     private static GlBuffer _kinds, _pool, _alive, _cmd, _cpuVbo;
     private static StreamRing? _births;
     private static int _cap, _cursor;
+    private static float _busy; // seconds until the longest life still running is over
+    private static bool _idle;
     private static int _lViewProj, _lOrigin, _lCam, _lRight, _lUp, _lAmbient, _lFog, _lFogRange;
     private static int _uFirst, _uCount, _uCursor, _uCapE, _uDt, _uTime, _uCapU;
 
@@ -343,6 +345,12 @@ public static unsafe class FxGpu
             Size(cap);
         var births = Fx.BirthCount;
         Fx.BirthCount = 0;
+        // Nothing alive and nothing new: no dispatch and no draw. Effects cost nothing in a quiet frame, whatever the pool's size.
+        _busy = MathF.Max(_busy - dt, Fx.LongestBirth);
+        Fx.LongestBirth = 0;
+        if (births == 0 && _busy <= 0 && _idle)
+            return;
+        _idle = births == 0 && _busy <= 0;
         Native.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, PoolBinding, _pool);
         Native.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, AliveBinding, _alive);
         Native.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, CmdBinding, _cmd);
@@ -378,7 +386,7 @@ public static unsafe class FxGpu
     {
         if (!_ready)
             return;
-        if (!_gpu && Fx.CpuAlive == 0)
+        if (_gpu ? _idle : Fx.CpuAlive == 0)
             return;
         _draw.Use();
         var vp = gfx.ViewProjRelative;
