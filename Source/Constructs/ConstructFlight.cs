@@ -30,6 +30,8 @@ public struct CStab
     public bool Fitted; // the mix stands for the construct as it is
 
     public Vector3 Inertia; // kg m2 about its right, its forward, its up
+    public float Gap; // m: under it, for its landing assist
+    public int GapTick;
     public float Spool; // s: the slowest thruster it works
     public float UpForce, FrontForce; // N: all it can push up, and on, now
     public Vector3 Auth; // a joint gimbal on the pitch, yaw or roll output: N m for a unit of output at full thrust, by its loops' axes (pitch, roll, yaw); 0: not known
@@ -59,6 +61,7 @@ public sealed partial class Construct
     public bool StabOwns; // this tick the stabilizer has set its effectors (a wrecked one sets nothing: they go back to their wires and the driver)
     public Vector3 GyroNow; // N m, world: what the gyro asks for this tick
     public bool HasFlightDiag, DiagSent; // a Flight Diagnostic Panel is on it; clients were last told something non-zero
+    public Vector4 StabErr; // the loops' errors now: pitch and roll degrees, yaw degrees a second, climb m/s (a Flight Diagnostic Panel; on clients too)
     public float StabBurn = -1, StabVent; // what it asks of the burners (below 0: nothing) and the cells' vents
 }
 
@@ -88,6 +91,7 @@ public static partial class ConstructFlight
     private const float MinCos = 0.5f; // past this lean the height loop stops adding thrust for it
     private const float MinMargin = 0.05f; // rad: the lean left to a craft with no thrust to spare
     private const float GimbalMost = 0.35f; // rad: past this a gimbal's joint isn't asked to go
+    private const float LeanErr = 3f; // m/s: a drift's lean is worked out no faster for more than this (braking from speed isn't a drift)
     private const int MixSteps = 3; // rounds of putting back what the limits took off
 
     /// <summary>With the caches: the stabilizers on it, what is wired into each, and (the first's) what it can command.</summary>
@@ -175,6 +179,18 @@ public static partial class ConstructFlight
         a %= MathF.Tau;
         return a > MathF.PI ? a - MathF.Tau : a < -MathF.PI ? a + MathF.Tau : a;
     }
+
+    /// <summary>A per cent gain of the auto value (0: auto).</summary>
+    private static float Gain(in CPart p, ConstructPartDef d, CfgKey k)
+    {
+        var v = ConstructConfig.Get(p, d, k, 0);
+        return v > 0 ? v / 100f : 1f;
+    }
+
+    /// <summary>The throttle as its curve has it: above 0 finer low down, below 0 finer high up.</summary>
+    private static float Curved(float x, float curve) => curve == 0 ? x : curve > 0 ? MathF.Pow(x, 1 + curve / 50f) : 1 - MathF.Pow(1 - x, 1 - curve / 50f);
+
+    private static readonly Vector3[] Presets = [new(1, 1, 1), new(0.6f, 0.75f, 0.7f), new(1.5f, 1.25f, 1.2f)]; // Normal, Docile, Sport: x the rates, y the responses, z the limits
 
     private static float Setting(in CPart p, ConstructPartDef d, CfgKey k, float limit)
     {
@@ -375,7 +391,7 @@ public static partial class ConstructFlight
             ref var e = ref f.Items[k];
             var has = MathF.Max(e.Auth, 0);
             f.Low[k] = e.Lo * has;
-            f.High[k] = e.Hi * has;
+            f.High[k] = e.Hi * has * (e.Kind == EffectorKind.Rotor ? f.RotorShare : e.Kind is EffectorKind.Thruster or EffectorKind.Repulsor ? f.ThrustShare : 1f);
             u[k] = 0;
         }
         for (var step = 0; step <= MixSteps; step++)
@@ -487,6 +503,12 @@ public static partial class ConstructFlight
         var pattern = KeysOf(c, p, d);
         var autopilot = Autopilot(world, c, ref s, ref p, d, input);
         var ask = Ask(pattern, keys, input, ConstructConfig.Get(p, d, CfgKey.InvertPitch, 0) >= 0.5f);
+        ask.Pitch = ConstructAero.Curve(ask.Pitch, ConstructConfig.Get(p, d, CfgKey.PitchExpo, 0) / 100f);
+        ask.Forward = ConstructAero.Curve(ask.Forward, ConstructConfig.Get(p, d, CfgKey.PitchExpo, 0) / 100f);
+        ask.Roll = ConstructAero.Curve(ask.Roll, ConstructConfig.Get(p, d, CfgKey.RollExpo, 0) / 100f);
+        ask.Side = ConstructAero.Curve(ask.Side, ConstructConfig.Get(p, d, CfgKey.RollExpo, 0) / 100f);
+        ask.Yaw = ConstructAero.Curve(ask.Yaw, ConstructConfig.Get(p, d, CfgKey.YawExpo, 0) / 100f);
+        ask.Lift = ConstructAero.Curve(ask.Lift, ConstructConfig.Get(p, d, CfgKey.ClimbExpo, 0) / 100f);
         if ((s.WiredIn & 1 << InSetHome) != 0)
         {
             if (input[InSetHome] >= 0.5f && s.HomeWas < 0.5f)
@@ -675,10 +697,17 @@ public static partial class ConstructFlight
         var weight = c.Mass * g * carried;
         var floats = c.CellCount > 0 && c.LiftNow > 0.4f * MathF.Max(1, weight); // (her gas keeps her level, and she goes as a ship goes)
         var lim = pattern == FlightPattern.Plane ? PlaneLimits : pattern == FlightPattern.Rocket ? RocketLimits : floats ? ShipLimits : RotorLimits;
-        var maxTilt = Rad(Setting(p, d, CfgKey.MaxTilt, lim.X));
-        var maxTurn = Rad(Setting(p, d, CfgKey.MaxTurn, lim.Y));
-        var maxClimb = Setting(p, d, CfgKey.MaxClimb, lim.Z);
-        var maxSpeed = Setting(p, d, CfgKey.MaxSpeed, lim.W);
+        var preset = Presets[Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.FlightPreset, 0), 0, Presets.Length - 1)];
+        var maxTilt = Rad(Setting(p, d, CfgKey.MaxTilt, lim.X * preset.Z));
+        var maxTurn = Rad(Setting(p, d, CfgKey.MaxTurn, lim.Y * preset.X));
+        var maxClimb = Setting(p, d, CfgKey.MaxClimb, lim.Z * preset.Z);
+        var maxDescent = Setting(p, d, CfgKey.MaxDescent, maxClimb);
+        var maxSpeed = Setting(p, d, CfgKey.MaxSpeed, lim.W * preset.Z);
+        var rates = new Vector3(Rad(Setting(p, d, CfgKey.PitchRate, maxTurn * 180f / MathF.PI)), Rad(Setting(p, d, CfgKey.RollRate, maxTurn * 180f / MathF.PI)), Rad(Setting(p, d, CfgKey.YawRate, maxTurn * 180f / MathF.PI)));
+        var response = new Vector3(Gain(p, d, CfgKey.PitchResponse), Gain(p, d, CfgKey.RollResponse), Gain(p, d, CfgKey.YawResponse)) * preset.Y;
+        var damping = new Vector3(Gain(p, d, CfgKey.PitchDamping), Gain(p, d, CfgKey.RollDamping), Gain(p, d, CfgKey.YawDamping));
+        var hold = new Vector3(Gain(p, d, CfgKey.PitchHold), Gain(p, d, CfgKey.RollHold), Gain(p, d, CfgKey.YawHold));
+        var climbResponse = Gain(p, d, CfgKey.ClimbResponse) * preset.Y;
         var strength = ConstructConfig.Get(p, d, CfgKey.Strength, 100) / 100f;
         var level = ConstructConfig.Get(p, d, CfgKey.Level, 1) >= 0.5f;
         var mouse = ConstructConfig.Get(p, d, CfgKey.MouseAim, 0) >= 0.5f && seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
@@ -686,8 +715,14 @@ public static partial class ConstructFlight
         var trimRoll = Rad(ConstructConfig.Get(p, d, CfgKey.TrimRoll, 0));
         if (s.Repulsors)
             maxTilt = MathF.Min(maxTilt, Rad(6)); // (a field pushes along its part: lean far and it slides off what it rides)
+        var maxPitch = Rad(Setting(p, d, CfgKey.MaxPitchAngle, maxTilt * 180f / MathF.PI));
+        var maxBank = Rad(Setting(p, d, CfgKey.MaxBank, maxTilt * 180f / MathF.PI));
         if (rotor && s.UpForce > 0)
-            maxTilt = MathF.Min(maxTilt, MathF.Max(MinMargin, MathF.Acos(MathF.Min(1, 1.15f * MathF.Max(0, weight - c.LiftNow) / s.UpForce)))); // (the lean it has the thrust to hold up)
+        {
+            var room = MathF.Max(MinMargin, MathF.Acos(MathF.Min(1, 1.15f * MathF.Max(0, weight - c.LiftNow) / s.UpForce))); // (the lean it has the thrust to hold up)
+            maxPitch = MathF.Min(maxPitch, room);
+            maxBank = MathF.Min(maxBank, room);
+        }
         var spool = s.Spool > 0 ? MathF.Max(0.05f, s.Spool) : 0.4f;
         var knows = (f.Can & (1 << FlightEffectors.Pitch | 1 << FlightEffectors.Roll)) != 0;
         var loop = knows && pattern != FlightPattern.Plane ? MathF.Min(4f, 1.2f / spool) * MathF.Min(strength, 1.5f) // (it knows what its thrusters do: as quick as they follow, and no quicker for the slider)
@@ -742,7 +777,7 @@ public static partial class ConstructFlight
         float climbWant;
         if (ask.Lift != 0 && rotor)
         {
-            climbWant = ask.Lift * maxClimb;
+            climbWant = ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent);
             s.HoldAlt = height + (climb > 0 ? climb * climb / (2 * stopping) : 0); // (let go, it stops as soon as it can: a craft that hardly weighs can't be pulled down)
             s.AltHeld = true;
             if (byGap && ask.Lift > 0 && height > 0.7f * s.RepulsorRange)
@@ -756,9 +791,22 @@ public static partial class ConstructFlight
                 s.AltHeld = true;
             }
             var off = s.HoldAlt - height;
-            climbWant = Math.Clamp(0.8f * off, -maxClimb, off > 0 ? maxClimb : maxClimb);
+            climbWant = Math.Clamp(0.8f * climbResponse * off, -maxDescent, maxClimb);
             if (off > 0)
                 climbWant = MathF.Min(climbWant, MathF.Sqrt(2 * stopping * off));
+        }
+
+        var assist = ConstructConfig.Get(p, d, CfgKey.LandingAssist, 0);
+        if (assist > 0 && climbWant < 0)
+        {
+            // Near the ground it comes down no faster than it can stop.
+            if (++s.GapTick >= 6 || s.GapTick == 1)
+            {
+                s.GapTick = 1;
+                s.Gap = World.Query.Raycast(c.WorldCom, -up, assist + c.Radius, QueryFilter.All) - MathF.Max(0, c.Com.Y - c.LocalMin.Y);
+            }
+            if (s.Gap < assist)
+                climbWant = MathF.Max(climbWant, -MathF.Max(0.6f, 0.5f * s.Gap));
         }
 
         // The way it goes: to a point, by the mouse, or by hand.
@@ -806,7 +854,7 @@ public static partial class ConstructFlight
 
         // What each loop is asked for.
         float tiltPitch = trimPitch, tiltRoll = trimRoll;
-        var yawRate = ask.Yaw != 0 ? ask.Yaw * maxTurn : Math.Clamp(1.5f * strength * headErr, -maxTurn, maxTurn);
+        var yawRate = ask.Yaw != 0 ? ask.Yaw * rates.Z : Math.Clamp(1.5f * strength * response.Z * headErr, -rates.Z, rates.Z);
         var acroPitch = float.NaN;
         var acroRoll = float.NaN;
         var pushes = f.CanDo(FlightEffectors.Forward);
@@ -818,70 +866,74 @@ public static partial class ConstructFlight
                 var speed = MathF.Max(c.Vel.Length(), 1f);
                 if (holdPos && far < 3 * speed)
                     headErr = Wrap(course + MathF.PI / 2 - a.Heading); // (it can't stop: it goes round the point)
-                var turn = holdHead || holdPos || aiming ? Math.Clamp(1.2f * headErr, -maxTilt, maxTilt) : 0f;
-                tiltRoll += ask.Roll * maxTilt + turn;
+                var turn = holdHead || holdPos || aiming ? Math.Clamp(1.2f * headErr, -maxBank, maxBank) : 0f;
+                tiltRoll += ask.Roll * maxBank + turn;
                 if (holdAlt)
-                    tiltPitch += Math.Clamp(MathF.Asin(Math.Clamp(climbWant / speed, -1, 1)), -maxTilt, maxTilt) + ask.Pitch * maxTilt * 0.5f;
+                    tiltPitch += Math.Clamp(MathF.Asin(Math.Clamp(climbWant / speed, -1, 1)), -maxPitch, maxPitch) + ask.Pitch * maxPitch * 0.5f;
                 else
-                    tiltPitch += ask.Pitch * maxTilt + (aiming ? Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(look, up), -1, 1)), -maxTilt, maxTilt) : 0);
-                yawRate = (speed > 5 ? g * MathF.Tan(Math.Clamp(a.Roll, -1.2f, 1.2f)) / speed : 0) + ask.Yaw * maxTurn; // (the rudder follows the bank)
+                    tiltPitch += ask.Pitch * maxPitch + (aiming ? Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(look, up), -1, 1)), -maxPitch, maxPitch) : 0);
+                yawRate = (speed > 5 ? g * MathF.Tan(Math.Clamp(a.Roll, -1.2f, 1.2f)) / speed * Gain(p, d, CfgKey.TurnCoord) : 0) + ask.Yaw * rates.Z; // (the rudder follows the bank)
                 if (!level && !holdAlt && !holdHead && !holdPos && !aiming)
                 {
-                    acroPitch = ask.Pitch * maxTurn;
-                    acroRoll = ask.Roll * maxTurn * 2;
+                    acroPitch = ask.Pitch * rates.X;
+                    acroRoll = ask.Roll * rates.Y * 2;
                 }
                 break;
             }
             case FlightPattern.Rocket:
-                tiltPitch += ask.Pitch * maxTilt;
-                tiltRoll += ask.Roll * maxTilt;
+                tiltPitch += ask.Pitch * maxPitch;
+                tiltRoll += ask.Roll * maxBank;
                 if (aiming)
                 {
                     // The nose (its up) on the look.
-                    tiltPitch += Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(look, a.FlatFront), -1, 1)), -maxTilt, maxTilt);
-                    tiltRoll += Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(look, a.FlatRight), -1, 1)), -maxTilt, maxTilt);
+                    tiltPitch += Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(look, a.FlatFront), -1, 1)), -maxPitch, maxPitch);
+                    tiltRoll += Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(look, a.FlatRight), -1, 1)), -maxBank, maxBank);
                 }
                 else if (holdPos)
                 {
-                    tiltPitch += -LeanFor(ground * (wantFront - vFront), g, maxTilt);
-                    tiltRoll += LeanFor(ground * (wantSide - vSide), g, maxTilt);
+                    tiltPitch += -LeanFor(ground * (wantFront - vFront), g, maxPitch);
+                    tiltRoll += LeanFor(ground * (wantSide - vSide), g, maxBank);
                 }
-                yawRate = ask.Yaw * maxTurn;
+                yawRate = ask.Yaw * rates.Z;
                 break;
             default:
                 if (!level)
                 {
-                    acroPitch = -ask.Forward * maxTurn;
-                    acroRoll = ask.Side * maxTurn;
+                    acroPitch = -ask.Forward * rates.X;
+                    acroRoll = ask.Side * rates.Y;
                 }
                 else
                 {
                     // It leans only along what it has no jet for: a hover platform stays level.
                     // A steady push from something it can't cancel (a tail rotor's side force, a load off the mast, the wind) is worked out slowly, or it would drift for ever.
-                    var ease = armed ? 0.1f * ground * dt : 0;
+                    // (A speed loop of gain k holding on an integral of k * k / 4 is the least it can be and not swing: more, and with the attitude's own lag it rings for ever.)
+                    var ease = armed ? 0.2f * ground * ground / MathF.Max(g, 0.1f) * dt * Gain(p, d, CfgKey.WindHold) : 0;
                     if (!pushes && !floats)
                     {
-                        s.Lean.X = Math.Clamp(s.Lean.X + ease * (wantFront - vFront), -maxTilt * 0.5f, maxTilt * 0.5f);
-                        tiltPitch += -LeanFor(ground * (wantFront - vFront), g, maxTilt) - s.Lean.X;
+                        s.Lean.X = Math.Clamp(s.Lean.X + (ask.Forward != 0 ? 0 : ease * Math.Clamp(wantFront - vFront, -LeanErr, LeanErr)), -maxPitch * 0.5f, maxPitch * 0.5f);
+                        tiltPitch += -LeanFor(ground * (wantFront - vFront), g, maxPitch) - s.Lean.X;
                     }
                     if (!slides && !floats)
                     {
-                        s.Lean.Y = Math.Clamp(s.Lean.Y + ease * (wantSide - vSide), -maxTilt * 0.5f, maxTilt * 0.5f);
-                        tiltRoll += LeanFor(ground * (wantSide - vSide), g, maxTilt) + s.Lean.Y;
+                        s.Lean.Y = Math.Clamp(s.Lean.Y + (ask.Side != 0 ? 0 : ease * Math.Clamp(wantSide - vSide, -LeanErr, LeanErr)), -maxBank * 0.5f, maxBank * 0.5f);
+                        tiltRoll += LeanFor(ground * (wantSide - vSide), g, maxBank) + s.Lean.Y;
                     }
                 }
                 break;
         }
 
         // Attitude to turning, turning to torque.
+        var idle = ask.Pitch == 0 && ask.Roll == 0 && ask.Forward == 0 && ask.Side == 0 ? Gain(p, d, CfgKey.AutoLevel) : 1f; // (how hard it comes level when let go)
+        var pitchErr = Wrap(tiltPitch - a.Pitch);
+        var rollErr = Wrap(tiltRoll - a.Roll);
         var want = new Vector3(
-            !float.IsNaN(acroPitch) ? acroPitch : Math.Clamp(loop * Wrap(tiltPitch - a.Pitch), -maxTurn, maxTurn),
-            !float.IsNaN(acroRoll) ? acroRoll : Math.Clamp(loop * Wrap(tiltRoll - a.Roll), -maxTurn, maxTurn),
+            !float.IsNaN(acroPitch) ? acroPitch : Math.Clamp(loop * response.X * idle * pitchErr, -rates.X, rates.X),
+            !float.IsNaN(acroRoll) ? acroRoll : Math.Clamp(loop * response.Y * idle * rollErr, -rates.Y, rates.Y),
             yawRate);
         var rateErr = want - a.Rate;
         var torque = default(Vector3); // (N m, for the mix)
         var units = default(Vector3); // (-1..1, for the outputs)
-        var kRate = 3f * loop;
+        var kRate = 3f * loop * preset.Y;
         var speedNow = c.Vel.Length();
         var surface = pattern == FlightPattern.Plane ? MathF.Min(1, PlaneSpeed / MathF.Max(speedNow, PlaneSpeed * 0.5f)) : 1f;
         surface *= surface;
@@ -893,12 +945,12 @@ public static partial class ConstructFlight
             var auth = axis == 0 ? s.Auth.X : axis == 1 ? s.Auth.Y : s.Auth.Z;
             var integral = axis == 0 ? s.Integral.X : axis == 1 ? s.Integral.Y : s.Integral.Z;
             var err = axis == 0 ? rateErr.X : axis == 1 ? rateErr.Y : rateErr.Z;
-            var accel = kRate * err + integral;
+            var accel = kRate * (axis == 0 ? damping.X : axis == 1 ? damping.Y : damping.Z) * err + integral;
             var t = accel * known;
             var most = axis == 0 ? s.Most.X : axis == 1 ? s.Most.Y : s.Most.Z;
             var unit = auth != 0 ? Math.Clamp(t / (auth * mainLevel), -most, most) : Math.Clamp((0.5f * strength * err + 0.1f * integral) * surface, -1, 1);
             if (settling && MathF.Abs(unit) < most)
-                integral = Math.Clamp(integral + 0.6f * loop * err * dt, -2f, 2f);
+                integral = Math.Clamp(integral + 0.6f * loop * (axis == 0 ? hold.X : axis == 1 ? hold.Y : hold.Z) * err * dt, -2f, 2f);
             if (axis == 0)
             {
                 torque.X = t;
@@ -928,8 +980,9 @@ public static partial class ConstructFlight
         }
 
         // The height loop.
-        var kv = 2.4f * MathF.Min(1.2f, 0.8f / spool) * strength;
+        var kv = 2.4f * MathF.Min(1.2f, 0.8f / spool) * strength * Gain(p, d, CfgKey.ClimbDamping);
         var climbErr = climbWant - climb;
+        c.StabErr = new Vector4(pitchErr * 180f / MathF.PI, rollErr * 180f / MathF.PI, (want.Z - a.Rate.Z) * 180f / MathF.PI, climbErr);
         var lean = MathF.Max(MinCos, Vector3.Dot(a.Up, up));
         var climbAccel = Math.Clamp(kv * climbErr + s.AltIntegral, -0.9f * g, 2f * g);
         var liftForce = MathF.Max(0, (c.Mass * (g * carried + climbAccel) - c.LiftNow) / lean);
@@ -959,10 +1012,12 @@ public static partial class ConstructFlight
         {
             if (holdAlt)
                 p.Mem = s.UpForce > 0 ? Math.Clamp(liftForce / s.UpForce, 0, 1) : Math.Clamp(p.Mem + climbErr * 0.05f * dt, 0, 1);
-            demand[FlightEffectors.Up] = p.Mem * s.UpForce;
+            demand[FlightEffectors.Up] = Curved(p.Mem, ConstructConfig.Get(p, d, CfgKey.ThrottleCurve, 0)) * s.UpForce;
         }
         else
-            demand[FlightEffectors.Forward] = p.Mem * s.FrontForce;
+            demand[FlightEffectors.Forward] = Curved(p.Mem, ConstructConfig.Get(p, d, CfgKey.ThrottleCurve, 0)) * s.FrontForce;
+        f.ThrustShare = Gain(p, d, CfgKey.ThrustLimit);
+        f.RotorShare = Gain(p, d, CfgKey.CollectiveRange);
         Mix(c, f, demand, weights);
 
         // The same demands on its outputs, for whatever is wired by hand.
@@ -1001,7 +1056,7 @@ public static partial class ConstructFlight
             output[OutLeftAileron] = units.Y; // (down, more lift: the right wing goes down)
             output[OutRightAileron] = -units.Y;
         }
-        s.AltIntegral = Math.Clamp(s.AltIntegral + 0.3f * kv * climbErr * dt, -0.5f * g, 0.5f * g);
+        s.AltIntegral = Math.Clamp(s.AltIntegral + 0.3f * kv * Gain(p, d, CfgKey.ClimbHold) * climbErr * dt, -0.5f * g, 0.5f * g);
     }
 
     /// <summary>The lean that gives this acceleration over the ground.</summary>

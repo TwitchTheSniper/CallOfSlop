@@ -161,6 +161,14 @@ public enum CfgKey : byte
     WingKind, // Airframe Former: what it cuts (a row of Extrusion.json's "airframes")
     WingChord, // Airframe Former: its chord, m
     WingSpan, // Airframe Former: its span, m
+    PitchRate, PitchResponse, PitchDamping, PitchHold, PitchExpo, // Flight Stabilizer: the pitch loop (0: auto; ConstructFlight.cs)
+    RollRate, RollResponse, RollDamping, RollHold, RollExpo, // Flight Stabilizer: the roll loop (0: auto; ConstructFlight.cs)
+    YawRate, YawResponse, YawDamping, YawHold, YawExpo, // Flight Stabilizer: the yaw loop (0: auto; ConstructFlight.cs)
+    ClimbResponse, ClimbDamping, ClimbHold, ClimbExpo, // Flight Stabilizer: the climb loop (0: auto; ConstructFlight.cs)
+    FlightPreset, // Flight Stabilizer: Normal, Docile or Sport: what auto means
+    ThrottleCurve, MaxBank, MaxPitchAngle, MaxDescent, TurnCoord, AutoLevel, WindHold, LandingAssist, CollectiveRange, ThrustLimit, // Flight Stabilizer: Advanced (0: auto)
+    Throw, // control surface, nozzle: a share of its full deflection (ConstructAero.ThrowOf)
+    Expo, // control surface, nozzle: soft around the middle, %
     COUNT,
 }
 
@@ -173,6 +181,7 @@ public sealed class CConfigDef
     public float Min, Max = 1, Default, Step;
     public string Unit = "", Label = "", Group = "", Tooltip = "";
     public string[] Options = []; // a choice's (or key's) names
+    public bool Advanced; // on the panel under its Advanced fold
     public bool Hidden; // not on the panel: state kept in the settings, so it rides saves and CBody (a lift cell's holes)
     public bool CreativeOnly; // set only in creative worlds: the server refuses it in survival, the panel shows it read-only, a blueprint's value is left out there
     public bool Bound; // kept in CPart.Setting (the part's legacy choice: the linking tool's R cycles it) rather than CPart.Cfg
@@ -216,10 +225,43 @@ public sealed class CConfigDef
 }
 
 /// <summary>A part's setting values (one float a setting slot, <see cref="ConstructConfig.MaxSlots"/>); they move with the part.</summary>
-[InlineArray(ConstructConfig.MaxSlots)]
-public struct CfgValues
+[InlineArray(ConstructConfig.NearSlots)]
+public struct CfgNear
 {
     private float _v;
+}
+
+/// <summary>
+/// A part's setting values. The first <see cref="ConstructConfig.NearSlots"/> are on the part; a part with more (only a Flight Stabilizer, for now)
+/// keeps the rest in an array it makes when one is set, so every other part pays one reference for them. Copy a part's values with <see cref="Copy"/>.
+/// </summary>
+public struct CfgValues
+{
+    private CfgNear _near;
+    private float[]? _more;
+
+    public float this[int s]
+    {
+        readonly get => s < ConstructConfig.NearSlots ? _near[s] : _more != null ? _more[s - ConstructConfig.NearSlots] : 0;
+        set
+        {
+            if (s < ConstructConfig.NearSlots)
+            {
+                _near[s] = value;
+                return;
+            }
+            _more ??= new float[ConstructConfig.MaxSlots - ConstructConfig.NearSlots];
+            _more[s - ConstructConfig.NearSlots] = value;
+        }
+    }
+
+    public readonly CfgValues Copy()
+    {
+        var c = this;
+        if (_more != null)
+            c._more = (float[])_more.Clone();
+        return c;
+    }
 }
 
 /// <summary>
@@ -233,7 +275,7 @@ public struct CfgValues
 /// </summary>
 public static class ConstructConfig
 {
-    public const int MaxSlots = 19; // (19 since the Flight Stabilizer)
+    public const int NearSlots = 19, MaxSlots = 64; // on the part, and in all (19 since the Flight Stabilizer; the rest are CfgValues' array)
 
     /// <summary>How far away a part can be configured from (metres to the part's centre).</summary>
     public const float Reach = 8f;
@@ -377,7 +419,7 @@ public static class ConstructConfig
 
     // ---- Parsing (part files) -----------------------------------------------------------------------------------------
 
-    private static readonly string[] EntryKeys = ["key", "type", "min", "max", "default", "step", "unit", "label", "group", "tooltip", "options", "creative", "hidden"];
+    private static readonly string[] EntryKeys = ["key", "type", "min", "max", "default", "step", "unit", "label", "group", "tooltip", "options", "creative", "hidden", "advanced"];
     private static readonly string[] TypeNames = ["number", "choice", "toggle", "colour", "key", "mask"];
 
     /// <summary>
@@ -454,6 +496,7 @@ public static class ConstructConfig
             AddWheelSettings(d, list);
         if (d.Rotor != null)
             AddRotorSettings(d, list);
+        AddThrowSettings(d, list);
         Finish(d, list, file);
     }
 
@@ -518,10 +561,27 @@ public static class ConstructConfig
     {
         var list = new List<CConfigDef>();
         AddRotorSettings(d, list);
+        AddThrowSettings(d, list);
         Finish(d, list, d.Name);
     }
 
     /// <summary>Every rotor has these, and its blades' health in hidden settings (they ride saves and CBody).</summary>
+    /// <summary>Every control surface and nozzle: how far it goes, and how soft around the middle.</summary>
+    private static void AddThrowSettings(ConstructPartDef d, List<CConfigDef> list)
+    {
+        var surface = d.Surface is { Control: > 0 };
+        if (!surface && d.ThrustGimbal <= 0)
+            return;
+        var group = surface ? "Control" : "Nozzle";
+        var most = (surface ? d.Surface!.Control : d.ThrustGimbal) * 180f / MathF.PI;
+        if (!list.Exists(e => e.Id == CfgKey.Throw))
+            list.Add(new CConfigDef { Key = KeyName(CfgKey.Throw), Id = CfgKey.Throw, Type = CfgType.Number, Label = "Throw", Group = group, Unit = "%", Min = 10, Max = 300, Step = 5, Default = 100, Tooltip = $"How far it moves: 100 is its full {most:0} degrees. Past that for a weak one, up to {ConstructAero.ThrowMost * 180f / MathF.PI:0} degrees. A stabilizer knows." });
+        if (!list.Exists(e => e.Id == CfgKey.Expo))
+            list.Add(new CConfigDef { Key = KeyName(CfgKey.Expo), Id = CfgKey.Expo, Type = CfgType.Number, Label = "Expo", Group = group, Unit = "%", Min = 0, Max = 100, Step = 5, Default = 0, Tooltip = "Soft around the middle, the same at the ends." });
+        if (!surface && !list.Exists(e => e.Id == CfgKey.Reverse))
+            list.Add(new CConfigDef { Key = KeyName(CfgKey.Reverse), Id = CfgKey.Reverse, Type = CfgType.Toggle, Label = "Reverse", Group = group, Tooltip = "It moves the other way for the same signal." });
+    }
+
     private static void AddRotorSettings(ConstructPartDef d, List<CConfigDef> list)
     {
         list.Add(new CConfigDef { Key = KeyName(CfgKey.Hand), Id = CfgKey.Hand, Type = CfgType.Choice, Label = "Turns", Group = "Rotor", Options = ["Right hand", "Left hand"], Tooltip = "Which way it turns. A pair of opposite hands cancels each other's torque." });
@@ -599,6 +659,7 @@ public static class ConstructConfig
         if (ConstructParts.Opt(e, "creative") is { } cr)
             c.CreativeOnly = cr.ValueKind == JsonValueKind.True;
         c.Hidden = ConstructParts.Opt(e, "hidden") is { ValueKind: JsonValueKind.True };
+        c.Advanced = ConstructParts.Opt(e, "advanced") is { ValueKind: JsonValueKind.True };
         if (c.Id == CfgKey.Fluid)
             c.Options = ConstructFluid.Options;
         if (c.Id == CfgKey.Material)
@@ -702,14 +763,15 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
-                CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null,
+                CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null || d.ThrustGimbal > 0,
                 CfgKey.Trim => d.Surface is { Control: > 0 },
                 CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade3) => d.Rotor != null,
                 CfgKey.BladeStyle => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
                 CfgKey.WingKind or CfgKey.WingChord or CfgKey.WingSpan => d.IsAirframeFormer,
-                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) => d.Logic == CLogic.FlightStabilizer,
+                CfgKey.Throw or CfgKey.Expo => d.Surface is { Control: > 0 } || d.ThrustGimbal > 0,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,

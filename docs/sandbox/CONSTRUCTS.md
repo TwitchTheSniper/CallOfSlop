@@ -4837,6 +4837,16 @@ A surface is any part with a `"surface"` block, so a new one is data: `area`, `a
 
 **Extruded airfoils**: the Extruder's Profile list gains the rows of `Extrusion.json`'s `"airfoils"` after Pipe. They are ordinary sections on the grid (wire, saves and blueprints need nothing new); a finished piece whose mask is one of them gets a `Surface` from its chord, length and row. Chord across x with the leading edge at -x, span along its length.
 
+### Tuning
+
+Every control surface and nozzle has **Throw** (10 to 300% of its full deflection, stopped at 43 degrees; `ConstructAero.ThrowOf`, and the stabilizer's scan counts it), **Expo** and **Reverse**.
+
+The stabilizer's panel keeps its plain settings on top (a new **Preset**: Normal, Docile, Sport, which is what auto means: rates, responses and limits). Under the **Advanced** fold (a config entry's `"advanced": true`, its own group each) Pitch, Roll and Yaw have Rate limit, Response (P), Damping (D), Hold (I) and Expo, and Climb all but the rate, which is Max climb and Max descent; then Throttle curve, Max bank, Max pitch, Turn coordination, Auto-level, Wind hold, Landing assist, Collective range and Thrust limit. Zero is auto everywhere (Landing assist: off), gains are per cent of auto, so what the scan worked out stays the starting point. Expo shapes a wired stick: a key is all or nothing. A Flight Diagnostic Panel's last line is each loop's error now: pitch and roll degrees, yaw degrees a second, climb m/s.
+
+Settings past the first 19 live in an array a part makes when one is set (`CfgValues`, `ConstructConfig.NearSlots`, `MaxSlots` 64), so each part grew by one reference, not 45 floats; copy a part's values with `Copy`.
+
+The speed loop's drift integral is `k * k / 5 / g` for a speed gain `k`, and a drift of over 3 m/s counts as 3. It was ten times that, which with the attitude's lag made a limit cycle over the ground.
+
 ## Propellers and rotors
 
 `ConstructRotor.cs`. A part of role `rotor` with a `"rotor"` block: `radius`, `ratedKw`, `ratedRpm`, `blades`, `bladeHealth`, `motorKw`, `shaft`, `heli`, `duct`, `topSpeed`, `spool`, `cyclic`, `hubMoment`, `at`, `axis` (the way it pushes), `forward`.

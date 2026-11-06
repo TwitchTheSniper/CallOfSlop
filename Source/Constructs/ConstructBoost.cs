@@ -241,8 +241,10 @@ public static class ConstructBoost
         if (d.ThrustGimbal > 0)
         {
             var rate = d.GimbalRate * dt;
-            var wantX = t.GimbalScanned && c.StabOwns ? t.CommandX * d.ThrustGimbal : p.InCount1 > 0 ? Math.Clamp(p.In1, -1, 1) * d.ThrustGimbal : 0;
-            var wantY = t.GimbalScanned && c.StabOwns ? t.CommandY * d.ThrustGimbal : p.InCount2 > 0 ? Math.Clamp(p.In2, -1, 1) * d.ThrustGimbal : 0;
+            var most = ConstructAero.ThrowOf(p, d, d.ThrustGimbal) * (ConstructConfig.Get(p, d, CfgKey.Reverse, 0) >= 0.5f ? -1 : 1);
+            var expo = ConstructConfig.Get(p, d, CfgKey.Expo, 0) / 100f;
+            var wantX = ConstructAero.Curve(t.GimbalScanned && c.StabOwns ? t.CommandX : p.InCount1 > 0 ? Math.Clamp(p.In1, -1, 1) : 0, expo) * most;
+            var wantY = ConstructAero.Curve(t.GimbalScanned && c.StabOwns ? t.CommandY : p.InCount2 > 0 ? Math.Clamp(p.In2, -1, 1) : 0, expo) * most;
             t.AngleX += Math.Clamp(wantX - t.AngleX, -rate, rate);
             t.AngleY += Math.Clamp(wantY - t.AngleY, -rate, rate);
             dir = Vector3.Normalize(Vector3.Transform(t.Dir + Vector3.Cross(t.GimbalX, t.Dir) * t.AngleX + Vector3.Cross(t.GimbalY, t.Dir) * t.AngleY, q));
