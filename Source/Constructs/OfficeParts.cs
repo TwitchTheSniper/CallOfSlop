@@ -114,7 +114,69 @@ public static class OfficeParts
         card.Add(2, on ? "" : "circuit, and wait.");
     }
 
-    /// <summary>A computer's screen: how to email IT.</summary>
+    // ---- The Scammers' adverts (Story/Office/Scammers.json; the server side: Game/GameSandboxScams.cs) ----
+
+    /// <summary>The start of a scammer's message ("[INBOX] Brenda: ..."), and of the computer's own lines ("[PC] ..."), which end a scam on the screens that heard it.</summary>
+    public const string Inbox = "[INBOX] ", Pc = "[PC] ";
+
+    /// <summary>A computer's own seed: its place on its construct, the same on every peer and through a save. Its adverts come from it.</summary>
+    public static uint Seed(in CPart p, int i) =>
+        (uint)i * 0x27d4eb2fu ^ BitConverter.SingleToUInt32Bits(p.Pos.X) * 7u ^ BitConverter.SingleToUInt32Bits(p.Pos.Y) * 131u ^ BitConverter.SingleToUInt32Bits(p.Pos.Z) * 8191u;
+
+    /// <summary>Server: a finger on an advert. The computer is hooked by that advert's scam (<see cref="CPart.State"/> the scam plus one, <see cref="CPart.Rounds"/> its messages sent, <see cref="CPart.Count"/> seconds towards the next).</summary>
+    public static string? ClickAdvert(Construct c, int part, int slot)
+    {
+        if (ScamDesk.Script is not { } desk || desk.AdvertAt(Seed(c.Parts[part], part), slot) is not (>= 0 and var ad))
+            return "the advert won't load";
+        if (c.Parts[part].D.Office != OfficeKind.Computer)
+            return "that isn't a computer";
+        if (!PluggedIn(c, part))
+            return "no internet: plug the Computer into a battery's circuit";
+        ref var p = ref c.Parts[part];
+        var scam = desk.Adverts[ad].Scam;
+        if (p.State == scam + 1)
+            return "it's already open: check your inbox";
+        p.State = (byte)(scam + 1);
+        p.Rounds = 0;
+        p.Count = 0;
+        return null;
+    }
+
+    // What this peer knows of a hooked computer: the host reads the part; a client remembers the one its player clicked, and what it heard.
+    private static ushort _hookedBody = ushort.MaxValue;
+    private static int _hookedPart = -1, _hookedScam = -1, _inboxCount;
+    private static readonly string[] _inbox = new string[Keep];
+
+    /// <summary>A client's player clicked an advert on this computer (a guess until the scammers write: the server may refuse).</summary>
+    public static void Clicked(Construct c, int part, int slot)
+    {
+        if (ScamDesk.Script is not { } desk || desk.AdvertAt(Seed(c.Parts[part], part), slot) is not (>= 0 and var ad))
+            return;
+        (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (c.Id, part, desk.Adverts[ad].Scam, 0);
+    }
+
+    /// <summary>A scammer's message arrived (every peer): kept for the screen. Allocates only when one arrives.</summary>
+    public static void HeardInbox(string text)
+    {
+        if (text.StartsWith(Pc, StringComparison.Ordinal))
+        {
+            (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (ushort.MaxValue, -1, -1, 0); // (the scam is over)
+            return;
+        }
+        if (!text.StartsWith(Inbox, StringComparison.Ordinal))
+            return;
+        var body = text[Inbox.Length..];
+        var colon = body.IndexOf(": ", StringComparison.Ordinal);
+        if (colon > 0 && colon < 40 && ScamDesk.Script is { } desk && desk.Scams.Any(s => body.StartsWith(s.From + ": ", StringComparison.Ordinal)))
+        {
+            _inboxCount = 0; // (a new message)
+            body = body[(colon + 2)..];
+        }
+        if (_inboxCount < Keep)
+            _inbox[_inboxCount++] = body;
+    }
+
+    /// <summary>A computer's screen: how to email IT, and two adverts; hooked, the scam's pop-up and its latest message.</summary>
     public static void FillComputer(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
     {
         ref var p = ref c.Parts[part];
@@ -122,18 +184,71 @@ public static class OfficeParts
         {
             card.State = PanelState.Fault;
             card.Add(0, "FATAL EXCEPTION 0E");
+            Blank(card);
             return;
         }
         var on = PluggedIn(c, part);
-        card.State = on ? PanelState.Ok : PanelState.Off;
-        card.Add(0, on ? "IT SERVICE DESK" : "NO POWER");
-        if (on)
+        if (!on)
         {
-            card.Add(1, "Stand here and type");
-            card.Add(2, "in chat to email IT.");
-            card.Add(3, "Replies come by fax.");
+            card.State = PanelState.Off;
+            card.Add(0, "NO POWER");
+            card.Add(1, "Plug into a");
+            card.Add(2, "battery.");
+            Blank(card);
+            return;
         }
+        var desk = ScamDesk.Script;
+        if (desk != null)
+            for (var t = 0; t < card.Touch.Length && t < 2; t++)
+                card.TouchLabels[t] = desk.AdvertAt(Seed(p, part), t) is (>= 0 and var ad) ? desk.Adverts[ad].Label : "";
         else
-            card.Add(1, "Plug into a battery.");
+            Blank(card);
+        // Hooked: the host knows from the part; a client from the advert its player clicked here.
+        var scam = Host ? p.State - 1 : c.Id == _hookedBody && part == _hookedPart ? _hookedScam : -1;
+        if (desk != null && scam >= 0 && scam < desk.Scams.Length)
+        {
+            var s = desk.Scams[scam];
+            card.State = PanelState.Refused;
+            card.Add(0, s.Popup);
+            int at = 1, column = 0;
+            var lines = Host ? p.Rounds > 0 && p.Rounds <= s.Messages.Length ? s.Messages[p.Rounds - 1] : null : null;
+            if (!Host && _inboxCount > 0)
+            {
+                for (var k = 0; k < _inboxCount; k++)
+                {
+                    card.Wrap(_inbox[k], 16, 1, 4, 0, ref at, ref column);
+                    if (column > 0)
+                        (at, column) = (at + 1, 0);
+                }
+                return;
+            }
+            if (lines != null)
+            {
+                foreach (var line in lines)
+                {
+                    card.Wrap(line, 16, 1, 4, 0, ref at, ref column);
+                    if (column > 0)
+                        (at, column) = (at + 1, 0);
+                }
+                return;
+            }
+            card.Add(1, "Connecting to");
+            for (var k = 0; k < s.From.Length && k < 16; k++)
+                card.Add(2, s.From[k]);
+            card.Add(3, "Please wait...");
+            return;
+        }
+        card.State = PanelState.Ok;
+        card.Add(0, "IT SERVICE DESK");
+        card.Add(1, "Stand here and");
+        card.Add(2, "type in chat:");
+        card.Add(3, "it emails IT.");
+        card.Add(4, "Replies by fax.");
+    }
+
+    private static void Blank(PanelCard card)
+    {
+        for (var t = 0; t < card.Touch.Length; t++)
+            card.TouchLabels[t] = "";
     }
 }

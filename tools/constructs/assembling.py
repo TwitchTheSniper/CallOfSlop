@@ -171,6 +171,15 @@ HAND = [
     rec("Network Switch", 4, 3, m={"steel": 1, "copper": 1}, p={"Circuit Board": 1}),
     rec("Cable Reel", 3, 2, m={"copper": 3, "planks": 1}),
     rec("Satellite Dish", 4, 2, m={"steel": 2, "copper": 1}),
+    # The Call Centre's kit (tools/constructs/callcentre_parts.py): cheap and plasticky, like everything they sell.
+    rec("Cubicle Desk", 6, m={"planks": 4, "steel": 2, "laminate": 1}),
+    rec("Water Cooler", 4, m={"laminate": 2, "glass": 1}),
+    rec("Office Phone", 3, 2, m={"laminate": 1, "copper": 1}),
+    rec("Call Headset", 2, 2, m={"laminate": 1, "copper": 1}),
+    rec("Gift Card Sign", 2, m={"planks": 1, "laminate": 1}),
+    rec("Prize Wheel", 3, m={"planks": 2, "laminate": 1}),
+    rec("Loudhailer", 3, 2, m={"steel": 1, "copper": 1}),
+    rec("Phone Mast", 4, 2, m={"steel": 2, "copper": 1}),
     # The Clan MacSlop's (tools/constructs/highland_parts.py): pipes are wood and a bag, a cask is staves and hoops.
     rec("Pipe Box", 8, 2, m={"planks": 4, "rubber": 2}, p={"Bearing": 1}),
     rec("Whisky Cask", 5, m={"planks": 10, "steel": 2}),
@@ -184,6 +193,14 @@ HAND = [
     rec("Flare Dispenser", 6, 2, m={"steel": 6, "copper": 1}),
     rec("AA Sight", 8, 3, m={"steel": 3, "glass": 2}, p={"Lens": 1, "Circuit Board": 1}),
     rec("Seeker Head", 12, 4, m={"steel": 3, "glass": 2}, p={"Lens": 2, "Control Unit": 1}),
+    # Modular ordnance (tools/constructs/ordnance_parts.py).
+    rec("Ordnance Bench", 15, 2, m={"steel": 30, "planks": 6}),
+    rec("Impact Fuse", 3, 2, m={"steel": 2, "copper": 1}),
+    rec("Delay Fuse", 4, 2, m={"steel": 2, "copper": 2}),
+    rec("Warhead HE", 6, 2, m={"steel": 8, "concrete": 2}),
+    rec("Warhead Blast", 7, 2, m={"steel": 6, "concrete": 3}),
+    rec("Warhead Bunker", 9, 3, m={"steel": 16, "concrete": 2}),
+    rec("Bomb Tail Fins", 3, 2, m={"steel": 3}),
     # What a pilot wears (tools/constructs/pilot_parts.py): a parachute early, a jetpack late.
     rec("Parachute", 3, m={"rubber": 2, "planks": 2}),
     rec("Backpack Glider", 4, 2, m={"rubber": 3, "steel": 2}),

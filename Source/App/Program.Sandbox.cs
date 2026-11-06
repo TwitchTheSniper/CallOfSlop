@@ -51,7 +51,7 @@ public static unsafe partial class Program
     {
         if (_sbMenuKeyEaten)
         {
-            _sbMenuKeyEaten = Keybinds.IsDown(_window, _settings.Binds[(int)GameAction.SandboxInventory]); // (the press that closed it from the search box: spent until the key is up; the real key, as _down is blocked while ImGui still has the keyboard this frame)
+            _sbMenuKeyEaten = Keybinds.IsDown(_window, _settings.Binds[(int)GameAction.SandboxInventory]); // (the press that opened it, or closed it from the search box: spent until the key is up; the real key, as _down is blocked while ImGui still has the keyboard this frame)
             return;
         }
         if (_game is not { SandboxOn: true } g || !Pressed(GameAction.SandboxInventory))
@@ -75,6 +75,7 @@ public static unsafe partial class Program
             return;
         }
         Ui.OpenSandboxParts();
+        _sbMenuKeyEaten = true; // (this press opened it: a key still held mustn't read as a new press when a click takes the keyboard back from the search box)
         SetMouseCaptured(false);
     }
 
@@ -315,7 +316,7 @@ public static unsafe partial class Program
             if (pk != _sbPieceKey)
             {
                 _sbPieceKey = pk;
-                _sbPieceText = SandboxKeys.Line(hit.Body.DefOf(hit.Part) is { IsExtrusion: true } on ? Extrusion.Label(on.ExKey) : hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "take it out"));
+                _sbPieceText = SandboxKeys.Line(hit.Body.DefOf(hit.Part) is { IsOrdnance: true } ord ? ord.Description : hit.Body.DefOf(hit.Part) is { IsExtrusion: true } on ? Extrusion.Label(on.ExKey) : hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "take it out"));
             }
             g.SandboxLookText = _sbPieceText;
         }
@@ -370,6 +371,11 @@ public static unsafe partial class Program
             {
                 // The Gun Workbench: F opens the weapon builder (GameSandboxBench.cs, UiWorkbenchRun.cs); a lit slot is still F to take.
                 Ui.OpenSandboxBench(g, ConstructEdits.BenchCentre(hit.Body, hit.Part));
+                SetMouseCaptured(false);
+            }
+            else if (aimed && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).IsOrdnanceBench && hit.SlotPlus1 == 0)
+            {
+                Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)
                 SetMouseCaptured(false);
             }
             else if (join)

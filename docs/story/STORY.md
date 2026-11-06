@@ -588,9 +588,36 @@ Code: `Source/Constructs/OfficeParts.cs` (the parts and their panels), `Source/G
   for one. With no fax near it says so (`"noFax"`).
 - Nothing new goes on the wire: the lines are system chat lines, and a client's fax panel shows the last page it heard.
 
+- **Malware**: when the scammers (below) hook a computer, IT notices and faxes its `"malware"` page to the nearest fax,
+  with the cure.
+
 This is the channel; the IT Department isn't a story entity yet. Next: an IT Department faction in the story world, faxes
 and emails as events its patterns and the drama manager can use (a reply that depends on what the player did to its
 convoys), and pages that wait for an answer.
+
+## The Scammers
+
+The Scammers (The Call Centre) live in the Computer's adverts. Code: `Source/Story/ScamDesk.cs` (the words),
+`Source/Constructs/OfficeParts.cs` (the screen, the click), `Source/Game/GameSandboxScams.cs` (the server); data
+`Story/Office/Scammers.json` (checked by `--check-story`).
+
+- **Adverts**: a plugged-in Computer's screen holds two touch buttons (`office.advert`, `office.advert2`; docs/sandbox/CONSTRUCTS.md,
+  "Touch panels") under the IT text. Which two of the `"adverts"` a computer shows comes from its place on its construct
+  (`OfficeParts.Seed`), so every peer sees the same ones.
+- **Hooked**: clicking one (Hands out and empty) hooks the computer with that advert's scam: `CPart.State` the scam plus one,
+  `Rounds` its messages sent, `Count` the seconds towards the next, all saved with the world. The scam's first message comes in
+  `"firstIn"`, the rest every `"every"`, as `[INBOX]` chat lines for the players within 10 m (it waits for someone). The screen
+  turns red with the scam's `"popup"` and its latest message. The IT Department notices (its `"malware"` fax).
+- **Typing back**: a player at a hooked computer emails the scammers, not IT. The first reply rule with one of its words
+  answers, `"replyIn"` later. A rule with `"take"` means the player fell for it ("ok", "yes", a gift card, a code): the scammers
+  take that share of the computer's construct's battery charge, say so as a `[PC]` line, and are gone.
+- **The cure**: IT's own advice. A hooked computer that loses power (unplugged, its battery flat or shot) is cured. A scam
+  that runs out of messages closes by itself.
+- Nothing new goes on the wire. A client's screen shows the scam on the computer its own player clicked, with the messages it
+  heard; a `[PC]` line ends it there.
+
+Its vehicles are the vehicle kit's Call Centre style (docs/vehiclekit/VEHICLEKIT.md, "The Call Centre style"). Next: scams
+that answer what the player says more closely, and a Call Centre that remembers who fell for it.
 
 ## Next
 

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Computer",
-  "description": "A beige computer on a desk. Plug it into a battery's circuit, stand at it and type in chat: it emails the IT Department.",
+  "description": "A beige computer on a desk. Plug it into a battery's circuit, stand at it and type in chat: it emails the IT Department. Don't click the adverts.",
   "group": "Logic",
   "section": "Office",
   "role": "panel",
@@ -29,8 +29,30 @@
       ],
       "face": "+z",
       "up": "+y",
-      "rows": 4,
-      "range": 10
+      "rows": 8,
+      "range": 10,
+      "touch": [
+        {
+          "action": "office.advert",
+          "at": [
+            0.02,
+            0.2,
+            0.98,
+            0.36
+          ],
+          "label": "AD"
+        },
+        {
+          "action": "office.advert2",
+          "at": [
+            0.02,
+            0.03,
+            0.98,
+            0.19
+          ],
+          "label": "AD"
+        }
+      ]
     }
   ],
   "boxes": [

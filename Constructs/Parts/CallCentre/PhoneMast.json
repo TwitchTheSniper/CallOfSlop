@@ -1,0 +1,126 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Phone Mast",
+  "description": "A phone mast, bolted to the roof. Four bars of signal, all of it outgoing.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5.0,
+  "health": 30,
+  "armour": 1,
+  "material": "steel",
+  "color": "#8e9296",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.06,
+        0.0,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        0.04,
+        0.06
+      ],
+      "color": "#25272a"
+    },
+    {
+      "min": [
+        -0.025,
+        0.04,
+        -0.025
+      ],
+      "max": [
+        0.025,
+        0.9,
+        0.025
+      ],
+      "color": "#8e9296"
+    },
+    {
+      "min": [
+        -0.03,
+        0.6,
+        -0.072
+      ],
+      "max": [
+        0.03,
+        0.86,
+        -0.048
+      ],
+      "color": "#eeeeea",
+      "detail": true
+    },
+    {
+      "min": [
+        0.048,
+        0.6,
+        -0.03
+      ],
+      "max": [
+        0.072,
+        0.86,
+        0.03
+      ],
+      "color": "#eeeeea",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.6,
+        0.048
+      ],
+      "max": [
+        0.03,
+        0.86,
+        0.072
+      ],
+      "color": "#eeeeea",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.072,
+        0.6,
+        -0.03
+      ],
+      "max": [
+        -0.048,
+        0.86,
+        0.03
+      ],
+      "color": "#eeeeea",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.02,
+        0.902,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.94,
+        0.02
+      ],
+      "color": "#d8322a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

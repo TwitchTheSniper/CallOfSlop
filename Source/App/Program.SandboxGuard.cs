@@ -110,6 +110,7 @@ public static unsafe partial class Program
             ConnectorRender.Now = now;
             DrawSandboxConfigInMatch(now);
             DrawConnectorPanelInMatch();
+            Ui.DrawOrdnanceBench();
             DrawToolWheelEditorInMatch();
             DrawSandboxTrackInMatch();
             DrawSandboxPaintInMatch();

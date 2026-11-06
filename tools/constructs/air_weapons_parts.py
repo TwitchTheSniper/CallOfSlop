@@ -36,10 +36,10 @@ def bomb(name, radius_m, length, mass, blast, damage, fuse, crater, desc):
     return "Bombs", p
 
 
-def rack(name, stations, desc):
+def rack(name, stations, desc, load=300):
     """Lugs below a hanger: each -y socket takes a bomb's lug."""
     x = 0.125 * stations
-    p = Part(name, SMALL, "Bombs", desc, role="logic", tool="welder", color=DARK, group=GROUP)
+    p = Part(name, SMALL, "Bombs", desc + f" Rated for {load * stations:g} kg.", role="logic", tool="welder", color=DARK, group=GROUP)
     p.add(box((-x, -0.04, -0.2), (x, 0.08, 0.2)))
     for k in range(stations):
         at = -x + 0.25 * k + 0.125
@@ -49,7 +49,7 @@ def rack(name, stations, desc):
     p.sock("back", (0, 0, 0.2), "+z")
     p.sock("front", (0, 0, -0.2), "-z")
     p.stats(6 * stations, 80, 3, 1.5)
-    p.set(logic={"kind": "bombrack"})
+    p.set(logic={"kind": "bombrack", "load": load * stations})
     return "Bombs", p
 
 
@@ -88,6 +88,8 @@ def parts():
         bomb("Light Bomb", 0.11, 1.0, 40, 7, 120, 0.5, 2.5, "40 kg: 7 m blast half a second after a hit. Hang it on a Bomb Rack."),
         rack("Bomb Rack", 1, "Holds a bomb on its lug. While its input is on it lets go, three times a second, if its own construct leaves the way down clear: a closed bay door stops it."),
         rack("Twin Bomb Rack", 2, "Two bombs side by side. While its input is on it lets them go in turn, if its own construct leaves the way down clear."),
+        rack("Heavy Bomb Rack", 1, "A strong single hook for what a small rack won't take. While its input is on it lets go, if its own construct leaves the way down clear.", load=5000),
+        rack("Giant Bomb Rack", 1, "For the biggest things a designer dares. While its input is on it lets go, if its own construct leaves the way down clear.", load=2000000),
         gun("AA Gun", "Flak: its shells burst near what flies. An AA Sight on it leads what the gunner looks at.", 1.3, 0.22, 90, {"damage": 80, "rpm": 90, "spread": 0.4, "range": 900, "maxRange": 1000, "mag": 8, "reload": 3, "kick": 200, "fx": "cannon", "soundOf": "Leviathan .50", "shell": "flak", "speed": 340, "prox": 4, "blast": 12, "blastDamage": 170}),
         gun("Rocket Pod Mk2", "Seven rockets that push themselves: 1.5 s of burn, straight at what the gun points at.", 0.5, 0.2, 45, {"damage": 90, "rpm": 180, "spread": 1.2, "range": 500, "maxRange": 1000, "mag": 7, "reload": 8, "kick": 30, "fx": "rocket", "soundOf": "Leviathan .50", "shell": "rocket", "speed": 40, "thrust": 220, "burn": 1.5, "blast": 5, "blastDamage": 160, "crater": 1.2}),
         gun("Missile Rail", "A guided missile: it locks what the gunner looks at, or what a Seeker Head sees, and turns after it. Flares draw it.", 0.7, 0.14, 60, {"damage": 200, "rpm": 30, "spread": 0, "range": 900, "maxRange": 1000, "mag": 2, "reload": 10, "kick": 20, "fx": "rocket", "soundOf": "Leviathan .50", "shell": "missile", "speed": 30, "thrust": 160, "burn": 3, "turn": 70, "prox": 5, "blast": 9, "blastDamage": 320}),

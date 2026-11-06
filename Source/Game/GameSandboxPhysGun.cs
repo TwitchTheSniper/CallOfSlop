@@ -408,6 +408,17 @@ public sealed partial class Game
 
     public string SandboxPhysGunHint(in SandboxHand h)
     {
+        ConstructRender.SnapGhost = false; // (the hook a held bomb is near: drawn each frame while it lasts)
+        if (h.GrabBody != 0 && Constructs.Get(h.GrabBody) is { } held && ConstructOrdnance.Hangs(held) && ConstructOrdnance.FindSnap(Constructs, held, out var spot))
+        {
+            ConstructRender.SnapGhost = true;
+            ConstructRender.SnapAt = spot.WorldAt + Vector3.Transform((held.DefOf(0).BoundsMin + held.DefOf(0).BoundsMax) * 0.5f, spot.WorldRot);
+            ConstructRender.SnapRot = spot.WorldRot;
+            ConstructRender.SnapSize = held.DefOf(0).BoundsMax - held.DefOf(0).BoundsMin;
+            ConstructRender.SnapOk = spot.Why == null;
+            if (spot.Why != null)
+                return spot.Why;
+        }
         if (_sbPhysHint.Stale((SandboxKeys.Stamp * 2L + (h.GrabBody != 0 ? 1 : 0)) * 31 + (SandboxSnapLabel?.GetHashCode() ?? 0)))
             _sbPhysHint.Text = h.GrabBody != 0 && SandboxSnapLabel != null ? $"{SandboxKeys.PhysGun} [{SandboxSnapLabel}]" : SandboxKeys.PhysGun;
         return _sbPhysHint.Text;

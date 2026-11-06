@@ -59,6 +59,10 @@
       "RE: your email. Thank you for contacting the IT Service Desk.",
       "Your ticket has been logged and will be ignored in the order it was received." ] }
   ],
+  "malware": { "lines": [
+    "SECURITY ALERT: A device on your network clicked an advert. We know. We always know.",
+    "Malware is now running on your Computer. Do not give it your battery's code.",
+    "To remove it: have you tried turning it off and on again? Unplug it from the battery." ] },
   "sent": "Email sent to the IT Service Desk. Replies come by fax.",
   "noFax": "Email sent. IT replies by fax, and no fax is plugged in near this computer."
 }
