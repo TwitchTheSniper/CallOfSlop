@@ -25,9 +25,9 @@ public static unsafe partial class Program
 
     // Pass timings (--gl-bench only): DrawArena calls BenchPass(k) after pass k (0 before the first); CPU timestamps and
     // GPU timestamp queries, read after the bench's glFinish. One bool test per call when not benchmarking.
-    private static readonly string[] BenchPassNames = { "", "buildings", "terrain", "props", "meshes", "foliage", "decals", "sky", "horde" };
+    private static readonly string[] BenchPassNames = { "", "buildings", "terrain", "props", "meshes", "foliage", "decals", "sky", "horde", "constructs" };
     private static bool _passOn;
-    private static readonly long[] PassCpu = new long[9];
+    private static readonly long[] PassCpu = new long[10];
     private static int _passMarks;
     private static GlGpuStamps? _passGpu;
 
@@ -59,6 +59,7 @@ public static unsafe partial class Program
                 Glfw.PollEvents();
         }
         Console.WriteLine($"[glbench] {RenderCaps.Describe()}");
+        BuildBenchConstructs(args);
         Console.WriteLine($"[glbench] compute self-check: {GlCompute.SelfCheck()}"); // the compute hook works (4.6 path) or is off (4.1)
         Console.WriteLine($"[glbench] {frames} frames a view and configuration, horde {horde} on Zombies maps; times are medians in ms");
         var configs = new List<string> { "all on" };
@@ -148,13 +149,15 @@ public static unsafe partial class Program
                     _window.SwapBuffers();
                     if (f < 0)
                         continue;
-                    if (_passMarks == (1 << np) - 1 || (zombies == 0 && _passMarks == (1 << (np - 1)) - 1))
+                    if ((_passMarks & 255) == 255)
                     {
-                        for (var p = 1; p < np && (_passMarks & (1 << p)) != 0; p++)
+                        for (var p = 1; p < np; p++)
                         {
-                            passCpu[c * np + p] += Stopwatch.GetElapsedTime(PassCpu[p - 1], PassCpu[p]).TotalMilliseconds;
+                            if ((_passMarks & (1 << p)) == 0)
+                                continue;
+                            passCpu[c * np + p] += Stopwatch.GetElapsedTime(PassCpu[p == 9 && (_passMarks & 256) == 0 ? 7 : p - 1], PassCpu[p]).TotalMilliseconds;
                             if (_passGpu != null && _passGpu.Ready(p))
-                                passGpu[c * np + p] += (_passGpu.Read(p) - (double)_passGpu.Read(p - 1)) / 1e6;
+                                passGpu[c * np + p] += (_passGpu.Read(p) - (double)_passGpu.Read(p == 9 && (_passMarks & 256) == 0 ? 7 : p - 1)) / 1e6;
                         }
                         passN[c]++;
                     }
@@ -277,7 +280,70 @@ public static unsafe partial class Program
             DrawBenchHorde(eye, target, zombies, (float)(frame / 60.0));
             BenchPass(8);
         }
+        DrawBenchConstructs(eye, target);
         Gfx.SetFog(map.Sky, 0, 0);
+    }
+
+    private static ConstructWorld? _benchWorld;
+    private static readonly Dictionary<Construct, Vector3> _benchHome = new();
+
+    /// <summary>
+    /// <c>--bench-bp "A,B" [--bench-copies N]</c>: N copies of each named blueprint on a grid in front of the camera, drawn by the
+    /// real ConstructRender: what materials and part batches cost.
+    /// </summary>
+    private static void BuildBenchConstructs(string[] args)
+    {
+        var names = args.SkipWhile(a => !a.Equals("--bench-bp", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (names == null)
+            return;
+        var copies = Math.Clamp(FlagAfter(args, "--bench-copies", 1), 1, 400);
+        _benchWorld = new ConstructWorld();
+        var cols = Math.Max(1, (int)MathF.Ceiling(MathF.Sqrt(copies)));
+        var made = 0;
+        var parts = 0;
+        foreach (var name in names.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (ConstructBuild.FindBlueprint(name) is not { } bp)
+            {
+                Console.WriteLine($"[glbench] no blueprint \"{name}\"");
+                continue;
+            }
+            for (var i = 0; i < copies; i++)
+                if (ConstructBuild.Build(_benchWorld, bp, new Vector3((i % cols - cols * 0.5f) * 16f, 2f + made % copies * 0, -(i / cols) * 16f - made * 0.01f), Quaternion.Identity, out var why) is { } c)
+                {
+                    c.Rebuild();
+                    parts += c.PartCount;
+                    made++;
+                }
+                else
+                    Console.WriteLine($"[glbench] {name} didn't build: {why}");
+        }
+        Console.WriteLine($"[glbench] constructs: {made} bodies, {parts} parts");
+    }
+
+    private static void DrawBenchConstructs(Vector3 eye, Vector3 target)
+    {
+        if (_benchWorld == null)
+            return;
+        var fwd = target - eye;
+        fwd.Y = 0;
+        fwd = fwd.LengthSquared() > 1e-4f ? Vector3.Normalize(fwd) : new Vector3(0, 0, -1);
+        var at = eye + fwd * 24f - new Vector3(0, 1.7f, 0);
+        var yaw = MathF.Atan2(-fwd.X, -fwd.Z);
+        var turn = Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw);
+        foreach (var c in _benchWorld.Bodies)
+        {
+            if (!_benchHome.TryGetValue(c, out var home))
+                _benchHome[c] = home = c.Pos;
+            c.Pos = c.PrevPos = at + Vector3.Transform(home, turn);
+            c.Rot = c.PrevRot = turn;
+        }
+        ConstructRender.Now = Glfw.Time;
+        ConstructRender.Draw(Gfx, _benchWorld, 1f, blendTicks: false);
+        ConstructRender.DrawGlass(Gfx, eye);
+        Gfx.SetBlend(false);
+        Gfx.SetDepthWrite(true);
+        BenchPass(9);
     }
 
     /// <summary>
