@@ -14,7 +14,7 @@ public static unsafe partial class Program
         Fx.Level = _settings.Particles;
         Fx.On = !_smokeNoFx;
         (PostFx.Level, PostFx.BloomOn, PostFx.HazeOn, PostFx.AoOn) = (_settings.PostEffects, _settings.Bloom, _settings.HeatHaze, _settings.AmbientOcclusion);
-        Gfx.MarkGlow = PostFx.Bloom;
+        Gfx.MarkGlow = LightGrid.MarkGlow = PostFx.Bloom;
     }
 
     private static bool _smokeNoFx;

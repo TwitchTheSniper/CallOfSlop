@@ -510,6 +510,17 @@ public static partial class ConstructRender
             c.PartBounds(i, out var mn, out var mx);
             var top = new Vector3((mn.X + mx.X) * 0.5f, mx.Y, (mn.Z + mx.Z) * 0.5f);
             var w = MathF.Min(mx.X - mn.X, mx.Z - mn.Z);
+            if (Fx.On)
+            {
+                // Particles (Source/Render/Fx/Fx.cs): the flames lick up from its top, and it smokes.
+                var onBody = seg * body;
+                var at = Vector3.Transform(top, onBody) + (gfx.Relative ? gfx.Origin : Vector3.Zero);
+                var up = Vector3.TransformNormal(Vector3.UnitY, onBody);
+                Fx.Flame(FxKind.Flame, at, up, c.Vel, MathF.Max(0.1f, w * 0.3f), 0.7f + w * 0.4f, 0.7f, _fxDt);
+                for (var k = Fx.Share(5f * _fxDt); k > 0; k--)
+                    Fx.Emit(FxKind.DarkSmoke, at + up * 0.3f, c.Vel + up * 1.6f, 0.2f + w * 0.2f, 2.2f);
+            }
+            else
             for (var f = 0; f < 3; f++)
             {
                 var flick = 0.65f + 0.35f * MathF.Sin((float)Now * (13f + f * 4.3f) + i * 1.7f + f * 2.1f);

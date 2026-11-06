@@ -3931,10 +3931,12 @@ weighs 84,000 t and is a base to build a town on.
   asks (nothing asked: no fuel, no smoke), and comes up over its `spool`; its `run` wire holds it off, or keeps its fire
   banked at 10%. A plant makes a construct electrical like a battery, and holds its `buffer` (kJ). Fuel reaches it as it
   reaches an engine; a Reactor needs none.
+- **Flame** (`"flame": {"at", "dir", "radius", "length", "kind", "source", "colour"}`, or a list, any part): a flame drawn by data (docs/render/MATERIALS.md, "Flames by data"). `"at"` and `"dir"` are all it needs; a thruster or burner without one gets its own from its numbers. `"source"`: thrust, burner, engine, signal or always.
+- **Material** (`"surface"`, a part or a box): the shared material it is made of, a row of `Materials/Surfaces.json`. Parts don't need it: the file's rules give every box one by its role, material, folder and colour.
 - **Smoke** (`"smoke": {"at", "size"}`, any part): a stack puts out what a burning plant makes while one reaches it: the plant's
   own stack, a Chimney, Stack Section or Wide Funnel touching it (or touching a stack that does), or a pipe from its
   `Exhaust out` port to the stack's `Exhaust in`. An engine on fuel smokes as hard as it pulls. `Construct.SmokeLevel` goes to
-  clients in the pose; the puffs are worked out from the clock (`ConstructRender.DrawSmoke`: no state, nothing allocated).
+  clients in the pose; the puffs are particles (`ConstructRender.EmitFlames`, `Fx`: nothing allocated). A burner's heat goes in the same share of the pose.
 - **Steam engines** (`"curve": "steam"`): full torque from a standstill, falling away towards the limiter; their `spool` is
   raising steam.
 - **Pools at scale.** A capital bunker holds 4 Ml and a bank 10 TJ, where a float can't take a tick's sip off: everything

@@ -259,15 +259,6 @@ public static class Fx
         }
         CpuAlive = n;
     }
-
-    /// <summary>Clears the air (a new map, a self-test).</summary>
-    public static void Clear()
-    {
-        BirthCount = 0;
-        Array.Clear(CpuPool);
-        CpuAlive = 0;
-        FxGpu.ClearPool = true;
-    }
 }
 
 /// <summary>Materials/Particles.json as the C# step and the shaders read it (the shaders' FxKinds block: five vec4s a kind).</summary>

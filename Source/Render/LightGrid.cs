@@ -65,6 +65,11 @@ public static unsafe class LightGrid
     /// <summary>Settings > Video > Materials: 0 Low (the classic light), 1 Medium, 2 High.</summary>
     public static float SurfaceLevel = 1f;
 
+    /// <summary>The world is being drawn for the bloom: props mark what glows in the back buffer's alpha (PostFx.cs). Menus and pictures never do.</summary>
+    public static bool MarkGlow;
+
+    private static float _lastMark;
+
     private static FrameBlock _block;
     private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic];
     private static int _dynCount;
@@ -227,15 +232,17 @@ public static unsafe class LightGrid
     /// <summary>Menus, gun pictures and thumbnails: the classic light (mode 0).</summary>
     public static void Off()
     {
-        if (!_ready || _lastMode == 0f)
+        if (!_ready || (_lastMode == 0f && _lastMark == 0f))
             return;
         _block.Mode = Vector4.Zero;
+        MarkGlow = false;
         Send();
     }
 
     private static void Send()
     {
         _block.Surf.X = SurfaceLevel;
+        _block.Surf.Y = _lastMark = MarkGlow ? 1f : 0f;
         Native.glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
         fixed (FrameBlock* p = &_block)
             Native.glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FrameBlock), p);

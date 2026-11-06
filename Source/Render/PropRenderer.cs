@@ -331,14 +331,14 @@ public sealed unsafe class PropRenderer
             else
                 col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             col += vColor * (ownGlow * 0.1);
-            FragColor = vec4(ApplyFog(col, vWorld), 1.0);
+            FragColor = vec4(ApplyFog(col, vWorld), 1.0 - uSurfQ.y * min(ownGlow * 0.05, 0.9)); // (alpha: the bloom's mark, PostFx.cs; blending is off here)
         }
         """;
 
     /// <summary>The plain fragment shader plus the animated parts' glow (light that ignores the sun and shade).</summary>
     private static readonly string AnimFragmentSrc = FragmentSrc
         .Replace("out vec4 FragColor;", "in vec3 vGlow;\nout vec4 FragColor;")
-        .Replace("FragColor = vec4(ApplyFog(col, vWorld), 1.0);", "FragColor = vec4(ApplyFog(col + vGlow, vWorld), 1.0);");
+        .Replace("FragColor = vec4(ApplyFog(col, vWorld), 1.0 - uSurfQ.y * min(ownGlow * 0.05, 0.9));", "FragColor = vec4(ApplyFog(col + vGlow, vWorld), 1.0 - uSurfQ.y * min(max(ownGlow * 0.05, dot(vGlow, vec3(0.5))), 0.9));");
 
     private bool _ready, _broken;
     private GlProgram _program, _debrisProgram;

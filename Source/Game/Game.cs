@@ -878,6 +878,8 @@ public sealed partial class Game : IDisposable
         var life = speed > 0 ? 0.25f + Vector3.Distance(from, to) / speed : 0f;
         var bow = speed > 0 ? PowderCharge.Bow(ArcSpeed(def), Vector3.Distance(from, to)) : 0f; // (a Sandbox round's arc, as it fell: GameRoundArc.cs)
         Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow });
+        if (CallOfSlop.Fx.On && def.Sound != SoundStyle.Suppressed && Vector3.DistanceSquared(from, to) > 1e-4f)
+            CallOfSlop.Fx.Muzzle(from, Vector3.Normalize(to - from), 0.12f + def.Caliber * 0.1f); // (sparks and a wisp at the muzzle; the flash itself is the gun's)
     }
 
     private void OnLocalSpawn(Player p)

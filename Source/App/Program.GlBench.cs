@@ -126,6 +126,7 @@ public static unsafe partial class Program
                         // The last frame of each configuration: a picture, and compared pixel by pixel with "all on" (the
                         // same data drawn another way should give the same picture: a 1-level difference is the
                         // driver's MSAA resolve or blend order, more is a bug).
+                        _shotFull = _benchFull;
                         SaveScreenshot($"bench_{Slug(map.Name)}_{view.Name}_{Slug(configs[c])}");
                         var px = ReadFrame();
                         if (c == 0)
@@ -291,6 +292,7 @@ public static unsafe partial class Program
     }
 
     private static int _benchFx;
+    private static bool _benchFull;
     private static float _benchDist = 24f;
 
     /// <summary>
@@ -304,7 +306,7 @@ public static unsafe partial class Program
         _settings.PostEffects = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-post", (int)_settings.PostEffects), 0, 2);
         _benchFx = Math.Clamp(FlagAfter(args, "--bench-fx", 0), 0, 500000);
         _benchDist = Math.Clamp(FlagAfter(args, "--bench-dist", 24), 3, 400);
-        _shotFull = args.Any(a => a.Equals("--bench-full", StringComparison.OrdinalIgnoreCase));
+        _benchFull = args.Any(a => a.Equals("--bench-full", StringComparison.OrdinalIgnoreCase));
     }
 
     private static void DrawBenchFx(Vector3 eye, Vector3 target, int frame)
@@ -380,7 +382,9 @@ public static unsafe partial class Program
                 else
                     Console.WriteLine($"[glbench] {name} didn't build: {why}");
         }
+        var boxes = ConstructParts.All.Sum(d => d.Boxes.Length);
         Console.WriteLine($"[glbench] constructs: {made} bodies, {parts} parts");
+        Console.WriteLine($"[glbench] materials: {ConstructParts.All.Count} part types, {boxes} boxes at {System.Runtime.CompilerServices.Unsafe.SizeOf<CPartBox>()} B a box, {BoxLooks.Count} looks at {System.Runtime.CompilerServices.Unsafe.SizeOf<BoxLooks.Row>()} B a look, {Surfaces.File.Rows.Length} materials ({SurfaceGpu.Bytes} B on the GPU); body batch box {sizeof(Renderer.BodyBox)} B");
     }
 
     private static void DrawBenchConstructs(Vector3 eye, Vector3 target)

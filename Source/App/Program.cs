@@ -1783,7 +1783,7 @@ public static unsafe partial class Program
         _worldFov = fov; // (for your tracers: Program.Muzzle.cs)
 
         pass.Dispose();
-        pass = Perf.Pass(PerfArea.PostFx, PerfGpuPass.PostFx);
+        pass = Perf.Pass(PerfArea.PostFx, PerfGpuPass.Occlusion);
         PostFx.ApplyAo(Gfx, fb.X, fb.Y, proj); // (High: over the opaque world, under the effects)
         pass.Dispose();
 

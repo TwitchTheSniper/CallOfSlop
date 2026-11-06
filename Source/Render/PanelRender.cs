@@ -696,7 +696,14 @@ public static unsafe class PanelRender
             Native.glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, p);
         VideoFeeds.Bind();
         gfx.SetBlend(true);
+        if (gfx.MarkGlow)
+        {
+            // A screen gives light: the back buffer's alpha is its bloom mark (PostFx.cs), at a constant share, as a panel's own alpha is its text's edge.
+            Native.glBlendColor(0f, 0f, 0f, 0.6f);
+            Native.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_CONSTANT_ALPHA);
+        }
         Native.glDrawArrays(GL_TRIANGLES, 0, _vertCount / VertFloats);
+        Renderer.BlendDefault();
         gfx.SetBlend(false);
         PerfCounters.Draw(_vertCount / VertFloats);
         gfx.Rebind();

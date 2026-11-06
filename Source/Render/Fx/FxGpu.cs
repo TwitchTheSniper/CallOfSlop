@@ -19,9 +19,6 @@ public static unsafe class FxGpu
     /// <summary>Living particles last frame are the GPU's business; this is what the F9 window can say cheaply: the pool's size.</summary>
     public static int PoolSize { get; private set; }
 
-    /// <summary>Set to clear the GPU pool on the next frame.</summary>
-    public static bool ClearPool;
-
     private const string Block = """
         layout(std140) uniform FxKinds
         {
@@ -342,11 +339,8 @@ public static unsafe class FxGpu
             return;
         }
         var cap = Fx.Capacity(Fx.Level, true);
-        if (cap != _cap || ClearPool)
-        {
-            ClearPool = false;
+        if (cap != _cap)
             Size(cap);
-        }
         var births = Fx.BirthCount;
         Fx.BirthCount = 0;
         Native.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, PoolBinding, _pool);

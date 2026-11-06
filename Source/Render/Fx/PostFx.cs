@@ -476,6 +476,11 @@ public static unsafe class PostFx
         if (Bloom)
             DrawBloom(w, h);
         _hazeCount = 0;
+        // The marks have done their job: the back buffer's alpha goes back to 1, so nothing past here (or a compositor) ever sees them.
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
+        Native.glColorMask(false, false, false, true);
+        Native.glClearColor(0f, 0f, 0f, 1f);
+        Native.glClear(GL_COLOR_BUFFER_BIT);
         End(gfx, w, h);
     }
 

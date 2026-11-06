@@ -128,7 +128,7 @@ public static unsafe class Lighting
             vec4 uProbeC;    // mode 2: sun, flicker phasor (x, y), flicker pace
             vec4 uDynPos[4]; // dynamic lights: position, range
             vec4 uDynCol[4]; // colour * intensity
-            vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md)
+            vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md); y: 1 while glow is marked for the bloom
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
         uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
