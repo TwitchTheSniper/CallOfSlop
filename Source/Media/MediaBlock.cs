@@ -54,6 +54,10 @@ public sealed unsafe class MediaBlock : IDisposable
 
     public long FrameSeq => Volatile.Read(ref Long(OffSeq));
 
+    /// <summary>How much sound the browser has written, and this side has read: for the log.</summary>
+    public long AudioWritten => Volatile.Read(ref Long(OffAudioWrite));
+    public long AudioRead => _audioRead;
+
     /// <summary>The newest frame if it is one not yet taken, or null. Valid until the next call.</summary>
     public byte* TakeFrame()
     {

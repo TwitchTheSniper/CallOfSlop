@@ -12,7 +12,7 @@ namespace SlopBrowser;
 /// Stdin closing, which is also what the game crashing looks like, ends the process.
 /// <code>
 /// in:  open SLOP ID SECONDS WIDTH HEIGHT MAP | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
-/// out: ready | fail REASON | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE
+/// out: ready | fail REASON | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE
 /// </code>
 /// </summary>
 internal static class Program
@@ -36,7 +36,8 @@ internal static class Program
                 WindowlessRenderingEnabled = true,
                 RootCachePath = Root, // (its own for each run: a second game on this PC gets a second browser)
                 CachePath = "", // (in memory: nothing of a browsing session is left on disk)
-                LogSeverity = LogSeverity.Disable,
+                LogSeverity = LogSeverity.Warning,
+                LogFile = LogFile(args),
                 PersistSessionCookies = false,
                 Locale = "en-US",
             };
@@ -46,6 +47,12 @@ internal static class Program
             settings.CefCommandLineArgs.Add("disable-extensions");
             settings.CefCommandLineArgs.Add("disable-pdf-extension");
             settings.CefCommandLineArgs.Add("disable-background-networking");
+            // A page here has no window, so nothing may treat it as a tab in the background, and its sound stays in this process's reach.
+            settings.CefCommandLineArgs.Add("disable-renderer-backgrounding");
+            settings.CefCommandLineArgs.Add("disable-background-timer-throttling");
+            settings.CefCommandLineArgs.Add("disable-backgrounding-occluded-windows");
+            settings.CefCommandLineArgs.Add("disable-background-media-suspend");
+            settings.CefCommandLineArgs.Add("disable-features", "AudioServiceOutOfProcess");
             if (!Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null))
             {
                 Say("fail cef did not start");
@@ -136,6 +143,16 @@ internal static class Program
             Console.Out.WriteLine(line);
             Console.Out.Flush();
         }
+    }
+
+    /// <summary>A line for the game's log.</summary>
+    public static void Log(string text) => Say("log " + OneLine(text));
+
+    /// <summary>CEF's own log, beside the game's when the game says where that is.</summary>
+    private static string LogFile(string[] args)
+    {
+        var at = Array.IndexOf(args, "--log-dir");
+        return Path.Combine(at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.GetTempPath(), "slopbrowser.log");
     }
 
     public static string OneLine(string s) => s.Replace('\r', ' ').Replace('\n', ' ');

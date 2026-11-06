@@ -59,6 +59,22 @@ CEF's audio handler takes the sound away from the speakers, so there is no secon
 **The game's own tracks** use the same voice path with one `MusicRenderer` on the sound thread (the menu's music player's tracks: no frenzy lines, they need a match). The music CPU rule is at most 1.5x the baseline, and one more render would be 2x, so there is only ever one, the nearest, and it holds silently (the panel
 keeps its line) while the music thread renders the lobby's decks or the kill frenzy. A Sandbox world in play has neither, so a track plays as one baseline render. A track starts on a bar line, so peers agree to the bar, not the sample.
 
+CEF only captures what is audible: while a page is muted the audio handler isn't even asked (tried on stock CEF: nothing until `muted` went false, then sound within moments). So the page unmutes the player and sets its volume whenever it reports, once a second, and clears CEF's own mute once.
+
+### Finding where sound stops
+
+The hops log to `callofslop.log`, each on a 5 s throttle while something plays; CEF's own warnings go to `slopbrowser.log` beside it.
+
+| Hop | Line starts | Right | If it's wrong |
+| --- | --- | --- | --- |
+| 1 | `[media] browser: page 0: player` | `false 100` after at most one `true` line | The player stays muted |
+| 2 | `[media] browser: page 0: audio handler asked` | Once, soon after playing | CEF never saw the page as audible |
+| 3 | `[media] browser: page 0: audio stream started` | 2 channels, 44100 Hz | The stream didn't open (`audio stream error` says why) |
+| 4 | `[media] browser: page 0: audio packets` | Peak above 0 | Peak 0: the page is silent |
+| 5 | `[media] sound voice 0 (hop 5)` | Ring written and read both rising, peak above 0 | The game isn't reading the ring |
+| 6 | Same line, `OpenAL (hop 6)` | `Playing`, gain above 0 | The source is stopped or silent |
+| 7 | `[media] level voice 0 (hop 7)` | Every factor above 0 | That factor is the zero |
+
 ## YouTube, checked and not
 
 Checked in the container with a stock CEF (120, Linux, from NuGet, offscreen), the same standard distribution as the 156 Windows build the game ships:

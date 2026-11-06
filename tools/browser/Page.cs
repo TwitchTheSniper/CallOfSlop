@@ -22,6 +22,8 @@ internal sealed class Page : IDisposable
     private readonly SharedBlock _block;
     private readonly ChromiumWebBrowser _web;
     private string _title = "";
+    private string _sound = "";
+    private bool _awake;
 
     public Page(int slot, string id, double seconds, int width, int height, string block)
     {
@@ -31,7 +33,7 @@ internal sealed class Page : IDisposable
         _web = new ChromiumWebBrowser(Address, automaticallyCreateBrowser: false)
         {
             RenderHandler = new Painter(_block),
-            AudioHandler = new Sound(_block),
+            AudioHandler = new Sound(_block, slot),
             RequestHandler = new Requests(html),
             LifeSpanHandler = new NoPopups(),
             DisplayHandler = new Console_(this),
@@ -53,6 +55,16 @@ internal sealed class Page : IDisposable
         if (!message.StartsWith(Report, StringComparison.Ordinal))
             return;
         var body = message[Report.Length..];
+        Wake();
+        if (body.StartsWith("audio ", StringComparison.Ordinal))
+        {
+            if (body != _sound)
+            {
+                _sound = body;
+                Program.Log($"page {_slot}: player {body} (muted, volume)"); // (hop 1: it must come to false 100)
+            }
+            return;
+        }
         if (body.StartsWith("title ", StringComparison.Ordinal))
         {
             var title = Program.OneLine(body[6..]);
@@ -64,6 +76,21 @@ internal sealed class Page : IDisposable
             return;
         }
         Program.Say($"s {_slot} {body}");
+    }
+
+    /// <summary>Once, when the page first speaks: CEF's own mute off, and a page in front. Sound comes only from a page that isn't muted at either end.</summary>
+    private void Wake()
+    {
+        if (_awake)
+            return;
+        _awake = true;
+        var host = _web.GetBrowserHost();
+        if (host == null)
+            return;
+        Program.Log($"page {_slot}: browser muted {host.IsAudioMuted}");
+        host.SetAudioMuted(false);
+        host.WasHidden(false);
+        host.SetFocus(true);
     }
 
     public void Dispose()
@@ -83,8 +110,16 @@ internal sealed class Page : IDisposable
         function report() {
           if (!player || !player.getPlayerState) { say("-2 0 0 " + error); return; }
           say(player.getPlayerState() + " " + player.getCurrentTime().toFixed(2) + " " + player.getDuration().toFixed(2) + " " + error);
+          sound();
           var d = player.getVideoData && player.getVideoData();
           if (d && d.title) say("title " + d.title);
+        }
+        // The player can start muted when nobody clicked anything, and then CEF sends no sound at all (it captures only what is audible).
+        function sound() {
+          if (!player.isMuted) return;
+          var m = player.isMuted(), v = player.getVolume();
+          if (m || v < 100) { player.unMute(); player.setVolume(100); }
+          say("audio " + m + " " + v);
         }
         window.slop = {
           play: function () { if (player && player.playVideo) player.playVideo(); },
@@ -94,9 +129,9 @@ internal sealed class Page : IDisposable
         function onYouTubeIframeAPIReady() {
           player = new YT.Player("p", {
             host: "https://www.youtube-nocookie.com", width: {{width}}, height: {{height}}, videoId: "{{id}}",
-            playerVars: { autoplay: 1, start: {{(long)seconds}}, playsinline: 1, enablejsapi: 1, origin: "{{Origin}}" },
+            playerVars: { autoplay: 1, mute: 0, start: {{(long)seconds}}, playsinline: 1, enablejsapi: 1, origin: "{{Origin}}" },
             events: {
-              onReady: function (e) { e.target.playVideo(); report(); },
+              onReady: function (e) { e.target.unMute(); e.target.setVolume(100); e.target.playVideo(); report(); },
               onStateChange: report,
               onError: function (e) { error = e.data; report(); }
             }
@@ -136,19 +171,44 @@ internal sealed class Page : IDisposable
     }
 
     /// <summary>The sound: with this handler CEF sends a page's audio here, not to the speakers.</summary>
-    private sealed class Sound(SharedBlock block) : IAudioHandler
+    private sealed class Sound(SharedBlock block, int slot) : IAudioHandler
     {
-        private int _channels;
+        private const long LogEvery = 5;
+        private int _channels = 2, _rate = SharedBlock.GameRate;
+        private long _packets, _nextLog;
+
         public bool GetAudioParameters(IWebBrowser chromiumWebBrowser, IBrowser browser, ref AudioParameters parameters)
         {
-            parameters.SampleRate = 44100; // (the game's rate: Audio.SampleRate)
+            Program.Log($"page {slot}: audio handler asked (hop 2): offered {parameters.SampleRate} Hz, {parameters.ChannelLayout}, {parameters.FramesPerBuffer} frames");
+            parameters.SampleRate = SharedBlock.GameRate;
             parameters.ChannelLayout = ChannelLayout.LayoutStereo;
             return true;
         }
-        public void OnAudioStreamStarted(IWebBrowser chromiumWebBrowser, IBrowser browser, AudioParameters parameters, int channels) => _channels = channels;
-        public void OnAudioStreamPacket(IWebBrowser chromiumWebBrowser, IBrowser browser, IntPtr data, int noOfFrames, long pts) => block.WriteAudio(data, noOfFrames, _channels);
-        public void OnAudioStreamStopped(IWebBrowser chromiumWebBrowser, IBrowser browser) { }
-        public void OnAudioStreamError(IWebBrowser chromiumWebBrowser, IBrowser browser, string errorMessage) => Program.Say("fail audio: " + Program.OneLine(errorMessage));
+
+        public void OnAudioStreamStarted(IWebBrowser chromiumWebBrowser, IBrowser browser, AudioParameters parameters, int channels)
+        {
+            _channels = channels;
+            _rate = parameters.SampleRate;
+            Program.Log($"page {slot}: audio stream started (hop 3): {channels} channels, {parameters.SampleRate} Hz, {parameters.ChannelLayout}");
+        }
+
+        public void OnAudioStreamPacket(IWebBrowser chromiumWebBrowser, IBrowser browser, IntPtr data, int noOfFrames, long pts)
+        {
+            block.WriteAudio(data, noOfFrames, _channels, _rate);
+            _packets++;
+            var now = Environment.TickCount64 / 1000;
+            if (now < _nextLog)
+                return;
+            _nextLog = now + LogEvery;
+            Program.Log($"page {slot}: audio packets (hop 4): {_packets}, {block.AudioFrames} frames into the ring, peak {block.AudioPeak:0.000}");
+            block.AudioPeak = 0;
+        }
+
+        public void OnAudioStreamStopped(IWebBrowser chromiumWebBrowser, IBrowser browser) => Program.Log($"page {slot}: audio stream stopped after {_packets} packets");
+
+        // (never a "fail": that closes every page, and a picture without sound is still a picture)
+        public void OnAudioStreamError(IWebBrowser chromiumWebBrowser, IBrowser browser, string errorMessage) => Program.Log($"page {slot}: audio stream error: {errorMessage}");
+
         public void Dispose() { }
     }
 
