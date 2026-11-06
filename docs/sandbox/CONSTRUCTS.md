@@ -4944,10 +4944,18 @@ parts"), so a search or the tree finds them like any other part.
 
 **Direct spawns** (creative worlds only: a map with `"infiniteParts": false` refuses them, "its enemies come from the
 world"): Msg.CAct `Spawn` (u8 what, u8 difficulty, u8 gun kind, u8 its value, u8 zombie mix, u32 count, the aimed spot)
-and `ClearSpawns`. The server checks the permission (the host, or everyone when the host allows it), the spot (`SandboxSpawnSpot`:
-ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and the caps (a request over a cap is
-cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a bot a tick, 8 individual zombies
-a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+and `ClearSpawns`. The server checks the permission (joined players may spawn unless the host turns that off in the Spawn
+tab), the spot (`SandboxSpawnSpot`: ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and
+the caps (a request over a cap is cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a
+bot a tick, 8 individual zombies a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+
+**Joined players** have the same tab within limits of their own, so a client can't take the host's tick: at most
+`SpawnClientBots` (8) bots and `SpawnClientZombies` (64) zombies out at once, spawners on their constructs included, all
+under the host's bot cap (16 by default, shared with everyone) and the individual tier's cap (300 zombies at once, shared).
+Their zombies are always individuals: the crowd and mass tiers have no owners, so they couldn't be counted or cleared per
+player. A client's clear (**Clear mine**) takes only what is theirs, even when the host has turned their spawning off; the
+host's Clear all takes everything. What a player spawned is nobody's once they leave, so the next person given that id
+neither inherits it nor has it count against them.
 
 **Sides**: a spawned bot is a full bot (the bot AI, the nav graph) with team 10 (friendly) or 11 (enemy), replicated in the
 mode state like any team. The Sandbox's `AreEnemies`: enemy bots against everyone else and never each other; friendly bots

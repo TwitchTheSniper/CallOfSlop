@@ -8,7 +8,8 @@ namespace CallOfSlop;
 /// a bot's difficulty and gun (any, a weapon class or one gun) and how many; the zombies' count (1 to 500,000: a slider,
 /// a number and presets, a warning above 100,000) and mix. "Place" closes the window and the next Fire spawns at the
 /// aimed spot (Program.SandboxSpawn.cs). Clear all, the spawner parts (taken like any part), and for the host the caps
-/// and whether everyone may spawn.
+/// and whether joined players may spawn. A joined player has the same tab within their own limits (bots, up to 64
+/// individual zombies) and clears only their own.
 /// </summary>
 public sealed partial class Ui
 {
@@ -82,21 +83,24 @@ public sealed partial class Ui
                         (game.SpawnLoad, game.SpawnLoadValue) = (SbLoadKind.Gun, _spGunIds[g]);
                 ImGui.EndCombo();
             }
-            var cap = Math.Max(1, Math.Min(game.SandboxBotCap, Game.SpawnBotCapMax));
+            var cap = Math.Max(1, Math.Min(game.SandboxBotCap, game.IsServer ? Game.SpawnBotCapMax : Game.SpawnClientBots));
             ImGui.SetNextItemWidth(320 * _scale);
             ImGui.SliderInt("How many##sbbots"u8, ref game.SpawnBots, 1, cap);
-            game.SpawnBots = Math.Clamp(game.SpawnBots, 1, Game.SpawnBotCapMax);
+            game.SpawnBots = Math.Clamp(game.SpawnBots, 1, game.IsServer ? Game.SpawnBotCapMax : cap);
         }
         else
         {
             ImGui.TextColored(Dim, "Hunt players and friendly bots, and swipe at constructs in the way."u8);
+            var most = game.IsServer ? Game.SpawnZombieMax : Game.SpawnClientZombies;
             ImGui.SetNextItemWidth(320 * _scale);
-            ImGui.SliderInt("How many##sbzs"u8, ref game.SpawnZombies, 1, Game.SpawnZombieMax, "%d"u8, ImGuiSliderFlags.Logarithmic);
+            ImGui.SliderInt("How many##sbzs"u8, ref game.SpawnZombies, 1, most, "%d"u8, ImGuiSliderFlags.Logarithmic);
             ImGui.SetNextItemWidth(320 * _scale);
             ImGui.InputInt("##sbzn"u8, ref game.SpawnZombies, 10, 1000);
-            game.SpawnZombies = Math.Clamp(game.SpawnZombies, 1, Game.SpawnZombieMax);
+            game.SpawnZombies = Math.Clamp(game.SpawnZombies, 1, most);
             for (var k = 0; k < SpawnPresetLabels.Length; k++)
             {
+                if (Game.SpawnZombiePresets[k] > most)
+                    break;
                 if (k > 0)
                     ImGui.SameLine();
                 if (ImGui.Button(SpawnPresetLabels[k]))
@@ -124,7 +128,7 @@ public sealed partial class Ui
             return;
         }
         ImGui.SameLine();
-        if (BigButton("CLEAR ALL##sbclear"))
+        if (BigButton(game.IsServer ? "CLEAR ALL##sbclear" : "CLEAR MINE##sbclear"))
             game.SandboxSendClearSpawns();
         ImGui.Separator();
         // The spawner parts: taken like any part.
@@ -141,12 +145,14 @@ public sealed partial class Ui
         {
             ImGui.Separator();
             ImGui.TextColored(Dim, "Host"u8);
-            ImGui.Checkbox("Everyone can spawn and clear (off: only you)"u8, ref game.SandboxSpawnAnyone);
+            ImGui.Checkbox("Joined players can spawn (off: only you)"u8, ref game.SandboxSpawnAnyone);
             ImGui.SetNextItemWidth(320 * _scale);
             ImGui.SliderInt("Most bots##sbbotcap"u8, ref game.SandboxBotCap, 1, Game.SpawnBotCapMax);
             ImGui.SetNextItemWidth(320 * _scale);
             ImGui.SliderInt("Most zombies##sbzcap"u8, ref game.SandboxZombieCap, 100, Game.SpawnZombieMax, "%d"u8, ImGuiSliderFlags.Logarithmic);
         }
+        else
+            ImGuiSafe.TextColored(Dim, $"Your limit: {Game.SpawnClientBots} bots and {Game.SpawnClientZombies} zombies at once.");
         ImGuiSafe.TextColored(Dim, $"Spawned now: {game.SpawnedBotsNow} bots, {game.SpawnedZombiesNow:N0} zombies");
     }
 
