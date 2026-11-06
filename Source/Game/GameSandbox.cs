@@ -69,6 +69,7 @@ public enum CActKind : byte
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
     Talk, // u8 the person's body (its player id), u8 TalkAsk: a player talks to one of the story's people (protocol 159; GameStoryChat.cs)
     Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
+    Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq, text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -256,6 +257,8 @@ public sealed partial class Game
 
     internal void ServerTickSandbox(double now)
     {
+        if (ServerTick % World.TickRate == 0)
+            ConstructMedia.Tick(Constructs, ServerTick); // (the game's own tracks end by the clock)
         SandboxNow = now;
         if (!SandboxOn)
             return;
@@ -857,6 +860,18 @@ public sealed partial class Game
                 var text = r.Text(LogicText.MaxChars);
                 return hands.PartText(Constructs, p.Id, eye, body, part, slot, text, Constructs.Get(body) is { } tc ? SandboxConfigRefusal(tc, p.Id) : null);
             }
+            case CActKind.Media:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var op = r.U8();
+                var line = r.U8();
+                var seq = r.U32();
+                var entry = r.Text(MediaEntry.MaxChars);
+                if (op > (byte)MediaOp.Ended)
+                    return null;
+                return hands.MediaAct(Constructs, p.Id, eye, body, part, (MediaOp)op, line, seq, entry, ServerTick, Constructs.Get(body) is { } mc ? SandboxConfigRefusal(mc, p.Id) : null);
+            }
             case CActKind.AnalogLever:
             {
                 var body = r.U16();
@@ -1105,6 +1120,24 @@ public sealed partial class Game
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.PartText).U16(body).U16((ushort)part).U8((byte)slot).Str(LogicText.Clean(text));
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxActGuarded(me, ref r) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>Client (or the host itself): a Video Screen's or Music Player's list or transport. The server checks it as the configure tool's.</summary>
+    public void SandboxMedia(ushort body, int part, MediaOp op, int line = 0, uint seq = 0, string entry = "")
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.Media).U16(body).U16((ushort)part).U8((byte)op).U8((byte)line).U32(seq).Str(entry);
         if (IsServer)
         {
             if (Local is { } me)

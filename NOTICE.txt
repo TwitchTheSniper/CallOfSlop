@@ -14,3 +14,10 @@ tools/render/make_panel_font.py. DejaVu changes are in the public domain; the Bi
 Copyright (c) 2003 Bitstream, Inc., and may be used, embedded and changed under the Bitstream Vera licence: the fonts may
 be copied, modified and sold with software, but not sold by themselves, and a modified font that keeps the words
 "Bitstream" or "Vera" in its name must be renamed. The Software Is Provided "As Is", Without Warranty Of Any Kind.
+
+The Browser folder holds the browser Video Screens and Music Players use to run YouTube's player (docs/sandbox/MEDIA.md):
+Chromium Embedded Framework (bitbucket.org/chromiumembedded/cef), Copyright (c) 2008-2020 Marshall A. Greenblatt, Portions
+Copyright (c) 2006-2009 Google Inc.; CefSharp (github.com/cefsharp/CefSharp), Copyright (c) The CefSharp Authors; both under
+BSD licences, in that folder as LICENSE-CEF.txt and LICENSE-CefSharp.txt. libcef.dll contains Chromium (BSD-style) and
+FFmpeg (LGPL 2.1, as a stock CEF build has it: no H.264 or AAC) and other open source components, whose notices are in
+the file itself. YouTube's player and what it shows are YouTube's and are not part of this product.

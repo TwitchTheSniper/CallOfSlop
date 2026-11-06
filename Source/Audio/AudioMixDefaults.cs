@@ -53,6 +53,7 @@ public enum MixBus : byte
     Frenzy4,
     Frenzy5,
     Frenzy6,
+    Media,
     COUNT,
 
     /// <summary>"Work it out from the sound" (<see cref="Audio.BusFor"/>): the default for the Effect calls.</summary>
@@ -166,6 +167,7 @@ public static class AudioMixDefaults
         L("frenzy.4", "Music", "Kill frenzy level 4", "Full volume, the last drop."),
         L("frenzy.5", "Music", "Kill frenzy level 5 (FRENZY)", "As loud as the menu music."),
         L("frenzy.6", "Music", "Kill frenzy level 6 (MAX FRENZY)", "As loud as the gunfire (then the music limiter)."),
+        L("media", "Music", "Video Screens and Music Players", "What they play, on top of each part's Volume and Settings > Audio > Screens volume."),
 
         // ---- Shape (MixParam order) ----
         P("dist.reference_m", "Gunshot reference distance", 5f, 1f, 20f, "%.1f m", "Other players' shots start fading from here (inverse distance)."),

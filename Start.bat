@@ -22,6 +22,11 @@ if errorlevel 1 (
         exit /b 1
     )
 )
+rem Video Screens' browser (tools\browser), once: about 500 MB, and only a link in the game needs it, so a failure here isn't one for the game.
+if not exist "bin\Release\net10.0\Browser\SlopBrowser.exe" (
+    echo Building the video browser, once...
+    dotnet publish tools\browser\SlopBrowser.csproj -c Release -o bin\Release\net10.0\Browser -nologo -v q > bin\browser.log 2>&1
+)
 rem .NET crash dumps beside the log (Source/App/CrashDumps.cs): a native crash leaves crash-PID.dmp to send to the developer.
 set DOTNET_DbgEnableMiniDump=1
 set DOTNET_DbgMiniDumpType=1

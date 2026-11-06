@@ -221,6 +221,9 @@ public static unsafe partial class Program
             AudioSystem.Init();
             AudioSystem.MasterVolume = _settings.Volume;
             AudioSystem.Music.Volume = _settings.MusicVolume;
+            MediaDirector.Level = _settings.MediaVolume;
+            MediaDirector.Others = _settings.MediaOthers;
+            MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
             LoadAudioMix(); // audio_mix.json from the Audio mixer window, if there is one (Program.AudioMixer.cs)
@@ -277,6 +280,7 @@ public static unsafe partial class Program
             ShutdownSteamNet();
             ShutdownSteam(); // Program.Steam.cs
             Ui.Dispose();
+            MediaDirector.Shutdown(AudioSystem);
             AudioSystem.Dispose();
             Glfw.Terminate();
             if (!_smoke && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the smoke test borrows settings temporarily; never save them
@@ -1624,6 +1628,7 @@ public static unsafe partial class Program
             return;
         float w = fb.X, h = fb.Y;
 
+        MediaDirector.Frame(_session, AudioSystem, now); // screens and music players near this player (Source/Media)
         DrawCameraFeed(now); // a watched camera's picture, only if a screen near this player asked for one (Program.CameraFeeds.cs)
         Gfx.BeginFrame(fb.X, fb.Y, World.Map.Sky);
 

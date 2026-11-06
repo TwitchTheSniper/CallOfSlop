@@ -110,6 +110,20 @@ if ($Step -ne "zip") {
     Copy-Item -Force "tools/MIGRATING.md" (Join-Path $folder "MOVING YOUR SAVES.txt") # how to bring progression over from an older build
     if ($Runtime -like "win-*") { Copy-Item -Force "tools/RunServerList.bat" (Join-Path $folder "RunServerList.bat") } # a server list for friends (README, Playing with friends)
     Copy-Item -Force "tools/masters.txt" (Join-Path $folder "masters.txt") # server lists shipped with the zip (Settings.ShippedMasters)
+    # The browser for Video Screens and Music Players (docs/sandbox/MEDIA.md): Windows only, in a folder of its own; the game only starts it when a link plays.
+    if ($Runtime -like "win-*") {
+        Write-Host "Publishing the browser..."
+        $browser = Join-Path $folder "Browser"
+        & dotnet publish "tools/browser/SlopBrowser.csproj" -c Release -o $browser -p:DebugType=none -nologo -v q *>> $log
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $browser "SlopBrowser.exe"))) { Fail "the browser didn't publish (see bin\package.log)" }
+        # Only English of Chromium's page text, and no debug files: about 50 MB less, and none of it is ever shown (a page has no menus here).
+        Get-ChildItem -Path (Join-Path $browser "locales") -File | Where-Object { $_.Name -ne "en-US.pak" } | Remove-Item -Force
+        Get-ChildItem -Path $browser -File | Where-Object { $_.Extension -in ".pdb", ".xml" } | Remove-Item -Force
+        # The licences of what's in the folder.
+        $nuget = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $HOME ".nuget/packages" }
+        Copy-Item -Force (Join-Path $nuget "chromiumembeddedframework.runtime.win-x64/*/LICENSE.txt") (Join-Path $browser "LICENSE-CEF.txt")
+        Copy-Item -Force (Join-Path $nuget "cefsharp.common.netcore/*/LICENSE") (Join-Path $browser "LICENSE-CefSharp.txt")
+    }
     if (-not (Test-Path (Join-Path $folder "CallOfSlop.exe")) -and $Runtime -like "win-*") { Fail "CallOfSlop.exe wasn't published" }
 }
 

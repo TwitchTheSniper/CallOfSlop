@@ -309,7 +309,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 163: a steering differential takes a data link (DataIn "Steer": the link rules peers check against each other) and a config slot, CfgKey.SteerKind.
     // 164: a build text's length is a U32 (Msg.ZBuild, Msg.ZDrop text, CActKind.Bench): the Sandbox's builds have no part limit.
     // 165: flying rounds (ConstructRounds.cs): CFireKind.RoundOut in Msg.CFire.
-    public const byte ProtocolVersion = 165;
+    // 166: Video Screens and Music Players (ConstructMedia.cs): CActKind.Media, CfgKey.Loop, and a CBody's messages are followed by the media lists (u16 n; each u16 part, u8 state, u8 line, u8 by, u32 start tick, u32 seq, f32 paused at, u8 lines, the lines).
+    public const byte ProtocolVersion = 166;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

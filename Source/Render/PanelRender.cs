@@ -24,6 +24,7 @@ public static unsafe class PanelRender
     public const int QuadFloats = 12; // x, y, u0, v0, u1, v1, r, g, b, layer; x1, y1 (panel metres)
     private const int VertFloats = 8; // xyz, uv, rgb
     private const float PictureU = 2; // a quad's u from here up is a camera's picture, its layer in the red of its colour
+    private const float VideoU = 3; // and from here up a browser page's (VideoFeeds.cs)
     private const int CellW = 6, CellH = 8; // a character's box in the layout: the proportions text is measured with
     private const int BarSlices = 32, TraceSteps = 3; // quads a full coloured bar takes, and a graph's sample (a Graph Screen stays under 200)
     private const float LayerStep = 0.004f; // what is on the screen stands this share of its height off it
@@ -79,6 +80,7 @@ public static unsafe class PanelRender
         in vec3 vColour;
         uniform sampler2D uFont;
         uniform sampler2DArray uFeeds;
+        uniform sampler2DArray uVideo;
         out vec4 FragColor;
         void main()
         {
@@ -86,6 +88,11 @@ public static unsafe class PanelRender
             // choice below, where the derivatives are defined).
             vec2 texels = vUv * vec2(textureSize(uFont, 0));
             float w = clamp(0.083 * max(length(dFdx(texels)), length(dFdy(texels))), 0.01, 0.3);
+            if (vUv.x >= 3.0)
+            {
+                FragColor = vec4(texture(uVideo, vec3(vUv.x - 3.0, vUv.y, vColour.r)).rgb, 1.0);
+                return;
+            }
             if (vUv.x >= 2.0)
             {
                 FragColor = vec4(texture(uFeeds, vec3(vUv.x - 2.0, vUv.y, vColour.r)).rgb, 1.0);
@@ -248,6 +255,8 @@ public static unsafe class PanelRender
         Solid(s, hw - edge, -hh + edge, hw, hh - edge, state, 1);
         if (card.Picture > 0)
             Quad(s, -hw + edge, -hh + edge, hw - edge, hh - edge, PictureU, 0, PictureU + 1, 1, new Vector3(card.Picture - 1, 0, 0), 1);
+        if (card.Video > 0) // (the browser's rows come top first)
+            Quad(s, -hw + edge, -hh + edge, hw - edge, hh - edge, VideoU, card.VideoHeight / (float)MediaBlock.MaxHeight, VideoU + card.VideoWidth / (float)MediaBlock.MaxWidth, 0, new Vector3(card.Video - 1, 0, 0), 1);
         var barH = card.Bar >= 0 ? h * 0.075f : 0;
         var row = (h - 2 * pad - barH) / rows;
         var glyphH = row * 0.86f;
@@ -596,6 +605,7 @@ public static unsafe class PanelRender
         Native.glBufferData(GL_ARRAY_BUFFER, _bufferBytes, null, GL_STREAM_DRAW); // orphan: no stall on the last copy
         fixed (float* p = _verts)
             Native.glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, p);
+        VideoFeeds.Bind();
         gfx.SetBlend(true);
         Native.glDrawArrays(GL_TRIANGLES, 0, _vertCount / VertFloats);
         gfx.SetBlend(false);
@@ -626,6 +636,8 @@ public static unsafe class PanelRender
                 Native.glUniform1i(Native.glGetUniformLocation(program, n), (int)FontUnit);
             fixed (byte* n = "uFeeds\0"u8)
                 Native.glUniform1i(Native.glGetUniformLocation(program, n), 15); // (CameraFeeds' pictures)
+            fixed (byte* n = "uVideo\0"u8)
+                Native.glUniform1i(Native.glGetUniformLocation(program, n), (int)VideoFeeds.Unit);
             GlVertexArray vao = default;
             Native.glGenVertexArrays(1, &vao);
             _vao = vao;

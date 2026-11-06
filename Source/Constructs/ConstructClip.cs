@@ -336,6 +336,9 @@ public sealed class ConstructClip
             var msg = LogicText.ToJson(in p);
             if (msg.Length > 0)
                 sb.Append(", \"text\": ").Append(msg);
+            var media = ConstructMedia.ToJson(in p);
+            if (media.Length > 0)
+                sb.Append(", \"media\": ").Append(media);
             if (ConstructPaint.IsSet(p.Paint))
                 sb.Append(", \"paint\": \"").Append(ConstructPaint.ToHex(p.Paint)).Append('"');
             sb.Append(k + 1 < c.PartCount ? " },\n" : " }\n");

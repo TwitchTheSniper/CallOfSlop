@@ -118,6 +118,7 @@ public enum CfgKey : byte
     Charge, // a builder receiver: its powder charge, percent (PowderCharge)
     Pushable, // hinge: a player walking into what hangs on it swings it (ConstructDoor.PushOpens)
     SteerKind, // a steering differential: reverse, drag or clutch steering (SteerMode)
+    Loop, // Video Screen, Music Player: the list starts again after its last track (ConstructMedia.cs)
     COUNT,
 }
 
@@ -266,6 +267,7 @@ public static class ConstructConfig
     {
         p.LeverShown = -1;
         p.Text = p.Text2 = null;
+        p.Media = null;
         p.Mem = 0;
         p.Reading = d.Logic == CLogic.Numpad ? LogicInputs.NoEntry : 0;
         for (var s = 0; s < d.Config.Length; s++)
@@ -653,7 +655,9 @@ public static class ConstructConfig
                 CfgKey.Limit or CfgKey.Wrap => d.Logic == CLogic.Counter,
                 CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
-                CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,
+                CfgKey.Pitch => d.Logic == CLogic.Horn,
+                CfgKey.Volume => d.Logic == CLogic.Horn || d.IsMedia,
+                CfgKey.Loop => d.IsMedia,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && (d.JointLimited || d.JointType == JointType.Swivel) && d.JointType != JointType.Steering,
                 CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel),
                 CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,

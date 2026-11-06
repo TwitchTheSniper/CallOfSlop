@@ -135,6 +135,7 @@ public static class ConstructNet
         ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
         LogicDisplays.Write(w, c); // protocol 153: what the displays show
         LogicText.Write(w, c); // ...and the signs' messages
+        ConstructMedia.Write(w, c); // protocol 166: the screens' and music players' lists
         // Protocol 93: carried by a frozen cargo volume (ConstructCargo.cs): the carrier, and the pose in its volume's segment frame.
         w.U16(c.CarriedBy);
         if (c.CarriedBy != 0)
@@ -974,6 +975,7 @@ public static class ConstructNet
         ConstructConfig.Read(ref r, c); // protocol 89: the part settings
         LogicDisplays.Read(ref r, c); // protocol 153
         LogicText.Read(ref r, c);
+        ConstructMedia.Read(ref r, c); // protocol 166
         c.CarriedBy = r.U16(); // protocol 93: carried by a frozen cargo volume
         if (c.CarriedBy != 0)
         {

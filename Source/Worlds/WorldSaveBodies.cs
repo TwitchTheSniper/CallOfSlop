@@ -313,6 +313,16 @@ public sealed partial class ConstructWorld
                     settings++;
                 }
             }
+            // (a media part's list, the same way: ConstructMedia.cs)
+            if (d.IsMedia)
+            {
+                var text = ConstructMedia.SaveText(p);
+                for (var chunk = 0; chunk * 3 < text.Length; chunk++)
+                {
+                    countAt.U16((ushort)i).U16(names.Key(ConstructMedia.SaveKey(chunk))).F32(LogicText.Pack(text, chunk));
+                    settings++;
+                }
+            }
         }
         w.I32(settings).Bytes(countAt.Span);
         w.I32(b.LinkCount);
@@ -531,7 +541,11 @@ public sealed partial class ConstructWorld
                 parts[part].Cfg[slot] = d.Config[slot].Clamp(v);
             else if (slot < 0 && d.TextSlots > 0 && float.IsFinite(v))
                 LogicText.LoadChunk(ref parts[part], names.Keys[key], v); // (a sign's message: LogicText.cs)
+            else if (slot < 0 && d.IsMedia && float.IsFinite(v))
+                ConstructMedia.LoadChunk(ref parts[part], names.Keys[key], v);
         }
+        for (var i = 0; i < n; i++)
+            ConstructMedia.LoadDone(ref parts[i]);
         var links = r.Count(6);
         if (links > Construct.MaxLinks)
             throw new WorldFileException($"a construct of {links} links");

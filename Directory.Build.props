@@ -2,5 +2,7 @@
   <!-- The exe's icon (tools/branding/make_icon.py). Here, not in the csproj, so CI's NuGet cache key (a hash of the csproj) stays. -->
   <PropertyGroup>
     <ApplicationIcon>Branding\CallOfSlop.ico</ApplicationIcon>
+    <!-- The browser helper is a project of its own (tools/browser, Windows only): its sources aren't the game's. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tools/browser/**</DefaultItemExcludes>
   </PropertyGroup>
 </Project>

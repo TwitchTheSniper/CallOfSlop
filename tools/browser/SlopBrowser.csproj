@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The game's browser for Video Screens and Music Players (docs/sandbox/MEDIA.md): an exe of its own, so the game's process never
+       loads CEF. Windows only. Built by tools/package.ps1 and by Start.bat; never by the game's csproj or CI's self-test jobs. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PlatformTarget>x64</PlatformTarget>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon></ApplicationIcon> <!-- (Directory.Build.props sets the game's, by a path that is the game's) -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>SlopBrowser</AssemblyName>
+    <RootNamespace>SlopBrowser</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CefSharp.OffScreen.NETCore" Version="156.0.150" />
+  </ItemGroup>
+
+</Project>

@@ -75,6 +75,8 @@ public sealed class PanelCard
     public ulong IconMask; // bit y * 8 + x of the picture, y up (0: a plain swatch)
     public float Bar = -1; // 0 to 1; below 0: none
     public int Picture; // a camera's picture behind the text: its layer in CameraFeeds plus one (0: none)
+    public int Video; // a browser page's picture: its layer in VideoFeeds plus one (0: none)
+    public int VideoWidth, VideoHeight; // how much of the layer it fills
     public int Mark = -1; // a line drawn on a lit strip (a list's pick); below 0: none
     public PanelDraw Draw;
     public bool HasInk; // text, needle, trace and bars all in Ink, not the state's colours (a display's "ink" setting)
@@ -97,6 +99,7 @@ public sealed class PanelCard
         IconMask = 0;
         Bar = -1;
         Picture = 0;
+        Video = 0;
         Mark = -1;
         Draw = PanelDraw.None;
         HasInk = false;
@@ -252,6 +255,7 @@ public sealed class PanelCard
         }
         Mix((uint)State | (HasIcon ? 256u : 0));
         Mix((uint)(int)(Bar * 96) ^ (uint)Picture << 24);
+        Mix((uint)Video);
         Mix((uint)IconMask);
         Mix((uint)(IconMask >> 32));
         Mix((uint)(IconColour.X * 255) | (uint)(IconColour.Y * 255) << 8 | (uint)(IconColour.Z * 255) << 16);
@@ -281,6 +285,7 @@ public static class PanelSources
         ["press.bay"] = ConstructPress.FillBay,
         ["press.die"] = ConstructPress.FillDie,
         ["camera"] = ConstructRemote.FillScreen,
+        ["media"] = MediaDirector.Fill,
         ["terminal"] = ConstructTerminals.FillPanel,
         ["machine"] = MachineScreens.Fill,
         ["logic.readout"] = LogicDisplays.Readout,
