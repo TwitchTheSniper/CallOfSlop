@@ -61,6 +61,8 @@ Each experiment runs only on the 4.6 path, keeps the 4.1 code as its other branc
 | `mdi` | The prop renderer's visible runs (one `glDrawElementsInstanced` each on 4.1, with two `glVertexAttribPointer` calls before it) are queued as `DrawElementsIndirectCommand`s and drawn with one `glMultiDrawElementsIndirect` per pass; the base instance offsets the instanced attributes, so the vertex shader is unchanged (`PropRenderer.QueueRun` / `FlushIndirect`). | on | 90 draw calls become 3 on Ashgrave Cathedral, 34 become 1 on Horde Test; identical pictures; CPU submission equal or a little lower in every run. |
 | `persistent` | The box batch's per-frame instance data (horde bodies, players, guns), and the mass horde's crowd instances (`Renderer.DrawCrowd`, its own ring `Renderer.crowdRing`, 16 bytes an instance), written straight into a persistently mapped, triple-buffered, fenced ring (`StreamRing`: `glBufferStorage` + `GL_MAP_PERSISTENT_BIT`, DSA when there) and drawn with `glDrawArraysInstancedBaseInstance`, instead of `glBufferData` orphaning + `glBufferSubData` (`Renderer.FlushBatch`). | off | On llvmpipe it costs 1-2.5 ms of CPU a frame on Horde Test (5,800 batched boxes) and shows nothing on Downtown; see below. Worth an A/B on a real GPU with `--gl-on=persistent`. |
 
+| `gpufx` | Particles on the GPU (`Source/Render/Fx`, docs/render/MATERIALS.md "Effects"): a storage buffer pool stepped by compute shaders, births through a persistent `StreamRing`, one `glDrawArraysIndirect`. Off: the 4.1 path's CPU pool, a tenth to a sixtieth the size. Read once, when the pool is made. | on | No CPU work per particle, no upload but the births. |
+
 Also on the 4.6 path, behind their flags and ready for use: **DSA** (`StreamRing` makes its buffer with
 `glCreateBuffers` / `glNamedBufferStorage` when `RenderCaps.Dsa`), and **compute** (`GlCompute`, below). Not tried:
 bindless textures (not widely enough supported) and SSBO-for-uniform tricks (nothing needed one).
@@ -70,7 +72,7 @@ bindless textures (not widely enough supported) and SSBO-for-uniform tricks (not
 `GlCompute.Create(source, label)` compiles a compute shader through the prelude (null on the 4.1 path), `BindStorage`
 binds an SSBO, `Dispatch` runs it and `Barrier` makes its writes visible to the next vertex fetch, indirect command
 or read-back. `--gl-bench` runs `GlCompute.SelfCheck` first (a kernel that doubles 256 floats, read back:
-`[glbench] compute self-check: ok`). Nothing in the game uses it yet. Where it goes:
+`[glbench] compute self-check: ok`). The particles use it (`gpufx` above). Where else it can go:
 
 - **Horde skinning:** `ZombieAnim.Evaluate` poses each zombie on the CPU and `ZombieAnim.Draw` pushes its boxes into
   the box batch (`Renderer.BeginBatch` / `EndBatch`). A compute pass would take one record per zombie (position,

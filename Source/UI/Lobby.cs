@@ -28,6 +28,19 @@ public enum PauseAction
 /// <summary>The lobby (main menu), the in-game pause menu and the shared settings panel.</summary>
 public sealed partial class Ui
 {
+    /// <summary>One Low, Medium, High row of the Video settings.</summary>
+    private static void VideoLevelRow(ReadOnlySpan<byte> title, string id, ref VideoLevel level)
+    {
+        ImGui.Text(title);
+        var v = (int)level;
+        for (var i = 0; i <= (int)VideoLevel.High; i++)
+        {
+            ImGui.SameLine();
+            if (ImGui.RadioButton($"{(VideoLevel)i}##{id}", ref v, i))
+                level = (VideoLevel)v;
+        }
+    }
+
     private enum Page
     {
         Main,
@@ -870,6 +883,25 @@ public sealed partial class Ui
                     s.SkyQuality = (SkyQuality)skyQ;
             }
             ImGui.TextColored(Dim, "Maps with a sky: Low draws the gradient, sun and moon; High adds drifting clouds and stars."u8);
+
+            ImGui.Spacing();
+            VideoLevelRow("Materials"u8, "materials", ref s.Materials);
+            ImGui.TextColored(Dim, "Parts and props: Low is the plain look. Medium adds metal, wood, rubber and glass that catch the sun and the sky, worn edges and rust on hurt parts. High adds fine surface detail up close."u8);
+            VideoLevelRow("Particles"u8, "particles", ref s.Particles);
+            ImGui.TextColored(Dim, "Flames, smoke, sparks, dust and blasts: how many at once."u8);
+            VideoLevelRow("Post effects"u8, "post", ref s.PostEffects);
+            if (s.PostEffects > VideoLevel.Low)
+            {
+                ImGui.Checkbox("Bloom##post"u8, ref s.Bloom);
+                ImGui.SameLine();
+                ImGui.Checkbox("Heat haze##post"u8, ref s.HeatHaze);
+                if (s.PostEffects == VideoLevel.High)
+                {
+                    ImGui.SameLine();
+                    ImGui.Checkbox("Ambient occlusion##post"u8, ref s.AmbientOcclusion);
+                }
+            }
+            ImGui.TextColored(Dim, "Low: none. Medium: a glow round lamps, flames and screens, and heat haze over flames. High: a wider glow, and soft shade in corners."u8);
 
             ImGui.Spacing();
             ImGui.Text("Lighting"u8);

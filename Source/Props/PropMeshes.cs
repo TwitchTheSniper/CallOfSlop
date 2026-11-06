@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed class PropMeshes
 {
-    public const int FloatsPerVertex = 12;
+    public const int FloatsPerVertex = 10; // position, normal, the packed look (see Pack), texture u, v, layer value
 
     /// <summary>A range of the shared index buffer.</summary>
     public readonly record struct Range(int FirstIndex, int IndexCount);
@@ -81,7 +81,7 @@ public sealed class PropMeshes
                 if (normal.Y < -0.5f)
                     ao *= 0.7f;
                 var col = part.Color * ao;
-                v.AddRange([pos.X, pos.Y, pos.Z, normal.X, normal.Y, normal.Z, col.X, col.Y, col.Z,
+                v.AddRange([pos.X, pos.Y, pos.Z, normal.X, normal.Y, normal.Z, Pack(col, SurfaceOf(part)),
                     su * uLen * 0.5f * part.TexScale, sw * wLen * 0.5f * part.TexScale, LayerOf(part)]);
             }
             idx.AddRange([baseVertex, baseVertex + 1, baseVertex + 2, baseVertex, baseVertex + 2, baseVertex + 3]);
@@ -123,12 +123,22 @@ public sealed class PropMeshes
                 if (normal.Y < -0.5f)
                     ao *= 0.7f;
                 var col = part.Color * ao;
-                v.AddRange([pos.X, pos.Y, pos.Z, normal.X, normal.Y, normal.Z, col.X, col.Y, col.Z,
+                v.AddRange([pos.X, pos.Y, pos.Z, normal.X, normal.Y, normal.Z, Pack(col, SurfaceOf(part)),
                     su * uLen * 0.5f * part.TexScale, sw * wLen * 0.5f * part.TexScale, LayerOf(part)]);
             }
             idx.AddRange([baseVertex, baseVertex + 1, baseVertex + 2, baseVertex, baseVertex + 2, baseVertex + 3]);
         }
     }
+
+    /// <summary>A vertex's colour (RGB8) and material row in one float's bits: 4 bytes where three floats were (read as four normalised bytes).</summary>
+    public static float Pack(Vector3 col, byte surface)
+    {
+        static uint B(float v) => (uint)Math.Clamp((int)(v * 255f + 0.5f), 0, 255);
+        return BitConverter.UInt32BitsToSingle(B(col.X) | B(col.Y) << 8 | B(col.Z) << 16 | (uint)surface << 24); // (a row below 127: never a NaN's pattern)
+    }
+
+    /// <summary>A prop part's shared material (Surfaces.cs), by its texture material; a pane or a glowing part keeps the classic light. Nothing is stored in the part: the row comes from the table.</summary>
+    public static byte SurfaceOf(PropPart part) => part.Glass > 0 || part.Glow > 0 ? (byte)0 : Surfaces.File.Props[part.Layer >= 0 ? part.Layer : (int)Material.Grid];
 
     /// <summary>
     /// The vertex's layer value: the texture layer, -1 for a plain colour, or for a glass or glowing part (both plain

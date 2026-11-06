@@ -386,6 +386,8 @@ public static class Extrusion
         var area = Fill(k.Mask) * w * h;
         var d = Stats(k, mat, area, area * len, thinnest, $"An extrusion: a {ProfileLabel(k.Mask)} section {w:0.##} by {h:0.##} m, {len:0.##} m of {names.NameOf(k.Material)}.");
         d.Boxes = boxes;
+        d.SurfaceOverride = SurfaceRules.OfBulk(names.NameOf(k.Material));
+        SurfaceRules.Apply(d);
         d.SolidBoxes = n;
         d.BoundsMin = min;
         d.BoundsMax = max;
@@ -458,6 +460,8 @@ public static class Extrusion
         var what = pipe ? $"A pipe {across:0.##} m across with a {wall:0.##} m wall" : $"A round bar {across:0.##} m across";
         var d = Stats(k, mat, area, area * len, pipe ? wall : across, $"An extrusion: {what}, {len:0.##} m of {names.NameOf(k.Material)}.");
         d.Boxes = boxes;
+        d.SurfaceOverride = SurfaceRules.OfBulk(names.NameOf(k.Material));
+        SurfaceRules.Apply(d);
         d.SolidBoxes = n;
         d.BoundsMin = new Vector3(-r, -r, 0);
         d.BoundsMax = new Vector3(r, r, len);
@@ -496,6 +500,8 @@ public static class Extrusion
             new CPartBox(solid, new Vector3(middle + 0.008f, r * 0.72f, r * 0.08f), hubColour, Detail: true),
             new CPartBox(solid, new Vector3(middle + 0.006f, r * 0.08f, r * 0.72f), hubColour, Detail: true),
         ];
+        d.SurfaceOverride = SurfaceRules.OfBulk(names.NameOf(k.Material));
+        SurfaceRules.Apply(d);
         d.SolidBoxes = 3;
         d.BoundsMin = new Vector3(0, -r, -r);
         d.BoundsMax = new Vector3(wide, r, r);
