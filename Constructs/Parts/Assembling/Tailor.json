@@ -1,0 +1,61 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tailor",
+  "description": "Scrap, tier 1 of 5. Sews lift cells from cloth: set a recipe with the configure tool. Needs power.",
+  "group": "Production",
+  "section": "Assemblers",
+  "tier": 1,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 6,
+  "mass": 600,
+  "health": 2000,
+  "armour": 6,
+  "material": "steel",
+  "power": 1500,
+  "collider": "boxes",
+  "color": "#6b4a35",
+  "boxes": [
+    {"min": [-1, 0, -1], "max": [1, 0.06, 1]},
+    {"min": [-0.92, 0.06, -0.92], "max": [0.92, 0.68, -0.88], "color": "#956242"},
+    {"min": [-0.92, 0.06, -0.12], "max": [0.92, 0.68, -0.08], "color": "#6e4830"},
+    {"min": [-0.92, 0.06, -0.88], "max": [-0.88, 0.68, -0.12], "color": "#8d5c3e"},
+    {"min": [0.88, 0.06, -0.88], "max": [0.92, 0.68, -0.12], "color": "#784f35"},
+    {"min": [-0.998, 0.06, -1], "max": [-0.92, 1.72, -0.9], "color": "#b88b4f"},
+    {"min": [-1, 0.06, 0.9], "max": [-0.92, 1.72, 1], "color": "#87663a"},
+    {"min": [0.92, 0.06, -1], "max": [0.998, 1.72, -0.9], "color": "#9a7442"},
+    {"min": [0.92, 0.06, 0.9], "max": [1, 1.72, 1], "color": "#af844b"},
+    {"min": [-1, 1.72, -1], "max": [1, 1.84, -0.84], "color": "#816137"},
+    {"min": [-1, 1.72, 0.84], "max": [1, 1.84, 1], "color": "#a67d47"},
+    {"min": [-1, 0.3, -0.92], "max": [-0.92, 0.66, -0.08], "color": "#8d6a3c"},
+    {"min": [0.92, 0.3, -0.92], "max": [1, 0.66, -0.08], "color": "#b88b4f"},
+    {"min": [-1, 1.84, -0.16], "max": [1, 1.96, 0.16], "color": "#87663a"},
+    {"min": [-0.12, 1.24, -0.2], "max": [0.12, 1.84, 0.2], "color": "#4e5a42"},
+    {"min": [-0.04, 1.12, -0.04], "max": [0.04, 1.24, 0.04], "color": "#a59c8e", "detail": true},
+    {"min": [-0.6, 0.12, -0.964], "max": [0.2, 0.56, -0.94], "color": "#76835f", "detail": true},
+    {"min": [0.08, 0.68, -0.94], "max": [0.88, 0.8, -0.08], "color": "#8b857a", "detail": true},
+    {"min": [0.14, 1.44, -0.16], "max": [0.4, 1.8, 0.1], "color": "#4e5a42", "detail": true, "shape": "cylinder", "front": "+y"},
+    {"min": [0.14, 1.8, 0], "max": [0.4, 1.84, 0.1], "color": "#8b857a", "detail": true},
+    {"min": [-0.84, 0.84, 0.4], "max": [0.84, 1.08, 0.64], "color": "#a8542a", "detail": true, "shape": "cylinder", "front": "+y"},
+    {"min": [0.1325, 0.4919, -1.012], "max": [0.9245, 0.7939, -0.902], "color": "#14181c", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [1, 0.5, -0.5], "dir": "+x"},
+    {"name": "-x", "at": [-1, 0.5, -0.5], "dir": "-x"},
+    {"name": "back", "at": [0, 0.5, -1], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [1, 0.5, -0.6], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [1, 0.5, 0.6], "face": "+x"}
+  ],
+  "panels": [{"source": "machine", "at": [0.5285, 0.6429, -1.016], "size": [0.76, 0.27], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "config": [
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."},
+    {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
+  ],
+  "storage": {
+    "slots": [{"min": [-0.91, 0.07, 0.03], "max": [-0.02, 1.12, 0.96], "stack": 12, "label": "tray"}, {"min": [0.02, 0.07, 0.03], "max": [0.91, 1.12, 0.96], "stack": 12, "label": "tray"}],
+    "assemble": {"capacity": 200, "min": [-0.87, 0.07, -0.87], "max": [0.87, 0.64, -0.13], "batches": 4, "outAt": [0, 0.06, 1], "outDir": "+z", "machine": "tailor"}
+  }
+}

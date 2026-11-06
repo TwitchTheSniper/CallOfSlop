@@ -600,6 +600,7 @@ public sealed class ConstructPartDef
     public int InCapacity; // a production machine: how much its input holds (a mixed input: of each material; an Assembler: its fill's scale)
     public bool RefineMix; // a production machine whose recipes take several materials (a Foundry): its input is CStore's mixed input
     public bool IsAssembler; // a machine that builds parts from a chosen recipe (ConstructAssembling.cs): its slots are its output tray, its input is mixed
+    public byte AsmMachine; // an Assembler\'s family: which recipes it builds (AssemblingTable.Machines)
     public int AsmBatches = 4; // an Assembler: how many batches of each input it buffers
     public Vector3 AsmOutAt = Vector3.Zero, AsmOutDir = Vector3.UnitZ; // an Assembler: where a finished body leaves, and which way (part frame)
     public int RefineWork = ConstructRefining.BaseWork; // a production machine: thousandths of a tick of work a 10 Hz step does ("speed" in storage.refine)
@@ -612,6 +613,7 @@ public sealed class ConstructPartDef
     public int ExtDieSocket = -1; // ...its socket of kind "die"
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
+    public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
@@ -652,6 +654,7 @@ public sealed class ConstructPartDef
     public Vector3 BeltDir; // ...and which way (part frame)
     public float WinchMin, WinchSpeed, WinchRating; // a winch ("hitch"."winch"): its shortest chain (m), reeling speed (m/s), the heaviest body it lifts (N)
     public bool IsWinch => WinchSpeed > 0;
+    public bool IsCargoWinch; // a winch a pilot works from a seat: a signal into grab takes the nearest eye in reach, or lets go ("winch"."grab": ConstructLinks.cs)
     public bool Helm; // a helm seat ("seat"."helm"): the construct's driver sits here before any other seat
 
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
@@ -730,7 +733,7 @@ public sealed class ConstructPartDef
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.AmmoSwitch => 1, // which feed goes on
-        PartRole.Hitch => IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
+        PartRole.Hitch => IsCargoWinch ? 3 : IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
         PartRole.Differential => Diff is DiffKind.Lockable or DiffKind.Steering ? 1 : 0, // locks it; steers it (-1 to 1: 1 is right)

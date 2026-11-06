@@ -69,7 +69,8 @@ public static class ConstructAssembling
     public static AssembleRecipe? RecipeOf(AssemblingTable table, in CPart p, ConstructPartDef d)
     {
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
-        return k >= 0 && k < table.Recipes.Length ? table.Recipes[k] : null;
+        var list = table.ByMachine[d.AsmMachine];
+        return k >= 0 && k < list.Length ? list[k] : null;
     }
 
     private static void Work(ConstructWorld world, IWorldQuery query, AssemblingTable table, Construct c, int part, CStore st)
@@ -354,7 +355,7 @@ public static class ConstructAssembling
         var bw = $"{file}, storage.assemble";
         if (b.ValueKind != JsonValueKind.Object || d.BulkCapacity != 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner || slots == 0)
             throw new ConstructPartException($"{file}: storage \"assemble\" is an object (min, max, capacity, outAt, outDir) on a part with \"slots\", its output tray, and no \"bulk\"");
-        ConstructParts.Known(b, ["min", "max", "capacity", "speed", "chuteLoad", "batches", "outAt", "outDir"], bw);
+        ConstructParts.Known(b, ["min", "max", "capacity", "speed", "chuteLoad", "batches", "outAt", "outDir", "machine"], bw);
         d.InFillMin = ConstructParts.Vec(ConstructParts.Need(b, "min", bw), file, "storage.assemble.min");
         d.InFillMax = ConstructParts.Vec(ConstructParts.Need(b, "max", bw), file, "storage.assemble.max");
         if (d.InFillMax.X - d.InFillMin.X < 0.05f || d.InFillMax.Y - d.InFillMin.Y < 0.05f || d.InFillMax.Z - d.InFillMin.Z < 0.05f)
@@ -380,6 +381,8 @@ public static class ConstructAssembling
             "-z" => -Vector3.UnitZ,
             _ => throw new ConstructPartException($"{file}: storage.assemble.outDir is level: \"+x\", \"-x\", \"+z\" or \"-z\""),
         };
+        if (ConstructParts.Opt(b, "machine") is { } mc)
+            d.AsmMachine = AssemblingTable.MachineOf(ConstructParts.Str(mc, file, "storage.assemble.machine"), file);
         d.IsAssembler = true;
         d.DataIn = [ConstructGatherer.RunPort];
     }

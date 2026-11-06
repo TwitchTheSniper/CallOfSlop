@@ -1344,6 +1344,7 @@ public sealed partial class Game
             s.Velocity = c.Vel;
             s.Grounded = true;
             s.MantleTicks = 0;
+            s.Stance = Stance.Stand; // (the seat takes Ctrl: the body doesn't crouch)
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }

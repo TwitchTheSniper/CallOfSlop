@@ -249,7 +249,7 @@ public static class ConstructNet
             {
                 w.U16(e.Body).U16(e.Part).U16(e.Shell).Vec(e.At).Vec(e.To).U8(e.Muzzle); // (protocol 150)
                 if ((ShellKind)e.Muzzle >= ShellKind.Rocket)
-                    w.F32(e.Thrust).F32(e.Turn).U16(e.Burn).U16(e.Target); // (protocol 177: every PC flies it alike)
+                    w.F32(e.Thrust).F32(e.Turn).U16(e.Burn).U16(e.Target); // (protocol 178: every PC flies it alike)
             }
             else if (e.Kind == CFireKind.RoundOut)
                 w.Vec(e.At).Vec(e.To);

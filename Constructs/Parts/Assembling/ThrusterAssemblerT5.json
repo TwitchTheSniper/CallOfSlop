@@ -1,0 +1,67 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Plasma Thruster Assembler",
+  "description": "Plasma, tier 5 of 5. Builds jets, rockets, boosters and repulsors from their components: set a recipe with the configure tool. Needs power.",
+  "group": "Production",
+  "section": "Assemblers",
+  "tier": 5,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 12,
+  "mass": 5400,
+  "health": 18000,
+  "armour": 24,
+  "material": "steel",
+  "power": 14400,
+  "collider": "boxes",
+  "color": "#1a1f2e",
+  "boxes": [
+    {"min": [-3, 0, -3], "max": [3, 0.18, 3]},
+    {"min": [-2.76, 0.18, -2.76], "max": [2.76, 2.04, -2.64]},
+    {"min": [-2.76, 0.18, -0.36], "max": [2.76, 2.04, -0.24]},
+    {"min": [-2.76, 0.18, -2.64], "max": [-2.64, 2.04, -0.36]},
+    {"min": [2.64, 0.18, -2.64], "max": [2.76, 2.04, -0.36]},
+    {"min": [-3, 0.18, -3], "max": [-2.76, 5.4, -2.52], "hidden": true},
+    {"min": [2.76, 0.18, -3], "max": [3, 5.4, -2.52], "hidden": true},
+    {"min": [-3, 0.18, 2.52], "max": [-2.76, 5.4, 3], "hidden": true},
+    {"min": [2.76, 0.18, 2.52], "max": [3, 5.4, 3], "hidden": true},
+    {"min": [-3, 0.9, -2.52], "max": [-2.76, 1.98, -0.24], "hidden": true},
+    {"min": [2.76, 0.9, -2.52], "max": [3, 1.98, -0.24], "hidden": true},
+    {"min": [-3, 5.4, -3], "max": [3, 5.76, 3], "color": "#2c3448", "hidden": true},
+    {"min": [-0.36, 3.96, -0.6], "max": [0.36, 5.4, 0.6], "color": "#39445c", "hidden": true},
+    {"min": [-3, 5.4, -3], "max": [3, 5.76, 3], "color": "#2c3448", "detail": true, "shape": "rounded", "front": "+x", "radius": 0.45, "edges": "long"},
+    {"min": [-0.36, 3.96, -0.6], "max": [0.36, 5.4, 0.6], "color": "#39445c", "detail": true, "shape": "rounded", "front": "+y", "radius": 0.48, "edges": "long"},
+    {"min": [-3, 0.18, -3], "max": [-2.76, 5.4, -2.52], "color": "#39445c", "detail": true, "shape": "rounded", "front": "+y", "radius": 0.48, "edges": "long"},
+    {"min": [-3, 0.18, 2.52], "max": [-2.76, 5.4, 3], "color": "#39445c", "detail": true, "shape": "rounded", "front": "+y", "radius": 0.48, "edges": "long"},
+    {"min": [2.76, 0.18, -3], "max": [3, 5.4, -2.52], "color": "#39445c", "detail": true, "shape": "rounded", "front": "+y", "radius": 0.48, "edges": "long"},
+    {"min": [2.76, 0.18, 2.52], "max": [3, 5.4, 3], "color": "#39445c", "detail": true, "shape": "rounded", "front": "+y", "radius": 0.48, "edges": "long"},
+    {"min": [-1.44, 3.72, -1.44], "max": [1.44, 3.96, 1.44], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false, "shape": "tube", "front": "+y", "segments": 32, "inner": 0.86},
+    {"min": [-0.3, 3.42, -0.3], "max": [0.3, 4.02, 0.3], "color": "#b050ff", "detail": true, "glow": true, "paintable": false, "shape": "sphere"},
+    {"min": [-2.52, 5.79, 2.64], "max": [2.52, 5.88, 2.82], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-2.52, 5.79, -2.82], "max": [2.52, 5.88, -2.64], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-3.072, 2.16, -2.94], "max": [-3, 5.28, -2.82], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [3, 2.16, -2.94], "max": [3.072, 5.28, -2.82], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-2.52, 2.04, -2.712], "max": [2.52, 2.112, -2.628], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-1.2, 2.64, 0.72], "max": [1.2, 3.12, 2.52], "color": "#b050ff", "detail": true, "glow": true, "paintable": false, "shape": "tube", "front": "+y", "segments": 24, "inner": 0.7},
+    {"min": [-2.6078, 1.0429, -2.7849], "max": [-0.1777, 1.9729, -2.7268], "color": "#14181c", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [3, 1.5, -1.5], "dir": "+x"},
+    {"name": "-x", "at": [-3, 1.5, -1.5], "dir": "-x"},
+    {"name": "back", "at": [0, 1.5, -3], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [3, 1.5, -1.8], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [3, 1.5, 1.8], "face": "+x"}
+  ],
+  "panels": [{"source": "machine", "at": [-1.3927, 1.5079, -2.7889], "size": [2.33, 0.83], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "config": [
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."},
+    {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
+  ],
+  "storage": {
+    "slots": [{"min": [-2.73, 0.21, 0.09], "max": [-0.06, 3.36, 2.88], "stack": 12, "label": "tray"}, {"min": [0.06, 0.21, 0.09], "max": [2.73, 3.36, 2.88], "stack": 12, "label": "tray"}],
+    "assemble": {"capacity": 3200, "min": [-2.61, 0.21, -2.61], "max": [2.61, 1.92, -0.39], "speed": 16, "chuteLoad": 160, "batches": 20, "outAt": [0, 0.18, 3], "outDir": "+z", "machine": "thruster"}
+  }
+}

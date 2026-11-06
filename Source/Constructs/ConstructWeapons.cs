@@ -63,7 +63,7 @@ public enum CFireKind : byte
     ShellOut, // a shell left a gun (protocol 150): body, part, its id, where (At) and its velocity (To), its kind in Muzzle
     ShellLand, // a shell went off: its id, where, the blast's radius, its kind in Muzzle
     RoundOut, // a round passed its reach and flies on: where, and how fast (ConstructRounds.cs)
-    ShellStop, // a bomb hit and waits for its fuse: its id, where (protocol 177)
+    ShellStop, // a bomb hit and waits for its fuse: its id, where (protocol 178)
     ShellSteer, // a missile went for a flare: its id, the flare's in Target, where (At) and how fast (To)
 }
 

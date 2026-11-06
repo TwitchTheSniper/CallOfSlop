@@ -158,6 +158,9 @@ public enum CfgKey : byte
     BladeStyle, // Fan Former, rotor: which blade (Air.json's "bladeStyles")
     InvertPitch, // Flight Stabilizer: W lifts the nose
     Grain, // solid booster: seconds of it burnt (not on the panel; ConstructBoost.cs)
+    WingKind, // Airframe Former: what it cuts (a row of Extrusion.json's "airframes")
+    WingChord, // Airframe Former: its chord, m
+    WingSpan, // Airframe Former: its span, m
     Stabilised, // Turret Module: the seat's look stays on the point it was set on as the craft moves (Game.SandboxStabilise)
     FuseRange, // AA Sight: metres at which its gun's shells burst with nothing locked (0: none)
     COUNT,
@@ -502,6 +505,17 @@ public static class ConstructConfig
     }
 
     /// <summary>A rotor made at run time (a Fan Former's): the settings of a part file's rotor, with no file behind them.</summary>
+    /// <summary>A control surface a machine made: as a part file's "config" would (<see cref="CfgKey.Reverse"/>, <see cref="CfgKey.Trim"/>).</summary>
+    public static void ForSurface(ConstructPartDef d)
+    {
+        var most = d.Surface!.Control * 180f / MathF.PI;
+        Finish(d,
+        [
+            new CConfigDef { Key = KeyName(CfgKey.Reverse), Id = CfgKey.Reverse, Type = CfgType.Toggle, Label = "Reverse", Group = "Surface", Tooltip = "It turns the other way for the same signal: a pair of ailerons, one each way." },
+            new CConfigDef { Key = KeyName(CfgKey.Trim), Id = CfgKey.Trim, Type = CfgType.Number, Label = "Trim", Group = "Surface", Unit = "deg", Min = -most, Max = most, Step = 0.5f, Tooltip = "Where it sits with no signal." },
+        ], d.Name);
+    }
+
     public static void ForRotor(ConstructPartDef d)
     {
         var list = new List<CConfigDef>();
@@ -696,6 +710,7 @@ public static class ConstructConfig
                 CfgKey.BladeStyle => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
+                CfgKey.WingKind or CfgKey.WingChord or CfgKey.WingSpan => d.IsAirframeFormer,
                 (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Stabilised => d.Logic == CLogic.TurretModule,

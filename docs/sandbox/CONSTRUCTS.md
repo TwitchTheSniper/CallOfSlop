@@ -2735,9 +2735,9 @@ The drop aid: a pilot or a gunner with a rack in reach gets the orange cross (`G
 
 A Flight Stabilizer's last output, `fire`, is its pilot's fire key, for a rack or a gun wired by hand.
 
-**On the wire** (protocol 177). `ShellOut` adds a rocket's or missile's thrust, turn, burn and target, so a client far from the gun flies the same path; for a bomb its `Part` is the bomb's part type, not a gun. `ShellStop` lands a bomb's copy where it hit, and `ShellSteer` gives a missile drawn by a flare the server's place and speed. A client steers by its own copies of the bodies; `ShellLand` ends a shell everywhere as ever.
+**On the wire** (protocol 178). `ShellOut` adds a rocket's or missile's thrust, turn, burn and target, so a client far from the gun flies the same path; for a bomb its `Part` is the bomb's part type, not a gun. `ShellStop` lands a bomb's copy where it hit, and `ShellSteer` gives a missile drawn by a flare the server's place and speed. A client steers by its own copies of the bodies; `ShellLand` ends a shell everywhere as ever.
 
-**Cost.** Nothing allocates in a tick. Fly adds a few float operations a shell. Each proximity shell takes one broadphase lookup and a box test on the moving bodies near it, one tick in three, at most 21 a tick, along the whole stretch since its last look, so a 340 m/s shell doesn't pass a target between looks; a missile walks the 64 shells once in 12 ticks, only with a flare in the air; a lead sight spends no ray while its lock holds. Measured on the cloud box: 63 shells of the three kinds among 60 flying bodies: `StepShells` a mean of 0.03 ms a tick, the worst 0.3 ms, 0 bytes. A bomb's release is one `RemovePart`, with its rebuild and its structure message, at most once a body a tick.
+**Cost.** Nothing allocates in a tick. Fly adds a few float operations a shell. Each proximity shell takes one broadphase lookup and a box test on the moving bodies near it, one tick in three, at most 21 a tick, along the whole stretch since its last look, so a 340 m/s shell doesn't pass a target between looks; a missile walks the 64 shells once in 12 ticks, only with a flare in the air; a lead sight spends no ray while its lock holds. Measured on the cloud box: 63 shells of the three kinds among 60 flying bodies: `StepShells` a mean of 0.04 ms a tick, the worst 0.3 ms with the box quiet, 0 bytes. A bomb's release is one `RemovePart`, with its rebuild and its structure message, at most once a body a tick.
 
 Bombs share the shell's limit: their blasts reach players, zombies and constructs but not props or destructible buildings.
 
@@ -4888,7 +4888,37 @@ A surface is any part with a `"surface"` block, so a new one is data: `area`, `a
 
 ## The Fan Former
 
-A Wheel Former whose piece is a whole rotor (`storage.wheel.fan`): `ExShape.Fan`, kept in `ConstructExtruder.GrowFan`. Its settings say what it makes (`Extrusion.json`'s `"fanKinds"`), how many blades, which blade style and how far across. Fan Formers go 3, 12, 48 and 96 m by size class: the hub stands high enough for the prop it makes. The prop grows from the machine's first size, paid by volume from `Extrusion.json`'s `"fans"`, and parts off by itself at the size asked; a Cut signal parts it off early. What it can take and how fast it turns follow from its size by the kind's row. In survival this is where props come from: rotor parts get no Assembler recipe (`assembling.py`); creative has the fixed sizes in the Tab menu.
+A Wheel Former whose piece is a whole rotor (`storage.wheel.fan`): `ExShape.Fan`, kept in `ConstructExtruder.GrowWhole`. Its settings say what it makes (`Extrusion.json`'s `"fanKinds"`), how many blades, which blade style and how far across. Fan Formers go 3, 12, 48 and 96 m by size class: the hub stands high enough for the prop it makes. The prop grows from the machine's first size, paid by volume from `Extrusion.json`'s `"fans"`, and parts off by itself at the size asked; a Cut signal parts it off early. What it can take and how fast it turns follow from its size by the kind's row. In survival this is where props come from: rotor parts get no Assembler recipe (`assembling.py`); creative has the fixed sizes in the Tab menu.
+
+## The Airframe Former
+
+A Wheel Former whose piece is a wing or a control surface (`storage.wheel.airframe`): `ExShape.Wing`, grown by `ConstructExtruder.GrowWhole` beside the Fan Former's. Four sizes (`AIRFRAME_FORMERS` in `tools/constructs/extrusion_parts.py`): 6, 24, 96 and 192 m of span, 3, 8, 24 and 32 m of chord. Its settings say what it cuts (`Extrusion.json`'s `"airframes"`: wing, tail plane, fin, swept left and right, aileron, elevator, rudder, flap), the chord and the span. What is in its bin is the skin (`"wings"`: cloth, wood, planks, laminate, metal, steel, in units a m3 of skin). The chord is set when a piece starts; the piece grows along its span out of the machine, and parts off by itself at the span asked, or on a Cut signal. It takes a Run wire, as the rest.
+
+- **The piece** is a run-time def by key, on the wire and in a blueprint: `Extrusion wing-aileron 50x0x200 cloth` is chord x 0 x span. Its span is along +z, its chord across x with the leading edge at -x, lift +y, as an extruded airfoil. Numbers come from its row and do not depend on the material, except that cloth tears (`SurfaceDef.Tears`, `PartBreak.Disable`) and has 1.6 times the drag. A 1.5 by 2 m metal wing weighs what the Wing Segment file does (27 kg); skin thickens with the root of the chord over 1.5 m.
+- **Fitting.** Sockets are an extrusion's: `base`, `tip` and four faces at each metre of span, of the size class its chord gives. A wing is the same from either end: a left wing welds by `base`, a right one by `tip`, so the same piece makes both. Swept wings can't do that, so left and right are two rows. A control surface hinges along its leading edge: weld its `-x0` to a wing's `+x` socket. It has Reverse and Trim and an `angle` input, and a stabilizer finds it like any other.
+
+## Flight in survival
+
+Flight parts in survival are looted or made on machines; they are not gated by materials. Creative keeps every part in the menu. Generators: `tools/constructs/assembling.py`, `machine_tiers.py`, `extrusion_parts.py`, `air_cargo.py`.
+
+| What | Where it comes from |
+| --- | --- |
+| Wings, tails, control surfaces | An Airframe Former. The part files in `Parts/Wings` have no recipe: they come from wrecks |
+| Props, rotors, ducted fans | A Fan Former (the part files have no recipe) |
+| Jets, lift fans, rockets (their gimbal is a setting), boosters, decouplers, repulsors, anti-grav | A **Thruster Assembler**, from Turbine Stages, Thrust Chambers or Field Coils the plain Assembler makes |
+| Cloth lift cells | A **Tailor**. Armoured and vacuum cells stay on the plain Assembler. Cells are boxes: shaped envelopes aren't made |
+
+- **Assembler families.** A recipe's `"machine"` (`AssemblingTable.Machines`) gives it to one family, and a part's `storage.assemble.machine` says which it is: each lists only its own recipes (`ByMachine`, `ChoicesBy`), its Recipe setting an index into that list, and an old blueprint's name for a recipe on the wrong family is refused. Both have the Assembler's five tiers.
+- **Anti-grav.** Anti-Grav Generators take Levite Cores, which take levite: a `levite seam` (`Resources.json`), a rare underground kind worked by a tier 4 Drill Module and smelted at tier 4. It is `"deep"`: a drill bores its whole hole, for nothing, before it strikes it (`DrillShaft.Bored`). A world smaller than the kind's 900 m cell may have none: Proving Ground places one.
+- **Loot.** `Constructs/Loot.json` has an `aircraft` table, and a few flight parts in the others. A part with a surface or a rotor shows its tier by its size class, as it has no recipe. Crashed Plane and Crashed Jet are blueprints of real parts with a looted Chest: anyone may salvage them. Proving Ground has one of each; the world has no generator of wrecks.
+- **Tiers.** With every part from its machine: the Hot Air Balloon needs tier 2, the Fabric Flyer (cloth, a wooden prop, an Engine) tier 3 for its stabilizer and battery, the Sky Crane tier 4 for its Battery Packs.
+
+### Air cargo
+
+A craft lifts any body with a Tow Eye. What is new is one part, the **Cargo Winch 16 m** (`"winch": {"grab": true}`): a winch a pilot works from the seat, with three inputs. A rising `grab` takes the nearest eye in its chain's reach, or lets go (`ConstructWorld.WinchGrab`); `reel` is a winch's own; `pay out` lets it down. Everything else is what parts already do: a coupling's chain, a winch's rating, a Cargo Volume's frozen box, a Drill Module on a body of its own.
+
+- **Sky Crane**: four 2 m ducted fans on a hub, with every weight paired across it and the winch under its middle; 595 kg, and it has lifted 1.6 t all told at this game's gravity. Fire grabs, aim reels in, reload pays out. Its Flight Control Panel's autopilot (Hover) holds it over a load. Two Battery Packs give it about 2.5 minutes.
+- **Cargo Pod**: a frozen Cargo Volume under a Tow Eye. **Drill Pod**: a Drill Module, a Battery and a Materials Bin under a Tow Eye: set it on a deposit, wait, lift it out. Ore is heavy (4 kg a unit): lift it before the bin outweighs the crane.
 
 ## World links (board item wl01)
 
