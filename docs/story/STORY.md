@@ -616,7 +616,8 @@ The Scammers (The Call Centre) live in the Computer's adverts. Code: `Source/Sto
 - Nothing new goes on the wire. A client's screen shows the scam on the computer its own player clicked, with the messages it
   heard; a `[PC]` line ends it there.
 
-Next: The Call Centre's vehicles (a vehicle kit style), and scams that answer what the player says more closely.
+Its vehicles are the vehicle kit's Call Centre style (docs/vehiclekit/VEHICLEKIT.md, "The Call Centre style"). Next: scams
+that answer what the player says more closely, and a Call Centre that remembers who fell for it.
 
 ## Next
 

@@ -1,0 +1,86 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Prize Wheel",
+  "description": "A wheel of prizes on a post. Every slice says WINNER. None of them are.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 4.0,
+  "health": 25,
+  "armour": 0,
+  "material": "steel",
+  "color": "#ffd400",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.02,
+        0.0,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.22,
+        0.02
+      ],
+      "color": "#25272a"
+    },
+    {
+      "min": [
+        -0.24,
+        0.22,
+        -0.03
+      ],
+      "max": [
+        0.24,
+        0.7,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.24,
+        0.22,
+        -0.03
+      ],
+      "max": [
+        0.24,
+        0.7,
+        0.0
+      ],
+      "color": "#ffd400",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "-z"
+    },
+    {
+      "min": [
+        -0.02,
+        0.704,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.76,
+        0.0
+      ],
+      "color": "#d8322a",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
