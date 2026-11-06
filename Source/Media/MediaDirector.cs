@@ -144,14 +144,15 @@ public static class MediaDirector
                 }
         }
 
-        // Pages whose part isn't among the nearest any more, or has moved on to another track, go first.
+        // Pages whose part isn't among the nearest any more, or has moved on to another track, go first; and all of them if the browser went.
+        var browser = MediaBrowser.Problem == null;
         for (var i = 0; i < Pages.Length; i++)
         {
             ref var page = ref Pages[i];
             if (!page.Open)
                 continue;
             var c = world?.Get(page.Body);
-            var keep = c != null && page.Part < c.PartCount && Listed(page.Body, page.Part) && c.Parts[page.Part].Media is { } m && m.Seq == page.Seq && m.Entry == page.Entry;
+            var keep = browser && c != null && page.Part < c.PartCount && Listed(page.Body, page.Part) && c.Parts[page.Part].Media is { } m && m.Seq == page.Seq && m.Entry == page.Entry;
             if (!keep)
                 ClosePage(audio, i);
         }
@@ -235,7 +236,7 @@ public static class MediaDirector
         VideoFeeds.Forget(free);
         Pages[free] = new Page
         {
-            Open = true, Body = body, Part = part, Seq = m.Seq, Entry = m.Entry!, State = MediaState.Playing, NextSync = now + 3, NextSeek = now + SeekEvery,
+            Open = true, Body = body, Part = part, Seq = m.Seq, Entry = m.Entry!, State = MediaState.Playing, NextSync = now + 3, NextSeek = now + 3, // (a joiner whose tick hadn't come in yet opened at 0)
             Near = d.MediaNear, Hear = d.MediaHear,
         };
         audio.MediaPage(free, MediaBrowser.Block(free));
@@ -324,7 +325,7 @@ public static class MediaDirector
         {
             card.State = PanelState.Wants;
             card.Add(0, d.Name);
-            card.Add(1, Why(m));
+            Words(card, panel, Why(m), 1);
             return;
         }
         var r = MediaBrowser.Report(page);
@@ -337,10 +338,17 @@ public static class MediaDirector
             card.Video = 0;
             card.State = PanelState.Fault;
             card.Add(0, "Can't play this");
-            card.Add(1, ErrorText(r.Error));
+            Words(card, panel, ErrorText(r.Error), 1);
         }
         else if (card.Video == 0)
             card.Add(0, "Loading");
+    }
+
+    private static void Words(PanelCard card, PanelDef panel, string text, int line)
+    {
+        var at = line;
+        var column = 0;
+        card.Wrap(text, PanelRender.Columns(panel.Size, panel.Rows), line, panel.Rows - 1, 0, ref at, ref column);
     }
 
     private static string Why(CMedia m)

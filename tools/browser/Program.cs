@@ -17,10 +17,11 @@ namespace SlopBrowser;
 /// </summary>
 internal static class Program
 {
-    private const int MaxSlots = 8;
+    private const int MaxSlots = 4; // (the game's MediaDirector.MaxPages)
     private static readonly Regex VideoId = new("^[A-Za-z0-9_-]{11}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Page?[] Pages = new Page?[MaxSlots];
     private static readonly object Out = new();
+    private static readonly string Root = Path.Combine(Path.GetTempPath(), "SlopBrowser-" + Environment.ProcessId);
 
     private static int Main(string[] args)
     {
@@ -29,9 +30,11 @@ internal static class Program
         Console.OutputEncoding = System.Text.Encoding.UTF8;
         try
         {
+            Directory.CreateDirectory(Root);
             var settings = new CefSettings
             {
                 WindowlessRenderingEnabled = true,
+                RootCachePath = Root, // (its own for each run: a second game on this PC gets a second browser)
                 CachePath = "", // (in memory: nothing of a browsing session is left on disk)
                 LogSeverity = LogSeverity.Disable,
                 PersistSessionCookies = false,
@@ -67,9 +70,22 @@ internal static class Program
             Say("fail " + OneLine(e.Message));
         }
 
+        // A page that won't close must not outlive the game.
+        new Thread(() =>
+        {
+            Thread.Sleep(5000);
+            Environment.Exit(0);
+        }) { IsBackground = true }.Start();
         for (var i = 0; i < Pages.Length; i++)
             CloseSlot(i);
         Cef.Shutdown();
+        try
+        {
+            Directory.Delete(Root, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+        }
         return 0;
     }
 

@@ -1853,6 +1853,10 @@ The user: "a wireless seat connection. I want the player to be able to control d
 - **A far drone.** The world is whole on every client. What falls off with distance is how often a body's pose goes out, so a pilot's poses are centred on the drone (`SandboxInterestAt`), and what is round it stays current. A piloted body goes in every pose packet already, as a driven one does.
 - **Scout Drone**: a Drone Frame, four Drone Rotors for lift, two Drone Pushers at the back for W and A/D, a Drone Battery, a receiver, a Driving Module and a camera, 34 kg. Sprint lifts it into the hover hold. Light rotors matter: the hover hold is weak off a planet against a big fan on a small body, and a 750 kg version on Light Lift Fans tumbled under its own pushers.
 
+## Video Screens and Music Players
+
+A picture and sound from YouTube links and the game's own tracks, on a part: [MEDIA.md](MEDIA.md).
+
 ## Cameras and screens
 
 The user: "they have an incredibly short render distance for the player. So if there's no players near a functioning screen in the camera system, the camera just doesn't do anything." Code: `Source/Render/CameraFeeds.cs`, `Source/App/Program.CameraFeeds.cs`, `ConstructRemote.FillScreen`.

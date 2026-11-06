@@ -14,6 +14,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <InvariantGlobalization>true</InvariantGlobalization>
     <ApplicationIcon></ApplicationIcon> <!-- (Directory.Build.props sets the game's, by a path that is the game's) -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>SlopBrowser</AssemblyName>
     <RootNamespace>SlopBrowser</RootNamespace>
   </PropertyGroup>

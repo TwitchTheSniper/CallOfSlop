@@ -28,9 +28,9 @@ public static class MediaBrowser
 
     private static readonly MediaReport[] Reports = NewReports();
     private static readonly MediaBlock?[] Blocks = new MediaBlock?[MediaDirector.MaxPages];
-    private static readonly BlockingCollection<string> Lines = new(64);
+    private static BlockingCollection<string>? _lines; // (one per process: a new one never hears what was said to the last)
     private static Process? _process;
-    private static int _restarts, _ready;
+    private static int _restarts;
     private static double _failedAt = double.NegativeInfinity;
     private static string? _problem;
     private static int _blockNumber;
@@ -109,23 +109,15 @@ public static class MediaBrowser
         if (_process == null)
             return;
         Send("quit");
+        _lines?.CompleteAdding();
         _process = null;
-        Volatile.Write(ref _ready, 0);
+        _lines = null;
     }
 
     /// <summary>The game is closing. Its end of stdin closing would do it too.</summary>
-    public static void Shutdown()
-    {
-        Quit();
-        Lines.CompleteAdding();
-    }
+    public static void Shutdown() => Quit();
 
-    private static void Send(string line)
-    {
-        if (_process == null || Lines.IsAddingCompleted)
-            return;
-        Lines.TryAdd(line); // (a browser that stopped reading loses commands, and the game never waits for it)
-    }
+    private static void Send(string line) => _lines?.TryAdd(line); // (a browser that stopped reading loses commands, and the game never waits for it)
 
     private static bool Start()
     {
@@ -144,9 +136,11 @@ public static class MediaBrowser
                 WorkingDirectory = Path.GetDirectoryName(ExePath)!,
             };
             var process = Process.Start(info) ?? throw new InvalidOperationException("it did not start");
+            var lines = new BlockingCollection<string>(64);
             _process = process;
+            _lines = lines;
             _problem = null;
-            new Thread(() => Writer(process)) { IsBackground = true, Name = "Browser in" }.Start();
+            new Thread(() => Writer(process, lines)) { IsBackground = true, Name = "Browser in" }.Start();
             new Thread(() => Reader(process)) { IsBackground = true, Name = "Browser out" }.Start();
             Console.WriteLine("[media] browser started");
             return true;
@@ -173,13 +167,13 @@ public static class MediaBrowser
             _problem = null;
     }
 
-    private static void Writer(Process process)
+    private static void Writer(Process process, BlockingCollection<string> lines)
     {
         try
         {
             var input = process.StandardInput;
             input.AutoFlush = true;
-            foreach (var line in Lines.GetConsumingEnumerable())
+            foreach (var line in lines.GetConsumingEnumerable())
             {
                 if (process.HasExited)
                     break;
@@ -209,8 +203,9 @@ public static class MediaBrowser
         }
         if (ReferenceEquals(_process, process))
         {
+            _lines?.CompleteAdding();
+            _lines = null;
             _process = null;
-            Volatile.Write(ref _ready, 0);
             Fail("the browser closed");
         }
     }
@@ -221,8 +216,7 @@ public static class MediaBrowser
         switch (a[0])
         {
             case "ready":
-                Volatile.Write(ref _ready, 1);
-                _restarts = 0;
+                Console.WriteLine("[media] browser ready");
                 break;
             case "fail":
                 Console.WriteLine($"[media] browser: {line}");

@@ -47,7 +47,7 @@ def video(name, cls, w, h, range_m, hear, near, power, mass):
     pw, ph = w - 2 * rim, h - 2 * rim
     pw = min(pw, round(ph * 16 / 9, 3))
     p.set(power=power, config=[VOLUME, LOOP], centreSockets=False, media=media(hear, near),
-          panels=[{"source": "media", "at": [0, 0, round(-proud - 0.003, 3)], "size": [round(pw, 3), round(pw * 9 / 16, 3)], "face": "-z", "up": "+y", "rows": 3, "range": range_m}])
+          panels=[{"source": "media", "at": [0, 0, round(-proud - 0.003, 3)], "size": [round(pw, 3), round(pw * 9 / 16, 3)], "face": "-z", "up": "+y", "rows": 8, "range": range_m}])
     return p
 
 
@@ -64,7 +64,7 @@ def music():
     p.sock("top", (0, h, t / 2), "+y")
     p.stats(6, 50, 1, 1)
     p.set(power=10, config=[VOLUME, LOOP], centreSockets=False, media=media(50, 5, 356, 200),
-          panels=[{"source": "media", "at": [0, 0.13, -0.007], "size": [0.19, 0.107], "face": "-z", "up": "+y", "rows": 3, "range": 12}])
+          panels=[{"source": "media", "at": [0, 0.13, -0.007], "size": [0.19, 0.107], "face": "-z", "up": "+y", "rows": 8, "range": 12}])
     return p
 
 

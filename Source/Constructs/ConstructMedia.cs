@@ -168,7 +168,7 @@ public static class ConstructMedia
 
     // ---- The server -------------------------------------------------------------------------------------------
 
-    /// <summary>Starts a line from the top. Null when there is nothing there.</summary>
+    /// <summary>Starts a line from the top.</summary>
     private static void Start(CMedia m, int line, byte by, uint tick)
     {
         m.Index = (byte)line;

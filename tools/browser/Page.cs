@@ -28,7 +28,7 @@ internal sealed class Page : IDisposable
         _slot = slot;
         _block = new SharedBlock(block, width, height);
         var html = Html(id, seconds, width, height);
-        _web = new ChromiumWebBrowser(Address, new BrowserSettings { WindowlessFrameRate = 30 }, automaticallyCreateBrowser: false)
+        _web = new ChromiumWebBrowser(Address, automaticallyCreateBrowser: false)
         {
             RenderHandler = new Painter(_block),
             AudioHandler = new Sound(_block),
@@ -39,7 +39,7 @@ internal sealed class Page : IDisposable
             MenuHandler = null,
         };
         _web.Size = new System.Drawing.Size(width, height);
-        _web.CreateBrowser();
+        _web.CreateBrowser(null, new BrowserSettings { WindowlessFrameRate = 30 }); // (settings given to the constructor only count when it creates the browser itself)
     }
 
     public void Run(string script)

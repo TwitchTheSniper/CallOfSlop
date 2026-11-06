@@ -1215,6 +1215,10 @@ what comes next are in [docs/sandbox/CONSTRUCTS.md](docs/sandbox/CONSTRUCTS.md).
 
 - **Big systems**: the Medium, Large and Capital sizes hold what makes a mothership work: ramp decks and drawbridges on motor hinges, lift platforms on rated pistons, arched gates, hangar doors, catapults and arrestor gear, docking clamps and magnetic locks that hold a crewed vehicle fast (and charge and refuel it) until a signal lets it go, winches, crane booms, conveyors, naval guns, magazines and hoists; the Ship systems group has the Bridge Helm, crew stations, the Fire Director (one gunner fights every turret wired to it), sensors and lights. Vehicles' wheels now stand on other constructs: a parked car rides a moving deck, and drives off it. `docs/sandbox/CONSTRUCTS.md`, "Large systems".
 
+## Video Screens and Music Players
+
+In Sandbox, a **Video Screen** (three sizes) or a **Music Player** plays YouTube links and the game's own tracks in the world, and everyone near hears it fade with distance. Use the configure tool on it: paste a link, build a list of up to 32 lines, play, pause, stop. Each player's game runs its own copy of YouTube's player, kept to the same time. Links need Windows and the `Browser` folder that ships with the game; the game's own tracks play on every platform. Settings > Audio has a Screens volume and a switch for other players' videos. How it works: `docs/sandbox/MEDIA.md`.
+
 ## Updates
 
 Release builds check GitHub for a newer release and can install it from inside the game.
@@ -1421,6 +1425,8 @@ Source/
 All tuning values (damage, fire rate, speeds, arena size) live at the top of `World.cs`.
 
 ## Licence note
+
+The `Browser` folder holds Chromium Embedded Framework and CefSharp, both BSD licensed: `NOTICE.txt` lists them.
 
 BRUTAL is free to use, but section 2 of the BRUTAL License asks shipped products to credit BRUTAL, show the BRUTAL logo before gameplay and ship `NOTICE.txt`.
 This prototype prints the credit and ships `NOTICE.txt`; add the logo splash before you distribute it.
