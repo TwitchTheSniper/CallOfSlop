@@ -14,7 +14,7 @@ public static class MediaEntry
     public const int IdChars = 11;
 
     /// <summary>The longest line: a Browser Screen's address.</summary>
-    public const int MaxChars = 300;
+    public const int MaxChars = 1024;
 
     public static bool IsLink(string entry) => entry.StartsWith(Link, StringComparison.Ordinal);
 
@@ -94,7 +94,7 @@ public static class MediaEntry
             why = "only public http and https addresses open here";
             return null;
         }
-        return Web + u.AbsoluteUri;
+        return Web + WebScrub.Clean(u.AbsoluteUri);
     }
 
     private static bool WebSafe(string url)
@@ -125,15 +125,8 @@ public static class MediaEntry
         return System.Net.IPAddress.IsLoopback(ip) || ip.IsIPv6LinkLocal || ip.IsIPv6SiteLocal || (b[0] & 0xFE) == 0xFC || b[0] == 0xFF;
     }
 
-    /// <summary>Two web lines are the same page: their query and fragment aside, since a page's own address reaches other players without those.</summary>
-    public static bool SamePage(string a, string b) =>
-        a.AsSpan(0, Cut(a)).TrimEnd('/').SequenceEqual(b.AsSpan(0, Cut(b)).TrimEnd('/'));
-
-    private static int Cut(string s)
-    {
-        var at = s.IndexOfAny(['?', '#']);
-        return at < 0 ? s.Length : at;
-    }
+    /// <summary>Two web lines are the same address, a last slash aside.</summary>
+    public static bool SamePage(string a, string b) => a.AsSpan().TrimEnd('/').SequenceEqual(b.AsSpan().TrimEnd('/'));
 
     /// <summary>What a pasted address comes to: a list line, or null with <paramref name="why"/> saying what is wrong with it.</summary>
     public static string? FromUrl(string text, out string why)

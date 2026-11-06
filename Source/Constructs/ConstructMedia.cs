@@ -42,7 +42,16 @@ public sealed class CMedia
     public uint StartTick; // the tick at which this track was at 0 seconds
     public uint Seq; // goes up when another track starts, or this one starts again: a report of its end names it
     public float PausedAt; // seconds into the track, while paused
+    public uint WebTick; // the server's: when a page last reported
     public byte Mark; // goes up on a seek: every peer's page follows at once, not at its next drift check
+    public byte Lead = 255; // a Browser Screen: whose page the others follow, the last player to use it
+    public ushort Scroll; // a Browser Screen: how far down its page is, 0..65535
+    public byte Inner; // a Browser Screen: the page's own video or audio: 0 none, 1 playing, 2 paused
+    public uint InnerTick; // the tick that was InnerAt
+    public float InnerAt; // seconds into it
+
+    /// <summary>Where a page's own video or audio is by the shared clock.</summary>
+    public float InnerPosition(uint tick) => Inner == 1 && tick >= InnerTick ? InnerAt + (tick - InnerTick) * World.TickDt : InnerAt;
     internal bool PipesDriven; // a Pipe Box's construct had a driver at the last check (ConstructPipes.cs; the server's own, never sent or saved)
     internal byte PipesIdle; // seconds since its driver left, while it plays
 
@@ -109,7 +118,7 @@ public static class ConstructMedia
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Media is { } m)
             {
-                w.U16((ushort)i).U8((byte)m.State).U8(m.Index).U8(m.By).U32(m.StartTick).U32(m.Seq).F32(m.PausedAt).U8(m.Mark).U8((byte)m.List.Length);
+                w.U16((ushort)i).U8((byte)m.State).U8(m.Index).U8(m.By).U32(m.StartTick).U32(m.Seq).F32(m.PausedAt).U8(m.Mark).U8(m.Lead).U16(m.Scroll).U8(m.Inner).U32(m.InnerTick).F32(m.InnerAt).U8((byte)m.List.Length);
                 foreach (var line in m.List)
                     w.Str(line);
                 n++;
@@ -124,7 +133,7 @@ public static class ConstructMedia
         {
             var part = r.U16();
             var state = r.U8();
-            var m = new CMedia { Index = r.U8(), By = r.U8(), StartTick = r.U32(), Seq = r.U32(), PausedAt = r.F32(), Mark = r.U8() };
+            var m = new CMedia { Index = r.U8(), By = r.U8(), StartTick = r.U32(), Seq = r.U32(), PausedAt = r.F32(), Mark = r.U8(), Lead = r.U8(), Scroll = r.U16(), Inner = r.U8(), InnerTick = r.U32(), InnerAt = r.F32() };
             int lines = r.U8();
             if (part >= c.PartCount || !c.Parts[part].D.IsMedia || state > (byte)MediaState.Paused || lines > MaxList || !float.IsFinite(m.PausedAt))
                 throw new MalformedPacketException($"media on part {part}");
@@ -233,6 +242,9 @@ public static class ConstructMedia
             mw.List = [address];
             mw.Index = 0;
             mw.By = player;
+            mw.Lead = player;
+            mw.Scroll = 0;
+            mw.Inner = 0;
             mw.StartTick = tick;
             if (mw.State != MediaState.Playing)
             {
@@ -313,6 +325,39 @@ public static class ConstructMedia
         }
     }
 
+    /// <summary>Server: what a Browser Screen's leading page reports. It takes the lead, as the last to use it. Refused quietly past ten a second.</summary>
+    public static bool WebState(CMedia m, byte player, ushort scroll, byte inner, float at, uint tick)
+    {
+        if (inner > 2 || !float.IsFinite(at) || at < 0 || m.Lead == player && tick - m.WebTick < World.TickRate / 10)
+            return false;
+        m.WebTick = tick;
+        m.Lead = player;
+        m.Scroll = scroll;
+        m.Inner = inner;
+        m.InnerAt = at;
+        m.InnerTick = tick;
+        return true;
+    }
+
+    /// <summary>CBodyKind.WebState: one Browser Screen's page, on its own, so scrolling doesn't send the body.</summary>
+    public static void WriteWeb(PacketWriter w, ushort body, ushort part, CMedia m) =>
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.WebState).U16(body).U16(part).U8(m.Lead).U16(m.Scroll).U8(m.Inner).U32(m.InnerTick).F32(m.InnerAt);
+
+    public static void ReadWeb(ref PacketReader r, ConstructWorld world)
+    {
+        var body = r.U16();
+        var part = r.U16();
+        var lead = r.U8();
+        var scroll = r.U16();
+        var inner = r.U8();
+        var tick = r.U32();
+        var at = r.F32();
+        if (inner > 2 || !float.IsFinite(at))
+            throw new MalformedPacketException("a web page's state");
+        if (world.Get(body) is { } c && part < c.PartCount && c.Parts[part].Media is { } m)
+            (m.Lead, m.Scroll, m.Inner, m.InnerTick, m.InnerAt) = (lead, scroll, inner, tick, at);
+    }
+
     /// <summary>Server: a panel's button (<see cref="PanelTouch"/>).</summary>
     public static string? Touch(Construct c, int part, MediaOp op, byte player, uint tick)
     {
@@ -358,7 +403,8 @@ public sealed partial class ConstructEdits
                 return defended;
             if (refusal != null)
                 return refusal;
-            if (Vector3.Distance(eye, ReachPoint(c, part, eye)) > ConstructConfig.Reach)
+            // (the page leading can walk away and go on: its address follows wherever links take it)
+            if (!(op == MediaOp.Go && c.Parts[part].Media?.Lead == player) && Vector3.Distance(eye, ReachPoint(c, part, eye)) > ConstructConfig.Reach)
                 return "too far away";
         }
         var before = c.Parts[part].Media is { } was ? (was.Seq, was.State, was.List.Length) : default;
