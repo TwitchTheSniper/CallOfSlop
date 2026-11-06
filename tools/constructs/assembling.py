@@ -183,6 +183,10 @@ HAND = [
     # The Clan MacSlop's (tools/constructs/highland_parts.py): pipes are wood and a bag, a cask is staves and hoops.
     rec("Pipe Box", 8, 2, m={"planks": 4, "rubber": 2}, p={"Bearing": 1}),
     rec("Whisky Cask", 5, m={"planks": 10, "steel": 2}),
+    # The Ministry of Slop's (tools/constructs/british_parts.py): cast iron and glass, built to outlast everyone.
+    rec("Pillar Box", 6, m={"steel": 12}),
+    rec("Phone Box", 8, m={"steel": 14, "glass": 3}, p={"Circuit Board": 1}),
+    rec("Tea Urn", 4, m={"steel": 3, "planks": 1}),
     # Air weapons (tools/constructs/air_weapons_parts.py): a rack and a bomb early, what steers itself late.
     rec("Light Bomb", 3, 2, m={"steel": 6, "concrete": 2}),
     rec("Bomb Rack", 4, 2, m={"steel": 5}),

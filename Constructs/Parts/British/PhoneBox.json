@@ -1,0 +1,336 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Phone Box",
+  "description": "A red telephone box, cut down to fit. The phone's been out of order for years; the shelf under it hasn't.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 80.0,
+  "health": 260,
+  "armour": 3,
+  "material": "steel",
+  "color": "#c8102e",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.24,
+          0.07,
+          -0.24
+        ],
+        "max": [
+          0.24,
+          0.6,
+          0.26
+        ],
+        "label": "under the shelf"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.31,
+        0.0,
+        -0.31
+      ],
+      "max": [
+        0.31,
+        0.06,
+        0.31
+      ],
+      "color": "#9a0c22"
+    },
+    {
+      "min": [
+        -0.35,
+        0.062,
+        -0.35
+      ],
+      "max": [
+        -0.25,
+        1.44,
+        -0.25
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        -0.35,
+        0.062,
+        0.25
+      ],
+      "max": [
+        -0.25,
+        1.44,
+        0.35
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        0.25,
+        0.062,
+        -0.35
+      ],
+      "max": [
+        0.35,
+        1.44,
+        -0.25
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        0.25,
+        0.062,
+        0.25
+      ],
+      "max": [
+        0.35,
+        1.44,
+        0.35
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        -0.248,
+        0.3,
+        -0.306
+      ],
+      "max": [
+        0.248,
+        1.4,
+        -0.294
+      ],
+      "color": "#7fb2d9",
+      "detail": true,
+      "glass": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.012,
+        0.302,
+        -0.31
+      ],
+      "max": [
+        0.012,
+        1.398,
+        -0.29
+      ],
+      "color": "#c8102e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.294,
+        0.3,
+        -0.248
+      ],
+      "max": [
+        0.306,
+        1.4,
+        0.248
+      ],
+      "color": "#7fb2d9",
+      "detail": true,
+      "glass": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.29,
+        0.302,
+        -0.012
+      ],
+      "max": [
+        0.31,
+        1.398,
+        0.012
+      ],
+      "color": "#c8102e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.306,
+        0.3,
+        -0.248
+      ],
+      "max": [
+        -0.294,
+        1.4,
+        0.248
+      ],
+      "color": "#7fb2d9",
+      "detail": true,
+      "glass": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.31,
+        0.302,
+        -0.012
+      ],
+      "max": [
+        -0.29,
+        1.398,
+        0.012
+      ],
+      "color": "#c8102e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.248,
+        0.062,
+        0.27
+      ],
+      "max": [
+        0.248,
+        1.438,
+        0.302
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        -0.248,
+        0.062,
+        -0.31
+      ],
+      "max": [
+        0.248,
+        0.298,
+        -0.29
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        0.29,
+        0.062,
+        -0.248
+      ],
+      "max": [
+        0.31,
+        0.298,
+        0.248
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        -0.31,
+        0.062,
+        -0.248
+      ],
+      "max": [
+        -0.29,
+        0.298,
+        0.248
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        -0.32,
+        1.44,
+        -0.32
+      ],
+      "max": [
+        0.32,
+        1.54,
+        0.32
+      ],
+      "color": "#c8102e"
+    },
+    {
+      "min": [
+        -0.28,
+        1.542,
+        -0.28
+      ],
+      "max": [
+        0.28,
+        1.6,
+        0.28
+      ],
+      "color": "#c8102e",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.08,
+        0.95,
+        0.2
+      ],
+      "max": [
+        0.08,
+        1.15,
+        0.268
+      ],
+      "color": "#17181a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.62,
+        0.1
+      ],
+      "max": [
+        0.2,
+        0.65,
+        0.268
+      ],
+      "color": "#6b4527",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.06,
+        0.3
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

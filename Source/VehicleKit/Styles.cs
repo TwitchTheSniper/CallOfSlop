@@ -4,10 +4,10 @@ namespace CallOfSlop.VehicleKit;
 public static class Styles
 {
     /// <summary>Every style a generator can be run in.</summary>
-    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Highland, Scam, Militia];
+    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Highland, Scam, British, Militia];
 
     /// <summary>The styles whose vehicles ship as blueprints.</summary>
-    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It, Highland, Scam];
+    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It, Highland, Scam, British];
 
     /// <summary>Bandits: rust and bare metal, nothing matches, spikes, war paint and trophies.</summary>
     public static readonly FactionStyle Bandit = new()
@@ -273,6 +273,74 @@ public static class Styles
         },
         LootTable = "highland",
         Limits = new() { ["crookedPlates"] = 3, ["tiltDegrees"] = 3, ["thirdSeat"] = 0.7, ["slits"] = 0.2 },
+    };
+
+    /// <summary>
+    /// The Ministry of Slop: a very British faction on wheels, affectionate and mostly understated. Bus red on the panels with the odd
+    /// racing green, cream or rain-washed grey; racing green, cream and navy on the hoods; war paint in the flag's blue, red and white and
+    /// double-yellow-line yellow. Union Flags, Belisha beacons and rain gauges on the roofs, teapots in cosies, traffic cones nobody will
+    /// move and garden gnomes where bandits hang skulls, furled brollies down the flanks (it's that sort of day), queue posts on the beds,
+    /// and rooms of pillar boxes and red telephone boxes (loot in each) round a tea urn (Constructs/Parts/British,
+    /// tools/constructs/british_parts.py). Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>).
+    /// Guns are named the way the British complain: Terribly Sorry, Bit of Bother, a Strongly Worded Letter and Builder's Tea.
+    /// </summary>
+    public static readonly FactionStyle British = new()
+    {
+        Name = "British",
+        Group = "Ministry of Slop",
+        Palette = new()
+        {
+            ["rust"] = ["#c8102e", "#b5121b", "#c8102e", "#be0f2a", "#c8102e", "#b5121b", "#1f4a32", "#e8dfc8", "#7d8186"], // (the panels: bus red, mostly; a racing green, cream, the grey of a wet Tuesday)
+            ["body"] = ["#004225", "#e8dfc8", "#1d2b4f", "#004225"],                                // (racing green, cream, navy)
+            ["frame"] = ["#1b1c1e", "#2b2a28"],
+            ["war"] = ["#012169", "#c8102e", "#f2f0e8", "#f2c400"],                                // (the flag's blue, red and white; double-yellow-line yellow)
+        },
+        Parts = new(Bandit.Parts)
+        {
+            ["engine"] = ["Engine", "Engine", "V8 Engine"],
+            ["wall"] = ["Sheet Steel", "Plate Steel", "Plate Steel"],
+            ["deck"] = ["Plate Steel", "Tread Plate"],
+            ["bed"] = ["Plate Steel", "Tread Plate", "Wood Planks"],
+            ["sheet"] = ["Sheet Steel", "Plate Steel", "Plate Steel"],
+            ["patch"] = ["Sheet Steel 0.5 m", "Plate Steel 0.5 m"],
+            ["hood"] = ["Long Hood", "Snub Hood", "Long Hood", "Bull Hood"],
+            ["nose"] = ["Slat Grille", "Bar Grille", "Slat Grille", "none"],
+            ["fender"] = ["Arch Fender", "Wide Arch Fender"],
+            ["cab"] = ["Windscreen Frame", "Tin Roof Cab", "Chop Top Cab", "Roll Bar"],
+            ["heavyCab"] = ["Tin Roof Cab", "Cab Over Shell", "Chop Top Cab"],
+            ["spike"] = ["Furled Brolly", "Furled Brolly", "Belisha Beacon"],                                  // (Constructs/Parts/British, tools/constructs/british_parts.py)
+            ["trophy"] = ["Teapot", "Traffic Cone", "Garden Gnome", "Teapot", "Rain Gauge", "Traffic Cone"],
+            ["mast"] = ["Union Flag", "Belisha Beacon", "Rain Gauge", "Union Flag"],                           // (on the roofs: Vehicle.Kit)
+            ["gear"] = ["Queue Post", "Queue Post", "Traffic Cone", "Garden Gnome"],                           // (on open beds and porches: a queue forms)
+            ["pillar"] = ["Pillar Box"],                                                                       // (loot inside)
+            ["phonebox"] = ["Phone Box"],                                                                      // (loot under the shelf)
+            ["urn"] = ["Tea Urn"],
+            ["layout"] = ["tea room", "post office", "lost property", "snug"],
+            ["layout tea room"] = ["urn", "bench", "bench", "pillar"],
+            ["layout post office"] = ["pillar", "pillar", "phonebox", "shelf"],
+            ["layout lost property"] = ["phonebox", "shelf", "crates", "pillar"],
+            ["layout snug"] = ["bench", "urn", "phonebox", "crates"],
+        },
+        LightGear = Bandit.LightGear,
+        HeavyGear = Bandit.HeavyGear,
+        // The weapon slot: named the way they complain.
+        Weapons =
+        [
+            new("Terribly Sorry", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Terribly Sorry", "Workhorse Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag,action:Full-Auto Sear}"),
+            new("Bit of Bother", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
+            new("Strongly Worded Letter", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+            new("Builder's Tea", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
+        ],
+        Extra = ["Double Decker"],
+        // (--sweep-vehicle's most different passing seeds in this style's dice)
+        Seeds = new()
+        {
+            ["Technical"] = [2, 14, 4, 5, 18], ["Box Truck"] = [1, 24, 19], ["War Bus"] = [1, 8, 15], ["Flatbed Fort"] = [1, 9, 23],
+            ["Gun Wagon"] = [1, 19, 5], ["Scrap Tanker"] = [1, 22, 18], ["Tanker Rig"] = [1, 19], ["Fuel Trailer"] = [1, 3], ["Double Decker"] = [1, 5, 13],
+        },
+        LootTable = "british",
+        Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 0.8, ["slits"] = 0.1 },
     };
 
     /// <summary>A second look over the same shapes, to prove a style swaps without touching a generator: run <c>--gen-vehicle "Militia Box Truck" --out DIR</c>. Nothing of it ships.</summary>
