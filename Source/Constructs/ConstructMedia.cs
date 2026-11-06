@@ -25,6 +25,7 @@ public enum MediaOp : byte
     Next,
     Previous,
     Ended, // a peer's player came to the end of the track numbered by the seq, or (from whoever started it) can't play it
+    Seek, // to the seq, in milliseconds: someone's hands on the page's seek bar
 }
 
 /// <summary>
@@ -40,6 +41,7 @@ public sealed class CMedia
     public uint StartTick; // the tick at which this track was at 0 seconds
     public uint Seq; // goes up when another track starts, or this one starts again: a report of its end names it
     public float PausedAt; // seconds into the track, while paused
+    public byte Mark; // goes up on a seek: every peer's page follows at once, not at its next drift check
 
     public string? Entry => Index < List.Length ? List[Index] : null;
 
@@ -102,7 +104,7 @@ public static class ConstructMedia
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Media is { } m)
             {
-                w.U16((ushort)i).U8((byte)m.State).U8(m.Index).U8(m.By).U32(m.StartTick).U32(m.Seq).F32(m.PausedAt).U8((byte)m.List.Length);
+                w.U16((ushort)i).U8((byte)m.State).U8(m.Index).U8(m.By).U32(m.StartTick).U32(m.Seq).F32(m.PausedAt).U8(m.Mark).U8((byte)m.List.Length);
                 foreach (var line in m.List)
                     w.Str(line);
                 n++;
@@ -117,7 +119,7 @@ public static class ConstructMedia
         {
             var part = r.U16();
             var state = r.U8();
-            var m = new CMedia { Index = r.U8(), By = r.U8(), StartTick = r.U32(), Seq = r.U32(), PausedAt = r.F32() };
+            var m = new CMedia { Index = r.U8(), By = r.U8(), StartTick = r.U32(), Seq = r.U32(), PausedAt = r.F32(), Mark = r.U8() };
             int lines = r.U8();
             if (part >= c.PartCount || !c.Parts[part].D.IsMedia || state > (byte)MediaState.Paused || lines > MaxList || !float.IsFinite(m.PausedAt))
                 throw new MalformedPacketException($"media on part {part}");
@@ -264,6 +266,16 @@ public static class ConstructMedia
             case MediaOp.Previous when m.List.Length > 0:
                 Start(m, m.Index > 0 ? m.Index - 1 : m.List.Length - 1, player, tick);
                 return null;
+            case MediaOp.Seek when m.State != MediaState.Stopped:
+            {
+                var seconds = seq * 0.001f;
+                if (m.State == MediaState.Paused)
+                    m.PausedAt = seconds;
+                else
+                    m.StartTick = tick - Math.Min(tick, (uint)(seconds * World.TickRate));
+                m.Mark++;
+                return null;
+            }
             case MediaOp.Ended when seq == m.Seq && m.State == MediaState.Playing:
                 Advance(m, loop, m.By, tick);
                 return null;
@@ -272,6 +284,13 @@ public static class ConstructMedia
             default:
                 return "nothing to do";
         }
+    }
+
+    /// <summary>Server: a panel's button (<see cref="PanelTouch"/>).</summary>
+    public static string? Touch(Construct c, int part, MediaOp op, byte player, uint tick)
+    {
+        ref var p = ref c.Parts[part];
+        return Apply(ref p, p.D, op, 0, 0, "", player, tick);
     }
 
     /// <summary>

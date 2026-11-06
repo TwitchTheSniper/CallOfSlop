@@ -46,6 +46,8 @@ public static partial class Program
     /// <summary>The wheel on the lever under the crosshair, or the one in the hand.</summary>
     private static bool LeverScroll(double y)
     {
+        if (_scrPage >= 0)
+            y = PointerWheel(y);
         if (!_lvHeld && !_lvWheelOk)
             return false;
         _lvScroll += y;

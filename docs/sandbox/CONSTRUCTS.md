@@ -1853,6 +1853,19 @@ The user: "a wireless seat connection. I want the player to be able to control d
 - **A far drone.** The world is whole on every client. What falls off with distance is how often a body's pose goes out, so a pilot's poses are centred on the drone (`SandboxInterestAt`), and what is round it stays current. A piloted body goes in every pose packet already, as a driven one does.
 - **Scout Drone**: a Drone Frame, four Drone Rotors for lift, two Drone Pushers at the back for W and A/D, a Drone Battery, a receiver, a Driving Module and a camera, 34 kg. Sprint lifts it into the hover hold. Light rotors matter: the hover hold is weak off a planet against a big fan on a small body, and a 750 kg version on Light Lift Fans tumbled under its own pushers.
 
+## Touch panels
+
+With Hands out and empty, the crosshair on a panel is a finger (`PanelTouch.cs`, `Program.SandboxPointer.cs`). A panel declares its buttons in its part file, and any panel can have them:
+
+```json
+"picture": [0, 0.44, 1, 1],
+"touch": [{ "action": "media.next", "at": [0.68, 0.03, 0.98, 0.24], "label": "Next" }]
+```
+
+`at` is x0, y0, x1, y1 as shares of the panel from its bottom left; up to 8 buttons. `picture` is where a page's picture sits (default: all of it). The button aimed at lights up, and LMB fires `action` on the server under the configure tool's rule: contested, permission, reach and power.
+
+To add a button: add the entry above, naming an action. A new action is one line in `PanelTouch.Actions`, a function that changes the part and returns null or why not. A panel source can change a label as it fills its card (`card.TouchLabels[i]`), as the Music Player's Play/Pause does. Buttons don't output a signal yet.
+
 ## Video Screens and Music Players
 
 A picture and sound from YouTube links and the game's own tracks, on a part: [MEDIA.md](MEDIA.md).

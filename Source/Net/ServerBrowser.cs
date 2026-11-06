@@ -310,7 +310,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 164: a build text's length is a U32 (Msg.ZBuild, Msg.ZDrop text, CActKind.Bench): the Sandbox's builds have no part limit.
     // 165: flying rounds (ConstructRounds.cs): CFireKind.RoundOut in Msg.CFire.
     // 166: Video Screens and Music Players (ConstructMedia.cs): CActKind.Media, CfgKey.Loop, and a CBody's messages are followed by the media lists (u16 n; each u16 part, u8 state, u8 line, u8 by, u32 start tick, u32 seq, f32 paused at, u8 lines, the lines).
-    public const byte ProtocolVersion = 166;
+    // 167: touch panels and hands on a page (PanelTouch.cs, Program.SandboxPointer.cs): CActKind.PanelTouch, MediaOp.Seek, and a u8 mark in a CBody's media lists, after paused-at.
+    public const byte ProtocolVersion = 167;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

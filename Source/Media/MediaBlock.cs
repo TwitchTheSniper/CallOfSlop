@@ -11,7 +11,8 @@ namespace CallOfSlop;
 public sealed unsafe class MediaBlock : IDisposable
 {
     public const int MaxWidth = 1280, MaxHeight = 720, HeaderBytes = 4096, RingFrames = 1 << 17;
-    private const int OffLatest = 16, OffReading = 20, OffSeq = 24, OffAudioWrite = 32;
+    private const int OffLatest = 16, OffReading = 20, OffSeq = 24, OffAudioWrite = 32, OffMouseHead = 64, OffMouseTail = 68, OffMouse = 256;
+    public const int MouseSlots = 128, MouseMove = 1, MouseDown = 2, MouseUp = 3, MouseWheel = 4, MouseLeave = 5;
 
     /// <summary>Sound is dropped to this far behind the browser. It builds up only after a stall; past this the picture would be visibly ahead.</summary>
     private const int MaxBehindFrames = Audio.SampleRate / 3;
@@ -75,6 +76,20 @@ public sealed unsafe class MediaBlock : IDisposable
         }
         _seenFrame = seq;
         return _base + HeaderBytes + RingFrames * sizeof(float) + (long)latest * _frameBytes;
+    }
+
+    /// <summary>A mouse event for the page. The ring is the header's: four ints each, read by the browser every few ms. Full (the browser stopped reading): dropped.</summary>
+    public void Mouse(int kind, int x, int y, int data)
+    {
+        var head = Int(OffMouseHead);
+        if (head - Volatile.Read(ref Int(OffMouseTail)) >= MouseSlots)
+            return;
+        var e = (int*)(_base + OffMouse) + (head & (MouseSlots - 1)) * 4;
+        e[0] = kind;
+        e[1] = x;
+        e[2] = y;
+        e[3] = data;
+        Volatile.Write(ref Int(OffMouseHead), head + 1);
     }
 
     /// <summary>Starts over: a new track in this block. The browser's ring goes on from where it is.</summary>

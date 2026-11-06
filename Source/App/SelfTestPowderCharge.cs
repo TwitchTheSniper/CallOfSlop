@@ -188,21 +188,28 @@ public static partial class SelfTest
                     c.Parts[magPart].Rounds = ConstructAmmo.Pack(800, 0);
                     c.Parts[c.Guns[0].Part].Rounds = c.Guns[0].Mag;
                     c.Parts[c.Guns[0].Part].Reload = 0;
-                    var seen = a.Tracers.Count == 0 ? 0.0 : a.Tracers[^1].Born;
+                    // This gun's own shots: from its muzzle, by what was there before. (A flying round's streaks are tracers too, on the render clock, not this.)
+                    var muzzleAt = c.WorldCom;
+                    bool Own(in Tracer tr) => Vector3.DistanceSquared(tr.From, muzzleAt) < 25f && tr.Speed >= 0 && tr.Width > 0.031f;
+                    var seen = double.MinValue;
+                    foreach (var t in a.Tracers)
+                        if (Own(t))
+                            seen = Math.Max(seen, t.Born);
                     var marks = new List<float>();
                     float reach = 0;
                     c.Parts[trigger].State = 1;
-                    PumpEach(server, [a], 1.6, ref now, clock, _ =>
+                    Until(() =>
                     {
                         foreach (var t in a.Tracers)
-                            if (t.Born > seen)
+                            if (t.Born > seen && Own(t))
                             {
                                 seen = t.Born;
                                 var x = MathF.Sqrt((t.To.X - t.From.X) * (t.To.X - t.From.X) + (t.To.Z - t.From.Z) * (t.To.Z - t.From.Z));
                                 marks.Add(t.From.Y - t.To.Y - g2 / (2 * v * v) * x * x);
                                 reach = MathF.Max(reach, x);
                             }
-                    });
+                        return marks.Count >= 5;
+                    }, 8, $"the client saw the merged gun's rounds at {charge}%");
                     c.Parts[trigger].State = 0;
                     marks.Sort();
                     var off = marks.Count > 0 ? marks[marks.Count / 2] : float.NaN;
@@ -259,7 +266,6 @@ public static partial class SelfTest
                 var slot = (byte)hRec.CfgSlot[(int)CfgKey.Charge];
                 var baseSpeed = 0f;
                 var baseBlast = 0f;
-                float baseFlight = 0;
                 foreach (var charge in new[] { 100, 40, 200 })
                 {
                     if (charge != 100)
@@ -280,34 +286,34 @@ public static partial class SelfTest
                     h.Parts[0].Rounds = h.Guns[0].Mag;
                     h.Parts[0].Reload = 0;
                     h.Parts[0].Cool = 0;
+                    // Its own flight: how far it went level over how long it took, read off the shell itself (its height and how soon this loop first saw it vary with the ground).
                     var last = default(Vector3);
                     var first = default(Vector3);
+                    int firstAge = 0, lastAge = 0;
                     var flying = false;
-                    var landed = false;
                     h.Parts[hs].State = 1;
-                    PumpEach(server, [a], 7, ref now, clock, _ =>
+                    Until(() =>
                     {
-                        if (landed)
-                            return;
                         var any = false;
-                        foreach (ref var s in w.Shells.AsSpan())
-                            if (s.Id != 0 && !s.Landed && s.Gun == h.Id)
-                            {
-                                any = true;
-                                if (!flying)
-                                    first = s.Pos;
-                                flying = true;
-                                last = s.Pos;
-                                h.Parts[hs].State = 0;
-                            }
-                        landed = flying && !any;
-                    });
+                        for (var k = 0; k < w.ShellCount; k++)
+                        {
+                            ref var s = ref w.Shells[k];
+                            if (s.Landed || s.Gun != h.Id)
+                                continue;
+                            any = true;
+                            if (!flying)
+                                (first, firstAge) = (s.Pos, s.Age);
+                            flying = true;
+                            (last, lastAge) = (s.Pos, s.Age);
+                            h.Parts[hs].State = 0;
+                        }
+                        return flying && !any;
+                    }, 12, $"a shell at {charge}% landed");
                     h.Parts[hs].State = 0;
                     var flew = new Vector2(last.X - first.X, last.Z - first.Z).Length();
-                    Line($"howitzer at {charge}%: {h.Guns[0].Speed:0} m/s (x{h.Guns[0].Speed / MathF.Max(1f, baseSpeed):0.00}, wanted x{wantV:0.00}), reach {h.Guns[0].MaxRange:0} m, blast {h.Guns[0].Blast:0.0} m, flew {flew:0} m level from {first.Y - ConstructWorld.Ground(World.Query, last.X, last.Z).Y:0.0} m up");
-                    if (charge == 100)
-                        baseFlight = flew;
-                    if (!flying || !landed || MathF.Abs(h.Guns[0].Speed - baseSpeed * wantV) > 1f || MathF.Abs(h.Guns[0].Blast - baseBlast) > 0.3f || !(MathF.Abs(flew - baseFlight * wantV) <= MathF.Max(6f, baseFlight * wantV * 0.25f)))
+                    var flownV = flew / MathF.Max(World.TickDt, (lastAge - firstAge) * World.TickDt);
+                    Line($"howitzer at {charge}%: {h.Guns[0].Speed:0} m/s (x{h.Guns[0].Speed / MathF.Max(1f, baseSpeed):0.00}, wanted x{wantV:0.00}), reach {h.Guns[0].MaxRange:0} m, blast {h.Guns[0].Blast:0.0} m, flew {flew:0} m in {(lastAge - firstAge) * World.TickDt:0.00} s: {flownV:0} m/s");
+                    if (lastAge <= firstAge || MathF.Abs(h.Guns[0].Speed - baseSpeed * wantV) > 1f || MathF.Abs(h.Guns[0].Blast - baseBlast) > 0.3f || !(MathF.Abs(flownV - baseSpeed * wantV) <= baseSpeed * wantV * 0.04f))
                         problems.Add($"a howitzer at {charge}% didn't fly as its speed says");
                 }
             }

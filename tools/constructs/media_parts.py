@@ -52,19 +52,24 @@ def video(name, cls, w, h, range_m, hear, near, power, mass):
 
 
 def music():
-    desc = "Plays a list of YouTube links and the game's own tracks: build the list with the configure tool. Heard to 50 m. The game's tracks need no browser."
+    desc = "Plays a list of YouTube links and the game's own tracks: build the list with the configure tool, and use its screen with Hands. Heard to 50 m. The game's tracks need no browser."
     p = Part("Music Player", SMALL, SECTION, desc, role="panel", tool="wrench", group="Logic", color=SPEAKER)
-    w, h, t = 0.5, 0.26, 0.16
+    w, h, t = 0.36, 0.36, 0.14
+    rim = 0.008
     p.add(box((-w / 2, 0, 0), (w / 2, h, t)))
-    for x in (-0.17, 0.17):
-        p.add(box((x - 0.05, 0.08, -0.004), (x + 0.05, 0.18, 0.002), GRILLE, detail=True))
-    p.add(box((-0.1, 0.045, -0.004), (0.1, 0.215, 0.002), BEZEL, detail=True))
+    p.add(box((-w / 2 + rim, rim, -0.004), (w / 2 - rim, h - rim, 0.002), BEZEL, detail=True))
     p.sock("bottom", (0, 0, t / 2), "-y")
     p.sock("back", (0, h / 2, t), "+z")
     p.sock("top", (0, h, t / 2), "+y")
     p.stats(6, 50, 1, 1)
+    pw = round(w - 2 * rim, 3)
+    bottom = 0.44  # YouTube's player stays in view above the controls: 16:9 across the whole width, the title and buttons under it
     p.set(power=10, config=[VOLUME, LOOP], centreSockets=False, media=media(50, 5, 356, 200),
-          panels=[{"source": "media", "at": [0, 0.13, -0.007], "size": [0.19, 0.107], "face": "-z", "up": "+y", "rows": 8, "range": 12}])
+          panels=[{"source": "media", "at": [0, h / 2, -0.007], "size": [pw, pw], "face": "-z", "up": "+y", "rows": 8, "range": 12,
+                   "picture": [0, bottom, 1, 1],
+                   "touch": [{"action": "media.previous", "at": [0.02, 0.03, 0.32, 0.24], "label": "Prev"},
+                             {"action": "media.toggle", "at": [0.35, 0.03, 0.65, 0.24], "label": "Play"},
+                             {"action": "media.next", "at": [0.68, 0.03, 0.98, 0.24], "label": "Next"}]}])
     return p
 
 

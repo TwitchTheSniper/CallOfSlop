@@ -51,6 +51,8 @@ public sealed class PanelDef
     public int Rows = 4; // text rows it is laid out for
     public float Range; // not drawn further off than this (m)
     public PanelFill? Fill;
+    public Vector4 Picture = new(0, 0, 1, 1); // where a page's picture sits: shares of the panel, from its bottom left
+    public PanelTouchDef[] Touch = []; // its buttons (PanelTouch.cs)
 }
 
 /// <summary>Fills a panel's card from the part as it is on this peer. Runs at <see cref="PanelRender.FillHz"/> for panels in range and in view; must not allocate in a steady state.</summary>
@@ -77,6 +79,10 @@ public sealed class PanelCard
     public int Picture; // a camera's picture behind the text: its layer in CameraFeeds plus one (0: none)
     public int Video; // a browser page's picture: its layer in VideoFeeds plus one (0: none)
     public int VideoWidth, VideoHeight; // how much of the layer it fills
+    public Vector4 VideoRect; // where on the panel (PanelDef.Picture)
+    public PanelTouchDef[] Touch = []; // the panel's buttons
+    public readonly string?[] TouchLabels = new string?[PanelTouch.MaxRegions]; // a source's own words for them (null: the part file's)
+    public int Hover = -1; // the button aimed at on this PC
     public int Mark = -1; // a line drawn on a lit strip (a list's pick); below 0: none
     public PanelDraw Draw;
     public bool HasInk; // text, needle, trace and bars all in Ink, not the state's colours (a display's "ink" setting)
@@ -100,6 +106,9 @@ public sealed class PanelCard
         Bar = -1;
         Picture = 0;
         Video = 0;
+        Touch = [];
+        Array.Clear(TouchLabels);
+        Hover = -1;
         Mark = -1;
         Draw = PanelDraw.None;
         HasInk = false;
@@ -256,6 +265,9 @@ public sealed class PanelCard
         Mix((uint)State | (HasIcon ? 256u : 0));
         Mix((uint)(int)(Bar * 96) ^ (uint)Picture << 24);
         Mix((uint)Video);
+        Mix((uint)(Hover + 1));
+        foreach (var label in TouchLabels)
+            Mix((uint)(label?.GetHashCode() ?? 0));
         Mix((uint)IconMask);
         Mix((uint)(IconMask >> 32));
         Mix((uint)(IconColour.X * 255) | (uint)(IconColour.Y * 255) << 8 | (uint)(IconColour.Z * 255) << 16);
@@ -334,7 +346,7 @@ public static class ConstructPanels
         foreach (var e in list.EnumerateArray())
         {
             var where = $"panels[{n++}]";
-            ConstructParts.Known(e, ["source", "slot", "at", "size", "face", "up", "rows", "range"], $"{file}, {where}");
+            ConstructParts.Known(e, ["source", "slot", "at", "size", "face", "up", "rows", "range", "picture", "touch"], $"{file}, {where}");
             var p = new PanelDef { Source = ConstructParts.Str(ConstructParts.Need(e, "source", $"{file}, {where}"), file, where + ".source") };
             p.Fill = PanelSources.Find(p.Source) ?? throw new ConstructPartException($"{file}: {where}.source \"{p.Source}\" isn't one of {PanelSources.Names}");
             p.Slot = ConstructParts.Opt(e, "slot") is { } sl ? (int)ConstructParts.Num(sl, file, where + ".slot") : 0;
@@ -356,6 +368,7 @@ public static class ConstructPanels
             var row = p.Size.Y / p.Rows;
             p.Range = ConstructParts.Opt(e, "range") is { } g ? ConstructParts.Num(g, file, where + ".range") : Math.Clamp(row * 400, 12, 120);
             ConstructParts.Range(p.Range, 1, 400, file, where + ".range");
+            PanelTouch.Parse(p, e, file, where);
             made.Add(p);
         }
         d.Panels = made.ToArray();
