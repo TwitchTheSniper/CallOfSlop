@@ -249,8 +249,13 @@ public sealed class ProvingGround : IMapGenerator
     static JObject Sandbox() => new(
         ("rack", JArray.Of(RackX, RackZ, 180)),
         ("rackParts", new JArray(RackParts.Select(n => (JNode)new JString(n)))),
+        ("resources", new JObject(("deposits", new JArray(
+        [
+            new JObject(("kind", "levite seam"), ("x", 150), ("z", 150), ("radius", 26), ("aspect", 0.5), ("yaw", 30)),
+        ])))),
         ("constructs", new JArray(
         [
+            C("Crashed Plane", 118, 96, 35), C("Crashed Jet", -62, 142, 250),
             C("Gun Bench", -156, -138), C("Cargo Rack", -142, -138), C("Chest", -190 + 6, -150), C("Storage Corner", -184, -166),
             C("Ammo Dump", -184, -182), C("Lamp Post", -170, -184), C("Lamp Post", -150, -184),
             C("Buggy", -142, -152), C("Racer", -142, -164), C("4x4 Truck", -146, -178), C("Trailer", -166, -178),
