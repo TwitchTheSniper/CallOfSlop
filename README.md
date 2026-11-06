@@ -1198,8 +1198,9 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   (red with the reason in a wall, in mid-air or on a construct), Fire spawns there (again and again), RMB or Esc stops.
   Up to 64 zombies come as full zombies rising at the spot; a bigger group goes into the mass horde round it (the nearest
   wake as full zombies). Zombies hunt players and friendly bots and swipe at constructs in their way (doors and panels
-  give way). **CLEAR ALL** removes every spawned bot and zombie. Spawned bots don't respawn. Only the host spawns and
-  clears unless the host ticks "Everyone can spawn"; the host also sets the most bots (16 by default) and zombies
+  give way). **CLEAR ALL** removes every spawned bot and zombie. Spawned bots don't respawn. Joined players spawn too, up to
+  8 bots and 64 zombies each at once (never a crowd), and **CLEAR MINE** removes only theirs; the host can turn their
+  spawning off with "Joined players can spawn". The host also sets the most bots (16 by default) and zombies
   (500,000). Survival worlds have no direct spawns.
 - **Spawner parts** (Spawn group): a **Bot Spawner** and a **Zombie Spawner** are parts like any other (attach tool, anchored
   or on a vehicle, moved with the physics gun, saved in blueprints). The configure tool sets what they spawn (team,

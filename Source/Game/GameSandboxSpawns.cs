@@ -247,7 +247,7 @@ public sealed partial class Game
         if (!SandboxInfiniteParts)
             return "no spawning in a survival world: its enemies come from the world";
         if (p.Id != LocalId && !SandboxSpawnAnyone)
-            return "only the host can spawn here (the host can allow everyone in the Spawn tab)";
+            return "only the host can spawn here (the host has turned it off in the Spawn tab)";
         return null;
     }
 
