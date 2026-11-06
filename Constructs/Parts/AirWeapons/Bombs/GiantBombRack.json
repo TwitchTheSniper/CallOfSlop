@@ -3,7 +3,7 @@
   "name": "Giant Bomb Rack",
   "description": "For the biggest things a designer dares. While its input is on it lets go, if its own construct leaves the way down clear. Rated for 2e+06 kg.",
   "group": "Weapons",
-  "section": "Bombs",
+  "section": "Bomb racks",
   "role": "logic",
   "tool": "welder",
   "mass": 6.0,

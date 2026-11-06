@@ -426,7 +426,7 @@ public static class OrdnanceFlight
         var f = st.Flight;
         var design = def.OrdDesign!;
         var rail = c.DefOf(rack).RackRail;
-        var at = ConstructRender.PartCentre(c, part);
+        var at = ConstructOrdnance.ReleaseAt(c, rack, part); // (a drum turns it to the bottom first)
         c.WorldFrame(c.Parts[part].Seg, out var q, out _);
         var fwd = Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, q * Rot24.Quat(c.Parts[part].Rot)));
         var vel = c.PointVel(at) + c.SegPointVel(c.Parts[part].Seg, at) + (rail ? fwd * RailKick : Vector3.Zero);

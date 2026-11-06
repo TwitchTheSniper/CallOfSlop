@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "8-Station Bomb Rack",
+  "description": "Eight bombs, four pairs.",
+  "modularRack": {
+    "stations": 8,
+    "layout": "pairs",
+    "size": "light"
+  }
+}

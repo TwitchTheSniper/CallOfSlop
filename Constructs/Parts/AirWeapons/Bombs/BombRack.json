@@ -3,7 +3,7 @@
   "name": "Bomb Rack",
   "description": "Holds a bomb on its lug. While its input is on it lets go, three times a second, if its own construct leaves the way down clear: a closed bay door stops it. Rated for 300 kg.",
   "group": "Weapons",
-  "section": "Bombs",
+  "section": "Bomb racks",
   "role": "logic",
   "tool": "welder",
   "mass": 6.0,

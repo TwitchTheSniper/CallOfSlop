@@ -59,9 +59,10 @@ public sealed partial class ConstructEdits
             var overlap0 = 0f;
             var litres0 = d.IsTankVolume ? ConstructFluid.Litres(p, d) : 0f;
             var fill0 = d.IsTankVolume ? ConstructConfig.Get(p, d, CfgKey.Fill, 0) : 0f;
-            if (d.IsSizedBox)
+            if (d.IsSizedBox || d.IsModularRack)
             {
-                overlap0 = ConstructStoreVolume.Overlap(c, i);
+                if (d.IsSizedBox)
+                    overlap0 = ConstructStoreVolume.Overlap(c, i);
                 for (var k = 0; k < d.Config.Length; k++)
                     before[k] = p.Cfg[k];
             }
@@ -80,6 +81,12 @@ public sealed partial class ConstructEdits
                 for (var k = 0; k < d.Config.Length; k++)
                     p.Cfg[k] = before[k];
                 return busy;
+            }
+            if (d.IsModularRack && ModularRack.Reshape(world, c, i, InfiniteParts) is { } shape)
+            {
+                for (var k = 0; k < d.Config.Length; k++)
+                    p.Cfg[k] = before[k]; // (still the old part: a refused shape changes nothing)
+                return shape;
             }
             changed++;
             if (d.Logic is CLogic.Timer or CLogic.Delay)

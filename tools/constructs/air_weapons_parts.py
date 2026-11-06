@@ -39,7 +39,7 @@ def bomb(name, radius_m, length, mass, blast, damage, fuse, crater, desc):
 def rack(name, stations, desc, load=300):
     """Lugs below a hanger: each -y socket takes a bomb's lug."""
     x = 0.125 * stations
-    p = Part(name, SMALL, "Bombs", desc + f" Rated for {load * stations:g} kg.", role="logic", tool="welder", color=DARK, group=GROUP)
+    p = Part(name, SMALL, "Bomb racks", desc + f" Rated for {load * stations:g} kg.", role="logic", tool="welder", color=DARK, group=GROUP)
     p.add(box((-x, -0.04, -0.2), (x, 0.08, 0.2)))
     for k in range(stations):
         at = -x + 0.25 * k + 0.125
@@ -51,6 +51,33 @@ def rack(name, stations, desc, load=300):
     p.stats(6 * stations, 80, 3, 1.5)
     p.set(logic={"kind": "bombrack", "load": load * stations})
     return "Bombs", p
+
+
+class ModularPreset:
+    """A preset of the Modular Bomb Rack: only its shape. The game makes the whole part from it (Source/Constructs/ModularRack.cs), the same way it
+    makes a shape the configure tool asks for, so a preset and the rack it is set to are one part."""
+
+    def __init__(self, name, stations, layout, size, desc):
+        self.name, self.stations, self.layout, self.size, self.desc = name, stations, layout, size, desc
+
+    def json(self):
+        return {"format": "call-of-slop-construct-part/1", "name": self.name, "description": self.desc,
+                "modularRack": {"stations": self.stations, "layout": self.layout, "size": self.size}}
+
+
+# The Modular Bomb Rack's presets (docs/sandbox/CONSTRUCTS.md, "Modular bomb racks"): every shape differs, and the configure tool turns any into any.
+MODULAR = [
+    ("Modular Bomb Rack", 1, "row", "light", "A bomb rack set by the configure tool: 1 to 16 stations, in a row, in pairs or on a drum, light, heavy or giant."),
+    ("Triple Bomb Rack", 3, "row", "light", "Three bombs side by side."),
+    ("Quad Bomb Rack", 4, "row", "light", "Four bombs side by side."),
+    ("5-Station Bomb Rack", 5, "row", "light", "Five bombs side by side."),
+    ("6-Station Bomb Rack", 6, "pairs", "light", "Six bombs, three pairs."),
+    ("7-Station Bomb Rack", 7, "row", "light", "Seven bombs side by side."),
+    ("8-Station Bomb Rack", 8, "pairs", "light", "Eight bombs, four pairs."),
+    ("Sixteen Bomb Rack", 16, "pairs", "light", "Sixteen bombs, eight pairs: a bay's worth."),
+    ("Light Rotary Drum", 6, "drum", "light", "A small drum for a bomb bay, mounted by its spine or its ends."),
+    ("Rotary Bomb Drum", 8, "drum", "heavy", "A heavy drum for a bomb bay, mounted by its spine or its ends."),
+]
 
 
 def gun(name, desc, length, half, mass, block, color=DARK):
@@ -96,7 +123,7 @@ def parts():
         gun("Flare Dispenser", "Throws flares that burn five seconds, sinking. Missiles coming in may go for one instead.", 0.3, 0.12, 15, {"damage": 1, "rpm": 180, "spread": 8, "range": 30, "maxRange": 60, "mag": 12, "reload": 6, "kick": 2, "fx": "cannon", "soundOf": "Leviathan .50", "shell": "flare", "speed": 30, "burn": 5}),
         sight("AA Sight", "lead", 1200, 8, "On a gun: the gun leads the body its gunner looks at, and its shells burst on the way there.", [fuse]),
         sight("Seeker Head", "seeker", 1000, 20, "On a Missile Rail: the missile locks the flying body nearest straight ahead, with or without a gunner."),
-    ]
+    ] + [("Bombs", ModularPreset(*m)) for m in MODULAR]
 
 
 def load(name):

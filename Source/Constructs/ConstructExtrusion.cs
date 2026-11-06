@@ -949,6 +949,12 @@ public static class Extrusion
             Ordnance.Write(w, d);
             return;
         }
+        if (d.IsRackRuntime)
+        {
+            w.U8(ModularRack.WireKind);
+            ModularRack.Write(w, d);
+            return;
+        }
         switch (k.Shape)
         {
             case ExShape.Round:
@@ -985,6 +991,8 @@ public static class Extrusion
         var profile = r.U8();
         if (profile == OrdnanceWire)
             return Ordnance.Read(ref r);
+        if (profile == ModularRack.WireKind)
+            return ModularRack.Read(ref r);
         var mask = 0ul;
         var shape = ExShape.Section;
         ushort wall = 0;

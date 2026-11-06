@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Modular Bomb Rack",
+  "description": "A bomb rack set by the configure tool: 1 to 16 stations, in a row, in pairs or on a drum, light, heavy or giant.",
+  "modularRack": {
+    "stations": 1,
+    "layout": "row",
+    "size": "light"
+  }
+}
