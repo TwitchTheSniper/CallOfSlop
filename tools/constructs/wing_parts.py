@@ -152,7 +152,7 @@ def loose_blade(c):
     p.add(box((-r / 2, -0.04 * c.x, -0.02 * c.x), (r / 2, 0.04 * c.x, 0.02 * c.x)))
     p.sock("root", (-r / 2, 0, 0), "-x")
     p.stats(3 * c.x ** 2, 30 * c.x, 0, 1)
-    p.set(stage=True)
+    p.set(stage=True, toolOnly=True)
     return ("", p)
 
 
@@ -269,8 +269,7 @@ def light_plane():
     for end in ("-z", "+z"):
         gear = add(part="Suspension", on=axle, socket=end, by="mount")
         add(part="Wheel", on=gear, socket="axle", by="axle")
-    strut = add(part="Square Beam 1 m", on=boom, socket="-y6", by="+z")
-    block = add(part="Frame Block", on=strut, socket="-z", by="+y")
+    block = add(part="Frame Block", on=boom, socket="-y6", by="+y")
     for face in ("-x", "+x"):
         gear = add(part="Suspension", on=block, socket=face, by="mount")
         add(part="Wheel", on=gear, socket="axle", by="axle")

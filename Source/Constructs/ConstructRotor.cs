@@ -31,6 +31,7 @@ public sealed partial class Construct
     public float RotorThrust; // N this tick, all of them
     public bool RotorLive; // something turns, or is asked to
     public bool RotorEngine; // a rotor is on the engine's shaft: the trim is the engine's throttle
+    public bool RotorRuns; // a wire asks a rotor on the shaft for something: that runs the engine, as a wire into it does
     public bool RotorGoverned; // a helicopter rotor is on it: the engine runs at full speed and collective takes the load
     public float RpmGovern; // the crank's most while a rotor is on its shaft, a little past where the hub is rated (0: none)
     public Vector3 RotorReaction; // N m on the body last tick from the rotors a torque mix doesn't count (the body's frame)
@@ -175,6 +176,7 @@ public static class ConstructRotor
         var live = false;
         var reaction = Vector3.Zero;
         var back = Quaternion.Conjugate(c.Rot);
+        var runs = false;
         for (var k = 0; k < c.RotorCount; k++)
         {
             ref var r = ref c.Rotors[k];
@@ -182,6 +184,7 @@ public static class ConstructRotor
                 continue;
             ref var p = ref c.Parts[r.Part];
             var wired = p.InCount > 0;
+            runs |= r.Feed >= 0 && wired && p.In != 0;
             var cmd = wired ? Math.Clamp(p.In, d.Heli ? -1 : 0, 1) : c.Driver != 255 ? c.AeroTrim : 0f;
             var mix = ConstructConfig.Get(p, p.D, CfgKey.TorqueMix, 0) >= 0.5f;
             if (mix)
@@ -246,11 +249,12 @@ public static class ConstructRotor
             var at = o + Vector3.Transform(r.At, q);
             var dir = Vector3.Transform(r.Dir, q);
             var bodyDir = dir;
-            var rel = Lerp(c, at, com) - wind;
+            var rel = c.Vel + Vector3.Cross(c.AngVel, at - com) - wind;
             var axial = Vector3.Dot(rel, dir);
             var edge2 = MathF.Max(0, rel.LengthSquared() - axial * axial);
             var push = Push(ref r, d, ind * eff * t.RotorFigure, MathF.Max(0, axial), edge2, SeaAir * density);
-            var fade = axial <= 0 ? 1f : 1 - MathF.Pow(axial / MathF.Max(1, d.TopSpeed * share), 2);
+            var bite = axial / MathF.Max(1, d.TopSpeed * share);
+            var fade = axial <= 0 ? 1f : 1 - bite * bite;
             push *= MathF.Max(0, fade) * d.Duct * blades;
             if (d.Heli && cmd < 0)
                 push = -push;
@@ -295,6 +299,7 @@ public static class ConstructRotor
         c.RotorThrust = thrust;
         c.RotorLive = live;
         c.RotorReaction = reaction;
+        c.RotorRuns = runs;
     }
 
     /// <summary>A tail rotor's torque mix: the collective that cancels the other rotors' torque last tick, the way a helicopter's pedals are linked to its collective.</summary>
@@ -310,8 +315,6 @@ public static class ConstructRotor
         var full = MathF.Pow(d.RatedKw * 1000f * density * (1 - AirTable.Current.RotorProfile) * AirTable.Current.RotorFigure, 2f / 3f) * MathF.Cbrt(2 * SeaAir * density * MathF.PI * d.Radius * d.Radius) * d.Duct;
         return -Vector3.Dot(c.RotorReaction, lever) / size / MathF.Max(1, full);
     }
-
-    private static Vector3 Lerp(Construct c, Vector3 at, Vector3 com) => c.Vel + Vector3.Cross(c.AngVel, at - com);
 
     /// <summary>
     /// The disc's momentum: the speed the power puts through it, down from the most it can be (the hover's: the sum is convex, so
@@ -365,7 +368,7 @@ public static class ConstructRotor
         var radius = off.Length();
         if (radius > d.Radius || radius < d.Radius * 0.08f)
             return false;
-        var angle = MathF.Atan2(Vector3.Dot(off, r.Right), Vector3.Dot(off, r.Fwd)) - r.Angle * Vector3.Dot(r.Dir, Rot24.Apply(c.Parts[part].Rot, d.Axis));
+        var angle = MathF.Atan2(Vector3.Dot(off, r.Fwd), Vector3.Dot(off, r.Right)) - r.Angle; // (a blade's box lies along Right at no angle, and turns towards Fwd, as drawn)
         var slice = MathF.Tau / d.Blades;
         var turn = angle / slice;
         var near = (int)MathF.Round(turn);
@@ -429,7 +432,7 @@ public static class ConstructRotor
         var fwd = Vector3.Transform(r.Fwd, q);
         var right = Vector3.Transform(r.Right, q);
         var dir = Vector3.Transform(r.Dir, q);
-        var out_ = fwd * MathF.Cos(angle) + right * MathF.Sin(angle);
+        var out_ = right * MathF.Cos(angle) + fwd * MathF.Sin(angle);
         var at = o + Vector3.Transform(r.At, q) + out_ * (rd.Radius * 0.55f);
         var name = rd.Radius < 2f ? "Loose Blade" : rd.Radius < 8f ? "Medium Loose Blade" : rd.Radius < 24f ? "Large Loose Blade" : "Capital Loose Blade";
         if (ConstructParts.Find(name) is not { } piece || ConstructEdits.DropLoose(world, piece, at, q) is not { } body)
@@ -468,10 +471,20 @@ public static class ConstructRotor
         var d = c.Parts[part].D.Rotor!;
         var source = r.Feed >= 0 ? "on the shaft" : d.MotorKw > 0 ? "electric" : "no shaft linked";
         var blades = r.Alive < d.Blades ? $"{r.Alive} of {d.Blades} blades, out of balance" : $"{d.Blades} blades";
-        return $"{blades}, {r.Omega * ConstructDrive.RpmPerRadS:0} of {d.RatedOmega * ConstructDrive.RpmPerRadS:0} rpm, {r.Thrust / 9.81f:0} kg of push, {source}";
+        return $"{blades}, {r.Omega * ConstructDrive.RpmPerRadS:0} of {d.RatedOmega * ConstructDrive.RpmPerRadS:0} rpm, {source}";
     }
 
-    public static long LookKey(Construct c, int part) => Of(c, part) is var k and >= 0 ? (long)(c.Rotors[k].Omega * 0.2f) ^ (long)(c.Rotors[k].Thrust * 0.02f) << 12 ^ (long)c.Rotors[k].Alive << 40 : 0;
+    public static long LookKey(Construct c, int part) => Of(c, part) is var k and >= 0 ? (long)(c.Rotors[k].Omega * 0.2f) ^ (long)c.Rotors[k].Alive << 24 : 0;
+
+    /// <summary>The driver's HUD: how fast its rotors turn, a share of rated (this reads on a client too).</summary>
+    public static float SpeedShare(Construct c)
+    {
+        var most = 0f;
+        for (var k = 0; k < c.RotorCount; k++)
+            if (c.Rotors[k].Part < c.PartCount && c.Parts[c.Rotors[k].Part].D.Rotor is { } d)
+                most = MathF.Max(most, c.Rotors[k].Omega / d.RatedOmega);
+        return most;
+    }
 }
 
 public static partial class ConstructPhysics

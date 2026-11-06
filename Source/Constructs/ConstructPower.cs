@@ -130,7 +130,7 @@ public static class ConstructPower
         if (c.Dirty)
             c.Rebuild();
         var electrical = c.HasBattery || world.PowerRequired;
-        var wants = c.Engine >= 0 && (c.Driver != 255 || c.EngineWired || c.SteerRuns) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
+        var wants = c.Engine >= 0 && (c.Driver != 255 || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
         if (electrical != c.Electrical)
         {
             c.Electrical = electrical;
@@ -141,7 +141,7 @@ public static class ConstructPower
         {
             c.PowerOn = true;
             // (no battery: it runs whenever it could, unless it needs a starter: a diesel, a turbine)
-            var asked = c.Driver != 255 && (c.Throttle != 0 || c.AeroTrim > 0 || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns; // (a skid steerer pivots from a standstill)
+            var asked = c.Driver != 255 && (c.Throttle != 0 || c.AeroTrim > 0 || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns || c.RotorRuns; // (a skid steerer pivots from a standstill)
             c.EngineRunning = wants && engineDef is not { NeedsStarter: true };
             c.StarterFailed = wants && asked && engineDef is { NeedsStarter: true };
             c.PowerUse = 0;
@@ -161,7 +161,7 @@ public static class ConstructPower
             c.EngineRunning = false;
             c.StarterFailed = false;
         }
-        else if (!c.EngineRunning && (c.Driver != 255 && (c.Throttle != 0 || c.AeroTrim > 0 || c.RotorGoverned || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns))
+        else if (!c.EngineRunning && (c.Driver != 255 && (c.Throttle != 0 || c.AeroTrim > 0 || c.RotorGoverned || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns || c.RotorRuns))
         {
             var starter = engineDef?.StarterKJ ?? StarterKJ;
             if (c.PowerOn && c.Engine >= 0 && c.Parts[c.Engine].Powered && c.Charge >= starter)

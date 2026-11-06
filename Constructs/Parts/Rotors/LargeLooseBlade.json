@@ -14,6 +14,7 @@
   "color": "#30343a",
   "attachSeconds": 1,
   "stage": true,
+  "toolOnly": true,
   "boxes": [
     {
       "min": [

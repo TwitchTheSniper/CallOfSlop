@@ -143,38 +143,32 @@
       "by": "axle"
     },
     {
-      "part": "Square Beam 1 m",
+      "part": "Frame Block",
       "on": 5,
       "socket": "-y6",
-      "by": "+z"
-    },
-    {
-      "part": "Frame Block",
-      "on": 23,
-      "socket": "-z",
       "by": "+y"
     },
     {
       "part": "Suspension",
-      "on": 24,
+      "on": 23,
       "socket": "-x",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 25,
+      "on": 24,
       "socket": "axle",
       "by": "axle"
     },
     {
       "part": "Suspension",
-      "on": 24,
+      "on": 23,
       "socket": "+x",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 27,
+      "on": 26,
       "socket": "axle",
       "by": "axle"
     }

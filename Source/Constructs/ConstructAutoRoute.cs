@@ -305,7 +305,7 @@ public sealed class RouteSearch
             Done(RouteSearchState.Failed, crossWhy);
             return;
         }
-        if (!_flat && !_half && _msS != _msG)
+        if (!_flat && !_half && _msS != _msG && c.Parts[_goalHost].D.Rotor == null) // (a tilting rotor's shaft ends over its joint: ConstructRotor.cs)
         {
             Done(RouteSearchState.Failed, "a drive shaft can't cross a joint: fit a U joint or CV joint there");
             return;
