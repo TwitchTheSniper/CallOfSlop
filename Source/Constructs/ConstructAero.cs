@@ -174,11 +174,16 @@ public static class ConstructAero
         return lift > 0 && density > 0 ? MathF.Sqrt(2 * c.Mass * ConstructPhysics.GravityAccel / (SeaAir * density * lift)) : 0;
     }
 
+    private const float MarkerSpeed = 40; // m/s: the speed the balance markers count a surface's lift at
+
+    /// <summary>What a surface lifts at sea level at <see cref="MarkerSpeed"/>, at a small angle, kg: by its lift slope, as it answers a change of pitch.</summary>
+    public static float LiftKgAt(Construct c, in CSurface s) => 0.5f * SeaAir * MarkerSpeed * MarkerSpeed * s.Area * s.Slope * 0.1f * c.SurfaceScale / MathF.Max(1, ConstructPhysics.GravityAccel);
+
     /// <summary>A control surface's input, its trim and its reversal: how far it wants to be (radians). Only its own wire moves it.</summary>
     public static float Asked(in CPart p, ConstructPartDef d)
     {
         var s = d.Surface!;
-        var cmd = p.Working && p.InCount > 0 ? Math.Clamp(p.In, -1, 1) : 0f;
+        var cmd = p.Working && p.InCount > 0 ? Math.Clamp(p.In, -1, 1) * s.Sign : 0f;
         if (ConstructConfig.Get(p, d, CfgKey.Reverse, 0) >= 0.5f)
             cmd = -cmd;
         return Math.Clamp(cmd * s.Control + ConstructConfig.Get(p, d, CfgKey.Trim, 0) * MathF.PI / 180f, -s.Control, s.Control);

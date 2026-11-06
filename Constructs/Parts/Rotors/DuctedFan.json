@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ducted Fan",
-  "description": "1 m across in a duct, on its own 50 kW motor. Pushes hard for its size. Tilt it on a joint.",
+  "description": "1 m across in a duct, on its own 100 kW motor. Pushes hard for its size. Tilt it on a joint.",
   "group": "Small",
   "section": "Rotors",
   "role": "rotor",
@@ -14,7 +14,7 @@
   "attachSeconds": 2.5,
   "rotor": {
     "radius": 0.5,
-    "ratedKw": 50,
+    "ratedKw": 100,
     "ratedRpm": 6000,
     "blades": 6,
     "bladeHealth": 30,
@@ -29,7 +29,7 @@
     ],
     "axis": "+z",
     "forward": "+y",
-    "motorKw": 50,
+    "motorKw": 100,
     "shaft": false
   },
   "boxes": [

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gas Compressor",
-  "description": "Takes hydrogen or helium by chute and sends it down its pipe as gas: a unit is 50 l, 5 m3 of cell.",
+  "description": "Takes hydrogen or helium by chute and sends it down its pipe as gas: a unit is 50 l, 50 m3 of cell.",
   "group": "Small",
   "section": "Gas",
   "role": "storage",

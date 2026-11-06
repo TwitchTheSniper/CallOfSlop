@@ -164,7 +164,7 @@ public static partial class ConstructPhysics
             c.LiftInput = c.RollInput = 0;
         c.LiftHeld = c.LiftInput != 0 ? c.LiftHeld + dt : 0;
         // The hold: the driver's sprint starts it, or a height wired into a thruster.
-        if (c.LiftInput > 0 && !c.HoverOn)
+        if (c.LiftInput > 0 && !c.HoverOn && c.StabCount == 0) // (a stabilizer holds height itself: ConstructFlight.cs)
         {
             c.HoverOn = true;
             c.HoverY = height;
@@ -409,6 +409,9 @@ public static partial class ConstructPhysics
         return sum;
     }
 
+    /// <summary>Is this thruster able to push now (a stabilizer's mix leaves out one that can't)?</summary>
+    public static bool ThrusterLive(Construct c, ref CThruster t, in CPart p) => Live(c, ref t, p);
+
     private static bool Live(Construct c, ref CThruster t, in CPart p)
     {
         if (!p.Working)
@@ -421,11 +424,11 @@ public static partial class ConstructPhysics
 public static class ConstructThrustHud
 {
     /// <summary>What the driver's second line shows, as a key (it is made again when this changes).</summary>
-    public static long Key(Construct c) => (long)(c.Vel.Length() * 1.5f) * 104729 + (long)(ConstructRotor.SpeedShare(c) * 100) * 15485863 + (c.CellCount > 0 ? (long)(ConstructLift.LiftKg(c) / 10f) * 7919 + (long)(c.BurnTrim * 100) * 31 : 0) + (int)MathF.Round(c.ThrustShow * 100) + ((long)(c.HoverOn ? (int)MathF.Round(ConstructPhysics.HoldShown(c.HoverY)) + 100000 : 0) << 8) ^ (long)MathF.Round(c.PowerUse / 1e6f) << 32;
+    public static long Key(Construct c) => (c.StabCount > 0 ? (long)ConstructFlight.ApText(c).Length * 104729 + c.Stabs[0].Part : 0) + (long)(c.Vel.Length() * 1.5f) * 1299709 + (long)(ConstructRotor.SpeedShare(c) * 100) * 15485863 + (c.CellCount > 0 ? (long)(ConstructLift.LiftKg(c) / 10f) * 7919 + (long)(c.BurnTrim * 100) * 31 : 0) + (int)MathF.Round(c.ThrustShow * 100) + ((long)(c.HoverOn ? (int)MathF.Round(ConstructPhysics.HoldShown(c.HoverY)) + 100000 : 0) << 8) ^ (long)MathF.Round(c.PowerUse / 1e6f) << 32;
 
     /// <summary>The driver's second line: the thrust, the height held, the power drawn.</summary>
     public static string Line(Construct c) =>
-        (c.SurfaceCount > 0 ? $"Air {c.Vel.Length() * 3.6f:0} km/h, stall {ConstructAero.StallSpeed(c) * 3.6f:0}, " : "") + (c.RotorCount > 0 ? $"Rotor {ConstructRotor.SpeedShare(c) * 100:0}%, " : "") + (c.CellCount > 0 ? $"Lift {ConstructLift.LiftKg(c) / 1000f:0.##} of {c.Mass / 1000f:0.##} t{(c.BurnerCount > 0 ? $", burner {c.BurnTrim * 100:0}%" : "")}, " : "") + (c.ThrusterCount > 0 ? $"Thrust {c.ThrustShow * 100:0}%{(c.HoverOn ? $", holding {ConstructPhysics.HoldShown(c.HoverY):0} m" : "")}, " : "") + $"drawing {c.PowerUse / 1e6f:0.#} MW";
+        (c.StabCount > 0 && ConstructFlight.ApText(c) is { Length: > 0 } ap ? ap + ", " : "") + (c.SurfaceCount > 0 ? $"Air {c.Vel.Length() * 3.6f:0} km/h, stall {ConstructAero.StallSpeed(c) * 3.6f:0}, " : "") + (c.RotorCount > 0 ? $"Rotor {ConstructRotor.SpeedShare(c) * 100:0}%, " : "") + (c.CellCount > 0 ? $"Lift {ConstructLift.LiftKg(c) / 1000f:0.##} of {c.Mass / 1000f:0.##} t{(c.BurnerCount > 0 ? $", burner {c.BurnTrim * 100:0}%" : "")}, " : "") + (c.ThrusterCount > 0 ? $"Thrust {c.ThrustShow * 100:0}%{(c.HoverOn ? $", holding {ConstructPhysics.HoldShown(c.HoverY):0} m" : "")}, " : "") + $"drawing {c.PowerUse / 1e6f:0.#} MW";
 
     private static string Mw(float kw) => (kw / 1000f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 }

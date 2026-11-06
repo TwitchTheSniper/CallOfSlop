@@ -9,7 +9,7 @@ public sealed class AirTable
     public const string Format = "call-of-slop-air/1";
     public float ScaleHeight = 1200, SeaLevel;
     public float LiftHydrogen = 1.12f, LiftHelium = 1.04f, LiftHotAir = 0.31f, LiftVacuum = 1.225f;
-    public float GasLitresPerM3 = 10;
+    public float GasLitresPerM3 = 1;
     public float SoftFromM3 = 20000, SoftPower = 0.35f, SoftMost = 6;
     public float LeakSpeed = 6, HolePerDamage = 0.002f, HoleMost = 2, HoleCell = 40, IgniteDamage = 80;
     public float CoolShare = 0.008f, VentShare = 0.04f, VentHotShare = 0.12f, PumpShare = 0.02f, BurnShare = 0.25f;
@@ -115,14 +115,16 @@ public static class ConstructAir
     public static Vector3 WindLow, WindHigh;
     private static bool _weatherWind;
 
-    /// <summary>Is there air on this world at all? No on a planetoid or in curved gravity (the same test flying rounds use).</summary>
-    public static bool HasAir => !(GravityFrames.Curved || World.Map.Planetoid != null);
+    /// <summary>Is there air on this world at all? Yes on a planetoid, thinning away above it (<see cref="Density"/>); no on a map with its own curved gravity and no planetoid, which is open space. A gravity generator's volume on a flat world changes nothing.</summary>
+    public static bool HasAir => World.Map.Planetoid != null || GravityFrames.Base == null;
 
     /// <summary>How thick the air is at a point: 1 at sea level, thinner with height, 0 off world.</summary>
     public static float Density(Vector3 p)
     {
         if (!HasAir)
             return 0;
+        if (World.Map.Planetoid != null)
+            return DragShare(p); // (a planetoid's air: 1 at its radius, thinning with height)
         var t = AirTable.Current;
         return p.Y <= t.SeaLevel ? 1f : MathF.Exp((t.SeaLevel - p.Y) / t.ScaleHeight);
     }

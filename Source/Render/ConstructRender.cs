@@ -120,6 +120,7 @@ public static partial class ConstructRender
         AidCount = 0;
         PlaneBody = null;
         GridBody = null;
+        BalanceBody = null;
         RemoverSel = null;
         PartSel = null;
         SelBoxBody = null;
@@ -1039,8 +1040,42 @@ public static partial class ConstructRender
         GridAt = at;
     }
 
+    private static Construct? BalanceBody;
+    public static Vector3 BalanceCom, BalanceLift, BalanceThrust, BalancePush;
+    public static bool BalanceHasLift, BalanceHasThrust;
+
+    /// <summary>This frame, a flyer's balance markers show (rest frame numbers above; the labels are Program.SandboxFlight.cs's).</summary>
+    public static void ShowBalance(Construct c) => BalanceBody = c;
+
+    private static void DrawBalance(Renderer gfx, Construct c)
+    {
+        var body = Matrix4x4.CreateFromQuaternion(c.Rot) * Matrix4x4.CreateTranslation(c.Pos);
+        var r = c.Radius + 0.5f; // (the bars come out of the hull: a marker inside it is still seen)
+        var thin = 0.02f + 0.004f * c.Radius;
+        var size = 0.14f + 0.03f * c.Radius;
+        var mass = new Vector3(1f, 0.85f, 0.2f);
+        var lift = new Vector3(0.3f, 0.75f, 1f);
+        var thrust = new Vector3(1f, 0.45f, 0.15f);
+        gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(BalanceCom) * body, mass, 0.9f, mode: 2);
+        gfx.Draw(Matrix4x4.CreateScale(2 * r, thin, thin) * Matrix4x4.CreateTranslation(BalanceCom) * body, mass, 0.6f, mode: 2);
+        gfx.Draw(Matrix4x4.CreateScale(thin, 2 * r, thin) * Matrix4x4.CreateTranslation(BalanceCom) * body, mass, 0.6f, mode: 2);
+        gfx.Draw(Matrix4x4.CreateScale(thin, thin, 2 * r) * Matrix4x4.CreateTranslation(BalanceCom) * body, mass, 0.6f, mode: 2);
+        if (BalanceHasLift)
+        {
+            gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(BalanceLift) * body, lift, 0.9f, mode: 2);
+            gfx.Draw(Matrix4x4.CreateScale(thin, 2 * r, thin) * Matrix4x4.CreateTranslation(BalanceLift) * body, lift, 0.6f, mode: 2);
+        }
+        if (BalanceHasThrust)
+        {
+            gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(BalanceThrust) * body, thrust, 0.9f, mode: 2);
+            gfx.Draw(Matrix4x4.CreateScale(thin, thin, r) * Basis(BalancePush) * Matrix4x4.CreateTranslation(BalanceThrust + BalancePush * (0.5f * r)) * body, thrust, 0.6f, mode: 2);
+        }
+    }
+
     private static void DrawAidGhosts(Renderer gfx, float pulse)
     {
+        if (BalanceBody is { } bc)
+            DrawBalance(gfx, bc);
         if (AidGhostBody is { } c)
         {
             var seg = AidSeg <= c.JointCount ? AidSeg : 0;

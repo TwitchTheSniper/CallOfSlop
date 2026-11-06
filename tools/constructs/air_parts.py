@@ -98,7 +98,7 @@ def burner(c, name, n, mass, heat, rate):
 
 def compressor():
     """Between a bin of bulk gas and the pipes: a bin whose hydrogen or helium leaves by its pipe as gas."""
-    p = Part("Gas Compressor", SMALL, "Gas", "Takes hydrogen or helium by chute and sends it down its pipe as gas: a unit is 50 l, 5 m3 of cell.", role="storage", tool="wrench", color="#5d6b4a", group="Small")
+    p = Part("Gas Compressor", SMALL, "Gas", "Takes hydrogen or helium by chute and sends it down its pipe as gas: a unit is 50 l, 50 m3 of cell.", role="storage", tool="wrench", color="#5d6b4a", group="Small")
     p.add(box((-0.4, 0, -0.4), (0.4, 0.8, 0.4)))
     p.add(box((0.4, 0.3, -0.08), (0.46, 0.46, 0.08), "#c8863a", detail=True))
     p.add(box((-0.25, 0.8, -0.25), (0.25, 0.86, 0.25), BAND, detail=True))

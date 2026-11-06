@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Flight Panel",
+  "description": "Attitude, height, speed and the autopilot, with its buttons. Reads the first stabilizer on the construct. No wiring.",
+  "group": "Flight control",
+  "section": "Flight control",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 30.0,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#39414a",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "instrument"
+  },
+  "panels": [
+    {
+      "source": "flight.panel",
+      "at": [
+        0,
+        0,
+        0.123
+      ],
+      "size": [
+        2.784,
+        1.984
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 7,
+      "touch": [
+        {
+          "action": "flight.on",
+          "at": [
+            0.02,
+            0.03,
+            0.26,
+            0.24
+          ],
+          "label": "AP on"
+        },
+        {
+          "action": "flight.off",
+          "at": [
+            0.27,
+            0.03,
+            0.51,
+            0.24
+          ],
+          "label": "AP off"
+        },
+        {
+          "action": "flight.mode",
+          "at": [
+            0.52,
+            0.03,
+            0.74,
+            0.24
+          ],
+          "label": "Mode"
+        },
+        {
+          "action": "flight.home",
+          "at": [
+            0.75,
+            0.03,
+            0.98,
+            0.24
+          ],
+          "label": "Set home"
+        }
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.4,
+        -1.0,
+        -0.12
+      ],
+      "max": [
+        1.4,
+        1.0,
+        0.12
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.12
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.4,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.4,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

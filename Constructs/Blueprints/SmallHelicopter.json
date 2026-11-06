@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Small Helicopter",
-  "description": "One rotor on an engine, and a tail rotor to hold it straight. Shift and Ctrl set collective, W and S cyclic pitch, Q and E cyclic roll, A and D the tail.",
+  "description": "One rotor on a turbine, a tail rotor on a shaft, a Flight Stabilizer flying both. Shift climbs, Ctrl sinks, W and S lean it on, Q and E sideways, A and D turn.",
   "steps": [
     {
       "part": "Square Beam 1 m"
@@ -86,7 +86,8 @@
       "socket": "-y",
       "by": "base",
       "config": {
-        "torqueMix": 1
+        "torqueMix": 1,
+        "reverse": 1
       }
     },
     {
@@ -96,18 +97,12 @@
       "by": "front"
     },
     {
-      "part": "Driving Module",
-      "on": 5,
-      "socket": "-x",
-      "by": "+x"
-    },
-    {
-      "part": "Scale",
-      "on": 5,
-      "socket": "+x",
-      "by": "-x",
+      "part": "Flight Stabilizer",
+      "on": 7,
+      "socket": "+y1",
+      "by": "-y",
       "config": {
-        "factor": -0.4
+        "pattern": "Helicopter"
       }
     },
     {
@@ -118,32 +113,32 @@
     },
     {
       "part": "Square Beam 2 m",
-      "on": 17,
+      "on": 16,
       "socket": "-z",
       "by": "+y3",
       "spin": 1
     },
     {
       "part": "Suspension",
-      "on": 18,
+      "on": 17,
       "socket": "-z",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 19,
+      "on": 18,
       "socket": "axle",
       "by": "axle"
     },
     {
       "part": "Suspension",
-      "on": 18,
+      "on": 17,
       "socket": "+z",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 21,
+      "on": 20,
       "socket": "axle",
       "by": "axle"
     },
@@ -155,7 +150,7 @@
     },
     {
       "part": "Suspension",
-      "on": 23,
+      "on": 22,
       "socket": "-z",
       "by": "mount"
     }
@@ -169,13 +164,14 @@
     {
       "type": "data",
       "from": 15,
-      "to": 2,
-      "toPort": "drive"
+      "fromPort": "lift",
+      "to": 4,
+      "toPort": "collective"
     },
     {
       "type": "data",
       "from": 15,
-      "fromPort": "throttle",
+      "fromPort": "pitch",
       "to": 4,
       "toPort": "cyclic pitch"
     },
@@ -189,12 +185,7 @@
     {
       "type": "data",
       "from": 15,
-      "fromPort": "steer",
-      "to": 16
-    },
-    {
-      "type": "data",
-      "from": 16,
+      "fromPort": "yaw",
       "to": 13,
       "toPort": "collective"
     },

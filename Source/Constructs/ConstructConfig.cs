@@ -137,6 +137,23 @@ public enum CfgKey : byte
     FanKind, // Fan Former: what it makes
     FanBlades, // Fan Former: how many blades
     FanDiameter, // Fan Former: how far across, m
+    Pattern, // Flight Stabilizer: which control pattern (FlightPattern; ConstructFlight.cs)
+    MaxTilt, // Flight Stabilizer: the most it leans, degrees (0: its pattern's)
+    MaxTurn, // Flight Stabilizer: the fastest it turns, degrees a second (0: its pattern's)
+    MaxClimb, // Flight Stabilizer: the fastest it climbs, m/s (0: its pattern's)
+    MaxSpeed, // Flight Stabilizer: the fastest it is asked to go, m/s (0: its pattern's)
+    Level, // Flight Stabilizer: it brings itself level
+    TrimPitch, // Flight Stabilizer: degrees it counts as level, nose up
+    TrimRoll, // Flight Stabilizer: degrees it counts as level, right wing down
+    MouseAim, // Flight Stabilizer: it flies where the seat looks
+    Autopilot, // Flight Stabilizer: the autopilot is on
+    ApMode, // Flight Stabilizer: what the autopilot holds (FlightMode)
+    TargetAlt, // Flight Stabilizer: the height held, m (0: where it was when engaged)
+    TargetHeading, // Flight Stabilizer: the heading held, degrees (below 0: where it pointed when engaged)
+    WaypointX, // Flight Stabilizer: the point it flies to
+    WaypointZ,
+    HomeX, // Flight Stabilizer: where it took off from (not on the panel)
+    HomeZ,
     COUNT,
 }
 
@@ -209,7 +226,7 @@ public struct CfgValues
 /// </summary>
 public static class ConstructConfig
 {
-    public const int MaxSlots = 12; // (12 since the spawners: a bot spawner has 9 settings)
+    public const int MaxSlots = 18; // (18 since the Flight Stabilizer)
 
     /// <summary>How far away a part can be configured from (metres to the part's centre).</summary>
     public const float Reach = 8f;
@@ -492,10 +509,12 @@ public static class ConstructConfig
         list.Add(new CConfigDef { Key = KeyName(CfgKey.Hand), Id = CfgKey.Hand, Type = CfgType.Choice, Label = "Turns", Group = "Rotor", Options = ["Right hand", "Left hand"], Tooltip = "Which way it turns. A pair of opposite hands cancels each other's torque." });
         list.Add(new CConfigDef { Key = KeyName(CfgKey.Pusher), Id = CfgKey.Pusher, Type = CfgType.Toggle, Label = "Pusher", Group = "Rotor", Tooltip = "It pushes back towards its mount, not away from it." });
         if (d.Rotor.Heli)
+            list.Add(new CConfigDef { Key = KeyName(CfgKey.Reverse), Id = CfgKey.Reverse, Type = CfgType.Toggle, Label = "Reverse collective", Group = "Rotor", Tooltip = "A plus signal takes push off: a tail rotor pushing to the right of the craft, on a Flight Stabilizer's yaw." });
+        if (d.Rotor.Heli)
             list.Add(new CConfigDef { Key = KeyName(CfgKey.TorqueMix), Id = CfgKey.TorqueMix, Type = CfgType.Toggle, Label = "Torque mix", Group = "Rotor", Tooltip = "A tail rotor: it adds the collective that cancels the other rotors' torque by itself." });
-        list.Add(new CConfigDef { Key = KeyName(CfgKey.BladeLost), Id = CfgKey.BladeLost, Type = CfgType.Mask, Hidden = true });
+        list.Add(new CConfigDef { Key = KeyName(CfgKey.BladeLost), Id = CfgKey.BladeLost, Type = CfgType.Mask, Hidden = true, Label = "Blades lost", Group = "Rotor", Tooltip = "Not on the panel." });
         for (var k = 0; k < d.Rotor!.Blades; k++)
-            list.Add(new CConfigDef { Key = KeyName((CfgKey)((int)CfgKey.Blade0 + k)), Id = (CfgKey)((int)CfgKey.Blade0 + k), Type = CfgType.Number, Hidden = true, Min = 0, Max = 1, Default = 1 });
+            list.Add(new CConfigDef { Key = KeyName((CfgKey)((int)CfgKey.Blade0 + k)), Id = (CfgKey)((int)CfgKey.Blade0 + k), Type = CfgType.Number, Hidden = true, Min = 0, Max = 1, Default = 1, Label = "Blade health", Group = "Rotor", Tooltip = "Not on the panel." });
     }
 
     /// <summary>Every wheel, track and tyre has the tyre's settings, each starting at what its part file says; a part file only lists one to change its range or text.</summary>
@@ -662,9 +681,11 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
-                CfgKey.Reverse or CfgKey.Trim => d.Surface is { Control: > 0 },
+                CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null,
+                CfgKey.Trim => d.Surface is { Control: > 0 },
                 CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade5) => d.Rotor != null,
                 CfgKey.FanKind or CfgKey.FanBlades or CfgKey.FanDiameter => d.IsFanFormer,
+                >= CfgKey.Pattern and <= CfgKey.HomeZ => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
@@ -715,7 +736,7 @@ public static class ConstructConfig
                 CfgKey.Loop => d.IsMedia,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && (d.JointLimited || d.JointType == JointType.Swivel) && d.JointType != JointType.Steering,
                 CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel),
-                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
+                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.FlightStabilizer,
                 CfgKey.Friction or CfgKey.DirtGrip or CfgKey.SideGrip or CfgKey.Rolling or CfgKey.Bounciness => d.Role == PartRole.Wheel,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 _ => false,

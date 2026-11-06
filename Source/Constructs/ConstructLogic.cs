@@ -249,6 +249,9 @@ public static class ConstructLogic
                         next = manned && (c.Parts[seat].Keys & ConstructParts.KeyFire) != 0 ? 1 : 0;
                         break;
                     }
+                    case CLogic.FlightStabilizer:
+                        next = ConstructFlight.Step(world, c, i, ref p, d, count[i] > 0 ? firstFrom[i] : -1, dt);
+                        break;
                     case CLogic.DriveModule:
                         next = ConstructModules.StepDrive(c, ref p, count[i] > 0 ? firstFrom[i] : -1, dt);
                         break;

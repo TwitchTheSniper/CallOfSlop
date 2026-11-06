@@ -21,6 +21,7 @@ public sealed class SurfaceDef
     public float Control; // a control surface: the most it turns, radians (0: none)
     public float ControlRate = 2.5f; // ...how fast, radians a second
     public float Effect = 1; // ...how much of its turn the air sees
+    public float Sign = 1; // ...-1: a plus signal takes lift off it (an elevator: a Flight Stabilizer's plus is nose up)
     public Vector3 Hinge; // ...where its leaf turns (the part's frame)
 
     /// <summary>The numbers that follow from an aspect ratio and a sweep (degrees): a lift slope by lifting-line theory, its induced drag.</summary>
@@ -93,7 +94,7 @@ public static partial class ConstructParts
         if (Opt(b, "control") is { } ct)
         {
             var cw = $"{file}, surface.control";
-            Known(ct, ["max", "rate", "effect", "hinge"], cw);
+            Known(ct, ["max", "rate", "effect", "hinge", "sign"], cw);
             var max = Num(Need(ct, "max", cw), file, "surface.control.max");
             Range(max, 1, 80, file, "surface.control.max");
             s.Control = max * MathF.PI / 180f;
@@ -105,6 +106,7 @@ public static partial class ConstructParts
             }
             s.Effect = Opt(ct, "effect") is { } ef ? Num(ef, file, "surface.control.effect") : 1f;
             Range(s.Effect, 0, 1, file, "surface.control.effect");
+            s.Sign = Opt(ct, "sign") is { } sg && Num(sg, file, "surface.control.sign") < 0 ? -1 : 1;
             s.Hinge = Opt(ct, "hinge") is { } hg ? Vec(hg, file, "surface.control.hinge") : s.At;
             d.DataIn = ["angle"];
         }

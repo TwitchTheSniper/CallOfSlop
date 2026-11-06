@@ -197,6 +197,7 @@ public enum CLogic : byte
     BusIn, // eight signals down one link (LogicBlocks.cs)
     BusOut, // splits a Data Bus link back into eight
     RemoteLink, // a Remote Transmitter: the seat wired into it sends its controls on a channel (ConstructRemote.cs)
+    FlightStabilizer, // a seat's axes in, mixed channels out, with its own sensors and autopilot (ConstructFlight.cs)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -525,7 +526,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric || Rotor is { MotorKw: > 0 }; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && Logic != CLogic.FlightStabilizer && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric || Rotor is { MotorKw: > 0 }; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -666,6 +667,7 @@ public sealed class ConstructPartDef
     /// <see cref="ConstructRoutes.DataPort"/>. Empty: the one port.
     /// </summary>
     public string[] DataIn = [], DataOut = [];
+    public float Gyro; // a Flight Stabilizer: the N m its gyro turns the craft about its up with (ConstructFlight.cs)
 
     /// <summary>A spawner part (the Spawn category).</summary>
     public bool IsSpawner => Logic is CLogic.BotSpawner or CLogic.ZombieSpawner;
@@ -674,7 +676,7 @@ public sealed class ConstructPartDef
     public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule; // (a Remote Transmitter reads a seat too: ConstructModules.LinkWhy)
     public bool Watches => Logic is CLogic.LevelSensor or CLogic.DamageSensor; // has a watch link (ConstructRoutes.WatchPort)
     public bool HasReading => Logic is >= CLogic.Xor and <= CLogic.BusOut and not (CLogic.KeySwitch or CLogic.Instrument or CLogic.RadioTx or CLogic.BusIn); // its number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
-    public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
+    public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut or CLogic.FlightStabilizer || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
     public int TextSlots; // messages it holds ("logic.text": CPart.Text and Text2; LogicText.cs)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
@@ -699,7 +701,7 @@ public sealed class ConstructPartDef
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
             CLogic.Numpad or CLogic.CodeLock or CLogic.KeySwitch or CLogic.Instrument or CLogic.AltitudeSensor or CLogic.TiltSensor or CLogic.HeadingSensor or CLogic.LevelSensor or CLogic.DamageSensor or CLogic.RadioRx => 0,
             CLogic.Filter or CLogic.RandomPulse or CLogic.OccupancySensor or CLogic.RadioTx or CLogic.BusOut => 1,
-            CLogic.Mux or CLogic.BusIn or CLogic.Display => 16,
+            CLogic.Mux or CLogic.BusIn or CLogic.Display or CLogic.FlightStabilizer => 16,
             CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director or CLogic.DriveModule or CLogic.TurretModule => 1,
             CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
@@ -1807,7 +1809,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -1865,6 +1867,12 @@ public static partial class ConstructParts
         d.TextSlots = Opt(b, "text") is { } texts ? (int)Num(texts, file, "logic.text") : 0;
         if (d.TextSlots is < 0 or > 2)
             throw new ConstructPartException($"{file}: \"logic.text\" is how many messages it holds, 0 to 2");
+        if (d.Logic == CLogic.FlightStabilizer)
+        {
+            d.DataIn = ConstructFlight.InPorts;
+            d.DataOut = ConstructFlight.OutPorts;
+            d.Gyro = Opt(b, "gyro") is { } gyro ? Num(gyro, file, "logic.gyro") : 0;
+        }
         if (d.IsSeatModule)
         {
             d.DataIn = ["seat"];

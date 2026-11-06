@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Elevator",
-  "description": "1.2 m2. It pitches the craft. Wire its angle, -1 to 1 of 25 degrees.",
+  "description": "1.2 m2. Behind the centre of mass, a plus signal lifts the nose: a Flight Stabilizer's pitch needs nothing between. Wire its angle, -1 to 1 of 25 degrees.",
   "group": "Small",
   "section": "Control surfaces",
   "role": "frame",
@@ -33,7 +33,8 @@
         0,
         0,
         0
-      ]
+      ],
+      "sign": -1
     }
   },
   "config": [

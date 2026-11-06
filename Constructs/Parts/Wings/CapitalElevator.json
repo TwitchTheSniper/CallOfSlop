@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Elevator",
-  "description": "4915.2 m2. It pitches the craft. Wire its angle, -1 to 1 of 25 degrees.",
+  "description": "4915.2 m2. Behind the centre of mass, a plus signal lifts the nose: a Flight Stabilizer's pitch needs nothing between. Wire its angle, -1 to 1 of 25 degrees.",
   "group": "Capital",
   "section": "Control surfaces",
   "role": "frame",
@@ -34,7 +34,8 @@
         0,
         0,
         0
-      ]
+      ],
+      "sign": -1
     }
   },
   "config": [

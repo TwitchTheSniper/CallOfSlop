@@ -214,6 +214,11 @@ public static partial class ConstructPhysics
                 }
                 if (c.ThrusterCount > 0)
                     Thrusters(c, query, _invI[i], dt);
+                if (c.GyroNow != Vector3.Zero)
+                {
+                    c.AngVel += Construct.Mul(_invI[i], c.GyroNow * dt); // (a Flight Stabilizer's gyro)
+                    c.GyroNow = Vector3.Zero;
+                }
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
                     SpringFeet(c, query, _invI[i], dt);
             }
@@ -1941,7 +1946,7 @@ public static partial class ConstructPhysics
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
         var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < StillSpeed2;
-        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && c.ThrustShow <= 0 && !c.RotorLive;
+        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && !c.StabLive && c.ThrustShow <= 0 && !c.RotorLive;
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];

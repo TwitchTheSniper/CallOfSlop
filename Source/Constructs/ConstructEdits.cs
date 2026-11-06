@@ -1217,7 +1217,7 @@ public sealed partial class ConstructEdits
         c.Brake = (b & Buttons.Jump) != 0;
         // Reversing: Back while rolling forward brakes first.
         var fwd = Vector3.Dot(c.Vel, Vector3.Transform(c.DriveFwd, c.Rot));
-        if (throttle < 0 && fwd > 1f)
+        if (throttle < 0 && fwd > 1f && c.StabCount == 0) // (on a Flight Stabilizer S is the elevator: it doesn't brake a plane as it rotates; the handbrake still does)
         {
             c.Brake = true;
             throttle = 0;

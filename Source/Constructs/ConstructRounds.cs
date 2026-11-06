@@ -31,7 +31,7 @@ public sealed partial class ConstructWorld
     private int _roundCursor;
 
     /// <summary>Is there no air here (a planetoid or open space)? No drag, and rounds fly far longer.</summary>
-    private static bool Vacuum => !ConstructAir.HasAir;
+    private static bool Vacuum => !ConstructAir.HasAir || World.Map.Planetoid != null; // (a planetoid's thin air doesn't slow a round)
 
     /// <summary>A round flies on. False when the pool is full.</summary>
     public bool AddRound(in CRound r)

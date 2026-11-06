@@ -158,6 +158,7 @@ public static unsafe partial class Program
                 _sbSeatKeys = keys;
                 g.SandboxSend(CActKind.SeatKeys, part: (byte)keys);
             }
+            SeatedFinger(g, me, in h, now); // (a pilot's finger on a Flight Panel: Program.SandboxFlight.cs)
             return true;
         }
         if (_sbSeatKeys > 0)
@@ -194,6 +195,7 @@ public static unsafe partial class Program
         var reachLook = GantryOn ? GantryMaxDist() + _gDist : ConstructBuild.Reach + 1; // (the Build Gantry's camera sees as far as its range)
         var wall = World.RaycastWorld(eye, dir, reachLook);
         var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, reachLook), out var hit, look: true, noTracks: h.Tool is not (ConstructTool.Tracks or ConstructTool.Configure)); // (only these act on the band: bullets hit it, other tools reach what it runs on)
+        BalanceFrame(g, in h, aimed, hit, now); // (centre of mass, lift and thrust on a flyer: Program.SandboxFlight.cs)
         SandboxAidKeys(g, ref h); // (the build stations: Program.SandboxAids.cs)
         SandboxGantryFrame(g, me, aimed, hit, now);
         SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)

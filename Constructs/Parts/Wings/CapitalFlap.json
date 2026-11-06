@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Flap",
-  "description": "4096 m2. More lift and more drag: lower it to land. Wire its angle, -1 to 1 of 40 degrees.",
+  "description": "4096 m2. More lift and more drag: a Flight Stabilizer's flaps lower it as the speed falls. Wire its angle, -1 to 1 of 40 degrees.",
   "group": "Capital",
   "section": "Control surfaces",
   "role": "frame",

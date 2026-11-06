@@ -69,7 +69,7 @@ public sealed partial class ConstructEdits
                 any |= ConstructConfig.Set(ref p, d, slots[k], values[k]);
             if (!any)
                 continue;
-            if (d.IsSizedBox && ((d.IsTankVolume ? ConstructFluid.ResizeRefusal(ref p, d, litres0, fill0) : null) ?? ConstructStoreVolume.ResizeRefusal(world, c, i, overlap0)) is { } small)
+            if (d.IsSizedBox && ((d.IsTankVolume && !(d.IsEnvelope && InfiniteParts) ? ConstructFluid.ResizeRefusal(ref p, d, litres0, fill0) : null) ?? ConstructStoreVolume.ResizeRefusal(world, c, i, overlap0)) is { } small)
             {
                 for (var k = 0; k < d.Config.Length; k++)
                     p.Cfg[k] = before[k];

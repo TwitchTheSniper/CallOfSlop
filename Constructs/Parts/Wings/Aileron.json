@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Aileron",
-  "description": "1 m2. It rolls the craft: one up, one down (Reverse on one of the pair). Wire its angle, -1 to 1 of 25 degrees.",
+  "description": "1 m2. Plus is trailing edge down, more lift: wire a Flight Stabilizer's left and right aileron to each. Wire its angle, -1 to 1 of 25 degrees.",
   "group": "Small",
   "section": "Control surfaces",
   "role": "frame",

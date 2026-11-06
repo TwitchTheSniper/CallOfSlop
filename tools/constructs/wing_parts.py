@@ -103,7 +103,7 @@ def fabric(c):
     return ("", p)
 
 
-def control(c, base, chord, span, about, max_deg, effect, cl0=0.0, vertical=False):
+def control(c, base, chord, span, about, max_deg, effect, cl0=0.0, vertical=False, sign=1):
     """A surface with a hinge in the part: its leaf turns by its wire, its first box stays what it collides with."""
     w, ch, t = span * c.x / 2, chord * c.x, 0.06 * c.x
     area = span * chord * c.x * c.x
@@ -126,7 +126,7 @@ def control(c, base, chord, span, about, max_deg, effect, cl0=0.0, vertical=Fals
         lift, at = "+y", (0, 0, ch / 2)
     p.stats(8 * area * c.x ** 0.5, 30 * area ** 0.8 + 30, c.armour // 4, 1.5 * c.x ** 0.5)
     p.set(surface={"area": area, "at": list(at), "lift": lift, "forward": "-z", "aspect": 5, "cl0": cl0, "stall": 16, "cd0": 0.02,
-                   "control": {"max": max_deg, "rate": 90, "effect": effect, "hinge": [0, 0, 0]}},
+                   "control": dict({"max": max_deg, "rate": 90, "effect": effect, "hinge": [0, 0, 0]}, **({"sign": -1} if sign < 0 else {}))},
           config=[{"key": "reverse", "type": "toggle", "label": "Reverse", "group": "Surface", "tooltip": "It turns the other way for the same signal: a pair of ailerons, one each way."},
                   {"key": "trim", "label": "Trim", "group": "Surface", "unit": "deg", "min": -max_deg, "max": max_deg, "step": 0.5, "default": 0, "tooltip": "Where it sits with no signal."}])
     return ("", p)
@@ -194,7 +194,7 @@ def rotors():
         rotor("Two-Blade Prop", SMALL, "1.8 m across. Bolt it to an engine's Drive out, or link a shaft to it. Its hub is geared to run at its rated speed at the engine's peak.", 0.9, 110, 2400, 2),
         rotor("Three-Blade Prop", SMALL, "2.2 m across, 3 blades, for a stronger engine.", 1.1, 220, 2200, 3, health=80),
         rotor("Electric Prop", SMALL, "1 m across, on its own 24 kW motor: no shaft, it runs off the circuit.", 0.5, 24, 4200, 2, motor=24, shaft=False, health=40, spool=0.6),
-        rotor("Ducted Fan", SMALL, "1 m across in a duct, on its own 50 kW motor. Pushes hard for its size. Tilt it on a joint.", 0.5, 50, 6000, 6, motor=50, shaft=False, duct=1.25, top=110, health=30, spool=0.5),
+        rotor("Ducted Fan", SMALL, "1 m across in a duct, on its own 100 kW motor. Pushes hard for its size. Tilt it on a joint.", 0.5, 100, 6000, 6, motor=100, shaft=False, duct=1.25, top=110, health=30, spool=0.5),
         rotor("Medium Prop", MEDIUM, "7 m across, 4 blades.", 3.5, 2200, 700, 4, health=500, top=110, spool=3),
         rotor("Medium Ducted Fan", MEDIUM, "4 m across in a duct, on its own 1.5 MW motor.", 2, 1500, 1500, 6, motor=1500, shaft=False, duct=1.25, top=110, health=300, spool=1.2),
         rotor("Large Prop", LARGE, "24 m across, 5 blades: a flying fortress's.", 12, 40000, 220, 5, health=6000, top=120, spool=8),
@@ -215,10 +215,10 @@ def wings():
         out.append(swept(c, "R"))
         out.append(fabric(c))
         out.append(fixed_fin(c))
-        out.append(control(c, "Aileron", 0.5, 2, "It rolls the craft: one up, one down (Reverse on one of the pair).", 25, 0.7))
-        out.append(control(c, "Elevator", 0.6, 2, "It pitches the craft.", 25, 0.8))
-        out.append(control(c, "Rudder", 0.6, 1.5, "It yaws the craft.", 30, 0.8, vertical=True))
-        out.append(control(c, "Flap", 0.5, 2, "More lift and more drag: lower it to land.", 40, 0.7, cl0=0.1))
+        out.append(control(c, "Aileron", 0.5, 2, "Plus is trailing edge down, more lift: wire a Flight Stabilizer's left and right aileron to each.", 25, 0.7))
+        out.append(control(c, "Elevator", 0.6, 2, "Behind the centre of mass, a plus signal lifts the nose: a Flight Stabilizer's pitch needs nothing between.", 25, 0.8, sign=-1))
+        out.append(control(c, "Rudder", 0.6, 1.5, "Behind the centre of mass and standing up, a plus signal swings the nose right: a Flight Stabilizer's yaw.", 30, 0.8, vertical=True))
+        out.append(control(c, "Flap", 0.5, 2, "More lift and more drag: a Flight Stabilizer's flaps lower it as the speed falls.", 40, 0.7, cl0=0.1))
     return out
 
 
@@ -248,8 +248,8 @@ def light_plane():
         return len(s) - 1
 
     root = add(part="Frame Block")
-    engine = add(part="Engine", on=root, socket="-z", by="-z")  # (its Drive out, +z, faces forward: the prop bolts to it)
-    add(part="Two-Blade Prop", on=engine, socket="+z", by="base")
+    engine = add(part="Turbine", on=root, socket="-z", by="-z")  # (its Drive out, +z, faces forward: the prop bolts to it)
+    prop = add(part="Three-Blade Prop", on=engine, socket="+z", by="base")
     seat = add(part="Seat", on=root, socket="+y", by="bottom")
     tank = add(part="Fuel Tank", on=root, socket="+z", by="-z")
     boom = add(part="Square Beam 2 m", on=tank, socket="+z", by="-z")
@@ -257,13 +257,14 @@ def light_plane():
     fin = add(part="Tail Fin", on=tail, socket="+y", by="-y")
     left = add(part="Wing Segment", on=tank, socket="-x", by="+x")
     right = add(part="Wing Segment", on=tank, socket="+x", by="-x")
+    add(part="Battery", on=tank, socket="-y", by="+y")  # (the turbine's starter)
     left2 = add(part="Wing Segment", on=left, socket="-x", by="+x")
     right2 = add(part="Wing Segment", on=right, socket="+x", by="-x")
     ail_l = add(part="Aileron", on=left2, socket="back", by="hinge")
-    ail_r = add(part="Aileron", on=right2, socket="back", by="hinge", config={"reverse": 1})
+    ail_r = add(part="Aileron", on=right2, socket="back", by="hinge")
     elev = add(part="Elevator", on=tail, socket="back", by="hinge")
     rudd = add(part="Rudder", on=fin, socket="back", by="hinge")
-    drive = add(part="Driving Module", on=tank, socket="-y", by="-y")
+    stab = add(part="Flight Stabilizer", on=tank, socket="+y", by="-y", config={"pattern": "Plane"})
     leg = add(part="Square Beam 0.5 m", on=root, socket="-y", by="+z")
     axle = add(part="Square Beam 2 m", on=leg, socket="-z", by="+y3", spin=1)
     for end in ("-z", "+z"):
@@ -274,16 +275,39 @@ def light_plane():
         gear = add(part="Suspension", on=block, socket=face, by="mount")
         add(part="Wheel", on=gear, socket="axle", by="axle")
     links = [
-        {"type": "data", "from": seat, "to": drive},
-        {"type": "data", "from": drive, "to": engine, "toPort": "drive"},
-        {"type": "data", "from": drive, "fromPort": "throttle", "to": elev},
-        {"type": "data", "from": drive, "fromPort": "roll", "to": ail_l},
-        {"type": "data", "from": drive, "fromPort": "roll", "to": ail_r},
-        {"type": "data", "from": drive, "fromPort": "steer", "to": rudd},
+        {"type": "data", "from": seat, "to": stab},
+        {"type": "data", "from": stab, "fromPort": "throttle", "to": prop},
+        {"type": "data", "from": stab, "fromPort": "pitch", "to": elev},
+        {"type": "data", "from": stab, "fromPort": "yaw", "to": rudd},
+        {"type": "data", "from": stab, "fromPort": "left aileron", "to": ail_l},
+        {"type": "data", "from": stab, "fromPort": "right aileron", "to": ail_r},
         {"type": "pipe", "from": tank, "to": engine, "fromPort": "Fuel out", "toPort": "Fuel in"},
     ]
     return {"format": "call-of-slop-construct-blueprint/1", "name": "Light Plane",
-            "description": "A single-engine tail-dragger. Shift and Ctrl set the throttle, W and S pitch, A and D the rudder, Q and E roll.", "steps": s, "links": links}
+            "description": "A single-engine tail-dragger on a Flight Stabilizer. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.", "steps": s, "links": links}
+
+
+def fan_quad():
+    """Four ducted fans of opposite hands on a cross: a Flight Stabilizer's corners, with no jets and no shaft."""
+    s = []
+
+    def add(**kw):
+        s.append(kw)
+        return len(s) - 1
+
+    root = add(part="Square Beam 2 m")
+    front = add(part="Square Beam 2 m", on=root, socket="+y0", by="-y3", spin=1)
+    back = add(part="Square Beam 2 m", on=root, socket="+y7", by="-y3", spin=1)
+    fans = [add(part="Ducted Fan", on=beam, socket=sock, by="base", config={"hand": hand})
+            for beam, sock, hand in ((front, "+y0", 0), (front, "+y7", 1), (back, "+y0", 1), (back, "+y7", 0))]
+    seat = add(part="Seat", on=root, socket="+y5", by="bottom")
+    stab = add(part="Flight Stabilizer", on=root, socket="+y3", by="-y", config={"pattern": "Quadcopter"})
+    add(part="Battery Pack", on=root, socket="-y3", by="+y")
+    links = [{"type": "data", "from": seat, "to": stab}]
+    for fan, port in zip(fans, ("front left", "front right", "rear left", "rear right")):
+        links.append({"type": "data", "from": stab, "fromPort": port, "to": fan})
+    return {"format": "call-of-slop-construct-blueprint/1", "name": "Fan Quad",
+            "description": "Four ducted fans of opposite hands and a Flight Stabilizer: no jets, no shaft. Shift lifts off, Ctrl lands, W and S lean it on, Q and E sideways, A and D turn.", "steps": s, "links": links}
 
 
 SPIN_T, SPIN_TAIL = 0, 0
@@ -310,10 +334,9 @@ def helicopter():
     add(part="Frame Block", on=seat, socket="-x", by="+x")
     post = add(part="Square Beam 0.5 m", on=boom2, socket="+y3", by="-z")  # (the tail rotor level with the centre of mass, or its push rolls the craft)
     tailbox = add(part="Right-Angle Gearbox", on=post, socket="+x1", by="+y", spin=SPIN_TAIL)
-    tail = add(part="Tail Rotor", on=tailbox, socket="-y", by="base", config={"torqueMix": 1})
+    tail = add(part="Tail Rotor", on=tailbox, socket="-y", by="base", config={"torqueMix": 1, "reverse": 1})
     add(part="Tail Fin", on=boom2, socket="+z", by="front")
-    drive = add(part="Driving Module", on=tank, socket="-x", by="+x")
-    bias = add(part="Scale", on=tank, socket="+x", by="-x", config={"factor": -0.4})
+    stab = add(part="Flight Stabilizer", on=boom, socket="+y1", by="-y", config={"pattern": "Helicopter"})
     leg = add(part="Square Beam 0.5 m", on=tank, socket="-y", by="+z")
     axle = add(part="Square Beam 2 m", on=leg, socket="-z", by="+y3", spin=1)
     for end in ("-z", "+z"):
@@ -322,17 +345,16 @@ def helicopter():
     strut = add(part="Square Beam 1 m", on=boom, socket="-y5", by="+z")
     add(part="Suspension", on=strut, socket="-z", by="mount")
     links = [
-        {"type": "data", "from": seat, "to": drive},
-        {"type": "data", "from": drive, "to": engine, "toPort": "drive"},
-        {"type": "data", "from": drive, "fromPort": "throttle", "to": main, "toPort": "cyclic pitch"},
-        {"type": "data", "from": drive, "fromPort": "roll", "to": main, "toPort": "cyclic roll"},
-        {"type": "data", "from": drive, "fromPort": "steer", "to": bias},
-        {"type": "data", "from": bias, "to": tail, "toPort": "collective"},
+        {"type": "data", "from": seat, "to": stab},
+        {"type": "data", "from": stab, "fromPort": "lift", "to": main, "toPort": "collective"},
+        {"type": "data", "from": stab, "fromPort": "pitch", "to": main, "toPort": "cyclic pitch"},
+        {"type": "data", "from": stab, "fromPort": "roll", "to": main, "toPort": "cyclic roll"},
+        {"type": "data", "from": stab, "fromPort": "yaw", "to": tail, "toPort": "collective"},
         {"type": "shaft", "from": gearbox, "fromPort": "Branch shaft", "to": tailbox, "toPort": "Input shaft"},
         {"type": "pipe", "from": tank, "to": engine, "fromPort": "Fuel out", "toPort": "Fuel in"},
     ]
     return {"format": "call-of-slop-construct-blueprint/1", "name": "Small Helicopter",
-            "description": "One rotor on an engine, and a tail rotor to hold it straight. Shift and Ctrl set collective, W and S cyclic pitch, Q and E cyclic roll, A and D the tail.", "steps": s, "links": links}
+            "description": "One rotor on a turbine, a tail rotor on a shaft, a Flight Stabilizer flying both. Shift climbs, Ctrl sinks, W and S lean it on, Q and E sideways, A and D turn.", "steps": s, "links": links}
 
 
 def main():
@@ -341,6 +363,7 @@ def main():
     code |= write_parts(ROTORS, rotors() + blades())
     code |= write_blueprint("LightPlane", light_plane(), check)
     code |= write_blueprint("SmallHelicopter", helicopter(), check)
+    code |= write_blueprint("FanQuad", fan_quad(), check)
     return code
 
 

@@ -1,19 +1,19 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Light Plane",
-  "description": "A single-engine tail-dragger. Shift and Ctrl set the throttle, W and S pitch, A and D the rudder, Q and E roll.",
+  "description": "A single-engine tail-dragger on a Flight Stabilizer. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
   "steps": [
     {
       "part": "Frame Block"
     },
     {
-      "part": "Engine",
+      "part": "Turbine",
       "on": 0,
       "socket": "-z",
       "by": "-z"
     },
     {
-      "part": "Two-Blade Prop",
+      "part": "Three-Blade Prop",
       "on": 1,
       "socket": "+z",
       "by": "base"
@@ -61,6 +61,12 @@
       "by": "-x"
     },
     {
+      "part": "Battery",
+      "on": 4,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
       "part": "Wing Segment",
       "on": 8,
       "socket": "-x",
@@ -74,18 +80,15 @@
     },
     {
       "part": "Aileron",
-      "on": 10,
+      "on": 11,
       "socket": "back",
       "by": "hinge"
     },
     {
       "part": "Aileron",
-      "on": 11,
+      "on": 12,
       "socket": "back",
-      "by": "hinge",
-      "config": {
-        "reverse": 1
-      }
+      "by": "hinge"
     },
     {
       "part": "Elevator",
@@ -100,10 +103,13 @@
       "by": "hinge"
     },
     {
-      "part": "Driving Module",
+      "part": "Flight Stabilizer",
       "on": 4,
-      "socket": "-y",
-      "by": "-y"
+      "socket": "+y",
+      "by": "-y",
+      "config": {
+        "pattern": "Plane"
+      }
     },
     {
       "part": "Square Beam 0.5 m",
@@ -113,32 +119,32 @@
     },
     {
       "part": "Square Beam 2 m",
-      "on": 17,
+      "on": 18,
       "socket": "-z",
       "by": "+y3",
       "spin": 1
     },
     {
       "part": "Suspension",
-      "on": 18,
+      "on": 19,
       "socket": "-z",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 19,
+      "on": 20,
       "socket": "axle",
       "by": "axle"
     },
     {
       "part": "Suspension",
-      "on": 18,
+      "on": 19,
       "socket": "+z",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 21,
+      "on": 22,
       "socket": "axle",
       "by": "axle"
     },
@@ -150,25 +156,25 @@
     },
     {
       "part": "Suspension",
-      "on": 23,
+      "on": 24,
       "socket": "-x",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 24,
+      "on": 25,
       "socket": "axle",
       "by": "axle"
     },
     {
       "part": "Suspension",
-      "on": 23,
+      "on": 24,
       "socket": "+x",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 26,
+      "on": 27,
       "socket": "axle",
       "by": "axle"
     }
@@ -177,37 +183,37 @@
     {
       "type": "data",
       "from": 3,
+      "to": 17
+    },
+    {
+      "type": "data",
+      "from": 17,
+      "fromPort": "throttle",
+      "to": 2
+    },
+    {
+      "type": "data",
+      "from": 17,
+      "fromPort": "pitch",
+      "to": 15
+    },
+    {
+      "type": "data",
+      "from": 17,
+      "fromPort": "yaw",
       "to": 16
     },
     {
       "type": "data",
-      "from": 16,
-      "to": 1,
-      "toPort": "drive"
-    },
-    {
-      "type": "data",
-      "from": 16,
-      "fromPort": "throttle",
-      "to": 14
-    },
-    {
-      "type": "data",
-      "from": 16,
-      "fromPort": "roll",
-      "to": 12
-    },
-    {
-      "type": "data",
-      "from": 16,
-      "fromPort": "roll",
+      "from": 17,
+      "fromPort": "left aileron",
       "to": 13
     },
     {
       "type": "data",
-      "from": 16,
-      "fromPort": "steer",
-      "to": 15
+      "from": 17,
+      "fromPort": "right aileron",
+      "to": 14
     },
     {
       "type": "pipe",

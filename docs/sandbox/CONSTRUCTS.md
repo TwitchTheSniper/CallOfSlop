@@ -4635,7 +4635,7 @@ A Tank Volume or Storage Volume is meant to sit inside walls. Code: `Source/Cons
 
 Stage 1 of flight (the design is the project doc `claude/flight.md`). Code: `Source/Constructs/ConstructAir.cs` (the air, the one place flight reads it), `ConstructLift.cs` (cells, gas, burners, lift); numbers: `Constructs/Air.json`; parts: `Constructs/Parts/Air`, the demos `Hot Air Balloon`, `Scout Airship` and `Armoured Airship`, all from `tools/constructs/air_parts.py`.
 
-**The air.** `ConstructAir.Density(p)` is 1 at sea level and falls by e every `scaleHeight` (1,200 m). It is 0 on a planetoid or in curved gravity (`HasAir`): nothing floats there. `Wind(p)` is the weather's wind at the player, the low wind turning into the cloud-level wind by `windAloftAt`; with no weather on the map it is zero. `GroundEffect` and `Turbulence` are the hooks for later parts; turbulence already shakes cells near a player in a wind. Rounds' vacuum test goes through `HasAir`. The arcade flight drag keeps its old thinning (`DragShare`), since a planetoid's sky has drag but no lift: the climb out of the bubble flies as it did.
+**The air.** `ConstructAir.Density(p)` is 1 at sea level and falls by e every `scaleHeight` (1,200 m). On a planetoid it is 1 at the radius and falls the same way above it; in open space, curved gravity with no planetoid, it is 0 (`HasAir`) and nothing floats. `Wind(p)` is the weather's wind at the player, the low wind turning into the cloud-level wind by `windAloftAt`; with no weather on the map it is zero. `GroundEffect` and `Turbulence` are the hooks for later parts; turbulence already shakes cells near a player in a wind. Rounds' vacuum test goes through `HasAir`. The arcade flight drag keeps its old thinning (`DragShare`), since a planetoid's sky has drag but no lift: the climb out of the bubble flies as it did.
 
 **A cell.** A Lift Cell is a Tank Volume with an `envelope` in its `fluidTank` block: the same box settings, handles, pipes and network, but the box is a solid: it collides, stops rays and rounds, and is drawn as a skin, slack on a soft cell until it fills. No Sealed volumes rules; 32 cells and 16 burners a construct. Sizes: 40, 80, 160 and 320 m a side by size class, soft (0.25 kg/m2) or armoured (1.6 kg/m2, armour 40). The skin weighs by its area, through the load path, at the box's centre. The gas weighs nothing of its own: it is in the lift figure.
 
@@ -4650,7 +4650,7 @@ The lift acts at each cell's centre, so a cell off the centre of mass tips the c
 
 **Softer past a size.** A construct's cells count `(volume / softFromM3) ^ softPower` times over, at most `softMost`: from 20,000 m3, 1.76x at 100,000 m3, 3.9x at 1,000,000 m3, 6x from about 3,300,000 m3 up. So a flying city doesn't need thousands of cells.
 
-**Gas.** Pipes bring hydrogen and helium as they bring any fluid, 10 l of a tank's compressed gas a cubic metre (`gasLitresPerM3`). In survival the bulk materials `hydrogen` (a Smelter on dirt) and `helium` (a new underground deposit, tier 2 drill) go by chute into a **Gas Compressor**, whose pipe gives 50 l a unit. Creative sets the gas and fill on the panel. A cell's fill is a percentage as a tank's is, and for hot air it is the heat, for vacuum the emptiness.
+**Gas.** Pipes bring hydrogen and helium as they bring any fluid, 1 l of a tank's compressed gas a cubic metre (`gasLitresPerM3`), so a Large Fluid Tank's 150 l fills 150 m3. In survival the bulk materials `hydrogen` (a Smelter on dirt) and `helium` (a new underground deposit, tier 2 drill) go by chute into a **Gas Compressor**, whose pipe gives 50 l a unit. Creative sets the gas and fill on the panel. A cell's fill is a percentage as a tank's is, and for hot air it is the heat, for vacuum the emptiness. Resizing a cell keeps its percentage in creative; in survival it keeps its gas, so a bigger box is a slacker bag with the same lift and more skin. The look line says what it lifts of what the construct weighs, what it would lift full, and if it is frozen or has no air.
 
 **Burners.** Role `burner`: `{"heat": m3 kept at full heat, "burnRate": l/s, "at", "reach"}`. It burns fuel as a thruster does (touching a tank, or a pipe), and heats the first cell up its flame, along the part's up. Its `throttle` wire sets it; its `height` wire holds that many metres over the ground with a slow trim; unwired, the driver's Sprint raises the setting and Crouch lowers it and then vents. Hot air cools at `coolShare` a second, by the air.
 
@@ -4664,7 +4664,48 @@ The lift acts at each cell's centre, so a cell off the centre of mass tips the c
 
 **Mooring.** A rope to the ground holds a balloon, and it swings out on its rope in a wind and sleeps there. A craft rising on a slack rope jerks it: 7 t rising at 13 m/s snapped a 25 t rope, and an XL rope holds. Tie it short or fill it tied.
 
+A cell has to lift itself: a soft cube needs about 3.3 m a side, an armoured one about 9.5 m (its block included).
+
 **Choices made (the developer may change them):** gas has no weight of its own in a cell; a cell's box is a plain box until shaped envelopes come; a burner's reach is along the part's up, not a pipe; hot air and vacuum don't pipe; a hit always makes a hole, however small; dirt as hydrogen's source (nothing better exists to make it from yet).
+
+## Flight control
+
+Stage 2 of flight. Code: `Source/Constructs/ConstructFlight.cs` (the loops, in the logic step), `ConstructFlightPanel.cs` (the Flight Panel, the balance sums), `Source/App/Program.SandboxFlight.cs` (a pilot's finger, the markers); parts and the demos **Quadcopter** and **Stabilised Airship**: `tools/constructs/flight_parts.py`.
+
+**A Flight Stabilizer** (small, medium, large) is a logic part with built-in sensors and no need of power. Link a seat or a Drone Receiver to its `seat` port: that seat then drives the construct, as through a Driving Module, once any output is linked. Mount it level with its arrow forward: its own frame is what it reads (+y up, -z forward). It keeps working with nobody in the seat, so a craft isn't dropped when its pilot gets up, and it lets go (disarms) when asked down and not going down for 0.6 s, or with a plane's or rocket's throttle at zero.
+
+**Its ports.** Sixteen named outputs, ordinary data links; a part with a logic input can take any of them. Signs: positive `pitch` asks the nose up, positive `yaw` the nose right, positive `roll` the right wing down; `left aileron` is `roll` and `right aileron` its negative. A surface whose input runs the other way takes a Scale block of -1 on its link.
+
+| Output | Range | Plane | Helicopter | Quadcopter | Gimballed rocket | Hover platform | Airship |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `throttle` | 0..1 | engines | | | engines | forward jets | forward jets |
+| `reverse` | 0..1 | reverse thrust wire | | | | back jets | back jets |
+| `lift` | 0..1 | | collective | lift if no corners are linked | | lift if no corners are linked | lift jets or a burner |
+| `vent` | 0..1 | | | | | | a cell's vent, coming down |
+| `pitch`, `yaw`, `roll` | -1..1 | elevator, rudder, roll | cyclic, tail rotor, cyclic | the same, for what it can't reach | gimbal lean on `pitch` and `yaw`, spin on `roll` | as a quadcopter | surfaces, if any |
+| `left aileron`, `right aileron`, `flaps` | -1..1, 0..1 | ailerons; flaps below half its max speed | | | | | |
+| `front left`, `front right`, `rear left`, `rear right` | 0..1 | | | motors | | motors | engines: the turn is theirs (`rear left`, `rear right`) |
+| `strafe left`, `strafe right` | 0..1 | | | | | side jets | side jets |
+
+Inputs: `seat`, then axes that add to the seat's (`throttle`, `pitch`, `yaw`, `roll`, `lift`), `autopilot` (on while high), `mode` (1 to 5), `altitude`, `heading`, `waypoint x`, `waypoint z`, and `set home` (a rising edge). A wired value goes into the settings, numbers twice a second, so a panel anywhere shows it.
+
+**Keys.** Plane: W nose down, S nose up, A and D bank and the rudder follows, Q and E roll, Shift and Ctrl work a throttle that stays where it is left. Helicopter and quadcopter: W and S go forward and back, Q and E sideways, A and D turn, Shift and Ctrl climb and sink, and it holds speed zero and its height when let go. Rocket: W, S, A, D lean it, Q and E spin it, Shift and Ctrl the throttle. Hover platform: as a quadcopter, staying level, moving by its side jets. Airship: W and S the engines, A and D turn, Shift and Ctrl climb and sink.
+
+**Settings** on the configure panel: pattern; strength; stabilise level (off: the keys ask for turning, and it stays where it is left); mouse aim (it flies where the seat looks: multirotors turn to the look, planes bank to it and pitch to it, a rocket leans its nose to it, an airship turns to it); max lean, turn, climb and speed (0: the pattern's own); trim, pitch and roll, what it counts as level. A multirotor's speed loop holds it still, so a multirotor's trim only shifts where it hangs; trim is for what stays at an angle. There is one set of settings on a stabilizer, for its pattern.
+
+**What it knows.** Twice a second it looks at what its outputs reach (`Refit`). Corner channels that reach thrusters give their force and place, and the mix is the least squares share of lift and torque among them, so a craft whose centre of mass is off the middle, or that has lost a thruster or run out of fuel, is mixed for as it is. Nothing there needs tuning: the craft's inertia and mass turn turning asked into torque, its loops go as fast as its slowest thruster follows, and it never leans further than its spare thrust can hold up (a craft at 91% thrust in the hover gets 3 degrees). A joint on `pitch`, `yaw` or `roll` that carries a thruster is a gimbal: its authority and its sign come from the joint's axis, and it is asked for 20 degrees at most. Anything else takes `strength` as its gain, falling with the square of the speed past 40 m/s. A new kind of lifter or control output teaches `Refit` its force in one line.
+
+**The gyro.** Thrusters have no torque about their own axis, so four thrusters pushing the same way can't turn. A stabilizer has a gyro (`logic.gyro`, N m: 1,500, 400,000, 30,000,000), about its own up, on `Construct.GyroNow`. It answers yaw first; a mix that has yaw takes the rest.
+
+**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; set on the panel, at a Flight Panel, or by its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. Hover holds the point it was at; the pilot's keys move what is held. Waypoints are x and z, at the height held. A plane, which can't stop, circles a point.
+
+**The Flight Panel** (no wiring; it reads the first stabilizer on the construct): height, climb, speed, heading, pitch, roll and the autopilot, with touch buttons for on, off, next mode and set home. A pilot's finger reaches it from the seat on a stabilised craft.
+
+**Balance markers.** With the attach, linking, configure or selector tool out, or a part in hand, the crosshair on a craft with a stabilizer, thrusters, cells or anything else that lifts shows the centre of mass (yellow), lift (blue) and thrust (orange, with its direction), labelled over the hull with how far ahead of the centre of mass each is. `Construct.LiftCentre` is the one sum: a new lifting thing adds itself there with `ConstructFlight.AddLift`.
+
+**The tick.** A stabilizer costs about 1 microsecond a tick and a look 0.35, and allocates nothing. Asleep and unarmed it clears its outputs and returns.
+
+**Choices made (the developer may change them):** the gyro; one set of settings per stabilizer, not per pattern; no airspeed or ground height sensor (height is the world's, as an Altitude Sensor reads it); an airship's level is her gas's job, so her pitch and roll go only to surfaces; a stabilizer needs no power, and a panel does.
 
 ### Link type from the port (at01)
 
@@ -4744,9 +4785,10 @@ A surface is any part with a `"surface"` block, so a new one is data: `area`, `a
 - **Further off** the surfaces that lift work as one through the centre of mass, with no moment; it costs one surface. **Asleep** it costs nothing. A flying craft doesn't sleep while a rotor turns.
 - A craft with surfaces has real drag: `bodyDrag` for everything that isn't wing, and the arcade drag and speed cap (`ConstructPhysics.MaxSpeed`) stop applying while the air slows it (`Construct.AeroFlying`, up to `flightTop`).
 - The ground's cushion (`ConstructAir.GroundEffect`) reads one ray a craft at 4 Hz. Past `softWingM2` of wing lift scales kindly.
-- `ConstructAero.StallSpeed` and `CentreOfLift` are what the HUD and the look line use, and what a balance marker reads.
+- `ConstructAero.StallSpeed` is what the HUD and the look line use. `Construct.LiftCentre` counts every surface that lifts, the tail too, by its lift slope at 40 m/s: the point the craft balances round, so the centre of mass goes ahead of it. `ThrustCentre` counts rotors.
+- On a Flight Stabilizer S doesn't brake on the ground (it is the elevator as a plane rotates); Space does.
 
-**Control surfaces** (Aileron, Elevator, Rudder, Flap) take a data input, -1 to 1 of their `max` degrees, plus their Reverse and Trim settings. Only their wire moves them: a Flight Stabilizer, or a Driving Module's outputs by hand. Plus is more lift on an aileron, elevator or flap, and on a rudder the nose to the right, as the seat's steering. The leaf is the box tagged `"side": "leaf"`, drawn turning about `hinge`; the part's solid boxes don't move. Angles ride the pose (`ConstructNet.WriteAir`).
+**Control surfaces** (Aileron, Elevator, Rudder, Flap) take a data input, -1 to 1 of their `max` degrees, plus their Reverse and Trim settings. Only their wire moves them. They are made to take a Flight Stabilizer's outputs with nothing in between, on the normal layout: `pitch` into an Elevator behind the centre of mass (plus lifts the nose: `"sign": -1` in its control block), `yaw` into a Rudder behind it standing up (plus swings the nose right), `left aileron` and `right aileron` into an Aileron each (plus is trailing edge down on either side), `flaps` into a Flap. A canard, a fin hanging down or anything else the other way round takes the part's Reverse setting. The leaf is the box tagged `"side": "leaf"`, drawn turning about `hinge`; the part's solid boxes don't move. Angles ride the pose (`ConstructNet.WriteAir`).
 
 **Extruded airfoils**: the Extruder's Profile list gains the rows of `Extrusion.json`'s `"airfoils"` after Pipe. They are ordinary sections on the grid (wire, saves and blueprints need nothing new); a finished piece whose mask is one of them gets a `Surface` from its chord, length and row. Chord across x with the leading edge at -x, span along its length.
 
@@ -4757,7 +4799,9 @@ A surface is any part with a `"surface"` block, so a new one is data: `area`, `a
 - **Power.** A rotor with a "Drive in" port is a shaft feed like a drill: bolt it to an engine's Drive out or a gearbox's output, or link a shaft to it. Its hub is geared so it reaches its rated speed at the engine's peak (`CRotor.Reduction`), and the engine is held there (`Construct.RpmGovern`). What it takes comes off the crank (`Construct.RotorLoad`, through `ConstructDrillDrive.Carry`), so an engine it overloads is pulled down. Unwired, the driver's Shift and Ctrl set a trim (`Construct.AeroTrim`) that is the engine's throttle. A rotor with `motorKw` and no shaft linked runs off the circuit (`MotorWork`).
 - **Push.** It takes power by the cube of its speed and the air's density. Momentum theory turns that into push: T = 2 rho A vi U, P = T (V + vi), with `rotorFigure` of the power doing the work, `rotorProfile` of it pushing nothing, and fading to nothing at `topSpeed`. Forward speed helps a rotor up to a stall limit.
 - **Torque** goes into the craft about its axis, by its Hand setting. A Tail Rotor's Torque mix setting adds the collective that cancels the others' torque, as a helicopter's pedals are linked to its collective.
-- **Helicopter rotors** (`"heli": true`): inputs collective (-1..1), cyclic pitch, cyclic roll, then the drive bus. Collective is the blade pitch: at a constant speed it sets the push, and the engine is asked for full throttle. Cyclic tips the push by `cyclic` degrees and adds `hubMoment`. A turning head damps pitch and roll.
+- **Helicopter rotors** (`"heli": true`): inputs collective (-1..1), cyclic pitch, cyclic roll, then the drive bus. Collective is the blade pitch: at a constant speed it sets the push, and the engine is asked for full throttle. Cyclic tips the push by `cyclic` degrees and adds `hubMoment`, plus being nose up and right wing down, so a Flight Stabilizer's `lift`, `pitch` and `roll` go straight in, and `yaw` into a tail rotor's collective (Reverse collective when it pushes to the craft's right). A turning head damps pitch and roll.
+- **On a stabilizer** a rotor on `lift`, `throttle` or a corner port counts as a thruster (`ConstructFlight.MapRotor`): a wire asks for a share of its full push (`ConstructRotor.FullPush`), and on a corner its torque goes into the mix, so a quad's opposite hands give it yaw. A rotor on a joint isn't mapped yet.
+- A wire into a rotor on the shaft runs the engine, with no seat (`Construct.RotorRuns`).
 - **Tilting**: on a joint its frame turns with its segment. A shaft link may end on a rotor across a joint.
 - **Blades** are one box (`"spin": true`) the renderer repeats round the hub; hidden arms are what it collides with. A ray meets the blades themselves (`ConstructRotor.Ray`): the blade as it lies when stopped, a blur when turning, where `rotorHit` of the disc counts as blade. Each blade's health is a hidden setting (`Blade0`..`Blade5`, a share of `bladeHealth`, and `BladeLost` a mask), so it rides saves and CBody. A blade lost rebuilds the rotor with less push, shakes the craft (`rotorShake`) and throws a Loose Blade off as a wreck. A blast or a crash picks a blade; a ray at the hub hits the hub.
 - A rotor's speed rides the pose as a share of its rated speed; each peer turns its own blades from that.

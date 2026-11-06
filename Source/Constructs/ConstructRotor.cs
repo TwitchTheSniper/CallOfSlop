@@ -186,6 +186,8 @@ public static class ConstructRotor
             var wired = p.InCount > 0;
             runs |= r.Feed >= 0 && wired && p.In != 0;
             var cmd = wired ? Math.Clamp(p.In, d.Heli ? -1 : 0, 1) : c.Driver != 255 ? c.AeroTrim : 0f;
+            if (wired && ConstructConfig.Get(p, p.D, CfgKey.Reverse, 0) >= 0.5f)
+                cmd = -cmd;
             var mix = ConstructConfig.Get(p, p.D, CfgKey.TorqueMix, 0) >= 0.5f;
             if (mix)
                 cmd = Math.Clamp(cmd + MixFor(c, ref r, d, com, density), -1, 1);
@@ -197,7 +199,7 @@ public static class ConstructRotor
             if (electric)
             {
                 if (working && c.Electrical && ConstructPower.On(c, r.Part))
-                    want = d.Heli ? wired || c.Driver != 255 ? rated : 0 : MathF.Abs(cmd) * rated;
+                    want = d.Heli ? wired || c.Driver != 255 ? rated : 0 : MathF.Sqrt(MathF.Abs(cmd)) * rated; // (push goes with the square of its speed: a wire asks for push)
             }
             else if (r.Feed >= 0 && working && engineOn)
             {
@@ -265,10 +267,10 @@ public static class ConstructRotor
             var arm = at - com;
             if (d.Heli && (p.InCount1 > 0 || p.InCount2 > 0))
             {
-                // Cyclic tips the disc: the push leans, and the hub adds its own moment (how a rotor's head steers).
+                // Cyclic tips the disc: the push leans, and the hub adds its own moment (how a rotor's head steers). Plus is nose up and right wing down, as a Flight Stabilizer's outputs.
                 var fwd = Vector3.Transform(r.Fwd, q);
                 var right = Vector3.Transform(r.Right, q);
-                var tilt = (fwd * Math.Clamp(p.InCount1 > 0 ? p.In1 : 0, -1, 1) + right * Math.Clamp(p.InCount2 > 0 ? p.In2 : 0, -1, 1)) * MathF.Tan(d.Cyclic);
+                var tilt = (fwd * -Math.Clamp(p.InCount1 > 0 ? p.In1 : 0, -1, 1) + right * Math.Clamp(p.InCount2 > 0 ? p.In2 : 0, -1, 1)) * MathF.Tan(d.Cyclic);
                 dir = Vector3.Normalize(dir + tilt);
                 c.AngVel += Construct.Mul(invI, Vector3.Cross(bodyDir, tilt) * (MathF.Abs(push) * d.Radius * d.HubMoment * dt));
             }
@@ -300,6 +302,35 @@ public static class ConstructRotor
         c.RotorLive = live;
         c.RotorReaction = reaction;
         c.RotorRuns = runs;
+    }
+
+    /// <summary>What a rotor pushes flat out, at sea level, standing still (N).</summary>
+    public static float FullPush(Construct c, int k)
+    {
+        ref var r = ref c.Rotors[k];
+        if (r.Part >= c.PartCount || c.Parts[r.Part].D.Rotor is not { } d)
+            return 0;
+        var t = AirTable.Current;
+        var power = d.RatedKw * 1000f * (1 - t.RotorProfile) * t.RotorFigure * r.Alive / d.Blades;
+        return MathF.Pow(power, 2f / 3f) * MathF.Cbrt(2 * SeaAir * MathF.PI * d.Radius * d.Radius) * d.Duct * r.Alive / d.Blades;
+    }
+
+    /// <summary>The torque a rotor turns the craft with flat out (N m, rest frame): what a stabilizer's mix counts on a corner.</summary>
+    public static Vector3 FullTwist(Construct c, int k)
+    {
+        ref var r = ref c.Rotors[k];
+        if (r.Part >= c.PartCount || c.Parts[r.Part].D.Rotor is not { } d)
+            return Vector3.Zero;
+        return r.Dir * (-r.Sense * d.RatedKw * 1000f / d.RatedOmega);
+    }
+
+    /// <summary>Can it turn now: a working rotor with its power? (A stabilizer maps what can answer it.)</summary>
+    public static bool Live(Construct c, int k)
+    {
+        ref var r = ref c.Rotors[k];
+        if (r.Part >= c.PartCount || !c.Parts[r.Part].Working || r.Alive == 0 || c.Parts[r.Part].D.Rotor is not { } d)
+            return false;
+        return r.Feed >= 0 ? c.EngineRunning || c.Engine >= 0 : d.MotorKw > 0 && c.Electrical && ConstructPower.On(c, r.Part);
     }
 
     /// <summary>A tail rotor's torque mix: the collective that cancels the other rotors' torque last tick, the way a helicopter's pedals are linked to its collective.</summary>
