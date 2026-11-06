@@ -26,6 +26,8 @@ public static class MediaDirector
         public double NextSync, NextSeek;
         public bool EndSent;
         public float Near, Hear;
+        public byte Mark;
+        public double HandsUntil; // this peer's hands were on the page: until then the page leads and the server follows
     }
 
     private struct Near
@@ -61,7 +63,7 @@ public static class MediaDirector
         }
     }
 
-    private static int PageOf(ushort body, int part)
+    public static int PageOf(ushort body, int part)
     {
         for (var i = 0; i < Pages.Length; i++)
             if (Pages[i].Open && Pages[i].Body == body && Pages[i].Part == part)
@@ -267,6 +269,18 @@ public static class MediaDirector
         if (world.Get(page.Body) is not { } c || c.Parts[page.Part].Media is not { } m)
             return;
         var r = MediaBrowser.Report(i);
+        if (now < page.HandsUntil)
+        {
+            page.Mark = m.Mark;
+            page.State = m.State;
+            FromPage(g, ref page, m, r);
+            return;
+        }
+        if (m.Mark != page.Mark)
+        {
+            page.Mark = m.Mark;
+            page.NextSync = page.NextSeek = 0;
+        }
         if (m.State != page.State)
         {
             page.State = m.State;
@@ -280,6 +294,11 @@ public static class MediaDirector
         {
             if (state == MediaReport.Playing)
                 MediaBrowser.Pause(i);
+            if (r.Duration > 0 && MathF.Abs(r.Time - m.PausedAt) > SeekDrift && now >= page.NextSeek)
+            {
+                page.NextSeek = now + 1;
+                MediaBrowser.Seek(i, m.PausedAt);
+            }
             return;
         }
         if (state is MediaReport.Paused or MediaReport.Cued)
@@ -298,6 +317,39 @@ public static class MediaDirector
             page.NextSeek = now + SeekEvery; // (an advert holds the player's clock back, and a seek does nothing until it is over)
             MediaBrowser.Seek(i, clock);
         }
+    }
+
+    /// <summary>
+    /// The other way round: someone here is using YouTube's own controls, so what the page does goes to the server, and from there to every peer. Volume stays on this page.
+    /// </summary>
+    private static void FromPage(Game g, ref Page page, CMedia m, MediaReport r)
+    {
+        var state = r.State;
+        if (state == MediaReport.Paused && m.State == MediaState.Playing)
+            g.SandboxMedia(page.Body, page.Part, MediaOp.Pause);
+        else if (state == MediaReport.Playing && m.State == MediaState.Paused)
+            g.SandboxMedia(page.Body, page.Part, MediaOp.Resume);
+        if (state is MediaReport.Playing or MediaReport.Paused && r.Duration > 0 && MathF.Abs(r.Time - m.Position(g.ServerTick)) > SeekDrift * 0.6f)
+            g.SandboxMedia(page.Body, page.Part, MediaOp.Seek, seq: (uint)(r.Time * 1000));
+    }
+
+    private const double HandsLead = 3; // seconds the page leads after a click
+
+    public static void PageMove(int page, int x, int y, bool drag) => MediaBrowser.Block(page)?.Mouse(MediaBlock.MouseMove, x, y, drag ? 1 : 0);
+
+    public static void PageLeave(int page) => MediaBrowser.Block(page)?.Mouse(MediaBlock.MouseLeave, 0, 0, 0);
+
+    public static void PageButton(int page, int x, int y, bool down, double now)
+    {
+        if (now > 0)
+            Pages[page].HandsUntil = now + HandsLead;
+        MediaBrowser.Block(page)?.Mouse(down ? MediaBlock.MouseDown : MediaBlock.MouseUp, x, y, 0);
+    }
+
+    public static void PageWheel(int page, int x, int y, int delta, double now)
+    {
+        Pages[page].HandsUntil = now + HandsLead;
+        MediaBrowser.Block(page)?.Mouse(MediaBlock.MouseWheel, x, y, delta);
     }
 
     /// <summary>What a Video Screen's or Music Player's panel shows on this PC.</summary>
@@ -327,9 +379,12 @@ public static class MediaDirector
             card.State = m.State == MediaState.Paused ? PanelState.Idle : PanelState.Ok;
             card.Add(0, m.State == MediaState.Paused ? "Paused" : "Now playing");
             card.Add(1, track.Name);
+            Buttons(card, panel, m);
             return;
         }
         var page = PageOf(c.Id, part);
+        if (panel.Touch.Length > 0)
+            Buttons(card, panel, m);
         if (page < 0)
         {
             card.State = PanelState.Wants;
@@ -341,6 +396,7 @@ public static class MediaDirector
         card.Video = VideoFeeds.Request(page);
         card.VideoWidth = d.MediaWidth;
         card.VideoHeight = d.MediaHeight;
+        card.VideoRect = panel.Picture;
         card.State = PanelState.Ok;
         if (r.Error != 0)
         {
@@ -351,7 +407,20 @@ public static class MediaDirector
         }
         else if (card.Video == 0)
             card.Add(0, "Loading");
+        else if (panel.Touch.Length > 0)
+            card.Add(TitleRow(panel), Label(line));
     }
+
+    /// <summary>The play button's word follows the state. Every other label is the part file's.</summary>
+    private static void Buttons(PanelCard card, PanelDef panel, CMedia? m)
+    {
+        for (var i = 0; i < panel.Touch.Length; i++)
+            if (panel.Touch[i].Action == "media.toggle")
+                card.TouchLabels[i] = m is { State: MediaState.Playing } ? "Pause" : "Play";
+    }
+
+    /// <summary>The row under the picture, for what's playing.</summary>
+    private static int TitleRow(PanelDef panel) => Math.Clamp((int)MathF.Ceiling((1 - panel.Picture.Y) * panel.Rows), 0, panel.Rows - 1);
 
     private static void Words(PanelCard card, PanelDef panel, string text, int line)
     {

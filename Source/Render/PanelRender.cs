@@ -159,6 +159,8 @@ public static unsafe class PanelRender
                 if (now - s.Filled >= 1 / FillHz || s.Stamp != c.RebuildStamp || s.Touched != Touch)
                     Fill(world, c, part, panel, s, now);
                 Emit(s, panel.Size.Y, centre, normal, Vector3.TransformNormal(ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, panel.Up)), seg));
+                if (key == _pointerKey && _pointerRegion < 0)
+                    EmitPointer(panel.Size.Y, centre, normal, Vector3.TransformNormal(ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, panel.Up)), seg));
                 LastDrawn++;
             }
         }
@@ -210,6 +212,8 @@ public static unsafe class PanelRender
         s.Stamp = c.RebuildStamp;
         s.Touched = Touch;
         s.Card.Clear();
+        s.Card.Touch = panel.Touch;
+        s.Card.Hover = s.Key == _pointerKey ? _pointerRegion : -1;
         panel.Fill!(world, c, part, panel, s.Card);
         var hash = s.Card.Hash();
         if (hash == s.Hash && s.QuadCount > 0)
@@ -256,7 +260,12 @@ public static unsafe class PanelRender
         if (card.Picture > 0)
             Quad(s, -hw + edge, -hh + edge, hw - edge, hh - edge, PictureU, 0, PictureU + 1, 1, new Vector3(card.Picture - 1, 0, 0), 1);
         if (card.Video > 0) // (the browser's rows come top first)
-            Quad(s, -hw + edge, -hh + edge, hw - edge, hh - edge, VideoU, card.VideoHeight / (float)MediaBlock.MaxHeight, VideoU + card.VideoWidth / (float)MediaBlock.MaxWidth, 0, new Vector3(card.Video - 1, 0, 0), 1);
+        {
+            PictureArea(size, card.VideoRect, out var px0, out var py0, out var px1, out var py1);
+            Quad(s, px0, py0, px1, py1, VideoU, card.VideoHeight / (float)MediaBlock.MaxHeight, VideoU + card.VideoWidth / (float)MediaBlock.MaxWidth, 0, new Vector3(card.Video - 1, 0, 0), 1);
+        }
+        for (var t = 0; t < card.Touch.Length; t++)
+            Button(s, card, t, size, state);
         var barH = card.Bar >= 0 ? h * 0.075f : 0;
         var row = (h - 2 * pad - barH) / rows;
         var glyphH = row * 0.86f;
@@ -315,6 +324,86 @@ public static unsafe class PanelRender
         }
         if (card.Draw != PanelDraw.None)
             Shapes(s, card, size, pad, card.Draw is PanelDraw.Lamps or PanelDraw.Graph ? hh - pad : bottom + (rows - 1) * row, state);
+    }
+
+    /// <summary>A touch button: its plate, lit when aimed at, and its label in the middle, as big as fits.</summary>
+    private static void Button(Slot s, PanelCard card, int t, Vector2 size, Vector3 state)
+    {
+        var r = card.Touch[t].At;
+        var gap = size.Y * 0.012f;
+        var x0 = -size.X * 0.5f + r.X * size.X + gap;
+        var y0 = -size.Y * 0.5f + r.Y * size.Y + gap;
+        var x1 = -size.X * 0.5f + r.Z * size.X - gap;
+        var y1 = -size.Y * 0.5f + r.W * size.Y - gap;
+        Solid(s, x0, y0, x1, y1, t == card.Hover ? state * 0.75f : new Vector3(0.13f, 0.17f, 0.2f), 1);
+        var text = card.TouchLabels[t] ?? card.Touch[t].Label;
+        var glyphH = MathF.Min((y1 - y0) * 0.7f, (x1 - x0) * 0.9f / MathF.Max(1, text.Length) * CellH / CellW);
+        var glyphW = glyphH * CellW / CellH;
+        var x = (x0 + x1 - glyphW * text.Length) * 0.5f;
+        for (var k = 0; k < text.Length; k++)
+            if (text[k] > 32)
+                Glyph(s, text[k], x + k * glyphW, (y0 + y1 - glyphH) * 0.5f, glyphW, glyphH, new Vector3(0.9f, 0.95f, 0.97f));
+    }
+
+    /// <summary>Where a picture sits on a panel, in metres from its centre: its rectangle, inside the border.</summary>
+    public static void PictureArea(Vector2 size, Vector4 rect, out float x0, out float y0, out float x1, out float y1)
+    {
+        var edge = size.Y * 0.025f;
+        x0 = MathF.Max(-size.X * 0.5f + rect.X * size.X, -size.X * 0.5f + edge);
+        y0 = MathF.Max(-size.Y * 0.5f + rect.Y * size.Y, -size.Y * 0.5f + edge);
+        x1 = MathF.Min(-size.X * 0.5f + rect.Z * size.X, size.X * 0.5f - edge);
+        y1 = MathF.Min(-size.Y * 0.5f + rect.W * size.Y, size.Y * 0.5f - edge);
+    }
+
+    /// <summary>A place on a panel is on its picture.</summary>
+    public static bool InPicture(PanelDef panel, Vector2 at)
+    {
+        PictureArea(panel.Size, panel.Picture, out var x0, out var y0, out var x1, out var y1);
+        return at.X >= x0 && at.X <= x1 && at.Y >= y0 && at.Y <= y1;
+    }
+
+    /// <summary>A place on a panel as a pixel of its page, held to the page's edge.</summary>
+    public static void PageSpot(PanelDef panel, Vector2 at, int width, int height, out int x, out int y)
+    {
+        PictureArea(panel.Size, panel.Picture, out var x0, out var y0, out var x1, out var y1);
+        x = Math.Clamp((int)((at.X - x0) / (x1 - x0) * width), 0, width - 1);
+        y = Math.Clamp((int)((y1 - at.Y) / (y1 - y0) * height), 0, height - 1);
+    }
+
+    private static long _pointerKey = -1;
+    private static Vector2 _pointerAt;
+    private static int _pointerRegion = -1;
+    private static readonly Slot PointerSlot = new();
+
+    /// <summary>This frame's crosshair on a panel: a cursor there, or (region at 0 or up) that button lit.</summary>
+    public static void SetPointer(long key, Vector2 at, int region)
+    {
+        if (key != _pointerKey || region != _pointerRegion)
+            Touch++;
+        _pointerKey = key;
+        _pointerAt = at;
+        _pointerRegion = region;
+    }
+
+    public static void ClearPointer()
+    {
+        if (_pointerKey != -1)
+            Touch++;
+        _pointerKey = -1;
+        _pointerRegion = -1;
+    }
+
+    /// <summary>The cursor, on top of what is on the panel. A plain arrow of three quads: a white one with a dark edge, and a tail.</summary>
+    private static void EmitPointer(float height, Vector3 centre, Vector3 normal, Vector3 up)
+    {
+        var size = height * 0.03f;
+        var s = PointerSlot;
+        s.QuadCount = 0;
+        var x = _pointerAt.X;
+        var y = _pointerAt.Y;
+        Solid(s, x - size * 0.1f, y - size * 1.1f, x + size * 0.8f, y + size * 0.1f, new Vector3(0.05f), 4);
+        Solid(s, x, y - size, x + size * 0.7f, y, Vector3.One, 5);
+        Emit(s, height, centre, normal, up);
     }
 
     /// <summary>What a card draws besides text. Every shape is made of the same upright quads: a needle or a line is a row of small ones, so a panel needs no second shader or vertex format.</summary>

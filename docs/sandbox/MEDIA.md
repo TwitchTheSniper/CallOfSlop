@@ -9,7 +9,7 @@ distance. A link needs the Windows game with its Browser folder. A game track ne
 
 | Part | Picture | Seen to | Heard to | Full level to |
 | --- | --- | --- | --- | --- |
-| Music Player | 356 x 200 page, a small screen | 12 m | 50 m | 5 m |
+| Music Player | 356 x 200 page, the top of a screen filling its face, with buttons under it | 12 m | 50 m | 5 m |
 | Video Screen | 1280 x 720 | 25 m | 40 m | 4 m |
 | Medium Video Screen | 1280 x 720 | 60 m | 80 m | 8 m |
 | Large Video Screen | 1280 x 720 | 150 m | 160 m | 16 m |
@@ -49,6 +49,19 @@ line, it gets three goes a session, and game tracks don't notice. Self-tests and
   game allocates nothing. `VideoFeeds` copies at most one frame a render, and only for a page a panel asked for, so a screen behind you or out of sight costs no picture.
 - **The page.** YouTube's official iframe player, from `youtube-nocookie.com`, in a small page the browser serves itself at `https://callofslop.invalid/player.html`. It needs a real https page: since 2025 the player refuses to run without a Referer
   (error 153), which rules out `file:` and `data:` URLs. Top-level navigation away is refused, popups are closed, no input reaches the page. Nothing is kept on disk. Its picture is shown as it comes, with nothing drawn over it, adverts included.
+
+## Hands on a screen
+
+`Program.SandboxPointer.cs`. With Hands out and empty, in use reach, the crosshair on a live page's picture is a mouse in the browser, with a cursor drawn on the screen. Hover shows YouTube's controls, LMB clicks and drags, and the wheel scrolls.
+RMB takes the mouse off that part until the crosshair leaves it. F does what it always did, because the mouse never reads it. The mouse doesn't type: no key reaches the page.
+
+- **Events** go through a small ring in the shared block's header (`MediaBlock.Mouse`), read every 8 ms by a thread on the page, so a moving crosshair allocates nothing.
+- **The page can't leave.** Popups are closed, so "watch on YouTube" and the logo open nothing. In the top frame nothing but the page's own address loads, and a click inside a frame can only go to `/embed/`. Navigation without a gesture stays free, so adverts load as usual.
+- **Who may.** The mouse is off for anyone the configure rule refuses: they see the picture and the reason on the look line, and clicks do nothing. The server checks every result again.
+- **Everyone follows.** For 3 s after a click or wheel on this peer the page leads (`MediaDirector.FromPage`): a pause, a resume or a seek it reports goes to the server as a `MediaOp`, and from there to every peer. A seek also raises `CMedia.Mark`, so others seek at once. After that the server leads again.
+- **Volume stays each viewer's own.** From the first click the page stops resetting the player's volume and mute, so the slider sticks, on that PC only. This only applies to the volume inside the player: the part's Volume is shared.
+
+A Music Player's picture takes the mouse too. Its buttons are panel buttons, and work on game tracks with no browser.
 
 ## Sound
 

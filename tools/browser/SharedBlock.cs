@@ -11,7 +11,7 @@ namespace SlopBrowser;
 internal sealed unsafe class SharedBlock : IDisposable
 {
     public const int HeaderBytes = 4096, RingFrames = 1 << 17, GameRate = 44100;
-    private const int OffLatest = 16, OffReading = 20, OffSeq = 24, OffAudioWrite = 32;
+    private const int OffLatest = 16, OffReading = 20, OffSeq = 24, OffAudioWrite = 32, OffMouseHead = 64, OffMouseTail = 68, OffMouse = 256, MouseSlots = 128;
 
     private readonly MemoryMappedFile _file;
     private readonly MemoryMappedViewAccessor _view;
@@ -80,6 +80,22 @@ internal sealed unsafe class SharedBlock : IDisposable
         _phase = phase - frames;
         AudioFrames += written;
         Volatile.Write(ref Long(OffAudioWrite), at + written);
+    }
+
+    /// <summary>The next mouse event from the game, if there is one.</summary>
+    public bool NextMouse(out int kind, out int x, out int y, out int data)
+    {
+        kind = x = y = data = 0;
+        var tail = Int(OffMouseTail);
+        if (Volatile.Read(ref Int(OffMouseHead)) == tail)
+            return false;
+        var e = (int*)(_base + OffMouse) + (tail & (MouseSlots - 1)) * 4;
+        kind = e[0];
+        x = Math.Clamp(e[1], 0, Width - 1);
+        y = Math.Clamp(e[2], 0, Height - 1);
+        data = e[3];
+        Volatile.Write(ref Int(OffMouseTail), tail + 1);
+        return true;
     }
 
     public void Dispose()

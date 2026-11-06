@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Music Player",
-  "description": "Plays a list of YouTube links and the game's own tracks: build the list with the configure tool. Heard to 50 m. The game's tracks need no browser.",
+  "description": "Plays a list of YouTube links and the game's own tracks: build the list with the configure tool, and use its screen with Hands. Heard to 50 m. The game's tracks need no browser.",
   "group": "Logic",
   "section": "Media",
   "role": "panel",
@@ -45,30 +45,68 @@
       "source": "media",
       "at": [
         0,
-        0.13,
+        0.18,
         -0.007
       ],
       "size": [
-        0.19,
-        0.107
+        0.344,
+        0.344
       ],
       "face": "-z",
       "up": "+y",
       "rows": 8,
-      "range": 12
+      "range": 12,
+      "picture": [
+        0,
+        0.44,
+        1,
+        1
+      ],
+      "touch": [
+        {
+          "action": "media.previous",
+          "at": [
+            0.02,
+            0.03,
+            0.32,
+            0.24
+          ],
+          "label": "Prev"
+        },
+        {
+          "action": "media.toggle",
+          "at": [
+            0.35,
+            0.03,
+            0.65,
+            0.24
+          ],
+          "label": "Play"
+        },
+        {
+          "action": "media.next",
+          "at": [
+            0.68,
+            0.03,
+            0.98,
+            0.24
+          ],
+          "label": "Next"
+        }
+      ]
     }
   ],
   "boxes": [
     {
       "min": [
-        -0.25,
+        -0.18,
         0.0,
         0.0
       ],
       "max": [
-        0.25,
-        0.26,
-        0.16
+        0.18,
+        0.36,
+        0.14
       ]
     }
   ],
@@ -78,7 +116,7 @@
       "at": [
         0.0,
         0.0,
-        0.08
+        0.07
       ],
       "dir": "-y"
     },
@@ -86,8 +124,8 @@
       "name": "back",
       "at": [
         0.0,
-        0.13,
-        0.16
+        0.18,
+        0.14
       ],
       "dir": "+z"
     },
@@ -95,8 +133,8 @@
       "name": "top",
       "at": [
         0.0,
-        0.26,
-        0.08
+        0.36,
+        0.07
       ],
       "dir": "+y"
     }
