@@ -284,7 +284,8 @@ public static class LogicSensors
     public static float Heading(Construct c, int part)
     {
         var f = Front(c, part);
-        var a = MathF.Atan2(f.X, -f.Z) * 180 / MathF.PI;
+        GravityFrames.Frame(c.WorldCom, out var right, out _, out var north);
+        var a = MathF.Atan2(System.Numerics.Vector3.Dot(f, right), System.Numerics.Vector3.Dot(f, north)) * 180 / MathF.PI;
         return a < 0 ? a + 360 : a;
     }
 
@@ -292,7 +293,7 @@ public static class LogicSensors
     {
         ref var p = ref c.Parts[part];
         c.WorldFrame(p.Seg, out var q, out var t);
-        return (t + System.Numerics.Vector3.Transform(p.Pos, q)).Y;
+        return ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(t + System.Numerics.Vector3.Transform(p.Pos, q)));
     }
 
     public static float Pose(Construct c, int i, ref CPart p, ConstructPartDef d)
@@ -304,8 +305,9 @@ public static class LogicSensors
             case CLogic.HeadingSensor:
                 return Heading(c, i);
             default:
-                p.Out1 = MathF.Asin(Math.Clamp(Front(c, i, 0).Y, -1, 1)) * 180 / MathF.PI;
-                return MathF.Asin(Math.Clamp(Front(c, i).Y, -1, 1)) * 180 / MathF.PI;
+                var up = ConstructPhysics.HoldUp(c.WorldCom); // (level is against the gravity where it is)
+                p.Out1 = MathF.Asin(Math.Clamp(System.Numerics.Vector3.Dot(Front(c, i, 0), up), -1, 1)) * 180 / MathF.PI;
+                return MathF.Asin(Math.Clamp(System.Numerics.Vector3.Dot(Front(c, i), up), -1, 1)) * 180 / MathF.PI;
         }
     }
 

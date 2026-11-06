@@ -321,7 +321,7 @@ public static partial class ConstructLift
             // How far over the ground: a wing's cushion (ConstructAero.cs). One ray, and only as low as it can matter.
             var reachDown = c.SurfaceSpan * t.GroundEffectSpans + c.Radius;
             var from = c.WorldCom;
-            c.GroundHeight = query.Raycast(from, -Vector3.UnitY, reachDown, QueryFilter.All, out var under) ? under.Distance : 1e6f;
+            c.GroundHeight = query.Raycast(from, -ConstructPhysics.HoldUp(from), reachDown, QueryFilter.All, out var under) ? under.Distance : 1e6f;
         }
         // The cheap paths: is a player near enough for cell by cell, and has anything changed for a craft asleep?
         // (A stabilizer at work steers by its surfaces, watched or not.)
@@ -386,10 +386,13 @@ public static partial class ConstructLift
         {
             // A height over the ground, wired: a slow trim, as the air in the bag takes a while to answer.
             var com = c.WorldCom;
-            var ground = query.Raycast(com, -Vector3.UnitY, 4000f, QueryFilter.All, out var hit) ? hit.Point.Y : com.Y - 4000f;
-            var miss = ground + p.In1 - com.Y;
-            c.BurnTrim = Math.Clamp(c.BurnTrim + (0.02f * miss - 0.25f * c.Vel.Y) * dt, 0, 1);
-            want = Math.Clamp(c.BurnTrim + 0.03f * miss - 0.4f * c.Vel.Y, 0, 1);
+            var way = ConstructPhysics.HoldUp(com);
+            var height = ConstructPhysics.HoldHeight(com);
+            var ground = query.Raycast(com, -way, 4000f, QueryFilter.All, out var hit) ? ConstructPhysics.HoldHeight(hit.Point) : height - 4000f;
+            var miss = ground + p.In1 - height;
+            var rising = Vector3.Dot(c.Vel, way);
+            c.BurnTrim = Math.Clamp(c.BurnTrim + (0.02f * miss - 0.25f * rising) * dt, 0, 1);
+            want = Math.Clamp(c.BurnTrim + 0.03f * miss - 0.4f * rising, 0, 1);
         }
         else
             want = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : c.StabBurn >= 0 ? c.StabBurn : c.BurnTrim;

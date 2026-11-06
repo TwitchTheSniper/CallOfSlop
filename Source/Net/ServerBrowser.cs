@@ -325,7 +325,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 179: flight tuning: new CfgKeys, a part's settings up to 64, a CBodyKind.Flight carries the loops' errors.
     // 180: modular ordnance (OrdnanceDesign.cs): a designed bomb or missile in a Full's part list, CActKind.Ordnance, the Ordnance Bench, a bomb's size in ShellOut.
     // 181: Browser Screens stay together (ConstructMedia.cs): CActKind.WebState, CBodyKind.WebState, a lead, scroll and in-page media in a CBody's media lists, and web lines up to 1024 characters with their query.
-    public const byte ProtocolVersion = 181;
+    // 182: the Flight Stabilizer's setting slots moved (CfgKey.HomeY, WaypointY: a point on a round world).
+    public const byte ProtocolVersion = 182;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

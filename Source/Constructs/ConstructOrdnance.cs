@@ -412,7 +412,7 @@ public static class ConstructOrdnance
     public static Vector3 SightPoint(ConstructWorld world, Construct c, ref CGun g, int seat, Vector3 muzzle, IWorldQuery query, float reach)
     {
         var eye = ConstructWeapons.SeatEye(c, seat);
-        var look = World.Forward(c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);
+        var look = GravityFrames.Forward(c.WorldCom, c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);
         var speed = MathF.Max(1f, g.Speed);
         if (Track(world, c, ref g, eye, look, query) is { } t)
         {
@@ -435,7 +435,7 @@ public static class ConstructOrdnance
             return Seek(world, c, muzzle, dir, g.SightReach, g.SightCos, query);
         if (g.Seat < 0 || g.Seat >= c.PartCount || (c.Parts[g.Seat].Keys & CPart.Occupied) == 0)
             return 0;
-        return Track(world, c, ref g, ConstructWeapons.SeatEye(c, g.Seat), World.Forward(c.Parts[g.Seat].AimYaw, c.Parts[g.Seat].AimPitch), query)?.Id ?? 0;
+        return Track(world, c, ref g, ConstructWeapons.SeatEye(c, g.Seat), GravityFrames.Forward(c.WorldCom, c.Parts[g.Seat].AimYaw, c.Parts[g.Seat].AimPitch), query)?.Id ?? 0;
     }
 
     /// <summary>A seeker's look: the moving body nearest its axis in its cone, that the map doesn't hide. Walks the bodies near the cone, so only at a launch or now and then for a HUD.</summary>

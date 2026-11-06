@@ -968,7 +968,7 @@ public static class ConstructWeapons
     public static Vector3 GunnerPoint(ConstructWorld world, Construct c, int seat, IWorldQuery query, float reach)
     {
         var eye = SeatEye(c, seat);
-        var look = World.Forward(c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);
+        var look = GravityFrames.Forward(c.WorldCom, c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);
         var d = query.Raycast(eye, look, reach, QueryFilter.Shots);
         if (world.Raycast(eye, look, d, out var hit, c) && hit.Distance < d)
             d = hit.Distance;

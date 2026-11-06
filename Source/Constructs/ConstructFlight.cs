@@ -44,7 +44,8 @@ public struct CStab
     public Vector2 Lean; // radians: the lean a steady drift has worked out (forward, right)
     public float AltIntegral;
     public float HoldAlt, HoldHead;
-    public Vector2 HoldPos; // x, z
+    public Vector3 HoldPos; // the point it holds or flies to; only the way along the ground to it counts
+    public Vector3 North; // what its headings are measured from: on a round world carried along with it, so a held heading is a great circle and there is no pole
     public bool AltHeld, HeadHeld, PosHeld, ApWas;
     public float AltCfg, HeadCfg; // the settings when last read: a change takes over from the pilot's nudges
     public float Landed; // s: asked down and not going down
@@ -543,7 +544,7 @@ public static partial class ConstructFlight
             s.Landed = 0;
         }
         var height = s.Repulsors && !flies ? c.RepulsorGap : ConstructPhysics.HoldHeight(c.WorldCom);
-        var up = ConstructPhysics.HoldUp(c.WorldCom);
+        var up = ConstructPhysics.BodyUp(c, dt);
         var climb = Vector3.Dot(c.Vel, up);
         if (!flies && !autopilot)
         {
@@ -666,7 +667,7 @@ public static partial class ConstructFlight
     {
         ref var p = ref c.Parts[part];
         var at = c.WorldCom;
-        var moved = Put(ref p, p.D, CfgKey.HomeX, at.X) | Put(ref p, p.D, CfgKey.HomeZ, at.Z);
+        var moved = Put(ref p, p.D, CfgKey.HomeX, at.X) | Put(ref p, p.D, CfgKey.HomeY, at.Y) | Put(ref p, p.D, CfgKey.HomeZ, at.Z);
         if (moved)
             world.StructureDirty.Add(c.Id);
     }
@@ -679,7 +680,30 @@ public static partial class ConstructFlight
         public Vector3 Rate; // rad/s: nose up, right wing down, nose right
     }
 
-    private static Attitude Read(Construct c, in CPart p, Vector3 up)
+    /// <summary>North here, for a heading on the compass.</summary>
+    public static Vector3 CompassNorth(Vector3 at)
+    {
+        GravityFrames.Frame(at, out _, out _, out var north);
+        return north;
+    }
+
+    /// <summary>The way along the ground under <paramref name="up"/>: flat maps and round ones alike.</summary>
+    private static Vector3 Along(Vector3 v, Vector3 up) => v - up * Vector3.Dot(v, up);
+
+    /// <summary>A stabilizer's north carried to where the craft is now.</summary>
+    private static Vector3 Carried(ref CStab s, Vector3 at, Vector3 up)
+    {
+        if (!GravityFrames.Curved)
+            return -Vector3.UnitZ;
+        var n = Along(s.North, up);
+        if (n.LengthSquared() < 1e-4f)
+            n = Along(CompassNorth(at), up);
+        return s.North = Vector3.Normalize(n);
+    }
+
+    private static Attitude Read(Construct c, in CPart p, Vector3 up) => Read(c, p, up, CompassNorth(c.WorldCom));
+
+    private static Attitude Read(Construct c, in CPart p, Vector3 up, Vector3 north)
     {
         c.WorldFrame(p.Seg, out var q, out _);
         var frame = q * Rot24.Quat(p.Rot);
@@ -695,16 +719,20 @@ public static partial class ConstructFlight
             flat = a.Up * (fu > 0 ? -1 : 1) - up * Vector3.Dot(a.Up, up) * (fu > 0 ? -1 : 1); // (nose straight up: its belly gives the heading)
         a.FlatFront = flat.LengthSquared() > 1e-6f ? Vector3.Normalize(flat) : Vector3.UnitZ;
         a.FlatRight = Vector3.Cross(a.FlatFront, up);
-        a.Heading = MathF.Atan2(a.FlatFront.X, -a.FlatFront.Z);
+        a.Heading = HeadingOf(a.FlatFront, up, north);
         a.Rate = new Vector3(Vector3.Dot(c.AngVel, a.Right), Vector3.Dot(c.AngVel, a.Front), -Vector3.Dot(c.AngVel, a.Up));
         return a;
     }
 
+    private static float HeadingOf(Vector3 flat, Vector3 up, Vector3 north) => MathF.Atan2(Vector3.Dot(flat, Vector3.Cross(north, up)), Vector3.Dot(flat, north));
+
     private static void Fly(ConstructWorld world, Construct c, ref CStab s, FlightEffectors f, ref CPart p, ConstructPartDef d, FlightPattern pattern, in Asked ask, bool autopilot, bool armed, int seat, float height, float climb, Vector3 up, Span<float> output, float dt)
     {
-        var a = Read(c, p, up);
+        var com = c.WorldCom;
+        var north = Carried(ref s, com, up);
+        var a = Read(c, p, up, north);
         var rotor = pattern == FlightPattern.Rotorcraft;
-        var g = ConstructPhysics.GravityAccel;
+        var g = GravityFrames.Curved ? GravityFrames.GravityAt(com).Length() : ConstructPhysics.GravityAccel;
         var carried = 1 - c.AntiShare;
         var weight = c.Mass * g * carried;
         var floats = c.CellCount > 0 && c.LiftNow > 0.4f * MathF.Max(1, weight); // (her gas keeps her level, and she goes as a ship goes)
@@ -742,7 +770,7 @@ public static partial class ConstructFlight
         var ground = MathF.Min(0.8f, 0.4f * loop); // (the speed loop stays well inside the attitude loop, or a big slow craft swings about what it asks)
 
         // The autopilot: what it holds, and the point it flies to.
-        var pos = new Vector2(c.WorldCom.X, c.WorldCom.Z);
+        var pos = com;
         var mode = (FlightMode)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.ApMode, 0), 0, 4);
         if (autopilot && !s.ApWas)
         {
@@ -769,6 +797,12 @@ public static partial class ConstructFlight
             if (head != s.HeadCfg)
             {
                 s.HeadCfg = head;
+                if (head >= 0 && GravityFrames.Curved)
+                {
+                    // (a number is on the compass here: its north is where headings count from, from now on)
+                    north = s.North = Vector3.Normalize(Along(CompassNorth(com), up));
+                    a.Heading = HeadingOf(a.FlatFront, up, north);
+                }
                 s.HoldHead = head >= 0 ? Rad(head) : a.Heading;
                 s.HeadHeld = true;
             }
@@ -779,9 +813,9 @@ public static partial class ConstructFlight
                 s.PosHeld = true;
             }
             else if (mode == FlightMode.Waypoint)
-                s.HoldPos = new Vector2(ConstructConfig.Get(p, d, CfgKey.WaypointX, 0), ConstructConfig.Get(p, d, CfgKey.WaypointZ, 0));
+                s.HoldPos = new Vector3(ConstructConfig.Get(p, d, CfgKey.WaypointX, 0), ConstructConfig.Get(p, d, CfgKey.WaypointY, 0), ConstructConfig.Get(p, d, CfgKey.WaypointZ, 0));
             else if (mode == FlightMode.Home)
-                s.HoldPos = new Vector2(ConstructConfig.Get(p, d, CfgKey.HomeX, 0), ConstructConfig.Get(p, d, CfgKey.HomeZ, 0));
+                s.HoldPos = new Vector3(ConstructConfig.Get(p, d, CfgKey.HomeX, 0), ConstructConfig.Get(p, d, CfgKey.HomeY, 0), ConstructConfig.Get(p, d, CfgKey.HomeZ, 0));
         }
 
         // The height: the pilot's hand moves what is held.
@@ -822,18 +856,21 @@ public static partial class ConstructFlight
         }
 
         // The way it goes: to a point, by the mouse, or by hand.
-        var toward = s.HoldPos - pos;
+        var line = s.HoldPos - pos;
+        var toward = Along(line, up);
         var far = toward.Length();
-        var course = far > 1 ? MathF.Atan2(toward.X, -toward.Y) : a.Heading;
+        var course = far > 1 ? HeadingOf(toward, up, north) : a.Heading;
+        if (GravityFrames.Curved)
+            far = line.Length(); // (round the far side the way along the ground is short, and the point isn't near)
         var look = default(Vector3);
         var aiming = false;
         if (mouse)
         {
-            look = World.Forward(c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);
+            look = GravityFrames.Forward(com, c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);
             var flat = look - up * Vector3.Dot(look, up);
             aiming = flat.LengthSquared() > 1e-4f;
             if (aiming)
-                s.HoldHead = MathF.Atan2(flat.X, -flat.Z);
+                s.HoldHead = HeadingOf(flat, up, north);
         }
         else if (holdPos && far > (floats ? 25 : 6))
             s.HoldHead = course; // (a ship near the point stops turning for it: she can only go forward, and would hunt round it)
@@ -845,10 +882,9 @@ public static partial class ConstructFlight
         var headErr = Wrap(s.HoldHead - a.Heading);
 
         // Over the ground: the speed each way it is asked to go at.
-        var vel = new Vector2(c.Vel.X, c.Vel.Z);
-        Vector2 flatFront = new(a.FlatFront.X, a.FlatFront.Z), flatRight = new(a.FlatRight.X, a.FlatRight.Z);
-        var vFront = Vector2.Dot(vel, flatFront);
-        var vSide = Vector2.Dot(vel, flatRight);
+        var vel = Along(c.Vel, up);
+        var vFront = Vector3.Dot(vel, a.FlatFront);
+        var vSide = Vector3.Dot(vel, a.FlatRight);
         float wantFront, wantSide;
         if (ask.Forward != 0 || ask.Side != 0 || !holdPos)
         {
@@ -859,9 +895,10 @@ public static partial class ConstructFlight
         }
         else
         {
-            var wish = far > 0.01f ? toward / far * MathF.Min(0.5f * ground * far, maxSpeed) : Vector2.Zero;
-            wantFront = Vector2.Dot(wish, flatFront);
-            wantSide = Vector2.Dot(wish, flatRight);
+            var way = toward.Length();
+            var wish = way > 0.01f ? toward / way * MathF.Min(0.5f * ground * far, maxSpeed) : Vector3.Zero;
+            wantFront = Vector3.Dot(wish, a.FlatFront);
+            wantSide = Vector3.Dot(wish, a.FlatRight);
         }
 
         // What each loop is asked for.

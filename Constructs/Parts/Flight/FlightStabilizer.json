@@ -560,6 +560,25 @@
       "advanced": true
     },
     {
+      "key": "waypointY",
+      "label": "Waypoint y",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world y: only on a round world, where x and z don't place it."
+    },
+    {
+      "key": "homeY",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
       "key": "homeX",
       "hidden": true,
       "unit": "m",
