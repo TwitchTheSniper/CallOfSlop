@@ -11,6 +11,7 @@ public enum ExShape : byte
     Pipe,
     Wheel,
     Fan, // a whole propeller, rotor or ducted fan off a Fan Former
+    Blade, // a blade thrown off a rotor: scrap
 }
 
 /// <summary>
@@ -18,7 +19,8 @@ public enum ExShape : byte
 /// its length in cm, its material (a RecyclingTable id), and whether it is still on its machine. <see cref="Shape"/>: a Round
 /// or a Pipe has no grid: <see cref="W"/> and <see cref="H"/> are both its diameter, and <see cref="Wall"/> a Pipe's wall (cm).
 /// A Wheel has <see cref="W"/> its width along the axle, <see cref="H"/> its diameter and no length. A Fan has <see cref="H"/>
-/// its diameter, no width or length, and <see cref="Wall"/> its kind and blades (<see cref="Extrusion.FanWall"/>). This is all a piece
+/// its diameter, no width or length, and <see cref="Wall"/> its kind, blade style and blades (<see cref="Extrusion.FanWall"/>). A Blade has <see cref="W"/> its chord,
+/// <see cref="H"/> its length and <see cref="Wall"/> its style. This is all a piece
 /// is, on the wire and in a blueprint (a part id only means something on the machine that made it), and what a later
 /// machine reads to know a piece's section and length.
 /// </summary>
@@ -60,7 +62,8 @@ public static class Extrusion
     public const ushort RuntimeBase = 0x4000; // well above ConstructParts.MaxTypes
     public const ushort WireMark = 0xFFFE; // in a Full's part list: a key follows instead of a part id
     public const int MinFanCm = 40, MaxFanCm = 9600; // a fan: 0.4 to 96 m across
-    private const byte CustomWire = 255, RoundWire = 254, PipeWire = 253, WheelWire = 252, FanWire = 251;
+    public const int MaxBladeStyles = 8; // (three bits of a Fan's Wall)
+    private const byte CustomWire = 255, RoundWire = 254, PipeWire = 253, WheelWire = 252, FanWire = 251, BladeWire = 250;
     private const int RoundSides = 14; // a Round's sides: with the caps' middles, 30 points of ConvexHull.MaxCorners' 32
     private const int PipeBoxes = 32, PipeSides = 24; // a Pipe's wall: this many boxes round its bore, and sides drawn
     private const int WheelSides = 24;
@@ -152,7 +155,8 @@ public static class Extrusion
         ExShape.Round => $"Round {k.W / 100f:0.##} m",
         ExShape.Pipe => $"Pipe {k.W / 100f:0.##} m, wall {k.Wall} cm",
         ExShape.Wheel => $"Wheel {k.H / 100f:0.##} m across, {k.W / 100f:0.##} m wide",
-        ExShape.Fan => $"{FanKindOf(k.Wall)?.Label ?? "Fan"} {k.H / 100f:0.##} m across, {FanBladesOf(k.Wall)} blades",
+        ExShape.Fan => $"{FanKindOf(k.Wall)?.Label ?? "Fan"} {k.H / 100f:0.##} m across, {FanBladesOf(k.Wall)} {StyleRow(FanStyleOf(k.Wall)).Label.ToLowerInvariant()} blades",
+        ExShape.Blade => $"{StyleRow(k.Wall).Label} blade {k.H / 100f:0.##} m long",
         _ => $"{ProfileLabel(k.Mask)} {k.W / 100f:0.##} x {k.H / 100f:0.##} m",
     };
 
@@ -259,12 +263,27 @@ public static class Extrusion
         }
     }
 
-    /// <summary>A Fan's <see cref="ExtrusionKey.Wall"/>: its kind (a row of "fanKinds") and how many blades.</summary>
-    public static ushort FanWall(int kind, int blades) => (ushort)(kind << 4 | blades);
+    /// <summary>A Fan's <see cref="ExtrusionKey.Wall"/>: its kind (a row of "fanKinds"), its blade style (a row of Air.json's "bladeStyles") and how many blades.</summary>
+    public static ushort FanWall(int kind, int style, int blades) => (ushort)(kind << 8 | style << 5 | blades);
 
-    public static int FanBladesOf(ushort wall) => wall & 15;
+    public static int FanBladesOf(ushort wall) => wall & 31;
 
-    public static FanKind? FanKindOf(ushort wall) => wall >> 4 is var k && k < ExtrusionTable.Current.FanKinds.Length ? ExtrusionTable.Current.FanKinds[k] : null;
+    public static int FanStyleOf(ushort wall) => wall >> 5 & 7;
+
+    public static FanKind? FanKindOf(ushort wall) => wall >> 8 is var k && k < ExtrusionTable.Current.FanKinds.Length ? ExtrusionTable.Current.FanKinds[k] : null;
+
+    private static BladeStyleRow StyleRow(int style)
+    {
+        var rows = AirTable.Current.BladeStyles;
+        return rows[Math.Clamp(style, 0, rows.Length - 1)];
+    }
+
+    /// <summary>A blade to throw off a rotor of this radius, chord and style: sizes to the 5 cm step, so a rotor's blades are one piece each.</summary>
+    public static ConstructPartDef? Blade(float radius, float chord, int style, byte material)
+    {
+        static ushort Step(float metres) => (ushort)(Math.Clamp((int)MathF.Round(metres * 20), 2, 2000) * StepCm);
+        return material == 0 ? null : Def(new ExtrusionKey(0, Step(chord), Step(radius), 0, material, false, ExShape.Blade, (ushort)style));
+    }
 
     /// <summary>A fan's solid material, m3: its blades and its hub.</summary>
     public static float FanVolume(in ExtrusionKey k)
@@ -272,14 +291,16 @@ public static class Extrusion
         var r = k.H * 0.005f;
         var kind = FanKindOf(k.Wall);
         var chord = r * (kind?.ChordShare ?? 0.1f);
-        return FanBladesOf(k.Wall) * r * chord * chord * 0.12f + r * r * r * 0.02f;
+        return FanBladesOf(k.Wall) * r * chord * chord * 0.12f * StyleRow(FanStyleOf(k.Wall)).Area + r * r * MathF.Min(r, 4) * 0.02f; // (a hub past 4 m of radius grows with its disc, not its volume)
     }
 
     private static bool Valid(in ExtrusionKey k)
     {
         if (k.Shape == ExShape.Fan)
             return k.H is >= MinFanCm and <= MaxFanCm && k.H % StepCm == 0 && k.W == 0 && k.L == 0 && k.Mask == 0 && FanBladesOf(k.Wall) is >= 2 and <= ConstructRotor.MaxBlades
-                && FanKindOf(k.Wall) != null && ExtrusionTable.Current.FindFan(k.Material) != null;
+                && FanStyleOf(k.Wall) < AirTable.Current.BladeStyles.Length && FanKindOf(k.Wall) != null && ExtrusionTable.Current.FindFan(k.Material) != null;
+        if (k.Shape == ExShape.Blade)
+            return k.H is >= 10 and <= MaxFanCm && k.W is >= 10 and <= MaxFanCm && k.W % StepCm == 0 && k.H % StepCm == 0 && k.L == 0 && k.Mask == 0 && k.Wall < AirTable.Current.BladeStyles.Length && k.Material != 0;
         if (k.Shape == ExShape.Wheel)
             return k.W is >= MinWheelWidthCm and <= MaxWheelWidthCm && k.H is >= MinWheelCm and <= MaxWheelCm && k.W % StepCm == 0 && k.H % StepCm == 0
                 && k.L == 0 && k.Mask == 0 && k.Wall == 0 && ExtrusionTable.Current.FindWheel(k.Material) != null;
@@ -301,6 +322,8 @@ public static class Extrusion
             return BuildWheel(k);
         if (k.Shape == ExShape.Fan)
             return BuildFan(k);
+        if (k.Shape == ExShape.Blade)
+            return BuildBlade(k);
         var d = k.Shape == ExShape.Section ? BuildSection(k) : BuildRound(k);
         d.Sockets = k.Growing ? [new CSocket("base", new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, (d.BoundsMin.Y + d.BoundsMax.Y) * 0.5f, 0), 5, SocketKind.Die)]
             : Sockets(k, k.W / 100f, k.H / 100f, k.L / 100f, d.BoundsMin, d.BoundsMax);
@@ -509,7 +532,38 @@ public static class Extrusion
         return d;
     }
 
-    private static readonly ConstructPartDef?[] FanConfigs = new ConstructPartDef?[ConstructRotor.MaxBlades + 1];
+    private static readonly ConstructPartDef?[,] FanConfigs = new ConstructPartDef?[ConstructRotor.MaxBlades + 1, MaxBladeStyles];
+
+    /// <summary>A blade off a rotor, as scrap: one hidden box to collide with, and the style's four stations drawn root to tip along its +x.</summary>
+    private static ConstructPartDef BuildBlade(in ExtrusionKey k)
+    {
+        var names = RecyclingTable.Current;
+        var style = StyleRow(k.Wall);
+        float len = k.H / 100f, chord = k.W / 100f, thick = MathF.Max(0.012f, chord * 0.06f);
+        var row = ExtrusionTable.Current.FindFan(k.Material) ?? ExtrusionTable.Current.FanRows.FirstOrDefault() ?? ExtrusionTable.Current.Rows[0];
+        var d = Stats(k, row, 0, len * chord * 0.12f * chord * style.Area, thick, $"A {style.Label.ToLowerInvariant()} rotor blade, thrown off its hub. Scrap.");
+        var colour = names.ColourOf(k.Material);
+        var boxes = new CPartBox[5];
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        for (var s = 0; s < 4; s++)
+        {
+            var st = style.Stations[s];
+            var half = new Vector3(len / 8, chord * st.X * 0.5f, thick);
+            var at = new Vector3(len * (s + 0.5f) / 4, st.Y * len, 0);
+            boxes[s + 1] = new CPartBox(at, half + new Vector3(0, 0, 0.001f * s), colour, Detail: true);
+            lo = Vector3.Min(lo, at - half);
+            hi = Vector3.Max(hi, at + half);
+        }
+        boxes[0] = new CPartBox((lo + hi) * 0.5f, (hi - lo) * 0.5f, colour, Hidden: true);
+        d.Boxes = boxes;
+        d.SolidBoxes = 1;
+        d.BoundsMin = lo;
+        d.BoundsMax = hi;
+        d.Section = "Rotors";
+        d.Sockets = [new CSocket("root", new Vector3(lo.X, (lo.Y + hi.Y) * 0.5f, 0), 1, SocketKind.Struct)];
+        return d;
+    }
 
     /// <summary>
     /// A whole rotor off a Fan Former. Its origin is the back of its hub, where it mounts, and it pushes along its +z. What it can
@@ -524,7 +578,8 @@ public static class Extrusion
         var blades = FanBladesOf(k.Wall);
         float across = k.H / 100f, r = across * 0.5f, chord = r * kind.ChordShare, hub = MathF.Max(0.08f, r * 0.12f), deep = MathF.Max(0.12f, r * 0.14f);
         var disc = MathF.PI * r * r;
-        var bladeVolume = r * chord * chord * 0.12f;
+        var style = FanStyleOf(k.Wall);
+        var bladeVolume = r * chord * chord * 0.12f * StyleRow(style).Area;
         var d = Stats(k, row, 0, FanVolume(k), chord * 0.12f, $"A {kind.Label.ToLowerInvariant()} off a Fan Former: {across:0.##} m across, {blades} blades of {names.NameOf(k.Material)}.");
         var colour = names.ColourOf(k.Material);
         var lathe = PartShapes.For(new PartBox { Shape = "cylinder", Size = Vector3.One, Segments = WheelSides, Inner = -1 });
@@ -560,6 +615,8 @@ public static class Extrusion
             MotorKw = kind.MotorPerM2 * disc,
             RatedOmega = kind.TipSpeed / r,
             Blades = blades,
+            BaseBlades = 3,
+            Style = style,
             Chord = chord,
             Spool = kind.Spool * MathF.Max(1, MathF.Sqrt(r)),
             TopSpeed = kind.TopSpeed,
@@ -573,15 +630,15 @@ public static class Extrusion
         d.DataIn = kind.Heli ? ["collective", "cyclic pitch", "cyclic roll", ConstructModules.Bus] : ["throttle", ConstructModules.Bus];
         d.NamedPorts = [new NamedPort { Name = "Drive in", Type = RouteType.Shaft, In = true, Socket = 0, Byte = 0, At = Vector3.Zero, Face = 5 }];
         d.DriveInSocket = 0;
-        if (FanConfigs[blades] is { } made)
+        if (FanConfigs[blades, style] is { } made)
         {
             d.Config = made.Config;
             d.CfgSlot = made.CfgSlot;
         }
         else
         {
-            ConstructConfig.ForRotor(d);
-            FanConfigs[blades] = d;
+            ConstructConfig.ForRotor(d); // (its blades and style are the settings' defaults, so a made prop carries them)
+            FanConfigs[blades, style] = d;
         }
         return d;
     }
@@ -674,7 +731,8 @@ public static class Extrusion
             ExShape.Round => RoundWord,
             ExShape.Pipe => PipeWord + k.Wall.ToString(CultureInfo.InvariantCulture),
             ExShape.Wheel => WheelWord,
-            ExShape.Fan => FanWord + k.Wall.ToString(CultureInfo.InvariantCulture),
+            ExShape.Fan => $"{FanWord}{k.Wall >> 8}.{StyleRow(FanStyleOf(k.Wall)).Id}.{FanBladesOf(k.Wall)}",
+            ExShape.Blade => BladeWord + StyleRow(k.Wall).Id,
             _ => PresetOf(k.Mask) is var p and >= 0 ? Presets[p].Id : AirfoilOf(k.Mask)?.Id ?? k.Mask.ToString("x16", CultureInfo.InvariantCulture),
         };
         return $"{Prefix}{profile} {k.W}x{k.H}x{k.L} {RecyclingTable.Current.NameOf(k.Material)}{(k.Growing ? GrowingSuffix : "")}";
@@ -682,7 +740,7 @@ public static class Extrusion
 
     public const string Prefix = "Extrusion ";
     private const string GrowingSuffix = " growing";
-    private const string RoundWord = "round", PipeWord = "pipe", WheelWord = "wheel", FanWord = "fan";
+    private const string RoundWord = "round", PipeWord = "pipe", WheelWord = "wheel", FanWord = "fan", BladeWord = "blade-";
 
     /// <summary>The piece a name gives (<see cref="Name"/>), or null when it isn't one.</summary>
     public static ConstructPartDef? Parse(string name)
@@ -706,9 +764,28 @@ public static class Extrusion
             mask = foil.Mask;
         else if (words[0].StartsWith(FanWord, StringComparison.OrdinalIgnoreCase))
         {
-            if (!ushort.TryParse(words[0][FanWord.Length..], out wall))
+            // "fan3.scimitar.8": its kind, style and blades, by name (a style's row may move, a name doesn't). "fan51": before styles, kind times 16 plus blades.
+            var bits = words[0][FanWord.Length..].Split('.');
+            if (bits.Length == 3)
+            {
+                var row = Array.FindIndex(AirTable.Current.BladeStyles, x => x.Id == bits[1]);
+                if (row < 0 || !int.TryParse(bits[0], out var kind) || !int.TryParse(bits[2], out var count))
+                    return null;
+                wall = FanWall(kind, row, count);
+            }
+            else if (ushort.TryParse(bits[0], out var old))
+                wall = FanWall(old >> 4, 0, old & 15);
+            else
                 return null;
             shape = ExShape.Fan;
+        }
+        else if (words[0].StartsWith(BladeWord, StringComparison.OrdinalIgnoreCase))
+        {
+            var row = Array.FindIndex(AirTable.Current.BladeStyles, x => x.Id == words[0][BladeWord.Length..]);
+            if (row < 0)
+                return null;
+            wall = (ushort)row;
+            shape = ExShape.Blade;
         }
         else if (words[0].StartsWith(PipeWord, StringComparison.OrdinalIgnoreCase))
         {
@@ -749,6 +826,9 @@ public static class Extrusion
             case ExShape.Fan:
                 w.U8(FanWire).U16(k.Wall);
                 break;
+            case ExShape.Blade:
+                w.U8(BladeWire).U16(k.Wall);
+                break;
             default:
                 var preset = PresetOf(k.Mask);
                 w.U8(preset >= 0 ? (byte)preset : CustomWire);
@@ -775,6 +855,11 @@ public static class Extrusion
         }
         else if (profile is WheelWire)
             shape = ExShape.Wheel;
+        else if (profile is BladeWire)
+        {
+            shape = ExShape.Blade;
+            wall = r.U16();
+        }
         else if (profile is FanWire)
         {
             shape = ExShape.Fan;
