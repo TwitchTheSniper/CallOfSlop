@@ -51,7 +51,7 @@ public static unsafe partial class Program
     {
         if (_sbMenuKeyEaten)
         {
-            _sbMenuKeyEaten = Keybinds.IsDown(_window, _settings.Binds[(int)GameAction.SandboxInventory]); // (the press that closed it from the search box: spent until the key is up; the real key, as _down is blocked while ImGui still has the keyboard this frame)
+            _sbMenuKeyEaten = Keybinds.IsDown(_window, _settings.Binds[(int)GameAction.SandboxInventory]); // (the press that opened it, or closed it from the search box: spent until the key is up; the real key, as _down is blocked while ImGui still has the keyboard this frame)
             return;
         }
         if (_game is not { SandboxOn: true } g || !Pressed(GameAction.SandboxInventory))
@@ -75,6 +75,7 @@ public static unsafe partial class Program
             return;
         }
         Ui.OpenSandboxParts();
+        _sbMenuKeyEaten = true; // (this press opened it: a key still held mustn't read as a new press when a click takes the keyboard back from the search box)
         SetMouseCaptured(false);
     }
 
