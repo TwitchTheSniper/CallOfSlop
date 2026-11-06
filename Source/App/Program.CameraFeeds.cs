@@ -54,23 +54,43 @@ public static partial class Program
 
     /// <summary>
     /// Seated at a console with a drone on the link, the view is the drone's: from its first camera, or from behind it with none. The mouse still looks
-    /// within the seat's limits, turned onto the drone, so it is one view and no extra pass. Third person (its key) gives the seat back.
+    /// within the seat's limits, turned onto the drone: the frame's own full pass, not a feed. The third-person key orbits the drone instead (ThirdPerson.PilotOn).
+    /// True when the view is the drone's: the player's body is then drawn in the chair like anyone's.
     /// </summary>
-    private static void PilotCamera(ref Vector3 eye, ref Vector3 fwd, ref Vector3 up)
+    private const float PilotYawLimit = 0.95f, PilotPitchLimit = 1f;
+    private static ushort _pilotBody; // the drone the view last came from (0: none)
+
+    private static bool PilotCamera(ref Vector3 eye, ref Vector3 fwd, ref Vector3 up)
     {
-        if (_session is not { SandboxOn: true } g || g.Local is not { Alive: true } me || !g.SandboxHands.Hand(me.Id).Seated)
-            return;
+        if (_session is not { SandboxOn: true } g || g.Local is not { Alive: true } me || g.LocalDrone() is not { } d)
+        {
+            _pilotBody = 0;
+            return false;
+        }
         ref var h = ref g.SandboxHands.Hand(me.Id);
-        if (ConstructRemote.Piloted(g.Constructs, me.Id) is not { } d || g.Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount)
-            return;
+        if (g.Constructs.Get(h.SeatBody) is not { } c)
+            return false;
         ConstructRender.SeatPose(c, h.SeatPart, g.TickAlpha, g.IsServer, out var seat, out _);
+        if (_pilotBody != d.Id)
+        {
+            // A new link starts looking down the nose, whichever way the player sat down facing.
+            _pilotBody = d.Id;
+            var (yaw, pitch) = GravityFrames.Angles(me.Position, Vector3.Transform(-Vector3.UnitZ, seat));
+            g.LookYaw = yaw;
+            g.LookPitch = pitch;
+            fwd = g.LookDir(yaw, pitch);
+        }
         var look = Vector3.Transform(fwd, Quaternion.Conjugate(seat));
         if (d.CameraParts.Length > 0 && d.CameraParts[0] < d.PartCount)
         {
+            // A camera turns only so far: past this the view would look into its own housing.
+            var aside = Math.Clamp(MathF.Atan2(look.X, -look.Z), -PilotYawLimit, PilotYawLimit);
+            var tilt = Math.Clamp(MathF.Asin(Math.Clamp(look.Y, -1f, 1f)), -PilotPitchLimit, PilotPitchLimit);
+            look = new Vector3(MathF.Sin(aside) * MathF.Cos(tilt), MathF.Sin(tilt), -MathF.Cos(aside) * MathF.Cos(tilt));
             ConstructRemote.CameraPose(d, d.CameraParts[0], g.TickAlpha, g.IsServer, out eye, out var rot);
             fwd = Vector3.Transform(look, rot);
             up = Vector3.Transform(Vector3.UnitY, rot);
-            return;
+            return true;
         }
         var rx = d.Receiver;
         ref var r = ref d.Parts[rx];
@@ -79,5 +99,6 @@ public static partial class Program
         fwd = Vector3.Transform(look, turn);
         up = Vector3.Transform(Vector3.UnitY, turn);
         eye = d.WorldCom - Vector3.Transform(-Vector3.UnitZ, turn) * (d.Radius + 2) + up * (d.Radius * 0.5f + 1);
+        return true;
     }
 }

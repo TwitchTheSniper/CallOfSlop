@@ -1700,13 +1700,14 @@ public static unsafe partial class Program
             camUp = Vector3.Transform(camUp, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + kk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
         }
+        var pilotView = false;
         if (!tp)
         {
-            PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
+            pilotView = PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
             _game.Audio.SetListener(eye, fwd);
         }
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
-        RenderOrigin(local, tp, eye, shake, out var origin, out var eyeFromOrigin);
+        RenderOrigin(local, tp || pilotView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);
         var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
@@ -1731,7 +1732,7 @@ public static unsafe partial class Program
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
-            if (p.Id == _game.LocalId && p.Alive && !tp) // (third person: your whole body is drawn like anyone's)
+            if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView) // (third person, or looking through a drone: your whole body is drawn like anyone's)
             {
                 if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
