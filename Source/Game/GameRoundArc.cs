@@ -19,9 +19,10 @@ public sealed partial class Game
     /// reaches further: its reach grows with its charge. <paramref name="targets"/>: the server's rewound players; null on a client, which
     /// uses the players as it sees them.
     /// </summary>
-    private void ArcShot(float speed, Player shooter, List<(Player P, Box Hitbox, HistoryEntry At)>? targets, ref Vector3 o, ref Vector3 d, ref float reach, out float flown)
+    private void ArcShot(float speed, Player shooter, List<(Player P, Box Hitbox, HistoryEntry At)>? targets, ref Vector3 o, ref Vector3 d, ref float reach, out float flown, out Vector3 endVel)
     {
         flown = 0;
+        endVel = default;
         if (speed <= 0)
             return;
         var total = reach * MathF.Max(1f, speed / ConstructWeaponParts.Current.RoundSpeed);
@@ -41,6 +42,7 @@ public sealed partial class Game
                 o = pos;
                 d = dir;
                 reach = len;
+                endVel = k == HandArcPieces - 1 ? vel : default; // (the last piece: if it meets nothing the round flies on, ConstructRounds.cs)
                 return;
             }
             pos += dir * len;

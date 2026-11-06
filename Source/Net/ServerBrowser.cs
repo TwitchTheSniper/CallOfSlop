@@ -307,8 +307,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 161: player factions (GameSandboxFactions.cs): Msg.Factions (the table) and CActKind.Faction (found, invite, accept, leave, remove, give).
     // 162: free travel route 1 (GameTravel.cs, GameTravelPlace.cs): the host runs every planetoid; Msg.Travel is one packet (purpose 1 visit: world, map, place number; 2 home), Msg.Relay goes between a traveller and a planetoid's number on the host only.
     // 163: a steering differential takes a data link (DataIn "Steer": the link rules peers check against each other) and a config slot, CfgKey.SteerKind.
-    // 164: Video Screens and Music Players (ConstructMedia.cs): CActKind.Media, CfgKey.Loop, and a CBody's messages are followed by the media lists (u16 n; each u16 part, u8 state, u8 line, u8 by, u32 start tick, u32 seq, f32 paused at, u8 lines, the lines).
-    public const byte ProtocolVersion = 164;
+    // 164: a build text's length is a U32 (Msg.ZBuild, Msg.ZDrop text, CActKind.Bench): the Sandbox's builds have no part limit.
+    // 165: flying rounds (ConstructRounds.cs): CFireKind.RoundOut in Msg.CFire.
+    // 166: Video Screens and Music Players (ConstructMedia.cs): CActKind.Media, CfgKey.Loop, and a CBody's messages are followed by the media lists (u16 n; each u16 part, u8 state, u8 line, u8 by, u32 start tick, u32 seq, f32 paused at, u8 lines, the lines).
+    public const byte ProtocolVersion = 166;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

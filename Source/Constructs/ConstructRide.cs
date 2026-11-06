@@ -61,6 +61,9 @@ public static partial class ConstructRide
     /// <summary>Boarding assist 2: jumping into a construct's ledge up to this high (m) above the feet vaults onto it.</summary>
     public const float VaultReach = 1.4f;
 
+    /// <summary>A body coming down lands on a part's top with its centre up to this far (m) past the edge (a capsule stands on an edge like that).</summary>
+    public const float EdgeHold = 0.6f * World.PlayerRadius;
+
     /// <summary>Boarding assist 3: Use within this (m) of a construct's part grabs on, and climbs onto a top this high (m) above the feet at most.</summary>
     public const float GrabReach = 1.5f, GrabRise = 2.6f;
 
@@ -256,6 +259,8 @@ public static partial class ConstructRide
             else if (faceUp != Vector3.Zero && Vector3.Dot(faceUp, up) < World.MinWalkNormalY)
                 up = faceUp; // (not a face that lies across the construct's up: the surface under the feet decides)
             s.Grounded = true;
+            if (standing.Anchored && standing.MoveSeg(standSeg) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(up, QuatOf(standing, standSeg))), worldUp) >= AnchoredLevel)
+                return; // (the end of a tall frozen thing: its up is its long side, but this floor is level: the world's)
             Join(ref s, standing, standSeg, up, rel);
             return;
         }

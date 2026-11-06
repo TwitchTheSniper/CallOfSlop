@@ -63,6 +63,20 @@ public sealed partial class Game : IConstructTargets
 
     private static byte GunKillId(Construct by, int gunPart) => by.GunOf(gunPart) is var k and >= 0 && by.Guns[k].Def is { } w ? w.Id : Weapons.DefaultPrimary.Id;
 
+    void IConstructTargets.RoundHit(int id, float damage, byte by, byte weapon, Vector3 at, Vector3 dir)
+    {
+        var amount = Math.Max(1, (int)MathF.Round(damage)); // (a spent round still stings)
+        if (id == CwZombieTarget)
+        {
+            if (_cwZombie is { } z && Players.TryGetValue(by, out var killer))
+                DamageZombie(killer, z, amount, false, melee: false, SandboxNow);
+            _cwZombie = null;
+            return;
+        }
+        if (Players.TryGetValue((byte)id, out var victim) && victim.Alive)
+            DamagePlayer(Players.GetValueOrDefault(by) ?? victim, victim, amount, false, weapon, SandboxNow, DamageKind.Bullet, at);
+    }
+
     void IConstructTargets.HitTarget(int id, float damage, GunEffect effects, Construct by, int gunPart, Vector3 at, Vector3 dir)
     {
         var credit = ConstructCredit(by, gunPart);
@@ -185,6 +199,8 @@ public sealed partial class Game : IConstructTargets
             for (var k = 0; k < w.FireCount; k++)
                 ConstructFireFx(w.Fires[k], now);
         }
+        w.FlushedFires = true;
+        w.FireCount = 0;
         for (var from = 0; from < w.AmmoDirty.Count;)
         {
             from = ConstructNet.WriteAmmo(SbW, w, w.AmmoDirty, from);
@@ -207,6 +223,12 @@ public sealed partial class Game : IConstructTargets
 
     private void ConstructFireFx(in CFireEvent e, double now)
     {
+        if (e.Kind == CFireKind.RoundOut)
+        {
+            if (!IsServer)
+                Constructs.AddRound(new CRound { Pos = e.At, Tested = e.At, Vel = e.To }); // (this PC's copy, for its tracer: ConstructRounds.cs)
+            return;
+        }
         if (e.Kind == CFireKind.ShellOut)
         {
             ShellOutFx(e, now);

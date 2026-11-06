@@ -157,6 +157,21 @@ public sealed partial class Game
         _rideDrawn = null;
     }
 
+    /// <summary>
+    /// A tick that took a player into a frame (a landing, another segment): the draw between the ticks starts where the feet
+    /// were, carried with the deck, not at the landing spot, so the last tick of a fall isn't skipped.
+    /// </summary>
+    private void RideEntryDraw(Player p)
+    {
+        ref var s = ref p.Sim;
+        if (s.RideBody == 0 || (p.PrevRideBody == s.RideBody && p.PrevRideSeg == s.RideSeg) || Constructs.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
+            return;
+        var was = p.PrevPosition + ConstructRide.SurfaceVel(c, s.RideSeg, s.Position) * World.TickDt;
+        if (Vector3.DistanceSquared(was, s.Position) > 4f)
+            return; // (a teleport, a respawn: nothing to blend from)
+        (p.PrevRideBody, p.PrevRideSeg, p.PrevRideLocal) = (s.RideBody, s.RideSeg, ConstructRide.ToLocal(c, s.RideSeg, was));
+    }
+
     /// <summary>Server: after the constructs' step every rider is where their construct now is, whether or not an input came in this tick.</summary>
     private void SandboxRidersFollow()
     {

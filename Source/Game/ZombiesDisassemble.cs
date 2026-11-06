@@ -293,7 +293,7 @@ public sealed partial class Game
     }
 
     private static void WriteBuildCleared(PacketWriter w, byte player, int slot, byte weapon) =>
-        w.Begin(Msg.ZBuild).U8(player).U8((byte)slot).U8(weapon).U8(ZBuildCleared).U16(0);
+        w.Begin(Msg.ZBuild).U8(player).U8((byte)slot).U8(weapon).U8(ZBuildCleared).U32(0);
 
     /// <summary>Server, for a joiner: the empty gun slots 1-2 of <paramref name="p"/> (others are drawn empty-handed, not with a stock gun).</summary>
     private void SendEmptySlotsTo(RakNetGUID guid, Player p, ZPlayer zp)

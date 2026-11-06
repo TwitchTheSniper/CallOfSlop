@@ -2614,6 +2614,15 @@ ended, as the round's end is what the event says.
 
 `World.Query` is the map alone: constructs aren't in it, so anything that flies has to ask them too. `Throwables.Bodies` is the constructs of the Game ticking (set at the top of each tick, null outside the Sandbox). A thrown thing sweeps each sub-step's motion relative to each nearby body (`Throwables.ConstructContact`), so a thin plate or one coming at it isn't passed, and bounces by the relative velocity. Slow on an up-facing surface it rests on the construct (`Projectile.RideBody`, in that segment's frame): it rolls to a stop, goes with the vehicle, and flies again if it tips over 60 degrees, rolls off or the part goes. A sticky thing stuck to a construct goes with it. Launcher rounds (`RocketFlight.Step`) meet constructs too, and shells always did. A blast's players are covered by a construct between them (`Throwables.ConstructCover`; glass doesn't cover). A construct's own parts aren't: `ConstructWorld.Blast` hits every part in range by distance, through the hull.
 
+### Flying rounds
+
+Code: `Source/Constructs/ConstructRounds.cs`. A Sandbox round is resolved at once over its reach, as ever (a built hand gun's 200 m, times its charge above 100%; a mounted gun's range). A round that met nothing in its reach doesn't end there: it goes into a pool and flies until it lands, with `CFireKind.RoundOut` telling every PC, and a client flies its own copy for the tracer. Stock guns and every other mode end at their reach. Flame and harpoon guns don't fly on, and shells have their own pool.
+
+- **Cap.** 256 rounds at once (`MaxRounds`); past that a round ends at its reach. 48 of them look for what they hit a tick (`RoundRaysPerTick`), in turn, each over the whole stretch since its last look, so nothing is flown through and a busy sky costs a bounded tick. Nothing allocates.
+- **Air.** Drag of 0.3 a second (`RoundDrag`): against gravity of 18 m/s2 a falling round settles at 60 m/s. A 350 m/s round shot straight up reaches 782 m and is down in 23 s at 59 m/s. It flies 60 s at most, and goes at the map's edge.
+- **Impact.** A flying round hits players, zombies and construct parts with its damage times its speed over its muzzle speed: that round lands with a sixth of its damage, at least 1 on a player. It hits the map with no mark, and an explosive round doesn't go off.
+- **Space.** On a planetoid or out in space there is no drag, and a round follows `ConstructShells.GravityAt` (the map's point gravity and every gravity hook). It flies 120 s: 42 km at 350 m/s, 126 km at 1,050 m/s. It goes 180 km from the bubble's origin (`RoundSpaceReach`), where floats coarsen and ships leave the bubble: it doesn't leave with them.
+
 ### Powder charge
 
 One number for how hard a round leaves, 25% to 300% of the standard load (`Source/Zombies/PowderCharge.cs`). 100% is the gun as it was. **On a construct gun** it is a setting on the receiver (configure tool, `CfgKey.Charge`, group Gun): every builder receiver and the Rifle, Heavy and Shell Receivers have it; on a merged receiver any member's panel sets it (the first member away from 100% counts). **On a hand gun** it is a slider beside the build in the Sandbox's Gun Workbench, kept in the build text's style field after an `@` (`volley@150`), which the default doesn't write. It isn't on a beam (`energy`), `fuel`, `harpoon` or `launcher` receiver, nor on melee weapons. Zombies ignores it, and no other mode has built guns' arcs.
@@ -4948,10 +4957,18 @@ parts"), so a search or the tree finds them like any other part.
 
 **Direct spawns** (creative worlds only: a map with `"infiniteParts": false` refuses them, "its enemies come from the
 world"): Msg.CAct `Spawn` (u8 what, u8 difficulty, u8 gun kind, u8 its value, u8 zombie mix, u32 count, the aimed spot)
-and `ClearSpawns`. The server checks the permission (the host, or everyone when the host allows it), the spot (`SandboxSpawnSpot`:
-ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and the caps (a request over a cap is
-cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a bot a tick, 8 individual zombies
-a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+and `ClearSpawns`. The server checks the permission (joined players may spawn unless the host turns that off in the Spawn
+tab), the spot (`SandboxSpawnSpot`: ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and
+the caps (a request over a cap is cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a
+bot a tick, 8 individual zombies a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+
+**Joined players** have the same tab within limits of their own, so a client can't take the host's tick: at most
+`SpawnClientBots` (8) bots and `SpawnClientZombies` (64) zombies out at once, spawners on their constructs included, all
+under the host's bot cap (16 by default, shared with everyone) and the individual tier's cap (300 zombies at once, shared).
+Their zombies are always individuals: the crowd and mass tiers have no owners, so they couldn't be counted or cleared per
+player. A client's clear (**Clear mine**) takes only what is theirs, even when the host has turned their spawning off; the
+host's Clear all takes everything. What a player spawned is nobody's once they leave, so the next person given that id
+neither inherits it nor has it count against them.
 
 **Sides**: a spawned bot is a full bot (the bot AI, the nav graph) with team 10 (friendly) or 11 (enemy), replicated in the
 mode state like any team. The Sandbox's `AreEnemies`: enemy bots against everyone else and never each other; friendly bots
@@ -5547,6 +5564,16 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
   turns; until the first one arrives the server works it out from the world look. The world position stays in the entry
   (a fallback for a construct the client doesn't have yet).
 - **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear), with one change on the move, below.
+- **Coming down onto a construct** (`ConstructWorld.BlockPlayer`). A body coming down lands on any part's top that faces up in the
+  world, whichever way the part is turned (an inverted or tipped hull too), with its centre up to `ConstructRide.EdgeHold`
+  (0.24 m) past the edge, as the frame's capsule stands on an edge, and a tick's fall relative to the part always reaches the
+  top, so a fast fall doesn't pass it. Without these the sideways push-out took them off the rim or beam. The landing's tick is
+  drawn from where the feet were (`RideEntryDraw`), and a client's correction on a deck is eased up to 8 m (a fast deck on a
+  client's copy is a round trip behind). Frozen upside down a rider stays on (level is judged by their own up). The world
+  still counts: a hull that carries its rider into the ground lets them go, and a construct can't run over someone who rode it
+  in the last 1.5 s (`Game.RunOverGrace`); it only pushes them. Under a part (a hull's roof) a body stops, it isn't pushed out
+  sideways. `SteepBoard` only takes feet at the face, so a tall thing's long side (its up by area) doesn't take a body coming down
+  on its end. Sandbox has no 60 m sky limit (`World.OpenSky`): a body put back under it landed inside anything built taller.
 - **Getting out on the move** (`ConstructRideExit.cs`, `Game.SandboxStand`). On a construct moving over 1 m/s, or with no ground
   under the plain exit (a hovering hull, a ship on water), the search looks for a spot on the construct first: 8 ways out of the
   seat in its own directions and the rider's up, 0.75 to 3.2 m out, nearest first, in sight of the seat before any other. A spot

@@ -1111,7 +1111,7 @@ public sealed partial class Ui
     {
         ImGui.TextColored(Orange, "THE BUILD"u8);
         ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, $"  {Bm.Build.PartCount} parts, {Bm.Build.Weight:0.0} kg");
+        ImGuiSafe.TextColored(Dim, $"  {Bm.PartsNow} parts, {Bm.WeightNow:0.0} kg");
         if (!Bm.Build.IsMelee && Bm.Build.Root is { Part.ReceiverCapacity: > 1 })
         {
             ImGui.SameLine();
@@ -1398,7 +1398,7 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Dim, $"Fire type: {Bm.FireType} (the action part on each receiver sets it)");
         }
         var cap = b.CarryWeight * 2;
-        WbBar("Weight", b.Weight, trial?.Build.Weight, cap > 0 ? b.Weight / cap : 0, trial != null && cap > 0 ? trial.Build.Weight / (trial.Build.CarryWeight * 2) : null, "0.0 kg", false);
+        WbBar("Weight", Bm.WeightNow, trial?.Build.Weight, cap > 0 ? Bm.WeightNow / cap : 0, trial != null && cap > 0 ? trial.Build.Weight / (trial.Build.CarryWeight * 2) : null, "0.0 kg", false);
         if (b.Frame != null)
             WbWrapped(Dim, $"Carries {b.CarryWeight:0.#} kg before it slows you (at most {cap:0.#} kg).");
     }

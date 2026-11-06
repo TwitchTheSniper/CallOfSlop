@@ -417,6 +417,9 @@ public sealed partial class Construct
     // Caches
     public CWheel[] Wheels = [];
     public int WheelCount;
+
+    /// <summary>The next time this copy looks for where its wheels meet the ground, for the springs drawn (ConstructRender.FitWheels).</summary>
+    public double FitAt;
     public bool Dirty = true;
     public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
     public uint StoreNetKey, StoreNetSeen; // a hash of its stores and chutes, and the last one the beacons took in (ConstructBeacons.cs)

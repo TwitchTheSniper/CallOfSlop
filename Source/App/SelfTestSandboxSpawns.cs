@@ -357,6 +357,7 @@ public static partial class SelfTest
         sp.ImmuneUntil = now + 1e6;
         Pump(server, [a], 0.3, ref now, clock);
         var spot = ConstructWorld.Ground(World.Query, 10, -6);
+        server.SandboxSpawnAnyone = false;
         a.SandboxSendSpawn(SbSpawnKind.Zombies, 0, 0, 0, 0, 5, spot);
         Pump(server, [a], 0.4, ref now, clock);
         var refused = a.SandboxNotice;

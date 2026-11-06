@@ -69,7 +69,7 @@ public enum CActKind : byte
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
     Talk, // u8 the person's body (its player id), u8 TalkAsk: a player talks to one of the story's people (protocol 159; GameStoryChat.cs)
     Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
-    Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq, text: a Video Screen's or Music Player's list and transport (protocol 164; ConstructMedia.cs)
+    Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq, text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -188,6 +188,7 @@ public sealed partial class Game
 
     internal void SandboxOnSpawn(Player p)
     {
+        KeepBuiltGuns(p); // (a built gun stays through a death: the respawn button sends the saved loadout, which isn't it; ZombiesMode.cs)
         if (IsServer)
         {
             SandboxRules();
@@ -1277,6 +1278,8 @@ public sealed partial class Game
         if (!SandboxOn || Constructs.Bodies.Count == 0)
             return;
         ref var h = ref SandboxHands.Hand(p.Id);
+        if (IsServer && (h.Seated || s.RideBody != 0))
+            (_sbRodeBody[p.Id], _sbRodeAt[p.Id]) = (h.Seated ? h.SeatBody : s.RideBody, SandboxNow);
         if (h.Seated && Constructs.Get(h.SeatBody) is { } c)
         {
             s.Position = ConstructEdits.SeatFeet(c, h.SeatPart);
@@ -1320,7 +1323,12 @@ public sealed partial class Game
 
     public const double RunOverCooldown = 0.6;
 
+    /// <summary>Seconds after riding a construct (on it or in its seat) that it can't run its rider over: a roll or a crash drops them under it.</summary>
+    public const double RunOverGrace = 1.5;
+
     private readonly double[] _sbHitAt = new double[256];
+    private readonly ushort[] _sbRodeBody = new ushort[256]; // server: the construct each player last rode, and when
+    private readonly double[] _sbRodeAt = new double[256];
 
     /// <summary>Run-over damage: by how fast the part moved towards them (its own speed) and how heavy its construct is; the driver (if any) gets the credit.</summary>
     public static int RunOverDamage(float speed, float mass) =>
@@ -1342,6 +1350,8 @@ public sealed partial class Game
     private void SandboxRunOver(Player p, ref MoveState s, Construct car)
     {
         var now = SandboxNow;
+        if (car.Id == _sbRodeBody[p.Id] && now < _sbRodeAt[p.Id] + RunOverGrace)
+            return; // (just off this construct: it pushes them, as anything slow does, but it doesn't run them over)
         if (now < _sbHitAt[p.Id] + RunOverCooldown)
             return;
         _sbHitAt[p.Id] = now;
@@ -1559,7 +1569,7 @@ public sealed partial class Game
             ConstructSeal.Step(Constructs, null, ref Constructs._sealTicks, server: false);
             Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
-            ConstructRender.FitWheels(Constructs, World.Query);
+            ConstructRender.FitWheels(Constructs, World.Query, Local?.RenderPosition ?? Vector3.Zero, now);
             if (AnyGravityParts() || ConstructGravity.Wells + ConstructGravity.Generators > 0)
                 ConstructGravity.Refresh(Constructs); // (gravity parts from the heard outputs and the blended poses: ConstructGravity.cs)
         }

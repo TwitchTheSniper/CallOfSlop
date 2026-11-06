@@ -20,6 +20,7 @@ public sealed partial class Zombie
         Id = 0;
         SbBody = SbTag = 0; // (GameSandboxSpawns.cs)
         SbPart = 0;
+        SbOwner = 255;
         Sim = default;
         Yaw = 0;
         Health = MaxHealth = 0;

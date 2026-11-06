@@ -270,9 +270,8 @@ public sealed partial class Game
     public static void WriteWeaponDrop(PacketWriter w, ZWeaponDrop d, double secondsLeft)
     {
         var bytes = Encoding.UTF8.GetBytes(d.Build.ToText());
-        var n = Math.Min(bytes.Length, 6000);
         w.Begin(Msg.ZPickup).U8(0).U16(d.Id).F32(d.At.X).F32(d.At.Y).F32(d.At.Z).F32((float)Math.Max(0, secondsLeft)).U8(d.Owner)
-            .U8((byte)((d.Full ? 1 : 0) | (d.Melee ? 2 : 0))).Str(d.OwnerName.Length > 32 ? d.OwnerName[..32] : d.OwnerName).U16((ushort)n).Bytes(bytes.AsSpan(0, n))
+            .U8((byte)((d.Full ? 1 : 0) | (d.Melee ? 2 : 0))).Str(d.OwnerName.Length > 32 ? d.OwnerName[..32] : d.OwnerName).U32((uint)bytes.Length).Bytes(bytes)
             .U16((ushort)Math.Clamp(d.ExpireRound, 0, ushort.MaxValue));
     }
 

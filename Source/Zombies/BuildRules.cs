@@ -351,6 +351,28 @@ public static class BuildRules
     /// <summary>Most barrels in one weapon, over all its receivers (after splitters and bundles).</summary>
     public const int MaxBarrels = 32;
 
+    /// <summary>
+    /// The Sandbox's workbench has no part or barrel limits: no count of parts or barrels, a weapon's or a receiver's, and no limit on how deep splitters
+    /// stack. What holds a build then is <see cref="MaxProjectiles"/> (a shot's packet counts its ends in a byte), <see cref="WeaponBuild.MaxParseDepth"/>
+    /// and <see cref="MaxTextBytes"/>. Set by the game that is running; a change forgets the assembled builds, as their verdicts depend on it.
+    /// </summary>
+    public static bool BarrelsOpen
+    {
+        get => _barrelsOpen;
+        set
+        {
+            if (_barrelsOpen == value)
+                return;
+            _barrelsOpen = value;
+            Game.ForgetAssembled();
+        }
+    }
+
+    private static bool _barrelsOpen;
+
+    /// <summary>The longest build text a game sends or takes. A longer one is refused whole, never cut.</summary>
+    public const int MaxTextBytes = 1 << 20;
+
     /// <summary>Splitters may feed splitters, but only this deep.</summary>
     public const int MaxSplitterDepth = 2;
 
@@ -359,7 +381,7 @@ public static class BuildRules
     /// <see cref="MaxSplitterDepth"/> deep. Offset splitters (one output: they move the barrel, they don't split the shot)
     /// never count, either as the new part or on the way up.
     /// </summary>
-    public static bool SplitterTooDeep(BuildNode parent, PartDef part) =>
+    public static bool SplitterTooDeep(BuildNode parent, PartDef part) => !_barrelsOpen &&
         part.Category == PartCategory.Splitter && !part.IsOffset
         && parent.SplitterDepth() + (parent.Part.Category == PartCategory.Splitter && !parent.Part.IsOffset ? 1 : 0) >= MaxSplitterDepth;
 
@@ -597,22 +619,25 @@ public static class BuildRules
     public static string? LimitProblem(WeaponBuild b)
     {
         var parts = b.PartCount;
-        if (parts > MaxParts)
+        if (Encoding.UTF8.GetByteCount(b.ToText()) > MaxTextBytes)
+            return $"Too many parts: {parts} make a build too long to send.";
+        if (parts > MaxParts && !_barrelsOpen)
             return $"Too many parts: {parts}, the most a weapon holds is {MaxParts}.";
         var barrels = b.BarrelCount;
-        if (barrels > MaxBarrels)
+        if (barrels > MaxBarrels && !_barrelsOpen)
             return $"Too many barrels: {barrels}; the most a weapon holds is {MaxBarrels}.";
-        foreach (var r in b.Receivers)
-        {
-            var rb = WeaponBuild.BarrelsOf(r);
-            var max = Math.Min(MaxBarrels, r.Part.Receiver!.MaxBarrels);
-            if (rb > max)
-                return $"Too many barrels on the {r.Part.Name}: {rb}; it handles at most {max}.";
-        }
+        if (!_barrelsOpen)
+            foreach (var r in b.Receivers)
+            {
+                var rb = WeaponBuild.BarrelsOf(r);
+                var max = Math.Min(MaxBarrels, r.Part.Receiver!.MaxBarrels);
+                if (rb > max)
+                    return $"Too many barrels on the {r.Part.Name}: {rb}; it handles at most {max}.";
+            }
         var shots = ProjectilesPerPull(b);
         if (shots > MaxProjectiles)
             return $"Too many projectiles per trigger pull: {shots}; the most is {MaxProjectiles}.";
-        if (b.Frame != null && b.Weight > b.CarryWeight * 2)
+        if (b.Frame != null && !_barrelsOpen && b.Weight > b.CarryWeight * 2) // (the Sandbox: a heavy gun is slow, not refused)
             return $"Too heavy: {b.Weight:0.0} kg; the {b.Root!.Part.Name} can't carry more than {b.CarryWeight * 2:0.#} kg.";
         if (b.IsMelee && b.Weight > MaxMeleeWeight)
             return $"Too heavy: {b.Weight:0.0} kg; a melee weapon can't be more than {MaxMeleeWeight:0} kg.";

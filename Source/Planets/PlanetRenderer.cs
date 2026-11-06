@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// its normal and colour, worked out on a worker thread from the planetoid's features; the vertex shader only adds the
 /// origin, so far-away pages lose nothing to float precision. Vertices morph into the next level's grid near the end of
 /// their range (positions, normals and colours together), so levels meet without cracks or pops; skirts hang down along
-/// "up" to hide what's left while a page is coming. Nodes on the far side of the planet are skipped.
+/// "up" to hide what's left while a page is coming. Nodes below the horizon are skipped (<see cref="BelowHorizon"/>).
 /// <para>
 /// The sky light and fog lean on the local "up" (away from the centre), not on world +Y: the shader corrects
 /// <c>ApplyLightAt</c>'s sky/ground ambient and colours the haze with the sky gradient seen from where the camera stands.
@@ -27,8 +27,15 @@ public sealed unsafe partial class PlanetRenderer
     private const int QuarterVerts = Quarter + 1;
     private const int Apron = PageVerts + 2;
 
-    /// <summary>A level is drawn within this many of its node widths of the camera.</summary>
-    public const float RangeScale = 2.4f;
+    /// <summary>The finest level is drawn within this many of its node widths of the camera.</summary>
+    public const float RangeScale = 2f;
+
+    /// <summary>
+    /// Each coarser level's range, in its own node widths, falls from <see cref="RangeScale"/> to this: the triangles a level
+    /// shows fall with the square of it, and far off they were a few pixels across. Below about 1.5 a node could border one
+    /// two levels coarser, which the morph can't join.
+    /// </summary>
+    public const float FarRangeScale = 1.6f;
 
     /// <summary>Pages kept on the GPU (two 65 x 65 RGBA32F layers each: 135 KB).</summary>
     public const int MaxPages = 512;
@@ -36,8 +43,9 @@ public sealed unsafe partial class PlanetRenderer
     private const int MaxLevels = 16;
     private const int MaxInstances = 4096;
     private const int FloatsPerInstance = 8;
-    private const int UploadsPerFrame = 8;
+    private const int UploadsPerFrame = 4; // (two 135 KB textures a page: at 60 frames a second still 240 pages a second)
     private const int MaxPending = 64;
+    private const double LowestSpare = 40; // metres under the lowest ground the top pages found: the pits they missed (BelowHorizon)
     private const int PosUnit = 10, NrmUnit = 11; // texture units (0: the box texture array, 12-14: the light grid)
 
     private const string VertexSrc = """
@@ -129,11 +137,13 @@ public sealed unsafe partial class PlanetRenderer
         in vec3 vNormal;
         in vec3 vUp;
         in vec4 vColor;
+        uniform sampler2DArray uTex;
+        #ifdef DUG_MASK
         in vec2 vGrid;
         flat in float vDug;
         in float vSkirt;
-        uniform sampler2DArray uTex;
         uniform sampler2DArray uDug;  // level-0 pages over dug ground: their cells (and a ring of the next pages'), 1 = dug
+        #endif
         uniform float uGroundLayer;
         uniform float uRockLayer;
         uniform mat3 uToLocal; // world -> the camera's local frame (y = up there)
@@ -160,11 +170,20 @@ public sealed unsafe partial class PlanetRenderer
 
         float Tri(vec3 p, vec3 w, float layer)
         {
-            return texture(uTex, vec3(p.zy, layer)).r * w.x + texture(uTex, vec3(p.xz, layer)).r * w.y + texture(uTex, vec3(p.xy, layer)).r * w.z;
+            // (a plane with no weight left costs no lookup: most of the ground leans on one or two)
+            float s = 0.0;
+            if (w.x > 0.0)
+                s += texture(uTex, vec3(p.zy, layer)).r * w.x;
+            if (w.y > 0.0)
+                s += texture(uTex, vec3(p.xz, layer)).r * w.y;
+            if (w.z > 0.0)
+                s += texture(uTex, vec3(p.xy, layer)).r * w.z;
+            return s;
         }
 
         void main()
         {
+            #ifdef DUG_MASK
             if (vDug >= 0.0)
             {
                 // Dug cells are drawn as blocks (PlanetRendererDug.cs): the surface leaves them out (texel = cell + 1).
@@ -185,9 +204,10 @@ public sealed unsafe partial class PlanetRenderer
                         discard;
                 }
             }
+            #endif
             vec3 n = normalize(vNormal);
             vec3 up = normalize(vUp);
-            vec3 w = abs(n);
+            vec3 w = max(abs(n) - vec3(0.04), vec3(0.0)); // (a sliver of a plane adds nothing to see: it goes to zero smoothly, so no line shows)
             w /= (w.x + w.y + w.z);
             float ground = Tri(vTex * 0.5, w, uGroundLayer);
             float rock = vColor.a > 0.01 ? Tri(vTex * 0.25, w, uRockLayer) : 0.0;
@@ -229,6 +249,7 @@ public sealed unsafe partial class PlanetRenderer
     private readonly int[] _pageUsed = new int[MaxPages];
     private readonly Vector3[] _pageOrigin = new Vector3[MaxPages];
     private readonly Vector3[] _pageMin = new Vector3[MaxPages * 5], _pageMax = new Vector3[MaxPages * 5]; // the page, then its four quarters
+    private readonly float[] _pageTop = new float[MaxPages * 5]; // the same five: the farthest vertex from the centre
     private int _pagesHeld;
     private readonly HashSet<long> _pending = new(MaxPending * 2);
 
@@ -242,6 +263,7 @@ public sealed unsafe partial class PlanetRenderer
         public readonly float[] Nrm = new float[PageVerts * PageVerts * 4];
         public Vector3 Origin;
         public readonly Vector3[] Min = new Vector3[5], Max = new Vector3[5];
+        public readonly float[] Top = new float[5];
     }
 
     private readonly ConcurrentQueue<Request> _requests = new();
@@ -261,11 +283,13 @@ public sealed unsafe partial class PlanetRenderer
     private int _instances;
     private int _frame;
     private Vector3 _cam, _camUp;
+    private double _lowest;  // from the centre: the ball that stands in for the ground (BelowHorizon)
+    private double _horizon; // the angle from under the camera to that ball's horizon (-1: inside it)
     private Vector4[] _planes = new Vector4[6];
     private int _made;
 
-    /// <summary>Triangles in one instance: the 32 x 32 grid and its four skirts (both faces).</summary>
-    public const int TrianglesPerInstance = Quarter * Quarter * 2 + 4 * Quarter * 4;
+    /// <summary>Triangles in one instance: the 32 x 32 grid and its four skirts (their outer faces: a crack is seen from its low side, and that's the side the far edge's skirt shows).</summary>
+    public const int TrianglesPerInstance = Quarter * Quarter * 2 + 4 * Quarter * 2;
 
     /// <summary>Instances (quarter-nodes) drawn last frame, pages held, pages made since the planetoid was set, triangles.</summary>
     public (int Instances, int Pages, int Made, int Triangles) Stats => (_instances, _pagesHeld, _made, _instances * TrianglesPerInstance);
@@ -283,8 +307,16 @@ public sealed unsafe partial class PlanetRenderer
 
     private readonly bool _headless;
     private bool _glReady;
-    private GlProgram _program;
-    private int _locViewProj, _locCam, _locCenter, _locTexOrigin, _locMorph, _locPos, _locNrm, _locTex, _locGround, _locRock, _locFog, _locFogRange, _locToLocal, _locDip;
+
+    /// <summary>The ground's program: without the dug mask's discard the GPU can test depth before shading, so that's the one used until a dug page is in view.</summary>
+    private struct Ground
+    {
+        public GlProgram Program;
+        public int ViewProj, Cam, Center, TexOrigin, Morph, Pos, Nrm, Tex, GroundLayer, Rock, Fog, FogRange, ToLocal, Dip, Dug;
+    }
+
+    private Ground _plain, _masked;
+    private bool _dugInView;
     private GlVertexArray _vao;
     private GlBuffer _ibo, _instVbo;
     private uint _posTex, _nrmTex;
@@ -326,10 +358,18 @@ public sealed unsafe partial class PlanetRenderer
         _cell = p.Cell;
         for (var l = 0; l < _levels; l++)
         {
-            _range[l] = (float)(RangeScale * (PageCells << l) * _cell);
-            _morph[l] = new Vector2(_range[l] * 0.6f, _range[l] * 0.9f);
+            var width = (float)((PageCells << l) * _cell);
+            // At least a level's own diagonal past the level before: whatever is drawn at l - 1 ends inside this range.
+            _range[l] = l == 0 ? RangeScale * width : MathF.Max(FarRangeScale * width, _range[l - 1] + 1.5f * width * 0.5f);
+            // A vertex stays on its own grid out past the finer level's nodes, which reach about a node's diagonal beyond
+            // that level's range (they meet this level there, and turn into it there), so the morph runs in what's left.
+            var finer = l == 0 ? 0f : _range[l - 1] + width * 0.5f * 1.414f;
+            _morph[l] = l == 0 ? new Vector2(_range[l] * 0.6f, _range[l] * 0.9f)
+                : new Vector2(MathF.Max(_range[l - 1] * 1.02f, MathF.Min(finer, _range[l] * 0.8f)), _range[l] * 0.95f);
         }
-        // The top two levels now, on this thread (30 pages): there's always ground, from the first frame.
+        // The top two levels now, on this thread (30 pages): there's always ground, from the first frame. They also sample
+        // the whole world (Planetoid.MinHeight is the features' limit, which no ground reaches: 1.6 km too low on the Dev map).
+        _lowest = double.MaxValue;
         var wp = new double[Apron * Apron * 3];
         var wh = new double[Apron * Apron];
         for (var l = _levels - 1; l >= Math.Max(_levels - 2, 0); l--)
@@ -342,10 +382,13 @@ public sealed unsafe partial class PlanetRenderer
                 var req = new Request(_src, KeyOf(f, l, nx, nz), f, l, nx, nz);
                 var res = _free.TryDequeue(out var d) ? d : new Result();
                 MakePage(req, res, wp, wh);
+                foreach (var h in wh)
+                    _lowest = Math.Min(_lowest, h);
                 _pending.Add(req.Key);
                 _results.Enqueue(res);
             }
         }
+        _lowest = Math.Max(p.Radius + _lowest - LowestSpare, p.Radius + p.MinHeight);
         if (_worker == null)
         {
             _worker = new Thread(Work) { IsBackground = true, Name = "Planet pages", Priority = ThreadPriority.BelowNormal };
@@ -398,6 +441,7 @@ public sealed unsafe partial class PlanetRenderer
         {
             dst.Min[q] = new Vector3(float.MaxValue);
             dst.Max[q] = new Vector3(float.MinValue);
+            dst.Top[q] = 0;
         }
         var surf = pl.Surface;
         var o = 0;
@@ -432,13 +476,14 @@ public sealed unsafe partial class PlanetRenderer
             dst.Nrm[o + 3] = B(col.X) + B(col.Y) * 256f + B(col.Z) * 65536f;
             o += 4;
             var w = dst.Origin + rel;
-            Grow(dst, 0, w);
+            var top = (float)len;
+            Grow(dst, 0, w, top);
             // A vertex on a quarter's edge belongs to both quarters.
             for (var q = 0; q < 4; q++)
             {
                 int qi = (q & 1) * Quarter, qj = (q >> 1) * Quarter;
                 if (i >= qi && i <= qi + Quarter && j >= qj && j <= qj + Quarter)
-                    Grow(dst, 1 + q, w);
+                    Grow(dst, 1 + q, w, top);
             }
         }
         // Skirts hang below the edges.
@@ -451,10 +496,11 @@ public sealed unsafe partial class PlanetRenderer
 
         static float B(float v) => Math.Clamp(MathF.Round(v * 255f), 0f, 255f);
 
-        static void Grow(Result d, int q, Vector3 w)
+        static void Grow(Result d, int q, Vector3 w, float top)
         {
             d.Min[q] = Vector3.Min(d.Min[q], w);
             d.Max[q] = Vector3.Max(d.Max[q], w);
+            d.Top[q] = MathF.Max(d.Top[q], top);
         }
     }
 
@@ -467,17 +513,30 @@ public sealed unsafe partial class PlanetRenderer
     public void Update(Vector3 cam, ReadOnlySpan<Vector4> planes)
     {
         _instances = 0;
+        _dugInView = false;
         if (_src is not { } src)
             return;
         _frame++;
         _cam = cam;
         var rel = cam - src.Planet.Center;
         _camUp = rel.LengthSquared() > 1e-6f ? Vector3.Normalize(rel) : Vector3.UnitY;
+        var dist = rel.Length();
+        _horizon = dist > _lowest ? Math.Acos(_lowest / dist) : -1;
         planes.CopyTo(_planes);
         TakeResults(src, UploadsPerFrame);
         UpdateDug(src.Planet);
+        // Near ground first (the faces here, the quarters in Select): one draw shades in this order, so what the ground
+        // nearer the camera hides never gets as far as the fragment shader.
+        Span<float> near = stackalloc float[6];
+        Span<int> order = stackalloc int[6];
         for (var f = 0; f < 6; f++)
-            Select(f, _levels - 1, 0, 0);
+        {
+            near[f] = -Vector3.Dot(FaceDir(f), _camUp);
+            order[f] = f;
+        }
+        Nearest(near, order);
+        for (var f = 0; f < 6; f++)
+            Select(order[f], _levels - 1, 0, 0);
         if (_requests.Count > 0)
             _wake.Release();
     }
@@ -488,16 +547,21 @@ public sealed unsafe partial class PlanetRenderer
         var key = KeyOf(face, level, nx, nz);
         var page = _pageOf.TryGetValue(key, out var p) ? p : -1;
         Vector3 min, max;
+        float top;
         if (page >= 0)
         {
             min = _pageMin[page * 5];
             max = _pageMax[page * 5];
+            top = _pageTop[page * 5];
         }
         else
+        {
             Estimate(src.Planet, face, level, nx, nz, out min, out max);
+            top = (float)src.Planet.Radius + src.Planet.MaxHeight;
+        }
         if (!SphereTouchesBox(_cam, _range[level], min, max))
             return false;
-        if (!TerrainRenderer.Visible(_planes, min, max) || BehindPlanet(src.Planet, min, max))
+        if (!TerrainRenderer.Visible(_planes, min, max) || BelowHorizon(src.Planet.Center, min, max, top))
             return true; // out of view: nothing, and no page wanted for it
         if (page < 0)
         {
@@ -511,11 +575,47 @@ public sealed unsafe partial class PlanetRenderer
                 AddQuarter(page, level, q);
             return true;
         }
+        Span<float> near = stackalloc float[4];
+        Span<int> order = stackalloc int[4];
         for (var q = 0; q < 4; q++)
+        {
+            var mid = (_pageMin[page * 5 + 1 + q] + _pageMax[page * 5 + 1 + q]) * 0.5f;
+            near[q] = Vector3.DistanceSquared(mid, _cam);
+            order[q] = q;
+        }
+        Nearest(near, order);
+        for (var k = 0; k < 4; k++)
+        {
+            var q = order[k];
             if (!Select(face, level - 1, nx * 2 + (q & 1), nz * 2 + (q >> 1)))
                 AddQuarter(page, level, q);
+        }
         return true;
     }
+
+    /// <summary><paramref name="order"/> by <paramref name="key"/>, smallest first (a handful: an insertion sort; <paramref name="key"/> is left sorted too).</summary>
+    private static void Nearest(Span<float> key, Span<int> order)
+    {
+        for (var i = 1; i < key.Length; i++)
+        {
+            var (k, o) = (key[i], order[i]);
+            var j = i - 1;
+            for (; j >= 0 && key[j] > k; j--)
+                (key[j + 1], order[j + 1]) = (key[j], order[j]);
+            (key[j + 1], order[j + 1]) = (k, o);
+        }
+    }
+
+    /// <summary>A cube face's middle direction (Planetoid's faces: +X, -X, +Y, -Y, +Z, -Z).</summary>
+    private static Vector3 FaceDir(int f) => f switch
+    {
+        0 => Vector3.UnitX,
+        1 => -Vector3.UnitX,
+        2 => Vector3.UnitY,
+        3 => -Vector3.UnitY,
+        4 => Vector3.UnitZ,
+        _ => -Vector3.UnitZ,
+    };
 
     /// <summary>A node's bounds before its page is made: nine directions over it at the lowest and highest the ground can be.</summary>
     private static void Estimate(Planetoid pl, int face, int level, int nx, int nz, out Vector3 min, out Vector3 max)
@@ -540,12 +640,24 @@ public sealed unsafe partial class PlanetRenderer
         max += new Vector3(sag);
     }
 
-    /// <summary>Is the box wholly on the far side of the planet from the camera (past the plane through the centre)?</summary>
-    private bool BehindPlanet(Planetoid pl, Vector3 min, Vector3 max)
+    /// <summary>
+    /// Is the box, whose highest point is <paramref name="top"/> from the centre, wholly below the horizon? A smooth ball a
+    /// little under the lowest ground found stands in for the ground, so a slope never hides what it shouldn't: a line of
+    /// sight touching that ball leaves the camera at <see cref="_horizon"/> round from under it and reaches height
+    /// <paramref name="top"/> the same way again past the touch.
+    /// </summary>
+    private bool BelowHorizon(Vector3 centre, Vector3 min, Vector3 max, float top)
     {
-        var c = (min + max) * 0.5f - pl.Center;
+        if (_horizon < 0)
+            return false;
+        var c = (min + max) * 0.5f - centre;
+        var len = c.Length();
         var r = (max - min).Length() * 0.5f;
-        return Vector3.Dot(c, _camUp) + r < 0;
+        if (r >= len)
+            return false;
+        var past = top > _lowest ? Math.Acos(_lowest / top) : 0;
+        var away = Math.Acos(Math.Clamp(Vector3.Dot(c, _camUp) / len, -1f, 1f)) - Math.Asin(r / len);
+        return away > _horizon + past + 0.002; // (about 20 m to spare)
     }
 
     private void AddQuarter(int page, int level, int q)
@@ -554,7 +666,7 @@ public sealed unsafe partial class PlanetRenderer
             return;
         var min = _pageMin[page * 5 + 1 + q];
         var max = _pageMax[page * 5 + 1 + q];
-        if (!TerrainRenderer.Visible(_planes, min, max))
+        if (!TerrainRenderer.Visible(_planes, min, max) || BelowHorizon(_src!.Planet.Center, min, max, _pageTop[page * 5 + 1 + q]))
             return;
         var o = _instances++ * FloatsPerInstance;
         var origin = _pageOrigin[page];
@@ -565,7 +677,9 @@ public sealed unsafe partial class PlanetRenderer
         _inst[o + 4] = (q & 1) * Quarter;
         _inst[o + 5] = (q >> 1) * Quarter;
         _inst[o + 6] = level;
-        _inst[o + 7] = (float)(_cell * (1 << level)) * (level == 0 && _pageDug[page] ? -1f : 1f); // (negative: its dug mask is on)
+        var dug = level == 0 && _pageDug[page];
+        _dugInView |= dug;
+        _inst[o + 7] = (float)(_cell * (1 << level)) * (dug ? -1f : 1f); // (negative: its dug mask is on)
     }
 
     private void Ask(Source src, long key, int face, int level, int nx, int nz)
@@ -611,6 +725,7 @@ public sealed unsafe partial class PlanetRenderer
             {
                 _pageMin[layer * 5 + q] = r.Min[q];
                 _pageMax[layer * 5 + q] = r.Max[q];
+                _pageTop[layer * 5 + q] = r.Top[q];
             }
             _pageUsed[layer] = _frame;
             _made++;
@@ -659,42 +774,47 @@ public sealed unsafe partial class PlanetRenderer
         if (_instances == 0 && _dug.Count == 0)
             return;
         var vp = gfx.ViewProj;
-        _program.Use();
-        Native.glUniformMatrix4fv(_locViewProj, 1, false, &vp.M11);
+        ref readonly var g = ref _dugInView ? ref _masked : ref _plain;
+        g.Program.Use();
+        Native.glUniformMatrix4fv(g.ViewProj, 1, false, &vp.M11);
         var cam = gfx.CameraPosition;
-        Native.glUniform3f(_locCam, cam.X, cam.Y, cam.Z);
+        Native.glUniform3f(g.Cam, cam.X, cam.Y, cam.Z);
         var c = src.Planet.Center;
-        Native.glUniform3f(_locCenter, c.X, c.Y, c.Z);
+        Native.glUniform3f(g.Center, c.X, c.Y, c.Z);
         var to = new Vector3(MathF.Floor(cam.X / 64f) * 64f, MathF.Floor(cam.Y / 64f) * 64f, MathF.Floor(cam.Z / 64f) * 64f);
-        Native.glUniform3f(_locTexOrigin, to.X, to.Y, to.Z);
+        Native.glUniform3f(g.TexOrigin, to.X, to.Y, to.Z);
         fixed (Vector2* m = _morph)
-            Native.glUniform2fv(_locMorph, MaxLevels, (float*)m);
+            Native.glUniform2fv(g.Morph, MaxLevels, (float*)m);
         var toLocal = LocalFrame(src.Planet, cam);
-        Native.glUniformMatrix3fv(_locToLocal, 1, false, &toLocal.M11);
-        Native.glUniform1f(_locDip, HorizonDip(src.Planet, cam));
-        Native.glUniform1i(_locTex, 0);
-        Native.glUniform1i(_locPos, PosUnit);
-        Native.glUniform1i(_locNrm, NrmUnit);
-        Native.glUniform1f(_locGround, (float)Material.Dirt);
-        Native.glUniform1f(_locRock, (float)Material.Concrete);
+        Native.glUniformMatrix3fv(g.ToLocal, 1, false, &toLocal.M11);
+        Native.glUniform1f(g.Dip, HorizonDip(src.Planet, cam));
+        Native.glUniform1i(g.Tex, 0);
+        Native.glUniform1i(g.Pos, PosUnit);
+        Native.glUniform1i(g.Nrm, NrmUnit);
+        Native.glUniform1f(g.GroundLayer, (float)Material.Dirt);
+        Native.glUniform1f(g.Rock, (float)Material.Concrete);
         var fog = gfx.FogColor;
-        Native.glUniform3f(_locFog, fog.X, fog.Y, fog.Z);
-        Native.glUniform2f(_locFogRange, gfx.FogRange.X, gfx.FogRange.Y);
+        Native.glUniform3f(g.Fog, fog.X, fog.Y, fog.Z);
+        Native.glUniform2f(g.FogRange, gfx.FogRange.X, gfx.FogRange.Y);
         Native.glActiveTexture(GL_TEXTURE0 + PosUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _posTex);
         Native.glActiveTexture(GL_TEXTURE0 + NrmUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _nrmTex);
         Native.glActiveTexture(GL_TEXTURE0 + DugUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _dugTex);
-        Native.glUniform1i(_locDug, DugUnit);
+        Native.glUniform1i(g.Dug, DugUnit);
         Native.glActiveTexture(GL_TEXTURE0);
         _vao.Bind();
         Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
+        Native.glBufferData(GL_ARRAY_BUFFER, MaxInstances * FloatsPerInstance * sizeof(float), null, GL_DYNAMIC_DRAW); // (orphan: never waits for a frame still drawing from it)
         fixed (float* p = _inst)
             Native.glBufferSubData(GL_ARRAY_BUFFER, 0, (nint)_instances * FloatsPerInstance * sizeof(float), p);
         PerfCounters.Draw(_indexCount * _instances);
+        Enable(GlCapability.CullFace); // (slopes facing away: the rest of the frame draws with it off)
+        Native.glCullFace(GlFace.Back);
         Native.glDrawElementsInstanced(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, (void*)0, _instances);
-        DrawDug(gfx, src.Planet, planes, to, toLocal);
+        DrawDug(gfx, src.Planet, planes, to, toLocal); // (PlanetEdits.Emit winds every quad to its normal)
+        Native.glDisable(GlCapability.CullFace);
         DrawCavity(gfx, src.Planet); // a hollow planetoid's cavity (PlanetRendererCavity.cs), after the ground that hides most of it
     }
 
@@ -741,42 +861,10 @@ public sealed unsafe partial class PlanetRenderer
 
     private void InitGl()
     {
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
-        _program = CreateProgram();
-        Native.glAttachShader(_program, vs);
-        Native.glAttachShader(_program, fs);
-        Native.glLinkProgram(_program);
-        GlDebug.Label(GL_PROGRAM, _program.Id, "PlanetRenderer");
-        int linked;
-        Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
-        vs.Dispose();
-        fs.Dispose();
-        if (linked == 0)
-        {
-            var log = stackalloc byte[2048];
-            int len;
-            Native.glGetProgramInfoLog(_program, 2048, &len, log);
-            throw new InvalidOperationException("planet shader link failed: " + System.Text.Encoding.UTF8.GetString(log, Math.Max(len, 0)));
-        }
-        _locViewProj = Uniform("uViewProj\0"u8);
-        _locCam = Uniform("uCam\0"u8);
-        _locCenter = Uniform("uCenter\0"u8);
-        _locTexOrigin = Uniform("uTexOrigin\0"u8);
-        _locMorph = Uniform("uMorph\0"u8);
-        _locPos = Uniform("uPos\0"u8);
-        _locNrm = Uniform("uNrm\0"u8);
-        _locTex = Uniform("uTex\0"u8);
-        _locGround = Uniform("uGroundLayer\0"u8);
-        _locRock = Uniform("uRockLayer\0"u8);
-        _locFog = Uniform("uFog\0"u8);
-        _locFogRange = Uniform("uFogRange\0"u8);
-        _locToLocal = Uniform("uToLocal\0"u8);
-        _locDip = Uniform("uDip\0"u8);
-        _locDug = Uniform("uDug\0"u8);
-        Lighting.Upload(_program);
+        _plain = MakeGround(FragmentSrc);
+        _masked = MakeGround(FragmentSrc.Replace("#version 410 core\n", "#version 410 core\n#define DUG_MASK\n"));
 
-        var idx = new List<uint>(Quarter * Quarter * 6 + 4 * Quarter * 12);
+        var idx = new List<uint>(Quarter * Quarter * 6 + 4 * Quarter * 6);
         const uint nv = QuarterVerts;
         for (uint z = 0; z < Quarter; z++)
         for (uint x = 0; x < Quarter; x++)
@@ -789,7 +877,11 @@ public sealed unsafe partial class PlanetRenderer
         {
             uint e0 = Edge(side, k), e1 = Edge(side, k + 1);
             uint s0 = nv * nv + side * nv + k, s1 = s0 + 1;
-            idx.AddRange([e0, s0, s1, e0, s1, e1, e0, s1, s0, e0, e1, s1]); // both faces
+            // The face away from the grid (sides 0 and 1 run with the grid's u and v, so their edge-first order faces in).
+            if (side < 2)
+                idx.AddRange([e0, s1, s0, e0, e1, s1]);
+            else
+                idx.AddRange([e0, s0, s1, e0, s1, e1]);
         }
         _indexCount = idx.Count;
         _vao = GenVertexArray();
@@ -840,7 +932,48 @@ public sealed unsafe partial class PlanetRenderer
         }
     }
 
-    private int Uniform(ReadOnlySpan<byte> nameZ) => Uniform(_program, nameZ);
+    private static Ground MakeGround(string fragment)
+    {
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fragment)).Compile();
+        var program = CreateProgram();
+        Native.glAttachShader(program, vs);
+        Native.glAttachShader(program, fs);
+        Native.glLinkProgram(program);
+        GlDebug.Label(GL_PROGRAM, program.Id, "PlanetRenderer");
+        int linked;
+        Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
+        vs.Dispose();
+        fs.Dispose();
+        if (linked == 0)
+        {
+            var log = stackalloc byte[2048];
+            int len;
+            Native.glGetProgramInfoLog(program, 2048, &len, log);
+            throw new InvalidOperationException("planet shader link failed: " + System.Text.Encoding.UTF8.GetString(log, Math.Max(len, 0)));
+        }
+        var g = new Ground
+        {
+            Program = program,
+            ViewProj = Uniform(program, "uViewProj\0"u8),
+            Cam = Uniform(program, "uCam\0"u8),
+            Center = Uniform(program, "uCenter\0"u8),
+            TexOrigin = Uniform(program, "uTexOrigin\0"u8),
+            Morph = Uniform(program, "uMorph\0"u8),
+            Pos = Uniform(program, "uPos\0"u8),
+            Nrm = Uniform(program, "uNrm\0"u8),
+            Tex = Uniform(program, "uTex\0"u8),
+            GroundLayer = Uniform(program, "uGroundLayer\0"u8),
+            Rock = Uniform(program, "uRockLayer\0"u8),
+            Fog = Uniform(program, "uFog\0"u8),
+            FogRange = Uniform(program, "uFogRange\0"u8),
+            ToLocal = Uniform(program, "uToLocal\0"u8),
+            Dip = Uniform(program, "uDip\0"u8),
+            Dug = Uniform(program, "uDug\0"u8),
+        };
+        Lighting.Upload(program);
+        return g;
+    }
 
     private static int Uniform(GlProgram program, ReadOnlySpan<byte> nameZ)
     {

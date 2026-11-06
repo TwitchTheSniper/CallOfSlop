@@ -18,11 +18,28 @@ public sealed partial class Game
     private void ClientShellsTick()
     {
         Constructs.FlyShells(World.TickDt);
+        Constructs.StepRounds(World.Query, World.TickDt, server: false);
         ShellTrails();
+    }
+
+    /// <summary>Flying rounds near this PC's eye, as a streak every few ticks: the same arc as the shot's, on from where its tracer ended. A busy sky draws no more than it can see.</summary>
+    private void RoundTrails()
+    {
+        var w = Constructs;
+        if (Local is not { } me)
+            return;
+        var eye = me.RenderEye;
+        for (var k = 0; k < w.RoundCount; k++)
+        {
+            ref var r = ref w.Rounds[k];
+            if (r.Age % 4 == 0 && Vector3.DistanceSquared(eye, r.Pos) < 400f * 400f)
+                Tracers.Add(new Tracer { From = r.Pos - r.Vel * (4 * World.TickDt), To = r.Pos, Color = new Vector3(1f, 0.85f, 0.5f), Width = 0.03f, Born = Brutal.GlfwApi.Glfw.Time, Life = 0.12f });
+        }
     }
 
     private void ShellTrails()
     {
+        RoundTrails();
         var w = Constructs;
         for (var k = 0; k < w.ShellCount; k++)
         {

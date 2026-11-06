@@ -132,6 +132,9 @@ public sealed partial class ConstructWorld
     /// <summary>What the guns did this tick (shots, blasts, cook-offs): the server sends them, the host draws them. Cleared at the start of each step.</summary>
     public readonly CFireEvent[] Fires = new CFireEvent[256];
     public int FireCount;
+
+    /// <summary>A game sends the events itself, then clears them (<see cref="Game"/>'s SandboxFireFlush), so what is added between ticks (a hand gun's round flying on) isn't lost to the next step.</summary>
+    public bool FlushedFires;
     public int ShotsFired; // shots in all (the self-test)
     public ushort LastShotBody; // the last round's gun's construct and where it ended (the self-test)
     public Vector3 LastShotEnd;
@@ -1207,7 +1210,19 @@ public sealed partial class ConstructWorld
                     // In the box's frame: the closest point of the box to the player's axis, at feet and at a few heights.
                     var lf = Vector3.Transform(feet - t, iq);
                     var top = TopAt(lf, centre, half, upLocal, t, q, feet, margin);
-                    if (top is { } topY && MathF.Min(feet.Y, stepper || into ? feet0 : feet.Y) >= topY - rise && feet.Y <= topY + above && s.Velocity.Y <= 0.5f && upLocal.Y > 0.7f)
+                    // Coming down: a tick's fall (relative to the part) reaches the top from above, however fast; and a body lands on an
+                    // edge as the frame's capsule stands on one, the centre a little past it (a beam, a deck's rim), not pushed off.
+                    if (!s.Grounded && s.Velocity.Y <= 0.5f)
+                    {
+                        var drop = MathF.Max(0, (c.Anchored || c.Asleep ? 0 : c.Vel.Y) - s.Velocity.Y) * World.TickDt + 0.06f;
+                        rise = MathF.Max(rise, drop);
+                        if (top == null && TopAt(lf, centre, half, upLocal, t, q, feet, ConstructRide.EdgeHold) is { } edge)
+                        {
+                            top = edge;
+                            rise = drop;
+                        }
+                    }
+                    if (top is { } topY && MathF.Min(feet.Y, stepper || into ? feet0 : feet.Y) >= topY - rise && feet.Y <= topY + above && s.Velocity.Y <= 0.5f)
                     {
                         s.Position.Y = topY;
                         var landing = MathF.Max(0, -s.Velocity.Y - (c.Vel.Y < 0 ? -c.Vel.Y : 0)); // (m/s coming down onto it)
@@ -1280,6 +1295,16 @@ public sealed partial class ConstructWorld
                         if (upLocal.Y < 0.9995f && TopAt(Vector3.Transform(wclosest - t, iq), centre, half, upLocal, t, q, feet) is { } under && under <= feet.Y + 0.06f)
                             continue;
                         var inside = Vector3.DistanceSquared(closest, lp) < 1e-8f;
+                        // Straight under it (a ceiling, a roof, a lintel): it stops the head. Never out sideways through the walls of a hull.
+                        if (!inside && wclosest.Y > probe.Y + 0.01f && (c == ride || c.Anchored || c.Asleep || c.Vel.LengthSquared() < 1f))
+                        {
+                            if (!s.Grounded)
+                                s.Position.Y = MathF.Min(s.Position.Y, wclosest.Y - height);
+                            if (s.Velocity.Y > 0)
+                                s.Velocity.Y = 0;
+                            pushed = true;
+                            continue;
+                        }
                         float nx, nz, depth;
                         if (inside || d2 < 1e-8f)
                         {

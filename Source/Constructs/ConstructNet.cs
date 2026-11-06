@@ -135,7 +135,7 @@ public static class ConstructNet
         ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
         LogicDisplays.Write(w, c); // protocol 153: what the displays show
         LogicText.Write(w, c); // ...and the signs' messages
-        ConstructMedia.Write(w, c); // protocol 164: the screens' and music players' lists
+        ConstructMedia.Write(w, c); // protocol 166: the screens' and music players' lists
         // Protocol 93: carried by a frozen cargo volume (ConstructCargo.cs): the carrier, and the pose in its volume's segment frame.
         w.U16(c.CarriedBy);
         if (c.CarriedBy != 0)
@@ -246,6 +246,8 @@ public static class ConstructNet
                 w.Vec(e.At).Vec(e.To).U8((byte)e.Part); // (protocol 134)
             else if (e.Kind == CFireKind.ShellOut)
                 w.U16(e.Body).U16(e.Part).U16(e.Shell).Vec(e.At).Vec(e.To).U8(e.Muzzle); // (protocol 150)
+            else if (e.Kind == CFireKind.RoundOut)
+                w.Vec(e.At).Vec(e.To);
             else if (e.Kind == CFireKind.ShellLand)
                 w.U16(e.Shell).Vec(e.At).F32(e.Radius).U8(e.Muzzle); // (protocol 150)
             else
@@ -277,6 +279,8 @@ public static class ConstructNet
                 e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec(), Part = r.U8() };
             else if (kind == CFireKind.ShellOut)
                 e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U16(), Shell = r.U16(), At = r.Vec(), To = r.Vec(), Muzzle = r.U8() };
+            else if (kind == CFireKind.RoundOut)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec() };
             else if (kind == CFireKind.ShellLand)
                 e = new CFireEvent { Kind = kind, Shell = r.U16(), At = r.Vec(), Radius = r.F32(), Muzzle = r.U8() };
             else
@@ -971,7 +975,7 @@ public static class ConstructNet
         ConstructConfig.Read(ref r, c); // protocol 89: the part settings
         LogicDisplays.Read(ref r, c); // protocol 153
         LogicText.Read(ref r, c);
-        ConstructMedia.Read(ref r, c); // protocol 164
+        ConstructMedia.Read(ref r, c); // protocol 166
         c.CarriedBy = r.U16(); // protocol 93: carried by a frozen cargo volume
         if (c.CarriedBy != 0)
         {

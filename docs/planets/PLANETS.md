@@ -94,6 +94,10 @@ What lies about falls towards the centre and lands on the ground anywhere on the
 `PlanetRenderer` (drawn from `TerrainRenderer.Draw` when the map has a planetoid) is the streamed terrain's CDLOD per
 face: a quadtree per face (the top level is the whole face, 8 levels on the 10 km map), 65 x 65-texel pages made on a
 worker thread, one instanced draw a frame, morphing between levels and skirts along "up".
+A level's range falls from 2 node widths (`RangeScale`) to 1.6 (`FarRangeScale`) with distance, nodes and quarters below the
+horizon (a ball just under the lowest ground, `BelowHorizon`) or facing away are skipped, near ground is drawn first, and the
+masked program (dug ground) is used only while a dug page is in view. Far constructs have their own level of detail
+(`ConstructRenderCull.cs`).
 
 - A page stores each vertex's **position relative to the page's origin** (the node's centre on the sphere), so the
   shader adds the origin and nothing far away loses precision. Normals come from the 3D positions, colours from the flat

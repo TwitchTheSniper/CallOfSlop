@@ -536,6 +536,12 @@ public sealed class BenchModel
         return true;
     }
 
+    /// <summary>The build's part count and weight as of its last change: the window reads these each frame (a Sandbox build has no part limit, and each walks every part).</summary>
+    public int PartsNow;
+
+    /// <inheritdoc cref="PartsNow"/>
+    public float WeightNow;
+
     /// <summary>The build's powder charge (the Sandbox's workbench).</summary>
     public void SetCharge(int charge)
     {
@@ -601,6 +607,8 @@ public sealed class BenchModel
                 tints[n] = MissingTint;
         }
         Asm = WeaponBuilder.Assemble(Build, tints);
+        PartsNow = Build.PartCount;
+        WeightNow = Build.Weight;
         FireType = Build.IsMelee ? "" : BuildStats.FireTypeText(Build);
         BuildRows();
         BuildSpots();
