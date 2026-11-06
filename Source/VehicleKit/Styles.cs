@@ -4,10 +4,10 @@ namespace CallOfSlop.VehicleKit;
 public static class Styles
 {
     /// <summary>Every style a generator can be run in.</summary>
-    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Militia];
+    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Highland, Militia];
 
     /// <summary>The styles whose vehicles ship as blueprints.</summary>
-    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It];
+    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It, Highland];
 
     /// <summary>Bandits: rust and bare metal, nothing matches, spikes, war paint and trophies.</summary>
     public static readonly FactionStyle Bandit = new()
@@ -160,6 +160,67 @@ public static class Styles
         },
         LootTable = "it",
         Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
+    };
+
+    /// <summary>
+    /// The Clan MacSlop: a Highland clan on wheels, and the loudest faction on the map. Tartan reds and hunting greens on the panels, Saltire
+    /// blue and white on the hoods, war paint in pillar-box red and lion-rampant yellow; Saltires on the roofs, thistles, haggis and a Highland
+    /// coo's head where bandits hang skulls, wee cabers down the flanks, kegs on the beds and whisky casks in the rooms (loot inside). Every
+    /// vehicle carries a Pipe Box (the "piper" slot: Vehicle.Kit), which strikes up the pipes while someone drives it, so you hear them
+    /// coming from 150 m (docs/sandbox/MEDIA.md, "Pipe Boxes"; the tunes are PipeTunes). Plates a little crooked (well loved, not neglected).
+    /// Guns are named for the glen: the Claymore, the Sgian Dubh, the Highland Charge and the Caber Toss.
+    /// </summary>
+    public static readonly FactionStyle Highland = new()
+    {
+        Name = "Highland",
+        Group = "Clan MacSlop",
+        Palette = new()
+        {
+            ["rust"] = ["#7b1e22", "#1f4a2e", "#23395d", "#5b4a2f", "#8c2a2a", "#2b5a3a"], // (the panels: clan tartan reds, hunting green, navy, tweed)
+            ["body"] = ["#005eb8", "#0b4f9c", "#e8e4d8", "#005eb8"],                     // (Saltire blue and white)
+            ["frame"] = ["#2a2622", "#33302b"],
+            ["war"] = ["#c8102e", "#f2c400", "#e8e4d8", "#1b1714"],                      // (pillar-box red, lion-rampant yellow, white, black)
+        },
+        Parts = new(Bandit.Parts)
+        {
+            ["engine"] = ["Engine", "V8 Engine", "V8 Engine"],
+            ["wall"] = ["Sheet Steel", "Plate Steel", "Tread Plate", "Plate Steel"],
+            ["deck"] = ["Plate Steel", "Tread Plate", "Wood Planks"],
+            ["bed"] = ["Wood Planks", "Plate Steel", "Tread Plate"],
+            ["hood"] = ["Long Hood", "Bull Hood", "Snub Hood", "Long Hood"],
+            ["nose"] = ["Bull Bar", "Bar Grille", "Ram Plow", "none"],
+            ["cab"] = ["Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Windscreen Frame", "Roll Bar"],
+            ["spike"] = ["Wee Caber", "Wee Caber", "Iron Spike"],                                        // (Constructs/Parts/Highland, tools/constructs/highland_parts.py)
+            ["trophy"] = ["Thistle", "Coo Heid", "Haggis on a Post", "Thistle", "Wee Keg", "Coo Heid"],
+            ["mast"] = ["Saltire Flag", "Saltire Flag", "Thistle"],                                      // (on the roofs: Vehicle.Kit)
+            ["gear"] = ["Wee Keg", "Wee Keg", "Coo Heid", "Saltire Flag"],                               // (on open beds and porches)
+            ["piper"] = ["Pipe Box"],                                                                    // (one on every vehicle: Vehicle.Kit)
+            ["cask"] = ["Whisky Cask"],                                                                  // (loot inside)
+            ["layout"] = ["bothy", "distillery", "ceilidh hall", "kit room"],
+            ["layout bothy"] = ["bunk", "bunk", "shelf", "cask"],
+            ["layout distillery"] = ["cask", "cask", "cask", "crates"],
+            ["layout ceilidh hall"] = ["bench", "bench", "cask", "crates"],
+            ["layout kit room"] = ["workbench", "shelf", "cask", "crates"],
+        },
+        LightGear = Bandit.LightGear,
+        HeavyGear = Bandit.HeavyGear,
+        // The weapon slot: named for the glen.
+        Weapons =
+        [
+            new("Claymore", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+            new("Sgian Dubh", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
+            new("Highland Charge", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Highland Charge", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Caber Toss", "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}"),
+        ],
+        // (--sweep-vehicle's most different passing seeds in this style's dice)
+        Seeds = new()
+        {
+            ["Technical"] = [1, 14, 10, 11, 5], ["Box Truck"] = [1, 11, 4], ["War Bus"] = [2, 12, 4], ["Flatbed Fort"] = [1, 9, 2],
+            ["Gun Wagon"] = [1, 3, 15], ["Scrap Tanker"] = [1, 9, 6], ["Tanker Rig"] = [1, 13], ["Fuel Trailer"] = [1, 2],
+        },
+        LootTable = "highland",
+        Limits = new() { ["crookedPlates"] = 3, ["tiltDegrees"] = 3, ["thirdSeat"] = 0.7, ["slits"] = 0.2 },
     };
 
     /// <summary>A second look over the same shapes, to prove a style swaps without touching a generator: run <c>--gen-vehicle "Militia Box Truck" --out DIR</c>. Nothing of it ships.</summary>

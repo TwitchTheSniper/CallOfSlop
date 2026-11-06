@@ -73,6 +73,10 @@ public sealed partial class MusicRenderer
     private readonly float[] _bDelayL = new float[MaxChunk], _bDelayR = new float[MaxChunk], _bVerbL = new float[MaxChunk], _bVerbR = new float[MaxChunk];
     private readonly float[] _bRev = new float[MaxChunk], _bVox = new float[MaxChunk];
 
+    // A pipe tune plays through its own renderer (MusicPipes.cs); the sequencer stays as it was.
+    private readonly PipeRenderer _pipes = new();
+    private bool _pipeOn;
+
     public MusicRenderer()
     {
         Load(MusicTracks.All[0], 1);
@@ -87,11 +91,20 @@ public sealed partial class MusicRenderer
     public double Position => _rendered / (double)Sr;
 
     /// <summary>Seconds left until <see cref="Finished"/>.</summary>
-    public double Remaining => _wd ? WeirdRemaining : Math.Max(0, (_track.TotalBars + MusicTrack.TailBars - (_step / 16.0)) * _track.SecondsPerBar + _toNextStep / Sr);
+    public double Remaining => _pipeOn ? _pipes.Remaining : _wd ? WeirdRemaining : Math.Max(0, (_track.TotalBars + MusicTrack.TailBars - (_step / 16.0)) * _track.SecondsPerBar + _toNextStep / Sr);
 
     /// <summary>Starts a track from the top (or from a bar, for tests). Deterministic for (track, seed, startBar).</summary>
     public void Load(MusicTrack track, uint seed, int startBar = 0)
     {
+        _pipeOn = track.Pipes != null;
+        if (track.Pipes is { } tune)
+        {
+            _track = track;
+            _rendered = 0;
+            _pipes.Load(tune, seed, startBar, track.SecondsPerBar, track.Seconds);
+            Finished = _pipes.Finished;
+            return;
+        }
         _track = track;
         _style = track.Style;
         _noise = new MusicRng(seed * 2654435761u + 17);
@@ -1130,6 +1143,13 @@ public sealed partial class MusicRenderer
     public void Render(Span<float> stereo)
     {
         var frames = stereo.Length / 2;
+        if (_pipeOn)
+        {
+            _pipes.Render(stereo);
+            _rendered += frames;
+            Finished = _pipes.Finished;
+            return;
+        }
         var i = 0;
         StepLogCount = 0;
         while (i < frames)

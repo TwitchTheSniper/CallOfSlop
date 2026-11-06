@@ -258,7 +258,10 @@ public static class VehicleChecks
             w.Step(q, World.TickDt);
             r.WorstTilt = MathF.Max(r.WorstTilt, Tilt(c));
             r.TopSpeed = MathF.Max(r.TopSpeed, c.Vel.Length());
+            if (t % World.TickRate == World.TickRate - 1)
+                ConstructPipes.Tick(w, (uint)t); // (as the server does, once a second)
         }
+        Pipes(c, r);
         var moved = c.WorldCom - p0;
         r.Distance = new Vector2(moved.X, moved.Z).Length();
         r.Yaw = World.WrapAngle(Heading(c) - h0) * 180 / MathF.PI;
@@ -277,6 +280,21 @@ public static class VehicleChecks
         var left = w.Bodies.Count(b => b != c && b.WheelCount == 0 && Vector3.Distance(b.WorldCom, c.WorldCom) < 8);
         if (left < bp.Cargo.Count)
             r.Failures.Add($"{bp.Cargo.Count - left} of {bp.Cargo.Count} cargo fell off on the drive run");
+    }
+
+    /// <summary>A Pipe Box (docs/sandbox/MEDIA.md, "Pipe Boxes") must have struck up a pipe tune by the end of the drive.</summary>
+    private static void Pipes(Construct c, VehicleReport r)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            if (!p.D.MediaPipes)
+                continue;
+            if (p.Media is { State: MediaState.Playing, Entry: { } line } && MediaEntry.Track(line) is { Pipes: not null } tune)
+                r.Notes.Add($"pipes: the {p.D.Name} struck up \"{tune.Name}\" while it drove");
+            else
+                r.Failures.Add($"the {p.D.Name} didn't strike up while it drove (engine {(c.EngineRunning ? "running" : "off")})");
+        }
     }
 
     private static void Turn(ConstructBuild.Blueprint bp, VehicleCheckOptions o, VehicleReport r)

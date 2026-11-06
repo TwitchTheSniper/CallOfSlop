@@ -1,0 +1,273 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Pipe Box",
+  "description": "The Clan MacSlop's pipes, in a box. It strikes up by itself when someone drives what it's on, so you hear them coming, and plays the game's tracks and links like a Music Player. Heard to 150 m. Run a data cable to a speaker to carry it further.",
+  "group": "Logic",
+  "section": "Media",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 8.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#6b4527",
+  "attachSeconds": 1,
+  "config": [
+    {
+      "key": "volume",
+      "label": "Volume",
+      "group": "General",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "default": 0.8,
+      "tooltip": "How loud it plays, before distance."
+    },
+    {
+      "key": "loop",
+      "label": "Loop the list",
+      "group": "General",
+      "type": "toggle",
+      "default": true,
+      "tooltip": "After the last tune it starts again from the top."
+    }
+  ],
+  "centreSockets": false,
+  "media": {
+    "hear": 150,
+    "near": 10,
+    "width": 356,
+    "height": 200,
+    "pipes": true
+  },
+  "panels": [
+    {
+      "source": "media",
+      "at": [
+        0,
+        0.16,
+        -0.077
+      ],
+      "size": [
+        0.304,
+        0.304
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 8,
+      "range": 12,
+      "picture": [
+        0,
+        0.44,
+        1,
+        1
+      ],
+      "touch": [
+        {
+          "action": "media.previous",
+          "at": [
+            0.02,
+            0.03,
+            0.32,
+            0.24
+          ],
+          "label": "Prev"
+        },
+        {
+          "action": "media.toggle",
+          "at": [
+            0.35,
+            0.03,
+            0.65,
+            0.24
+          ],
+          "label": "Play"
+        },
+        {
+          "action": "media.next",
+          "at": [
+            0.68,
+            0.03,
+            0.98,
+            0.24
+          ],
+          "label": "Next"
+        }
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.16,
+        0.0,
+        -0.07
+      ],
+      "max": [
+        0.16,
+        0.32,
+        0.07
+      ]
+    },
+    {
+      "min": [
+        -0.11,
+        0.324,
+        -0.06
+      ],
+      "max": [
+        0.11,
+        0.444,
+        0.06
+      ],
+      "color": "#9b1c22",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 10,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.073,
+        0.414,
+        0.007
+      ],
+      "max": [
+        -0.047,
+        0.734,
+        0.033
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.08,
+        0.704,
+        0.0
+      ],
+      "max": [
+        -0.04,
+        0.734,
+        0.04
+      ],
+      "color": "#c9cbc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.013,
+        0.414,
+        0.017
+      ],
+      "max": [
+        0.013,
+        0.684,
+        0.043
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        0.654,
+        0.01
+      ],
+      "max": [
+        0.02,
+        0.684,
+        0.05
+      ],
+      "color": "#c9cbc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.047,
+        0.414,
+        0.007
+      ],
+      "max": [
+        0.073,
+        0.684,
+        0.033
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        0.654,
+        0.0
+      ],
+      "max": [
+        0.08,
+        0.684,
+        0.04
+      ],
+      "color": "#c9cbc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.09,
+        0.404,
+        -0.01
+      ],
+      "max": [
+        0.15,
+        0.419,
+        0.004
+      ],
+      "color": "#1f4a2e",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.16,
+        0.07
+      ],
+      "dir": "+z"
+    }
+  ]
+}
