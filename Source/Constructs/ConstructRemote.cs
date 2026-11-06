@@ -75,7 +75,7 @@ public static class ConstructRemote
         var near = float.MaxValue;
         foreach (var d in world.Bodies)
         {
-            if (d.Receiver < 0 || d == c || d.Dirty || d.Receiver >= d.PartCount || d.Driver != 255 && d.Driver != player || d.Owner != owner && d.Owner != 255)
+            if (d.Receiver < 0 || d == c || d.Dirty || d.Receiver >= d.PartCount || d.Driver != 255 && d.Driver != player || !Factions.Shares(d.Owner, owner) && d.Owner != 255)
                 continue;
             var f = Hears(d, d.Receiver, channel, range, at);
             if (f >= 0 && f < near)
@@ -147,7 +147,7 @@ public static class ConstructRemote
         var near = float.MaxValue;
         foreach (var d in world.Bodies)
         {
-            if (d.CameraParts.Length == 0 || d.Owner != owner && d.Owner != 255 && owner != 255)
+            if (d.CameraParts.Length == 0 || !Factions.Shares(d.Owner, owner) && d.Owner != 255 && owner != 255)
                 continue;
             for (var k = 0; k < d.CameraParts.Length; k++)
             {

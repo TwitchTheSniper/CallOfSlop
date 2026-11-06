@@ -392,7 +392,7 @@ public sealed partial class ConstructWorld
     private static bool Moving(Construct c) =>
         !c.Asleep && !c.Anchored && (c.Vel.LengthSquared() >= ConstructPhysics.StillSpeed2 || c.AngVel.LengthSquared() >= ConstructPhysics.StillSpeed2 || c.Driver != 255 && c.Throttle != 0);
 
-    private static bool Drives(Construct c) => c.CanDrive && (c.Driver != 255 || c.EngineWired) && (!c.Electrical || c.EngineRunning);
+    private static bool Drives(Construct c) => c.CanDrive && (c.Driver != 255 || c.EngineWired || c.SteerRuns) && (!c.Electrical || c.EngineRunning);
 
     /// <summary>
     /// The map's couplings and wires between the constructs it starts with (its "sandbox" section): construct index and

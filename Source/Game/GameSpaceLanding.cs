@@ -27,9 +27,9 @@ public sealed partial class Game
         public readonly HashSet<ushort> Bodies = [];
         public readonly HashSet<ushort> Stores = [];
         public string From = "", To = "";
-        public bool All; // every body and store in the file is the ship's (a planetoid opened on a traveller's own game: GameTravel.cs)
-        public bool Travel; // the file's space section starts this game's space clock and ships (GameTravel.cs)
-        public bool KeepPlaces; // everyone keeps their place, here or not (a planetoid handed to one still on it: GameTravelMeet.cs)
+        public bool All; // every body and store in the file is the ship's (a planetoid's game on the host opening: GameTravelPlace.cs)
+        public bool Travel; // the file's space section starts this game's space clock and ships (GameTravelPlace.cs)
+        public bool KeepPlaces; // everyone keeps their place, here or not (the riders sit in their seats again as they join: GameTravelPlace.cs)
     }
 
     private LandingPlan? _landing;
@@ -49,7 +49,7 @@ public sealed partial class Game
     /// <summary>Host, after the ships step: a ship in space within another planetoid's sky lands, or is held at its edge.</summary>
     internal void SpaceLandingStep(SpaceSession s, SpaceFlight f)
     {
-        if (_landing != null || _landNext != null || _travelNext != null || _meetNext != null || !SandboxOn || SpaceLaunched == 0)
+        if (_landing != null || _landNext != null || _travelNext != null || Host != null || !SandboxOn || SpaceLaunched == 0)
             return;
         if (!ReferenceEquals(_landableFor, s))
         {
@@ -77,12 +77,9 @@ public sealed partial class Game
                 var r = pos - bp;
                 if (r.LengthSquared >= edge * edge)
                     continue;
-                var keptBy = KeeperOf(m.Name);
-                if (keptBy == null && TravelAlone(c, m))
-                    return; // (free travel: the one rider's own game opens it, GameTravel.cs)
-                if (keptBy != null && TravelMeet(c, m, keptBy, b))
-                    return; // (free travel: the rider visits the game that keeps it, GameTravelMeet.cs)
-                var why = keptBy != null ? $"{keptBy.Name}'s game has {m.Name}: one person aboard can land there" : LandProblem(c);
+                if (TravelToPlace(c, m, b))
+                    return; // (free travel: the planetoid runs beside this game and the riders join it, GameTravel.cs)
+                var why = PlaceOf(m.Name) != null ? $"others are on {m.Name}: a ship without the host aboard can land there" : LandProblem(c);
                 if (why == null)
                 {
                     _landNext = (c, m);

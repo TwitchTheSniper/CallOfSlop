@@ -195,7 +195,12 @@ public sealed partial class Game
                 s.OwnerRecord[rec.Online] = (ushort)(k + 1);
             if (rec.Offline != 255)
                 s.OwnerRecord[rec.Offline] = (ushort)(k + 1);
+            var who = rec.Online != 255 ? rec.Online : rec.Offline; // (player factions: GameSandboxFactions.cs)
+            var faction = who == 255 ? (byte)0 : FactionTable.Of[who];
+            s.Players[k].Faction = faction;
+            s.Players[k].FactionLeader = faction != 0 && FactionTable.Leader[faction] == who;
         }
+        s.FactionNames = (string[])FactionTable.Names.Clone();
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
         if (DigGroundIfMade is { } g)
@@ -522,6 +527,7 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.Players:
             {
+                FactionTable.Clear(); // (a world's own factions, if it has any, follow: WorldReadFactions)
                 var n = r.Count(8);
                 for (var k = 0; k < n; k++)
                 {
@@ -547,6 +553,9 @@ public sealed partial class Game
                 }
                 break;
             }
+            case WorldSaveWriter.FactionsTag:
+                WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
+                break;
             case WorldSaveWriter.SpaceSeats:
             {
                 var n = r.Count(12);
@@ -785,6 +794,7 @@ public sealed partial class Game
             if (rec.Offline != 255 && c.FrozenBy == rec.Offline)
                 c.FrozenBy = p.Id;
         }
+        FactionPlayerBack(p, rec.Offline); // (their faction again: GameSandboxFactions.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)
@@ -887,6 +897,7 @@ public sealed partial class Game
         _worldKeys[p.Id] = 0;
         rec.Online = 255;
         rec.Spawned = false;
+        FactionPlayerGone(p, rec.Offline); // (still in their faction while away: GameSandboxFactions.cs)
         foreach (var c in Constructs.Bodies)
         {
             if (c.Owner == p.Id)

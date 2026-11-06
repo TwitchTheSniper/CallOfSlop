@@ -40,8 +40,8 @@ public sealed partial class Game
 
     private void TickServerAdvert(double now)
     {
-        if (!IsServer || Net.IsOffline)
-            return;
+        if (!IsServer || Net.IsOffline || Host != null)
+            return; // (a planetoid's game on the host is no server of its own: GameTravelPlace.cs)
         if (now >= _nextInfoUpdate)
         {
             _nextInfoUpdate = now + 1;

@@ -1041,7 +1041,7 @@ public static partial class ConstructPhysics
     /// Before the wheels: each track's drive for this tick, every wheel's on it together, whichever of them touches the ground:
     /// a driven sprocket held off the ground drives the whole track. The contacts share it by their grip.
     /// </summary>
-    private static void TracksDrive(Construct c, bool driving, float throttle, float steer, float want, float boost, float dt)
+    private static void TracksDrive(Construct c, bool driving, float throttle, float steer, float sideFade, float want, float boost, float dt)
     {
         for (var n = 0; n < c.TrackCount; n++)
         {
@@ -1057,7 +1057,7 @@ public static partial class ConstructPhysics
                 ref var w = ref c.Wheels[k];
                 if (driving && w.Share > 0)
                 {
-                    var dir = w.SideDrive ? Math.Clamp(throttle - steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
+                    var dir = w.SideDrive ? ConstructDrive.SideDir(c, in w, throttle, ConstructDrive.WheelSteer(c, in w, steer) * sideFade) : MathF.Sign(throttle);
                     var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f;
                     t.Drive += MathF.Sign(dir) * amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * boost;
                 }

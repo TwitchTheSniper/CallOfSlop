@@ -294,6 +294,8 @@ public static class PanelSources
         ["logic.altimeter"] = LogicDisplays.Altimeter,
         ["logic.speedometer"] = LogicDisplays.Speedometer,
         ["logic.keypad"] = LogicDisplays.Keypad,
+        ["office.fax"] = OfficeParts.FillFax,
+        ["office.computer"] = OfficeParts.FillComputer,
     };
 
     public static PanelFill? Find(string name) => All.GetValueOrDefault(name);

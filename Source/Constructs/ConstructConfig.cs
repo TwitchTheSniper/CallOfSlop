@@ -117,6 +117,7 @@ public enum CfgKey : byte
     Ramp, // Bar Gauges and Graph Screens: how the colour follows the value (PanelRamp)
     Charge, // a builder receiver: its powder charge, percent (PowderCharge)
     Pushable, // hinge: a player walking into what hangs on it swings it (ConstructDoor.PushOpens)
+    SteerKind, // a steering differential: reverse, drag or clutch steering (SteerMode)
     COUNT,
 }
 
@@ -310,13 +311,13 @@ public static class ConstructConfig
     // ---- Who may configure --------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Why a player may not configure this construct, or null (decision 19, factions treated as the owner for now): your
-    /// own, nobody's (the map's), a wreck or a loose part are fine; someone else's is refused, "defended" while its owner is
+    /// Why a player may not configure this construct, or null (decision 19; a faction mate's counts as your own,
+    /// <see cref="Factions.Shares"/>): your own, nobody's (the map's), a wreck or a loose part are fine; someone else's is refused, "defended" while its owner is
     /// alive within <see cref="ContestRadius"/>. <paramref name="ownerName"/> and <paramref name="ownerNear"/> come from the game.
     /// </summary>
     public static string? Refusal(Construct c, byte player, string ownerName, bool ownerNear)
     {
-        if (c.Owner == player || c.Owner == 255 || c.Wreck || c.Loose)
+        if (Factions.Shares(c.Owner, player) || c.Owner == 255 || c.Wreck || c.Loose)
             return null;
         return ownerNear ? $"Owned by {ownerName} - defended" : $"Owned by {ownerName}: only its owner can configure it";
     }
@@ -557,6 +558,7 @@ public static class ConstructConfig
         CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
+        CfgKey.SteerKind => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
@@ -614,6 +616,7 @@ public static class ConstructConfig
                 CfgKey.RunMode => d.IsWheelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
+                CfgKey.SteerKind => d.Diff == DiffKind.Steering,
                 CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
                 CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
                 CfgKey.SetMode => d.RailDrive == RailDriveKind.Electric,

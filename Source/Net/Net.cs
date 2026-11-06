@@ -97,8 +97,9 @@ public enum Msg : byte
     ResourceFell, // server -> all and each joiner: Sandbox: trees felled (u16 count, then u32 ResourceField.TreeKey each)
     ResourceGrew, // server -> all: Sandbox: felled trees grown back (u16 count, then u32 ResourceField.TreeKey each; a joiner only hears what is still felled) (reliable ordered; GameResources.cs, protocol 111)
     Space, // server -> all and each joiner: the space bubble (a SpaceMsg first): which system and body the map is, the space clock (time, warp), ships' states (GameSpace.cs, protocol 125)
-    Travel, // server <-> one client: free travel: a ship and a planetoid handed to a traveller's own game, or sent back, in pieces (begin: id, purpose, length; then chunks) (reliable ordered; GameTravel.cs, protocol 146)
-    Relay, // client <-> server: free travel: a packet between a planetoid's keeper and a visitor's games, through the host (kind: 0 data (other player, reliability, the packet), 1 opened, 2 closed; the host passes it on with the sender's id) (as the packet's own reliability; RelayTransport.cs, GameTravelMeet.cs, protocol 147)
+    Travel, // server -> one client: free travel: purpose 1, join a planetoid the host runs (world, map, its number); 2, back in the host's space (reliable ordered; GameTravel.cs, GameTravelVisit.cs, protocol 162)
+    Relay, // client <-> server: free travel: a packet between a traveller's game and a planetoid's game on the host (kind: 0 data (planetoid number, up: reliability, the packet), 1 opened, 2 closed) (as the packet's own reliability; RelayTransport.cs, GameTravelVisit.cs, protocol 162)
+    Factions, // server -> all and each joiner: Sandbox player factions, the whole table (names, leaders, members, invites) when it changes (reliable ordered; GameSandboxFactions.cs, protocol 161)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

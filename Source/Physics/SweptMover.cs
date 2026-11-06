@@ -202,6 +202,8 @@ public sealed class SweptMover : IMover
         }
         else
         {
+            if (phys.Planet is { Hollow: true } hollow && Vector3.DistanceSquared(s.Position, hollow.Center) < hollow.InnerRadius * hollow.InnerRadius)
+                s.Velocity -= up * (Vector3.Dot(s.Velocity, up) * CavityDragBlend); // a hollow planetoid's cavity: its thick air brakes a fall through a hole
             s.Velocity += (g + hook) * dt;
             s.Position = Fly(s.Position, s.Velocity * dt, s.Stance, ref s.Velocity, ref s.Grounded);
             if (onTerrain && !s.Grounded && _terrain is { } slope)
@@ -227,6 +229,13 @@ public sealed class SweptMover : IMover
         if (movers)
             MoverPhysics.EndTick(ref s, _tick, carried, platformVel);
     }
+
+    /// <summary>
+    /// How much of a fall's speed a tick in a hollow planetoid's cavity takes off (0.8 a second: about 11 m/s at most under
+    /// 9 m/s2). The pull turns round at the cavity's wall, so without it someone who drops down a shaft would swing through
+    /// the hole for ever; with it they come to rest in the hole's mouth and drift out onto the cavity's roof.
+    /// </summary>
+    private static readonly float CavityDragBlend = 1f - MathF.Exp(-0.8f * World.TickDt);
 
     /// <summary>The shapes a rider's frame step works on (<see cref="ConstructRide"/> fills it, in the frame's coordinates).</summary>
     public List<ContactShape> FrameShapes => _shapes;

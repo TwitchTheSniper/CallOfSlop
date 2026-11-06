@@ -621,6 +621,7 @@ public sealed class ConstructPartDef
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
     public bool RemoteReceiver, IsCamera; // ConstructRemote.cs
+    public OfficeKind Office; // a Fax Machine or a Computer: the IT Department's lines (OfficeParts.cs)
     public bool CameraScreen => Array.Exists(Panels, x => x.Source == "camera");
     public float RemoteRange, CameraFov;
     public Vector3 CameraAt;
@@ -659,7 +660,7 @@ public sealed class ConstructPartDef
         PartRole.Hitch => IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
-        PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
+        PartRole.Differential => Diff is DiffKind.Lockable or DiffKind.Steering ? 1 : 0, // locks it; steers it (-1 to 1: 1 is right)
         PartRole.Suspension => MotorTorque > 0 ? 2 : ActiveSuspension ? 1 : 0, // its ride height; a hub motor's throttle and a Driving Module's drive link
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
         PartRole.Thruster => 4, // throttle, hold height
@@ -1001,7 +1002,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1440,6 +1441,7 @@ public static partial class ConstructParts
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
+        OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))
             throw new ConstructPartException($"{file}: a terminal names two chute ports: \"{ConstructTerminals.NetworkPort}\" (both ways) and \"{ConstructTerminals.OutPort}\" (out only)");
