@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "payload",
     "length": 0.9,
-    "for": "missile",
+    "group": "Sub-payloads",
+    "groupOrder": 5,
     "kind": "mirv",
     "payload": 24,
     "settings": [

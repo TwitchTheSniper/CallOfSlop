@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "control",
     "length": 0.2,
-    "for": "missile",
+    "group": "Tail control",
+    "groupOrder": 9,
     "numbers": {
       "turnBurn": 80
     }

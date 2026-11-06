@@ -20,7 +20,7 @@ GROUP = "Weapons"
 OLIVE, DARK, STEEL, BRASS, RED, WHITE, GREY = "#4a5530", "#2a2c26", "#7c838c", "#c8a838", "#a83428", "#d8d8d0", "#565a5e"
 
 
-def section(name, slot, length, mass, color, desc, band=None, who=None, fins=False, nose=False, wings=0.0, canards=False, nozzle=False, pack=False, glass=False, ring=False, **ordnance):
+def section(name, slot, length, mass, color, desc, band=None, fins=False, nose=False, wings=0.0, canards=False, nozzle=False, pack=False, glass=False, ring=False, **ordnance):
     """A round section, with a coloured band, fins, wings, canards, a nozzle, a chute pack, a glass eye, a ring tail or a tapered nose."""
     p = Part(name, SMALL, "Ordnance sections", desc, tool="wrench", color=color, group=GROUP)
     z = length / 2
@@ -50,15 +50,31 @@ def section(name, slot, length, mass, color, desc, band=None, who=None, fins=Fal
     p.sock("-z", (0, 0, -z), "-z")
     p.sock("+z", (0, 0, z), "+z")
     p.stats(mass, 40, 1, 1.0)
-    block = {"slot": slot, "length": length}
-    if who:
-        block["for"] = who
+    group = group_of(name, slot, ordnance.get("kind"))
+    block = {"slot": slot, "length": length, "group": group, "groupOrder": GROUPS.index(group) + 1}
     numbers = {k: v for k, v in ordnance.items() if k not in TOP}
     block.update({k: v for k, v in ordnance.items() if k in TOP})
     if numbers:
         block["numbers"] = numbers
     p.set(ordnance=block)
     return "Sections", p
+
+
+# The Ordnance Bench's picker, nose to tail in the order a weapon is built (a design's sections are stacked the same way). Every section goes in every
+# design: a design with a motor that lights as it leaves flies as a missile, one without falls as a bomb (OrdnanceDesign.Powered).
+GROUPS = ["Fuses", "Seekers", "Forward control", "Warheads", "Sub-payloads", "Body and fuel", "Wings", "Propulsion", "Tail control", "Stabilizers and brakes"]
+FORWARD = ("Canards", "Reaction Jets")
+SUBS = ("cluster", "incendiary", "mines", "mirv", "rods")
+
+
+def group_of(name, slot, kind):
+    """A section's group in the bench's picker, from its slot."""
+    if slot == "control":
+        return "Forward control" if name in FORWARD else "Tail control"
+    if slot == "payload":
+        return "Sub-payloads" if kind in SUBS else "Warheads"
+    return {"fuse": "Fuses", "seeker": "Seekers", "spacer": "Warheads", "body": "Body and fuel", "fuel": "Body and fuel", "wings": "Wings",
+            "motor": "Propulsion", "stage": "Propulsion", "stabilizer": "Stabilizers and brakes"}[slot]
 
 
 TOP = ("payload", "blast", "damage", "crater", "fuseDelay", "settings", "kind")  # (the rest are the flight's numbers)
@@ -71,7 +87,6 @@ def setting(key, label, unit, lo, hi, step, default):
 
 CLASS = setting("class", "Thrust class", "", 1, 5, 1, 1)
 CHANNEL = setting("channel", "Channel", "", 1, 99, 1, 1)
-MISSILE, BOMB = "missile", "bomb"
 WHITE2, ORANGE, BLUE = "#c8ccc8", "#b86a28", "#3a4c68"
 
 
@@ -82,7 +97,7 @@ def stage1():
         section("Warhead HE", "payload", 0.5, 25, OLIVE, "25 kg of high explosive. Stack as many as the airframe can lift.", band=BRASS, payload=20),
         section("Warhead Blast", "payload", 0.6, 28, "#5a4a30", "Thin-cased: a wider blast for its weight, and less damage.", band=RED, payload=22, blast=1.5, damage=0.6),
         section("Warhead Bunker", "payload", 0.6, 45, "#3a3d40", "A thick steel case: a deep crater.", band=WHITE, payload=20, damage=1.2, crater=2.2),
-        section("Bomb Tail Fins", "stabilizer", 0.4, 6, DARK, "Keeps a bomb nose down.", who="bomb", fins=True, drag=0.2),
+        section("Bomb Tail Fins", "stabilizer", 0.4, 6, DARK, "Keeps a bomb nose down.", fins=True, drag=0.2),
     ]
 
 
@@ -111,10 +126,10 @@ def stage3():
         section("Stage Separator", "stage", 0.12, 4, RED, "Splits a missile into stages: what is behind it burns first and drops when it burns out.", band=DARK),
         section("Body Tube", "body", 0.5, 5, WHITE2, "An empty length of airframe: room, and weight."),
         # Steering: degrees a second of turn. Fins and canards need air and speed; a gimbal and vanes need a burning motor; reaction jets work anywhere.
-        section("Tail Fins", "control", 0.4, 6, DARK, "Steer in the air at speed. Nothing in thin air.", who=MISSILE, fins=True, turnAir=60, drag=0.03),
-        section("Canards", "control", 0.3, 5, DARK, "Small fins near the nose: a sharp turn in the air, and some drag.", who=MISSILE, canards=True, turnAir=90, drag=0.05),
-        section("Gimbal Mount", "control", 0.2, 7, STEEL, "Swings the motor: turns while it burns, in air or out of it.", who=MISSILE, band=BRASS, turnBurn=80),
-        section("Jet Vanes", "control", 0.15, 3, GREY, "Vanes in the exhaust: a little turn while it burns.", who=MISSILE, turnBurn=45),
+        section("Tail Fins", "control", 0.4, 6, DARK, "Steer in the air at speed. Nothing in thin air.", fins=True, turnAir=60, drag=0.03),
+        section("Canards", "control", 0.3, 5, DARK, "Small fins near the nose: a sharp turn in the air, and some drag.", canards=True, turnAir=90, drag=0.05),
+        section("Gimbal Mount", "control", 0.2, 7, STEEL, "Swings the motor: turns while it burns, in air or out of it.", band=BRASS, turnBurn=80),
+        section("Jet Vanes", "control", 0.15, 3, GREY, "Vanes in the exhaust: a little turn while it burns.", turnBurn=45),
         section("Reaction Jets", "control", 0.25, 10, GREY, "Puffs of gas round the body: a slow turn at any speed, anywhere.", band=RED, turnAny=35),
         # Seekers: how it finds what it steers for (the game's own pieces: flares, Cameras, Wireless Senders, Flight Stabilizers, beacons).
         section("Heat Seeker", "seeker", 0.35, 6, WHITE2, "Locks the moving thing nearest straight ahead as it goes. Flares draw it.", nose=True, glass=True, kind="heat", reach=1200, cone=25),
@@ -151,22 +166,22 @@ def stage4():
         section("Mine Dispenser", "payload", 0.9, 34, OLIVE, "Sows mines that lie until something moves near them, or their life runs out.", band=WHITE,
                 kind="mines", payload=16, prox=4, settings=[count(2, 120, 8), setting("life", "Mine life", "s", 10, 900, 10, 180)]),
         section("MIRV Bus", "payload", 0.9, 40, WHITE2, "Splits into small guided warheads that fan out round what it steers for.", band=RED,
-                who=MISSILE, kind="mirv", payload=24, settings=[count(2, 24, 4)]),
+                kind="mirv", payload=24, settings=[count(2, 24, 4)]),
         section("Rod Bundle", "payload", 1.0, 60, STEEL, "Steel rods thrown down fast: what they hit takes their speed. Drop them from high up.",
                 kind="rods", payload=25, blast=0.4, damage=2.5, crater=1.5, settings=[count(2, 60, 8)]),
         section("Kinetic Penetrator", "payload", 0.8, 70, "#3a3d40", "A dense rod with a little filling: the faster it hits, the harder.", band=STEEL, nose=True,
                 kind="kinetic", payload=12, blast=0.5, damage=3, crater=2.5),
         section("Tandem Spacer", "spacer", 0.15, 3, DARK, "Splits the payload ahead of it from the one behind: they go off one after the other, the later one deeper.", band=BRASS),
         # Glide, cruise and rocket assist (bombs).
-        section("Glide Wings", "wings", 0.8, 30, OLIVE, "Wings: it glides a long way from high up. Add a Glide Guidance Kit and a seeker to steer it.", who=BOMB, wings=0.9, lift=1.0, drag=0.04),
-        section("Pop-out Wings", "wings", 0.6, 20, OLIVE, "Folded wings that spring out a moment after it drops: a shorter glide.", who=BOMB, wings=0.15, lift=0.8, drag=0.03, deploy=0.8),
+        section("Glide Wings", "wings", 0.8, 30, OLIVE, "Wings: it glides a long way from high up. Add a Glide Guidance Kit and a seeker to steer it.", wings=0.9, lift=1.0, drag=0.04),
+        section("Pop-out Wings", "wings", 0.6, 20, OLIVE, "Folded wings that spring out a moment after it drops: a shorter glide.", wings=0.15, lift=0.8, drag=0.03, deploy=0.8),
         section("Cruise Wings", "wings", 0.9, 26, STEEL, "Long thin wings that hold it up at speed: with a Turbojet, a cruise missile.", wings=1.3, lift=1.3, drag=0.025),
-        section("Glide Guidance Kit", "control", 0.35, 8, DARK, "Moving tail fins and a computer: it steers for what its seeker finds.", who=BOMB, fins=True, turnAir=40, drag=0.02),
-        section("Rocket Assist", "motor", 0.6, 22, ORANGE, "A rocket that lights a second after the drop and drives the bomb on: further, and harder into what it hits.", who=BOMB, nozzle=True, kind="solid",
+        section("Glide Guidance Kit", "control", 0.35, 8, DARK, "Moving tail fins and a computer: it steers for what its seeker finds.", fins=True, turnAir=40, drag=0.02),
+        section("Rocket Assist", "motor", 0.6, 22, ORANGE, "A rocket that lights a second after the drop and drives the bomb on: further, and harder into what it hits.", nozzle=True, kind="solid",
                 settings=[setting("burn", "Burn time", "s", 0.5, 8, 0.5, 2)], thrust=7000, wait=1, mass_burn=4),
         # Stabilizers.
-        section("Retard Chute", "stabilizer", 0.3, 6, DARK, "A chute that opens off the rack: it falls slow and steep, and the plane is long gone.", who=BOMB, pack=True, drag=1.4, deploy=0.3),
-        section("Ballute", "stabilizer", 0.3, 5, DARK, "A balloon brake: slower and steeper than fins alone.", who=BOMB, pack=True, drag=0.5, deploy=0.2),
+        section("Retard Chute", "stabilizer", 0.3, 6, DARK, "A chute that opens off the rack: it falls slow and steep, and the plane is long gone.", pack=True, drag=1.4, deploy=0.3),
+        section("Ballute", "stabilizer", 0.3, 5, DARK, "A balloon brake: slower and steeper than fins alone.", pack=True, drag=0.5, deploy=0.2),
         section("Ring Tail", "stabilizer", 0.35, 7, DARK, "A ring round the tail: steady, with a little steering in the air.", ring=True, drag=0.05, turnAir=8),
     ]
 

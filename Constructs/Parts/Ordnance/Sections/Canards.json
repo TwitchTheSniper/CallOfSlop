@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "control",
     "length": 0.3,
-    "for": "missile",
+    "group": "Forward control",
+    "groupOrder": 3,
     "numbers": {
       "turnAir": 90,
       "drag": 0.05

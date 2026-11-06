@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "control",
     "length": 0.4,
-    "for": "missile",
+    "group": "Tail control",
+    "groupOrder": 9,
     "numbers": {
       "turnAir": 60,
       "drag": 0.03

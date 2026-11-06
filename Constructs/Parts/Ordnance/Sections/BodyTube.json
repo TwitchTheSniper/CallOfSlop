@@ -14,7 +14,9 @@
   "attachSeconds": 1.0,
   "ordnance": {
     "slot": "body",
-    "length": 0.5
+    "length": 0.5,
+    "group": "Body and fuel",
+    "groupOrder": 6
   },
   "boxes": [
     {

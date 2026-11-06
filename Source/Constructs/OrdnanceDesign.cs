@@ -20,7 +20,9 @@ public sealed record OrdSetting(string Key, string Label, string Unit, float Min
 public sealed class OrdSectionDef
 {
     public string Slot = ""; // seeker, payload, fuse, stabilizer, body...
-    public bool ForBomb = true, ForMissile = true;
+    public bool ForBomb = true, ForMissile = true; // ("for": older files; the bench offers every section to every design, so nothing reads it)
+    public string Group = "Other"; // its group in the bench's picker ("group")...
+    public int GroupOrder = 99; // ...and where that group comes, nose to tail ("groupOrder"): the order a weapon is built in
     public float Length; // m
     public float Payload, Blast = 1f, Damage = 1f, Crater = 1f; // kg of filling; what it does to the blast's radius, damage and crater
     public float FuseDelay; // s after impact
@@ -30,7 +32,7 @@ public sealed class OrdSectionDef
 
     public float Num(string key, float or = 0) => Nums.GetValueOrDefault(key, or);
 
-    private static readonly string[] Keys = ["slot", "for", "length", "payload", "blast", "damage", "crater", "fuseDelay", "settings", "kind", "numbers"];
+    private static readonly string[] Keys = ["slot", "for", "length", "payload", "blast", "damage", "crater", "fuseDelay", "settings", "kind", "numbers", "group", "groupOrder"];
 
     public static OrdSectionDef Parse(JsonElement b, string file)
     {
@@ -49,6 +51,10 @@ public sealed class OrdSectionDef
             o.ForBomb = who == "bomb";
             o.ForMissile = who == "missile";
         }
+        if (ConstructParts.Opt(b, "group") is { } grp)
+            o.Group = ConstructParts.Str(grp, file, "ordnance.group");
+        if (ConstructParts.Opt(b, "groupOrder") is { } go)
+            o.GroupOrder = (int)ConstructParts.Num(go, file, "ordnance.groupOrder");
         float Opt(string key, float or) => ConstructParts.Opt(b, key) is { } v ? ConstructParts.Num(v, file, $"ordnance.{key}") : or;
         o.Payload = Opt("payload", 0);
         o.Blast = Opt("blast", 1);
@@ -113,6 +119,19 @@ public sealed class OrdnanceDesign
     public OrdKind Kind;
     public int DiameterCm = RefCm;
     public readonly List<OrdPiece> Pieces = [];
+
+    /// <summary>
+    /// What its sections make it: a motor that lights as it leaves (no wait after the drop) makes a missile, otherwise it is a bomb (a Rocket Assist,
+    /// which waits, only drives a bomb on). The bench sets <see cref="Kind"/> from this; a key keeps the letter it was saved with, so a key made before
+    /// (a bomb with a Solid Motor, say) is still the same weapon, and only becomes a missile if it is built again at the bench.
+    /// </summary>
+    public OrdKind Powered()
+    {
+        foreach (var p in Pieces)
+            if (p.Section.Ord is { Slot: "motor" } o && o.Num("thrust") > 0 && o.Num("wait") <= 0)
+                return OrdKind.Missile;
+        return OrdKind.Bomb;
+    }
 
     /// <summary>The scale of everything against a section's reference diameter.</summary>
     public float Scale => DiameterCm / (float)RefCm;

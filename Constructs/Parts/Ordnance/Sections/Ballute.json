@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "stabilizer",
     "length": 0.3,
-    "for": "bomb",
+    "group": "Stabilizers and brakes",
+    "groupOrder": 10,
     "numbers": {
       "drag": 0.5,
       "deploy": 0.2
