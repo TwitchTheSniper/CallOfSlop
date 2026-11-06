@@ -14,7 +14,9 @@
   "attachSeconds": 1.0,
   "ordnance": {
     "slot": "spacer",
-    "length": 0.15
+    "length": 0.15,
+    "group": "Warheads",
+    "groupOrder": 4
   },
   "boxes": [
     {

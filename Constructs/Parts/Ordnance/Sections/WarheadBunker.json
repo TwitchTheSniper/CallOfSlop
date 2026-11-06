@@ -15,6 +15,8 @@
   "ordnance": {
     "slot": "payload",
     "length": 0.6,
+    "group": "Warheads",
+    "groupOrder": 4,
     "payload": 20,
     "damage": 1.2,
     "crater": 2.2

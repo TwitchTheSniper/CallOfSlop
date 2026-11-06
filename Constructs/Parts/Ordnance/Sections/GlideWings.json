@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "wings",
     "length": 0.8,
-    "for": "bomb",
+    "group": "Wings",
+    "groupOrder": 7,
     "numbers": {
       "lift": 1.0,
       "drag": 0.04

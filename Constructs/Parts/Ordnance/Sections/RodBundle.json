@@ -15,6 +15,8 @@
   "ordnance": {
     "slot": "payload",
     "length": 1.0,
+    "group": "Sub-payloads",
+    "groupOrder": 5,
     "kind": "rods",
     "payload": 25,
     "blast": 0.4,

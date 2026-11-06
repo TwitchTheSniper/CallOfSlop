@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "control",
     "length": 0.35,
-    "for": "bomb",
+    "group": "Tail control",
+    "groupOrder": 9,
     "numbers": {
       "turnAir": 40,
       "drag": 0.02

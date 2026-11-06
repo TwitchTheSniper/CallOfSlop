@@ -15,7 +15,8 @@
   "ordnance": {
     "slot": "motor",
     "length": 0.6,
-    "for": "bomb",
+    "group": "Propulsion",
+    "groupOrder": 8,
     "kind": "solid",
     "settings": [
       {
