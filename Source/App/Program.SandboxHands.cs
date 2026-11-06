@@ -30,6 +30,8 @@ public static partial class Program
     /// <summary>One frame with the hands out (not in a seat, the mouse captured).</summary>
     private static void SandboxHandsInput(Game g, Player me, in SandboxHand h, Vector3 eye, Vector3 dir, float wall, bool aimed, in ConstructHit hit, bool slotted)
     {
+        if (_scrTook)
+            return; // (the buttons are the screen's this frame: Program.SandboxPointer.cs)
         if (Pressed(GameAction.Aim))
         {
             if (h.Held == ConstructParts.None && g.Constructs.HoseHeldBy(me.Id) < 0)

@@ -111,9 +111,8 @@ public static class MediaDirector
         var to = audio.ListenerPosition - at;
         var distance = to.Length();
         var angle = distance > 1e-3f ? MathF.Acos(Math.Clamp(Vector3.Dot(front, to / distance), -1, 1)) * 180f / MathF.PI : 0;
-        ref var sp = ref src.Parts[HeardPart[k]];
         var level = ConstructSpeakers.Shape(p, p.D).Level(distance, angle);
-        audio.MediaSpeakerPlace(k, at, Level * ConstructConfig.Get(sp, sp.D, CfgKey.Volume, 1) * ConstructConfig.Get(p, p.D, CfgKey.Volume, 1) * level);
+        audio.MediaSpeakerPlace(k, at, Level * ConstructConfig.Get(p, p.D, CfgKey.Volume, 1) * level); // (its own Volume only: a screen at 0 with speakers on is silent, and they carry it)
     }
 
     private static readonly Vector3 Rot24Front = -Vector3.UnitZ; // (a speaker faces its -Z)
