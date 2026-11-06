@@ -15,6 +15,16 @@
   "logic": {
     "kind": "turretmodule"
   },
+  "config": [
+    {
+      "key": "stabilised",
+      "type": "toggle",
+      "label": "Stabilised",
+      "group": "Aim",
+      "default": false,
+      "tooltip": "With the mouse still, the look and the guns stay on the point they were left on as the craft moves."
+    }
+  ],
   "boxes": [
     {
       "min": [

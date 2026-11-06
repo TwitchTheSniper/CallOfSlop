@@ -374,7 +374,7 @@ public sealed class SandboxToolWheel
             tool = ConstructTool.None;
             g.SwitchTo(gun, Brutal.GlfwApi.Glfw.Time);
         }
-        if (tool != h.Tool)
+        if (tool != h.Tool || tool == ConstructTool.None && h.Held != ConstructParts.None)
             g.SandboxSend(CActKind.Tool, part: (byte)tool);
         return false;
     }

@@ -131,9 +131,12 @@ public sealed class SandboxModule : GameModeModule
             if (game.IsServer)
                 continue;
             ref var h = ref game.SandboxHands.Hand(id);
-            if (id != game.LocalId)
-                h.Tool = tool; // (the local player's own tool is what it chose: the server follows the client's request)
-            h.Held = ConstructParts.Get(held) != null ? held : ConstructParts.None;
+            if (id != game.LocalId || game.SandboxNow > h.ToolAskedAt + Game.SandboxToolLag)
+                h.Tool = tool; // (what the local player just chose stands until the server has heard it; after that the server's word holds, or a spawn or a saved world's tool would never show here)
+            if (held != h.HeldGone)
+                h.HeldGone = ConstructParts.None; // (the server has heard: from here on a part is a new one)
+            if (held != h.HeldGone || game.SandboxNow > h.HeldGoneUntil)
+                h.Held = ConstructParts.Get(held) != null ? held : ConstructParts.None; // (a part the local player's tool change just put away stays gone: this snapshot may be older)
             if (id != game.LocalId) // (the local player's seat comes with their own move: GameSnapshots.cs)
             {
                 h.SeatBody = seat;

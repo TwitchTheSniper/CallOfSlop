@@ -201,6 +201,7 @@ public enum CLogic : byte
     Decoupler, // a rising input splits the construct here into two live bodies (ConstructBoost.cs)
     AntiGrav, // on power cancels a share of its construct's weight, within its radius (ConstructBoost.cs)
     Mooring, // a mast: on (unwired: always), it ropes a balloon in reach; off or Interact casts it off (ConstructCarrier.cs)
+    BombRack, // lets go of the explosive parts bolted to it, one at a time while its input is on (ConstructOrdnance.cs)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -560,8 +561,12 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && Logic != CLogic.FlightStabilizer && Logic != CLogic.Decoupler && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric || Rotor is { MotorKw: > 0 }; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && Logic != CLogic.FlightStabilizer && Logic != CLogic.Decoupler && Logic != CLogic.BombRack && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric || Rotor is { MotorKw: > 0 }; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
+    public float GunThrust, GunBurn, GunTurn, GunProx, GunCrater; // a heavy gun's shell (ConstructOrdnance.cs): its push (m/s2), seconds it burns, turn (degrees a second), proximity fuse (m), crater (m)
+    public int GunShell = -1; // a heavy gun's ShellKind ("shell"); -1: its rounds are rounds
+    public SightKind Sight; // "sight": bolted to a gun, what it adds (ConstructOrdnance.cs)
+    public float SightReach, SightCone; // how far it sees (m), and how far off its axis or the look a target can be (degrees)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
     public float GunMaxRange = 300f; // how far its rounds reach at all
@@ -1154,7 +1159,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
+        "sight", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1239,6 +1244,21 @@ public static partial class ConstructParts
             };
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
             : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.FluidTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator or PartRole.Transfer or PartRole.EnginePiece ? PartBreak.Disable : PartBreak.Detach;
+        if (Opt(root, "sight") is { } sgt)
+        {
+            const string sw = "sight";
+            Known(sgt, ["kind", "reach", "cone"], $"{file}: \"{sw}\"");
+            d.Sight = Str(Need(sgt, "kind", file), file, "sight.kind").ToLowerInvariant() switch
+            {
+                "lead" => SightKind.Lead,
+                "seeker" => SightKind.Seeker,
+                var other => throw new ConstructPartException($"{file}: \"sight.kind\" is lead or seeker, not \"{other}\""),
+            };
+            d.SightReach = Num(Need(sgt, "reach", file), file, "sight.reach");
+            Range(d.SightReach, 10f, 5000f, file, "sight.reach");
+            d.SightCone = Num(Need(sgt, "cone", file), file, "sight.cone");
+            Range(d.SightCone, 0.5f, 90f, file, "sight.cone");
+        }
         if (Opt(root, "explosive") is { } ex)
         {
             const string ew = "explosive";
@@ -1875,7 +1895,7 @@ public static partial class ConstructParts
     /// </summary>
     private static void ParseGun(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf"], bw);
+        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf"], bw);
         d.GunMaxRange = Opt(b, "maxRange") is { } mr ? Num(mr, file, "gun.maxRange") : 300f;
         Range(d.GunMaxRange, 1, 1000, file, "gun.maxRange");
         d.GunKick = Opt(b, "kick") is { } kick ? Num(kick, file, "gun.kick") : 0f;
@@ -1922,6 +1942,26 @@ public static partial class ConstructParts
         Range(d.GunPellets, 1, 24, file, "gun.pellets");
         d.GunSpeed = Opt(b, "speed") is { } spd ? Num(spd, file, "gun.speed") : 0f;
         Range(d.GunSpeed, 0, 2000, file, "gun.speed");
+        if (Opt(b, "shell") is { } sh)
+        {
+            if (!Enum.TryParse<ShellKind>(Str(sh, file, "gun.shell"), ignoreCase: true, out var kind) || kind == ShellKind.Bomb)
+                throw new ConstructPartException($"{file}: \"gun.shell\" is a shell a gun fires, one of {string.Join(", ", Enum.GetNames<ShellKind>().Where(n => n != nameof(ShellKind.Bomb)))}");
+            d.GunShell = (int)kind;
+            if (d.GunSpeed <= 0)
+                throw new ConstructPartException($"{file}: a \"gun.shell\" needs a \"speed\"");
+        }
+        d.GunThrust = Opt(b, "thrust") is { } thr ? Num(thr, file, "gun.thrust") : 0f;
+        Range(d.GunThrust, 0, 2000, file, "gun.thrust");
+        d.GunBurn = Opt(b, "burn") is { } brn ? Num(brn, file, "gun.burn") : 0f;
+        Range(d.GunBurn, 0, 60, file, "gun.burn");
+        d.GunTurn = Opt(b, "turn") is { } trn ? Num(trn, file, "gun.turn") : 0f;
+        Range(d.GunTurn, 0, 720, file, "gun.turn");
+        d.GunProx = Opt(b, "prox") is { } prx ? Num(prx, file, "gun.prox") : 0f;
+        Range(d.GunProx, 0, 100, file, "gun.prox");
+        d.GunCrater = Opt(b, "crater") is { } crt ? Num(crt, file, "gun.crater") : 0f;
+        Range(d.GunCrater, 0, 60, file, "gun.crater");
+        if (d.GunShell < 0 && (d.GunThrust > 0 || d.GunBurn > 0 || d.GunTurn > 0 || d.GunProx > 0 || d.GunCrater > 0))
+            throw new ConstructPartException($"{file}: \"thrust\", \"burn\", \"turn\", \"prox\" and \"crater\" belong to a gun with a \"shell\"");
         d.GunFlags = Opt(b, "flags") is { ValueKind: JsonValueKind.Array } fl ? fl.EnumerateArray().Select(f => Str(f, file, "gun.flags").ToLowerInvariant()).ToArray() : [];
         foreach (var f in d.GunFlags)
             if (f is not ("penetrating" or "explosive" or "incendiary"))

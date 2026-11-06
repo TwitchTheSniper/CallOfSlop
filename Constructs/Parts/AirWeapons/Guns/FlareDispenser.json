@@ -1,0 +1,110 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Flare Dispenser",
+  "description": "Throws flares that burn five seconds, sinking. Missiles coming in may go for one instead.",
+  "group": "Weapons",
+  "section": "Guns",
+  "role": "gun",
+  "tool": "welder",
+  "mass": 15.0,
+  "health": 240,
+  "armour": 6,
+  "material": "steel",
+  "color": "#2a2c26",
+  "attachSeconds": 3.0,
+  "gun": {
+    "damage": 1,
+    "rpm": 180,
+    "spread": 8,
+    "range": 30,
+    "maxRange": 60,
+    "mag": 12,
+    "reload": 6,
+    "kick": 2,
+    "fx": "cannon",
+    "soundOf": "Leviathan .50",
+    "shell": "flare",
+    "speed": 30,
+    "burn": 5,
+    "muzzle": [
+      0,
+      0,
+      -0.3
+    ]
+  },
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        -0.12,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        0.12,
+        0.12
+      ]
+    },
+    {
+      "min": [
+        -0.054,
+        -0.054,
+        -0.3
+      ],
+      "max": [
+        0.054,
+        0.054,
+        -0.12
+      ],
+      "color": "#3a3d40"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.12,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.12,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.12,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.12,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.12
+      ],
+      "dir": "+z"
+    }
+  ]
+}

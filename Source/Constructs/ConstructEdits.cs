@@ -18,6 +18,8 @@ public struct SandboxHand
 {
     public ConstructTool Tool; // None: a gun or bare hands (use only, never edit)
     public ushort Held; // the part in hand (ConstructParts id, ConstructParts.None: none)
+    public double ToolAskedAt, HeldGoneUntil; // client: when the local player last changed tool, and until when a snapshot still showing the put-away part is old news
+    public ushort HeldGone; // client: the part a tool change put away (it is gone at once here; the server follows)
     public ushort MagFor, MagPack; // a magazine in hand: which part kind, and its rounds and type (ConstructAmmo.Pack); it goes with the hands, not into a backpack
     public EditKind Edit;
     public ushort Body;
@@ -144,13 +146,43 @@ public sealed partial class ConstructEdits
 
     public ref SandboxHand Hand(byte player) => ref Hands[player];
 
-    public string? SetTool(byte player, ConstructTool tool)
+    public string? SetTool(byte player, ConstructTool tool, ConstructWorld? world = null, Vector3? eye = null, float yaw = 0)
     {
         ref var h = ref Hands[player];
         if (h.Tool != tool)
             h.Edit = EditKind.None; // putting the tool away stops the edit
+        if (h.Held != ConstructParts.None && (h.Tool != tool || tool == ConstructTool.None) && !KeepsHeld(tool, ConstructParts.Get(h.Held)))
+            PutAwayHeld(player, world, eye, yaw); // (None asked for again: a gun picked with a part in the hands, which would block firing)
         h.Tool = tool;
         return null;
+    }
+
+    /// <summary>
+    /// Does a change to this tool keep the part in the hands (the user, 2026-11-06: switching tool puts it away)? Only the hands
+    /// and the tool that fits that part: without those a part taken off a shelf could never be fitted. Client and server ask the same.
+    /// </summary>
+    public static bool KeepsHeld(ConstructTool tool, ConstructPartDef? held) =>
+        tool == ConstructTool.Hands || held != null && ConstructBuild.ToolFits(tool, held);
+
+    /// <summary>
+    /// Server: a tool change puts the held part away. Creative: it simply goes. Otherwise a beacon's network or the inventory
+    /// (<see cref="ReturnHeld"/>); a kind at its count limit, or no inventory, takes <see cref="Give"/>'s path with the hands
+    /// full: the backpack, else dropped in front of the player. A magazine's rounds stay noted (<see cref="CarryMagazine"/>).
+    /// </summary>
+    private void PutAwayHeld(byte player, ConstructWorld? world, Vector3? eye, float yaw)
+    {
+        ref var h = ref Hands[player];
+        var def = ConstructParts.Get(h.Held);
+        if (InfiniteParts || def == null)
+        {
+            h.Held = ConstructParts.None;
+            return;
+        }
+        ReturnHeld(player, world, eye);
+        if (h.Held == ConstructParts.None)
+            Notices.Add((player, $"{def.Name} put away"));
+        else if (world != null && eye is { } at && Give(world, player, def, at + GravityFrames.FlatForward(at, yaw) * 0.8f) is not GiveResult.Lost)
+            h.Held = ConstructParts.None;
     }
 
     private string? Reachable(Vector3 eye, Vector3 at, float reach) =>

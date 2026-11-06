@@ -77,8 +77,8 @@ public static partial class ConstructFlight
     public const int InSeat = 0, InThrottle = 1, InPitch = 2, InYaw = 3, InRoll = 4, InLift = 5, InAutopilot = 6, InMode = 7, InAltitude = 8, InHeading = 9, InWaypointX = 10, InWaypointZ = 11, InSetHome = 12;
     public static readonly string[] InPorts = ["seat", "throttle", "pitch", "yaw", "roll", "lift", "autopilot", "mode", "altitude", "heading", "waypoint x", "waypoint z", "set home"]; // (add at the end: a link names its port by index)
 
-    public const int OutThrottle = 0, OutReverse = 1, OutLift = 2, OutVent = 3, OutPitch = 4, OutYaw = 5, OutRoll = 6, OutLeftAileron = 7, OutRightAileron = 8, OutFlaps = 9, OutFrontLeft = 10, OutFrontRight = 11, OutRearLeft = 12, OutRearRight = 13, OutStrafeLeft = 14, OutStrafeRight = 15;
-    public static readonly string[] OutPorts = ["throttle", "reverse", "lift", "vent", "pitch", "yaw", "roll", "left aileron", "right aileron", "flaps", "front left", "front right", "rear left", "rear right", "strafe left", "strafe right"]; // (add at the end, sixteen at most: a link names its port by index)
+    public const int OutThrottle = 0, OutReverse = 1, OutLift = 2, OutVent = 3, OutPitch = 4, OutYaw = 5, OutRoll = 6, OutLeftAileron = 7, OutRightAileron = 8, OutFlaps = 9, OutFrontLeft = 10, OutFrontRight = 11, OutRearLeft = 12, OutRearRight = 13, OutStrafeLeft = 14, OutStrafeRight = 15, OutFire = 16;
+    public static readonly string[] OutPorts = ["throttle", "reverse", "lift", "vent", "pitch", "yaw", "roll", "left aileron", "right aileron", "flaps", "front left", "front right", "rear left", "rear right", "strafe left", "strafe right", "fire"]; // (add at the end, up to LogicBlocks.PortWidth, which also sizes every wide part: a link names its port by index)
 
     /// <summary>The limits while their settings are 0: the most it tilts (degrees), turns (degrees a second), climbs and goes (m/s).</summary>
     private static readonly Vector4 RotorLimits = new(30, 90, 8, 30), ShipLimits = new(5, 12, 3, 15), PlaneLimits = new(45, 30, 20, 120), RocketLimits = new(25, 30, 30, 300);
@@ -463,6 +463,18 @@ public static partial class ConstructFlight
 
     /// <summary>One tick of a Flight Stabilizer. Returns its first output; the others go to its ports.</summary>
     public static float Step(ConstructWorld world, Construct c, int part, ref CPart p, ConstructPartDef d, int from, float dt)
+    {
+        var first = FlyStep(world, c, part, ref p, d, from, dt);
+        if (c.PortBase.Length > 0 && c.PortBase[part] >= 0)
+        {
+            // The pilot's fire key, whatever the stabilizer is doing: a rack or a gun on it works on the ground and with the engine off too.
+            var seat = from >= 0 && from < c.PartCount && c.Parts[from].D.Role == PartRole.Seat ? from : c.DriveSeat;
+            c.PortOut[c.PortBase[part] + OutFire] = seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & ConstructParts.KeyFire) != 0 ? 1 : 0;
+        }
+        return first;
+    }
+
+    private static float FlyStep(ConstructWorld world, Construct c, int part, ref CPart p, ConstructPartDef d, int from, float dt)
     {
         var k = IndexOf(c, part);
         if (c.PortBase.Length == 0 || c.PortBase[part] < 0)

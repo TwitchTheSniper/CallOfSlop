@@ -321,7 +321,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 175: jets, rockets and repulsors (ConstructBoost.cs): Fluid.Oxidiser, CfgKey.Grain, CLogic.Decoupler and AntiGrav, thruster kinds, a decoupler splits a body into two live ones, CBodyKind.Flight, the Flight Stabilizer's "pattern" setting becomes "keys".
     // 176: carrier work and pilot gear (ConstructCarrier.cs, PilotGear.cs): CLogic.Mooring, a seat's hook and eject keys in CActKind.SeatKeys, the recipient's worn gear in its snapshot (flag 8).
     // 177: flight in survival: ExShape.Wing pieces and CfgKey.WingKind/WingChord/WingSpan (the Airframe Former), Assembler families' recipe lists, the levite materials
-    public const byte ProtocolVersion = 177;
+    // 178: air weapons (ConstructOrdnance.cs): CLogic.BombRack, ShellKinds Bomb to Flare, a rocket's or missile's flight in CFireKind.ShellOut, CFireKind.ShellStop and ShellSteer, CfgKey.Stabilised and FuseRange; a Flight Stabilizer's seventeenth output, so data ports reach 31 in a link's byte.
+    public const byte ProtocolVersion = 178;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
