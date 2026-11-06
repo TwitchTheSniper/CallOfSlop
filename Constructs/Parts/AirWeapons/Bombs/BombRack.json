@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bomb Rack",
-  "description": "Holds a bomb on its lug. While its input is on it lets go, three times a second, if its own construct leaves the way down clear: a closed bay door stops it.",
+  "description": "Holds a bomb on its lug. While its input is on it lets go, three times a second, if its own construct leaves the way down clear: a closed bay door stops it. Rated for 300 kg.",
   "group": "Weapons",
   "section": "Bombs",
   "role": "logic",
@@ -13,7 +13,8 @@
   "color": "#2a2c26",
   "attachSeconds": 1.5,
   "logic": {
-    "kind": "bombrack"
+    "kind": "bombrack",
+    "load": 300
   },
   "boxes": [
     {

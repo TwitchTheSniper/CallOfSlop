@@ -184,6 +184,14 @@ HAND = [
     rec("Flare Dispenser", 6, 2, m={"steel": 6, "copper": 1}),
     rec("AA Sight", 8, 3, m={"steel": 3, "glass": 2}, p={"Lens": 1, "Circuit Board": 1}),
     rec("Seeker Head", 12, 4, m={"steel": 3, "glass": 2}, p={"Lens": 2, "Control Unit": 1}),
+    # Modular ordnance (tools/constructs/ordnance_parts.py).
+    rec("Ordnance Bench", 15, 2, m={"steel": 30, "planks": 6}),
+    rec("Impact Fuse", 3, 2, m={"steel": 2, "copper": 1}),
+    rec("Delay Fuse", 4, 2, m={"steel": 2, "copper": 2}),
+    rec("Warhead HE", 6, 2, m={"steel": 8, "concrete": 2}),
+    rec("Warhead Blast", 7, 2, m={"steel": 6, "concrete": 3}),
+    rec("Warhead Bunker", 9, 3, m={"steel": 16, "concrete": 2}),
+    rec("Bomb Tail Fins", 3, 2, m={"steel": 3}),
     # What a pilot wears (tools/constructs/pilot_parts.py): a parachute early, a jetpack late.
     rec("Parachute", 3, m={"rubber": 2, "planks": 2}),
     rec("Backpack Glider", 4, 2, m={"rubber": 3, "steel": 2}),

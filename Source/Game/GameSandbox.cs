@@ -73,6 +73,7 @@ public enum CActKind : byte
     Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq (Seek: milliseconds), text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
+    Ordnance, // u32 length, text: build this design at the Ordnance Bench in reach (protocol 180; GameSandboxOrdnance.cs)
 }
 
 /// <summary>
@@ -755,6 +756,8 @@ public sealed partial class Game
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
             case CActKind.Bench:
                 return SandboxBenchAct(p, ref r);
+            case CActKind.Ordnance:
+                return SandboxOrdnanceBuild(p, ReadLong(ref r));
             case CActKind.Sculpt:
                 return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:

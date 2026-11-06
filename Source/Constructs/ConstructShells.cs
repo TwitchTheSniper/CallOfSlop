@@ -33,7 +33,7 @@ public struct CShell
     public int Burn, Fuse, Delay; // ticks it pushes for, its age when it bursts (0: never), ticks it lies after it hit before going off
     public int Clear; // ticks it passes its own construct
     public ushort Target, Decoy; // what a missile steers for: a body, or (drawn away) a flare's shell id
-    public ushort Def; // a bomb's part type (what is drawn)
+    public Vector3 Size; // a bomb's size (what is drawn: its part type may be this machine's own)
     public ushort Stuck; // the body a bomb landed on, and where on it (it rides along until its fuse)
     public Vector3 StuckAt;
 }

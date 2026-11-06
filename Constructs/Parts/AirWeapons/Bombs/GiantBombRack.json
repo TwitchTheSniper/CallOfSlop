@@ -1,0 +1,85 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Giant Bomb Rack",
+  "description": "For the biggest things a designer dares. While its input is on it lets go, if its own construct leaves the way down clear. Rated for 2e+06 kg.",
+  "group": "Weapons",
+  "section": "Bombs",
+  "role": "logic",
+  "tool": "welder",
+  "mass": 6.0,
+  "health": 80,
+  "armour": 3,
+  "material": "steel",
+  "color": "#2a2c26",
+  "attachSeconds": 1.5,
+  "logic": {
+    "kind": "bombrack",
+    "load": 2000000
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.04,
+        -0.2
+      ],
+      "max": [
+        0.125,
+        0.08,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        -0.08,
+        -0.07
+      ],
+      "max": [
+        0.05,
+        -0.04,
+        0.07
+      ],
+      "color": "#c8a838",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lug0",
+      "at": [
+        0.0,
+        -0.04,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.08,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ]
+}

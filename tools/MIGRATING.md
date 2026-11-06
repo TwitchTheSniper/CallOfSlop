@@ -18,6 +18,7 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `loadout.txt` | Your loadouts |
 | `settings.txt` | Your settings and keybinds |
 | `workbench.txt` | Your workbench weapon builds |
+| `ordnance.txt` | Your saved bomb and missile designs (the Ordnance Bench) |
 | `blueprints.txt` | Your workbench blueprint library (newer builds; the first time it opens it copies in the builds from `workbench.txt`) |
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
 | The `ConstructBlueprints` folder | Blueprints you saved at a Blueprint Desk in Sandbox |

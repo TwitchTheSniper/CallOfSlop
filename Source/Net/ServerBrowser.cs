@@ -323,7 +323,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 177: flight in survival: ExShape.Wing pieces and CfgKey.WingKind/WingChord/WingSpan (the Airframe Former), Assembler families' recipe lists, the levite materials
     // 178: air weapons (ConstructOrdnance.cs): CLogic.BombRack, ShellKinds Bomb to Flare, a rocket's or missile's flight in CFireKind.ShellOut, CFireKind.ShellStop and ShellSteer, CfgKey.Stabilised and FuseRange; a Flight Stabilizer's seventeenth output, so data ports reach 31 in a link's byte.
     // 179: flight tuning: new CfgKeys, a part's settings up to 64, a CBodyKind.Flight carries the loops' errors.
-    public const byte ProtocolVersion = 179;
+    // 180: modular ordnance (OrdnanceDesign.cs): a designed bomb or missile in a Full's part list, CActKind.Ordnance, the Ordnance Bench, a bomb's size in ShellOut.
+    public const byte ProtocolVersion = 180;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

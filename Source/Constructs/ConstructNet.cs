@@ -89,8 +89,8 @@ public static class ConstructNet
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            if (p.D is { IsExtrusion: true } piece)
-                Extrusion.Write(w, piece); // (protocol 119: a piece is its key, never this machine's id)
+            if (p.D.RuntimeMade)
+                Extrusion.Write(w, p.D); // (protocol 119: a piece is its key, never this machine's id)
             else
                 w.U16(p.Def);
             w.CmVec(p.Pos).U8(p.Rot).U8(p.Seg)
@@ -175,7 +175,7 @@ public static class ConstructNet
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            Mix(ref h, p.D is { IsExtrusion: true } piece ? (int)piece.ExHash : p.Def); // (an extrusion's id is this machine's own)
+            Mix(ref h, p.D.RuntimeMade ? (int)p.D.ExHash : p.Def); // (an extrusion's id is this machine's own)
             Mix(ref h, Cm(p.Pos.X));
             Mix(ref h, Cm(p.Pos.Y));
             Mix(ref h, Cm(p.Pos.Z));
@@ -248,6 +248,8 @@ public static class ConstructNet
             else if (e.Kind == CFireKind.ShellOut)
             {
                 w.U16(e.Body).U16(e.Part).U16(e.Shell).Vec(e.At).Vec(e.To).U8(e.Muzzle); // (protocol 150)
+                if ((ShellKind)e.Muzzle == ShellKind.Bomb)
+                    w.Vec(e.Half); // (protocol 180: its size; a designed bomb's id is this machine's own)
                 if ((ShellKind)e.Muzzle >= ShellKind.Rocket)
                     w.F32(e.Thrust).F32(e.Turn).U16(e.Burn).U16(e.Target); // (protocol 178: every PC flies it alike)
             }
@@ -289,6 +291,8 @@ public static class ConstructNet
             else if (kind == CFireKind.ShellOut)
             {
                 e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U16(), Shell = r.U16(), At = r.Vec(), To = r.Vec(), Muzzle = r.U8() };
+                if ((ShellKind)e.Muzzle == ShellKind.Bomb)
+                    e.Half = r.Vec();
                 if ((ShellKind)e.Muzzle >= ShellKind.Rocket)
                 {
                     e.Thrust = r.F32();

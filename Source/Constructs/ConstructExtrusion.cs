@@ -68,6 +68,7 @@ public static class Extrusion
     private const float WingSkin = 0.0225f; // m of skin and ribs over its area, before chord's root
     public const int MaxBladeStyles = 8; // (three bits of a Fan's Wall)
     private const byte CustomWire = 255, RoundWire = 254, PipeWire = 253, WheelWire = 252, FanWire = 251, BladeWire = 250, WingWire = 249;
+    internal const byte OrdnanceWire = 248; // (a modular bomb or missile, not an extrusion: Ordnance.Write)
     private const int RoundSides = 14; // a Round's sides: with the caps' middles, 30 points of ConvexHull.MaxCorners' 32
     private const int PipeBoxes = 32, PipeSides = 24; // a Pipe's wall: this many boxes round its bore, and sides drawn
     private const int WheelSides = 24;
@@ -248,6 +249,20 @@ public static class Extrusion
             into[n++] = new Rect(x0, y0, w, h);
         }
         return n;
+    }
+
+    /// <summary>Gives a run-time part made elsewhere (a modular bomb or missile: Ordnance.cs) an id in this table. False when it is full.</summary>
+    internal static bool Adopt(ConstructPartDef d)
+    {
+        lock (Interned)
+        {
+            if (_count >= MaxDefs)
+                return false;
+            d.Id = (ushort)(RuntimeBase + _count);
+            ById[_count] = d;
+            Volatile.Write(ref _count, _count + 1);
+            return true;
+        }
     }
 
     /// <summary>The piece for a key, made the first time it is asked for. Null: a bad key, or the table is full.</summary>
@@ -928,6 +943,12 @@ public static class Extrusion
     {
         ref readonly var k = ref d.ExKey;
         w.U16(WireMark);
+        if (d.IsOrdnance)
+        {
+            w.U8(OrdnanceWire);
+            Ordnance.Write(w, d);
+            return;
+        }
         switch (k.Shape)
         {
             case ExShape.Round:
@@ -962,6 +983,8 @@ public static class Extrusion
     public static ushort Read(ref PacketReader r)
     {
         var profile = r.U8();
+        if (profile == OrdnanceWire)
+            return Ordnance.Read(ref r);
         var mask = 0ul;
         var shape = ExShape.Section;
         ushort wall = 0;
