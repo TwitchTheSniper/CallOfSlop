@@ -41,7 +41,16 @@ public sealed partial class Game
         if (purpose == PurposeVisit)
         {
             var sr = new SaveReader(r.Take(r.Remaining).ToArray()); // (written with a SaveWriter: GameTravel.cs PlaceVisit)
-            var visit = new TravelVisit { World = sr.Str(), Map = sr.Str(), Place = sr.U8() };
+            TravelVisit visit;
+            try
+            {
+                visit = new TravelVisit { World = sr.Str(), Map = sr.Str(), Place = sr.U8() };
+            }
+            catch (WorldFileException ex)
+            {
+                Console.WriteLine($"[travel] a bad visit message from the host: {ex.Message}");
+                return;
+            }
             PendingVisit = visit;
             Console.WriteLine($"[travel] the host sends this game to {visit.Map} (place {visit.Place})");
         }
