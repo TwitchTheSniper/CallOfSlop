@@ -4648,7 +4648,7 @@ The lift acts at each cell's centre, so a cell off the centre of mass tips the c
 
 **Softer past a size.** A construct's cells count `(volume / softFromM3) ^ softPower` times over, at most `softMost`: from 20,000 m3, 1.76x at 100,000 m3, 3.9x at 1,000,000 m3, 6x from about 3,300,000 m3 up. So a flying city doesn't need thousands of cells.
 
-**Gas.** Pipes bring hydrogen and helium as they bring any fluid, 10 l of a tank's compressed gas a cubic metre (`gasLitresPerM3`). In survival the bulk materials `hydrogen` (a Smelter on dirt) and `helium` (a new underground deposit, tier 2 drill) go by chute into a **Gas Compressor**, whose pipe gives 50 l a unit. Creative sets the gas and fill on the panel. A cell's fill is a percentage as a tank's is, and for hot air it is the heat, for vacuum the emptiness.
+**Gas.** Pipes bring hydrogen and helium as they bring any fluid, 1 l of a tank's compressed gas a cubic metre (`gasLitresPerM3`), so a Large Fluid Tank's 150 l fills 150 m3. In survival the bulk materials `hydrogen` (a Smelter on dirt) and `helium` (a new underground deposit, tier 2 drill) go by chute into a **Gas Compressor**, whose pipe gives 50 l a unit. Creative sets the gas and fill on the panel. A cell's fill is a percentage as a tank's is, and for hot air it is the heat, for vacuum the emptiness. Resizing a cell keeps its percentage in creative; in survival it keeps its gas, so a bigger box is a slacker bag with the same lift and more skin. The look line says what it lifts of what the construct weighs, what it would lift full, and if it is frozen or has no air.
 
 **Burners.** Role `burner`: `{"heat": m3 kept at full heat, "burnRate": l/s, "at", "reach"}`. It burns fuel as a thruster does (touching a tank, or a pipe), and heats the first cell up its flame, along the part's up. Its `throttle` wire sets it; its `height` wire holds that many metres over the ground with a slow trim; unwired, the driver's Sprint raises the setting and Crouch lowers it and then vents. Hot air cools at `coolShare` a second, by the air.
 
@@ -4661,6 +4661,8 @@ The lift acts at each cell's centre, so a cell off the centre of mass tips the c
 **The network.** `CBodyKind.Fluid` carries a hole with each tank (protocol 170), at 5 Hz while a cell's fill moves by more than 0.2%. `CActKind.PatchCell` is the patch.
 
 **Mooring.** A rope to the ground holds a balloon, and it swings out on its rope in a wind and sleeps there. A craft rising on a slack rope jerks it: 7 t rising at 13 m/s snapped a 25 t rope, and an XL rope holds. Tie it short or fill it tied.
+
+A cell has to lift itself: a soft cube needs about 3.3 m a side, an armoured one about 9.5 m (its block included).
 
 **Choices made (the developer may change them):** gas has no weight of its own in a cell; a cell's box is a plain box until shaped envelopes come; a burner's reach is along the part's up, not a pipe; hot air and vacuum don't pipe; a hit always makes a hole, however small; dirt as hydrogen's source (nothing better exists to make it from yet).
 
