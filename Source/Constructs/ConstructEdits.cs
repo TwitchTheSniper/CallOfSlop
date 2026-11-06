@@ -1080,6 +1080,9 @@ public sealed partial class ConstructEdits
                 case CLogic.Launch:
                     lp.State |= 1; // (a catapult: fire)
                     break;
+                case CLogic.Mooring:
+                    lp.State ^= 1; // (a mast: cast off, tie on)
+                    break;
                 case CLogic.Lever:
                     lp.State = (byte)((lp.State + 1) & 3);
                     break;

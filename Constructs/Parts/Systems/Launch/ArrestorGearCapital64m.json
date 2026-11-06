@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Arrestor Gear Capital 64 m",
-  "description": "Stops up to 2000 t at 12 m/s2 on a deck.",
+  "description": "Catches up to 2000 t landing on it, or 24 m either end of it, at 25 m/s2. No hook needed.",
   "group": "Capital",
   "section": "Launch and landing",
   "role": "logic",
@@ -17,10 +17,11 @@
     "kind": "arrest"
   },
   "launch": {
-    "width": 40,
-    "height": 16,
-    "accel": 12,
-    "maxMass": 2000000
+    "width": 64,
+    "height": 32,
+    "accel": 25,
+    "maxMass": 2000000,
+    "reach": 24
   },
   "walk": "floor",
   "power": 20000,

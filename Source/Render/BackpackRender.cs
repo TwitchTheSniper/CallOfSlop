@@ -64,12 +64,16 @@ public sealed class PackNode : IRenderable
 {
     public CStore? Pack;
     public Matrix4x4 Frame;
+    public byte Canopy; // a pilot's gear in the air (CanopyRender.cs)
+    public Matrix4x4 BodyFrame;
 
     public void Emit(DrawList list, SceneNode node)
     {
+        var o = new ToolListOut(list);
+        if (Canopy != 0)
+            CanopyRender.Emit(ref o, Canopy, BodyFrame);
         if (Pack == null)
             return;
-        var o = new ToolListOut(list);
         BackpackRender.Emit(ref o, Pack, Frame);
     }
 }

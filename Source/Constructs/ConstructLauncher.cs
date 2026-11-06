@@ -19,7 +19,7 @@ public static class ConstructLauncher
     private static readonly List<Construct> _near = new(64);
 
     /// <summary>Is the world point in part <paramref name="part"/>'s working zone? <paramref name="local"/>: the point in the part's frame.</summary>
-    private static bool InZone(Construct c, int part, Vector3 world, out Vector3 local)
+    public static bool InZone(Construct c, int part, Vector3 world, float reach, out Vector3 local)
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
@@ -27,7 +27,7 @@ public static class ConstructLauncher
         var rest = Vector3.Transform(world - t, Quaternion.Conjugate(q));
         local = Vector3.Transform(rest - p.Pos, Quaternion.Conjugate(Rot24.Quat(p.Rot)));
         return MathF.Abs(local.X) <= d.LaunchWidth * 0.5f && local.Y >= d.BoundsMax.Y - 0.5f && local.Y <= d.BoundsMax.Y + d.LaunchHeight
-               && local.Z >= d.BoundsMin.Z && local.Z <= d.BoundsMax.Z;
+               && local.Z >= d.BoundsMin.Z - reach && local.Z <= d.BoundsMax.Z + reach;
     }
 
     private static bool Takes(Construct c, Construct b, float maxMass) =>
@@ -36,6 +36,7 @@ public static class ConstructLauncher
     /// <summary>One tick of every catapult and arrestor.</summary>
     public static void Step(ConstructWorld world, float dt)
     {
+        world.CarrierClock++;
         var bodies = world.Bodies;
         for (var i = 0; i < bodies.Count; i++)
         {
@@ -44,10 +45,15 @@ public static class ConstructLauncher
                 continue;
             for (var k = 0; k < c.PartCount; k++)
             {
-                if (c.Parts[k].D.Logic == CLogic.Launch)
+                var d = c.Parts[k].D;
+                if (d.Logic == CLogic.Launch)
                     Catapult(world, c, k, dt);
-                else if (c.Parts[k].D.Logic == CLogic.Arrest)
+                else if (d.Logic == CLogic.Arrest)
                     Arrest(world, c, k, dt);
+                else if (d.Logic == CLogic.Mooring)
+                    ConstructCarrier.Mooring(world, c, k);
+                else if (d.DockPull > 0)
+                    ConstructCarrier.Tractor(world, c, k, dt);
             }
         }
     }
@@ -59,11 +65,31 @@ public static class ConstructLauncher
         if (p.Broken || !ConstructPower.On(c, k))
         {
             p.Count = 0;
+            p.Mem = 0;
             p.State = (byte)(p.State & ~1);
             return;
         }
         c.WorldFrame(p.Seg, out var q, out _);
         var dir = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, -Vector3.UnitZ), q));
+        // Hooked by its pilot (ConstructCarrier.cs): it waits on the rail for a press.
+        if (p.Mem != 0)
+        {
+            if (world.Get((ushort)p.Mem) is not { } held || !Takes(c, held, d.LaunchMaxMass) || held.CarriedBy != 0 || !InZone(c, k, held.WorldCom, 0, out var local))
+                p.Mem = 0;
+            else if ((p.State & 1) != 0)
+            {
+                p.State = (byte)(p.State & ~1);
+                p.Count = held.Id;
+                p.Mem = 0;
+                held.ArrestFree = world.CarrierClock + 120;
+                world.Events.Add($"construct {c.Id}: the {d.Name} fired construct {held.Id} ({held.Mass:0} kg)");
+            }
+            else
+            {
+                ConstructCarrier.HoldOnRail(c, k, held, local, dir, dt);
+                return;
+            }
+        }
         if ((p.State & 1) != 0)
         {
             p.State = (byte)(p.State & ~1);
@@ -73,13 +99,14 @@ public static class ConstructLauncher
                 for (var n = 0; n < near.Count; n++)
                 {
                     var b = near[n];
-                    if (!Takes(c, b, d.LaunchMaxMass) || !InZone(c, k, b.WorldCom, out _))
+                    if (!Takes(c, b, d.LaunchMaxMass) || !InZone(c, k, b.WorldCom, 0, out _))
                         continue;
                     if (b.CarriedBy == 0 && (b.Vel - ConstructRide.SurfaceVel(c, p.Seg, b.WorldCom)).LengthSquared() > SettleSpeed * SettleSpeed)
                         continue;
                     if (b.CarriedBy != 0)
                         ConstructCargo.Release(world, b);
                     p.Count = b.Id;
+                    b.ArrestFree = world.CarrierClock + 120;
                     world.Events.Add($"construct {c.Id}: the {d.Name} fired construct {b.Id} ({b.Mass:0} kg)");
                     break;
                 }
@@ -88,7 +115,7 @@ public static class ConstructLauncher
         if (p.Count == 0)
             return;
         var body = world.Get(p.Count);
-        if (body == null || !Takes(c, body, d.LaunchMaxMass) || !InZone(c, k, body.WorldCom, out _))
+        if (body == null || !Takes(c, body, d.LaunchMaxMass) || !InZone(c, k, body.WorldCom, 0, out _))
         {
             p.Count = 0;
             return;
@@ -97,6 +124,17 @@ public static class ConstructLauncher
             ConstructCargo.Release(world, body); // (a dock that caught it again in the first ticks of the shot: the shot wins)
         var dv = d.LaunchAccel * dt;
         var v = Vector3.Dot(body.Vel, dir);
+        if (d.LaunchSpeed > 0)
+        {
+            // Off the rail at its speed over the deck, so a ship under way adds its own.
+            var over = d.LaunchSpeed - Vector3.Dot(body.Vel - ConstructRide.SurfaceVel(c, p.Seg, body.WorldCom), dir);
+            if (over <= 0)
+            {
+                p.Count = 0;
+                return;
+            }
+            dv = MathF.Min(dv, over);
+        }
         if (c.Electrical)
         {
             var kj = 0.5f * body.Mass * MathF.Abs((v + dv) * (v + dv) - v * v) / 1000f / Efficiency;
@@ -119,25 +157,30 @@ public static class ConstructLauncher
         var d = p.D;
         if (p.Broken || p.Out < 0.5f)
             return;
-        var near = world.Near(ConstructRender.PartCentre(c, k), MathF.Max(c.DefOf(k).BoundsMax.Z - c.DefOf(k).BoundsMin.Z, d.LaunchWidth), _near);
+        var near = world.Near(ConstructRender.PartCentre(c, k), MathF.Max(c.DefOf(k).BoundsMax.Z - c.DefOf(k).BoundsMin.Z + d.LaunchReach * 2, d.LaunchWidth), _near);
         for (var n = 0; n < near.Count; n++)
         {
             var b = near[n];
-            if (b.CarriedBy != 0 || !Takes(c, b, d.LaunchMaxMass) || !InZone(c, k, b.WorldCom, out _))
+            if (b.CarriedBy != 0 || !Takes(c, b, d.LaunchMaxMass) || !InZone(c, k, b.WorldCom, d.LaunchReach, out _) || world.CarrierClock < b.ArrestFree)
                 continue;
             var rel = b.Vel - ConstructRide.SurfaceVel(c, c.Parts[k].Seg, b.WorldCom);
             var speed = rel.Length();
             if (speed <= SettleSpeed)
+            {
+                b.ArrestFree = world.CarrierClock + 180; // (caught: now it may go round again under its own power)
                 continue;
+            }
             var dv = MathF.Min(d.LaunchAccel * dt, speed - SettleSpeed);
             b.Wake();
             b.Vel -= rel / speed * dv;
+            if (d.LaunchReach > 0)
+                b.AngVel += (c.AngVel - b.AngVel) * MathF.Min(1f, 4f * dt); // (a clumsy landing doesn't tumble)
             Push(c, b.WorldCom, rel / speed * (dv * b.Mass));
         }
     }
 
     /// <summary>The reaction on a ship that moves (an impulse at a world point).</summary>
-    private static void Push(Construct c, Vector3 at, Vector3 j)
+    public static void Push(Construct c, Vector3 at, Vector3 j)
     {
         if (c.Anchored || c.CarriedBy != 0 || c.InvMass <= 0)
             return;

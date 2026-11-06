@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Docking Clamp Large",
-  "description": "Holds a vehicle up to 300 t, charges and refuels it, unloads its bins.",
+  "description": "Armed, it draws in a craft up to 300 t from 48 m off and holds it, charges and refuels it, unloads its bins. The pilot's key lets go.",
   "group": "Large",
   "section": "Launch and landing",
   "role": "logic",
@@ -22,7 +22,8 @@
     "maxMass": 300000,
     "charge": 500,
     "refuel": 10,
-    "chute": true
+    "chute": true,
+    "pull": 48
   },
   "power": 10000,
   "config": [

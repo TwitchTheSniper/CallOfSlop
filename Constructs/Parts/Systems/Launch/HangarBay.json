@@ -1,0 +1,178 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hangar Bay",
+  "description": "Holds craft up to 6 t that park in its box, charges and refuels them. Signal off or the pilot's key: out along its front at 10 m/s.",
+  "group": "Ship systems",
+  "section": "Launch and landing",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 10.0,
+  "health": 22,
+  "armour": 20,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 2.5,
+  "logic": {
+    "kind": "cargo"
+  },
+  "dock": {
+    "side": 20,
+    "settle": 3.0,
+    "maxMass": 6000,
+    "charge": 20,
+    "refuel": 1,
+    "eject": 10
+  },
+  "power": 400,
+  "config": [
+    {
+      "key": "startOn",
+      "label": "Starts holding",
+      "group": "Dock",
+      "default": true,
+      "tooltip": "A newly built dock starts holding what comes into its box."
+    },
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 20,
+      "step": 0.5,
+      "tooltip": "The box's size across the part.",
+      "default": 10
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 20,
+      "step": 0.5,
+      "tooltip": "The box's size up from the part.",
+      "default": 4
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 20,
+      "step": 0.5,
+      "tooltip": "The box's size along the part.",
+      "default": 10
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -20,
+      "max": 20,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (x).",
+      "default": 0
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -20,
+      "max": 20,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (y).",
+      "default": 2.05
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -20,
+      "max": 20,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (z).",
+      "default": 0
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.125,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.05,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.2,
+        0.05,
+        -0.225
+      ],
+      "max": [
+        0.2,
+        0.0875,
+        -0.125
+      ],
+      "color": "#b8902e",
+      "detail": true,
+      "use": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

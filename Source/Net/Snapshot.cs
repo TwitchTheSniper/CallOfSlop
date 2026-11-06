@@ -23,6 +23,7 @@ public struct SnapPlayer
     public Vector3 RideLocal;
     public Vector3 RideUp; // contraption space: their up in its rest frame (protocol 130; zero: not; ConstructRideMove.cs)
     public bool Noclip; // Sandbox: flying with no collision (protocol 126; NoclipMove.cs)
+    public byte Canopy; // Sandbox: open or burning (protocol 176; PilotGear.cs)
 }
 
 /// <summary>Fields that rarely change ("slow"): score, loadout, attachments and perks. Sent when they change, and on a slow rotation.</summary>
@@ -61,6 +62,10 @@ public struct SnapOwn
     public byte RideSeg, RideAir, RideClimb, RideFree, RideGrip; // RideGrip: a grip face's up axis (0: none; else 1 + axis * 2 + (negative ? 1 : 0))
     public Vector3 RideLocal, RideClimbTo;
     public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
+    public bool Worn; // what they wear follows (PilotGear.cs)
+    public byte Gear, Canopy, GearDelay;
+    public ushort JetFuel;
+    public bool GearJump;
 }
 
 /// <summary>The per-recipient header of every snapshot packet.</summary>
@@ -101,6 +106,7 @@ public static class Snapshot
     public const byte RideKind = 254;
     public const int NoclipBytes = 1; // (protocol 126: kind 253 alone: flying)
     public const byte NoclipKind = 253;
+    public const byte CanopyKind = 249; // (protocol 176: + the Canopy, 250..252, alone: PilotGear.cs)
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
     public const int MaxParts = 8;
@@ -136,14 +142,15 @@ public static class Snapshot
 
     private static float UpOf(byte b) => (sbyte)b / 127f;
 
-    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes : p.Noclip ? NoclipBytes : p.MantleTicks > 0 ? MantleBytes : 0);
+    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes : p.Noclip || p.Canopy != 0 ? NoclipBytes : p.MantleTicks > 0 ? MantleBytes : 0);
 
     public static void WriteFast(PacketWriter w, in SnapPlayer p)
     {
         var seated = p.SeatBody != 0;
         var riding = !seated && p.RideBody != 0;
         var flying = !seated && !riding && p.Noclip;
-        var mantling = p.MantleTicks > 0 || seated || riding || flying;
+        var worn = !seated && !riding && !flying && p.Canopy != 0;
+        var mantling = p.MantleTicks > 0 || seated || riding || flying || worn;
         w.U8(p.Id)
             .U24(Q24(p.Position.X)).U24(Q24(p.Position.Y)).U24(Q24(p.Position.Z))
             .U16(Q16(p.Velocity.X, VelScale)).U16(Q16(p.Velocity.Y, VelScale)).U16(Q16(p.Velocity.Z, VelScale))
@@ -159,6 +166,8 @@ public static class Snapshot
                 .U8(UpByte(p.RideUp.X)).U8(UpByte(p.RideUp.Y)).U8(UpByte(p.RideUp.Z));
         else if (flying)
             w.U8(NoclipKind);
+        else if (worn)
+            w.U8((byte)(CanopyKind + p.Canopy));
         else if (mantling)
             w.U8(p.MantleTicks).U24(Q24(p.MantleTo.X)).U24(Q24(p.MantleTo.Y)).U24(Q24(p.MantleTo.Z));
     }
@@ -187,6 +196,11 @@ public static class Snapshot
             {
                 p.MantleTicks = 0;
                 p.Noclip = true;
+            }
+            else if (p.MantleTicks > CanopyKind && p.MantleTicks < NoclipKind)
+            {
+                p.Canopy = (byte)(p.MantleTicks - CanopyKind);
+                p.MantleTicks = 0;
             }
             else if (p.MantleTicks == 0)
             {
@@ -242,7 +256,7 @@ public static class Snapshot
             w.U8(0);
             return;
         }
-        w.U8((byte)(1 | (o.Mantling ? 2 : 0) | (o.Ride ? 4 : 0))).Vec(o.Position).Vec(o.Velocity);
+        w.U8((byte)(1 | (o.Mantling ? 2 : 0) | (o.Ride ? 4 : 0) | (o.Worn ? 8 : 0))).Vec(o.Position).Vec(o.Velocity);
         if (o.Mantling)
             w.Vec(o.MantleTo);
         if (o.Ride)
@@ -251,6 +265,8 @@ public static class Snapshot
             if (o.RideClimb > 0)
                 w.Vec(o.RideClimbTo);
         }
+        if (o.Worn)
+            w.U8(o.Gear).U8(o.Canopy).U8(o.GearDelay).U16(o.JetFuel).U8((byte)(o.GearJump ? 1 : 0));
         WriteSlow(w, o.Slow);
     }
 
@@ -286,6 +302,17 @@ public static class Snapshot
                     return null;
                 o.RideClimbTo = r.Vec();
             }
+        }
+        if ((flags & 8) != 0)
+        {
+            if (!r.Has(6 + SlowBytes))
+                return null;
+            o.Worn = true;
+            o.Gear = r.U8();
+            o.Canopy = r.U8();
+            o.GearDelay = r.U8();
+            o.JetFuel = r.U16();
+            o.GearJump = r.U8() != 0;
         }
         if (!r.Has(SlowBytes))
             return null;

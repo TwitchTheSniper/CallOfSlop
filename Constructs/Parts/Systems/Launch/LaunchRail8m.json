@@ -1,0 +1,117 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Launch Rail 8 m",
+  "description": "Roll on, press the pilot's key to hook, again to fling up to 6 t off at 55 m/s over the deck. Or a signal. Needs batteries.",
+  "group": "Ship systems",
+  "section": "Launch and landing",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 160.0,
+  "health": 240,
+  "armour": 20,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 2.5,
+  "logic": {
+    "kind": "launch"
+  },
+  "launch": {
+    "width": 10,
+    "height": 5,
+    "accel": 236,
+    "maxMass": 6000,
+    "speed": 55
+  },
+  "walk": "floor",
+  "power": 100,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.025,
+        -7.875
+      ],
+      "max": [
+        0.125,
+        0.025,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.0875,
+        -0.125,
+        -0.0875
+      ],
+      "max": [
+        0.0875,
+        -0.025,
+        0.0875
+      ],
+      "color": "#6d747c"
+    },
+    {
+      "min": [
+        -0.03,
+        0.025,
+        -7.855
+      ],
+      "max": [
+        0.03,
+        0.037,
+        0.105
+      ],
+      "color": "#c7a23a",
+      "detail": true,
+      "use": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -7.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

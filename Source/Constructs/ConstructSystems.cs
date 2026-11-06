@@ -15,7 +15,7 @@ public static partial class ConstructParts
         {
             if (d.Logic != CLogic.Cargo)
                 throw new ConstructPartException($"{file}: only a cargo logic part has a \"dock\" block");
-            Known(dock, ["side", "settle", "maxMass", "charge", "refuel", "chute"], $"{file}, dock");
+            Known(dock, ["side", "settle", "maxMass", "charge", "refuel", "chute", "pull", "eject"], $"{file}, dock");
             d.DockSide = Num(Need(dock, "side", $"{file}, dock"), file, "dock.side");
             Range(d.DockSide, ConstructCargo.MinSide, 128, file, "dock.side");
             d.DockSettle = Opt(dock, "settle") is { } st ? Num(st, file, "dock.settle") : ConstructCargo.SettleSpeed;
@@ -28,25 +28,50 @@ public static partial class ConstructParts
             d.DockFuel = Opt(dock, "refuel") is { } rf ? Num(rf, file, "dock.refuel") : 0f;
             Range(d.DockFuel, 0, 10000, file, "dock.refuel");
             d.DockChute = Opt(dock, "chute") is { ValueKind: JsonValueKind.True };
+            d.DockPull = Opt(dock, "pull") is { } pl ? Num(pl, file, "dock.pull") : 0f;
+            Range(d.DockPull, 0, 256, file, "dock.pull");
+            d.DockEject = Opt(dock, "eject") is { } ej ? Num(ej, file, "dock.eject") : 0f;
+            Range(d.DockEject, 0, 60, file, "dock.eject");
         }
         var launch = Opt(root, "launch");
         if (launch is { } lb)
         {
             if (d.Logic is not (CLogic.Launch or CLogic.Arrest))
                 throw new ConstructPartException($"{file}: only a catapult or arrestor (logic kind launch, arrest) has a \"launch\" block");
-            Known(lb, ["width", "height", "accel", "maxMass"], $"{file}, launch");
+            Known(lb, ["width", "height", "accel", "maxMass", "speed", "reach"], $"{file}, launch");
             d.LaunchWidth = Num(Need(lb, "width", $"{file}, launch"), file, "launch.width");
             Range(d.LaunchWidth, 0.5f, 128, file, "launch.width");
             d.LaunchHeight = Num(Need(lb, "height", $"{file}, launch"), file, "launch.height");
             Range(d.LaunchHeight, 0.5f, 64, file, "launch.height");
             d.LaunchAccel = Num(Need(lb, "accel", $"{file}, launch"), file, "launch.accel");
-            Range(d.LaunchAccel, 0.5f, 100, file, "launch.accel");
+            Range(d.LaunchAccel, 0.5f, 500, file, "launch.accel");
+            d.LaunchSpeed = Opt(lb, "speed") is { } ls ? Num(ls, file, "launch.speed") : 0f;
+            Range(d.LaunchSpeed, 0, 400, file, "launch.speed");
+            d.LaunchReach = Opt(lb, "reach") is { } lr ? Num(lr, file, "launch.reach") : 0f;
+            Range(d.LaunchReach, 0, 256, file, "launch.reach");
             d.LaunchMaxMass = Opt(lb, "maxMass") is { } lm ? Num(lm, file, "launch.maxMass") : float.MaxValue;
             if (d.LaunchMaxMass < 1)
                 throw new ConstructPartException($"{file}: \"launch.maxMass\" is at least 1 kg");
         }
         else if (d.Logic is CLogic.Launch or CLogic.Arrest)
             throw new ConstructPartException($"{file}: a catapult or arrestor needs a \"launch\" block (width, height, accel)");
+        if (Opt(root, "mooring") is { } mb)
+        {
+            if (d.Logic != CLogic.Mooring)
+                throw new ConstructPartException($"{file}: only a mooring mast (logic kind mooring) has a \"mooring\" block");
+            Known(mb, ["reach", "rope"], $"{file}, mooring");
+            d.MastReach = Num(Need(mb, "reach", $"{file}, mooring"), file, "mooring.reach");
+            Range(d.MastReach, 1, 64, file, "mooring.reach");
+            d.MastRope = Opt(mb, "rope") is { } mr ? (byte)Num(mr, file, "mooring.rope") : (byte)2;
+        }
+        if (Opt(root, "wear") is { } wb)
+            d.Wear = Str(wb, file, "wear") switch
+            {
+                "parachute" => PilotGear.Chute,
+                "glider" => PilotGear.Glider,
+                "jetpack" => PilotGear.Jet,
+                var w => throw new ConstructPartException($"{file}: \"wear\" is parachute, glider or jetpack, not \"{w}\""),
+            };
         if (Opt(root, "jump") is { } jb)
         {
             if (d.Logic != CLogic.JumpDrive)

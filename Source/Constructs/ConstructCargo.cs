@@ -77,6 +77,8 @@ public static class ConstructCargo
     }
 
     /// <summary>What a carried body's carrier carries it in: the volume part (found again by its tag after parts are renumbered), or -1.</summary>
+    public static int CarriedIn(Construct carrier, Construct b) => VolumeOf(carrier, b);
+
     private static int VolumeOf(Construct carrier, Construct b)
     {
         if (b.CarryPart < carrier.PartCount && carrier.Parts[b.CarryPart].Tag == b.CarryTag && IsVolume(carrier.Parts[b.CarryPart].D))
@@ -105,7 +107,7 @@ public static class ConstructCargo
     {
         if (b.Dirty)
             b.Rebuild();
-        if (!Inside(c, part, b.WorldCom, 0.02f))
+        if (!Inside(c, part, b.WorldCom, c.Parts[part].D.DockPull > 0 ? 1.5f : 0.02f)) // (a pull dock's grip reaches: a craft's gear or a hull may stop it short of the box)
             return false;
         if (c.Parts[part].D.IsDock)
             return true; // (a clamp holds what its grip is on: a plane's wings may stick out of the box)
@@ -123,9 +125,9 @@ public static class ConstructCargo
     }
 
     /// <summary>Why <paramref name="b"/> can't be caught by carrier <paramref name="c"/> (null: it can).</summary>
-    private static bool Catchable(ConstructWorld world, Construct c, Construct b, ConstructPartDef volume)
+    public static bool Catchable(ConstructWorld world, Construct c, Construct b, ConstructPartDef volume)
     {
-        if (b == c || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255)
+        if (b == c || world.CarrierClock < b.DockAway || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255)
             return false;
         if (volume.IsDock)
         {
@@ -230,7 +232,7 @@ public static class ConstructCargo
             var part = c == null || c.CarriedBy != 0 ? -1 : VolumeOf(c, b);
             if (c == null || part < 0 || !IsFrozen(c.Parts[part]))
             {
-                Release(world, b);
+                ConstructCarrier.LetGo(world, b); // (a hangar bay's signal launches: out along its front)
                 continue;
             }
             b.CarrySeg = c.Parts[part].Seg;
@@ -341,7 +343,7 @@ public static class ConstructCargo
                         continue;
                     if (!fresh && !b.Asleep && (b.Vel - c.PointVel(b.WorldCom)).LengthSquared() > p.D.DockSettle * p.D.DockSettle)
                         continue; // (still falling in, or driving through: caught once it settles)
-                    if (MostlyInside(c, part, b))
+                    if (MostlyInside(c, part, b) && (p.D.DockPull <= 0 || fresh || ConstructCarrier.Snapped(c, part, b)))
                     {
                         Catch(world, c, part, b);
                         carried = CarriedCount(world, c);
@@ -415,6 +417,12 @@ public static class ConstructCargo
     public static float SnapTo(float v) => MathF.Round(v / Snap) * Snap;
 
     /// <summary>A point in the world in a volume part's own frame (the frame its size and centre are in).</summary>
+    public static Vector3 ToRest(Construct c, int part, Vector3 world)
+    {
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        return Vector3.Transform(world - t, Quaternion.Conjugate(q));
+    }
+
     public static Vector3 ToPart(Construct c, int part, Vector3 world)
     {
         ref var p = ref c.Parts[part];
@@ -589,6 +597,7 @@ public static class ConstructCargo
 public sealed partial class ConstructWorld
 {
     internal int CargoTicks;
+    public uint CarrierClock; // server: ticks, for what a dock or arrestor leaves alone a while (ConstructCarrier.cs)
     /// <summary>A volume changed state (frozen or not): the cargo step looks at once rather than at its next 10 Hz look.</summary>
     public bool CargoScanNow;
     internal bool CargoChanged;

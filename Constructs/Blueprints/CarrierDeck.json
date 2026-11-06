@@ -1,0 +1,314 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Carrier Deck",
+ "description": "A flying deck. Land over the stern, the arrestor stops you, roll onto the catapult, G hooks, G flings. F arms the clamp; park in the bay.",
+ "steps": [
+  {
+   "part": "Catapult Medium 16 m"
+  },
+  {
+   "part": "Arrestor Gear Medium 16 m",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 0,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 2,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 3,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 4,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 2,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 6,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 7,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 8,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 0,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 10,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 11,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 12,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 10,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 14,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 15,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 16,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 14,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 15,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 16,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Lift Platform Medium 5x5",
+   "on": 17,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 5,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 9,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 13,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 21,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 5,
+   "socket": "-x",
+   "by": "front"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 9,
+   "socket": "-x",
+   "by": "front"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 12,
+   "socket": "+x",
+   "by": "front"
+  },
+  {
+   "part": "Medium Turbojet",
+   "on": 20,
+   "socket": "+x",
+   "by": "front"
+  },
+  {
+   "part": "Medium Fuel Bunker",
+   "on": 4,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Medium Fuel Bunker",
+   "on": 8,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Medium Fuel Bunker",
+   "on": 13,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Medium Fuel Bunker",
+   "on": 21,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Medium Flight Stabilizer",
+   "on": 3,
+   "socket": "+y.0+",
+   "by": "-y",
+   "config": {
+    "keys": "Rotorcraft",
+    "maxTilt": 6
+   }
+  },
+  {
+   "part": "Adapter Medium to Small",
+   "on": 3,
+   "socket": "+y.0-",
+   "by": "back"
+  },
+  {
+   "part": "Bridge Helm",
+   "on": 35,
+   "socket": "front0.0",
+   "by": "-y"
+  },
+  {
+   "part": "Docking Clamp Medium",
+   "on": 6,
+   "socket": "+y.0-",
+   "by": "-y"
+  },
+  {
+   "part": "Mooring Mast Medium",
+   "on": 21,
+   "socket": "+y.1+",
+   "by": "-y"
+  },
+  {
+   "part": "Hangar Bay Medium",
+   "on": 18,
+   "socket": "+y.0-",
+   "by": "-y",
+   "config": {
+    "sizeX": 8,
+    "sizeY": 5,
+    "sizeZ": 15,
+    "atX": 0,
+    "atY": 2.5,
+    "atZ": 9.5
+   }
+  }
+ ],
+ "links": [
+  {
+   "type": "pipe",
+   "from": 30,
+   "to": 22,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 31,
+   "to": 23,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 32,
+   "to": 24,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 33,
+   "to": 25,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 30,
+   "to": 26,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 31,
+   "to": 27,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 32,
+   "to": 28,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 33,
+   "to": 29,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  }
+ ]
+}

@@ -210,9 +210,12 @@ public static class ConstructLogic
                         if (on && (p.State & 2) == 0)
                             p.State |= 1;
                         p.State = (byte)((p.State & 1) | (on ? 2 : 0));
-                        next = p.Count != 0 ? 1 : 0;
+                        next = p.Count != 0 ? 1 : p.Mem != 0 ? 0.25f : 0; // (a quarter: a craft hooked, ConstructCarrier.cs)
                         break;
                     }
+                    case CLogic.Mooring:
+                        next = count[i] == 0 ? (p.State & 1) == 0 ? 1 : 0 : on ? 1 : 0; // (unwired: Interact casts off, again ties on)
+                        break;
                     case CLogic.Arrest:
                         next = count[i] == 0 || on ? 1 : 0; // (unwired: always on)
                         break;
