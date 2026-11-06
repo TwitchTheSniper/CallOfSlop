@@ -1,0 +1,158 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Light Bomb",
+  "description": "40 kg: 7 m blast half a second after a hit. Hang it on a Bomb Rack.",
+  "group": "Weapons",
+  "section": "Bombs",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 40.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#4a5530",
+  "attachSeconds": 1.0,
+  "explosive": {
+    "radius": 7,
+    "damage": 120,
+    "fuse": 0.5,
+    "knockback": 12,
+    "crater": 2.5
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.11,
+        -0.11,
+        -0.5
+      ],
+      "max": [
+        0.11,
+        0.11,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.1067,
+        -0.1067,
+        -0.275
+      ],
+      "max": [
+        0.1067,
+        0.1067,
+        0.275
+      ],
+      "color": "#4a5530",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.1034,
+        -0.1034,
+        -0.485
+      ],
+      "max": [
+        0.1034,
+        0.1034,
+        -0.27
+      ],
+      "color": "#4a5530",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "taper": [
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "min": [
+        -0.11,
+        -0.11,
+        -0.2
+      ],
+      "max": [
+        0.11,
+        0.11,
+        -0.16
+      ],
+      "color": "#c8a838",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.055,
+        -0.055,
+        0.27
+      ],
+      "max": [
+        0.055,
+        0.055,
+        0.46
+      ],
+      "color": "#2a2c26",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.012,
+        -0.143,
+        0.31
+      ],
+      "max": [
+        0.012,
+        0.143,
+        0.5
+      ],
+      "color": "#2a2c26",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.143,
+        -0.012,
+        0.315
+      ],
+      "max": [
+        0.143,
+        0.012,
+        0.495
+      ],
+      "color": "#2a2c26",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.04,
+        0.1056,
+        -0.06
+      ],
+      "max": [
+        0.04,
+        0.16,
+        0.06
+      ],
+      "color": "#2a2c26",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lug",
+      "at": [
+        0.0,
+        0.16,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

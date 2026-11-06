@@ -1,0 +1,112 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "AA Gun",
+  "description": "Flak: its shells burst near what flies. An AA Sight on it leads what the gunner looks at.",
+  "group": "Weapons",
+  "section": "Guns",
+  "role": "gun",
+  "tool": "welder",
+  "mass": 90.0,
+  "health": 240,
+  "armour": 6,
+  "material": "steel",
+  "color": "#2a2c26",
+  "attachSeconds": 3.0,
+  "gun": {
+    "damage": 80,
+    "rpm": 90,
+    "spread": 0.4,
+    "range": 900,
+    "maxRange": 1400,
+    "mag": 8,
+    "reload": 3,
+    "kick": 200,
+    "fx": "cannon",
+    "soundOf": "Leviathan .50",
+    "shell": "flak",
+    "speed": 340,
+    "prox": 7,
+    "blast": 8,
+    "blastDamage": 110,
+    "muzzle": [
+      0,
+      0,
+      -1.3
+    ]
+  },
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.22,
+        -0.22,
+        -0.22
+      ],
+      "max": [
+        0.22,
+        0.22,
+        0.22
+      ]
+    },
+    {
+      "min": [
+        -0.099,
+        -0.099,
+        -1.3
+      ],
+      "max": [
+        0.099,
+        0.099,
+        -0.22
+      ],
+      "color": "#3a3d40"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.22,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.22,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.22,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.22,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.22
+      ],
+      "dir": "+z"
+    }
+  ]
+}

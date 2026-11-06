@@ -257,7 +257,7 @@ public static class ConstructModules
         if (part < 0 || part >= c.PartCount)
             return null;
         var d = c.DefOf(part);
-        return d.Logic == CLogic.FlightStabilizer ? ConstructFlight.Problem(c, part) : d.Role == PartRole.Seat ? SeatProblem(c, part) : d.Logic == CLogic.DriveModule ? DriveProblem(c, part) : d.Logic == CLogic.TurretModule ? TurretProblem(c, part) : null;
+        return d.Logic == CLogic.BombRack ? ConstructOrdnance.Problem(ConstructPhysics.LastWorld, c, part) : d.Logic == CLogic.FlightStabilizer ? ConstructFlight.Problem(c, part) : d.Role == PartRole.Seat ? SeatProblem(c, part) : d.Logic == CLogic.DriveModule ? DriveProblem(c, part) : d.Logic == CLogic.TurretModule ? TurretProblem(c, part) : null;
     }
 
     private static string? SeatProblem(Construct c, int seat)
@@ -356,6 +356,15 @@ public static class ConstructModules
         }
         var at = ModIndex(c, part);
         return at < 0 ? "" : c.TurretMods[at].Of > 1 ? $"turret {c.TurretMods[at].Slot + 1} of {c.TurretMods[at].Of} on its seat" : "";
+    }
+
+    /// <summary>Does the seat's look hold its point as the craft moves (a Turret Module of its set to stabilised)?</summary>
+    public static bool Stabilised(Construct c, int seat)
+    {
+        for (var k = 0; k < c.TurretModCount; k++)
+            if (c.TurretMods[k].Seat == seat && c.Parts[c.TurretMods[k].Part] is var p && ConstructConfig.Get(p, p.D, CfgKey.Stabilised, 0) >= 0.5f)
+                return true;
+        return false;
     }
 
     /// <summary>The gun the sitter of <paramref name="seat"/> is working now (the module in use's first), or the first of any of its modules, or -1.</summary>

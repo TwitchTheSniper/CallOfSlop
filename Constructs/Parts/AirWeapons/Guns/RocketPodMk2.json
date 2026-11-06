@@ -1,0 +1,114 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Rocket Pod Mk2",
+  "description": "Seven rockets that push themselves: 1.5 s of burn, straight at what the gun points at.",
+  "group": "Weapons",
+  "section": "Guns",
+  "role": "gun",
+  "tool": "welder",
+  "mass": 45.0,
+  "health": 240,
+  "armour": 6,
+  "material": "steel",
+  "color": "#2a2c26",
+  "attachSeconds": 3.0,
+  "gun": {
+    "damage": 90,
+    "rpm": 180,
+    "spread": 1.2,
+    "range": 500,
+    "maxRange": 1200,
+    "mag": 7,
+    "reload": 8,
+    "kick": 30,
+    "fx": "rocket",
+    "soundOf": "Leviathan .50",
+    "shell": "rocket",
+    "speed": 40,
+    "thrust": 220,
+    "burn": 1.5,
+    "blast": 5,
+    "blastDamage": 160,
+    "crater": 1.2,
+    "muzzle": [
+      0,
+      0,
+      -0.5
+    ]
+  },
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.09,
+        -0.09,
+        -0.5
+      ],
+      "max": [
+        0.09,
+        0.09,
+        -0.2
+      ],
+      "color": "#3a3d40"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.2,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.2,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    }
+  ]
+}

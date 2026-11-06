@@ -50,7 +50,7 @@ def lever(name, cls, s, mass, health, armour, tool):
     return "", p
 
 
-def module(name, kind, desc, accent):
+def module(name, kind, desc, accent, config=None):
     """A control module (ConstructModules.cs): a flat box with a row of terminals along its top, each a control it breaks out."""
     p = Part(name, SMALL, "Controls", desc, role="logic", tool="wrench", color=HOUSING, group="Logic")
     h, t = 0.15, 0.08
@@ -63,7 +63,12 @@ def module(name, kind, desc, accent):
         p.sock(name_, at, name_)
     p.stats(4, 60, 2, 1.0)
     p.set(logic={"kind": kind})
+    if config:
+        p.set(config=config)
     return "", p
+
+
+STABILISED = [{"key": "stabilised", "type": "toggle", "label": "Stabilised", "group": "Aim", "default": False, "tooltip": "With the mouse still, the look and the guns stay on the point they were left on as the craft moves."}]
 
 
 # ---- Hand controls, displays, logic blocks, sensors, bundling (docs/sandbox/CONSTRUCTS.md, "Logic blocks") ----------
@@ -302,7 +307,7 @@ def controls():
 def main():
     return write_parts(OUT, [
         module("Driving Module", "drivemodule", "Link a seat in and its drive output to the drivetrain: that seat drives. The controls are outputs too.", "#5ac060"),
-        module("Turret Module", "turretmodule", "Link a seat in and its guns output to a gun: that seat aims and fires it.", "#e06040"),
+        module("Turret Module", "turretmodule", "Link a seat in and its guns output to a gun: that seat aims and fires it.", "#e06040", STABILISED),
         lever("Analog Lever", SMALL, 1, 3, 40, 1, "wrench"),
         lever("Medium Analog Lever", MEDIUM, 5, 60, 180, 4, "welder"),
         lever("Large Analog Lever", LARGE, 20, 600, 600, 8, "welder"),

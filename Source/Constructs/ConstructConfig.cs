@@ -158,6 +158,8 @@ public enum CfgKey : byte
     BladeStyle, // Fan Former, rotor: which blade (Air.json's "bladeStyles")
     InvertPitch, // Flight Stabilizer: W lifts the nose
     Grain, // solid booster: seconds of it burnt (not on the panel; ConstructBoost.cs)
+    Stabilised, // Turret Module: the seat's look stays on the point it was set on as the craft moves (Game.SandboxStabilise)
+    FuseRange, // AA Sight: metres at which its gun's shells burst with nothing locked (0: none)
     COUNT,
 }
 
@@ -633,7 +635,7 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
         CfgKey.SteerKind => "choice",
@@ -696,6 +698,8 @@ public static class ConstructConfig
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
                 (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
+                CfgKey.Stabilised => d.Logic == CLogic.TurretModule,
+                CfgKey.FuseRange => d.Sight == SightKind.Lead,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,

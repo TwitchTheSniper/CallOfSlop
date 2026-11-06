@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Flak Gun",
+  "description": "A seated AA Gun with an AA Sight. Look at what flies: the gun leads it, and its shells burst beside it.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "top11",
+      "by": "-y"
+    },
+    {
+      "part": "Turntable",
+      "on": 1,
+      "socket": "+y",
+      "by": "base"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 2,
+      "socket": "top",
+      "by": "y-1"
+    },
+    {
+      "part": "Lever",
+      "on": 0,
+      "socket": "x+1",
+      "by": "-x"
+    },
+    {
+      "part": "Seat",
+      "on": 3,
+      "socket": "y+2",
+      "by": "bottom"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 3,
+      "socket": "y+0",
+      "by": "base"
+    },
+    {
+      "part": "AA Gun",
+      "on": 6,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 7,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Turret Module",
+      "on": 5,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "AA Sight",
+      "on": 7,
+      "socket": "top",
+      "by": "bottom"
+    }
+  ],
+  "wires": [
+    [
+      4,
+      2
+    ],
+    [
+      5,
+      9
+    ],
+    [
+      9,
+      7
+    ]
+  ]
+}

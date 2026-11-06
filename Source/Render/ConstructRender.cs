@@ -80,10 +80,23 @@ public static partial class ConstructRender
         for (var k = 0; k < world.ShellCount; k++)
         {
             ref var s = ref world.Shells[k];
+            var way = Basis(s.Vel.LengthSquared() > 1e-3f ? Vector3.Normalize(s.Vel) : Vector3.UnitY);
+            if (s.Kind == ShellKind.Bomb)
+            {
+                // A bomb looks its size, and lies where it hit until its fuse runs out.
+                var d = ConstructParts.Def(s.Def);
+                var size = d.BoundsMax - d.BoundsMin;
+                gfx.Draw(Matrix4x4.CreateScale(size) * way * Matrix4x4.CreateTranslation(s.Landed ? s.Pos : Vector3.Lerp(s.Prev, s.Pos, alpha)), new Vector3(0.29f, 0.33f, 0.19f));
+                n++;
+                continue;
+            }
             if (s.Landed)
                 continue;
             var at = Vector3.Lerp(s.Prev, s.Pos, alpha);
-            gfx.Draw(Matrix4x4.CreateScale(0.14f, 0.14f, 0.5f) * Basis(s.Vel.LengthSquared() > 1e-3f ? Vector3.Normalize(s.Vel) : Vector3.UnitY) * Matrix4x4.CreateTranslation(at), new Vector3(0.75f, 0.68f, 0.5f));
+            if (s.Kind == ShellKind.Flare)
+                gfx.Draw(Matrix4x4.CreateScale(0.3f) * Matrix4x4.CreateTranslation(at), new Vector3(1f, 0.8f, 0.45f));
+            else
+                gfx.Draw(Matrix4x4.CreateScale(0.14f, 0.14f, s.Kind >= ShellKind.Rocket ? 1.1f : 0.5f) * way * Matrix4x4.CreateTranslation(at), new Vector3(0.75f, 0.68f, 0.5f));
             n++;
         }
         if (GunnerMarked)

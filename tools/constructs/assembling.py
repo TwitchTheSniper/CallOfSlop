@@ -159,6 +159,16 @@ HAND = [
     rec("Network Switch", 4, 3, m={"steel": 1, "copper": 1}, p={"Circuit Board": 1}),
     rec("Cable Reel", 3, 2, m={"copper": 3, "planks": 1}),
     rec("Satellite Dish", 4, 2, m={"steel": 2, "copper": 1}),
+    # Air weapons (tools/constructs/air_weapons_parts.py): a rack and a bomb early, what steers itself late.
+    rec("Light Bomb", 3, 2, m={"steel": 6, "concrete": 2}),
+    rec("Bomb Rack", 4, 2, m={"steel": 5}),
+    rec("Twin Bomb Rack", 6, 2, m={"steel": 9}),
+    rec("AA Gun", 20, 3, m={"steel": 40}, p={"Gear Set": 1}),
+    rec("Rocket Pod Mk2", 12, 3, m={"steel": 18, "copper": 3}),
+    rec("Missile Rail", 20, 4, m={"steel": 20, "copper": 6}, p={"Control Unit": 1, "Servo Motor": 1}),
+    rec("Flare Dispenser", 6, 2, m={"steel": 6, "copper": 1}),
+    rec("AA Sight", 8, 3, m={"steel": 3, "glass": 2}, p={"Lens": 1, "Circuit Board": 1}),
+    rec("Seeker Head", 12, 4, m={"steel": 3, "glass": 2}, p={"Lens": 2, "Control Unit": 1}),
     # What a pilot wears (tools/constructs/pilot_parts.py): a parachute early, a jetpack late.
     rec("Parachute", 3, m={"rubber": 2, "planks": 2}),
     rec("Backpack Glider", 4, 2, m={"rubber": 3, "steel": 2}),

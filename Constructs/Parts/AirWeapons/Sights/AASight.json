@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "AA Sight",
+  "description": "On a gun: the gun leads the body its gunner looks at, and its shells burst on the way there.",
+  "group": "Weapons",
+  "section": "Sights",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 5.0,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2a2c26",
+  "attachSeconds": 1.0,
+  "sight": {
+    "kind": "lead",
+    "reach": 1200,
+    "cone": 8
+  },
+  "config": [
+    {
+      "key": "fuseRange",
+      "label": "Fuse range",
+      "group": "Gun",
+      "unit": "m",
+      "min": 0,
+      "max": 1500,
+      "step": 25,
+      "default": 0,
+      "tooltip": "With nothing locked, shells burst this far out. 0: only near what flies, or on what they hit."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.08,
+        0.0,
+        -0.14
+      ],
+      "max": [
+        0.08,
+        0.12,
+        0.14
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        0.03,
+        -0.155
+      ],
+      "max": [
+        0.05,
+        0.09,
+        -0.135
+      ],
+      "color": "#20303a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
