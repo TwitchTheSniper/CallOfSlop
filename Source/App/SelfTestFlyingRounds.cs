@@ -72,19 +72,29 @@ public static partial class SelfTest
             a.SelfTestWeaponFrame(Brutal.GlfwApi.Glfw.Time, 0.02f);
             a.UpdateTrigger(Brutal.GlfwApi.Glfw.Time, true, true);
             a.UpdateTrigger(Brutal.GlfwApi.Glfw.Time, false, false);
-            Pump(server, [a], 0.8, ref now, clock);
             var sv = server.Constructs;
             var cl = a.Constructs;
-            var gap = sv.RoundCount > 0 && cl.RoundCount > 0 ? Vector3.Distance(sv.Rounds[0].Pos, cl.Rounds[0].Pos) : -1f;
-            Line($"a real round: {sv.RoundCount} on the host, {cl.RoundCount} on the client, {gap:0.0} m apart");
-            if (sv.RoundCount == 0 || cl.RoundCount == 0 || gap > 40f)
-                problems.Add("a real round didn't fly on on both peers");
+            for (var end = now + 5; now < end && (sv.RoundCount == 0 || cl.RoundCount == 0);) // (it passes its reach, and the event arrives, in a while: for the state, not a fixed wait)
+                Pump(server, [a], 0.05, ref now, clock);
+            Pump(server, [a], 0.2, ref now, clock);
+            // Same arc: each at its own age, so a late start or a slow tick on one peer doesn't read as a different path.
+            var gap = -1f;
+            if (sv.RoundCount > 0 && cl.RoundCount > 0)
+            {
+                var ahead = (sv.Rounds[0].Age - cl.Rounds[0].Age) * World.TickDt;
+                gap = Vector3.Distance(sv.Rounds[0].Pos, cl.Rounds[0].Pos + cl.Rounds[0].Vel * ahead);
+            }
+            Line($"a real round: {sv.RoundCount} on the host, {cl.RoundCount} on the client, {gap:0.0} m off its arc");
+            if (sv.RoundCount == 0 || cl.RoundCount == 0 || gap < 0 || gap > 6f)
+                problems.Add($"a real round didn't fly on on both peers ({sv.RoundCount}, {cl.RoundCount}, {gap:0.0} m)");
             // Coming down: on a player and a construct, with what its speed left.
             server.Net.SimulateBadNetwork(0, 0, 0);
             sp.Health = 100;
             var head = sp.Chest + new Vector3(0, 12, 0);
             sv.AddRound(new CRound { Pos = head, Tested = head, Vel = new Vector3(0, -60, 0), Damage = 60, Muzzle = 350, By = sp.Id, Weapon = sp.Primary });
-            Pump(server, [a], 0.6, ref now, clock);
+            var landed0 = sv.RoundsLanded;
+            for (var end = now + 4; now < end && sv.RoundsLanded == landed0;)
+                Pump(server, [a], 0.05, ref now, clock);
             Line($"on a player: health 100 -> {sp.Health}");
             if (sp.Health >= 100 || sp.Health < 80)
                 problems.Add($"a falling round on a player left {sp.Health}");
@@ -93,7 +103,9 @@ public static partial class SelfTest
             var hp0 = c.Parts[0].Health;
             var over = c.WorldCom + new Vector3(0, 12, 0);
             sv.AddRound(new CRound { Pos = over, Tested = over, Vel = new Vector3(0, -60, 0), Damage = 300, Muzzle = 350 });
-            Pump(server, [a], 0.6, ref now, clock);
+            landed0 = sv.RoundsLanded;
+            for (var end = now + 4; now < end && sv.RoundsLanded == landed0;)
+                Pump(server, [a], 0.05, ref now, clock);
             Line($"on a part: health {hp0:0} -> {c.Parts[0].Health:0}");
             if (c.Parts[0].Health >= hp0)
                 problems.Add("a falling round did nothing to a part");

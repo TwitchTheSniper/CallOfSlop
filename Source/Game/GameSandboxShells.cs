@@ -33,7 +33,7 @@ public sealed partial class Game
         {
             ref var r = ref w.Rounds[k];
             if (r.Age % 4 == 0 && Vector3.DistanceSquared(eye, r.Pos) < 400f * 400f)
-                Tracers.Add(new Tracer { From = r.Pos - r.Vel * (4 * World.TickDt), To = r.Pos, Color = new Vector3(1f, 0.85f, 0.5f), Width = 0.03f, Born = Brutal.GlfwApi.Glfw.Time, Life = 0.12f });
+                Tracers.Add(new Tracer { From = r.Pos - r.Vel * (4 * World.TickDt), To = r.Pos, Color = new Vector3(1f, 0.85f, 0.5f), Width = 0.03f, Born = ConstructRender.Now, Life = 0.12f });
         }
     }
 
