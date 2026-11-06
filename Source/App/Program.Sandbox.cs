@@ -130,7 +130,7 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Welder ? ConstructTool.None : ConstructTool.Welder));
         if (Pressed(GameAction.Streak2))
             g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Linker ? ConstructTool.None : ConstructTool.Linker));
-        if ((Pressed(GameAction.PrimaryWeapon) || Pressed(GameAction.SecondaryWeapon)) && h.Tool != ConstructTool.None)
+        if ((Pressed(GameAction.PrimaryWeapon) || Pressed(GameAction.SecondaryWeapon)) && (h.Tool != ConstructTool.None || h.Held != ConstructParts.None)) // (a gun can't fire past a part in the hands: picking one puts the part away)
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         if (h.Tool != ConstructTool.Welder && SocketWeldBusy)
             _swFlow.Cancel(); // (the welder put away: the socket weld being set up goes)

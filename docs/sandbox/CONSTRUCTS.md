@@ -247,7 +247,9 @@ piece aimed at from its far edge doesn't glow.
 
 `ConstructTool.Hands` (wire byte 12, `Source/Constructs/ConstructEditsHands.cs`, `Source/App/Program.SandboxHands.cs`), the tool wheel's
 south slot. It takes things and puts them down; it never fits or removes a part (`ConstructBuild.ToolFits` is false for it, and
-the Replacer refuses it), so fitting stays the attach tool's and the attach tool's. What the hands hold stays there when the tool changes.
+the Replacer refuses it), so fitting stays the attach tool's and the attach tool's.
+
+**Switching tool puts the held part away** (the user, 2026-11-06, for parts stuck in the hand while building; `ConstructEdits.SetTool`, `KeepsHeld`, `PutAwayHeld`). However the tool changes (the wheel, a number key, a gun, a tile in the Tab inventory), the part goes back at once unless the new tool is the hands or the one that fits it: without those a part taken off a shelf could never be fitted. Staying on a tool keeps it. Picking a gun with a part in the hands puts it away even with no tool out, since a part in the hands blocks firing. In creative it simply goes. Otherwise it goes to a beacon's network in range, else the inventory's counts; a kind at its count limit takes `Give`'s path with the hands full: the backpack, else dropped in front of you. A magazine's rounds stay noted for the player as on any other way out of the hands. A client shows the change at once (`Game.SandboxToolAsked`, the same rule), and its own tool follows the server again a second after it last asked, so a tool the server set (a saved world's) shows.
 
 - **Fire** (one thing a press): a held part goes into the lit storage slot under the crosshair; else the stored part in a slot
   comes out (`CActKind.TakeStored`, as F does); else the loose part comes into the hands (`CActKind.HandTake`: `PickUp` plus
