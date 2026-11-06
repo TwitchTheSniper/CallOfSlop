@@ -98,7 +98,7 @@ def prize_wheel():
     stalk(p, top, BLACK)
     r = 0.24
     p.add(box((-r, top, -0.03), (r, top + 2 * r, 0.0), hidden=True))
-    p.add(box((-r, top, -0.03), (r, top + 2 * r, 0.0), YELLOW, detail=True, shape="cylinder", segments=16, front="-z"))  # (the wheel)
+    p.add(box((-r, top, -0.03), (r, top + 2 * r, 0.0), YELLOW, detail=True, shape="cylinder", segments=12, front="-z"))  # (the wheel: 12 sides, so it gets a hull; 16 keep their boxes)
     cy = top + r
     for k, c in enumerate((PINK, GREEN, TEAL, RED)):  # (the slices: four bars across its face, 4 mm proud)
         y = cy - 0.15 + k * 0.08
