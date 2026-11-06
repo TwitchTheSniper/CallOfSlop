@@ -12,7 +12,7 @@ public sealed unsafe class MediaBlock : IDisposable
 {
     public const int MaxWidth = 1280, MaxHeight = 720, HeaderBytes = 4096, RingFrames = 1 << 17;
     private const int OffLatest = 16, OffReading = 20, OffSeq = 24, OffAudioWrite = 32, OffMouseHead = 64, OffMouseTail = 68, OffMouse = 256;
-    public const int MouseSlots = 128, MouseMove = 1, MouseDown = 2, MouseUp = 3, MouseWheel = 4, MouseLeave = 5;
+    public const int MouseSlots = 128, MouseMove = 1, MouseDown = 2, MouseUp = 3, MouseWheel = 4, MouseLeave = 5, KeyDown = 6, KeyUp = 7, KeyChar = 8;
 
     /// <summary>Sound is dropped to this far behind the browser. It builds up only after a stall; past this the picture would be visibly ahead.</summary>
     private const int MaxBehindFrames = Audio.SampleRate / 3;

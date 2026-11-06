@@ -877,7 +877,7 @@ public sealed partial class Game
                 var line = r.U8();
                 var seq = r.U32();
                 var entry = r.Text(MediaEntry.MaxChars);
-                if (op > (byte)MediaOp.Seek)
+                if (op > (byte)MediaOp.Go)
                     return null;
                 return hands.MediaAct(Constructs, p.Id, eye, body, part, (MediaOp)op, line, seq, entry, ServerTick, Constructs.Get(body) is { } mc ? SandboxConfigRefusal(mc, p.Id) : null);
             }

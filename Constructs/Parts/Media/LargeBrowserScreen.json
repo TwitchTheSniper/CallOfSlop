@@ -1,0 +1,128 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Browser Screen",
+  "description": "A web page on a screen: type the address with the configure tool, and use it with Hands. Private: nothing is saved. Seen from 150 m.",
+  "group": "Logic",
+  "section": "Media",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 240.0,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 1,
+  "power": 400,
+  "config": [
+    {
+      "key": "volume",
+      "label": "Volume",
+      "group": "General",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "default": 0.8,
+      "tooltip": "How loud it plays, before distance."
+    }
+  ],
+  "centreSockets": false,
+  "media": {
+    "hear": 160,
+    "near": 16,
+    "web": true
+  },
+  "panels": [
+    {
+      "source": "media",
+      "at": [
+        0,
+        0,
+        -0.011
+      ],
+      "size": [
+        7.94,
+        4.466
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 8,
+      "range": 150
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        -2.3,
+        0.0
+      ],
+      "max": [
+        4.0,
+        2.3,
+        0.12
+      ]
+    },
+    {
+      "min": [
+        -3.97,
+        -2.27,
+        -0.008
+      ],
+      "max": [
+        3.97,
+        2.27,
+        0.002
+      ],
+      "color": "#14181c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.12
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.3,
+        0.06
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.3,
+        0.06
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        0.0,
+        0.06
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        0.0,
+        0.06
+      ],
+      "dir": "+x"
+    }
+  ]
+}

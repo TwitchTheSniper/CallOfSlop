@@ -21,7 +21,7 @@ internal sealed class Page : IDisposable
     private readonly int _slot;
     private readonly SharedBlock _block;
     private readonly ChromiumWebBrowser _web;
-    private readonly Sound _audioHandler;
+    private readonly PageSound _audioHandler;
     private string _title = "";
     private string _sound = "";
     private long _playingSince, _nextProbe;
@@ -37,7 +37,7 @@ internal sealed class Page : IDisposable
         _web = new ChromiumWebBrowser(Address, automaticallyCreateBrowser: false)
         {
             RenderHandler = new Painter(_block),
-            AudioHandler = _audioHandler = new Sound(_block, slot),
+            AudioHandler = _audioHandler = new PageSound(_block, slot),
             RequestHandler = new Requests(html),
             LifeSpanHandler = new NoPopups(),
             DisplayHandler = new Console_(this),
@@ -45,7 +45,7 @@ internal sealed class Page : IDisposable
             MenuHandler = null,
         };
         _web.Size = new System.Drawing.Size(width, height);
-        new Thread(MouseLoop) { IsBackground = true, Name = "Mouse " + slot }.Start();
+        new Thread(() => PageInput.Run(_block, _web, keys: false, () => _closing, Hands)) { IsBackground = true, Name = "Mouse " + slot }.Start();
         _web.CreateBrowser(null, new BrowserSettings { WindowlessFrameRate = 30 }); // (settings given to the constructor only count when it creates the browser itself)
     }
 
@@ -137,45 +137,6 @@ internal sealed class Page : IDisposable
         host.SetFocus(true);
     }
 
-    /// <summary>The game's crosshair on this page, as CEF's mouse events. Only these: nothing here can type.</summary>
-    private void MouseLoop()
-    {
-        var pressed = false;
-        while (!_closing)
-        {
-            if (!_block.NextMouse(out var kind, out var x, out var y, out var data))
-            {
-                Thread.Sleep(8);
-                continue;
-            }
-            if (!_web.IsBrowserInitialized || _web.GetBrowserHost() is not { } host)
-                continue;
-            var e = new MouseEvent(x, y, pressed ? CefEventFlags.LeftMouseButton : CefEventFlags.None);
-            switch (kind)
-            {
-                case 1:
-                    host.SendMouseMoveEvent(e, false);
-                    break;
-                case 5:
-                    host.SendMouseMoveEvent(e, true);
-                    break;
-                case 2:
-                    Hands();
-                    pressed = true;
-                    host.SendMouseClickEvent(new MouseEvent(x, y, CefEventFlags.LeftMouseButton), MouseButtonType.Left, false, 1);
-                    break;
-                case 3:
-                    pressed = false;
-                    host.SendMouseClickEvent(new MouseEvent(x, y, CefEventFlags.None), MouseButtonType.Left, true, 1);
-                    break;
-                case 4:
-                    Hands();
-                    host.SendMouseWheelEvent(e, 0, data);
-                    break;
-            }
-        }
-    }
-
     /// <summary>From the first click the player's volume and mute are the viewer's, and the page stops setting them.</summary>
     private void Hands()
     {
@@ -237,77 +198,6 @@ internal sealed class Page : IDisposable
         <script src="https://www.youtube.com/iframe_api"></script>
         </body></html>
         """);
-
-    /// <summary>Frames from the offscreen browser.</summary>
-    private sealed class Painter(SharedBlock block) : IRenderHandler
-    {
-        public ScreenInfo? GetScreenInfo() => new ScreenInfo { DeviceScaleFactor = 1 };
-        public Rect GetViewRect() => new(0, 0, block.Width, block.Height);
-        public bool GetScreenPoint(int viewX, int viewY, out int screenX, out int screenY)
-        {
-            screenX = viewX;
-            screenY = viewY;
-            return false;
-        }
-        public void OnAcceleratedPaint(PaintElementType type, Rect dirtyRect, AcceleratedPaintInfo acceleratedPaintInfo) { }
-        public void OnPaint(PaintElementType type, Rect dirtyRect, IntPtr buffer, int width, int height)
-        {
-            if (type == PaintElementType.View)
-                block.WriteFrame(buffer, width, height);
-        }
-        public void OnCursorChange(IntPtr cursor, CursorType type, CursorInfo customCursorInfo) { }
-        public bool StartDragging(IDragData dragData, DragOperationsMask mask, int x, int y) => false;
-        public void UpdateDragCursor(DragOperationsMask operation) { }
-        public void OnPopupShow(bool show) { }
-        public void OnPopupSize(Rect rect) { }
-        public void OnImeCompositionRangeChanged(CefSharp.Structs.Range selectedRange, Rect[] characterBounds) { }
-        public void OnVirtualKeyboardRequested(IBrowser browser, TextInputMode inputMode) { }
-        public void Dispose() { }
-    }
-
-    /// <summary>The sound: with this handler CEF sends a page's audio here, not to the speakers.</summary>
-    private sealed class Sound(SharedBlock block, int slot) : IAudioHandler
-    {
-        private const long LogEvery = 5;
-        private int _channels = 2, _rate = SharedBlock.GameRate;
-        private long _packets, _nextLog;
-        public volatile bool Started;
-
-        public bool GetAudioParameters(IWebBrowser chromiumWebBrowser, IBrowser browser, ref AudioParameters parameters)
-        {
-            Program.Log($"page {slot}: audio handler asked (hop 2): offered {parameters.SampleRate} Hz, {parameters.ChannelLayout}, {parameters.FramesPerBuffer} frames");
-            parameters.SampleRate = SharedBlock.GameRate;
-            parameters.ChannelLayout = ChannelLayout.LayoutStereo;
-            return true;
-        }
-
-        public void OnAudioStreamStarted(IWebBrowser chromiumWebBrowser, IBrowser browser, AudioParameters parameters, int channels)
-        {
-            _channels = channels;
-            _rate = parameters.SampleRate;
-            Started = true;
-            Program.Log($"page {slot}: audio stream started (hop 3): {channels} channels, {parameters.SampleRate} Hz, {parameters.ChannelLayout}");
-        }
-
-        public void OnAudioStreamPacket(IWebBrowser chromiumWebBrowser, IBrowser browser, IntPtr data, int noOfFrames, long pts)
-        {
-            block.WriteAudio(data, noOfFrames, _channels, _rate);
-            _packets++;
-            var now = Environment.TickCount64 / 1000;
-            if (now < _nextLog)
-                return;
-            _nextLog = now + LogEvery;
-            Program.Log($"page {slot}: audio packets (hop 4): {_packets}, {block.AudioFrames} frames into the ring, peak {block.AudioPeak:0.000}");
-            block.AudioPeak = 0;
-        }
-
-        public void OnAudioStreamStopped(IWebBrowser chromiumWebBrowser, IBrowser browser) => Program.Log($"page {slot}: audio stream stopped after {_packets} packets");
-
-        // (never a "fail": that closes every page, and a picture without sound is still a picture)
-        public void OnAudioStreamError(IWebBrowser chromiumWebBrowser, IBrowser browser, string errorMessage) => Program.Log($"page {slot}: audio stream error: {errorMessage}");
-
-        public void Dispose() { }
-    }
 
     /// <summary>Answers the page's own address, and keeps the top frame on it. A click inside the player can't leave the embed either, and adverts still load: only a gesture is held to it.</summary>
     private sealed class Requests(string html) : RequestHandler
