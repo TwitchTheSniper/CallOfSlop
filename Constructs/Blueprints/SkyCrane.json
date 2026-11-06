@@ -115,7 +115,8 @@
       "by": "-y",
       "config": {
         "keys": "Rotorcraft",
-        "apMode": "Hover"
+        "apMode": "Hover",
+        "maxTilt": 15
       }
     },
     {

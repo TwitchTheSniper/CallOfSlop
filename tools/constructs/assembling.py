@@ -23,7 +23,7 @@ import zfight  # noqa: E402
 FORMAT = "call-of-slop-assembling/1"
 ABOUT = ("Assembling (docs/sandbox/CONSTRUCTS.md, 'Assembling'): what an Assembler builds. Written by tools/constructs/assembling.py: fix it, not this file. "
          "'output' names a part, 'count' how many a batch makes (default 1), 'materials' the bulk materials (Recycling.json) and 'parts' the item parts it takes, "
-         "'seconds' the work at speed 1, 'minTier' the lowest tier of Assembler (default 1). At most 6 inputs; a physics-only part can't be an input.")
+         "'seconds' the work at speed 1, 'minTier' the lowest tier of Assembler (default 1), 'machine' the family that builds it, when not the plain Assembler. At most 6 inputs; a physics-only part can't be an input.")
 
 # Components: small item parts, each one step in a chain. (name, file, mass, colour, boxes)
 COMPONENTS = [

@@ -62,7 +62,7 @@ def sky_crane():
     seat = add(part="Seat", on=hub, socket="+y", by="bottom")
     add(part="Battery Pack", on=arms[2], socket="-y2", by="+y")
     pack = add(part="Battery Pack", on=arms[3], socket="-y2", by="+y")
-    add(part="Flight Stabilizer", on=arms[0], socket="+y2", by="-y", config={"keys": "Rotorcraft", "apMode": "Hover"})
+    add(part="Flight Stabilizer", on=arms[0], socket="+y2", by="-y", config={"keys": "Rotorcraft", "apMode": "Hover", "maxTilt": 15})
     add(part="Flight Control Panel", on=pack, socket="+x", by="back")
     winch = add(part="Cargo Winch 16 m", on=hub, socket="-y", by="+y")
     links = []
@@ -88,8 +88,11 @@ def drill_pod():
     s = [{"part": "Drill Module"},
          {"part": "Battery", "on": 0, "socket": "-x", "by": "+x"},
          {"part": "Materials Bin", "on": 0, "socket": "+x", "by": "-x"},
-         {"part": "Tow Eye", "on": 0, "socket": "back", "by": "bottom", "spin": 0}]
-    return blueprint("Drill Pod", "A Drill Module with a battery and a bin, on a Tow Eye: a Sky Crane lowers it onto a deposit, waits, and lifts it out full.", s,
+         {"part": "Square Beam 0.5 m", "on": 0, "socket": "back", "by": "-z"},
+         {"part": "Square Beam 0.5 m", "on": 3, "socket": "-y1", "by": "+z"},  # (a foot: with the bit's mast it stands up)
+         {"part": "Square Beam 1 m", "on": 3, "socket": "+y1", "by": "-z"},
+         {"part": "Tow Eye", "on": 5, "socket": "+z", "by": "bottom"}]
+    return blueprint("Drill Pod", "A Drill Module with a battery and a bin, on a Tow Eye: a Sky Crane lowers it onto a deposit, waits, and lifts it out, while the bin is still light enough.", s,
                      [{"type": "chute", "from": 0, "to": 2, "fromPort": "Chute out"}])
 
 
