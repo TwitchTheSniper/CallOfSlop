@@ -20,7 +20,7 @@ JETS = [("Light", SMALL, 3, 12e3, 0.5), ("Small", SMALL, 7, 75e3, 0.8), ("Medium
 ROCKETS = [("Light", SMALL, 3, 30e3, 0.2), ("Small", SMALL, 7, 200e3, 0.3), ("Medium", MEDIUM, 3, 3e6, 0.5), ("Large", LARGE, 3, 40e6, 0.8), ("Capital", CAPITAL, 1, 5e8, 1.2)]
 BOOSTERS = [("Small", SMALL, 7, 120e3, 8), ("Medium", MEDIUM, 3, 2e6, 20), ("Large", LARGE, 3, 30e6, 30)]
 REPULSORS = [("", SMALL, 2, 30e3, 3, 40), ("Medium ", MEDIUM, 1, 800e3, 5, 800), ("Large ", LARGE, 1, 20e6, 8, 16000)]
-ANTIGRAV = [("", SMALL, 2, 6, 80, 400), ("Medium ", MEDIUM, 1, 30, 1500, 8000), ("Large ", LARGE, 1, 120, 40000, 200000), ("Capital ", CAPITAL, 1, 500, 1000000, 5000000)]
+ANTIGRAV = [("", SMALL, 2, 6, 80, 80), ("Medium ", MEDIUM, 1, 30, 1500, 3000), ("Large ", LARGE, 1, 120, 40000, 80000), ("Capital ", CAPITAL, 1, 500, 1000000, 1500000)]
 DECOUPLERS = [("", SMALL, 2), ("Medium ", MEDIUM, 1), ("Large ", LARGE, 1), ("Capital ", CAPITAL, 1)]
 
 
@@ -113,11 +113,11 @@ def antigrav():
     out = []
     for prefix, c, n, radius, mass, kw in ANTIGRAV:
         x = n * c.cell / 2
-        p = Part(f"{prefix}Anti-Grav Generator", c, "Repulsors", f"Cancels half the weight of what is within {radius} m, more on a big ship. Draws {kw / 1000:g} MW. Power gone, it stops at once. Its input switches it.", role="logic", tool="wrench", color=BODY, group="Thrusters" if c is SMALL else None)
+        p = Part(f"{prefix}Anti-Grav Generator", c, "Repulsors", f"Cancels 45% of the weight of what is within {radius} m, further on a big ship. Draws {kw / 1000:g} MW. Power gone, it stops at once. Its input switches it.", role="logic", tool="wrench", color=BODY, group="Thrusters" if c is SMALL else None)
         plate(p, x, x)
         p.add(box((-x * 0.6, x * 0.99, -x * 0.6), (x * 0.6, x * 1.15, x * 0.6), FIELD, detail=True, glow=True))
         p.stats(mass, health(mass / 1000), max(2, c.armour // 3), c.seconds)
-        p.set(logic={"kind": "antigrav", "share": 0.5, "radius": radius}, power=float(kw), ports=[power_port("Power in", "in", (-x, 0, 0), "-x")])
+        p.set(logic={"kind": "antigrav", "share": 0.45, "radius": radius}, power=float(kw * 1000), ports=[power_port("Power in", "in", (-x, 0, 0), "-x")])
         out.append(("Repulsors", p))
     return out
 
@@ -135,7 +135,7 @@ def data(a, b, out=None, to=None):
     return link
 
 
-def pipe(a, b, into="Fuel in", out="Fuel out"):
+def pipe(a, b, into="Fuel in", out="Fluid out"):
     return {"type": "pipe", "from": a, "to": b, "fromPort": out, "toPort": into}
 
 
@@ -162,13 +162,12 @@ def jet_platform():
     steps = cross("Fuel Tank")
     steps += [{"part": "Light Turbojet", "on": 3 + k, "socket": "-y", "by": "front"} for k in range(4)]  # 7..10
     steps.append({"part": "Seat", "on": 0, "socket": "+y", "by": "bottom"})  # 11
-    steps.append({"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y", "config": {"pattern": "Hover platform"}})  # 12
+    steps.append({"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y", "config": {"maxSpeed": 80}})  # 12
     steps.append({"part": "Light Turbojet", "on": 2, "socket": "+z", "by": "front"})  # 13: the push on
     steps.append({"part": "Light Turbojet", "on": 1, "socket": "-z", "by": "front"})  # 14: the push back
     steps.append({"part": "Input Reader", "on": 0, "socket": "-x", "by": "+x", "config": {"setting": "jump"}})  # 15
-    steps.append({"part": "Flight Panel", "on": 1, "socket": "+y", "by": "-y"})
-    links = [data(11, 12), data(12, 13), data(12, 14, "reverse"), data(11, 15), data(15, 13, None, "afterburner")]
-    links += [data(12, 7 + k, port) for k, port in enumerate(CORNERS)]
+    steps.append({"part": "Flight Control Panel", "on": 1, "socket": "+y", "by": "-y"})
+    links = [data(11, 15), data(15, 13, None, "afterburner")]
     return {"format": FORMAT, "name": "Jet Hover Platform", "description": "Four turbojets hold it up and level. W and S push it on, Space lights the pusher's afterburner, Shift and Ctrl climb and sink, A and D turn.", "steps": steps, "links": links}
 
 
@@ -184,17 +183,16 @@ def two_stage():
         {"part": "Decoupler", "on": 1, "socket": "+y", "by": "-y"},  # 3
         {"part": "Fluid Tank", "on": 3, "socket": "+y", "by": "-y", "config": fill("fuel")},  # 4: second stage fuel
         {"part": "Fluid Tank", "on": 4, "socket": "+y", "by": "-y", "config": fill("oxidiser")},  # 5
-        {"part": "Light Rocket Engine", "on": 4, "socket": "+x", "by": "+y"},  # 6
-        {"part": "Light Rocket Engine", "on": 4, "socket": "-x", "by": "-y"},  # 7
+        {"part": "Light Rocket Engine", "on": 4, "socket": "+x", "by": "+y", "spin": 1},  # 6
+        {"part": "Light Rocket Engine", "on": 4, "socket": "-x", "by": "-y", "spin": 1},  # 7
         {"part": "Seat", "on": 5, "socket": "+y", "by": "bottom"},  # 8
-        {"part": "Flight Stabilizer", "on": 5, "socket": "+z", "by": "-y", "config": {"pattern": "Gimballed rocket"}},  # 9
+        {"part": "Flight Stabilizer", "on": 5, "socket": "+z", "by": "-y"},  # 9
         {"part": "Input Reader", "on": 5, "socket": "-z", "by": "+x", "config": {"setting": "jump"}},  # 10
         {"part": "Toggle", "on": 5, "socket": "+x", "by": "-x"},  # 11
         {"part": "Math Block", "on": 5, "socket": "-x", "by": "+x", "config": {"operator": "multiply"}},  # 12
     ]
     links = [pipe(0, 2), pipe(1, 2, "Oxidiser in", "Fluid out"), pipe(4, 6), pipe(4, 7), pipe(5, 6, "Oxidiser in", "Fluid out"), pipe(5, 7, "Oxidiser in", "Fluid out"),
-             data(8, 9), data(8, 10), data(10, 3), data(10, 11), data(9, 2), data(9, 12), data(11, 12, None, "b"), data(12, 6), data(12, 7),
-             data(9, 2, "pitch", "gimbal pitch"), data(9, 2, "yaw", "gimbal yaw"), data(9, 6, "pitch", "gimbal pitch"), data(9, 6, "yaw", "gimbal yaw"), data(9, 7, "pitch", "gimbal pitch"), data(9, 7, "yaw", "gimbal yaw")]
+             data(8, 10), data(10, 3), data(10, 11), data(9, 12), data(11, 12, None, "b"), data(12, 6), data(12, 7)]
     return {"format": FORMAT, "name": "Two-Stage Rocket", "description": "Shift opens the throttle, W, S, A and D lean it, Space drops the first stage and lights the second.", "steps": steps, "links": links}
 
 
@@ -202,30 +200,33 @@ def hover_car():
     steps = cross("Frame Block")
     steps += [{"part": "Repulsor", "on": 3 + k, "socket": "-y", "by": "front"} for k in range(4)]  # 7..10
     steps.append({"part": "Seat", "on": 0, "socket": "+y", "by": "bottom"})  # 11
-    steps.append({"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y", "config": {"pattern": "Hover platform"}})  # 12
+    steps.append({"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y"})  # 12
     steps.append({"part": "Battery", "on": 1, "socket": "+y", "by": "-y"})  # 13
     steps.append({"part": "Light Lift Fan", "on": 2, "socket": "+z", "by": "front"})  # 14
     steps.append({"part": "Light Lift Fan", "on": 1, "socket": "-z", "by": "front"})  # 15
-    links = [data(11, 12), data(12, 14), data(12, 15, "reverse")]
-    links += [data(12, 7 + k, port) for k, port in enumerate(CORNERS)]
+    steps.append({"part": "Fuel Tank", "on": 0, "socket": "-x", "by": "+x"})  # 16
+    steps.append({"part": "Small Genset", "on": 16, "socket": "-x", "by": "+x"})  # 17
+    links = []
     links += [{"type": "power", "from": 13, "to": k, "fromPort": "Power out", "toPort": "Power in"} for k in (7, 8, 9, 10, 14, 15)]
+    links.append({"type": "power", "from": 17, "to": 13, "fromPort": "Power out", "toPort": "Power in"})
     return {"format": FORMAT, "name": "Hover Car", "description": "Four repulsors and a battery. Shift lifts it off, W and S drive it, A and D turn it, Ctrl sets it down. It follows the ground.", "steps": steps, "links": links}
 
 
 def barge():
-    steps = cross("Concrete Floor 2x2 m") if False else cross("Fuel Tank")
+    steps = cross("Fuel Tank")
     steps += [{"part": "Light Lift Fan", "on": 3 + k, "socket": "-y", "by": "front"} for k in range(4)]  # 7..10
     steps.append({"part": "Seat", "on": 0, "socket": "+y", "by": "bottom"})  # 11
-    steps.append({"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y", "config": {"pattern": "Hover platform"}})  # 12
+    steps.append({"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y"})  # 12
     steps.append({"part": "Anti-Grav Generator", "on": 3, "socket": "+y", "by": "-y"})  # 13
     steps.append({"part": "Anti-Grav Generator", "on": 4, "socket": "+y", "by": "-y"})  # 14
     steps.append({"part": "Light Lift Fan", "on": 2, "socket": "+z", "by": "front"})  # 15
     steps.append({"part": "Battery", "on": 1, "socket": "+y", "by": "-y"})  # 16
     steps.append({"part": "Battery", "on": 6, "socket": "+y", "by": "-y"})  # 17
-    steps.append({"part": "Generator", "on": 5, "socket": "+y", "by": "-y"})  # 18
-    links = [data(11, 12), data(12, 15)]
-    links += [data(12, 7 + k, port) for k, port in enumerate(CORNERS)]
+    steps.append({"part": "Small Genset", "on": 5, "socket": "-x", "by": "+x"})  # 18
+    steps.append({"part": "Small Genset", "on": 6, "socket": "+x", "by": "-x"})  # 19
+    links = []
     links += [{"type": "power", "from": 16, "to": k, "fromPort": "Power out", "toPort": "Power in"} for k in (7, 8, 9, 10, 13, 14, 15)]
+    links += [{"type": "power", "from": g, "to": 16, "fromPort": "Power out", "toPort": "Power in"} for g in (18, 19)]
     return {"format": FORMAT, "name": "Anti-Grav Barge", "description": "Two generators carry her whole weight; small fans steer her up and down. Lose the power and she falls.", "steps": steps, "links": links}
 
 

@@ -127,7 +127,7 @@ public enum CfgKey : byte
     ConeOuter, // speaker: where it reaches the outer level, degrees
     ConeGain, // speaker: the level outside the cone
     Hole, // lift cell: the holes in it, m2 (not on the panel; ConstructLift.cs)
-    Pattern, // Flight Stabilizer: which control pattern (FlightPattern; ConstructFlight.cs)
+    Keys, // Flight Stabilizer: what its keys mean (FlightPattern; ConstructFlight.cs)
     MaxTilt, // Flight Stabilizer: the most it leans, degrees (0: its pattern's)
     MaxTurn, // Flight Stabilizer: the fastest it turns, degrees a second (0: its pattern's)
     MaxClimb, // Flight Stabilizer: the fastest it climbs, m/s (0: its pattern's)
@@ -600,7 +600,7 @@ public static class ConstructConfig
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
-        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
+        CfgKey.Keys or CfgKey.ApMode or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
 
@@ -648,7 +648,7 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
-                >= CfgKey.Pattern and <= CfgKey.HomeZ => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,

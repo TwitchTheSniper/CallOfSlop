@@ -18,7 +18,7 @@ OUT = os.path.join("Constructs", "Parts", "Flight")
 BLUEPRINTS = os.path.join("Constructs", "Blueprints")
 SECTION = "Flight control"
 HOUSING, DARK, ARROW, PIN, SCREEN = "#39414a", "#20252b", "#e0b030", "#b08a4a", "#101416"
-PATTERNS = ["Plane", "Helicopter", "Quadcopter", "Gimballed rocket", "Hover platform", "Airship"]
+KEYS = ["Auto", "Rotorcraft", "Plane", "Rocket"]
 MODES = ["Hold altitude", "Hold heading", "Hover", "Waypoint", "Return home"]
 FILL = 22  # (a little short of her weight: the lift jet keeps her up and lets her down, and she needn't vent to come down)
 FIVE = (("+x", "+x"), ("-x", "-x"), ("+z", "+z"), ("-z", "-z"), ("-y", "-y"))
@@ -37,7 +37,7 @@ def choice(key, label, group, options, default, tip):
 
 
 CONFIG = [
-    choice("pattern", "Pattern", "Control", PATTERNS, 2, "How the keys and outputs work: docs/sandbox/CONSTRUCTS.md, Flight control."),
+    choice("keys", "Keys", "Control", KEYS, 0, "What the seat's keys mean. Auto: wings make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."),
     number("strength", "Strength", "Control", "%", 10, 300, 5, 100, "How hard it corrects. Lower it if the craft shakes."),
     toggle("level", "Stabilise level", "Control", True, "Off: the keys ask for turning, and it stays at whatever angle you leave it."),
     toggle("mouseAim", "Mouse aim", "Control", False, "It flies where the seat looks."),
@@ -75,22 +75,36 @@ def stabilizer(name, cls, s, mass, hp, armour, gyro, tool):
     return "", p
 
 
-def panel(name, cls, s, mass, hp, armour, tool):
-    """Telemetry over a row of buttons (ConstructFlight.FillPanel; PanelTouch.cs)."""
+def box_panel(name, cls, s, mass, hp, armour, tool, desc, source, rows, touch=None):
     w, h, t = 0.7 * s, 0.5 * s, 0.03 * s
-    p = Part(name, cls, SECTION, "Attitude, height, speed and the autopilot, with its buttons. Reads the first stabilizer on the construct. No wiring.", role="logic", tool=tool, color=HOUSING, group="Flight control")
+    p = Part(name, cls, SECTION, desc, role="logic", tool=tool, color=HOUSING, group="Flight control")
     p.add(box((-w / 2, -h / 2, -t), (w / 2, h / 2, t)))
     for n, at, d in (("back", (0, 0, -t), "-z"), ("+x", (w / 2, 0, 0), "+x"), ("-x", (-w / 2, 0, 0), "-x"), ("+y", (0, h / 2, 0), "+y"), ("-y", (0, -h / 2, 0), "-y")):
         p.sock(n, at, d)
     p.stats(mass, hp, armour, 1.0 if cls is SMALL else None)
-    touch = [
-        {"action": "flight.on", "at": [0.02, 0.03, 0.26, 0.24], "label": "AP on"},
-        {"action": "flight.off", "at": [0.27, 0.03, 0.51, 0.24], "label": "AP off"},
-        {"action": "flight.mode", "at": [0.52, 0.03, 0.74, 0.24], "label": "Mode"},
-        {"action": "flight.home", "at": [0.75, 0.03, 0.98, 0.24], "label": "Set home"},
-    ]
-    p.set(logic={"kind": "instrument"}, panels=[{"source": "flight.panel", "at": [0, 0, round(t + 0.003, 4)], "size": [round(w - 0.016, 3), round(h - 0.016, 3)], "face": "+z", "up": "+y", "rows": 7, "touch": touch}])
+    surface = {"source": source, "at": [0, 0, round(t + 0.003, 4)], "size": [round(w - 0.016, 3), round(h - 0.016, 3)], "face": "+z", "up": "+y", "rows": rows}
+    if touch:
+        surface["touch"] = touch
+    p.set(logic={"kind": "instrument"}, panels=[surface])
     return "", p
+
+
+def row(y0, y1, *buttons):
+    n = len(buttons)
+    return [{"action": a, "at": [round(0.02 + k * 0.96 / n, 3), y0, round(0.02 + (k + 1) * 0.96 / n - 0.01, 3), y1], "label": label} for k, (a, label) in enumerate(buttons)]
+
+
+TOUCH = row(0.14, 0.26, ("flight.on", "AP on"), ("flight.off", "AP off"), ("flight.mode", "Mode"), ("flight.home", "Set home")) + row(0.02, 0.13, ("flight.level", "Level"), ("flight.strength", "Strength"), ("flight.altitude", "Hold alt"), ("flight.heading", "Hold hdg"))
+
+
+def control(name, cls, s, mass, hp, armour, tool):
+    """Telemetry over the autopilot's and the stabilizer's buttons (ConstructFlight.FillPanel; PanelTouch.cs)."""
+    return box_panel(name, cls, s, mass, hp, armour, tool, "Attitude, height, speed, the autopilot and how it is set, with buttons. For the first stabilizer on the construct. No wiring.", "flight.panel", 9, TOUCH)
+
+
+def diagnostic(name, cls, s, mass, hp, armour, tool):
+    """The stabilizer's view: what it found, from above and from the side (ConstructFlight.FillDiagnostic; PanelRender.FlightPlot)."""
+    return box_panel(name, cls, s, mass, hp, armour, tool, "A plot of the craft from above and from the side: an arrow for each thing the stabilizer found, by what it is told; red ones are dead. Names any axis it can't control.", "flight.diagnostic", 6)
 
 
 def parts():
@@ -99,10 +113,13 @@ def parts():
         stabilizer("Medium Flight Stabilizer", MEDIUM, 4, 240, 400, 6, 400000, "welder"),
         stabilizer("Large Flight Stabilizer", LARGE, 16, 12000, 2000, 12, 3e7, "welder"),
         stabilizer("Capital Flight Stabilizer", CAPITAL, 64, 500000, 12000, 30, 2e9, "welder"),
-        panel("Flight Panel", SMALL, 1, 3, 30, 0, "wrench"),
-        panel("Medium Flight Panel", MEDIUM, 4, 30, 120, 2, "welder"),
-        panel("Large Flight Panel", LARGE, 16, 300, 400, 4, "welder"),
-        panel("Capital Flight Panel", CAPITAL, 64, 2000, 1600, 8, "welder"),
+        control("Flight Control Panel", SMALL, 1, 3, 30, 0, "wrench"),
+        control("Medium Flight Control Panel", MEDIUM, 4, 30, 120, 2, "welder"),
+        control("Large Flight Control Panel", LARGE, 16, 300, 400, 4, "welder"),
+        control("Capital Flight Control Panel", CAPITAL, 64, 2000, 1600, 8, "welder"),
+        diagnostic("Flight Diagnostic Panel", SMALL, 1, 3, 30, 0, "wrench"),
+        diagnostic("Medium Flight Diagnostic Panel", MEDIUM, 4, 30, 120, 2, "welder"),
+        diagnostic("Large Flight Diagnostic Panel", LARGE, 16, 300, 400, 4, "welder"),
     ]
 
 
@@ -130,12 +147,11 @@ def quadcopter():
         {"part": "Light Jet", "on": 5, "socket": "-y", "by": "front"},
         {"part": "Light Jet", "on": 6, "socket": "-y", "by": "front"},
         {"part": "Seat", "on": 0, "socket": "+y", "by": "bottom"},  # 11
-        {"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y", "config": {"pattern": "Quadcopter"}},  # 12
+        {"part": "Flight Stabilizer", "on": 2, "socket": "+y", "by": "-y"},  # 12
         {"part": "Drone Battery", "on": 6, "socket": "+y", "by": "-y"},  # 13
-        {"part": "Flight Panel", "on": 1, "socket": "+y", "by": "-y"},  # 14
+        {"part": "Flight Control Panel", "on": 1, "socket": "+y", "by": "-y"},  # 14
     ]
-    links = [data(11, 12)]
-    links += [data(12, 7 + k, port) for k, port in enumerate(("front left", "front right", "rear left", "rear right"))]
+    links = []
     return {"format": "call-of-slop-construct-blueprint/1", "name": "Quadcopter",
             "description": "Four jets and a Flight Stabilizer. Shift lifts off and climbs, Ctrl sinks and lands, W and S lean it on, Q and E sideways, A and D turn. The panel's AP buttons hold what you leave it at.",
             "steps": steps, "links": links}
@@ -146,18 +162,14 @@ def stabilised_airship():
     b = airship("Stabilised Airship", "The Scout Airship with a Flight Stabilizer: W and S drive her, A and D turn her by her engines, Shift and Ctrl climb and sink on a lift jet. The panel's AP buttons fly her.",
                 "Lift Cell", (10, 12, 24), "helium", FILL, masts=2)
     steps = b["steps"]
-    seat = 1
-    jets = [k for k, x in enumerate(steps) if x["part"] == "Light Jet"]
-    stab = len(steps)
-    steps.append({"part": "Flight Stabilizer", "on": 3, "socket": "+y", "by": "-y", "config": {"pattern": "Airship"}})
+    steps.append({"part": "Flight Stabilizer", "on": 3, "socket": "+y", "by": "-y"})
     steps.append({"part": "Square Beam 2 m", "on": 3, "socket": "+z", "by": "-z"})
     lift = len(steps)
     steps.append({"part": "Light Jet", "on": lift - 1, "socket": "-y7", "by": "front"})
     steps.append({"part": "Drone Battery", "on": 5, "socket": "+z", "by": "-y"})
     steps.append({"part": "Fuel Tank", "on": 0, "socket": "-z", "by": "+z"})
-    steps.append({"part": "Flight Panel", "on": len(steps) - 1, "socket": "+y", "by": "-y"})
-    b["links"] += [{"type": "pipe", "from": 0, "to": lift, "fromPort": "Fuel out", "toPort": "Fuel in"},
-                   data(seat, stab), data(stab, jets[0], "rear left"), data(stab, jets[1], "rear right"), data(stab, lift, "lift")]
+    steps.append({"part": "Flight Control Panel", "on": len(steps) - 1, "socket": "+y", "by": "-y"})
+    b["links"] += [{"type": "pipe", "from": 0, "to": lift, "fromPort": "Fuel out", "toPort": "Fuel in"}]
     return b
 
 

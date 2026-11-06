@@ -31,10 +31,14 @@ public static class PanelTouch
         ["media.next"] = (w, c, part, player, tick) => ConstructMedia.Touch(c, part, MediaOp.Next, player, tick),
         ["media.toggle"] = (w, c, part, player, tick) =>
             ConstructMedia.Touch(c, part, c.Parts[part].Media is { State: MediaState.Playing } ? MediaOp.Pause : MediaOp.Resume, player, tick),
-        ["flight.off"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 0),
-        ["flight.on"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 1),
-        ["flight.mode"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 2),
-        ["flight.home"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 3),
+        ["flight.off"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "off"),
+        ["flight.on"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "on"),
+        ["flight.mode"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "mode"),
+        ["flight.home"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "home"),
+        ["flight.level"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "level"),
+        ["flight.strength"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "strength"),
+        ["flight.altitude"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "altitude"),
+        ["flight.heading"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "heading"),
     };
 
     /// <summary>A panel's "touch" list, and its "picture" rectangle.</summary>

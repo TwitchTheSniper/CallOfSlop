@@ -56,13 +56,15 @@
    "part": "Light Rocket Engine",
    "on": 4,
    "socket": "+x",
-   "by": "+y"
+   "by": "+y",
+   "spin": 1
   },
   {
    "part": "Light Rocket Engine",
    "on": 4,
    "socket": "-x",
-   "by": "-y"
+   "by": "-y",
+   "spin": 1
   },
   {
    "part": "Seat",
@@ -74,10 +76,7 @@
    "part": "Flight Stabilizer",
    "on": 5,
    "socket": "+z",
-   "by": "-y",
-   "config": {
-    "pattern": "Gimballed rocket"
-   }
+   "by": "-y"
   },
   {
    "part": "Input Reader",
@@ -109,7 +108,7 @@
    "type": "pipe",
    "from": 0,
    "to": 2,
-   "fromPort": "Fuel out",
+   "fromPort": "Fluid out",
    "toPort": "Fuel in"
   },
   {
@@ -123,14 +122,14 @@
    "type": "pipe",
    "from": 4,
    "to": 6,
-   "fromPort": "Fuel out",
+   "fromPort": "Fluid out",
    "toPort": "Fuel in"
   },
   {
    "type": "pipe",
    "from": 4,
    "to": 7,
-   "fromPort": "Fuel out",
+   "fromPort": "Fluid out",
    "toPort": "Fuel in"
   },
   {
@@ -146,11 +145,6 @@
    "to": 7,
    "fromPort": "Fluid out",
    "toPort": "Oxidiser in"
-  },
-  {
-   "type": "data",
-   "from": 8,
-   "to": 9
   },
   {
    "type": "data",
@@ -166,11 +160,6 @@
    "type": "data",
    "from": 10,
    "to": 11
-  },
-  {
-   "type": "data",
-   "from": 9,
-   "to": 2
   },
   {
    "type": "data",
@@ -192,48 +181,6 @@
    "type": "data",
    "from": 12,
    "to": 7
-  },
-  {
-   "type": "data",
-   "from": 9,
-   "to": 2,
-   "fromPort": "pitch",
-   "toPort": "gimbal pitch"
-  },
-  {
-   "type": "data",
-   "from": 9,
-   "to": 2,
-   "fromPort": "yaw",
-   "toPort": "gimbal yaw"
-  },
-  {
-   "type": "data",
-   "from": 9,
-   "to": 6,
-   "fromPort": "pitch",
-   "toPort": "gimbal pitch"
-  },
-  {
-   "type": "data",
-   "from": 9,
-   "to": 6,
-   "fromPort": "yaw",
-   "toPort": "gimbal yaw"
-  },
-  {
-   "type": "data",
-   "from": 9,
-   "to": 7,
-   "fromPort": "pitch",
-   "toPort": "gimbal pitch"
-  },
-  {
-   "type": "data",
-   "from": 9,
-   "to": 7,
-   "fromPort": "yaw",
-   "toPort": "gimbal yaw"
   }
  ]
 }

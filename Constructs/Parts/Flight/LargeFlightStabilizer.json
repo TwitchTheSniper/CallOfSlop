@@ -19,20 +19,18 @@
   },
   "config": [
     {
-      "key": "pattern",
+      "key": "keys",
       "type": "choice",
-      "label": "Pattern",
+      "label": "Keys",
       "group": "Control",
       "options": [
+        "Auto",
+        "Rotorcraft",
         "Plane",
-        "Helicopter",
-        "Quadcopter",
-        "Gimballed rocket",
-        "Hover platform",
-        "Airship"
+        "Rocket"
       ],
-      "default": 2,
-      "tooltip": "How the keys and outputs work: docs/sandbox/CONSTRUCTS.md, Flight control."
+      "default": 0,
+      "tooltip": "What the seat's keys mean. Auto: wings make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."
     },
     {
       "key": "strength",

@@ -474,6 +474,10 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.ReadingDirty.Clear();
+        if (ServerTick % ConstructFluid.SendEvery == 3)
+            foreach (var c in Constructs.Bodies)
+                if (c.StabCount > 0 && ConstructFlight.WriteDiagnostic(w, c))
+                    Net.Broadcast(w.Span, PacketReliability.Unreliable);
         if (ServerTick % ConstructFluid.SendEvery == 0)
         {
             int body = 0, tank = 0;

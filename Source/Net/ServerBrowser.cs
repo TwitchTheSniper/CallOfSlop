@@ -316,7 +316,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 170: lift cells (ConstructLift.cs): new Fluids, CfgKey.Hole, CActKind.PatchCell, and CBodyKind.Fluid carries a hole (f32) on each entry.
     // 171: a seat's roll keys: CActKind.SeatKeys's byte gains roll left (8) and right (16), a Driving Module gains a "roll" output.
     // 172: Flight Stabilizers: CLogic.FlightStabilizer, 17 new CfgKeys, a part's settings up to 18, a Flight Panel's touch actions.
-    // 173: jets, rockets and repulsors (ConstructBoost.cs): Fluid.Oxidiser, CfgKey.Grain, CLogic.Decoupler and AntiGrav, thruster kinds, a decoupler splits a body into two live ones.
+    // 173: jets, rockets and repulsors (ConstructBoost.cs): Fluid.Oxidiser, CfgKey.Grain, CLogic.Decoupler and AntiGrav, thruster kinds, a decoupler splits a body into two live ones, CBodyKind.Flight, the Flight Stabilizer's "pattern" setting becomes "keys".
     public const byte ProtocolVersion = 173;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 

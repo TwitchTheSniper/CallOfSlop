@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Large Flight Panel",
-  "description": "Attitude, height, speed and the autopilot, with its buttons. Reads the first stabilizer on the construct. No wiring.",
+  "name": "Large Flight Control Panel",
+  "description": "Attitude, height, speed, the autopilot and how it is set, with buttons. For the first stabilizer on the construct. No wiring.",
   "group": "Flight control",
   "section": "Flight control",
   "role": "logic",
@@ -30,47 +30,87 @@
       ],
       "face": "+z",
       "up": "+y",
-      "rows": 7,
+      "rows": 9,
       "touch": [
         {
           "action": "flight.on",
           "at": [
             0.02,
-            0.03,
-            0.26,
-            0.24
+            0.14,
+            0.25,
+            0.26
           ],
           "label": "AP on"
         },
         {
           "action": "flight.off",
           "at": [
-            0.27,
-            0.03,
-            0.51,
-            0.24
+            0.26,
+            0.14,
+            0.49,
+            0.26
           ],
           "label": "AP off"
         },
         {
           "action": "flight.mode",
           "at": [
-            0.52,
-            0.03,
-            0.74,
-            0.24
+            0.5,
+            0.14,
+            0.73,
+            0.26
           ],
           "label": "Mode"
         },
         {
           "action": "flight.home",
           "at": [
-            0.75,
-            0.03,
-            0.98,
-            0.24
+            0.74,
+            0.14,
+            0.97,
+            0.26
           ],
           "label": "Set home"
+        },
+        {
+          "action": "flight.level",
+          "at": [
+            0.02,
+            0.02,
+            0.25,
+            0.13
+          ],
+          "label": "Level"
+        },
+        {
+          "action": "flight.strength",
+          "at": [
+            0.26,
+            0.02,
+            0.49,
+            0.13
+          ],
+          "label": "Strength"
+        },
+        {
+          "action": "flight.altitude",
+          "at": [
+            0.5,
+            0.02,
+            0.73,
+            0.13
+          ],
+          "label": "Hold alt"
+        },
+        {
+          "action": "flight.heading",
+          "at": [
+            0.74,
+            0.02,
+            0.97,
+            0.13
+          ],
+          "label": "Hold hdg"
         }
       ]
     }

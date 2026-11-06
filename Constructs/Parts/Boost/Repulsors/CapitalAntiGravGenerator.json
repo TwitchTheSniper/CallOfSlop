@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Anti-Grav Generator",
-  "description": "Cancels half the weight of what is within 500 m, more on a big ship. Draws 5000 MW. Power gone, it stops at once. Its input switches it.",
+  "description": "Cancels 45% of the weight of what is within 500 m, further on a big ship. Draws 1500 MW. Power gone, it stops at once. Its input switches it.",
   "group": "Capital",
   "section": "Repulsors",
   "role": "logic",
@@ -15,10 +15,10 @@
   "attachSeconds": 15.0,
   "logic": {
     "kind": "antigrav",
-    "share": 0.5,
+    "share": 0.45,
     "radius": 500
   },
-  "power": 5000000.0,
+  "power": 1500000000.0,
   "ports": [
     {
       "name": "Power in",

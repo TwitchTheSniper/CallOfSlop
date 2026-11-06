@@ -76,10 +76,7 @@
    "part": "Flight Stabilizer",
    "on": 2,
    "socket": "+y",
-   "by": "-y",
-   "config": {
-    "pattern": "Hover platform"
-   }
+   "by": "-y"
   },
   {
    "part": "Battery",
@@ -98,49 +95,21 @@
    "on": 1,
    "socket": "-z",
    "by": "front"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Small Genset",
+   "on": 16,
+   "socket": "-x",
+   "by": "+x"
   }
  ],
  "links": [
-  {
-   "type": "data",
-   "from": 11,
-   "to": 12
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 14
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 15,
-   "fromPort": "reverse"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 7,
-   "fromPort": "front left"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 8,
-   "fromPort": "front right"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 9,
-   "fromPort": "rear left"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 10,
-   "fromPort": "rear right"
-  },
   {
    "type": "power",
    "from": 13,
@@ -180,6 +149,13 @@
    "type": "power",
    "from": 13,
    "to": 15,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 17,
+   "to": 13,
    "fromPort": "Power out",
    "toPort": "Power in"
   }

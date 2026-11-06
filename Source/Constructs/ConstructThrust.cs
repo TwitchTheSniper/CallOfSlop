@@ -15,6 +15,8 @@ public struct CThruster
     public float Ab; // 0..1: its afterburner, lit
     public Vector3 GimbalX, GimbalY; // a nozzle: the axes its pitch and yaw inputs turn it about (the segment's frame)
     public float AngleX, AngleY; // ...and how far it is turned, radians
+    public bool Scanned, GimbalScanned; // a stabilizer commands it (ConstructEffectors.cs), and its nozzle: a wire by hand leaves it to the wire
+    public float Command, CommandX, CommandY; // what the stabilizer tells it
     public float Gap; // a repulsor: metres to what is under it, as of its last look (float.MaxValue: nothing in reach)
 }
 
@@ -260,7 +262,9 @@ public static partial class ConstructPhysics
             var want = 0f;
             if (Live(c, ref t, p))
             {
-                if (d.ThrustKind == ThrustKind.Solid)
+                if (t.Scanned && c.StabOwns)
+                    want = Math.Clamp(t.Command, 0, 1);
+                else if (d.ThrustKind == ThrustKind.Solid)
                     want = ConstructBoost.Grain(c, ref p, d, dt);
                 else if (d.ThrustKind == ThrustKind.Repulsor)
                     want = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : 1;
@@ -309,6 +313,7 @@ public static partial class ConstructPhysics
                 c.MotorWork += d.ThrustPower * 1000f * (d.ThrustKind == ThrustKind.Repulsor ? push / d.ThrustForce : t.Level);
         }
         c.ThrustShow = all > 0 ? MathF.Min(1, shown / all) : 0;
+        c.StabOwns = false;
         if (shown > 0)
         {
             c.Vel -= c.Vel * MathF.Min(1, (FlightDrag + c.Vel.Length() * AirDragOf(c)) * (planet ? AirAt(com) : 1f) * dt);

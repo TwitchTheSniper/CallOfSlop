@@ -241,8 +241,8 @@ public static class ConstructBoost
         if (d.ThrustGimbal > 0)
         {
             var rate = d.GimbalRate * dt;
-            var wantX = p.InCount1 > 0 ? Math.Clamp(p.In1, -1, 1) * d.ThrustGimbal : 0;
-            var wantY = p.InCount2 > 0 ? Math.Clamp(p.In2, -1, 1) * d.ThrustGimbal : 0;
+            var wantX = t.GimbalScanned && c.StabOwns ? t.CommandX * d.ThrustGimbal : p.InCount1 > 0 ? Math.Clamp(p.In1, -1, 1) * d.ThrustGimbal : 0;
+            var wantY = t.GimbalScanned && c.StabOwns ? t.CommandY * d.ThrustGimbal : p.InCount2 > 0 ? Math.Clamp(p.In2, -1, 1) * d.ThrustGimbal : 0;
             t.AngleX += Math.Clamp(wantX - t.AngleX, -rate, rate);
             t.AngleY += Math.Clamp(wantY - t.AngleY, -rate, rate);
             dir = Vector3.Normalize(Vector3.Transform(t.Dir + Vector3.Cross(t.GimbalX, t.Dir) * t.AngleX + Vector3.Cross(t.GimbalY, t.Dir) * t.AngleY, q));
@@ -296,6 +296,8 @@ public static class ConstructBoost
 
 public static partial class ConstructPhysics
 {
+    private const float RayBack = 0.15f;
+
     /// <summary>Each repulsor's gap: a look at the ground and at constructs under it every few ticks, in turn, and carried on by the speed between looks.</summary>
     public static void RepulsorLook(Construct c, IWorldQuery query, uint tick)
     {
@@ -317,10 +319,11 @@ public static partial class ConstructPhysics
             {
                 var range = d.RepulsorRange;
                 var gap = float.MaxValue;
-                if (query.Raycast(at, down, range, QueryFilter.All, out var hit))
-                    gap = Vector3.Distance(at, hit.Point);
-                if (_world is { } w && w.Raycast(at, down, MathF.Min(range, gap), out var ch, ignore: c))
-                    gap = MathF.Min(gap, ch.Distance);
+                var from = at - down * RayBack; // (from inside the part: sat on the ground, its face is on the ground)
+                if (query.Raycast(from, down, range + RayBack, QueryFilter.All, out var hit))
+                    gap = MathF.Max(0, hit.Distance - RayBack);
+                if (_world is { } w && w.Raycast(from, down, MathF.Min(range, gap) + RayBack, out var ch, ignore: c))
+                    gap = MathF.Min(gap, MathF.Max(0, ch.Distance - RayBack));
                 t.Gap = gap;
             }
             else if (t.Gap != float.MaxValue)

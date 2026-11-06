@@ -76,10 +76,7 @@
    "part": "Flight Stabilizer",
    "on": 2,
    "socket": "+y",
-   "by": "-y",
-   "config": {
-    "pattern": "Hover platform"
-   }
+   "by": "-y"
   },
   {
    "part": "Anti-Grav Generator",
@@ -112,47 +109,19 @@
    "by": "-y"
   },
   {
-   "part": "Generator",
+   "part": "Small Genset",
    "on": 5,
-   "socket": "+y",
-   "by": "-y"
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Small Genset",
+   "on": 6,
+   "socket": "+x",
+   "by": "-x"
   }
  ],
  "links": [
-  {
-   "type": "data",
-   "from": 11,
-   "to": 12
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 15
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 7,
-   "fromPort": "front left"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 8,
-   "fromPort": "front right"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 9,
-   "fromPort": "rear left"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 10,
-   "fromPort": "rear right"
-  },
   {
    "type": "power",
    "from": 16,
@@ -199,6 +168,20 @@
    "type": "power",
    "from": 16,
    "to": 15,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 18,
+   "to": 16,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 19,
+   "to": 16,
    "fromPort": "Power out",
    "toPort": "Power in"
   }

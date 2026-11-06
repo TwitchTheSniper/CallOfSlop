@@ -275,7 +275,7 @@ public static partial class ConstructLift
                 loss += hole * t.LeakSpeed / MathF.Max(1, cell.Volume);
                 if (held == Fluid.HotAir)
                     loss += t.CoolShare * MathF.Max(air, 0.05f);
-                var vent = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : venting ? 1f : 0f;
+                var vent = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : venting ? 1f : c.StabVent;
                 loss += vent * (held == Fluid.HotAir ? t.VentHotShare : t.VentShare);
             }
             if (d.Envelope!.Vacuum && hole <= 0 && c.Electrical && ConstructPower.On(c, cell.Part))
@@ -380,7 +380,7 @@ public static partial class ConstructLift
             want = Math.Clamp(c.BurnTrim + 0.03f * miss - 0.4f * c.Vel.Y, 0, 1);
         }
         else
-            want = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : c.BurnTrim;
+            want = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : c.StabBurn >= 0 ? c.StabBurn : c.BurnTrim;
         if (!p.Working || air <= 0 || b.Cell < 0 || !b.Fed || !(c.FuelLeft > 0))
             want = 0;
         b.Level += Math.Clamp(want - b.Level, -dt, dt);

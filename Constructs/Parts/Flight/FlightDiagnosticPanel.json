@@ -1,0 +1,96 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Flight Diagnostic Panel",
+  "description": "A plot of the craft from above and from the side: an arrow for each thing the stabilizer found, by what it is told; red ones are dead. Names any axis it can't control.",
+  "group": "Flight control",
+  "section": "Flight control",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 30,
+  "armour": 0,
+  "material": "steel",
+  "color": "#39414a",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "instrument"
+  },
+  "panels": [
+    {
+      "source": "flight.diagnostic",
+      "at": [
+        0,
+        0,
+        0.033
+      ],
+      "size": [
+        0.684,
+        0.484
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 6
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.35,
+        -0.25,
+        -0.03
+      ],
+      "max": [
+        0.35,
+        0.25,
+        0.03
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.03
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.35,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.35,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

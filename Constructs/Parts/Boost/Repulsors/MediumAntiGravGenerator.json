@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Anti-Grav Generator",
-  "description": "Cancels half the weight of what is within 30 m, more on a big ship. Draws 8 MW. Power gone, it stops at once. Its input switches it.",
+  "description": "Cancels 45% of the weight of what is within 30 m, further on a big ship. Draws 3 MW. Power gone, it stops at once. Its input switches it.",
   "group": "Medium",
   "section": "Repulsors",
   "role": "logic",
@@ -15,10 +15,10 @@
   "attachSeconds": 4.0,
   "logic": {
     "kind": "antigrav",
-    "share": 0.5,
+    "share": 0.45,
     "radius": 30
   },
-  "power": 8000.0,
+  "power": 3000000.0,
   "ports": [
     {
       "name": "Power in",

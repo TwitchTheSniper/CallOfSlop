@@ -960,6 +960,9 @@ public static partial class ConstructParts
     {
         "fuel hose reel" or "water hose reel" => "Fluid Hose Reel",
         "fuel hose inlet" or "water hose inlet" => "Fluid Hose Inlet",
+        "flight panel" => "Flight Control Panel",
+        "medium flight panel" => "Medium Flight Control Panel",
+        "large flight panel" => "Large Flight Control Panel",
         _ => null,
     };
 
@@ -1501,7 +1504,7 @@ public static partial class ConstructParts
         }
         // Milestone 3: a power draw (watts while it works) and a gauge's dial.
         d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && d.RailDrive != RailDriveKind.Shaft ? 10f : d.ActiveSuspension ? 150f : 0f;
-        Range(d.PowerDraw, 0, 1_000_000, file, "power");
+        Range(d.PowerDraw, 0, 10_000_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Anti-Grav Generator",
-  "description": "Cancels half the weight of what is within 120 m, more on a big ship. Draws 200 MW. Power gone, it stops at once. Its input switches it.",
+  "description": "Cancels 45% of the weight of what is within 120 m, further on a big ship. Draws 80 MW. Power gone, it stops at once. Its input switches it.",
   "group": "Large",
   "section": "Repulsors",
   "role": "logic",
@@ -15,10 +15,10 @@
   "attachSeconds": 8.0,
   "logic": {
     "kind": "antigrav",
-    "share": 0.5,
+    "share": 0.45,
     "radius": 120
   },
-  "power": 200000.0,
+  "power": 80000000.0,
   "ports": [
     {
       "name": "Power in",

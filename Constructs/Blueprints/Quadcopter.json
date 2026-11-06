@@ -76,10 +76,7 @@
    "part": "Flight Stabilizer",
    "on": 2,
    "socket": "+y",
-   "by": "-y",
-   "config": {
-    "pattern": "Quadcopter"
-   }
+   "by": "-y"
   },
   {
    "part": "Drone Battery",
@@ -88,41 +85,11 @@
    "by": "-y"
   },
   {
-   "part": "Flight Panel",
+   "part": "Flight Control Panel",
    "on": 1,
    "socket": "+y",
    "by": "-y"
   }
  ],
- "links": [
-  {
-   "type": "data",
-   "from": 11,
-   "to": 12
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 7,
-   "fromPort": "front left"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 8,
-   "fromPort": "front right"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 9,
-   "fromPort": "rear left"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 10,
-   "fromPort": "rear right"
-  }
- ]
+ "links": []
 }
