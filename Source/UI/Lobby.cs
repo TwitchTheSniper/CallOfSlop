@@ -978,6 +978,10 @@ public sealed partial class Ui
                 MediaDirector.Others = s.MediaOthers;
             if (ImGui.IsItemHovered())
                 ImGui.SetItemTooltip("Off: links other players start stay dark and silent on this PC. The game's own tracks still play."u8);
+            if (ImGui.Checkbox("Show other players' web pages"u8, ref s.MediaOthersWeb))
+                MediaDirector.OthersWeb = s.MediaOthersWeb;
+            if (ImGui.IsItemHovered())
+                ImGui.SetItemTooltip("Off: other players' Browser Screens stay blank. On: their sites load on this PC, which shows those sites your address and runs what they chose."u8);
             var musicStyle = (int)s.MusicChoice;
             ImGui.Text("Music style"u8);
             ImGui.SameLine();

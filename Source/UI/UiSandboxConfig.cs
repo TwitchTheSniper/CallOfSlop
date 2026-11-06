@@ -388,7 +388,10 @@ public sealed partial class Ui
             }
 
             SandboxConfigText(game, c, _cfPart, d);
-            SandboxConfigMedia(game, c, _cfPart, d);
+            if (d.IsWeb)
+                SandboxConfigWeb(game, c, _cfPart);
+            else
+                SandboxConfigMedia(game, c, _cfPart, d);
             SandboxConfigSpeaker(c, _cfPart, d);
             // The settings, group by group.
             var lockedAny = false;

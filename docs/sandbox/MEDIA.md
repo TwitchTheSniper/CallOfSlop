@@ -89,6 +89,19 @@ The hops log to `callofslop.log`, each on a 5 s throttle while something plays; 
 | 6 | Same line, `OpenAL (hop 6)` | `Playing`, gain above 0 | The source is stopped or silent |
 | 7 | `[media] level voice 0 (hop 7)` | Every factor above 0 | That factor is the zero |
 
+## Browser Screens
+
+Browser Screen, Medium and Large are a real Chromium tab on a part. Address bar, Back, Forward, Reload and Close are on the configure panel. Hands work as on a video, and Enter on the picture gives the page the keyboard until Esc (or the crosshair leaves): the game's keys are off meanwhile. It shares the 4 pages, its sound takes the same path, and speakers work. Windows only.
+
+**Shared:** the address typed, and the address links lead to, without the query or fragment, which can hold a login's token. So a page behind a query can look different on another peer. **Not shared:** clicks, typing and logins. Each peer has its own page, and keys never go on the wire.
+
+Safety, since the address can come from another player (`tools/browser/WebPage.cs`, its own class, handlers and request context, so none of this touches the locked YouTube page):
+
+- **Other players' pages are off by default** (Settings > Audio > Show other players' web pages). Off, they stay blank with "NAME's browser: hidden". Loading one shows the site this PC's address and runs what a stranger chose. It can be turned off at any time, and the next scan closes them.
+- **Only public http and https.** `MediaEntry.FromAddress`, `Clean` on every way in, and `WebPolicy` in the helper refuse everything else: `file:`, `chrome:`, `data:`, `javascript:`, devtools, localhost, private and link-local addresses, bare machine names. The helper applies this to what a page loads too, so a public page can't reach into the viewer's network. A public name that resolves to a private address isn't caught: only the page's literal address is checked.
+- **Blocked:** downloads, external programs, file pickers, JavaScript dialogs, HTTP login prompts, every permission (camera, microphone, location, notifications). A popup opens in place if a click asked for it.
+- **Nothing kept.** A request context in memory per page and a throwaway folder per run. No passwords or cookies on disk. Keys aren't logged, a page's console goes nowhere, and addresses aren't logged.
+
 ## Speakers
 
 Speaker, Medium Speaker and Large Speaker (`ConstructSpeakers.cs`) repeat a Video Screen or Music Player: run a Data cable to one with the linking tool, on the same construct or, as a world link, from another. It's a Data cable and no new link kind, so saves, blueprints and the linking tool are the ones every link has. Cut it and the speaker goes silent at the next scan.

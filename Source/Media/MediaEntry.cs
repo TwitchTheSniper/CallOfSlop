@@ -10,15 +10,22 @@ namespace CallOfSlop;
 /// </summary>
 public static class MediaEntry
 {
-    public const string Link = "yt:", Game = "game:";
+    public const string Link = "yt:", Game = "game:", Web = "web:";
     public const int IdChars = 11;
 
-    /// <summary>The longest line: "game:" and the longest track name there may be.</summary>
-    public const int MaxChars = 48;
+    /// <summary>The longest line: a Browser Screen's address.</summary>
+    public const int MaxChars = 300;
 
     public static bool IsLink(string entry) => entry.StartsWith(Link, StringComparison.Ordinal);
 
     public static string VideoId(string entry) => entry[Link.Length..];
+
+    public static bool IsWeb(string entry) => entry.StartsWith(Web, StringComparison.Ordinal);
+
+    /// <summary>A line a browser page plays: a video or a web address.</summary>
+    public static bool IsPage(string entry) => IsLink(entry) || IsWeb(entry);
+
+    public static string WebUrl(string entry) => entry[Web.Length..];
 
     /// <summary>The game's track of a "game:" line, or null.</summary>
     public static MusicTrack? Track(string entry)
@@ -41,6 +48,8 @@ public static class MediaEntry
             return null;
         if (IsLink(entry))
             return entry.Length == Link.Length + IdChars && IsId(entry.AsSpan(Link.Length)) ? entry : null;
+        if (IsWeb(entry))
+            return WebSafe(WebUrl(entry)) ? entry : null;
         return Track(entry) != null ? entry : null;
     }
 
@@ -52,6 +61,75 @@ public static class MediaEntry
             if (ch is not (>= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '-' or '_'))
                 return false;
         return true;
+    }
+
+    /// <summary>
+    /// What a typed address comes to for a Browser Screen: a list line, or null with why not. Another peer's browser may open this, so it is http or https only, and never a place on the viewer's own network: localhost,
+    /// a private address, a bare machine name. tools/browser/WebPage.cs (WebPolicy) checks the same again, there on everything a page loads.
+    /// </summary>
+    public static string? FromAddress(string text, out string why)
+    {
+        why = "";
+        text = text.Trim();
+        if (text.Length == 0)
+        {
+            why = "type an address first";
+            return null;
+        }
+        if (!text.Contains("://", StringComparison.Ordinal))
+        {
+            var colon = text.IndexOf(':');
+            if (colon > 0 && text.IndexOf('.') is var dot && (dot < 0 || colon < dot) && !int.TryParse(text.AsSpan(colon + 1, Math.Max(0, text.IndexOf('/', colon) is var sl && sl > 0 ? sl - colon - 1 : text.Length - colon - 1)), out _))
+            {
+                why = "only http and https addresses open here"; // (file:, chrome:, data:, javascript:...)
+                return null;
+            }
+            text = "https://" + text;
+        }
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var u) || !WebSafe(u.AbsoluteUri))
+        {
+            why = "only public http and https addresses open here";
+            return null;
+        }
+        return Web + u.AbsoluteUri;
+    }
+
+    private static bool WebSafe(string url)
+    {
+        if (url.Length > MaxChars - Web.Length || !Uri.TryCreate(url, UriKind.Absolute, out var u) || u.Scheme is not ("https" or "http") || u.UserInfo.Length > 0)
+            return false;
+        foreach (var ch in url)
+            if (ch is <= ' ' or > '~')
+                return false;
+        return !PrivateHost(u);
+    }
+
+    private static bool PrivateHost(Uri u)
+    {
+        var host = u.IdnHost.Trim('[', ']').TrimEnd('.').ToLowerInvariant();
+        if (host.Length == 0 || !host.Contains('.') && !host.Contains(':') || host == "localhost")
+            return true;
+        foreach (var end in (ReadOnlySpan<string>)[".localhost", ".local", ".internal", ".lan", ".home.arpa"])
+            if (host.EndsWith(end, StringComparison.Ordinal))
+                return true;
+        if (!System.Net.IPAddress.TryParse(host, out var ip))
+            return false;
+        if (ip.IsIPv4MappedToIPv6)
+            ip = ip.MapToIPv4();
+        var b = ip.GetAddressBytes();
+        if (b.Length == 4)
+            return b[0] is 0 or 10 or 127 || b[0] == 100 && b[1] >= 64 && b[1] < 128 || b[0] == 169 && b[1] == 254 || b[0] == 172 && b[1] >= 16 && b[1] < 32 || b[0] == 192 && b[1] == 168 || b[0] >= 224;
+        return System.Net.IPAddress.IsLoopback(ip) || ip.IsIPv6LinkLocal || ip.IsIPv6SiteLocal || (b[0] & 0xFE) == 0xFC || b[0] == 0xFF;
+    }
+
+    /// <summary>Two web lines are the same page: their query and fragment aside, since a page's own address reaches other players without those.</summary>
+    public static bool SamePage(string a, string b) =>
+        a.AsSpan(0, Cut(a)).TrimEnd('/').SequenceEqual(b.AsSpan(0, Cut(b)).TrimEnd('/'));
+
+    private static int Cut(string s)
+    {
+        var at = s.IndexOfAny(['?', '#']);
+        return at < 0 ? s.Length : at;
     }
 
     /// <summary>What a pasted address comes to: a list line, or null with <paramref name="why"/> saying what is wrong with it.</summary>

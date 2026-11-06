@@ -13,6 +13,7 @@ public sealed class MediaReport
     public volatile int Error;
     public volatile float Time, Duration;
     public volatile string Title = "";
+    public volatile string Address = ""; // a web page's, with no query
 }
 
 /// <summary>
@@ -70,8 +71,14 @@ public static class MediaBrowser
     /// <summary>Opens a page in slot <paramref name="page"/>. False: no browser, and <see cref="Problem"/> says why.</summary>
     public static bool Open(int page, string videoId, float seconds, int width, int height)
     {
-        if (!MediaEntry.IsId(videoId) || Problem != null || !Start())
+        if (!MediaEntry.IsId(videoId) || Problem != null || !Start() || !Prepare(page, width, height))
             return false;
+        Send(string.Create(CultureInfo.InvariantCulture, $"open {page} {videoId} {seconds:0.##} {width} {height} {Blocks[page]!.Name}"));
+        return true;
+    }
+
+    private static bool Prepare(int page, int width, int height)
+    {
         try
         {
             if (Blocks[page] is not { } b || b.Width != width || b.Height != height)
@@ -91,9 +98,23 @@ public static class MediaBrowser
         r.Error = 0;
         r.Time = r.Duration = 0;
         r.Title = "";
-        Send(string.Create(CultureInfo.InvariantCulture, $"open {page} {videoId} {seconds:0.##} {width} {height} {Blocks[page]!.Name}"));
+        r.Address = "";
         return true;
     }
+
+    /// <summary>Opens a Browser Screen's page. The address has been through <see cref="MediaEntry.Clean"/>. Nothing here logs it.</summary>
+    public static bool OpenWeb(int page, string url, int width, int height)
+    {
+        if (Problem != null || !Start() || !Prepare(page, width, height))
+            return false;
+        Send($"web {page} {url} {width} {height} {Blocks[page]!.Name}");
+        return true;
+    }
+
+    public static void Go(int page, string url) => Send($"go {page} {url}");
+
+    /// <summary>"back", "forward" or "reload".</summary>
+    public static void Web(int page, string command) => Send($"{command} {page}");
 
     public static void Play(int page) => Send($"play {page}");
 
@@ -233,6 +254,9 @@ public static class MediaBrowser
                 r.Duration = Num(a[4]);
                 r.Error = int.TryParse(a[5], out var error) ? error : 0;
                 r.State = int.TryParse(a[2], out var state) ? state : MediaReport.NotLoaded;
+                break;
+            case "u" when a.Length >= 3 && int.TryParse(a[1], out var page3) && (uint)page3 < Reports.Length:
+                Reports[page3].Address = a[2]; // (never logged)
                 break;
             case "t" when a.Length >= 3 && int.TryParse(a[1], out var page2) && (uint)page2 < Reports.Length:
                 Reports[page2].Title = MediaEntry.Printable(line[(line.IndexOf(' ', 2) + 1)..]);

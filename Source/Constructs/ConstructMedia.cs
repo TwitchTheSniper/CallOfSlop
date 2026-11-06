@@ -26,6 +26,7 @@ public enum MediaOp : byte
     Previous,
     Ended, // a peer's player came to the end of the track numbered by the seq, or (from whoever started it) can't play it
     Seek, // to the seq, in milliseconds: someone's hands on the page's seek bar
+    Go, // a Browser Screen to the entry: typed, or where someone's page went (with no query)
 }
 
 /// <summary>
@@ -71,8 +72,9 @@ public static class ConstructMedia
     {
         if (ConstructParts.Opt(root, "media") is not { } m)
             return;
-        ConstructParts.Known(m, ["hear", "near", "width", "height"], $"{file}, media");
+        ConstructParts.Known(m, ["hear", "near", "width", "height", "web"], $"{file}, media");
         d.IsMedia = true;
+        d.IsWeb = ConstructParts.Opt(m, "web") is { ValueKind: JsonValueKind.True };
         d.MediaHear = ConstructParts.Num(ConstructParts.Need(m, "hear", $"{file}, media"), file, "media.hear");
         d.MediaNear = ConstructParts.Num(ConstructParts.Need(m, "near", $"{file}, media"), file, "media.near");
         ConstructParts.Range(d.MediaHear, 5, 500, file, "media.hear");
@@ -88,7 +90,7 @@ public static class ConstructMedia
     {
         var list = new List<string>();
         foreach (var line in lines)
-            if (MediaEntry.Clean(line) is { } e && list.Count < MaxList)
+            if (MediaEntry.Clean(line) is { } e && list.Count < (p.D.IsWeb ? 1 : MaxList) && MediaEntry.IsWeb(e) == p.D.IsWeb)
                 list.Add(e);
         p.Media = list.Count == 0 ? null : new CMedia { List = list.ToArray() };
     }
@@ -126,7 +128,11 @@ public static class ConstructMedia
             m.State = (MediaState)state;
             m.List = new string[lines];
             for (var l = 0; l < lines; l++)
+            {
                 m.List[l] = MediaEntry.Clean(r.Text(MediaEntry.MaxChars)) ?? throw new MalformedPacketException("a media line that isn't one");
+                if (MediaEntry.IsWeb(m.List[l]) != c.Parts[part].D.IsWeb)
+                    throw new MalformedPacketException("a web line on the wrong part");
+            }
             c.Parts[part].Media = m;
         }
     }
@@ -208,10 +214,28 @@ public static class ConstructMedia
         {
             if (MediaEntry.Clean(entry) is not { } clean)
                 return "only YouTube links and the game's own tracks play here";
+            if (MediaEntry.IsWeb(clean) || d.IsWeb)
+                return "a Browser Screen takes an address";
             var m0 = p.Media ??= new CMedia();
             if (m0.List.Length >= MaxList)
                 return $"a list holds {MaxList} tracks";
             m0.List = [.. m0.List, clean];
+            return null;
+        }
+        if (op == MediaOp.Go)
+        {
+            if (!d.IsWeb || MediaEntry.Clean(entry) is not { } address || !MediaEntry.IsWeb(address))
+                return "only public http and https addresses open here";
+            var mw = p.Media ??= new CMedia();
+            mw.List = [address];
+            mw.Index = 0;
+            mw.By = player;
+            mw.StartTick = tick;
+            if (mw.State != MediaState.Playing)
+            {
+                mw.State = MediaState.Playing;
+                mw.Seq++;
+            }
             return null;
         }
         if (p.Media is not { } m)
@@ -305,7 +329,7 @@ public static class ConstructMedia
                 if (i >= c.PartCount)
                     continue;
                 ref var p = ref c.Parts[i];
-                if (p.Media is not { State: MediaState.Playing } m || m.Entry is not { } line || MediaEntry.IsLink(line))
+                if (p.Media is not { State: MediaState.Playing } m || m.Entry is not { } line || MediaEntry.IsPage(line))
                     continue;
                 if (MediaEntry.Track(line) is { } t && m.Position(tick) < t.Seconds)
                     continue;

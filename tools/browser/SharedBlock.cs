@@ -91,8 +91,8 @@ internal sealed unsafe class SharedBlock : IDisposable
             return false;
         var e = (int*)(_base + OffMouse) + (tail & (MouseSlots - 1)) * 4;
         kind = e[0];
-        x = Math.Clamp(e[1], 0, Width - 1);
-        y = Math.Clamp(e[2], 0, Height - 1);
+        x = kind <= 5 ? Math.Clamp(e[1], 0, Width - 1) : e[1]; // (a key's code and modifiers, past that)
+        y = kind <= 5 ? Math.Clamp(e[2], 0, Height - 1) : e[2];
         data = e[3];
         Volatile.Write(ref Int(OffMouseTail), tail + 1);
         return true;

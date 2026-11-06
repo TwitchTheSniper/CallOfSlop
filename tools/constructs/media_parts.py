@@ -23,15 +23,19 @@ LOOP = {"key": "loop", "label": "Loop the list", "group": "General", "type": "to
         "tooltip": "After the last track it starts again from the top."}
 
 
-def media(hear, near, width=None, height=None):
+def media(hear, near, width=None, height=None, web=False):
     m = {"hear": hear, "near": near}
+    if web:
+        m["web"] = True
     if width:
         m["width"], m["height"] = width, height
     return m
 
 
-def video(name, cls, w, h, range_m, hear, near, power, mass):
+def video(name, cls, w, h, range_m, hear, near, power, mass, web=False):
     desc = f"Plays YouTube links and the game's own tracks: paste a link with the configure tool. Seen from {range_m:g} m, heard to {hear:g} m."
+    if web:
+        desc = f"A web page on a screen: type the address with the configure tool, and use it with Hands. Private: nothing is saved. Seen from {range_m:g} m."
     p = Part(name, cls, SECTION, desc, role="panel", tool="wrench" if mass <= 40 else "welder", group="Logic", color=CASE)
     t = 0.05 if cls is SMALL else 0.12
     rim = 0.012 if cls is SMALL else 0.03
@@ -46,7 +50,7 @@ def video(name, cls, w, h, range_m, hear, near, power, mass):
     p.stats(mass, 50, 1, 1)
     pw, ph = w - 2 * rim, h - 2 * rim
     pw = min(pw, round(ph * 16 / 9, 3))
-    p.set(power=power, config=[VOLUME, LOOP], centreSockets=False, media=media(hear, near),
+    p.set(power=power, config=[VOLUME] if web else [VOLUME, LOOP], centreSockets=False, media=media(hear, near, web=web),
           panels=[{"source": "media", "at": [0, 0, round(-proud - 0.003, 3)], "size": [round(pw, 3), round(pw * 9 / 16, 3)], "face": "-z", "up": "+y", "rows": 8, "range": range_m}])
     return p
 
@@ -110,6 +114,9 @@ def speaker(name, cls, w, h, t, reach, default, near, power, mass):
 def main():
     parts = [
         ("", music()),
+        ("", video("Browser Screen", SMALL, 1.0, 0.6, 25, 40, 4, 40, 6, web=True)),
+        ("", video("Medium Browser Screen", MEDIUM, 3, 1.75, 60, 80, 8, 150, 60, web=True)),
+        ("", video("Large Browser Screen", MEDIUM, 8, 4.6, 150, 160, 16, 400, 240, web=True)),
         ("", speaker("Speaker", SMALL, 0.26, 0.42, 0.2, 40, 25, 3, 15, 5)),
         ("", speaker("Medium Speaker", MEDIUM, 1, 1.6, 0.7, 100, 60, 6, 60, 40)),
         ("", speaker("Large Speaker", MEDIUM, 2.2, 3.6, 1.4, 250, 150, 12, 200, 180)),

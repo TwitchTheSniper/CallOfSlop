@@ -54,6 +54,9 @@ public static class MediaDirector
     /// <summary>A peer's own switch: Settings > Audio.</summary>
     public static bool Others = true;
 
+    /// <summary>Other players' Browser Screens on this PC. Off by default: a page opened here shows the site this PC's address and runs what a stranger chose. Settings > Audio.</summary>
+    public static bool OthersWeb;
+
     /// <summary>Master level for this PC's screens, on top of each part's Volume.</summary>
     public static float Level = 1;
 
@@ -78,12 +81,13 @@ public static class MediaDirector
     }
 
     /// <summary>The part is a link this PC doesn't play by its own choice.</summary>
-    public static bool Hidden(CMedia m, byte me) => !Others && m.By != me;
+    public static bool Hidden(CMedia m, byte me) => m.By != me && !(m.Entry is { } line && MediaEntry.IsWeb(line) ? OthersWeb : Others);
 
     /// <summary>Each frame of the windowed game, Sandbox or not (<paramref name="g"/> null: nothing's world).</summary>
     public static void Frame(Game? g, Audio audio, double now)
     {
         VideoFeeds.Upload(now);
+        NameOf ??= by => g?.Players.TryGetValue(by, out var who) == true ? who.Name : "A player";
         var world = g is { SandboxOn: true } ? g.Constructs : null;
         if (now >= _nextScan)
         {
@@ -165,7 +169,7 @@ public static class MediaDirector
                     var distance = Vector3.Distance(ConstructRender.DrawnPoint(c, i, Vector3.Zero, g.TickAlpha, g.IsServer), ear);
                     if (distance > p.D.MediaHear)
                         continue;
-                    if (!MediaEntry.IsLink(line))
+                    if (!MediaEntry.IsPage(line))
                     {
                         if (distance < trackDistance)
                         {
@@ -194,7 +198,7 @@ public static class MediaDirector
                     var distance = Vector3.Distance(ConstructRender.DrawnPoint(c, i, Vector3.Zero, g.TickAlpha, g.IsServer), ear);
                     if (distance > ConstructConfig.Get(p, p.D, CfgKey.HearRange, 40))
                         continue;
-                    if (!MediaEntry.IsLink(line))
+                    if (!MediaEntry.IsPage(line))
                     {
                         if (distance < trackDistance)
                         {
@@ -221,7 +225,7 @@ public static class MediaDirector
             if (!page.Open)
                 continue;
             var c = world?.Get(page.Body);
-            var keep = browser && c != null && page.Part < c.PartCount && Listed(page.Body, page.Part) && c.Parts[page.Part].Media is { } m && m.Seq == page.Seq && m.Entry == page.Entry;
+            var keep = browser && c != null && page.Part < c.PartCount && Listed(page.Body, page.Part) && c.Parts[page.Part].Media is { } m && m.Seq == page.Seq && (m.Entry == page.Entry || m.Entry is { } line && MediaEntry.IsWeb(line));
             if (!keep)
                 ClosePage(audio, i);
         }
@@ -338,7 +342,9 @@ public static class MediaDirector
         ref var p = ref c.Parts[part];
         var m = p.Media!;
         var d = p.D;
-        if (!MediaBrowser.Open(free, MediaEntry.VideoId(m.Entry!), m.Position(g.ServerTick), d.MediaWidth, d.MediaHeight))
+        var opened = MediaEntry.IsWeb(m.Entry!) ? MediaBrowser.OpenWeb(free, MediaEntry.WebUrl(m.Entry!), d.MediaWidth, d.MediaHeight)
+            : MediaBrowser.Open(free, MediaEntry.VideoId(m.Entry!), m.Position(g.ServerTick), d.MediaWidth, d.MediaHeight);
+        if (!opened)
             return;
         VideoFeeds.Forget(free);
         Pages[free] = new Page
@@ -365,6 +371,11 @@ public static class MediaDirector
         if (world.Get(page.Body) is not { } c || c.Parts[page.Part].Media is not { } m)
             return;
         var r = MediaBrowser.Report(i);
+        if (m.Entry is { } web && MediaEntry.IsWeb(web))
+        {
+            WebSync(g, ref page, i, web, r.Address, now);
+            return;
+        }
         if (now < page.HandsUntil)
         {
             page.Mark = m.Mark;
@@ -429,7 +440,42 @@ public static class MediaDirector
             g.SandboxMedia(page.Body, page.Part, MediaOp.Seek, seq: (uint)(r.Time * 1000));
     }
 
+    /// <summary>
+    /// A Browser Screen: the address is shared, and nothing else is. Where the server's address changed the page goes there, unless it is already. Where this peer's hands took the page
+    /// somewhere, the new address goes to the server, with no query or fragment: one can hold a login's token, and those stay on this PC.
+    /// </summary>
+    private static void WebSync(Game g, ref Page page, int i, string web, string address, double now)
+    {
+        var at = MediaEntry.Web + address;
+        if (web != page.Entry)
+        {
+            page.Entry = web;
+            if (address.Length == 0 || !MediaEntry.SamePage(at, web))
+                MediaBrowser.Go(i, MediaEntry.WebUrl(web));
+            return;
+        }
+        if (now < page.HandsUntil && address.Length > 0 && !MediaEntry.SamePage(at, web) && MediaEntry.Clean(at) != null)
+            g.SandboxMedia(page.Body, page.Part, MediaOp.Go, entry: at);
+    }
+
+    /// <summary>Back, forward or reload on this peer's page. What comes of it is shared as a click's would be.</summary>
+    public static void WebCommand(ushort body, int part, string command, double now)
+    {
+        var page = PageOf(body, part);
+        if (page < 0)
+            return;
+        Pages[page].HandsUntil = now + WebLead;
+        MediaBrowser.Web(page, command);
+    }
+
+    public static void PageKey(int page, int kind, int key, int mods, double now)
+    {
+        Pages[page].HandsUntil = now + WebLead;
+        MediaBrowser.Block(page)?.Mouse(kind, key, mods, 0);
+    }
+
     private const double HandsLead = 3; // seconds the page leads after a click
+    private const double WebLead = 6; // and a web page, which takes longer to go anywhere
 
     public static void PageMove(int page, int x, int y, bool drag) => MediaBrowser.Block(page)?.Mouse(MediaBlock.MouseMove, x, y, drag ? 1 : 0);
 
@@ -438,7 +484,7 @@ public static class MediaDirector
     public static void PageButton(int page, int x, int y, bool down, double now)
     {
         if (now > 0)
-            Pages[page].HandsUntil = now + HandsLead;
+            Pages[page].HandsUntil = now + (MediaEntry.IsWeb(Pages[page].Entry) ? WebLead : HandsLead);
         MediaBrowser.Block(page)?.Mouse(down ? MediaBlock.MouseDown : MediaBlock.MouseUp, x, y, 0);
     }
 
@@ -525,10 +571,15 @@ public static class MediaDirector
         card.Wrap(text, PanelRender.Columns(panel.Size, panel.Rows), line, panel.Rows - 1, 0, ref at, ref column);
     }
 
+    /// <summary>Who a part's line came from, for a line that says so.</summary>
+    public static Func<byte, string>? NameOf;
+
     private static string Why(CMedia m)
     {
         if (MediaBrowser.Problem is { } problem)
             return problem;
+        if (m.Entry is { } line && MediaEntry.IsWeb(line) && !OthersWeb)
+            return $"{NameOf?.Invoke(m.By) ?? "A player"}'s browser: hidden";
         return !Others ? "Other players' videos are off" : _closest >= MaxPages ? $"{MaxPages} screens already playing" : "Waiting";
     }
 
@@ -569,7 +620,7 @@ public static class MediaDirector
         for (var i = 0; i < Pages.Length; i++)
             if (Pages[i].Open && Pages[i].Entry == line && MediaBrowser.Report(i).Title is { Length: > 0 } title)
                 return title;
-        return "YouTube " + MediaEntry.VideoId(line);
+        return MediaEntry.IsWeb(line) ? MediaEntry.WebUrl(line) : "YouTube " + MediaEntry.VideoId(line);
     }
 
     /// <summary>The game is leaving: pages closed, browser gone, sound off.</summary>

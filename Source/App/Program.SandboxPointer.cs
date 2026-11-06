@@ -1,4 +1,5 @@
 using System.Numerics;
+using Brutal.GlfwApi;
 
 namespace CallOfSlop;
 
@@ -13,7 +14,7 @@ public static partial class Program
     private static int _scrPart = -1, _scrPanel, _scrPage = -1, _scrSentX = -1, _scrSentY = -1, _scrOffPart = -1;
     private static ushort _scrOffBody;
     private static long _scrStamp, _scrLookKey;
-    private static bool _scrDown, _scrTook;
+    private static bool _scrDown, _scrTook, _scrWeb;
     private static string _scrLook = "";
 
     /// <summary>The wheel's notches while the crosshair is a mouse.</summary>
@@ -26,8 +27,82 @@ public static partial class Program
         return 0;
     }
 
+    private static bool _webTyping, _webSaid;
+
+    /// <summary>A key while a page has the keyboard: it goes to the page, and only there. True when the game shouldn't see it. Enter on a page's picture gives it the keyboard, Esc takes it back.</summary>
+    private static bool WebTypingKey(GlfwKey key, GlfwKeyAction action, GlfwModifier mods)
+    {
+        if (!_webTyping)
+        {
+            if (key != GlfwKey.Enter || action != GlfwKeyAction.Press || _scrPage < 0 || Ui.ChatOpen || !_scrWeb)
+                return false;
+            _webTyping = true;
+            Array.Clear(_down);
+            if (!_webSaid && _session is { } g)
+                g.SandboxSay("Private page: nothing is saved, and logins end when the game closes. Keys stay on this PC.");
+            _webSaid = true;
+            return true;
+        }
+        if (key == GlfwKey.Escape)
+        {
+            if (action == GlfwKeyAction.Press)
+                _webTyping = false;
+            return true;
+        }
+        if (_scrPage >= 0)
+            MediaDirector.PageKey(_scrPage, action == GlfwKeyAction.Release ? MediaBlock.KeyUp : MediaBlock.KeyDown, WindowsKey(key), (int)mods & 7, Brutal.GlfwApi.Glfw.Time);
+        return true;
+    }
+
+    private static void OnWebChar(GlfwWindow window, uint codepoint)
+    {
+        if (_webTyping && _scrPage >= 0 && codepoint <= 0xFFFF)
+            MediaDirector.PageKey(_scrPage, MediaBlock.KeyChar, (int)codepoint, 0, Brutal.GlfwApi.Glfw.Time);
+    }
+
+    /// <summary>GLFW's key to the Windows key code CEF wants.</summary>
+    private static int WindowsKey(GlfwKey key)
+    {
+        var k = (int)key;
+        return k switch
+        {
+            >= 'A' and <= 'Z' or >= '0' and <= '9' or 32 => k,
+            59 => 186, // ;
+            61 => 187, // =
+            44 => 188, // ,
+            45 => 189, // -
+            46 => 190, // .
+            47 => 191, // /
+            96 => 192, // `
+            91 => 219, // [
+            92 => 220, // backslash
+            93 => 221, // ]
+            39 => 222, // '
+            257 or 335 => 13, // enter
+            258 => 9, // tab
+            259 => 8, // backspace
+            260 => 45, // insert
+            261 => 46, // delete
+            262 => 39,
+            263 => 37,
+            264 => 40,
+            265 => 38, // arrows
+            266 => 33,
+            267 => 34, // page up, down
+            268 => 36,
+            269 => 35, // home, end
+            >= 290 and <= 301 => 112 + k - 290, // F1..F12
+            340 or 344 => 16,
+            341 or 345 => 17,
+            342 or 346 => 18, // shift, control, alt
+            _ => 0,
+        };
+    }
+
     private static void PointerOff()
     {
+        _webTyping = false;
+        _scrWeb = false;
         if (_scrDown && _scrPage >= 0)
             MediaDirector.PageButton(_scrPage, _scrSentX, _scrSentY, false, 0);
         if (_scrPage >= 0)
@@ -101,9 +176,10 @@ public static partial class Program
         if (onPicture)
         {
             _scrPage = page;
+            _scrWeb = d.IsWeb;
             PointerMove(c, part, def, spot, now);
             PanelRender.SetPointer(key, spot, -1);
-            PointerSay(g, d, null, "LMB: click, RMB: mouse off (then LMB picks up a loose one)");
+            PointerSay(g, d, null, _webTyping ? "typing to the page: Esc stops" : d.IsWeb ? "LMB: click, Enter: type, RMB: mouse off" : "LMB: click, RMB: mouse off (then LMB picks up a loose one)");
             if (Pressed(GameAction.Aim))
             {
                 _scrOffBody = c.Id;

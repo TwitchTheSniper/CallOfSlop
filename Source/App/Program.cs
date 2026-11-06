@@ -223,6 +223,7 @@ public static unsafe partial class Program
             AudioSystem.Music.Volume = _settings.MusicVolume;
             MediaDirector.Level = _settings.MediaVolume;
             MediaDirector.Others = _settings.MediaOthers;
+            MediaDirector.OthersWeb = _settings.MediaOthersWeb;
             MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
@@ -414,6 +415,7 @@ public static unsafe partial class Program
         };
 
         _window.OnKey += OnKey;
+        _window.OnChar += OnWebChar;
         _window.OnMouseButton += OnMouseButton;
         _window.OnScroll += OnScroll;
         _window.OnFocus += (_, focus) =>
@@ -969,6 +971,8 @@ public static unsafe partial class Program
 
     private static void OnKey(GlfwWindow window, GlfwKey key, int scancode, GlfwKeyAction action, GlfwModifier mods)
     {
+        if (WebTypingKey(key, action, mods))
+            return; // (a page has the keyboard: Program.SandboxPointer.cs)
         if (action != GlfwKeyAction.Press)
             return;
 
@@ -1207,7 +1211,7 @@ public static unsafe partial class Program
     private static void PollActions()
     {
         Array.Copy(_down, _prev, _down.Length);
-        var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen; // typing in the chat suspends the game controls
+        var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen || _webTyping; // typing in the chat suspends the game controls
         for (var i = 0; i < _down.Length; i++)
             _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
         Keybinds.Resolve(_settings.Binds, _session != null && _game is { SandboxOn: true }, _down); // (per-mode keys; a Shift chord hides its plain key)

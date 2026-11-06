@@ -11,15 +11,15 @@ namespace SlopBrowser;
 /// Pictures and sound go to the game through one shared memory block a page; commands come in on stdin, reports go out on stdout.
 /// Stdin closing, which is also what the game crashing looks like, ends the process.
 /// <code>
-/// in:  open SLOP ID SECONDS WIDTH HEIGHT MAP | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
-/// out: ready | fail REASON | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE
+/// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP | web SLOT URL WIDTH HEIGHT MAP | go SLOT URL | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
+/// out: ready | fail REASON | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE | u SLOT ADDRESS (no query)
 /// </code>
 /// </summary>
 internal static class Program
 {
     private const int MaxSlots = 4; // (the game's MediaDirector.MaxPages)
     private static readonly Regex VideoId = new("^[A-Za-z0-9_-]{11}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    private static readonly Page?[] Pages = new Page?[MaxSlots];
+    private static readonly IDisposable?[] Pages = new IDisposable?[MaxSlots]; // (a Page, YouTube's locked player; or a WebPage, a Browser Screen's own rules)
     private static readonly object Out = new();
     private static readonly string Root = Path.Combine(Path.GetTempPath(), "SlopBrowser-" + Environment.ProcessId);
 
@@ -112,14 +112,30 @@ internal static class Program
                 CloseSlot(slot);
                 Pages[slot] = new Page(slot, a[2], Num(a[3]), (int)Num(a[4]), (int)Num(a[5]), a[6]);
                 break;
+            case "web" when a.Length == 6:
+                CloseSlot(slot);
+                Pages[slot] = new WebPage(slot, a[2], (int)Num(a[3]), (int)Num(a[4]), a[5]);
+                break;
+            case "go" when a.Length == 3:
+                (Pages[slot] as WebPage)?.Go(a[2]);
+                break;
+            case "back":
+                (Pages[slot] as WebPage)?.Back();
+                break;
+            case "forward":
+                (Pages[slot] as WebPage)?.Forward();
+                break;
+            case "reload":
+                (Pages[slot] as WebPage)?.Reload();
+                break;
             case "play":
-                Pages[slot]?.Run("slop.play()");
+                (Pages[slot] as Page)?.Run("slop.play()");
                 break;
             case "pause":
-                Pages[slot]?.Run("slop.pause()");
+                (Pages[slot] as Page)?.Run("slop.pause()");
                 break;
             case "seek" when a.Length == 3:
-                Pages[slot]?.Run(string.Create(CultureInfo.InvariantCulture, $"slop.seek({Num(a[2]):0.###})"));
+                (Pages[slot] as Page)?.Run(string.Create(CultureInfo.InvariantCulture, $"slop.seek({Num(a[2]):0.###})"));
                 break;
             case "close":
                 CloseSlot(slot);

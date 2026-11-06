@@ -15,6 +15,63 @@ public sealed partial class Ui
     private string _cmWhy = "";
     private string _cmHeard = "";
 
+    private ImInputString? _cwAddress;
+    private long _cwKey = -1;
+    private string _cwSeen = "";
+
+    /// <summary>A Browser Screen: its address bar, and plainly what is and isn't shared.</summary>
+    private void SandboxConfigWeb(Game game, Construct c, int part)
+    {
+        if (part < 0 || part >= c.PartCount)
+            return;
+        var body = c.Id;
+        var m = c.Parts[part].Media;
+        var line = m?.Entry ?? "";
+        var shown = line.Length > 0 ? MediaEntry.WebUrl(line) : "";
+        ImGui.SeparatorText("Address"u8);
+        _cwAddress ??= new ImInputString(MediaEntry.MaxChars);
+        var key = (long)c.Id << 20 | (uint)part;
+        if (key != _cwKey || shown != _cwSeen)
+        {
+            ImGuiSafe.SetInput(_cwAddress, shown);
+            _cwKey = key;
+            _cwSeen = shown;
+        }
+        ImGui.SetNextItemWidth(-1);
+        var go = ImGui.InputTextWithHint("##cwaddress"u8, "Type an address"u8, _cwAddress, ImGuiInputTextFlags.EnterReturnsTrue);
+        go |= ImGui.Button("Go"u8);
+        var now = Brutal.GlfwApi.Glfw.Time;
+        ImGui.SameLine();
+        if (ImGui.Button("Back"u8))
+            MediaDirector.WebCommand(body, part, "back", now);
+        ImGui.SameLine();
+        if (ImGui.Button("Forward"u8))
+            MediaDirector.WebCommand(body, part, "forward", now);
+        ImGui.SameLine();
+        if (ImGui.Button("Reload"u8))
+            MediaDirector.WebCommand(body, part, "reload", now);
+        ImGui.SameLine();
+        if (ImGui.Button("Close"u8))
+            game.SandboxMedia(body, part, MediaOp.Stop);
+        if (go)
+        {
+            if (MediaEntry.FromAddress(ImGuiSafe.Text(_cwAddress), out var why) is { } entry)
+            {
+                game.SandboxMedia(body, part, MediaOp.Go, entry: entry);
+                _cmWhy = "";
+            }
+            else
+                _cmWhy = why;
+        }
+        if (_cmWhy.Length > 0)
+            ImGuiSafe.TextColored(new float4(1f, 0.6f, 0.3f, 1f), _cmWhy);
+        ImGuiSafe.TextWrapped(MediaDirector.Look(c, part));
+        ImGui.SeparatorText("Private page"u8);
+        ImGui.TextWrapped("Nothing is saved to disk. Logins, cookies and history end when the game closes."u8);
+        ImGui.TextWrapped("Shared: the address, and where links take the page (without anything after a ? in it). Other players only load it if they turn on Show other players' web pages."u8);
+        ImGui.TextWrapped("Not shared: your clicks and your typing. Each player's page is their own, and logged in or not they see their own copy."u8);
+    }
+
     private void SandboxConfigMedia(Game game, Construct c, int part, ConstructPartDef d)
     {
         if (!d.IsMedia || part < 0 || part >= c.PartCount)

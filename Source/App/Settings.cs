@@ -49,6 +49,7 @@ public sealed class Settings
     public float MusicVolume = 0.5f; // menu and lobby music, on top of the master volume (0 = off)
     public float MediaVolume = 0.8f; // Video Screens and Music Players on this PC, on top of each part's Volume
     public bool MediaOthers = true; // play the links other players start
+    public bool MediaOthersWeb; // show other players' Browser Screens: off, a stranger's site doesn't load on this PC
     public float EffectsVolume = 1f; // gunfire, hits and every other sound effect, on top of the master volume
     public float FootstepVolume = 1f; // footsteps, jumps and landings, on top of the effects volume
     public float OwnGunVolume = 1f; // your own gunshots, on top of the effects volume (1 = the tuned mix, see Audio.GunMix.cs)
@@ -448,6 +449,7 @@ public sealed class Settings
                     case "music_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MusicVolume = Math.Clamp(f, 0f, 1f); break;
                     case "media_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MediaVolume = Math.Clamp(f, 0f, 1f); break;
                     case "media_others": s.MediaOthers = v != "0"; break;
+                    case "media_others_web": s.MediaOthersWeb = v == "1"; break;
                     case "effects_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.EffectsVolume = Math.Clamp(f, 0f, 1f); break;
                     case "footstep_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FootstepVolume = Math.Clamp(f, 0f, 1f); break;
                     case "own_gun_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.OwnGunVolume = Math.Clamp(f, 0f, 1f); break;
@@ -584,6 +586,7 @@ public sealed class Settings
                     $"music_volume={MusicVolume.ToString(inv)}",
                     $"media_volume={MediaVolume.ToString(inv)}",
                     $"media_others={(MediaOthers ? 1 : 0)}",
+                    $"media_others_web={(MediaOthersWeb ? 1 : 0)}",
                     $"effects_volume={EffectsVolume.ToString(inv)}",
                     $"footstep_volume={FootstepVolume.ToString(inv)}",
                     $"own_gun_volume={OwnGunVolume.ToString(inv)}",
