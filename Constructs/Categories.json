@@ -23,6 +23,7 @@
     { "section": "Wings", "to": ["Flight", "Wings"] },
     { "section": "Control surfaces", "to": ["Flight", "Control surfaces"] },
     { "section": "Rotors", "to": ["Flight", "Rotors"] },
+    { "name": ["Drone Rotor", "Drone Pusher"], "to": ["Flight", "Rotors"] },
     { "group": "Weapon parts", "section": "Receiver", "to": ["Weapon parts", "Receivers"] },
     { "group": "Weapon parts", "section": "Action", "to": ["Weapon parts", "Actions"] },
     { "group": "Weapon parts", "section": ["Barrel", "Splitter"], "to": ["Weapon parts", "Barrels"] },
