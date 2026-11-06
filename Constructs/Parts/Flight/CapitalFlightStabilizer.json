@@ -1,0 +1,367 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Flight Stabilizer",
+  "description": "Takes a seat's controls and flies the craft: link its outputs to thrusters, flaps and gimbals.",
+  "group": "Flight control",
+  "section": "Flight control",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 500000.0,
+  "health": 12000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#39414a",
+  "attachSeconds": 15.0,
+  "logic": {
+    "kind": "flightstabilizer",
+    "gyro": 2000000000.0
+  },
+  "config": [
+    {
+      "key": "keys",
+      "type": "choice",
+      "label": "Keys",
+      "group": "Control",
+      "options": [
+        "Auto",
+        "Rotorcraft",
+        "Plane",
+        "Rocket"
+      ],
+      "default": 0,
+      "tooltip": "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."
+    },
+    {
+      "key": "strength",
+      "label": "Strength",
+      "group": "Control",
+      "unit": "%",
+      "min": 10,
+      "max": 300,
+      "step": 5,
+      "default": 100,
+      "tooltip": "How hard it corrects. Lower it if the craft shakes."
+    },
+    {
+      "key": "level",
+      "type": "toggle",
+      "label": "Stabilise level",
+      "group": "Control",
+      "default": true,
+      "tooltip": "Off: the keys ask for turning, and it stays at whatever angle you leave it."
+    },
+    {
+      "key": "mouseAim",
+      "type": "toggle",
+      "label": "Mouse aim",
+      "group": "Control",
+      "default": false,
+      "tooltip": "It flies where the seat looks."
+    },
+    {
+      "key": "invertPitch",
+      "type": "toggle",
+      "label": "Invert pitch",
+      "group": "Control",
+      "default": false,
+      "tooltip": "W lifts the nose and S drops it."
+    },
+    {
+      "key": "maxTilt",
+      "label": "Max lean",
+      "group": "Limits",
+      "unit": "deg",
+      "min": 0,
+      "max": 80,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The most it leans. 0: the pattern's own."
+    },
+    {
+      "key": "maxTurn",
+      "label": "Max turn",
+      "group": "Limits",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 360,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns. 0: the pattern's own."
+    },
+    {
+      "key": "maxClimb",
+      "label": "Max climb",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 200,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "The fastest it climbs. 0: the pattern's own."
+    },
+    {
+      "key": "maxSpeed",
+      "label": "Max speed",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 1000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The speed the keys ask for. 0: the pattern's own."
+    },
+    {
+      "key": "trimPitch",
+      "label": "Trim, nose up",
+      "group": "Trim",
+      "unit": "deg",
+      "min": -30,
+      "max": 30,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "What it counts as level, nose up."
+    },
+    {
+      "key": "trimRoll",
+      "label": "Trim, right wing down",
+      "group": "Trim",
+      "unit": "deg",
+      "min": -30,
+      "max": 30,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "What it counts as level, right wing down."
+    },
+    {
+      "key": "autopilot",
+      "type": "toggle",
+      "label": "Autopilot",
+      "group": "Autopilot",
+      "default": false,
+      "tooltip": "On: it holds what the mode says. Its input and the Flight Panel set this too."
+    },
+    {
+      "key": "apMode",
+      "type": "choice",
+      "label": "Mode",
+      "group": "Autopilot",
+      "options": [
+        "Hold altitude",
+        "Hold heading",
+        "Hover",
+        "Waypoint",
+        "Return home"
+      ],
+      "default": 2,
+      "tooltip": "What it holds."
+    },
+    {
+      "key": "targetAlt",
+      "label": "Altitude",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": 0,
+      "max": 20000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The height held. 0: where it was when engaged."
+    },
+    {
+      "key": "targetHeading",
+      "label": "Heading",
+      "group": "Autopilot",
+      "unit": "deg",
+      "min": -1,
+      "max": 360,
+      "step": 1,
+      "default": -1,
+      "tooltip": "The heading held, clockwise from north. -1: where it pointed when engaged."
+    },
+    {
+      "key": "waypointX",
+      "label": "Waypoint x",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world x."
+    },
+    {
+      "key": "waypointZ",
+      "label": "Waypoint z",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world z."
+    },
+    {
+      "key": "homeX",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
+      "key": "homeZ",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    }
+  ],
+  "faces": "forward",
+  "faceAxis": "-z",
+  "boxes": [
+    {
+      "min": [
+        -9.6,
+        -3.84,
+        -9.6
+      ],
+      "max": [
+        9.6,
+        3.84,
+        9.6
+      ]
+    },
+    {
+      "min": [
+        -1.28,
+        3.648,
+        -7.04
+      ],
+      "max": [
+        1.28,
+        4.608,
+        3.2
+      ],
+      "color": "#e0b030",
+      "detail": true
+    },
+    {
+      "min": [
+        -3.84,
+        3.712,
+        -5.76
+      ],
+      "max": [
+        3.84,
+        4.48,
+        -3.2
+      ],
+      "color": "#e0b030",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.528,
+        3.648,
+        5.12
+      ],
+      "max": [
+        -4.992,
+        4.864,
+        7.68
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.688,
+        3.648,
+        5.12
+      ],
+      "max": [
+        -1.152,
+        4.864,
+        7.68
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        1.152,
+        3.648,
+        5.12
+      ],
+      "max": [
+        2.688,
+        4.864,
+        7.68
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        4.992,
+        3.648,
+        5.12
+      ],
+      "max": [
+        6.528,
+        4.864,
+        7.68
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        9.6,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -9.6,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        9.6
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -9.6
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -3.84,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

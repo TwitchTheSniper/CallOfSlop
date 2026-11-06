@@ -22,6 +22,8 @@ public struct CRotor
     public float Thrust; // N now
     public float Power; // W now
     public float Sent; // the share of rated speed the pose last carried
+    public bool Scanned; // a stabilizer commands it (ConstructEffectors.cs); a wire by hand leaves it to the wire
+    public float Command, CommandX, CommandY; // what it tells it
 }
 
 public sealed partial class Construct
@@ -156,7 +158,7 @@ public static class ConstructRotor
             return throttle;
         var asked = c.Driver != 255;
         for (var k = 0; k < c.RotorCount && !asked; k++)
-            asked = c.Parts[c.Rotors[k].Part].InCount > 0;
+            asked = c.Parts[c.Rotors[k].Part].InCount > 0 || c.Rotors[k].Scanned && c.StabOwns;
         if (!asked)
             return throttle;
         return c.RotorGoverned ? 1f : MathF.Max(MathF.Abs(throttle), RotorWired(c) ? WiredThrottle(c) : c.AeroTrim);
@@ -165,7 +167,7 @@ public static class ConstructRotor
     private static bool RotorWired(Construct c)
     {
         for (var k = 0; k < c.RotorCount; k++)
-            if (c.Rotors[k].Feed >= 0 && c.Parts[c.Rotors[k].Part].InCount > 0)
+            if (c.Rotors[k].Feed >= 0 && (c.Parts[c.Rotors[k].Part].InCount > 0 || c.Rotors[k].Scanned && c.StabOwns))
                 return true;
         return false;
     }
@@ -174,8 +176,8 @@ public static class ConstructRotor
     {
         var most = 0f;
         for (var k = 0; k < c.RotorCount; k++)
-            if (c.Rotors[k].Feed >= 0 && c.Parts[c.Rotors[k].Part].InCount > 0)
-                most = MathF.Max(most, Math.Clamp(c.Parts[c.Rotors[k].Part].In, 0, 1));
+            if (c.Rotors[k].Feed >= 0 && (c.Parts[c.Rotors[k].Part].InCount > 0 || c.Rotors[k].Scanned && c.StabOwns))
+                most = MathF.Max(most, c.Rotors[k].Scanned && c.StabOwns ? c.Rotors[k].Command : Math.Clamp(c.Parts[c.Rotors[k].Part].In, 0, 1));
         return most;
     }
 
@@ -204,9 +206,10 @@ public static class ConstructRotor
             if (r.Part >= c.PartCount || c.Parts[r.Part].D.Rotor is not { } d)
                 continue;
             ref var p = ref c.Parts[r.Part];
-            var wired = p.InCount > 0;
-            runs |= r.Feed >= 0 && wired && p.In != 0;
-            var cmd = wired ? Math.Clamp(p.In, d.Heli ? -1 : 0, 1) : c.Driver != 255 ? c.AeroTrim : 0f;
+            var scanned = r.Scanned && c.StabOwns;
+            var wired = p.InCount > 0 && !scanned;
+            runs |= r.Feed >= 0 && (wired && p.In != 0 || scanned && r.Command != 0);
+            var cmd = scanned ? r.Command : wired ? Math.Clamp(p.In, d.Heli ? -1 : 0, 1) : c.Driver != 255 ? c.AeroTrim : 0f;
             if (wired && ConstructConfig.Get(p, p.D, CfgKey.Reverse, 0) >= 0.5f)
                 cmd = -cmd;
             var mix = ConstructConfig.Get(p, p.D, CfgKey.TorqueMix, 0) >= 0.5f;
@@ -220,7 +223,7 @@ public static class ConstructRotor
             if (electric)
             {
                 if (working && c.Electrical && ConstructPower.On(c, r.Part))
-                    want = d.Heli ? wired || c.Driver != 255 ? rated : 0 : MathF.Sqrt(MathF.Abs(cmd)) * rated; // (push goes with the square of its speed: a wire asks for push)
+                    want = d.Heli ? wired || scanned || c.Driver != 255 ? rated : 0 : MathF.Sqrt(MathF.Abs(cmd)) * rated; // (push goes with the square of its speed: a wire asks for push)
             }
             else if (r.Feed >= 0 && working && engineOn)
             {
@@ -286,12 +289,14 @@ public static class ConstructRotor
             if (!free)
                 continue;
             var arm = at - com;
-            if (d.Heli && (p.InCount1 > 0 || p.InCount2 > 0))
+            if (d.Heli && (p.InCount1 > 0 || p.InCount2 > 0 || scanned))
             {
                 // Cyclic tips the disc: the push leans, and the hub adds its own moment (how a rotor's head steers). Plus is nose up and right wing down, as a Flight Stabilizer's outputs.
                 var fwd = Vector3.Transform(r.Fwd, q);
                 var right = Vector3.Transform(r.Right, q);
-                var tilt = (fwd * -Math.Clamp(p.InCount1 > 0 ? p.In1 : 0, -1, 1) + right * Math.Clamp(p.InCount2 > 0 ? p.In2 : 0, -1, 1)) * MathF.Tan(d.Cyclic);
+                var cycX = scanned ? r.CommandX : p.InCount1 > 0 ? Math.Clamp(p.In1, -1, 1) : 0;
+                var cycY = scanned ? r.CommandY : p.InCount2 > 0 ? Math.Clamp(p.In2, -1, 1) : 0;
+                var tilt = (fwd * -cycX + right * cycY) * MathF.Tan(d.Cyclic);
                 dir = Vector3.Normalize(dir + tilt);
                 c.AngVel += Construct.Mul(invI, Vector3.Cross(bodyDir, tilt) * (MathF.Abs(push) * d.Radius * d.HubMoment * dt));
             }

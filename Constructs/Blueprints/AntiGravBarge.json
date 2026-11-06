@@ -1,0 +1,189 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Anti-Grav Barge",
+ "description": "Two generators carry her whole weight; small fans steer her up and down. Lose the power and she falls.",
+ "steps": [
+  {
+   "part": "Fuel Tank"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 1,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 1,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 2,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 2,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Light Lift Fan",
+   "on": 3,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Lift Fan",
+   "on": 4,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Lift Fan",
+   "on": 5,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Lift Fan",
+   "on": 6,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Flight Stabilizer",
+   "on": 2,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Anti-Grav Generator",
+   "on": 3,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Anti-Grav Generator",
+   "on": 4,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Light Lift Fan",
+   "on": 2,
+   "socket": "+z",
+   "by": "front"
+  },
+  {
+   "part": "Battery",
+   "on": 1,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Battery",
+   "on": 6,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Small Genset",
+   "on": 5,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Small Genset",
+   "on": 6,
+   "socket": "+x",
+   "by": "-x"
+  }
+ ],
+ "links": [
+  {
+   "type": "power",
+   "from": 16,
+   "to": 7,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 16,
+   "to": 8,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 16,
+   "to": 9,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 16,
+   "to": 10,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 16,
+   "to": 13,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 16,
+   "to": 14,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 16,
+   "to": 15,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 18,
+   "to": 16,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 19,
+   "to": 16,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  }
+ ]
+}

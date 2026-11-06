@@ -68,7 +68,7 @@
       "socket": "+y3",
       "by": "-y",
       "config": {
-        "pattern": "Quadcopter"
+        "keys": "Rotorcraft"
       }
     },
     {

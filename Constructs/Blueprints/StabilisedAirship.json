@@ -86,10 +86,7 @@
    "part": "Flight Stabilizer",
    "on": 3,
    "socket": "+y",
-   "by": "-y",
-   "config": {
-    "pattern": "Airship"
-   }
+   "by": "-y"
   },
   {
    "part": "Square Beam 2 m",
@@ -116,7 +113,7 @@
    "by": "+z"
   },
   {
-   "part": "Flight Panel",
+   "part": "Flight Control Panel",
    "on": 16,
    "socket": "+y",
    "by": "-y"
@@ -143,29 +140,6 @@
    "to": 14,
    "fromPort": "Fuel out",
    "toPort": "Fuel in"
-  },
-  {
-   "type": "data",
-   "from": 1,
-   "to": 12
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 10,
-   "fromPort": "rear left"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 11,
-   "fromPort": "rear right"
-  },
-  {
-   "type": "data",
-   "from": 12,
-   "to": 14,
-   "fromPort": "lift"
   }
  ]
 }

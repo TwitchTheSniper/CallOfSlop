@@ -1,0 +1,125 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Jet Hover Platform",
+ "description": "Four turbojets hold it up and level. W and S push it on, Space lights the pusher's afterburner, Shift and Ctrl climb and sink, A and D turn.",
+ "steps": [
+  {
+   "part": "Fuel Tank"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 1,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 1,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 2,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 2,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Light Turbojet",
+   "on": 3,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Turbojet",
+   "on": 4,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Turbojet",
+   "on": 5,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Turbojet",
+   "on": 6,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Flight Stabilizer",
+   "on": 2,
+   "socket": "+y",
+   "by": "-y",
+   "config": {
+    "maxSpeed": 80
+   }
+  },
+  {
+   "part": "Light Turbojet",
+   "on": 2,
+   "socket": "+z",
+   "by": "front"
+  },
+  {
+   "part": "Light Turbojet",
+   "on": 1,
+   "socket": "-z",
+   "by": "front"
+  },
+  {
+   "part": "Input Reader",
+   "on": 0,
+   "socket": "-x",
+   "by": "+x",
+   "config": {
+    "setting": "jump"
+   }
+  },
+  {
+   "part": "Flight Control Panel",
+   "on": 1,
+   "socket": "+y",
+   "by": "-y"
+  }
+ ],
+ "links": [
+  {
+   "type": "data",
+   "from": 11,
+   "to": 15
+  },
+  {
+   "type": "data",
+   "from": 15,
+   "to": 13,
+   "toPort": "afterburner"
+  }
+ ]
+}

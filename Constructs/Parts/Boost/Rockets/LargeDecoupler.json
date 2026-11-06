@@ -1,0 +1,104 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Decoupler",
+  "description": "A rising input and it goes: each side flies on as its own craft, with its own tanks. What is linked across it is cut.",
+  "group": "Large",
+  "section": "Rockets",
+  "role": "logic",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 2560.0,
+  "health": 1533,
+  "armour": 2,
+  "material": "steel",
+  "color": "#b7bcc2",
+  "attachSeconds": 8.0,
+  "logic": {
+    "kind": "decoupler",
+    "kick": 3
+  },
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -0.8,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        0.8,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.06,
+        -0.24,
+        -2.06
+      ],
+      "max": [
+        2.06,
+        0.24,
+        2.06
+      ],
+      "color": "#d0352c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.8,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.8,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

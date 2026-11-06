@@ -1,0 +1,119 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Anti-Grav Generator",
+  "description": "Cancels 45% of the weight of what is within 6 m, further on a big ship. Draws 0.08 MW. Power gone, it stops at once. Its input switches it.",
+  "group": "Thrusters",
+  "section": "Repulsors",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 80.0,
+  "health": 270,
+  "armour": 6,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 2.5,
+  "logic": {
+    "kind": "antigrav",
+    "share": 0.45,
+    "radius": 6
+  },
+  "power": 80000.0,
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.15,
+        0.2475,
+        -0.15
+      ],
+      "max": [
+        0.15,
+        0.2875,
+        0.15
+      ],
+      "color": "#58c8e0",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

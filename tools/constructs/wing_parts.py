@@ -264,7 +264,7 @@ def light_plane():
     ail_r = add(part="Aileron", on=right2, socket="back", by="hinge")
     elev = add(part="Elevator", on=tail, socket="back", by="hinge")
     rudd = add(part="Rudder", on=fin, socket="back", by="hinge")
-    stab = add(part="Flight Stabilizer", on=tank, socket="+y", by="-y", config={"pattern": "Plane"})
+    stab = add(part="Flight Stabilizer", on=tank, socket="+y", by="-y", config={"keys": "Plane"})
     leg = add(part="Square Beam 0.5 m", on=root, socket="-y", by="+z")
     axle = add(part="Square Beam 2 m", on=leg, socket="-z", by="+y3", spin=1)
     for end in ("-z", "+z"):
@@ -301,7 +301,7 @@ def fan_quad():
     fans = [add(part="Ducted Fan", on=beam, socket=sock, by="base", config={"hand": hand})
             for beam, sock, hand in ((front, "+y0", 0), (front, "+y7", 1), (back, "+y0", 1), (back, "+y7", 0))]
     seat = add(part="Seat", on=root, socket="+y5", by="bottom")
-    stab = add(part="Flight Stabilizer", on=root, socket="+y3", by="-y", config={"pattern": "Quadcopter"})
+    stab = add(part="Flight Stabilizer", on=root, socket="+y3", by="-y", config={"keys": "Rotorcraft"})
     add(part="Battery Pack", on=root, socket="-y3", by="+y")
     links = [{"type": "data", "from": seat, "to": stab}]
     for fan, port in zip(fans, ("front left", "front right", "rear left", "rear right")):
@@ -336,7 +336,7 @@ def helicopter():
     tailbox = add(part="Right-Angle Gearbox", on=post, socket="+x1", by="+y", spin=SPIN_TAIL)
     tail = add(part="Tail Rotor", on=tailbox, socket="-y", by="base", config={"torqueMix": 1, "reverse": 1})
     add(part="Tail Fin", on=boom2, socket="+z", by="front")
-    stab = add(part="Flight Stabilizer", on=boom, socket="+y1", by="-y", config={"pattern": "Helicopter"})
+    stab = add(part="Flight Stabilizer", on=boom, socket="+y1", by="-y", config={"keys": "Rotorcraft"})
     leg = add(part="Square Beam 0.5 m", on=tank, socket="-y", by="+z")
     axle = add(part="Square Beam 2 m", on=leg, socket="-z", by="+y3", spin=1)
     for end in ("-z", "+z"):

@@ -571,7 +571,7 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Component <paramref name="k"/> of <paramref name="c"/> becomes a body of its own, moving as that part of the body moved.</summary>
-    private Construct? SplitOff(Construct c, Span<int> comp, int k)
+    private Construct? SplitOff(Construct c, Span<int> comp, int k, bool live = false)
     {
         // Its frame: the segment none of its joints hang it from (its own hinge isn't in the piece), so its parts keep their turns.
         var baseSeg = -1;
@@ -633,14 +633,17 @@ public sealed partial class ConstructWorld
         ConstructTracks.Remap(c, map[..c.PartCount], wreck); // (and the tracks)
         for (var i = 0; i < wreck.PartCount; i++)
             wreck.Parts[i].SitterPlus1 = 0; // (a seat that falls away throws its sitter out)
-        wreck.Wreck = true;
+        wreck.Wreck = !live;
         wreck.Owner = c.Owner;
-        wreck.Damaged = true;
+        wreck.Damaged = !live;
         wreck.Rebuild();
         // Moving as that bit of the old body moved.
         wreck.Vel = c.PointVel(wreck.WorldCom);
         wreck.AngVel = c.AngVel;
-        wreck.Empty();
+        if (live)
+            ConstructBoost.ShareFuel(c, wreck, comp, k); // (a stage comes away working, with what its tanks hold)
+        else
+            wreck.Empty();
         Events.Add($"construct {c.Id}: a piece of {wreck.PartCount} part(s) fell away as wreck {wreck.Id}");
         Note(CNoteKind.Piece, wreck.Id, other: c.Id); // (the story: its construct's remains)
         return wreck;
@@ -1694,6 +1697,7 @@ public sealed partial class ConstructWorld
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
+        ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         ConstructPhysics.Step(this, query, dt);

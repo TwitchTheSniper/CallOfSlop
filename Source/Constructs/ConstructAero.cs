@@ -12,6 +12,8 @@ public struct CSurface
     public float Area, Cl0, Slope, Stall, Cd0, Induced;
     public float Deflect; // radians now, leading edge up is plus (it rides the pose to clients)
     public float Sent; // what the pose last carried
+    public bool Scanned; // a stabilizer commands it (ConstructEffectors.cs); a wire by hand leaves it to the wire
+    public float Command; // what it tells it, -1..1
 }
 
 public sealed partial class Construct
@@ -198,10 +200,10 @@ public static class ConstructAero
     }
 
     /// <summary>A control surface's input, its trim and its reversal: how far it wants to be (radians). Only its own wire moves it.</summary>
-    public static float Asked(in CPart p, ConstructPartDef d)
+    public static float Asked(in CPart p, ConstructPartDef d, bool scanned = false, float command = 0)
     {
         var s = d.Surface!;
-        var cmd = p.Working && p.InCount > 0 ? Math.Clamp(p.In, -1, 1) * s.Sign : 0f;
+        var cmd = !p.Working ? 0f : scanned ? Math.Clamp(command, -1, 1) * s.Sign : p.InCount > 0 ? Math.Clamp(p.In, -1, 1) * s.Sign : 0f;
         if (ConstructConfig.Get(p, d, CfgKey.Reverse, 0) >= 0.5f)
             cmd = -cmd;
         return Math.Clamp(cmd * s.Control + ConstructConfig.Get(p, d, CfgKey.Trim, 0) * MathF.PI / 180f, -s.Control, s.Control);
@@ -223,7 +225,7 @@ public static class ConstructAero
             ref var s = ref c.Surfaces[k];
             if (!s.Control || s.Part >= c.PartCount || c.Parts[s.Part].D.Surface is not { } sd)
                 continue;
-            var want = Asked(in c.Parts[s.Part], c.Parts[s.Part].D);
+            var want = Asked(in c.Parts[s.Part], c.Parts[s.Part].D, s.Scanned && c.StabOwns, s.Command);
             var rate = sd.ControlRate * dt;
             s.Deflect += Math.Clamp(want - s.Deflect, -rate, rate);
         }

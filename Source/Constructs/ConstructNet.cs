@@ -27,6 +27,7 @@ public enum CBodyKind : byte
     Reading, // protocol 153: displays and keypads that changed: (id, part, f32) each (LogicDisplays.cs)
     Terminal, // protocol 142: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
     NoCollide, // protocol 154: the no-collide pairs, the whole list: u16 count, each u16 body, u16 part, u16 body, u16 part, u8 flags (ConstructNet.WriteNoCollides)
+    Flight, // protocol 174: what a stabilizer commands, for Flight Diagnostic Panels (ConstructFlight.WriteDiagnostic)
 }
 
 /// <summary>
@@ -714,6 +715,9 @@ public static class ConstructNet
                 KeepBase(world, r.Since(start));
                 break;
             }
+            case CBodyKind.Flight:
+                ConstructFlight.ReadDiagnostic(ref r, world);
+                break;
             case CBodyKind.Reading:
                 LogicDisplays.ReadChanges(ref r, world);
                 break;

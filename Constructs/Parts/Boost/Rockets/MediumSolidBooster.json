@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Solid Booster",
+  "description": "2000 kN for 20 s, once. Its input lights it, or Shift unwired. It can't be throttled or stopped.",
+  "group": "Thrusters",
+  "section": "Rockets",
+  "role": "thruster",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 4444.4,
+  "health": 2332,
+  "armour": 8,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 4.0,
+  "thruster": {
+    "kind": "solid",
+    "force": 2000000.0,
+    "spool": 0.05,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      1.5
+    ],
+    "burnTime": 20
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -0.5,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "config": [
+    {
+      "key": "grain",
+      "hidden": true,
+      "unit": "s",
+      "min": 0,
+      "max": 1000,
+      "default": 0
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -1.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -0.54,
+        -0.54,
+        0.75
+      ],
+      "max": [
+        0.54,
+        0.54,
+        1.545
+      ],
+      "color": "#2a2c2f",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.35,
+        -0.35,
+        1.515
+      ],
+      "max": [
+        0.35,
+        0.35,
+        1.59
+      ],
+      "color": "#c8642a",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -1.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

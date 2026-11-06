@@ -55,7 +55,7 @@ public static class ConstructModules
             var flight = p.D.Logic == CLogic.FlightStabilizer;
             if (p.D.Logic is not (CLogic.DriveModule or CLogic.TurretModule) && !flight || !p.Working)
                 continue;
-            var seat = SeatOf(c, i);
+            var seat = flight ? ConstructFlight.SeatFor(c, i) : SeatOf(c, i);
             if (seat < 0 || !c.Parts[seat].Working)
                 continue;
             if (p.D.Logic == CLogic.TurretModule)
@@ -65,7 +65,7 @@ public static class ConstructModules
             }
             if (c.ControlSeat < 0)
                 c.ControlSeat = seat;
-            if (!(flight ? ConstructFlight.Reaches(c, i) : Linked(c, i)))
+            if (!flight && !Linked(c, i))
                 continue;
             if (c.DriveSeat < 0 || c.Parts[seat].D.Helm && !c.Parts[c.DriveSeat].D.Helm)
                 c.DriveSeat = seat; // (two modules that both reach the drivetrain: the helm's, else the first)
@@ -347,6 +347,8 @@ public static class ConstructModules
     public static string Look(Construct c, int part)
     {
         var d = c.DefOf(part);
+        if (d.Logic == CLogic.FlightStabilizer)
+            return ConstructFlight.Look(c, part);
         if (d.Logic == CLogic.DriveModule)
         {
             var seat = SeatOf(c, part);

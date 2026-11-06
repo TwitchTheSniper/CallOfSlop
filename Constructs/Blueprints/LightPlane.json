@@ -108,7 +108,7 @@
       "socket": "+y",
       "by": "-y",
       "config": {
-        "pattern": "Plane"
+        "keys": "Plane"
       }
     },
     {

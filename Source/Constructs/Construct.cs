@@ -1053,6 +1053,7 @@ public sealed partial class Construct
         ConstructLift.Build(this);
         ConstructAero.Build(this);
         ConstructRotor.Build(this);
+        ConstructBoost.Build(this);
         ConstructFlight.Build(this);
         ConstructHydraulics.Build(this);
         ConstructSeal.Build(this);

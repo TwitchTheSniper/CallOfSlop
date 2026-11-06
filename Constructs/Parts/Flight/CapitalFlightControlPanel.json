@@ -1,0 +1,179 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Flight Control Panel",
+  "description": "Attitude, height, speed, the autopilot and how it is set, with buttons. For the first stabilizer on the construct. No wiring.",
+  "group": "Flight control",
+  "section": "Flight control",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 2000.0,
+  "health": 1600,
+  "armour": 8,
+  "material": "steel",
+  "color": "#39414a",
+  "attachSeconds": 15.0,
+  "logic": {
+    "kind": "instrument"
+  },
+  "panels": [
+    {
+      "source": "flight.panel",
+      "at": [
+        0,
+        0,
+        1.923
+      ],
+      "size": [
+        44.784,
+        31.984
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 8,
+      "touch": [
+        {
+          "action": "flight.on",
+          "at": [
+            0.02,
+            0.14,
+            0.25,
+            0.26
+          ],
+          "label": "AP on"
+        },
+        {
+          "action": "flight.off",
+          "at": [
+            0.26,
+            0.14,
+            0.49,
+            0.26
+          ],
+          "label": "AP off"
+        },
+        {
+          "action": "flight.mode",
+          "at": [
+            0.5,
+            0.14,
+            0.73,
+            0.26
+          ],
+          "label": "Mode"
+        },
+        {
+          "action": "flight.home",
+          "at": [
+            0.74,
+            0.14,
+            0.97,
+            0.26
+          ],
+          "label": "Set home"
+        },
+        {
+          "action": "flight.level",
+          "at": [
+            0.02,
+            0.02,
+            0.25,
+            0.13
+          ],
+          "label": "Level"
+        },
+        {
+          "action": "flight.strength",
+          "at": [
+            0.26,
+            0.02,
+            0.49,
+            0.13
+          ],
+          "label": "Strength"
+        },
+        {
+          "action": "flight.altitude",
+          "at": [
+            0.5,
+            0.02,
+            0.73,
+            0.13
+          ],
+          "label": "Hold alt"
+        },
+        {
+          "action": "flight.heading",
+          "at": [
+            0.74,
+            0.02,
+            0.97,
+            0.13
+          ],
+          "label": "Hold hdg"
+        }
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -22.4,
+        -16.0,
+        -1.92
+      ],
+      "max": [
+        22.4,
+        16.0,
+        1.92
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -1.92
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        22.4,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -22.4,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        16.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -16.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

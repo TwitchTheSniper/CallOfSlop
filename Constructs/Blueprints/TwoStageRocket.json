@@ -1,0 +1,186 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Two-Stage Rocket",
+ "description": "Shift opens the throttle, W, S, A and D lean it, Space drops the first stage and lights the second.",
+ "steps": [
+  {
+   "part": "Fluid Tank",
+   "config": {
+    "fluid": "fuel",
+    "fill": 100
+   }
+  },
+  {
+   "part": "Fluid Tank",
+   "on": 0,
+   "socket": "+y",
+   "by": "-y",
+   "config": {
+    "fluid": "oxidiser",
+    "fill": 100
+   }
+  },
+  {
+   "part": "Light Rocket Engine",
+   "on": 0,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Decoupler",
+   "on": 1,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Fluid Tank",
+   "on": 3,
+   "socket": "+y",
+   "by": "-y",
+   "config": {
+    "fluid": "fuel",
+    "fill": 100
+   }
+  },
+  {
+   "part": "Fluid Tank",
+   "on": 4,
+   "socket": "+y",
+   "by": "-y",
+   "config": {
+    "fluid": "oxidiser",
+    "fill": 100
+   }
+  },
+  {
+   "part": "Light Rocket Engine",
+   "on": 4,
+   "socket": "+x",
+   "by": "+y",
+   "spin": 2
+  },
+  {
+   "part": "Light Rocket Engine",
+   "on": 4,
+   "socket": "-x",
+   "by": "-y",
+   "spin": 2
+  },
+  {
+   "part": "Seat",
+   "on": 5,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Flight Stabilizer",
+   "on": 5,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Input Reader",
+   "on": 5,
+   "socket": "-z",
+   "by": "+x",
+   "config": {
+    "setting": "jump"
+   }
+  },
+  {
+   "part": "Toggle",
+   "on": 5,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Math Block",
+   "on": 5,
+   "socket": "-x",
+   "by": "+x",
+   "config": {
+    "operator": "multiply"
+   }
+  }
+ ],
+ "links": [
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 2,
+   "fromPort": "Fluid out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 1,
+   "to": 2,
+   "fromPort": "Fluid out",
+   "toPort": "Oxidiser in"
+  },
+  {
+   "type": "pipe",
+   "from": 4,
+   "to": 6,
+   "fromPort": "Fluid out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 4,
+   "to": 7,
+   "fromPort": "Fluid out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 5,
+   "to": 6,
+   "fromPort": "Fluid out",
+   "toPort": "Oxidiser in"
+  },
+  {
+   "type": "pipe",
+   "from": 5,
+   "to": 7,
+   "fromPort": "Fluid out",
+   "toPort": "Oxidiser in"
+  },
+  {
+   "type": "data",
+   "from": 8,
+   "to": 10
+  },
+  {
+   "type": "data",
+   "from": 10,
+   "to": 3
+  },
+  {
+   "type": "data",
+   "from": 10,
+   "to": 11
+  },
+  {
+   "type": "data",
+   "from": 9,
+   "to": 12
+  },
+  {
+   "type": "data",
+   "from": 11,
+   "to": 12,
+   "toPort": "b"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 6
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 7
+  }
+ ]
+}

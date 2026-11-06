@@ -515,6 +515,9 @@ public static unsafe class PanelRender
                 }
                 break;
             }
+            case PanelDraw.Flight:
+                FlightPlot(s, card, -hw + pad, -hh + pad, hw - pad, top, size);
+                break;
             case PanelDraw.Lamps:
             {
                 var side = (top - (-hh + pad)) / Math.Max(1, card.Lamps);
@@ -577,6 +580,64 @@ public static unsafe class PanelRender
         if ((s.QuadCount + 1) * QuadFloats > s.Quads.Length)
             Array.Resize(ref s.Quads, s.Quads.Length * 2); // (only when a card lays out)
         return ref s.Quads[s.QuadCount++ * QuadFloats];
+    }
+
+    private const int PlotArrows = 24, PlotSteps = 6;
+
+    /// <summary>A craft from above and from the side, an arrow at each effector by the way it pushes, long and bright by what it is told, red when it has nothing to give. A fixed number of quads.</summary>
+    private static void FlightPlot(Slot s, PanelCard card, float x0, float y0, float x1, float y1, Vector2 size)
+    {
+        if (card.Flight is not { } f)
+            return;
+        var gap = (x1 - x0) * 0.04f;
+        var mid = (x0 + x1) * 0.5f;
+        var line = size.Y * 0.006f;
+        for (var view = 0; view < 2; view++)
+        {
+            float a0 = view == 0 ? x0 : mid + gap * 0.5f, a1 = view == 0 ? mid - gap * 0.5f : x1;
+            Solid(s, a0, y0, a1, y1, new Vector3(0.05f, 0.07f, 0.09f), 1);
+            var lo = new Vector2(view == 0 ? card.FlightMin.X : card.FlightMin.Z, view == 0 ? card.FlightMin.Z : card.FlightMin.Y);
+            var hi = new Vector2(view == 0 ? card.FlightMax.X : card.FlightMax.Z, view == 0 ? card.FlightMax.Z : card.FlightMax.Y);
+            var span = MathF.Max(0.5f, MathF.Max(hi.X - lo.X, hi.Y - lo.Y)) * 1.25f;
+            var scale = MathF.Min(a1 - a0, y1 - y0) / span;
+            var c = new Vector2((a0 + a1) * 0.5f, (y0 + y1) * 0.5f);
+            var at0 = (lo + hi) * 0.5f;
+            Vector2 Place(Vector3 p) => view == 0 ? c + new Vector2(p.X - at0.X, at0.Y - p.Z) * scale : c + new Vector2(at0.X - p.Z, p.Y - at0.Y) * scale; // (forward is up on the first, left on the second)
+            var bl = c + (lo - at0) * scale;
+            var tr = c + (hi - at0) * scale;
+            var edge = new Vector3(0.3f, 0.36f, 0.42f);
+            Solid(s, bl.X, bl.Y, tr.X, bl.Y + line, edge, 1);
+            Solid(s, bl.X, tr.Y - line, tr.X, tr.Y, edge, 1);
+            Solid(s, bl.X, bl.Y, bl.X + line, tr.Y, edge, 1);
+            Solid(s, tr.X - line, bl.Y, tr.X, tr.Y, edge, 1);
+            var com = Place(card.FlightCom);
+            Solid(s, com.X - 2 * line, com.Y - 2 * line, com.X + 2 * line, com.Y + 2 * line, new Vector3(1f, 0.85f, 0.2f), 2);
+            var shown = 0;
+            for (var k = 0; k < f.Count && shown < PlotArrows; k++)
+            {
+                ref var e = ref f.Items[k];
+                if (e.Kind == EffectorKind.Gyro || e.Force == default)
+                    continue;
+                shown++;
+                var from = Place(e.At);
+                var dir = Place(e.At + Vector3.Normalize(e.Force)) - from;
+                var mag = dir.Length();
+                dir = mag > 1e-4f ? dir / mag : Vector2.Zero;
+                var amount = MathF.Abs(e.Cmd);
+                var dead = e.Auth <= 0;
+                var colour = dead ? new Vector3(0.9f, 0.15f, 0.12f) : e.Kind is EffectorKind.Surface or EffectorKind.Wing or EffectorKind.Gimbal or EffectorKind.Cyclic ? (e.Cmd >= 0 ? new Vector3(0.3f, 0.7f, 1f) : new Vector3(1f, 0.6f, 0.2f)) : Vector3.Lerp(new Vector3(0.3f, 0.5f, 0.35f), new Vector3(1f, 0.95f, 0.3f), amount);
+                var length = (0.08f + 0.22f * (dead ? 0 : amount)) * MathF.Min(a1 - a0, y1 - y0);
+                var dot = line * (e.Kind == EffectorKind.Gimbal ? 0.7f : 1.1f);
+                for (var t = 0; t <= PlotSteps; t++)
+                {
+                    var q = from + dir * (length * t / PlotSteps);
+                    var r = t == PlotSteps ? dot * 1.8f : dot;
+                    var px = SafeMath.Clamp(q.X, a0 + r, a1 - r);
+                    var py = SafeMath.Clamp(q.Y, y0 + r, y1 - r);
+                    Solid(s, px - r, py - r, px + r, py + r, colour, 2);
+                }
+            }
+        }
     }
 
     private static void Solid(Slot s, float x0, float y0, float x1, float y1, Vector3 colour, int layer) =>

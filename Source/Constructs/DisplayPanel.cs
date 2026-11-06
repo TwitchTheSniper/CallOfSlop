@@ -25,6 +25,7 @@ public enum PanelDraw : byte
     Lamps, // a lamp beside each line of text (Lamps, LampBits)
     Compass, // a tape of bearings past a mark (Value: of a whole turn)
     BarH, // a bar across the whole panel (Value)
+    Flight, // a craft from above and from the side, an arrow per effector (Flight and its bounds)
 }
 
 /// <summary>How a graph or a bar picks its colour along the value (<see cref="PanelCard.Ramp"/>; a display's "ramp" setting, in this order).</summary>
@@ -92,6 +93,8 @@ public sealed class PanelCard
     public bool Fit; // one line as big as the panel takes: a readout
     public float Value; // 0 to 1: what Draw shows
     public int Lamps, LampBits;
+    public FlightEffectors? Flight; // a Flight Diagnostic Panel's plot (it isn't copied: a card is filled and laid out at once)
+    public Vector3 FlightMin, FlightMax, FlightCom;
     public float[]? Trace; // oldest at TraceAt (it isn't copied: a card is filled and laid out at once)
     public int TraceAt;
     public float TraceLow, TraceHigh; // the graph's scale; the same: it fits the trace
@@ -119,6 +122,7 @@ public sealed class PanelCard
         Value = 0;
         Lamps = LampBits = 0;
         Trace = null;
+        Flight = null;
     }
 
     public ReadOnlySpan<char> Line(int i) => _text.AsSpan(i * MaxChars, _len[i]);
@@ -314,6 +318,7 @@ public static class PanelSources
         ["office.fax"] = OfficeParts.FillFax,
         ["office.computer"] = OfficeParts.FillComputer,
         ["flight.panel"] = ConstructFlight.FillPanel,
+        ["flight.diagnostic"] = ConstructFlight.FillDiagnostic,
     };
 
     public static PanelFill? Find(string name) => All.GetValueOrDefault(name);

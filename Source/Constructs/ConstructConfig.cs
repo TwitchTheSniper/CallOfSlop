@@ -138,7 +138,7 @@ public enum CfgKey : byte
     FanKind, // Fan Former: what it makes
     FanBlades, // Fan Former, rotor: how many blades
     FanDiameter, // Fan Former: how far across, m
-    Pattern, // Flight Stabilizer: which control pattern (FlightPattern; ConstructFlight.cs)
+    Keys, // Flight Stabilizer: what its keys mean (FlightPattern; ConstructFlight.cs)
     MaxTilt, // Flight Stabilizer: the most it leans, degrees (0: its pattern's)
     MaxTurn, // Flight Stabilizer: the fastest it turns, degrees a second (0: its pattern's)
     MaxClimb, // Flight Stabilizer: the fastest it climbs, m/s (0: its pattern's)
@@ -156,6 +156,8 @@ public enum CfgKey : byte
     HomeX, // Flight Stabilizer: where it took off from (not on the panel)
     HomeZ,
     BladeStyle, // Fan Former, rotor: which blade (Air.json's "bladeStyles")
+    InvertPitch, // Flight Stabilizer: W lifts the nose
+    Grain, // solid booster: seconds of it burnt (not on the panel; ConstructBoost.cs)
     COUNT,
 }
 
@@ -228,7 +230,7 @@ public struct CfgValues
 /// </summary>
 public static class ConstructConfig
 {
-    public const int MaxSlots = 18; // (18 since the Flight Stabilizer)
+    public const int MaxSlots = 19; // (19 since the Flight Stabilizer)
 
     /// <summary>How far away a part can be configured from (metres to the part's centre).</summary>
     public const float Reach = 8f;
@@ -638,7 +640,7 @@ public static class ConstructConfig
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
-        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
+        CfgKey.Keys or CfgKey.ApMode or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
 
@@ -692,7 +694,8 @@ public static class ConstructConfig
                 CfgKey.BladeStyle => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
-                >= CfgKey.Pattern and <= CfgKey.HomeZ => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch => d.Logic == CLogic.FlightStabilizer,
+                CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,

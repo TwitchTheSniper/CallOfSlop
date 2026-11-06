@@ -93,7 +93,7 @@ public static partial class SelfTest
         var names = RecyclingTable.Current;
         want(refining.Find("smelter", names.IdOf("iron ore"))?.MinTier == 1 && refining.Find("smelter", names.IdOf("sand"))?.MinTier == 1 && refining.Find("sawmill", names.IdOf("wood"))?.MinTier == 1
             && refining.Find("smelter", names.IdOf("copper ore"))?.MinTier == 2 && refining.Find("smelter", names.IdOf("gold ore"))?.MinTier == 3, "the recipes' minTier");
-        want(refining.Takes("smelter", 1) == "iron ore, sand, dirt" && refining.Takes("smelter", 2) == "iron ore, copper ore, sand, dirt" && refining.Takes("smelter", 3) == "iron ore, copper ore, gold ore, sand, dirt" && refining.Takes("smelter") == refining.Takes("smelter", 5), $"what a tier takes: \"{refining.Takes("smelter", 1)}\"");
+        want(refining.Takes("smelter", 1) == "iron ore, sand, dirt, stone" && refining.Takes("smelter", 2) == "iron ore, copper ore, sand, dirt, stone" && refining.Takes("smelter", 3) == "iron ore, copper ore, gold ore, sand, dirt, stone" && refining.Takes("smelter") == refining.Takes("smelter", 5), $"what a tier takes: \"{refining.Takes("smelter", 1)}\"");
     }
 
     /// <summary>A line's height as a share of its size (a module's size, a building's width): the shortest and tallest shape a tier may have. A drill's top is its shaft socket.</summary>
@@ -494,7 +494,7 @@ public static partial class SelfTest
         var ld = low.DefOf(ls);
         var inv = new SandboxInventory();
         string Look() => ConstructRefining.Look(ld, ss, false, inv);
-        want(Look().Contains("takes iron ore, sand, dirt (copper ore needs tier 2, gold ore needs tier 3)"), $"an empty tier 1 Smelter says \"{Look()}\"");
+        want(Look().Contains("takes iron ore, sand, dirt, stone (copper ore needs tier 2, gold ore needs tier 3)"), $"an empty tier 1 Smelter says \"{Look()}\"");
         w.Deposit(low, lowIn, 20, copper);
         Run(1.5f);
         want(ss.InAmount == 0 && src.Amount == 20 && ss.Refused == copper, $"copper ore into a tier 1 Smelter (input {ss.InAmount}, bin {src.Amount}, refused {ss.Refused})");

@@ -474,6 +474,10 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.ReadingDirty.Clear();
+        if (ServerTick % ConstructFluid.SendEvery == 3)
+            foreach (var c in Constructs.Bodies)
+                if (c.StabCount > 0 && ConstructFlight.WriteDiagnostic(w, c))
+                    Net.Broadcast(w.Span, PacketReliability.Unreliable);
         if (ServerTick % ConstructFluid.SendEvery == 0)
         {
             int body = 0, tank = 0;
@@ -1902,7 +1906,9 @@ public sealed partial class Game
                 var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));
                 lines.Add(new HudLine(GunLine(car, carGun), car.Guns[carGun].Problem.Length > 0 ? red : white));
             }
-            if (car.CanDrive && car.StarterFailed)
+            if (car.StabCount > 0 && !car.CanDrive)
+                lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
+            else if (car.CanDrive && car.StarterFailed)
                 lines.Add(new HudLine(car.Electrical ? "Won't start: no charged battery reaches the engine" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
             else if (car.CanDrive)
             {

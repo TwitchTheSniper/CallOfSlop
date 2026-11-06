@@ -184,7 +184,7 @@ public static partial class ConstructPhysics
             if (_dyn[i])
             {
                 weight = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, c.WorldCom) : g;
-                c.Vel += weight * dt; // (a planet: towards its centre, from where the body is)
+                c.Vel += weight * ((1 - c.AntiShare) * dt); // (a planet: towards its centre, from where the body is; Anti-Grav takes its share off)
                 if (c.GrabbedBy != 255)
                 {
                     if (c.Driver != 255)

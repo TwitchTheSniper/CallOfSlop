@@ -18,20 +18,18 @@
   },
   "config": [
     {
-      "key": "pattern",
+      "key": "keys",
       "type": "choice",
-      "label": "Pattern",
+      "label": "Keys",
       "group": "Control",
       "options": [
+        "Auto",
+        "Rotorcraft",
         "Plane",
-        "Helicopter",
-        "Quadcopter",
-        "Gimballed rocket",
-        "Hover platform",
-        "Airship"
+        "Rocket"
       ],
-      "default": 2,
-      "tooltip": "How the keys and outputs work: docs/sandbox/CONSTRUCTS.md, Flight control."
+      "default": 0,
+      "tooltip": "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."
     },
     {
       "key": "strength",
@@ -59,6 +57,14 @@
       "group": "Control",
       "default": false,
       "tooltip": "It flies where the seat looks."
+    },
+    {
+      "key": "invertPitch",
+      "type": "toggle",
+      "label": "Invert pitch",
+      "group": "Control",
+      "default": false,
+      "tooltip": "W lifts the nose and S drops it."
     },
     {
       "key": "maxTilt",

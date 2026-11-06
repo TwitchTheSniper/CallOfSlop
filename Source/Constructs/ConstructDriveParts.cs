@@ -445,7 +445,8 @@ public static partial class ConstructParts
     /// <summary>A thruster's block (role <c>thruster</c>; ConstructThrust.cs).</summary>
     private static void ParseThruster(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["force", "fuel", "burnRate", "power", "spool", "exhaust", "at"], bw);
+        Known(b, ["force", "fuel", "burnRate", "power", "spool", "exhaust", "at", "kind", "afterburner", "gimbal", "gimbalRate", "oxidiser", "burnTime", "range"], bw);
+        d.ThrustKind = Opt(b, "kind") is { } tk ? EnumOf<ThrustKind>(Str(tk, file, "thruster.kind"), file, "thruster.kind") : ThrustKind.Plain;
         d.ThrustForce = Num(Need(b, "force", bw), file, "thruster.force");
         Range(d.ThrustForce, 1, 2_000_000_000, file, "thruster.force");
         d.ThrustFuel = Opt(b, "fuel") is { } fu ? EnumOf<EngineFuel>(Str(fu, file, "thruster.fuel"), file, "thruster.fuel") : EngineFuel.Fuel;
@@ -455,13 +456,19 @@ public static partial class ConstructParts
         Range(d.ThrustBurn, 0, 100_000, file, "thruster.burnRate");
         d.ThrustPower = Opt(b, "power") is { } pw ? Num(pw, file, "thruster.power") : 0f;
         Range(d.ThrustPower, 0, 100_000_000, file, "thruster.power");
-        if (d.ThrustFuel == EngineFuel.Fuel && d.ThrustBurn <= 0 || d.ThrustFuel == EngineFuel.Electric && d.ThrustPower <= 0)
+        if (d.ThrustKind == ThrustKind.Solid)
+        {
+            d.BurnTime = Num(Need(b, "burnTime", bw), file, "thruster.burnTime");
+            Range(d.BurnTime, 0.1f, 600, file, "thruster.burnTime");
+        }
+        else if (d.ThrustFuel == EngineFuel.Fuel && d.ThrustBurn <= 0 || d.ThrustFuel == EngineFuel.Electric && d.ThrustPower <= 0)
             throw new ConstructPartException($"{file}: a thruster on fuel has a \"burnRate\", an electric one a \"power\" (kW)");
         d.ThrustSpool = Opt(b, "spool") is { } sp ? Num(sp, file, "thruster.spool") : 0f;
         Range(d.ThrustSpool, 0, 30, file, "thruster.spool");
         d.ThrustDir = DirOf(Str(Need(b, "exhaust", bw), file, "thruster.exhaust"), file, "thruster.exhaust");
         d.ThrustAt = Opt(b, "at") is { } at ? Vec(at, file, "thruster.at") : Vector3.Zero;
         d.DataIn = ["throttle", "height", ConstructModules.Bus];
+        ConstructBoost.Parse(d, b, file);
     }
 
     /// <summary>The <c>"smoke"</c> key (any part; ConstructPlant.cs): where a stack's smoke leaves, and how big its puffs are.</summary>

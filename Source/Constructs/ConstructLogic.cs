@@ -22,6 +22,7 @@ public static class ConstructLogic
     {
         if (c.Dirty)
             c.Rebuild();
+        c.StabOwns = false; // (a working stabilizer's step says otherwise)
         if (!c.HasLogic && c.XWireIn == 0)
         {
             SetGear(c, false, 0);
@@ -249,6 +250,14 @@ public static class ConstructLogic
                         next = manned && (c.Parts[seat].Keys & ConstructParts.KeyFire) != 0 ? 1 : 0;
                         break;
                     }
+                    case CLogic.Decoupler:
+                        next = ConstructBoost.StepDecoupler(world, c, i, ref p, on);
+                        break;
+                    case CLogic.AntiGrav:
+                        next = count[i] == 0 || on ? 1 : 0;
+                        if (next > 0)
+                            c.AntiNext += d.AntiShare * p.Mem;
+                        break;
                     case CLogic.FlightStabilizer:
                         next = ConstructFlight.Step(world, c, i, ref p, d, count[i] > 0 ? firstFrom[i] : -1, dt);
                         break;
@@ -418,6 +427,8 @@ public static class ConstructLogic
                 next = 0;
             p.OutNext = Math.Clamp(next, -MaxSignal, MaxSignal);
         }
+        if (c.AntiCount > 0)
+            ConstructBoost.TakeAnti(c);
         // Everything changes at once (one tick a wire), and the actuators take their inputs.
         var hash = 2166136261u;
         c.BrakeSignal = 0;
@@ -441,7 +452,7 @@ public static class ConstructLogic
             var d = p.D;
             if (d.IsSignal)
                 hash = (hash ^ (uint)Quantise(p.Out)) * 16777619u;
-            if (d.MotorTorque > 0 && count[i] > 0 && sum[i] != 0 || d.Role == PartRole.Thruster && (count[i] > 0 && sum[i] > 0 || count1[i] > 0) || d.Rotor != null && count[i] > 0 && sum[i] != 0)
+            if (d.MotorTorque > 0 && count[i] > 0 && sum[i] != 0 || d.Role == PartRole.Thruster && (count[i] > 0 && sum[i] > 0 || count1[i] > 0 && d.ThrustHolds) || d.Rotor != null && count[i] > 0 && sum[i] != 0)
                 c.ActiveSignal = true; // (a hub motor or a thruster asked to work: ConstructThrust.cs)
             if (d.Logic == CLogic.Brake && p.Out >= 0.5f)
                 c.BrakeSignal = MathF.Max(c.BrakeSignal, Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Strength, 100) / 100f, 0, 1)); // (its strength setting: how hard)

@@ -102,7 +102,7 @@
       "socket": "+y1",
       "by": "-y",
       "config": {
-        "pattern": "Helicopter"
+        "keys": "Rotorcraft"
       }
     },
     {
