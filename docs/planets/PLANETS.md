@@ -30,6 +30,7 @@ The top-level `"planetoid"` object (MapFile.cs calls `Planetoid.Parse`):
 | `strength` | 11 | Gravity at the surface (m/s2). The Dev map uses 18, the game's usual. |
 | `base` | 0 | Height before any feature. |
 | `surface` | | Colours and slope rules, exactly as a flat terrain's `surface`. |
+| `cavity` | | A hollow planetoid: its crust, glow and core ("Hollow planetoids" below). |
 | `features` | | Applied in order (below). |
 
 **Origin.** The centre is the World's origin (Karl, 2026-11-04), and the +Y pole (latitude 90) is at `(0, radius +
@@ -128,6 +129,47 @@ code doesn't care which ground it has.
 - `RestoreProps` clears the digging like a flat map's. "Planetoid digging" tests a crater at the pole, on a seam and at a
   cube corner (depth, roundness, 400 rays each against brute force, walks, fill and burying, a copy's digest, drawing,
   host + client + late joiner, the ground drill).
+
+## Hollow planetoids
+
+A planetoid can be hollow: a crust round a glowing cavity, reached by digging through. The Dev map **Geode**
+(`Maps/Dev/Geode.json`) is one: 1.2 km radius, a crust 180 m thick (about 90 m under the Sinkhole, the deep crater at
+latitude 78, longitude 35), a 1,020 m cavity and a glowing core 45 m across at the centre.
+
+```json
+"cavity": { "crust": 180, "glow": "#ff8a3a", "core": 45 }
+```
+
+`crust` (10 to 2000 m, at most 80% of the radius) is the thickness under the base height: the cavity's roof is the
+sphere at `radius + base - crust`. `glow` colours the cavity's seams, haze and core; `core` is the core's radius (0: none;
+it's a light, nothing touches it). A map is refused if its features can bring the ground within 8 m of the roof
+(`WorkOutBounds` is the judge, so it is cautious) or the cavity has no room round its core.
+
+- **Ground.** Everything below the roof is air (`Planetoid.Inner`, an altitude). `Altitude` in the cavity is the height
+  over its wall, `GroundUnder` and `NormalUnder` give the wall and its normal (towards the centre). `Gather` hands out each
+  untouched cell's two triangles on the roof as well, facing the centre, and rays go on past the lowest ground, so a ray
+  down a shaft crosses the cavity and lands on its far wall.
+- **Digging.** Bedrock is the roof: a column dug that far is open to the cavity (its lowest span stops at the roof, and
+  nothing at or below the roof is solid: `PlanetEdits.SolidAt`). A dug cell's columns still solid down to the roof draw
+  their underside there. `PlanetEdits.OpenToCavity` says whether anything has been dug through.
+- **Gravity.** The map's point gravity carries the cavity's radius (`PointGravity.Inside`, `"inside"` in a map's point
+  gravity): inside it the pull turns round, so things in the cavity are held to its wall and "up" points at the core.
+  Players walk on the inside of the crust, upside down to the people on top. Under a hole dug right through the turn comes
+  2.1 m inside the cavity instead (`Planetoid.TurnRadius`), and a fall in the cavity's air is braked (0.8 a second,
+  `SweptMover.CavityDragBlend`): someone who drops down a shaft shoots into the cavity, comes back to rest just inside
+  the hole's mouth, clear of its rim, and walks off onto the roof. Climbing back out needs a ladder, a ship or a jump pad.
+  The camera's up eases round as it turns (`GravityFrames.SmoothUp`). Nothing falls out of a hollow planetoid
+  (`PhysicsWorld.Underworld`).
+- **Drawing** (`PlanetRendererCavity.cs`). The roof is an exact sphere, traced per pixel: a cube round it is drawn from
+  inside and each pixel finds where its ray leaves the sphere (the near side is always in the crust or a hole), and the
+  core in front of it, writing that depth. Dug cells are left out through a bit-per-cell texture (unit 4). Rock lit by
+  the core with glowing seams, and a glowing haze with distance. It is drawn only from inside the cavity, or once a hole
+  is open.
+
+Not yet: loose bodies and vehicles get no cavity air brake (one dropped down a shaft keeps swinging through the hole),
+other renderers (players, constructs) are lit by the sun inside the cavity, and the roof is a smooth sphere (no shapes
+of its own). A hollow planetoid is at most 4 km in radius: the cavity's texture is N / 8 x N x 6 bytes (768 KB on Geode, 12 MB at
+4 km).
 
 ## In a star system
 

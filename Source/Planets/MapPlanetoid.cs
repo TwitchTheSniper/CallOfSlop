@@ -17,7 +17,9 @@ public sealed partial class Map
         if (Solid.Count > 0 || Spawns.Count > 0)
             throw new InvalidOperationException("SetPlanetoid must be called before any op");
         Planetoid = p;
-        Gravity ??= new PointGravity(p.Center, p.Strength, -Vector3.UnitZ);
+        Gravity ??= new PointGravity(p.Center, p.Strength, -Vector3.UnitZ, (float)p.InnerRadius); // (hollow: the pull turns round in the cavity)
+        if (Gravity is PointGravity { Inside: > 0 } pg)
+            pg.Cavity = p;
         PlanetCenter = p.Center;
         PlanetRadius = (float)p.Radius;
     }

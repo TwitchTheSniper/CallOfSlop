@@ -162,6 +162,8 @@ public sealed partial class Game
             if (!ok)
                 return; // spam: dropped
         }
+        if (SandboxEmail(from, text, now))
+            return; // (typed at a computer: an email to IT, GameSandboxOffice.cs)
         if (team && !TeamChatAvailable)
             return; // nobody to send it to
         var dead = Phase == MatchPhase.Playing && !from.Alive && from.AwayOn == null; // (a traveller away on a planetoid isn't dead: GameTravel.cs)
@@ -205,6 +207,8 @@ public sealed partial class Game
     {
         if ((flags & ChatFlags.System) == 0 && from != LocalId && MutedChat.Contains(name))
             return; // muted by you
+        if ((flags & ChatFlags.System) != 0 && text.StartsWith(OfficeParts.Prefix, StringComparison.Ordinal))
+            OfficeParts.Heard(text, ItDesk.Script?.From ?? ""); // (a fax's page, for its panel on this peer)
         Chat.Add(new ChatLine(now, from, name, text, flags, team));
         while (Chat.Count > ChatRules.Keep)
             Chat.RemoveAt(0);

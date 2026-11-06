@@ -511,7 +511,9 @@ public static partial class World
         if (len > max)
             feet = planet.Center + d / len * max;
         if (Map.Planetoid is { } pl && pl.Altitude(feet) < -0.3f)
-            feet = pl.GroundUnder(feet); // a planetoid: never far under its ground (a safety net: casts keep players on top)
+            feet = pl.Hollow && (feet - pl.Center).Length() - pl.InnerRadius < pl.SurfaceRadius(Vector3.Normalize(feet - pl.Center), out _) - (feet - pl.Center).Length()
+                ? pl.Center + Vector3.Normalize(feet - pl.Center) * (float)(pl.InnerRadius - 0.05) // (nearer the cavity: back onto its wall)
+                : pl.GroundUnder(feet); // a planetoid: never far under its ground (a safety net: casts keep players on top)
         return feet;
     }
 

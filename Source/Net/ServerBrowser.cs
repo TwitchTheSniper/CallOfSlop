@@ -306,7 +306,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 160: doors: CfgKey.Pushable, a config slot on passive hinges, and their Push data port.
     // 161: player factions (GameSandboxFactions.cs): Msg.Factions (the table) and CActKind.Faction (found, invite, accept, leave, remove, give).
     // 162: free travel route 1 (GameTravel.cs, GameTravelPlace.cs): the host runs every planetoid; Msg.Travel is one packet (purpose 1 visit: world, map, place number; 2 home), Msg.Relay goes between a traveller and a planetoid's number on the host only.
-    public const byte ProtocolVersion = 162;
+    // 163: a steering differential takes a data link (DataIn "Steer": the link rules peers check against each other) and a config slot, CfgKey.SteerKind.
+    public const byte ProtocolVersion = 163;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
