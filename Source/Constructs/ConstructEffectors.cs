@@ -45,6 +45,8 @@ public interface IEffectorSource
 /// <summary>What a stabilizer found on its construct: the list, the rows of what each does, and the mix (ConstructFlight.Refit, Mix).</summary>
 public sealed class FlightEffectors
 {
+    public float ThrustShare = 1, RotorShare = 1; // the stabilizer's Thrust limit and Collective range, on the mix's upper bounds
+
     public const int Max = 96, Rows = 6;
     public const int Forward = 0, Up = 1, Right = 2, Pitch = 3, Roll = 4, Yaw = 5; // the rows of a demand: N along its axes, N m about them
     public readonly CEffector[] Items = new CEffector[Max];
@@ -249,8 +251,9 @@ public sealed class ThrusterEffectors : IEffectorSource
             if (d.ThrustGimbal <= 0 || WiredByHand(c, t.Part, stab, 1) || WiredByHand(c, t.Part, stab, 2))
                 continue;
             t.GimbalScanned = true;
-            found.Add(source, EffectorKind.Gimbal, t.Part, 1, -1, 1, Vector3.Cross(t.GimbalX, t.Dir) * (d.ThrustForce * d.ThrustGimbal), t.At);
-            found.Add(source, EffectorKind.Gimbal, t.Part, 2, -1, 1, Vector3.Cross(t.GimbalY, t.Dir) * (d.ThrustForce * d.ThrustGimbal), t.At);
+            var swing = ConstructAero.ThrowOf(p, d, d.ThrustGimbal) * (ConstructConfig.Get(p, d, CfgKey.Reverse, 0) >= 0.5f ? -1 : 1);
+            found.Add(source, EffectorKind.Gimbal, t.Part, 1, -1, 1, Vector3.Cross(t.GimbalX, t.Dir) * (d.ThrustForce * swing), t.At);
+            found.Add(source, EffectorKind.Gimbal, t.Part, 2, -1, 1, Vector3.Cross(t.GimbalY, t.Dir) * (d.ThrustForce * swing), t.At);
         }
     }
 

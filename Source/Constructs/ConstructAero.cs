@@ -195,9 +195,17 @@ public static class ConstructAero
             return false;
         if (d.Sign < 0 != ConstructConfig.Get(c.Parts[s.Part], c.Parts[s.Part].D, CfgKey.Reverse, 0) >= 0.5f)
             dir = -dir;
-        force = 0.5f * SeaAir * speed * speed * s.Area * s.Slope * d.Control * d.Effect * c.SurfaceScale;
+        force = 0.5f * SeaAir * speed * speed * s.Area * s.Slope * ThrowOf(c.Parts[s.Part], c.Parts[s.Part].D, d.Control) * d.Effect * c.SurfaceScale;
         return true;
     }
+
+    public const float ThrowMost = 0.75f; // rad: no setting takes a surface or nozzle past this
+
+    /// <summary>A control surface's or nozzle's full deflection as its Throw sets it (radians, from what its part gives it).</summary>
+    public static float ThrowOf(in CPart p, ConstructPartDef d, float full) => MathF.Min(full * ConstructConfig.Get(p, d, CfgKey.Throw, 100) / 100f, MathF.Max(full, ThrowMost));
+
+    /// <summary>Soft around the middle, the same at the ends (expo 0..1).</summary>
+    public static float Curve(float x, float expo) => x * (1 - expo) + x * x * x * expo;
 
     /// <summary>A control surface's input, its trim and its reversal: how far it wants to be (radians). Only its own wire moves it.</summary>
     public static float Asked(in CPart p, ConstructPartDef d, bool scanned = false, float command = 0)
@@ -206,7 +214,8 @@ public static class ConstructAero
         var cmd = !p.Working ? 0f : scanned ? Math.Clamp(command, -1, 1) * s.Sign : p.InCount > 0 ? Math.Clamp(p.In, -1, 1) * s.Sign : 0f;
         if (ConstructConfig.Get(p, d, CfgKey.Reverse, 0) >= 0.5f)
             cmd = -cmd;
-        return Math.Clamp(cmd * s.Control + ConstructConfig.Get(p, d, CfgKey.Trim, 0) * MathF.PI / 180f, -s.Control, s.Control);
+        var most = ThrowOf(p, d, s.Control);
+        return Math.Clamp(Curve(cmd, ConstructConfig.Get(p, d, CfgKey.Expo, 0) / 100f) * most + ConstructConfig.Get(p, d, CfgKey.Trim, 0) * MathF.PI / 180f, -most, most);
     }
 
     /// <summary>One tick of a free, awake construct's surfaces (the thrusters and rotors' hover hold reads what they carry).</summary>
