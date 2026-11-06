@@ -52,6 +52,16 @@ FAN_FORMERS = [
 ]
 
 
+# An Airframe Former: (class, longest span, widest chord, first span, first chord, m/s of span, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
+AIRFRAME_FORMERS = [
+    (SMALL, 6, 3, 0.5, 0.3, 0.25, 6000, 400, 900, 520, 700, None, None),
+    (MEDIUM, 24, 8, 2, 1, 0.5, 24000, 2000, 3600, 18000, 6000, (5, 14, 4), 6),
+    (LARGE, 96, 24, 4, 2, 1, 96000, 8000, 14400, 240000, 48000, (3, 8, 3), 6),
+    (CAPITAL, 192, 32, 8, 4, 2, 384000, 32000, 57600, 2400000, 300000, (3, 5, 2), 3),
+]
+AIRFRAMES = ["Wing", "Tail plane", "Fin", "Swept wing, left", "Swept wing, right", "Aileron", "Elevator", "Rudder", "Flap"]  # (Extrusion.json's "airframes", in order)
+
+
 def name_of(c, base):
     return f"{c.name} {base}" if c.name else base
 
@@ -172,15 +182,29 @@ def fan_config(across, start):
     ]
 
 
-def former(row, fan=False):
-    if fan:
+def airframe_config(span, chord, s0, c0):
+    return [
+        {"key": "wingKind", "type": "choice", "label": "Cuts", "group": "Airframe", "options": AIRFRAMES, "default": 0,
+         "tooltip": "What it cuts. Its bin's material is the skin: cloth, wood, planks, laminate, metal or steel. Cloth is light and tears."},
+        {"key": "wingChord", "label": "Chord", "group": "Airframe", "unit": "m", "min": c0, "max": chord, "step": 0.05, "default": min(chord, max(c0, 1.5)),
+         "tooltip": "From leading edge to trailing edge. It stays what it was when the piece started."},
+        {"key": "wingSpan", "label": "Span", "group": "Airframe", "unit": "m", "min": s0, "max": span, "step": 0.05, "default": min(span, max(s0, 2)),
+         "tooltip": "How long. It parts off by itself at this length. Weld pieces along their span for a longer wing."},
+    ]
+
+
+def former(row, fan=False, air=False):
+    if air:
+        c, across, width, d0, w0, speed, push, units, power, mass, health, cells, hub_row = row
+        desc = f"Cuts a wing or a control surface from its settings, up to {across:g} m of span and {width:g} m of chord, of what is in its bin. It parts it off when it is done. Needs power."
+    elif fan:
         c, across, d0, speed, push, units, power, mass, health, cells, hub_row = row
         width, w0 = 0.05, 0.05
         desc = f"Makes a whole prop on its hub from its settings, up to {across:g} m across: a propeller, a rotor or a ducted fan. It parts it off when it is done. Needs power."
     else:
         c, width, across, w0, d0, speed, push, units, power, mass, health, cells, hub_row = row
         desc = f"Builds a wheel up on its hub: wider, or bigger across, up to {width:g} m wide and {across:g} m across. A Cut signal parts it off. Needs power."
-    p = Part(name_of(c, "Fan Former" if fan else "Wheel Former"), c, SECTION, desc, role="storage", group="Production", color=BODY)
+    p = Part(name_of(c, "Airframe Former" if air else "Fan Former" if fan else "Wheel Former"), c, SECTION, desc, role="storage", group="Production", color=BODY)
     if c is SMALL:
         p.add(box((-0.6, 0, -0.75), (0.6, 2.05, 0.75)))
         p.add(box((-0.6, 2.05, -0.05), (0.6, 2.2, 0.75)))
@@ -212,7 +236,9 @@ def former(row, fan=False):
     wheel = {"speed": speed, "at": list(hub), "maxWidth": width, "maxDiameter": across, "startWidth": w0, "startDiameter": d0, "pushForce": push}
     if fan:
         wheel["fan"] = True
-    p.set(power=power, storage={"bulk": bulk, "wheel": wheel}, config=fan_config(across, d0) if fan else former_config(), collider="boxes")  # (the hub is a look: its cylinder must never become a hull)
+    if air:
+        wheel["airframe"] = True
+    p.set(power=power, storage={"bulk": bulk, "wheel": wheel}, config=airframe_config(across, width, d0, w0) if air else fan_config(across, d0) if fan else former_config(), collider="boxes")  # (the hub is a look: its cylinder must never become a hull)
     return with_screen(p)
 
 
@@ -251,6 +277,7 @@ def main():
     parts += [("", extruder(r)) for r in EXTRUDERS]
     parts += [("", former(r)) for r in FORMERS]
     parts += [("", former(r, fan=True)) for r in FAN_FORMERS]
+    parts += [("", former(r, air=True)) for r in AIRFRAME_FORMERS]
     parts.append(("", die_frame("Die Frame", 0.25, 0.5, "Attach it to an Extruder to widen the die, up to 6 x 6 m.", 90, 300, 6, 3, 0.3)))
     parts.append(("", die_frame("Large Die Frame", 0.5, 1, "Attach it to an Extruder: 1 x 2 m more die.", 280, 700, 8, 5, 0.6)))
     code = write_parts(OUT, parts)

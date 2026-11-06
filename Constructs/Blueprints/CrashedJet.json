@@ -1,0 +1,41 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Crashed Jet",
+  "description": "A jet that came down: its turbojet may be worth more than the Chest it carried.",
+  "steps": [
+    {
+      "part": "Frame Block"
+    },
+    {
+      "part": "Light Turbojet",
+      "on": 0,
+      "socket": "+z",
+      "by": "front"
+    },
+    {
+      "part": "Swept Wing L",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Aileron",
+      "on": 2,
+      "socket": "+y",
+      "by": "hinge"
+    },
+    {
+      "part": "Chest",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    }
+  ],
+  "links": [],
+  "loot": [
+    {
+      "step": 4,
+      "table": "aircraft"
+    }
+  ]
+}

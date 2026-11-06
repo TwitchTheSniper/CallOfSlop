@@ -16,6 +16,7 @@
     { "machine": "foundry", "inputs": [{ "material": "copper", "units": 2 }, { "material": "metal", "units": 1 }], "output": "bronze", "unitsOut": 3, "seconds": 1.0, "minTier": 2 },
     { "machine": "foundry", "inputs": [{ "material": "copper", "units": 2 }, { "material": "gold", "units": 1 }], "output": "circuits", "unitsOut": 2, "seconds": 2.0, "minTier": 3 },
     { "machine": "smelter", "input": "dirt", "unitsIn": 4, "output": "hydrogen", "unitsOut": 1, "seconds": 1.0 },
-    { "machine": "smelter", "input": "stone", "unitsIn": 4, "output": "oxidiser", "unitsOut": 1, "seconds": 1.0 }
+    { "machine": "smelter", "input": "stone", "unitsIn": 4, "output": "oxidiser", "unitsOut": 1, "seconds": 1.0 },
+    { "machine": "smelter", "input": "levite ore", "unitsIn": 4, "output": "levite", "unitsOut": 1, "seconds": 2.0, "minTier": 4 }
   ]
 }

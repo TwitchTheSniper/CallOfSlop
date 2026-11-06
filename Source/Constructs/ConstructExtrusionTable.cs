@@ -9,6 +9,9 @@ public sealed record ExtrusionMaterial(string Material, float UnitsPerM3, float 
 public sealed record AirfoilRow(string Id, string Label, ulong Mask, float Cl0, float StallDeg, float Cd0);
 
 /// <summary>What a Fan Former makes (a row of the file's "fanKinds"): per square metre of disc and by tip speed, so any size follows.</summary>
+/// <summary>What an Airframe Former cuts (a row of the file's "airframes"): a lifting surface's numbers, and a control surface's when <see cref="Control"/> is above 0.</summary>
+public sealed record AirframeKind(string Id, string Label, float Cl0, float StallDeg, float Cd0, float Aspect, float Sweep, float Control, float Effect, float Sign);
+
 public sealed record FanKind(string Id, string Label, float KwPerM2, float MotorPerM2, float TipSpeed, float TopSpeed, float Duct, float Spool, float ChordShare, bool Heli);
 
 /// <summary>What a bulk material makes on a Wheel Former (one row of the file's "wheels"): as a material's row, and how it grips and rolls.</summary>
@@ -29,11 +32,14 @@ public sealed class ExtrusionTable
     public ExtrusionMaterial[] FanRows = [];
     public AirfoilRow[] Airfoils = [];
     public FanKind[] FanKinds = [];
+    public AirframeKind[] Airframes = [];
+    public ExtrusionMaterial[] WingRows = [];
     public string Problem = "";
 
     private readonly Dictionary<string, ExtrusionMaterial> _by = new();
     private readonly Dictionary<string, WheelMaterial> _wheels = new();
     private readonly Dictionary<string, ExtrusionMaterial> _fans = new();
+    private readonly Dictionary<string, ExtrusionMaterial> _wings = new();
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Extrusion.json");
 
@@ -90,6 +96,8 @@ public sealed class ExtrusionTable
             var fans = new List<ExtrusionMaterial>();
             var foils = new List<AirfoilRow>();
             var kinds = new List<FanKind>();
+            var wings = new List<ExtrusionMaterial>();
+            var frames = new List<AirframeKind>();
             foreach (var p in root.EnumerateObject())
                 switch (p.Name)
                 {
@@ -118,6 +126,14 @@ public sealed class ExtrusionTable
                         foreach (var row in p.Value.EnumerateArray())
                             kinds.Add(Kind(row, kinds.Count + 1));
                         break;
+                    case "wings":
+                        foreach (var row in p.Value.EnumerateArray())
+                            wings.Add(Row(row, wings.Count + 1));
+                        break;
+                    case "airframes":
+                        foreach (var row in p.Value.EnumerateArray())
+                            frames.Add(Frame(row, frames.Count + 1));
+                        break;
                     default: throw new FormatException($"unknown key \"{p.Name}\"");
                 }
             if (rows.Count == 0)
@@ -130,8 +146,12 @@ public sealed class ExtrusionTable
             t.FanRows = fans.ToArray();
             t.Airfoils = foils.ToArray();
             t.FanKinds = kinds.ToArray();
+            t.WingRows = wings.ToArray();
+            t.Airframes = frames.ToArray();
             foreach (var r in fans)
                 t._fans[r.Material] = r;
+            foreach (var r in wings)
+                t._wings[r.Material] = r;
             return t;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)
@@ -215,6 +235,30 @@ public sealed class ExtrusionTable
         return new FanKind(id, label, kw, motor, tip, top, duct, spool, chord, heli);
     }
 
+    private static AirframeKind Frame(JsonElement e, int n)
+    {
+        string id = "", label = "";
+        float cl0 = 0, stall = 15, cd0 = 0.02f, aspect = 6, sweep = 0, control = 0, effect = 1, sign = 1;
+        foreach (var p in e.EnumerateObject())
+            switch (p.Name)
+            {
+                case "id": id = p.Value.GetString() ?? ""; break;
+                case "label": label = p.Value.GetString() ?? ""; break;
+                case "cl0": cl0 = Num(p.Value, p.Name, n, -1, 2); break;
+                case "stall": stall = Num(p.Value, p.Name, n, 3, 45); break;
+                case "cd0": cd0 = Num(p.Value, p.Name, n, 0.001f, 2); break;
+                case "aspect": aspect = Num(p.Value, p.Name, n, 0.2f, 40); break;
+                case "sweep": sweep = Num(p.Value, p.Name, n, -75, 75); break;
+                case "control": control = Num(p.Value, p.Name, n, 1, 80); break;
+                case "effect": effect = Num(p.Value, p.Name, n, 0, 1); break;
+                case "sign": sign = Num(p.Value, p.Name, n, -1, 1) < 0 ? -1 : 1; break;
+                default: throw new FormatException($"airframe {n}: unknown key \"{p.Name}\"");
+            }
+        if (id.Length == 0 || id.Contains(' ') || label.Length == 0)
+            throw new FormatException($"airframe {n} needs an \"id\" (one word) and a \"label\"");
+        return new AirframeKind(id, label, cl0, stall, cd0, aspect, sweep, control, effect, sign);
+    }
+
     private static WheelMaterial WheelRow(JsonElement e, int n)
     {
         if (e.ValueKind != JsonValueKind.Object)
@@ -260,6 +304,16 @@ public sealed class ExtrusionTable
 
     /// <summary>The fan row for bulk material <paramref name="material"/>, or null when a Fan Former can't use it.</summary>
     public ExtrusionMaterial? FindFan(byte material) => material != 0 && _fans.TryGetValue(RecyclingTable.Current.NameOf(material), out var r) ? r : null;
+
+    /// <summary>The row for bulk material <paramref name="material"/> as a wing's skin, or null when an Airframe Former can't use it.</summary>
+    public ExtrusionMaterial? FindWing(byte material) => material != 0 && _wings.TryGetValue(RecyclingTable.Current.NameOf(material), out var r) ? r : null;
+
+    /// <summary>What an Airframe Former takes, in words (the look line).</summary>
+    public string TakesWings()
+    {
+        var names = RecyclingTable.Current;
+        return string.Join(", ", WingRows.Where(r => names.IdOf(r.Material) != 0).Select(r => r.Material));
+    }
 
     /// <summary>What a Fan Former takes, in words (the look line).</summary>
     public string TakesFans()

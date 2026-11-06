@@ -494,7 +494,7 @@ public static partial class SelfTest
         var ld = low.DefOf(ls);
         var inv = new SandboxInventory();
         string Look() => ConstructRefining.Look(ld, ss, false, inv);
-        want(Look().Contains("takes iron ore, sand, dirt, stone (copper ore needs tier 2, gold ore needs tier 3)"), $"an empty tier 1 Smelter says \"{Look()}\"");
+        want(Look().Contains("takes iron ore, sand, dirt, stone (copper ore needs tier 2, gold ore needs tier 3, levite ore needs tier 4)"), $"an empty tier 1 Smelter says \"{Look()}\"");
         w.Deposit(low, lowIn, 20, copper);
         Run(1.5f);
         want(ss.InAmount == 0 && src.Amount == 20 && ss.Refused == copper, $"copper ore into a tier 1 Smelter (input {ss.InAmount}, bin {src.Amount}, refused {ss.Refused})");
