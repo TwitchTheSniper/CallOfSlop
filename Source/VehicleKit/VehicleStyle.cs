@@ -121,6 +121,9 @@ public sealed class FactionStyle
     /// </summary>
     public Dictionary<string, int[]> Seeds { get; init; } = [];
 
+    /// <summary>Shapes only some styles build (<see cref="VehicleRegistry.Extras"/>), by name ("Double Decker"): this style ships them too.</summary>
+    public string[] Extra { get; init; } = [];
+
     /// <summary>Limits on variation by name ("crookedPlates", "tiltDegrees"...).</summary>
     public required Dictionary<string, double> Limits { get; init; }
 

@@ -1,0 +1,138 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Furled Brolly",
+  "description": "A furled umbrella, held out like a lance. You'll want it later: it's that sort of day.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1.0,
+  "health": 20,
+  "armour": 0,
+  "material": "steel",
+  "color": "#17181a",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.04,
+        0.0,
+        -0.04
+      ],
+      "max": [
+        0.04,
+        0.037,
+        0.04
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        -0.03,
+        0.039,
+        -0.03
+      ],
+      "max": [
+        0.03,
+        0.12,
+        0.03
+      ],
+      "color": "#6b4527",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.03,
+        0.002,
+        0.03
+      ],
+      "max": [
+        0.03,
+        0.03,
+        0.11
+      ],
+      "color": "#6b4527",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.045,
+        0.12,
+        -0.045
+      ],
+      "max": [
+        0.045,
+        0.62,
+        0.045
+      ],
+      "color": "#17181a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "taper": [
+        0.3,
+        0.3
+      ],
+      "front": "-y"
+    },
+    {
+      "min": [
+        -0.047,
+        0.4,
+        -0.047
+      ],
+      "max": [
+        0.047,
+        0.43,
+        0.047
+      ],
+      "color": "#c9cbc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.006,
+        0.62,
+        -0.006
+      ],
+      "max": [
+        0.006,
+        0.72,
+        0.006
+      ],
+      "color": "#c9cbc8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.03,
+        0.12,
+        -0.03
+      ],
+      "max": [
+        0.03,
+        0.6,
+        0.03
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

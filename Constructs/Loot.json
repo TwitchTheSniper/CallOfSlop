@@ -135,6 +135,27 @@
         {"part": "Wire Stock", "weight": 3, "count": [1, 1]}
       ]
     },
+    "british": {
+      "maxTier": 2,
+      "rarities": ["common", "uncommon"],
+      "rolls": [1, 3],
+      "empty": 0.2,
+      "items": [
+        {"part": "Gear Set", "weight": 7, "count": [1, 3]},
+        {"part": "Bearing", "weight": 6, "count": [1, 3]},
+        {"part": "Tyre Carcass", "weight": 5, "count": [1, 2]},
+        {"part": "Wiring Loom", "weight": 3, "count": [1, 1]},
+        {"part": "Lamp", "weight": 4, "count": [1, 2]},
+        {"part": "Small Fuel Tank", "weight": 3, "count": [1, 1]},
+        {"part": "Ammo Box", "weight": 8, "count": [1, 2]},
+        {"part": "Small Engine", "weight": 2, "count": [1, 1]},
+        {"part": "Courier Carbine Receiver", "weight": 4, "count": [1, 1]},
+        {"part": "Farmhand Pump Receiver", "weight": 3, "count": [1, 1]},
+        {"part": "Stub Barrel", "weight": 3, "count": [1, 2]},
+        {"part": "Box Magazine", "weight": 4, "count": [1, 2]},
+        {"part": "Flash Hider", "weight": 2, "count": [1, 1]}
+      ]
+    },
     "scam": {
       "maxTier": 3,
       "rarities": ["common", "uncommon"],

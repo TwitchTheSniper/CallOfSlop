@@ -1,0 +1,232 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tea Urn",
+  "description": "A tea urn on a trolley. When it runs dry, everything stops.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 25.0,
+  "health": 50,
+  "armour": 0,
+  "material": "steel",
+  "color": "#c9cbc8",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0.0,
+        -0.2
+      ],
+      "max": [
+        0.25,
+        0.04,
+        0.2
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        -0.245,
+        0.042,
+        -0.18
+      ],
+      "max": [
+        -0.215,
+        0.7,
+        -0.15
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        -0.245,
+        0.042,
+        0.15
+      ],
+      "max": [
+        -0.215,
+        0.7,
+        0.18
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        0.215,
+        0.042,
+        -0.18
+      ],
+      "max": [
+        0.245,
+        0.7,
+        -0.15
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        0.215,
+        0.042,
+        0.15
+      ],
+      "max": [
+        0.245,
+        0.7,
+        0.18
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        -0.25,
+        0.702,
+        -0.2
+      ],
+      "max": [
+        0.25,
+        0.74,
+        0.2
+      ],
+      "color": "#6b4527"
+    },
+    {
+      "min": [
+        -0.13,
+        0.742,
+        -0.12
+      ],
+      "max": [
+        0.13,
+        1.18,
+        0.12
+      ],
+      "color": "#c9cbc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.1,
+        1.182,
+        -0.09
+      ],
+      "max": [
+        0.1,
+        1.22,
+        0.09
+      ],
+      "color": "#17181a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        0.84,
+        -0.15
+      ],
+      "max": [
+        0.02,
+        0.88,
+        -0.11
+      ],
+      "color": "#17181a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.225,
+        0.742,
+        0.1
+      ],
+      "max": [
+        -0.175,
+        0.8,
+        0.15
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.165,
+        0.742,
+        0.06
+      ],
+      "max": [
+        -0.115,
+        0.8,
+        0.11
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.125,
+        0.742,
+        0.02
+      ],
+      "max": [
+        0.175,
+        0.8,
+        0.07
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.25,
+        0.04,
+        -0.2
+      ],
+      "max": [
+        0.25,
+        0.74,
+        0.2
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,258 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Pillar Box",
+  "description": "A pillar box. Last collection was some time ago. What's inside is loot, and the odd postcard.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 60.0,
+  "health": 220,
+  "armour": 3,
+  "material": "steel",
+  "color": "#c8102e",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.188,
+          0.088,
+          -0.188
+        ],
+        "max": [
+          0.188,
+          0.5,
+          0.188
+        ],
+        "label": "post"
+      },
+      {
+        "min": [
+          -0.188,
+          0.51,
+          -0.188
+        ],
+        "max": [
+          0.188,
+          0.9720000000000001,
+          0.188
+        ],
+        "label": "post"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.27,
+        0.0,
+        -0.27
+      ],
+      "max": [
+        0.27,
+        0.08,
+        0.27
+      ],
+      "color": "#17181a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.26,
+        0.082,
+        -0.26
+      ],
+      "max": [
+        0.26,
+        0.98,
+        0.26
+      ],
+      "color": "#c8102e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.272,
+        0.98,
+        -0.272
+      ],
+      "max": [
+        0.272,
+        1.02,
+        0.272
+      ],
+      "color": "#9a0c22",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.25,
+        1.02,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        1.1,
+        0.25
+      ],
+      "color": "#c8102e",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.11,
+        0.83,
+        -0.272
+      ],
+      "max": [
+        0.11,
+        0.85,
+        -0.23
+      ],
+      "color": "#17181a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.07,
+        0.68,
+        -0.268
+      ],
+      "max": [
+        0.07,
+        0.77,
+        -0.23
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.03,
+        0.55,
+        -0.268
+      ],
+      "max": [
+        0.03,
+        0.62,
+        -0.23
+      ],
+      "color": "#c8a24a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.234,
+        0.0,
+        -0.234
+      ],
+      "max": [
+        0.234,
+        0.08,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.234,
+        0.98,
+        -0.234
+      ],
+      "max": [
+        0.234,
+        1.02,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.234,
+        0.082,
+        -0.234
+      ],
+      "max": [
+        -0.194,
+        0.978,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.192,
+        0.082,
+        -0.234
+      ],
+      "max": [
+        0.192,
+        0.978,
+        -0.194
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.194,
+        0.082,
+        -0.234
+      ],
+      "max": [
+        0.234,
+        0.978,
+        0.234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.192,
+        0.082,
+        0.194
+      ],
+      "max": [
+        0.192,
+        0.978,
+        0.234
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

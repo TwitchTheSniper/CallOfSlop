@@ -193,6 +193,12 @@ The Clan MacSlop (`Styles.Highland`, group "Clan MacSlop"), a Highland clan on w
 
 **The Pipe Box (`Vehicle.Piper`).** A style with a `"piper"` slot stands exactly one on every vehicle with a seat, before the trophies take the sockets: on the hood, else the cab, a room's roof, the bed, a porch, the headboard or a flank. Its own fork, so nothing else of a seed moves, and a seed with nowhere to stand one throws, so the sweep skips it. A trailer has no seat and gets none. The box strikes up the pipes while someone drives (docs/sandbox/MEDIA.md, "Pipe Boxes"), so you hear the clan coming.
 
+### The British style
+
+The Ministry of Slop (`Styles.British`, group "Ministry of Slop"), a very British faction, affectionate and mostly understated rather than on the nose. Bus red on most panels with the odd racing green, cream or wet-Tuesday grey; racing green, cream and navy on the hoods; war paint in the flag's blue, red and white and double-yellow-line yellow; plates neat but not new. `tools/constructs/british_parts.py` writes its parts (`Constructs/Parts/British`): Union Flags, Belisha beacons and rain gauges on the roofs (masts), a Teapot in its cosy, a Traffic Cone nobody will move, a Garden Gnome and a Rain Gauge as trophies, Furled Brollies down the flanks as spikes (it's that sort of day), Queue Posts on the beds and porches (gear), and in the rooms a Pillar Box (two loot slots) and a cut-down red Phone Box (loot under the shelf) round a Tea Urn. Rooms are a tea room, a post office, lost property or a snug. Guns are named the way the British complain: Terribly Sorry (a machine gun), Bit of Bother (a carbine), the Strongly Worded Letter (a pump gun) and Builder's Tea (the flamer). Loot rolls from the `british` table: tier 1 and 2 drive parts, carbines and pump guns.
+
+**The Double Decker (`Generators/DoubleDecker.cs`).** An open-top double-decker bus: a long walk-in hull below (side door, loot, the seats that work the guns) and a railed top deck on the tall bays' roofs, with the two roof guns standing up through holes in it. The deck is laid from the bays' `top` sockets (each sits on a deck cell's centre), stops where the tail slopes down (a stepped roof), and a ladder hangs from its back edge, else down the right side. It is an **extra shape**: `VehicleRegistry.Extras` holds shapes a style ships only when it names them in `FactionStyle.Extra` (`Extra = ["Double Decker"]`), so no other faction's committed files change; any style can still run one by name (`--gen-vehicle "Bandit Double Decker" --out DIR`).
+
 @@SHIPPED@@
 
 

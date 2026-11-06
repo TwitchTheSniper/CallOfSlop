@@ -52,14 +52,23 @@ public static class VehicleRegistry
         s => new Generators.TankerRig(s),
     ];
 
+    /// <summary>Shapes a style ships only when it names them in <see cref="FactionStyle.Extra"/> (the British style's Double Decker); any style can still run one by name.</summary>
+    public static readonly Func<FactionStyle, IVehicleGenerator>[] Extras =
+    [
+        s => new Generators.DoubleDecker(s),
+    ];
+
+    private static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>
+        Shapes.Select(f => f(st)).Concat(Extras.Select(f => f(st)).Where(g => all || g is VehicleShape v && st.Extra.Contains(v.Shape)));
+
     /// <summary>What ships: every shape in every shipped style.</summary>
-    public static IReadOnlyList<IVehicleGenerator> All => _all ??= Styles.Shipped.SelectMany(st => Shapes.Select(f => f(st))).ToArray();
+    public static IReadOnlyList<IVehicleGenerator> All => _all ??= Styles.Shipped.SelectMany(st => For(st, false)).ToArray();
 
     private static IVehicleGenerator[]? _all;
 
     /// <summary>A generator by name; any style's, so "Militia Box Truck" works though only shipped styles' files are committed.</summary>
     public static IVehicleGenerator? Find(string name) =>
-        Styles.All.SelectMany(st => Shapes.Select(f => f(st))).FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || Slug(g.Name).Equals(name, StringComparison.OrdinalIgnoreCase));
+        Styles.All.SelectMany(st => For(st, true)).FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || Slug(g.Name).Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public static string Slug(string name) => new(name.Where(char.IsLetterOrDigit).ToArray());
 

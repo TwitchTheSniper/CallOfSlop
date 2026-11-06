@@ -1,0 +1,198 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Teapot",
+  "description": "A teapot in a knitted cosy, on a post. Still warm. Somehow it is always still warm.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 2.0,
+  "health": 15,
+  "armour": 0,
+  "material": "steel",
+  "color": "#3c6e47",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.02,
+        0.0,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.18,
+        0.02
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        -0.1,
+        0.18,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.192,
+        0.1
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.09,
+        0.194,
+        -0.09
+      ],
+      "max": [
+        0.09,
+        0.35,
+        0.09
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.1,
+        0.194,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.36,
+        0.1
+      ],
+      "color": "#3c6e47",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.05,
+        0.345,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.38,
+        0.05
+      ],
+      "color": "#e8dfc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.018,
+        0.38,
+        -0.018
+      ],
+      "max": [
+        0.018,
+        0.408,
+        0.018
+      ],
+      "color": "#c8102e",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 8,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.24,
+        -0.016
+      ],
+      "max": [
+        -0.09,
+        0.27,
+        0.016
+      ],
+      "color": "#e8dfc8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.215,
+        0.25,
+        -0.014
+      ],
+      "max": [
+        -0.18,
+        0.33,
+        0.014
+      ],
+      "color": "#e8dfc8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.09,
+        0.23,
+        -0.012
+      ],
+      "max": [
+        0.17,
+        0.255,
+        0.012
+      ],
+      "color": "#e8dfc8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.145,
+        0.257,
+        -0.012
+      ],
+      "max": [
+        0.17,
+        0.31,
+        0.012
+      ],
+      "color": "#e8dfc8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.09,
+        0.312,
+        -0.012
+      ],
+      "max": [
+        0.17,
+        0.335,
+        0.012
+      ],
+      "color": "#e8dfc8",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
