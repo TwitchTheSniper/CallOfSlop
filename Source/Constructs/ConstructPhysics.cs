@@ -204,6 +204,14 @@ public static partial class ConstructPhysics
                     Wheels(c, query, _invI[i], dt);
                 if (c.CellCount > 0)
                     Lift(c, _invI[i], weight, dt); // (before the thrusters: the hover hold carries what the cells don't)
+                if (c.SurfaceCount > 0 || c.RotorCount > 0)
+                {
+                    if (c.CellCount == 0)
+                        c.LiftNow = 0;
+                    ConstructAero.Step(c, _invI[i], weight, dt); // (the wings: ConstructAero.cs)
+                    c.LiftNow += MathF.Max(0, c.AeroLift);
+                    ConstructRotor.Step(c, _invI[i], true, dt); // (after Powertrain: it takes this tick's rpm)
+                }
                 if (c.ThrusterCount > 0)
                     Thrusters(c, query, _invI[i], dt);
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
@@ -213,6 +221,8 @@ public static partial class ConstructPhysics
                 Powertrain(c, false, dt); // (board item cs03: an anchored base's engine runs its wheels and its power take-off too)
             else
                 c.ThrustShow = 0; // (asleep or anchored: nothing it pushes on)
+            if (!_dyn[i] && c.RotorCount > 0 && !c.Asleep)
+                ConstructRotor.Step(c, _invI[i], false, dt); // (anchored: it turns, and pushes nothing)
             if (_jact[i])
                 JointPrep(c, i, dt);
             if (_dyn[i] && _jact[i] && c.GrabbedBy == 255) // (a held body is the beam's: it carries the arm's weight)
@@ -272,7 +282,7 @@ public static partial class ConstructPhysics
             var c = bodies[i];
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
-            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
+            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
             if (moving || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
@@ -667,7 +677,7 @@ public static partial class ConstructPhysics
             var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) * (w.Track ? w.UnitScale * climbDrive : 1f) : 0f;
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
-            var held = brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed);
+            var held = brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed && c.RotorThrust < 1); // (a propeller pulling is a tow)
             rolling |= !held || deck != null;
             onDeck |= deck != null;
             if (held)
@@ -720,8 +730,8 @@ public static partial class ConstructPhysics
         if (c.TrackUnits)
             TrackUnitsShare(c);
         // Air drag on the body: what tops out a car in a tall gear before its engine's limiter does.
-        if (touching > 0)
-            c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt);
+        if (touching > 0 && c.SurfaceCount == 0)
+            c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt); // (what flies has real drag: ConstructAero.cs)
         // A locked axle fights the steering: its wheels can't turn at different speeds, so they scrub the turn away.
         if (lockedTouch >= 2 && !c.SkidDrive)
         {
@@ -782,7 +792,7 @@ public static partial class ConstructPhysics
     private static void Powertrain(Construct c, bool free, float dt)
     {
         var on = DriveOn(c);
-        var throttle = DriveThrottle(c);
+        var throttle = ConstructRotor.EngineThrottle(c, DriveThrottle(c));
         var steer = ConstructDrive.SteerNow(c);
         if (free)
         {
@@ -1503,9 +1513,10 @@ public static partial class ConstructPhysics
         // On a planetoid the air thins with height (AirAt: 1 everywhere else, so nothing changes there): the damping thins
         // with it and the speed limit rises, so a flyer high up can reach the speed it takes to leave the bubble.
         var air = GravityFrames.Point != null ? AirAt(c.WorldCom) : 1f;
-        c.Vel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
+        if (!c.AeroFlying)
+            c.Vel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         c.AngVel *= 0.985f;
-        var top = air >= 1 ? MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+        var top = air >= 1 ? c.AeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
         var v2 = c.Vel.LengthSquared();
         if (v2 > top * top)
             c.Vel *= top / MathF.Sqrt(v2);
@@ -1930,7 +1941,7 @@ public static partial class ConstructPhysics
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
         var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < StillSpeed2;
-        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && c.ThrustShow <= 0;
+        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && c.ThrustShow <= 0 && !c.RotorLive;
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];

@@ -1,0 +1,114 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Swept Wing L",
+  "description": "48 m2 of wing swept back 30 degrees: less lift a degree, a later stall, less drag fast. A left wing.",
+  "group": "Medium",
+  "section": "Wings",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 864.0,
+  "health": 1402,
+  "armour": 6,
+  "material": "steel",
+  "color": "#b8bec6",
+  "attachSeconds": 4.0,
+  "surface": {
+    "area": 48.0,
+    "lift": "+y",
+    "forward": "-z",
+    "aspect": 6,
+    "sweep": 30,
+    "cl0": 0.2,
+    "stall": 19,
+    "cd0": 0.014
+  },
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        -0.24,
+        -1.269
+      ],
+      "max": [
+        -2.0,
+        0.24,
+        4.731
+      ]
+    },
+    {
+      "min": [
+        -1.997,
+        -0.24,
+        -2.423
+      ],
+      "max": [
+        0.0,
+        0.24,
+        3.577
+      ]
+    },
+    {
+      "min": [
+        0.006,
+        -0.24,
+        -3.577
+      ],
+      "max": [
+        2.0,
+        0.24,
+        2.423
+      ]
+    },
+    {
+      "min": [
+        2.009,
+        -0.24,
+        -4.731
+      ],
+      "max": [
+        4.0,
+        0.24,
+        1.269
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        0.0,
+        -1.731
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        0.0,
+        1.731
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.24,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.24,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

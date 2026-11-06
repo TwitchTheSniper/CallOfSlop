@@ -15,6 +15,11 @@ public sealed class AirTable
     public float CoolShare = 0.008f, VentShare = 0.04f, VentHotShare = 0.12f, PumpShare = 0.02f, BurnShare = 0.25f;
     public float Drag = 0.6f, DragArm = 0.25f, SpinDrag = 0.5f, Turbulence = 0.012f, WindAloftAt = 800, NearMetres = 600;
     public float GroundEffect = 0.25f, GroundEffectSpans = 1;
+    public float SoftWingM2 = 600; // past this much wing, lift scales kindly
+    public float BodyDrag = 0.004f; // Cd A of a craft, m2 per kg^(2/3): everything that isn't a wing
+    public float FlightTop = 140; // m/s: the most a craft flying on its surfaces goes (the arcade cap is 60)
+    public float RotorProfile = 0.14f, RotorFigure = 0.75f; // the share of a rotor's power that makes no push, and how well the rest does
+    public float RotorHit = 0.3f, RotorShake = 0.2f; // the share of a spinning disc a round meets a blade in; a lost blade's shake as a share of the push
     public string Problem = "";
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Air.json");
@@ -45,7 +50,7 @@ public sealed class AirTable
         var root = doc.RootElement;
         if (ConstructParts.Opt(root, "format")?.GetString() != Format)
             throw new ConstructPartException($"\"format\" must be \"{Format}\"");
-        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "igniteDamage", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "dragArm", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans"], "Air.json");
+        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "igniteDamage", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "dragArm", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans", "softWingM2", "bodyDrag", "flightTop", "rotorProfile", "rotorFigure", "rotorHit", "rotorShake"], "Air.json");
         var t = new AirTable();
         static float Num(JsonElement e, string key, float now, float lo, float hi)
         {
@@ -88,6 +93,13 @@ public sealed class AirTable
         t.NearMetres = Num(root, "nearMetres", t.NearMetres, 0, 1e7f);
         t.GroundEffect = Num(root, "groundEffect", t.GroundEffect, 0, 10);
         t.GroundEffectSpans = Num(root, "groundEffectSpans", t.GroundEffectSpans, 0.01f, 100);
+        t.SoftWingM2 = Num(root, "softWingM2", t.SoftWingM2, 1, 1e9f);
+        t.BodyDrag = Num(root, "bodyDrag", t.BodyDrag, 0, 1);
+        t.FlightTop = Num(root, "flightTop", t.FlightTop, ConstructPhysics.MaxSpeed, ConstructPhysics.MaxFlightSpeed);
+        t.RotorProfile = Num(root, "rotorProfile", t.RotorProfile, 0, 0.9f);
+        t.RotorFigure = Num(root, "rotorFigure", t.RotorFigure, 0.1f, 1);
+        t.RotorHit = Num(root, "rotorHit", t.RotorHit, 0, 1);
+        t.RotorShake = Num(root, "rotorShake", t.RotorShake, 0, 2);
         return t;
     }
 }

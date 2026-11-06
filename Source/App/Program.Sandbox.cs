@@ -231,6 +231,7 @@ public static unsafe partial class Program
                       ^ (ConstructDoor.Swings(hit.Body, hit.Part) ? ConstructDoor.IsOpen(hit.Body, hit.Part) ? 3L << 45 : 1L << 45 : 0) // (a door: open or shut)
                       ^ (d.IsRail ? ConstructLinear.LookKey(hit.Body, hit.Part) << 8 : 0) // (where a rail's carriage is, and how it stands)
                       ^ (d.Role == PartRole.FluidTank ? ConstructFluid.LookKey(hit.Body, hit.Part) << 8 : 0) // (what a Fluid Tank holds, and any pipe it refuses)
+                      ^ (d.Rotor != null ? ConstructRotor.LookKey(hit.Body, hit.Part) << 8 : d.Surface != null ? ConstructAero.LookKey(hit.Body, hit.Part) << 8 : 0) // (a rotor's speed and blades, a wing's stall speed)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
                       ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0); // (hands out: what the click does, and whether they are full)
             if (key != _sbLookKey)
@@ -251,6 +252,8 @@ public static unsafe partial class Program
                 {
                     _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
                     PartRole.Suspension when ConstructRoutes.HalfShaftLook(hit.Body, hit.Part) is { } halfLook => SandboxKeys.Line(d.Name, halfLook),
+                    PartRole.Rotor when ConstructRotor.Of(hit.Body, hit.Part) >= 0 => SandboxKeys.Line(d.Name, ConstructRotor.Note(hit.Body, hit.Part), null, null),
+                    PartRole.Frame when d.Surface != null && hit.Body.SurfaceCount > 0 => SandboxKeys.Line(d.Name, ConstructAero.Note(hit.Body, hit.Part), null, null),
                     PartRole.FluidTank when !hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, ConstructFluid.State(part, d), part.Burn > 0 ? "ON FIRE" : ConstructFluid.Problem(hit.Body, hit.Part), h.Tool == ConstructTool.Configure ? SandboxKeys.Do(SandboxKeys.Fire, g.SandboxInfiniteParts ? "set fluid and fill" : "see settings") : !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                     _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered.Length > 0 ? unpowered : ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Welder ? null : "needs the attach tool", h.Tool == ConstructTool.Welder ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),

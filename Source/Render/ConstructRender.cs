@@ -531,6 +531,11 @@ public static partial class ConstructRender
             if (box.Hidden || box.IsLeaf && !railShown)
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
             c.BoxOf(i, b, out var centre, out var half);
+            if (box.Spin && d.Rotor != null)
+            {
+                drawn += DrawBlades(gfx, c, i, d, in box, centre, seg * body, shade, opacity);
+                continue;
+            }
             Matrix4x4 model;
             if (isWheel)
             {
@@ -547,6 +552,8 @@ public static partial class ConstructRender
                 model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
                 model = box.Model(p.Rot, centre);
+            if (box.IsLeaf && d.Surface is { Control: > 0 } flap)
+                model *= FlapTurn(c, i, flap, in p); // (a control surface's leaf, on the hinge in the part)
             if (box.Rig >= BoxRig.Lever)
                 model *= ControlMove(in box, in p, leverAxis, leverAngle);
             else if (box.Rig != BoxRig.None)
@@ -579,6 +586,58 @@ public static partial class ConstructRender
         }
         return drawn;
     }
+
+    /// <summary>A control surface's leaf: its turn about the hinge in the part.</summary>
+    private static Matrix4x4 FlapTurn(Construct c, int part, SurfaceDef d, in CPart p)
+    {
+        for (var k = 0; k < c.ControlCount; k++)
+        {
+            ref var s = ref c.Surfaces[c.Controls[k]];
+            if (s.Part != part)
+                continue;
+            var at = p.Pos + Rot24.Apply(p.Rot, d.Hinge);
+            var span = Vector3.Cross(s.F, s.N);
+            return Matrix4x4.CreateTranslation(-at) * Matrix4x4.CreateFromAxisAngle(span, -s.Deflect) * Matrix4x4.CreateTranslation(at);
+        }
+        return Matrix4x4.Identity;
+    }
+
+    private const float BlurOmega = 45f; // rad/s: past this a rotor's blades are a blur: at a frame rate the real angle strobes
+
+    /// <summary>A rotor's blades: one box of the part, repeated round the hub, turned by its angle; past a speed they slow to a blur over a faint disc.</summary>
+    private static int DrawBlades(Renderer gfx, Construct c, int i, ConstructPartDef d, in CPartBox box, Vector3 centre, in Matrix4x4 frame, float shade, float opacity)
+    {
+        var k = ConstructRotor.Of(c, i);
+        if (k < 0)
+            return 0;
+        ref var r = ref c.Rotors[k];
+        ref var p = ref c.Parts[i];
+        var rd = d.Rotor!;
+        var hub = p.Pos + Rot24.Apply(p.Rot, rd.At);
+        var axis = Rot24.Apply(p.Rot, rd.Axis);
+        var local = box.Model(p.Rot, centre) * Matrix4x4.CreateTranslation(-hub);
+        var back = Matrix4x4.CreateTranslation(hub);
+        var fast = r.Omega > BlurOmega;
+        var angle = fast ? (float)(Now * BlurOmega * 0.37f) * r.Sense : r.Angle;
+        var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
+        var drawn = 0;
+        for (var b = 0; b < rd.Blades; b++)
+        {
+            if ((r.Lost >> b & 1) != 0)
+                continue;
+            gfx.Draw(local * Matrix4x4.CreateFromAxisAngle(axis, angle + b * MathF.Tau / rd.Blades) * back * frame, tint, opacity, mode: 0, shape: box.Shape);
+            drawn++;
+        }
+        if (fast)
+        {
+            var size = Vector3.One * (rd.Radius * 2) + Vector3.Abs(axis) * (0.02f - rd.Radius * 2);
+            QueueGlass(Matrix4x4.CreateScale(size) * back * frame, tint, 0.18f * MathF.Min(1, r.Omega / (2 * BlurOmega)) * opacity, DiscShape);
+            drawn++;
+        }
+        return drawn;
+    }
+
+    private static readonly ushort DiscShape = PartShapes.For(new PartBox { Shape = "cylinder", Size = Vector3.One, Segments = 24, Inner = -1 });
 
     /// <summary>A lit thruster's flame out of its nozzle, as long as it pushes hard.</summary>
     private static int DrawExhaust(Renderer gfx, Construct c, ConstructPartDef d, in CPart p, in Matrix4x4 frame)

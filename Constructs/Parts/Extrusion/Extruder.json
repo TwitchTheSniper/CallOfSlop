@@ -64,7 +64,10 @@
         "Cross",
         "Custom",
         "Round",
-        "Pipe"
+        "Pipe",
+        "Airfoil",
+        "Symmetric foil",
+        "Thin foil"
       ],
       "default": 0,
       "tooltip": "The cross-section. Custom is the cell grid below; clicking a cell starts one from what is shown. Round and Pipe take their diameter from Width."

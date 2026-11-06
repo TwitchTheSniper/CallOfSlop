@@ -127,7 +127,7 @@ public static partial class ConstructParts
         {
             d.DriveInSocket = list.Find(x => x.Type == RouteType.Shaft && x.In)?.Socket ?? -1;
             if (d.DriveInSocket < 0)
-                throw new ConstructPartException($"{file}: {(d.IsRail ? "a shaft-driven rail" : "storage.gather's ratedRpm")} needs a shaft input port (\"Drive in\")");
+                throw new ConstructPartException($"{file}: {(d.IsRail ? "a shaft-driven rail" : d.Rotor != null ? "a rotor on a shaft" : "storage.gather's ratedRpm")} needs a shaft input port (\"Drive in\")");
         }
     }
 }

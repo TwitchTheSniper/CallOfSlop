@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Loose Blade",
+  "description": "A rotor blade, thrown off its hub. Scrap.",
+  "group": "Medium",
+  "section": "Rotors",
+  "role": "frame",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 48.0,
+  "health": 120,
+  "armour": 0,
+  "material": "steel",
+  "color": "#30343a",
+  "attachSeconds": 1,
+  "stage": true,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -0.16,
+        -0.08
+      ],
+      "max": [
+        2.0,
+        0.16,
+        0.08
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "root",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

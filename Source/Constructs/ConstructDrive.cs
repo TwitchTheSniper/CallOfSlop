@@ -775,6 +775,8 @@ public static class ConstructDrive
         else
         {
             var want = (e.IdleRpm + MathF.Abs(throttle) * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (drills it can't carry pull it down)
+            if (c.RpmGovern > 0)
+                want = MathF.Min(want, c.RpmGovern); // (a rotor's hub: ConstructRotor.cs)
             rpm = c.Rpm + Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);
         }
         c.Rpm = MathF.Min(rpm, e.MaxRpm * 1.1f); // (the wheels can spin it past the limiter, coasting downhill or in a shift; not without bound)

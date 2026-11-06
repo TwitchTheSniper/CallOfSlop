@@ -1,0 +1,128 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Helicopter Rotor",
+  "description": "24 m across. Inputs: collective, cyclic pitch, cyclic roll.",
+  "group": "Medium",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 4742.0,
+  "health": 3326,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 12,
+    "ratedKw": 3500,
+    "ratedRpm": 140,
+    "blades": 5,
+    "bladeHealth": 700,
+    "chord": 0.6,
+    "spool": 8,
+    "topSpeed": 200,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.8400000000000001
+    ],
+    "axis": "+z",
+    "forward": "+y",
+    "heli": true,
+    "cyclic": 5,
+    "hubMoment": 0.2
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.44,
+        -1.44,
+        0.0
+      ],
+      "max": [
+        1.44,
+        1.44,
+        1.68
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -12.0,
+        -0.18,
+        0.66
+      ],
+      "max": [
+        12.0,
+        0.18,
+        1.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.18,
+        -12.0,
+        0.66
+      ],
+      "max": [
+        0.18,
+        12.0,
+        1.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.44,
+        -0.3,
+        0.804
+      ],
+      "max": [
+        12.0,
+        0.3,
+        0.876
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -1.44,
+        -1.44,
+        0.01
+      ],
+      "max": [
+        1.44,
+        1.44,
+        1.68
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

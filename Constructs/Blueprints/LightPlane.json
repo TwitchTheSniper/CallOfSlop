@@ -1,0 +1,226 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Light Plane",
+  "description": "A single-engine tail-dragger. Shift and Ctrl set the throttle, W and S pitch, A and D the rudder, Q and E roll.",
+  "steps": [
+    {
+      "part": "Frame Block"
+    },
+    {
+      "part": "Engine",
+      "on": 0,
+      "socket": "-z",
+      "by": "-z"
+    },
+    {
+      "part": "Two-Blade Prop",
+      "on": 1,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 4,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Tail Plane",
+      "on": 5,
+      "socket": "+z",
+      "by": "front"
+    },
+    {
+      "part": "Tail Fin",
+      "on": 6,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Wing Segment",
+      "on": 4,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Wing Segment",
+      "on": 4,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Wing Segment",
+      "on": 8,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Wing Segment",
+      "on": 9,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Aileron",
+      "on": 10,
+      "socket": "back",
+      "by": "hinge"
+    },
+    {
+      "part": "Aileron",
+      "on": 11,
+      "socket": "back",
+      "by": "hinge",
+      "config": {
+        "reverse": 1
+      }
+    },
+    {
+      "part": "Elevator",
+      "on": 6,
+      "socket": "back",
+      "by": "hinge"
+    },
+    {
+      "part": "Rudder",
+      "on": 7,
+      "socket": "back",
+      "by": "hinge"
+    },
+    {
+      "part": "Driving Module",
+      "on": 4,
+      "socket": "-y",
+      "by": "-y"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 0,
+      "socket": "-y",
+      "by": "+z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 17,
+      "socket": "-z",
+      "by": "+y3",
+      "spin": 1
+    },
+    {
+      "part": "Suspension",
+      "on": 18,
+      "socket": "-z",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 19,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Suspension",
+      "on": 18,
+      "socket": "+z",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 21,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 5,
+      "socket": "-y6",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 23,
+      "socket": "-z",
+      "by": "+y"
+    },
+    {
+      "part": "Suspension",
+      "on": 24,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 25,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Suspension",
+      "on": 24,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 27,
+      "socket": "axle",
+      "by": "axle"
+    }
+  ],
+  "links": [
+    {
+      "type": "data",
+      "from": 3,
+      "to": 16
+    },
+    {
+      "type": "data",
+      "from": 16,
+      "to": 1,
+      "toPort": "drive"
+    },
+    {
+      "type": "data",
+      "from": 16,
+      "fromPort": "throttle",
+      "to": 14
+    },
+    {
+      "type": "data",
+      "from": 16,
+      "fromPort": "roll",
+      "to": 12
+    },
+    {
+      "type": "data",
+      "from": 16,
+      "fromPort": "roll",
+      "to": 13
+    },
+    {
+      "type": "data",
+      "from": 16,
+      "fromPort": "steer",
+      "to": 15
+    },
+    {
+      "type": "pipe",
+      "from": 4,
+      "to": 1,
+      "fromPort": "Fuel out",
+      "toPort": "Fuel in"
+    }
+  ]
+}
