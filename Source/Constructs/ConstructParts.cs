@@ -260,6 +260,29 @@ public enum SocketKind : byte
 /// </summary>
 public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0, bool Glow = false, float Pump = 0, bool Spin = false, bool Roll = false)
 {
+    private readonly ushort _look = BoxLooks.Of(Color, Tone, 0); // (its colour, tone and material: one row of a shared table, BoxLooks)
+
+    /// <summary>The box's own colour, read through its look.</summary>
+    public Vector3 Color
+    {
+        get => BoxLooks.Get(_look).Color;
+        init => _look = BoxLooks.Of(value, BoxLooks.Get(_look).Tone, BoxLooks.Get(_look).Surface);
+    }
+
+    /// <summary>Its colour's tone against the part's main colour (see <see cref="ConstructPaint.ToneOf"/>).</summary>
+    public float Tone
+    {
+        get => BoxLooks.Get(_look).Tone;
+        init => _look = BoxLooks.Of(BoxLooks.Get(_look).Color, value, BoxLooks.Get(_look).Surface);
+    }
+
+    /// <summary>Its shared material: a row of <see cref="Surfaces"/> (SurfaceRules gives it at load; 0: none yet).</summary>
+    public byte Surface
+    {
+        get => BoxLooks.Get(_look).Surface;
+        init => _look = BoxLooks.Of(BoxLooks.Get(_look).Color, BoxLooks.Get(_look).Tone, value);
+    }
+
     public bool IsGlass => Glass > 0;
 
     public byte Front { get; init; }
@@ -375,6 +398,7 @@ public sealed class ConstructPartDef
     public float Health;
     public float Armour; // flat damage taken off every hit
     public string Material = "steel";
+    public byte SurfaceOverride; // "surface" in the file: the shared material of all its boxes (Surfaces.cs; else the rules in Materials/Surfaces.json)
     public bool PhysicsOnly; // decision 21: never an item (no hands, backpack or storage slot): welder-fitted, heavier than ConstructParts.HandCarryLimit, or "physicsOnly": true in its file
     public string PhysicsWhy = ""; // why ("structural", "heavy: 120 kg", "bulky"; empty for an item)
     public bool Core; // a construct core ("core": true): the starter block of a new construct (never a loose part; the root after seats and foundations)
@@ -747,9 +771,21 @@ public static partial class ConstructParts
     public const float DefaultGlass = 0.3f;
 
     private static readonly List<string> _refused = new();
-    private static readonly Lazy<ConstructPartDef[]> _all = new(() => PressTable.Attach(AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused))), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => WithSurfaces(PressTable.Attach(AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused)))), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
+
+    /// <summary>Every box gets its shared material (Materials/Surfaces.json), from the part it is on: nothing in the part files has to say.</summary>
+    private static byte SurfaceByName(JsonElement e, string file, string where) => Surfaces.File.ByName.TryGetValue(Str(e, file, where + ".surface"), out var row)
+        ? row
+        : throw new ConstructPartException($"{file}: {where}.surface: no such material in Materials/Surfaces.json");
+
+    private static ConstructPartDef[] WithSurfaces(ConstructPartDef[] all)
+    {
+        foreach (var d in all)
+            SurfaceRules.Apply(d);
+        return all;
+    }
 
     /// <summary>The hand-made parts, then one generated def for every other weapon builder part (ConstructWeaponParts.cs).</summary>
     public static ConstructPartDef[] WithWeaponParts(ConstructPartDef[] files, List<string> refused)
@@ -1025,7 +1061,7 @@ public static partial class ConstructParts
 
     private static readonly string[] TopKeys =
     [
-        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
+        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "surface", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
@@ -1100,6 +1136,8 @@ public static partial class ConstructParts
         d.Armour = Opt(root, "armour") is { } arm ? Num(arm, file, "armour") : 0f;
         Range(d.Armour, 0f, 1000f, file, "armour");
         d.Material = Opt(root, "material") is { } mat ? Str(mat, file, "material") : "steel";
+        if (Opt(root, "surface") is { } partSurface)
+            d.SurfaceOverride = SurfaceByName(partSurface, file, "the part");
         d.Friction = Opt(root, "friction") is { } fr ? Num(fr, file, "friction") : d.Material == "rubber" ? 1.0f : 0.6f;
         Range(d.Friction, 0f, 2f, file, "friction");
         if (Opt(root, "collider") is { } coll)
@@ -1147,7 +1185,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "surface", "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1217,6 +1255,8 @@ public static partial class ConstructParts
                 throw new ConstructPartException($"{file}: {where}: only a detail box may \"roll\"");
             var made = new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, pump, turns, roll);
             made = made with { Use = Opt(b, "use") is { ValueKind: JsonValueKind.True } };
+            if (Opt(b, "surface") is { } boxSurface)
+                made = made with { Surface = SurfaceByName(boxSurface, file, where) };
             if (Opt(b, "key") is { } keyBox)
                 made = made with { Key = Str(keyBox, file, where + ".key") is { Length: 1 } one ? one[0] : throw new ConstructPartException($"{file}: {where}.key is one character") };
             list.Add(Opt(b, "rig") is { } rg ? ParseRig(made, b, rg, file, where) : made);

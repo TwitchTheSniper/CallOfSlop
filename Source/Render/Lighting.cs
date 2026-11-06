@@ -128,11 +128,15 @@ public static unsafe class Lighting
             vec4 uProbeC;    // mode 2: sun, flicker phasor (x, y), flicker pace
             vec4 uDynPos[4]; // dynamic lights: position, range
             vec4 uDynCol[4]; // colour * intensity
+            vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md)
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
         uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
         uniform sampler3D uLitC; // r: sun reaching the cell, g, b: flicker phasor (128/255 = 0), a: flicker pace
         float gLitAmb = 1.0;     // the ambient factor the last ApplyLightAt used (the box shaders scale their rim light by it)
+        float gSunVis = 1.0;     // ...how much of the sun it let through (materials: the sun's highlight)
+        vec3 gLitDir = vec3(0.0); // ...the baked light's direction and colour there (the same)
+        vec3 gLitCol = vec3(0.0);
 
         """ + LightFlicker.Glsl + """
         // The flicker at a spot (LightFlicker.cs): c = the baked (and filtered) uLitC texel, share = the flickering share.
@@ -206,6 +210,7 @@ public static unsafe class Lighting
         vec3 ApplyLightAt(vec3 albedo, vec3 n, float wrap, vec3 p)
         {
             gLitAmb = 1.0;
+            gSunVis = 1.0;
             if (uLitMode.x < 0.5)
                 return ApplyLight(albedo, n, wrap);
             vec4 a;
@@ -224,6 +229,9 @@ public static unsafe class Lighting
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
             vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * b.w;
             float sunVis = min(c.r * (255.0 / 252.0), 1.0); // (its low two bits are flags: LightBaker.WriteFlags)
+            gSunVis = sunVis;
+            gLitDir = b.xyz;
+            gLitCol = a.rgb;
             float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0) * sunVis;
             float facing = (1.0 - min(length(b.xyz), 1.0)) * 0.6 + max((dot(n, b.xyz) + wrap) / (1.0 + wrap), 0.0);
             vec3 lit = a.rgb * facing * LitFlicker(uLitMode.y, c, a.a);
@@ -294,6 +302,7 @@ public static unsafe class Lighting
         if (!Programs.Contains(program.Id))
             Programs.Add(program.Id);
         LightGrid.Register(program); // the baked light's block and textures (LightGrid.cs)
+        SurfaceGpu.Register(program); // the shared material table (Surfaces.cs)
         Send(program.Id, Current);
         // A neutral sky until the first SetFog, so menus drawn before any map (gun previews) aren't tinted.
         Native.glUniform3f(Loc(program.Id, "uFog\0"u8), DefaultSky.X, DefaultSky.Y, DefaultSky.Z);

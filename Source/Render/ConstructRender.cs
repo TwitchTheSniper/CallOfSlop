@@ -448,6 +448,7 @@ public static partial class ConstructRender
         else
             health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
+        var wear = p.Broken ? 1f : 1f - health; // (a material rusts and scorches by it: Surfaces.cs)
         var drawn = 0;
         var rig = d.HasRig && d.Role == PartRole.Suspension ? RigOf(c, i) : default;
         var leverAxis = Rot24.Apply(p.Rot, Vector3.UnitX);
@@ -575,7 +576,7 @@ public static partial class ConstructRender
                 continue;
             }
             else
-                gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint; overloaded: red)
+                gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape, surface: Surfaces.Code(Surfaces.OnPaint(box.Surface, p.Paint, box.Paintable), wear)); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
         }
         return drawn;

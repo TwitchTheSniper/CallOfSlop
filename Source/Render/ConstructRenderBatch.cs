@@ -20,7 +20,6 @@ public static partial class ConstructRender
     {
         public readonly Renderer.BodyBatch Gl = new();
         public Construct? Body;
-        public float[] Data = [];
         public int[] Moving = []; // the parts walked every frame
         public int MovingCount;
         public Shaped[] Shapes = [];
@@ -36,8 +35,10 @@ public static partial class ConstructRender
         public Matrix4x4 Model;
         public Vector3 Colour;
         public int Shape;
+        public float Surface;
     }
 
+    private static Renderer.BodyBox[] _fillData = []; // (one scratch for every batch: the boxes live on the GPU, not twice)
     private static readonly Dictionary<Construct, Batch> _batches = new();
     private static readonly List<Construct> _batchGone = new();
     private static int _batchFrame;
@@ -82,15 +83,15 @@ public static partial class ConstructRender
                         else
                             shapes++;
                     }
-        if (b.Data.Length < boxes * Renderer.BatchFloats)
-            b.Data = new float[boxes * Renderer.BatchFloats * 5 / 4];
+        if (_fillData.Length < boxes)
+            _fillData = new Renderer.BodyBox[boxes * 5 / 4];
         if (b.Moving.Length < c.PartCount)
             b.Moving = new int[c.PartCount];
         if (b.Shapes.Length < shapes)
             b.Shapes = new Shaped[shapes];
         b.MovingCount = b.ShapeCount = 0;
         var o = 0;
-        var data = b.Data;
+        var data = _fillData;
         for (var i = 0; i < c.PartCount; i++)
         {
             if (!Plain(c, i))
@@ -102,28 +103,31 @@ public static partial class ConstructRender
             var d = p.D;
             var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
             var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
+            var wear = p.Broken ? 1f : 1f - health;
             for (var k = 0; k < d.Boxes.Length; k++)
             {
                 ref readonly var box = ref d.Boxes[k];
                 if (box.Hidden)
                     continue;
                 c.BoxOf(i, k, out var centre, out _);
-                var model = box.Model(p.Rot, centre);
                 var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
                 if (c.Frozen)
                     tint = Vector3.Lerp(tint, Frost, 0.45f);
+                var surface = Surfaces.OnPaint(box.Surface, p.Paint, box.Paintable);
                 if (box.Shape != 0)
                 {
-                    b.Shapes[b.ShapeCount++] = new Shaped { Model = model, Colour = tint, Shape = box.Shape };
+                    b.Shapes[b.ShapeCount++] = new Shaped { Model = box.Model(p.Rot, centre), Colour = tint, Shape = box.Shape, Surface = Surfaces.Code(surface, wear) };
                     continue;
                 }
-                data[o] = model.M11; data[o + 1] = model.M12; data[o + 2] = model.M13; data[o + 3] = model.M14;
-                data[o + 4] = model.M21; data[o + 5] = model.M22; data[o + 6] = model.M23; data[o + 7] = model.M24;
-                data[o + 8] = model.M31; data[o + 9] = model.M32; data[o + 10] = model.M33; data[o + 11] = model.M34;
-                data[o + 12] = model.M41; data[o + 13] = model.M42; data[o + 14] = model.M43; data[o + 15] = model.M44;
-                data[o + 16] = tint.X; data[o + 17] = tint.Y; data[o + 18] = tint.Z; data[o + 19] = 1f;
-                data[o + 20] = box.Glow ? 2f : 0f; data[o + 21] = (float)Material.Grid;
-                o += Renderer.BatchFloats;
+                ref var o1 = ref data[o++];
+                o1.Centre = centre;
+                o1.Size = Rot24.ApplyHalf(p.Rot, box.Half) * 2;
+                o1.R = (byte)MathF.Min(tint.X * 255f + 0.5f, 255f);
+                o1.G = (byte)MathF.Min(tint.Y * 255f + 0.5f, 255f);
+                o1.B = (byte)MathF.Min(tint.Z * 255f + 0.5f, 255f);
+                o1.Wear = (byte)(wear * 255f + 0.5f);
+                o1.Surface = surface;
+                o1.Mode = box.Glow ? (byte)2 : (byte)0;
             }
         }
         return boxes;
@@ -151,7 +155,7 @@ public static partial class ConstructRender
         if (stale)
         {
             var count = Fill(b, c);
-            gfx.UploadBody(b.Gl, b.Data, count);
+            gfx.UploadBody(b.Gl, _fillData, count);
             b.Stamp = c.RebuildStamp;
             b.Frozen = c.Frozen;
             b.Key = LookKey(c);
@@ -161,7 +165,7 @@ public static partial class ConstructRender
         for (var k = 0; k < b.ShapeCount; k++)
         {
             ref var s = ref b.Shapes[k];
-            gfx.Draw(s.Model * body, s.Colour, 1f, mode: 0, shape: s.Shape);
+            gfx.Draw(s.Model * body, s.Colour, 1f, mode: 0, shape: s.Shape, surface: s.Surface);
         }
         n += b.ShapeCount;
         for (var k = 0; k < b.MovingCount; k++)

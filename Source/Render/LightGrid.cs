@@ -47,7 +47,7 @@ public static unsafe class LightGrid
     /// <summary>Settings > Video > Dynamic lights (muzzle flashes and blasts light lit maps, at most <see cref="MaxDynamic"/>).</summary>
     public static bool DynamicEnabled = true;
 
-    /// <summary>The LitFrame block as std140 lays it out: 6 vec4s, then 4 positions and 4 colours.</summary>
+    /// <summary>The LitFrame block as std140 lays it out: 6 vec4s, then 4 positions and 4 colours, then the materials setting.</summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct FrameBlock
     {
@@ -59,7 +59,11 @@ public static unsafe class LightGrid
         public Vector4 ProbeC;  // probe: sun, flicker phasor x, y, pace (as stored: LightFlicker)
         public Vector4 Dyn0, Dyn1, Dyn2, Dyn3;     // dynamic lights: position, range
         public Vector4 DynC0, DynC1, DynC2, DynC3; // colour * intensity
+        public Vector4 Surf;    // x: the materials setting (Surfaces.cs)
     }
+
+    /// <summary>Settings > Video > Materials: 0 Low (the classic light), 1 Medium, 2 High.</summary>
+    public static float SurfaceLevel = 1f;
 
     private static FrameBlock _block;
     private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic];
@@ -231,6 +235,7 @@ public static unsafe class LightGrid
 
     private static void Send()
     {
+        _block.Surf.X = SurfaceLevel;
         Native.glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
         fixed (FrameBlock* p = &_block)
             Native.glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FrameBlock), p);
