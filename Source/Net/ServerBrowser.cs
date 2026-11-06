@@ -315,7 +315,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 169: Browser Screens (ConstructMedia.cs): MediaOp.Go, and a media line may be a web address, up to 300 characters.
     // 170: lift cells (ConstructLift.cs): new Fluids, CfgKey.Hole, CActKind.PatchCell, and CBodyKind.Fluid carries a hole (f32) on each entry.
     // 171: a seat's roll keys: CActKind.SeatKeys's byte gains roll left (8) and right (16), a Driving Module gains a "roll" output.
-    public const byte ProtocolVersion = 171;
+    // 172: Flight Stabilizers: CLogic.FlightStabilizer, 17 new CfgKeys, a part's settings up to 18, a Flight Panel's touch actions.
+    public const byte ProtocolVersion = 172;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

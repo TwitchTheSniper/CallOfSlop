@@ -133,7 +133,7 @@ public static partial class Program
             return true;
         }
         _scrDown = false;
-        var usable = aimed && h.Tool == ConstructTool.Hands && !h.Seated && h.Held == ConstructParts.None && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
+        var usable = aimed && (h.Seated ? hit.Body.StabCount > 0 && hit.Body.Id == h.SeatBody : h.Tool == ConstructTool.Hands && h.Held == ConstructParts.None) && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
             && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && hit.Body.DefOf(hit.Part).Panels.Length > 0 && !hit.Body.Parts[hit.Part].Broken;
         if (!usable || PanelTouch.Find(hit.Body, hit.Part, eye, dir, out var spot) is not (>= 0 and var n))
         {

@@ -1,0 +1,171 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Stabilised Airship",
+ "description": "The Scout Airship with a Flight Stabilizer: W and S drive her, A and D turn her by her engines, Shift and Ctrl climb and sink on a lift jet. The panel's AP buttons fly her.",
+ "steps": [
+  {
+   "part": "Fuel Tank"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Lift Cell",
+   "on": 0,
+   "socket": "-x",
+   "by": "+x",
+   "config": {
+    "sizeX": 10,
+    "sizeY": 12,
+    "sizeZ": 24,
+    "atX": 0.75,
+    "atY": 9.0,
+    "atZ": 0,
+    "fluid": "helium",
+    "fill": 22
+   }
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 4,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 5,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 6,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 7,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Light Jet",
+   "on": 8,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Light Jet",
+   "on": 9,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Flight Stabilizer",
+   "on": 3,
+   "socket": "+y",
+   "by": "-y",
+   "config": {
+    "pattern": "Airship"
+   }
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 3,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Light Jet",
+   "on": 13,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Drone Battery",
+   "on": 5,
+   "socket": "+z",
+   "by": "-y"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Flight Panel",
+   "on": 16,
+   "socket": "+y",
+   "by": "-y"
+  }
+ ],
+ "links": [
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 10,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 11,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 14,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "data",
+   "from": 1,
+   "to": 12
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 10,
+   "fromPort": "rear left"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 11,
+   "fromPort": "rear right"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 14,
+   "fromPort": "lift"
+  }
+ ]
+}

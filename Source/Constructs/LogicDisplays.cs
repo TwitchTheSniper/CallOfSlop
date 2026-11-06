@@ -124,7 +124,7 @@ public static class LogicDisplays
         }
     }
 
-    private static bool Live(Construct c, int part, PanelCard card)
+    public static bool Live(Construct c, int part, PanelCard card)
     {
         Ink(c.Parts[part], c.Parts[part].D, card);
         if (!c.Electrical || ConstructPower.On(c, part))

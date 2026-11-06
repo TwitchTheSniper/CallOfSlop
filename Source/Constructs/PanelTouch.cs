@@ -31,6 +31,10 @@ public static class PanelTouch
         ["media.next"] = (w, c, part, player, tick) => ConstructMedia.Touch(c, part, MediaOp.Next, player, tick),
         ["media.toggle"] = (w, c, part, player, tick) =>
             ConstructMedia.Touch(c, part, c.Parts[part].Media is { State: MediaState.Playing } ? MediaOp.Pause : MediaOp.Resume, player, tick),
+        ["flight.off"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 0),
+        ["flight.on"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 1),
+        ["flight.mode"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 2),
+        ["flight.home"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, 3),
     };
 
     /// <summary>A panel's "touch" list, and its "picture" rectangle.</summary>

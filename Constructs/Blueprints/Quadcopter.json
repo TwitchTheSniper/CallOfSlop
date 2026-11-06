@@ -1,0 +1,128 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Quadcopter",
+ "description": "Four jets and a Flight Stabilizer. Shift lifts off and climbs, Ctrl sinks and lands, W and S lean it on, Q and E sideways, A and D turn. The panel's AP buttons hold what you leave it at.",
+ "steps": [
+  {
+   "part": "Fuel Tank"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 1,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 1,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 2,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 2,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Light Jet",
+   "on": 3,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Jet",
+   "on": 4,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Jet",
+   "on": 5,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Light Jet",
+   "on": 6,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Flight Stabilizer",
+   "on": 2,
+   "socket": "+y",
+   "by": "-y",
+   "config": {
+    "pattern": "Quadcopter"
+   }
+  },
+  {
+   "part": "Drone Battery",
+   "on": 6,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Flight Panel",
+   "on": 1,
+   "socket": "+y",
+   "by": "-y"
+  }
+ ],
+ "links": [
+  {
+   "type": "data",
+   "from": 11,
+   "to": 12
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 7,
+   "fromPort": "front left"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 8,
+   "fromPort": "front right"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 9,
+   "fromPort": "rear left"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 10,
+   "fromPort": "rear right"
+  }
+ ]
+}
