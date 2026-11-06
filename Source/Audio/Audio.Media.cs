@@ -122,6 +122,8 @@ public sealed partial class Audio
     {
         if (!Enabled || _media[voice] is not { } v)
             return;
+        if (_mediaThread == null)
+            MediaStart(); // (it stopped itself in the moment this voice started)
         var s = v.Source;
         s.Position = new float3(at.X, at.Y, at.Z);
         s.ReferenceDistance = near;

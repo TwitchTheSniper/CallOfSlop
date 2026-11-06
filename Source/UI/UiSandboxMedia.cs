@@ -45,7 +45,7 @@ public sealed partial class Ui
         var look = MediaDirector.Look(c, part);
         if (look != _cmHeard)
             _cmHeard = look;
-        ImGui.TextWrapped(_cmHeard);
+        ImGuiSafe.TextWrapped(_cmHeard);
 
         // A link.
         _cmLink ??= new ImInputString(512);
@@ -68,7 +68,7 @@ public sealed partial class Ui
                 _cmWhy = why;
         }
         if (_cmWhy.Length > 0)
-            ImGui.TextColored(new float4(1f, 0.6f, 0.3f, 1f), _cmWhy);
+            ImGuiSafe.TextColored(new float4(1f, 0.6f, 0.3f, 1f), _cmWhy);
 
         // The game's own tracks: they need no browser, so they play on every PC.
         if (_cmTracks.Length == 0)
@@ -90,6 +90,8 @@ public sealed partial class Ui
 
         // The list.
         ImGui.SeparatorText($"List ({list.Length} of {ConstructMedia.MaxList})");
+        var row = ImGui.GetFrameHeightWithSpacing();
+        ImGui.BeginChild("##cmlist"u8, new float2(-1, Math.Min(list.Length, 8) * row + 2));
         for (var i = 0; i < list.Length; i++)
         {
             ImGui.PushID(i);
@@ -107,10 +109,11 @@ public sealed partial class Ui
                 game.SandboxMedia(body, part, MediaOp.Remove, i);
             ImGui.SameLine();
             if (on)
-                ImGui.TextColored(new float4(0.45f, 0.9f, 0.5f, 1f), MediaDirector.Label(list[i]));
+                ImGuiSafe.TextColored(new float4(0.45f, 0.9f, 0.5f, 1f), MediaDirector.Label(list[i]));
             else
                 ImGui.Text(MediaDirector.Label(list[i]));
             ImGui.PopID();
         }
+        ImGui.EndChild();
     }
 }

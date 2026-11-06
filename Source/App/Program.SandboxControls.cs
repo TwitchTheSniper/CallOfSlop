@@ -75,16 +75,25 @@ public static partial class Program
 
     private static int _mlKey;
     private static string _mlText = "";
+    private static double _mlNext;
+    private static long _mlPart;
 
     /// <summary>A Video Screen or Music Player under the crosshair: what it plays here, or why it can't. It is run from the configure tool's panel.</summary>
     private static void MediaLook(Game g, Construct c, int part, ConstructPartDef d, ConstructTool tool)
     {
-        var word = MediaDirector.Look(c, part);
-        var key = HashCode.Combine(d.Name, word, tool == ConstructTool.Configure);
-        if (key != _mlKey)
+        var now = Brutal.GlfwApi.Glfw.Time;
+        var at = (long)c.Id << 16 | (uint)part;
+        if (now >= _mlNext || at != _mlPart)
         {
-            _mlKey = key;
-            _mlText = tool == ConstructTool.Configure ? $"{d.Name}: {word}" : $"{d.Name}: {word} (configure tool: list and play)";
+            _mlNext = now + 0.25;
+            _mlPart = at;
+            var word = MediaDirector.Look(c, part);
+            var key = HashCode.Combine(d.Name, word, tool == ConstructTool.Configure);
+            if (key != _mlKey)
+            {
+                _mlKey = key;
+                _mlText = tool == ConstructTool.Configure ? $"{d.Name}: {word}" : $"{d.Name}: {word} (configure tool: list and play)";
+            }
         }
         g.SandboxLookText = _mlText;
     }
