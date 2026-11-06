@@ -33,6 +33,10 @@ public struct CGun
     public float RoundV; // what its rounds leave at (m/s; 0: they fly straight: flames, rockets)
     public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
     public short Turret; // the Turret Module wired into it (-1: none): its seat (Seat) aims and fires it (ConstructModules.cs)
+    public SightKind Sight; // a sight bolted to it (ConstructOrdnance.cs)
+    public float SightReach, SightCos, FuseRange; // how far it sees, the cosine of its cone, its fuse setting (m)
+    public int FuseTicks; // its next shell's age when it bursts (0: only on what it meets)
+    public ushort Track; // the body its gunner has in view (0: none; rebuilt with the guns, kept on each PC for itself)
 }
 
 /// <summary>What a construct gun's shot met (the fire events' flags).</summary>
@@ -59,6 +63,8 @@ public enum CFireKind : byte
     ShellOut, // a shell left a gun (protocol 150): body, part, its id, where (At) and its velocity (To), its kind in Muzzle
     ShellLand, // a shell went off: its id, where, the blast's radius, its kind in Muzzle
     RoundOut, // a round passed its reach and flies on: where, and how fast (ConstructRounds.cs)
+    ShellStop, // a bomb hit and waits for its fuse: its id, where (protocol 178)
+    ShellSteer, // a missile went for a flare: its id, the flare's in Target, where (At) and how fast (To)
 }
 
 /// <summary>One thing the guns did this tick (the server sends them as Msg.CFire; the host draws its own straight away).</summary>
@@ -74,6 +80,8 @@ public struct CFireEvent
     public Vector3 Half; // a shatter's: the glass part's world bounds' half size
     public Vector3 To; // a connector snap's other end; a shell's velocity
     public ushort Shell; // a shell's id
+    public float Thrust, Turn; // a rocket's or missile's, from their gun
+    public ushort Burn, Target; // ticks it burns, the body it steers for (ShellSteer: the flare)
 }
 
 /// <summary>A blast waiting to go off (an ammo box cooking off: a beat after it is holed).</summary>
@@ -556,6 +564,12 @@ public static class ConstructWeapons
         g.Forward = Rot24.Apply(p.Rot, -Vector3.UnitZ);
         g.Muzzle = p.Pos + Rot24.Apply(p.Rot, d.GunMuzzle);
         g.Shots = Math.Max(1, w.Pellets);
+        if (d.GunShell >= 0)
+        {
+            flags |= GunEffect.Shell; // (a heavy gun's own shell: triggers, feeds and reels as ever; ConstructOrdnance.cs)
+            g.Shell = (ShellKind)d.GunShell;
+            g.Crater = d.GunCrater;
+        }
         g.Effects = flags;
         g.Spread = w.HipSpreadDeg * 0.5f * MathF.PI / 180f;
         g.MaxRange = d.GunMaxRange;
@@ -581,8 +595,9 @@ public static class ConstructWeapons
 
     private static void Finish(Construct c, ref CGun g, WeaponDef w)
     {
-        g.RoundV = (g.Effects & GunEffect.Flame) != 0 || g.Fx is GunFx.Rocket or GunFx.Flame ? 0
-            : (g.Effects & GunEffect.Shell) != 0 || g.Speed > 0 ? g.Speed
+        g.RoundV = (g.Effects & GunEffect.Shell) != 0 ? g.Speed
+            : (g.Effects & GunEffect.Flame) != 0 || g.Fx is GunFx.Rocket or GunFx.Flame ? 0
+            : g.Speed > 0 ? g.Speed
             : ConstructWeaponParts.Current.RoundSpeed * MathF.Max(0.25f, w.BulletSpeed);
         if (g.RoundV > 0 && (g.Effects & GunEffect.Shell) == 0)
         {
@@ -701,6 +716,7 @@ public static class ConstructWeapons
             else if (logic == CLogic.Proximity && g.Sensor == CGun.NoSensor)
                 g.Sensor = from;
         }
+        ConstructOrdnance.SightOn(c, ref g);
         g.AimJoints = 0;
         for (int s = g.Seg, guard = 0; s > 0 && s <= c.JointCount && guard <= Construct.MaxJoints; guard++)
         {
@@ -817,17 +833,19 @@ public static class ConstructWeapons
             {
                 // At what the gunner looks at (the guns converge on it: no parallax from the gun sitting off the eye).
                 MuzzleWorld(c, k, out var muzzle, out _);
-                Aim(c, k, AimWay(c, k, muzzle, GunnerPoint(world, c, g.Seat, query, g.MaxRange)), force: true);
+                var point = g.Sight == SightKind.Lead ? ConstructOrdnance.SightPoint(world, c, ref g, g.Seat, muzzle, query, g.MaxRange) : GunnerPoint(world, c, g.Seat, query, g.MaxRange);
+                Aim(c, k, AimWay(c, k, muzzle, point), force: true);
             }
             else if (g.Director >= 0 && g.AimJoints > 0 && g.Director < c.PartCount && c.Parts[g.Director].Count is var manned and > 0 && manned <= c.PartCount)
             {
-                if (g.Director != lastDirector)
+                if (g.Director != lastDirector && g.Sight != SightKind.Lead)
                 {
                     lastDirector = g.Director;
                     directed = GunnerPoint(world, c, manned - 1, query, DirectorReach);
                 }
                 MuzzleWorld(c, k, out var muzzle, out _);
-                if (Aim(c, k, AimWay(c, k, muzzle, directed), force: false) > SentryHoldFire)
+                var point = g.Sight == SightKind.Lead ? ConstructOrdnance.SightPoint(world, c, ref g, manned - 1, muzzle, query, DirectorReach) : directed;
+                if (Aim(c, k, AimWay(c, k, muzzle, point), force: false) > SentryHoldFire)
                     trigger = false; // (held until it bears, like a sentry)
             }
             else if (g.Sensor != CGun.NoSensor && g.AimJoints > 0 && Nearest(world, c, g.Sensor) is { } target)
@@ -929,6 +947,8 @@ public static class ConstructWeapons
     private static Vector3 AimWay(Construct c, int k, Vector3 muzzle, Vector3 point)
     {
         ref var g = ref c.Guns[k];
+        if ((g.Effects & GunEffect.Shell) != 0 && c.DefOf(g.Part).GunThrust > 0)
+            return point - muzzle; // (a rocket flies at it under its own push)
         if ((g.Effects & GunEffect.Shell) == 0)
             return g.RoundV > 0 && ConstructShells.Lead(muzzle, point, g.RoundV, false, out var flat) ? flat : point - muzzle; // (direct fire allows for the drop)
         var high = g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & ConstructParts.KeyAim) != 0;
@@ -1063,7 +1083,7 @@ public static class ConstructWeapons
         if ((g.Effects & GunEffect.Shell) != 0)
         {
             MuzzleWorld(c, k, out _, out var along);
-            ConstructShells.Launch(world, c, k, Scatter(along, g.Spread, (uint)(c.Id * 73856093) ^ (uint)(g.Part * 19349663) ^ (seq * 83492791u)));
+            ConstructShells.Launch(world, c, k, Scatter(along, g.Spread, (uint)(c.Id * 73856093) ^ (uint)(g.Part * 19349663) ^ (seq * 83492791u)), query);
             world.ShotsFired++;
             return;
         }

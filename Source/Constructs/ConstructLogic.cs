@@ -265,6 +265,9 @@ public static class ConstructLogic
                     case CLogic.Decoupler:
                         next = ConstructBoost.StepDecoupler(world, c, i, ref p, on);
                         break;
+                    case CLogic.BombRack:
+                        next = ConstructOrdnance.StepRack(world, c, i, ref p, on);
+                        break;
                     case CLogic.AntiGrav:
                         next = count[i] == 0 || on ? 1 : 0;
                         if (next > 0)

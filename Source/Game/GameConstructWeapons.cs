@@ -234,6 +234,18 @@ public sealed partial class Game : IConstructTargets
             ShellOutFx(e, now);
             return;
         }
+        if (e.Kind == CFireKind.ShellStop)
+        {
+            if (!IsServer)
+                Constructs.ClientShellStop(e.Shell, e.At);
+            return;
+        }
+        if (e.Kind == CFireKind.ShellSteer)
+        {
+            if (!IsServer)
+                Constructs.ClientShellSteer(e);
+            return;
+        }
         if (e.Kind == CFireKind.ShellLand)
         {
             ShellLandFx(e, now);

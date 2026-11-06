@@ -1,0 +1,115 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Missile Rail",
+  "description": "A guided missile: it locks what the gunner looks at, or what a Seeker Head sees, and turns after it. Flares draw it.",
+  "group": "Weapons",
+  "section": "Guns",
+  "role": "gun",
+  "tool": "welder",
+  "mass": 60.0,
+  "health": 240,
+  "armour": 6,
+  "material": "steel",
+  "color": "#2a2c26",
+  "attachSeconds": 3.0,
+  "gun": {
+    "damage": 200,
+    "rpm": 30,
+    "spread": 0,
+    "range": 900,
+    "maxRange": 1000,
+    "mag": 2,
+    "reload": 10,
+    "kick": 20,
+    "fx": "rocket",
+    "soundOf": "Leviathan .50",
+    "shell": "missile",
+    "speed": 30,
+    "thrust": 160,
+    "burn": 3,
+    "turn": 70,
+    "prox": 5,
+    "blast": 9,
+    "blastDamage": 320,
+    "muzzle": [
+      0,
+      0,
+      -0.7
+    ]
+  },
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.14,
+        -0.14,
+        -0.14
+      ],
+      "max": [
+        0.14,
+        0.14,
+        0.14
+      ]
+    },
+    {
+      "min": [
+        -0.063,
+        -0.063,
+        -0.7
+      ],
+      "max": [
+        0.063,
+        0.063,
+        -0.14
+      ],
+      "color": "#3a3d40"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.14,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.14,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.14,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.14,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.14
+      ],
+      "dir": "+z"
+    }
+  ]
+}

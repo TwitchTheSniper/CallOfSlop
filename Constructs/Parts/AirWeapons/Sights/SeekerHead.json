@@ -1,0 +1,59 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Seeker Head",
+  "description": "On a Missile Rail: the missile locks the flying body nearest straight ahead, with or without a gunner.",
+  "group": "Weapons",
+  "section": "Sights",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 5.0,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2a2c26",
+  "attachSeconds": 1.0,
+  "sight": {
+    "kind": "seeker",
+    "reach": 1000,
+    "cone": 20
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.08,
+        0.0,
+        -0.14
+      ],
+      "max": [
+        0.08,
+        0.12,
+        0.14
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        0.03,
+        -0.155
+      ],
+      "max": [
+        0.05,
+        0.09,
+        -0.135
+      ],
+      "color": "#20303a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

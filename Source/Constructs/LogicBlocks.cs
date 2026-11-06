@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class LogicBlocks
 {
-    public const int PortWidth = 16, BusWidth = 8; // (data ports are 0 to 15 in a link's byte: ConstructRoutes.DataPort)
+    public const int PortWidth = 17, BusWidth = 8; // (a Flight Stabilizer's outputs; a link's byte holds more: ConstructRoutes.MaxDataPorts)
     private const int EdgeA = 2, EdgeB = 4, EdgeC = 8; // State bits: the input last tick (bit 0 is the block's own)
     private static uint _rng = 0x9E3779B9;
 
