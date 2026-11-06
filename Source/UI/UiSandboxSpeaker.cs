@@ -42,6 +42,6 @@ public sealed partial class Ui
                     dl.AddLine(mid, new float2(mid.X + MathF.Sin(a) * side * 0.5f, mid.Y - MathF.Cos(a) * side * 0.5f), new ImColor8(255, 208, 0, 192));
                 }
         dl.AddRectFilled(new float2(mid.X - 3 * _scale, mid.Y - 3 * _scale), new float2(mid.X + 3 * _scale, mid.Y + 3 * _scale), new ImColor8(255, 255, 255, 255));
-        ImGui.TextDisabled($"Rings every {shape.Range / 4:0.#} m");
+        ImGuiSafe.TextDisabled($"Rings every {shape.Range / 4:0.#} m");
     }
 }
