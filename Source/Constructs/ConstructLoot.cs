@@ -93,7 +93,7 @@ public static class ConstructLoot
         var wp = d.GunPartName.Length > 0 ? Parts.Find(d.GunPartName) : d.GunReceiver.Length > 0 ? Parts.Find(d.GunReceiver) : null;
         if (wp != null && !rarities.Contains(wp.Rarity.ToString(), StringComparer.OrdinalIgnoreCase))
             return $"a weapon part of rarity {wp.Rarity}: the table takes {string.Join(", ", rarities)}";
-        if (d.Surface != null && TierOfClass(d) > t.MaxTier)
+        if ((d.Surface != null || d.Rotor != null) && TierOfClass(d) > t.MaxTier)
             return $"it is tier {TierOfClass(d)} by its size: the table stops at tier {t.MaxTier}";
         var recipe = AssemblingTable.Current.Recipes.FirstOrDefault(r => r.Output == d);
         if (recipe != null && recipe.MinTier > t.MaxTier)

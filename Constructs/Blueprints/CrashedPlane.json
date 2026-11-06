@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Crashed Plane",
+  "description": "A light plane that came down: salvage its wings and tail, and see what its Chest holds.",
+  "steps": [
+    {
+      "part": "Frame Block"
+    },
+    {
+      "part": "Wing Segment",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fabric Wing Segment",
+      "on": 1,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Tail Plane",
+      "on": 3,
+      "socket": "+z",
+      "by": "front"
+    },
+    {
+      "part": "Tail Fin",
+      "on": 4,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Rudder",
+      "on": 5,
+      "socket": "back",
+      "by": "hinge"
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 0,
+      "socket": "-z",
+      "by": "-z"
+    },
+    {
+      "part": "Two-Blade Prop",
+      "on": 7,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Chest",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    }
+  ],
+  "links": [],
+  "loot": [
+    {
+      "step": 9,
+      "table": "aircraft"
+    }
+  ]
+}

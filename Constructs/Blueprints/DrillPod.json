@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Drill Pod",
+  "description": "A Drill Module with a battery and a bin, on a Tow Eye: a Sky Crane lowers it onto a deposit, waits, and lifts it out full.",
+  "steps": [
+    {
+      "part": "Drill Module"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Tow Eye",
+      "on": 0,
+      "socket": "back",
+      "by": "bottom",
+      "spin": 0
+    }
+  ],
+  "links": [
+    {
+      "type": "chute",
+      "from": 0,
+      "to": 2,
+      "fromPort": "Chute out"
+    }
+  ]
+}

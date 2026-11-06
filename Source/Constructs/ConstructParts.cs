@@ -617,6 +617,7 @@ public sealed class ConstructPartDef
     public Vector3 BeltDir; // ...and which way (part frame)
     public float WinchMin, WinchSpeed, WinchRating; // a winch ("hitch"."winch"): its shortest chain (m), reeling speed (m/s), the heaviest body it lifts (N)
     public bool IsWinch => WinchSpeed > 0;
+    public bool IsCargoWinch; // a winch a pilot works from a seat: a signal into grab takes the nearest eye in reach, or lets go ("winch"."grab": ConstructLinks.cs)
     public bool Helm; // a helm seat ("seat"."helm"): the construct's driver sits here before any other seat
 
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
@@ -695,7 +696,7 @@ public sealed class ConstructPartDef
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.AmmoSwitch => 1, // which feed goes on
-        PartRole.Hitch => IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
+        PartRole.Hitch => IsCargoWinch ? 3 : IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
         PartRole.Differential => Diff is DiffKind.Lockable or DiffKind.Steering ? 1 : 0, // locks it; steers it (-1 to 1: 1 is right)

@@ -1,0 +1,196 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Sky Crane",
+  "description": "Four ducted fans on a hub, a Cargo Winch under it. Hover over a Tow Eye with the panel's autopilot: fire grabs or lets go, aim reels in, reload lets out. Shift lifts off, Ctrl lands.",
+  "steps": [
+    {
+      "part": "Frame Block"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 0,
+      "socket": "+x",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 0,
+      "socket": "-x",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 0,
+      "socket": "-z",
+      "by": "-z"
+    },
+    {
+      "part": "Extrusion fan3.straight.6 0x200x0 metal",
+      "on": 1,
+      "socket": "+y7",
+      "by": "base",
+      "config": {
+        "hand": 1
+      }
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 1,
+      "socket": "-y6",
+      "by": "+z"
+    },
+    {
+      "part": "Extrusion fan3.straight.6 0x200x0 metal",
+      "on": 2,
+      "socket": "+y7",
+      "by": "base",
+      "config": {
+        "hand": 1
+      }
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 2,
+      "socket": "-y6",
+      "by": "+z"
+    },
+    {
+      "part": "Extrusion fan3.straight.6 0x200x0 metal",
+      "on": 3,
+      "socket": "+y7",
+      "by": "base",
+      "config": {
+        "hand": 0
+      }
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 3,
+      "socket": "-y6",
+      "by": "+z"
+    },
+    {
+      "part": "Extrusion fan3.straight.6 0x200x0 metal",
+      "on": 4,
+      "socket": "+y7",
+      "by": "base",
+      "config": {
+        "hand": 0
+      }
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 4,
+      "socket": "-y6",
+      "by": "+z"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery Pack",
+      "on": 3,
+      "socket": "-y2",
+      "by": "+y"
+    },
+    {
+      "part": "Battery Pack",
+      "on": 4,
+      "socket": "-y2",
+      "by": "+y"
+    },
+    {
+      "part": "Flight Stabilizer",
+      "on": 1,
+      "socket": "+y2",
+      "by": "-y",
+      "config": {
+        "keys": "Rotorcraft",
+        "apMode": "Hover"
+      }
+    },
+    {
+      "part": "Flight Control Panel",
+      "on": 15,
+      "socket": "+x",
+      "by": "back"
+    },
+    {
+      "part": "Cargo Winch 16 m",
+      "on": 0,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Input Reader",
+      "on": 1,
+      "socket": "-y2",
+      "by": "+y",
+      "config": {
+        "setting": "fire"
+      }
+    },
+    {
+      "part": "Input Reader",
+      "on": 1,
+      "socket": "-y3",
+      "by": "+y",
+      "config": {
+        "setting": "aim"
+      }
+    },
+    {
+      "part": "Input Reader",
+      "on": 1,
+      "socket": "-y4",
+      "by": "+y",
+      "config": {
+        "setting": "reload"
+      }
+    }
+  ],
+  "links": [
+    {
+      "type": "data",
+      "from": 13,
+      "to": 19
+    },
+    {
+      "type": "data",
+      "from": 19,
+      "to": 18,
+      "toPort": "grab"
+    },
+    {
+      "type": "data",
+      "from": 13,
+      "to": 20
+    },
+    {
+      "type": "data",
+      "from": 20,
+      "to": 18,
+      "toPort": "reel"
+    },
+    {
+      "type": "data",
+      "from": 13,
+      "to": 21
+    },
+    {
+      "type": "data",
+      "from": 21,
+      "to": 18,
+      "toPort": "pay out"
+    }
+  ]
+}

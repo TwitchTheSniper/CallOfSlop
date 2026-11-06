@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cargo Winch 16 m",
+  "description": "A winch a pilot works from the seat: grab takes the nearest eye within its 16 m, or lets go; reel takes it in, pay out lets it down. Lifts 3 t. Needs power.",
+  "group": "Vehicles",
+  "section": "Air cargo",
+  "role": "hitch",
+  "tool": "wrench",
+  "mass": 35.0,
+  "health": 200,
+  "armour": 6,
+  "material": "steel",
+  "color": "#30343a",
+  "attachSeconds": 3,
+  "hitch": {
+    "kind": "hook",
+    "at": [
+      0,
+      -0.27,
+      0
+    ],
+    "chain": 16,
+    "winch": {
+      "min": 1,
+      "speed": 3,
+      "rating": 54000,
+      "grab": true
+    }
+  },
+  "power": 800,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        -0.27,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        -0.2,
+        0.05
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.2,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -319,7 +319,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 173: wings and rotors (ConstructAero.cs, ConstructRotor.cs): a CPose carries rotors' speeds and control surfaces' angles after its joints, ExShape.Fan pieces in a Full's part list, new CfgKeys.
     // 174: rotors' blade counts and styles: a Fan piece's wall is kind, style and blades, ExShape.Blade pieces, CfgKey.BladeStyle, blade wear as masks.
     // 175: jets, rockets and repulsors (ConstructBoost.cs): Fluid.Oxidiser, CfgKey.Grain, CLogic.Decoupler and AntiGrav, thruster kinds, a decoupler splits a body into two live ones, CBodyKind.Flight, the Flight Stabilizer's "pattern" setting becomes "keys".
-    public const byte ProtocolVersion = 175;
+    // 176: flight in survival: ExShape.Wing pieces and CfgKey.WingKind/WingChord/WingSpan (the Airframe Former), Assembler families' recipe lists, the levite materials
+    public const byte ProtocolVersion = 176;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

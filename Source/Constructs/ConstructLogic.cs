@@ -152,6 +152,15 @@ public static class ConstructLogic
                     p.State |= ConstructExtruder.CutPending; // (a rising edge: the machine's next step cuts)
                 p.Count = (ushort)(cut ? 1 : 0);
             }
+            else if (d.IsCargoWinch)
+            {
+                next = 0;
+                var grab = count1[i] > 0 && sum1[i] >= 0.5f;
+                if (grab && p.Count == 0)
+                    world.WinchGrab(c, i); // (a rising edge)
+                p.Count = (ushort)(grab ? 1 : 0);
+                p.State = (byte)(count2[i] > 0 && sum2[i] >= 0.5f ? p.State | ConstructWorld.WinchPaysOut : p.State & ~ConstructWorld.WinchPaysOut);
+            }
             else if (d.Role != PartRole.Logic)
                 next = 0;
             else

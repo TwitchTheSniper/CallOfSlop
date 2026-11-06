@@ -9558,6 +9558,22 @@
   ],
   "constructs": [
    {
+    "blueprint": "Crashed Plane",
+    "at": [
+     118.0,
+     96.0
+    ],
+    "yaw": 35.0
+   },
+   {
+    "blueprint": "Crashed Jet",
+    "at": [
+     -62.0,
+     142.0
+    ],
+    "yaw": 250.0
+   },
+   {
     "blueprint": "Gun Bench",
     "at": [
      -156.0,

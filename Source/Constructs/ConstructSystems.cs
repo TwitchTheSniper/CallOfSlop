@@ -81,12 +81,17 @@ public static partial class ConstructParts
             return;
         if (d.Hitch != HitchKind.Hook)
             throw new ConstructPartException($"{file}: only a hook has a \"winch\"");
-        Known(w, ["min", "speed", "rating"], $"{file}, winch");
+        Known(w, ["min", "speed", "rating", "grab"], $"{file}, winch");
         d.WinchMin = Num(Need(w, "min", $"{file}, winch"), file, "winch.min");
         Range(d.WinchMin, 0.3f, d.HitchChain, file, "winch.min");
         d.WinchSpeed = Num(Need(w, "speed", $"{file}, winch"), file, "winch.speed");
         Range(d.WinchSpeed, 0.05f, 20, file, "winch.speed");
         d.WinchRating = Num(Need(w, "rating", $"{file}, winch"), file, "winch.rating");
         Range(d.WinchRating, 1, 2e9f, file, "winch.rating");
+        if (Opt(w, "grab") is { ValueKind: JsonValueKind.True })
+        {
+            d.IsCargoWinch = true;
+            d.DataIn = ["reel", "grab", "pay out"];
+        }
     }
 }
