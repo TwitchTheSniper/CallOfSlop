@@ -313,6 +313,7 @@ public static class PanelSources
         ["logic.keypad"] = LogicDisplays.Keypad,
         ["office.fax"] = OfficeParts.FillFax,
         ["office.computer"] = OfficeParts.FillComputer,
+        ["flight.panel"] = ConstructFlight.FillPanel,
     };
 
     public static PanelFill? Find(string name) => All.GetValueOrDefault(name);

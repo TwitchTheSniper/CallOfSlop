@@ -1051,6 +1051,7 @@ public sealed partial class Construct
         BuildThrusters();
         ConstructFluid.Build(this);
         ConstructLift.Build(this);
+        ConstructFlight.Build(this);
         ConstructHydraulics.Build(this);
         ConstructSeal.Build(this);
         BuildSegments();

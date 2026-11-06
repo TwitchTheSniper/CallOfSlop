@@ -127,6 +127,23 @@ public enum CfgKey : byte
     ConeOuter, // speaker: where it reaches the outer level, degrees
     ConeGain, // speaker: the level outside the cone
     Hole, // lift cell: the holes in it, m2 (not on the panel; ConstructLift.cs)
+    Pattern, // Flight Stabilizer: which control pattern (FlightPattern; ConstructFlight.cs)
+    MaxTilt, // Flight Stabilizer: the most it leans, degrees (0: its pattern's)
+    MaxTurn, // Flight Stabilizer: the fastest it turns, degrees a second (0: its pattern's)
+    MaxClimb, // Flight Stabilizer: the fastest it climbs, m/s (0: its pattern's)
+    MaxSpeed, // Flight Stabilizer: the fastest it is asked to go, m/s (0: its pattern's)
+    Level, // Flight Stabilizer: it brings itself level
+    TrimPitch, // Flight Stabilizer: degrees it counts as level, nose up
+    TrimRoll, // Flight Stabilizer: degrees it counts as level, right wing down
+    MouseAim, // Flight Stabilizer: it flies where the seat looks
+    Autopilot, // Flight Stabilizer: the autopilot is on
+    ApMode, // Flight Stabilizer: what the autopilot holds (FlightMode)
+    TargetAlt, // Flight Stabilizer: the height held, m (0: where it was when engaged)
+    TargetHeading, // Flight Stabilizer: the heading held, degrees (below 0: where it pointed when engaged)
+    WaypointX, // Flight Stabilizer: the point it flies to
+    WaypointZ,
+    HomeX, // Flight Stabilizer: where it took off from (not on the panel)
+    HomeZ,
     COUNT,
 }
 
@@ -199,7 +216,7 @@ public struct CfgValues
 /// </summary>
 public static class ConstructConfig
 {
-    public const int MaxSlots = 12; // (12 since the spawners: a bot spawner has 9 settings)
+    public const int MaxSlots = 18; // (18 since the Flight Stabilizer)
 
     /// <summary>How far away a part can be configured from (metres to the part's centre).</summary>
     public const float Reach = 8f;
@@ -630,6 +647,7 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
+                >= CfgKey.Pattern and <= CfgKey.HomeZ => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
@@ -680,7 +698,7 @@ public static class ConstructConfig
                 CfgKey.Loop => d.IsMedia,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && (d.JointLimited || d.JointType == JointType.Swivel) && d.JointType != JointType.Steering,
                 CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel),
-                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
+                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.FlightStabilizer,
                 CfgKey.Friction or CfgKey.DirtGrip or CfgKey.SideGrip or CfgKey.Rolling or CfgKey.Bounciness => d.Role == PartRole.Wheel,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 _ => false,

@@ -424,7 +424,7 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>The most ports a part lists in the picker.</summary>
-    public const int MaxLinkPorts = 16;
+    public const int MaxLinkPorts = 32; // (a Flight Stabilizer: 13 in, 16 out)
 
     /// <summary>Does the part have a link port of any type (so the linking tool has something to act on)?</summary>
     public static bool HasAnyPort(ConstructPartDef d) => d.NamedPorts.Length > 0 || d.HasOutput || d.MaxInputs > 0 || d.Role == PartRole.Storage;

@@ -52,7 +52,8 @@ public static class ConstructModules
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            if (p.D.Logic is not (CLogic.DriveModule or CLogic.TurretModule) || !p.Working)
+            var flight = p.D.Logic == CLogic.FlightStabilizer;
+            if (p.D.Logic is not (CLogic.DriveModule or CLogic.TurretModule) && !flight || !p.Working)
                 continue;
             var seat = SeatOf(c, i);
             if (seat < 0 || !c.Parts[seat].Working)
@@ -64,7 +65,7 @@ public static class ConstructModules
             }
             if (c.ControlSeat < 0)
                 c.ControlSeat = seat;
-            if (!Linked(c, i))
+            if (!(flight ? ConstructFlight.Reaches(c, i) : Linked(c, i)))
                 continue;
             if (c.DriveSeat < 0 || c.Parts[seat].D.Helm && !c.Parts[c.DriveSeat].D.Helm)
                 c.DriveSeat = seat; // (two modules that both reach the drivetrain: the helm's, else the first)
@@ -240,6 +241,8 @@ public static class ConstructModules
     {
         if ((td.IsSeatModule || td.Logic == CLogic.RemoteLink) && fd.Role != PartRole.Seat)
             return $"a {td.Name} reads a seat: link it from one";
+        if (td.Logic == CLogic.FlightStabilizer && toPort == 255 && fd.Role != PartRole.Seat)
+            return $"its seat port reads a seat: link a seat or a receiver to it, or use a port by name";
         var bus = BusPort(td);
         var intoBus = bus > 0 && toPort == ConstructRoutes.DataPortByte(bus);
         if (IsBus(fd, fromPort))
@@ -254,7 +257,7 @@ public static class ConstructModules
         if (part < 0 || part >= c.PartCount)
             return null;
         var d = c.DefOf(part);
-        return d.Role == PartRole.Seat ? SeatProblem(c, part) : d.Logic == CLogic.DriveModule ? DriveProblem(c, part) : d.Logic == CLogic.TurretModule ? TurretProblem(c, part) : null;
+        return d.Logic == CLogic.FlightStabilizer ? ConstructFlight.Problem(c, part) : d.Role == PartRole.Seat ? SeatProblem(c, part) : d.Logic == CLogic.DriveModule ? DriveProblem(c, part) : d.Logic == CLogic.TurretModule ? TurretProblem(c, part) : null;
     }
 
     private static string? SeatProblem(Construct c, int seat)
@@ -267,7 +270,9 @@ public static class ConstructModules
             if (c.Wires[k].From == seat && c.Wires[k].To < c.PartCount)
             {
                 ref var p = ref c.Parts[c.Wires[k].To];
-                if (p.D.Logic == CLogic.DriveModule)
+                if (p.D.Logic == CLogic.FlightStabilizer)
+                    driving = true;
+                else if (p.D.Logic == CLogic.DriveModule)
                 {
                     driving = true;
                     if (DriveProblem(c, c.Wires[k].To) is { } why)

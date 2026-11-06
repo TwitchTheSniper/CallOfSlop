@@ -138,6 +138,7 @@ public static partial class Program
     private static void DrawLinkWheelInMatch()
     {
         DrawLinkMarkers();
+        DrawBalanceLabels();
         if (_lkPicker.IsOpen)
         {
             var size = Brutal.ImGuiApi.ImGui.GetIO().DisplaySize;
