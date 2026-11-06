@@ -4872,6 +4872,10 @@ A surface is any part with a `"surface"` block, so a new one is data: `area`, `a
 
 **Extruded airfoils**: the Extruder's Profile list gains the rows of `Extrusion.json`'s `"airfoils"` after Pipe. They are ordinary sections on the grid (wire, saves and blueprints need nothing new); a finished piece whose mask is one of them gets a `Surface` from its chord, length and row. Chord across x with the leading edge at -x, span along its length.
 
+### Round worlds
+
+Everything in flight reads up from the gravity where the craft is: `ConstructPhysics.BodyUp` (`Construct.UpNow`; world +Y on a flat map). It follows a smooth field exactly, turns at most 2 rad/s over a step (a zone's wall, a hollow world's cavity), and where gravity all but vanishes it keeps the last good up. Speeds and the way to a point are taken along the ground under that up (`ConstructFlight.Along`), never from world x and z. A stabilizer's headings count from a north it carries with it (`CStab.North`), so a held heading is a great circle and no pole is in the way; a heading typed in is on the compass from that moment. A home or waypoint is a whole point on a round world (`homeY`, `waypointY`). Altitude, heading and tilt sensors, wind, ground effect, burner height holds and a seat's aim follow the same up.
+
 ### Tuning
 
 Every control surface and nozzle has **Throw** (10 to 300% of its full deflection, stopped at 43 degrees; `ConstructAero.ThrowOf`, and the stabilizer's scan counts it), **Expo** and **Reverse**.

@@ -37,6 +37,7 @@ public sealed partial class Construct
     public float LiftInput; // the driver's sprint (up) and crouch (down), -1..1
     public float RollInput; // the seat's roll keys, -1 left, 1 right
     public bool HoverOn; // the hover hold: every lifting thruster holds the construct level at HoverY (it stays on with nobody at the controls: a carrier's crew can leave the seat)
+    public Vector3 UpNow; // the way up for it now (ConstructPhysics.BodyUp)
     public float HoverY; // the height it holds its centre of mass at (world Y; on a planet, the distance from its centre: ConstructPhysics.HoldHeight)
     public Vector3 TiltHold; // on a planet: the level hold's integral (world axis x rad s), so a steady twist (a lifter a little off) can't leave it leaning
     public float HoverRateNow; // on a planet: how fast the height held moves this tick (m/s), which the hold follows as well as the height
@@ -131,10 +132,34 @@ public static partial class ConstructPhysics
     /// The height the hover hold measures (m): world Y, or on a planet (point gravity) the distance from its centre, so a
     /// flyer holds its height over the ball wherever it is, not a flat Y that the ground curves away from.
     /// </summary>
-    public static float HoldHeight(Vector3 p) => GravityFrames.Point is { } planet ? Vector3.Distance(p, planet.Center) : p.Y;
+    public static float HoldHeight(Vector3 p) => GravityFrames.Point is { } planet ? Vector3.Distance(p, planet.Center) : GravityFrames.HeightOf(p);
 
     /// <summary>The way up the hold pushes and measures: world +Y, or away from a planet's centre.</summary>
-    public static Vector3 HoldUp(Vector3 p) => GravityFrames.Point is { } planet ? GravityFrames.UpOf(planet, p) : Vector3.UnitY;
+    public static Vector3 HoldUp(Vector3 p) => GravityFrames.Point is { } planet ? GravityFrames.UpOf(planet, p) : GravityFrames.UpAt(p);
+
+    private const float UpTurn = 2f; // rad/s: the most a craft's up turns when the field steps (a zone's wall, a hollow world's cavity)
+    private const float NoGravity = 0.01f; // (m/s2)^2: under this it keeps the up it had
+
+    /// <summary>
+    /// A craft's up now, from the gravity where it is (<see cref="Construct.UpNow"/>; world +Y on a flat map). It follows a smooth field exactly, turns at most <see cref="UpTurn"/>
+    /// over a step, and where gravity all but vanishes it keeps the last good one.
+    /// </summary>
+    public static Vector3 BodyUp(Construct c, float dt)
+    {
+        if (!GravityFrames.Curved)
+            return c.UpNow = Vector3.UnitY;
+        var com = c.WorldCom;
+        var have = c.UpNow.LengthSquared() > 0.5f;
+        if (have && GravityFrames.GravityAt(com).LengthSquared() < NoGravity)
+            return c.UpNow;
+        var target = HoldUp(com);
+        if (!have)
+            return c.UpNow = target;
+        var dot = Math.Clamp(Vector3.Dot(c.UpNow, target), -1f, 1f);
+        var angle = MathF.Acos(dot);
+        var most = UpTurn * dt;
+        return c.UpNow = angle <= most ? target : Vector3.Normalize(World.Slerp(c.UpNow, target, most / angle));
+    }
 
     /// <summary>A hold height as the HUD shows it: on a planetoid, above its radius.</summary>
     public static float HoldShown(float height) => GravityFrames.Point != null && World.Map.Planetoid is { } pl ? height - (float)pl.Radius : height;
@@ -168,8 +193,8 @@ public static partial class ConstructPhysics
     {
         var com = c.WorldCom;
         var g = GravityAccel;
-        var planet = GravityFrames.Point != null; // (the hold measures its height from the planet's centre: HoldHeight)
-        var up = HoldUp(com);
+        var planet = GravityFrames.Curved; // (the hold measures its height along its gravity: HoldHeight)
+        var up = BodyUp(c, dt);
         var height = HoldHeight(com);
         if (c.Driver == 255)
             c.LiftInput = c.RollInput = 0;

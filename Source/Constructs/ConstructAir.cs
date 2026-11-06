@@ -184,6 +184,13 @@ public static class ConstructAir
         if (!HasAir)
             return Vector3.Zero;
         var t = AirTable.Current;
+        if (GravityFrames.Point is { } planet && World.Map.Planetoid is { } pl)
+        {
+            // Round a planetoid the weather's wind blows along the ground under it, from its radius up.
+            var up = GravityFrames.UpOf(planet, p);
+            var wind = Vector3.Lerp(WindLow, WindHigh, Math.Clamp((Vector3.Distance(p, planet.Center) - (float)pl.Radius) / t.WindAloftAt, 0, 1));
+            return wind - up * Vector3.Dot(wind, up);
+        }
         return Vector3.Lerp(WindLow, WindHigh, Math.Clamp((p.Y - t.SeaLevel) / t.WindAloftAt, 0, 1));
     }
 

@@ -83,6 +83,8 @@ CONFIG = [
     adv("landingAssist", "Landing assist", "Feel", "m", 0, 100, 1, 0, "Below this height it comes down gently. 0: off."),
     adv("collectiveRange", "Collective range", "Feel", "%", 0, 100, 5, 0, "The most of its rotors' push it uses. 0: all of it."),
     adv("thrustLimit", "Thrust limit", "Feel", "%", 0, 100, 5, 0, "The most of its thrusters' push it uses. 0: all of it."),
+    number("waypointY", "Waypoint y", "Autopilot", "m", -100000, 100000, 1, 0, "The point it flies to, world y: only on a round world, where x and z don't place it."),
+    {"key": "homeY", "hidden": True, "unit": "m", "min": -100000, "max": 100000, "default": 0},
     {"key": "homeX", "hidden": True, "unit": "m", "min": -100000, "max": 100000, "default": 0},
     {"key": "homeZ", "hidden": True, "unit": "m", "min": -100000, "max": 100000, "default": 0},
 ]

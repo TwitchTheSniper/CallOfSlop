@@ -171,6 +171,7 @@ public enum CfgKey : byte
     ThrottleCurve, MaxBank, MaxPitchAngle, MaxDescent, TurnCoord, AutoLevel, WindHold, LandingAssist, CollectiveRange, ThrustLimit, // Flight Stabilizer: Advanced (0: auto)
     Throw, // control surface, nozzle: a share of its full deflection (ConstructAero.ThrowOf)
     Expo, // control surface, nozzle: soft around the middle, %
+    HomeY, WaypointY, // Flight Stabilizer: on a round world, the rest of the point
     COUNT,
 }
 
@@ -772,7 +773,7 @@ public static class ConstructConfig
                 CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
                 CfgKey.WingKind or CfgKey.WingChord or CfgKey.WingSpan => d.IsAirframeFormer,
-                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) or CfgKey.HomeY or CfgKey.WaypointY => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Throw or CfgKey.Expo => d.Surface is { Control: > 0 } || d.ThrustGimbal > 0,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Stabilised => d.Logic == CLogic.TurretModule,

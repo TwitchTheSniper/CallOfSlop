@@ -226,7 +226,7 @@ public static class ConstructModules
                 ref var s = ref c.Parts[seat];
                 c.WorldFrame(s.Seg, out var q, out _);
                 var frame = q * Rot24.Quat(s.Rot);
-                var look = Vector3.Transform(World.Forward(s.AimYaw, s.AimPitch), Quaternion.Conjugate(frame));
+                var look = Vector3.Transform(GravityFrames.Forward(c.WorldCom, s.AimYaw, s.AimPitch), Quaternion.Conjugate(frame));
                 return port == PortYaw ? MathF.Atan2(look.X, -look.Z) / MathF.PI : MathF.Asin(Math.Clamp(look.Y, -1, 1)) / (MathF.PI * 0.5f);
             }
             default:

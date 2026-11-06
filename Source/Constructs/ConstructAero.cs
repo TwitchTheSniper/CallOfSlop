@@ -241,7 +241,7 @@ public static class ConstructAero
         if (density <= 0 || c.Mass <= 0)
             return;
         var air = 0.5f * SeaAir * density;
-        var up = weight.LengthSquared() > 1e-6f ? -Vector3.Normalize(weight) : Vector3.UnitY;
+        var up = weight.LengthSquared() > 1e-6f ? -Vector3.Normalize(weight) : ConstructPhysics.HoldUp(com);
         var cushion = c.SurfaceCount > 0 ? ConstructAir.GroundEffect(c.GroundHeight, c.SurfaceSpan) : 1f;
         var vel = c.Vel;
         var ang = c.AngVel;
