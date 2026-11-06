@@ -103,7 +103,53 @@ public static partial class SelfTest
                 }
             }
         }
+        // The user's picture: the top of a tall duct. Thin tops narrower than the body and hollow ducts with a hole it can't drop into, centred and a little off.
+        foreach (var (preset, size, off) in new[] { (0, 10, 0.15f), (0, 30, 0.3f), (3, 30, 0.15f), (3, 50, 0f), (3, 80, 0.15f) })
+            foreach (var frozen in new[] { true, false })
+            {
+                var def = Extrusion.Def(new ExtrusionKey(Extrusion.Presets[preset].Mask, (ushort)size, (ushort)size, 12000, (byte)metal, false))!;
+                var w = new ConstructWorld();
+                var c = ConstructBuild.PlaceNew(w, def, ConstructWorld.Ground(World.Query, -6, -6), 0)!;
+                c.Rebuild();
+                var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitX, -MathF.PI / 2);
+                RidePose(w, c, c.Pos + new Vector3(0, 1f, 0), rot, Vector3.Zero, Vector3.Zero);
+                var end = c.ToWorld(new Vector3((c.LocalMin.X + c.LocalMax.X) / 2, (c.LocalMin.Y + c.LocalMax.Y) / 2, c.LocalMax.Z));
+                var s = new MoveState { Position = end + new Vector3(off, 3f, 0) };
+                for (var t = 0; t < 300; t++)
+                {
+                    RidePose(w, c, c.Pos, rot, Vector3.Zero, Vector3.Zero);
+                    c.Anchored = frozen;
+                    RideTick(w, ref s);
+                }
+                if (Vector3.Distance(s.Position, end) > 0.5f || !s.Grounded)
+                    Fail($"ride entry: a body dropped on the top of a {size * 0.01f:0.0} m {Extrusion.Presets[preset].Mask} section 120 m tall (frozen {frozen}) ended at {s.Position}, its top at {end}");
+            }
         World.OpenSky = false;
+    }
+
+    /// <summary>The top of a frozen duct 60 m up, over the old sky limit, over the wire: the server and the client both keep the body there.</summary>
+    private static void RideTallOnWire(Game server, Game a, Game[] clients, Player sp, Stopwatch clock, ref double now, float z)
+    {
+        var w = server.Constructs;
+        var metal = (byte)RecyclingTable.Current.IdOf("metal");
+        var duct = Extrusion.Def(new ExtrusionKey(Extrusion.Presets[3].Mask, 60, 60, 12000, metal, false))!;
+        var c = ConstructBuild.PlaceNew(w, duct, ConstructWorld.Ground(World.Query, -8, z), 0)!;
+        c.Rebuild();
+        c.Rot = c.PrevRot = c.NetRot = Quaternion.CreateFromAxisAngle(Vector3.UnitX, -MathF.PI / 2);
+        c.Pos = c.PrevPos = c.NetPos += new Vector3(0, 1f, 0);
+        c.Frozen = c.Anchored = true;
+        c.Vel = c.AngVel = Vector3.Zero;
+        w.StructureDirty.Add(c.Id);
+        Pump(server, clients, 0.6, ref now, clock);
+        var top = c.ToWorld(new Vector3((c.LocalMin.X + c.LocalMax.X) / 2, (c.LocalMin.Y + c.LocalMax.Y) / 2, c.LocalMax.Z));
+        sp.Teleport(top + new Vector3(0.1f, 2f, 0));
+        Pump(server, clients, 2, ref now, clock);
+        var me = a.Local?.Position ?? default;
+        Line($"ride entry (wire): on a duct's top {top.Y:0.0} m up: server {sp.Position}, client {me}");
+        if (Vector3.Distance(sp.Position, top) > 0.5f || Vector3.Distance(me, top) > 0.5f)
+            Fail($"ride entry (wire): the top of a tall duct at {top} didn't hold the body (server {sp.Position}, client {me})");
+        w.Remove(c);
+        sp.Teleport(new Vector3(0, 1, 0));
     }
 
     /// <summary>A heavy deck drives through someone who just rode it (pushed, unhurt), then through them again later (hurt).</summary>
