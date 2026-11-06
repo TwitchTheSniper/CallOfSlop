@@ -457,6 +457,11 @@ public sealed partial class Construct
     public void NetHistAdd(uint tick, Vector3 pos, Quaternion rot)
     {
         var n = NetHistCount;
+        if (NetHistAngle.Length != NetHistMax * JointCount)
+        {
+            NetHistAngle = new float[NetHistMax * JointCount]; // (the joints changed: what was heard of the old ones means nothing now)
+            n = 0;
+        }
         if (n > 0 && tick <= NetHistTick[n - 1])
         {
             if (tick < NetHistTick[n - 1])
@@ -471,14 +476,8 @@ public sealed partial class Construct
                 NetHistPos[i - 1] = NetHistPos[i];
                 NetHistRot[i - 1] = NetHistRot[i];
             }
-            if (NetHistAngle.Length > 0)
-                Array.Copy(NetHistAngle, JointCount, NetHistAngle, 0, (NetHistMax - 1) * JointCount);
+            Array.Copy(NetHistAngle, JointCount, NetHistAngle, 0, (NetHistMax - 1) * JointCount);
             n--;
-        }
-        if (NetHistAngle.Length != NetHistMax * JointCount)
-        {
-            NetHistAngle = new float[NetHistMax * JointCount]; // (the joints changed: what was heard of the old ones means nothing now)
-            n = 0;
         }
         for (var j = 0; j < JointCount; j++)
             NetHistAngle[n * JointCount + j] = Joints[j].NetShown;
