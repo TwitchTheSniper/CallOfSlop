@@ -79,9 +79,43 @@ public static partial class SelfTest
             Line($"a real round: {sv.RoundCount} on the host, {cl.RoundCount} on the client, {gap:0.0} m apart");
             if (sv.RoundCount == 0 || cl.RoundCount == 0 || gap > 40f)
                 problems.Add("a real round didn't fly on on both peers");
+            // Coming down: on a player and a construct, with what its speed left.
+            server.Net.SimulateBadNetwork(0, 0, 0);
+            sp.Health = 100;
+            var head = sp.Chest + new Vector3(0, 12, 0);
+            sv.AddRound(new CRound { Pos = head, Tested = head, Vel = new Vector3(0, -60, 0), Damage = 60, Muzzle = 350, By = sp.Id, Weapon = sp.Primary });
+            Pump(server, [a], 0.6, ref now, clock);
+            Line($"on a player: health 100 -> {sp.Health}");
+            if (sp.Health >= 100 || sp.Health < 80)
+                problems.Add($"a falling round on a player left {sp.Health}");
+            var plate = ConstructParts.Need("Deck Plate");
+            var c = ConstructBuild.PlaceNew(sv, plate, new FreePlacement { Pos = ConstructWorld.Ground(World.Query, 60, 60) + new Vector3(0, 2, 0), Rot = Quaternion.Identity, Anchor = true })!;
+            var hp0 = c.Parts[0].Health;
+            var over = c.WorldCom + new Vector3(0, 12, 0);
+            sv.AddRound(new CRound { Pos = over, Tested = over, Vel = new Vector3(0, -60, 0), Damage = 300, Muzzle = 350 });
+            Pump(server, [a], 0.6, ref now, clock);
+            Line($"on a part: health {hp0:0} -> {c.Parts[0].Health:0}");
+            if (c.Parts[0].Health >= hp0)
+                problems.Add("a falling round did nothing to a part");
         }
         else
             problems.Add("the client never joined");
+        // A planetoid: no air, and a round follows the point gravity round it.
+        if (Maps.All.FirstOrDefault(m => m.Planetoid != null) is { Planetoid: { } planet } round)
+        {
+            World.SetMap(round);
+            var v = new ConstructWorld();
+            var start = planet.Center + new Vector3(0, (float)planet.Radius + 600f, 0);
+            v.AddRound(new CRound { Pos = start, Tested = start, Vel = new Vector3(300, 0, 0), Damage = 30, Muzzle = 300 });
+            for (var t = 0; t < 120; t++)
+                v.StepRounds(World.Query, World.TickDt, server: false);
+            var pull = ConstructShells.GravityAt(start);
+            var left = v.RoundCount > 0 ? v.Rounds[0].Vel : default;
+            Line($"planetoid {round.Name}: pull {pull.Length():0.0} m/s2, after 2 s speed {left.Length():0}, its round {(v.RoundCount > 0 ? "flying" : "gone")}");
+            if (pull.Length() < 0.01f || v.RoundCount == 0 || Vector3.Dot(left, Vector3.Normalize(pull)) <= 0 || left.Length() < 295f)
+                problems.Add("a round on a planetoid didn't fall towards it");
+        }
+        World.SetMap(yard);
         foreach (var p in problems)
             Fail($"flying rounds: {p}");
     }
