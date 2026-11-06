@@ -103,14 +103,16 @@ public static class ConstructAir
     public static Vector3 WindLow, WindHigh;
     private static bool _weatherWind;
 
-    /// <summary>Is there air on this world at all? No on a planetoid or on a map with its own curved gravity. A gravity generator's volume on a flat world changes nothing: it makes <see cref="GravityFrames.Curved"/> true everywhere.</summary>
-    public static bool HasAir => GravityFrames.Base == null && World.Map.Planetoid == null;
+    /// <summary>Is there air on this world at all? Yes on a planetoid, thinning away above it (<see cref="Density"/>); no on a map with its own curved gravity and no planetoid, which is open space. A gravity generator's volume on a flat world changes nothing.</summary>
+    public static bool HasAir => World.Map.Planetoid != null || GravityFrames.Base == null;
 
     /// <summary>How thick the air is at a point: 1 at sea level, thinner with height, 0 off world.</summary>
     public static float Density(Vector3 p)
     {
         if (!HasAir)
             return 0;
+        if (World.Map.Planetoid != null)
+            return DragShare(p); // (a planetoid's air: 1 at its radius, thinning with height)
         var t = AirTable.Current;
         return p.Y <= t.SeaLevel ? 1f : MathF.Exp((t.SeaLevel - p.Y) / t.ScaleHeight);
     }
