@@ -603,6 +603,7 @@ public static partial class ConstructRender
         return Matrix4x4.Identity;
     }
 
+    private const float BladeNear = 25f; // radii: past this each blade is one box
     private const float BlurOmega = 45f; // rad/s: past this a rotor's blades are a blur: at a frame rate the real angle strobes
 
     /// <summary>A rotor's blades: one box of the part, repeated round the hub, turned by its angle; past a speed they slow to a blur over a faint disc.</summary>
@@ -616,23 +617,41 @@ public static partial class ConstructRender
         var rd = d.Rotor!;
         var hub = p.Pos + Rot24.Apply(p.Rot, rd.At);
         var axis = Rot24.Apply(p.Rot, rd.Axis);
-        var local = box.Model(p.Rot, centre) * Matrix4x4.CreateTranslation(-hub);
         var back = Matrix4x4.CreateTranslation(hub);
+        var style = AirTable.Current.BladeStyles[r.Style];
+        var near = !Hud.Camera.Valid || Vector3.DistanceSquared(c.Pos, Hud.Camera.Eye) < MathF.Pow(BladeNear * MathF.Max(1, rd.Radius), 2); // (four boxes a blade close to, one far off: a 16-blade disc stays 17 draws)
+        var turn = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot));
+        Span<Matrix4x4> local = stackalloc Matrix4x4[4];
+        // The blade's box, as the style shapes it: along the part's x, its chord along y, each station its width and its offset off the radius.
+        var pieces = near ? 4 : 1;
+        for (var s = 0; s < pieces; s++)
+        {
+            var st = near ? style.Stations[s] : new Vector2(style.Area, style.Stations[2].Y);
+            var length = box.Half.X * 2 / pieces;
+            var mid = box.Center.X - box.Half.X + length * (s + 0.5f);
+            var size = new Vector3(length * 1.02f, box.Half.Y * 2 * st.X, box.Half.Z * 2);
+            local[s] = Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(new Vector3(mid, box.Center.Y + st.Y * rd.Radius, box.Center.Z)) * turn * Matrix4x4.CreateTranslation(p.Pos - hub);
+        }
         var fast = r.Omega > BlurOmega;
         var angle = fast ? (float)(Now * BlurOmega * 0.37f) * r.Sense : r.Angle;
         var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
         var drawn = 0;
-        for (var b = 0; b < rd.Blades; b++)
+        for (var b = 0; b < r.Blades; b++)
         {
             if ((r.Lost >> b & 1) != 0)
                 continue;
-            gfx.Draw(local * Matrix4x4.CreateFromAxisAngle(axis, angle + b * MathF.Tau / rd.Blades) * back * frame, tint, opacity, mode: 0, shape: box.Shape);
-            drawn++;
+            var at = Matrix4x4.CreateFromAxisAngle(axis, angle + b * MathF.Tau / r.Blades) * back * frame;
+            for (var s = 0; s < pieces; s++)
+                gfx.Draw(local[s] * at, tint, opacity, mode: 0, shape: box.Shape);
+            drawn += pieces;
         }
         if (fast)
         {
-            var size = Vector3.One * (rd.Radius * 2) + Vector3.Abs(axis) * (0.02f - rd.Radius * 2);
-            QueueGlass(Matrix4x4.CreateScale(size) * back * frame, tint, 0.18f * MathF.Min(1, r.Omega / (2 * BlurOmega)) * opacity, DiscShape);
+            // The disc: as wide as its tips swing, and as dense as its blades fill it.
+            var across = rd.Radius * 2 * MathF.Sqrt(1 + style.Stations[3].Y * style.Stations[3].Y);
+            var size = Vector3.One * across + Vector3.Abs(axis) * (0.02f - across);
+            var solid = r.Alive * rd.Chord * style.Area / (MathF.PI * rd.Radius);
+            QueueGlass(Matrix4x4.CreateScale(size) * back * frame, tint, Math.Clamp(0.1f + 0.6f * solid, 0.1f, 0.45f) * MathF.Min(1, r.Omega / (2 * BlurOmega)) * opacity, DiscShape);
             drawn++;
         }
         return drawn;
