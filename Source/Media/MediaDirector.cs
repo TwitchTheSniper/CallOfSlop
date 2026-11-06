@@ -13,6 +13,9 @@ public static class MediaDirector
     /// <summary>Browser pages at once. Four 720p VP9 decodes in software is about what a gaming PC gives a side show; the rest wait, with a line saying so.</summary>
     public const int MaxPages = 4;
 
+    /// <summary>Speakers heard at once, nearest first. Each is one more OpenAL source on a stream already decoded, so the cost is OpenAL's; this is about what a mix keeps clear.</summary>
+    public const int MaxSpeakers = 8;
+
     private const double ScanEvery = 0.25, SyncEvery = 1, SeekEvery = 10, QuitAfter = 20;
     private const float SeekDrift = 2.5f, FadeShare = 0.2f; // seconds off the clock before a page seeks; the last share of a part's range fades to nothing
 
@@ -38,7 +41,10 @@ public static class MediaDirector
 
     private static readonly Page[] Pages = new Page[MaxPages];
     private static readonly Near[] Closest = new Near[MaxPages];
-    private static readonly long[] NextLevelLog = new long[MaxPages + 1];
+    private static readonly Near[] Heard = new Near[MaxSpeakers];
+    private static readonly ushort[] HeardBody = new ushort[MaxSpeakers], HeardPart = new ushort[MaxSpeakers];
+    private static int _heard;
+    private static readonly long[] NextLevelLog = new long[MaxPages + 1 + MaxSpeakers];
     private static int _closest, _waiting;
     private static double _nextScan, _idleSince = double.NaN;
     private static bool _trackOn;
@@ -91,7 +97,26 @@ public static class MediaDirector
                 Place(world, audio, g!, i, Pages[i].Body, Pages[i].Part, Pages[i].Near, Pages[i].Hear);
         if (_trackOn)
             Place(world, audio, g!, Audio.MediaTrackVoice, _trackBody, _trackPart, _trackNear, _trackHear);
+        for (var k = 0; k < _heard; k++)
+            PlaceSpeaker(world, audio, g!, k);
     }
+
+    private static void PlaceSpeaker(ConstructWorld world, Audio audio, Game g, int k)
+    {
+        if (world.Get(Heard[k].Body) is not { } c || Heard[k].Part >= c.PartCount || world.Get(HeardBody[k]) is not { } src || HeardPart[k] >= src.PartCount)
+            return;
+        ref var p = ref c.Parts[Heard[k].Part];
+        var at = ConstructRender.DrawnPoint(c, Heard[k].Part, Vector3.Zero, g.TickAlpha, g.IsServer);
+        var front = Vector3.Normalize(ConstructRender.DrawnPoint(c, Heard[k].Part, Rot24Front, g.TickAlpha, g.IsServer) - at);
+        var to = audio.ListenerPosition - at;
+        var distance = to.Length();
+        var angle = distance > 1e-3f ? MathF.Acos(Math.Clamp(Vector3.Dot(front, to / distance), -1, 1)) * 180f / MathF.PI : 0;
+        ref var sp = ref src.Parts[HeardPart[k]];
+        var level = ConstructSpeakers.Shape(p, p.D).Level(distance, angle);
+        audio.MediaSpeakerPlace(k, at, Level * ConstructConfig.Get(sp, sp.D, CfgKey.Volume, 1) * ConstructConfig.Get(p, p.D, CfgKey.Volume, 1) * level);
+    }
+
+    private static readonly Vector3 Rot24Front = -Vector3.UnitZ; // (a speaker faces its -Z)
 
     private static void Place(ConstructWorld world, Audio audio, Game g, int voice, ushort body, ushort part, float near, float hear)
     {
@@ -153,7 +178,41 @@ public static class MediaDirector
                     else if (!Hidden(m, me))
                         Keep(c.Id, (ushort)i, distance);
                 }
+            // A speaker near is reason enough for its player to play, however far off that is.
+            _heard = 0;
+            foreach (var c in world.Bodies)
+                for (var k = 0; k < c.SpeakerParts.Length; k++)
+                {
+                    int i = c.SpeakerParts[k];
+                    if (i >= c.PartCount)
+                        continue;
+                    ref var p = ref c.Parts[i];
+                    if (p.Broken || !ConstructPower.On(c, i) || ConstructSpeakers.Source(world, c, i, out var from) is not { } src)
+                        continue;
+                    ref var sp = ref src.Parts[from];
+                    if (sp.Broken || sp.Media is not { State: not MediaState.Stopped } m || m.Entry is not { } line || !ConstructPower.On(src, from))
+                        continue;
+                    var distance = Vector3.Distance(ConstructRender.DrawnPoint(c, i, Vector3.Zero, g.TickAlpha, g.IsServer), ear);
+                    if (distance > ConstructConfig.Get(p, p.D, CfgKey.HearRange, 40))
+                        continue;
+                    if (!MediaEntry.IsLink(line))
+                    {
+                        if (distance < trackDistance)
+                        {
+                            track = src;
+                            trackPart = from;
+                            trackDistance = distance;
+                        }
+                    }
+                    else if (!Hidden(m, me))
+                        Keep(src.Id, (ushort)from, distance);
+                    else
+                        continue;
+                    KeepSpeaker(c.Id, (ushort)i, src.Id, (ushort)from, distance);
+                }
         }
+        else
+            _heard = 0;
 
         // Pages whose part isn't among the nearest any more, or has moved on to another track, go first; and all of them if the browser went.
         var browser = MediaBrowser.Problem == null;
@@ -191,6 +250,15 @@ public static class MediaDirector
             audio.MediaTrack(null, 0, 0, false);
         }
 
+        // Speakers follow their players' voices, whichever those are now. A cut link, a stopped player or one past the nearest is silence.
+        for (var k = 0; k < MaxSpeakers; k++)
+        {
+            var follows = -1;
+            if (k < _heard)
+                follows = _trackOn && HeardBody[k] == _trackBody && HeardPart[k] == _trackPart ? Audio.MediaTrackVoice : PageOf(HeardBody[k], HeardPart[k]);
+            audio.MediaSpeaker(k, follows);
+        }
+
         // Nothing has wanted the browser for a while: it goes, and what it held.
         if (LivePages > 0)
             _idleSince = double.NaN;
@@ -217,6 +285,15 @@ public static class MediaDirector
     /// <summary>Into the list of the nearest, in order. One pushed off the end is waiting for a page.</summary>
     private static void Keep(ushort body, ushort part, float distance)
     {
+        for (var n = 0; n < _closest; n++)
+            if (Closest[n].Body == body && Closest[n].Part == part)
+            {
+                if (Closest[n].Distance <= distance)
+                    return;
+                Array.Copy(Closest, n + 1, Closest, n, _closest - n - 1); // (nearer by a speaker: it goes in again at its new place)
+                _closest--;
+                break;
+            }
         var at = _closest;
         while (at > 0 && Closest[at - 1].Distance > distance)
             at--;
@@ -232,6 +309,26 @@ public static class MediaDirector
         for (var n = _closest - 1; n > at; n--)
             Closest[n] = Closest[n - 1];
         Closest[at] = new Near { Body = body, Part = part, Distance = distance };
+    }
+
+    private static void KeepSpeaker(ushort body, ushort part, ushort from, ushort fromPart, float distance)
+    {
+        var at = _heard;
+        while (at > 0 && Heard[at - 1].Distance > distance)
+            at--;
+        if (at >= MaxSpeakers)
+            return;
+        if (_heard < MaxSpeakers)
+            _heard++;
+        for (var n = _heard - 1; n > at; n--)
+        {
+            Heard[n] = Heard[n - 1];
+            HeardBody[n] = HeardBody[n - 1];
+            HeardPart[n] = HeardPart[n - 1];
+        }
+        Heard[at] = new Near { Body = body, Part = part, Distance = distance };
+        HeardBody[at] = from;
+        HeardPart[at] = fromPart;
     }
 
     private static void OpenPage(Game g, ConstructWorld world, Audio audio, ushort body, ushort part, double now)

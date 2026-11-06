@@ -1,0 +1,152 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Speaker",
+  "description": "Repeats a Video Screen or Music Player: run a data cable to it with the linking tool. Range up to 40 m, every way or as a cone.",
+  "group": "Logic",
+  "section": "Media",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 5.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#30363d",
+  "attachSeconds": 1,
+  "power": 15,
+  "config": [
+    {
+      "key": "volume",
+      "label": "Loudness",
+      "group": "Sound",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "default": 0.8,
+      "tooltip": "How loud it plays, before distance."
+    },
+    {
+      "key": "hearRange",
+      "label": "Range",
+      "group": "Sound",
+      "min": 5,
+      "max": 40,
+      "step": 1,
+      "default": 25,
+      "unit": "m",
+      "tooltip": "Past this it is silent."
+    },
+    {
+      "key": "curve",
+      "label": "Falloff",
+      "group": "Sound",
+      "type": "choice",
+      "options": [
+        "Inverse",
+        "Linear"
+      ],
+      "default": 0,
+      "tooltip": "Inverse falls fast near it, like a real speaker. Linear falls evenly to the range."
+    },
+    {
+      "key": "rolloff",
+      "label": "Falloff rate",
+      "group": "Sound",
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "default": 1,
+      "tooltip": "How fast it falls: 1 is natural."
+    },
+    {
+      "key": "speakerMode",
+      "label": "Pattern",
+      "group": "Direction",
+      "type": "choice",
+      "options": [
+        "Every way",
+        "Directional"
+      ],
+      "default": 0,
+      "tooltip": "Directional aims it along the part's front."
+    },
+    {
+      "key": "coneInner",
+      "label": "Inner cone",
+      "group": "Direction",
+      "min": 0,
+      "max": 360,
+      "step": 5,
+      "default": 60,
+      "unit": "deg",
+      "tooltip": "Full level inside this angle."
+    },
+    {
+      "key": "coneOuter",
+      "label": "Outer cone",
+      "group": "Direction",
+      "min": 0,
+      "max": 360,
+      "step": 5,
+      "default": 150,
+      "unit": "deg",
+      "tooltip": "It fades to the outer level by this angle."
+    },
+    {
+      "key": "coneGain",
+      "label": "Outer level",
+      "group": "Direction",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "default": 0.15,
+      "tooltip": "How loud it is behind the cone."
+    }
+  ],
+  "centreSockets": false,
+  "speaker": {
+    "near": 3
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.13,
+        0.0,
+        0.0
+      ],
+      "max": [
+        0.13,
+        0.42,
+        0.2
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.1
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.21,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.42,
+        0.1
+      ],
+      "dir": "+y"
+    }
+  ]
+}
