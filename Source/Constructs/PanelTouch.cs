@@ -39,6 +39,8 @@ public static class PanelTouch
         ["flight.strength"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "strength"),
         ["flight.altitude"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "altitude"),
         ["flight.heading"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "heading"),
+        ["office.advert"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 0),
+        ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
     };
 
     /// <summary>A panel's "touch" list, and its "picture" rectangle.</summary>

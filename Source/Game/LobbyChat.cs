@@ -209,6 +209,8 @@ public sealed partial class Game
             return; // muted by you
         if ((flags & ChatFlags.System) != 0 && text.StartsWith(OfficeParts.Prefix, StringComparison.Ordinal))
             OfficeParts.Heard(text, ItDesk.Script?.From ?? ""); // (a fax's page, for its panel on this peer)
+        else if ((flags & ChatFlags.System) != 0 && (text.StartsWith(OfficeParts.Inbox, StringComparison.Ordinal) || text.StartsWith(OfficeParts.Pc, StringComparison.Ordinal)))
+            OfficeParts.HeardInbox(text); // (a scammer's message, for the hooked computer's screen: GameSandboxScams.cs)
         Chat.Add(new ChatLine(now, from, name, text, flags, team));
         while (Chat.Count > ChatRules.Keep)
             Chat.RemoveAt(0);

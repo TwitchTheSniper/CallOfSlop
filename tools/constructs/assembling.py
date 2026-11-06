@@ -171,6 +171,15 @@ HAND = [
     rec("Network Switch", 4, 3, m={"steel": 1, "copper": 1}, p={"Circuit Board": 1}),
     rec("Cable Reel", 3, 2, m={"copper": 3, "planks": 1}),
     rec("Satellite Dish", 4, 2, m={"steel": 2, "copper": 1}),
+    # The Call Centre's kit (tools/constructs/callcentre_parts.py): cheap and plasticky, like everything they sell.
+    rec("Cubicle Desk", 6, m={"planks": 4, "steel": 2, "laminate": 1}),
+    rec("Water Cooler", 4, m={"laminate": 2, "glass": 1}),
+    rec("Office Phone", 3, 2, m={"laminate": 1, "copper": 1}),
+    rec("Call Headset", 2, 2, m={"laminate": 1, "copper": 1}),
+    rec("Gift Card Sign", 2, m={"planks": 1, "laminate": 1}),
+    rec("Prize Wheel", 3, m={"planks": 2, "laminate": 1}),
+    rec("Loudhailer", 3, 2, m={"steel": 1, "copper": 1}),
+    rec("Phone Mast", 4, 2, m={"steel": 2, "copper": 1}),
     # The Clan MacSlop's (tools/constructs/highland_parts.py): pipes are wood and a bag, a cask is staves and hoops.
     rec("Pipe Box", 8, 2, m={"planks": 4, "rubber": 2}, p={"Bearing": 1}),
     rec("Whisky Cask", 5, m={"planks": 10, "steel": 2}),

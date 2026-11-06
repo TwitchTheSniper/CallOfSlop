@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-scams/1",
+  "about": "The Scammers (docs/story/STORY.md, \"The Scammers\"): a plugged-in Computer shows two of the adverts. Clicking one hooks the computer with its scam: the first message in \"firstIn\", the rest every \"every\", to the players within 10 m. Whatever a player types at a hooked computer goes to the scammers: the first reply rule with one of its words answers (specific ones first, the one with no words last), \"replyIn\" later. A rule with \"take\" means they fell for it: the scammers take that share of the computer's battery and leave. Unplugging the computer cures it. Lines: printable ASCII, at most 96 characters; labels at most 28 characters, popups 16.",
+  "from": "The Call Centre",
+  "firstIn": "3s",
+  "every": ["20s", "40s"],
+  "replyIn": ["4s", "10s"],
+  "adverts": [
+    { "label": "HOT SINGLES NEAR YOU!", "scam": "singles" },
+    { "label": "Lonely? Brenda is 0.4 km", "scam": "singles" },
+    { "label": "YOU WON! CLAIM PRIZE >>", "scam": "prize" },
+    { "label": "1,000,000th VISITOR!!", "scam": "prize" },
+    { "label": "VIRUS FOUND! CLEAN NOW", "scam": "support" },
+    { "label": "Your PC is SLOW. Fix it!", "scam": "support" },
+    { "label": "DOWNLOAD MORE RAM (FREE)", "scam": "support" },
+    { "label": "1 SCRAP = 1000 SLOPCOIN", "scam": "coin" },
+    { "label": "Mechanics HATE him! >>", "scam": "torque" },
+    { "label": "Parcel waiting: pay 1 kJ", "scam": "parcel" },
+    { "label": "A DUKE NEEDS YOUR HELP", "scam": "duke" }
+  ],
+  "scams": [
+    { "name": "singles", "from": "Brenda (0.4 km away)", "popup": "1 NEW MESSAGE <3", "messages": [
+      { "lines": ["hey u. saw ur profile. u look strong. do u have a battery?"] },
+      { "lines": ["omg we have so much in common. i also like batteries.", "i am stuck at a bus stop on the far side of the map. bus costs 40 kJ. i will pay u back x2"] },
+      { "lines": ["babe? r u there? just reply OK and i can come see u tonight <3"] },
+      { "lines": ["my uncle runs a scrap yard, he says if u send ur battery he can double it. trust me"] },
+      { "lines": ["wow ok. i thought we had something special.", "(Brenda has gone offline. Brenda's profile picture was a stock photo of a forklift.)"] }
+    ] },
+    { "name": "prize", "from": "Prize Department", "popup": "YOU HAVE WON!!!", "messages": [
+      { "lines": ["CONGRATULATIONS! You are our 1,000,000th visitor! You have WON a brand new tank!"] },
+      { "lines": ["To claim your tank, a small handling fee of HALF YOUR BATTERY is required.", "Reply YES to claim. This offer expires in 00:04:59."] },
+      { "lines": ["FINAL NOTICE: your tank is waiting in our warehouse. It is very shiny. Reply YES."] },
+      { "lines": ["Your prize has been given to the next visitor. They said YES. Be more like them."] }
+    ] },
+    { "name": "support", "from": "Tech Support Team", "popup": "VIRUS ALERT!!!", "messages": [
+      { "lines": ["Hello sir or madam, this is Tech Support. We are calling about your computer.", "It has 4,812 viruses. Very dangerous. Do not turn it off."] },
+      { "lines": ["Please do not turn it off and on again. That is what IT wants you to do. They are the virus.", "To clean it, just reply with your battery's code. Any number is fine."] },
+      { "lines": ["Sir, I am seeing your screen now. I am seeing many red things. Reply OK and I fix it."] },
+      { "lines": ["Sir, my manager is here now. He is very disappointed. He is shaking his head at the headset."] },
+      { "lines": ["Okay, you have been too smart for us today. Please rate this call 5 stars. Goodbye."] }
+    ] },
+    { "name": "coin", "from": "SlopCoin Investments", "popup": "TO THE MOON!", "messages": [
+      { "lines": ["SlopCoin is up 4000% today. Early investors are now very rich. You are not. Yet."] },
+      { "lines": ["Send us some battery and we will turn it into SlopCoin. SlopCoin is worth 1000 SlopCoin.", "Reply DEAL to invest. Not financial advice. Very financial advice."] },
+      { "lines": ["Huge news: SlopCoin is going to the moon. Literally. We bought a rocket. Reply DEAL."] },
+      { "lines": ["Update: SlopCoin is now worth 0 SlopCoin. The rocket has left without you. HODL."] }
+    ] },
+    { "name": "torque", "from": "Torque Guru Dave", "popup": "ONE WEIRD TRICK", "messages": [
+      { "lines": ["Mechanics HATE me! I found one weird trick to double your engine's torque."] },
+      { "lines": ["Step 1: plug your battery into my website. Step 2: there is no step 2. Reply OK."] },
+      { "lines": ["Number 7 will SHOCK you! (It is the battery. The battery will shock you.)"] },
+      { "lines": ["You scrolled past. The mechanics won. I hope you are happy with your normal torque."] }
+    ] },
+    { "name": "parcel", "from": "Parcel Delivery Service", "popup": "MISSED DELIVERY", "messages": [
+      { "lines": ["We tried to deliver your parcel but you were out. You are always out. It is a wasteland."] },
+      { "lines": ["To rebook your delivery, a fee of 1 kJ is required. Reply OK and we will take 1 kJ.", "We will definitely only take 1 kJ."] },
+      { "lines": ["Your parcel will be returned to sender in 2 hours. The sender is also us."] },
+      { "lines": ["Your parcel has been left in a safe place. The safe place is a crater. Have a nice day."] }
+    ] },
+    { "name": "duke", "from": "The Exiled Duke of Server Farm 9", "popup": "URGENT + PRIVATE", "messages": [
+      { "lines": ["DEAREST FRIEND. I am a duke of the old server farms, cast out by the IT Department.", "I have 40 million kJ locked in a battery I cannot reach. I need a trusted partner."] },
+      { "lines": ["If you will send me some of your battery to pay the unlocking fee, I will share HALF.", "Reply YES, my friend. This must stay between us. Do not tell the IT Department."] },
+      { "lines": ["My friend, the guards are close. I am typing from a cupboard. Please reply YES quickly."] },
+      { "lines": ["The IT Department has found my cupboard. Remember me as I was: rich, but only in theory."] }
+    ] }
+  ],
+  "replies": [
+    { "if": ["scam", "fake", "liar", "lying", "not real"], "lines": [
+      "This is not a scam. Scams are illegal. This is a business opportunity with a deadline." ] },
+    { "if": ["police", "report", "it department", "the it"], "lines": [
+      "Please do not contact the IT Department. They will only tell you to turn it off and on again." ] },
+    { "if": ["no ", "no.", "no!", "nope", "stop", "go away", "leave me", "unsubscribe"], "lines": [
+      "Sir please do not hang up. Your account will be suspended. We are only trying to help you." ] },
+    { "if": ["who are", "who is", "what are", "what is", "where are"], "lines": [
+      "We are a legitimate company based in a very real building. You can hear the other desks.",
+      "Please reply OK to continue." ] },
+    { "if": ["gift card", "giftcard", "password", "code", " pin ", "my number"], "take": 0.5, "lines": [
+      "Thank you so much. Processing... processing... your battery has been verified.",
+      "We have taken a small fee. Have a wonderful day. (The line goes dead.)" ] },
+    { "if": [" yes", " ok", " okay", " sure", " deal", " fine", " k ", "claim", "take my", "send", "<3"], "take": 0.5, "lines": [
+      "EXCELLENT. Transfer starting. Please do not unplug your computer during this time.",
+      "Transfer complete. Thank you for choosing us. You will never hear from us again." ] },
+    { "lines": [
+      "We do not understand your reply. Please just say OK. Saying OK fixes everything." ] }
+  ],
+  "sent": "Email sent. Someone in a very loud room is typing...",
+  "closed": "The pop-ups close by themselves. The screen says IT SERVICE DESK again.",
+  "cured": "The computer turns off and on again. The pop-ups are gone. IT was right.",
+  "robbed": "A progress bar fills and empties. Your battery is at {percent} percent. The pop-ups are gone."
+}
