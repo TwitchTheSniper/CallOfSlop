@@ -3,7 +3,7 @@
   "name": "Twin Bomb Rack",
   "description": "Two bombs side by side. While its input is on it lets them go in turn, if its own construct leaves the way down clear. Rated for 600 kg.",
   "group": "Weapons",
-  "section": "Bombs",
+  "section": "Bomb racks",
   "role": "logic",
   "tool": "welder",
   "mass": 12.0,

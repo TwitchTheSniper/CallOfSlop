@@ -270,6 +270,24 @@ HAND = [
     rec("Wood Panel", 2, m={"laminate": 4}),
 ]
 
+
+def rack_recipe(name, stations, layout, size):
+    """A Modular Bomb Rack preset (air_weapons_parts.py MODULAR): its cost goes with its stations; a drum adds its gears, a heavy rack its wiring."""
+    if size == "light":
+        m, extra, tier, seconds = {"steel": 3 + 3 * stations}, {}, 2, 3 + stations
+    elif size == "heavy":
+        m, extra, tier, seconds = {"steel": 10 + 12 * stations, "copper": 2}, {"Circuit Board": 1}, 3, 6 + 2 * stations
+    else:
+        m, extra, tier, seconds = {"steel": min(2000, 40 + 80 * stations), "copper": 6}, {"Control Unit": 1}, 4, 20 + 5 * stations
+    if layout == "drum":
+        extra["Gear Set"] = 1 if size == "light" else 2
+    return rec(name, seconds, tier, m=m, p=extra or None)
+
+
+from air_weapons_parts import MODULAR  # noqa: E402
+
+HAND += [rack_recipe(name, n, layout, size) for name, n, layout, size, _ in MODULAR]
+
 # What a role adds, beyond the mass in material. Parts per 50 kg, at least one.
 ROLE_PARTS = {
     "engine": "Piston Set", "transmission": "Gear Set", "differential": "Gear Set", "transfer": "Gear Set", "joint": "Servo Motor",

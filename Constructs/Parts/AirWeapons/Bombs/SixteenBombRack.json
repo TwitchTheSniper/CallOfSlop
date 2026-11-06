@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sixteen Bomb Rack",
+  "description": "Sixteen bombs, eight pairs: a bay's worth.",
+  "modularRack": {
+    "stations": 16,
+    "layout": "pairs",
+    "size": "light"
+  }
+}

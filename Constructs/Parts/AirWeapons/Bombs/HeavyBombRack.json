@@ -3,7 +3,7 @@
   "name": "Heavy Bomb Rack",
   "description": "A strong single hook for what a small rack won't take. While its input is on it lets go, if its own construct leaves the way down clear. Rated for 5000 kg.",
   "group": "Weapons",
-  "section": "Bombs",
+  "section": "Bomb racks",
   "role": "logic",
   "tool": "welder",
   "mass": 6.0,

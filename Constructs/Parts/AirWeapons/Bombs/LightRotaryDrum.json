@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Light Rotary Drum",
+  "description": "A small drum for a bomb bay, mounted by its spine or its ends.",
+  "modularRack": {
+    "stations": 6,
+    "layout": "drum",
+    "size": "light"
+  }
+}

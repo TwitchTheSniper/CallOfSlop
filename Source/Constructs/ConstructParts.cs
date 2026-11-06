@@ -619,10 +619,14 @@ public sealed class ConstructPartDef
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
     public ExtrusionKey ExKey; // ...what it is
     public bool IsOrdnance; // a modular bomb or missile off an Ordnance Bench (OrdnanceDesign.cs): its Name is its key, its id this machine's own
-    public bool RuntimeMade => IsExtrusion || IsOrdnance; // (never on the wire or in a hash by id)
+    public bool RuntimeMade => IsExtrusion || IsOrdnance || IsRackRuntime; // (never on the wire or in a hash by id)
     public OrdSectionDef? Ord; // "ordnance": a section of a modular bomb or missile
     public float RackLoad; // a Bomb Rack's rated load, kg (ConstructOrdnance.cs)
     public bool RackRail; // ...a launch rail: what it lets go leaves forward along it, a missile under its own thrust (OrdnanceFlight.cs)
+    public RackShape Rack; // a Modular Bomb Rack's shape (ModularRack.cs; "logic.modular"): Stations is 0 for every other part
+    public float RackStation; // ...its rated load a station, kg (RackLoad is the whole rack's)
+    public bool IsRackRuntime; // ...made at run time for a shape no part file has: its Name is its key, its id this machine's own
+    public bool IsModularRack => Rack.Stations > 0;
     public OrdnanceDesign? OrdDesign; // a designed weapon's design and numbers (IsOrdnance)
     public OrdStats? OrdStats;
     public bool IsOrdnanceBench; // a storage part that is also an Ordnance Bench: F opens it (GameSandboxOrdnance.cs)
@@ -1077,6 +1081,8 @@ public static partial class ConstructParts
             return Ordnance.Parse(name); // (a design names itself, as a piece does)
         if (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
+        if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase))
+            return ModularRack.Parse(name); // (a rack of a shape no file has names itself too)
         foreach (var d in All)
             if (d.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 return d;
@@ -1193,6 +1199,8 @@ public static partial class ConstructParts
         var root = doc.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: a part file is one JSON object");
+        if (Opt(root, "modularRack") is { } rackShape)
+            return Parse(ModularRack.Expand(root, rackShape, file), file); // (a preset of the Modular Bomb Rack: its shape is made from its settings, ModularRack.cs)
         Known(root, TopKeys, file);
         if (Opt(root, "format") is { } fmt && fmt.GetString() != Format)
             throw new ConstructPartException($"{file}: \"format\" must be \"{Format}\"");
@@ -1991,7 +1999,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load", "rail"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load", "rail", "station", "modular"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -2051,6 +2059,14 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"logic.text\" is how many messages it holds, 0 to 2");
         d.RackLoad = Opt(b, "load") is { } ld ? Num(ld, file, "logic.load") : 0;
         d.RackRail = Opt(b, "rail") is { ValueKind: JsonValueKind.True };
+        if (Opt(b, "modular") is { } modular)
+        {
+            if (d.Logic != CLogic.BombRack || d.RackRail)
+                throw new ConstructPartException($"{file}: \"logic.modular\" is a bomb rack's shape");
+            d.Rack = ModularRack.ShapeOf(modular, file);
+            d.RackStation = Num(Need(b, "station", bw), file, "logic.station");
+            Range(d.RackStation, 1f, MaxPartMass, file, "logic.station");
+        }
         d.DecoupleKick = d.Logic == CLogic.Decoupler ? Opt(b, "kick") is { } kk ? Num(kk, file, "logic.kick") : 2f : 0;
         if (d.Logic == CLogic.AntiGrav)
         {

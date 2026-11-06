@@ -66,16 +66,19 @@ public static class ConstructOrdnance
 
     /// <summary>
     /// The working explosive parts bolted or welded to a rack. A designed weapon over the rack's rated load isn't held: it stays bolted on and won't let go (the look line says why);
-    /// the rack and bombs of older saves keep working whatever they weigh.
+    /// the rack and bombs of older saves keep working whatever they weigh. A Modular Bomb Rack (ModularRack.cs) weighs everything on it: one over a
+    /// station's rating isn't held, nor one that takes the whole past the rack's.
     /// </summary>
     public static int Held(Construct c, int rack, Span<ushort> into)
     {
         var n = 0;
-        var rating = c.DefOf(rack).RackLoad;
+        var rd = c.DefOf(rack);
+        var rating = rd.RackLoad;
+        var total = 0f;
         for (var e = c.FirstLink(rack); e >= 0 && n < into.Length; e = c.NextLink(e))
         {
             var o = c.OtherEnd(e);
-            if (c.Parts[o].Working && c.DefOf(o) is { Explosive: not null } d && !(d.IsOrdnance && rating > 0 && d.Mass > rating))
+            if (c.Parts[o].Working && c.DefOf(o) is { Explosive: not null } d && (rd.IsModularRack ? Takes(rd, d, ref total) : !(d.IsOrdnance && rating > 0 && d.Mass > rating)))
                 into[n++] = (ushort)o;
         }
         for (var j = 0; j < c.JointCount && n < into.Length; j++)
@@ -84,10 +87,52 @@ public static class ConstructOrdnance
             if (!jt.Freeform || jt.Cut)
                 continue;
             var o = jt.Hinge == rack ? jt.Child : jt.Child == rack ? jt.Hinge : -1;
-            if (o >= 0 && o < c.PartCount && c.Parts[o].Working && c.DefOf(o).Explosive != null)
+            if (o >= 0 && o < c.PartCount && c.Parts[o].Working && c.DefOf(o) is { Explosive: not null } d && (!rd.IsModularRack || Takes(rd, d, ref total)))
                 into[n++] = (ushort)o;
         }
         return n;
+    }
+
+    /// <summary>A modular rack's limits: a station's rating, and the whole rack's with what it already holds.</summary>
+    private static bool Takes(ConstructPartDef rack, ConstructPartDef bomb, ref float total)
+    {
+        if (bomb.Mass > rack.RackStation || total + bomb.Mass > rack.RackLoad)
+            return false;
+        total += bomb.Mass;
+        return true;
+    }
+
+    /// <summary>Why a modular rack won't take one more of this weight on top of <paramref name="carried"/> kg, or null.</summary>
+    public static string? LoadWhy(ConstructPartDef rack, float carried, float mass) =>
+        mass > rack.RackStation ? $"too heavy: {mass:0} kg, and a station of the {rack.Name} takes {rack.RackStation:0} kg"
+        : carried + mass > rack.RackLoad ? $"too heavy: {carried + mass:0} kg on a {rack.Name} rated for {rack.RackLoad:0} kg in all" : null;
+
+    /// <summary>
+    /// Where a bomb leaves its rack (world): where it hangs, or on a drum the bottom of its ring (the drum turns it there). Its way down and its
+    /// shell start here.
+    /// </summary>
+    public static Vector3 ReleaseAt(Construct c, int rack, int bomb)
+    {
+        var at = ConstructRender.PartCentre(c, bomb);
+        if ((uint)rack >= (uint)c.PartCount || c.DefOf(rack).Rack is not { Stations: > 0, Layout: RackLayout.Drum })
+            return at;
+        ref var rp = ref c.Parts[rack];
+        c.WorldFrame(rp.Seg, out var q, out var t);
+        var rq = q * Rot24.Quat(rp.Rot);
+        var axis = t + Vector3.Transform(rp.Pos, q); // (the drum's axis is the part's z axis)
+        var local = Vector3.Transform(at - axis, Quaternion.Conjugate(rq));
+        var r = MathF.Sqrt(local.X * local.X + local.Y * local.Y);
+        return axis + Vector3.Transform(new Vector3(0, -r, local.Z), rq);
+    }
+
+    /// <summary>Ticks to a rack's next drop: a third of a second on the old racks; a modular rack's interval, or a tick in a salvo.</summary>
+    private static ushort Interval(in CPart p, ConstructPartDef d)
+    {
+        if (!d.IsModularRack)
+            return RackInterval;
+        if (d.Rack.Layout != RackLayout.Drum && ConstructConfig.Get(p, d, CfgKey.FireOrder, 0) >= 0.5f)
+            return 1;
+        return (ushort)Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.RackInterval, RackInterval / (float)World.TickRate) * World.TickRate), 1, 600);
     }
 
     /// <summary>Server: a rack's tick. Its input on, it asks to let one go; bodies change after the logic step. Puts out how many it holds.</summary>
@@ -95,12 +140,25 @@ public static class ConstructOrdnance
     {
         if (p.Cool > 0)
             p.Cool--;
-        if (on && p.Cool == 0 && world.ShellRoom && world.Drops.Count < world.Drops.Capacity)
-            world.Drops.Add((c.Id, (ushort)part));
+        var held = 0;
         for (var k = 0; k < c.RackCount; k++)
             if (c.Racks[k].Part == part)
-                return c.Racks[k].Held;
-        return 0;
+                held = c.Racks[k].Held;
+        var fire = on;
+        var d = p.D;
+        if (d.IsModularRack && d.Rack.Layout != RackLayout.Drum && ConstructConfig.Get(p, d, CfgKey.FireOrder, 0) >= 0.5f)
+        {
+            // A salvo: a press (State bit 2 is the input last tick) latches bit 1, and the rack lets go a tick apart until it is empty.
+            if (on && (p.State & 4) == 0 && held > 0)
+                p.State |= 2;
+            if (held == 0)
+                p.State &= unchecked((byte)~2);
+            p.State = (byte)((p.State & ~4) | (on ? 4 : 0));
+            fire = (p.State & 2) != 0;
+        }
+        if (fire && p.Cool == 0 && world.ShellRoom && world.Drops.Count < world.Drops.Capacity)
+            world.Drops.Add((c.Id, (ushort)part));
+        return held;
     }
 
     /// <summary>The racks that asked this tick let go. One bomb a body a tick: the next rack's numbers aren't good after a part comes off, and it asks again.</summary>
@@ -139,19 +197,19 @@ public static class ConstructOrdnance
                     continue; // (too heavy for its thrust: it stays on the rail, and the look line says so)
                 if (!OrdnanceFlight.Launch(world, c, rack, bomb, query))
                     return false;
-                c.Parts[rack].Cool = RackInterval;
+                c.Parts[rack].Cool = Interval(c.Parts[rack], c.DefOf(rack));
                 world.RemovePart(c, bomb);
                 return true;
             }
             var ex = def.Explosive!;
-            var at = ConstructRender.PartCentre(c, bomb);
+            var at = ReleaseAt(c, rack, bomb);
             var vel = c.PointVel(at) + c.SegPointVel(c.Parts[bomb].Seg, at);
             var fuse = Math.Max(1, (int)MathF.Round(ex.ExplodeFuse * World.TickRate));
             var id = world.AddShell(new CShell { Kind = ShellKind.Bomb, By = c.Owner, Gun = c.Id, GunPart = (ushort)rack, Size = def.BoundsMax - def.BoundsMin, Pos = at, Prev = at, Tested = at, Vel = vel, Blast = ex.ExplodeRadius, Damage = ex.ExplodeDamage, Crater = ex.ExplodeCrater, Delay = fuse, Clear = BombClear });
             if (id == 0)
                 return false;
             world.AddFire(new CFireEvent { Kind = CFireKind.ShellOut, Body = c.Id, Part = (ushort)rack, Shell = id, At = at, To = vel, Muzzle = (byte)ShellKind.Bomb, Half = def.BoundsMax - def.BoundsMin });
-            c.Parts[rack].Cool = RackInterval;
+            c.Parts[rack].Cool = Interval(c.Parts[rack], c.DefOf(rack));
             world.RemovePart(c, bomb);
             return true;
         }
@@ -164,11 +222,12 @@ public static class ConstructOrdnance
     public static bool Blocked(ConstructWorld world, Construct c, int bomb, out ConstructPartDef? by)
     {
         by = null;
-        var at = ConstructRender.PartCentre(c, bomb);
+        var rack = RackOf(c, bomb);
+        var at = ReleaseAt(c, rack, bomb);
         var pull = ConstructShells.GravityAt(at);
         c.WorldFrame(c.Parts[bomb].Seg, out var q, out _);
         var down = pull.LengthSquared() > 0.01f ? Vector3.Normalize(pull) : Vector3.Transform(-Vector3.UnitY, q);
-        if (RackOf(c, bomb) is var rack and >= 0 && c.DefOf(rack).RackRail)
+        if (rack >= 0 && c.DefOf(rack).RackRail)
             down = Vector3.Transform(-Vector3.UnitZ, q * Rot24.Quat(c.Parts[bomb].Rot)); // (a rail's way out is ahead of what it holds)
         c.PartBounds(bomb, out var mn, out var mx);
         var half = (mx - mn) * 0.5f;
@@ -185,9 +244,20 @@ public static class ConstructOrdnance
     {
         Span<ushort> held = stackalloc ushort[MaxHeld];
         var n = Held(c, part, held);
+        var rd = c.DefOf(part);
+        if (rd.IsModularRack)
+        {
+            // One on it that it doesn't hold: over a station's rating, or past the whole rack's.
+            var carried = 0f;
+            for (var k = 0; k < n; k++)
+                carried += c.DefOf(held[k]).Mass;
+            for (var e = c.FirstLink(part); e >= 0; e = c.NextLink(e))
+                if (c.DefOf(c.OtherEnd(e)) is { Explosive: not null } over && held[..n].IndexOf((ushort)c.OtherEnd(e)) < 0)
+                    return LoadWhy(rd, carried, over.Mass) ?? $"the {over.Name} isn't held";
+        }
         if (n == 0)
         {
-            var rating = c.DefOf(part).RackLoad;
+            var rating = rd.RackLoad;
             for (var e = c.FirstLink(part); e >= 0; e = c.NextLink(e))
                 if (c.DefOf(c.OtherEnd(e)) is { IsOrdnance: true } over && rating > 0 && over.Mass > rating)
                     return $"that weighs {over.Mass:0} kg, and this is rated for {rating:0} kg";
@@ -293,8 +363,10 @@ public static class ConstructOrdnance
                     for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
                         if (c.DefOf(c.OtherEnd(e)).Explosive != null)
                             carried += c.DefOf(c.OtherEnd(e)).Mass;
-                    spot.Why = rd.RackLoad > 0 && carried + d.Mass > rd.RackLoad ? $"too heavy: {carried + d.Mass:0} kg on a {rd.Name} rated for {rd.RackLoad:0} kg"
-                        : c.PartCount >= Construct.MaxParts ? "that construct is full"
+                    spot.Why = rd.IsModularRack ? LoadWhy(rd, carried, d.Mass)
+                        : rd.RackLoad > 0 && carried + d.Mass > rd.RackLoad ? $"too heavy: {carried + d.Mass:0} kg on a {rd.Name} rated for {rd.RackLoad:0} kg"
+                        : null;
+                    spot.Why ??= c.PartCount >= Construct.MaxParts ? "that construct is full"
                         : !Room(c, rack, d, spot.At, spot.Rot, rp.Seg) ? "something is in the way" : null;
                 }
             }

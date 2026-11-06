@@ -277,6 +277,8 @@ public sealed partial class Ui
     /// <summary>The panel, every frame while open. Returns false when it closed itself (the part or construct went).</summary>
     public bool DrawSandboxConfig(Game game, double now)
     {
+        if (SandboxConfigOpen && _cfDef is { IsModularRack: true } was && game.Constructs.Get(_cfBody) is { } rc && _cfPart < rc.PartCount && rc.Parts[_cfPart].Def != was.Id && rc.DefOf(_cfPart).IsModularRack)
+            OpenSandboxConfig(rc, _cfPart); // (a rack set to another shape is another part in the same place: the panel follows it, ModularRack.cs)
         if (!SandboxConfigOpen || _cfDef is not { } d || game.Constructs.Get(_cfBody) is not { } c || _cfPart >= c.PartCount || c.Parts[_cfPart].Def != d.Id)
         {
             CloseSandboxConfig();

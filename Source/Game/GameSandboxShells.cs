@@ -184,6 +184,7 @@ public sealed partial class Game
             return "";
         var held = 0;
         var first = -1;
+        var firstRack = -1;
         Span<ushort> bombs = stackalloc ushort[ConstructOrdnance.MaxHeld];
         for (var k = 0; k < c.RackCount; k++)
         {
@@ -192,11 +193,11 @@ public sealed partial class Game
                 continue;
             held += n;
             if (first < 0)
-                first = bombs[0];
+                (first, firstRack) = (bombs[0], rack);
         }
         if (first < 0)
             return "";
-        var at = ConstructRender.PartCentre(c, first);
+        var at = ConstructOrdnance.ReleaseAt(c, firstRack, first);
         var lands = ConstructShells.Fall(at, c.PointVel(at) + c.SegPointVel(c.Parts[first].Seg, at), World.Query, out var land, out var secs);
         ConstructRender.GunnerMarked = lands;
         ConstructRender.GunnerMark = land;

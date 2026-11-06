@@ -729,6 +729,8 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `friction`, `dirtGrip`, `sideGrip`, `rolling`, `bounciness` | Every wheel, track and tyre, without a line in its part file | The tyre: [Wheels](#wheels-the-rim-and-the-cylinder) |
 | `fluid`, `fill` | Fluid Tank | What it holds (none, or any fluid: the options are filled in from the game's list) and how full it is, %. Creative only ([Fluid tanks](#fluid-tanks)) |
 | `setting` | Input Reader, gearboxes, selectors, differentials, transfer cases, adjustable suspensions | Their own choice, above |
+| `stations`, `rackLayout`, `rackSize` | Modular Bomb Rack | Its shape: setting one swaps the part for that shape ([Modular bomb racks](#modular-bomb-racks)) |
+| `fireOrder`, `rackInterval` | Modular Bomb Rack | One at a time or a salvo; seconds between drops |
 
 Values live on the part (`CPart.Cfg`, eight floats inline, so they move with the part when parts are renumbered or a
 construct splits; a colour is 0xRRGGBB, exact in a float), are read through `ConstructConfig.Get` (a table lookup, no
@@ -2743,6 +2745,28 @@ A Flight Stabilizer's last output, `fire`, is its pilot's fire key, for a rack o
 
 Bombs share the shell's limit: their blasts reach players, zombies and constructs but not props or destructible buildings.
 
+### Modular bomb racks
+
+One configurable rack instead of a part for every count (`Source/Constructs/ModularRack.cs`; presets from `tools/constructs/air_weapons_parts.py`, recipes from `assembling.py`). The **Modular Bomb Rack** is a `CLogic.BombRack` whose shape is its settings, in the configure tool's Rack group:
+
+| Setting | Values | What it does |
+| --- | --- | --- |
+| Stations | 1 to 16 | How many hooks (sockets `lug0` up). |
+| Layout | single row, double row, drum | Side by side across the rack; pairs, one behind the other; rings of three (bottom, left, right) round an axis along the rack, mounted by the spine on top or by the end plates. |
+| Station size | light, heavy, giant | 500 kg, 5000 kg and 2000 t a station; everything scales with it (light 1, heavy 2.5, giant 8 times). |
+| Fire order | one at a time, salvo | One each interval while the input is on; or one press lets everything go, a tick apart (one bomb a body a tick). |
+| Interval | 0.05 to 3 s | Between drops one at a time, and a drum's turn. |
+
+**Presets** (the Tab inventory's Weapons, Bomb racks, with the old racks): Modular Bomb Rack (1 light), Triple (3) and Quad (4) Bomb Racks, 5-, 6-, 7- and 8-Station Bomb Racks (6 and 8 in pairs), the Sixteen Bomb Rack (light pairs), the Light Rotary Drum (6 light) and the Rotary Bomb Drum (8 heavy). A preset's file is only its shape (`"modularRack": {"stations": 8, "layout": "drum", "size": "heavy"}`); the game makes the whole part from it, as it makes any other shape, so a preset and a rack set to that shape are one part.
+
+**A shape is a part.** Every shape is one def: a preset's file when one has that shape, else one made at run time, named by its key (`Bomb Rack (5 light, pairs)`, which is also its name in saves and blueprints), in the extrusions' id space (read it through `CPart.D`, `DefOf` or `ConstructParts.Def`, never `All[id]`). Changing Stations, Layout or Station size swaps the part in place for the new shape with the Replacer's plan (`ConstructReplace.Plan`, `Apply`): its welds, wires and the socket it hangs by stay, and it grows from there. Refused, with the reason and nothing changed: anything on its hooks ("take everything off its hooks first"), something in the way, and in survival a bigger rack than it was (Stations x size, a drum a quarter more: build a bigger preset at an Assembler). A blueprint names the shape as its part; a `"config"` that sets Stations, Layout or Station size is refused with the part name it means. The panel follows the rack to its new part.
+
+**Loads.** A station takes up to its rating, and the whole rack its station's rating plus three quarters of one for each more station; this counts every bomb on it, old ones too (the Light Bomb, Aerial Bomb and Small Nuke all fit a light station). One over either isn't held, the physics gun won't snap it on, and the look line says which. Everything else is a rack's: physics-gun snapping and pulling off, designed weapons, the drop aid, the output (how many it holds) and the way down.
+
+**The drum.** A bomb on a drum leaves from the bottom of its ring: `ConstructOrdnance.ReleaseAt` turns it there about the drum's axis, its way down is looked for from there, and its shell (or a designed weapon's launch) starts there. A drum lets one go each interval, salvo or not. The drum isn't drawn turning.
+
+**Network and cost** (protocol 184). A run-time shape goes in a Full's part list as a mark and three bytes (stations, layout, size; `ModularRack.Write`); its settings ride in a CBody as every part's do. A rack's tick is the old rack's plus two setting lookups; a reshape is the Replacer's work, once a change.
+
 ### Modular ordnance
 
 Bombs and missiles designed from sections at an **Ordnance Bench** (stages 1 to 4 of the ordnance work; code `Source/Constructs/OrdnanceDesign.cs`, `OrdnanceFlight.cs`, `OrdnanceStore.cs`, `ConstructOrdnance.cs`, `Game/GameSandboxOrdnance.cs`, `UI/UiOrdnanceBench.cs`; parts, rails and the demo blueprints from `tools/constructs/ordnance_parts.py`, recipes from `assembling.py`). Demo blueprints: **Strike Plane** (a heat-seeking missile on a Launch Rail under each wing) and **Glide Bomber** (a GPS glide bomb under each wing). Everything here is arcade: numbers chosen to play well, not to model real weapons.
@@ -2769,7 +2793,7 @@ Bombs and missiles designed from sections at an **Ordnance Bench** (stages 1 to 
 | stabilizer | Bomb Tail Fins, Retard Chute, Ballute, Ring Tail | Drag; a chute or ballute opens a moment after the drop. |
 | body | Body Tube | Room, and weight. |
 
-**Hooks and rails.** A designed weapon hangs by its lug on any rack (`CLogic.BombRack`). A rack's `load` (kg) is its rating: one over it isn't held (it stays bolted on, and the look line says why), and the physics gun won't snap it on. A Bomb Rack drops what it holds; a **Launch Rail** (`logic.rail`) sends it forward along itself at 12 m/s more than the craft, its way out a ray ahead of the weapon rather than down. A missile on a rail whose first stage's push here is less than its weight doesn't leave (the look line gives both in kN); off a hook it falls and lights anyway. The old Bomb Rack, Twin, Heavy and Giant racks, the Missile Rail gun, the Light Bomb and the other explosive parts work as before.
+**Hooks and rails.** A designed weapon hangs by its lug on any rack (`CLogic.BombRack`). A rack's `load` (kg) is its rating: one over it isn't held (it stays bolted on, and the look line says why), and the physics gun won't snap it on. A Bomb Rack drops what it holds; a **Launch Rail** (`logic.rail`) sends it forward along itself at 12 m/s more than the craft, its way out a ray ahead of the weapon rather than down. A missile on a rail whose first stage's push here is less than its weight doesn't leave (the look line gives both in kN); off a hook it falls and lights anyway. The old Bomb Rack, Twin, Heavy and Giant racks, the Missile Rail gun, the Light Bomb and the other explosive parts work as before; the [Modular Bomb Rack](#modular-bomb-racks) holds designed weapons too.
 
 **Flight** (`OrdnanceFlight.Fly`, every PC). Gravity, then the push along its way (after its wait; an air motor's share by the air's thickness, none under its least speed), drag (a share of its speed a second at 100 m/s in thick air, with the square of its speed: a terminal speed), wings, and a turn of at most its turn rate towards what it steers for: `RocketFlight.Turn`, the Missile Rail's pursuit. Thrust is a push in m/s2 of what is still flying, so dropping a stage makes the rest quicker. A missile goes off 6 s after its last burn if it has met nothing; a bomb falls until it hits. A shell is given up on after its burns and waits, 6 s and half a minute (more than 90 s only for a long burn: a `Limit:` line says so).
 
