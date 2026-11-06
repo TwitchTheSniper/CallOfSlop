@@ -350,6 +350,7 @@ public sealed partial class Construct
     public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
     public ushort[] CameraParts = []; // cameras (ConstructRemote.cs)
     public ushort[] MediaParts = []; // Video Screens and Music Players (ConstructMedia.cs)
+    public ushort[] SpeakerParts = []; // speakers (ConstructSpeakers.cs)
     public int Receiver = -1; // the first Drone Receiver: this body can be flown from afar
     public ushort[] ReadingParts = [], GraphParts = [], RadioParts = []; // displays and keypads; Graph Screens; wireless senders (LogicDisplays.cs, ConstructRadio.cs)
     public int[] PortBase = []; // per part (only with a part of WidePorts): where its ports start in PortIn and PortOut, or -1
@@ -1417,9 +1418,23 @@ public sealed partial class Construct
                 HasLogic = true;
         }
         var media = 0;
+        var speakers = 0;
         for (var i = 0; i < PartCount; i++)
+        {
             if (Parts[i].D.IsMedia)
                 media++;
+            if (Parts[i].D.IsSpeaker)
+                speakers++;
+        }
+        if (SpeakerParts.Length != speakers)
+            SpeakerParts = speakers == 0 ? [] : new ushort[speakers];
+        if (speakers > 0)
+        {
+            speakers = 0;
+            for (var i = 0; i < PartCount; i++)
+                if (Parts[i].D.IsSpeaker)
+                    SpeakerParts[speakers++] = (ushort)i;
+        }
         if (MediaParts.Length != media)
             MediaParts = media == 0 ? [] : new ushort[media];
         if (media > 0)

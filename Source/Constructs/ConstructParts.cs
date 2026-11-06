@@ -622,6 +622,8 @@ public sealed class ConstructPartDef
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
     public bool RemoteReceiver, IsCamera; // ConstructRemote.cs
     public bool IsMedia; // a Video Screen or Music Player (ConstructMedia.cs)
+    public bool IsSpeaker; // a speaker (ConstructSpeakers.cs)
+    public float SpeakerNear; // metres it holds full level
     public float MediaHear, MediaNear; // metres: where its sound is gone, and how far it stays at full level
     public int MediaWidth, MediaHeight; // the page its browser shows, pixels
     public OfficeKind Office; // a Fax Machine or a Computer: the IT Department's lines (OfficeParts.cs)
@@ -635,7 +637,7 @@ public sealed class ConstructPartDef
     public string DieFamily = ""; // a die: its rows in Pressing.json
     public (int First, int Count) DieRows;
 
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsMedia || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
@@ -656,7 +658,7 @@ public sealed class ConstructPartDef
     public int TextSlots; // messages it holds ("logic.text": CPart.Text and Text2; LogicText.cs)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
-    public int MaxInputs => Role switch
+    public int MaxInputs => IsSpeaker ? 1 : Role switch // (a speaker's one cable comes from what it repeats)
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.AmmoSwitch => 1, // which feed goes on
@@ -1005,7 +1007,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1445,6 +1447,7 @@ public static partial class ConstructParts
         ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
+        ConstructSpeakers.Parse(d, root, file);
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))

@@ -20,7 +20,11 @@ public sealed partial class Audio
     /// <summary>The voice of the game's own tracks; below it, one voice a browser page.</summary>
     public const int MediaTrackVoice = MediaDirector.MaxPages;
 
-    private const int MediaVoiceCount = MediaDirector.MaxPages + 1;
+    /// <summary>The first speaker's voice: each repeats a player's voice and decodes nothing of its own.</summary>
+    public const int MediaSpeakerVoice = MediaTrackVoice + 1;
+
+    private const int MediaVoiceCount = MediaSpeakerVoice + MediaDirector.MaxSpeakers;
+    private const int MediaHistory = 8; // buffers a player keeps for its speakers
     private const int MediaBuffers = 4, MediaFrames = 2048; // 4 x 46 ms queued, as the music's stream
 
     private sealed class MediaVoice
@@ -30,6 +34,10 @@ public sealed partial class Audio
         public readonly short[] Pcm = new short[MediaFrames];
         public readonly float[] Mono = new float[MediaFrames];
         public volatile MediaBlock? Block;
+        public short[][] History = []; // a player's last buffers, for its speakers
+        public long Serial; // buffers it has made
+        public volatile int Follows = -1; // a speaker: the voice it repeats
+        public long Cursor = -1; // a speaker: the buffer of that voice's it plays next
         public long Got, Fills; // frames of real sound and buffers filled since the last log line
         public float Peak;
     }
@@ -70,6 +78,12 @@ public sealed partial class Audio
                 if (_media[i] != null)
                     continue;
                 var v = new MediaVoice { Source = Al.GenSource(), Buffers = Al.GenBuffers(MediaBuffers) };
+                if (i < MediaSpeakerVoice)
+                {
+                    v.History = new short[MediaHistory][];
+                    for (var h = 0; h < MediaHistory; h++)
+                        v.History[h] = new short[MediaFrames];
+                }
                 _media[i] = v;
             }
         }
@@ -94,6 +108,26 @@ public sealed partial class Audio
             return;
         v.Block = block;
         MediaCount(block != null ? 1 : -1, v);
+    }
+
+    /// <summary>Speaker voice <paramref name="speaker"/> repeats this voice from now on (-1: silence).</summary>
+    public void MediaSpeaker(int speaker, int follows)
+    {
+        if (_media[MediaSpeakerVoice + speaker] is not { } v || v.Follows == follows)
+            return;
+        v.Cursor = -1;
+        v.Follows = follows;
+    }
+
+    /// <summary>A speaker's place and level, already worked out (<see cref="SpeakerShape.Level"/>): OpenAL only pans it.</summary>
+    public void MediaSpeakerPlace(int speaker, Vector3 at, float gain)
+    {
+        if (!Enabled || _media[MediaSpeakerVoice + speaker] is not { } v)
+            return;
+        var s = v.Source;
+        s.Position = new float3(at.X, at.Y, at.Z);
+        s.RolloffFactor = 0f;
+        s.Gain = Math.Clamp(gain * Mix.Gain(MixBus.Media), 0f, 1f);
     }
 
     /// <summary>A game track from a place in it (null: nothing). The same track and seed again is ignored, so this can be said on every scan.</summary>
@@ -212,6 +246,11 @@ public sealed partial class Audio
                 Console.WriteLine($"[media] sound voice {i} (hop 5): {ring}{v.Got} frames of sound in {v.Fills} buffers, peak {v.Peak:0.000}; "
                     + $"OpenAL (hop 6): {s.State}, gain {s.Gain:0.000}, at {s.Position.X:0.0} {s.Position.Y:0.0} {s.Position.Z:0.0}, listener {_listener.X:0.0} {_listener.Y:0.0} {_listener.Z:0.0}, near {s.ReferenceDistance:0.0} far {s.MaxDistance:0.0}, master {ListenerGain:0.00}");
             }
+            if (v.Follows >= 0)
+            {
+                var s = v.Source;
+                Console.WriteLine($"[media] speaker voice {i - MediaSpeakerVoice} follows voice {v.Follows}: {v.Got} frames in {v.Fills} buffers, peak {v.Peak:0.000}; OpenAL {s.State}, gain {s.Gain:0.000}");
+            }
             v.Got = v.Fills = 0;
             v.Peak = 0;
         }
@@ -219,6 +258,11 @@ public sealed partial class Audio
 
     private void MediaFill(MediaVoice v, AlBuffer buffer)
     {
+        if (v.Follows >= 0 || Array.IndexOf(_media, v) >= MediaSpeakerVoice)
+        {
+            MediaRepeat(v, buffer);
+            return;
+        }
         var mono = v.Mono.AsSpan();
         if (ReferenceEquals(v, _media[MediaTrackVoice]))
             MediaRender(mono);
@@ -237,6 +281,38 @@ public sealed partial class Audio
             v.Pcm[i] = (short)(Math.Clamp(mono[i], -1f, 1f) * 32767f);
         }
         buffer.SetData(AlFormat.Mono16, MemoryMarshal.AsBytes(v.Pcm.AsSpan()), SampleRate);
+        v.Pcm.CopyTo(v.History[v.Serial % MediaHistory], 0);
+        v.Serial++;
+    }
+
+    /// <summary>
+    /// A speaker's next buffer: the same one its player queued, not decoded again. Both queues are the same length, so a speaker starts as far back as the player's queue and they stay in step to a buffer (46 ms).
+    /// </summary>
+    private void MediaRepeat(MediaVoice v, AlBuffer buffer)
+    {
+        var follows = v.Follows;
+        var from = follows >= 0 ? _media[follows] : null;
+        short[]? pcm = null;
+        if (from != null)
+        {
+            var newest = from.Serial - 1;
+            if (v.Cursor < 0 || v.Cursor <= newest - MediaHistory)
+                v.Cursor = Math.Max(0, newest - MediaBuffers + 1);
+            if (v.Cursor <= newest)
+            {
+                pcm = from.History[v.Cursor++ % MediaHistory];
+                v.Got += pcm.Length;
+                foreach (var sample in pcm)
+                    v.Peak = MathF.Max(v.Peak, MathF.Abs(sample / 32767f));
+            }
+        }
+        v.Fills++;
+        if (pcm == null)
+        {
+            Array.Clear(v.Pcm);
+            pcm = v.Pcm;
+        }
+        buffer.SetData(AlFormat.Mono16, MemoryMarshal.AsBytes(pcm.AsSpan()), SampleRate);
     }
 
     /// <summary>The game's track, mixed to one channel. Renders nothing while it is paused, wanted by nobody or holding for the music thread.</summary>

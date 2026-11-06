@@ -88,6 +88,15 @@ The hops log to `callofslop.log`, each on a 5 s throttle while something plays; 
 | 6 | Same line, `OpenAL (hop 6)` | `Playing`, gain above 0 | The source is stopped or silent |
 | 7 | `[media] level voice 0 (hop 7)` | Every factor above 0 | That factor is the zero |
 
+## Speakers
+
+Speaker, Medium Speaker and Large Speaker (`ConstructSpeakers.cs`) repeat a Video Screen or Music Player: run a Data cable to one with the linking tool, on the same construct or, as a world link, from another. It's a Data cable and no new link kind, so saves, blueprints and the linking tool are the ones every link has. Cut it and the speaker goes silent at the next scan.
+
+- **Cheap.** A speaker decodes nothing: it queues the same buffers as its player (`MediaRepeat`), in step to one 46 ms buffer. At most 8 speakers sound at once, nearest first (`MediaDirector.MaxSpeakers`), across all players.
+- **A speaker near keeps its player going.** A page or track opens for a speaker in range even if the player itself is out of earshot, and it counts towards the 4 pages by the speaker's distance.
+- **Settings:** Loudness, Range (up to 40, 100 or 250 m by size), Falloff (inverse or linear) and its rate, Pattern (every way or directional), Inner and Outer cone along the part's front, Outer level. The sound also has the player's Volume on top.
+- **The picture** on the configure panel is drawn from `SpeakerShape.Level`, the function the sound uses, so what it shows is what is heard. The game works distance and cone out itself and gives OpenAL the result, rather than using OpenAL's cone and distance settings, so the picture and the linear curve can't differ from it.
+
 ## YouTube, checked and not
 
 Checked in the container with a stock CEF (120, Linux, from NuGet, offscreen), the same standard distribution as the 156 Windows build the game ships:

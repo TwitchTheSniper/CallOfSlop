@@ -119,6 +119,13 @@ public enum CfgKey : byte
     Pushable, // hinge: a player walking into what hangs on it swings it (ConstructDoor.PushOpens)
     SteerKind, // a steering differential: reverse, drag or clutch steering (SteerMode)
     Loop, // Video Screen, Music Player: the list starts again after its last track (ConstructMedia.cs)
+    SpeakerMode, // speaker: every way, or directional (ConstructSpeakers.cs)
+    HearRange, // speaker: metres, up to its size's most
+    Rolloff, // speaker: how fast it falls off
+    Curve, // speaker: inverse or linear falloff
+    ConeInner, // speaker: the full level's cone, degrees
+    ConeOuter, // speaker: where it reaches the outer level, degrees
+    ConeGain, // speaker: the level outside the cone
     COUNT,
 }
 
@@ -656,7 +663,8 @@ public static class ConstructConfig
                 CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch => d.Logic == CLogic.Horn,
-                CfgKey.Volume => d.Logic == CLogic.Horn || d.IsMedia,
+                CfgKey.Volume => d.Logic == CLogic.Horn || d.IsMedia || d.IsSpeaker,
+                CfgKey.SpeakerMode or CfgKey.HearRange or CfgKey.Rolloff or CfgKey.Curve or CfgKey.ConeInner or CfgKey.ConeOuter or CfgKey.ConeGain => d.IsSpeaker,
                 CfgKey.Loop => d.IsMedia,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && (d.JointLimited || d.JointType == JointType.Swivel) && d.JointType != JointType.Steering,
                 CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel),

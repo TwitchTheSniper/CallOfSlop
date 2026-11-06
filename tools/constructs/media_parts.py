@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the Video Screens and the Music Player (Constructs/Parts/Media).
+"""Writes the Video Screens, the Music Player and the speakers (Constructs/Parts/Media).
 
 docs/sandbox/MEDIA.md. A screen is a dark case, a bezel standing out of it and the picture's panel on the bezel, a few millimetres apart so
 no two faces share a plane. The Music Player is a box with a small screen: YouTube's player stays on view whatever a part is for.
@@ -73,9 +73,46 @@ def music():
     return p
 
 
+def speaker(name, cls, w, h, t, reach, default, near, power, mass):
+    desc = f"Repeats a Video Screen or Music Player: run a data cable to it with the linking tool. Range up to {reach:g} m, every way or as a cone."
+    p = Part(name, cls, SECTION, desc, role="panel", tool="wrench" if mass <= 40 else "welder", group="Logic", color=SPEAKER)
+    proud = 0.004 if cls is SMALL else 0.012
+    p.add(box((-w / 2, 0, 0), (w / 2, h, t)))
+    # Two drivers on a front grille, each standing a little out of the one behind it.
+    p.add(box((-w * 0.42, h * 0.05, -proud), (w * 0.42, h * 0.95, 0.002), BEZEL, detail=True))
+    for cy, r in ((h * 0.68, w * 0.26), (h * 0.27, w * 0.34)):
+        p.add(box((-r, cy - r, -proud * 2), (r, cy + r, -proud / 2), GRILLE, detail=True))
+    p.sock("bottom", (0, 0, t / 2), "-y")
+    p.sock("back", (0, h / 2, t), "+z")
+    p.sock("top", (0, h, t / 2), "+y")
+    p.stats(mass, 40, 1, 1)
+    config = [
+        dict(VOLUME, label="Loudness", group="Sound"),
+        {"key": "hearRange", "label": "Range", "group": "Sound", "min": 5, "max": reach, "step": 1, "default": default, "unit": "m",
+         "tooltip": "Past this it is silent."},
+        {"key": "curve", "label": "Falloff", "group": "Sound", "type": "choice", "options": ["Inverse", "Linear"], "default": 0,
+         "tooltip": "Inverse falls fast near it, like a real speaker. Linear falls evenly to the range."},
+        {"key": "rolloff", "label": "Falloff rate", "group": "Sound", "min": 0.1, "max": 4, "step": 0.1, "default": 1,
+         "tooltip": "How fast it falls: 1 is natural."},
+        {"key": "speakerMode", "label": "Pattern", "group": "Direction", "type": "choice", "options": ["Every way", "Directional"], "default": 0,
+         "tooltip": "Directional aims it along the part's front."},
+        {"key": "coneInner", "label": "Inner cone", "group": "Direction", "min": 0, "max": 360, "step": 5, "default": 60, "unit": "deg",
+         "tooltip": "Full level inside this angle."},
+        {"key": "coneOuter", "label": "Outer cone", "group": "Direction", "min": 0, "max": 360, "step": 5, "default": 150, "unit": "deg",
+         "tooltip": "It fades to the outer level by this angle."},
+        {"key": "coneGain", "label": "Outer level", "group": "Direction", "min": 0, "max": 1, "step": 0.05, "default": 0.15,
+         "tooltip": "How loud it is behind the cone."},
+    ]
+    p.set(power=power, config=config, centreSockets=False, speaker={"near": near})
+    return p
+
+
 def main():
     parts = [
         ("", music()),
+        ("", speaker("Speaker", SMALL, 0.26, 0.42, 0.2, 40, 25, 3, 15, 5)),
+        ("", speaker("Medium Speaker", MEDIUM, 1, 1.6, 0.7, 100, 60, 6, 60, 40)),
+        ("", speaker("Large Speaker", MEDIUM, 2.2, 3.6, 1.4, 250, 150, 12, 200, 180)),
         ("", video("Video Screen", SMALL, 1.0, 0.6, 25, 40, 4, 40, 6)),
         ("", video("Medium Video Screen", MEDIUM, 3, 1.75, 60, 80, 8, 150, 60)),
         ("", video("Large Video Screen", MEDIUM, 8, 4.6, 150, 160, 16, 400, 240)),
