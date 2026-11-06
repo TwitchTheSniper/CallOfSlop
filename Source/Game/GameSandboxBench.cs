@@ -41,8 +41,7 @@ public sealed partial class Game
     {
         var w = SbW;
         var bytes = Encoding.UTF8.GetBytes(text);
-        var n = Math.Min(bytes.Length, 6000);
-        w.Begin(Msg.CAct).U8((byte)CActKind.Bench).U8((byte)kind).U8((byte)slot).U16((ushort)n).Bytes(bytes.AsSpan(0, n));
+        w.Begin(Msg.CAct).U8((byte)CActKind.Bench).U8((byte)kind).U8((byte)slot).U32((uint)bytes.Length).Bytes(bytes); // (whole: BuildRules.MaxTextBytes; see WriteBuild)
         SandboxSendBuilt(w);
     }
 
@@ -50,7 +49,7 @@ public sealed partial class Game
 
     private string? SandboxBenchAct(Player p, ref PacketReader r)
     {
-        if (!r.Has(4))
+        if (!r.Has(6))
             return "bad bench request";
         var kind = r.U8();
         var slot = r.U8();
@@ -62,6 +61,7 @@ public sealed partial class Game
     {
         if (!SandboxOn || !p.Alive)
             return "Not now.";
+        BuildRules.BarrelsOpen = true;
         SandboxRules();
         var hands = SandboxHands;
         var creative = hands.InfiniteParts;

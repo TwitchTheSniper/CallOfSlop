@@ -348,13 +348,23 @@ public sealed partial class Game : IDisposable
         LookFrame = me.Position;
     }
 
+    /// <summary>The local player's move speed: the gun's, or the Sandbox's tools' own (full, whatever gun is slung), times what slows anyone.</summary>
+    internal float LocalMoveSpeed(WeaponDef def)
+    {
+        var tool = SandboxOn && Local is { } me && SandboxHands.Hand(me.Id).Tool != ConstructTool.None; // (the attach, link and paint tools, the physics gun: the gun's away)
+        return Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, tool ? 1f : FrenzyBuffs.Mobility(Local, def), Aiming && !tool) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
+    }
+
+    /// <summary>The fastest a client's input may ask for: its fastest gun, and full in the Sandbox, where a tool can be out (it isn't tied to the tool, so a switch on its way doesn't pull the player back).</summary>
+    internal byte MaxMoveSpeed(Player p) => (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(SandboxOn ? 1f : 0f, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary)))), false) * ZombieMoveMult(p) * 100), 1, 200);
+
     private InputCmd SampleLocalInput(uint seq)
     {
         RideLookSync(); // (before the planet's transport: a look change since the last frame counts in the construct's frame)
         TransportLook();
         RideLookRead();
         var def = Active.Def;
-        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
+        var speed = LocalMoveSpeed(def);
         var ride = RideInput(); // contraption space: the look in the construct's frame (GameSandboxRide.cs)
         return ZombieInput(Local, new InputCmd // downed in Zombies: a slow crawl (ZombieBots.cs)
         {
@@ -628,7 +638,7 @@ public sealed partial class Game : IDisposable
             var o = ray.Origin;
             var d = ray.Dir;
             var aimReach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
-            ArcShot(ArcSpeed(def), me, null, ref o, ref d, ref aimReach, out _); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
+            ArcShot(ArcSpeed(def), me, null, ref o, ref d, ref aimReach, out _, out _); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
             var dist = World.Query.Raycast(o, d, aimReach, QueryFilter.Shots);
             dist = PenetrateAfterHit(def, o, d, dist, aimReach); // the same walls the server lets it through (GamePenetration.cs)
             var through = _pen.Surfaces > 0 ? o : (Vector3?)null;
@@ -895,13 +905,14 @@ public sealed partial class Game : IDisposable
     private void ClientTickStep()
     {
         Throwables.Bodies = SandboxOn ? Constructs : null;
+        BuildRules.BarrelsOpen = SandboxOn;
         ClientTickSpace(); // the space bubble's clock between the host's (GameSpace.cs)
         ClientTickProjectiles(Brutal.GlfwApi.Glfw.Time);
         ClientTickRockets(); // launcher projectiles (GameLaunchersNet.cs)
         if (Local is not { } me)
             return;
 
-        if (Constructs.ShellCount > 0)
+        if (Constructs.ShellCount + Constructs.RoundCount > 0)
             ClientShellsTick(); // (artillery in the air, this PC's copies: GameSandboxShells.cs)
         var cmd = NoclipFilter(me, FreezeFilter(SampleLocalInput(_nextSeq++)));
         cmd.Tick = NextMoverTick(cmd.Seq); // the tick the server will simulate it at (mover poses; GameMovers.cs)
@@ -1139,6 +1150,7 @@ public sealed partial class Game : IDisposable
         ServerTick++;
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
         Throwables.Bodies = SandboxOn ? Constructs : null; // what thrown and launched things meet besides the map
+        BuildRules.BarrelsOpen = SandboxOn; // (the Sandbox's workbench has no barrel limits)
         AllocProfile.Mark("match and mode");
         var perf = Perf.Measure(PerfArea.Modes); // the perf window's areas (Source/Perf)
         ServerTickMatch(now);
@@ -1484,7 +1496,7 @@ public sealed partial class Game : IDisposable
     /// Applies damage (server only), after the victim's survival perks. Returns true if it killed.
     /// <paramref name="killId"/> is a weapon id, 240+ for throwables, or <see cref="MeleeKillId"/>.
     /// </summary>
-    private bool DamagePlayer(Player attacker, Player victim, int amount, bool head, byte killId, double now, DamageKind kind = DamageKind.Bullet,
+    internal bool DamagePlayer(Player attacker, Player victim, int amount, bool head, byte killId, double now, DamageKind kind = DamageKind.Bullet,
         Vector3? from = null)
     {
         if (!victim.Alive || amount <= 0 || !DamageEnabled || now < victim.ImmuneUntil)
@@ -1653,7 +1665,7 @@ public sealed partial class Game : IDisposable
             var d = ray.Dir;
             var grow = BulletRadius(ray.Size); // a fat round (a Bloat Barrel's slug) clips targets off its line (GameBuilder.cs)
             var reach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
-            ArcShot(arcV, shooter, targets, ref o, ref d, ref reach, out var flown); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
+            ArcShot(arcV, shooter, targets, ref o, ref d, ref reach, out var flown, out var endVel); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
             var dist = World.Query.Raycast(o, d, reach, QueryFilter.Shots); // bullets pass Zombies window openings
             dist = PenetrateAfterHit(def, o, d, dist, reach); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
@@ -1712,6 +1724,8 @@ public sealed partial class Game : IDisposable
             ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist + flown), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
+            if (endVel != default && dist >= reach - 0.01f && hit == null)
+                Constructs.RoundFlies(end, endVel, ray.Damage * def.DamageMultAt(dist + flown), arcV, shooter.Id, def.Id, 0); // (nothing in its reach: it flies on, ConstructRounds.cs)
             barrels.Add(ray.Barrel);
             if (device != null)
                 flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist + flown) * pen, now);
@@ -1938,7 +1952,7 @@ public sealed partial class Game : IDisposable
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
                     break;
                 int count = Math.Min((int)r.U8(), 16);
-                var maxSpeed = (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary))), false) * ZombieMoveMult(p) * 100), 1, 200); // (Lightweight lifts a slow pair of guns; the LMG frenzy buff, FrenzyServer.cs)
+                var maxSpeed = MaxMoveSpeed(p); // (Lightweight lifts a slow pair of guns; the LMG frenzy buff, FrenzyServer.cs)
                 Span<InputCmd> cmds = stackalloc InputCmd[count];
                 var read = 0;
                 for (; read < count && r.Has(15); read++)

@@ -377,16 +377,15 @@ public sealed partial class Game
 
     private static void WriteBuild(PacketWriter w, byte player, int slot, byte weapon, byte flags, string text)
     {
-        var bytes = Encoding.UTF8.GetBytes(text);
-        var n = Math.Min(bytes.Length, 6000);
-        w.Begin(Msg.ZBuild).U8(player).U8((byte)slot).U8(weapon).U8(flags).U16((ushort)n).Bytes(bytes.AsSpan(0, n));
+        var bytes = Encoding.UTF8.GetBytes(text); // (whole: a reliable message of any length is split by the transport; BuildRules.MaxTextBytes refused a longer build)
+        w.Begin(Msg.ZBuild).U8(player).U8((byte)slot).U8(weapon).U8(flags).U32((uint)bytes.Length).Bytes(bytes);
     }
 
     private static string ReadLong(ref PacketReader r)
     {
-        if (!r.Has(2))
+        if (!r.Has(4))
             return "";
-        int n = Math.Min(r.U16(), r.Remaining); // a lying length can't allocate more than the packet holds
+        var n = (int)Math.Min(r.U32(), (uint)r.Remaining); // a lying length can't allocate more than the packet holds
         var bytes = new byte[n];
         for (var i = 0; i < n; i++)
             bytes[i] = r.U8();
@@ -540,8 +539,7 @@ public sealed partial class Game
     public static void WriteBenchRequest(PacketWriter w, int kind, int slot, string text)
     {
         var bytes = Encoding.UTF8.GetBytes(text);
-        var n = Math.Min(bytes.Length, 6000);
-        w.Begin(Msg.ZBench).U8((byte)kind).U8((byte)slot).U16((ushort)n).Bytes(bytes.AsSpan(0, n));
+        w.Begin(Msg.ZBench).U8((byte)kind).U8((byte)slot).U32((uint)bytes.Length).Bytes(bytes);
     }
 
     /// <summary>Server: runs a <see cref="Msg.ZBench"/> from <paramref name="p"/> (after the message id); returns why not, or null.</summary>
@@ -651,7 +649,7 @@ public sealed partial class Game
             case (byte)Msg.ZPickup when !IsServer:
                 ReadWeaponDrop(ref r, now); // a dropped build appeared or went (ZombiesDrops.cs)
                 break;
-            case (byte)Msg.ZBuild when !IsServer && r.Has(6):
+            case (byte)Msg.ZBuild when !IsServer && r.Has(8):
             {
                 var who = r.U8();
                 var slot = r.U8();

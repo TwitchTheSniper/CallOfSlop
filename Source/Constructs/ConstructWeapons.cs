@@ -58,6 +58,7 @@ public enum CFireKind : byte
     ConnectorSnap, // a rope or spring went (protocol 134): its ends (At, To), its kind and size in Part (kind | size << 4)
     ShellOut, // a shell left a gun (protocol 150): body, part, its id, where (At) and its velocity (To), its kind in Muzzle
     ShellLand, // a shell went off: its id, where, the blast's radius, its kind in Muzzle
+    RoundOut, // a round passed its reach and flies on: where, and how fast (ConstructRounds.cs)
 }
 
 /// <summary>One thing the guns did this tick (the server sends them as Msg.CFire; the host draws its own straight away).</summary>
@@ -93,6 +94,9 @@ public interface IConstructTargets
 
     /// <summary>A round hit target <paramref name="id"/> (from <see cref="RayTarget"/>) for <paramref name="damage"/>.</summary>
     void HitTarget(int id, float damage, GunEffect effects, Construct by, int gunPart, Vector3 at, Vector3 dir);
+
+    /// <summary>A flying round (ConstructRounds.cs) came down on target <paramref name="id"/> with <paramref name="damage"/> left.</summary>
+    void RoundHit(int id, float damage, byte by, byte weapon, Vector3 at, Vector3 dir);
 
     /// <summary>A blast hurts every target in range (walls shield).</summary>
     void BlastTargets(Vector3 at, float radius, float damage, Construct? by);
@@ -761,7 +765,8 @@ public static class ConstructWeapons
     /// <summary>One tick of every gun, burning part and cook-off (server, before the logic: wires carry last tick's values).</summary>
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
-        world.FireCount = 0;
+        if (!world.FlushedFires)
+            world.FireCount = 0;
         var bodies = world.Bodies;
         for (var bi = 0; bi < bodies.Count; bi++)
         {
@@ -776,6 +781,7 @@ public static class ConstructWeapons
         StepCookOffs(world);
         world.StepFeedBurns(); // (a cut, loaded ammo feed burning along itself: ConstructAmmo.cs)
         world.StepShells(query, dt); // (artillery in the air: ConstructShells.cs)
+        world.StepRounds(query, dt, server: true); // (rounds past their reach: ConstructRounds.cs)
     }
 
     private static void StepGuns(ConstructWorld world, Construct c, IWorldQuery query)
@@ -1171,7 +1177,11 @@ public static class ConstructWeapons
                     what = 3;
                 }
                 if (what != 0 || arc + 1 >= pieces)
+                {
+                    if (what == 0 && g.RoundV > 0 && (g.Effects & (GunEffect.Flame | GunEffect.Harpoon)) == 0 && pierce == 0)
+                        world.RoundFlies(pos + dir * seg, vel, left * g.Def!.DamageMultAt(travelled + seg), g.RoundV, own.Owner, g.Def.Id, own.Id); // (nothing in its reach: it flies on, ConstructRounds.cs)
                     break;
+                }
                 pos += dir * seg;
                 travelled += seg;
             }

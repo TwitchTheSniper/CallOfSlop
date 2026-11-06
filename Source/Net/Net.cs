@@ -114,7 +114,7 @@ public sealed class PacketWriter
     /// <summary>A writer with the usual 8 KB buffer, or a bigger one for a rare big message (Msg.ZRun: every loose part kind).</summary>
     public PacketWriter(int capacity = 8192) => _buf = new byte[Math.Max(64, capacity)];
 
-    /// <summary>The buffer's size: a message never grows past it.</summary>
+    /// <summary>The buffer's size: only a long block of <see cref="Bytes"/> grows it.</summary>
     public int Capacity => _buf.Length;
 
     /// <summary>The payload budget for one unsplit datagram (RakNet's MTU is ~1400 with headers; this leaves room).</summary>
@@ -201,6 +201,8 @@ public sealed class PacketWriter
     /// <summary>Appends raw bytes.</summary>
     public PacketWriter Bytes(ReadOnlySpan<byte> data)
     {
+        if (Length + data.Length > _buf.Length)
+            Array.Resize(ref _buf, Math.Max(_buf.Length * 2, Length + data.Length + 256)); // (a long text, a rare message: the writer keeps the room)
         data.CopyTo(_buf.AsSpan(Length));
         Length += data.Length;
         return this;

@@ -187,6 +187,7 @@ public sealed partial class Game
 
     internal void SandboxOnSpawn(Player p)
     {
+        KeepBuiltGuns(p); // (a built gun stays through a death: the respawn button sends the saved loadout, which isn't it; ZombiesMode.cs)
         if (IsServer)
         {
             SandboxRules();
