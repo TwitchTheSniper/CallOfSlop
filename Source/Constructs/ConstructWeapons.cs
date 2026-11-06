@@ -88,6 +88,9 @@ public struct CFireEvent
     public ushort Wait, Deploy;
     public int Life;
     public Vector3 Aim;
+    public ShellLookKind LookKind; // ShellOut (protocol 184): the model it is drawn with in the air (ShellLooks.cs)
+    public uint Look; // ...a part file's id, or a designed weapon's key hashed
+    public Quaternion Rot; // ...how it hung on its rack (its part's world turn)
 }
 
 /// <summary>A blast waiting to go off (an ammo box cooking off: a beat after it is holed).</summary>

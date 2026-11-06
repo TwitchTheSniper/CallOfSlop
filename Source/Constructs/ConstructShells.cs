@@ -52,6 +52,10 @@ public struct CShell
     public int GuidePart, Channel;
     public OrdFuse Fuses;
     public float FuseHeight, FuseDistance;
+
+    // How it is drawn (every PC, from the launch event: ShellLooks.cs). Null: a plain box.
+    public ConstructPartDef? Look; // the model it had on its rack (a designed weapon's run-time part, a bomb's part file, a rocket's stand-in)
+    public Quaternion Rot, PrevRot; // its part's turn in the world, this tick and the last (nose, -Z, eased from its rack onto its way)
 }
 
 /// <summary>What a designed shell is and does (a wire byte).</summary>
@@ -310,6 +314,8 @@ public sealed partial class ConstructWorld
             if (s.Kind >= ShellKind.Rocket || (s.Flags & ShellFlags.Designed) != 0)
                 ConstructOrdnance.Fly(this, ref s, dt); // (a rocket's push, a missile's turn, a flare's drag, a designed weapon's flight)
             s.Pos += s.Vel * dt;
+            if (s.Look != null)
+                ShellLooks.Turn(ref s); // (its nose onto its way: drawn only, the same on every PC)
             if (++s.Age > (s.Life > 0 ? s.Life : ShellMaxAge))
             {
                 if (s.Kind == ShellKind.Flare)

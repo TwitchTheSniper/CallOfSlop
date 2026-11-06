@@ -467,7 +467,7 @@ public static class OrdnanceFlight
         if (id == 0)
             return false;
         s.Id = id;
-        world.AddFire(Out(s, c.Id, (ushort)rack));
+        world.AddFire(Out(s, c.Id, (ushort)rack).WithLook(c, part));
         return true;
     }
 

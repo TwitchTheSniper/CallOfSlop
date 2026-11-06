@@ -80,9 +80,20 @@ public static partial class ConstructRender
     private static int DrawShells(Renderer gfx, ConstructWorld world, float alpha)
     {
         var n = 0;
+        int full = 0, far = 0, shapedLeft = ShellShapedBudget;
+        var cull = !gfx.ViewProj.IsIdentity; // (no camera: everything)
+        var fxDt = ShellFxDt();
+        gfx.BeginBatch(); // (their plain boxes in the frame's instanced draw: ConstructRenderShells.cs)
         for (var k = 0; k < world.ShellCount; k++)
         {
             ref var s = ref world.Shells[k];
+            if (s.Look is { } look)
+            {
+                if (s.Landed && s.Kind != ShellKind.Bomb)
+                    continue; // (a missile is gone where it hits; a bomb lies until its fuse)
+                n += DrawShellLook(gfx, ref s, look, alpha, fxDt, ref shapedLeft, ref full, ref far, cull); // (the model it had on its rack, flying nose first)
+                continue;
+            }
             var way = Basis(s.Vel.LengthSquared() > 1e-3f ? Vector3.Normalize(s.Vel) : Vector3.UnitY);
             if (s.Kind == ShellKind.Bomb || (s.Flags & ShellFlags.Designed) != 0 && !s.Landed && s.Size.LengthSquared() > 1e-4f)
             {
@@ -124,6 +135,10 @@ public static partial class ConstructRender
             gfx.Draw(Matrix4x4.CreateScale(size * 0.5f, size * 0.2f, size * 4f) * Matrix4x4.CreateTranslation(GunnerMark + new Vector3(0, size * 0.32f, 0)), new Vector3(1f, 0.4f, 0.1f));
             n += 2;
         }
+        gfx.EndBatch();
+        if (!CameraFeeds.InPass)
+            ShellDetailNext();
+        (LastShellsFull, LastShellsFar, LastShellDraws) = (full, far, n);
         return n;
     }
 
@@ -594,7 +609,11 @@ public static partial class ConstructRender
             else if (c.PartScale[i] > 1)
                 model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
+            {
                 model = box.Model(p.Rot, centre);
+                if (d.IsOrdnance)
+                    FoldWing(d, b, in box, p.Rot, centre, ref model); // (a designed weapon's pop-out wings, folded until it drops)
+            }
             if (box.IsLeaf && d.Surface is { Control: > 0 } flap)
                 model *= FlapTurn(c, i, flap, in p); // (a control surface's leaf, on the hinge in the part)
             if (box.Rig >= BoxRig.Lever)

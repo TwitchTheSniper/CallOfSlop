@@ -327,7 +327,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 181: Browser Screens stay together (ConstructMedia.cs): CActKind.WebState, CBodyKind.WebState, a lead, scroll and in-page media in a CBody's media lists, and web lines up to 1024 characters with their query.
     // 182: the Flight Stabilizer's setting slots moved (CfgKey.HomeY, WaypointY: a point on a round world).
     // 183: modular ordnance in flight (OrdnanceFlight.cs): ShellOut's designed-weapon block (stages, steering, wings, aim), ShellSteer's aim, stage and guide updates, OrdKind.Spent in a Full's part list.
-    public const byte ProtocolVersion = 183;
+    // 184: bombs and missiles look like themselves in the air (ShellLooks.cs): ShellOut of a bomb, rocket or missile carries its model (a part file's id or a design's hash) and its turn on the rack.
+    public const byte ProtocolVersion = 184;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

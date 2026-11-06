@@ -62,6 +62,8 @@ public sealed partial class Game
             Constructs.ClientAddShell(e.Shell, kind, e.At, e.To);
             Constructs.ClientShellFlight(e.Shell, e);
         }
+        if (ShellLooks.Carries(kind))
+            Constructs.SetShellLook(e); // (its model and its turn on the rack: the same on host and clients, ShellLooks.cs)
         ConstructShotsSeen++;
         if (kind == ShellKind.Bomb)
         {

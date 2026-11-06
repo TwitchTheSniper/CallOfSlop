@@ -265,6 +265,8 @@ public static class ConstructNet
                         w.F32(e.AirPush).F32(e.TurnAir).F32(e.TurnBurn).F32(e.Drag).F32(e.Lift).F32(e.MinSpeed).U16(e.Wait).U16(e.Deploy).U8((byte)e.Flags).Vec(e.Aim).U32((uint)Math.Max(0, e.Life));
                     }
                 }
+                if (ShellLooks.Carries((ShellKind)e.Muzzle))
+                    ShellLooks.Write(w, in e); // (protocol 184: the model it had on its rack, and how it hung there)
             }
             else if (e.Kind == CFireKind.RoundOut)
                 w.Vec(e.At).Vec(e.To);
@@ -348,6 +350,8 @@ public static class ConstructNet
                             throw new MalformedPacketException("a designed shell's flight that isn't a number");
                     }
                 }
+                if (ShellLooks.Carries((ShellKind)e.Muzzle))
+                    ShellLooks.Read(ref r, ref e);
                 if (!float.IsFinite(e.Thrust + e.Turn))
                     throw new MalformedPacketException("a shell's flight that isn't a number");
             }

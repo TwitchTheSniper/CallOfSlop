@@ -97,6 +97,8 @@ public sealed class OrdStats
     public int Sections, Items; // lines, and section parts it takes in survival
     public string Problem = ""; // why it won't be built ("" when it will)
     public readonly OrdFlightStats Flight = new(); // stages, steering, seeker, fuses and charges (OrdnanceFlight.cs)
+    public short[] BoxPiece = []; // its run-time part's boxes: the piece each draws (-1: hidden), so a shell in the air drops a spent stage's (ShellLooks.cs)
+    public float[] BoxFold = []; // ...a pop-out wing's half span while folded (on its rack, and in the air until it deploys), else 0
 }
 
 /// <summary>
@@ -290,6 +292,16 @@ public static class Ordnance
         }
     }
 
+    /// <summary>The run-time part whose key hashes to <paramref name="hash"/> (<see cref="ConstructPartDef.ExHash"/>), if this machine has made it. A launch's look; walks the few designs made.</summary>
+    public static ConstructPartDef? ByHash(uint hash)
+    {
+        lock (Interned)
+            foreach (var def in Interned.Values)
+                if (def.ExHash == hash)
+                    return def;
+        return null;
+    }
+
     private static ConstructPartDef Build(OrdnanceDesign d, OrdStats st, string key)
     {
         var s = d.Scale;
@@ -307,8 +319,11 @@ public static class Ordnance
                 drawn += !b.Hidden ? 1 : 0;
         var firstOnly = drawn > budget; // (each box is a draw call: past the budget a section is its first box)
         var z = -half;
-        foreach (var p in d.Pieces)
+        var pieceOf = new List<short>(ConstructParts.MaxBoxes) { -1, -1 };
+        var fold = new List<float>(ConstructParts.MaxBoxes) { 0, 0 };
+        for (var pi = 0; pi < d.Pieces.Count; pi++)
         {
+            var p = d.Pieces[pi];
             var len = p.Section.Ord!.Length * p.Count * s;
             var stretch = p.Count; // (a stack draws as one long section)
             foreach (var b in p.Section.Boxes)
@@ -323,11 +338,15 @@ public static class Ordnance
                     Half = new Vector3(b.Half.X * s, b.Half.Y * s, b.Half.Z * s * stretch),
                     Detail = true,
                 });
+                pieceOf.Add((short)Math.Min(pi, short.MaxValue));
+                fold.Add(p.Section.Ord.Num("lift") > 0 && p.Section.Ord.Num("deploy") > 0 && b.Shape == 0 && b.Half.X * s > r * 1.2f ? r * 0.9f : 0f); // (folded inside the body)
                 if (firstOnly)
                     break;
             }
             z += len;
         }
+        st.BoxPiece = pieceOf.ToArray();
+        st.BoxFold = fold.Exists(f => f > 0) ? fold.ToArray() : [];
         var def = new ConstructPartDef
         {
             Name = key,
