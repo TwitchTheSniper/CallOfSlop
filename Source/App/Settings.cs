@@ -49,6 +49,7 @@ public sealed class Settings
     public float MusicVolume = 0.5f; // menu and lobby music, on top of the master volume (0 = off)
     public float MediaVolume = 0.8f; // Video Screens and Music Players on this PC, on top of each part's Volume
     public bool MediaOthers = true; // play the links other players start
+    public bool MediaBlockAds, MediaBlockWebAds; // this PC's ad blocking on YouTube links, and on Browser Screens: off unless this viewer turned it on (docs/sandbox/MEDIA.md)
     public bool MediaOthersWeb; // show other players' Browser Screens: off, a stranger's site doesn't load on this PC
     public float EffectsVolume = 1f; // gunfire, hits and every other sound effect, on top of the master volume
     public float FootstepVolume = 1f; // footsteps, jumps and landings, on top of the effects volume
@@ -454,6 +455,8 @@ public sealed class Settings
                     case "media_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MediaVolume = Math.Clamp(f, 0f, 1f); break;
                     case "media_others": s.MediaOthers = v != "0"; break;
                     case "media_others_web": s.MediaOthersWeb = v == "1"; break;
+                    case "media_block_ads": s.MediaBlockAds = v == "1"; break;
+                    case "media_block_web_ads": s.MediaBlockWebAds = v == "1"; break;
                     case "effects_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.EffectsVolume = Math.Clamp(f, 0f, 1f); break;
                     case "footstep_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FootstepVolume = Math.Clamp(f, 0f, 1f); break;
                     case "own_gun_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.OwnGunVolume = Math.Clamp(f, 0f, 1f); break;
@@ -597,6 +600,8 @@ public sealed class Settings
                     $"media_volume={MediaVolume.ToString(inv)}",
                     $"media_others={(MediaOthers ? 1 : 0)}",
                     $"media_others_web={(MediaOthersWeb ? 1 : 0)}",
+                    $"media_block_ads={(MediaBlockAds ? 1 : 0)}",
+                    $"media_block_web_ads={(MediaBlockWebAds ? 1 : 0)}",
                     $"effects_volume={EffectsVolume.ToString(inv)}",
                     $"footstep_volume={FootstepVolume.ToString(inv)}",
                     $"own_gun_volume={OwnGunVolume.ToString(inv)}",

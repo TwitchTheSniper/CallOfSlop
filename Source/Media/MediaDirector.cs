@@ -30,6 +30,7 @@ public static class MediaDirector
         public bool EndSent;
         public float Near, Hear;
         public byte Mark;
+        public bool Ads;
         public double HandsUntil; // this peer's hands were on the page: until then the page leads and the server follows
     }
 
@@ -56,6 +57,9 @@ public static class MediaDirector
 
     /// <summary>Other players' Browser Screens on this PC. Off by default: a page opened here shows the site this PC's address and runs what a stranger chose. Settings > Audio.</summary>
     public static bool OthersWeb;
+
+    /// <summary>Ad blocking on this PC: videos and music, and Browser Screens. Each viewer's own, and never on the wire. Off by default. docs/sandbox/MEDIA.md, "Ad blocking".</summary>
+    public static bool BlockAds, BlockWebAds;
 
     /// <summary>Master level for this PC's screens, on top of each part's Volume.</summary>
     public static float Level = 1;
@@ -342,15 +346,16 @@ public static class MediaDirector
         ref var p = ref c.Parts[part];
         var m = p.Media!;
         var d = p.D;
-        var opened = MediaEntry.IsWeb(m.Entry!) ? MediaBrowser.OpenWeb(free, MediaEntry.WebUrl(m.Entry!), d.MediaWidth, d.MediaHeight)
-            : MediaBrowser.Open(free, MediaEntry.VideoId(m.Entry!), m.Position(g.ServerTick), d.MediaWidth, d.MediaHeight);
+        var ads = MediaEntry.IsWeb(m.Entry!) ? BlockWebAds : BlockAds;
+        var opened = MediaEntry.IsWeb(m.Entry!) ? MediaBrowser.OpenWeb(free, MediaEntry.WebUrl(m.Entry!), d.MediaWidth, d.MediaHeight, ads)
+            : MediaBrowser.Open(free, MediaEntry.VideoId(m.Entry!), m.Position(g.ServerTick), d.MediaWidth, d.MediaHeight, ads);
         if (!opened)
             return;
         VideoFeeds.Forget(free);
         Pages[free] = new Page
         {
             Open = true, Body = body, Part = part, Seq = m.Seq, Entry = m.Entry!, State = MediaState.Playing, NextSync = now + 3, NextSeek = now + 3, // (a joiner whose tick hadn't come in yet opened at 0)
-            Near = d.MediaNear, Hear = d.MediaHear,
+            Near = d.MediaNear, Hear = d.MediaHear, Ads = ads,
         };
         audio.MediaPage(free, MediaBrowser.Block(free));
     }
@@ -371,6 +376,14 @@ public static class MediaDirector
         if (world.Get(page.Body) is not { } c || c.Parts[page.Part].Media is not { } m)
             return;
         var r = MediaBrowser.Report(i);
+        var ads = MediaEntry.IsWeb(page.Entry) ? BlockWebAds : BlockAds;
+        if (ads != page.Ads)
+        {
+            page.Ads = ads;
+            MediaBrowser.Ads(i, ads);
+            page.NextSync = now + 2;
+            page.NextSeek = 0; // (the page starts again: it comes back to the clock)
+        }
         if (m.Entry is { } web && MediaEntry.IsWeb(web))
         {
             WebSync(g, ref page, i, web, r.Address, now);

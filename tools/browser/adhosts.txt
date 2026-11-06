@@ -1,0 +1,51 @@
+# Hosts and paths the optional ad blocking refuses (docs/sandbox/MEDIA.md, "Ad blocking"). Read when the browser starts.
+# A line is a host, which also covers everything under it. "path:" lines are for YouTube's own hosts only, where ads and video share a name:
+# they refuse any address whose path starts so. Keep this small: anything YouTube's player needs to play must not be here.
+
+# Ad servers
+doubleclick.net
+googlesyndication.com
+googleadservices.com
+googleads.g.doubleclick.net
+adservice.google.com
+2mdn.net
+adnxs.com
+adsrvr.org
+amazon-adsystem.com
+criteo.com
+criteo.net
+outbrain.com
+taboola.com
+pubmatic.com
+rubiconproject.com
+openx.net
+casalemedia.com
+moatads.com
+serving-sys.com
+smartadserver.com
+yieldmo.com
+media.net
+popads.net
+propellerads.com
+
+# Tracking
+google-analytics.com
+googletagmanager.com
+googletagservices.com
+scorecardresearch.com
+quantserve.com
+hotjar.com
+mixpanel.com
+segment.io
+newrelic.com
+nr-data.net
+bat.bing.com
+connect.facebook.net
+
+# YouTube's own ad and tracking paths
+path:/pagead/
+path:/ptracking
+path:/api/stats/ads
+path:/api/stats/atr
+path:/get_midroll_
+path:/youtubei/v1/log_event

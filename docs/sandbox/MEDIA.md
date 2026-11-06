@@ -48,7 +48,7 @@ line, it gets three goes a session, and game tracks don't notice. Self-tests and
 - **Pictures and sound** go through a shared memory block per page (`MediaBlock.cs`, `tools/browser/SharedBlock.cs`: keep the two layouts the same). Three frames, so a frame is written beside the one being read. No side waits for the other and the
   game allocates nothing. `VideoFeeds` copies at most one frame a render, and only for a page a panel asked for, so a screen behind you or out of sight costs no picture.
 - **The page.** YouTube's official iframe player, from `youtube-nocookie.com`, in a small page the browser serves itself at `https://callofslop.invalid/player.html`. It needs a real https page: since 2025 the player refuses to run without a Referer
-  (error 153), which rules out `file:` and `data:` URLs. Top-level navigation away is refused, popups are closed, no input reaches the page. Nothing is kept on disk. Its picture is shown as it comes, with nothing drawn over it, adverts included.
+  (error 153), which rules out `file:` and `data:` URLs. Top-level navigation away is refused, popups are closed, no input reaches the page. Nothing is kept on disk. Its picture is shown as it comes, with nothing drawn over it, adverts included, unless this viewer turned on ad blocking.
 
 ## Hands on a screen
 
@@ -123,3 +123,16 @@ Checked in the container with a stock CEF (120, Linux, from NuGet, offscreen), t
 
 Not checked, because youtube.com can't be reached from the container: that a real video plays. Stock CEF has no H.264 or AAC, so anything YouTube offers only in those won't play, and some live streams may be among them. Stock CEF has no Widevine, so paid films won't.
 Uploaders can refuse embedding (error 101 or 150), which the panel says. Ads may run, as on any embed; the clock waits and then seeks.
+
+## Ad blocking
+
+A box on the Video Screen, Music Player and Browser Screen panels, off by default (`media_block_ads`, `media_block_web_ads` in the settings: one for YouTube links, one for Browser Screens). It is each viewer's own: it isn't sent to the server or other peers, and their pages are untouched. Changing it reloads the page, which comes back to the clock, so no restart is needed: turning it off is the way out if it breaks playback.
+
+**The terms risk.** Blocking YouTube's ads breaks YouTube's API terms, which this project otherwise keeps to. The user chose this as an opt-in knowing that. It's a risk to the project's standing with YouTube if it ships, and it's why it is off by default and never on for anyone who didn't tick it.
+
+What it does (`tools/browser/AdFilter.cs`, `adhosts.txt` beside the exe, read when the browser starts):
+
+- **Requests:** a page refuses hosts on the list, and on YouTube's own hosts, paths on the list. It can only refuse a request, so it adds no way out of a page's rules. The list is a few dozen lines, nothing like a real ad blocker's.
+- **Adverts that get through:** once a second it hides advert overlays in the player's frame and presses a skip button if there is one, with a real mouse click at its place, since the player ignores a script's. If the button goes between looking and clicking, the click lands on the video and may pause it; the clock then starts it again.
+
+**How well it works, honestly:** expect banners, trackers and overlays to go. Expect in-stream adverts mostly to stay. They come from the same servers as the video, so nothing here can tell them apart, an unskippable one plays in full, and the player's page changes often, which can break the skip button's names without warning. Refusing YouTube's tracking calls may also make the player complain or stall: that's what the off switch is for.
