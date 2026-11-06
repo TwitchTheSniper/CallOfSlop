@@ -1,0 +1,98 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wee Caber",
+  "description": "A caber, cut down to fit. Still a log. Still thrown, now and then.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 6.0,
+  "health": 50,
+  "armour": 2,
+  "material": "steel",
+  "color": "#6b4527",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.075,
+        0.002,
+        -0.075
+      ],
+      "max": [
+        0.075,
+        0.024,
+        0.075
+      ],
+      "color": "#3a3532",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.05,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.7,
+        0.05
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.05,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.7,
+        0.05
+      ],
+      "color": "#6b4527",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "taper": [
+        0.8,
+        0.8
+      ],
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.044,
+        0.697,
+        -0.044
+      ],
+      "max": [
+        0.044,
+        0.708,
+        0.044
+      ],
+      "color": "#c8a77a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

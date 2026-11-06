@@ -928,6 +928,15 @@ The five **harder hardbass** tracks go further: a layered gabber kick (a second,
 
 The five **weird hardbass** tracks keep that core (pumping kick, off-beat bass, chants) and then misbehave: bars of 7/8 and 5/4, tempo ramps, a drunk breakdown with a tape-deck wobble, sudden swerves into a few bars of dusty lo-fi or a music box, a quarter-tone scale, a polka accordion, an 8-bit sound chip, bitcrushed and pitch-shifted chants, and toy sound effects (rubber duck quacks for the game's ducks, a squeaky toy, slide whistles, a boing), all synthesised too. They're in the Hardbass only list as well, and cost about the same CPU as the other hardbass tracks. The kill-frenzy layer only picks the ones whose drops stay in steady 4/4 (Drunk Duck Breakdown), since it loops drops on the bar line.
 
+The four **pipe tunes** are the Clan MacSlop's (`Source/Audio/MusicPipes.cs`, docs/audio/MUSIC.md "Pipe tunes"): a Highland bagpipe, synthesised too, with its three drones striking in with a growl and dying with a groan at the end, a chanter that never stops sounding and separates its notes with grace notes, doublings and birls, and a pipe band's snare and bass drum from the second time through. They are original tunes in the old forms, never in a menu or lobby playlist: their vehicles' Pipe Boxes play them in Sandbox while someone drives (docs/sandbox/MEDIA.md, "Pipe Boxes"), and the Music Player lists them.
+
+| Where | Tune | Kind | Tempo | Key |
+|---|---|---|---|---|
+| Pipe Box | The Haggis Has Landed | 2/4 march, pipes and drums | 104 | A mixolydian |
+| Pipe Box | Kilts at Full Throttle | 6/8 jig, pipes and drums | 112 | A mixolydian |
+| Pipe Box | Lament for a Flat Tyre | 3/4 slow air, pipes alone | 60 | A mixolydian |
+| Pipe Box | Midges on the Windscreen | 4/4 strathspey (Scotch snaps), pipes and drums | 120 | A mixolydian |
+
 - **Main menu > Music player** lists every track and every frenzy class (with a level picker) to play, pause, seek by bar, loop and shuffle, through the game's own music thread; the menu's music fades out while it's open and comes back when you leave. It saves only the music volume.
 - **Menu tracks** play on the main menu and its pages; **lobby tracks** play in a session while no match is live: warmup / ready-up, the countdown, and the results screen with the map vote. When a match goes live the music **fades out**, and it comes back on the results screen.
 - Each list is shuffled (every track once per round, never the same track twice in a row), and tracks **crossfade** into each other, as do menu and lobby music.

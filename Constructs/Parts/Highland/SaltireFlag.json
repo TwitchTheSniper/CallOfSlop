@@ -1,0 +1,295 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Saltire Flag",
+  "description": "A Saltire on a pole, white on blue. It flies the right way up whichever way you park.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 2.0,
+  "health": 25,
+  "armour": 0,
+  "material": "steel",
+  "color": "#005eb8",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        0.0,
+        -0.04
+      ],
+      "max": [
+        0.05,
+        0.04,
+        0.04
+      ],
+      "color": "#3a3532"
+    },
+    {
+      "min": [
+        -0.016,
+        0.04,
+        -0.016
+      ],
+      "max": [
+        0.016,
+        1.0,
+        0.016
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.016,
+        0.04,
+        -0.016
+      ],
+      "max": [
+        0.016,
+        1.0,
+        0.016
+      ],
+      "color": "#4a2f1a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.018,
+        0.64,
+        -0.006
+      ],
+      "max": [
+        0.518,
+        0.98,
+        0.006
+      ],
+      "color": "#005eb8",
+      "detail": true
+    },
+    {
+      "min": [
+        0.022,
+        0.642,
+        -0.009
+      ],
+      "max": [
+        0.1129,
+        0.7031,
+        0.009
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.02,
+        0.9314,
+        -0.003
+      ],
+      "max": [
+        0.1129,
+        0.978,
+        0.015
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0914,
+        0.6886,
+        -0.003
+      ],
+      "max": [
+        0.1843,
+        0.7517,
+        0.015
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0914,
+        0.8829,
+        -0.009
+      ],
+      "max": [
+        0.1843,
+        0.946,
+        0.009
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1629,
+        0.7371,
+        -0.009
+      ],
+      "max": [
+        0.2557,
+        0.8003,
+        0.009
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1629,
+        0.8343,
+        -0.003
+      ],
+      "max": [
+        0.2557,
+        0.8974,
+        0.015
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2363,
+        0.7857,
+        -0.009
+      ],
+      "max": [
+        0.3271,
+        0.8469,
+        0.007
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2343,
+        0.7857,
+        -0.015
+      ],
+      "max": [
+        0.3271,
+        0.8489,
+        0.003
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3057,
+        0.8343,
+        -0.009
+      ],
+      "max": [
+        0.3986,
+        0.8974,
+        0.009
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3057,
+        0.7371,
+        -0.009
+      ],
+      "max": [
+        0.3986,
+        0.8003,
+        0.009
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3771,
+        0.8829,
+        -0.015
+      ],
+      "max": [
+        0.47,
+        0.946,
+        0.003
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3771,
+        0.6886,
+        -0.003
+      ],
+      "max": [
+        0.47,
+        0.7517,
+        0.015
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.4486,
+        0.9314,
+        -0.003
+      ],
+      "max": [
+        0.52,
+        0.978,
+        0.015
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.4486,
+        0.642,
+        -0.009
+      ],
+      "max": [
+        0.52,
+        0.7031,
+        0.009
+      ],
+      "color": "#f2f0e8",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
