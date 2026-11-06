@@ -47,12 +47,13 @@ public sealed partial class ConstructEdits
     /// Adds up the builder parts <paramref name="player"/> has at the bench (by builder part name): the part in the hands,
     /// the bench's slots and the backpack. Fills <paramref name="into"/> (cleared first).
     /// </summary>
-    public void BenchCollect(ConstructWorld world, byte player, Construct bench, int part, Dictionary<string, int> into)
+    public void BenchCollect(ConstructWorld world, byte player, Construct bench, int part, Dictionary<string, int> into, Func<ConstructPartDef, string>? nameOf = null)
     {
+        nameOf ??= ConstructWeaponParts.NameOf;
         into.Clear();
         void Add(ushort id, int n)
         {
-            if (n > 0 && ConstructParts.Get(id) is { } d && ConstructWeaponParts.NameOf(d) is { Length: > 0 } name)
+            if (n > 0 && ConstructParts.Get(id) is { } d && nameOf(d) is { Length: > 0 } name)
                 into[name] = into.GetValueOrDefault(name) + n;
         }
         Add(Hands[player].Held, 1);
@@ -65,9 +66,10 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>Takes one item standing for builder part <paramref name="name"/> away: from the bench's slots, then the backpack, then the hands. False if there is none.</summary>
-    public bool BenchTake(ConstructWorld world, byte player, Construct bench, int part, string name)
+    public bool BenchTake(ConstructWorld world, byte player, Construct bench, int part, string name, Func<ConstructPartDef, string>? nameOf = null)
     {
-        bool Is(ushort id) => ConstructParts.Get(id) is { } d && ConstructWeaponParts.NameOf(d).Equals(name, StringComparison.OrdinalIgnoreCase);
+        nameOf ??= ConstructWeaponParts.NameOf;
+        bool Is(ushort id) => ConstructParts.Get(id) is { } d && nameOf(d).Equals(name, StringComparison.OrdinalIgnoreCase);
         if (world.StoreOf(bench, part) is { } st)
             for (var k = 0; k < st.SlotCount; k++)
                 if (st.Count[k] > 0 && Is(st.Def[k]))

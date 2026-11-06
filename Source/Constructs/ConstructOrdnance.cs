@@ -133,10 +133,10 @@ public static class ConstructOrdnance
             var at = ConstructRender.PartCentre(c, bomb);
             var vel = c.PointVel(at) + c.SegPointVel(c.Parts[bomb].Seg, at);
             var fuse = Math.Max(1, (int)MathF.Round(ex.ExplodeFuse * World.TickRate));
-            var id = world.AddShell(new CShell { Kind = ShellKind.Bomb, By = c.Owner, Gun = c.Id, GunPart = (ushort)rack, Def = def.Id, Pos = at, Prev = at, Tested = at, Vel = vel, Blast = ex.ExplodeRadius, Damage = ex.ExplodeDamage, Crater = ex.ExplodeCrater, Delay = fuse, Clear = BombClear });
+            var id = world.AddShell(new CShell { Kind = ShellKind.Bomb, By = c.Owner, Gun = c.Id, GunPart = (ushort)rack, Size = def.BoundsMax - def.BoundsMin, Pos = at, Prev = at, Tested = at, Vel = vel, Blast = ex.ExplodeRadius, Damage = ex.ExplodeDamage, Crater = ex.ExplodeCrater, Delay = fuse, Clear = BombClear });
             if (id == 0)
                 return false;
-            world.AddFire(new CFireEvent { Kind = CFireKind.ShellOut, Body = c.Id, Part = def.Id, Shell = id, At = at, To = vel, Muzzle = (byte)ShellKind.Bomb });
+            world.AddFire(new CFireEvent { Kind = CFireKind.ShellOut, Body = c.Id, Part = (ushort)rack, Shell = id, At = at, To = vel, Muzzle = (byte)ShellKind.Bomb, Half = def.BoundsMax - def.BoundsMin });
             c.Parts[rack].Cool = RackInterval;
             world.RemovePart(c, bomb);
             return true;
@@ -414,7 +414,7 @@ public sealed partial class ConstructWorld
         if (ShellAt(id) is var k and >= 0)
         {
             ref var s = ref Shells[k];
-            (s.Thrust, s.Turn, s.Burn, s.Target, s.Def) = (e.Thrust, e.Turn, e.Burn, e.Target, e.Part);
+            (s.Thrust, s.Turn, s.Burn, s.Target, s.Size) = (e.Thrust, e.Turn, e.Burn, e.Target, e.Half);
         }
     }
 

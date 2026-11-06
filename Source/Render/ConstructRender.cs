@@ -84,9 +84,7 @@ public static partial class ConstructRender
             if (s.Kind == ShellKind.Bomb)
             {
                 // A bomb looks its size, and lies where it hit until its fuse runs out.
-                var d = ConstructParts.Def(s.Def);
-                var size = d.BoundsMax - d.BoundsMin;
-                gfx.Draw(Matrix4x4.CreateScale(size) * way * Matrix4x4.CreateTranslation(s.Landed ? s.Pos : Vector3.Lerp(s.Prev, s.Pos, alpha)), new Vector3(0.29f, 0.33f, 0.19f));
+                gfx.Draw(Matrix4x4.CreateScale(s.Size) * way * Matrix4x4.CreateTranslation(s.Landed ? s.Pos : Vector3.Lerp(s.Prev, s.Pos, alpha)), new Vector3(0.29f, 0.33f, 0.19f));
                 n++;
                 continue;
             }

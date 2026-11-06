@@ -315,7 +315,7 @@ public static unsafe partial class Program
             if (pk != _sbPieceKey)
             {
                 _sbPieceKey = pk;
-                _sbPieceText = SandboxKeys.Line(hit.Body.DefOf(hit.Part) is { IsExtrusion: true } on ? Extrusion.Label(on.ExKey) : hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "take it out"));
+                _sbPieceText = SandboxKeys.Line(hit.Body.DefOf(hit.Part) is { IsOrdnance: true } ord ? ord.Description : hit.Body.DefOf(hit.Part) is { IsExtrusion: true } on ? Extrusion.Label(on.ExKey) : hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "take it out"));
             }
             g.SandboxLookText = _sbPieceText;
         }
@@ -370,6 +370,11 @@ public static unsafe partial class Program
             {
                 // The Gun Workbench: F opens the weapon builder (GameSandboxBench.cs, UiWorkbenchRun.cs); a lit slot is still F to take.
                 Ui.OpenSandboxBench(g, ConstructEdits.BenchCentre(hit.Body, hit.Part));
+                SetMouseCaptured(false);
+            }
+            else if (aimed && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).IsOrdnanceBench && hit.SlotPlus1 == 0)
+            {
+                Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)
                 SetMouseCaptured(false);
             }
             else if (join)

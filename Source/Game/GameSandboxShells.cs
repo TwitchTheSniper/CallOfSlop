@@ -65,7 +65,7 @@ public sealed partial class Game
         ConstructShotsSeen++;
         if (kind == ShellKind.Bomb)
         {
-            Audio.Effect3D(Sfx.Throw, e.At, 0.8f); // (a rack lets go: no flash, and e.Part is the bomb's type)
+            Audio.Effect3D(Sfx.Throw, e.At, 0.8f); // (a rack lets go: no flash)
             return;
         }
         var dir = e.To.LengthSquared() > 1e-4f ? Vector3.Normalize(e.To) : Vector3.UnitY;
