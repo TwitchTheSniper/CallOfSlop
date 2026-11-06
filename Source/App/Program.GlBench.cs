@@ -131,6 +131,7 @@ public static unsafe partial class Program
                     var t1 = Stopwatch.GetTimestamp();
                     Native.glFinish();
                     var t2 = Stopwatch.GetTimestamp();
+                    if (f % 3 == 0) Console.WriteLine($"[f] {f} cpu {Stopwatch.GetElapsedTime(t0, t1).TotalMilliseconds:0} all {Stopwatch.GetElapsedTime(t0, t2).TotalMilliseconds:0} inst {TerrainGfx.PlanetStats.Instances}");
                     if (shots && f >= (frames - 1) * nc)
                     {
                         // The last frame of each configuration: a picture, and compared pixel by pixel with "all on" (the
