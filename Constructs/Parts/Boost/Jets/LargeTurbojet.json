@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Turbojet",
+  "description": "Breathes air: 18000 kN at sea level, less as the air thins, none in vacuum. Afterburner: its input on, at the top of its throttle, for 2.5 times the thrust and six times the fuel.",
+  "group": "Thrusters",
+  "section": "Jets",
+  "role": "thruster",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 90909.1,
+  "health": 27931,
+  "armour": 10,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 8.0,
+  "thruster": {
+    "kind": "air",
+    "force": 18000000.0,
+    "spool": 2.2,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      6.0
+    ],
+    "burnRate": 36.0,
+    "afterburner": {
+      "force": 27000000,
+      "burn": 180.0,
+      "band": 0.9
+    }
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -2.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -6.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -2.16,
+        -2.16,
+        3.0
+      ],
+      "max": [
+        2.16,
+        2.16,
+        6.18
+      ],
+      "color": "#2a2c2f",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.4,
+        -1.4,
+        6.06
+      ],
+      "max": [
+        1.4,
+        1.4,
+        6.36
+      ],
+      "color": "#c8642a",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -6.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

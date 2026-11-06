@@ -12,6 +12,10 @@ public struct CThruster
     public bool Lifts; // it pushes up the body: the hover hold works it
     public bool Fed; // on fuel: a tank reaches it
     public float Level; // 0..1 (it follows what it is asked over its spool)
+    public float Ab; // 0..1: its afterburner, lit
+    public Vector3 GimbalX, GimbalY; // a nozzle: the axes its pitch and yaw inputs turn it about (the segment's frame)
+    public float AngleX, AngleY; // ...and how far it is turned, radians
+    public float Gap; // a repulsor: metres to what is under it, as of its last look (float.MaxValue: nothing in reach)
 }
 
 /// <summary>
@@ -67,9 +71,11 @@ public sealed partial class Construct
     {
         Span<float> keep = stackalloc float[MaxThrusters];
         Span<ushort> keepPart = stackalloc ushort[MaxThrusters];
+        Span<float> keepAb = stackalloc float[MaxThrusters];
         var old = ThrusterCount;
         for (var k = 0; k < old; k++)
         {
+            keepAb[k] = Thrusters[k].Ab;
             keep[k] = Thrusters[k].Level;
             keepPart[k] = Thrusters[k].Part;
         }
@@ -86,7 +92,7 @@ public sealed partial class Construct
             var at = p.Pos + Rot24.Apply(p.Rot, d.ThrustAt);
             var dir = -ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.ThrustDir));
             ref var t = ref Thrusters[ThrusterCount];
-            t = new CThruster { Part = (ushort)i, Seg = p.Seg, At = at, Dir = dir, Lifts = dir.Y > 0.7f, Fed = d.ThrustFuel != EngineFuel.Fuel || p.Working && FuelReaches(i) };
+            t = new CThruster { Part = (ushort)i, Seg = p.Seg, At = at, Dir = dir, Lifts = dir.Y > 0.7f && d.ThrustKind is ThrustKind.Plain or ThrustKind.Air or ThrustKind.Rocket, Gap = float.MaxValue, GimbalX = Rot24.Apply(p.Rot, Vector3.UnitX), GimbalY = Rot24.Apply(p.Rot, Vector3.UnitY), Fed = d.ThrustFuel != EngineFuel.Fuel || p.Working && FuelReaches(i) };
             t.MixForward = Vector3.Dot(dir, fwd);
             t.MixYaw = Vector3.Cross(at - Com, dir).Y * d.ThrustForce; // (made a share below)
             most = MathF.Max(most, MathF.Abs(t.MixYaw));
@@ -94,7 +100,10 @@ public sealed partial class Construct
             mostRoll = MathF.Max(mostRoll, MathF.Abs(t.MixRoll));
             for (var k = 0; k < old; k++)
                 if (keepPart[k] == i)
+                {
                     t.Level = keep[k];
+                    t.Ab = keepAb[k];
+                }
             ThrusterCount++;
         }
         for (var k = 0; k < ThrusterCount; k++)
@@ -176,7 +185,7 @@ public static partial class ConstructPhysics
         {
             ref var t = ref c.Thrusters[k];
             ref var p = ref c.Parts[t.Part];
-            if (p.InCount1 > 0)
+            if (p.InCount1 > 0 && p.D.ThrustHolds)
                 wiredHeight = MathF.Max(wiredHeight, p.In1);
             if (t.Lifts && Live(c, ref t, p))
             {
@@ -234,9 +243,12 @@ public static partial class ConstructPhysics
         }
         else
             c.TiltHold = Vector3.Zero;
-        var hoverShare = liftForce > 0 ? MathF.Max(0, c.Mass * g - c.LiftNow) / liftForce : 0f; // (cells carry their share: ConstructLift.cs)
+        var hoverShare = liftForce > 0 ? MathF.Max(0, c.Mass * g * (1 - c.AntiShare) - c.LiftNow) / liftForce : 0f; // (cells carry their share: ConstructLift.cs)
         var shown = 0f;
         var all = 0f;
+        var air = c.HasBoost ? ConstructBoost.AirShare(c, com) : 1f;
+        if (c.RepulsorCount > 0)
+            RepulsorLook(c, query, _warmTick);
         for (var k = 0; k < c.ThrusterCount; k++)
         {
             ref var t = ref c.Thrusters[k];
@@ -248,7 +260,11 @@ public static partial class ConstructPhysics
             var want = 0f;
             if (Live(c, ref t, p))
             {
-                if (p.InCount > 0)
+                if (d.ThrustKind == ThrustKind.Solid)
+                    want = ConstructBoost.Grain(c, ref p, d, dt);
+                else if (d.ThrustKind == ThrustKind.Repulsor)
+                    want = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : 1;
+                else if (p.InCount > 0)
                     want = Math.Clamp(p.In, 0, 1);
                 else if (c.HoverOn && t.Lifts)
                 {
@@ -272,16 +288,27 @@ public static partial class ConstructPhysics
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
             all += d.ThrustForce;
-            if (t.Level <= 0)
+            if (t.Level <= 0 && t.Ab <= 0)
                 continue;
-            shown += d.ThrustForce * t.Level;
-            ApplyImpulse(c, invI, at - com, dir * (d.ThrustForce * t.Level * dt));
+            var push = d.ThrustForce * t.Level;
+            var burn = d.ThrustBurn * t.Level;
+            if (d.ThrustKind != ThrustKind.Plain)
+                ConstructBoost.Scale(c, ref t, p, d, air, want, ref dir, ref push, ref burn, at, q, dt);
+            if (push <= 0)
+                continue;
+            shown += push;
+            ApplyImpulse(c, invI, at - com, dir * (push * dt));
             if (d.ThrustFuel == EngineFuel.Fuel)
-                c.UseFuel(d.ThrustBurn * t.Level * dt);
+            {
+                if (d.ThrustKind != ThrustKind.Solid)
+                    c.UseFuel(burn * dt);
+                if (d.ThrustOx > 0)
+                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Level * dt);
+            }
             else
-                c.MotorWork += d.ThrustPower * 1000f * t.Level;
+                c.MotorWork += d.ThrustPower * 1000f * (d.ThrustKind == ThrustKind.Repulsor ? push / d.ThrustForce : t.Level);
         }
-        c.ThrustShow = all > 0 ? shown / all : 0;
+        c.ThrustShow = all > 0 ? MathF.Min(1, shown / all) : 0;
         if (shown > 0)
         {
             c.Vel -= c.Vel * MathF.Min(1, (FlightDrag + c.Vel.Length() * AirDragOf(c)) * (planet ? AirAt(com) : 1f) * dt);
@@ -391,17 +418,22 @@ public static partial class ConstructPhysics
             var d = p.D;
             var want = 0f;
             if (Live(c, ref t, p))
-                want = p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
+                want = d.ThrustKind == ThrustKind.Solid ? ConstructBoost.Grain(c, ref p, d, dt) : p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
             all += d.ThrustForce;
-            if (t.Level <= 0)
+            if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
             c.WorldFrame(t.Seg, out var q, out _);
             sum += Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Level);
             shown += d.ThrustForce * t.Level;
             if (d.ThrustFuel == EngineFuel.Fuel)
-                c.UseFuel(d.ThrustBurn * t.Level * dt);
+            {
+                if (d.ThrustKind != ThrustKind.Solid)
+                    c.UseFuel(d.ThrustBurn * t.Level * dt);
+                if (d.ThrustOx > 0)
+                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Level * dt);
+            }
             else
                 c.MotorWork += d.ThrustPower * 1000f * t.Level;
         }
@@ -415,6 +447,10 @@ public static partial class ConstructPhysics
     private static bool Live(Construct c, ref CThruster t, in CPart p)
     {
         if (!p.Working)
+            return false;
+        if (p.D.ThrustKind == ThrustKind.Solid)
+            return ConstructConfig.Get(p, p.D, CfgKey.Grain, 0) < p.D.BurnTime;
+        if (p.D.ThrustOx > 0 && c.OxLeft <= 0)
             return false;
         return p.D.ThrustFuel == EngineFuel.Fuel ? t.Fed && c.FuelLeft > 0 : c.Electrical && ConstructPower.On(c, t.Part);
     }

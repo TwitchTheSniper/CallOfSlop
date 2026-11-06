@@ -144,6 +144,7 @@ public enum CfgKey : byte
     WaypointZ,
     HomeX, // Flight Stabilizer: where it took off from (not on the panel)
     HomeZ,
+    Grain, // solid booster: seconds of it burnt (not on the panel; ConstructBoost.cs)
     COUNT,
 }
 
@@ -648,6 +649,7 @@ public static class ConstructConfig
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
                 >= CfgKey.Pattern and <= CfgKey.HomeZ => d.Logic == CLogic.FlightStabilizer,
+                CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,

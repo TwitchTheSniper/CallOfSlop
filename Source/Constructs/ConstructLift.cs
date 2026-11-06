@@ -337,6 +337,8 @@ public static partial class ConstructLift
         Fluid gas;
         if (st.Material == names.IdOf("hydrogen"))
             gas = Fluid.Hydrogen;
+        else if (st.Material == names.IdOf("oxidiser"))
+            gas = Fluid.Oxidiser;
         else if (st.Material == names.IdOf("helium"))
             gas = Fluid.Helium;
         else

@@ -1,0 +1,187 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Hover Car",
+ "description": "Four repulsors and a battery. Shift lifts it off, W and S drive it, A and D turn it, Ctrl sets it down. It follows the ground.",
+ "steps": [
+  {
+   "part": "Frame Block"
+  },
+  {
+   "part": "Frame Block",
+   "on": 0,
+   "socket": "-z",
+   "by": "+z"
+  },
+  {
+   "part": "Frame Block",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Frame Block",
+   "on": 1,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Frame Block",
+   "on": 1,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Frame Block",
+   "on": 2,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Frame Block",
+   "on": 2,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Repulsor",
+   "on": 3,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Repulsor",
+   "on": 4,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Repulsor",
+   "on": 5,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Repulsor",
+   "on": 6,
+   "socket": "-y",
+   "by": "front"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Flight Stabilizer",
+   "on": 2,
+   "socket": "+y",
+   "by": "-y",
+   "config": {
+    "pattern": "Hover platform"
+   }
+  },
+  {
+   "part": "Battery",
+   "on": 1,
+   "socket": "+y",
+   "by": "-y"
+  },
+  {
+   "part": "Light Lift Fan",
+   "on": 2,
+   "socket": "+z",
+   "by": "front"
+  },
+  {
+   "part": "Light Lift Fan",
+   "on": 1,
+   "socket": "-z",
+   "by": "front"
+  }
+ ],
+ "links": [
+  {
+   "type": "data",
+   "from": 11,
+   "to": 12
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 14
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 15,
+   "fromPort": "reverse"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 7,
+   "fromPort": "front left"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 8,
+   "fromPort": "front right"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 9,
+   "fromPort": "rear left"
+  },
+  {
+   "type": "data",
+   "from": 12,
+   "to": 10,
+   "fromPort": "rear right"
+  },
+  {
+   "type": "power",
+   "from": 13,
+   "to": 7,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 13,
+   "to": 8,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 13,
+   "to": 9,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 13,
+   "to": 10,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 13,
+   "to": 14,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  },
+  {
+   "type": "power",
+   "from": 13,
+   "to": 15,
+   "fromPort": "Power out",
+   "toPort": "Power in"
+  }
+ ]
+}

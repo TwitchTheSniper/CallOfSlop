@@ -1,0 +1,147 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Rocket Engine",
+  "description": "500000 kN anywhere. Fuel and oxidiser by pipe from Fluid Tanks. Its nozzle gimbals 8 degrees on its pitch and yaw inputs.",
+  "group": "Thrusters",
+  "section": "Rockets",
+  "role": "thruster",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 694444.4,
+  "health": 156350,
+  "armour": 13,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 15.0,
+  "thruster": {
+    "kind": "rocket",
+    "force": 500000000.0,
+    "spool": 1.2,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      8.0
+    ],
+    "burnRate": 3000.0,
+    "oxidiser": 6000.0,
+    "gimbal": 8,
+    "gimbalRate": 60
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -8.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Oxidiser in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "oxidiser",
+      "at": [
+        8.0,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -8.64,
+        -8.64,
+        4.0
+      ],
+      "max": [
+        8.64,
+        8.64,
+        8.24
+      ],
+      "color": "#2a2c2f",
+      "detail": true
+    },
+    {
+      "min": [
+        -5.6,
+        -5.6,
+        8.08
+      ],
+      "max": [
+        5.6,
+        5.6,
+        8.48
+      ],
+      "color": "#c8642a",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

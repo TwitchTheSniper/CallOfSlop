@@ -12,7 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from air_parts import airship  # noqa: E402
-from scale import LARGE, MEDIUM, SMALL, Part, box, write_parts  # noqa: E402
+from scale import CAPITAL, LARGE, MEDIUM, SMALL, Part, box, write_parts  # noqa: E402
 
 OUT = os.path.join("Constructs", "Parts", "Flight")
 BLUEPRINTS = os.path.join("Constructs", "Blueprints")
@@ -98,9 +98,11 @@ def parts():
         stabilizer("Flight Stabilizer", SMALL, 1, 4, 60, 2, 1500, "wrench"),
         stabilizer("Medium Flight Stabilizer", MEDIUM, 4, 240, 400, 6, 400000, "welder"),
         stabilizer("Large Flight Stabilizer", LARGE, 16, 12000, 2000, 12, 3e7, "welder"),
+        stabilizer("Capital Flight Stabilizer", CAPITAL, 64, 500000, 12000, 30, 2e9, "welder"),
         panel("Flight Panel", SMALL, 1, 3, 30, 0, "wrench"),
         panel("Medium Flight Panel", MEDIUM, 4, 30, 120, 2, "welder"),
         panel("Large Flight Panel", LARGE, 16, 300, 400, 4, "welder"),
+        panel("Capital Flight Panel", CAPITAL, 64, 2000, 1600, 8, "welder"),
     ]
 
 

@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Anti-Grav Generator",
+  "description": "Cancels half the weight of what is within 30 m, more on a big ship. Draws 8 MW. Power gone, it stops at once. Its input switches it.",
+  "group": "Medium",
+  "section": "Repulsors",
+  "role": "logic",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 1500.0,
+  "health": 1046,
+  "armour": 8,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "antigrav",
+    "share": 0.5,
+    "radius": 30
+  },
+  "power": 8000.0,
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -0.5,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.3,
+        0.495,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.575,
+        0.3
+      ],
+      "color": "#58c8e0",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

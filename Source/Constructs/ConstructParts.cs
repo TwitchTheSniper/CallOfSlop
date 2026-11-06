@@ -197,6 +197,8 @@ public enum CLogic : byte
     BusOut, // splits a Data Bus link back into eight
     RemoteLink, // a Remote Transmitter: the seat wired into it sends its controls on a channel (ConstructRemote.cs)
     FlightStabilizer, // a seat's axes in, mixed channels out, with its own sensors and autopilot (ConstructFlight.cs)
+    Decoupler, // a rising input splits the construct here into two live bodies (ConstructBoost.cs)
+    AntiGrav, // on power cancels a share of its construct's weight, within its radius (ConstructBoost.cs)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -466,6 +468,12 @@ public sealed class ConstructPartDef
     public EngineFuel PlantFuel; // generator: Fuel, or None (a reactor)
     public float ThrustForce, ThrustBurn, ThrustPower, ThrustSpool; // thruster: N, litres a second and kW at full thrust, seconds from nothing to full
     public EngineFuel ThrustFuel; // thruster: Fuel or Electric
+    public ThrustKind ThrustKind; // thruster: what makes its push (ConstructBoost.cs)
+    public float AbForce, AbBurn, AbBand; // thruster: N and l/s its afterburner adds at full, and the share of throttle where it can light (0: none)
+    public float ThrustOx; // rocket: l/s of oxidiser at full thrust
+    public float BurnTime; // solid booster: seconds of grain
+    public float ThrustGimbal, GimbalRate; // nozzle: radians either way, radians a second
+    public float RepulsorRange; // repulsor: metres it reaches
     public byte ThrustDir; // thruster: the way its exhaust leaves (a direction index): the push is the other way
     public Vector3 ThrustAt; // thruster: where the push acts, and the exhaust starts (part frame)
     public Vector3 SmokeAt; // "smoke": the top of the stack (part frame)
@@ -525,7 +533,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && Logic != CLogic.FlightStabilizer && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && Logic != CLogic.FlightStabilizer && Logic != CLogic.Decoupler && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -663,6 +671,7 @@ public sealed class ConstructPartDef
     /// <see cref="ConstructRoutes.DataPort"/>. Empty: the one port.
     /// </summary>
     public string[] DataIn = [], DataOut = [];
+    public float DecoupleKick, AntiShare, AntiRadius; // a Decoupler: the m/s it parts its two sides at; Anti-Grav: the share of weight it cancels, and its radius (ConstructBoost.cs)
     public float Gyro; // a Flight Stabilizer: the N m its gyro turns the craft about its up with (ConstructFlight.cs)
 
     /// <summary>A spawner part (the Spawn category).</summary>
@@ -697,6 +706,7 @@ public sealed class ConstructPartDef
             CLogic.Numpad or CLogic.CodeLock or CLogic.KeySwitch or CLogic.Instrument or CLogic.AltitudeSensor or CLogic.TiltSensor or CLogic.HeadingSensor or CLogic.LevelSensor or CLogic.DamageSensor or CLogic.RadioRx => 0,
             CLogic.Filter or CLogic.RandomPulse or CLogic.OccupancySensor or CLogic.RadioTx or CLogic.BusOut => 1,
             CLogic.Mux or CLogic.BusIn or CLogic.Display or CLogic.FlightStabilizer => 16,
+            CLogic.Decoupler or CLogic.AntiGrav => 1,
             CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director or CLogic.DriveModule or CLogic.TurretModule => 1,
             CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
@@ -705,6 +715,7 @@ public sealed class ConstructPartDef
     };
 
     /// <summary>Is a signal part (its value travels to clients): an output, or a lamp, horn or brake.</summary>
+    public bool ThrustHolds => ThrustGimbal <= 0 && ThrustKind is not (ThrustKind.Solid or ThrustKind.Repulsor); // (its second input is a height to hold)
     public bool IsSignal => HasOutput || Role == PartRole.Logic;
     public override string ToString() => Name;
 }
@@ -903,7 +914,7 @@ public static partial class ConstructParts
                 if (d.Drive is not (DriveKind.Hub or DriveKind.Stub))
                     Need(RouteType.Shaft, false, "a shaft output port");
                 break;
-            case PartRole.Thruster when d.ThrustFuel == EngineFuel.Fuel:
+            case PartRole.Thruster when d.ThrustFuel == EngineFuel.Fuel && d.ThrustKind != ThrustKind.Solid:
             case PartRole.Burner:
                 Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
                 break;
@@ -1799,7 +1810,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -1857,6 +1868,14 @@ public static partial class ConstructParts
         d.TextSlots = Opt(b, "text") is { } texts ? (int)Num(texts, file, "logic.text") : 0;
         if (d.TextSlots is < 0 or > 2)
             throw new ConstructPartException($"{file}: \"logic.text\" is how many messages it holds, 0 to 2");
+        d.DecoupleKick = d.Logic == CLogic.Decoupler ? Opt(b, "kick") is { } kk ? Num(kk, file, "logic.kick") : 2f : 0;
+        if (d.Logic == CLogic.AntiGrav)
+        {
+            d.AntiShare = Num(Need(b, "share", bw), file, "logic.share");
+            Range(d.AntiShare, 0.01f, 1, file, "logic.share");
+            d.AntiRadius = Num(Need(b, "radius", bw), file, "logic.radius");
+            Range(d.AntiRadius, 0.5f, 100_000, file, "logic.radius");
+        }
         if (d.Logic == CLogic.FlightStabilizer)
         {
             d.DataIn = ConstructFlight.InPorts;

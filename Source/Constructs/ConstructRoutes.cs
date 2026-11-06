@@ -27,6 +27,7 @@ public enum Fluid : byte
     Helium, // lift gas: safe, rarer
     HotAir, // what a burner keeps in a cell: its fill is the cell's heat, and no pipe carries it
     Vacuum, // what a Vacuum Cell's pump leaves: its fill is how empty it is, and no pipe carries it
+    Oxidiser, // what a rocket burns its fuel with (ConstructBoost.cs)
 }
 
 /// <summary>A node of a routed link: where it sits (the rest frame of its host part's segment, on the 1 cm grid), the part it sits on, and the health of the segment that arrives at it.</summary>

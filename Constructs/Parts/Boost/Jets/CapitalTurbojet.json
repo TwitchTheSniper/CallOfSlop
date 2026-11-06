@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Turbojet",
+  "description": "Breathes air: 300000 kN at sea level, less as the air thins, none in vacuum. Afterburner: its input on, at the top of its throttle, for 2.5 times the thrust and six times the fuel.",
+  "group": "Thrusters",
+  "section": "Jets",
+  "role": "thruster",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1515151.5,
+  "health": 303267,
+  "armour": 13,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 15.0,
+  "thruster": {
+    "kind": "air",
+    "force": 300000000.0,
+    "spool": 3.2,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      8.0
+    ],
+    "burnRate": 600.0,
+    "afterburner": {
+      "force": 450000000,
+      "burn": 3000.0,
+      "band": 0.9
+    }
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -8.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -8.64,
+        -8.64,
+        4.0
+      ],
+      "max": [
+        8.64,
+        8.64,
+        8.24
+      ],
+      "color": "#2a2c2f",
+      "detail": true
+    },
+    {
+      "min": [
+        -5.6,
+        -5.6,
+        8.08
+      ],
+      "max": [
+        5.6,
+        5.6,
+        8.48
+      ],
+      "color": "#c8642a",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

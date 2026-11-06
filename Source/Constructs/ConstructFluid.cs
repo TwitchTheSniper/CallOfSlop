@@ -11,6 +11,7 @@ namespace CallOfSlop;
 public sealed partial class Construct
 {
     public ushort[] FluidTanks = [];
+    public bool[] FluidOxFeeds = []; // a tank a rocket can draw oxidiser from
     public bool[] FluidFeeds = []; // a tank a fuel burner can draw on: it touches one, or a pipe runs to a fuel inlet
     public int FluidTankCount;
     public float FluidFuel, FluidFuelCap; // the litres of fuel in the tanks that feed, and what they hold at most
@@ -73,6 +74,7 @@ public static class ConstructFluid
         Fluid.Steam or Fluid.Exhaust => 0.01f,
         Fluid.Hydrogen or Fluid.Helium => 0.02f, // (compressed)
         Fluid.HotAir or Fluid.Vacuum => 0f,
+        Fluid.Oxidiser => 1.14f,
         _ => 1f,
     };
 
@@ -88,6 +90,7 @@ public static class ConstructFluid
         Fluid.Helium => new Vector3(0.75f, 0.8f, 0.95f),
         Fluid.HotAir => new Vector3(0.9f, 0.45f, 0.25f),
         Fluid.Vacuum => new Vector3(0.55f, 0.58f, 0.62f),
+        Fluid.Oxidiser => new Vector3(0.6f, 0.8f, 0.95f),
         _ => new Vector3(0.45f, 0.45f, 0.48f),
     };
 
@@ -419,6 +422,7 @@ public static class ConstructFluid
         {
             c.FluidTanks = new ushort[n + 4];
             c.FluidFeeds = new bool[n + 4];
+            c.FluidOxFeeds = new bool[n + 4];
         }
         c.FluidTankCount = 0;
         if (n > 0)
@@ -426,6 +430,7 @@ public static class ConstructFluid
                 if (c.Parts[i].D.Role == PartRole.FluidTank)
                 {
                     c.FluidTanks[c.FluidTankCount] = (ushort)i;
+                    c.FluidOxFeeds[c.FluidTankCount] = FeedsOx(c, i);
                     c.FluidFeeds[c.FluidTankCount++] = Feeds(c, i);
                 }
         Refresh(c);
@@ -454,6 +459,24 @@ public static class ConstructFluid
                 continue;
             var other = a == tank ? b : b == tank ? a : -1;
             if (other >= 0 && other < c.PartCount && (Burns(c, other) || c.DefOf(other).Role == PartRole.FuelLine))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>A pipe to a rocket's oxidiser inlet, or a rocket touching it.</summary>
+    private static bool FeedsOx(Construct c, int tank)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type == RouteType.Pipe && r.Source == tank && r.FedEnd && r.To < c.PartCount && c.DefOf(r.To).ThrustOx > 0 && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Pipe, r.ToPort) is { Fluid: "oxidiser" })
+                return true;
+        }
+        for (var k = 0; k < c.LinkCount; k++)
+        {
+            var other = c.Links[k].A == tank ? c.Links[k].B : c.Links[k].B == tank ? c.Links[k].A : -1;
+            if (other >= 0 && other < c.PartCount && c.DefOf(other).ThrustOx > 0)
                 return true;
         }
         return false;
@@ -492,6 +515,28 @@ public static class ConstructFluid
         }
         c.FluidFuel = fuel;
         c.FluidFuelCap = cap;
+        var ox = 0f;
+        for (var k = 0; k < c.FluidTankCount; k++)
+            if (Current(c, k) && c.FluidOxFeeds[k] && c.Parts[c.FluidTanks[k]] is { Working: true } t && Held(t, t.D) == Fluid.Oxidiser)
+                ox += Litres(t, t.D);
+        c.OxLeft = ox;
+    }
+
+    /// <summary>A rocket's oxidiser, off the tanks that feed it.</summary>
+    public static void BurnOx(Construct c, float litres)
+    {
+        for (var k = 0; k < c.FluidTankCount && litres > 0; k++)
+        {
+            if (!Current(c, k) || !c.FluidOxFeeds[k])
+                continue;
+            ref var p = ref c.Parts[c.FluidTanks[k]];
+            if (!p.Working || Held(p, p.D) != Fluid.Oxidiser)
+                continue;
+            var sip = MathF.Min(litres, Litres(p, p.D));
+            Change(ref p, p.D, -(double)sip);
+            litres -= sip;
+        }
+        Changed(c);
     }
 
     /// <summary>A burner's sip once the pool is dry: off the feeding tanks that hold fuel.</summary>

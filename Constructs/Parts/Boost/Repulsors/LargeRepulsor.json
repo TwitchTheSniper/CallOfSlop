@@ -1,0 +1,119 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Repulsor",
+  "description": "Pushes off what is under it, 20000 kN at the ground, a tenth of that by 4 m, none at 8 m. On power; its throttle wire sets it.",
+  "group": "Thrusters",
+  "section": "Repulsors",
+  "role": "thruster",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 37037.0,
+  "health": 13126,
+  "armour": 10,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 8.0,
+  "thruster": {
+    "kind": "repulsor",
+    "force": 20000000.0,
+    "fuel": "electric",
+    "power": 16000,
+    "spool": 0.1,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      1.0
+    ],
+    "range": 8
+  },
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -2.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -1.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        1.0
+      ]
+    },
+    {
+      "min": [
+        -1.6,
+        -1.6,
+        0.96
+      ],
+      "max": [
+        1.6,
+        1.6,
+        1.14
+      ],
+      "color": "#58c8e0",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Turbojet",
+  "description": "Breathes air: 75 kN at sea level, less as the air thins, none in vacuum. Afterburner: its input on, at the top of its throttle, for 2.5 times the thrust and six times the fuel.",
+  "group": "Thrusters",
+  "section": "Jets",
+  "role": "thruster",
+  "tool": "wrench",
+  "mass": 378.8,
+  "health": 462,
+  "armour": 6,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 2.5,
+  "thruster": {
+    "kind": "air",
+    "force": 75000.0,
+    "spool": 0.8,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      0.875
+    ],
+    "burnRate": 0.15,
+    "afterburner": {
+      "force": 112500,
+      "burn": 0.75,
+      "band": 0.9
+    }
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -0.375,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.375,
+        -0.375,
+        -0.875
+      ],
+      "max": [
+        0.375,
+        0.375,
+        0.875
+      ]
+    },
+    {
+      "min": [
+        -0.405,
+        -0.405,
+        0.4375
+      ],
+      "max": [
+        0.405,
+        0.405,
+        0.9012
+      ],
+      "color": "#2a2c2f",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2625,
+        -0.2625,
+        0.8838
+      ],
+      "max": [
+        0.2625,
+        0.2625,
+        0.9275
+      ],
+      "color": "#c8642a",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -0.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.375,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.375,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.375,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.375,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

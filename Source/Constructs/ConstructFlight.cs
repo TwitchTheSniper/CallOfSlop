@@ -39,6 +39,9 @@ public struct CStab
     public Vector3 Inertia; // kg m2 about its right, its forward, its up
     public Vector3 Auth; // N m for a whole unit of output at full thrust, by its loops' axes (pitch, roll, yaw); 0: not known, the gain alone
     public Vector3 Most; // the most of a unit a gimbal's joint is asked to go, the same axes
+    public float Gim00, Gim01, Gim10, Gim11; // nozzles on its pitch and yaw outputs: N m of the two loops those outputs serve, for a unit of each (rows the loops, columns the outputs)
+    public bool Repulsors; // its corners ride on repulsors: height is the gap under them
+    public float RepulsorRange;
     public float MainLevel; // what the thrusters on the throttle port do now, 0..1
 
     // The loops
@@ -187,6 +190,8 @@ public static partial class ConstructFlight
         s.Spool = 0;
         s.Auth = default;
         s.Most = Vector3.One;
+        s.Gim00 = s.Gim01 = s.Gim10 = s.Gim11 = 0;
+        s.Repulsors = false;
         Span<float> demand = stackalloc float[16]; // (four rows, each of four channels)
         demand.Clear();
         var mainAxis = pattern == FlightPattern.Airship ? -Vector3.UnitZ : Vector3.UnitY;
@@ -200,10 +205,13 @@ public static partial class ConstructFlight
             var port = wire.FromPort;
             if (port is OutPitch or OutYaw or OutRoll)
             {
-                GimbalAuth(c, ref s, wire.To, port, pattern, inv);
+                if (c.Parts[wire.To].D.ThrustGimbal > 0)
+                    NozzleAuth(c, ref s, wire.To, port, wire.ToPort, pattern, inv);
+                else
+                    GimbalAuth(c, ref s, wire.To, port, pattern, inv);
                 continue;
             }
-            if (c.Parts[wire.To].D.Role != PartRole.Thruster || wire.ToPort != 0)
+            if (c.Parts[wire.To].D.Role != PartRole.Thruster)
                 continue;
             var t = -1;
             for (var k = 0; k < c.ThrusterCount; k++)
@@ -212,7 +220,14 @@ public static partial class ConstructFlight
             if (t < 0 || !ConstructPhysics.ThrusterLive(c, ref c.Thrusters[t], c.Parts[wire.To]))
                 continue;
             ref var th = ref c.Thrusters[t];
-            var force = c.Parts[wire.To].D.ThrustForce;
+            if (wire.ToPort != 0)
+                continue;
+            var force = ConstructBoost.ForceNow(c, c.Parts[wire.To].D);
+            if (c.Parts[wire.To].D.ThrustKind == ThrustKind.Repulsor)
+            {
+                s.Repulsors = true;
+                s.RepulsorRange = c.Parts[wire.To].D.RepulsorRange;
+            }
             s.Spool = MathF.Max(s.Spool, c.Parts[wire.To].D.ThrustSpool);
             var dir = Vector3.Transform(th.Dir, inv);
             if (port == OutThrottle)
@@ -271,6 +286,37 @@ public static partial class ConstructFlight
                 var torque = Vector3.Transform(Vector3.Cross(t.At - c.Com, dir * force) * jt.Max, inv);
                 var along = axis == 0 ? torque.X : axis == 1 ? -torque.Z : -torque.Y;
                 s.Auth = axis == 0 ? s.Auth with { X = s.Auth.X + along } : axis == 1 ? s.Auth with { Y = s.Auth.Y + along } : s.Auth with { Z = s.Auth.Z + along };
+            }
+        }
+    }
+
+    /// <summary>A nozzle's own gimbal on the pitch or yaw output: what a unit of the output does to the two loops those outputs serve. Each input may land on either loop, either way, however the nozzle was turned when it was fitted: <see cref="Fly"/> solves for it.</summary>
+    private static void NozzleAuth(Construct c, ref CStab s, int part, int port, int toPort, FlightPattern pattern, Quaternion inv)
+    {
+        if (port == OutRoll || toPort is not (1 or 2))
+            return;
+        for (var k = 0; k < c.ThrusterCount; k++)
+        {
+            ref var t = ref c.Thrusters[k];
+            if (t.Part != part)
+                continue;
+            var d = c.Parts[part].D;
+            var turn = Vector3.Cross(toPort == 1 ? t.GimbalX : t.GimbalY, t.Dir);
+            var torque = Vector3.Transform(Vector3.Cross(t.At - c.Com, turn * d.ThrustForce) * d.ThrustGimbal, inv);
+            float pitch = torque.X, roll = -torque.Z, yaw = -torque.Y;
+            var row0 = Axis(pattern, OutPitch);
+            var row1 = Axis(pattern, OutYaw);
+            var a = row0 == 0 ? pitch : row0 == 1 ? roll : yaw;
+            var b = row1 == 0 ? pitch : row1 == 1 ? roll : yaw;
+            if (port == OutPitch)
+            {
+                s.Gim00 += a;
+                s.Gim10 += b;
+            }
+            else
+            {
+                s.Gim01 += a;
+                s.Gim11 += b;
             }
         }
     }
@@ -406,7 +452,7 @@ public static partial class ConstructFlight
             s.Integral = default;
             s.Landed = 0;
         }
-        var height = ConstructPhysics.HoldHeight(c.WorldCom);
+        var height = s.Repulsors && pattern == FlightPattern.Hover ? c.RepulsorGap : ConstructPhysics.HoldHeight(c.WorldCom);
         var up = ConstructPhysics.HoldUp(c.WorldCom);
         var climb = Vector3.Dot(c.Vel, up);
         if (!flies && !autopilot)
@@ -630,12 +676,14 @@ public static partial class ConstructFlight
             climbWant = ask.Lift * maxClimb;
             s.HoldAlt = height;
             s.AltHeld = true;
+            if (s.Repulsors && pattern == FlightPattern.Hover && ask.Lift > 0 && height > 0.7f * s.RepulsorRange)
+                climbWant = 0; // (its field gives out above this)
         }
         else
         {
             if (!s.AltHeld)
             {
-                s.HoldAlt = height;
+                s.HoldAlt = s.Repulsors && pattern == FlightPattern.Hover ? MathF.Max(height, 0.25f * s.RepulsorRange) : height;
                 s.AltHeld = true;
             }
             climbWant = Math.Clamp(0.8f * (s.HoldAlt - height), -maxClimb, maxClimb);
@@ -798,9 +846,19 @@ public static partial class ConstructFlight
         var kv = 2.4f * MathF.Min(1.2f, 0.8f / spool) * strength;
         var climbErr = climbWant - climb;
         var lean = MathF.Max(MinCos, Vector3.Dot(a.Up, up));
+        var carried = 1 - c.AntiShare;
         var climbAccel = Math.Clamp(kv * climbErr + s.AltIntegral, -0.9f * g, 2f * g);
-        var liftForce = MathF.Max(0, (c.Mass * (g + climbAccel) - c.LiftNow) / lean);
+        var liftForce = MathF.Max(0, (c.Mass * (g * carried + climbAccel) - c.LiftNow) / lean);
         var offLimit = false;
+
+        if (s.Repulsors && pattern == FlightPattern.Hover)
+        {
+            // The field is weak at height: the same push asks for more of it. Height is the gap, so it follows the ground.
+            var field = MathF.Max(0.03f, c.RepulsorShape);
+            liftForce /= field;
+            torque.X /= field;
+            torque.Y /= field;
+        }
 
         // The gyro takes what yaw it can; a fit that can turn it has the rest.
         var gyro = MathF.Min(d.Gyro * strength, MathF.Abs(torque.Z));
@@ -861,6 +919,19 @@ public static partial class ConstructFlight
         if (!offLimit)
             s.AltIntegral = Math.Clamp(s.AltIntegral + 0.3f * kv * climbErr * dt, -0.5f * g, 0.5f * g);
 
+        var nozzles = s.Gim00 * s.Gim11 - s.Gim01 * s.Gim10;
+        if (nozzles != 0)
+        {
+            // Its nozzles: the two loops these outputs serve, solved through what each output does to each.
+            float a0 = torque.X, a1 = pattern == FlightPattern.Rocket ? torque.Y : torque.Z;
+            var share = MathF.Max(0.1f, mainLevel);
+            units.X = Math.Clamp((s.Gim11 * a0 - s.Gim01 * a1) / nozzles / share, -1, 1);
+            var second = Math.Clamp((s.Gim00 * a1 - s.Gim10 * a0) / nozzles / share, -1, 1);
+            if (pattern == FlightPattern.Rocket)
+                units.Y = second;
+            else
+                units.Z = second;
+        }
         output[OutPitch] = units.X;
         if (pattern == FlightPattern.Rocket)
         {
