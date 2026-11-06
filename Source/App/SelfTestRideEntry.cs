@@ -211,6 +211,9 @@ public static partial class SelfTest
     }
 
     /// <summary>The fall onto a fast deck on the wire: the client's copy is a round trip behind, and its landing is eased onto the server's, never snapped.</summary>
+    /// <summary>The fall against the deck, at the landing (14 m/s down, 14 m/s across, and a little): how far a frame's time alone carries the body in the deck's frame.</summary>
+    private const float RideFallSpeed = 24f;
+
     private static void RideLandOnWire(Game server, Game a, Game[] clients, Player sp, Stopwatch clock, ref double now, float z)
     {
         var w = server.Constructs;
@@ -235,7 +238,9 @@ public static partial class SelfTest
         sp.Teleport(new Vector3(mid.X, mid.Y + 10f, mid.Z + 14f * meet));
         var until = clock.Elapsed.TotalSeconds + 2.4;
         var worst = 0f;
+        var raw = 0f;
         var last = Vector3.Zero;
+        var lastAt = 0.0;
         var has = false;
         while (clock.Elapsed.TotalSeconds < until)
         {
@@ -245,17 +250,21 @@ public static partial class SelfTest
             if (sp.Sim.RideBody != c.Id && me.Sim.RideBody != c.Id)
                 continue;
             var local = a.SelfTestDrawnLocal(cc, 0, me.RenderPosition);
+            var at = clock.Elapsed.TotalSeconds;
             if (has)
-                worst = MathF.Max(worst, Vector3.Distance(local, last));
-            (last, has) = (local, true);
+            {
+                worst = MathF.Max(worst, Vector3.Distance(local, last) - RideFallSpeed * (float)(at - lastAt)); // (a slow frame's fall isn't a snap)
+                raw = MathF.Max(raw, Vector3.Distance(local, last));
+            }
+            (last, lastAt, has) = (local, at, true);
         }
-        Line($"ride entry (wire): a 10 m fall onto a deck at 14 m/s: the biggest step in the deck's frame {worst:0.00} m; server {sp.Sim.RideBody == c.Id}, client {a.Local?.Sim.RideBody == c.Id}");
+        Line($"ride entry (wire): a 10 m fall onto a deck at 14 m/s: the biggest step in the deck's frame {raw:0.00} m, {worst:0.00} m past what the frame's time explains; server {sp.Sim.RideBody == c.Id}, client {a.Local?.Sim.RideBody == c.Id}");
         if (sp.Sim.RideBody != c.Id || a.Local?.Sim.RideBody != c.Id)
             Fail($"ride entry (wire): the rider isn't on the deck (server {sp.Sim.RideBody}, client {a.Local?.Sim.RideBody}, deck {c.Id})");
         else if (a.Local is { } m && Vector3.Distance(m.Sim.RideLocal, sp.Sim.RideLocal) > 0.05f)
             Fail($"ride entry (wire): the client and the server disagree on the deck ({m.Sim.RideLocal}, {sp.Sim.RideLocal})");
         if (worst > 0.6f)
-            Fail($"ride entry (wire): the landing snapped: {worst:0.00} m in a frame in the deck's frame");
+            Fail($"ride entry (wire): the landing snapped: {worst:0.00} m in a frame in the deck's frame, past what the frame's time explains");
         c.Anchored = true;
         c.Vel = Vector3.Zero;
         c.Pos = pos0;

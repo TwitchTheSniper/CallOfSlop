@@ -71,6 +71,17 @@ public sealed partial class Game
         return h.RemoteBody != 0 && Constructs.Get(h.RemoteBody) is { } d ? d.WorldCom : p.Position;
     }
 
+    /// <summary>The drone this PC's player flies from their seat, or null: the view, the third-person orbit and the streamed ground go there. Looks at the bodies only in a seat that sends.</summary>
+    public Construct? LocalDrone()
+    {
+        if (Local is not { Alive: true } me)
+            return null;
+        ref var h = ref SandboxHands.Hand(me.Id);
+        if (!h.Seated || Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount || !ConstructRemote.Sends(c, h.SeatPart))
+            return null;
+        return ConstructRemote.Piloted(Constructs, me.Id);
+    }
+
     /// <summary>A pilot's HUD lines, in place of the seat's. False: not piloting.</summary>
     private bool SandboxRemoteHud(Player me, in SandboxHand h, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 red)
     {
