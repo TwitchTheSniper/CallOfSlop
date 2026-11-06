@@ -79,6 +79,8 @@ public enum GameAction
     SelectTool, // the selector itself, out or away (it has no slot on the tool wheel; the Tab inventory's Tools tab lists it too)
     StoryWindow, // binds version 20: Sandbox, the story window (the story world, its chronicle, the stories in progress; Source/UI/UiStory.cs) on F4
     FactionWindow, // binds version 21: Sandbox, the faction window (found, invite, join, give; Source/UI/UiFactions.cs) on F2
+    SeatRollLeft, // binds version 22: in a seat, roll left and right (the seat's Roll axis: ConstructParts.KeyRollLeft); on Q and E, which do this only in a seat (see Resolve)
+    SeatRollRight,
     COUNT,
 }
 
@@ -114,6 +116,7 @@ public static class Keybinds
         Any,
         Sandbox,
         NotSandbox,
+        Seat, // only in a construct's seat, in Sandbox: while one is held, whatever else is on its key is off (Resolve)
     }
 
     public static BindContext Context(GameAction a) =>
@@ -124,6 +127,7 @@ public static class Keybinds
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
                 or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
+            GameAction.SeatRollLeft or GameAction.SeatRollRight => BindContext.Seat,
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
         };
@@ -142,28 +146,46 @@ public static class Keybinds
             return false; // (the selector's actions and the stations' switches share keys: the switches are off while the selector is out: Program.SandboxAids.cs)
         var x = Context(a);
         var y = Context(b);
+        if (x == BindContext.Seat || y == BindContext.Seat)
+            return x == y || LiveInSeat(x == BindContext.Seat ? b : a); // (the roll keys take a key over in a seat, so they clash only with what a seat itself reads)
         return x == BindContext.Any || y == BindContext.Any || x == y;
     }
 
-    /// <summary>Is <paramref name="a"/> live in a match that is (<paramref name="sandbox"/>) or isn't Sandbox?</summary>
-    public static bool ActiveIn(GameAction a, bool sandbox) =>
+    /// <summary>The actions a seated player's controls use: the roll keys can't share a key with these.</summary>
+    private static bool LiveInSeat(GameAction a) =>
+        a is GameAction.MoveForward or GameAction.MoveBack or GameAction.MoveLeft or GameAction.MoveRight or GameAction.Jump or GameAction.Sprint or GameAction.CrouchHold or GameAction.CrouchToggle
+            or GameAction.Fire or GameAction.Aim or GameAction.Reload or GameAction.Interact;
+
+    /// <summary>Is <paramref name="a"/> live in a match that is (<paramref name="sandbox"/>) or isn't Sandbox, with the player in a seat or not?</summary>
+    public static bool ActiveIn(GameAction a, bool sandbox, bool seated = false) =>
         Context(a) switch
         {
             BindContext.Sandbox => sandbox,
             BindContext.NotSandbox => !sandbox,
+            BindContext.Seat => sandbox && seated,
             _ => true,
         };
 
     /// <summary>
     /// This frame's raw key states (<paramref name="down"/>[i]: action i's binding is held) made into what the game reads:
-    /// an action whose context isn't live is off, and while a Shift chord is held the plain actions on the same key are
-    /// off (Shift + Left rolls instead of also turning). Nothing allocates.
+    /// an action whose context isn't live is off, while a Shift chord is held the plain actions on the same key are
+    /// off (Shift + Left rolls instead of also turning), and in a seat a roll key held turns off whatever else is on its
+    /// key (Q and E roll, not swap weapons or use equipment). Nothing allocates.
     /// </summary>
-    public static void Resolve(int[] binds, bool sandbox, bool[] down)
+    public static void Resolve(int[] binds, bool sandbox, bool[] down, bool seated = false)
     {
         for (var i = 0; i < down.Length; i++)
-            if (down[i] && !ActiveIn((GameAction)i, sandbox))
+            if (down[i] && !ActiveIn((GameAction)i, sandbox, seated))
                 down[i] = false;
+        if (sandbox && seated)
+            for (var i = (int)GameAction.SeatRollLeft; i <= (int)GameAction.SeatRollRight; i++)
+            {
+                if (!down[i])
+                    continue;
+                for (var j = 0; j < down.Length; j++)
+                    if (j != i && binds[j] == binds[i])
+                        down[j] = false;
+            }
         for (var i = 0; i < down.Length; i++)
         {
             if (!down[i] || !IsChord(binds[i]))
@@ -250,6 +272,8 @@ public static class Keybinds
         Key(GlfwKey.Period), // The selector, out or away
         Key(GlfwKey.F4), // Story window (Sandbox): binds version 20
         Key(GlfwKey.F2), // Faction window (Sandbox): binds version 21
+        Key(GlfwKey.Q), // Roll left, in a seat: binds version 22 (shares Swap weapon's Q: Overlap)
+        Key(GlfwKey.E), // Roll right, in a seat (shares Equipment's E)
     ];
 
     /// <summary>
@@ -271,8 +295,9 @@ public static class Keybinds
     /// 17: Weather map F11 added (same rule). 18: Noclip (creative Sandbox) on V added (same rule; it may share Melee's key, see <see cref="Overlap"/>).
     /// 19: the build stations' keys (Sandbox): Mirror M, Line O, Replace P, Gantry U, build plane Page Up / Down, orbit Left Alt (same rule). The selector on the full stop, its actions on M, O, P, U and comma (the first four share those keys: see <see cref="Overlap"/>).
     /// 20: the Story window (Sandbox) on F4 added (same rule). 21: the Faction window (Sandbox) on F2 added (same rule).
+    /// 22: roll left and right in a seat on Q and E added (same rule; they share those keys, see <see cref="Overlap"/> and <see cref="Resolve"/>).
     /// </summary>
-    public const int DefaultsVersion = 21;
+    public const int DefaultsVersion = 22;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -327,6 +352,8 @@ public static class Keybinds
         (19, GameAction.SelectTool, Unbound, Key(GlfwKey.Period)),
         (20, GameAction.StoryWindow, Unbound, Key(GlfwKey.F4)),
         (21, GameAction.FactionWindow, Unbound, Key(GlfwKey.F2)),
+        (22, GameAction.SeatRollLeft, Unbound, Key(GlfwKey.Q)),
+        (22, GameAction.SeatRollRight, Unbound, Key(GlfwKey.E)),
     ];
 
     /// <summary>
@@ -489,6 +516,8 @@ public static class Keybinds
             GameAction.SelectTool => "Selector: take it out or put it away (build stations)",
             GameAction.StoryWindow => "Story window (Sandbox host: the story world, its chronicle, the stories in progress)",
             GameAction.FactionWindow => "Faction window (Sandbox: found or join a faction, share and give what you own)",
+            GameAction.SeatRollLeft => "Roll left (in a seat)",
+            GameAction.SeatRollRight => "Roll right (in a seat)",
             _ => a.ToString(),
         };
 

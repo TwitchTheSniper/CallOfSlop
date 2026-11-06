@@ -34,7 +34,7 @@ public struct SandboxHand
     public double Start, Duration;
     public ushort SeatBody; // 0: not sitting
     public ushort SeatPart;
-    public ushort SeatKeys; // seated: the fire, aim and reload keys the client holds (input readers; ConstructParts.KeyFire...)
+    public ushort SeatKeys; // seated: the fire, aim, reload and roll keys the client holds (input readers; ConstructParts.KeyFire...)
     public double RackAt; // last rack take (a press cycles to the next part)
     public float SeatLook; // seated: the look relative to the seat's facing, as the client sends it (CActKind.SeatLook; protocol 80)
     public ushort RemoteBody; // the drone this sitter flies (GameSandboxRemote.cs): server
@@ -1202,6 +1202,9 @@ public sealed partial class ConstructEdits
         c.WorldFrame(p.Seg, out var q, out var t);
         return t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, p.D.SeatAt), q);
     }
+
+    /// <summary>The roll axis of a seat's keys (-1 left, 1 right; <see cref="ConstructParts.KeyRollLeft"/>).</summary>
+    public static float RollOf(int keys) => ((keys & ConstructParts.KeyRollRight) != 0 ? 1f : 0f) - ((keys & ConstructParts.KeyRollLeft) != 0 ? 1f : 0f);
 
     /// <summary>Driving: the seated player's keys become throttle, steering and brake (server, every tick).</summary>
     public static void DriveInput(Construct c, Buttons b, float dt)

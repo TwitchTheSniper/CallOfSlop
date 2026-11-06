@@ -314,7 +314,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 168: speakers (ConstructSpeakers.cs): new CfgKeys, and a Video Screen or Music Player is a data output.
     // 169: Browser Screens (ConstructMedia.cs): MediaOp.Go, and a media line may be a web address, up to 300 characters.
     // 170: lift cells (ConstructLift.cs): new Fluids, CfgKey.Hole, CActKind.PatchCell, and CBodyKind.Fluid carries a hole (f32) on each entry.
-    public const byte ProtocolVersion = 170;
+    // 171: a seat's roll keys: CActKind.SeatKeys's byte gains roll left (8) and right (16), a Driving Module gains a "roll" output.
+    public const byte ProtocolVersion = 171;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

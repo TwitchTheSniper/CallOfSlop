@@ -712,7 +712,7 @@ public sealed partial class Ui
                 {
                     var i = n % (int)GameAction.COUNT;
                     var action = (GameAction)i;
-                    if ((Keybinds.Context(action) == Keybinds.BindContext.Sandbox) != (n >= (int)GameAction.COUNT))
+                    if ((Keybinds.Context(action) is Keybinds.BindContext.Sandbox or Keybinds.BindContext.Seat) != (n >= (int)GameAction.COUNT))
                         continue;
                     if (action == Keybinds.FirstSandboxAction)
                     {

@@ -17,7 +17,7 @@ public struct CPart
     public byte State; // a switch's on/off, a lever's position (0..3), a toggle's output and last input, a timer's phase
     public ushort Count; // ticks: a button's pulse left, a timer's or delay's count
     public float Out, OutNext; // the signal it puts out (this tick's, and the next being worked out)
-    public ushort Keys; // a seat: its sitter's keys this tick (Buttons, then fire/aim/reload bits; 0x8000: someone sits there)
+    public ushort Keys; // a seat: its sitter's keys this tick (Buttons, then fire/aim/reload/roll bits; 0x8000: someone sits there)
     public byte SitterPlus1; // a seat: the player sitting in it, plus one (0: empty)
     public bool Stood; // a pressure plate: a player stood on it this tick
 
