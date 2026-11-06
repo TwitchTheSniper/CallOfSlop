@@ -81,6 +81,8 @@ public static class ConstructLoot
         return table;
     }
 
+    private static int TierOfClass(ConstructPartDef d) => d.Class == ConstructParts.Small ? 1 : d.Class == ConstructParts.Medium ? 2 : d.Class == ConstructParts.Large ? 3 : 4;
+
     /// <summary>Why a part can't be in a table: it must fit a slot and belong to the table's tech tier.</summary>
     private static string? Refuse(ConstructPartDef? d, string name, LootTable t, string[] rarities)
     {
@@ -91,10 +93,12 @@ public static class ConstructLoot
         var wp = d.GunPartName.Length > 0 ? Parts.Find(d.GunPartName) : d.GunReceiver.Length > 0 ? Parts.Find(d.GunReceiver) : null;
         if (wp != null && !rarities.Contains(wp.Rarity.ToString(), StringComparer.OrdinalIgnoreCase))
             return $"a weapon part of rarity {wp.Rarity}: the table takes {string.Join(", ", rarities)}";
+        if (d.Surface != null && TierOfClass(d) > t.MaxTier)
+            return $"it is tier {TierOfClass(d)} by its size: the table stops at tier {t.MaxTier}";
         var recipe = AssemblingTable.Current.Recipes.FirstOrDefault(r => r.Output == d);
         if (recipe != null && recipe.MinTier > t.MaxTier)
             return $"its recipe needs a tier {recipe.MinTier} Assembler: the table stops at tier {t.MaxTier}";
-        return recipe == null && wp == null ? $"it has no recipe to show its tier" : null;
+        return recipe == null && wp == null && d.Surface == null && d.Rotor == null ? $"it has no recipe to show its tier" : null; // (a wing or a rotor file is looted only: an Airframe or Fan Former makes its own, so it has none)
     }
 
     /// <summary>A step of a tiny generator: this file's rolls need no more, and it can't touch a seeded simulation.</summary>

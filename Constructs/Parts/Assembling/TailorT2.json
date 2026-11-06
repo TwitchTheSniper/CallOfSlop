@@ -1,0 +1,67 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Workshop Tailor",
+  "description": "Workshop, tier 2 of 5. Sews lift cells from cloth: set a recipe with the configure tool. Needs power.",
+  "group": "Production",
+  "section": "Assemblers",
+  "tier": 2,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 7.5,
+  "mass": 937.5,
+  "health": 3125,
+  "armour": 9,
+  "material": "steel",
+  "power": 2700,
+  "collider": "boxes",
+  "color": "#2f5f8a",
+  "boxes": [
+    {"min": [-1.25, 0, -1.25], "max": [1.25, 0.075, 1.25]},
+    {"min": [-1.15, 0.075, -1.15], "max": [1.15, 0.85, -1.1], "color": "#2a2e33"},
+    {"min": [-1.15, 0.075, -0.15], "max": [1.15, 0.85, -0.1], "color": "#2a2e33"},
+    {"min": [-1.15, 0.075, -1.1], "max": [-1.1, 0.85, -0.15], "color": "#2a2e33"},
+    {"min": [1.1, 0.075, -1.1], "max": [1.15, 0.85, -0.15], "color": "#2a2e33"},
+    {"min": [-1.25, 0.075, -1.25], "max": [-1.15, 2.25, -1.15], "color": "#3a3f46"},
+    {"min": [-1.25, 0.075, 1.15], "max": [-1.15, 2.25, 1.25], "color": "#3a3f46"},
+    {"min": [1.15, 0.075, -1.25], "max": [1.25, 2.25, -1.15], "color": "#3a3f46"},
+    {"min": [1.15, 0.075, 1.15], "max": [1.25, 2.25, 1.25], "color": "#3a3f46"},
+    {"min": [-1.25, 2.25, -1.25], "max": [1.25, 2.4, -1.1]},
+    {"min": [-1.25, 2.25, 1.1], "max": [1.25, 2.4, 1.25]},
+    {"min": [-1.25, 2.25, -1.1], "max": [-1.1, 2.4, 1.1]},
+    {"min": [1.1, 2.25, -1.1], "max": [1.25, 2.4, 1.1]},
+    {"min": [-1.25, 0.375, -1.15], "max": [-1.15, 0.875, 1.15], "color": "#3a3f46"},
+    {"min": [1.15, 0.375, -1.15], "max": [1.25, 0.875, 1.15], "color": "#3a3f46"},
+    {"min": [-0.15, 1.55, -0.25], "max": [0.15, 2.25, 0.25], "color": "#26496b"},
+    {"min": [-1.1, 2.3, -0.05], "max": [1.1, 2.35, 0.05], "color": "#d8c690", "detail": true},
+    {"min": [-0.05, 1.4, -0.05], "max": [0.05, 1.55, 0.05], "color": "#c9ced6", "detail": true},
+    {"min": [-1.26, 2.4, -1.26], "max": [1.26, 2.45, -1.09], "color": "#d8c690", "detail": true},
+    {"min": [-1.26, 2.4, 1.09], "max": [1.26, 2.45, 1.26], "color": "#d8c690", "detail": true},
+    {"min": [-0.1875, 1.6, -0.2875], "max": [0.1875, 1.7, 0.2875], "color": "#d8c690", "detail": true},
+    {"min": [-1.25, 2.4125, -0.075], "max": [1.25, 2.5, 0.075], "color": "#3a3f46", "detail": true},
+    {"min": [-1.28, 0.075, -1.28], "max": [-1.145, 0.225, -1.12], "color": "#3a3f46", "detail": true},
+    {"min": [1.145, 0.075, -1.28], "max": [1.28, 0.225, -1.12], "color": "#3a3f46", "detail": true},
+    {"min": [-1.28, 0.075, 1.12], "max": [-1.145, 0.225, 1.28], "color": "#3a3f46", "detail": true},
+    {"min": [1.145, 0.075, 1.12], "max": [1.28, 0.225, 1.28], "color": "#3a3f46", "detail": true},
+    {"min": [-1.05, 1.05, 0.5], "max": [1.05, 1.35, 0.8], "color": "#d8c690", "detail": true, "shape": "cylinder", "front": "+y"},
+    {"min": [-1.0865, 0.4508, -1.162], "max": [-0.0745, 0.8428, -1.13], "color": "#14181c", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [1.25, 0.75, -0.75], "dir": "+x"},
+    {"name": "-x", "at": [-1.25, 0.75, -0.75], "dir": "-x"},
+    {"name": "back", "at": [0, 0.75, -1.25], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [1.25, 0.625, -0.75], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.25, 0.625, 0.75], "face": "+x"}
+  ],
+  "panels": [{"source": "machine", "at": [-0.5805, 0.6468, -1.166], "size": [0.97, 0.35], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "config": [
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."},
+    {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
+  ],
+  "storage": {
+    "slots": [{"min": [-1.1375, 0.0875, 0.0375], "max": [-0.025, 1.4, 1.2], "stack": 12, "label": "tray"}, {"min": [0.025, 0.0875, 0.0375], "max": [1.1375, 1.4, 1.2], "stack": 12, "label": "tray"}],
+    "assemble": {"capacity": 400, "min": [-1.0875, 0.0875, -1.0875], "max": [1.0875, 0.8, -0.1625], "speed": 2, "chuteLoad": 20, "batches": 8, "outAt": [0, 0.075, 1.25], "outDir": "+z", "machine": "tailor"}
+  }
+}

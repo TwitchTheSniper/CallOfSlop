@@ -1,0 +1,296 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Airframe Former",
+  "description": "Cuts a wing or a control surface from its settings, up to 6 m of span and 3 m of chord, of what is in its bin. It parts it off when it is done. Needs power.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "storage",
+  "tool": "welder",
+  "mass": 520.0,
+  "health": 700,
+  "armour": 6,
+  "material": "steel",
+  "color": "#55606b",
+  "attachSeconds": 4,
+  "power": 900,
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 400,
+      "min": [
+        -0.555,
+        2.055,
+        -0.705
+      ],
+      "max": [
+        0.555,
+        2.195,
+        -0.055
+      ]
+    },
+    "wheel": {
+      "speed": 0.25,
+      "at": [
+        0,
+        1.6,
+        0.75
+      ],
+      "maxWidth": 3,
+      "maxDiameter": 6,
+      "startWidth": 0.3,
+      "startDiameter": 0.5,
+      "pushForce": 6000,
+      "airframe": true
+    }
+  },
+  "config": [
+    {
+      "key": "wingKind",
+      "type": "choice",
+      "label": "Cuts",
+      "group": "Airframe",
+      "options": [
+        "Wing",
+        "Tail plane",
+        "Fin",
+        "Swept wing, left",
+        "Swept wing, right",
+        "Aileron",
+        "Elevator",
+        "Rudder",
+        "Flap"
+      ],
+      "default": 0,
+      "tooltip": "What it cuts. Its bin's material is the skin: cloth, wood, planks, laminate, metal or steel. Cloth is light and tears."
+    },
+    {
+      "key": "wingChord",
+      "label": "Chord",
+      "group": "Airframe",
+      "unit": "m",
+      "min": 0.3,
+      "max": 3,
+      "step": 0.05,
+      "default": 1.5,
+      "tooltip": "From leading edge to trailing edge. It stays what it was when the piece started."
+    },
+    {
+      "key": "wingSpan",
+      "label": "Span",
+      "group": "Airframe",
+      "unit": "m",
+      "min": 0.5,
+      "max": 6,
+      "step": 0.05,
+      "default": 2,
+      "tooltip": "How long. It parts off by itself at this length. Weld pieces along their span for a longer wing."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Screen colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what its screen shows. Black: its own colours."
+    }
+  ],
+  "collider": "boxes",
+  "panels": [
+    {
+      "source": "machine",
+      "at": [
+        -0.626,
+        1.581,
+        0.01
+      ],
+      "size": [
+        0.58,
+        0.21
+      ],
+      "face": "-x",
+      "up": "+y",
+      "rows": 4,
+      "range": 30
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        0.0,
+        -0.75
+      ],
+      "max": [
+        0.6,
+        2.05,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        -0.6,
+        2.05,
+        -0.05
+      ],
+      "max": [
+        0.6,
+        2.2,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        -0.6,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        -0.56,
+        2.2,
+        -0.05
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        0.56,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        0.6,
+        2.2,
+        -0.05
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.56,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        0.56,
+        2.2,
+        -0.71
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.61,
+        0.2,
+        -0.5
+      ],
+      "max": [
+        -0.59,
+        1.9,
+        0.5
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.59,
+        0.2,
+        -0.5
+      ],
+      "max": [
+        0.61,
+        1.9,
+        0.5
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        1.4,
+        0.74
+      ],
+      "max": [
+        0.2,
+        1.8,
+        0.77
+      ],
+      "color": "#23272c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.622,
+        1.463,
+        -0.293
+      ],
+      "max": [
+        -0.59,
+        1.699,
+        0.313
+      ],
+      "color": "#14181c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.6,
+        0.75,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.6,
+        0.75,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.2,
+        0.35
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.75,
+        -0.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "die",
+      "at": [
+        0.0,
+        1.6,
+        0.75
+      ],
+      "dir": "+z",
+      "kind": "die"
+    }
+  ]
+}

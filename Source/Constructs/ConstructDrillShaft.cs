@@ -75,6 +75,10 @@ public static class DrillShaft
         return false;
     }
 
+    /// <summary>Server: is the hole at a point bored as deep as a hole goes, or can it never be (no terrain to dig, no room left in the dig log)?</summary>
+    public static bool Bored(ConstructWorld world, ResourceField field, Vector3 at) =>
+        world.DrillDig == null || field.Terrain is not { } t || (t.EditsIfMade?.Log.Count ?? 0) >= MaxLog || !Next(t, at.X, at.Z, out _);
+
     /// <summary>Server: a drill tapped <paramref name="units"/>: every <see cref="UnitsPerScoop"/> of them dig the next scoop.</summary>
     public static void Dig(ConstructWorld world, ResourceField field, Construct c, CStore st, Vector3 at, int units)
     {

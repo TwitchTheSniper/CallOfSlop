@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-extrusion/1",
-  "about": "The Extruder (docs/sandbox/CONSTRUCTS.md, 'Extrusion'): what each bulk material makes when it is extruded. 'material' is a name in Recycling.json; a name that file doesn't list is simply not usable yet, so a material can be listed before it exists. 'unitsPerM3' is how much a cubic metre of product takes: its mass is that many units at the material's kgPerUnit. 'healthPerM3' gives its health, 'armourPerCm' times its thinnest wall in cm its armour, up to 'maxArmour'. 'class' is what it counts as for salvage and hits (a class in Recycling.json). 'wheels' is the same for a Wheel Former: a cubic metre of wheel is mostly air and rim, and 'grip', 'offroad', 'side' and 'roll' are the wheel keys of a part file; 'flat': it goes flat at zero health instead of coming off. 'airfoils' are the Extruder's airfoil sections, in the order of its Profile choices after Pipe: 'cells' top row first with the leading edge on the left, 'cl0', 'stall' and 'cd0' as a wing's (docs/sandbox/CONSTRUCTS.md, 'Wings'). 'fans' are the materials a Fan Former takes, as 'materials'. 'fanKinds' are what it makes, in the order of its Makes choices: 'kwPerM2' what a disc takes a square metre, 'motorPerM2' its own motor (0: a shaft), 'tipSpeed' its blade tips at rated speed in m/s, 'topSpeed' where it stops pushing, 'duct' what a duct adds, 'spool' seconds to speed at 1 m radius, 'chordShare' a blade's width over the radius, 'heli' collective and cyclic.",
+  "about": "'wings' and 'airframes' are the Airframe Former's (docs/sandbox/CONSTRUCTS.md, 'The Airframe Former'): what it cuts a skin from, by the m3 of a wing's skin, and the pieces it cuts. The Extruder (docs/sandbox/CONSTRUCTS.md, 'Extrusion'): what each bulk material makes when it is extruded. 'material' is a name in Recycling.json; a name that file doesn't list is simply not usable yet, so a material can be listed before it exists. 'unitsPerM3' is how much a cubic metre of product takes: its mass is that many units at the material's kgPerUnit. 'healthPerM3' gives its health, 'armourPerCm' times its thinnest wall in cm its armour, up to 'maxArmour'. 'class' is what it counts as for salvage and hits (a class in Recycling.json). 'wheels' is the same for a Wheel Former: a cubic metre of wheel is mostly air and rim, and 'grip', 'offroad', 'side' and 'roll' are the wheel keys of a part file; 'flat': it goes flat at zero health instead of coming off. 'airfoils' are the Extruder's airfoil sections, in the order of its Profile choices after Pipe: 'cells' top row first with the leading edge on the left, 'cl0', 'stall' and 'cd0' as a wing's (docs/sandbox/CONSTRUCTS.md, 'Wings'). 'fans' are the materials a Fan Former takes, as 'materials'. 'fanKinds' are what it makes, in the order of its Makes choices: 'kwPerM2' what a disc takes a square metre, 'motorPerM2' its own motor (0: a shaft), 'tipSpeed' its blade tips at rated speed in m/s, 'topSpeed' where it stops pushing, 'duct' what a duct adds, 'spool' seconds to speed at 1 m radius, 'chordShare' a blade's width over the radius, 'heli' collective and cyclic.",
   "materials": [
     { "material": "metal", "unitsPerM3": 200, "healthPerM3": 3200, "armourPerCm": 4, "maxArmour": 68, "class": "steel" },
     { "material": "steel", "unitsPerM3": 200, "healthPerM3": 5000, "armourPerCm": 6, "maxArmour": 90, "class": "steel" },
@@ -17,6 +17,25 @@
     { "id": "airfoil", "label": "Airfoil", "cl0": 0.3, "stall": 15, "cd0": 0.012, "cells": ["........", "........", "..###...", ".#####..", "#######.", "########", "........", "........"] },
     { "id": "symmetric-foil", "label": "Symmetric foil", "cl0": 0, "stall": 14, "cd0": 0.01, "cells": ["........", "........", ".###....", "######..", "########", "######..", ".###....", "........"] },
     { "id": "thin-foil", "label": "Thin foil", "cl0": 0.15, "stall": 11, "cd0": 0.008, "cells": ["........", "........", "........", "..####..", "########", "........", "........", "........"] }
+  ],
+  "wings": [
+    { "material": "cloth", "unitsPerM3": 267, "healthPerM3": 730, "armourPerCm": 0, "maxArmour": 0, "class": "cloth" },
+    { "material": "wood", "unitsPerM3": 355, "healthPerM3": 1500, "armourPerCm": 0.5, "maxArmour": 2, "class": "wood" },
+    { "material": "planks", "unitsPerM3": 710, "healthPerM3": 1700, "armourPerCm": 0.5, "maxArmour": 2, "class": "wood" },
+    { "material": "laminate", "unitsPerM3": 330, "healthPerM3": 1900, "armourPerCm": 0.5, "maxArmour": 3, "class": "wood" },
+    { "material": "metal", "unitsPerM3": 200, "healthPerM3": 2300, "armourPerCm": 2, "maxArmour": 5, "class": "steel" },
+    { "material": "steel", "unitsPerM3": 160, "healthPerM3": 3400, "armourPerCm": 3, "maxArmour": 8, "class": "steel" }
+  ],
+  "airframes": [
+    { "id": "wing", "label": "Wing", "cl0": 0.25, "stall": 15, "cd0": 0.018, "aspect": 7 },
+    { "id": "tail", "label": "Tail plane", "cl0": 0, "stall": 14, "cd0": 0.018, "aspect": 4 },
+    { "id": "fin", "label": "Fin", "cl0": 0, "stall": 16, "cd0": 0.02, "aspect": 2 },
+    { "id": "swept-left", "label": "Swept wing, left", "cl0": 0.2, "stall": 19, "cd0": 0.014, "aspect": 6, "sweep": 30 },
+    { "id": "swept-right", "label": "Swept wing, right", "cl0": 0.2, "stall": 19, "cd0": 0.014, "aspect": 6, "sweep": -30 },
+    { "id": "aileron", "label": "Aileron", "cl0": 0, "stall": 16, "cd0": 0.02, "aspect": 5, "control": 25, "effect": 0.7 },
+    { "id": "elevator", "label": "Elevator", "cl0": 0, "stall": 16, "cd0": 0.02, "aspect": 5, "control": 25, "effect": 0.8, "sign": -1 },
+    { "id": "rudder", "label": "Rudder", "cl0": 0, "stall": 16, "cd0": 0.02, "aspect": 5, "control": 30, "effect": 0.8 },
+    { "id": "flap", "label": "Flap", "cl0": 0.1, "stall": 16, "cd0": 0.02, "aspect": 5, "control": 40, "effect": 0.7 }
   ],
   "fans": [
     { "material": "metal", "unitsPerM3": 200, "healthPerM3": 40000, "armourPerCm": 1, "maxArmour": 6, "class": "steel" },

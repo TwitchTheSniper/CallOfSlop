@@ -49,6 +49,14 @@ COMPONENTS = [
      "Rolled steel plate."),
     ("Lens", "Lens", 0.5, "#8fc5d9", [((-0.05, 0, -0.05), (0.05, 0.1, 0.05)), ((-0.04, 0.1, -0.04), (0.04, 0.12, 0.04))],
      "For scopes, sensors and lamps."),
+    ("Turbine Stage", "TurbineStage", 6, "#9aa3ad", [((-0.14, 0, -0.14), (0.14, 0.1, 0.14)), ((-0.05, 0.1, -0.05), (0.05, 0.16, 0.05))],
+     "A ring of hot blades for a jet."),
+    ("Thrust Chamber", "ThrustChamber", 8, "#5b5048", [((-0.1, 0, -0.1), (0.1, 0.2, 0.1)), ((-0.15, 0.2, -0.15), (0.15, 0.32, 0.15))],
+     "A combustion chamber and its throat, for a rocket."),
+    ("Field Coil", "FieldCoil", 5, "#5c6fa8", [((-0.13, 0, -0.13), (0.13, 0.08, 0.13)), ((-0.07, 0.08, -0.07), (0.07, 0.14, 0.07))],
+     "A tuned coil that pushes against the ground."),
+    ("Levite Core", "LeviteCore", 3, "#a78fd0", [((-0.1, 0, -0.1), (0.1, 0.03, 0.1)), ((-0.07, 0.03, -0.07), (0.07, 0.18, 0.07))],
+     "Levite in a cage of circuits: the heart of an Anti-Grav Generator."),
 ]
 
 
@@ -80,6 +88,10 @@ HAND = [
     rec("Tyre Carcass", 5, m={"rubber": 4, "cloth": 2}),
     rec("Steel Plate", 2, count=2, m={"steel": 5}),
     rec("Lens", 3, 2, m={"glass": 1, "bronze": 1}),
+    rec("Turbine Stage", 6, 2, m={"steel": 4, "bronze": 2}),
+    rec("Thrust Chamber", 5, m={"steel": 5, "concrete": 1}),
+    rec("Field Coil", 6, 3, m={"copper": 6, "circuits": 1}),
+    rec("Levite Core", 12, 4, m={"levite": 4, "circuits": 2}),
     # Drivetrain.
     rec("Engine", 20, 2, m={"steel": 20}, p={"Piston Set": 2, "Wiring Loom": 1}),
     rec("Small Engine", 10, 2, m={"steel": 6}, p={"Piston Set": 1, "Wiring Loom": 1}),
@@ -186,8 +198,8 @@ CLASS = {
     "rubber": ("rubber", 0.3, "steel"), "glass": ("glass", 0.2, "steel"), "cloth": ("cloth", 1.0, "steel"), "sand": ("sand", 0.2, "planks"),
 }
 TIER_OF = {"steel": 1, "concrete": 1, "planks": 1, "laminate": 1, "rubber": 1, "cloth": 1, "glass": 1, "sand": 1, "bronze": 2, "copper": 2, "circuits": 3}
-PART_TIER = {"Gear Set": 1, "Tyre Carcass": 1, "Bearing": 2, "Piston Set": 2, "Copper Coil": 2, "Wiring Loom": 2, "Servo Motor": 2, "Circuit Board": 3, "Control Unit": 3}
-SKIP_FOLDERS = ("Spawn", "Components", "Press/Dies")  # (dies come from a Die Lathe, or the start kit)
+PART_TIER = {"Thrust Chamber": 1, "Turbine Stage": 2, "Field Coil": 3, "Levite Core": 4, "Gear Set": 1, "Tyre Carcass": 1, "Bearing": 2, "Piston Set": 2, "Copper Coil": 2, "Wiring Loom": 2, "Servo Motor": 2, "Circuit Board": 3, "Control Unit": 3}
+SKIP_FOLDERS = ("Spawn", "Components", "Press/Dies", "Wings")  # (dies come from a Die Lathe, or the start kit)
 SKIP_NAMES = ("Material Bundle", "Construct Core", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds")  # (the old ammo modules: a box's setting does it now)
 MAX_UNITS = 2000
 CLASS_TIER = {"small": 1, "medium": 2, "large": 3, "capital": 4}  # the lowest Assembler for a size class (tools/constructs/scale.py); a part's cost tops out at MAX_UNITS, its time at 600 s
@@ -229,6 +241,49 @@ def long_tail(p):
     tier = max([TIER_OF.get(k, 1) for k in m] + [PART_TIER.get(k, 1) for k in extra] + [min(5, p.get("tier", 1)), CLASS_TIER[size]])
     seconds = min(180.0 if size == "small" else 600.0, round(2 + mass * 0.03, 1))
     return rec(p["name"], seconds, tier, m=m, p=extra or None)
+
+
+# Flight parts by machine (docs/sandbox/CONSTRUCTS.md "Flight in survival"). Wings and control surfaces have no recipe: an Airframe
+# Former cuts its own, and the part files are found on wrecks. These go to one family of Assembler, built from their own components.
+THRUSTER_FOLDERS = ("Boost/Jets", "Boost/Rockets", "Boost/Repulsors", "BigDrive/Thrusters")
+TURBINES = ("Turbojet", "Jet", "Lift Fan")
+CORES = {"Repulsor": "Field Coil", "Anti-Grav Generator": "Field Coil", "Rocket Engine": "Thrust Chamber", "Solid Booster": "Thrust Chamber"}
+
+
+def machine_of(p):
+    """Which family builds a part: "" is the plain Assembler."""
+    if p["_folder"] in THRUSTER_FOLDERS:
+        return "thruster"
+    if p["_folder"] == "Air" and p.get("role") == "fluidtank" and p.get("material") == "cloth":
+        return "tailor"
+    return ""
+
+
+def flight_recipe(p):
+    """A rule's recipe, moved to its machine: a thruster's bulk is its casing, and the parts that make it work come from the Assembler."""
+    r = long_tail(p)
+    r["machine"] = machine_of(p)
+    if r["machine"] != "thruster":
+        return r
+    name, mass = p["name"], float(p["mass"])
+    core = next((v for k, v in CORES.items() if name.endswith(k)), "Turbine Stage" if name.endswith(TURBINES) else None)
+    if core is None:
+        return r  # (a Decoupler: bolts)
+    n = min(20, max(1, round(mass / 30)))
+    extra = {core: n}
+    if core == "Turbine Stage":
+        extra["Bearing"] = n
+    if "Solid Booster" not in name:
+        extra["Wiring Loom"] = min(20, max(1, n // 2))
+    if core == "Field Coil":
+        extra["Control Unit"] = min(20, max(1, n // 4))
+    if "Anti-Grav" in name:
+        extra["Levite Core"] = n
+    r["parts"] = extra
+    r["materials"] = {"steel": r["materials"].get("steel", min(MAX_UNITS, max(1, round(mass * 0.2))))}
+    tier = max(r.get("minTier", 1), max(PART_TIER.get(k, 1) for k in extra), 4 if "Anti-Grav" in name else 1)
+    r["minTier"] = tier
+    return r
 
 
 def parts():
@@ -291,7 +346,8 @@ def main():
         name = p["name"]
         if name in hand or p.get("stage") or name in SKIP_NAMES or p["_folder"].startswith(SKIP_FOLDERS):
             continue
-        tail.append(long_tail(p))
+        tail.append(flight_recipe(p) if machine_of(p) else long_tail(p))
+    tail.sort(key=lambda r: r.get("machine", ""))  # (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
     recipes = HAND + tail
     builder = builder_names()
     for r in recipes:

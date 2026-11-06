@@ -569,6 +569,7 @@ public sealed class ConstructPartDef
     public int InCapacity; // a production machine: how much its input holds (a mixed input: of each material; an Assembler: its fill's scale)
     public bool RefineMix; // a production machine whose recipes take several materials (a Foundry): its input is CStore's mixed input
     public bool IsAssembler; // a machine that builds parts from a chosen recipe (ConstructAssembling.cs): its slots are its output tray, its input is mixed
+    public byte AsmMachine; // an Assembler\'s family: which recipes it builds (AssemblingTable.Machines)
     public int AsmBatches = 4; // an Assembler: how many batches of each input it buffers
     public Vector3 AsmOutAt = Vector3.Zero, AsmOutDir = Vector3.UnitZ; // an Assembler: where a finished body leaves, and which way (part frame)
     public int RefineWork = ConstructRefining.BaseWork; // a production machine: thousandths of a tick of work a 10 Hz step does ("speed" in storage.refine)
@@ -581,6 +582,7 @@ public sealed class ConstructPartDef
     public int ExtDieSocket = -1; // ...its socket of kind "die"
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
+    public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
