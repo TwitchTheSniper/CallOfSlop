@@ -24,6 +24,8 @@ internal sealed class Page : IDisposable
     private string _title = "";
     private string _sound = "";
     private bool _awake;
+    private volatile bool _closing;
+    private bool _handsOn;
 
     public Page(int slot, string id, double seconds, int width, int height, string block)
     {
@@ -41,6 +43,7 @@ internal sealed class Page : IDisposable
             MenuHandler = null,
         };
         _web.Size = new System.Drawing.Size(width, height);
+        new Thread(MouseLoop) { IsBackground = true, Name = "Mouse " + slot }.Start();
         _web.CreateBrowser(null, new BrowserSettings { WindowlessFrameRate = 30 }); // (settings given to the constructor only count when it creates the browser itself)
     }
 
@@ -93,8 +96,57 @@ internal sealed class Page : IDisposable
         host.SetFocus(true);
     }
 
+    /// <summary>The game's crosshair on this page, as CEF's mouse events. Only these: nothing here can type.</summary>
+    private void MouseLoop()
+    {
+        var pressed = false;
+        while (!_closing)
+        {
+            if (!_block.NextMouse(out var kind, out var x, out var y, out var data))
+            {
+                Thread.Sleep(8);
+                continue;
+            }
+            if (!_web.IsBrowserInitialized || _web.GetBrowserHost() is not { } host)
+                continue;
+            var e = new MouseEvent(x, y, pressed ? CefEventFlags.LeftMouseButton : CefEventFlags.None);
+            switch (kind)
+            {
+                case 1:
+                    host.SendMouseMoveEvent(e, false);
+                    break;
+                case 5:
+                    host.SendMouseMoveEvent(e, true);
+                    break;
+                case 2:
+                    Hands();
+                    pressed = true;
+                    host.SendMouseClickEvent(new MouseEvent(x, y, CefEventFlags.LeftMouseButton), MouseButtonType.Left, false, 1);
+                    break;
+                case 3:
+                    pressed = false;
+                    host.SendMouseClickEvent(new MouseEvent(x, y, CefEventFlags.None), MouseButtonType.Left, true, 1);
+                    break;
+                case 4:
+                    Hands();
+                    host.SendMouseWheelEvent(e, 0, data);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>From the first click the player's volume and mute are the viewer's, and the page stops setting them.</summary>
+    private void Hands()
+    {
+        if (_handsOn)
+            return;
+        _handsOn = true;
+        Run("slop.hands()");
+    }
+
     public void Dispose()
     {
+        _closing = true;
         _web.Dispose();
         _block.Dispose();
     }
@@ -115,13 +167,15 @@ internal sealed class Page : IDisposable
           if (d && d.title) say("title " + d.title);
         }
         // The player can start muted when nobody clicked anything, and then CEF sends no sound at all (it captures only what is audible).
+        var hands = false;
         function sound() {
           if (!player.isMuted) return;
           var m = player.isMuted(), v = player.getVolume();
-          if (m || v < 100) { player.unMute(); player.setVolume(100); }
+          if (!hands && (m || v < 100)) { player.unMute(); player.setVolume(100); }
           say("audio " + m + " " + v);
         }
         window.slop = {
+          hands: function () { hands = true; },
           play: function () { if (player && player.playVideo) player.playVideo(); },
           pause: function () { if (player && player.pauseVideo) player.pauseVideo(); },
           seek: function (s) { if (player && player.seekTo) player.seekTo(s, true); }
@@ -137,7 +191,7 @@ internal sealed class Page : IDisposable
             }
           });
         }
-        setInterval(report, 1000);
+        setInterval(report, 500);
         </script>
         <script src="https://www.youtube.com/iframe_api"></script>
         </body></html>
@@ -212,13 +266,16 @@ internal sealed class Page : IDisposable
         public void Dispose() { }
     }
 
-    /// <summary>Answers the page's own address, and keeps the top frame on it.</summary>
+    /// <summary>Answers the page's own address, and keeps the top frame on it. A click inside the player can't leave the embed either, and adverts still load: only a gesture is held to it.</summary>
     private sealed class Requests(string html) : RequestHandler
     {
         private readonly byte[] _body = Encoding.UTF8.GetBytes(html);
 
         protected override bool OnBeforeBrowse(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool userGesture, bool isRedirect) =>
-            frame.IsMain && !request.Url.StartsWith(Address, StringComparison.Ordinal); // (true cancels)
+            frame.IsMain ? !request.Url.StartsWith(Address, StringComparison.Ordinal) : userGesture && !IsEmbed(request.Url); // (true cancels)
+
+        private static bool IsEmbed(string url) =>
+            Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Scheme == "https" && u.Host is "www.youtube-nocookie.com" or "www.youtube.com" && u.AbsolutePath.StartsWith("/embed/", StringComparison.Ordinal);
 
         protected override IResourceRequestHandler? GetResourceRequestHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool isNavigation, bool isDownload, string requestInitiator, ref bool disableDefaultHandling) =>
             request.Url.StartsWith(Address, StringComparison.Ordinal) ? new Local(_body) : null;

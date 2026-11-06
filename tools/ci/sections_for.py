@@ -108,7 +108,7 @@ RULES = [
     (r"^Source/Maps/", ALL_MAPS + ["Map reload", "Map packs", "Map shapes", "Planet gravity"]),
     (r"^Source/Net/", ["Packets", "Server browser", "Invite codes", "Paste and packets", "Mode modules", "Steam transport"]),
     (r"^Source/Platform/Steam/|^Source/Game/GameSteam|^Source/App/Program\.Steam|^docs/steam/", ["Steam platform", "Steam transport"]),
-    (r"^Source/Media/|^Source/Render/VideoFeeds|^Source/Constructs/ConstructMedia|^Source/UI/UiSandboxMedia|^Constructs/Parts/Media/|^tools/constructs/media_parts", ["Constructs", "Display screens", "Interaction sweep", "Sandbox parts menu", "No z-fighting", "Assembling", "Sound", "Audio mixer"]),
+    (r"^Source/Media/|^Source/Render/VideoFeeds|^Source/Constructs/ConstructMedia|^Source/Constructs/PanelTouch|^Source/App/Program\.SandboxPointer|^Source/UI/UiSandboxMedia|^Constructs/Parts/Media/|^tools/constructs/media_parts", ["Constructs", "Display screens", "Interaction sweep", "Sandbox parts menu", "No z-fighting", "Assembling", "Sound", "Audio mixer"]),
     (r"^Source/Audio/", ["Sound", "Gun mix", "Audio mixer", "Music", "Frenzy music",
                          "Frenzy gun sound"]),
     (r"^Source/Render/", ["Gun models", "Scene graph"]),
