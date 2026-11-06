@@ -1776,8 +1776,14 @@ public static unsafe partial class Program
         // ---- Tracers --------------------------------------------------------
         pass = Perf.Pass(PerfArea.Effects, PerfGpuPass.Effects);
         Gfx.SetBlend(true);
-        foreach (var t in _game.Tracers)
+        Gfx.BeginBatch(blended: true); // (one draw however many rounds are in the air)
+        Span<Vector4> tracerView = stackalloc Vector4[6];
+        TerrainRenderer.FrustumPlanes(Gfx.ViewProj, tracerView);
+        foreach (ref readonly var t in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_game.Tracers))
         {
+            var pad = new Vector3(t.Bow + 1f);
+            if (!TerrainRenderer.Visible(tracerView, Vector3.Min(t.From, t.To) - pad, Vector3.Max(t.From, t.To) + pad))
+                continue;
             var age = (float)(now - t.Born);
             var alpha = Math.Clamp(1f - age / 0.25f, 0f, 1f);
             var d = t.To - t.From;
@@ -1818,6 +1824,7 @@ public static unsafe partial class Program
             Gfx.Draw(model, t.Color, alpha, mode: 2);
             Gfx.Draw(Matrix4x4.CreateScale(0.1f * (1 + age * 4)) * Matrix4x4.CreateTranslation(t.To), new Vector3(1f, 0.9f, 0.6f), alpha, mode: 2);
         }
+        Gfx.EndBatch();
 
         // ---- Explosions, smoke, recon reveal ---------------------------------------
         Gfx.SetDepthWrite(false);
@@ -2078,7 +2085,9 @@ public static unsafe partial class Program
         if (ScenePresentation.Enabled) // camera -> gun -> parts/attachments, camera -> arms (Source/Scene/Rigs/ViewModelRig.cs)
         {
             GunModel.FlashBarrels = LocalFlashBarrels(now); // only the barrels that fired flash
+            Gfx.BeginBatch();
             ScenePresentation.DrawViewModel(Gfx, _vmAnim, def, GunModel.AdsCutaway, now < _game.MuzzleFlashUntil, (float)Glfw.Time, armColors);
+            Gfx.EndBatch();
             GunModel.FlashBarrels = GunModel.AllBarrels;
             if (lens)
                 SightLens.Draw(Gfx);
@@ -2086,10 +2095,12 @@ public static unsafe partial class Program
         }
         (GunModel.MagOffset, GunModel.MagHidden) = (_vmAnim.MagOffset, _vmAnim.MagHidden); // the magazine comes out during a reload
         GunModel.FlashBarrels = LocalFlashBarrels(now);
+        Gfx.BeginBatch();
         DrawGun(def, pose, now < _game.MuzzleFlashUntil);
         GunModel.FlashBarrels = GunModel.AllBarrels;
         (GunModel.MagOffset, GunModel.MagHidden) = (Vector3.Zero, false);
         _vmAnim.DrawArms(Gfx, armColors);
+        Gfx.EndBatch();
         if (lens)
             SightLens.Draw(Gfx);
     }

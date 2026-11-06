@@ -212,7 +212,7 @@ public sealed unsafe partial class PlanetRenderer
         Native.glCullFace(GlFace.Back);
         Native.glDisable(GlCapability.CullFace); // (the scene's passes draw without culling unless they ask)
         _vao.Bind();
-        _program.Use();
+        _plain.Program.Use();
         CavityDrawn = true;
     }
 
@@ -334,7 +334,7 @@ public sealed unsafe partial class PlanetRenderer
         Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (void*)0);
         EnableVertexAttribArray(0);
         _vao.Bind();
-        _program.Use();
+        _plain.Program.Use();
         _cavGlReady = true;
     }
 }

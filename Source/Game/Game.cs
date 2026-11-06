@@ -307,7 +307,7 @@ public sealed partial class Game : IDisposable
         FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
         AllocProfile.Mark("render states");
         UpdateRenderStates((float)frameDt);
-        UpdateSandboxSeats(now, (float)frameDt); // Sandbox: seated players drawn in their seats, the view turning with the seat (GameSandbox.cs)
+        UpdateSandboxSeats(now, (float)frameDt);
         AllocProfile.Mark("frame visuals");
         UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
         UpdateZombiesFrame(now, (float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
@@ -429,9 +429,18 @@ public sealed partial class Game : IDisposable
         }
 
         // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
-        for (var i = Tracers.Count - 1; i >= 0; i--)
-            if (now - Tracers[i].Born > (Tracers[i].Life > 0 ? Tracers[i].Life : 0.25))
-                Tracers.RemoveAt(i);
+        var kept = 0;
+        for (var i = 0; i < Tracers.Count; i++)
+        {
+            var t = Tracers[i];
+            if (now - t.Born > (t.Life > 0 ? t.Life : 0.25))
+                continue;
+            if (kept != i)
+                Tracers[kept] = t; // (one pass: a long-lived crowd of rounds doesn't shift the list per removal)
+            kept++;
+        }
+        if (kept < Tracers.Count)
+            Tracers.RemoveRange(kept, Tracers.Count - kept);
         for (var i = Feed.Count - 1; i >= 0; i--)
             if (now - Feed[i].Time > 8)
                 Feed.RemoveAt(i);
