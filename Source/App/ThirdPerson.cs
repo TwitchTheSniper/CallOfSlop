@@ -28,7 +28,7 @@ public static class ThirdPerson
     public const float SeatPitchMin = -1.4f, SeatPitchMax = 1.3f;
 
     /// <summary>The remembered mode per context.</summary>
-    public static bool FootOn, SeatOn;
+    public static bool FootOn, SeatOn, PilotOn;
 
     /// <summary>The shoulder the camera sits over: +1 right, -1 left.</summary>
     public static float Side = 1f;
@@ -56,9 +56,11 @@ public static class ThirdPerson
     public static float PullRatio = 1f;
 
     /// <summary>Flip the view of a context: on foot, or (<paramref name="seated"/>) in a seat. Each remembers its own mode.</summary>
-    public static void Toggle(bool seated)
+    public static void Toggle(bool seated, bool piloting = false)
     {
-        if (seated)
+        if (piloting)
+            PilotOn = !PilotOn;
+        else if (seated)
             SeatOn = !SeatOn;
         else
             FootOn = !FootOn;

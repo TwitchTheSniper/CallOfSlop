@@ -25,12 +25,13 @@ public static unsafe partial class Program
         var seated = g.SandboxHands.Hand(me.Id).Seated;
         if (!seated)
             _tpSeatKey = 0; // (a seat sat in again starts from its own distance and heading)
+        var piloting = seated && g.LocalDrone() != null; // (its own mode: a seat's remembered third person would be the chair, not the drone)
         if (_mouseCaptured && Pressed(GameAction.ThirdPerson))
-            ThirdPerson.Toggle(seated);
+            ThirdPerson.Toggle(seated, piloting);
         if (_mouseCaptured && Pressed(GameAction.ThirdPersonSide))
             ThirdPerson.Side = -ThirdPerson.Side;
         ThirdPerson.Seated = seated;
-        ThirdPerson.Active = seated ? ThirdPerson.SeatOn : ThirdPerson.FootOn;
+        ThirdPerson.Active = piloting ? ThirdPerson.PilotOn : seated ? ThirdPerson.SeatOn : ThirdPerson.FootOn;
         if (!ThirdPerson.Active)
         {
             ThirdPerson.HaveCam = false;
@@ -142,12 +143,13 @@ public static unsafe partial class Program
                 return false;
             }
             ref var h = ref _game.SandboxHands.Hand(local.Id);
-            var key = ((uint)h.SeatBody << 8) | (uint)(h.SeatPart + 1);
+            var drone = _game.LocalDrone();
+            var key = drone != null ? 0x80000000u | drone.Id : ((uint)h.SeatBody << 8) | (uint)(h.SeatPart + 1);
             if (key != _tpSeatKey)
             {
                 _tpSeatKey = key;
                 ThirdPerson.SeatDist = dist;
-                ThirdPerson.OrbitYaw = _game.LookYaw;
+                ThirdPerson.OrbitYaw = drone != null ? heading : _game.LookYaw; // (a drone's starts from behind it)
                 ThirdPerson.OrbitPitch = -0.25f;
                 _tpHeading = heading;
             }

@@ -25,6 +25,16 @@ public sealed partial class Game
         follow = false;
         if (!SandboxOn)
             return false;
+        if (LocalDrone() is { } d)
+        {
+            // Flying a drone: the orbit is round it, turning with it, the player's body stays in the chair.
+            var at = IsServer ? Vector3.Lerp(d.PrevPos, d.Pos, _alpha) : d.Pos;
+            var turn = IsServer ? Quaternion.Slerp(d.PrevRot, d.Rot, _alpha) : d.Rot;
+            point = ThirdPerson.SeatPoint(d, d.Receiver, at, turn, out dist, out zoomMin, out zoomMax, out _);
+            heading = SeatYaw(turn);
+            follow = true;
+            return true;
+        }
         ref var h = ref SandboxHands.Hand(LocalId);
         if (h.SeatBody == 0 || Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount || c.Parts[h.SeatPart].D.Role != PartRole.Seat)
             return false;
