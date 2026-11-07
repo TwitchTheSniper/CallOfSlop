@@ -74,6 +74,8 @@ public sealed partial class Vehicle
         foreach (var bay in bays)
             foreach (var side in new[] { "-x0", "+x0" })
             {
+                if (Look != null && !BaySpots.Pannier([bay.Def.Name], 0))
+                    break; // (a lofted bay whose side stands out just over its waist: an eave, a ledge)
                 var at = Array.FindIndex(bay.Def.Sockets, s => s.Name == side);
                 if (at < 0 || C.SocketUsed(bay.Index, at) || !d.Chance(chance))
                     continue;

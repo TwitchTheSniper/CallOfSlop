@@ -206,7 +206,9 @@ public static class VehicleChecks
         var look = paint != 0 ? (int)paint : 1 + d.Id;
         var moving = d.Role is PartRole.Wheel or PartRole.Suspension || seg != 0 && !c.Rigid(seg);
         foreach (var b in ZFight.Boxes(d))
-            boxes.Add(ZFight.ZBox.Of(name, t + Vector3.Transform(pos + Rot24.Apply(rot24, b.C), q), b.H, rot) with { Look = look, Moving = moving });
+            boxes.Add(b.Hull != null
+                ? b.Moved(rot, t + Vector3.Transform(pos, q)) with { Name = name, Look = look, Moving = moving } // (a faceted "hull" shape)
+                : ZFight.ZBox.Of(name, t + Vector3.Transform(pos + Rot24.Apply(rot24, b.C), q), b.H, rot) with { Look = look, Moving = moving });
     }
 
     /// <summary>
@@ -234,7 +236,7 @@ public static class VehicleChecks
                 continue; // (too far to share a face, or to cover one)
             AddBoxes(c, boxes, $"{i}:{d.Name}", d, c.Parts[i].Pos, c.Parts[i].Rot, c.Parts[i].Seg, c.Parts[i].Paint);
         }
-        foreach (var h in ZFight.Find(boxes, sameLookOk: true))
+        foreach (var h in ZFight.Find(boxes, sameLookOk: true, split: mine))
             if ((h.A < mine) != (h.B < mine) && h.Area >= TinyFight)
                 return ZFight.Describe(boxes, h);
         return null;

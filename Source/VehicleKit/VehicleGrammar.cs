@@ -630,8 +630,9 @@ public static class ShapeGrammar
         // The room: the guns it works from inside (roof turrets, a sponson), up to the four belts a magazine feeds.
         var inRoom = Math.Clamp(want - count, count == 0 ? 1 : 0, room.Len >= 5.5f ? 3 : room.Len >= 4.5f ? 2 : 1); // (each is a seat on a wall that loot would take)
         room.Bays = p.Body is { } body ? Bays(p.BayDice!, (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack", body) : Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack");
-        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => room.Bays[k] is "Door" or "Bay T" || room.Bays[k] is "Tail T" && v.Look == null).ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
-        var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => room.Bays[k] != "Door").ToList();
+        var loft = v.Look?.Names(room.Bays); // (kit 5: the bays as they will be built, so the spots come from their real roofs and flanks: BaySpots)
+        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => BaySpots.Roof(room.Bays, loft, k)).ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
+        var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => BaySpots.Side(room.Bays, loft, k)).ToList();
         var side = inRoom >= 2 || inRoom == 1 && d.Chance(0.3) ? middle.Count > 0 : false;
         if (side)
         {
@@ -971,7 +972,9 @@ public static class ShapeGrammar
     /// </summary>
     private static bool Rack(Vehicle v, Room room, IReadOnlyList<int> turretBays)
     {
-        var flat = room.Plan.Select(b => b is "Door" or "Bay T").ToArray(); // (by the plan: a lofted bay is named by its key)
+        var plan = room.Plan.ToArray();
+        var loft = room.Bays.Select(b => b.Def.Name).ToArray();
+        var flat = Enumerable.Range(0, plan.Length).Select(k => BaySpots.Flat(plan, v.Look != null ? loft : null, k)).ToArray(); // (by the built bays' roofs: BaySpots)
         var (bestFrom, bestLen) = (0, 0);
         for (var i = 0; i < flat.Length; i++)
         {
