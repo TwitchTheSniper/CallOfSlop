@@ -268,19 +268,19 @@ public sealed class VehicleGenJob
             Yield();
             _tow = ConstructBuild.ParseBlueprint(VehicleRegistry.Run(tg, towSeed, new VehicleLayers()), VehicleRegistry.FileName(tg, towSeed));
         }
-        _brief = MakeBrief(v, text);
+        _brief = MakeBrief(v, text, bp);
         _bp = bp;
     }
 
     /// <summary>The behaviour brief (VehicleBriefMake.cs), in the generation's slices like the rest. Never a reason for the vehicle not to spawn: a failure is logged and it has none.</summary>
-    private VehicleBrief? MakeBrief(Vehicle v, string text)
+    private VehicleBrief? MakeBrief(Vehicle v, string text, ConstructBuild.Blueprint bp)
     {
         if (!BriefsOn)
             return null;
         try
         {
             Yield();
-            return VehicleBriefMake.ForGenerated(v, text, VehicleSpawnKit.Names(Generator).Shape);
+            return VehicleBriefMake.ForGenerated(v, text, VehicleSpawnKit.Names(Generator).Shape, bp);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

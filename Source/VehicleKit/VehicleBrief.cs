@@ -70,7 +70,7 @@ public struct BriefGun
 {
     public BriefRef Part; // the gun part (a receiver or a heavy gun); At: its muzzle at rest
     public BriefMount Mount;
-    public GunClass Class; // light, medium or heavy (VehicleRoles.ClassOf's rule on the built gun: flame, harpoons, shells and blasts heavy, full-auto medium, else light)
+    public GunClass Class; // light, medium or heavy (VehicleRoles.ClassOf's rule on the built gun: flame, harpoons, shells and a blast of 2 m or more heavy, full-auto medium, else light)
     public RangeBand Band;
     public float Range, MaxRange; // m: full damage to here (WeaponDef.RangeM), and the round's reach (CGun.MaxRange)
     public float Dps; // damage a second at full rate in range (damage x rounds a shot / interval)

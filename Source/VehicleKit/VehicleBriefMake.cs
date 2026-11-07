@@ -30,15 +30,18 @@ public static class VehicleBriefMake
 {
     private const float Eye = 1.6f, WeakRange = 20f, GunReach = 80f;
 
-    /// <summary>A generated vehicle's brief, from its blueprint text: the drive check's body when it checked this very text, else a check run here for its body and numbers.</summary>
-    public static VehicleBrief? ForGenerated(Vehicle v, string text, string shape)
+    /// <summary>
+    /// A generated vehicle's brief, from its blueprint text: the drive check's body when the plan kept was checked with the same steps (its name, notes and loot tables
+    /// may have changed since: kit 4 notes the role after the check), else a check run here for its body and numbers.
+    /// </summary>
+    public static VehicleBrief? ForGenerated(Vehicle v, string text, string shape, ConstructBuild.Blueprint? parsed = null)
     {
-        var r = v.DriveCheck is { Body: not null } kept && string.Equals(kept.Text, text, StringComparison.Ordinal)
-            ? kept // (the plan kept was checked from this very text: its body, no second build)
+        var bp = parsed ?? ConstructBuild.ParseBlueprint(text, v.Name + ".json");
+        var r = v.DriveCheck is { Body: not null, Blueprint: { } checkedBp } kept && SameBuild(checkedBp, bp)
+            ? kept // (the plan kept was checked with these very steps: its body, no second build)
             : VehicleDriveCheck.Run(text, v.Name + ".json", v.Context?.Gravity ?? 1, gate: false);
         if (r.Body is not { } body || r.PartOf is not { } partOf)
             return null;
-        var bp = r.Blueprint!;
         var f = new BriefFacts
         {
             Name = v.Name, Style = v.Style.Name, Shape = shape, StyleDef = v.Style, Kit = v.Kit,
@@ -50,6 +53,11 @@ public static class VehicleBriefMake
                 f.Loot.Add((partOf[step], table));
         return Make(body, f);
     }
+
+    /// <summary>Do two blueprints build the same body, part for part (their steps, places, welds, extra links, wires and links), whatever their names and notes say?</summary>
+    public static bool SameBuild(ConstructBuild.Blueprint a, ConstructBuild.Blueprint b) =>
+        a.Steps.SequenceEqual(b.Steps) && a.StepAt.SequenceEqual(b.StepAt) && a.StepWeld.SequenceEqual(b.StepWeld) && a.Wires.SequenceEqual(b.Wires)
+        && a.StepAlso.Count == b.StepAlso.Count && a.Links.Count == b.Links.Count && a.Tracks.Count == b.Tracks.Count && a.Cargo.Count == b.Cargo.Count && a.ExactLinks == b.ExactLinks && a.Tow == b.Tow;
 
     /// <summary>
     /// A brief for any construct, from what it is (a committed seed's, an old save's, a player's truck): no role, no drive check, loot as the blueprint
@@ -64,7 +72,8 @@ public static class VehicleBriefMake
     /// <summary>Works it out. <paramref name="c"/>'s parts are referenced by index; <see cref="VehicleBrief.Attach"/> gives them their tags once the real body is built.</summary>
     public static VehicleBrief Make(Construct c, BriefFacts f)
     {
-        c.Rebuild();
+        if (c.Dirty)
+            c.Rebuild(); // (its caches: the wheels, guns, drive seat)
         var b = new VehicleBrief { Name = f.Name, Style = f.Style, Shape = f.Shape, Role = f.Role, Model = f.Model, Tier = (byte)Math.Clamp(f.Tier, 0, 255), Kit = (byte)Math.Clamp(f.Kit, 0, 255) };
         var g = new Geometry(c);
         VehicleGenJob.Yield();
@@ -434,7 +443,7 @@ public static class VehicleBriefMake
             gun.Dps = def == null ? 0 : def.Damage * Math.Max(1, cg.Shots) * (World.TickRate / (float)interval);
             gun.Range = def?.RangeM ?? cg.MaxRange;
             gun.MaxRange = cg.MaxRange;
-            gun.Class = (cg.Effects & (GunEffect.Flame | GunEffect.Harpoon | GunEffect.Shell | GunEffect.Explosive)) != 0 ? GunClass.Heavy
+            gun.Class = (cg.Effects & (GunEffect.Flame | GunEffect.Harpoon | GunEffect.Shell)) != 0 || cg.Blast >= 2 ? GunClass.Heavy // (as VehicleRoles.ClassOf: an explosive round on a carbine is still a carbine)
                 : def is { Mode: FireMode.Auto } ? GunClass.Medium : GunClass.Light;
             gun.Band = (cg.Effects & GunEffect.Flame) != 0 || gun.Range < 25 ? RangeBand.Close : gun.Range < 60 ? RangeBand.Short : gun.Range < 150 ? RangeBand.Medium : RangeBand.Long;
             // Who fires it: the gunner's seat, else a logic part wired into it.
@@ -595,7 +604,7 @@ public static class VehicleBriefMake
         }
         var best = 0;
         for (var bin = 1; bin < VehicleBrief.Bins; bin++)
-            if (dpsByBin[bin] > dpsByBin[best] + 1e-3f || MathF.Abs(dpsByBin[bin] - dpsByBin[best]) <= 1e-3f && Broad(bin) < Broad(best))
+            if (dpsByBin[bin] > dpsByBin[best] + 1e-3f || MathF.Abs(dpsByBin[bin] - dpsByBin[best]) <= 1e-3f && Broad(bin) < Broad(best) - 1e-3f)
                 best = bin;
         b.BestBin = (byte)best;
         b.BestSide = (byte)VehicleBrief.SideOf(VehicleBrief.BinBearing(best));
@@ -628,11 +637,12 @@ public static class VehicleBriefMake
                 continue;
             var (mask, top) = g.Exposure(i);
             list.Add(new BriefWeak { Part = Ref(g, i), Kind = kind, Bearings = mask, Top = top });
-            var weight = kind is "fuel" or "ammo" ? 3f : kind is "engine" or "driver" ? 2f : 1f;
+            var role = c.DefOf(i).Role;
+            var weight = role is PartRole.FuelTank or PartRole.AmmoBox ? 3f : role is PartRole.Engine || i == c.DriveSeat ? 2f : 1f; // (what burns or blows up counts most)
             for (var k = 0; k < VehicleBrief.WeakBins; k++)
                 if ((mask >> k & 1) != 0)
                     side[VehicleBrief.SideOf(k * 360f / VehicleBrief.WeakBins)] += weight;
-            if (kind == "fuel" && mask != 0)
+            if (role == PartRole.FuelTank && mask != 0)
                 b.FuelOpen++;
         }
         b.Weak = list.ToArray();
@@ -685,5 +695,112 @@ public static class VehicleBriefMake
         }
         b.Hitches = hitches.ToArray();
         b.Winches = winches.ToArray();
+    }
+}
+
+/// <summary><c>--brief "Style Shape" | "Style role" | MODEL_KEY | FILE [--seed S] [--tier T]</c>: a vehicle made as the spawn makes it, and its behaviour brief.</summary>
+public static class VehicleBriefCli
+{
+    private static string? Flag(string[] args, string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+
+    public static int Run(string what, string[] args)
+    {
+        var seedGiven = int.TryParse(Flag(args, "--seed"), out var seed);
+        var tier = int.TryParse(Flag(args, "--tier"), out var t) ? Math.Clamp(t, 1, VehicleRoles.MaxTier) : 2;
+        Vehicle? v = null;
+        string shape = "";
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            if (File.Exists(what))
+                return OfFile(what);
+            if (what.Contains('/'))
+            {
+                if (!VehicleModel.TryParse(what, out var model, out var whyNot))
+                {
+                    Console.WriteLine($"--brief {what}: {whyNot}");
+                    return 1;
+                }
+                v = VehicleFamilies.Make(model!);
+                shape = v.Role?.Shape ?? "";
+            }
+            else if (VehicleRegistry.Find(what) is { } g)
+            {
+                v = VehicleRegistry.Make(g, seedGiven ? seed : g.Seeds.Count > 0 ? g.Seeds[0] : 1);
+                shape = VehicleSpawnKit.Names(g).Shape;
+            }
+            else
+            {
+                foreach (var s in Styles.All)
+                    if (what.StartsWith(s.Name + " ", StringComparison.OrdinalIgnoreCase) && VehicleRoles.Find(what[(s.Name.Length + 1)..]) is { } role)
+                    {
+                        var sd = seedGiven ? seed : 1;
+                        var gen = VehicleRoles.ShapeFor(s, role, sd);
+                        shape = VehicleSpawnKit.Names(gen).Shape;
+                        v = VehicleRegistry.Make(gen, sd, role: new RoleAsk(role, tier, s) { Shape = shape });
+                    }
+                if (v == null)
+                {
+                    Console.WriteLine($"--brief: no generator, role, model or file \"{what}\"");
+                    return 1;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+        {
+            Console.WriteLine($"--brief {what}: it wasn't made: {ex.Message}");
+            return 1;
+        }
+        var made = watch.Elapsed.TotalMilliseconds;
+        var text = v.Text();
+        var bp = ConstructBuild.ParseBlueprint(text, v.Name + ".json");
+        var checkedAlready = v.DriveCheck is { Body: not null, Blueprint: { } dcb } && VehicleBriefMake.SameBuild(dcb, bp);
+        if (!checkedAlready)
+            _ = VehicleDriveCheck.Run(text, "warm.json", v.Context?.Gravity ?? 1, gate: false); // (its first run loads the maps and compiles: not the brief's cost)
+        watch.Restart();
+        var brief = VehicleBriefMake.ForGenerated(v, text, shape, bp);
+        var ms = watch.Elapsed.TotalMilliseconds;
+        if (brief == null)
+        {
+            Console.WriteLine($"{v.Name}: no brief (its blueprint didn't build)");
+            return 1;
+        }
+        Print(brief, $"made in {made:0} ms; brief in {ms:0} ms ({(checkedAlready ? "the drive check's body" : "built and drive-checked for it")})");
+        return 0;
+    }
+
+    private static int OfFile(string file)
+    {
+        var text = File.ReadAllText(file);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var r = VehicleDriveCheck.Run(text, Path.GetFileName(file), 1, gate: false);
+        if (r.Body is not { } body || r.PartOf is not { } partOf)
+        {
+            Console.WriteLine($"{file}: {r.Why}");
+            return 1;
+        }
+        var name = r.Blueprint!.Name;
+        var style = Styles.All.FirstOrDefault(s => name.StartsWith(s.Name + " ", StringComparison.Ordinal));
+        var f = new BriefFacts { Name = name, Style = style?.Name ?? "", StyleDef = style, Drive = r, Cargo = r.Blueprint.Cargo.Count };
+        foreach (var (step, table) in r.Blueprint.Loot)
+            if (step >= 0 && step < partOf.Length && partOf[step] >= 0)
+                f.Loot.Add((partOf[step], table));
+        var brief = VehicleBriefMake.Make(body, f);
+        Print(brief, $"built, drive-checked and briefed in {watch.Elapsed.TotalMilliseconds:0} ms");
+        return 0;
+    }
+
+    private static void Print(VehicleBrief brief, string cost)
+    {
+        foreach (var line in brief.Describe())
+            Console.WriteLine(line);
+        // The save's round trip: written, read back, the same text.
+        var w = new SaveWriter(1024);
+        brief.Write(w);
+        var back = VehicleBrief.Read(new SaveReader(w.Span.ToArray()));
+        var again = new SaveWriter(1024);
+        back?.Write(again);
+        var same = back != null && again.Span.SequenceEqual(w.Span);
+        Console.WriteLine($"  {cost}; saved as {w.Length} bytes, read back {(same ? "the same" : "DIFFERENT")}");
     }
 }
