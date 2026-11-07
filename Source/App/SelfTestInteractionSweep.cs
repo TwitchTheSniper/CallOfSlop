@@ -396,7 +396,6 @@ public static partial class SelfTest
 
     private static readonly SweepTool[] SweepTools = Enum.GetValues<SweepTool>();
 
-    private static float DiagMin = 1e9f, DiagMax = -1e9f, DiagLast, DiagDrillMin = 1e9f, DiagDrillLast; // DIAG
     private static void SweepOffline(Map yard, SandboxMap sb, List<string> problems, HashSet<string> seen)
     {
         yard.RestoreProps();
@@ -417,7 +416,7 @@ public static partial class SelfTest
         }
         if (SweepDrillSpot(spot) is not { } drillSpot)
         {
-            Fail("interaction sweep: no second open level ground on the yard for the Ground Drill cases");
+            Fail("interaction sweep: no second open level ground on the yard for the digging cases");
             return;
         }
         var w = g.Constructs;
@@ -453,12 +452,11 @@ public static partial class SelfTest
                 {
                     while (w.Bodies.Count > 0)
                         w.Remove(w.Bodies[^1]);
-                    // (the Ground Drill digs where it is aimed: its cases stand at a spot of their own, so the craters
-                    // can't sink the other cases' constructs and drift the look rate; the section's finally restores the yard)
-                    if (SweepBuild(w, d, st, tool == SweepTool.GroundDrill ? drillSpot : spot, out var part) is not { } c)
+                    // (the Ground Drill digs where it is aimed, and a spawner's bots blast craters: those cases stand at a spot of
+                    // their own, so the digging can't sink the other cases' constructs and drift the look rate; the section's finally restores the yard)
+                    if (SweepBuild(w, d, st, tool == SweepTool.GroundDrill || d.IsSpawner ? drillSpot : spot, out var part) is not { } c)
                         break;
                     var parts = c.PartCount;
-                    if (tool == SweepTool.GroundDrill) { DiagDrillMin = MathF.Min(DiagDrillMin, c.Pos.Y); DiagDrillLast = c.Pos.Y; } else { DiagMin = MathF.Min(DiagMin, c.Pos.Y); DiagMax = MathF.Max(DiagMax, c.Pos.Y); DiagLast = c.Pos.Y; } // DIAG
                     var keepMoving = st == SweepState.Moving;
                     if (keepMoving)
                     {
@@ -470,6 +468,8 @@ public static partial class SelfTest
                     run.Where = $"offline {d.Name}{(d.Generated ? " (generated)" : "")} {st}, {tool}";
                     cases++;
                     run.Case(tool, d, () => w.Get(c.Id) == c && c.PartCount == parts, tail: first || st != SweepState.Mounted || d.Role == PartRole.Gun); // (the wheel and MMB, which depend on the tool, not the part: once per kind)
+                    if (d.IsSpawner)
+                        g.SandboxClearAll(); // (its bots and zombies go with it: left alive they follow the player back to the main spot and their blasts dig it)
                     if (me.Alive == false)
                     {
                         g.SelfTestRespawn(me, run.Now);
@@ -480,7 +480,6 @@ public static partial class SelfTest
         }
         while (w.Bodies.Count > 0)
             w.Remove(w.Bodies[^1]);
-        Line($"DIAG sweep spot {spot} drill {drillSpot}: others y min {DiagMin:0.00} max {DiagMax:0.00} last {DiagLast:0.00}; drill y min {DiagDrillMin:0.00} last {DiagDrillLast:0.00}"); // DIAG
         Line($"interaction sweep offline: {defs.Count} part types ({kinds.Count} kinds), {cases} cases, {run.Frames} frames ({run.Looked} with a look line), {run.Climbs} grab-ons, in {clock.Elapsed.TotalSeconds:0.0} s");
         if (run.Looked < run.Frames / 3)
             problems.Add($"offline: only {run.Looked} of {run.Frames} frames had the crosshair on something (the sweep isn't reaching the parts)");
@@ -488,7 +487,7 @@ public static partial class SelfTest
             problems.Add("offline: F at a mounted part never grabbed on (the developer's crash path wasn't reached)");
     }
 
-    /// <summary>An open, level spot on the yard at least 20 m from <paramref name="away"/> (the sweep's Ground Drill cases dig there).</summary>
+    /// <summary>An open, level spot on the yard at least 20 m from <paramref name="away"/> (the sweep's Ground Drill and spawner cases dig there).</summary>
     private static Vector3? SweepDrillSpot(Vector3 away)
     {
         for (var x = -26f; x <= 26f; x += 2f)
