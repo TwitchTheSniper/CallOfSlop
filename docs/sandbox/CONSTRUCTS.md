@@ -3262,7 +3262,7 @@ generator shares: `Part`, `box`, `block_sockets`, `write_parts`. `tools/construc
 class unless it says `"class"`.
 
 **Sockets.** A larger class's part is made of its own cells and its sockets step on its own coarser lattice (a capital plate
-has a socket every 16 m, so 64 sockets a part are plenty). A socket snaps, autolinks, joins and socket-joins only to a
+has a socket every 16 m, so 255 sockets a part are plenty). A socket snaps, autolinks, joins and socket-joins only to a
 socket of its own class, and a mismatch says "use an adapter". The freeform and point attachments (one part anywhere on another)
 ignore classes.
 
@@ -3289,7 +3289,7 @@ ground bearing and height:
 | Hull (Large, Capital) | hollow hull sections (a floor, a ceiling and two sides, open ends), bows, keels |
 
 A hollow part spends boxes where it shows: state of it, about 5.5 boxes a part in the test hull. A part has at most 32
-boxes and 64 sockets and reaches at most 200 m from its origin.
+boxes and 255 sockets and reaches at most 200 m from its origin.
 
 **Limits**, and what set each:
 
