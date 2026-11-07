@@ -129,7 +129,7 @@ public sealed class RoleAsk
         if (n.ClassMin > best)
             n.ClassMin = best; // (a style with no heavy gun fields its heaviest)
         if (n.ArmourMin > 0)
-            n.ArmourMin = MathF.Max(0, n.ArmourMin + 1.5f * (tier - 2));
+            n.ArmourMin = MathF.Max(0, n.ArmourMin + (tier - 2));
         return n;
     }
 
@@ -288,15 +288,15 @@ public static class VehicleRoles
     [
         new("scout", "fast, light, one or two crew, one light gun, little loot")
         {
-            Shapes = [("Technical", 5), ("Box Truck", 1)],
-            Needs = N(seatsMax: 3, gunsMin: 1, gunsMax: 1, classMax: GunClass.Medium, speedMin: 30, lootMax: 3, lengthMax: 7),
+            Shapes = [("Technical", 1)], // (a Box Truck measured 20 to 25 m/s against a Technical's 25 to 34: no grammar shape is a scout)
+            Needs = N(seatsMax: 3, gunsMin: 1, gunsMax: 1, classMax: GunClass.Medium, speedMin: 27, lootMax: 3, lengthMax: 7),
             Modules = M(("body", "room", 0.5), ("body", "gap", 1.5), ("rear", "gun deck", 0.3), ("flank", "loaded", 0.3)),
             LengthBias = -0.7, BedGun = 0.2, Fast = 1, LootBase = 1,
         },
         new("raider", "fast to middling, two to four crew, guns, some loot")
         {
             Shapes = [("Technical", 3), ("Box Truck", 2), ("Gun Wagon", 2)],
-            Needs = N(seatsMin: 2, seatsMax: 4, gunsMin: 1, gunsMax: 3, speedMin: 26, lootMin: 1, lengthMax: 9.5f),
+            Needs = N(seatsMin: 2, seatsMax: 4, gunsMin: 1, gunsMax: 3, speedMin: 22, lootMin: 1, lengthMax: 9.5f),
             Modules = M(("body", "gun bed", 1.5), ("body", "bed", 1.2), ("body", "gap", 1.2), ("nose", "ram", 2)),
             LengthBias = -0.3, BedGun = 0.7, Fast = 0.6, Combat = true, LootBase = 1,
         },
@@ -310,7 +310,7 @@ public static class VehicleRoles
         new("carrier", "an APC: crew space, armour, little gun")
         {
             Shapes = [("War Bus", 3), ("Box Truck", 2), ("Double Decker", 2)],
-            Needs = N(seatsMin: 3, gunsMax: 2, armour: 9.5f, room: true),
+            Needs = N(seatsMin: 3, gunsMax: 2, armour: 11, room: true),
             Modules = M(("body", "room", 2.5), ("body", "gap", 0.5), ("body", "gun bed", 0.4), ("flank", "loaded", 2)),
             LengthBias = 0.5, BedGun = 0.2, Armour = 0.7, Fast = -0.3, LootBase = 1,
         },
@@ -331,14 +331,14 @@ public static class VehicleRoles
         new("command", "masts and radio, armour, one gun, the best loot")
         {
             Shapes = [("War Bus", 2), ("Box Truck", 2), ("Double Decker", 1)],
-            Needs = N(gunsMin: 1, gunsMax: 2, armour: 9.5f, room: true, signals: 2),
+            Needs = N(gunsMin: 1, gunsMax: 2, armour: 11, room: true, signals: 2),
             Modules = M(("body", "room", 2), ("body", "gun bed", 0.6), ("roof", "rack", 2), ("cab", "armoured", 2)),
             LengthBias = 0.2, BedGun = 0.2, Armour = 0.5, LootBase = 3, ExtraChests = 1,
         },
         new("boss", "the largest: the most guns and armour, the best loot; rare")
         {
             Shapes = [("War Bus", 3), ("Flatbed Fort", 1), ("Double Decker", 1)],
-            Needs = N(gunsMin: 3, armour: 10, lengthMin: 8.5f, room: true),
+            Needs = N(gunsMin: 3, armour: 11.5f, lengthMin: 8.5f, room: true),
             Modules = M(("body", "room", 1.5), ("body", "gun bed", 2), ("body", "gap", 0.3), ("rear", "gun deck", 2), ("flank", "loaded", 2)),
             LengthBias = 0.9, BedGun = 1, Armour = 0.8, Fast = -0.6, Combat = true, LootBase = 3, ExtraChests = 2,
         },
@@ -495,8 +495,12 @@ public sealed partial class Vehicle
         {
             var d = c.DefOf(i);
             c.PartBounds(i, out var a, out var b);
-            lo = Vector3.Min(lo, a);
-            hi = Vector3.Max(hi, b);
+            var seg = c.Parts[i].Seg;
+            if (!(seg > 0 && seg <= c.JointCount && c.Joints[seg - 1].Freeform)) // (a weld's bounds are its own segment's numbers: a patch is inside the outline anyway)
+            {
+                lo = Vector3.Min(lo, a);
+                hi = Vector3.Max(hi, b);
+            }
             if (d.Role == PartRole.Seat)
                 seats++;
             if (d.Role == PartRole.FuelTank)
@@ -571,7 +575,9 @@ public sealed partial class Vehicle
             return this;
         var n = ask.Needs;
         if (n.Winch && !Parts.Any(p => p.Name.Contains("Winch", StringComparison.Ordinal)))
-            Winch(Dice.Fork("kit role winch"));
+            OnDeck("Cargo Winch 16 m", null, Dice.Fork("kit role winch"));
+        if (ask.ArmourLean >= 0.3)
+            UpArmour(ask.ArmourLean, Dice.Fork("kit role armour"));
         if (n.SignalsMin > 0)
         {
             var slot = Style.Parts.ContainsKey("mast") ? "mast" : "trophy";
@@ -587,24 +593,38 @@ public sealed partial class Vehicle
             }
         }
         room ??= Rooms.FirstOrDefault();
-        for (var k = 0; k < ask.Role.ExtraChests + (ask.Tier >= 4 ? 1 : 0) && room != null; k++)
+        var chests = ask.Role.ExtraChests + (ask.Tier >= 4 ? 1 : 0);
+        for (var k = 0; k < chests && room != null; k++)
         {
             VehicleGenJob.Yield();
             if (!EndChest(room))
                 break;
+        }
+        if (room == null && chests > 0) // (no room: the loot rides on the deck, in the open, as a tanker's rich haul should)
+        {
+            var cd = Dice.Fork("kit role chests");
+            for (var k = 0; k < chests; k++)
+            {
+                VehicleGenJob.Yield();
+                if (OnDeck(Style.Part(cd, "chest"), "bottom", cd) is not { } chest)
+                    break;
+                Loot(chest, Style.LootTable);
+            }
         }
         var tier = ask.LootTier;
         RetableLoot(t => VehicleRoles.LootTable(t, tier));
         return this;
     }
 
-    /// <summary>A Cargo Winch on the first free up-facing socket of the bed, the porch, the rack or the tail rails that takes one clear of the guns and under open sky.</summary>
-    private void Winch(Dice d)
+    /// <summary>
+    /// <paramref name="part"/> (by its socket <paramref name="by"/>, null: the build's pick) on the first free up-facing socket of the porch, the bed, the rack, a tank or
+    /// the tail rails that takes it clear of the guns and under open sky: a recovery vehicle's winch, a roomless vehicle's chest. Null when none does.
+    /// </summary>
+    private VPart? OnDeck(string part, string? by, Dice d)
     {
-        const string winch = "Cargo Winch 16 m";
-        var def = Def(winch);
+        var def = Def(part);
         IEnumerable<VPart> Tag(string t) => Panels.GetValueOrDefault(t) ?? [];
-        foreach (var on in new[] { Tag("porch"), Tag("bed"), Tag("rack"), TailL.Concat(TailR) })
+        foreach (var on in new[] { Tag("porch"), Tag("bed"), Tag("rack"), Tanks, TailL.Concat(TailR) })
             foreach (var p in d.Shuffled(on))
             {
                 if (p.Seg != 0 && !C.Rigid(p.Seg))
@@ -616,15 +636,76 @@ public sealed partial class Vehicle
                         continue;
                     try
                     {
-                        Onto(p, socket, winch);
-                        return;
+                        return Onto(p, socket, part, by);
                     }
                     catch (VehicleKitException)
                     {
-                        // (no room for the winch on that socket: the next)
+                        // (no room for it on that socket: the next)
                     }
                 }
             }
+        return null;
+    }
+
+    /// <summary>
+    /// Appliqué armour (kit 4, a role that leans to armour): the style's heaviest armour plate, a metre square, welded flat over the sides of its rooms' hull bays, a few
+    /// centimetres proud of each bay's widest point (so no face is shared and nothing is inside the room), never on the door's side of the door bay, never touching another
+    /// plate (a metre apart and more), and only where it meets nothing else: panniers, sponsons, the ladder, wheels. As many as the lean asks, up to half the bays' sides.
+    /// In the style's body colours, so the palette stays the style's.
+    /// </summary>
+    private void UpArmour(double lean, Dice d)
+    {
+        var material = Style.Parts.GetValueOrDefault("armour")?.OrderByDescending(VehicleRoles.PlateArmour).ThenBy(x => x, StringComparer.Ordinal).FirstOrDefault() ?? "Plate Steel";
+        if (ConstructParts.Find(material + " 1 m") is not { } def)
+            return;
+        var plate = def.Name;
+        var e = def.BoundsMax - def.BoundsMin;
+        var thick = MathF.Min(e.X, MathF.Min(e.Y, e.Z));
+        var spots = new List<(VPart Bay, float Side)>();
+        foreach (var room in Rooms)
+            foreach (var bay in room.Bays)
+                foreach (var side in new[] { -1f, 1f })
+                    if (!(side > 0 && bay.Name.Contains("Door", StringComparison.Ordinal)))
+                        spots.Add((bay, side));
+        var want = (int)MathF.Round((float)(lean * spots.Count * 0.5));
+        var placed = new List<Vector3>();
+        foreach (var (bay, side) in d.Shuffled(spots))
+        {
+            if (placed.Count >= want)
+                break;
+            VehicleGenJob.Yield(); // (each try reads every part's bounds)
+            C.PartBounds(bay.Index, out var mn, out var mx);
+            var (lo, hi) = (FromRest(mn), FromRest(mx));
+            var c = CentreOf(bay);
+            var at = new Vector3((side > 0 ? hi.X : lo.X) + side * (thick * 0.5f + 0.04f), MathF.Min(c.Y, hi.Y - 0.55f), c.Z);
+            if (placed.Any(p => Vector3.Distance(p, at) < 1.05f) || _welded.Any(w => Vector3.Distance(w, at) < 0.9f) || !Clear(bay, at, new Vector3(thick * 0.5f + 0.02f, 0.5f, 0.5f)))
+                continue;
+            var p = Weld(plate, bay, at, Orient.Facing(new Vector3(side, 0, 0)), 0, 0, 0);
+            PanelList("armour").Add(p);
+            _welded.Add(at);
+            placed.Add(at);
+            if (Style.Palette.ContainsKey("body"))
+                Paint(p, Style.Colour(d, "body"));
+        }
+        if (placed.Count > 0)
+            MarksPlaced.Add($"armour: {placed.Count} {plate} on the hull");
+    }
+
+    /// <summary>Whether a box of half size <paramref name="half"/> at <paramref name="at"/> (vehicle coordinates) meets no part but <paramref name="on"/> (welded parts judged by their spots).</summary>
+    private bool Clear(VPart on, Vector3 at, Vector3 half)
+    {
+        var (mn, mx) = (at - half, at + half);
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            var seg = C.Parts[i].Seg;
+            if (i == on.Index || seg > 0 && seg <= C.JointCount && C.Joints[seg - 1].Freeform)
+                continue;
+            C.PartBounds(i, out var bmn, out var bmx);
+            var (qmn, qmx) = (FromRest(bmn), FromRest(bmx));
+            if (qmn.X < mx.X && qmx.X > mn.X && qmn.Y < mx.Y && qmx.Y > mn.Y && qmn.Z < mx.Z && qmx.Z > mn.Z)
+                return false;
+        }
+        return true;
     }
 
     /// <summary>As the marks pass's turret test, for a part of <paramref name="def"/>'s size standing on <paramref name="at"/> by its bounds: lower than every ring's top, or out of its guns' reach.</summary>
@@ -826,7 +907,31 @@ public static class VehicleRolesCli
             Console.WriteLine($"    {v.Description}");
         }
         Summary(outs);
+        if (outs.FirstOrDefault(o => o.V != null) is { } first)
+            bad += Again(st, role, tier, first, args.Any(a => a.Equals("--sliced", StringComparison.OrdinalIgnoreCase)));
         return bad;
+    }
+
+    /// <summary>
+    /// The first seed made again, which must write the same text (as <c>--gen-vehicle</c> proves a seed), and with <paramref name="sliced"/> once more as the game's
+    /// dynamic spawn makes it (<see cref="VehicleGenJob"/>, 2.5 ms slices on its own thread), whose hash must be the direct run's. 1 when they differ.
+    /// </summary>
+    private static int Again(FactionStyle st, VehicleRole role, int tier, Outcome first, bool sliced)
+    {
+        var text = first.V!.Text();
+        var again = Make(st, role, tier, first.Seed);
+        var same = again.V?.Text() == text;
+        Console.WriteLine($"  seed {first.Seed} made again: {(same ? "the same text" : "DIFFERENT TEXT")}");
+        if (!sliced)
+            return same ? 0 : 1;
+        var g = VehicleRoles.ShapeFor(st, role, first.Seed);
+        var job = new VehicleGenJob(g, first.Seed, default, new RoleAsk(role, tier, st) { Shape = first.Shape });
+        while (!job.Step(2.5))
+        {
+        }
+        var hash = VehicleGenJob.Fnv(text);
+        Console.WriteLine($"  seed {first.Seed} as a dynamic spawn makes it: {job.Name}, {(job.Blueprint == null ? "FAILED: " + job.Error : job.Hash == hash ? "the same hash" : "A DIFFERENT HASH")} over {job.Slices} slices; kit {job.Kit}: {job.RoleNotes}");
+        return same && job.Hash == hash ? 0 : 1;
     }
 
     private static string Describe(RoleNeeds n)
