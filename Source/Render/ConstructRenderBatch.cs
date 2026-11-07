@@ -43,6 +43,8 @@ public static partial class ConstructRender
         public long Look; // their health, paint and frost
         public int[] Members = [];
         public int MemberCount, Boxes;
+        public int[] SlotPart = []; // slot k's member (its place in Members: an edit can renumber the parts) and box
+        public byte[] SlotBox = [];
         public bool Dirty = true, LookDue = true;
         public Vector3 Centre; // a sphere round its boxes, in the segment's frame
         public float Radius;
@@ -52,7 +54,7 @@ public static partial class ConstructRender
     {
         public int Stamp = -1;
         public long Dyn;
-        public int Seen;
+        public int Seen, Draws;
         public bool On; // enough static boxes to merge
         public MergeChunk[] Chunks = [];
         public int ChunkCount;
@@ -76,7 +78,8 @@ public static partial class ConstructRender
     private static long[] _eKey = [], _eGeo = [];
     private static int[] _eSub = [], _eSeg = [], _eCount = [], _eBoxes = [], _eFirst = [];
     private static bool[] _oldClaimed = [];
-    private static float[] _mergeXform = [], _mergeLook = [], _mergeShape = [];
+    private static float[] _mergeXform = [], _mergeLook = [];
+    private static long[] _slotKey = [];
     private static MergeDraw[] _mergeQueue = new MergeDraw[64];
     private static int _mergeQueued, _mergeBudget, _mergeFrame;
     private static Matrix4x4[] _segFrame = new Matrix4x4[Construct.MaxJoints + 1];
@@ -293,104 +296,114 @@ public static partial class ConstructRender
         return total;
     }
 
-    /// <summary>A chunk's looks into the scratch (the same slot order as <see cref="BuildChunk"/>).</summary>
+    /// <summary>A chunk's looks into the scratch, slot by slot (the order <see cref="BuildChunk"/> laid them in).</summary>
     private static int FillLooks(Construct c, MergeChunk ch)
     {
-        Grow(ref _mergeLook, ch.Boxes * Renderer.MergeLookFloats);
+        var n = ch.Gl.Slots;
+        Grow(ref _mergeLook, n * Renderer.MergeLookFloats);
         var look = _mergeLook;
-        var s = 0;
-        for (var pass = 0; pass < 2; pass++)
-            for (var k = 0; k < ch.MemberCount; k++)
+        var lastPart = -1;
+        float shade = 1, wear = 0;
+        var frost = false;
+        for (var s = 0; s < n; s++)
+        {
+            var i = ch.Members[ch.SlotPart[s]];
+            ref var p = ref c.Parts[i];
+            var d = p.D;
+            if (i != lastPart)
             {
-                var i = ch.Members[k];
-                ref var p = ref c.Parts[i];
-                var d = p.D;
+                lastPart = i;
                 var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
-                var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
-                var wear = p.Broken ? 1f : 1f - health;
-                var frost = Frosted(c, i);
-                foreach (ref readonly var box in d.Boxes.AsSpan())
-                {
-                    if (box.Hidden || (box.Shape != 0) != (pass == 1))
-                        continue;
-                    Vector3 tint;
-                    float code;
-                    if (box.Glow)
-                    {
-                        tint = box.Color * shade;
-                        code = -1f;
-                    }
-                    else
-                    {
-                        tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
-                        if (frost)
-                            tint = Vector3.Lerp(tint, Frost, 0.45f);
-                        code = Surfaces.Code(Surfaces.OnPaint(box.Surface, p.Paint, box.Paintable), wear);
-                    }
-                    var o = s++ * 4;
-                    look[o] = tint.X;
-                    look[o + 1] = tint.Y;
-                    look[o + 2] = tint.Z;
-                    look[o + 3] = code;
-                }
+                shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
+                wear = p.Broken ? 1f : 1f - health;
+                frost = Frosted(c, i);
             }
-        return s;
+            ref readonly var box = ref d.Boxes[ch.SlotBox[s]];
+            Vector3 tint;
+            float code;
+            if (box.Glow)
+            {
+                tint = box.Color * shade;
+                code = -1f;
+            }
+            else
+            {
+                tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
+                if (frost)
+                    tint = Vector3.Lerp(tint, Frost, 0.45f);
+                code = Surfaces.Code(Surfaces.OnPaint(box.Surface, p.Paint, box.Paintable), wear);
+            }
+            var o = s * 4;
+            look[o] = tint.X;
+            look[o + 1] = tint.Y;
+            look[o + 2] = tint.Z;
+            look[o + 3] = code;
+        }
+        return n;
     }
 
-    /// <summary>A chunk's boxes onto the GPU: plain boxes first (slots 0 up, drawn from gl_VertexID), then the contoured ones and their shapes' vertices.</summary>
+    /// <summary>
+    /// A chunk's boxes onto the GPU, grouped by shape (plain boxes first, then each contoured shape: one instanced draw a
+    /// group), each slot's part and box kept so its look can be written again alone.
+    /// </summary>
     private static void BuildChunk(Renderer gfx, Construct c, MergeChunk ch)
     {
-        Grow(ref _mergeXform, ch.Boxes * Renderer.MergeXformFloats);
-        var xf = _mergeXform;
+        var n = ch.Boxes;
+        Grow(ref _mergeXform, n * Renderer.MergeXformFloats);
+        Grow(ref _slotKey, n);
+        Grow(ref ch.SlotPart, n);
+        Grow(ref ch.SlotBox, n);
+        var keys = _slotKey;
         var s = 0;
-        var cubes = 0;
-        var verts = 0;
+        for (var k = 0; k < ch.MemberCount; k++)
+        {
+            var i = ch.Members[k];
+            var boxes = c.Parts[i].D.Boxes;
+            for (var b = 0; b < boxes.Length; b++)
+                if (!boxes[b].Hidden)
+                    keys[s++] = (long)boxes[b].Shape << 40 | (long)k << 8 | (long)b; // (shape, then the member's place, then box)
+        }
+        Array.Sort(keys, 0, s);
+        var xf = _mergeXform;
         var mn = new Vector3(float.MaxValue);
         var mx = new Vector3(float.MinValue);
-        for (var pass = 0; pass < 2; pass++)
+        var gl = ch.Gl;
+        gl.Groups = 0;
+        var lastShape = -1;
+        for (var k = 0; k < s; k++)
         {
-            for (var k = 0; k < ch.MemberCount; k++)
+            var shape = (int)(keys[k] >> 40);
+            var member = (int)(keys[k] >> 8 & 0xFFFFFFFF);
+            var i = ch.Members[member];
+            var b = (int)(keys[k] & 0xFF);
+            ref var p = ref c.Parts[i];
+            ref readonly var box = ref p.D.Boxes[b];
+            if (shape != lastShape)
             {
-                var i = ch.Members[k];
-                ref var p = ref c.Parts[i];
-                var d = p.D;
-                for (var b = 0; b < d.Boxes.Length; b++)
-                {
-                    ref readonly var box = ref d.Boxes[b];
-                    if (box.Hidden || (box.Shape != 0) != (pass == 1))
-                        continue;
-                    c.BoxOf(i, b, out var centre, out var half);
-                    mn = Vector3.Min(mn, centre - half);
-                    mx = Vector3.Max(mx, centre + half);
-                    var m = box.Model(p.Rot, centre);
-                    var o = s * Renderer.MergeXformFloats;
-                    xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
-                    xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
-                    xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
-                    if (pass == 1)
-                    {
-                        var mesh = PartShapes.Mesh(box.Shape);
-                        var nv = mesh.Length / 6;
-                        Grow(ref _mergeShape, (verts + nv) * Renderer.MergeShapeFloats);
-                        var sh = _mergeShape;
-                        for (var v = 0; v < nv; v++)
-                        {
-                            var q = (verts + v) * Renderer.MergeShapeFloats;
-                            Array.Copy(mesh, v * 6, sh, q, 6);
-                            sh[q + 6] = s;
-                        }
-                        verts += nv;
-                    }
-                    else
-                        cubes++;
-                    s++;
-                }
+                Grow(ref gl.GroupShape, gl.Groups + 1);
+                Grow(ref gl.GroupFirst, gl.Groups + 1);
+                Grow(ref gl.GroupCount, gl.Groups + 1);
+                gl.GroupShape[gl.Groups] = shape;
+                gl.GroupFirst[gl.Groups] = k;
+                gl.GroupCount[gl.Groups] = 0;
+                gl.Groups++;
+                lastShape = shape;
             }
+            gl.GroupCount[gl.Groups - 1]++;
+            ch.SlotPart[k] = member;
+            ch.SlotBox[k] = (byte)b;
+            c.BoxOf(i, b, out var centre, out var half);
+            mn = Vector3.Min(mn, centre - half);
+            mx = Vector3.Max(mx, centre + half);
+            var m = box.Model(p.Rot, centre);
+            var o = k * Renderer.MergeXformFloats;
+            xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
+            xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
+            xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
         }
-        gfx.UploadMergedXforms(ch.Gl, xf, s, cubes);
-        gfx.UploadMergedShapes(ch.Gl, _mergeShape, verts);
-        var looks = FillLooks(c, ch); // (first: it can grow the scratch)
-        gfx.UploadMergedLooks(ch.Gl, _mergeLook, looks);
+        gfx.UploadMergedXforms(gl, xf, s);
+        var looks = FillLooks(c, ch); // (after the slots: it reads them, and it can grow the scratch)
+        gfx.UploadMergedLooks(gl, _mergeLook, looks);
         ch.Look = ChunkLook(c, ch);
         ch.LookDue = false;
         ch.Centre = s > 0 ? (mn + mx) * 0.5f : Vector3.Zero;
@@ -412,13 +425,6 @@ public static partial class ConstructRender
         return (boxes, set.WalkedCount, shaped);
     }
 
-    public static string WalkedNames(Construct c)
-    {
-        var set = new MergeSet();
-        Plan(null, set, c);
-        return string.Join(", ", Enumerable.Range(0, set.WalkedCount).Select(k => c.Parts[set.Walked[k]].D).GroupBy(d => d.Name).OrderByDescending(g => g.Count()).Select(g => $"{g.Key} x{g.Count()} ({g.First().Boxes.Count(b => !b.Hidden)} boxes, {g.First().Boxes.Count(b => !b.Hidden && b.Shape != 0)} shaped, role {g.First().Role})"));
-    }
-
     /// <summary>
     /// Draws <paramref name="c"/> through its merged meshes, the walked parts box by box. Returns false (nothing drawn) when
     /// the body has too few static boxes to merge: the caller walks it all.
@@ -428,7 +434,7 @@ public static partial class ConstructRender
         if (!_merges.TryGetValue(c, out var set))
             _merges[c] = set = new MergeSet();
         set.Seen = _mergeFrame;
-        var check = (_mergeFrame + c.Id) % MergeCheckFrames == 0;
+        var check = (++set.Draws + c.Id) % MergeCheckFrames == 0; // (counted in its own draws: a camera pass or a frame it is culled in doesn't skip a check)
         if (set.Stamp != c.RebuildStamp)
         {
             Plan(gfx, set, c);
@@ -467,7 +473,7 @@ public static partial class ConstructRender
                         n += DrawPart(gfx, world, c, ch.Members[m], body, alpha, 1f);
                 continue;
             }
-            if (ch.LookDue || check && ((k + _mergeFrame) & 1) == 0)
+            if (ch.LookDue || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws)
             {
                 var look = ChunkLook(c, ch);
                 if (look != ch.Look || ch.LookDue)
@@ -515,6 +521,26 @@ public static partial class ConstructRender
         LastBatchWalked += set.WalkedCount;
         drawn += n;
         return true;
+    }
+
+    /// <summary>The merged meshes as they stand: bodies, chunks, box slots and bytes on the GPU (the bench; walks them, so not every frame).</summary>
+    public static (int Bodies, int Chunks, int Slots, long Bytes) MergedStats()
+    {
+        int bodies = 0, chunks = 0, slots = 0;
+        long bytes = 0;
+        foreach (var (_, s) in _merges)
+        {
+            if (!s.On)
+                continue;
+            bodies++;
+            for (var k = 0; k < s.ChunkCount; k++)
+            {
+                chunks++;
+                slots += s.Chunks[k].Gl.Slots;
+                bytes += s.Chunks[k].Gl.Bytes;
+            }
+        }
+        return (bodies, chunks, slots, bytes);
     }
 
     /// <summary>Starts a frame's merged drawing (the rebuild budget and the counters).</summary>
