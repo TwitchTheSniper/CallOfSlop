@@ -1,0 +1,45 @@
+{
+  // Clan MacSlop (docs/story/STORY.md "Factions", "Technologies"): the Highland style's vans and their pipers. They hate
+  // the Ministry, and anyone who hurts the Ministry is family.
+  "format": "call-of-slop-faction/1",
+  "name": "Clan MacSlop",
+  "about": "a clan with pipes, plate and a long memory; the Ministry owes them a castle and they mean to collect",
+  "home": "The Glen",
+  "claims": [ "Highland " ],
+  "members": [
+    { "name": "Hamish MacSlop", "about": "the chief; has never lost an argument, because he never stops having it",
+      "qualities": { "Sociable": 65, "Honest": 70, "Brave": 90, "Vengeful": 80, "Gossipy": 40, "Greedy": 30 } },
+    { "name": "Morag MacSlop", "about": "the clan's smith; her armour has never been dented, only the people who tried",
+      "qualities": { "Sociable": 35, "Honest": 80, "Brave": 75, "Vengeful": 60, "Gossipy": 20, "Greedy": 25 } },
+    { "name": "Wee Eck", "about": "the piper, six foot six; the pipes are louder than he is, which is saying something",
+      "qualities": { "Sociable": 85, "Honest": 60, "Brave": 70, "Vengeful": 35, "Gossipy": 75, "Greedy": 20 } }
+  ],
+  "tiers": [
+    { "name": "Blood Feud", "below": -50 },
+    { "name": "Sassenach", "below": -15 },
+    { "name": "Stranger", "below": 15 },
+    { "name": "Friend of the Clan", "below": 45 },
+    { "name": "Clansman" }
+  ],
+  "deeds": [
+    { "name": "Killed our kin", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },
+    { "name": "Wrecked our wagons", "verb": "Wreck", "remember": "WreckedOurs", "standing": -20 },
+    { "name": "Stripped our wagons", "verb": "Strip", "remember": "LootedOurs", "standing": -8 },
+    { "name": "Wrecked a Ministry van", "verb": "Wreck", "whose": "Ministry of Slop", "standing": 10,
+      "about": "one less van with a clipboard in it" },
+    { "name": "Stripped a Ministry van", "verb": "Strip", "whose": "Ministry of Slop", "standing": 3, "every": "5m",
+      "about": "taking the Ministry's kit back, a bolt at a time" }
+  ],
+  "teaches": [
+    { "name": "Pipes and Drums", "tier": "Friend of the Clan",
+      "about": "speaker stacks loud enough to be heard in the next glen (and felt in the one after)",
+      "parts": [ "Medium Speaker", "Large Speaker" ] },
+    { "name": "Clan Plate", "tier": "Friend of the Clan",
+      "about": "Morag's heavy armour, and the ports to shoot out of it",
+      "parts": [ "Heavy Armour 0.5 m", "Heavy Armour 1 m", "Heavy Armour 1x2 m", "Heavy Armour 2 m", "Heavy Armour Port 1 m" ] },
+    { "name": "The Wrecking Ball", "tier": "Clansman",
+      "about": "the clan's answer to most questions, swung on a chain",
+      "parts": [ "Wrecking Ball" ] }
+  ],
+  "rivals": { "Ministry of Slop": 50 }
+}

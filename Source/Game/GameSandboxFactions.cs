@@ -416,9 +416,10 @@ public sealed partial class Game
 
     /// <summary>
     /// <see cref="Msg.Factions"/>: u8 n, each (u8 id, text name, u8 leader, u32 colour, text tag, u8 flags: 1 open,
-    /// 2 notorious; u8 s, s x i8 the story factions' standing); u8 m, each member (u8 owner byte, u8 faction, text name,
-    /// u8 rank); u8 k, each invite (u8 player, u8 faction); u8 k, each ask (u8 player, u8 faction); u8 k, each stance
-    /// (u8 a, u8 b, i8 stance); u8 s, each story faction's name.
+    /// 2 notorious; u8 s, s x (i8 the story faction's standing, u8 its technologies learnt, a bit each)); u8 m, each member
+    /// (u8 owner byte, u8 faction, text name, u8 rank); u8 k, each invite (u8 player, u8 faction); u8 k, each ask (u8 player,
+    /// u8 faction); u8 k, each stance (u8 a, u8 b, i8 stance); u8 s, each story faction's name; then each one's technologies
+    /// (u8 n, n x text: protocol 201).
     /// </summary>
     private void WriteFactions(PacketWriter w)
     {
@@ -435,7 +436,7 @@ public sealed partial class Game
             {
                 w.U8((byte)id).Str(t.Names[id]).U8(t.Leader[id]).U32(t.Colour[id]).Str(t.Tag[id]).U8((byte)((t.Open[id] ? 1 : 0) | (t.Notorious[id] ? 2 : 0))).U8((byte)story);
                 for (var f = 0; f < story; f++)
-                    w.U8((byte)t.StoryStanding[id * FactionTable.MaxStory + f]);
+                    w.U8((byte)t.StoryStanding[id * FactionTable.MaxStory + f]).U8(t.StoryLearnt[id * FactionTable.MaxStory + f]);
             }
         byte m = 0;
         for (var k = 0; k < 255; k++)
@@ -458,6 +459,14 @@ public sealed partial class Game
         w.U8((byte)story);
         for (var f = 0; f < story; f++)
             w.Str(t.StoryNames[f]);
+        for (var f = 0; f < story; f++)
+        {
+            var techs = f < t.StoryTech.Length ? t.StoryTech[f] : [];
+            var tn = Math.Min(techs.Length, 8);
+            w.U8((byte)tn);
+            for (var k = 0; k < tn; k++)
+                w.Str(techs[k]);
+        }
     }
 
     private static void WriteFactionPairs(PacketWriter w, byte[] of)
@@ -490,11 +499,12 @@ public sealed partial class Game
             var flags = r.U8();
             int s = r.U8();
             var ok = id is > 0 and < FactionTable.Max;
-            for (var f = 0; f < s; f++)
+            for (var f = 0; f < s && r.Has(2); f++)
             {
                 var v = (sbyte)r.U8();
+                var learnt = r.U8();
                 if (ok && f < FactionTable.MaxStory)
-                    t.StoryStanding[id * FactionTable.MaxStory + f] = v;
+                    (t.StoryStanding[id * FactionTable.MaxStory + f], t.StoryLearnt[id * FactionTable.MaxStory + f]) = (v, learnt);
             }
             if (!ok)
                 continue;
@@ -531,6 +541,20 @@ public sealed partial class Game
                 names[f] = name;
         }
         t.StoryNames = names;
+        var techs = new string[names.Length][];
+        for (var f = 0; f < sn; f++)
+        {
+            int tn = r.Has(1) ? r.U8() : 0;
+            var list = new string[tn];
+            for (var k = 0; k < tn; k++)
+                list[k] = r.Has(1) ? r.Text(255) : "";
+            if (f < techs.Length)
+                techs[f] = list;
+        }
+        for (var f = 0; f < techs.Length; f++)
+            techs[f] ??= [];
+        t.StoryTech = techs;
+        ConstructAssembling.TaughtBy = t.TeacherOf;
         t.Version++;
     }
 

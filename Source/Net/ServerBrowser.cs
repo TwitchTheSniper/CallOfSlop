@@ -344,7 +344,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 198: lofted bays' keys in their compact form ("~" and three characters a point, "=" for a back section that is the front's; HullLoft.Section.Key): a 196 peer reads them as stand-ins.
     // 199: the survival opening (GameSandboxOpening.cs, docs/story/OPENING.md): Msg.Opening (server -> one client, the beat) at the end of Msg, CActKind.OpeningSkip at the end of its enum.
     // 200: player factions' colours, tags, ranks, asks to join and stances (GameSandboxFactions.cs): Msg.Factions carries them and the story factions' standing; new FactionOps at the end of the enum.
-    public const byte ProtocolVersion = 200;
+    // 201: story factions' technologies (GameStoryTech.cs, docs/story/STORY.md "Technologies"): Msg.Factions carries each story faction's learnt technologies (a u8 after each standing) and its technology lines after the names; AsmBlock.Untaught (3) in an Assembler's blocked byte.
+    public const byte ProtocolVersion = 201;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

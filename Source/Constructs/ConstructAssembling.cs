@@ -12,6 +12,7 @@ public enum AsmState : byte
     OutputFull, // the tray has no room for what it makes
     Blocked, // a finished batch can't leave (CStore.Blocked)
     Ready,
+    Untaught, // a story faction hasn't taught its owner this part yet (AsmBlock.Untaught)
 }
 
 /// <summary>Why a finished batch can't leave an Assembler (<see cref="CStore.Blocked"/>).</summary>
@@ -20,6 +21,7 @@ public enum AsmBlock : byte
     None,
     OutputBlocked, // something stands where a body leaves
     WorldFull, // no room for another construct
+    Untaught, // not a finished batch: the recipe's part is a technology its owner hasn't been taught (ConstructWorld.Taught)
     COUNT,
 }
 
@@ -92,6 +94,17 @@ public static class ConstructAssembling
             st.JobTicks = 0;
             SetBlocked(world, st, AsmBlock.None);
         }
+        if (recipe != null && world.Taught is { } taught && !world.CreativeRecycling && !taught(c.Owner, recipe.Output))
+        {
+            // A technology nobody has taught its owner: it waits, and says so (a faction's teaching ends the wait).
+            st.JobTicks = 0;
+            SetBlocked(world, st, AsmBlock.Untaught);
+            ConstructGatherer.SetBusy(world, st, false);
+            MachineScreens.SetProgress(world, st, 0);
+            return;
+        }
+        if (st.Blocked == (byte)AsmBlock.Untaught)
+            SetBlocked(world, st, AsmBlock.None);
         var held = ConstructGatherer.HeldOff(c, part);
         ConstructGatherer.SetHeld(world, st, held);
         var state = StateOf(d, st, recipe);
@@ -242,6 +255,8 @@ public static class ConstructAssembling
     {
         if (r == null)
             return AsmState.NoRecipe;
+        if (st.Blocked == (byte)AsmBlock.Untaught)
+            return AsmState.Untaught;
         if (r.MinTier > d.Tier)
             return AsmState.TierLow;
         if (st.Blocked != 0)
@@ -286,6 +301,9 @@ public static class ConstructAssembling
     }
 
     /// <summary>What the machine is doing, or why not. Read by the look line on either side.</summary>
+    /// <summary>Who teaches a part, as words for the look line (the game sets it from the faction table, which every PC has): null when it can't say.</summary>
+    public static Func<string, string?>? TaughtBy;
+
     public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r)
     {
         var names = RecyclingTable.Current;
@@ -296,6 +314,7 @@ public static class ConstructAssembling
                 AsmState.NoRecipe => " - no recipe: pick one with the configure tool",
                 AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
+                AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",
                 AsmState.OutputFull => " - tray full",
                 AsmState.Blocked => st.Blocked == (byte)AsmBlock.WorldFull ? " - the world is full of constructs" : " - something is in the way of its output",
                 _ => " - no power: needs a charged battery",

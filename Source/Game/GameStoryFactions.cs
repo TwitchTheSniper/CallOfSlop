@@ -34,8 +34,10 @@ public sealed partial class Game
             _storyGroup[p.Id] = (who, t.Version);
             var id = t.Of[p.Id];
             s.Factions.SetGroup(who, id != 0 && t.Names[id].Length > 0 ? s.Factions.Group(t.Names[id]) : -1);
+            StoryTeachEarned(s, who); // (what their standing already earns: a group just joined, a save from before technologies; GameStoryTech.cs)
         }
         StoryStandingsTick(s, t);
+        StoryTaughtTick(s);
     }
 
     /// <summary>
@@ -49,9 +51,16 @@ public sealed partial class Game
         if (t.StoryNames.Length != count)
         {
             var names = new string[count];
+            var techs = new string[count][];
             for (var f = 0; f < count; f++)
-                names[f] = s.Factions.Def(f).Name;
+            {
+                var def = s.Factions.Def(f);
+                names[f] = def.Name;
+                techs[f] = def.Teaches.Select(x => $"{x.Name} ({def.Tiers[x.Tier].Name}): {string.Join(", ", x.Parts)}").ToArray();
+            }
             t.StoryNames = names;
+            t.StoryTech = techs;
+            ConstructAssembling.TaughtBy = t.TeacherOf;
             changed = true;
         }
         for (var id = 1; id < FactionTable.Max; id++)
@@ -68,6 +77,10 @@ public sealed partial class Game
                 ref var at = ref t.StoryStanding[id * FactionTable.MaxStory + f];
                 changed |= at != v;
                 at = v;
+                var learnt = s.Factions.LearntMask(g, f);
+                ref var lm = ref t.StoryLearnt[id * FactionTable.MaxStory + f];
+                changed |= lm != learnt;
+                lm = learnt;
             }
         }
         if (changed)
@@ -142,7 +155,7 @@ public sealed partial class Game
             var def = s.Factions.Def(n.Faction);
             if (!def.Name.Equals(desk.From, StringComparison.OrdinalIgnoreCase) || _itMailCount >= MaxMail)
                 continue;
-            var on = def.NoticeName(n.Deed, n.Tier);
+            var on = def.NoticeName(n.Deed, n.Tier, n.Tech);
             var page = desk.NoticeFor(on, s.World, s.Factions.EntityOf(n.Faction), n.Party);
             if (page < 0 || PlayerOfStory(n.Actor) is not { } to)
                 continue;
