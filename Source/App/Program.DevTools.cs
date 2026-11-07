@@ -42,13 +42,13 @@ public static unsafe partial class Program
         if (key == GlfwKey.Unknown || Ui.ChatOpen || Ui.WantsTextInput || !DevToolsAllowed)
             return false;
         var code = Keybinds.Key(key);
-        if (code == _settings.Bind(GameAction.LookAtInspector))
+        if (_settings.HasBind(GameAction.LookAtInspector, code))
         {
             Ui.LookAtOpen = !Ui.LookAtOpen;
             _devHitKey = default;
             return true;
         }
-        if (code == _settings.Bind(GameAction.CopyLookAt) && _session != null)
+        if (_settings.HasBind(GameAction.CopyLookAt, code) && _session != null)
         {
             if (!Ui.LookAtOpen)
                 ProbeLookAt(); // closed: one look, just for the copy
@@ -56,7 +56,7 @@ public static unsafe partial class Program
             Ui.DevToolsMessage("copied: " + _devRef, Glfw.Time);
             return true;
         }
-        if (code == _settings.Bind(GameAction.PropEditor) && _session != null)
+        if (_settings.HasBind(GameAction.PropEditor, code) && _session != null)
         {
             if (Ui.PropEditorOpen)
             {

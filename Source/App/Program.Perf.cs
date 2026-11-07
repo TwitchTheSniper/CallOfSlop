@@ -29,7 +29,7 @@ public static unsafe partial class Program
             SetPerfMode(PerfView.Off);
             return true;
         }
-        if (key == GlfwKey.Unknown || Keybinds.Key(key) != _settings.Bind(GameAction.PerfWindow) || Ui.ChatOpen || Ui.WantsTextInput)
+        if (key == GlfwKey.Unknown || !_settings.HasBind(GameAction.PerfWindow, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput)
             return false;
         SetPerfMode(Ui.PerfMode switch { PerfView.Off => PerfView.Window, PerfView.Window => PerfView.Overlay, _ => PerfView.Off });
         return true;
