@@ -635,7 +635,10 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
   reads: their standing with all of them is -100 whatever it was, so every faction hunts them. Each faction gets a
   notice on `"Notorious"`, and pages can ask `?them Notorious`.
 - **Verbs**: Email (a player at a Computer to a faction; its effect counts `Emails`), Fax (a faction's page printed for a
-  group: `Faxed`, which "per my last fax" reads), Keep (a player plugs in a faction's fax: its first page), Rate.
+  group: `Faxed`, which "per my last fax" reads), Keep (a player plugs in a faction's fax: its first page), Rate; and between
+  player factions (GameStoryFactions.cs): Unite (a player founds one: actor the player, target its group), Ally, Feud (the
+  target's group takes a Grudge) and Truce (actor and target the two groups), which the radio has lines for. The Faction
+  window (F2) shows each player faction how every story faction stands with it, and whether it is Notorious.
 - **Strip**: a wreck's part taken off is noted whoever owns it, and the story keeps a Strip of one's own or nobody's
   construct only when a faction claims it (stripping the IT van you spawned yourself still counts against you with IT).
 - Everything is world state (entities, relations, qualities), so it is saved with the story; a faction new to the data

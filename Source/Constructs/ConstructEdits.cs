@@ -473,7 +473,7 @@ public sealed partial class ConstructEdits
             {
                 if (world.Get(h.Body) is not { } c || h.Part >= c.PartCount || !ConstructBuild.ToolFits(h.Tool, c.DefOf(h.Part)) || c.Driver != 255)
                     return "failed: that part is gone";
-                if (SalvageRefusal(c, player) is { } theirs)
+                if ((SalvageRefusal(c, player) ?? (Salvageable(c, player) ? null : Factions.RankRefusal(c.Owner, player))) is { } theirs)
                     return $"failed: {theirs}";
                 if (Contested(c, player) is { } defended)
                     return $"failed: {defended}";

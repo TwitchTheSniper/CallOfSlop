@@ -35,6 +35,64 @@ public sealed partial class Game
             var id = t.Of[p.Id];
             s.Factions.SetGroup(who, id != 0 && t.Names[id].Length > 0 ? s.Factions.Group(t.Names[id]) : -1);
         }
+        StoryStandingsTick(s, t);
+    }
+
+    /// <summary>
+    /// Once a second: how each story faction stands with each player faction, and whether it is Notorious, into the table
+    /// (which everyone gets when it changes) for the Faction window. A faction's standing with a player in none is not shown.
+    /// </summary>
+    private static void StoryStandingsTick(StoryEngine s, FactionTable t)
+    {
+        var count = Math.Min(s.Factions.Count, FactionTable.MaxStory);
+        var changed = false;
+        if (t.StoryNames.Length != count)
+        {
+            var names = new string[count];
+            for (var f = 0; f < count; f++)
+                names[f] = s.Factions.Def(f).Name;
+            t.StoryNames = names;
+            changed = true;
+        }
+        for (var id = 1; id < FactionTable.Max; id++)
+        {
+            if (t.Names[id].Length == 0)
+                continue;
+            var g = s.Factions.Group(t.Names[id]);
+            var notorious = s.Factions.Notorious(g);
+            changed |= t.Notorious[id] != notorious;
+            t.Notorious[id] = notorious;
+            for (var f = 0; f < count; f++)
+            {
+                var v = (sbyte)Math.Clamp(s.Factions.Standing(f, g), -100, 100);
+                ref var at = ref t.StoryStanding[id * FactionTable.MaxStory + f];
+                changed |= at != v;
+                at = v;
+            }
+        }
+        if (changed)
+            t.Version++;
+    }
+
+    /// <summary>A player founded a faction: a Unite event (the radio can tell of a new outfit).</summary>
+    private void StoryFactionFounded(Player p, string name)
+    {
+        if (Story is not { } s || s.Rules.VerbId("Unite") is not (var v and >= 0) || StoryWho(p) is not (var who and >= 0))
+            return;
+        var g = s.Factions.Group(name);
+        s.Factions.SetGroup(who, g);
+        s.Record(v, who, g, place: StoryPlace());
+    }
+
+    /// <summary>Two player factions became allies, enemies, or neither: an Ally, Feud or Truce event between their groups.</summary>
+    private void StoryFactionRelation(string us, string them, FactionTable.Relations now, Player by)
+    {
+        if (Story is not { } s)
+            return;
+        var v = s.Rules.VerbId(now switch { FactionTable.Relations.Allied => "Ally", FactionTable.Relations.War => "Feud", _ => "Truce" });
+        if (v < 0)
+            return;
+        s.Record(v, s.Factions.Group(us), s.Factions.Group(them), place: StoryPlace());
     }
 
     /// <summary>A player emailed a faction from a computer: an Email event (its deeds read the words).</summary>

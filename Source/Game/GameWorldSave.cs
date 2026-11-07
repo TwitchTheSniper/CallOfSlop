@@ -199,8 +199,13 @@ public sealed partial class Game
             var faction = who == 255 ? (byte)0 : FactionTable.Of[who];
             s.Players[k].Faction = faction;
             s.Players[k].FactionLeader = faction != 0 && FactionTable.Leader[faction] == who;
+            s.Players[k].FactionRank = faction != 0 ? FactionTable.Rank[who] : (byte)0;
         }
         s.FactionNames = (string[])FactionTable.Names.Clone();
+        s.FactionColours = (uint[])FactionTable.Colour.Clone();
+        s.FactionTags = (string[])FactionTable.Tag.Clone();
+        s.FactionOpen = (bool[])FactionTable.Open.Clone();
+        s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
@@ -561,6 +566,9 @@ public sealed partial class Game
             }
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
+                break;
+            case WorldSaveWriter.FactionLooks:
+                WorldReadFactionLooks(r, ws); // (GameSandboxFactions.cs)
                 break;
             case WorldSaveWriter.Opening:
             {
