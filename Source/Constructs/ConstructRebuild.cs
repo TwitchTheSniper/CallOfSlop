@@ -118,7 +118,7 @@ public sealed partial class Construct
     internal static bool RebuildCheck = Environment.GetEnvironmentVariable("CALLOFSLOP_REBUILD_CHECK") == "1";
 
     internal static readonly List<string> CheckLog = [];
-    internal static int CheckRuns, CheckFails, PlainRuns, FullRuns;
+    internal static int CheckRuns, CheckFails, PlainRuns, FullRuns; // (counts for the check and a harness: every body, every thread, roughly)
 
     private bool _dirty = true;
     private bool _needFull = true; // (any Dirty = true: the journal can't say what changed)
@@ -146,7 +146,7 @@ public sealed partial class Construct
     private bool _jMapped;
     private bool _jPower; // the circuit has to be flooded again (a powered part went and its neighbours didn't meet round it)
     private bool _jBounds; // a part on the bounds went: the bounds are summed again
-    private bool _jAdded; // parts were added (the collider is built again)
+    private bool _jAdded; // parts were added (they go into the collider's small tree of their own)
     private int _plainCount; // plain rebuilds since the sums were summed from the parts
     private int _editSerial, _serialAtRebuild; // (what the collider and the part tree were built at)
 
