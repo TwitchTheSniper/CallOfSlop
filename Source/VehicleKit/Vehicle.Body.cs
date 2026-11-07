@@ -202,7 +202,7 @@ public sealed partial class Vehicle
         return picks.Count == 0 ? null : d.Pick(picks);
     }
 
-    /// <summary>Up to <paramref name="count"/> of the style's <paramref name="slot"/> parts (they stand on a "base" socket) on free sockets of <paramref name="on"/> that face <paramref name="dir"/>.</summary>
+    /// <summary>Up to <paramref name="count"/> of the style's <paramref name="slot"/> parts (they stand on a "base" socket) on free sockets of <paramref name="on"/> that face <paramref name="dir"/>, never where one would z-fight with what is already there.</summary>
     public Vehicle Dress(string slot, IEnumerable<VPart> on, Vector3 dir, int count, Dice d)
     {
         var left = count;
@@ -214,12 +214,12 @@ public sealed partial class Vehicle
                 continue;
             try
             {
-                Onto(p, socket, Style.Part(d, slot), "base", 0);
+                Onto(p, socket, Style.Part(d, slot), "base", 0, clear: true);
                 left--;
             }
             catch (VehicleKitException)
             {
-                // (no room there: the next panel)
+                // (no room there, or a face on one already there, such as an engine's rocker cover poking up under a hood's top socket: the next panel)
             }
         }
         return this;
