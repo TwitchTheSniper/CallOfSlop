@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CallOfSlop.VehicleKit;
@@ -61,13 +62,52 @@ public sealed class VehicleGenJob
 
     /// <summary>
     /// A point where a generation may hand back to the game (between the game's own build calls, never inside one). Only the
-    /// generation thread ever stops here, and only once its slice is spent.
+    /// generation thread ever stops here, and only once its slice is spent. The compiler fills in the caller's file and line (constants: nothing is
+    /// allocated), so a span that runs long is named by the two yields either side of it (<see cref="OverrunMs"/>).
     /// </summary>
-    public static void Yield()
+    public static void Yield([CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
     {
-        if (_current is { } j && Stopwatch.GetTimestamp() >= j._until)
-            j.Pause();
+        if (_current is { } j)
+            j.At(file, line);
     }
+
+    /// <summary>A slice past this (ms) is logged with the span that ran it over, by call site: a step between two yields that has grown shows here.</summary>
+    public const double OverrunMs = 4;
+
+    /// <summary>The longest span between two yields (ms) in the whole generation, and where it ran: "VehicleCore.cs:182 to VehicleCore.cs:157".</summary>
+    public double WorstSpanMs;
+
+    public string WorstSpanAt => $"{Site(_worstFrom, _worstFromLine)} to {Site(_worstTo, _worstToLine)}";
+
+    private string _worstFrom = "", _worstTo = "";
+    private int _worstFromLine, _worstToLine;
+
+    // (the span running now: when it started, at which yield; the slice's longest so far)
+    private long _spanStart, _sliceSpan, _sliceRun;
+    private string _lastFile = "the start", _sliceFrom = "", _sliceTo = "";
+    private int _lastLine, _sliceFromLine, _sliceToLine;
+    private static int _overruns;
+    private double _budgetMs;
+
+    private void At(string file, int line)
+    {
+        Note(file, line, Stopwatch.GetTimestamp());
+        if (Stopwatch.GetTimestamp() >= _until)
+            Pause();
+        _spanStart = Stopwatch.GetTimestamp();
+    }
+
+    /// <summary>A span ends at a yield (or the generation's end): the slice's longest is kept, with both ends' call sites. Allocates nothing.</summary>
+    private void Note(string file, int line, long now)
+    {
+        var span = now - _spanStart;
+        _sliceRun += span;
+        if (span > _sliceSpan)
+            (_sliceSpan, _sliceFrom, _sliceFromLine, _sliceTo, _sliceToLine) = (span, _lastFile, _lastLine, file, line);
+        (_lastFile, _lastLine) = (file, line);
+    }
+
+    private static string Site(string file, int line) => line > 0 ? $"{Path.GetFileName(file)}:{line}" : file;
 
     private void Pause()
     {
@@ -92,6 +132,9 @@ public sealed class VehicleGenJob
         }
         var start = Stopwatch.GetTimestamp();
         _until = start + (long)(budgetMs * Stopwatch.Frequency / 1000);
+        _sliceSpan = _sliceRun = 0;
+        _budgetMs = budgetMs;
+        var gc = GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2);
         _go.Release();
         if (!_back.Wait(StuckMs + (int)budgetMs))
         {
@@ -106,16 +149,36 @@ public sealed class VehicleGenJob
         CpuMs += ms;
         WorstSliceMs = Math.Max(WorstSliceMs, ms);
         Slices++;
+        var spanMs = _sliceSpan * 1000.0 / Stopwatch.Frequency;
+        if (spanMs > WorstSpanMs)
+        {
+            WorstSpanMs = spanMs; // (the sites are kept, not written: the tick allocates nothing)
+            (_worstFrom, _worstFromLine, _worstTo, _worstToLine) = (_sliceFrom, _sliceFromLine, _sliceTo, _sliceToLine);
+        }
+        if (ms > OverrunMs)
+            Overran(ms, spanMs, _sliceRun * 1000.0 / Stopwatch.Frequency, GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) != gc);
         if (_finished)
         {
             Blueprint = _bp;
             Tow = _tow;
             Error = _error;
             Done = true;
-            if (Kit > 0)
-                Console.WriteLine($"[vehicles] {Name}: kit {Kit}{(Modules.Length > 0 ? " (" + Modules + ")" : "")}");
         }
         return Done;
+    }
+
+    private string SpanAt() => $"{Site(_sliceFrom, _sliceFromLine)} to {Site(_sliceTo, _sliceToLine)}";
+
+    /// <summary>
+    /// A slice ran past <see cref="OverrunMs"/>: logged (the first 10, then every 100th) with its longest span and that span's two yields, and whether a
+    /// garbage collection ran in it. A span of its own size is a step that needs a yield inside it; a short span in a long slice is the thread waking late
+    /// (a busy machine) or the collection.
+    /// </summary>
+    private void Overran(double ms, double spanMs, double runMs, bool collected)
+    {
+        if (++_overruns > 10 && _overruns % 100 != 0)
+            return;
+        Console.WriteLine($"[vehicles] slice {ms:0.0} ms in {Name} (budget {_budgetMs:0.0}, the kit ran {runMs:0.0} of it): longest span {spanMs:0.0} ms, {SpanAt()}{(collected ? ", a garbage collection ran" : "")} ({_overruns} so far)");
     }
 
     /// <summary>Drops an unfinished job: its thread wakes, unwinds from where it waited and ends, before this returns.</summary>
@@ -132,6 +195,7 @@ public sealed class VehicleGenJob
     {
         _go.Wait();
         _current = this;
+        _spanStart = Stopwatch.GetTimestamp();
         try
         {
             if (!_abandon)
@@ -148,6 +212,7 @@ public sealed class VehicleGenJob
         }
         finally
         {
+            Note("the end", 0, Stopwatch.GetTimestamp());
             _current = null;
             _finished = true;
             _back.Release();
@@ -157,7 +222,9 @@ public sealed class VehicleGenJob
     private void Generate()
     {
         var v = VehicleRegistry.Make(Generator, Seed);
+        Yield();
         var text = v.Text();
+        Yield();
         Hash = Fnv(text);
         (Kit, Modules) = (v.Kit, string.Join(", ", v.Modules));
         Yield();
@@ -172,6 +239,45 @@ public sealed class VehicleGenJob
             _tow = ConstructBuild.ParseBlueprint(VehicleRegistry.Run(tg, towSeed), VehicleRegistry.FileName(tg, towSeed));
         }
         _bp = bp;
+    }
+
+    private static bool _warm;
+
+    /// <summary>What the warm-up cost (ms), once it has run.</summary>
+    public static double WarmMs { get; private set; }
+
+    /// <summary>
+    /// The first generation in a process pays for compiling the kit and the build code it calls: about a second, a few milliseconds at a time over its first
+    /// ticks and up to 40 to 80 ms in one span (the first rebuild of a construct with guns). This runs a small one once, at once, on the calling thread: a Bandit Technical in a world
+    /// of its own, written, hashed, read back and measured as a spawn's is, so every path a spawn takes is compiled before the first one. The server calls it
+    /// when a Sandbox match starts, not on a tick in play. Nothing it makes is kept; a failure is only logged.
+    /// </summary>
+    public static void Warm()
+    {
+        if (_warm)
+            return;
+        _warm = true;
+        var start = Stopwatch.GetTimestamp();
+        try
+        {
+            if (VehicleRegistry.Find("Bandit Technical") is { } g && g.Seeds.Count > 0)
+            {
+                var v = VehicleRegistry.Make(g, g.Seeds[0]);
+                var text = v.Text();
+                _ = Fnv(text);
+                _ = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(g, g.Seeds[0]));
+                _ = v.Stability();
+                _ = v.Fill();
+            }
+            if (VehicleRegistry.Find("Bandit Box Truck") is { } grammar)
+                ShapeGrammar.PlanOnly(grammar, 1); // (the shape grammar's planner: a plan, nothing built)
+        }
+        catch (Exception ex) // (only a warm-up: never a reason for a match not to start)
+        {
+            Console.WriteLine($"[vehicles] warm-up failed: {ex.GetType().Name}: {ex.Message}");
+        }
+        WarmMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+        Console.WriteLine($"[vehicles] warmed the kit in {WarmMs:0} ms");
     }
 
     public static ulong Fnv(string text)
