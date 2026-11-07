@@ -15,6 +15,20 @@ public sealed class FactionDeed
     public (ushort Quality, int Delta)[] Wants = [];
     public double Every; // s: counted once in this long per doer at most (0: every time)
     public string Text = ""; // what it asks, as words (the window)
+    public string WhoseName = ""; // "whose": the deed is against another faction's things, not this one's...
+    public int Whose = -1; // ...that faction (-1: this one)
+}
+
+/// <summary>
+/// A technology a faction teaches (docs/story/STORY.md "Technologies"): the parts an Assembler won't build for a player or
+/// group until the faction has taught them it, which it does when its standing with them first comes to <see cref="Tier"/>.
+/// </summary>
+public sealed class FactionTech
+{
+    public string Name = "", About = "";
+    public int Id; // its place in the faction's list
+    public int Tier; // the faction's tier it is taught at
+    public string[] Parts = []; // construct parts by name (the game checks them against its parts)
 }
 
 /// <summary>Something a faction wants (a quality of the faction from 0 to 100) and how it drifts by the hour.</summary>
@@ -42,6 +56,9 @@ public sealed class FactionDef
     public FactionWant[] Wants = [];
     public FactionTier[] Tiers = [];
     public FactionDeed[] Deeds = [];
+    public FactionTech[] Teaches = [];
+    public string[] Staff = []; // people from a cast (by name) who are its members whenever they are in the story
+    public (string Name, int Faction, int Percent)[] Rivals = []; // a rise in its standing takes this share of the rise off the rival's
 
     /// <summary>The tier a standing falls in (-1: the faction has none).</summary>
     public int TierOf(int standing)
@@ -54,28 +71,31 @@ public sealed class FactionDef
 
     public string TierName(int standing) => TierOf(standing) is var t and >= 0 ? Tiers[t].Name : "";
 
-    /// <summary>What a notice names: a deed, a tier, or "Notorious" (an atrocity: every faction hunts them).</summary>
-    public string NoticeName(int deed, int tier) => deed >= 0 ? Deeds[deed].Name : tier >= 0 ? Tiers[tier].Name : "Notorious";
+    /// <summary>What a notice names: a deed, a tier, a technology it taught, or "Notorious" (an atrocity: every faction hunts them).</summary>
+    public string NoticeName(int deed, int tier, int tech = -1) => deed >= 0 ? Deeds[deed].Name : tier >= 0 ? Tiers[tier].Name : tech >= 0 ? Teaches[tech].Name : "Notorious";
 }
 
 /// <summary>The factions from Story/Factions/*.json. A bad file is refused whole with its reason (<see cref="StoryRules.Errors"/>).</summary>
 public sealed class FactionRules
 {
     public const int MaxFactions = 32, MaxDeeds = 64, MaxMembers = 64, MaxWants = 8, MaxTiers = 8, MaxStanding = 100;
+    public const int MaxTeaches = 8, MaxTechParts = 32, MaxRivals = 8; // (8: a faction's learnt technologies are a byte on the wire)
     public const string Format = "call-of-slop-faction/1";
 
     public FactionDef[] Factions = [];
     public int MemberOf = -1, Claims = -1, Home = -1, Likes = -1, Grudge = -1; // relations
-    public int Email = -1, Fax = -1, Keep = -1, Rate = -1, Atrocity = -1; // verbs
+    public int Email = -1, Fax = -1, Keep = -1, Rate = -1, Atrocity = -1, Teach = -1; // verbs
+    public int Learnt = -1; // the relation a player or group holds towards a technology (a Thing) it was taught
     public int Notorious = -1; // the quality on a player or group every faction hunts
 
     public FactionDef? Find(string name) => Array.Find(Factions, f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "wants", "tiers", "deeds"];
+    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals"];
+    private static readonly string[] TechKeys = ["name", "about", "tier", "parts"];
     private static readonly string[] MemberKeys = ["name", "about", "qualities"];
     private static readonly string[] WantKeys = ["name", "about", "start", "perHour"];
     private static readonly string[] TierKeys = ["name", "below"];
-    private static readonly string[] DeedKeys = ["name", "about", "verb", "theirs", "words", "remember", "standing", "wants", "every"];
+    private static readonly string[] DeedKeys = ["name", "about", "verb", "theirs", "whose", "words", "remember", "standing", "wants", "every"];
 
     public static FactionRules Load(StoryRules rules, string folder)
     {
@@ -84,6 +104,7 @@ public sealed class FactionRules
             MemberOf = rules.Relation("MemberOf")?.Id ?? -1, Claims = rules.Relation("Claims")?.Id ?? -1, Home = rules.Relation("Home")?.Id ?? -1,
             Likes = rules.Relation("Likes")?.Id ?? -1, Grudge = rules.Relation("Grudge")?.Id ?? -1,
             Email = rules.VerbId("Email"), Fax = rules.VerbId("Fax"), Keep = rules.VerbId("Keep"), Rate = rules.VerbId("Rate"), Atrocity = rules.VerbId("Atrocity"),
+            Teach = rules.VerbId("Teach"), Learnt = rules.Relation("Learnt")?.Id ?? -1,
             Notorious = rules.Quality("Notorious")?.Id ?? -1,
         };
         var all = new List<FactionDef>();
@@ -106,6 +127,35 @@ public sealed class FactionRules
             {
                 rules.Errors.Add(ex.Message);
             }
+        }
+        // What names another faction: rivals and "whose" deeds (a faction's file may name one that comes later).
+        foreach (var def in all.ToArray())
+        {
+            try
+            {
+                def.Rivals = def.Rivals.Select(r => (r.Name, all.FindIndex(o => o.Name.Equals(r.Name, StringComparison.OrdinalIgnoreCase)) is var k and >= 0 && k != def.Id ? k
+                    : throw new StoryException($"{def.File}: {def.Name}: \"rivals\": no other faction called {r.Name}"), r.Percent)).ToArray();
+                foreach (var d in def.Deeds)
+                    if (d.WhoseName.Length > 0)
+                        d.Whose = all.FindIndex(o => o.Name.Equals(d.WhoseName, StringComparison.OrdinalIgnoreCase)) is var k and >= 0 && k != def.Id ? k
+                            : throw new StoryException($"{def.File}: {def.Name}: {d.Name}: \"whose\" is another faction (no {d.WhoseName})");
+                if (def.Teaches.Length > 0 && (fr.Learnt < 0 || fr.Teach < 0))
+                    throw new StoryException($"{def.File}: {def.Name}: \"teaches\" needs the relation Learnt and the verb Teach (Story/Relations, Story/Verbs)");
+            }
+            catch (StoryException ex)
+            {
+                rules.Errors.Add(ex.Message);
+                all.Remove(def);
+            }
+        }
+        for (var k = 0; k < all.Count; k++)
+            all[k].Id = k;
+        foreach (var def in all) // (ids again, after a refusal)
+        {
+            def.Rivals = def.Rivals.Select(r => (r.Name, all.FindIndex(o => o.Name.Equals(r.Name, StringComparison.OrdinalIgnoreCase)), r.Percent)).Where(r => r.Item2 >= 0).ToArray();
+            foreach (var d in def.Deeds)
+                if (d.WhoseName.Length > 0)
+                    d.Whose = all.FindIndex(o => o.Name.Equals(d.WhoseName, StringComparison.OrdinalIgnoreCase));
         }
         fr.Factions = all.ToArray();
         return fr;
@@ -145,8 +195,10 @@ public sealed class FactionRules
             }
             members.Add(new FactionMember(name, StoryRules.Str(m, "about", at), quals.ToArray()));
         }
-        if (members.Count > MaxMembers)
-            throw new StoryException($"{where}: {MaxMembers} members at most");
+        def.Staff = StoryRules.List(root, "staff", where).Select(x => x.ValueKind == JsonValueKind.String && x.GetString() is { Length: > 0 and <= 40 } s ? s
+            : throw new StoryException($"{where}: each of \"staff\" is the name of a cast's person (Story/Casts)")).ToArray();
+        if (members.Count + def.Staff.Length > MaxMembers)
+            throw new StoryException($"{where}: {MaxMembers} members and staff at most");
         def.Members = members.ToArray();
 
         var wants = new List<FactionWant>();
@@ -209,6 +261,7 @@ public sealed class FactionRules
             if (theirs.Length > 0)
                 deed.Theirs = Array.IndexOf(StoryRules.RoleNames, theirs) is var r and >= 0 && r != (int)StoryRole.Actor ? (StoryRole)r
                     : throw new StoryException($"{at}: \"theirs\" is the role that is the faction's: target, owner, place or item");
+            deed.WhoseName = StoryRules.Str(e, "whose", at);
             deed.Words = StoryRules.List(e, "words", at).Select(x => x.ValueKind == JsonValueKind.String && x.GetString() is { Length: > 0 } s ? s
                 : throw new StoryException($"{at}: each of \"words\" is text")).ToArray();
             if (deed.Words.Length > 0 && verb != "Email")
@@ -239,6 +292,42 @@ public sealed class FactionRules
         if (deeds.Count > MaxDeeds)
             throw new StoryException($"{where}: {MaxDeeds} deeds at most");
         def.Deeds = deeds.ToArray();
+
+        var techs = new List<FactionTech>();
+        foreach (var e in StoryRules.List(root, "teaches", where))
+        {
+            var at = $"{where}: technology {techs.Count + 1}";
+            if (e.ValueKind != JsonValueKind.Object)
+                throw new StoryException($"{at}: like {{\"name\": \"Remote Control\", \"tier\": \"Registered\", \"parts\": [\"Remote Transmitter\"]}}");
+            StoryRules.Keys(e, TechKeys, at);
+            var tech = new FactionTech { Name = StoryRules.Str(e, "name", at, true), About = StoryRules.Str(e, "about", at), Id = techs.Count };
+            at = $"{where}: {tech.Name}";
+            Plain(tech.Name, at, 32);
+            if (techs.Any(o => o.Name.Equals(tech.Name, StringComparison.OrdinalIgnoreCase)) || deeds.Any(o => o.Name.Equals(tech.Name, StringComparison.OrdinalIgnoreCase))
+                || tiers.Any(o => o.Name.Equals(tech.Name, StringComparison.OrdinalIgnoreCase)) || tech.Name.Equals("Notorious", StringComparison.OrdinalIgnoreCase))
+                throw new StoryException($"{at}: technologies, deeds and tiers share names (a fax's notices name them)");
+            var tier = StoryRules.Str(e, "tier", at, true);
+            tech.Tier = tiers.FindIndex(t => t.Name.Equals(tier, StringComparison.OrdinalIgnoreCase)) is var ti and >= 0 ? ti
+                : throw new StoryException($"{at}: \"tier\" is one of the faction's tiers (no {tier})");
+            tech.Parts = StoryRules.List(e, "parts", at).Select(x => x.ValueKind == JsonValueKind.String && x.GetString() is { Length: > 0 and <= 64 } s ? s
+                : throw new StoryException($"{at}: each of \"parts\" is a construct part's name")).ToArray();
+            if (tech.Parts.Length is 0 or > MaxTechParts)
+                throw new StoryException($"{at}: \"parts\" names 1 to {MaxTechParts} parts");
+            techs.Add(tech);
+        }
+        if (techs.Count > MaxTeaches)
+            throw new StoryException($"{where}: {MaxTeaches} technologies at most");
+        def.Teaches = techs.ToArray();
+
+        if (root.TryGetProperty("rivals", out var rv))
+        {
+            if (rv.ValueKind != JsonValueKind.Object)
+                throw new StoryException($"{where}: \"rivals\" is like {{\"Clan MacSlop\": 50}} (the share of a rise in its standing taken off theirs, in percent)");
+            def.Rivals = rv.EnumerateObject().Select(p => p.Value.ValueKind == JsonValueKind.Number && p.Value.TryGetInt32(out var n) && n is >= 1 and <= 100 ? (p.Name, -1, n)
+                : throw new StoryException($"{where}: \"rivals\": {p.Name} is a whole number from 1 to 100 (percent)")).ToArray();
+            if (def.Rivals.Length > MaxRivals)
+                throw new StoryException($"{where}: {MaxRivals} rivals at most");
+        }
         return def;
     }
 
@@ -261,8 +350,8 @@ file static class StringExt
     public static string DefaultIfEmpty(this string s, string or) => s.Length > 0 ? s : or;
 }
 
-/// <summary>Something a faction would say about: a deed (its index), a tier its standing with a party came to (<see cref="Deed"/> -1), or, both -1, the party became Notorious.</summary>
-public readonly record struct FactionNotice(int Faction, int Deed, int Tier, int Actor, int Party);
+/// <summary>Something a faction would say about: a deed (its index), a tier its standing with a party came to (<see cref="Deed"/> -1), a technology it taught them (both -1), or, all -1, the party became Notorious.</summary>
+public readonly record struct FactionNotice(int Faction, int Deed, int Tier, int Actor, int Party, int Tech = -1);
 
 /// <summary>
 /// The factions in the story world (docs/story/STORY.md "Factions"): each is a Faction entity with a home place, members
@@ -284,9 +373,14 @@ public sealed class StoryFactions
     private readonly Dictionary<(int Faction, int Deed, int Party), double> _deedAt = new();
     private readonly List<(int Faction, int Party, int Tier, int Actor)> _rated = new(8);
     private string? _words; // the email being recorded
+    private int[][] _techIds = []; // per faction and technology, its Thing (what Learnt points at)
+    private bool[][] _staffIn = []; // per faction and staff name: found in the story and made a member
 
     /// <summary>What the factions would say about, oldest first, for the game to send (a fax); it empties them.</summary>
     public readonly List<FactionNotice> Notices = new(16);
+
+    /// <summary>Technologies taught since the game last looked (faction, technology, the party taught, who brought it about), oldest first; the game empties it.</summary>
+    public readonly List<(int Faction, int Tech, int Party, int Actor)> Taught = new(8);
 
     public long Deeds;
 
@@ -305,6 +399,9 @@ public sealed class StoryFactions
         _deedAt.Clear();
         _rated.Clear();
         Notices.Clear();
+        Taught.Clear();
+        _techIds = [];
+        _staffIn = [];
         _driftAt = 0;
         Deeds = 0;
     }
@@ -332,9 +429,15 @@ public sealed class StoryFactions
         _ids = new int[r.Factions.Length];
         _drift = new double[r.Factions.Length * FactionRules.MaxWants];
         _verbs = new bool[_e.Rules.Verbs.Length];
+        _techIds = new int[r.Factions.Length][];
+        _staffIn = new bool[r.Factions.Length][];
         for (var f = 0; f < r.Factions.Length; f++)
         {
             var def = r.Factions[f];
+            _techIds[f] = new int[def.Teaches.Length];
+            _staffIn[f] = new bool[def.Staff.Length];
+            for (var t = 0; t < def.Teaches.Length; t++)
+                _techIds[f][t] = W.Get(StoryKind.Thing, Key($"tech:{def.Name}:{def.Teaches[t].Name}"), def.Teaches[t].Name, now);
             foreach (var d in def.Deeds)
                 _verbs[d.Verb] = true;
             var key = Key("faction:" + def.Name);
@@ -372,6 +475,89 @@ public sealed class StoryFactions
                 W.Set(mid, r.MemberOf, id, 1);
             }
         }
+        BindStaff();
+    }
+
+    /// <summary>People of a cast who are a faction's staff (the colony's warden and guards are the Ministry's): members once they are in the story.</summary>
+    private void BindStaff()
+    {
+        var r = R;
+        for (var f = 0; f < _staffIn.Length; f++)
+        {
+            var staff = r.Factions[f].Staff;
+            for (var k = 0; k < staff.Length; k++)
+            {
+                if (_staffIn[f][k] || _ids[f] < 0)
+                    continue;
+                var who = W.Find(staff[k]);
+                if (who < 0 || W[who].Kind != StoryKind.Person)
+                    continue;
+                _staffIn[f][k] = true;
+                W.Set(who, r.MemberOf, _ids[f], 1);
+            }
+        }
+    }
+
+    // ---- Technologies -------------------------------------------------------------------------------------------
+
+    /// <summary>Has this party (a player or group) been taught a faction's technology? Learnt for good, whatever the standing does after.</summary>
+    public bool Learnt(int party, int f, int tech)
+    {
+        Ensure();
+        if (R.Learnt < 0 || !W.Valid(party) || (uint)f >= (uint)_techIds.Length || (uint)tech >= (uint)_techIds[f].Length)
+            return false;
+        return W.Get(party, R.Learnt, _techIds[f][tech]) > 0;
+    }
+
+    /// <summary>Has this player been taught it, themselves or through their group?</summary>
+    public bool Knows(int player, int f, int tech) => Learnt(player, f, tech) || (Party(player) is var g && g != player && Learnt(g, f, tech));
+
+    /// <summary>A faction's technologies this party has learnt, a bit each (bit 0: its first).</summary>
+    public byte LearntMask(int party, int f)
+    {
+        var m = 0;
+        if ((uint)f < (uint)R.Factions.Length)
+            for (var t = 0; t < R.Factions[f].Teaches.Length; t++)
+                if (Learnt(party, f, t))
+                    m |= 1 << t;
+        return (byte)m;
+    }
+
+    /// <summary>
+    /// A party's standing came to a tier: the faction teaches them every technology of that tier or below they don't know yet.
+    /// A Teach event each (the radio can tell of it), a notice (a fax can print it), and <see cref="Taught"/> for the game.
+    /// </summary>
+    private void TeachUpTo(int f, int party, int tier, int actor)
+    {
+        var def = R.Factions[f];
+        if (def.Teaches.Length == 0 || R.Learnt < 0 || Notorious(party))
+            return;
+        for (var t = 0; t < def.Teaches.Length; t++)
+        {
+            if (def.Teaches[t].Tier > tier || Learnt(party, f, t))
+                continue;
+            W.Set(party, R.Learnt, _techIds[f][t], 1);
+            if (R.Teach >= 0)
+                _e.Record(R.Teach, _ids[f], party, item: _techIds[f][t], value: Standing(f, party));
+            if (Notices.Count < 64)
+                Notices.Add(new FactionNotice(f, -1, -1, actor, party, t));
+            if (Taught.Count < 64)
+                Taught.Add((f, t, party, actor));
+        }
+    }
+
+    /// <summary>
+    /// Teaches a party what their standing already earns (a group a player has just joined, an old save from before the
+    /// technologies): every faction, every tier up to the one they are in. Nothing happens when they know it all.
+    /// </summary>
+    public void TeachEarned(int party, int actor)
+    {
+        Ensure();
+        if (!W.Valid(party))
+            return;
+        for (var f = 0; f < R.Factions.Length; f++)
+            if (R.Factions[f].Teaches.Length > 0 && _ids[f] >= 0)
+                TeachUpTo(f, party, R.Factions[f].TierOf(Standing(f, party)), actor);
     }
 
     /// <summary>A faction's entity (-1: none).</summary>
@@ -521,7 +707,7 @@ public sealed class StoryFactions
         {
             foreach (var d in fs[f].Deeds)
             {
-                if (d.Verb != ev.Verb || OwnerOf(ev.Role(d.Theirs)) != f || !Said(d))
+                if (d.Verb != ev.Verb || OwnerOf(ev.Role(d.Theirs)) != (d.Whose >= 0 ? d.Whose : f) || !Said(d))
                     continue;
                 var party = Party(ev.Actor);
                 if (d.Every > 0)
@@ -582,9 +768,20 @@ public sealed class StoryFactions
             W.Add(id, d.Remember, who, 1);
         if (d.Standing == 0)
             return;
+        Move(f, who, d.Standing, rate, actor);
+        if (d.Standing <= 0)
+            return;
+        foreach (var (_, g, percent) in R.Factions[f].Rivals) // (rising with one cools its rivals: a share of the rise off theirs, a point at least)
+            if (_ids[g] >= 0)
+                Move(g, who, -Math.Max(1, d.Standing * percent / 100), rate, actor);
+    }
+
+    /// <summary>Moves a faction's standing with someone; a party's that comes to a new tier is rated after the event (<see cref="Flush"/>).</summary>
+    private void Move(int f, int who, int delta, bool rate, int actor)
+    {
         var def = R.Factions[f];
         var was = Standing(f, who);
-        SetStanding(id, who, was + d.Standing);
+        SetStanding(_ids[f], who, was + delta);
         if (rate && def.TierOf(Standing(f, who)) is var t1 and >= 0 && t1 != def.TierOf(was))
             _rated.Add((f, who, t1, actor));
     }
@@ -604,6 +801,7 @@ public sealed class StoryFactions
             }
             if (Notices.Count < 64)
                 Notices.Add(new FactionNotice(f, -1, tier, actor, party));
+            TeachUpTo(f, party, tier, actor);
         }
     }
 
@@ -612,6 +810,7 @@ public sealed class StoryFactions
     {
         if (now < _driftAt)
             return;
+        BindStaff(); // (a cast added since: once a minute)
         var first = _driftAt == 0;
         _driftAt = now + 60;
         if (first)

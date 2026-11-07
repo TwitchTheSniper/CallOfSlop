@@ -5,6 +5,9 @@
   // adds 1 to the "remember" relation the faction holds towards them and their group, moves its standing with both by
   // "standing" (from -100 to 100), and its "wants" by theirs. Standing is the faction's Likes (above 0) or Grudge (below).
   // Its words are in Story/Office/IT.json, whose pages, replies and notices can ask about all of this ("when").
+  // "teaches": technologies (parts an Assembler won't build until the faction has taught them), taught for good the first
+  // time its standing with a player or group comes to the tier. "rivals": a rise in its standing takes that share (percent)
+  // of the rise off the rival's. A deed with "whose" is against another faction's things (someone else's vans).
   "format": "call-of-slop-faction/1",
   "name": "IT Department",
   "about": "the people who kept the servers running when everything else stopped; they still think they run the network",
@@ -47,5 +50,15 @@
       "remember": "Threats", "standing": -10, "wants": { "Respect": -8 }, "every": "5m" },
     { "name": "Rude email", "verb": "Email", "words": [ "useless", "idiot", "stupid", "rubbish", "hate", "worst" ],
       "standing": -4, "wants": { "Respect": -5 }, "every": "5m" }
-  ]
+  ],
+  "teaches": [
+    { "name": "Remote Control", "tier": "Registered",
+      "about": "a registered user may operate equipment remotely, subject to the acceptable use policy",
+      "parts": [ "Remote Transmitter", "Medium Remote Transmitter", "Remote Console", "Drone Receiver" ] },
+    { "name": "Video Network", "tier": "Admin",
+      "about": "admin rights: screens that show the web, video and cameras, on the network IT says it runs",
+      "parts": [ "Browser Screen", "Medium Browser Screen", "Large Browser Screen", "Video Screen", "Medium Video Screen", "Large Video Screen",
+        "Camera Screen", "Medium Camera Screen", "Large Camera Screen" ] }
+  ],
+  "rivals": { "The Call Centre": 25 }
 }

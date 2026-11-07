@@ -68,6 +68,28 @@ public sealed class FactionTable
     public string[] StoryNames = [];
     public readonly sbyte[] StoryStanding = new sbyte[Max * MaxStory];
 
+    /// <summary>
+    /// What each story faction teaches (docs/story/STORY.md "Technologies"), a line each ("Remote Control (Registered): Remote
+    /// Transmitter, ..."), and per player faction the ones it has learnt, a bit each (<see cref="StoryLearnt"/>[id * MaxStory + f]).
+    /// </summary>
+    public string[][] StoryTech = [];
+
+    /// <summary>Who teaches a part, from <see cref="StoryTech"/>: "the Ministry of Slop teaches it (The Antimatter Bomb, at Crown Servant)", or null.</summary>
+    public string? TeacherOf(string part)
+    {
+        for (var f = 0; f < StoryTech.Length && f < StoryNames.Length; f++)
+            foreach (var line in StoryTech[f])
+            {
+                var colon = line.IndexOf("): ", StringComparison.Ordinal);
+                if (colon < 0 || !line[(colon + 3)..].Split(", ").Contains(part, StringComparer.OrdinalIgnoreCase))
+                    continue;
+                var open = line.LastIndexOf(" (", colon, StringComparison.Ordinal);
+                return open < 0 ? $"{StoryNames[f]} teaches it" : $"{StoryNames[f]} teaches it ({line[..open]}, at {line[(open + 2)..colon]})";
+            }
+        return null;
+    }
+    public readonly byte[] StoryLearnt = new byte[Max * MaxStory];
+
     /// <summary>A player faction every story faction hunts (it did something none forgives; StoryFactions.Notorious).</summary>
     public readonly bool[] Notorious = new bool[Max];
 
@@ -94,6 +116,7 @@ public sealed class FactionTable
         Array.Clear(Asked);
         Array.Clear(Stance);
         Array.Clear(StoryStanding);
+        Array.Clear(StoryLearnt);
         Array.Clear(Notorious);
         Version++;
     }
@@ -180,6 +203,7 @@ public sealed class FactionTable
         Open[id] = false;
         Notorious[id] = false;
         Array.Clear(StoryStanding, id * MaxStory, MaxStory);
+        Array.Clear(StoryLearnt, id * MaxStory, MaxStory);
         for (var k = 0; k < Max; k++)
             Stance[id * Max + k] = Stance[k * Max + id] = 0;
         for (var k = 0; k < Invited.Length; k++)

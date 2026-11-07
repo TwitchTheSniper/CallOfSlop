@@ -136,6 +136,9 @@ public interface IConstructTargets
 
     /// <summary>A massive blast's crater of <paramref name="crater"/> m: dug in bands over ticks (Game.MegaDigTick).</summary>
     void MegaGround(Vector3 at, float crater);
+
+    /// <summary>A massive blast began at <paramref name="at"/> (its radius as capped, its look, the player byte it is credited to): the story hears of an antimatter one.</summary>
+    void MegaStarted(Vector3 at, float radius, byte look, byte by) { }
 }
 
 /// <summary>

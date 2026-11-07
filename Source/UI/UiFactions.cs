@@ -63,6 +63,38 @@ public sealed partial class Ui
         _ => "trusts you",
     };
 
+    /// <summary>
+    /// What the world's factions teach (docs/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
+    /// has taught them, at a tier of its standing. With a faction of yours, which ones it has learnt.
+    /// </summary>
+    private void DrawStoryTech(FactionTable t, byte mine)
+    {
+        var any = false;
+        for (var f = 0; f < t.StoryTech.Length && !any; f++)
+            any = t.StoryTech[f].Length > 0;
+        if (!any || !ImGui.CollapsingHeader("What the world's factions teach##fatech"u8))
+            return;
+        ImGuiSafe.TextColored(Dim, mine == 0
+            ? "In survival an Assembler won't build these until the faction teaches you, which it does when its standing with you first reaches the tier shown. Earn it with deeds; rising with one faction cools its rivals."
+            : "In survival an Assembler won't build these until the faction teaches your faction, which it does when its standing with you first reaches the tier shown. Learnt for good. Rising with one faction cools its rivals.");
+        for (var f = 0; f < t.StoryTech.Length && f < t.StoryNames.Length; f++)
+        {
+            var techs = t.StoryTech[f];
+            if (techs.Length == 0)
+                continue;
+            ImGuiSafe.TextColored(Orange, t.StoryNames[f]);
+            var learnt = mine != 0 ? t.StoryLearnt[mine * FactionTable.MaxStory + f] : 0;
+            for (var k = 0; k < techs.Length; k++)
+            {
+                var have = (learnt & (1 << k)) != 0;
+                if (have)
+                    ImGuiSafe.TextColored(new float4(0.45f, 0.9f, 0.45f, 1f), $"  [learnt] {techs[k]}");
+                else
+                    ImGuiSafe.TextWrapped($"  {techs[k]}");
+            }
+        }
+    }
+
     private void DrawFactionBody(Game game, Player me)
     {
         var t = game.FactionTable;
@@ -111,6 +143,7 @@ public sealed partial class Ui
                 ImGuiSafe.SetInput(_faName, "");
             }
             DrawFactionList(game, t, me);
+            DrawStoryTech(t, 0);
             return;
         }
         var myRank = t.RankOf(me.Id);
@@ -248,6 +281,7 @@ public sealed partial class Ui
                 int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
                 ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
             }
+            DrawStoryTech(t, mine);
         }
 
         // ---- Give

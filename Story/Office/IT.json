@@ -427,6 +427,22 @@
   "noFax": "Email sent. IT replies by fax, and no fax is plugged in near this computer.",
   "notices": [
     {
+      "on": "Remote Control",
+      "lines": [
+        "ACCESS GRANTED: You are now a Registered User. Remote control equipment has been enabled.",
+        "Your Assemblers may now build transmitters, consoles and drone receivers. Use them responsibly.",
+        "Misuse will be logged. Everything will be logged. Kev says well done."
+      ]
+    },
+    {
+      "on": "Video Network",
+      "lines": [
+        "ADMIN RIGHTS: Congratulations. Nobody outside IT has ever been given these before.",
+        "Your Assemblers may now build browser, video and camera screens. Do not watch videos on them.",
+        "Deborah would like a meeting about it. Deborah would like a meeting about everything."
+      ]
+    },
+    {
       "on": "Notorious",
       "lines": [
         "ALL STAFF, ALL DEVICES: This user is no longer a user. This user is a security incident.",

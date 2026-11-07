@@ -345,7 +345,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 199: the survival opening (GameSandboxOpening.cs, docs/story/OPENING.md): Msg.Opening (server -> one client, the beat) at the end of Msg, CActKind.OpeningSkip at the end of its enum.
     // 200: player factions' colours, tags, ranks, asks to join and stances (GameSandboxFactions.cs): Msg.Factions carries them and the story factions' standing; new FactionOps at the end of the enum.
     // 201: the warden's induction (GameTutorial.cs, docs/sandbox/TUTORIAL.md): Msg.Tutorial at the end of Msg.
-    public const byte ProtocolVersion = 201;
+    // 202: story factions' technologies (GameStoryTech.cs, docs/story/STORY.md "Technologies"): Msg.Factions carries each story faction's learnt technologies (a u8 after each standing) and its technology lines after the names; AsmBlock.Untaught (3) in an Assembler's blocked byte.
+    public const byte ProtocolVersion = 202;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

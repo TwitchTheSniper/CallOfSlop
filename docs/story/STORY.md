@@ -607,10 +607,13 @@ Code: `Source/Constructs/OfficeParts.cs` (the parts and their panels), `Source/G
 A faction (living factions, F1; code `Source/Story/StoryFactions.cs`, the game's side `Source/Game/GameStoryFactions.cs`, the
 Story window's *Factions* tab `Source/UI/UiStoryFactions.cs`; data `Story/Factions/*.json`, relations in
 `Story/Relations/Factions.json`, verbs in `Story/Verbs/Factions.json`) is a Faction entity in the story world. The IT
-Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlop and the Ministry of Slop follow as data.
+Department is the first (`Story/Factions/IT.json`); the Call Centre (`CallCentre.json`), Clan MacSlop (`MacSlop.json`) and the
+Ministry of Slop (`Ministry.json`) are data in the same shape.
 
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
+  `"staff"` names people of a cast who are its members too, whenever they are in the story (the penal colony's warden and
+  guards, `Story/Casts/PenalColony.json`, are the Ministry's): greeting, chatting and trading with them count as deeds.
 - **What is theirs**: the faction itself, its members, and the constructs it `Claims`: a construct the story meets with a
   name that starts with one of `"claims"` (`"IT "`: every IT style vehicle and blueprint, spawned from the parts menu or by
   the vehicle kit; the game reads the name when the construct is set down, `Game.StoryConstruct`). A scenario's construct
@@ -622,7 +625,8 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
   group (`WreckedOurs`, `LootedOurs`, `KeptOurs`, `Courtesy`, `Threats`, `KilledOurs`), moves the faction's standing with
   both by `"standing"`, and its wants by `"wants"`. An Email deed asks for `"words"` (any one, any case) in the email;
   `"every"` counts a deed once in that long per group. The IT Department counts wrecking its vehicles (-20), stripping
-  them (-8), plugging in its fax (+5), polite emails (+3, once in ten minutes), threats (-10) and rudeness (-4).
+  them (-8), plugging in its fax (+5), polite emails (+3, once in ten minutes), threats (-10) and rudeness (-4). A deed
+  with `"whose"` is against another faction's things instead: Clan MacSlop likes you wrecking the Ministry's vans (+10).
 - **Standing** runs from -100 to 100 and is held as the faction's `Likes` (above 0) or `Grudge` (below) towards a party,
   so queries, patterns, the drama manager and the fax read it like any feeling (`?us Grudge ?them >= 16`). `"tiers"`
   name its bands from the worst up (IT: Blacklisted below -50, Flagged below -15, Unregistered, Registered from 15, Admin
@@ -630,8 +634,12 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
 - **Groups**: standing is kept for a player's group: the player faction they are in (`Source/Constructs/Factions.cs`,
   a Faction entity `"group:NAME"` the game keeps them `MemberOf`, once a second), or themselves when in none. A deed
   counts towards both the doer and their group; a group's is the one the fax reads.
-- **Notorious** (the world-wide state on top of each faction's own): an Atrocity event (nothing records one yet; later,
-  an antimatter bomb dropped on a town or colony) makes the doer and their group `Notorious`, a quality every faction
+- **Rivals** (`"rivals"`: `{"Clan MacSlop": 50}`): a rise in a faction's standing takes that share (percent, a point at
+  least) of the rise off each rival's standing with the same party. The Ministry and Clan MacSlop are rivals both ways, so
+  are the Ministry and the Call Centre; the IT Department and the Call Centre a little (25%).
+- **Notorious** (the world-wide state on top of each faction's own): an Atrocity event (the game records one when an
+  Antimatter Warhead goes off with anyone but its owner in its reach, `GameStoryTech.cs`; one set off in an empty valley
+  is only a very big bang) makes the doer and their group `Notorious`, a quality every faction
   reads: their standing with all of them is -100 whatever it was, so every faction hunts them. Each faction gets a
   notice on `"Notorious"`, and pages can ask `?them Notorious`.
 - **Verbs**: Email (a player at a Computer to a faction; its effect counts `Emails`), Fax (a faction's page printed for a
@@ -646,6 +654,48 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
 - **Trying it**: `--story-sim Story/Scenarios/ITDepartment.json` plays a fax kept, two vans wrecked and stripped, and
   prints the IT Department's standing at the end; in the game, the Story window's Factions tab shows each faction's
   wants, members, claims, and its standing and memory of every player and group.
+
+## Technologies
+
+No money: standing is what a faction gives you things for, and what it gives is technology (code: the engine's side in
+`StoryFactions.cs`, the game's `Source/Game/GameStoryTech.cs`). A faction's `"teaches"` lists a few technologies, each a
+`"name"`, the `"tier"` it is taught at and the construct `"parts"` it holds (eight technologies at most). In survival an
+Assembler won't build a part a faction teaches until its owner has been taught it (the look line and the machine's screen
+say "not taught" and who teaches it, `AsmBlock.Untaught`); a part no faction teaches is built for anyone, and creative
+builds everything. The first loop:
+
+1. Earn standing with deeds (above; rivals cool as you go).
+2. The first time a faction's standing with a party comes to a technology's tier (the Rate event's moment), it teaches
+   them every technology of that tier and below: they hold `Learnt` towards the technology (a Thing, `"tech:FACTION:NAME"`),
+   for good, whatever the standing does after; a Notorious party is taught nothing.
+3. A Teach event goes on the record (the radio has lines for it), the players taught get a HUD line ("Ministry of Slop
+   taught you Explosives Licence: your Assemblers build ..."), and a desk can fax a notice named after the technology (the
+   IT Department's are in `Story/Office/IT.json`).
+
+A party is a player's group (their player faction) or the player alone; an Assembler builds a part for its owner when the
+owner or their group has learnt it. Joining a group (or loading a save from before technologies) teaches what the
+standing already earns. The Faction window (F2) lists what each faction teaches, and with a faction of yours which it has
+learnt. What ships:
+
+| Faction | Tier | Technology | Parts |
+| --- | --- | --- | --- |
+| IT Department | Registered | Remote Control | Remote Transmitter, Medium Remote Transmitter, Remote Console, Drone Receiver |
+| IT Department | Admin | Video Network | browser, video and camera screens, all sizes |
+| The Call Centre | Valued Customer | Wireless | Wireless Sender, Wireless Receiver |
+| The Call Centre | Premium Member | Signal Tricks | Radio Homer, Beacon Homer, Command Link, Flare Dispenser, Smoke Shell |
+| Clan MacSlop | Friend of the Clan | Pipes and Drums, Clan Plate | Medium and Large Speaker; Heavy Armour and its port |
+| Clan MacSlop | Clansman | The Wrecking Ball | Wrecking Ball |
+| Ministry of Slop | Trusty | Explosives Licence | Warhead Blast, Warhead Bunker, Aerial Bomb, Mine Dispenser |
+| Ministry of Slop | Contractor | Atomic Licence | Small Nuke, Fission Warhead, Fusion Warhead |
+| Ministry of Slop | Crown Servant | The Antimatter Bomb | Antimatter Warhead |
+
+How standing is earned for now: IT as above; the Call Centre likes anyone who falls for one of its adverts (a Hooked
+event, +12) or wrecks a Ministry van (+6); Clan MacSlop likes wrecking (+10) and stripping (+3) Ministry vans; the
+Ministry likes a good morning to its staff (+2), a chat (+1, once in ten minutes), a trade (+3) and wrecking the clan's
+or the Call Centre's vans (+8). Killing, wrecking and stripping a faction's own costs as with IT. A part name that isn't
+a part is logged when the game first reads the table (`[story] ... no part called`). Trying it:
+`--story-sim` with a scenario that wrecks two Highland vans prints "Ministry of Slop taught Karl Explosives Licence", and
+Karl keeps `Learnt` after wrecking the Ministry's own vans takes him to Enemy of the State.
 
 Next (the living factions plan): F2 voices for the other factions (Call Centre scams that remember who fell for them,
 Ministry memos, MacSlop challenges on the radio), F3 visits on foot through the drama manager, F4 turf on planetoids.

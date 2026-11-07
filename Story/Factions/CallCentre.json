@@ -1,0 +1,43 @@
+{
+  // The Call Centre (docs/story/STORY.md "Factions", "Technologies"): the scammers behind the adverts on the IT Computer
+  // (Story/Office/Scammers.json) and the Scam style's vans. Falling for an offer makes you a valued customer.
+  // The jokes are on the call-centre trope, never on anyone's nationality.
+  "format": "call-of-slop-faction/1",
+  "name": "The Call Centre",
+  "about": "a room full of headsets that never stopped ringing; they will call you back, whether you like it or not",
+  "home": "The Call Floor",
+  "claims": [ "Scam " ],
+  "members": [
+    { "name": "Brenda", "about": "0.4 km away, always; nobody has met her and everybody has had her messages",
+      "qualities": { "Sociable": 90, "Honest": 5, "Brave": 30, "Vengeful": 40, "Gossipy": 70, "Greedy": 85 } },
+    { "name": "Torque Guru Dave", "about": "one weird trick, endlessly, to anyone with an engine",
+      "qualities": { "Sociable": 70, "Honest": 10, "Brave": 45, "Vengeful": 35, "Gossipy": 60, "Greedy": 80 } },
+    { "name": "Team Leader Craig", "about": "runs the floor by the targets board; the targets board is always red",
+      "qualities": { "Sociable": 55, "Honest": 15, "Brave": 50, "Vengeful": 65, "Gossipy": 40, "Greedy": 90 } }
+  ],
+  "tiers": [
+    { "name": "Do Not Call", "below": -50 },
+    { "name": "Blocked Number", "below": -15 },
+    { "name": "Cold Lead", "below": 15 },
+    { "name": "Valued Customer", "below": 45 },
+    { "name": "Premium Member" }
+  ],
+  "deeds": [
+    { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },
+    { "name": "Wrecked our vans", "verb": "Wreck", "remember": "WreckedOurs", "standing": -20 },
+    { "name": "Stripped our vans", "verb": "Strip", "remember": "LootedOurs", "standing": -8 },
+    { "name": "Fell for our offer", "verb": "Hooked", "standing": 12,
+      "about": "a player answers an advert on a Computer and pays: a customer, and a customer is always right (about paying)" },
+    { "name": "Wrecked a Ministry van", "verb": "Wreck", "whose": "Ministry of Slop", "standing": 6,
+      "about": "the Ministry keeps shutting their lines down; anyone who slows it down is a friend of the business" }
+  ],
+  "teaches": [
+    { "name": "Wireless", "tier": "Valued Customer",
+      "about": "a free upgrade, terms apply: send signals with no wire",
+      "parts": [ "Wireless Sender", "Wireless Receiver" ] },
+    { "name": "Signal Tricks", "tier": "Premium Member",
+      "about": "the things they don't want you to know: homing on a signal, steering by radio, and making the other side see things",
+      "parts": [ "Radio Homer", "Beacon Homer", "Command Link", "Flare Dispenser", "Smoke Shell" ] }
+  ],
+  "rivals": { "Ministry of Slop": 50, "IT Department": 25 }
+}
