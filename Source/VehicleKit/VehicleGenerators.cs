@@ -90,7 +90,7 @@ public static class VehicleRegistry
     /// kit 3 even when its own file is kit 1's (that file is the seed without them); a shape with no recipe has no layers and throws. The command line's <c>--vary LAYER</c>
     /// turns <paramref name="seed"/> into that layer's seed on its base seed, so every tool that loops over seeds loops over one layer.
     /// </remarks>
-    public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null, VehicleLayers? layers = null)
+    public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null, VehicleLayers? layers = null, RoleAsk? role = null)
     {
         var lay = layers ?? VehicleLayers.Force ?? default;
         if (VehicleLayers.Vary is { } vary && layers == null)
@@ -98,14 +98,18 @@ public static class VehicleRegistry
         var k = kit ?? VehicleKitVersion.For(g, seed);
         if (lay.Any && kit == null)
             k = Math.Max(k, VehicleKitVersion.Layered);
+        if (role != null && kit == null && VehicleKitVersion.Force is null or >= VehicleKitVersion.Roles)
+            k = VehicleKitVersion.Roles; // (kit 4: a role's vehicle, VehicleRoles.cs; --kit 3 makes the seed without its role)
         if (k >= VehicleKitVersion.Grammar && ShapeGrammar.RecipeOf(g) is { } recipe)
         {
             if (lay.Any && k < VehicleKitVersion.Layered)
                 throw new VehicleKitException($"kit {k} has no layers (kit 3 has)");
-            return ShapeGrammar.Make(g, seed, recipe, k, lay);
+            return ShapeGrammar.Make(g, seed, recipe, k, lay, role);
         }
         if (lay.Any)
             throw new VehicleKitException($"the {g.Name} has no layers: only the shape grammar's shapes do (kit 3)");
+        if (role != null && k >= VehicleKitVersion.Roles)
+            return VehicleRoleMake.Kit1(g, seed, role); // (a shape the grammar doesn't make: its generator, with the role's part weights, measured and tried again)
         var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
         g.Build(v);
         if (ShapeGrammar.RecipeOf(g) == null && (kit ?? VehicleKitVersion.Force ?? (g.Seeds.Contains(seed) ? VehicleKitVersion.Legacy : VehicleKitVersion.Current)) >= VehicleKitVersion.Grammar)

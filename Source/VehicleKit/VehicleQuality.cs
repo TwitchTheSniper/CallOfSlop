@@ -218,6 +218,8 @@ public static class VehicleQualityCli
     /// </summary>
     public static int KitReport(string[] args)
     {
+        if (args.Any(x => x.Equals("--roles", StringComparison.OrdinalIgnoreCase)))
+            return VehicleRolesCli.Matrix(args); // (kit 4's role and tier matrix: VehicleRoles.cs)
         var seeds = SeedsFrom(args, 10);
         var check = args.Any(x => x.Equals("--check", StringComparison.OrdinalIgnoreCase));
         var extras = args.Any(x => x.Equals("--extras", StringComparison.OrdinalIgnoreCase));

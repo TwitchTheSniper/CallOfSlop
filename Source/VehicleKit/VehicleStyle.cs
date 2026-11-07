@@ -165,8 +165,26 @@ public sealed class FactionStyle
     public string Colour(Dice d, string role) =>
         Palette.TryGetValue(role, out var c) ? Noted("colour " + role, d.Pick(c)) : throw new VehicleKitException($"style {Name} has no \"{role}\" colours");
 
-    public string Part(Dice d, string slot) =>
-        Parts.TryGetValue(slot, out var c) ? Noted(slot, d.Pick(c)) : throw new VehicleKitException($"style {Name} has no \"{slot}\" parts");
+    public string Part(Dice d, string slot)
+    {
+        if (!Parts.TryGetValue(slot, out var c))
+            throw new VehicleKitException($"style {Name} has no \"{slot}\" parts");
+        if (Weigh?.Invoke(this, slot, c) is { } w) // (kit 4's role and tier: the same one roll, over weighted choices)
+        {
+            var roll = d.Next() * w.Weights.Sum();
+            for (var i = 0; i < w.Items.Length; i++)
+                if ((roll -= w.Weights[i]) < 0 || i == w.Items.Length - 1)
+                    return Noted(slot, w.Items[i]);
+        }
+        return Noted(slot, d.Pick(c));
+    }
+
+    /// <summary>
+    /// Kit 4 (VehicleRoles.cs): while a role's vehicle is made on this thread, the choices of a slot and their weights instead of the slot's list as it is (null: as
+    /// it is). A role that wants armour weighs its plates by their armour, a tier weighs parts by the tier of their recipe. Per thread, as <see cref="Trace"/>; null
+    /// whenever no role is being made, so every other vehicle picks exactly as before.
+    /// </summary>
+    [ThreadStatic] public static Func<FactionStyle, string, string[], (string[] Items, double[] Weights)?>? Weigh;
 
     /// <summary>Notes a pick in <see cref="Trace"/> when one is being kept.</summary>
     public static string Noted(string slot, string value)

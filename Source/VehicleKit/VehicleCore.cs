@@ -75,6 +75,9 @@ public class BlueprintScript
 
     public List<string> Modules { get; } = new();
 
+    /// <summary>Kit 4: the role, tier and shape and how the vehicle met the role (VehicleRoles.cs), written before <see cref="Modules"/> in the kit line; empty before kit 4.</summary>
+    public List<string> KitNotes { get; } = new();
+
     public int Count => _steps.Count;
     public IReadOnlyList<VPart> Parts => _parts;
     private readonly List<VPart> _parts = new();
@@ -383,6 +386,26 @@ public class BlueprintScript
         _loot.Add((container.Step, table));
     }
 
+    /// <summary>How many containers fill from a loot table, and how many loose cargo pieces ride aboard (VehicleRoles.cs measures a role's loot by these).</summary>
+    public int LootSpots => _loot.Count;
+
+    public int CargoPieces => _cargo.Count;
+
+    /// <summary>The loot tables its containers fill from, one a container.</summary>
+    public IEnumerable<string> LootTables => _loot.Select(l => l.Table);
+
+    /// <summary>Every loot container's table passed through <paramref name="map"/> (kit 4's loot tiers: "bandit" to "bandit 3"); a table the file doesn't have is refused.</summary>
+    public void RetableLoot(Func<string, string> map)
+    {
+        for (var i = 0; i < _loot.Count; i++)
+        {
+            var t = map(_loot[i].Table);
+            if (!ConstructLoot.Tables.ContainsKey(t))
+                throw new VehicleKitException($"no loot table \"{t}\" in Constructs/Loot.json");
+            _loot[i] = (_loot[i].Step, t);
+        }
+    }
+
     /// <summary>A loose part riding in a frozen Cargo Volume, its origin at <paramref name="at"/>. It stays a body of its own: shot off, stolen or salvaged like anything loose.</summary>
     public void Cargo(string part, Vector3 at, int turn = 0)
     {
@@ -416,7 +439,7 @@ public class BlueprintScript
         var sb = new StringBuilder();
         sb.Append('{');
         if (Kit > VehicleKitVersion.Legacy)
-            sb.Append("\n  // kit ").Append(Kit).Append(Modules.Count > 0 ? "; " + string.Join(", ", Modules) : "");
+            sb.Append("\n  // kit ").Append(Kit).Append(KitNotes.Count + Modules.Count > 0 ? "; " + string.Join(", ", KitNotes.Concat(Modules)) : "");
         sb.Append("\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(Name)).Append(",\n");
         if (Group.Length > 0)
             sb.Append("  \"group\": ").Append(Quote(Group)).Append(",\n");
