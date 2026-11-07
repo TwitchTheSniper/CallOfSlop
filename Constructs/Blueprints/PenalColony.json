@@ -1,0 +1,235 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Penal Colony",
+  "description": "The Ministry of Slop's penal colony: a fenced yard, a cell block and the warden's office.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 2,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 3,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 4,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 5,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 6,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 8,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 2,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Wire Fence 4 m",
+      "on": 10,
+      "socket": "ra0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 4 m",
+      "on": 13,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 4 m",
+      "on": 11,
+      "socket": "ra0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 4 m",
+      "on": 15,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 4 m",
+      "on": 12,
+      "socket": "ra0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 4 m",
+      "on": 17,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 2 m",
+      "on": 9,
+      "socket": "ra0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 2 m",
+      "on": 10,
+      "socket": "rb0",
+      "by": "l0"
+    },
+    {
+      "part": "Hinge",
+      "on": 19,
+      "socket": "r4",
+      "by": "base"
+    },
+    {
+      "part": "Fence Gate",
+      "on": 21,
+      "socket": "leaf",
+      "by": "hang"
+    },
+    {
+      "part": "Corrugated Door Corner",
+      "on": 1,
+      "socket": "t8_8",
+      "by": "b0_0"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 4,
+      "socket": "t0_8",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 5,
+      "socket": "t0_7",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 2,
+      "socket": "t8_0",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 23,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 23,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Steel Flush Door 1.5x2.25 m",
+      "on": 28,
+      "socket": "leaf",
+      "by": "hang"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 3,
+      "socket": "t8_8",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 6,
+      "socket": "t0_8",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 7,
+      "socket": "t0_7",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 4,
+      "socket": "t8_0",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 30,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 31,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Flush Door 1.5x2.25 m",
+      "on": 35,
+      "socket": "leaf",
+      "by": "hang"
+    }
+  ]
+}

@@ -97,7 +97,7 @@ public sealed partial class Game
         if (ItDesk.Script is not { Malware: not null } it || _itMailCount >= MaxMail)
             return;
         var due = now + it.ReplyAfter((uint)ScamMessages * 2246822519u);
-        _itMail[_itMailCount++] = new ItMail { From = at, Page = it.MalwarePage, Due = due, Until = due + 600 };
+        _itMail[_itMailCount++] = new ItMail { From = at, Page = it.MalwarePage, Due = due, Until = due + 600, To = 255 };
     }
 
     /// <summary>Server: a player typed at a hooked computer. The scammers read it, and answer soon. False: the hook is stale (it's IT's again).</summary>

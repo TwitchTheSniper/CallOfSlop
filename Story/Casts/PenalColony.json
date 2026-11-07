@@ -1,0 +1,25 @@
+{
+  // The penal colony's staff (docs/story/OPENING.md): the Ministry of Slop's warden and guards, put into a new survival
+  // world with the colony (Game/GameSandboxOpening.cs). The one place is the host's world, so they live and work there
+  // and have bodies round the colony. Serious world, funny people: by the book, underpaid, and very fond of forms.
+  "name": "Penal Colony",
+  "about": "the Ministry of Slop's warden and three guards at the penal colony",
+  "places": [
+    { "name": "Penal Colony", "world": true }
+  ],
+  "people": [
+    { "name": "Warden Pettigrew", "about": "Ministry of Slop warden, runs the colony by the handbook", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 45, "Honest": 70, "Brave": 50, "Vengeful": 55, "Gossipy": 30, "Greedy": 35, "Wealth": 30 } },
+    { "name": "Sergeant Bellweather", "about": "senior guard, has seen every escape attempt twice", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 40, "Honest": 60, "Brave": 75, "Vengeful": 60, "Gossipy": 25, "Greedy": 30, "Wealth": 12 } },
+    { "name": "Officer Crumb", "about": "guard, mostly guards the kettle", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 80, "Honest": 55, "Brave": 30, "Vengeful": 20, "Gossipy": 85, "Greedy": 40, "Wealth": 6 } },
+    { "name": "Officer Nettles", "about": "guard, new, keen, armed with a clipboard", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 60, "Honest": 80, "Brave": 55, "Vengeful": 30, "Gossipy": 50, "Greedy": 15, "Wealth": 5 } }
+  ],
+  "feelings": [
+    { "who": "Sergeant Bellweather", "rel": "Likes", "to": "Warden Pettigrew", "value": 30 },
+    { "who": "Officer Crumb", "rel": "Likes", "to": "Officer Nettles", "value": 25 },
+    { "who": "Officer Nettles", "rel": "Likes", "to": "Sergeant Bellweather", "value": 35 }
+  ]
+}

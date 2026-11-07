@@ -55,7 +55,7 @@ Source/Render/       Renderer.cs, ConstructRender*.cs, Terrain/Foliage/Prop/Buil
 Source/Space/        docs/space/SPACE.md, GALAXY.md: SpacePos, StarSystem, SpaceShips, SpaceFlight, SpaceBubble, Galaxy
 Source/Planets/      planetoids (docs/planets/PLANETS.md); Source/Physics/ also holds gravity (docs/space/GRAVITY.md)
 Source/Weather/      docs/weather/WEATHER.md; the window is UI/UiWeather.cs (F11)
-Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/), drama (StoryDrama), lines and radio (StoryLines, StoryTalk; data in Story/Lines), plays (StoryPlays; Story/Plays), place states (StoryPlaces; Story/Places), the roster (StoryRoster); the appraiser is Game/GameStory.cs, the people's bodies Game/GameStoryBodies.cs, their words in the world Game/GameStoryTalk.cs, the window UI/UiStory*.cs (F4)
+Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/), drama (StoryDrama), lines and radio (StoryLines, StoryTalk; data in Story/Lines), plays (StoryPlays; Story/Plays), place states (StoryPlaces; Story/Places), the roster (StoryRoster), factions (StoryFactions; Story/Factions, the game's side Game/GameStoryFactions.cs); the appraiser is Game/GameStory.cs, the people's bodies Game/GameStoryBodies.cs, their words in the world Game/GameStoryTalk.cs, the window UI/UiStory*.cs (F4)
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
 Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC.md), Synth*
 Source/Perf/         the F9 profiler

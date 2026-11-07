@@ -1,68 +1,525 @@
 {
   "format": "call-of-slop-office/1",
-  "about": "The IT Department's fax line (docs/story/STORY.md, \"The IT Department's fax\"). Replies: the first rule with one of its words in the email wins, so the specific ones come first. A Fax Machine on a battery's circuit prints the pages in order, the first within the hour, the rest while it stays plugged in. A Computer on a circuit emails IT whatever a player stands at it and types in chat; the answer comes back by fax. Lines: printable ASCII, at most 96 characters.",
+  "about": "The IT Department's fax line (docs/story/STORY.md, \"The IT Department's fax\"). Replies: the first rule with one of its words in the email wins, so the specific ones come first. A Fax Machine on a battery's circuit prints the pages in order, the first within the hour, the rest while it stays plugged in. A Computer on a circuit emails IT whatever a player stands at it and types in chat; the answer comes back by fax. Lines: printable ASCII, at most 96 characters. The faction (Story/Factions/IT.json) remembers what is done to it, and its pages, replies and notices ask about it: an \"alts\" page or a reply with a \"when\" (a story query over ?us, the IT Department, and ?them, the reader's group) prints instead when it holds, the most specific alternative first. \"notices\" are faxed to a player about a deed of theirs or a tier their standing came to (by name), the first whose \"when\" holds.",
   "from": "IT Department",
-  "first": ["10m", "60m"],
-  "every": ["25m", "50m"],
+  "first": [
+    "10m",
+    "60m"
+  ],
+  "every": [
+    "25m",
+    "50m"
+  ],
   "pages": [
-    { "lines": [
-      "TO: Unknown device on our network. FROM: IT Service Desk.",
-      "We have detected a fax machine that is not on the asset register.",
-      "Do not unplug it. Find a Computer and email us. Ticket #0001 has been opened." ] },
-    { "lines": [
-      "REMINDER: Ticket #0001 is still open. If you have emailed us, your email is in a queue.",
-      "If you are reading this, you have power. Please confirm in writing, from a Computer." ] },
-    { "lines": [
-      "NOTICE: Unlicensed scavenging of company hardware has been reported in your area.",
-      "Server racks, switches and dishes remain the property of the IT Department.",
-      "Return them, or fill in form IT-7 (Request To Keep Things)." ] },
-    { "lines": [
-      "MEMO: The IT Department is relocating. Our convoys are on the roads.",
-      "They carry spares. They also carry the Reply All. Please do not approach without a ticket." ] },
-    { "lines": [
-      "SURVEY: How would you rate your experience with the IT Department today?",
-      "1 - Terrible  2 - Bad  3 - Fine  4 - Good  5 - We are watching. Email your answer." ] },
-    { "lines": [
-      "TO: Valued user. Your ticket has been escalated to a senior technician.",
-      "He has a van. Expect him. Have you tried turning it off and on again?" ] }
+    {
+      "lines": [
+        "TO: Unknown device on our network. FROM: IT Service Desk.",
+        "We have detected a fax machine that is not on the asset register.",
+        "Do not unplug it. Find a Computer and email us. Ticket #0001 has been opened."
+      ],
+      "alts": [
+        {
+          "when": "?us KeptOurs ?them",
+          "lines": [
+            "TO: Repeat offender. FROM: IT Service Desk.",
+            "We have detected ANOTHER fax machine that is not on the asset register. That makes two.",
+            "We are counting. Find a Computer and email us. Ticket #0002 has been opened."
+          ]
+        },
+        {
+          "when": "?us WreckedOurs ?them",
+          "lines": [
+            "TO: The device that wrecked one of our vans. FROM: IT Service Desk.",
+            "One of our fax machines is now on your network. We know where you got it.",
+            "Do not unplug it. Ticket #0001 (Incident, Priority: Personal) has been opened."
+          ]
+        }
+      ]
+    },
+    {
+      "lines": [
+        "REMINDER: Ticket #0001 is still open. If you have emailed us, your email is in a queue.",
+        "If you are reading this, you have power. Please confirm in writing, from a Computer."
+      ],
+      "alts": [
+        {
+          "when": "?us Grudge ?them >= 16",
+          "lines": [
+            "REMINDER: Ticket #0001 is still open. Your account is flagged, so it will stay open.",
+            "Flagged accounts may still email us. We read them aloud at the Christmas party."
+          ]
+        },
+        {
+          "when": "?us Courtesy ?them",
+          "lines": [
+            "REMINDER: Ticket #0001 is still open. Thank you for your polite email.",
+            "Politeness has been noted on your account. Nobody has noted anything nice in years."
+          ]
+        },
+        {
+          "when": "?us Emails ?them",
+          "lines": [
+            "REMINDER: Ticket #0001 is still open. Per my last fax, your email is in a queue.",
+            "Per this fax, it still is. Please do not email again to ask where your email is."
+          ]
+        }
+      ]
+    },
+    {
+      "lines": [
+        "NOTICE: Unlicensed scavenging of company hardware has been reported in your area.",
+        "Server racks, switches and dishes remain the property of the IT Department.",
+        "Return them, or fill in form IT-7 (Request To Keep Things)."
+      ],
+      "alts": [
+        {
+          "when": "?us LootedOurs ?them >= 3",
+          "lines": [
+            "NOTICE: Unlicensed scavenging of company hardware has been reported. By you. Several times.",
+            "We have photographs. Form IT-7 (Request To Keep Things) is now form IT-7b (Request To Explain)."
+          ]
+        },
+        {
+          "when": "?us LootedOurs ?them",
+          "lines": [
+            "NOTICE: Unlicensed scavenging of company hardware has been reported in your area.",
+            "Server racks, switches and dishes remain the property of the IT Department.",
+            "We are not saying it was you. We are faxing you, specifically, for no reason."
+          ]
+        },
+        {
+          "when": "?us Hardware < 40",
+          "lines": [
+            "NOTICE: Our hardware stock is critically low. Somebody has been stripping our vans.",
+            "If you find a server rack, please return it. If you took one, return it anyway."
+          ]
+        }
+      ]
+    },
+    {
+      "lines": [
+        "MEMO: The IT Department is relocating. Our convoys are on the roads.",
+        "They carry spares. They also carry the Reply All. Please do not approach without a ticket."
+      ],
+      "alts": [
+        {
+          "when": "?us Grudge ?them >= 51",
+          "lines": [
+            "MEMO: The IT Department is relocating. Our convoys are on the roads.",
+            "They carry spares. They carry the Reply All. They also carry your description."
+          ]
+        },
+        {
+          "when": "?us Likes ?them >= 15",
+          "lines": [
+            "MEMO: The IT Department is relocating. Our convoys are on the roads.",
+            "Registered users may wave at them. Please do not wave anything heavier than a hand."
+          ]
+        }
+      ]
+    },
+    {
+      "lines": [
+        "SURVEY: How would you rate your experience with the IT Department today?",
+        "1 - Terrible  2 - Bad  3 - Fine  4 - Good  5 - We are watching. Email your answer."
+      ],
+      "alts": [
+        {
+          "when": "?us Grudge ?them >= 16",
+          "lines": [
+            "SURVEY: How would you rate your experience with the IT Department today?",
+            "Please note: on flagged accounts, an answer of 1 is treated as a threat. So is 2."
+          ]
+        },
+        {
+          "when": "?us Likes ?them >= 50",
+          "lines": [
+            "SURVEY (ADMINS ONLY): How would you rate the other users?",
+            "1 - Terrible  2 - Bad  3 - Fine  4 - Good  5 - Promote them. Email your answer."
+          ]
+        }
+      ]
+    },
+    {
+      "lines": [
+        "TO: Valued user. Your ticket has been escalated to a senior technician.",
+        "He has a van. Expect him. Have you tried turning it off and on again?"
+      ],
+      "alts": [
+        {
+          "when": "?us Grudge ?them >= 51",
+          "lines": [
+            "TO: Blacklisted user. Your ticket has been escalated to a senior technician.",
+            "He has a van. He has your address. He has a grudge. Have you tried turning it off and on again?"
+          ]
+        },
+        {
+          "when": "?us Likes ?them >= 50",
+          "lines": [
+            "TO: Valued Admin. Your ticket has been escalated to a senior technician.",
+            "He is coming to shake your hand. He has a van. Please do not let him near the network."
+          ]
+        }
+      ]
+    }
   ],
-  "replyIn": ["40s", "3m"],
+  "replyIn": [
+    "40s",
+    "3m"
+  ],
   "replies": [
-    { "if": ["password", "login", "log in", "account"], "lines": [
-      "RE: password. We never ask for your password. What is your password?",
-      "It must be 14 characters, one capital, one number, and not your previous 40 passwords." ] },
-    { "if": ["off and on", "restart", "reboot", "turned it off"], "lines": [
-      "RE: restart. Excellent. That fixes 92 percent of issues. Ticket closed.",
-      "To reopen it, open a new ticket." ] },
-    { "if": ["who are", "what are", "who is", "what is"], "lines": [
-      "RE: who we are. We are the IT Department. We kept the lights on when nobody else did.",
-      "The servers still run. Somebody has to patch them. Where do you think the power comes from?" ] },
-    { "if": ["sorry", "return", "give back", "form it-7", "it-7"], "lines": [
-      "RE: return of hardware. Form IT-7 received. Your request to keep things is under review.",
-      "Review takes six to eight weeks. In the meantime, the hardware is on loan. Do not drop it." ] },
-    { "if": ["trade", "buy", "sell", "deal", "parts", "spares"], "lines": [
-      "RE: procurement. All purchases go through procurement. Procurement is a fax machine.",
-      "You are talking to it. Bring circuit boards. We will think about it." ] },
-    { "if": ["attack", "kill", "shoot", "fight", " war"], "lines": [
-      "RE: threats. Threatening IT staff is a breach of the acceptable use policy.",
-      "Your account has been flagged. The Reply All is fuelled and on its way. Have a nice day." ] },
-    { "if": ["help", "problem", "broken", "fix", "issue"], "lines": [
-      "RE: your request for help. Have you tried turning it off and on again?",
-      "If that does not work, please wait. Your place in the queue is 4,812." ] },
-    { "if": ["1", "2", "3", "4", "5", "rate", "survey"], "lines": [
-      "RE: survey. Thank you for your feedback. It has been filed with the rest.",
-      "Your satisfaction is important to us. Please hold." ] },
-    { "if": ["hello", "hi ", "hey"], "lines": [
-      "RE: your email. Hello. Your message has been received and logged.",
-      "Please state the nature of your problem in one line. Thank you for contacting IT." ] },
-    { "lines": [
-      "RE: your email. Thank you for contacting the IT Service Desk.",
-      "Your ticket has been logged and will be ignored in the order it was received." ] }
+    {
+      "if": [
+        "password",
+        "login",
+        "log in",
+        "account"
+      ],
+      "when": "?us Likes ?them >= 50",
+      "lines": [
+        "RE: password. As an Admin you may now reset your own password.",
+        "The new one must be different from the old one, and also the same. Good luck."
+      ]
+    },
+    {
+      "if": [
+        "password",
+        "login",
+        "log in",
+        "account"
+      ],
+      "lines": [
+        "RE: password. We never ask for your password. What is your password?",
+        "It must be 14 characters, one capital, one number, and not your previous 40 passwords."
+      ]
+    },
+    {
+      "if": [
+        "off and on",
+        "restart",
+        "reboot",
+        "turned it off"
+      ],
+      "lines": [
+        "RE: restart. Excellent. That fixes 92 percent of issues. Ticket closed.",
+        "To reopen it, open a new ticket."
+      ]
+    },
+    {
+      "if": [
+        "who are",
+        "what are",
+        "who is",
+        "what is"
+      ],
+      "when": "?us WreckedOurs ?them",
+      "lines": [
+        "RE: who we are. We are the people whose van you wrecked.",
+        "We kept the lights on when nobody else did. Then you shot the lights. Ticket reopened."
+      ]
+    },
+    {
+      "if": [
+        "who are",
+        "what are",
+        "who is",
+        "what is"
+      ],
+      "lines": [
+        "RE: who we are. We are the IT Department. We kept the lights on when nobody else did.",
+        "The servers still run. Somebody has to patch them. Where do you think the power comes from?"
+      ]
+    },
+    {
+      "if": [
+        "sorry",
+        "return",
+        "give back",
+        "form it-7",
+        "it-7"
+      ],
+      "when": "?us Grudge ?them >= 16",
+      "lines": [
+        "RE: apology. Apology received and attached to your file. Your file is quite thick.",
+        "Your flag has been downgraded. It is now a slightly smaller flag."
+      ]
+    },
+    {
+      "if": [
+        "sorry",
+        "return",
+        "give back",
+        "form it-7",
+        "it-7"
+      ],
+      "lines": [
+        "RE: return of hardware. Form IT-7 received. Your request to keep things is under review.",
+        "Review takes six to eight weeks. In the meantime, the hardware is on loan. Do not drop it."
+      ]
+    },
+    {
+      "if": [
+        "trade",
+        "buy",
+        "sell",
+        "deal",
+        "parts",
+        "spares"
+      ],
+      "when": "?us Likes ?them >= 15",
+      "lines": [
+        "RE: procurement. Registered users get ten percent off. Ten percent of nothing is still nothing.",
+        "Bring circuit boards. Moira says she will think about it, which is more than usual."
+      ]
+    },
+    {
+      "if": [
+        "trade",
+        "buy",
+        "sell",
+        "deal",
+        "parts",
+        "spares"
+      ],
+      "when": "?us Grudge ?them >= 16",
+      "lines": [
+        "RE: procurement. Procurement does not deal with flagged accounts.",
+        "Procurement is a fax machine, and it is not talking to you."
+      ]
+    },
+    {
+      "if": [
+        "trade",
+        "buy",
+        "sell",
+        "deal",
+        "parts",
+        "spares"
+      ],
+      "lines": [
+        "RE: procurement. All purchases go through procurement. Procurement is a fax machine.",
+        "You are talking to it. Bring circuit boards. We will think about it."
+      ]
+    },
+    {
+      "if": [
+        "attack",
+        "kill",
+        "shoot",
+        "fight",
+        " war"
+      ],
+      "lines": [
+        "RE: threats. Threatening IT staff is a breach of the acceptable use policy.",
+        "Your account has been flagged. The Reply All is fuelled and on its way. Have a nice day."
+      ]
+    },
+    {
+      "if": [
+        "help",
+        "problem",
+        "broken",
+        "fix",
+        "issue"
+      ],
+      "when": "?us Likes ?them >= 50",
+      "lines": [
+        "RE: your request for help. Admin tickets skip the queue. There is still a queue.",
+        "You are first in it. Have you tried turning it off and on again? We have to ask."
+      ]
+    },
+    {
+      "if": [
+        "help",
+        "problem",
+        "broken",
+        "fix",
+        "issue"
+      ],
+      "when": "?us Grudge ?them >= 51",
+      "lines": [
+        "RE: your request for help. Your ticket has been moved to the bottom of the queue.",
+        "The queue has no bottom. Have you tried turning yourself off and on again?"
+      ]
+    },
+    {
+      "if": [
+        "help",
+        "problem",
+        "broken",
+        "fix",
+        "issue"
+      ],
+      "lines": [
+        "RE: your request for help. Have you tried turning it off and on again?",
+        "If that does not work, please wait. Your place in the queue is 4,812."
+      ]
+    },
+    {
+      "if": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "rate",
+        "survey"
+      ],
+      "lines": [
+        "RE: survey. Thank you for your feedback. It has been filed with the rest.",
+        "Your satisfaction is important to us. Please hold."
+      ]
+    },
+    {
+      "if": [
+        "hello",
+        "hi ",
+        "hey"
+      ],
+      "lines": [
+        "RE: your email. Hello. Your message has been received and logged.",
+        "Please state the nature of your problem in one line. Thank you for contacting IT."
+      ]
+    },
+    {
+      "when": "?us Grudge ?them >= 51",
+      "lines": [
+        "RE: your email. Your account is blacklisted. Emails from blacklisted accounts are printed,",
+        "read out at the all-hands meeting, and then used to light the barbecue."
+      ]
+    },
+    {
+      "when": "?us Grudge ?them >= 16",
+      "lines": [
+        "RE: your email. Your account is flagged. Flagged emails are read in the order they annoy us.",
+        "Yours is near the front."
+      ]
+    },
+    {
+      "when": "?us Likes ?them >= 50",
+      "lines": [
+        "RE: your email. Thank you, Admin. Your email has been read by a human.",
+        "This almost never happens. Please do not tell the other users."
+      ]
+    },
+    {
+      "when": "?us Faxed ?them >= 3",
+      "lines": [
+        "RE: your email. Per my last fax, and the one before it, your ticket has been logged.",
+        "Please refer to my last fax for anything not covered in this fax."
+      ]
+    },
+    {
+      "lines": [
+        "RE: your email. Thank you for contacting the IT Service Desk.",
+        "Your ticket has been logged and will be ignored in the order it was received."
+      ]
+    }
   ],
-  "malware": { "lines": [
-    "SECURITY ALERT: A device on your network clicked an advert. We know. We always know.",
-    "Malware is now running on your Computer. Do not give it your battery's code.",
-    "To remove it: have you tried turning it off and on again? Unplug it from the battery." ] },
+  "malware": {
+    "lines": [
+      "SECURITY ALERT: A device on your network clicked an advert. We know. We always know.",
+      "Malware is now running on your Computer. Do not give it your battery's code.",
+      "To remove it: have you tried turning it off and on again? Unplug it from the battery."
+    ]
+  },
   "sent": "Email sent to the IT Service Desk. Replies come by fax.",
-  "noFax": "Email sent. IT replies by fax, and no fax is plugged in near this computer."
+  "noFax": "Email sent. IT replies by fax, and no fax is plugged in near this computer.",
+  "notices": [
+    {
+      "on": "Notorious",
+      "lines": [
+        "ALL STAFF, ALL DEVICES: This user is no longer a user. This user is a security incident.",
+        "Every faction has their description. So does Gary. Do not reply to them."
+      ]
+    },
+    {
+      "on": "Wrecked our hardware",
+      "when": "?us WreckedOurs ?them >= 3",
+      "lines": [
+        "INCIDENT REPORT: Per my last three faxes, please stop wrecking our vans.",
+        "This has been escalated to someone who does not use faxes."
+      ]
+    },
+    {
+      "on": "Wrecked our hardware",
+      "when": "?us WreckedOurs ?them >= 2",
+      "lines": [
+        "INCIDENT REPORT: Per my last fax, please stop wrecking our vans. This is the second one.",
+        "We keep count. We keep count of everything. It is literally our job."
+      ]
+    },
+    {
+      "on": "Wrecked our hardware",
+      "lines": [
+        "INCIDENT REPORT: One of our vehicles has stopped responding.",
+        "Our logs show your device was nearby. We are not saying anything. We are faxing it."
+      ]
+    },
+    {
+      "on": "Stripped our hardware",
+      "when": "?us LootedOurs ?them >= 3",
+      "lines": [
+        "ASSET NOTICE: More of our hardware has left the asset register, near your device again.",
+        "We can see you, by the way. The switches talk. Phil listens."
+      ]
+    },
+    {
+      "on": "Stripped our hardware",
+      "lines": [
+        "ASSET NOTICE: Hardware has been removed from IT property without form IT-7.",
+        "If this was you, email us from a Computer. If it was not you, email us anyway."
+      ]
+    },
+    {
+      "on": "Killed our staff",
+      "lines": [
+        "MEMO: A member of staff has failed to log in this morning.",
+        "Their last known location was near your device. Their desk plant will be shared out."
+      ]
+    },
+    {
+      "on": "Polite email",
+      "when": "?us Respect < 30",
+      "lines": [
+        "RE: your kind email. Nobody has said thank you to the IT Department in years.",
+        "Phil cried. Then he restarted the router. We are touched. Ticket closed with a smile."
+      ]
+    },
+    {
+      "on": "Blacklisted",
+      "lines": [
+        "NOTICE OF BLACKLISTING: Your account has been disabled.",
+        "Your devices will be wiped. Your name is on the whiteboard. It is underlined twice."
+      ]
+    },
+    {
+      "on": "Flagged",
+      "lines": [
+        "NOTICE: Your account has been flagged for review by the IT Department.",
+        "Reviews take six to eight weeks. Until then, everything you do is also being reviewed."
+      ]
+    },
+    {
+      "on": "Unregistered",
+      "lines": [
+        "NOTICE: Your account status has changed to Unregistered.",
+        "Neither good nor bad. Mostly ignored. Like the rest of the network."
+      ]
+    },
+    {
+      "on": "Registered",
+      "lines": [
+        "WELCOME: You are now a Registered User of the IT Department's network.",
+        "You may now raise tickets with a priority of Low. Please do not get excited."
+      ]
+    },
+    {
+      "on": "Admin",
+      "lines": [
+        "CONGRATULATIONS: You have been granted Admin rights.",
+        "Please use them responsibly. Gary did not. We do not talk about Gary."
+      ]
+    }
+  ]
 }
