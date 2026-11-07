@@ -117,8 +117,6 @@ public sealed class RoleAsk
         {
             if (tier >= 3)
                 n.GunsMax += 1;
-            if (tier >= 4)
-                n.GunsMin = Math.Min(n.GunsMin + 1, n.GunsMax);
             if (tier >= 3 && n.ClassMin < GunClass.Medium)
                 n.ClassMin = GunClass.Medium;
         }
@@ -129,7 +127,7 @@ public sealed class RoleAsk
         if (n.ClassMin > best)
             n.ClassMin = best; // (a style with no heavy gun fields its heaviest)
         if (n.ArmourMin > 0)
-            n.ArmourMin = MathF.Max(0, n.ArmourMin + (tier - 2));
+            n.ArmourMin = MathF.Max(0, n.ArmourMin + 0.5f * (tier - 2)); // (measured: a tier 4 carrier's appliqué and plates reach 12 to 14)
         return n;
     }
 
@@ -162,7 +160,7 @@ public sealed class RoleAsk
     /// <summary>The gun count to roll from, within the recipe's.</summary>
     public (int Lo, int Hi) GunRange(int min, int max)
     {
-        var lo = Math.Clamp(Needs.GunsMin, min, max);
+        var lo = Math.Clamp(Needs.GunsMin + (Role.Combat && Tier >= 4 ? 1 : 0), min, max); // (a tier 4 fighter rolls one more where its shape has room: a lean, not a need, as a Technical carries one)
         return (lo, Math.Clamp(Needs.GunsMax, lo, max));
     }
 
@@ -226,8 +224,7 @@ public sealed class RoleAsk
     };
 
     /// <summary>
-    /// <see cref="FactionStyle.Weigh"/> while this role's vehicle is made: plates weigh more the more armour they have (and the style's own "armour" slot joins a wall's and
-    /// a deck's choices when the role leans to armour), and running gear and the light cab weigh by the tier of their recipe against this tier. Only the style's own
+    /// <see cref="FactionStyle.Weigh"/> while this role's vehicle is made: the style's plate materials weigh more the more armour they have, and running gear and the light cab weigh by the tier of their recipe against this tier. Only the style's own
     /// parts: the identity stays the style's.
     /// </summary>
     public (string[] Items, double[] Weights)? Weigh(FactionStyle st, string slot, string[] list)
@@ -237,8 +234,9 @@ public sealed class RoleAsk
             var a = ArmourLean;
             if (a <= 0)
                 return null;
-            var items = a >= 0.3 && slot != "armour" && st.Parts.TryGetValue("armour", out var arm) ? list.Concat(arm).ToArray() : list;
-            return (items, items.Select(m => Math.Pow(Math.Max(4, VehicleRoles.PlateArmour(m)) / 20.0, 1.5 * a)).ToArray());
+            // (the style's own materials only: an Armour Plate deck or wall stands thicker than any a style lists, and refused a Flatbed Fort's bunker brow beside it.
+            // The armour plate goes on as appliqué instead: Vehicle.UpArmour)
+            return (list, list.Select(m => Math.Pow(Math.Max(4, VehicleRoles.PlateArmour(m)) / 20.0, 1.5 * a)).ToArray());
         }
         if (!Graded.Contains(slot) || list.Distinct().Count() < 2)
             return null;
@@ -794,6 +792,9 @@ public static class VehicleRoleMake
                 g.Build(v);
                 v.GuaranteeMarks();
                 v.RoleKit(null);
+                var least = (g.Checks ?? new VehicleCheckOptions()).MinStability + 0.02f; // (a kit-1 generator has no stability gate of its own: a role's parts can stand it taller)
+                if (v.Stability() is var stable && stable < least)
+                    throw new VehicleKitException($"stability {stable:0.00}: under the check's {least - 0.02f:0.00}");
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
             {
@@ -873,7 +874,11 @@ public static class VehicleRolesCli
             Console.WriteLine($"loot: {p}");
     }
 
-    /// <summary><c>--role "Bandit Raider" --tier 2 [--seeds N] [--from S] [--seed-list A,B]</c>: each seed's shape, kit line, fit and identity, then the hit rate. Exit code: how many missed or failed.</summary>
+    /// <summary>
+    /// <c>--role "Bandit Raider" --tier 2 [--seeds N] [--from S] [--seed-list A,B] [--check] [--sliced]</c>: each seed's shape, fit, identity and what the role pass placed, then the hit
+    /// rate; the first seed is made again (the same text), with <c>--sliced</c> as the dynamic spawn makes it (the same hash), and <c>--check</c> runs the full check on each
+    /// (seconds a seed). Exit code: how many missed, failed or differed.
+    /// </summary>
     public static int Role(string text, string[] args)
     {
         var (st, role) = Parse(text);
@@ -889,6 +894,8 @@ public static class VehicleRolesCli
         Console.WriteLine($"{st.Name} {role.Name} ({role.Purpose}), tier {tier}: shapes {string.Join(", ", VehicleRoles.ShapesFor(st, role).Select(x => $"{VehicleQualityCli.Parts(x.G).Shape} {x.W}"))}");
         Console.WriteLine($"  needs: {Describe(ask.Needs)}; loot tier {ask.LootTier}, armour lean {ask.ArmourLean:0.00}");
         var bad = 0;
+        var check = args.Any(a => a.Equals("--check", StringComparison.OrdinalIgnoreCase));
+        var checkedBad = 0;
         var outs = new List<Outcome>();
         foreach (var seed in seeds)
         {
@@ -905,8 +912,20 @@ public static class VehicleRolesCli
             Console.WriteLine($"    {v.Fit}");
             Console.WriteLine($"    identity {v.Identity}");
             Console.WriteLine($"    {v.Description}");
+            if (v.MarksPlaced.Count > 0)
+                Console.WriteLine($"    placed: {string.Join("; ", v.MarksPlaced)}");
+            if (check) // (the full check, as --sweep-vehicle runs it: drive, turn, guns, coplanar faces, rooms)
+            {
+                var g = VehicleRoles.ShapeFor(st, role, seed);
+                var r = VehicleChecks.Check(v.Text(), VehicleRegistry.Slug(v.Name) + ".json", g.Checks, v.Rooms);
+                checkedBad += r.Passed ? 0 : 1;
+                Console.WriteLine(r.Passed ? "    check: passed" : $"    check: FAILED {string.Join("; ", r.Failures)}");
+            }
         }
         Summary(outs);
+        if (check)
+            Console.WriteLine($"  the full check: {outs.Count(o => o.V != null) - checkedBad}/{outs.Count(o => o.V != null)} passed");
+        bad += checkedBad;
         if (outs.FirstOrDefault(o => o.V != null) is { } first)
             bad += Again(st, role, tier, first, args.Any(a => a.Equals("--sliced", StringComparison.OrdinalIgnoreCase)));
         return bad;
