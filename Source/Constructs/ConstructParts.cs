@@ -681,7 +681,16 @@ public sealed class ConstructPartDef
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
 
     /// <summary>Catches fire from incendiary rounds (wood, rubber, fuel tanks, ammo boxes).</summary>
-    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox; // (a lift cell burns by its gas: ConstructWorld.CanBurn)
+    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox || Burns; // (a lift cell burns by its gas: ConstructWorld.CanBurn)
+
+    /// <summary>Burns whatever its material: a designed weapon with a motor's propellant or a tank's fuel in it (OrdnanceDesign.Build).</summary>
+    public bool Burns;
+
+    /// <summary>
+    /// A warhead: what makes an explosive part go off when it is broken (shot, blasted, burnt: ConstructWorld.Arm) rather than only break. A designed
+    /// weapon's charge with filling or a sub-payload (not a Kinetic Penetrator alone, a motor, a tube or a spent stage); a part file's explosive with a blast.
+    /// </summary>
+    public bool Warhead;
 
     public bool UsesTool(ConstructTool t) => t != ConstructTool.None && t == Tool;
 
@@ -1327,6 +1336,7 @@ public static partial class ConstructParts
             Range(br.ExplodeCrater, 0f, 60f, file, "explosive.crater");
             Range(br.ExplodeKnockback, 0f, 200f, file, "explosive.knockback");
             d.Explosive = br;
+            d.Warhead = true; // (a bomb part's own charge: it goes off when it is broken)
         }
         d.Yield = Opt(root, "yield") is { } yl ? (int)MathF.Round(Num(yl, file, "yield")) : 0;
         Range(d.Yield, 0f, 10000f, file, "yield");

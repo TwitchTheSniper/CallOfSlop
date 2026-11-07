@@ -167,6 +167,7 @@ public sealed partial class ConstructWorld
             m.Front = MathF.Min(m.Radius, m.Front + m.Speed * dt);
             m.Ticks++;
             Targets?.MegaFront(m.At, m.Radius, m.Damage, from, m.Front, Get(m.Gun), m.GunPart);
+            BlastShells(m.At, m.Radius, m.Damage, from, m.Front); // (ordnance in the air the front passed this tick)
             WalkMega(ref m, ref budget);
             if (m.Front >= m.Radius && m.Body >= m.BodyCount)
             {

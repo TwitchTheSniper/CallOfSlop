@@ -1221,6 +1221,12 @@ public static class ConstructWeapons
                     tid = id;
                     what = 3;
                 }
+                if (world.ShellCount > 0 && world.RayShell(pos, dir, best, out var sd, out var sk) && sd < best)
+                {
+                    best = sd;
+                    tid = sk;
+                    what = 4; // (a bomb or missile in the air: ConstructCookOffs.cs)
+                }
                 if (what != 0 || arc + 1 >= pieces)
                 {
                     if (what == 0 && g.RoundV > 0 && (g.Effects & (GunEffect.Flame | GunEffect.Harpoon)) == 0 && pierce == 0)
@@ -1239,6 +1245,12 @@ public static class ConstructWeapons
             if (what == 3)
             {
                 world.Targets!.HitTarget(tid, dealt, g.Effects, own, g.Part, at, dir);
+                hit |= CFireHit.Target;
+                break;
+            }
+            if (what == 4)
+            {
+                world.HurtShell(tid, dealt);
                 hit |= CFireHit.Target;
                 break;
             }

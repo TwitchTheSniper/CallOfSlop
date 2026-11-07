@@ -1708,6 +1708,17 @@ public sealed partial class Game : IDisposable
                 zombie = null;
                 PveShotAdd(enemy, ray.Damage * def.DamageMultAt(dist + flown) * (eHead ? def.HeadMult : 1f) * PenFactor(dist), eHead);
             }
+            if (SandboxOn && IsServer && Constructs.ShellCount > 0 && Constructs.RayShell(o, d, dist, out var shellDist, out var shellK))
+            {
+                // A bomb or missile in the air nearer than anything else: it takes the round (ConstructCookOffs.cs).
+                dist = shellDist;
+                hit = null;
+                turret = null;
+                zombie = null;
+                device = null;
+                construct = null;
+                Constructs.HurtShell(shellK, ray.Damage * def.DamageMultAt(dist + flown) * PenFactor(dist));
+            }
             var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
             if (def.Harpoon && SandboxOn && !harpooned && turret == null && zombie == null && device == null)
             {

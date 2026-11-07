@@ -56,6 +56,7 @@ public struct CShell
     // How it is drawn (every PC, from the launch event: ShellLooks.cs). Null: a plain box.
     public ConstructPartDef? Look; // the model it had on its rack (a designed weapon's run-time part, a bomb's part file, a rocket's stand-in)
     public Quaternion Rot, PrevRot; // its part's turn in the world, this tick and the last (nose, -Z, eased from its rack onto its way)
+    public float Hurt; // the server's: damage it has taken in the air (ConstructCookOffs.cs: at its part's health it goes off)
 }
 
 /// <summary>What a designed shell is and does (a wire byte).</summary>
@@ -468,6 +469,7 @@ public sealed partial class ConstructWorld
         }
         if (s.Damage <= 0 || mega)
             return; // (a dispenser's pop; a massive blast goes on in StepMegas)
+        BlastShells(s.Pos, s.Blast, s.Damage); // (ordnance in the air near it: it may go off too, in its turn)
         var by = Get(s.Gun);
         Targets?.ShellBlast(s.Pos, s.Blast, s.Damage, s.Crater, s.Kind == ShellKind.Incendiary, by, s.GunPart);
         var near = Near(s.Pos, s.Blast + 1f, _blastNear);
