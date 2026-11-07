@@ -51,7 +51,7 @@ public static unsafe partial class Program
     {
         if (_sbMenuKeyEaten)
         {
-            _sbMenuKeyEaten = Keybinds.IsDown(_window, _settings.Binds[(int)GameAction.SandboxInventory]); // (the press that opened it, or closed it from the search box: spent until the key is up; the real key, as _down is blocked while ImGui still has the keyboard this frame)
+            _sbMenuKeyEaten = Keybinds.IsDown(_window, _settings.Binds, GameAction.SandboxInventory); // (the press that opened it, or closed it from the search box: spent until the key is up; the real key, as _down is blocked while ImGui still has the keyboard this frame)
             return;
         }
         if (_game is not { SandboxOn: true } g || !Pressed(GameAction.SandboxInventory))
@@ -883,7 +883,7 @@ public static unsafe partial class Program
         var b = _settings.Binds;
         long key = 17;
         foreach (var a in TurnActions)
-            key = key * 31 + b[(int)a];
+            key = key * 31 + Keybinds.First(b, a);
         if (key != _sbTurnBinds || _sbTurnText.Length == 0)
         {
             _sbTurnBinds = key;
@@ -906,7 +906,7 @@ public static unsafe partial class Program
             : code == Keybinds.Key(Brutal.GlfwApi.GlfwKey.Up) ? "^"
             : code == Keybinds.Key(Brutal.GlfwApi.GlfwKey.Down) ? "v"
             : Keybinds.Name(code);
-        int B(GameAction a) => b[(int)a];
+        int B(GameAction a) => Keybinds.First(b, a);
         var rl = B(GameAction.RollLeft);
         var rr = B(GameAction.RollRight);
         var roll = Keybinds.IsChord(rl) && Keybinds.IsChord(rr) ? $"Shift + {N(rl & ~Keybinds.ShiftFlag)} {N(rr & ~Keybinds.ShiftFlag)}" : $"{N(rl)} / {N(rr)}";

@@ -29,7 +29,7 @@ public static unsafe partial class Program
     /// <summary>The chat keys (from UpdateLocalPlayer, after the keybinds were polled). Keys held when the line closed wait for release.</summary>
     private static void ChatKeys()
     {
-        if (_chatLatch && !Keybinds.IsDown(_window, _settings.Bind(GameAction.ChatAll)) && !Keybinds.IsDown(_window, _settings.Bind(GameAction.ChatTeam)))
+        if (_chatLatch && !Keybinds.IsDown(_window, _settings.Binds, GameAction.ChatAll) && !Keybinds.IsDown(_window, _settings.Binds, GameAction.ChatTeam))
             _chatLatch = false;
         if (Ui.ChatOpen || _chatLatch || Ui.PauseOpen || Ui.BenchRun != null || Ui.Rebinding != null || Ui.SandboxPartsOpen) // (Enter takes a part in the Sandbox parts menu)
             return;
@@ -77,7 +77,7 @@ public static unsafe partial class Program
         else if (audio.Mic.IsOpen)
             audio.Mic.Close();
 
-        var ptt = !Ui.WantsTextInput && !Ui.ChatOpen && Ui.Rebinding == null && Keybinds.IsDown(_window, s.Bind(GameAction.PushToTalk));
+        var ptt = !Ui.WantsTextInput && !Ui.ChatOpen && Ui.Rebinding == null && Keybinds.IsDown(_window, s.Binds, GameAction.PushToTalk);
         if (ptt && !_pttWasDown && game != null && !canTalk && !testing)
             Ui.VoiceHint(game.Net.IsOffline ? "Voice chat needs a multiplayer game"
                 : !game.VoiceAllowed ? "The host has turned voice chat off"

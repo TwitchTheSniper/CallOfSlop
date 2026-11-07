@@ -16,7 +16,7 @@ public static unsafe partial class Program
             SetFactionOpen(false);
             return true;
         }
-        if (key == GlfwKey.Unknown || Keybinds.Key(key) != _settings.Bind(GameAction.FactionWindow) || Ui.ChatOpen || Ui.WantsTextInput || _session is not { SandboxOn: true })
+        if (key == GlfwKey.Unknown || !_settings.HasBind(GameAction.FactionWindow, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput || _session is not { SandboxOn: true })
             return false;
         SetFactionOpen(!Ui.FactionsOpen);
         return true;

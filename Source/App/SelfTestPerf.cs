@@ -363,7 +363,7 @@ public static partial class SelfTest
     private static void CheckPerfKey()
     {
         var kd = Keybinds.Defaults;
-        if (kd.Length != (int)GameAction.COUNT || kd[(int)GameAction.PerfWindow] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F9) || Duplicates(kd).Length > 0)
+        if (kd.Length != Keybinds.Total || kd[(int)GameAction.PerfWindow] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F9) || Duplicates(kd).Length > 0)
             Fail($"perf: the default key isn't an unshared F9 ({Duplicates(kd)})");
         // An old settings file (binds version 7): F9 added; one that already used F9 keeps it and the window starts unbound.
         var old = (int[])kd.Clone();

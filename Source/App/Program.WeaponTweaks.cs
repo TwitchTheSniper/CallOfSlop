@@ -18,7 +18,7 @@ public static unsafe partial class Program
             SetWeaponTweaksOpen(false);
             return true;
         }
-        if (key == Brutal.GlfwApi.GlfwKey.Unknown || Keybinds.Key(key) != _settings.Bind(GameAction.WeaponTweaks) || Ui.ChatOpen || Ui.WantsTextInput || !WeaponTweaksAllowed)
+        if (key == Brutal.GlfwApi.GlfwKey.Unknown || !_settings.HasBind(GameAction.WeaponTweaks, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput || !WeaponTweaksAllowed)
             return false;
         SetWeaponTweaksOpen(!Ui.WeaponTweaksOpen);
         return true;

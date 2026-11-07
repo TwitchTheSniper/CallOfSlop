@@ -404,6 +404,7 @@ public static partial class SelfTest
         Section("Automatic server list", CheckAutoServerList); // SelfTestListing.cs: host starts a list, second host joins it, learning, hand-over (loopback)
         Section("HUD layout", CheckHudLayout);
         Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
+        Section("Keybind slots", CheckKeybindSlots); // SelfTestKeybindSlots.cs: several bindings per action: old and new settings lines, any binding works the action
         Section("Weapon select", CheckWeaponSelect);
         Section("Loadout navigation", CheckLoadoutNav);
         Section("Recoil", CheckRecoil);
