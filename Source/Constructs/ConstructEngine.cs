@@ -191,12 +191,10 @@ public static class ConstructEngine
         c.ModCount = 0;
         c.ModActive = -1;
         var any = false;
-        for (var i = 0; i < n; i++)
-        {
-            c.EngineOf[i] = 0;
-            c.EngineSlot[i] = 0;
+        Array.Clear(c.EngineOf, 0, n);
+        Array.Clear(c.EngineSlot, 0, n);
+        foreach (var i in c.Specials) // (engine pieces are special parts)
             any |= c.Parts[i].D.Piece != EnginePiece.None;
-        }
         if (!any)
             return;
         c.ModEngines ??= new ModEngine[MaxEngines];

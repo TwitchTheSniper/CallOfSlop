@@ -73,8 +73,10 @@ public sealed partial class Construct
         TrackUnits = false;
         for (var t = 0; t < TrackPartCount; t++)
             TrackWheel[t] = ushort.MaxValue;
-        for (var i = 0; i < PartCount && WheelCount < MaxWheels; i++)
+        foreach (var i in Specials) // (wheels are special parts: ConstructRebuild.cs)
         {
+            if (WheelCount >= MaxWheels)
+                break;
             if (!IsRaycastWheel(i))
                 continue;
             var s = SuspensionOf(i);
@@ -162,8 +164,10 @@ public sealed partial class Construct
         for (var k = 0; k < old; k++)
             keep[k] = Springs[k].Compression;
         SpringCount = 0;
-        for (var i = 0; i < PartCount && SpringCount < MaxSprings; i++)
+        foreach (var i in Specials) // (suspensions are special parts)
         {
+            if (SpringCount >= MaxSprings)
+                break;
             ref var p = ref Parts[i];
             var d = p.D;
             if (d.Role != PartRole.Suspension || !p.Working || p.Seg != 0 || d.Travel <= 0)
@@ -204,6 +208,32 @@ public sealed partial class Construct
     /// on a steering pivot that a U joint or CV joint feeds. Only those wheels are driven; the rest roll.
     /// <see cref="DriveProblem"/> says what is missing.
     /// </summary>
+    /// <summary>
+    /// The edges of the drive line at part <paramref name="part"/> in edge order, as a walk over every edge would meet
+    /// them: its own links (by the part's link index, sorted), then every edge from <paramref name="extraFrom"/> to
+    /// <paramref name="end"/> (the seams and shafts: few). Returns how many went into <paramref name="into"/>.
+    /// </summary>
+    private int EdgesAt(int part, Span<int> into, int extraFrom, int end)
+    {
+        var n = 0;
+        for (var e = FirstLink(part); e >= 0 && n < into.Length; e = NextLink(e))
+        {
+            var k = e >> 1;
+            if (n > 0 && into[n - 1] == k)
+                continue; // (a link from a part to itself: once)
+            var at = n++;
+            while (at > 0 && into[at - 1] > k)
+            {
+                into[at] = into[at - 1];
+                at--;
+            }
+            into[at] = k;
+        }
+        for (var k = extraFrom; k < end && n < into.Length; k++)
+            into[n++] = k;
+        return n;
+    }
+
     private void BuildDrivetrain()
     {
         CanDrive = false;
@@ -236,7 +266,7 @@ public sealed partial class Construct
         var anyEngine = false;
         var electricNoBattery = false;
         ConstructEngine.Build(this); // (modular engines: which pieces make which engine, and its numbers)
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials) // (engines are special parts: ConstructRebuild.cs)
         {
             if (Parts[i].D.Role != PartRole.Engine || !Rigid(Parts[i].Seg))
                 continue;
@@ -332,6 +362,7 @@ public sealed partial class Construct
         Span<ushort> queue = scratch.Take<ushort>(PartCount);
         Span<bool> halfFed = scratch.Take<bool>(PartCount); // a suspension a half shaft feeds: its numbers are in ratio, eff, cap, mask, group
         halfFed.Clear();
+        Span<int> inc = scratch.Take<int>(edgeCount); // (the edges at one part, in edge order: its links by the index, then every seam and shaft)
         int head = 0, tail = 0;
         queue[tail++] = (ushort)Transmission;
         fed[Transmission] = true;
@@ -353,8 +384,10 @@ public sealed partial class Construct
                 outMask |= AddGate(at, 0, -1, 0);
             if (da.Role == PartRole.Transfer && da.Drive is DriveKind.Hub or DriveKind.Stub)
                 continue; // (a hub drives only its suspension: after this loop)
-            for (var k = 0; k < edgeCount; k++)
+            var incCount = EdgesAt(at, inc, LinkCount, edgeCount);
+            for (var ki = 0; ki < incCount; ki++)
             {
+                var k = inc[ki];
                 ref var l = ref edges[k];
                 var linkEff = edgeEff[k];
                 int other, sa, sb;
@@ -496,8 +529,10 @@ public sealed partial class Construct
                 driven++;
                 continue;
             }
-            for (var l = 0; l < LinkCount + SeamCount && !w.Driven; l++)
+            var sCount = EdgesAt(s, inc, LinkCount, LinkCount + SeamCount);
+            for (var si = 0; si < sCount && !w.Driven; si++)
             {
+                var l = inc[si];
                 int other, so;
                 ref var lk = ref (l < LinkCount ? ref Links[l] : ref SeamLinks[l - LinkCount]);
                 if (lk.A == s) (other, so) = (lk.B, lk.SB);

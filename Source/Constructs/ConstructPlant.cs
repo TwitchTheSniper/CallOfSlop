@@ -73,7 +73,7 @@ public sealed partial class Construct
         }
         PlantCount = 0;
         HasSmoke = false;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials) // (plants and stacks are special parts)
         {
             var d = Parts[i].D;
             HasSmoke |= d.SmokeSize > 0;
@@ -92,7 +92,7 @@ public sealed partial class Construct
         if (SmokeFed.Length < PartCount)
             SmokeFed = new bool[PartCount * 2];
         Array.Clear(SmokeFed);
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials)
             if (Parts[i].D.SmokeSize > 0 && Burner(i))
                 SmokeFed[i] = true;
         for (var k = 0; k < RouteCount; k++)

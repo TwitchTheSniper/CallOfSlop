@@ -67,8 +67,8 @@ public sealed partial class Construct
     private void RebuildScoops()
     {
         ScoopCount = 0;
-        for (var i = 0; i < PartCount && ScoopCount < MaxScoops; i++)
-            if (Parts[i].D.IsScoop)
+        foreach (var i in Specials) // (scoops are special parts)
+            if (ScoopCount < MaxScoops && Parts[i].D.IsScoop)
             {
                 Scoops ??= new CScoop[MaxScoops];
                 Scoops[ScoopCount++] = new CScoop { Part = (ushort)i };

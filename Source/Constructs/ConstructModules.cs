@@ -49,7 +49,7 @@ public static class ConstructModules
         c.DriveSeat = -1;
         c.ControlSeat = -1;
         c.TurretModCount = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (modules are special parts: ConstructRebuild.cs)
         {
             ref var p = ref c.Parts[i];
             var flight = p.D.Logic == CLogic.FlightStabilizer;

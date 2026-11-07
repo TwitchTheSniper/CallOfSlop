@@ -36,8 +36,8 @@ public sealed partial class Construct
     private void BuildShaftFeeds(Span<CLink> edges, Span<float> edgeEff)
     {
         var any = false;
-        for (var i = 0; i < PartCount && !any; i++)
-            any = Parts[i].D.ShaftIn;
+        foreach (var i in Specials) // (a drill's Drive in is a special part's)
+            any |= Parts[i].D.ShaftIn;
         if (!any)
             return;
         if (Transmission >= 0)

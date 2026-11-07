@@ -35,7 +35,7 @@ internal struct WBox
 /// own and its freeform welds are group 0). A group's tree is built in that group's frame, so a joint moving costs
 /// nothing: the tree moves with the frame. Rebuilt only when the parts change, on first use, so a client never pays for it.
 /// </summary>
-internal sealed class ConstructCollider
+internal sealed partial class ConstructCollider
 {
     public struct Leaf
     {
@@ -45,6 +45,7 @@ internal sealed class ConstructCollider
         public byte Seg;
         public bool Turned, Wheel; // a freeform weld's box; a raycast wheel (it stays out of the ground collision)
         public bool Stub; // a box of a wheel that has a cylinder: it stands for the part, it doesn't collide
+        public bool Dead; // a hole a part that went left (ConstructRebuild.cs): in no node, skipped by the walks over a group
         public bool Scoop; // a box of a scoop: while its edge is in the ground the ground gives way to it (ConstructScoops.cs)
         public int Hull; // index in Hulls, -1: a plain box
         public int WheelIx; // this leaf is wheel WheelIx's cylinder, drawn wherever the hub is now (ConstructWheelShape.cs), and its bounds its whole travel; -1: no
@@ -78,6 +79,8 @@ internal sealed class ConstructCollider
     /// <summary>The boxes of the construct as it is now (rest pose; the joints' frames carry them after that).</summary>
     public void Build(Construct c)
     {
+        _dead = 0;
+        BenchTmp.Mark(2, null);
         var total = c.WheelCount;
         var hulls = 0;
         if (_wheelOf.Length < c.PartCount)
@@ -101,6 +104,7 @@ internal sealed class ConstructCollider
             Array.Resize(ref Hulls, hulls);
         if (Groups.Length < c.JointCount + 1)
             Groups = new Group[c.JointCount + 1];
+        BenchTmp.Mark(2, "col count");
         LeafCount = 0;
         var hullAt = 0;
         GroupCount = 0;
@@ -157,12 +161,19 @@ internal sealed class ConstructCollider
                 AddCylinder(c, _wheelOf[i], i, seg);
             }
         }
+        BenchTmp.Mark(2, "col leaves");
         // Group by joint, in segment order, and build each group's tree.
         var nodesNeeded = Math.Max(1, LeafCount * 2);
         if (Nodes.Length < nodesNeeded)
             Nodes = new Node[nodesNeeded];
         if (_keys.Length < LeafCount)
             _keys = new float[LeafCount];
+        if (LeafCount >= FastMin)
+        {
+            BuildFast(c);
+            BenchTmp.Mark(2, "col tree");
+            return;
+        }
         for (var k = 0; k < LeafCount; k++)
             _keys[k] = c.MoveSeg(Leaves[k].Seg);
         Array.Sort(_keys, Leaves, 0, LeafCount);
@@ -181,6 +192,146 @@ internal sealed class ConstructCollider
             BuildNode(g.Root, at, end - at);
             at = end;
         }
+    }
+
+    /// <summary>
+    /// Leaves from which the trees are built from Morton order instead (docs/perf/LIMITS.md, "Rebuilds"): each group's
+    /// leaf centres on a 1,024 cell lattice, interleaved, radix sorted (no compare, so no branch a tree-ordered list can
+    /// fool), then halved by count all the way down, the bounds made bottom-up: O(n), the leaves moved once. Below this
+    /// the old sort is kept, so small bodies' trees (and the contacts they give) are what they were.
+    /// </summary>
+    internal const int FastMin = 2048;
+
+    private int[] _order = [], _orderB = [];
+    private uint[] _code = [], _codeB = [];
+    private Leaf[] _spare = [];
+
+    private void BuildFast(Construct c)
+    {
+        if (_order.Length < LeafCount)
+        {
+            var cap = Math.Max(LeafCount, _order.Length * 2);
+            _order = new int[cap];
+            _orderB = new int[cap];
+            _code = new uint[cap];
+            _codeB = new uint[cap];
+        }
+        // By group (a stable count by segment: the body's first, then each joint's in order).
+        Span<int> start = stackalloc int[Construct.MaxJoints + 2];
+        start.Clear();
+        for (var k = 0; k < LeafCount; k++)
+            start[c.MoveSeg(Leaves[k].Seg) + 1]++;
+        for (var s = 1; s < start.Length; s++)
+            start[s] += start[s - 1];
+        Span<int> fill = stackalloc int[Construct.MaxJoints + 1];
+        start[..fill.Length].CopyTo(fill);
+        for (var k = 0; k < LeafCount; k++)
+            _order[fill[c.MoveSeg(Leaves[k].Seg)]++] = k;
+        NodeCount = 0;
+        for (var s = 0; s <= Construct.MaxJoints; s++)
+        {
+            var count = start[s + 1] - start[s];
+            if (count == 0)
+                continue;
+            MortonSort(start[s], count);
+            ref var g = ref Groups[GroupCount++];
+            g.Seg = (byte)s;
+            g.First = start[s];
+            g.Count = count;
+            g.Root = NodeCount++;
+        }
+        // The leaves in tree order, moved once; then each group's tree over them.
+        if (_spare.Length < Leaves.Length)
+            _spare = new Leaf[Leaves.Length];
+        for (var k = 0; k < LeafCount; k++)
+            _spare[k] = Leaves[_order[k]];
+        (Leaves, _spare) = (_spare, Leaves);
+        for (var g = 0; g < GroupCount; g++)
+            FastNode(Groups[g].Root, Groups[g].First, Groups[g].Count);
+    }
+
+    /// <summary>Sorts _order[start .. start + count] by the Morton code of each leaf's centre in the group's centre bounds (stable: ties stay in part order).</summary>
+    private void MortonSort(int start, int count)
+    {
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        for (var k = start; k < start + count; k++)
+        {
+            var m = Leaves[_order[k]].Centre;
+            lo = Vector3.Min(lo, m);
+            hi = Vector3.Max(hi, m);
+        }
+        var scale = new Vector3(1023f) / Vector3.Max(hi - lo, new Vector3(1e-6f));
+        for (var k = start; k < start + count; k++)
+        {
+            var q = (Leaves[_order[k]].Centre - lo) * scale;
+            _code[k] = Spread((uint)Math.Clamp((int)q.X, 0, 1023)) | Spread((uint)Math.Clamp((int)q.Y, 0, 1023)) << 1 | Spread((uint)Math.Clamp((int)q.Z, 0, 1023)) << 2;
+        }
+        Span<int> bucket = stackalloc int[257];
+        for (var shift = 0; shift < 30; shift += 8)
+        {
+            bucket.Clear();
+            for (var k = start; k < start + count; k++)
+                bucket[(int)(_code[k] >> shift & 255) + 1]++;
+            for (var b = 1; b < 257; b++)
+                bucket[b] += bucket[b - 1];
+            for (var k = start; k < start + count; k++)
+            {
+                var at = start + bucket[(int)(_code[k] >> shift & 255)]++;
+                _codeB[at] = _code[k];
+                _orderB[at] = _order[k];
+            }
+            Array.Copy(_codeB, start, _code, start, count);
+            Array.Copy(_orderB, start, _order, start, count);
+        }
+    }
+
+    /// <summary>Ten bits spread to every third bit (for a Morton code).</summary>
+    private static uint Spread(uint v)
+    {
+        v = (v | v << 16) & 0x030000FF;
+        v = (v | v << 8) & 0x0300F00F;
+        v = (v | v << 4) & 0x030C30C3;
+        v = (v | v << 2) & 0x09249249;
+        return v;
+    }
+
+    /// <summary>A node over Leaves[start .. start + count] in Morton order: halved by count, its bounds from its children's.</summary>
+    private void FastNode(int node, int start, int count)
+    {
+        Vector3 lo, hi;
+        if (count <= LeafSize)
+        {
+            lo = new Vector3(float.MaxValue);
+            hi = new Vector3(float.MinValue);
+            for (var i = start; i < start + count; i++)
+            {
+                ref var l = ref Leaves[i];
+                var e = Extent(l);
+                lo = Vector3.Min(lo, l.Centre - e);
+                hi = Vector3.Max(hi, l.Centre + e);
+            }
+            ref var n = ref Nodes[node];
+            n.Centre = (lo + hi) * 0.5f;
+            n.Half = (hi - lo) * 0.5f;
+            n.Start = start;
+            n.Count = count;
+            return;
+        }
+        var half = count / 2;
+        var left = NodeCount;
+        NodeCount += 2;
+        FastNode(left, start, half);
+        FastNode(left + 1, start + half, count - half);
+        ref var a = ref Nodes[left];
+        ref var b = ref Nodes[left + 1];
+        lo = Vector3.Min(a.Centre - a.Half, b.Centre - b.Half);
+        hi = Vector3.Max(a.Centre + a.Half, b.Centre + b.Half);
+        ref var p = ref Nodes[node];
+        p.Centre = (lo + hi) * 0.5f;
+        p.Half = (hi - lo) * 0.5f;
+        p.Start = left;
+        p.Count = 0;
     }
 
     /// <summary>A wheel's cylinder: one leaf whose bounds hold it through its whole travel, so the tree isn't touched as the hub moves.</summary>
@@ -387,6 +538,7 @@ public sealed partial class Construct
                 _collider ??= new ConstructCollider();
                 _collider.Build(this);
                 _colliderStale = false;
+                _colliderSerial = _editSerial;
             }
             return _collider;
         }

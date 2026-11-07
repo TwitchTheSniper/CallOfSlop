@@ -84,7 +84,7 @@ public sealed partial class Construct
         }
         ThrusterCount = 0;
         var want = 0;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials) // (thrusters are special parts)
             if (Parts[i].D.Role == PartRole.Thruster)
                 want++;
         if (want > MaxThrusters)
@@ -96,8 +96,10 @@ public sealed partial class Construct
         var mostRoll = 1e-3f;
         var fwd = SeatForward();
         var kept = 0; // (the old list is in part order, as the new one is: one walk through both)
-        for (var i = 0; i < PartCount && ThrusterCount < want; i++)
+        foreach (var i in Specials)
         {
+            if (ThrusterCount >= want)
+                break;
             ref var p = ref Parts[i];
             var d = p.D;
             if (d.Role != PartRole.Thruster)

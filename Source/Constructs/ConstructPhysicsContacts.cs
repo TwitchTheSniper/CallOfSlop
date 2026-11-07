@@ -331,7 +331,7 @@ public static partial class ConstructPhysics
         ref var gr = ref col.Groups[g];
         for (var k = gr.First; k < gr.First + gr.Count && n < MaxCand - 64; k++)
         {
-            if (col.Leaves[k].Wheel)
+            if (col.Leaves[k].Wheel || col.Leaves[k].Dead)
                 continue;
             col.World(k, f, out var box);
             var e = CFrame.Abs(new CFrame { X = box.X, Y = box.Y, Z = box.Z }, box.H) + new Vector3(margin);
@@ -361,7 +361,7 @@ public static partial class ConstructPhysics
         ref var gr = ref col.Groups[g];
         for (var k = gr.First; k < gr.First + gr.Count && n < MaxCand - 64; k++)
         {
-            if (col.Leaves[k].Wheel)
+            if (col.Leaves[k].Wheel || col.Leaves[k].Dead)
                 continue;
             col.World(k, f, out var box);
             var e = CFrame.Abs(new CFrame { X = box.X, Y = box.Y, Z = box.Z }, box.H) + new Vector3(margin);
