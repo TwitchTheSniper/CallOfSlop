@@ -34,7 +34,8 @@ public sealed partial class ConstructWorld
             if (doomed[i] && c.Parts[i].Store != 0)
                 Spill(c, i); // (a container that goes spills what it holds)
         var keepDriver = c.Driver;
-        Span<int> comp = stackalloc int[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> comp = scratch.Take<int>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = i < doomed.Length && doomed[i] ? -2 : -1;
         var root = c.Root >= 0 && c.Root < c.PartCount && comp[c.Root] != -2 ? c.Root : -1;

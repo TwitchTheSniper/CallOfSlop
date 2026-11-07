@@ -39,10 +39,9 @@ normal by the pattern. Terrain, buildings and map boxes aren't in it.
 
 ### Big bodies
 
-`ConstructRender`'s body batch keeps a `Renderer.BodyBox` per plain box: centre, size, RGBA8 tint and wear, row and mode, 32 bytes
-where it was 88 (a plain box has no turn of its own: the matrix was four vec4s of mostly zeros). It is still one draw, whatever the
-materials: the row is per instance, so no material ever splits a batch. Boxes are no longer kept in CPU memory as well; one scratch
-array serves every rebuild.
+Constructs' static parts are merged meshes (docs/render/MERGED-MESHES.md): a box is a slot with its matrix (48 bytes) and its
+look (tint and material code, 16 bytes) on the GPU, and the row is per slot, so no material ever splits a draw. The old body
+batch (`Renderer.BodyBox`, 32 bytes a plain box of bodies of 64 parts or more) is gone.
 
 ## Effects
 
@@ -119,7 +118,7 @@ Memory:
 | What | Before | After |
 | --- | --- | --- |
 | A part box (11,961 of them) | 128 B | 108 B, plus 1,704 shared looks at 20 B |
-| A body batch's plain box | 88 B on the GPU and 88 B in memory | 32 B on the GPU |
+| A body batch's plain box | 88 B on the GPU and 88 B in memory | 32 B on the GPU (now a merged mesh slot: 64 B on the GPU, docs/render/MERGED-MESHES.md) |
 | A prop vertex | 48 B | 40 B |
 | The material table | none | 16 KB |
 | The particle pool | none | 3.1 MB at Medium, 6.3 MB at High, 1.2 MB for the births; made on the first frame that draws them, at any setting |

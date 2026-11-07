@@ -226,7 +226,9 @@ public sealed partial class Construct
 {
     // The caps (docs/sandbox/CONSTRUCTS.md, "Size classes"): part indices are two bytes everywhere, segments one (so joints stay
     // under 256). The arrays below start small and grow with the construct (Reserve...): a loose block costs what it did not.
-    public const int MaxParts = 8000;
+    // MaxParts was 8,000 until docs/perf/LIMITS.md: the part-sized scratch is off the stack now (Scratch.cs), and 16,000 x 3
+    // links stays under the u16 link count on the wire (21,845 parts at most without widening it).
+    public const int MaxParts = 16000;
     public const int MaxLinks = MaxParts * 3;
     public const int MaxJoints = 255; // (a segment is a byte: 0 is the body, k hangs on joint k - 1)
     public const int MaxWheels = 256;
@@ -425,6 +427,8 @@ public sealed partial class Construct
     public double FitAt;
     public bool Dirty = true;
     public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
+    internal ushort[] SigList = []; // the signal parts in part order (ConstructNet.Signals: kept for the poses)
+    internal int SigListCount, SigListStamp = -1, SigListParts = -1;
     public uint StoreNetKey, StoreNetSeen; // a hash of its stores and chutes, and the last one the beacons took in (ConstructBeacons.cs)
 
     // Client: the pose it is drawn at (blended towards the last one received).
@@ -516,13 +520,23 @@ public sealed partial class Construct
         Array.Resize(ref PtoDriven, n);
         Array.Resize(ref EngineOf, n);
         Array.Resize(ref EngineSlot, n);
+        Scratch.Reserve(ScratchBytes(n, Links.Length)); // (the part-sized spans of a rebuild, the drive line and the logic step grow here, on the edit: Scratch.cs)
     }
+
+    /// <summary>
+    /// Scratch a construct of this size may want at once (Scratch.cs): the drive line's per-part spans (about 20 B a part,
+    /// with its edges 10 B a link) inside a rebuild's flood, with the alignment and a margin for nesting.
+    /// </summary>
+    public static int ScratchBytes(int parts, int links) => 64 * 1024 + parts * 48 + links * 16;
 
     /// <summary>Room for <paramref name="links"/> links.</summary>
     public void ReserveLinks(int links)
     {
         if (links > Links.Length)
+        {
             Array.Resize(ref Links, Math.Min(Math.Max(links, Links.Length * 2), MaxLinks));
+            Scratch.Reserve(ScratchBytes(Parts.Length, Links.Length));
+        }
     }
 
     /// <summary>Room for <paramref name="joints"/> joints and their segments.</summary>
@@ -1732,8 +1746,9 @@ public sealed partial class Construct
     {
         if (modular < 0 && ConstructRoutes.PipeFeeds(this, engine))
             return true;
-        Span<bool> seen = stackalloc bool[PartCount];
-        Span<ushort> queue = stackalloc ushort[PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> seen = scratch.Take<bool>(PartCount);
+        Span<ushort> queue = scratch.Take<ushort>(PartCount);
         int head = 0, tail = 0;
         if (modular < 0)
         {

@@ -420,7 +420,8 @@ public sealed partial class ConstructWorld
     /// <summary>Splits off every piece of <paramref name="c"/> no longer joined to its root (a cut weld) as bodies of their own; the first one, and how many.</summary>
     private Construct? Resplit(Construct c, out int pieces)
     {
-        Span<int> comp = stackalloc int[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> comp = scratch.Take<int>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = -1;
         var comps = 0;

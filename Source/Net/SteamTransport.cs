@@ -28,7 +28,17 @@ public sealed class SteamTransport : INetTransport
         /// <summary>The peer closed or the route broke: what it sent before still waits in Steam's queue, so the
         /// connection is drained once more, then the game hears the event and the handle is released.</summary>
         public byte Closing;
+        /// <summary>A message coming in pieces (<see cref="Msg.Fragment"/>), one a lane: the bytes so far and its whole length.</summary>
+        public readonly byte[]?[] Asm = new byte[NetLanes.Count][];
+        public readonly int[] AsmLen = new int[NetLanes.Count], AsmTotal = new int[NetLanes.Count];
     }
+
+    /// <summary>The bytes of a message a <see cref="Msg.Fragment"/> carries (its header is 7 bytes): a reliable message over
+    /// <see cref="MaxMessageSize"/> goes as these, in order on its own lane, and is whole again before the game reads it.</summary>
+    public const int FragmentBytes = 256 * 1024;
+    /// <summary>The largest message put back together (a sanity check on a peer's length).</summary>
+    public const int MaxReassembled = 64 * 1024 * 1024;
+    private byte[]? _fragOut; // (made the first time a message is split)
 
     private readonly ISteamBackend _steam;
     private readonly int _maxClients;
@@ -263,7 +273,48 @@ public sealed class SteamTransport : INetTransport
     {
         if (!_conns.TryGetValue(conn, out var c) || !c.Connected || data.Length == 0)
             return;
+        if (data[0] == (byte)Msg.Fragment)
+        {
+            Reassemble(c, data);
+            return;
+        }
         _handler?.Invoke(GuidOf(c.SteamId), data);
+    }
+
+    /// <summary>A piece of a split message: added to its lane's buffer, and the whole message goes to the game when it is all there.</summary>
+    private void Reassemble(Conn c, ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 8 || data[1] >= NetLanes.Count)
+            return;
+        var lane = data[1];
+        if (data[2] != 0)
+            c.AsmLen[lane] = 0; // (a first piece: whatever came before it on this lane was cut short, a send refused)
+        var total = (int)BitConverter.ToUInt32(data.Slice(3, 4));
+        var piece = data[7..];
+        if (total <= MaxMessageSize || total > MaxReassembled || (c.AsmLen[lane] > 0 && c.AsmTotal[lane] != total))
+        {
+            Console.WriteLine($"[steam] dropped a bad fragment ({total} bytes, lane {lane})");
+            c.AsmLen[lane] = 0;
+            return;
+        }
+        if (c.AsmLen[lane] == 0)
+        {
+            c.AsmTotal[lane] = total;
+            if (c.Asm[lane] is not { } have || have.Length < total)
+                c.Asm[lane] = new byte[total]; // (kept for the next one: a big body's Full comes again with every change)
+        }
+        var buf = c.Asm[lane]!;
+        if (c.AsmLen[lane] + piece.Length > total)
+        {
+            c.AsmLen[lane] = 0;
+            return;
+        }
+        piece.CopyTo(buf.AsSpan(c.AsmLen[lane]));
+        c.AsmLen[lane] += piece.Length;
+        if (c.AsmLen[lane] < total)
+            return;
+        c.AsmLen[lane] = 0;
+        _handler?.Invoke(GuidOf(c.SteamId), buf.AsSpan(0, total));
     }
 
     public void SendTo(RakNetGUID target, ReadOnlySpan<byte> data, PacketReliability reliability)
@@ -275,12 +326,35 @@ public sealed class SteamTransport : INetTransport
 
     private void Send(Conn c, ReadOnlySpan<byte> data, PacketReliability reliability)
     {
+        var flags = NetLanes.SteamSendFlags(reliability);
+        var lane = (int)NetLanes.For(reliability, data[0]);
         if (data.Length > MaxMessageSize)
         {
-            Console.WriteLine($"[steam] dropped a {data.Length}-byte message (Msg {data[0]}): over Steam's {MaxMessageSize}-byte limit");
+            if (flags != NetLanes.SteamSendReliable)
+            {
+                Console.WriteLine($"[steam] dropped a {data.Length}-byte unreliable message (Msg {data[0]}): over Steam's {MaxMessageSize}-byte limit");
+                return;
+            }
+            // Over Steam's limit (a capital construct's Full): in pieces, in order on the message's own lane (reliable
+            // ordered within a lane), put back together on the far side (Reassemble).
+            var buf = _fragOut ??= new byte[FragmentBytes + 7];
+            buf[0] = (byte)Msg.Fragment;
+            buf[1] = (byte)lane;
+            BitConverter.TryWriteBytes(buf.AsSpan(3, 4), (uint)data.Length);
+            for (var at = 0; at < data.Length; at += FragmentBytes)
+            {
+                var n = Math.Min(FragmentBytes, data.Length - at);
+                buf[2] = (byte)(at == 0 ? 1 : 0);
+                data.Slice(at, n).CopyTo(buf.AsSpan(7));
+                if (!_steam.SendMessage(c.Handle, buf.AsSpan(0, n + 7), flags, lane))
+                {
+                    Console.WriteLine($"[steam] a {data.Length}-byte message (Msg {data[0]}) was refused at byte {at}: Steam's send buffer is full");
+                    return; // (the far side drops the part it has when the next first piece comes)
+                }
+            }
             return;
         }
-        _steam.SendMessage(c.Handle, data, NetLanes.SteamSendFlags(reliability), (int)NetLanes.For(reliability, data[0]));
+        _steam.SendMessage(c.Handle, data, flags, lane);
     }
 
     public void Broadcast(ReadOnlySpan<byte> data, PacketReliability reliability)

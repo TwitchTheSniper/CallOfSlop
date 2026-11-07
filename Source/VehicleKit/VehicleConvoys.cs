@@ -58,8 +58,16 @@ public static class VehicleConvoys
             return ok[^1].Role;
         }
         var scheme = Derive(seed, 0);
+        var used = new HashSet<string>(StringComparer.Ordinal);
+        int Family(int what, string role) // (a family's seed; another when its model name is one the convoy fields already, so no two lines share a name)
+        {
+            var s = Derive(seed, what);
+            for (var k = 1; k <= 8 && !used.Add(VehicleFamilies.ModelName(new VehicleModel(st.Name, role, tier, s))); k++)
+                s = Derive(seed, what + 100 * k);
+            return s;
+        }
         var lead = Weighted([("boss", tier >= 3 ? 0.5 : 0.12), ("command", 1)], d.Fork("leader"));
-        var leader = new VehicleModel(st.Name, lead, Math.Min(VehicleRoles.MaxTier, tier + 1), Derive(seed, 1), Scheme: scheme);
+        var leader = new VehicleModel(st.Name, lead, Math.Min(VehicleRoles.MaxTier, tier + 1), Family(1, lead), Scheme: scheme);
         var behind = new List<(string Slot, VehicleModel M)>();
         if (mix is { Count: > 0 })
         {
@@ -68,7 +76,7 @@ public static class VehicleConvoys
             {
                 var role = VehicleRoles.Find(r) ?? throw new VehicleKitException($"no role \"{r}\": {string.Join(", ", VehicleRoles.All.Select(x => x.Name))}");
                 if (!families.TryGetValue(role.Name, out var fs))
-                    families[role.Name] = fs = Derive(seed, 20 + families.Count);
+                    families[role.Name] = fs = Family(20 + families.Count, role.Name);
                 var twins = behind.Count(b => b.M.Role == role.Name && b.M.Seed == fs);
                 behind.Add((role.Name is "raider" or "scout" or "gun platform" ? "escort" : "cargo", new VehicleModel(st.Name, role.Name, tier, fs, twins == 1 && role.Combat ? 2 : 1, Scheme: scheme)));
             }
@@ -82,14 +90,14 @@ public static class VehicleConvoys
             var escortRole = Weighted(EscortRoles.Select(r => (r, fielded.GetValueOrDefault(r))), d.Fork("escorts"));
             var other = EscortRoles.First(r => r != escortRole);
             var second = escorts >= 3 && Fields(other) && d.Fork("second line").Chance(0.4);
-            var es = Derive(seed, 2);
+            var es = Family(2, escortRole);
             var md = d.Fork("marks");
             var variantAt = md.Chance(0.35) && escorts >= 2 ? md.Int(1, escorts - 1) : -1;
             for (var k = 0; k < escorts; k++)
             {
                 if (second && k == escorts - 1)
                 {
-                    behind.Add(("escort", new VehicleModel(st.Name, other, tier, Derive(seed, 4), Scheme: scheme)));
+                    behind.Add(("escort", new VehicleModel(st.Name, other, tier, Family(4, other), Scheme: scheme)));
                     continue;
                 }
                 var mark = k == 0 && escorts >= 2 && md.Chance(0.6) ? 2 : 1;
@@ -100,7 +108,7 @@ public static class VehicleConvoys
             if (cargo > 0)
             {
                 var cargoRole = Weighted(CargoRoles.Select(c => (c.Role, c.W * Math.Max(0.2, fielded.GetValueOrDefault(c.Role)))), d.Fork("cargo"));
-                var cs = Derive(seed, 3);
+                var cs = Family(3, cargoRole);
                 for (var k = 0; k < cargo; k++)
                     behind.Add(("cargo", new VehicleModel(st.Name, cargoRole, tier, cs, 1, k > 0 && cargoRole != "tanker" ? VehicleFamilies.TankerConversion : "", scheme)));
             }
@@ -195,7 +203,7 @@ public static class VehicleFamiliesCli
     }
 
     /// <summary>
-    /// <c>--family "Style Role" [--seed S] [--tier T]</c>: the family's Mk1 to Mk3 and its variants (of Mk1), a named unique of it, and two other families' Mk1 of the
+    /// <c>--family "Style Role" [--seed S] [--tier T] [--check]</c>: the family's Mk1 to Mk3 and its variants (of Mk1), a named unique of it, and two other families' Mk1 of the
     /// same role, each with its distance to Mk1 (<see cref="VehicleDiversity"/>) and the matrix; then the mean within the family against the mean to the others. A
     /// family reads as one when its members are closer to each other than to another family's. Exit code: members that failed, plus 1 when the family isn't closer.
     /// </summary>
@@ -226,10 +234,19 @@ public static class VehicleFamiliesCli
         var rolled = Enumerable.Range(1, 400).Count(s => VehicleFamilies.RollNamed(plain with { Seed = s, Named = null }));
         Console.WriteLine($"{st.Name} {role.Name} family {seed}, base tier {tier}: Mk1 at tier {tier}, Mk2 {Math.Min(4, tier + 1)}, Mk3 {Math.Min(4, tier + 2)}; seed {seed} is {(VehicleFamilies.RollNamed(plain with { Named = null }) ? "" : "not ")}a named unique ({rolled} of seeds 1-400 are)");
         var made = list.Select(x => MakeOne(x.What, x.M, true)).ToList();
+        var bad = 0;
         foreach (var o in made)
+        {
             Print(o);
+            if (o.V is { } v && Has(args, "--check")) // (the full check, as --sweep-vehicle runs it: seconds a member)
+            {
+                var r = VehicleChecks.Check(o.Text, VehicleRegistry.Slug(v.Name) + ".json", VehicleFamilies.Resolve(o.M).G.Checks, v.Rooms);
+                bad += r.Passed ? 0 : 1;
+                Console.WriteLine(r.Passed ? "    check: passed" : $"    check: FAILED {string.Join("; ", r.Failures)}");
+            }
+        }
         var ok = made.Where(o => o.F != null).ToList();
-        var bad = made.Count - ok.Count;
+        bad += made.Count - ok.Count;
         if (ok.Count < 2)
             return bad + 1;
         Console.WriteLine();

@@ -1484,13 +1484,30 @@ public static class ConstructNet
             c.SigSent = c.SigHash;
     }
 
-    private static int SignalParts(Construct c)
+    private static int SignalParts(Construct c) => Signals(c).Length;
+
+    /// <summary>
+    /// The signal parts in part order, kept with the construct and found again only after a rebuild or a part count
+    /// change (a pose once walked every part three times for them: 16,000 parts a body each pose; docs/perf/LIMITS.md).
+    /// Grows by doubling, so a steady pose allocates nothing.
+    /// </summary>
+    internal static ReadOnlySpan<ushort> Signals(Construct c)
     {
-        var n = 0;
-        for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].D.IsSignal)
-                n++;
-        return n;
+        if (c.SigListStamp != c.RebuildStamp || c.SigListParts != c.PartCount || c.Dirty)
+        {
+            var n = 0;
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.Parts[i].D.IsSignal)
+                {
+                    if (n == c.SigList.Length)
+                        Array.Resize(ref c.SigList, Math.Max(16, n * 2));
+                    c.SigList[n++] = (ushort)i;
+                }
+            c.SigListCount = n;
+            c.SigListStamp = c.RebuildStamp;
+            c.SigListParts = c.Dirty ? -1 : c.PartCount; // (a dirty body is walked again next time: its parts may change before the rebuild)
+        }
+        return c.SigList.AsSpan(0, c.SigListCount);
     }
 
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
@@ -1589,18 +1606,15 @@ public static class ConstructNet
         w.U16(0).U16(0);
         if (!c.HasLogic)
             return;
-        var total = SignalParts(c);
+        var sigs = Signals(c);
+        var total = sigs.Length;
         var first = total <= PoseSignals ? 0 : c.PoseSignalAt % total;
         var n = 0;
-        var ordinal = 0;
-        for (var i = 0; i < c.PartCount && n < PoseSignals; i++)
-            if (c.Parts[i].D.IsSignal)
-            {
-                if (ordinal++ < first)
-                    continue;
-                w.U8(unchecked((byte)ConstructLogic.Quantise(c.Parts[i].Out)));
-                n++;
-            }
+        for (var k = first; k < total && n < PoseSignals; k++)
+        {
+            w.U8(unchecked((byte)ConstructLogic.Quantise(c.Parts[sigs[k]].Out)));
+            n++;
+        }
         w.PatchU16(at, (ushort)first);
         w.PatchU16(at + 2, (ushort)n);
         var end = first + n >= total;
@@ -1679,23 +1693,12 @@ public static class ConstructNet
             ReadAir(ref r, c != null && !stale ? c : null);
             int signalFrom = r.U16();
             int signals = r.U16();
-            var si = 0;
-            if (c != null && !stale)
-                for (var skip = 0; skip < signalFrom && si < c.PartCount; si++)
-                    if (c.Parts[si].D.IsSignal)
-                        skip++;
-            for (int k2 = 0, i = si; k2 < signals; k2++)
+            var sigs = c != null && !stale ? Signals(c) : default;
+            for (var k2 = 0; k2 < signals; k2++)
             {
                 var sig = (sbyte)r.U8() / 10f;
-                if (c == null || stale)
-                    continue;
-                while (i < c.PartCount && !c.Parts[i].D.IsSignal)
-                    i++;
-                if (i < c.PartCount)
-                {
-                    c.Parts[i].Out = sig;
-                    i++;
-                }
+                if (signalFrom + k2 < sigs.Length)
+                    c!.Parts[sigs[signalFrom + k2]].Out = sig;
             }
             if (c == null || stale || !float.IsFinite(pos.X + pos.Y + pos.Z) || q.LengthSquared() < 0.5f)
                 continue;

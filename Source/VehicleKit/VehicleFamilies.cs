@@ -134,11 +134,14 @@ public static class VehicleFamilies
         var style = Styles.All.FirstOrDefault(s => s.Name.Equals(m.Style, StringComparison.OrdinalIgnoreCase))?.Name ?? m.Style;
         if (m.IsNamed)
             return $"{style} {Dice.Of(m.Seed).Fork("family named name " + m.Role).Pick(names.Named)}";
-        var model = Dice.Of(m.Seed).Fork("family name " + m.Role).Pick(names.Models);
+        var model = ModelName(m);
         var mark = names.Marks[Math.Clamp(m.Mark, 1, Marks) - 1];
         var variant = m.Variant.Length > 0 ? names.VariantLabel(m.Variant) : "";
         return string.Join(" ", new[] { style, model, mark, variant }.Where(x => x.Length > 0));
     }
+
+    /// <summary>The family's model name from the style's list, by its seed and role ("Rustbucket"): every mark and variant of the family shares it.</summary>
+    public static string ModelName(VehicleModel m) => Dice.Of(m.Seed).Fork("family name " + m.Role).Pick(VehicleFamilyNames.For(m.Style).Models);
 
     /// <summary>A mark's vehicle once made: named for its model, the key in the kit line, the description says what it is.</summary>
     internal static void Note(Vehicle v, RoleAsk ask, VehicleModel m, string shape)
@@ -179,9 +182,10 @@ public sealed partial class Vehicle
     /// <summary>
     /// Appliqué for a vehicle with no room (a family's Mk2 and Mk3, its up-armoured variant): the style's heaviest armour plate, a metre square, welded upright a few
     /// centimetres proud of the outermost plate or beam of the body at a station along each side, 0.35 m and more over the ground, only where it meets nothing
-    /// else (wheels, guns, ladders, drums), a metre and more from any other weld. As many as the lean asks, from a third of the stations at 0.3 up.
+    /// else (wheels, guns, ladders, drums), a metre and more from any other weld (the hull's appliqué included). As many as the lean asks, from a third of the stations
+    /// at 0.3 up, and at least <paramref name="least"/> (a Mk2 two, a Mk3 and an up-armoured variant four) where there is room.
     /// </summary>
-    private void SideArmour(double lean, Dice d)
+    private void SideArmour(double lean, int least, Dice d)
     {
         var material = Style.Parts.GetValueOrDefault("armour")?.OrderByDescending(VehicleRoles.PlateArmour).ThenBy(x => x, StringComparer.Ordinal).FirstOrDefault() ?? "Plate Steel";
         if (ConstructParts.Find(material + " 1 m") is not { } def)
@@ -231,7 +235,7 @@ public sealed partial class Vehicle
                 if (Parts.FirstOrDefault(p => p.Index == host.Index) is { } vp)
                     spots.Add((vp, new Vector3(x, y, Math.Clamp(z, host.Lo.Z - 0.3f, host.Hi.Z + 0.3f)), side));
             }
-        var want = Math.Max(2, (int)MathF.Round((float)(lean * spots.Count * 0.35)));
+        var want = Math.Max(Math.Max(2, least), (int)MathF.Round((float)(lean * spots.Count * 0.35)));
         var placed = new List<Vector3>();
         foreach (var (host, at, side) in d.Shuffled(spots))
         {
@@ -257,8 +261,9 @@ public sealed partial class Vehicle
     /// </summary>
     internal void FamilyKit(RoleAsk ask)
     {
-        if (ask.KitArmourLean >= 0.3 && Rooms.Count == 0)
-            SideArmour(ask.KitArmourLean, Dice.Fork("kit family armour")); // (no hull to take appliqué: the sides take it)
+        var least = ask.Variant == VehicleFamilies.UpArmoured ? 4 : ask.Model!.Mark >= 3 ? 4 : ask.Model.Mark >= 2 ? 2 : 0;
+        if (ask.KitArmourLean >= 0.3 && (Rooms.Count == 0 || least > 0))
+            SideArmour(ask.KitArmourLean, least, Dice.Fork("kit family armour")); // (a later mark is plated where it shows: the sides, past what the hull took)
         if (ask.Variant == VehicleFamilies.TankerConversion)
         {
             var d = Dice.Fork("kit family drums");

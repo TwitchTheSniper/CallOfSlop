@@ -48,7 +48,8 @@ public sealed partial class ConstructWorld
         var kick = c.Parts[index].D.DecoupleKick;
         c.WorldFrame(c.Parts[index].Seg, out var fq, out var ft);
         var at = ft + Vector3.Transform(c.Parts[index].Pos, fq);
-        Span<int> comp = stackalloc int[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> comp = scratch.Take<int>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = -1;
         comp[index] = -2;

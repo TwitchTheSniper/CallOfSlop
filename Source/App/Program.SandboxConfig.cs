@@ -32,7 +32,7 @@ public static partial class Program
         var c = hit.Body;
         var d = c.DefOf(hit.Part);
         var why = g.SandboxConfigRefusal(c, me.Id);
-        var key = ((long)c.Id << 24) | ((long)hit.Part << 16) | (long)Ui.SandboxConfigSelection.Length << 8 | (why != null ? 1L : 0) | (d.Configurable ? 2L : 0);
+        var key = ((long)c.Id << 40) | ((long)hit.Part << 16) | (long)Ui.SandboxConfigSelection.Length << 8 | (why != null ? 1L : 0) | (d.Configurable ? 2L : 0);
         if (key != _sbCfgLookKey)
         {
             _sbCfgLookKey = key;

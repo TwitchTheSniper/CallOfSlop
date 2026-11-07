@@ -223,6 +223,9 @@ public static partial class ConstructRender
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
         gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)
+        var merge = MergeOn && gfx.MergedMeshes; // (static parts as merged meshes: ConstructRenderBatch.cs)
+        BeginMergedFrame();
+        var loopT0 = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var c in world.Bodies)
         {
             if (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0)
@@ -253,9 +256,7 @@ public static partial class ConstructRender
                 lod++;
                 continue;
             }
-            if (c.PartCount >= BatchMinParts && gfx.BodyBatches)
-                n += DrawBatched(gfx, world, c, body, blendTicks ? alpha : 1f);
-            else
+            if (!merge || !DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n)) // (too few static boxes, or merging off: part by part)
                 for (var i = 0; i < c.PartCount; i++)
                 {
                     n += DrawPart(gfx, world, c, i, body, blendTicks ? alpha : 1f, 1f);
@@ -285,7 +286,11 @@ public static partial class ConstructRender
             gfx.Relative = false;
             n += DrawWheel(gfx, c, alpha, blendTicks); // (from the seat's world pose)
         }
+        var loopT1 = System.Diagnostics.Stopwatch.GetTimestamp();
+        FlushMerged(gfx);
         gfx.EndBatch();
+        LoopMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT0, loopT1).TotalMilliseconds;
+        FlushMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT1).TotalMilliseconds;
         BatchSweep(gfx, world);
         LastCulled = culled;
         LastLod = lod;
@@ -314,6 +319,9 @@ public static partial class ConstructRender
         LastBoxes = n;
     }
 
+    /// <summary>Milliseconds spent walking the bodies (culling, merged chunks queued, other parts drawn box by box) and in the
+    /// last flush (the merged draws and the box batch), added up since the reader last cleared them (the GL bench).</summary>
+    public static double LoopMs, FlushMs;
     private const int FrozenOutlineParts = 24;
 
     private static Matrix4x4 Basis(Vector3 z)

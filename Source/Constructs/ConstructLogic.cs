@@ -49,12 +49,13 @@ public static class ConstructLogic
             c.ActiveSignal = false;
             return;
         }
-        Span<float> sum = stackalloc float[c.PartCount];
-        Span<byte> count = stackalloc byte[c.PartCount];
-        Span<byte> high = stackalloc byte[c.PartCount];
-        Span<ushort> firstFrom = stackalloc ushort[c.PartCount];
-        Span<float> sum1 = stackalloc float[c.PartCount], sum2 = stackalloc float[c.PartCount]; // (named data ports 1 and 2: the spawners' spawn now and rate)
-        Span<byte> count1 = stackalloc byte[c.PartCount], count2 = stackalloc byte[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<float> sum = scratch.Take<float>(c.PartCount);
+        Span<byte> count = scratch.Take<byte>(c.PartCount);
+        Span<byte> high = scratch.Take<byte>(c.PartCount);
+        Span<ushort> firstFrom = scratch.Take<ushort>(c.PartCount);
+        Span<float> sum1 = scratch.Take<float>(c.PartCount), sum2 = scratch.Take<float>(c.PartCount); // (named data ports 1 and 2: the spawners' spawn now and rate)
+        Span<byte> count1 = scratch.Take<byte>(c.PartCount), count2 = scratch.Take<byte>(c.PartCount);
         sum.Clear();
         count.Clear();
         high.Clear();

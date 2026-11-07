@@ -76,7 +76,7 @@ public enum CActKind : byte
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
     Ordnance, // u32 length, text: build this design at the Ordnance Bench in reach (protocol 180; GameSandboxOrdnance.cs)
     Vehicle, // text style, text shape, u32 seed (0: the server picks): a faction vehicle made at spawn time, in front of the player (protocol 186; GameSandboxVehicles.cs)
-    FactionVehicle, // u8 (0 by role, 1 a convoy), text style, text role (empty: any), u8 tier, u8 count (a convoy's; 0: 5), u32 seed (0: the server picks) (protocol 190; GameSandboxVehicles.cs)
+    FactionVehicle, // u8 (0 by role, 1 a convoy), text style, text role (empty: any), u8 tier, u8 count (a convoy's; 0: 5), u32 seed (0: the server picks) (protocol 191; GameSandboxVehicles.cs)
 }
 
 /// <summary>
@@ -1663,7 +1663,7 @@ public sealed partial class Game
         return lim >= MathF.PI ? local : Math.Clamp(local, -lim, lim);
     }
 
-    private uint _stabSeat; // the seat whose look is held (body << 8 | part + 1; 0: none)
+    private uint _stabSeat; // the seat whose look is held (body << 16 | part + 1; 0: none)
     private ushort _stabBody; // the body that point is on (0: the world)
     private Vector3 _stabAt;
     private float _stabYaw, _stabPitch; // the look as the last frame left it: any other is the player's hand
@@ -1703,7 +1703,7 @@ public sealed partial class Game
         }
     }
 
-    private uint _sbViewSeat; // the seat the local view last turned with (body << 8 | part + 1; 0: none)
+    private uint _sbViewSeat; // the seat the local view last turned with (body << 16 | part + 1; 0: none)
     private float _sbViewYaw;
 
     private float _sbLookSent = float.NaN;
@@ -1842,7 +1842,7 @@ public sealed partial class Game
             if (p.Id == LocalId)
             {
                 // The view turns with the seat, then stays inside the seat type's limits.
-                localSeat = ((uint)body << 8) | (uint)(part + 1);
+                localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
                 if (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part)) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
