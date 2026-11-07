@@ -38,7 +38,7 @@ where the float maths runs in another order. One program for both GL tiers (`#ve
 
 ## Keeping it right
 
-- **Looks** (paint, damage, frost): a hash over each chunk's parts is checked every `MergeCheckFrames` (4) draws of the
+- **Looks** (paint, texture, damage, frost): a hash over each chunk's parts is checked every `MergeCheckFrames` (4) draws of the
   body, half the chunks at a time, so a change shows within 8 drawn frames; only that chunk's looks are written again (16
   bytes a box), never its geometry. A body out of view isn't checked until it is drawn again.
 - **Edits**: a rebuild (`Construct.RebuildStamp`) or a change in which parts are types, fires or stores (`DynKey`) plans

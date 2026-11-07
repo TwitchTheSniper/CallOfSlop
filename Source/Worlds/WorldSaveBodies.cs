@@ -239,6 +239,9 @@ public sealed partial class ConstructWorld
         s.NextTag = _nextTag;
     }
 
+    /// <summary>The setting key a part's texture (ConstructFinish.cs) is saved under, followed by the material's name.</summary>
+    public const string FinishKey = "finish:";
+
     /// <summary>One body as bytes: its fields, then its parts as columns (like values side by side, which packs far smaller).</summary>
     public static void WriteBody(SaveWriter w, WorldSnapshot s, in BodySnap b, WorldNames names)
     {
@@ -312,6 +315,12 @@ public sealed partial class ConstructWorld
                     countAt.U16((ushort)i).U16(names.Key(LogicText.SaveKey(slot, chunk))).F32(LogicText.Pack(text, chunk));
                     settings++;
                 }
+            }
+            // (the texture paint tool's material, by name, as a setting an older reader skips: ConstructFinish.cs)
+            if (p.Finish != 0 && ConstructFinish.Name(p.Finish) is { Length: > 0 } finish)
+            {
+                countAt.U16((ushort)i).U16(names.Key(FinishKey + finish)).F32(0f);
+                settings++;
             }
             // (a media part's list, the same way: ConstructMedia.cs)
             if (d.IsMedia)
@@ -535,6 +544,11 @@ public sealed partial class ConstructWorld
             var v = r.F32();
             if (part >= n || key >= names.Keys.Length)
                 throw new WorldFileException("a setting of a part that isn't there");
+            if (names.Keys[key].StartsWith(FinishKey, StringComparison.Ordinal))
+            {
+                parts[part].Finish = ConstructFinish.Of(names.Keys[key][FinishKey.Length..]); // (a material this build doesn't have: the part's own)
+                continue;
+            }
             var d = parts[part].D;
             var slot = Array.FindIndex(d.Config, e => !e.Bound && e.Key == names.Keys[key]);
             if (slot >= 0 && float.IsFinite(v))

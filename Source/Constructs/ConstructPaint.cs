@@ -170,7 +170,7 @@ public static class ConstructPaint
         {
             var (id, key) = changes[i];
             var route = (key & RouteKey) != 0;
-            var index = key & 0xFF;
+            var index = route ? key & ~RouteKey : key; // (a part's index runs past 255 on a big body: MaxParts 16,000)
             if (world.Get(id) is not { } c || index >= (route ? c.RouteCount : c.PartCount))
                 continue;
             var paint = route ? c.Routes[index].Paint : c.Parts[index].Paint;
@@ -183,8 +183,8 @@ public static class ConstructPaint
         return i;
     }
 
-    /// <summary>A change's key for a link (a part's key is its index).</summary>
-    public const ushort RouteKey = 0x100;
+    /// <summary>A change's key for a link (a part's key is its index, below Construct.MaxParts; it was 0x100, which read part 256 and up as links).</summary>
+    public const ushort RouteKey = 0x8000;
 
     /// <summary>Client: a CBodyKind.Paint message (after the kind byte).</summary>
     public static void ReadChanges(ref PacketReader r, ConstructWorld world)

@@ -239,6 +239,23 @@ public static unsafe class LightGrid
         Send();
     }
 
+    /// <summary>
+    /// The material swatches (SurfaceThumbs): the classic light like any picture, but with the materials drawn at Medium at least
+    /// whatever the setting, so a swatch shows its pattern; <c>false</c> puts the setting back. No GL work when the block can't be made.
+    /// </summary>
+    public static void Swatches(bool on)
+    {
+        if (!Init())
+            return;
+        _block.Mode = Vector4.Zero;
+        MarkGlow = false;
+        var keep = SurfaceLevel;
+        if (on)
+            SurfaceLevel = MathF.Max(keep, 1f);
+        Send();
+        SurfaceLevel = keep;
+    }
+
     private static void Send()
     {
         _block.Surf.X = SurfaceLevel;

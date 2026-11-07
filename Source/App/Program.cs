@@ -698,6 +698,7 @@ public static unsafe partial class Program
             perf = Perf.Measure(PerfArea.Render);
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
+            SurfaceThumbs.Pump(Gfx); // the texture paint tool's material swatches, while its list asks for them (Source/Render/SurfaceThumbnails.cs)
             if (Ui.WorkbenchOpen)
                 PartThumbs.Pump(Gfx); // workbench part pictures: a few per frame, cached (Source/Render/PartThumbnails.cs)
             SandboxTiles.Pump(Gfx); // the Sandbox inventory's tile atlas: made over a few frames once the window wants it, then kept (Source/Render/SandboxTiles.cs)
@@ -1000,7 +1001,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1089,6 +1090,12 @@ public static unsafe partial class Program
             Ui.CloseReplacePicker();
             SetMouseCaptured(true);
             _swallowClick = true;
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.SandboxTexturePickerOpen)
+        {
+            Ui.CloseSandboxTexturePicker(); // Esc closes the texture paint tool's list (back to painting)
+            SetMouseCaptured(true);
             return;
         }
         if (key == GlfwKey.Escape && Ui.SandboxPaintPickerOpen)

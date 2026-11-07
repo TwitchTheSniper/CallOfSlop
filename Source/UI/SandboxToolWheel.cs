@@ -29,17 +29,18 @@ public sealed class SandboxToolWheel
 {
     public enum Slot
     {
-        Nudge, // (straight up: ten segments, and hands straight down. Saved wheels are by name, so a slot's number is free to change)
+        Nudge, // (straight up: twelve segments, and hands straight down. Saved wheels are by name, so a slot's number is free to change)
         PhysicsGun, // (it lifts and moves pieces, decision 19)
         Tracks,
-        Welder,
+        Welder, // (east)
         Configure,
-        Hands,
+        NoCollide, // (before Hands since the texture paint tool came: twelve segments, and Hands still hangs straight down, RadialMenu.Tilt)
+        Hands, // (south)
         Remover, // (SW: where the scanner was going to be; board item rt01)
         GroundDrill, // (between the remover and the linking tool)
-        Linker,
+        Linker, // (west)
         Paint, // (NW: where the hand drill was going to be)
-        NoCollide, // (after Hands: eleven segments and Hands still hangs straight down, RadialMenu.Tilt)
+        Texture, // (beside the paint tool: the texture paint tool, ConstructFinish.cs)
         Selector, // (not on the default wheel: a player adds it; new tools go after it)
         COUNT,
     }
@@ -152,6 +153,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Configure, "Configure tool", "settings");
         Set(Slot.Remover, "Remover", "delete");
         Set(Slot.Paint, "Paint tool", "colour");
+        Set(Slot.Texture, "Texture paint tool", "materials");
         Set(Slot.GroundDrill, "Ground drill", "dig, fill");
         Set(Slot.Tracks, "Track tool", "wheels, loop");
         Set(Slot.Selector, "Selector", "select, copy, paste");
@@ -181,6 +183,7 @@ public sealed class SandboxToolWheel
             Slot.Configure => ConstructTool.Configure,
             Slot.PhysicsGun => ConstructTool.PhysicsGun,
             Slot.Paint => ConstructTool.Paint,
+            Slot.Texture => ConstructTool.Texture,
             Slot.Remover => ConstructTool.Remover,
             Slot.GroundDrill => ConstructTool.GroundDrill,
             Slot.Tracks => ConstructTool.Tracks,
@@ -199,6 +202,7 @@ public sealed class SandboxToolWheel
             ConstructTool.Configure => Slot.Configure,
             ConstructTool.PhysicsGun => Slot.PhysicsGun,
             ConstructTool.Paint => Slot.Paint,
+            ConstructTool.Texture => Slot.Texture,
             ConstructTool.Remover => Slot.Remover,
             ConstructTool.GroundDrill => Slot.GroundDrill,
             ConstructTool.Tracks => Slot.Tracks,
@@ -528,6 +532,14 @@ public sealed class SandboxToolWheel
                 Line(0.85f, -0.05f, 0.2f, 0.6f, 0.12f);
                 break;
             }
+            case Slot.Texture: // a roller: its handle, the frame, and a drum striped with a pattern
+                Line(-0.15f, 0.95f, -0.15f, 0.25f, 0.14f);
+                Line(-0.15f, 0.25f, 0.55f, 0.25f, 0.09f);
+                Line(0.55f, 0.25f, 0.55f, -0.2f, 0.09f);
+                Box(-0.85f, -0.85f, 0.85f, -0.2f, col, 0.12f);
+                for (var i = 0; i < 4; i++)
+                    ImDrawListExtensions.AddLine(dl, P(-0.62f + i * 0.42f, -0.78f), P(-0.42f + i * 0.42f, -0.27f), bg, 0.07f * r);
+                break;
             default: // the paint tool: a spray can (body, shoulder, nozzle cap) and a puff of spray dots
             {
                 Box(-0.55f, -0.35f, 0.15f, 0.85f, col, 0.1f);

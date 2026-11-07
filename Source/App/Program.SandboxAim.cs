@@ -63,6 +63,7 @@ public static partial class Program
             LinkMode = _linkWheel.Mode,
             Routing = _lkBody != 0,
             PaintMode = _paintWheel.Mode,
+            TextureMode = _textureWheel.Mode,
             Creative = g.SandboxInfiniteParts,
             Freeform = _weldModes.Freeform,
             Tying = ConnectorModeOn(in h),
