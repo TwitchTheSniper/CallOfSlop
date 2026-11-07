@@ -1526,6 +1526,8 @@ public static unsafe partial class Program
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
         _game.RideDrawnPose(); // (the host's aim meets the construct it rides as it is drawn: GameSandboxRide.cs)
         var sandbox = SandboxInputGuarded(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
+        if (_game.SandboxOn)
+            _game.TutorialClientFrame(Ui.SandboxPartsOpen, ToolWheelOpen); // (the induction's two cues only this PC sees: GameTutorial.cs)
         _game.RideTickPose();
         var buttons = Buttons.None;
         if (_mouseCaptured)

@@ -419,7 +419,7 @@ public sealed partial class Game
     /// 2 notorious; u8 s, s x (i8 the story faction's standing, u8 its technologies learnt, a bit each)); u8 m, each member
     /// (u8 owner byte, u8 faction, text name, u8 rank); u8 k, each invite (u8 player, u8 faction); u8 k, each ask (u8 player,
     /// u8 faction); u8 k, each stance (u8 a, u8 b, i8 stance); u8 s, each story faction's name; then each one's technologies
-    /// (u8 n, n x text: protocol 201).
+    /// (u8 n, n x text: protocol 202).
     /// </summary>
     private void WriteFactions(PacketWriter w)
     {

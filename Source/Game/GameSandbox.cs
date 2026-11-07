@@ -366,6 +366,7 @@ public sealed partial class Game
         SandboxDebris(now);
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
+        TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
     }
@@ -732,6 +733,15 @@ public sealed partial class Game
 
     /// <summary>Server: one action from a player (the local host's own go straight here). Returns why it was refused, or null.</summary>
     private string? SandboxAct(Player p, ref PacketReader r, double now)
+    {
+        var asked = r; // (a copy from the kind: the induction reads what was done once it worked, GameTutorial.cs)
+        var why = SandboxActDo(p, ref r, now);
+        if (why == null && SandboxOn)
+            TutorialSawAct(p, ref asked);
+        return why;
+    }
+
+    private string? SandboxActDo(Player p, ref PacketReader r, double now)
     {
         if (!SandboxOn)
             return null;
