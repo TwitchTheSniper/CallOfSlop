@@ -14,20 +14,42 @@ namespace CallOfSlop.VehicleKit;
 public sealed record BodyLanguage(string Name, string Words, HullLoft.Section Tall, float HeightMin, float HeightMax, float BrowRakeMin, float BrowRakeMax, float TailRakeMin, float TailRakeMax,
     float BrowNarrow, float TailNarrow, float LowShare = 0.87f, float NarrowShare = 0.8f)
 {
+    /// <summary>
+    /// Phase 2: the rooflines this language draws along a room, and how often (<see cref="Roofline"/>); null: <see cref="Roofline.Plain"/>, the plan's steps only.
+    /// Data, so a new archetype's line (a muscle car's fastback, a bus's dome) is a row.
+    /// </summary>
+    public (Roofline Line, double W)[]? Lines { get; init; }
+
+    /// <summary>How an overhang meets the wall under it: the height over which the extra width comes in (0.05 m a hard welded ledge, 0.5 m a soft flare).</summary>
+    public float FlareBlend { get; init; } = 0.3f;
+
+    /// <summary>The language's own walk-in section is a room's; a later non-room archetype (an engine cover, a cargo box, a car's cabin) says false and keeps its own scale.</summary>
+    public bool WalkIn { get; init; } = true;
+
     private static HullLoft.Section S(params float[] xy) => new(Enumerable.Range(0, xy.Length / 2).Select(i => new Vector2(xy[2 * i], xy[2 * i + 1])).ToArray());
 
     // The languages. Every tall section keeps x >= 1.0 below 1.6 m (furniture reaches a metre out: Vehicle.BayHalf), stands on the floor at 1.0 m or more and is over
     // 2.1 m at its top, so a door bay can be any of them; a low one keeps 2 m at the centre. The rounded ones are control polygons: a smooth style draws them as
     // curves (BodyStyleRule.Facets), a faceted one as they are.
-    public static readonly BodyLanguage Slab = new("slab", "welded slabs: upright walls, one hard chamfer, a flat roof", S(1.04f, 0, 1.07f, 1.86f, 0.8f, 2.22f, 0, 2.22f), 2.16f, 2.32f, 0.62f, 0.8f, 0.7f, 0.9f, 0.96f, 0.94f);
-    public static readonly BodyLanguage Ledge = new("ledge", "a box welded over a box: the upper walls stand proud of the lower on a ledge", S(1.02f, 0, 1.03f, 1.08f, 1.12f, 1.16f, 1.12f, 1.9f, 0.84f, 2.2f, 0, 2.2f), 2.14f, 2.3f, 0.7f, 0.85f, 0.75f, 0.9f, 0.95f, 0.93f);
-    public static readonly BodyLanguage Pod = new("pod", "clean rounded panels: tumblehome and a crowned roof", S(1.0f, 0, 1.1f, 0.45f, 1.1f, 1.3f, 0.98f, 1.8f, 0.72f, 2.15f, 0.36f, 2.3f, 0, 2.33f), 2.26f, 2.4f, 0.64f, 0.76f, 0.65f, 0.82f, 0.9f, 0.9f);
-    public static readonly BodyLanguage Van = new("van", "a panel van: near-upright sides rounding into a gently crowned roof", S(1.02f, 0, 1.08f, 0.6f, 1.08f, 1.75f, 0.96f, 2.08f, 0.6f, 2.24f, 0, 2.28f), 2.22f, 2.36f, 0.6f, 0.78f, 0.78f, 0.92f, 0.94f, 0.95f);
-    public static readonly BodyLanguage Bus = new("bus", "a bus: tall upright sides, a domed roof with rounded corners", S(1.04f, 0, 1.07f, 0.95f, 1.06f, 1.85f, 0.98f, 2.12f, 0.78f, 2.3f, 0.4f, 2.38f, 0, 2.4f), 2.34f, 2.48f, 0.72f, 0.9f, 0.72f, 0.88f, 0.96f, 0.95f);
-    public static readonly BodyLanguage Coach = new("coach", "a coach: a lower body, a long tumblehome and a raked front", S(1.02f, 0, 1.08f, 0.7f, 1.06f, 1.5f, 0.92f, 1.98f, 0.62f, 2.18f, 0, 2.24f), 2.2f, 2.32f, 0.6f, 0.72f, 0.72f, 0.88f, 0.9f, 0.93f);
-    public static readonly BodyLanguage Boat = new("boat", "boat-like: a flare to a strake, a curved tumblehome, a boat-tail stern", S(1.02f, 0, 1.13f, 0.7f, 1.09f, 1.45f, 0.92f, 1.95f, 0.55f, 2.22f, 0, 2.26f), 2.2f, 2.36f, 0.65f, 0.82f, 0.6f, 0.78f, 0.92f, 0.8f);
-    public static readonly BodyLanguage Cabin = new("cabin", "a site cabin: plain walls, eaves and a pitched roof", S(1.04f, 0, 1.06f, 1.92f, 1.12f, 1.98f, 0, 2.42f), 2.36f, 2.5f, 0.75f, 0.9f, 0.75f, 0.9f, 0.97f, 0.97f, 0.88f);
-    public static readonly BodyLanguage Armour = new("armour", "faceted armour: a flared lower hull, a steep glacis-like upper, a narrow roof", S(1.0f, 0, 1.13f, 0.75f, 0.88f, 2.0f, 0.56f, 2.2f, 0, 2.2f), 2.16f, 2.28f, 0.62f, 0.75f, 0.65f, 0.8f, 0.9f, 0.88f);
+    // Phase 2: each language's rooflines along the room (Roofline) and how its overhang meets the wall under it (FlareBlend): data, a row each.
+    public static readonly BodyLanguage Slab = new("slab", "welded slabs: upright walls, one hard chamfer, a flat roof", S(1.04f, 0, 1.07f, 1.86f, 0.8f, 2.22f, 0, 2.22f), 2.16f, 2.32f, 0.62f, 0.8f, 0.7f, 0.9f, 0.96f, 0.94f)
+        { Lines = [(Roofline.Stepped, 2), (Roofline.Plain, 1), (Roofline.Kicked, 1), (Roofline.Raked, 1), (Roofline.Sagged, 0.5)], FlareBlend = 0.05f };
+    public static readonly BodyLanguage Ledge = new("ledge", "a box welded over a box: the upper walls stand proud of the lower on a ledge", S(1.02f, 0, 1.03f, 1.08f, 1.12f, 1.16f, 1.12f, 1.9f, 0.84f, 2.2f, 0, 2.2f), 2.14f, 2.3f, 0.7f, 0.85f, 0.75f, 0.9f, 0.95f, 0.93f)
+        { Lines = [(Roofline.Stepped, 1.5), (Roofline.Plain, 1), (Roofline.Kicked, 1), (Roofline.Sloped, 1)], FlareBlend = 0.05f };
+    public static readonly BodyLanguage Pod = new("pod", "clean rounded panels: tumblehome and a crowned roof", S(1.0f, 0, 1.1f, 0.45f, 1.1f, 1.3f, 0.98f, 1.8f, 0.72f, 2.15f, 0.36f, 2.3f, 0, 2.33f), 2.26f, 2.4f, 0.64f, 0.76f, 0.65f, 0.82f, 0.9f, 0.9f)
+        { Lines = [(Roofline.Crowned, 2), (Roofline.Tapered, 2), (Roofline.Sloped, 1), (Roofline.Plain, 0.5)], FlareBlend = 0.6f };
+    public static readonly BodyLanguage Van = new("van", "a panel van: near-upright sides rounding into a gently crowned roof", S(1.02f, 0, 1.08f, 0.6f, 1.08f, 1.75f, 0.96f, 2.08f, 0.6f, 2.24f, 0, 2.28f), 2.22f, 2.36f, 0.6f, 0.78f, 0.78f, 0.92f, 0.94f, 0.95f)
+        { Lines = [(Roofline.Plain, 1.5), (Roofline.Raked, 1), (Roofline.Crowned, 1), (Roofline.Tapered, 0.5)], FlareBlend = 0.4f };
+    public static readonly BodyLanguage Bus = new("bus", "a bus: tall upright sides, a domed roof with rounded corners", S(1.04f, 0, 1.07f, 0.95f, 1.06f, 1.85f, 0.98f, 2.12f, 0.78f, 2.3f, 0.4f, 2.38f, 0, 2.4f), 2.34f, 2.48f, 0.72f, 0.9f, 0.72f, 0.88f, 0.96f, 0.95f)
+        { Lines = [(Roofline.Plain, 1.5), (Roofline.Crowned, 1), (Roofline.Kicked, 0.5), (Roofline.Tapered, 0.5)], FlareBlend = 0.5f };
+    public static readonly BodyLanguage Coach = new("coach", "a coach: a lower body, a long tumblehome and a raked front", S(1.02f, 0, 1.08f, 0.7f, 1.06f, 1.5f, 0.92f, 1.98f, 0.62f, 2.18f, 0, 2.24f), 2.2f, 2.32f, 0.6f, 0.72f, 0.72f, 0.88f, 0.9f, 0.93f)
+        { Lines = [(Roofline.Raked, 1.5), (Roofline.Tapered, 1), (Roofline.Crowned, 1), (Roofline.Plain, 0.5)], FlareBlend = 0.5f };
+    public static readonly BodyLanguage Boat = new("boat", "boat-like: a flare to a strake, a curved tumblehome, a boat-tail stern", S(1.02f, 0, 1.13f, 0.7f, 1.09f, 1.45f, 0.92f, 1.95f, 0.55f, 2.22f, 0, 2.26f), 2.2f, 2.36f, 0.65f, 0.82f, 0.6f, 0.78f, 0.92f, 0.8f)
+        { Lines = [(Roofline.Sheer, 2), (Roofline.Sagged, 1), (Roofline.Tapered, 1), (Roofline.Plain, 0.5)], FlareBlend = 0.35f };
+    public static readonly BodyLanguage Cabin = new("cabin", "a site cabin: plain walls, eaves and a pitched roof", S(1.04f, 0, 1.06f, 1.92f, 1.12f, 1.98f, 0, 2.42f), 2.36f, 2.5f, 0.75f, 0.9f, 0.75f, 0.9f, 0.97f, 0.97f, 0.88f)
+        { Lines = [(Roofline.Plain, 2), (Roofline.Stepped, 1), (Roofline.Sloped, 0.5)], FlareBlend = 0.05f };
+    public static readonly BodyLanguage Armour = new("armour", "faceted armour: a flared lower hull, a steep glacis-like upper, a narrow roof", S(1.0f, 0, 1.13f, 0.75f, 0.88f, 2.0f, 0.56f, 2.2f, 0, 2.2f), 2.16f, 2.28f, 0.62f, 0.75f, 0.65f, 0.8f, 0.9f, 0.88f)
+        { Lines = [(Roofline.Sloped, 1.5), (Roofline.Plain, 1), (Roofline.Raked, 1), (Roofline.Kicked, 0.5)], FlareBlend = 0.08f };
 
     public static readonly BodyLanguage[] All = [Slab, Ledge, Pod, Van, Bus, Coach, Boat, Cabin, Armour];
 
@@ -80,20 +102,119 @@ public sealed record BodyLanguage(string Name, string Words, HullLoft.Section Ta
 }
 
 /// <summary>
+/// A line along a room (docs/vehiclekit/BODY-STYLES.md, "Phase 2"): how a body's height and its width above the furniture change from the front of the room to its
+/// back, as factors of the language's section at each station between two bays (lofted bay to bay). Crown (a hog's back, or below 0 a sway back), rise (a raked roof
+/// rising to the tail, or below 0 sloping down to it), a kick-up over the tail, a taper in plan toward both ends, and how hard the plan's tall, low and narrow steps
+/// stay (1 as planned, 0 none). Each language lists the lines it draws (<see cref="BodyLanguage.Lines"/>) and the seed rolls one and its amount: data, a row each.
+/// </summary>
+public sealed record Roofline(string Name, string Words, float Crown = 0, float Rise = 0, float Kick = 0, float Taper = 0, float Steps = 1)
+{
+    public static readonly Roofline Plain = new("plain", "the plan's steps between tall, low and narrow bays");
+    public static readonly Roofline Stepped = new("stepped", "the plan's steps, cut deeper", Steps: 1.6f);
+    public static readonly Roofline Crowned = new("crowned", "a hog's back: highest in the middle, easing down to both ends", Crown: 0.11f, Steps: 0.35f);
+    public static readonly Roofline Sagged = new("sagged", "a sway back: lowest in the middle, rising to both ends", Crown: -0.08f, Steps: 0.5f);
+    public static readonly Roofline Raked = new("raked", "low at the front, rising toward the tail", Rise: 0.07f, Steps: 0.6f);
+    public static readonly Roofline Sloped = new("sloped", "tall at the front, sloping down toward the tail", Rise: -0.08f, Steps: 0.6f);
+    public static readonly Roofline Kicked = new("kick-up", "level, then kicked up over the tail", Kick: 0.13f, Steps: 0.7f);
+    public static readonly Roofline Tapered = new("tapered", "narrowing toward both ends in plan, a little crown", Crown: 0.04f, Taper: 0.16f, Steps: 0.5f);
+    public static readonly Roofline Sheer = new("sheer", "a boat's sheer: high at the bow, dipping amidships, a little rise at the stern", Crown: -0.05f, Rise: -0.05f, Taper: 0.08f, Steps: 0.4f);
+
+    public static readonly Roofline[] All = [Plain, Stepped, Crowned, Sagged, Raked, Sloped, Kicked, Tapered, Sheer];
+
+    /// <summary>The height and width factors at <paramref name="u"/> along the room (0 its front, 1 its back), the line drawn at <paramref name="amount"/> of its size.</summary>
+    public (float H, float W) At(float u, float amount)
+    {
+        var h = 1 + amount * (Crown * MathF.Sin(MathF.PI * u) + Rise * (2 * u - 1) + Kick * MathF.Max(0, (u - 0.6f) / 0.4f));
+        var w = 1 - amount * Taper * (2 * u - 1) * (2 * u - 1);
+        return (h, w);
+    }
+}
+
+/// <summary>
+/// A scale class (phase 2): the sizes a body of that class may take, so the limits are data, not constants. A walk-in class keeps what the room check needs (the aisle,
+/// a metre either side of the middle below 1.6 m, and 2.02 m of headroom at the centre); a class that isn't walked in (an engine cover, a tank, an armoured shell, a
+/// cargo box, a car's cabin) may go much smaller, and the big classes much bigger, up to what the chassis carries (the stability and drive checks plan again past
+/// that). <see cref="HullLoft.Section"/>'s key reaches 2 m of half width and 4 m of height for any of them.
+/// </summary>
+public sealed record BodyScale(string Name, string Words, bool WalkIn, float HalfMin, float HalfMax, float HeightMin, float HeightMax, float BayMin, float BayMax, float FloorHalf,
+    float FlareMin, float FlareMax)
+{
+    /// <summary>A car's or a buggy's body: nothing walks in it; the half width 0.6 to 1.0 m, 0.8 to 1.9 m tall, bays of half a metre to a metre.</summary>
+    public static readonly BodyScale Compact = new("compact", "a car's or a buggy's: engine covers, cargo boxes, cabins nobody walks in", false, 0.3f, 1.0f, 0.5f, 1.9f, 0.5f, 1.0f, 0.875f, 0, 0.1f);
+
+    /// <summary>A truck's room: as phase 1's, the upper body a little proud of the wheels.</summary>
+    public static readonly BodyScale Standard = new("standard", "a truck's walk-in room", true, 1.0f, 1.24f, 2.02f, 2.62f, 0.75f, 1.25f, 1.125f, 0, 0.14f);
+
+    /// <summary>A heavy truck's or a bus's: taller, and wider over the wheels.</summary>
+    public static readonly BodyScale Heavy = new("heavy", "a heavy truck's or a bus's: taller, wider over the wheels", true, 1.0f, 1.42f, 2.1f, 3.0f, 0.75f, 1.5f, 1.125f, 0.08f, 0.3f);
+
+    /// <summary>A land train's or a mobile base's: the biggest the kit has a name for (no style draws it yet: the chassis it needs is a later phase's).</summary>
+    public static readonly BodyScale Giant = new("giant", "a land train's or a mobile base's", true, 1.0f, 1.9f, 2.4f, 3.8f, 1.0f, 2.0f, 1.125f, 0.2f, 0.7f);
+
+    public static readonly BodyScale[] All = [Compact, Standard, Heavy, Giant];
+
+    /// <summary>Where a bay's feet stand from its middle, from its floor's half width (0.75 m on a truck's 1 to 1.24 m floor edge): on the Bolt Deck's quarter grid, a quarter in from the edge.</summary>
+    public static float Foot(float floorHalf) => Math.Clamp(MathF.Floor((floorHalf - 0.2f) / 0.25f + 1e-4f) * 0.25f, 0.25f, 1.5f);
+}
+
+/// <summary>
 /// How a style's rooms are lofted (the user's decisions, 2026-11-07): its languages and their weights; how many facets a side it draws them with (Bandit and
 /// military flat-faceted, 3 to 6; IT, British and any future high-tech smooth, 8 to 12; 0: each language's own corners); and whether its bays mix languages one
-/// station to the next (Bandit: cobbled from wrecks), or keep one language a vehicle. Data, so a new style or archetype is a row.
+/// station to the next (Bandit: cobbled from wrecks), or keep one language a vehicle. Phase 2 adds its proportions: the scale classes it builds at and how often,
+/// how tall against the language (<see cref="TallMin"/>, <see cref="TallMax"/>), how far its upper body overhangs (the class's flare, times <see cref="FlareShare"/>),
+/// how long its brows and tails may run (a wedge), and which side its door is on. Data, so a new style or archetype is a row.
 /// </summary>
 public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int FacetsMin = 0, int FacetsMax = 0, double Mix = 0)
 {
+    /// <summary>The scale classes the style's rooms come in, and how often.</summary>
+    public (BodyScale S, double W)[] Scales { get; init; } = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)];
+
+    /// <summary>The height against the language's own, as a factor range (then the scale's limits).</summary>
+    public float TallMin { get; init; } = 0.97f;
+    public float TallMax { get; init; } = 1.1f;
+
+    /// <summary>How much of the scale's overhang range the style uses (0 none: its walls go straight up from the floor).</summary>
+    public float FlareShare { get; init; } = 1f;
+
+    /// <summary>How hard the style draws its rooflines (a factor on the line's amount, rolled 0.5 to 1 of it).</summary>
+    public float LineAmount { get; init; } = 1f;
+
+    /// <summary>Brow and tail lengths a seed may roll (metres, on the quarter grid), with weights: a long brow is a wedge nose on the room.</summary>
+    public (float L, double W)[] Brows { get; init; } = [(1f, 2), (1.25f, 1.5), (1.5f, 1)];
+    public (float L, double W)[] Tails { get; init; } = [(1f, 2), (0.75f, 1), (1.25f, 1)];
+
+    /// <summary>The chance a room's door is in its left (-x) side; the rest in its right (+x).</summary>
+    public double DoorLeft { get; init; } = 0.5;
+
+    /// <summary>
+    /// Paint by sections (phase 2, the user's: "so the shapes read through the wear"): a room's bays are painted in runs of <see cref="RunMin"/> to <see cref="RunMax"/>
+    /// bays, a run ending where the roofline steps or the language changes, each run one colour unlike its neighbour's; <see cref="Contrast"/> is the palette role a run
+    /// takes when its neighbour already has the colour it rolled (null: another of the panels' own role). The rows inside a bay keep their tones (HullLoft).
+    /// </summary>
+    public int RunMin { get; init; } = 2;
+    public int RunMax { get; init; } = 3;
+    public string? Contrast { get; init; }
+
     public static readonly Dictionary<string, BodyStyleRule> ByStyle = new(StringComparer.Ordinal)
     {
-        ["Bandit"] = new([(BodyLanguage.Slab, 2), (BodyLanguage.Ledge, 1.5), (BodyLanguage.Armour, 0.5)], Mix: 0.5), // (each station after the first: a new language half the time)
-        ["Militia"] = new([(BodyLanguage.Armour, 1)]),
-        ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12),
-        ["Scam"] = new([(BodyLanguage.Cabin, 2), (BodyLanguage.Van, 1)]),
-        ["Highland"] = new([(BodyLanguage.Boat, 3), (BodyLanguage.Slab, 0.5)]),
-        ["British"] = new([(BodyLanguage.Bus, 2.5), (BodyLanguage.Coach, 1.5)], 8, 12),
+        // (each station after the first: a new language half the time; tall and short, hard ledges over the wheels)
+        ["Bandit"] = new([(BodyLanguage.Slab, 2), (BodyLanguage.Ledge, 1.5), (BodyLanguage.Armour, 0.5)], Mix: 0.5)
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.95f, TallMax = 1.16f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body" },
+        // (low and wide, flat-faceted: little height, a glacis brow)
+        ["Militia"] = new([(BodyLanguage.Armour, 1)])
+            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.02f, FlareShare = 0.8f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)] },
+        // (long, low, even: tapered pods, smooth flares, the door kerbside)
+        ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12)
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.95f, TallMax = 1.08f, FlareShare = 0.7f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3 },
+        // (a portacabin on a chassis: boxy, square ends, tall)
+        ["Scam"] = new([(BodyLanguage.Cabin, 2), (BodyLanguage.Van, 1)])
+            { Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.98f, TallMax = 1.12f, FlareShare = 0.4f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)] },
+        // (long and low with a sheer line: boat-tail sterns, flared strakes)
+        ["Highland"] = new([(BodyLanguage.Boat, 3), (BodyLanguage.Slab, 0.5)])
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.94f, TallMax = 1.08f, FlareShare = 0.9f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)] },
+        // (tall, upright buses: the heavy class first, the door kerbside)
+        ["British"] = new([(BodyLanguage.Bus, 2.5), (BodyLanguage.Coach, 1.5)], 8, 12)
+            { Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.18f, FlareShare = 0.6f, DoorLeft = 0.2 },
     };
 
     /// <summary>A style not named: military armour, faceted, one language.</summary>
@@ -102,27 +223,43 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     public static BodyStyleRule Of(FactionStyle st) => ByStyle.GetValueOrDefault(st.Name) ?? Default;
 
     /// <summary>A weighted pick from the languages.</summary>
-    public BodyLanguage Pick(Dice d)
+    public BodyLanguage Pick(Dice d) => Weighted(d, Languages);
+
+    public static T Weighted<T>(Dice d, IReadOnlyList<(T Item, double W)> items)
     {
-        var roll = d.Next() * Languages.Sum(x => x.W);
-        foreach (var (l, w) in Languages)
+        var roll = d.Next() * items.Sum(x => x.W);
+        foreach (var (l, w) in items)
             if ((roll -= w) < 0)
                 return l;
-        return Languages[^1].L;
+        return items[^1].Item;
     }
 }
 
 /// <summary>
-/// One body's roll of its language: its height and width, how far its brow and tail rake, how many facets it draws with, and the sections that come of it. Where its
-/// style mixes, each station between two bays (a room's front, each joint, its back) takes a language of its own, and a bay lofts from one to the next.
+/// One body's roll of its language: its scale class, height and width, how far its upper body overhangs, its roofline along the room, how far its brow and tail rake
+/// and how long they run, which side its door is on, how many facets it draws with, and the sections that come of it. Where its style mixes, each station between two
+/// bays (a room's front, each joint, its back) takes a language of its own, and a bay lofts from one to the next.
 /// </summary>
 public sealed class BodyLook
 {
     public BodyLanguage Language { get; }
-    public float Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow;
+    public BodyScale Scale { get; }
+    public Roofline Line { get; }
+    public float Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow, Flare, LineAmount, BrowLength, TailLength;
     public int Facets;
+
+    /// <summary>+1: the door in the room's right side (+x), -1 its left.</summary>
+    public float DoorSide = 1;
+
+    /// <summary>
+    /// Where the overhang starts, above the room's floor: over the wheels' tops with room for their travel (measured over every chassis recipe on 2026-11-07:
+    /// tyres stand at most 0.36 m over the floor, inside 1.1 m of half width). The hull sets it again from the real wheels (<see cref="Vehicle.Hull"/>).
+    /// </summary>
+    public float FlareFrom = FlareFloor;
+    public const float FlareFloor = 0.6f;
+
     private readonly BodyStyleRule _rule;
-    private readonly Dice _mix;
+    private readonly Dice _mix, _lengths;
 
     public BodyLook(BodyLanguage l, Dice d, BodyStyleRule? rule = null)
     {
@@ -136,10 +273,25 @@ public sealed class BodyLook
         TailNarrow = l.TailNarrow * (float)d.Between(0.97, 1.0);
         Facets = _rule.FacetsMax > 0 ? d.Fork("facets").Int(_rule.FacetsMin, _rule.FacetsMax) : 0;
         _mix = d.Fork("stations");
+        // Phase 2's proportions, each on a fork of its own.
+        var p = d.Fork("phase 2");
+        Scale = BodyStyleRule.Weighted(p.Fork("scale"), _rule.Scales);
+        Height = Math.Clamp(Height * (float)p.Fork("tall").Between(_rule.TallMin, _rule.TallMax), Scale.HeightMin, Scale.HeightMax);
+        Flare = (float)p.Fork("flare").Between(Scale.FlareMin, Scale.FlareMax) * _rule.FlareShare;
+        Line = l.Lines is { Length: > 0 } lines ? BodyStyleRule.Weighted(p.Fork("line"), lines) : Roofline.Plain;
+        LineAmount = _rule.LineAmount * (float)p.Fork("line amount").Between(0.5, 1.0);
+        BrowLength = BodyStyleRule.Weighted(p.Fork("brow"), _rule.Brows);
+        TailLength = BodyStyleRule.Weighted(p.Fork("tail"), _rule.Tails);
+        DoorSide = p.Fork("door").Chance(_rule.DoorLeft) ? -1 : 1;
+        _lengths = p.Fork("lengths");
     }
 
     /// <summary><c>--language NAME</c>: every kit-5 body in that language, whatever its style (to compare languages on one vehicle).</summary>
     public static BodyLanguage? Force;
+
+    /// <summary><c>--roofline NAME</c> and <c>--scale NAME</c>: every kit-5 body with that line or at that scale (to compare them on one plan).</summary>
+    public static Roofline? ForceLine;
+    public static BodyScale? ForceScale;
 
     /// <summary>A body's look from the style's languages, on the body layer's "language" fork.</summary>
     public static BodyLook Roll(Vehicle v)
@@ -148,8 +300,49 @@ public sealed class BodyLook
         var rule = BodyStyleRule.Of(v.Style);
         if (Force is { } forced)
             rule = rule with { Languages = [(forced, 1.0)], Mix = 0 };
-        return new BodyLook(rule.Pick(d), d.Fork("proportions"), rule);
+        if (ForceScale is { } scale)
+            rule = rule with { Scales = [(scale, 1.0)] };
+        var look = new BodyLook(rule.Pick(d), d.Fork("proportions"), rule);
+        return ForceLine is { } line ? look.WithLine(line) : look;
     }
+
+    private BodyLook(BodyLook o, Roofline line)
+    {
+        (Language, Scale, Line, _rule, _mix, _lengths) = (o.Language, o.Scale, line, o._rule, o._mix, o._lengths);
+        (Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow, Flare, LineAmount, BrowLength, TailLength, Facets, DoorSide, FlareFrom) =
+            (o.Height, o.Width, o.BrowRake, o.TailRake, o.BrowNarrow, o.TailNarrow, o.Flare, o.LineAmount, o.BrowLength, o.TailLength, o.Facets, o.DoorSide, o.FlareFrom);
+    }
+
+    private BodyLook WithLine(Roofline line) => new(this, line);
+
+    /// <summary>
+    /// The sections a style's rooms may show from the front, for <see cref="VehicleIdentity"/>'s section part: each language's tall section at the style's height
+    /// range, with and without its overhang and its taper, as <see cref="Section(BodyLanguage, string, int, float, float)"/> draws them (cached).
+    /// </summary>
+    public static IReadOnlyList<HullLoft.Section> References(BodyStyleRule rule)
+    {
+        lock (Refs)
+        {
+            if (Refs.TryGetValue(rule, out var have))
+                return have;
+            var list = new List<HullLoft.Section>();
+            var facets = rule.FacetsMax > 0 ? (rule.FacetsMin + rule.FacetsMax) / 2 : 0;
+            foreach (var (l, _) in rule.Languages)
+                foreach (var (scale, _) in rule.Scales)
+                    foreach (var tall in new[] { rule.TallMin, rule.TallMax })
+                        foreach (var flare in new[] { scale.FlareMin, (scale.FlareMin + scale.FlareMax) / 2, scale.FlareMax })
+                            foreach (var w in new[] { 1f, 0.9f })
+                            {
+                                var look = new BodyLook(l, new Dice(1), rule with { Scales = [(scale, 1)] });
+                                look.Height = Math.Clamp((l.HeightMin + l.HeightMax) / 2 * tall, scale.HeightMin, scale.HeightMax);
+                                (look.Flare, look.Facets) = (flare * rule.FlareShare, facets);
+                                list.Add(look.Section(l, "T", 0, 1, w));
+                            }
+            return Refs[rule] = list;
+        }
+    }
+
+    private static readonly Dictionary<BodyStyleRule, List<HullLoft.Section>> Refs = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>Station <paramref name="i"/>'s language (0: the room's front): the look's own unless the style mixes, then, after the first, a new one now and then. No dice state: the same station always answers the same.</summary>
     public BodyLanguage At(int i)
@@ -167,30 +360,82 @@ public sealed class BodyLook
     /// <summary>The section a plan's token stands for in this look's language: T tall, L low, N narrow; <paramref name="end"/> shrinks it for a brow (-1) or a tail (+1).</summary>
     public HullLoft.Section Section(string token, int end = 0) => Section(Language, token, end);
 
-    /// <summary>The section a plan's token stands for in language <paramref name="l"/> at this look's proportions.</summary>
-    public HullLoft.Section Section(BodyLanguage l, string token, int end = 0)
+    /// <summary>
+    /// The section a plan's token stands for in language <paramref name="l"/> at this look's proportions, at a station whose roofline factors are <paramref name="h"/>
+    /// (height) and <paramref name="w"/> (the width above the furniture and the overhang).
+    /// </summary>
+    public HullLoft.Section Section(BodyLanguage l, string token, int end = 0, float h = 1, float w = 1)
     {
         var t = l.Drawn(Facets);
-        var ky = Height / t.Top;
+        var ky = Height * h / t.Top;
         var kx = Width;
+        var steps = Line.Steps;
         if (token == "L")
-            ky *= l.LowShare;
+            ky *= 1 - (1 - l.LowShare) * steps;
         else if (token == "N")
         {
-            kx *= l.NarrowShare;
-            ky *= (1 + l.LowShare) / 2;
+            kx *= 1 - (1 - l.NarrowShare) * MathF.Min(1, steps);
+            ky *= 1 - (1 - l.LowShare) * steps / 2;
         }
-        if (end == 0)
+        var walkIn = Scale.WalkIn && l.WalkIn;
+        if (end == 0 && walkIn)
             ky = MathF.Max(ky, 2.02f / t.Top); // (headroom at the centre: a player is 1.8 m)
         if (end < 0)
             (kx, ky) = (kx * BrowNarrow, ky * BrowRake);
         else if (end > 0)
             (kx, ky) = (kx * TailNarrow, ky * TailRake);
-        kx = MathF.Max(kx, 0.76f / t.P[0].X); // (a seat or a crate stands half a metre out by a brow or a tail: the fixed bays' narrowest end is 0.74 m)
+        if (walkIn)
+            kx = MathF.Max(kx, 0.76f / t.P[0].X); // (a seat or a crate stands half a metre out by a brow or a tail: the fixed bays' narrowest end is 0.74 m)
         var s = t.Scaled(kx, ky);
-        if (end == 0 && token != "N")
+        // The taper (the upper body only: the furniture's metre stays) and the overhang over the wheels, coming in over the language's blend.
+        var flare = Flare * w * (token == "N" ? 0.5f : 1) * (end != 0 ? 0.6f : 1);
+        if (flare > 0.005f || w < 0.999f)
+            s = Overhang(s, flare, w, l.FlareBlend);
+        if (end == 0 && token != "N" && walkIn)
             s = new HullLoft.Section(s.P.Select((p, i) => i == 0 || p.Y < 1.6f ? p with { X = MathF.Max(p.X, i == 0 ? 1.0f : 1.02f) } : p).ToArray()); // (furniture's metre)
+        if (s.P.Any(p => p.X > Scale.HalfMax))
+            s = new HullLoft.Section(s.P.Select(p => p with { X = MathF.Min(p.X, Scale.HalfMax) }).ToArray());
         return Tidy(s);
+    }
+
+    /// <summary>
+    /// Moves the side out by <paramref name="flare"/> above <see cref="FlareFrom"/> (eased in over <paramref name="blend"/>) and narrows what is above 1.6 m by
+    /// <paramref name="w"/> (a taper toward the room's ends), with a point at the overhang's foot so the wall under it stays upright; to the centimetre.
+    /// </summary>
+    private HullLoft.Section Overhang(HullLoft.Section s, float flare, float w, float blend)
+    {
+        var pts = s.P.ToList();
+        void Split(float y)
+        {
+            for (var k = 0; k + 1 < pts.Count; k++)
+                if (pts[k].Y < y - 0.03f && pts[k + 1].Y > y + 0.03f && pts.Count < HullLoft.MaxPoints)
+                {
+                    var t = (y - pts[k].Y) / (pts[k + 1].Y - pts[k].Y);
+                    pts.Insert(k + 1, new Vector2(MathF.Round((pts[k].X + (pts[k + 1].X - pts[k].X) * t) * 100) / 100, MathF.Round(y * 100) / 100));
+                    return;
+                }
+        }
+        if (flare > 0.005f)
+        {
+            Split(FlareFrom);
+            if (blend > 0.1f)
+                Split(FlareFrom + blend);
+        }
+        var top = pts[^1].Y;
+        for (var k = 1; k < pts.Count; k++)
+        {
+            var p = pts[k];
+            if (p.X <= 0.001f)
+                continue; // (the centreline stays)
+            var u = blend <= 0.001f ? (p.Y > FlareFrom + 0.001f ? 1 : 0) : Math.Clamp((p.Y - FlareFrom) / blend, 0, 1);
+            var ease = u * u * (3 - 2 * u);
+            var x = p.X + flare * ease;
+            if (p.Y > 1.6f)
+                x *= w;
+            pts[k] = new Vector2(MathF.Round(x * 100) / 100, p.Y);
+        }
+        _ = top;
+        return new HullLoft.Section(pts.ToArray());
     }
 
     /// <summary>Drops points the centimetre grid made repeats of (a smooth curve's close points), keeping the floor edge and the centreline.</summary>
@@ -232,17 +477,87 @@ public sealed class BodyLook
         return (a.P.Length < m ? Grow(a, m) : a, b.P.Length < m ? Grow(b, m) : b);
     }
 
+    /// <summary>
+    /// The bays' lengths, front to back, for a plan of <paramref name="bays"/>: the brow and the tail as the seed rolled them (a long brow is a wedge), the door bay 1.5 m,
+    /// the metre bays taking up the difference in quarters within the scale's range, so the room keeps its planned length (3.5 m and whole metres). No dice state.
+    /// </summary>
+    public float[] Lengths(string[] bays)
+    {
+        var n = bays.Length;
+        var len = bays.Select(b => b == "Door" ? 1.5f : 1f).ToArray();
+        var ones = Enumerable.Range(1, Math.Max(0, n - 2)).Where(k => bays[k] != "Door").ToList();
+        float Lo() => MathF.Max(0.75f, Scale.BayMin);
+        float Hi() => MathF.Min(1.5f, Scale.BayMax);
+        var (brow, tail) = (BrowLength, TailLength);
+        for (var tries = 0; tries < 6; tries++)
+        {
+            var extra = (brow - 1) + (tail - 1); // (what the metre bays give back, in quarters)
+            var room = ones.Sum(k => extra > 0 ? 1 - Lo() : Hi() - 1);
+            if (MathF.Abs(extra) <= room + 1e-4f)
+                break;
+            (brow, tail) = (brow > 1 ? brow - 0.25f : brow < 1 ? brow + 0.25f : brow, tail > 1 ? tail - 0.25f : tail < 1 ? tail + 0.25f : tail);
+        }
+        len[0] = brow;
+        len[^1] = tail;
+        var give = (brow - 1) + (tail - 1);
+        var d = _lengths.Fork("bays " + n);
+        foreach (var k in d.Shuffled(ones).Concat(ones).Concat(ones)) // (a quarter at a time, round them)
+        {
+            if (MathF.Abs(give) < 1e-4f)
+                break;
+            var step = give > 0 ? -0.25f : 0.25f;
+            if (len[k] + step < Lo() - 1e-4f || len[k] + step > Hi() + 1e-4f)
+                continue;
+            len[k] += step;
+            give += step;
+        }
+        if (MathF.Abs(give) > 1e-4f)
+            (len[0], len[^1]) = (1, 1); // (no room for them: the plan's own lengths)
+        if (MathF.Abs(give) > 1e-4f)
+            for (var k = 1; k < n - 1; k++)
+                len[k] = bays[k] == "Door" ? 1.5f : 1f;
+        // A rhythm along a long room: one bay a quarter longer, the next a quarter shorter, now and then (the heavy classes' longer bays).
+        if (ones.Count >= 2 && Hi() > 1.01f && d.Chance(0.5))
+        {
+            var (a, b) = (d.Pick(ones), d.Pick(ones));
+            if (a != b && len[a] + 0.25f <= Hi() + 1e-4f && len[b] - 0.25f >= Lo() - 1e-4f)
+                (len[a], len[b]) = (len[a] + 0.25f, len[b] - 0.25f);
+        }
+        return len;
+    }
+
+    /// <summary>Each station's roofline factors (height, width), front to back, for bays of <paramref name="lengths"/>; the door bay's two stations level (its frame and a turret's roof).</summary>
+    private (float H, float W)[] Stations(string[] bays, float[] lengths)
+    {
+        var total = lengths.Sum();
+        var at = new (float H, float W)[bays.Length + 1];
+        var z = 0f;
+        for (var k = 0; k <= bays.Length; k++)
+        {
+            at[k] = Line.At(z / total, LineAmount);
+            if (k < bays.Length)
+                z += lengths[k];
+        }
+        var door = Array.IndexOf(bays, "Door");
+        if (door >= 0)
+            at[door] = at[door + 1] = (MathF.Max(at[door].H, at[door + 1].H), MathF.Max(at[door].W, at[door + 1].W));
+        return at;
+    }
+
     /// <summary>A plan's bay names ("Brow T", "Door", "Bay T-L", "Tail L") as lofted parts' keys, front to back; bay k lofts from station k to station k + 1.</summary>
     public string[] Names(string[] bays)
     {
+        var lengths = Lengths(bays);
+        var st = Stations(bays, lengths);
         var names = new string[bays.Length];
         for (var k = 0; k < bays.Length; k++)
         {
             var b = bays[k];
             if (b == "Door")
             {
-                var (ta, tb) = Match(Section(At(k), "T"), Section(At(k + 1), "T"));
-                names[k] = HullLoft.Key(1.5f, true, false, false, ta, tb);
+                var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W));
+                // (a door on the left: the right-hand door bay turned round, so its front section is the room's back one: Vehicle.Hull stands it by its back right foot)
+                names[k] = DoorSide > 0 ? HullLoft.Key(1.5f, true, false, false, ta, tb) : HullLoft.Key(1.5f, true, false, false, tb, ta);
                 continue;
             }
             var parts = b.Split(' ');
@@ -250,21 +565,78 @@ public sealed class BodyLook
             var (front, back) = (tokens[0], tokens[^1]);
             var (fa, fb) = parts[0] switch
             {
-                "Brow" => (Section(At(1), front, -1), Section(At(1), front)),
-                "Tail" => (Section(At(k), back), Section(At(k), back, 1)),
-                _ => (Section(At(k), front), Section(At(k + 1), back)),
+                "Brow" => (Section(At(1), front, -1, st[0].H, st[0].W), Section(At(1), front, 0, st[1].H, st[1].W)),
+                "Tail" => (Section(At(k), back, 0, st[k].H, st[k].W), Section(At(k), back, 1, st[k + 1].H, st[k + 1].W)),
+                _ => (Section(At(k), front, 0, st[k].H, st[k].W), Section(At(k + 1), back, 0, st[k + 1].H, st[k + 1].W)),
             };
             var (ma, mb) = Match(fa, fb);
-            names[k] = HullLoft.Key(1, false, parts[0] == "Brow", parts[0] == "Tail", ma, mb);
+            names[k] = HullLoft.Key(lengths[k], false, parts[0] == "Brow", parts[0] == "Tail", ma, mb);
         }
         return names;
     }
 
-    public string Label => string.Create(CultureInfo.InvariantCulture, $"{Language.Name} {Height:0.00} m, brow {BrowRake:0.00}, tail {TailRake:0.00}{(Facets > 0 ? $", {Facets} facets" : "")}");
+    /// <summary>A plan's bay k as built: its key's shape with the room's own front first (a left door bay's key is turned round: <see cref="Names"/>).</summary>
+    public static HullLoft.Shape? Built(string name, bool turned) =>
+        HullLoft.ShapeOf(name) is { } s ? turned ? s with { A = s.B, B = s.A } : s : null;
+
+    public string Label => string.Create(CultureInfo.InvariantCulture,
+        $"{Language.Name} {Scale.Name} {Height:0.00} m, flare {Flare:0.00}, {Line.Name} {LineAmount:0.0}, brow {BrowRake:0.00} {BrowLength:0.##} m, tail {TailRake:0.00} {TailLength:0.##} m, door {(DoorSide > 0 ? "right" : "left")}{(Facets > 0 ? $", {Facets} facets" : "")}");
 }
 
 public sealed partial class Vehicle
 {
+    /// <summary>
+    /// A room's bays in paint runs (<see cref="BodyStyleRule.RunMin"/>): a run ends where the roofline steps (a "Bay T-L"), where a mixing style's language changes,
+    /// or when it has run its rolled length. Kit 5 only; a fixed-bay room is one run a bay.
+    /// </summary>
+    public List<List<VPart>> PaintRuns(Room room, Dice d)
+    {
+        var runs = new List<List<VPart>>();
+        var rule = BodyStyleRule.Of(Style);
+        var want = d.Int(rule.RunMin, rule.RunMax);
+        for (var k = 0; k < room.Bays.Count; k++)
+        {
+            var step = k > 0 && (room.Plan[k - 1].Contains('-') || Look != null && Look.At(k) != Look.At(k - 1) || room.Plan[k - 1].StartsWith("Brow", StringComparison.Ordinal) != room.Plan[k].StartsWith("Brow", StringComparison.Ordinal) && d.Chance(0.5));
+            if (runs.Count == 0 || step || runs[^1].Count >= want || Look == null)
+            {
+                runs.Add(new List<VPart>());
+                want = d.Int(rule.RunMin, rule.RunMax);
+            }
+            runs[^1].Add(room.Bays[k]);
+        }
+        return runs;
+    }
+
+    /// <summary>
+    /// Paints each room by its runs (<see cref="PaintRuns"/>), each a colour of <paramref name="role"/> unlike the run before it (else the style's contrast role), so a
+    /// room's sections read from a distance; <paramref name="pick"/> may turn a run's colour (the wear's rust), and is asked again when it gives the neighbour's.
+    /// </summary>
+    public void PaintRooms(Dice d, string role, Func<Dice, string, string>? pick = null)
+    {
+        var rule = BodyStyleRule.Of(Style);
+        foreach (var room in Rooms)
+        {
+            if (room.Bays.Count == 0 || Look == null)
+                continue;
+            var prev = "";
+            var i = 0;
+            foreach (var run in PaintRuns(room, d.Fork("runs " + room.Tag)))
+            {
+                var colour = "";
+                var own = rule.Contrast != null && i++ % 2 == 1 && d.Chance(0.7) ? rule.Contrast : role; // (a contrasting style: every other run in its contrast role, mostly)
+                for (var tries = 0; tries < 4 && (colour.Length == 0 || colour == prev); tries++)
+                {
+                    colour = Style.Colour(d, tries >= 2 && rule.Contrast != null ? rule.Contrast : own);
+                    if (pick != null)
+                        colour = pick(d, colour);
+                }
+                foreach (var b in run)
+                    Paint(b, colour);
+                prev = colour;
+            }
+        }
+    }
+
     /// <summary>Kit 5: the room's body language and this seed's roll of it (<see cref="BodyLook"/>); null: the fixed hull bays of kits 1 to 4.</summary>
     public BodyLook? Look { get; set; }
 
@@ -402,29 +774,72 @@ public static class BodyReportCli
 /// </summary>
 public static class BaySpots
 {
-    /// <summary>A roof turret's bay: how level along its length, and how much higher than its roof a neighbour may stand (its own roof may fall away either side: a gable, a crown).</summary>
+    /// <summary>A roof turret's bay: how level along its length, and how much higher than its roof a bay within the turret's reach may stand (its own roof may fall away either side: a gable, a crown).</summary>
     private const float Level = 0.03f, Rise = 0.02f;
 
     /// <summary>A side gun's turret on a sponson: from just above the sponson's top to over the gunner's head, nothing out past the waist by more than this.</summary>
     private const float SideFrom = 0.15f, SideTo = 1.3f, SideProud = 0.03f, PannierTo = 0.35f;
 
+    /// <summary>
+    /// The turret a spot is judged for (phase 2: from the parts, not constants): the turntable's half width (a bay shorter than the table can't hold it) and the arm's
+    /// reach either way from the bay's middle (the arm, its seat and the gun's hinge: the Beam 1 m the kit lays, a quarter over each end), so a long bay's neighbours
+    /// are judged by how far they really are and a short one's next-but-one too.
+    /// </summary>
+    public readonly record struct Turret(float Table, float Reach)
+    {
+        public static Turret Kit => _kit ??= Measure();
+        private static Turret? _kit;
+
+        private static Turret Measure()
+        {
+            {
+                var table = ConstructParts.Find("Turntable") is { } t ? MathF.Max(t.BoundsMax.X - t.BoundsMin.X, t.BoundsMax.Z - t.BoundsMin.Z) / 2 : 0.33f;
+                var arm = ConstructParts.Find(Vehicle.Beam + " 1 m") is { } b ? (b.BoundsMax.Z - b.BoundsMin.Z) / 2 + 0.25f : 0.75f;
+                return new Turret(table, arm);
+            }
+        }
+    }
+
     private static HullLoft.Shape? Of(string? name) => name == null ? null : HullLoft.ShapeOf(name);
 
     private static float Top(HullLoft.Shape s) => MathF.Max(s.A.Top, s.B.Top);
 
-    /// <summary>Is bay <paramref name="k"/>'s roof a turret's: level along it, as tall as the room's tallest, no neighbour's roof above it (the turntable stands on its top).</summary>
-    public static bool Roof(string[] plan, string[]? loft, int k)
+    /// <summary>Each lofted bay's start and end along the room (its key's lengths), front to back.</summary>
+    private static (float Z0, float Z1)[] Spans(string[] loft)
+    {
+        var at = new (float, float)[loft.Length];
+        var z = 0f;
+        for (var k = 0; k < loft.Length; k++)
+        {
+            var len = Of(loft[k])?.Length ?? 1f;
+            at[k] = (z, z + len);
+            z += len;
+        }
+        return at;
+    }
+
+    /// <summary>The bays any part of which lies within <paramref name="reach"/> of bay <paramref name="k"/>'s middle (itself left out).</summary>
+    private static IEnumerable<int> Near(string[] loft, int k, float reach)
+    {
+        var spans = Spans(loft);
+        var mid = (spans[k].Z0 + spans[k].Z1) / 2;
+        for (var j = 0; j < loft.Length; j++)
+            if (j != k && spans[j].Z1 > mid - reach + 1e-3f && spans[j].Z0 < mid + reach - 1e-3f)
+                yield return j;
+    }
+
+    /// <summary>Is bay <paramref name="k"/>'s roof a turret's: level along it, long enough for the turntable, no bay within the turret's reach higher than its roof (the turntable stands on its top).</summary>
+    public static bool Roof(string[] plan, string[]? loft, int k) => Roof(plan, loft, k, Turret.Kit);
+
+    public static bool Roof(string[] plan, string[]? loft, int k, Turret t)
     {
         if (Of(loft?[k]) is not { } s)
             return plan[k] is "Door" or "Bay T" || plan[k] is "Tail T" && loft == null;
         var top = s.A.Top;
-        if (MathF.Abs(s.A.Top - s.B.Top) > Level || s.Front || s.Back)
-            return false; // (a sloped roof, a brow or a tail: the arm runs into the next bay's wall)
-        var tallest = loft!.Select(Of).Where(x => x != null).Max(x => Top(x!.Value));
-        if (top < tallest - Level)
-            return false;
-        foreach (var j in new[] { k - 1, k + 1 })
-            if (j >= 0 && j < loft.Length && Of(loft[j]) is { } n && Top(n) > top + Rise)
+        if (MathF.Abs(s.A.Top - s.B.Top) > Level || s.Front || s.Back || s.Length < 2 * t.Table)
+            return false; // (a sloped roof, a brow or a tail, a bay shorter than the table: the arm runs into the next bay's wall)
+        foreach (var j in Near(loft!, k, t.Reach + 0.25f))
+            if (Of(loft![j]) is { } n && Top(n) > top + Rise)
                 return false;
         return true;
     }
@@ -444,14 +859,14 @@ public static class BaySpots
         return (y, (MathF.Max(s.A.XAt(y), 0) + MathF.Max(s.B.XAt(y), 0)) / 2);
     }
 
-    /// <summary>Does anything stand out over a mount on bay <paramref name="k"/>'s waist, from <paramref name="from"/> to <paramref name="to"/> above it, on it or its neighbours?</summary>
-    private static bool ClearAbove(string[] loft, int k, float from, float to, int reach)
+    /// <summary>Does anything stand out over a mount on bay <paramref name="k"/>'s waist, from <paramref name="from"/> to <paramref name="to"/> above it, on it or the bays within <paramref name="reach"/>?</summary>
+    private static bool ClearAbove(string[] loft, int k, float from, float to, float reach)
     {
         if (Of(loft[k]) is not { } s)
             return true;
         var (wy, wx) = Waist(s);
-        for (var j = k - reach; j <= k + reach; j++)
-            if (j >= 0 && j < loft.Length && Of(loft[j]) is { } n)
+        foreach (var j in Near(loft, k, reach).Append(k))
+            if (Of(loft[j]) is { } n)
                 foreach (var sec in new[] { n.A, n.B })
                     if (sec.WidestBetween(wy + from, wy + to) > wx + SideProud)
                         return false;
@@ -460,9 +875,9 @@ public static class BaySpots
 
     /// <summary>
     /// Can bay <paramref name="k"/> take a side gun (a sponson, its turntable, an arm a metre long either way, the hinge and the gun)? Not on the door bay, and not
-    /// where an eave, a ledge or a neighbour's roof edge stands out over the turret (Bandit War Bus 5's ledge, a cabin's eaves: 2026-11-07).
+    /// where an eave, a ledge or a neighbour's roof edge stands out over the turret (Bandit War Bus 5's ledge, a cabin's eaves: 2026-11-07), within the turret's reach.
     /// </summary>
-    public static bool Side(string[] plan, string[]? loft, int k) => plan[k] != "Door" && (loft == null || ClearAbove(loft, k, SideFrom, SideTo, 1));
+    public static bool Side(string[] plan, string[]? loft, int k) => plan[k] != "Door" && (loft == null || ClearAbove(loft, k, SideFrom, SideTo, Turret.Kit.Reach + 0.25f));
 
     /// <summary>Can a pannier hang on bay <paramref name="k"/>'s waist (0.3 m above it clear on the bay itself)?</summary>
     public static bool Pannier(string[]? loft, int k) => loft == null || ClearAbove(loft, k, 0.05f, PannierTo, 0);
@@ -549,6 +964,20 @@ public static class FrontProfile
         {
             if (!Langs.TryGetValue((l.Name, facets), out var p))
                 Langs[(l.Name, facets)] = p = Of(l.Drawn(facets));
+            return p;
+        }
+    }
+
+    private static readonly Dictionary<BodyStyleRule, float[][]> Styles = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>Every section a style's rooms may show (<see cref="BodyLook.References"/>), from the front (cached).</summary>
+    public static float[][] OfStyle(BodyStyleRule rule)
+    {
+        var refs = BodyLook.References(rule);
+        lock (Styles)
+        {
+            if (!Styles.TryGetValue(rule, out var p))
+                Styles[rule] = p = refs.Select(Of).ToArray();
             return p;
         }
     }

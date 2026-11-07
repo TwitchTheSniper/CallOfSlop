@@ -458,8 +458,7 @@ public static class VehicleIdentity
             return double.NaN;
         Geometry(b);
         var rule = BodyStyleRule.Of(st);
-        var facets = FrontProfile.FacetsOf(rule);
-        var langs = rule.Languages.Select(x => FrontProfile.Of(x.L, facets)).ToArray();
+        var langs = FrontProfile.OfStyle(rule); // (phase 2: its languages as the style draws them, overhang and taper included)
         var sum = 0.0;
         var n = 0;
         foreach (var bay in b.V.Rooms.SelectMany(r => r.Bays))

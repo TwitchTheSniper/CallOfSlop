@@ -482,6 +482,7 @@ public sealed partial class Vehicle
         foreach (var (tag, list) in Panels)
             if (tag is not "furniture")
                 PaintAll(list.Where(p => p.Def.Slots.Length == 0), tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
+        PaintRooms(Dice.Fork("paint runs"), "rust"); // (phase 2: a room's bays by runs, one colour each, so its sections read: VehicleBodyLanguage.cs)
         var war = Style.Colour(d, "war");
         foreach (var p in d.Shuffled((Panels.GetValueOrDefault("hood") ?? []).Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
             Paint(p, war);

@@ -15,9 +15,16 @@ public sealed partial class Vehicle
     /// </summary>
     public Room Hull(string tag, float z0, float under, string[] bays, (float X, float Z)[]? seatSpots = null)
     {
+        var floorTop = under + 0.05f;
+        if (Look != null && WheelBand(z0, z0 + bays.Length + 0.5f, floorTop) is var band && band > Look.FlareFrom)
+        {
+            Modules.Add($"overhang from {band:0.00} m (the wheels)"); // (the plan judged its spots on the look's own: BaySpots; the wheels came higher)
+            Look.FlareFrom = band;
+        }
         var names = Look != null ? Look.Names(bays) : bays.Select(b => b == "Door" ? "Hull Door Bay T" : "Hull " + b).ToArray(); // (kit 5: lofted bays in the style's body language)
         if (Look != null && Look.Spoken(bays.Length) is var spoken && spoken != Look.Language.Name)
             Modules.Add($"sections {spoken}"); // (a mixing style's room: its stations' languages, front to back)
+        var doorSide = Look?.DoorSide ?? 1;
         var lengths = new float[names.Length];
         for (var k = 0; k < names.Length; k++)
         {
@@ -27,45 +34,70 @@ public sealed partial class Vehicle
         }
         var z1 = z0 + lengths.Sum();
         var r = new Rect(-BayHalf, BayHalf, z0, z1);
-        var room = new Room { Tag = tag, R = r, DoorFace = Vector3.UnitX, FloorTop = under + 0.05f, Plan = bays.ToList() };
-        Deck(tag + "floor", under, new Rect(-1.125f, 1.125f, z0, z1), "floor");
+        var floorHalf = Look?.Scale.FloorHalf ?? 1.125f;
+        var room = new Room { Tag = tag, R = r, DoorFace = new Vector3(doorSide, 0, 0), FloorTop = floorTop, Plan = bays.ToList() };
+        Deck(tag + "floor", under, new Rect(-floorHalf, floorHalf, z0, z1), "floor");
         var walls = PanelList(tag + "walls");
         var z = z0;
         var ceiling = 0f;
         for (var k = 0; k < names.Length; k++)
         {
-            var bay = Stand(names[k], new Vector3(-0.75f, room.FloorTop, z + 0.125f), Orient.Forward, null, "footL0", 0.06f);
+            // A bay stands on its feet (the Bolt Deck's quarter grid, from its floor's width: HullLoft.FootX); a left door bay is the right one turned round.
+            var turned = bays[k] == "Door" && doorSide < 0 && Look != null;
+            var foot = HullLoft.ShapeOf(names[k]) is { } sh ? HullLoft.FootX(sh) : 0.75f;
+            var bay = turned
+                ? Stand(names[k], new Vector3(-foot, room.FloorTop, z + 0.125f), new Orient(Vector3.UnitY, Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ), null, "footR1", 0.06f)
+                : Stand(names[k], new Vector3(-foot, room.FloorTop, z + 0.125f), Orient.Forward, null, "footL0", 0.06f);
             walls.Add(bay);
             room.Bays.Add(bay);
             ceiling = MathF.Max(ceiling, room.FloorTop + Def(names[k]).BoundsMax.Y); // (the tallest bay: a brow or a tail comes down)
             if (bays[k] == "Door")
-                HullDoorIn(room, bay, z, tag);
+                HullDoorIn(room, bay, z, tag, doorSide);
             z += lengths[k];
         }
         room.Walls.AddRange(walls);
         room.Ceiling = ceiling - 0.1f;
         room.FloorRest = ToRest(Vector3.Zero);
         if (Skirted)
-            Skirts(new Rect(-1.125f, 1.125f, z0, z1));
+            Skirts(new Rect(-floorHalf, floorHalf, z0, z1));
         foreach (var (x, sz) in seatSpots ?? [])
             room.Seats.Add(Put("Seat", new Vector3(x, room.FloorTop + 0.475f, sz), Orient.Forward, 0.2f, null, "bottom", onTop: true));
         Rooms.Add(room);
         return room;
     }
 
-    /// <summary>The flush door in a Door Bay: its hinge welded to the jamb behind the opening, the door swung shut in it.</summary>
-    private void HullDoorIn(Room room, VPart bay, float z, string tag)
+    /// <summary>
+    /// How high above the room's floor an overhang must start to clear the wheels under the room's length (from <paramref name="z0"/> to <paramref name="z1"/>): the
+    /// tyres' tops plus 0.12 m for their travel, where a tyre reaches in under the overhang (past 1.0 m of half width); 0 with no wheel there.
+    /// </summary>
+    private float WheelBand(float z0, float z1, float floorTop)
+    {
+        var band = 0f;
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            if (C.DefOf(i).Role is not PartRole.Wheel)
+                continue;
+            C.PartBounds(i, out var mn, out var mx);
+            var (a, b) = (FromRest(mn), FromRest(mx));
+            if (b.Z > z0 - 0.3f && a.Z < z1 + 0.3f && MathF.Max(MathF.Abs(a.X), MathF.Abs(b.X)) > 1.0f)
+                band = MathF.Max(band, b.Y - floorTop + 0.12f);
+        }
+        return MathF.Round(band * 100) / 100;
+    }
+
+    /// <summary>The flush door in a Door Bay: its hinge welded to the jamb behind the opening, the door swung shut in it; on <paramref name="side"/> (+1 right, -1 left: the right one turned round).</summary>
+    private void HullDoorIn(Room room, VPart bay, float z, string tag, float side = 1)
     {
         const float plane = 1.0f;
         var mid = z + 0.75f;
-        room.DoorMid = new Vector3(plane, room.FloorTop, mid);
-        var turn = new Orient(Vector3.UnitX, -Vector3.UnitZ, Vector3.UnitZ, -Vector3.UnitX);
+        room.DoorMid = new Vector3(side * plane, room.FloorTop, mid);
+        var turn = side > 0 ? new Orient(Vector3.UnitX, -Vector3.UnitZ, Vector3.UnitZ, -Vector3.UnitX) : new Orient(Vector3.UnitX, Vector3.UnitZ, Vector3.UnitZ, Vector3.UnitX);
         var def = Def(HullHinge);
-        var at = new Vector3(plane + DoorPlane, room.FloorTop + 1f, mid + (DoorWidth - HingeWidth) * 0.5f);
+        var at = new Vector3(side * (plane + DoorPlane), room.FloorTop + 1f, mid + side * (DoorWidth - HingeWidth) * 0.5f);
         room.Hinge = Weld(HullHinge, bay, at + Rot24.Apply(FirstTurn(turn), (def.BoundsMin + def.BoundsMax) * 0.5f), turn, 0, 0, 0);
         room.Door = Onto(room.Hinge, "leaf", HullDoor, "hang", 0);
         Paint(room.Door, Style.Colour(Dice.Fork("door " + tag), "rust"));
-        room.Ladder = Boarding(new Vector3(1.13f, room.FloorTop, mid), tag + "walls");
+        room.Ladder = Boarding(new Vector3(side * 1.13f, room.FloorTop, mid), tag + "walls");
     }
 
     /// <summary>A gun on a side: a Gun Sponson on <paramref name="on"/>'s waist socket, a turntable and the gun on it. <paramref name="seat"/> works it from inside.</summary>

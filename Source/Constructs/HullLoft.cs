@@ -18,7 +18,20 @@ public static class HullLoft
     private const float T = 0.04f; // a facet's thickness, as the fixed bays'
     private const float DoorPlane = 1.0f, DoorTop = 2.0f;
     private const string Steel = "#7a7f86", Rust = "#4a3a2e", Roof = "#5c5f62";
+    private const string SteelLow = "#686d74", SteelHigh = "#8c9198"; // (phase 2: a painted wall's rows by height, so a paint's tone shows the shape: ConstructPaint.ToneOf)
     public const int MaxPoints = 16; // (a smooth section: 8 to 12 facets a side, docs/vehiclekit/BODY-STYLES.md)
+
+    /// <summary>
+    /// A section's reach (phase 2, the scale classes of docs/vehiclekit/BODY-STYLES.md): 2 m of half width and 4 m of height, for any class from a buggy's cover to a
+    /// giant's room (the key's 9 bits go to 5.11 m; phase 1 read 1.3 m and 3 m, which every walk-in room still keeps).
+    /// </summary>
+    public const int MaxCm = 200, MaxHeightCm = 400;
+
+    /// <summary>Where a bay's feet stand from its middle: on the Bolt Deck's quarter grid, a quarter and a bit in from its floor's edge (0.75 m on a truck's 1.0 to 1.2 m edge).</summary>
+    public static float FootX(float floorHalf) => Math.Clamp(MathF.Floor((floorHalf - 0.2f) / 0.25f + 1e-4f) * 0.25f, 0.25f, 1.5f);
+
+    /// <summary>A bay's feet, from the narrower of its two floor edges.</summary>
+    public static float FootX(Shape s) => FootX(MathF.Min(s.A.P[0].X, s.B.P[0].X));
     private const string Digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"; // (a compact section: three of these a point)
 
     /// <summary>A half profile: points from the floor edge (y 0) up and over to the centreline (x 0), metres.</summary>
@@ -84,7 +97,7 @@ public static class HullLoft
                 var xy = pts[i].Split(',');
                 if (xy.Length != 2 || !int.TryParse(xy[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var x) || !int.TryParse(xy[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
                     return null;
-                if (x is < 0 or > 130 || y is < 0 or > 300)
+                if (x is < 0 or > MaxCm || y is < 0 or > MaxHeightCm)
                     return null;
                 list[i] = new Vector2(x / 100f, y / 100f);
             }
@@ -107,7 +120,7 @@ public static class HullLoft
                     v = v << 6 | d;
                 }
                 var (x, y) = (v >> 9, v & 511);
-                if (x > 130 || y > 300)
+                if (x > MaxCm || y > MaxHeightCm)
                     return null;
                 list[i] = new Vector2(x / 100f, y / 100f);
             }
@@ -116,7 +129,7 @@ public static class HullLoft
 
         private static Section? Valid(Vector2[] list)
         {
-            if (list[0].Y != 0 || list[^1].X != 0 || list[0].X < 0.6f)
+            if (list[0].Y != 0 || list[^1].X != 0 || list[0].X < 0.3f)
                 return null; // (from the floor to the centreline)
             for (var i = 1; i < list.Length; i++)
                 if (list[i].Y < list[i - 1].Y - 0.001f)
@@ -316,8 +329,15 @@ public static class HullLoft
     }
 
     /// <summary>The row colours as the fixed bays have them: the lowest row rust, rows steeper than 45 degrees steel (painted), the flatter ones roof.</summary>
-    private static (string Colour, bool Paint) Row(Vector2 p0, Vector2 p1, int k) =>
-        k == 0 ? (Rust, false) : MathF.Abs(p1.Y - p0.Y) >= MathF.Abs(p1.X - p0.X) ? (Steel, true) : (Roof, false);
+    private static (string Colour, bool Paint) Row(Vector2 p0, Vector2 p1, int k)
+    {
+        if (k == 0)
+            return (Rust, false);
+        if (MathF.Abs(p1.Y - p0.Y) < MathF.Abs(p1.X - p0.X))
+            return (Roof, false);
+        var y = (p0.Y + p1.Y) / 2; // (phase 2: the lower wall darker, the upper lighter, so rows read through any paint and any wear)
+        return (y < 0.95f ? SteelLow : y > 1.75f ? SteelHigh : Steel, true);
+    }
 
     /// <summary>A row's outward normal on the +x side (x, y): from point k to k + 1 of a section.</summary>
     private static Vector2 RowNormal(Vector2 p0, Vector2 p1) => Vector2.Normalize(new Vector2(p1.Y - p0.Y, -(p1.X - p0.X)) + new Vector2(1e-9f, 0));
@@ -449,10 +469,52 @@ public static class HullLoft
                 p.Hide(new Vector3(DoorPlane - 0.03f, 0, fz0), new Vector3(DoorPlane + 0.03f, DoorTop, fz1));
             }
             p.Hide(new Vector3(DoorPlane - 0.03f, DoorTop, z0), new Vector3(DoorPlane + 0.03f, DoorTop + 0.1f, z1));
+            // Where the section stands out past the doorway's plane (a flare, an overhang over the wheels, a strake), the bays either side are wider than the frame:
+            // close the door bay's ends between the frame (and the cant over it) and the section, a row at a time (phase 2).
+            foreach (var (s, z) in new[] { (a, z0), (b, z1) })
+                DoorEnds(p, s, z);
             // Where the section comes in past the doorway's plane under its top (a tumblehome), the frame stands proud of the bays either side: close its ends.
             foreach (var (s, z) in new[] { (a, z0), (b, z1) })
                 if (Crossing(s) is { } yc && yc < DoorTop - 0.01f && s.P.FirstOrDefault(q => q.Y > DoorTop + 0.05f) is var pj && pj != default)
                     p.Facet([new(DoorPlane, yc, z), new(DoorPlane, DoorTop, z), new(pj.X, pj.Y, z)], Vector3.UnitZ, Steel, 0.05f);
+        }
+    }
+
+    /// <summary>The +x outline of a door bay's side at height <paramref name="y"/>: the frame's plane up to its top, then the cant to the first point above it.</summary>
+    private static float DoorOutline(Section s, float y)
+    {
+        if (y <= DoorTop + 1e-4f)
+            return DoorPlane;
+        var j = Array.FindIndex(s.P, q => q.Y > DoorTop + 0.05f);
+        if (j < 0)
+            return DoorPlane;
+        if (y >= s.P[j].Y)
+            return s.XAt(y);
+        var t = (y - DoorTop) / (s.P[j].Y - DoorTop);
+        return DoorPlane + (s.P[j].X - DoorPlane) * t;
+    }
+
+    /// <summary>Strips at a door bay's end from its outline (<see cref="DoorOutline"/>) out to the section where the section stands outside it, below the cant's top.</summary>
+    private static void DoorEnds(Builder p, Section s, float z)
+    {
+        var j = Array.FindIndex(s.P, q => q.Y > DoorTop + 0.05f);
+        if (j < 0)
+            return;
+        var cuts = new List<float>();
+        for (var k = 0; k <= j; k++)
+            cuts.Add(s.P[k].Y);
+        cuts.Add(DoorTop);
+        cuts = cuts.Where(y => y <= s.P[j].Y + 1e-4f).Distinct().OrderBy(y => y).ToList();
+        for (var i = 0; i + 1 < cuts.Count; i++)
+        {
+            var (y0, y1) = (cuts[i] < 0.001f ? 0.003f : cuts[i], cuts[i + 1]);
+            if (y1 - y0 < 0.01f)
+                continue;
+            var (o0, o1) = (s.XAt(y0), s.XAt(y1 - 1e-4f));
+            var (i0, i1) = (DoorOutline(s, y0), DoorOutline(s, y1));
+            if (o0 < i0 + 0.012f && o1 < i1 + 0.012f)
+                continue; // (the section is the outline here, or inside it: the tumblehome's own close, below)
+            p.Facet([new(i0, y0, z), new(MathF.Max(o0, i0 + 0.001f), y0, z), new(MathF.Max(o1, i1 + 0.001f), y1, z), new(i1, y1, z)], Vector3.UnitZ, Steel, 0.05f);
         }
     }
 
@@ -516,8 +578,9 @@ public static class HullLoft
             Cap(p, b, length);
         foreach (var (k, z) in new[] { (0, 0.125f), (1, length - 0.125f) })
         {
-            p.Sock($"footL{k}", new Vector3(-0.75f, 0, z), "-y");
-            p.Sock($"footR{k}", new Vector3(0.75f, 0, z), "-y");
+            var foot = FootX(MathF.Min(a.P[0].X, b.P[0].X)); // (0.75 m on every truck's room: phase 1's)
+            p.Sock($"footL{k}", new Vector3(-foot, 0, z), "-y");
+            p.Sock($"footR{k}", new Vector3(foot, 0, z), "-y");
         }
         var y = (a.WaistY + b.WaistY) / 2;
         var w = (MathF.Max(a.XAt(y), 0) + MathF.Max(b.XAt(y), 0)) / 2;

@@ -632,7 +632,8 @@ public static class ShapeGrammar
         {
             room.SideBay = d.Pick(middle);
             var door = Array.IndexOf(room.Bays, "Door");
-            room.SideSide = Math.Abs(room.SideBay - door) > 1 && d.Chance(0.4) ? 1 : -1; // (the door side only away from the door and its ladder)
+            var doorSide = v.Look?.DoorSide ?? 1;
+            room.SideSide = Math.Abs(room.SideBay - door) > 1 && d.Chance(0.4) ? doorSide : -doorSide; // (the door side only away from the door and its ladder)
             inRoom--;
         }
         foreach (var k in d.Shuffled(roofCandidates))
@@ -780,7 +781,7 @@ public static class ShapeGrammar
             {
                 case "room":
                     v.Under(under, s.Z0, s.Z1);
-                    var spots = SeatSpots(s);
+                    var spots = SeatSpots(s, v.Look?.DoorSide ?? 1);
                     room = v.Hull(p.Recipe.RoomTag, s.Z0, v.FloorY, s.Bays, spots);
                     roomSeg = s;
                     // (not its walls in Trim's crooked patches: a patch on a hull bay goes on the bay's middle, which is inside the room, where a player stands)
@@ -991,16 +992,17 @@ public static class ShapeGrammar
         return v.Panels.TryGetValue("rack", out var laid) && laid.Count > 0;
     }
 
-    /// <summary>A room's seats at x -0.5 (clear of the door, which is on +x): the front, the back, and a third a metre ahead of the back one.</summary>
-    private static (float X, float Z)[] SeatSpots(Seg s)
+    /// <summary>A room's seats half a metre to the side away from the door (+x on the right, phase 2's left doors -x): the front, the back, and a third a metre ahead of the back one.</summary>
+    private static (float X, float Z)[] SeatSpots(Seg s, float doorSide)
     {
+        var x = -0.5f * doorSide;
         var list = new List<(float, float)>();
         if (s.SeatCount >= 1)
-            list.Add((-0.5f, s.Z0 + 0.375f));
+            list.Add((x, s.Z0 + 0.375f));
         if (s.SeatCount >= 2)
-            list.Add((-0.5f, s.Z1 - 0.875f));
+            list.Add((x, s.Z1 - 0.875f));
         if (s.SeatCount >= 3)
-            list.Add((-0.5f, s.Z1 - 1.875f)); // (a metre ahead of the back one: clear of the magazine's reels at the front and of the room's middle, where a player stands)
+            list.Add((x, s.Z1 - 1.875f)); // (a metre ahead of the back one: clear of the magazine's reels at the front and of the room's middle, where a player stands)
         return list.ToArray();
     }
 
