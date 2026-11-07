@@ -7,10 +7,12 @@ namespace CallOfSlop.VehicleKit;
 /// Which kit made a vehicle (docs/vehiclekit/VEHICLEKIT.md, "Shape grammar"). Kit 1 is the shapes as whole generators; kit 2 builds the shapes that have a recipe
 /// (<see cref="ShapeGrammar.Recipes"/>) from modules. A committed seed stays on the kit it was committed with (<see cref="Frozen"/>), so its file never changes;
 /// every other seed, the dynamic spawn's included, is made by <see cref="Current"/>. The kit is in the blueprint's text (a comment line, kit 2 on) and in the spawn log.
+/// Kit 3 (<see cref="Layered"/>) is kit 2's grammar with its variety in layers (<see cref="VehicleLayers"/>): a kit-2 seed means another vehicle under kit 3, which is
+/// fine because no kit-2 seed was ever committed and a saved world holds built constructs, not seeds; <c>--kit 2</c> still makes kit 2's.
 /// </summary>
 public static class VehicleKitVersion
 {
-    public const int Legacy = 1, Grammar = 2, Current = Grammar;
+    public const int Legacy = 1, Grammar = 2, Layered = 3, Current = Layered;
 
     /// <summary>The command line's <c>--kit N</c>: every seed by that kit (to measure one against the other). Null: each seed's own.</summary>
     public static int? Force;
@@ -164,13 +166,13 @@ public static class ShapeGrammar
     /// A seed by the grammar. A plan that the game refuses as it is built (a part with nowhere to go) is planned again from the next fork of the seed, up to
     /// <see cref="Attempts"/> times, so a seed fails only when every plan does; the same seed always takes the same attempts.
     /// </summary>
-    public static Vehicle Make(IVehicleGenerator g, int seed, ShapeRecipe recipe)
+    public static Vehicle Make(IVehicleGenerator g, int seed, ShapeRecipe recipe, int kit = VehicleKitVersion.Current, VehicleLayers layers = default)
     {
         Vehicle? kept = null; // (the best plan the identity check turned down: VehicleIdentity.Gate)
         for (var attempt = 0; ; attempt++)
         {
             VehicleGenJob.Yield(); // (a plan again starts a world of its own: a span of its own)
-            var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed), g.Style, seed) { Kit = VehicleKitVersion.Grammar };
+            var v = New(g, seed, kit, layers);
             VehicleGenJob.Yield();
             try
             {
@@ -198,13 +200,24 @@ public static class ShapeGrammar
             return false;
         try
         {
-            Plan(new Vehicle(VehicleRegistry.BlueprintName(g, seed), g.Style, seed) { Kit = VehicleKitVersion.Grammar }, recipe, 0);
+            Plan(New(g, seed, VehicleKitVersion.Current, default), recipe, 0);
             return true;
         }
         catch (VehicleKitException)
         {
             return false;
         }
+    }
+
+    /// <summary>A plan's vehicle: kit 2's plain, kit 3's with its layers and its wear started.</summary>
+    private static Vehicle New(IVehicleGenerator g, int seed, int kit, VehicleLayers layers)
+    {
+        if (kit < VehicleKitVersion.Layered)
+            return new Vehicle(VehicleRegistry.BlueprintName(g, seed), g.Style, seed) { Kit = kit };
+        var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed) + layers.Suffix, g.Name, g.Style, seed) { Kit = kit };
+        v.UseLayers(layers);
+        v.StartWear(LayerTables.WearOf(g.Style));
+        return v;
     }
 
     // ---- The plan ------------------------------------------------------------------------------------------------
@@ -241,6 +254,14 @@ public static class ShapeGrammar
         public bool RearDrum;
         public int Attempt;
         public readonly HashSet<string> Tags = new(StringComparer.Ordinal);
+
+        /// <summary>Kit 3: the chassis layer's roll, the body's ranges and its dice for the room's bays; null in kit 2.</summary>
+        public ChassisPlan? Chassis;
+        public BodyRange? Body;
+        public Dice? BayDice;
+
+        /// <summary>Where the axles stand behind the front one: a sill or a gun can't go there (the rails break for a differential).</summary>
+        public readonly List<float> Stations = new();
     }
 
     private static VehicleModule Module(string family, string name) => Catalogue.First(m => m.Family == family && m.Name == name);
@@ -270,20 +291,39 @@ public static class ShapeGrammar
 
     private static float Steps(Dice d, float min, float max, float step) => min + step * d.Int(0, (int)MathF.Round((max - min) / step));
 
+    /// <summary>A length from <paramref name="min"/> to <paramref name="max"/> in steps, leaning long (<paramref name="bias"/> over 0) or short (under): kit 3's body ranges.</summary>
+    private static float Steps(Dice d, float min, float max, float step, double bias)
+    {
+        var n = (int)MathF.Round((max - min) / step) + 1;
+        var u = d.Next();
+        u = bias >= 0 ? 1 - Math.Pow(1 - u, 1 + 2 * bias) : Math.Pow(u, 1 - 2 * bias);
+        return min + step * Math.Min(n - 1, (int)(u * n));
+    }
+
     private static PlanData Plan(Vehicle v, ShapeRecipe r, int attempt)
     {
         var st = v.Style;
-        var d = v.Dice.Fork(attempt == 0 ? "grammar" : "grammar " + attempt);
-        var p = new PlanData { Recipe = r, Attempt = attempt };
+        var layered = v.Kit >= VehicleKitVersion.Layered;
+        var again = attempt == 0 ? "" : " " + attempt;
+        var d = v.Dice.Fork("grammar" + again);
+        // (kit 3: each decision forks from its layer's root, so a layer's seed moves only what that layer decides; kit 2: all of it from one fork, as it always did)
+        Dice D(VehicleLayer l, string topic) => !layered ? d.Fork(topic) : l switch
+        {
+            VehicleLayer.Chassis => v.LayerDice(l).Fork("chassis" + again).Fork(topic),
+            VehicleLayer.Kit => v.LayerDice(l).Fork("grammar kit" + again).Fork(topic),
+            _ => d.Fork(topic),
+        };
+        var p = new PlanData { Recipe = r, Attempt = attempt, Body = layered ? LayerTables.BodyOf(st) : null };
         var tags = p.Tags;
 
         // The body: a pattern, weighted by the style's liking for each kind of segment, then lengths.
-        var pattern = Weighted(d.Fork("body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)))).ToList());
+        var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)))).ToList());
         var z = Front;
-        var ld = d.Fork("lengths");
+        var ld = D(VehicleLayer.Body, "lengths");
         foreach (var s in pattern.Segments)
         {
-            var len = s.Kind switch { "room" => Steps(ld, s.Min, s.Max, 1f), "tank" => Steps(ld, s.Min, s.Max, 1f), _ => Steps(ld, s.Min, s.Max, 0.5f) };
+            var step = s.Kind is "room" or "tank" ? 1f : 0.5f;
+            var len = p.Body is { } body ? Steps(ld, s.Min, s.Max, step, body.LengthBias) : Steps(ld, s.Min, s.Max, step);
             var seg = new Seg { Kind = s.Kind, Z0 = z, Z1 = z + len };
             p.Segs.Add(seg);
             tags.Add(s.Kind is "gun bed" ? "bed" : s.Kind);
@@ -302,7 +342,7 @@ public static class ShapeGrammar
 
         // Bed sides before the gear: walls hang under the floor's edge, so they rule out some recipes.
         if (tags.Contains("bed"))
-            p.Sides = Choose(d.Fork("sides"), st, "sides", tags);
+            p.Sides = Choose(D(VehicleLayer.Body, "sides"), st, "sides", tags);
 
         // The gear: what every chosen module allows.
         var allowed = (r.Gears ?? (st.HeavyGear.Select(x => x.Name).ToArray())).AsEnumerable();
@@ -312,28 +352,26 @@ public static class ShapeGrammar
         if (only.Length == 0)
             throw new VehicleKitException("no gear recipe fits every module");
         v.Heavy();
-        if (attempt == 0)
-            p.Gear = v.PickGear(only);
-        else // (a plan again rolls its gear again: one recipe may be what failed, a stilt's height say)
+        if (!layered)
         {
-            var fits = st.HeavyGear.Where(x => only.Contains(x.Name)).ToArray();
-            p.Gear = d.Fork("gear").Pick(fits.Length > 0 ? fits : throw new VehicleKitException($"style {st.Name} has no gear named {string.Join(", ", only)}"));
-            FactionStyle.Noted("gear", p.Gear.Name);
+            if (attempt == 0)
+                p.Gear = v.PickGear(only);
+            else // (a plan again rolls its gear again: one recipe may be what failed, a stilt's height say)
+            {
+                var fits = st.HeavyGear.Where(x => only.Contains(x.Name)).ToArray();
+                p.Gear = d.Fork("gear").Pick(fits.Length > 0 ? fits : throw new VehicleKitException($"style {st.Name} has no gear named {string.Join(", ", only)}"));
+                FactionStyle.Noted("gear", p.Gear.Name);
+            }
+            GearTags(p);
         }
-        if (p.Gear.Floor >= 0.5f)
-            tags.Add("high floor");
-        if (p.Gear.Tandem > 0)
-            tags.Add("six");
-        if (p.Gear.Tag != null)
-            tags.Add("tag axle");
 
         // Cab and nose: the style's own parts.
-        p.Cab = Choose(d.Fork("cab"), st, "cab", tags) ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
+        p.Cab = Choose(D(VehicleLayer.Body, "cab"), st, "cab", tags) ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
         foreach (var t in p.Cab.Provides)
             tags.Add(t);
-        p.CabPart = FactionStyle.Noted("heavyCab", d.Fork("cab part").Pick(p.Cab.PartsIn(st)));
-        p.Nose = Choose(d.Fork("nose"), st, "nose", tags) ?? throw new VehicleKitException($"style {st.Name} lists no hood the grammar knows");
-        var nd = d.Fork("nose part");
+        p.CabPart = FactionStyle.Noted("heavyCab", D(VehicleLayer.Body, "cab part").Pick(p.Cab.PartsIn(st)));
+        p.Nose = Choose(D(VehicleLayer.Body, "nose"), st, "nose", tags) ?? throw new VehicleKitException($"style {st.Name} lists no hood the grammar knows");
+        var nd = D(VehicleLayer.Body, "nose part");
         if (p.Nose.Name == "ram")
         {
             p.HoodPart = FactionStyle.Noted("hood", nd.Pick(st.Choices("hood").Where(h => h != "plates").DefaultIfEmpty("Long Hood").ToArray()));
@@ -344,7 +382,7 @@ public static class ShapeGrammar
 
         // The rear, then fuel: one tank feeds the engine (an engine has one fuel inlet).
         var rearWeights = r.Rears.ToDictionary(x => x.Rear, x => x.Weight);
-        p.Rear = Choose(d.Fork("rear"), st, "rear", tags, m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name]) ?? Module("rear", "bare");
+        p.Rear = Choose(D(VehicleLayer.Body, "rear"), st, "rear", tags, m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name]) ?? Module("rear", "bare");
         foreach (var t in p.Rear.Provides)
             tags.Add(t);
         if (!tags.Contains("fuel"))
@@ -361,33 +399,67 @@ public static class ShapeGrammar
             tags.Add("fuel");
         }
 
-        // The frame under it: the rear axle sits 1.25 m to 2.25 m in from the body's end, the tail rails reach the rear's end.
-        var shift = p.Segs[0].Kind == "hutch" ? 0.5f : 0.5f * d.Fork("wheelbase").Int(0, p.Segs.Count > 1 || p.End > 5.5f ? 2 : 1); // (a hutch's gun stands where Gun Wagon's frame puts it)
-        p.Rails = p.End - Front + 0.25f - shift;
-        p.RearAxle = -1.3f + p.Rails;
+        // The frame under it.
         var rearLen = p.Rear.Name is "porch" or "porch hitch" ? 1.25f : p.Rear.Name == "gun deck" ? 1.75f : p.Rear.Name == "hitch" ? 0.25f : 0f;
-        p.Tail = p.End - p.RearAxle + rearLen;
-        var least = p.Gear.Tandem > 0 ? p.Gear.Tandem + 0.75f : p.Gear.Tag != null ? 1.5f : 0.75f;
-        if (p.Tail < least)
-            p.Tail = least; // (the rails run on past the body)
+        if (!layered)
+        {
+            // The rear axle sits 1.25 m to 2.25 m in from the body's end, the tail rails reach the rear's end.
+            var shift = p.Segs[0].Kind == "hutch" ? 0.5f : 0.5f * d.Fork("wheelbase").Int(0, p.Segs.Count > 1 || p.End > 5.5f ? 2 : 1); // (a hutch's gun stands where Gun Wagon's frame puts it)
+            p.Rails = p.End - Front + 0.25f - shift;
+            p.RearAxle = -1.3f + p.Rails;
+            p.Tail = p.End - p.RearAxle + rearLen;
+            var least = p.Gear.Tandem > 0 ? p.Gear.Tandem + 0.75f : p.Gear.Tag != null ? 1.5f : 0.75f;
+            if (p.Tail < least)
+                p.Tail = least; // (the rails run on past the body)
+            p.Stations.Add(p.RearAxle);
+            if (p.Gear.Tandem > 0 || p.Gear.Tag != null)
+                p.Stations.Add(p.RearAxle + 1.25f);
+        }
+        else
+        {
+            // Kit 3: the chassis layer, fitted under the body: corners, axles, where they stand, the track.
+            var c = VehicleChassis.Roll(D(VehicleLayer.Chassis, "roll"), st, only, p.End, p.Segs.Count, tags.Contains("cabover"), p.Segs[0].Kind == "hutch" ? 1.75f : null, p.Rear.Name == "gun deck");
+            p.Chassis = c;
+            p.Gear = c.Gear;
+            GearTags(p);
+            p.RearAxle = p.End - c.Inset;
+            p.Rails = p.RearAxle - c.FrontZ - 0.375f;
+            p.Tail = p.End - p.RearAxle + rearLen;
+            var least = c.Extra == "tandem" ? c.Spacing + 0.75f : c.Extra == "tag" ? c.Spacing + 0.25f : 0.75f;
+            if (p.Tail < least)
+                p.Tail = least;
+            p.Stations.Add(p.RearAxle);
+            if (c.Extra.Length > 0)
+                p.Stations.Add(p.RearAxle + c.ExtraAt);
+            if (c.Extra == "pusher" && p.RearAxle - c.Spacing < Front + 0.6f)
+                throw new VehicleKitException("a pusher axle under the cab"); // (the next plan)
+        }
         if (p.Rails < 1.5f)
             throw new VehicleKitException("too short a body for a frame");
 
-        p.UnderKind = p.Gear.Floor < 0.5f ? Module("under", "stilts") : Choose(d.Fork("under"), st, "under", tags) ?? Module("under", "stilts");
-        p.Flank = Choose(d.Fork("flank"), st, "flank", tags);
-        p.Roof = Choose(d.Fork("roof"), st, "roof", tags);
+        p.UnderKind = p.Gear.Floor < 0.5f ? Module("under", "stilts") : Choose(D(VehicleLayer.Chassis, "under"), st, "under", tags) ?? Module("under", "stilts");
+        p.Flank = Choose(D(VehicleLayer.Kit, "flank"), st, "flank", tags);
+        p.Roof = Choose(D(VehicleLayer.Body, "roof"), st, "roof", tags);
 
-        Guns(v, p, d.Fork("guns"));
+        if (layered)
+            p.BayDice = D(VehicleLayer.Body, "bays");
+        Guns(v, p, D(VehicleLayer.Kit, "guns"));
         return p;
     }
 
-    /// <summary>Axle and tag stations a sill can't go on: rails break for a differential.</summary>
-    private static bool Clear(PlanData p, float z)
+    /// <summary>The tags a gear recipe gives the rest of the plan.</summary>
+    private static void GearTags(PlanData p)
     {
-        if (MathF.Abs(z - p.RearAxle) < 0.45f)
-            return false;
-        return !(p.Gear.Tandem > 0 || p.Gear.Tag != null) || MathF.Abs(z - (p.RearAxle + 1.25f)) >= 0.45f;
+        if (p.Gear.Floor >= 0.5f)
+            p.Tags.Add("high floor");
+        if (p.Gear.Tandem > 0)
+            p.Tags.Add("six");
+        if (p.Gear.Tag != null)
+            p.Tags.Add("tag axle");
     }
+
+    /// <summary>Axle and tag stations a sill can't go on: rails break for a differential.</summary>
+    private static bool Clear(PlanData p, float z) => p.Stations.TrueForAll(a => MathF.Abs(z - a) >= 0.45f);
 
     private static float RailZ(PlanData p, float z)
     {
@@ -471,7 +543,7 @@ public static class ShapeGrammar
 
         // The room: the guns it works from inside (roof turrets, a sponson), up to the four belts a magazine feeds.
         var inRoom = Math.Clamp(want - count, count == 0 ? 1 : 0, room.Len >= 5.5f ? 3 : room.Len >= 4.5f ? 2 : 1); // (each is a seat on a wall that loot would take)
-        room.Bays = Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack");
+        room.Bays = p.Body is { } body ? Bays(p.BayDice!, (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack", body) : Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack");
         var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => room.Bays[k] is "Door" or "Bay T" or "Tail T").ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
         var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => room.Bays[k] != "Door").ToList();
         var side = inRoom >= 2 || inRoom == 1 && d.Chance(0.3) ? middle.Count > 0 : false;
@@ -543,20 +615,78 @@ public static class ShapeGrammar
         return names.ToArray();
     }
 
+    /// <summary>
+    /// Kit 3's bays: <see cref="Bays(Dice, int, bool)"/> under a style's <see cref="BodyRange"/>: its section heights' weights, how often the roofline steps, and how often a
+    /// brow or a tail is raked down. The same rules hold: the door bay is tall, a rack has its flat pair, the roofline changes at least once (twice from three metre bays).
+    /// </summary>
+    public static string[] Bays(Dice d, int ones, bool flatPair, BodyRange b)
+    {
+        string H()
+        {
+            var x = d.Next() * (b.Tall + b.Low + b.Narrow);
+            return x < b.Tall ? "T" : x < b.Tall + b.Low ? "L" : "N";
+        }
+        var slots = ones + 1;
+        var door = d.Int(0, slots - 1);
+        var bounds = new string[slots + 1];
+        bounds[0] = H();
+        for (var i = 1; i <= slots; i++)
+            bounds[i] = d.Chance(b.StepChance) ? H() : bounds[i - 1];
+        if (d.Chance(b.Rake))
+            bounds[0] = d.Chance(0.6) ? "L" : "N"; // (a raked brow)
+        if (d.Chance(b.Rake))
+            bounds[slots] = d.Chance(0.6) ? "L" : "N"; // (and a raked tail)
+        bounds[door] = bounds[door + 1] = "T";
+        var keep = new List<int> { door, door + 1 };
+        if (flatPair && slots >= 2)
+        {
+            var n = door + 1 < slots ? door + 1 : door - 1;
+            bounds[n] = bounds[n + 1] = "T";
+            keep.AddRange([n, n + 1]);
+        }
+        if (bounds.All(x => x == "T"))
+        {
+            var ends = new List<int>();
+            if (!keep.Contains(0))
+                ends.Add(0);
+            if (!keep.Contains(slots))
+                ends.Add(slots);
+            if (ends.Count > 0)
+                bounds[d.Pick(ends)] = d.Chance(0.6) ? "L" : "N";
+        }
+        var changes = Enumerable.Range(1, slots).Count(i => bounds[i] != bounds[i - 1]);
+        var free = Enumerable.Range(0, slots + 1).Where(i => !keep.Contains(i)).ToList();
+        for (var tries = 0; changes < (slots >= 3 ? 2 : 1) && free.Count > 0 && tries < 8; tries++)
+        {
+            var i = d.Pick(free);
+            bounds[i] = bounds[i] == "T" ? (d.Chance(0.6) ? "L" : "N") : "T";
+            changes = Enumerable.Range(1, slots).Count(k => bounds[k] != bounds[k - 1]);
+        }
+        var names = new List<string> { "Brow " + bounds[0] };
+        for (var i = 0; i < slots; i++)
+            names.Add(i == door ? "Door" : bounds[i] == bounds[i + 1] ? "Bay " + bounds[i] : $"Bay {bounds[i]}-{bounds[i + 1]}");
+        names.Add("Tail " + bounds[slots]);
+        return names.ToArray();
+    }
+
     // ---- The build -----------------------------------------------------------------------------------------------
 
     private static void Build(Vehicle v, PlanData p)
     {
         var g = p.Gear;
+        var layered = p.Chassis != null;
         v.FloorY = g.Floor;
-        v.Ladder(-1.675f, p.Rails, 0.625f, p.Tail, g.Differential, frontWing: g.FrontWing, tandem: g.Tandem).SteeredAxle(g.FrontWheel, g.FrontSpring).DrivenAxle(g.RearWheel, g.RearSpring)
+        var (frontZ, nose) = p.Chassis is { } ch ? (ch.FrontZ, ch.Nose) : (-1.675f, 0.625f);
+        v.NoFenders = frontZ != -1.675f; // (the hood's fenders stand where kit 2's front wheels are)
+        v.Ladder(frontZ, p.Rails, nose, p.Tail, g.Differential, frontWing: g.FrontWing, tandem: g.Tandem).SteeredAxle(g.FrontWheel, g.FrontSpring).DrivenAxle(g.RearWheel, g.RearSpring)
             .Powertrain(-1.425f).OpenCab(shell: p.CabPart);
         if (g.Tag != null)
-            v.TagAxle(v.RearAxleZ + 1.25f, g.Tag, g.TagWheel ?? g.RearWheel);
+            v.TagAxle(v.RearAxleZ + (p.Chassis?.ExtraAt ?? 1.25f), g.Tag, g.TagWheel ?? g.RearWheel);
         if (MathF.Abs(v.RearAxleZ - p.RearAxle) > 0.01f)
             throw new VehicleKitException($"the plan put the rear axle at {p.RearAxle}, the frame at {v.RearAxleZ}"); // (the plan's sums are the frame's)
 
         var dice = v.Dice.Fork(p.Attempt == 0 ? "grammar build" : "grammar build " + p.Attempt);
+        var kit = layered ? v.LayerDice(VehicleLayer.Kit).Fork(p.Attempt == 0 ? "grammar kit build" : "grammar kit build " + p.Attempt) : dice; // (kit 3: the guns' and stores' rolls are the kit layer's)
         Room? room = null;
         Seg? roomSeg = null;
         VPart? hutch = null;
@@ -598,7 +728,7 @@ public static class ShapeGrammar
                     v.Deck("bed", deckY, new Vehicle.Rect(-Edge, Edge, Front, s.Z1), "floor", [new Vehicle.Rect(-0.375f, 0.375f, s.GunZ - 0.375f, s.GunZ + 0.375f)], whole: s.Drum ? [spot] : null);
                     if (s.Drum)
                         v.FuelUnderFloor(v.TankOn(v.Wholes[("bed", spot)], new Vector3(1, 0, spot.Z0 + 0.05f)), 1);
-                    s.Aft = dice.Fork("aft").Chance(0.5);
+                    s.Aft = kit.Fork("aft").Chance(0.5);
                     break;
                 }
                 case "gap": // (bare rails: air between the cab and the body)
@@ -647,11 +777,11 @@ public static class ShapeGrammar
                 return best;
             }
             foreach (var k in roomSeg.RoofBays)
-                v.Turret(room.Bays[k], WeaponFor(v, dice, room.Bays[k], false), seat: Seat(v.CentreOf(room.Bays[k]).Z));
+                v.Turret(room.Bays[k], WeaponFor(v, kit, room.Bays[k], false), seat: Seat(v.CentreOf(room.Bays[k]).Z));
             if (roomSeg.SideBay >= 0)
             {
                 var bay = room.Bays[roomSeg.SideBay];
-                v.SideGun(bay, roomSeg.SideSide, Seat(v.CentreOf(bay).Z), WeaponFor(v, dice, bay, true));
+                v.SideGun(bay, roomSeg.SideSide, Seat(v.CentreOf(bay).Z), WeaponFor(v, kit, bay, true));
             }
         }
         var fedGuns = v.Turrets.Select(t => t.Gun).ToArray();
@@ -683,7 +813,7 @@ public static class ShapeGrammar
                 throw new VehicleKitException($"the {room.Tag}: no wall took a container"); // (seats and the door took the walls: plan again)
             var chance = p.Flank?.Name switch { "panniers" => 0.4, "loaded" => 0.85, _ => 0.0 };
             if (chance > 0)
-                v.Panniers(room.Bays, dice.Fork("panniers"), chance);
+                v.Panniers(room.Bays, kit.Fork("panniers"), chance);
         }
 
         if (room != null && p.Roof?.Name == "rack" && !Rack(v, room, roomSeg!.RoofBays))
@@ -724,6 +854,11 @@ public static class ShapeGrammar
         v.Hood(p.HoodPart, p.NoseParts);
         VehicleGenJob.Yield();
         v.Trim(walls.ToArray());
+        if (layered)
+        {
+            VehicleGenJob.Yield();
+            v.Weather(); // (kit 3's wear layer: paint, soot, patches; the decks' rusted-out edges went in as they were laid)
+        }
 
         // The check holds a heavy vehicle to a stability of 0.6 (half its track over its centre of mass's height): a plan that stacks too much up high is planned again.
         VehicleGenJob.Yield(); // (each measure rebuilds the construct whole: a slice of its own)
@@ -835,6 +970,11 @@ public static class ShapeGrammar
         if (p.Roof != null)
             Note("roof", p.Roof.Name);
         v.Modules.Add("layout " + body);
+        if (p.Chassis is { } c && v.Layers is { } layers)
+        {
+            v.Modules.Insert(0, "chassis " + c.Label);
+            v.Modules.Insert(0, "seeds " + layers.Label(v.Seed));
+        }
         if (p.Attempt > 0)
             v.Modules.Add("plan " + (p.Attempt + 1));
         var sb = new StringBuilder();

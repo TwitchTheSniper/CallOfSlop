@@ -70,7 +70,7 @@ public static class VehicleChecks
         if (bp.Tow.Length == 0)
             return null;
         var at = bp.Tow.LastIndexOf(' ');
-        return VehicleRegistry.Find(bp.Tow[..at]) is { } g ? ConstructBuild.ParseBlueprint(VehicleRegistry.Run(g, int.Parse(bp.Tow[(at + 1)..])), "tow.json") : ConstructBuild.FindBlueprint(bp.Tow);
+        return VehicleRegistry.Find(bp.Tow[..at]) is { } g ? ConstructBuild.ParseBlueprint(VehicleRegistry.Run(g, int.Parse(bp.Tow[(at + 1)..]), new VehicleLayers()), "tow.json") : ConstructBuild.FindBlueprint(bp.Tow);
     }
 
     public static VehicleReport Check(string text, string file, VehicleCheckOptions? options = null, IReadOnlyList<Room>? rooms = null)

@@ -58,6 +58,7 @@ public sealed class VehicleSpawner(Game game)
     {
         public IVehicleGenerator Gen;
         public int Seed, Tries;
+        public VehicleLayers Layers; // kit 3's per-layer seeds (none: the seed's own); kept through rerolls of the seed
         public bool Picked; // the server chose the seed
         public Vector3 Ground;
         public float Yaw;
@@ -93,13 +94,17 @@ public sealed class VehicleSpawner(Game game)
     /// <paramref name="seed"/> null for one the server picks. It stands on the ground at <paramref name="ground"/> facing
     /// <paramref name="yaw"/>, or in front of player <paramref name="frontOf"/> as they are when it is ready.
     /// <paramref name="done"/> hears how it went, on the tick. Returns why it was refused, or null: queued.
+    /// <paramref name="layers"/>: kit 3's per-layer seeds (docs/vehiclekit/VEHICLEKIT.md, "Layered variety"), so a caller can ask for "the same truck, different wear"
+    /// (the seed and a <c>Wear</c> seed) or "the same body, another chassis"; a layer left null takes the seed. Only the shape grammar's shapes have layers.
     /// </summary>
-    public string? Request(string style, string shape, int? seed, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null)
+    public string? Request(string style, string shape, int? seed, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, VehicleLayers? layers = null)
     {
         if (VehicleSpawnKit.Find(style, shape) is not { } g)
             return $"no faction vehicle \"{style} {shape}\"";
         if (seed is < 1)
             return "a seed is 1 or more";
+        if (layers is { Any: true } lay && (ShapeGrammar.RecipeOf(g) == null || VehicleLayers.All.Any(l => lay[l] is < 1)))
+            return ShapeGrammar.RecipeOf(g) == null ? $"the {g.Name} has no layers" : "a layer's seed is 1 or more";
         if (Full(owner) is { } full)
             return full;
         _queue.Enqueue(new Ask
@@ -107,6 +112,7 @@ public sealed class VehicleSpawner(Game game)
             Gen = g,
             Seed = seed ?? VehicleSpawnKit.Next(ref _seedState),
             Picked = seed == null,
+            Layers = layers ?? default,
             Ground = ground,
             Yaw = yaw,
             Owner = owner,
@@ -197,7 +203,7 @@ public sealed class VehicleSpawner(Game game)
             FallBack(a, "");
             return;
         }
-        _job = new VehicleGenJob(a.Gen, a.Seed);
+        _job = new VehicleGenJob(a.Gen, a.Seed, a.Layers);
     }
 
     private void FallBack(Ask a, string why)

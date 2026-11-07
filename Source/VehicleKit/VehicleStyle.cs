@@ -10,9 +10,20 @@ public sealed class Dice(uint seed)
 
     public static Dice Of(int seed) => new((uint)seed);
 
+    /// <summary>
+    /// Kit 3's layers (<see cref="VehicleLayers"/>): a topic the route names is forked from that layer's own root instead, so a vehicle's chassis, body, kit and
+    /// wear can each take their own seed. A layer root with this one's seed forks exactly as this would. Null: every topic forks from here (kit 1 and 2).
+    /// </summary>
+    private Func<string, Dice?>? _route;
+
+    /// <summary>The same dice with a <see cref="_route"/> for its forks.</summary>
+    public Dice Routed(Func<string, Dice?> route) => new(seed) { _route = route };
+
     /// <summary>A separate stream for a topic ("paint", "panels"), fixed by the seed and the topic's name.</summary>
     public Dice Fork(string topic)
     {
+        if (_route?.Invoke(topic) is { } layer && layer != this)
+            return layer.Fork(topic);
         var h = 2166136261u ^ seed;
         foreach (var ch in topic)
             h = (h ^ ch) * 16777619u;

@@ -130,6 +130,25 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
         if (int.TryParse(args.SkipWhile(a => !a.Equals("--kit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var vehicleKit))
             VehicleKit.VehicleKitVersion.Force = vehicleKit; // --kit N: every vehicle seed by that kit (1: the shapes as whole generators, 2: the shape grammar), to measure one against the other
+        if (args.SkipWhile(a => !a.Equals("--layers", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } layerText)
+        {
+            if (!VehicleKit.VehicleLayers.TryParse(layerText, out var layers, out var why))
+            {
+                Console.WriteLine($"--layers {layerText}: {why}");
+                return 1;
+            }
+            VehicleKit.VehicleLayers.Force = layers; // --layers chassis=5,wear=9: kit 3's layer seeds on every vehicle made (docs/vehiclekit/VEHICLEKIT.md, "Layered variety")
+        }
+        if (args.SkipWhile(a => !a.Equals("--vary", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } varyText)
+        {
+            if (!VehicleKit.VehicleLayers.TryLayer(varyText, out var layer))
+            {
+                Console.WriteLine($"--vary {varyText}: chassis, body, kit or wear");
+                return 1;
+            }
+            var varyBase = int.TryParse(args.SkipWhile(a => !a.Equals("--base", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var b) ? b : 1;
+            VehicleKit.VehicleLayers.Vary = (layer, varyBase); // --vary wear [--base S]: the seeds a tool loops over become that layer's, on seed S
+        }
         if (args.Any(a => a.Equals("--no-identity-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleIdentity.GateOn = false; // kit 2 without its identity re-plan, to measure what the check changes
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
