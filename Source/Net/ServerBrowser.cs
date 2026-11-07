@@ -336,7 +336,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 190: parts a construct to 16,000 (docs/perf/LIMITS.md): Msg.Fragment carries a reliable message over Steam's 512 KB limit in pieces (SteamTransport.cs), since a capital construct's Full can pass it; a Full's part settings count is a u32 (a u16 wrapped past 4 settings a part at 16,000 parts); part indices and the link count were u16 already.
     // 191: faction vehicles by role and by convoy (GameSandboxVehicles.cs): CActKind.FactionVehicle asks the server for one by role and tier, or for a convoy, in front of the player.
     // 192: the texture paint tool (ConstructFinish.cs): tool byte 16, CActKind.Texture and CBodyKind.Finish at the ends of their enums, and a Full ends with the textured parts; a material always goes by its name, never its row.
-    public const byte ProtocolVersion = 192;
+    // 193: the fuse tool (ConstructFuse.cs): tool byte 17, CActKind.Fuse at the end of its enum, and a Full ends with the fused units (runs of parts with their u32 tag).
+    public const byte ProtocolVersion = 193;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

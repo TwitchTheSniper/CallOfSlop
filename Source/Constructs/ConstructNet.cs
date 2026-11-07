@@ -159,6 +159,7 @@ public static class ConstructNet
         ConstructPaint.WriteFull(w, c);
         ConstructTracks.Write(w, c); // (protocol 136)
         ConstructFinish.WriteFull(w, c); // (protocol 192: the texture paint tool's materials, by name)
+        ConstructFuse.WriteFull(w, c); // (protocol 193: the fused units, runs of parts and their tags)
     }
 
     /// <summary>
@@ -1120,6 +1121,7 @@ public static class ConstructNet
         ConstructPaint.ReadFull(ref r, c); // protocol 98: the paint
         ConstructTracks.Read(ref r, c, parts); // protocol 136: the tracks
         ConstructFinish.ReadFull(ref r, c); // protocol 192: the texture paint tool's materials
+        ConstructFuse.ReadFull(ref r, c); // protocol 193: the fused units
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");

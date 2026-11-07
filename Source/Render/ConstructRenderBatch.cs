@@ -203,6 +203,8 @@ public static partial class ConstructRender
             var seg = p.Seg > 0 && p.Seg <= c.JointCount ? p.Seg : 0;
             var key = (long)seg << 48 | (long)((int)MathF.Floor(p.Pos.X / MergeCell) & 0xFFFF) << 32
                 | (long)((int)MathF.Floor(p.Pos.Y / MergeCell) & 0xFFFF) << 16 | (long)((int)MathF.Floor(p.Pos.Z / MergeCell) & 0xFFFF);
+            if (p.Fuse != 0)
+                key = long.MinValue | (long)(p.Fuse & 0x7FFF) << 48 | key & 0xFFFFFFFFFFFFL; // (a fused unit's parts are chunks of their own: an edit beside it never plans them again, ConstructFuse.cs)
             if (!_open.TryGetValue(key, out var e) || _eBoxes[e] + nb > MergeChunkBoxes)
             {
                 var sub = _open.ContainsKey(key) ? _eSub[e] + 1 : 0;
