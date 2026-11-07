@@ -20,6 +20,9 @@ public sealed class VehicleGenJob
     public readonly IVehicleGenerator Generator;
     public readonly int Seed;
 
+    /// <summary>Kit 3's layer seeds the request asked for (<see cref="VehicleLayers"/>); none: every layer is the seed's.</summary>
+    public readonly VehicleLayers Layers;
+
     /// <summary>When done: the blueprint (and what it tows, when the tow isn't a committed file), or why not. Set on the game's thread.</summary>
     public ConstructBuild.Blueprint? Blueprint, Tow;
     public string Error = "";
@@ -52,13 +55,14 @@ public sealed class VehicleGenJob
     [ThreadStatic]
     private static VehicleGenJob? _current;
 
-    public VehicleGenJob(IVehicleGenerator generator, int seed)
+    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default)
     {
         Generator = generator;
         Seed = seed;
+        Layers = layers;
     }
 
-    public string Name => VehicleRegistry.BlueprintName(Generator, Seed);
+    public string Name => VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix;
 
     /// <summary>
     /// A point where a generation may hand back to the game (between the game's own build calls, never inside one). Only the
@@ -221,7 +225,7 @@ public sealed class VehicleGenJob
 
     private void Generate()
     {
-        var v = VehicleRegistry.Make(Generator, Seed);
+        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers);
         Yield();
         var text = v.Text();
         Yield();
@@ -236,7 +240,7 @@ public sealed class VehicleGenJob
             if (at <= 0 || !int.TryParse(bp.Tow[(at + 1)..], out var towSeed) || VehicleRegistry.Find(bp.Tow[..at]) is not { } tg)
                 throw new VehicleKitException($"it tows \"{bp.Tow}\", which is neither a blueprint nor a generator's seed");
             Yield();
-            _tow = ConstructBuild.ParseBlueprint(VehicleRegistry.Run(tg, towSeed), VehicleRegistry.FileName(tg, towSeed));
+            _tow = ConstructBuild.ParseBlueprint(VehicleRegistry.Run(tg, towSeed, new VehicleLayers()), VehicleRegistry.FileName(tg, towSeed));
         }
         _bp = bp;
     }

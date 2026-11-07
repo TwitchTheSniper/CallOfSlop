@@ -111,6 +111,10 @@ public static class VehicleDiversity
         f.Traits["=axles"] = f.Axles.ToString();
         f.Traits["=wheels"] = string.Join("+", f.WheelParts);
         f.Traits["=springs"] = string.Join("+", f.Springs);
+        f.Traits["=suspension"] = string.Join("+", f.Springs.Select(VehicleChassis.TypeOf).Distinct().OrderBy(n => n, StringComparer.Ordinal)); // (the kinds: leaf, coil, arms...)
+        f.Traits["=wheelbase"] = $"{MathF.Round(f.Wheelbase * 2) / 2:0.0} m";
+        f.Traits["=wheelbase share"] = $"{MathF.Round(f.Wheelbase / MathF.Max(1, f.Size.Z) * 20) / 20:0.00}"; // (of the length: where the axles stand, whatever the size)
+        f.Traits["=track"] = $"{MathF.Round(f.Track * 4) / 4:0.00} m";
         f.Traits["=length"] = $"{MathF.Round(f.Size.Z * 2) / 2:0.0} m";
         f.Traits["=height"] = $"{MathF.Round(f.Size.Y * 2) / 2:0.0} m";
     }

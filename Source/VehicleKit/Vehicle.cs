@@ -15,8 +15,34 @@ public sealed partial class Vehicle : BlueprintScript
     public const string Beam = "Square Beam";
 
     public FactionStyle Style { get; }
-    public Dice Dice { get; }
+    public Dice Dice { get; private set; }
     public int Seed { get; }
+
+    /// <summary>Kit 3's layer seeds (<see cref="UseLayers"/>); null before kit 3 or without it.</summary>
+    public VehicleLayers? Layers { get; private set; }
+
+    private readonly Dice[] _layerRoots = new Dice[4];
+    private string _stem = "";
+
+    /// <summary>
+    /// Kit 3: each layer forks from a root of its own seed (docs/vehiclekit/VEHICLEKIT.md, "Layered variety"), and <see cref="Dice"/>'s forks go to the layer their topic
+    /// belongs to (<see cref="VehicleLayers.LayerOf"/>), so a method that forks "paint" or "weapon 2" rolls from the body's or the kit's seed. With no overrides every root is
+    /// the seed's own, so a fork falls exactly as it would without layers.
+    /// </summary>
+    public Vehicle UseLayers(VehicleLayers layers)
+    {
+        Layers = layers;
+        foreach (var l in VehicleLayers.All)
+            _layerRoots[(int)l] = Dice.Of(layers.SeedOf(l, Seed)).Fork(_stem);
+        Dice = _layerRoots[(int)VehicleLayer.Body].Routed(topic => _layerRoots[(int)VehicleLayers.LayerOf(topic)]);
+        return this;
+    }
+
+    /// <summary>A layer's own root (kit 3); before <see cref="UseLayers"/>, the vehicle's dice.</summary>
+    public Dice LayerDice(VehicleLayer l) => Layers == null ? Dice : _layerRoots[(int)l];
+
+    /// <summary>Set when the front axle isn't under the hood's back (kit 3's chassis): the hood's fenders would stand over nothing.</summary>
+    public bool NoFenders;
 
     /// <summary>Set by <see cref="Heavy"/>: wheels, springs and the powertrain come from the style's "heavy..." slots.</summary>
     public bool IsHeavy { get; private set; }
@@ -34,7 +60,18 @@ public sealed partial class Vehicle : BlueprintScript
     {
         Style = style;
         Seed = seed;
-        Dice = Dice.Of(seed).Fork(name.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9')); // (one seed number never means one recipe across shapes)
+        _stem = name.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+        Dice = Dice.Of(seed).Fork(_stem); // (one seed number never means one recipe across shapes)
+        Group = style.Group;
+    }
+
+    /// <summary>A vehicle whose name isn't "Name seed" (kit 3's overridden layers add to it): its dice still come from the generator's name.</summary>
+    public Vehicle(string name, string stem, FactionStyle style, int seed) : base(name)
+    {
+        Style = style;
+        Seed = seed;
+        _stem = stem;
+        Dice = Dice.Of(seed).Fork(stem);
         Group = style.Group;
     }
 
@@ -249,7 +286,11 @@ public sealed partial class Vehicle : BlueprintScript
             var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1); // (on its side: its branch would land on the seat's sill)
             var back = CentreOf(Diff2).Z;
             Link("shaft", split, Diff!, "Output shaft", "Input shaft");
-            Link("shaft", split, Diff2, "Branch shaft", "Input shaft", laid: true, nodes: [new Vector3(0.45f, CentreOf(split).Y, CentreOf(split).Z), new Vector3(0.45f, -0.4f, CentreOf(split).Z), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)]);
+            var from = CentreOf(split).Z;
+            Vector3[] run = back - 0.5f - from > 7.9f // (a shaft's segment reaches at most 8 m: a long kit-3 wheelbase takes a node halfway; anything shorter is laid as it always was)
+                ? [new Vector3(0.45f, CentreOf(split).Y, from), new Vector3(0.45f, -0.4f, from), new Vector3(0.45f, -0.4f, (from + back - 0.5f) / 2), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)]
+                : [new Vector3(0.45f, CentreOf(split).Y, from), new Vector3(0.45f, -0.4f, from), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)];
+            Link("shaft", split, Diff2, "Branch shaft", "Input shaft", laid: true, nodes: run);
         }
         else
             Link("shaft", Gearbox, Diff!, "Output shaft", "Input shaft");

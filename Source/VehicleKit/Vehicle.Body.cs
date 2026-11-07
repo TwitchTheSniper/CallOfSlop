@@ -55,6 +55,8 @@ public sealed partial class Vehicle
             for (var j = 0; j < nz; j++)
                 if (h.Contains(r.X0 + (i + 0.5f) * Cell, r.Z0 + (j + 0.5f) * Cell))
                     used[i, j] = true;
+        if (Worn != null)
+            WornEdges(tag, used, nx, nz); // (kit 3's wear: an open deck's edge rusted out, from the wear layer's own fork)
         for (var progress = true; progress;) // (a plate far from the frame fits once its neighbour is on)
         {
             progress = false;
@@ -180,6 +182,7 @@ public sealed partial class Vehicle
         var tilt = Style.Limit("tiltDegrees");
         var p = Weld(part, on, at, Orient.Facing(face), d.Between(-tilt, tilt), d.Between(-tilt, tilt), d.Between(-tilt, tilt));
         PanelList(tag).Add(p);
+        _welded.Add(at);
         return p;
     }
 
@@ -293,7 +296,7 @@ public sealed partial class Vehicle
         if (nose != "none")
             PanelList("hoodsides").Add(Onto(hood, "front", nose, "back", 0));
         var fender = Style.Part(d, "fender");
-        if (fender != "none")
+        if (fender != "none" && !NoFenders)
             foreach (var (socket, s) in new[] { ("+x0", 1f), ("-x0", -1f) })
                 if (Array.Exists(hood.Def.Sockets, x => x.Name == socket))
                     try

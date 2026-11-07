@@ -79,16 +79,33 @@ public static class VehicleRegistry
     public static string FileName(IVehicleGenerator g, int seed) => $"{Slug(g.Name)}{seed}.json";
 
     /// <summary>Runs a generator for a seed: the blueprint's text.</summary>
-    public static string Run(IVehicleGenerator g, int seed) => Make(g, seed).Text();
+    public static string Run(IVehicleGenerator g, int seed, VehicleLayers? layers = null) => Make(g, seed, layers: layers).Text();
 
     /// <summary>
     /// Runs a generator for a seed: the built vehicle, with what the check needs to know about it. <paramref name="kit"/> null: the seed's own
     /// (<see cref="VehicleKitVersion.For"/>: the committed seeds as they were, everything else the shape grammar where the shape has a recipe).
     /// </summary>
-    public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null)
+    /// <remarks>
+    /// <paramref name="layers"/>: kit 3's per-layer seeds (<see cref="VehicleLayers"/>; null: none, or the command line's <c>--layers</c>). With overrides a seed is made by
+    /// kit 3 even when its own file is kit 1's (that file is the seed without them); a shape with no recipe has no layers and throws. The command line's <c>--vary LAYER</c>
+    /// turns <paramref name="seed"/> into that layer's seed on its base seed, so every tool that loops over seeds loops over one layer.
+    /// </remarks>
+    public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null, VehicleLayers? layers = null)
     {
-        if ((kit ?? VehicleKitVersion.For(g, seed)) >= VehicleKitVersion.Grammar && ShapeGrammar.RecipeOf(g) is { } recipe)
-            return ShapeGrammar.Make(g, seed, recipe);
+        var lay = layers ?? VehicleLayers.Force ?? default;
+        if (VehicleLayers.Vary is { } vary && layers == null)
+            (lay, seed) = (lay.With(vary.Layer, seed), vary.Base);
+        var k = kit ?? VehicleKitVersion.For(g, seed);
+        if (lay.Any && kit == null)
+            k = Math.Max(k, VehicleKitVersion.Layered);
+        if (k >= VehicleKitVersion.Grammar && ShapeGrammar.RecipeOf(g) is { } recipe)
+        {
+            if (lay.Any && k < VehicleKitVersion.Layered)
+                throw new VehicleKitException($"kit {k} has no layers (kit 3 has)");
+            return ShapeGrammar.Make(g, seed, recipe, k, lay);
+        }
+        if (lay.Any)
+            throw new VehicleKitException($"the {g.Name} has no layers: only the shape grammar's shapes do (kit 3)");
         var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
         g.Build(v);
         if (ShapeGrammar.RecipeOf(g) == null && (kit ?? VehicleKitVersion.Force ?? (g.Seeds.Contains(seed) ? VehicleKitVersion.Legacy : VehicleKitVersion.Current)) >= VehicleKitVersion.Grammar)
@@ -146,7 +163,7 @@ public static class VehicleKitCli
                     failed++;
                     continue;
                 }
-                var file = VehicleRegistry.FileName(g, seed);
+                var file = VehicleRegistry.Slug(v.Name) + ".json"; // (FileName's, or with kit 3's overridden layers in it: never a committed seed's file)
                 var path = Path.Combine(outDir, file);
                 Directory.CreateDirectory(outDir);
                 File.WriteAllText(path, text);
