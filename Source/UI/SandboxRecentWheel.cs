@@ -103,6 +103,6 @@ public sealed class SandboxRecentWheel
         if (!Menu.IsOpen)
             return;
         var size = ImGui.GetIO().DisplaySize;
-        Menu.Draw(ImGui.GetForegroundDrawList(), new float2(size.X * 0.5f, size.Y * 0.5f), scale, null);
+        Menu.Draw(ImGui.GetForegroundDrawList(), new float2(size.X * 0.5f, size.Y * 0.5f), Menu.FitScale(scale, size.Y), null); // (kept on screen at big text sizes)
     }
 }

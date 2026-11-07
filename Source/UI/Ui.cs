@@ -137,7 +137,7 @@ public sealed partial class Ui : IDisposable
         // height; a Mac Retina framebuffer is twice the window, and ImGui's DisplayFramebufferScale already makes it sharp.
         var h = _window == null ? 900 : OperatingSystem.IsMacOS() ? _window.Size.Y : _window.FramebufferSize.Y;
         var auto = Math.Clamp(h / 900f, 0.8f, 3f);
-        return Math.Clamp(auto * TextFactor, 0.6f, 5f);
+        return Math.Clamp(auto * TextFactor, 0.7f, 5f); // (0.7: ImGui's 13 px font at 9 px, the smallest that reads)
     }
 
     private unsafe void ApplyScale(float scale)
@@ -164,6 +164,7 @@ public sealed partial class Ui : IDisposable
         if (MathF.Abs(target - _scale) > 0.01f)
             ApplyScale(target); // between frames, so ImGui never sees a half-changed style
         CompactFontsIfDue();
+        KeepWindowsOnScreen(); // (UiTextSize.cs)
         if (_platform != null)
         {
             PlatformNewFrame(); // (UiPlatformFrame.cs: the backend's NewFrame without its per-frame monitor scan)

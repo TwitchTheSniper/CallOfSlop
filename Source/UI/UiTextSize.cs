@@ -27,6 +27,8 @@ public sealed partial class Ui
         ("Extra large", 150),
     ];
 
+    private static readonly string TextSizeHelp = $"{TextSizeMin}% to {TextSizeMax}%. Menus and the HUD grow with the text. Auto follows your monitor's scaling.";
+
     /// <summary>The player's text size (Settings.TextSize): 0 = Auto, else a percent.</summary>
     public int TextSize;
 
@@ -67,7 +69,8 @@ public sealed partial class Ui
             var dpi = MathF.Max(cs.X, cs.Y);
             var h = monitor.VideoMode.Height;
             // What the OS asks for, over what the height scale already gives (a 1080p monitor at 100% is the reference).
-            if (h > 0 && float.IsFinite(dpi) && dpi > 0)
+            // Only when it asks for more than 100%: a small monitor at 100% has big pixels, and the height scale suits it.
+            if (h > 0 && float.IsFinite(dpi) && dpi > 1.01f)
                 f = Math.Clamp(dpi / (h / 1080f), 1f, 1.5f);
             f = MathF.Round(f * 20) / 20; // (whole 5% steps, like the slider)
             Console.WriteLine($"[ui] monitor scaling {dpi * 100:0}% at {h} px high: Auto text size {f * 100:0}%");
@@ -114,6 +117,37 @@ public sealed partial class Ui
         }
     }
 
+    /// <summary>
+    /// Between frames, every frame: a window bigger than the screen (one first sized in <c>N * _scale</c> pixels at a big
+    /// text size on a small window) is made to fit and moved back on screen. Windows that fit are left alone, wherever the
+    /// player put them. A few dozen windows at most, nothing allocated.
+    /// </summary>
+    private static void KeepWindowsOnScreen()
+    {
+        var ctx = ImGui.GetCurrentContext();
+        if (ctx.IsNull())
+            return;
+        var display = ImGui.GetIO().DisplaySize;
+        if (display.X <= 0 || display.Y <= 0)
+            return;
+        const ImGuiWindowFlags Skip = ImGuiWindowFlags.ChildWindow | ImGuiWindowFlags.Tooltip | ImGuiWindowFlags.Popup;
+        var windows = ctx.Windows;
+        for (var i = 0; i < windows.Count; i++)
+        {
+            var win = windows[i];
+            if (win.IsNull() || (win.Flags & Skip) != 0)
+                continue;
+            var size = win.SizeFull;
+            if (size.X <= display.X && size.Y <= display.Y)
+                continue;
+            size = new float2(MathF.Min(size.X, display.X), MathF.Min(size.Y, display.Y));
+            win.SizeFull = size;
+            win.Size = size;
+            var pos = win.Pos;
+            win.Pos = new float2(Math.Clamp(pos.X, 0, display.X - size.X), Math.Clamp(pos.Y, 0, display.Y - size.Y));
+        }
+    }
+
     /// <summary>The Text size control (Settings > Video). Buttons only note their pick; it is applied after the drawing.</summary>
     private void TextSizeControl(Settings s, float w)
     {
@@ -134,7 +168,7 @@ public sealed partial class Ui
         _textDragging = ImGui.IsItemActive();
         if (ImGui.IsItemDeactivatedAfterEdit())
             _textWant = SnapTextSize(_textSlider); // on release, so the menu doesn't resize under the mouse
-        ImGui.TextColored(Dim, $"{TextSizeMin}% to {TextSizeMax}%. Menus and the HUD grow with the text. Auto follows your monitor's scaling.");
+        ImGuiSafe.TextColored(Dim, TextSizeHelp);
 
         if (_textWant >= 0)
         {
