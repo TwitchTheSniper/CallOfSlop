@@ -22,6 +22,8 @@ like any other. **Fix the generator, not its files.** No AI is in here: crew and
 | `... --layers chassis=5,wear=9` on any of these | Kit 3's layer seeds on every vehicle made: the seed's own vehicle with those layers rolled from other seeds ("Layered variety"). `--gen-vehicle` then writes `BanditBoxTruck7chassis5wear9.json`, never a committed seed's file. |
 | `... --vary wear [--base S]` on any of these | The seeds a tool loops over become one layer's seeds on base seed S (default 1): `--diversity "Bandit Box Truck" --vary chassis --base 5 --seeds 8` is seed 5's body and kit on eight chassis. |
 | `CallOfSlop --role "Bandit raider" --tier 2 [--seeds N] [--check] [--sliced]`, `--kit-report --roles` | Kit 4: vehicles for a role and tier, measured against it, and the matrix of every style, role and tier. See "Roles and tiers". |
+| `CallOfSlop --family "Bandit raider" [--seed S] [--tier T] [--check]` | A model line: its Mk1 to Mk3, its variants, a named unique and two other families of the role, with their distances; the family must read closer to itself than to the others. See "Families and convoys". |
+| `CallOfSlop --convoy Bandit [--seed S] [--count N] [--tier T] [--mix raider,tanker] [--no-check] [--write DIR]` | A convoy's plan (members, roles, models, the paint scheme, where each stands), each member made and given the full check, the leader made twice. See "Families and convoys". |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
@@ -449,6 +451,90 @@ main by the dressing fix. A role seed made twice writes the same text, and made 
 (Bandit Box Truck 1000, IT War Bus 77, Highland Flatbed Fort 55, Call Centre Gun Wagon 12, British Scrap Tanker 40, Militia Box Truck 5, Bandit Technical 30) write the
 same files as before kit 4, byte for byte.
 
+## Families and convoys
+
+Kit 4 makes one vehicle for a role. **Families** make model lines of them, and **convoys** make groups that read as a fleet (`VehicleFamilies.cs`, `VehicleFamilyNames.cs`,
+`VehicleConvoys.cs`; roadmap phase 6). Nothing here changes a vehicle made any other way: every committed seed, every request by shape and every kit-4 request by role
+makes the same text as before (`--gen-vehicles`: all 123 identical; `--kit-report --roles --raw` for every IT role, tier and two seeds: the same numbers as main).
+
+**A model** (`VehicleModel`) is a small record: style, role, the family's base tier, seed, mark (1 to 3), variant, paint scheme, layer overrides and a named flag. The same
+model always makes the same vehicle, so its key is all a world, a log or a convoy needs to spawn it again: `Bandit/raider/2/282030/mk2/scheme 292943/wear 419532`
+(`VehicleModel.Key`, `TryParse`; `VehicleSpawner.RequestModel` spawns one). Every family vehicle's kit line starts `model KEY`, and the spawn's "generated" line carries it.
+
+**Marks.** A family is a style, a role, a base tier and a seed. The seed picks the shape (`VehicleRoles.ShapeFor`, so every mark is the same shape) and the layers. Mk1 is
+made at the base tier, Mk2 a tier up and Mk3 two (to 4), but their frame leans by the base tier (`RoleAsk.FrameAt`: segment lengths, the chassis table's axles, cabs,
+bed sides, plate materials and running gear), so the marks share one body on one chassis. The kit follows the mark's tier: guns weigh by it, the loot tier rises, and the
+appliqué grows (`RoleAsk.KitArmourLean`: at least 0.3 for a Mk2, 0.5 for a Mk3). A room's hull bays keep Mk1's appliqué (kit 4's, at the frame's lean: plates high on a hull
+raise the centre of mass, and a mark that failed the stability gate for them went to another plan, another body), and the mark's own goes on the sides, low (`Vehicle.SideArmour`:
+the style's heaviest armour plate a metre square, welded upright 4 cm proud of the outermost plate or beam at a station, 0.35 m and more over the ground and its middle under
+the centre of mass, so it only steadies the vehicle, only where it meets nothing, a metre from any other weld; two on a Mk2, four on a Mk3, more as the lean asks). A mark is made from its **first plan that builds**, never planned again for its role or its identity:
+re-planning would give a later mark another body. So a family's mark misses its role more often than a kit-4 vehicle does, and says so in its kit line as any role vehicle
+does. A plan under the check's stability throws as it builds (a family's mark has no role re-plan to catch a tall one), and the next plan is taken; a mark whose first
+plans didn't build has "plan N" in its kit line, and `--family` flags a mark on another plan than Mk1's.
+
+**Variants** change one layer on purpose, on the family's body and chassis: **up-armoured** (the kit layer on a seed of its own, and the most appliqué: lean +0.3, four side
+plates and more), **gun truck** (the kit layer on a seed of its own, one more gun where the shape has a spot, every open bed a gun bed, one more allowed by its needs) and **tanker conversion**
+(up to three Fuel Drums on its open deck, clear of the guns, under open sky, never coplanar with what is there; a loot tier up for the cargo). A kit-1 shape (the Technical,
+the Tanker Rig, the Double Decker) has no layers: its variants change only what the pass adds, and its marks are its seed's with the mark's tier.
+
+**Named uniques.** A model is a named unique by a roll on its seed (`VehicleFamilies.RollNamed`: 8 % for a command or boss model, 2 % for the rest; `Named` in the key forces
+it): its own name, a tier up, the best loot (loot tier 4), one more chest and one more mark (the style's masts, else its trophies, on the marks pass's spots).
+
+**Names** (`VehicleFamilyNames.ByStyle`, by style name; Karl may edit them, and a changed list renames families without making any vehicle differently): each style has its
+model names, how its marks read and its uniques' names, all ASCII. Bandit "Rustbucket Mk2", "Old Mother Rust"; IT "Model T-1000 Helpdesk", "Patch Tuesday SP2",
+"Cloud Migration Enterprise", "The Mainframe"; the Call Centre "Hot Lead Gold", "Lucky Draw Platinum"; Highland "Glen Rover", "Bothy Bus II", "Bothy Bus Mor", "The Big Yin";
+British "Wellington Mk II", "Windsor Mk III", "Her Majesty's Displeasure"; a style not named (Militia) gets `Default` ("Patriot Mk1"). Each variant has a style word: Bandit
+"Plated", "Gunrig", "Guzzler"; IT "Hardened", "Pen Test", "Data Lake"; British "Ironclad", "Gunboat", "Bowser". A vehicle is named "Bandit Rustbucket Mk2 [raider, tier 3]",
+never a committed seed's name.
+
+**Measured** (`--family "STYLE ROLE" --seed 5 --tier 2 --check`, 2026-11-07, the 2-core box at load 3 to 9; distances as `--diversity` measures them):
+
+| Family | Shape | Mk1 to Mk2 / Mk3 | up-armoured / gun truck / tanker / named | within the family (worst) | to two other families (least) | full check |
+| --- | --- | --- | --- | --- | --- | --- |
+| Highland raider 5 | Box Truck | 0.007 / 0.015 | 0.081 / 0.074 / 0.014 / 0.003 | 0.049 (0.112) | 0.375 (0.344) | 9 of 9 |
+| IT carrier 5 | War Bus | 0.014 / 0.018 | 0.105 / 0.069 / 0.011 / 0.004 | 0.055 (0.115) | 0.220 (0.171) | 9 of 9 |
+| British command 5 | Box Truck | 0.008 / 0.016 | 0.052 / 0.067 / 0.017 / 0.003 | 0.040 (0.083) | 0.229 (0.204) | 9 of 9 |
+| Bandit raider 7 | Gun Wagon | 0.017 / 0.030 | 0.044 / 0.045 / 0.021 / 0.014 | 0.039 (0.075) | 0.305 (0.273) | 9 of 9 |
+
+The marks read as one vehicle (under 0.08) and the variants as close kin; every other family of the role is three to seven times further away. What a mark changes
+that the distance doesn't count: paint, loot, plate materials (none: the frame's), and the guns' classes.
+
+**Convoys** (`VehicleConvoys.Plan(style, count, tier, seed, mix)`; nothing is made to plan one, and the same seed always plans the same):
+
+- a **leader**: a command vehicle, or a boss (half as likely as a command vehicle from tier 3, an eighth below), a tier up;
+- **escorts**: one raider or scout line (by the style's `Fielded` weights), Mk1s with a Mk2 among them now and then and a gun truck or an up-armoured variant on one; past
+  three escorts, sometimes a second line for the last;
+- **cargo** (from three vehicles): a tanker line, else a recovery or carrier line (weighted 3, 1, 1 by what the style fields); a second cargo vehicle is its twin, or for a
+  line that isn't a tanker its tanker conversion;
+- the order: half the escorts, the cargo, the rest of the escorts at the rear. A column, or from four vehicles a wedge (a third of the time): the leader in the middle, the
+  rest alternately in a lane each side, 7 m out;
+- **one paint scheme** (`VehicleConvoys.SchemeOf`): for every palette role but the rust, one of the style's colours (two of a role that lists four or more), so the
+  convoy shares its body, hood, frame and war paint; every colour is still the style's own, so the identity's palette score holds. It works as `FactionStyle.Weigh` does: a
+  per-thread `FactionStyle.Scheme` while a member is made, the same one roll over the scheme's colours, null for every other vehicle. Each member also takes its own wear seed
+  (`Layers.Wear`, on the grammar's shapes), so twins differ in their rust, dirt and patches;
+- **one or two model families** behind the leader (the leader is its own), and no two lines share a model name (a family seed whose name is taken is moved on).
+
+**In the game.** `VehicleSpawner.RequestConvoy(style, count, tier, seed, at, heading, owner, done, mix)` plans it and queues its members; each is generated and set down as any
+dynamic spawn (sliced, rerolled, falling back to a committed seed of its shape). Where a member stands is worked out when it is ready: the leader at `at`, each one after it
+`VehicleConvoys.Gap` (5 m) behind the last tail in its lane (`Vehicle.ExtentZ`, the generated vehicle's own reach ahead of and behind its origin; a committed stand-in's from its
+shape's usual), on the ground, heading the convoy's way. **Caps:** a convoy's members have their own cap (`ConvoyQueueMax`, 6, beside the 8 single requests, which they don't
+count against), one convoy at a time on the server (`ConvoysAtOnce`), so a player has at most one; a request beyond it is refused with "a convoy is on its way already". One log
+line per convoy, when its last member is down: `[vehicles] Bandit convoy 3: 4 vehicles, column, tier 2, 3 families, scheme 292943: 4 of 4 down in 7.2 s: leader Bandit Roadrash
+Mk1 [command, tier 3] as 21 (KEY); escort ...; scheme body #6f7477+#5f6a55, ...`. The members' own "generated" and "set down" lines come as before.
+
+**The parts menu.** With "Faction vehicles: new seed" on, the Blueprints tab has "A faction tile makes": *its shape* (as before), *by role* (a role, any by default, and a tier:
+the tile's style, by role, `CActKind.FactionVehicle`, protocol 191) or *a convoy* (how many, 2 to 6, and a tier). A convoy is set down passing in front of the player: its leader
+22 m ahead and to one side, heading across their view, the rest in a line behind it, so the whole convoy is seen side on. The host's "Roles and convoys" (on by default; off: requests
+by role, model and convoy are refused and the tiles make their shape, as before kit 4) sits beside "Server generates them" (off: every member is a committed seed of its shape).
+
+**Checked.** `--convoy STYLE --seed 11 --count 6 --tier 3` for IT, British, Highland and the Call Centre and `--convoy Bandit --seed 3` generate every member, the leader twice
+to the same text. The full check passed every member of the table's four families (36 of 36) and 4 of the 5 of Bandit convoy 3; its leader (a tier 3 command
+Box Truck, plan 1) stands 10.5 degrees off level and doesn't drive, with nothing low, nothing in a wheel's box and its springs rated at nearly four times their share of its 2.7 t: the same plan
+kit 4 makes for that seed and turns down only for its armour, so a kit-4 role vehicle that met its role on such a plan would do the same. In game (an offline host on
+Construct Yard and a client over RakNet at 80 ms and 2 % loss, the client asking by the wire): Bandit convoy 3 (4 vehicles, column) down in 7.2 s and IT convoy 11 (6, wedge)
+in 20.2 s, spaced and laned as planned, the client with the same parts on every body, and every member's text hash the one `--convoy` prints for it (made in slices as the spawn makes it); the worst ticks were the first slice of a generation (21 to 33 ms, the same for a single role
+spawn on this box) and one 52 ms join with a garbage collection in it.
+
 ## Quality tools
 
 The kit will make vehicles during play with nobody looking, so these tools keep variety up and each faction looking like itself. They generate and measure (0.1 to 1 s a seed on the 2-core box); none runs the drive or gun checks unless asked, and the defaults stay small. Everything prints to `callofslop.log`. Source: `VehicleDiversity.cs` (the metric), `VehicleQuality.cs` (the commands), `Program.VehicleSheet.cs` (the sheet).
@@ -687,7 +773,7 @@ game.VehicleSpawn.Request("Bandit", "Box Truck", seed: null, ground, yaw, owner:
 
 `seed` null: the server picks one (1 to 999,999). `layers` (optional): kit 3's per-layer seeds ("Layered variety"), kept if the seed rerolls. `ground` and `yaw` say where it stands, or `frontOf` names a player it is set down in front of, as they stand when it is ready (the parts menu's way). The return is why it was refused, or null: queued. `done` hears how it went, on the tick. At most 8 wait, 2 from one player.
 
-**The parts menu.** The Blueprints tab has "Faction vehicles: new seed" (on by default) and a seed box (0: any). With it on, a faction vehicle's tile (a blueprint named "Style Shape seed") asks for a new one of that style and shape (`CActKind.Vehicle`: the style's and the shape's names and a seed; protocol 186); off, the tile spawns the committed file as before (`CActKind.Blueprint`, which tests and every other blueprint still use). The host also has "Server generates them": off (`VehicleSeeds.Committed`), every request gets a committed seed of its style and shape, the asked one when it ships, so a session plays only what CI checks.
+**The parts menu.** The Blueprints tab has "Faction vehicles: new seed" (on by default) and a seed box (0: any); by role and by convoy: "Families and convoys". With it on, a faction vehicle's tile (a blueprint named "Style Shape seed") asks for a new one of that style and shape (`CActKind.Vehicle`: the style's and the shape's names and a seed; protocol 186); off, the tile spawns the committed file as before (`CActKind.Blueprint`, which tests and every other blueprint still use). The host also has "Server generates them": off (`VehicleSeeds.Committed`), every request gets a committed seed of its style and shape, the asked one when it ships, so a session plays only what CI checks.
 
 **Only the server generates.** A built vehicle is an ordinary construct: clients get it as bodies (`CBody`), as they get anything built, so nothing about the seed is on the wire and a client never runs the kit. That is simpler and safer than clients regenerating: no machine-to-machine determinism to trust, no fallback to send a blueprint when a hash disagrees, and nothing changes when a client's build differs in a way the protocol doesn't catch. The text's FNV-1a hash is in the log line (`[vehicles] generated Bandit Box Truck 733786 (hash ...)`), and a seed always writes the same text: in game and in `--gen-vehicle` alike (the first shipped seed of every shape in every shipped style, made in slices this way, matched its committed file byte for byte). It saves and loads with the world and is salvaged like anything else, because that is all it is.
 

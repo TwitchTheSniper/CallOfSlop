@@ -63,7 +63,7 @@ public class BlueprintScript
     private readonly List<(int Step, string Table)> _loot = new();
     private Vector3 _origin;
 
-    public string Name { get; }
+    public string Name { get; internal set; } // (set again only for a family's mark, named for its model: VehicleFamilies.cs)
     public string Description { get; set; } = "";
     public string Group { get; set; } = "";
 

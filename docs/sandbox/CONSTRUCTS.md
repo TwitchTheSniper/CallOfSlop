@@ -5207,7 +5207,7 @@ server), `GameSandboxTexture.cs` (the request), `Program.SandboxTexture.cs` (inp
   list, which an older build skips (no format change). Blueprints: a step's `"finish": "tread plate"`. Copy and paste keep it.
 - **Free and instant** in both modes, with the colour paint tool's rules (`ConstructEdits.Finish`): the tool out, no seat, the
   reach, decision 19's contested-construct check; a part with nothing that takes a texture says so.
-- **Network (protocol 191)**: `CActKind.Texture` (construct, mode, part, the name) at the end of `CActKind`; the server sends
+- **Network (protocol 192)**: `CActKind.Texture` (construct, mode, part, the name) at the end of `CActKind`; the server sends
   changes in `CBodyKind.Finish` (at the end of `CBodyKind`: construct, part, name; at most 100 a message, after the paint
   changes each tick), and a `CBody` Full ends with the textured parts (a late joiner, a structure resend, a big body's patch).
   No string is made either side: names go as ASCII bytes and are matched against the table. Nothing allocates while painting.

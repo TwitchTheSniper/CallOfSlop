@@ -59,7 +59,7 @@ public static class ConstructFinish
         return n;
     }
 
-    // ---- The wire (protocol 191) -----------------------------------------------------------------------------------------
+    // ---- The wire (protocol 192) -----------------------------------------------------------------------------------------
 
     /// <summary>A name as a length byte then its ASCII (no string is made on either side).</summary>
     public static void WriteName(PacketWriter w, byte finish)
