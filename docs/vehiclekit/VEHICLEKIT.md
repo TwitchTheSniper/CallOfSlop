@@ -14,6 +14,7 @@ shot and salvaged part by part like any other. **Fix the generator, not its file
 | `CallOfSlop --gen-vehicle "Bandit Technical" [--seed S] [--out DIR] [--plan]` | Runs a generator (one seed, or every seed it ships), writes `Constructs/Blueprints/<Name><seed>.json` in the repository when the game runs from a checkout, else DIR, and prints the check. Each seed runs twice and must write the same text. `--plan` draws a PNG next to the exe. Exit code: how many seeds failed. |
 | `CallOfSlop --gen-vehicles [--out DIR]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. Exit code: how many aren't identical. |
 | `CallOfSlop --sweep-vehicle "Bandit War Bus" [--seeds N]` | Seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, on what, and what a generation costs. Run it before calling a shape done: a shipped seed proves only itself. It also compares seeds (`VehicleVariety`: kinds of part, plate and beam materials not counted, plus bounding shape): it prints the most different seeds it found, and fails when two shipped seeds are closer than 0.25. Choose `Seeds` from that line. |
+| `CallOfSlop --diversity "Bandit Box Truck" [--seeds N]`, `--diversity-style Bandit`, `--kit-report`, `--vehicle-sheet "Bandit Box Truck"`, `--grade-vehicle "Bandit Box Truck 7" 4 "note"`, `--grade-report` | The quality tools: how alike seeds are, what never varies, what fails and what it costs, contact sheets and grades. See "Quality tools". |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
@@ -146,6 +147,42 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 - A routed link with nodes is refused through solids unless `laid`. A shaft with no nodes runs straight and is only checked at its ends.
 - Stacked beams' bands, and bolts on a plate under an engine's details, are coplanar. Paint a frame one colour (one look doesn't fight); the hood uses `smallest: 2`.
 - `Freeform` parts aren't checked against the rest for overlap. Keep a crooked plate proud of what it covers: 6 cm clears 5 degrees on a 0.5 m plate.
+
+## Quality tools
+
+The kit will make vehicles during play with nobody looking, so these tools keep variety up and each faction looking like itself. They generate and measure (0.1 to 1 s a seed on the 2-core box); none runs the drive or gun checks unless asked, and the defaults stay small. Everything prints to `callofslop.log`. Source: `VehicleDiversity.cs` (the metric), `VehicleQuality.cs` (the commands), `Program.VehicleSheet.cs` (the sheet).
+
+**The distance** (`VehicleDiversity`). Each seed is built from its own blueprint text, as the game builds it, and measured. Four parts, each 0 to 1, weighted into one number from 0 (the same vehicle) to 1 (nothing shared):
+
+| Part | Weight | What it compares |
+| --- | --- | --- |
+| silhouette | 0.40 | Along the length in 16 slices, nose first, over the fixed parts (no wheels, no turrets, as `MaxSideFill` sees them): how much of each slice's side is filled, its plan width, and its top's height, each in its own bounding box (`VehiclePlan.Profiles`), plus the whole side and plan fill. The mean difference. |
+| parts | 0.20 | Kinds of part (`VehicleVariety.Kind`: a plate is a plate in any material or size, a beam a beam; counts capped at 8): one less their weighted overlap. |
+| layout | 0.25 | Rooms, turrets, seats, axles (wheels within half a metre are one), wheelbase, track, and the sets of wheel and spring parts. |
+| size | 0.15 | The bounding box, each axis as a fraction of the larger. |
+
+Paint and loot don't count. Silhouettes are compared in their own box, so a longer copy of a shape reads the same there and differs only in size. Read the parts as well as the total: on the Box Truck in November 2026 the silhouette part was 0.06 on average against 0.39 for parts, which is the user's "they're all too similar" in numbers. Two seeds under 0.08 (`VehicleDiversity.Alike`, set by looking at a Bandit Box Truck sheet: seeds 5, 6 and 7 at 0.05 to 0.07 differ only in their hood) read as one vehicle.
+
+**`--diversity "Style Shape" [--seeds N] [--from S] [--seed-list A,B,C] [--alike D] [--checked]`** (default seeds 1 to 20). Prints the spread (mean distance over pairs, each seed's nearest neighbour: mean and least, with the closest pair), the mean pair by part, groups of seeds closer than D to each other (single linkage: each group reads as one vehicle), the most different set (`VehicleVariety.Spread`, as `--sweep-vehicle` picks it) beside the shipped seeds, then every trait's spread, least varied first:
+
+```
+  =rooms                  1 value(s), commonest 100 % "1"  NEVER VARIES
+  fender                  1 value(s), commonest 100 % "Wide Arch Fender" of 3 listed  NEVER VARIES
+  floor                   1 value(s), commonest 100 % "Bolt Deck" of 1 listed  fixed (the style lists one)
+  cab                     4 value(s), commonest 50 % "Roll Bar" of 7 listed
+```
+
+A trait is a style slot the seed picked from (the choice it picked most, when it picked several times; colours as `colour ROLE`; the gear recipe as `gear`), or, with `=`, read off the body: weapons, rooms, turrets, axles, wheels, springs, length and height to the half metre. "NEVER VARIES" on a slot the style lists several choices for is a generator that always asks in the same place or a dice fork that never moves; "fixed" is the style's own choice. Over 85% one value is "rarely varies". Knobs a generator rolls itself (lengths, `Chance`) show only through the `=` traits. `--checked` runs the full check too and leaves out seeds that fail it (seconds a seed).
+
+**`--diversity-style Style [--seeds N] [--extras]`** (default 10 a shape): the same per shape without the trait table, then the whole style: mean pair and nearest neighbour over every vehicle, the three pairs of shapes that read closest to each other (mean distance between their seeds), and the style slots that never varied over any shape.
+
+**`--kit-report [--seeds N] [--style S] [--shape NAME] [--extras] [--check]`** (default 10 seeds; every style in `Styles.All`, its shipped shapes and the extras it names): a table of seeds that generate, the failure rate, generation time (mean and worst; one throwaway generation first, so the JIT isn't counted), part count, mass, and the commonest refusal; then the ten commonest refusals over everything, numbers and quoted names taken out so one reason on several seeds counts once. `--check` also runs the full check and counts its first failure as the reason. Eight shapes of one style at 10 seeds take about half a minute; the whole matrix about four minutes, so filter with `--style` and `--shape`.
+
+**`--vehicle-sheet "Style Shape" [--seeds N] [--from S] [--seed-list A,B,C]`** (default 12) under xvfb, as `--vehicle-shots`: one PNG next to the log, `vehicle_sheet_<Name>.png`, three seeds a row, each with its side and front three-quarter views, labelled with the seed, its grade if it has one, and "shipped". A seed that doesn't generate gets a dark cell. About 4 s a seed. It is for the user to grade when they ask for it: don't send sheets to anyone, and don't make them only to show work.
+
+**Grades.** `docs/vehiclekit/grades.json` holds the user's grades, one a line, sorted: `{ "style", "shape", "seed", "grade" (1 bin it, 5 ship it), "note", "date" }`. `--grade-vehicle "Bandit Box Truck 7" 4 "good stance, dull hood"` adds one, or replaces that seed's grade; it writes only from a checkout's build. Only the user's grades go in: an agent records what the user said, never its own opinion. `--grade-report [Style]` turns them into suggestions per shape: the mean, seeds graded 4 or 5 that don't ship yet (commit them: add them to the style's `Seeds` and run `--gen-vehicle`), shipped seeds graded 2 or less (drop them), low grades' notes; then per style, trait values whose seeds grade a point or more under the style's mean (two seeds or more each; each graded seed is generated again to read its traits). It is data only: nothing changes a weight or a list by itself.
+
+**A round of grading.** `--diversity` (or `--kit-report`) for the numbers; `--vehicle-sheet` of the most different set and a few from each too-alike group when the user wants to grade; their grades with `--grade-vehicle`; `--grade-report` for what to ship and which traits to look at in the generator or style.
 
 ## A faction style
 

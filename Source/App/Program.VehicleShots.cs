@@ -60,24 +60,30 @@ public static unsafe partial class Program
             }
             var file = name.Replace(' ', '_');
             foreach (var view in views)
-                for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
-                {
-                    Glfw.PollEvents();
-                    var fb = _window.FramebufferSize;
-                    Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
-                    Gfx.SetCamera(Matrix4x4.CreateLookAt(view.Eye, view.Look, Vector3.UnitY),
-                        Matrix4x4.CreatePerspectiveFieldOfView(view.Fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, MathF.Max(map.FarPlane, 300)));
-                    Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
-                    Glfw.SetTime(ShotTime);
-                    DrawArena();
-                    ConstructRender.Draw(Gfx, w, 1f, false);
-                    Gfx.SetFog(map.Sky, 0, 0);
-                    if (frame == 2)
-                        SaveScreenshot($"vehicle_{file}_{view.Name}");
-                    _window.SwapBuffers();
-                }
+                ShootVehicleView(w, map, view.Eye, view.Look, view.Fov, () => SaveScreenshot($"vehicle_{file}_{view.Name}"));
             Console.WriteLine($"[vehicleshots] {name}: {views.Count} pictures");
         }
         Console.WriteLine("[vehicleshots] done");
+    }
+
+    /// <summary>Draws a vehicle's world from one camera for three frames (the first ones settle the lighting) and calls <paramref name="atLast"/> on the last, before it is shown: read the back buffer there.</summary>
+    private static void ShootVehicleView(ConstructWorld w, Map map, Vector3 eye, Vector3 look, float fov, Action atLast)
+    {
+        for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
+        {
+            Glfw.PollEvents();
+            var fb = _window.FramebufferSize;
+            Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
+            Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, look, Vector3.UnitY),
+                Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, MathF.Max(map.FarPlane, 300)));
+            Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
+            Glfw.SetTime(ShotTime);
+            DrawArena();
+            ConstructRender.Draw(Gfx, w, 1f, false);
+            Gfx.SetFog(map.Sky, 0, 0);
+            if (frame == 2)
+                atLast();
+            _window.SwapBuffers();
+        }
     }
 }

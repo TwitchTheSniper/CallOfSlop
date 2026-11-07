@@ -127,11 +127,24 @@ public sealed class FactionStyle
     /// <summary>Limits on variation by name ("crookedPlates", "tiltDegrees"...).</summary>
     public required Dictionary<string, double> Limits { get; init; }
 
+    /// <summary>
+    /// What a run picks, slot by slot, while someone listens (<see cref="VehicleDiversity"/>'s trait spread sets it round one generation); null otherwise.
+    /// Per thread, so a run on another thread is never mixed in. Colours are noted as "colour ROLE".
+    /// </summary>
+    [ThreadStatic] public static List<(string Slot, string Value)>? Trace;
+
     public string Colour(Dice d, string role) =>
-        Palette.TryGetValue(role, out var c) ? d.Pick(c) : throw new VehicleKitException($"style {Name} has no \"{role}\" colours");
+        Palette.TryGetValue(role, out var c) ? Noted("colour " + role, d.Pick(c)) : throw new VehicleKitException($"style {Name} has no \"{role}\" colours");
 
     public string Part(Dice d, string slot) =>
-        Parts.TryGetValue(slot, out var c) ? d.Pick(c) : throw new VehicleKitException($"style {Name} has no \"{slot}\" parts");
+        Parts.TryGetValue(slot, out var c) ? Noted(slot, d.Pick(c)) : throw new VehicleKitException($"style {Name} has no \"{slot}\" parts");
+
+    /// <summary>Notes a pick in <see cref="Trace"/> when one is being kept.</summary>
+    public static string Noted(string slot, string value)
+    {
+        Trace?.Add((slot, value));
+        return value;
+    }
 
     public double Limit(string name) =>
         Limits.TryGetValue(name, out var v) ? v : throw new VehicleKitException($"style {Name} has no limit \"{name}\"");
