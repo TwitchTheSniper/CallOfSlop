@@ -253,6 +253,7 @@ public sealed partial class Game : IDisposable
     public void Update(double now, double frameDt)
     {
         World.Enter(Place); // (free when it is the only Game: WorldContext.cs)
+        OpeningNow = now; // (the survival opening's beats are timed on this: GameSandboxOpening.cs)
         AllocProfile.Mark("poll");
         if (!Net.IsOffline)
         {
@@ -916,7 +917,7 @@ public sealed partial class Game : IDisposable
 
         if (Constructs.ShellCount + Constructs.RoundCount > 0)
             ClientShellsTick(); // (artillery in the air, this PC's copies: GameSandboxShells.cs)
-        var cmd = NoclipFilter(me, FreezeFilter(SampleLocalInput(_nextSeq++)));
+        var cmd = OpeningFilter(me, NoclipFilter(me, FreezeFilter(SampleLocalInput(_nextSeq++)))); // (lying there in the survival opening: GameSandboxOpening.cs)
         cmd.Tick = NextMoverTick(cmd.Seq); // the tick the server will simulate it at (mover poses; GameMovers.cs)
         _pendingInputs.Add(cmd);
         if (_pendingInputs.Count > MaxPendingInputs)
@@ -1205,7 +1206,7 @@ public sealed partial class Game : IDisposable
             if (p.Id == LocalId)
             {
                 AllocProfile.Mark("local player");
-                var cmd = NoclipFilter(p, FreezeFilter(SampleLocalInput(0)));
+                var cmd = OpeningFilter(p, NoclipFilter(p, FreezeFilter(SampleLocalInput(0))));
                 p.Yaw = cmd.Yaw;
                 p.Pitch = cmd.Pitch;
                 p.Weapon = cmd.Weapon;
@@ -1265,7 +1266,7 @@ public sealed partial class Game : IDisposable
 
     private void ApplyCmd(Player p, InputCmd cmd)
     {
-        cmd = NoclipFilter(p, FreezeFilter(cmd)); // (the server's word: a client's wish counts only in creative Sandbox)
+        cmd = OpeningFilter(p, NoclipFilter(p, FreezeFilter(cmd))); // (the server's word: a client's wish counts only in creative Sandbox; lying still in the opening)
         cmd = TacticalFilter(p, cmd); // stunned: slower (GameTactical.cs)
         cmd = StreakMoveFilter(p, cmd); // the Juggernaut suit: slower (KillStreaksMore.cs)
         cmd.Tick = ServerMoverTick(cmd.Tick);
@@ -2202,6 +2203,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Factions:
                 ReadFactions(ref r); // Sandbox player factions (GameSandboxFactions.cs)
+                break;
+            case (byte)Msg.Opening when !IsServer:
+                ReadOpening(ref r); // the survival opening's beat (GameSandboxOpening.cs)
                 break;
             case (byte)Msg.Space:
                 ReadSpace(ref r); // the space bubble: system, clock, ships (GameSpace.cs)

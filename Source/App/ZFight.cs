@@ -26,8 +26,24 @@ public static class ZFight
     private const float ShadeTop = 0.45f;
 
     /// <summary>One box of a model: centre, its three unit axes, half sizes and a label for messages.</summary>
-    public readonly record struct ZBox(string Name, Vector3 C, Vector3 X, Vector3 Y, Vector3 Z, Vector3 H, bool Moving = false, int Look = 0)
+    /// <remarks>
+    /// A contoured "hull" shape (a faceted panel: hull bays, lofted bays) carries its convex hull in <see cref="Hull"/>, in the same frame as <see cref="C"/>: its faces
+    /// are the hull's, and <see cref="C"/>/<see cref="H"/> are its bounding box (for the reach test). Null for a plain box.
+    /// </remarks>
+    public readonly record struct ZBox(string Name, Vector3 C, Vector3 X, Vector3 Y, Vector3 Z, Vector3 H, bool Moving = false, int Look = 0, ConvexHull? Hull = null)
     {
+        /// <summary>A hull shape's box from its convex hull (any frame).</summary>
+        public static ZBox OfHull(string name, ConvexHull hull)
+        {
+            var (lo, hi) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+            foreach (var p in hull.V)
+                (lo, hi) = (Vector3.Min(lo, p), Vector3.Max(hi, p));
+            return new ZBox(name, (lo + hi) * 0.5f, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, (hi - lo) * 0.5f, Hull: hull);
+        }
+
+        /// <summary>A hull shape's box turned by <paramref name="q"/> and moved by <paramref name="t"/> (<c>p =&gt; t + q p</c>).</summary>
+        public ZBox Moved(Quaternion q, Vector3 t) => OfHull(Name, Hull!.MovedInto(null, q, t)) with { Moving = Moving, Look = Look };
+
         public static ZBox Of(string name, Matrix4x4 w)
         {
             var x = new Vector3(w.M11, w.M12, w.M13);
@@ -51,8 +67,15 @@ public static class ZFight
 
         public float Reach => H.Length();
 
-        public bool Contains(Vector3 p, float tol)
+        public bool Contains(Vector3 p, float tol, ConvexHull? hull = null)
         {
+            if (hull != null)
+            {
+                for (var f = 0; f < hull.N.Length; f++)
+                    if (Vector3.Dot(hull.N[f], p - hull.V[hull.FaceIdx[hull.FaceStart[f]]]) > tol)
+                        return false;
+                return true;
+            }
             var d = p - C;
             return MathF.Abs(Vector3.Dot(d, X)) <= H.X + tol && MathF.Abs(Vector3.Dot(d, Y)) <= H.Y + tol && MathF.Abs(Vector3.Dot(d, Z)) <= H.Z + tol;
         }
@@ -66,19 +89,25 @@ public static class ZFight
     /// <param name="sameLookOk">Two boxes with the same non-zero <see cref="ZBox.Look"/> (colour and texture, drawn with world-aligned texture coordinates, as map and building boxes are) show no difference where they overlap.</param>
     /// <param name="onGround">The model stands on the ground at y = 0 (props, buildings): a face pointing down at y = 0 is never seen.</param>
     /// <param name="groundShade">Props: same-look faces also need the same baked ground shade, which is set per corner, so it differs between boxes of different height below <see cref="ShadeTop"/>.</param>
-    public static List<Hit> Find(IReadOnlyList<ZBox> boxes, bool onGround = false, bool sameLookOk = false, bool groundShade = false)
+    /// <param name="split">Above 0: only pairs of one box before it and one from it on (a new part's boxes, first, against what is already there); the rest still cover.</param>
+    public static List<Hit> Find(IReadOnlyList<ZBox> boxes, bool onGround = false, bool sameLookOk = false, bool groundShade = false, int split = 0)
     {
         var hits = new List<Hit>();
         var n = boxes.Count;
         if (n < 2)
             return hits;
-        Span<Vector3> pa = stackalloc Vector3[4];
-        Span<Vector3> pb = stackalloc Vector3[4];
-        var poly = new List<Vector3>(8);
+        // A hull shape's faces, made once per call (null for a plain box; an empty hull for points that make nothing solid: no faces, covers nothing).
+        var hulls = new ConvexHull?[n];
         for (var i = 0; i < n; i++)
+            hulls[i] = boxes[i].Hull;
+        var pa = new List<Vector3>(8);
+        var pb = new List<Vector3>(8);
+        var poly = new List<Vector3>(8);
+        for (var i = 0; i < (split > 0 ? split : n); i++)
         {
             var a = boxes[i];
-            for (var j = i + 1; j < n; j++)
+            var faA = hulls[i]?.N.Length ?? 6;
+            for (var j = Math.Max(i + 1, split); j < n; j++)
             {
                 var b = boxes[j];
                 var sameLook = sameLookOk && a.Look != 0 && a.Look == b.Look;
@@ -86,28 +115,28 @@ public static class ZFight
                     continue;
                 if (Vector3.Distance(a.C, b.C) > a.Reach + b.Reach + PlaneTolerance)
                     continue;
-                for (var fa = 0; fa < 6; fa++)
+                var faB = hulls[j]?.N.Length ?? 6;
+                for (var fa = 0; fa < faA; fa++)
                 {
-                    var na = a.Axis(fa >> 1) * ((fa & 1) == 0 ? 1f : -1f);
-                    var da = Vector3.Dot(na, a.C) + a.Half(fa >> 1);
-                    for (var fb = 0; fb < 6; fb++)
+                    var (na, da) = Face(a, hulls[i], fa);
+                    for (var fb = 0; fb < faB; fb++)
                     {
-                        var nb = b.Axis(fb >> 1) * ((fb & 1) == 0 ? 1f : -1f);
+                        var (nb, _) = Face(b, hulls[j], fb);
                         if (Vector3.Dot(na, nb) < 0.9999f)
                             continue;
-                        var db = Vector3.Dot(na, b.C) + b.Half(fb >> 1);
+                        var db = Corner(b, hulls[j], fb, na);
                         if (MathF.Abs(da - db) > PlaneTolerance)
                             continue;
                         if (onGround && na.Y < -0.9999f && -da <= PlaneTolerance)
                             continue; // the underside on the ground: hidden
-                        Corners(a, fa, pa);
-                        Corners(b, fb, pb);
+                        Corners(a, hulls[i], fa, pa);
+                        Corners(b, hulls[j], fb, pb);
                         if (sameLook && SameShade(pa, pb))
                             continue;
                         var area = OverlapArea(na, pa, pb, out var centre, poly);
                         if (area < MinArea)
                             continue;
-                        if (Covered(boxes, i, j, na, centre, poly))
+                        if (Covered(boxes, hulls, i, j, na, centre, poly))
                             continue;
                         hits.Add(new Hit(i, j, na, centre, area, db - da));
                     }
@@ -117,54 +146,80 @@ public static class ZFight
         return hits;
     }
 
+    /// <summary>Face <paramref name="f"/>'s outward normal and its plane's distance along it.</summary>
+    private static (Vector3 N, float D) Face(in ZBox b, ConvexHull? h, int f)
+    {
+        if (h != null)
+        {
+            var nn = h.N[f];
+            return (nn, Vector3.Dot(nn, h.V[h.FaceIdx[h.FaceStart[f]]]));
+        }
+        var n = b.Axis(f >> 1) * ((f & 1) == 0 ? 1f : -1f);
+        return (n, Vector3.Dot(n, b.C) + b.Half(f >> 1));
+    }
+
+    /// <summary>Face <paramref name="f"/>'s plane measured along <paramref name="n"/> (a point of it).</summary>
+    private static float Corner(in ZBox b, ConvexHull? h, int f, Vector3 n)
+    {
+        if (h != null)
+            return Vector3.Dot(n, h.V[h.FaceIdx[h.FaceStart[f]]]);
+        var fn = b.Axis(f >> 1) * ((f & 1) == 0 ? 1f : -1f);
+        return Vector3.Dot(n, b.C + fn * b.Half(f >> 1));
+    }
+
     /// <summary>Do two faces get the same baked ground shade? Both above <see cref="ShadeTop"/>, or both over the same heights.</summary>
-    private static bool SameShade(ReadOnlySpan<Vector3> a, ReadOnlySpan<Vector3> b)
+    private static bool SameShade(List<Vector3> a, List<Vector3> b)
     {
         float loA = float.MaxValue, hiA = float.MinValue, loB = float.MaxValue, hiB = float.MinValue;
-        for (var k = 0; k < 4; k++)
-        {
-            loA = MathF.Min(loA, a[k].Y);
-            hiA = MathF.Max(hiA, a[k].Y);
-            loB = MathF.Min(loB, b[k].Y);
-            hiB = MathF.Max(hiB, b[k].Y);
-        }
+        foreach (var p in a)
+            (loA, hiA) = (MathF.Min(loA, p.Y), MathF.Max(hiA, p.Y));
+        foreach (var p in b)
+            (loB, hiB) = (MathF.Min(loB, p.Y), MathF.Max(hiB, p.Y));
         return (loA >= ShadeTop && loB >= ShadeTop) || (MathF.Abs(loA - loB) < 0.001f && MathF.Abs(hiA - hiB) < 0.001f);
     }
 
-    private static void Corners(ZBox b, int face, Span<Vector3> o)
+    private static void Corners(in ZBox b, ConvexHull? h, int face, List<Vector3> o)
     {
+        o.Clear();
+        if (h != null)
+        {
+            for (var k = h.FaceStart[face]; k < h.FaceStart[face + 1]; k++)
+                o.Add(h.V[h.FaceIdx[k]]);
+            return;
+        }
         int ax = face >> 1, u = (ax + 1) % 3, v = (ax + 2) % 3;
         var n = b.Axis(ax) * ((face & 1) == 0 ? 1f : -1f);
         var c = b.C + n * b.Half(ax);
         var du = b.Axis(u) * b.Half(u);
         var dv = b.Axis(v) * b.Half(v);
-        o[0] = c - du - dv;
-        o[1] = c + du - dv;
-        o[2] = c + du + dv;
-        o[3] = c - du + dv;
+        o.Add(c - du - dv);
+        o.Add(c + du - dv);
+        o.Add(c + du + dv);
+        o.Add(c - du + dv);
     }
 
     /// <summary>Area of the overlap of two coplanar rectangles (corners in order), by clipping one against the other; the overlap's centre in <paramref name="centre"/>.</summary>
-    private static float OverlapArea(Vector3 n, ReadOnlySpan<Vector3> a, ReadOnlySpan<Vector3> b, out Vector3 centre, List<Vector3> poly)
+    private static float OverlapArea(Vector3 n, List<Vector3> a, List<Vector3> b, out Vector3 centre, List<Vector3> poly)
     {
         var e1 = MathF.Abs(n.Y) < 0.9f ? Vector3.Normalize(Vector3.Cross(n, Vector3.UnitY)) : Vector3.Normalize(Vector3.Cross(n, Vector3.UnitX));
         var e2 = Vector3.Cross(n, e1);
         var origin = a[0];
         var subject = new List<Vector2>(8);
-        var clip = new Vector2[4];
+        var nc = b.Count;
+        var clip = new Vector2[nc];
         foreach (var p in a)
             subject.Add(new Vector2(Vector3.Dot(p - origin, e1), Vector3.Dot(p - origin, e2)));
-        for (var k = 0; k < 4; k++)
+        for (var k = 0; k < nc; k++)
             clip[k] = new Vector2(Vector3.Dot(b[k] - origin, e1), Vector3.Dot(b[k] - origin, e2));
         // Orientation of the clip polygon (either way round).
         var signed = 0f;
-        for (var k = 0; k < 4; k++)
-            signed += Cross(clip[k], clip[(k + 1) % 4]);
+        for (var k = 0; k < nc; k++)
+            signed += Cross(clip[k], clip[(k + 1) % nc]);
         var sgn = signed >= 0 ? 1f : -1f;
-        for (var k = 0; k < 4 && subject.Count > 0; k++)
+        for (var k = 0; k < nc && subject.Count > 0; k++)
         {
             var c0 = clip[k];
-            var c1 = clip[(k + 1) % 4];
+            var c1 = clip[(k + 1) % nc];
             var input = subject.ToArray();
             subject.Clear();
             for (var m = 0; m < input.Length; m++)
@@ -217,7 +272,7 @@ public static class ZFight
     private static Vector2 Cut(Vector2 p, Vector2 q, float ps, float qs) => p + (q - p) * (ps / (ps - qs));
 
     /// <summary>Is the whole shared patch hidden by a third box (a point just outside the faces is inside it) at every sample?</summary>
-    private static bool Covered(IReadOnlyList<ZBox> boxes, int i, int j, Vector3 n, Vector3 centre, List<Vector3> poly)
+    private static bool Covered(IReadOnlyList<ZBox> boxes, ConvexHull?[] hulls, int i, int j, Vector3 n, Vector3 centre, List<Vector3> poly)
     {
         // Samples: the middle of the patch and each corner pulled a tenth of the way in; hidden only if all are covered.
         for (var k = -1; k < poly.Count; k++)
@@ -226,7 +281,7 @@ public static class ZFight
             var outside = p + n * 0.001f;
             var hidden = false;
             for (var m = 0; m < boxes.Count && !hidden; m++)
-                if (m != i && m != j && boxes[m].Contains(outside, 1e-5f))
+                if (m != i && m != j && hulls[m] is not { N.Length: 0 } && boxes[m].Contains(outside, 1e-5f, hulls[m]))
                     hidden = true;
             if (!hidden)
                 return false;
@@ -281,18 +336,51 @@ public static class ZFight
         return list;
     }
 
-    /// <summary>A construct part's drawn plain boxes (solid and detail; hidden collision boxes and contoured shapes are skipped).</summary>
+    /// <summary>
+    /// A construct part's drawn boxes: plain ones (solid and detail) and "hull" shapes (faceted panels, by their corners); hidden collision boxes and the other
+    /// contoured shapes (cylinders, wedges...) are skipped.
+    /// </summary>
     public static List<ZBox> Boxes(ConstructPartDef def)
     {
+        lock (Cache)
+            if (Cache.TryGetValue(def, out var had))
+                return had;
         var list = new List<ZBox>(def.Boxes.Length);
         for (var i = 0; i < def.Boxes.Length; i++)
         {
             var b = def.Boxes[i];
-            if (b.Hidden || b.Shape != 0)
+            if (b.Hidden)
                 continue;
-            list.Add(ZBox.Aligned((i < def.SolidBoxes ? "box " : "detail ") + i, b.Center, b.Half));
+            if (b.Shape == 0)
+                list.Add(ZBox.Aligned((i < def.SolidBoxes ? "box " : "detail ") + i, b.Center, b.Half));
+            else if (PartShapes.KindOf(b.Shape) == "hull" && HullPoints(b) is { } pts && ConvexHull.Of(pts) is { } hull)
+                list.Add(ZBox.OfHull("facet " + i, hull));
         }
+        lock (Cache)
+            Cache.AddOrUpdate(def, list);
         return list;
+    }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ConstructPartDef, List<ZBox>> Cache = new(); // (a part's boxes never change once loaded: a hull is made once)
+
+    /// <summary>A hull shape's corners in its part's frame: its mesh's vertices through the box's own model matrix.</summary>
+    public static Vector3[]? HullPoints(in CPartBox b)
+    {
+        var mesh = PartShapes.Mesh(b.Shape);
+        if (mesh.Length == 0)
+            return null;
+        var m = b.Model(0, b.Center);
+        var pts = new List<Vector3>();
+        for (var k = 0; k + 2 < mesh.Length; k += PartShapes.FloatsPerVertex)
+        {
+            var p = Vector3.Transform(new Vector3(mesh[k], mesh[k + 1], mesh[k + 2]), m);
+            var seen = false;
+            foreach (var o in pts)
+                seen |= Vector3.DistanceSquared(o, p) < 1e-10f;
+            if (!seen)
+                pts.Add(p);
+        }
+        return pts.Count >= 4 ? pts.ToArray() : null;
     }
 
     /// <summary>A weapon-builder part's plain boxes (box and plate; contoured shapes and rods are skipped), all of them as if every tag were drawn.</summary>

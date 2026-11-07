@@ -46,9 +46,10 @@ def r(v):
     return round(v, 4)
 
 
-def facet(p, points, normal, color, t=T, paint=True):
-    """A flat panel through the points, t thick along normal (a unit vector): the hull of the points moved each way. paint False: it keeps its colour when the part is painted."""
-    both = [[r(a + s * n * t / 2) for a, n in zip(q, normal)] for q in points for s in (-1, 1)]
+def facet(p, points, normal, color, t=T, paint=True, offsets=None):
+    """A flat panel through the points, t thick along normal (a unit vector): the hull of the points moved each way. paint False: it keeps its colour when the part is painted.
+    offsets: each point's own way to move (a mitre: see mitres), so two panels meeting at an angle share the joint's plane instead of overlapping there."""
+    both = [[r(a + s * n * t / 2) for a, n in zip(q, offsets[i] if offsets else normal)] for i, q in enumerate(points) for s in (-1, 1)]
     mn = tuple(min(q[k] for q in both) for k in range(3))
     mx = tuple(max(q[k] for q in both) for k in range(3))
     extra = {} if paint else {"paintable": False}
@@ -67,9 +68,45 @@ def pad(p, name, at, d, size=0.03):
     p.sock(name, at, d)
 
 
-def sides(p, a, b, z0, z1, skip=False, plate=None):
-    """Both sides and the roof between sections a at z0 and b at z1. skip: the +x side is left to the caller."""
+def row_normals(sec):
+    """The outward normal (x, y) of each row of a half section (the +x side), then the roof's (0, 1)."""
+    out = []
+    for k in range(len(sec) - 1):
+        (x0, y0), (x1, y1) = sec[k], sec[k + 1]
+        nx, ny = y1 - y0, -(x1 - x0)
+        ln = (nx * nx + ny * ny) ** 0.5
+        out.append((nx / ln, ny / ln))
+    return out + [(0.0, 1.0)]
+
+
+def mitres(sec):
+    """Each point's offset for a facet's thickness (+x side): along its row's normal at the floor edge, else on the bisector of the two rows that meet there, lengthened so
+    each face keeps its own offset. Two facets meeting at a point then meet on one plane: no overlap whose end faces would share a plane (z-fighting, 2026-11-07)."""
+    ns = row_normals(sec)
+    out = [ns[0]]
+    for k in range(1, len(sec)):
+        (ax, ay), (bx, by) = ns[k - 1], ns[k]
+        mx, my = ax + bx, ay + by
+        ln = (mx * mx + my * my) ** 0.5
+        mx, my = mx / ln, my / ln
+        c = mx * ax + my * ay
+        out.append((mx / c, my / c))
+    return out
+
+
+def mitre(n1, n2):
+    """The offset two facets share at a point where they meet (normals n1 and n2, unit, any dimension): the bisector, lengthened so each face keeps its own offset."""
+    m = [x + y for x, y in zip(n1, n2)]
+    ln = sum(x * x for x in m) ** 0.5
+    m = [x / ln for x in m]
+    c = sum(x * y for x, y in zip(m, n1))
+    return tuple(x / c for x in m)
+
+
+def sides(p, a, b, z0, z1, skip=False, plate=None, roof_px=None):
+    """Both sides and the roof between sections a at z0 and b at z1. skip: the +x side is left to the caller; roof_px: the roof's +x edge offset then (the caller's cant meets it)."""
     colours = (RUST, STEEL, ROOF)
+    ma, mb = mitres(a), mitres(b)
     for s in (-1, 1) if not skip else (-1,):
         for k in range(3):
             (ax0, ay0), (ax1, ay1) = a[k], a[k + 1]
@@ -78,7 +115,8 @@ def sides(p, a, b, z0, z1, skip=False, plate=None):
             dy, dx = ay1 - ay0, ax1 - ax0
             n = (dy * s, -dx, 0)
             ln = (n[0] ** 2 + n[1] ** 2) ** 0.5
-            facet(p, q, (n[0] / ln, n[1] / ln, 0), colours[k], paint=k == 1)
+            offs = [(s * m[0], m[1], 0) for m in (ma[k], ma[k + 1], mb[k + 1], mb[k])]
+            facet(p, q, (n[0] / ln, n[1] / ln, 0), colours[k], paint=k == 1, offsets=offs)
         # What stands for them: a wall up to the shoulder, a step for the cant.
         x = (a[1][0] + b[1][0] + a[2][0] + b[2][0]) / 4
         y = min(a[2][1], b[2][1])
@@ -87,7 +125,9 @@ def sides(p, a, b, z0, z1, skip=False, plate=None):
         x2 = (a[3][0] + b[3][0] + a[2][0] + b[2][0]) / 4
         lo, hi = sorted((s * (x2 - 0.03), s * (x2 + 0.03)))
         hide(p, (lo, y, z0), (hi, min(a[3][1], b[3][1]), z1))
-    facet(p, [(-a[3][0], a[3][1], z0), (a[3][0], a[3][1], z0), (b[3][0], b[3][1], z1), (-b[3][0], b[3][1], z1)], (0, 1, 0), ROOF, paint=False)
+    pa, pb = (roof_px, roof_px) if roof_px else (ma[3], mb[3])
+    roof = [(-ma[3][0], ma[3][1], 0), (pa[0], pa[1], 0), (pb[0], pb[1], 0), (-mb[3][0], mb[3][1], 0)]
+    facet(p, [(-a[3][0], a[3][1], z0), (a[3][0], a[3][1], z0), (b[3][0], b[3][1], z1), (-b[3][0], b[3][1], z1)], (0, 1, 0), ROOF, paint=False, offsets=roof)
     w, y = min(a[3][0], b[3][0]), min(a[3][1], b[3][1])
     hide(p, (-w, y - 0.03, z0), (w, y + 0.03, z1))
 
@@ -151,13 +191,18 @@ def door_bay():
     a = PROFILES["T"]
     p = part("Hull Door Bay T", HULLS, "A bay with a doorway in one side. Takes a 1.25x2 m flush door on a Door Hinge.")
     L = 1.5
-    sides(p, a, a, 0.0, L, skip=True)
     top = 2.0
+    cn = (a[3][1] - top, PLANE - a[3][0])
+    ln = (cn[0] ** 2 + cn[1] ** 2) ** 0.5
+    cn = (cn[0] / ln, cn[1] / ln)  # the cant over the doorway, outward
+    at_top, at_roof = mitre((1.0, 0.0), cn), mitre(cn, (0.0, 1.0))  # (where it meets the frame, and the roof)
+    sides(p, a, a, 0.0, L, skip=True, roof_px=at_roof)
     # The flat frame round the doorway, then the cant over it.
     for z0, z1 in ((0.0, 0.125), (1.375, L)):
-        facet(p, [(PLANE, 0.0, z0), (PLANE, top, z0), (PLANE, top, z1), (PLANE, 0.0, z1)], (1, 0, 0), RUST)
+        facet(p, [(PLANE, 0.0, z0), (PLANE, top, z0), (PLANE, top, z1), (PLANE, 0.0, z1)], (1, 0, 0), RUST, offsets=[(1, 0, 0), (at_top[0], at_top[1], 0), (at_top[0], at_top[1], 0), (1, 0, 0)])
         hide(p, (PLANE - 0.03, 0.0, z0), (PLANE + 0.03, top, z1))
-    facet(p, [(PLANE, top, 0.0), (a[3][0], a[3][1], 0.0), (a[3][0], a[3][1], L), (PLANE, top, L)], (0.66, 0.75, 0), STEEL)
+    o1, o2 = (at_top[0], at_top[1], 0), (at_roof[0], at_roof[1], 0)
+    facet(p, [(PLANE, top, 0.0), (a[3][0], a[3][1], 0.0), (a[3][0], a[3][1], L), (PLANE, top, L)], (cn[0], cn[1], 0), STEEL, offsets=[o1, o2, o2, o1])
     hide(p, (PLANE - 0.03, top, 0.0), (PLANE + 0.03, top + 0.1, L))
     hide(p, (0.65, 2.15, 0.0), (0.71, a[3][1], L))
     fittings(p, a, a, L, door=True)
@@ -171,8 +216,11 @@ def cab_over():
     w0, w1, zn, zs, zb = 0.8, 0.95, -2.15, -1.25, 0.25
     y0, ybelt, yr = 0.12, 1.02, 1.82
     for s in (-1, 1):
-        facet(p, [(s * w1, y0, zs), (s * w1, ybelt, zs), (s * w1, ybelt, zb), (s * w1, y0, zb)], (1, 0, 0), RUST)
-        facet(p, [(s * w0, y0, zn), (s * w0, ybelt, zn), (s * w1, ybelt, zs), (s * w1, y0, zs)], (0.95 * s, 0, -0.3), RUST)
+        ns, nf = (s, 0.0, 0.0), (0.95 * s, 0.0, -0.3)
+        nf = tuple(x / sum(y * y for y in nf) ** 0.5 for x in nf)
+        j = mitre(ns, nf)  # (the side and the raked front share their joint: their undersides meet on an edge, not in an overlap)
+        facet(p, [(s * w1, y0, zs), (s * w1, ybelt, zs), (s * w1, ybelt, zb), (s * w1, y0, zb)], (1, 0, 0), RUST, offsets=[j, j, ns, ns])
+        facet(p, [(s * w0, y0, zn), (s * w0, ybelt, zn), (s * w1, ybelt, zs), (s * w1, y0, zs)], nf, RUST, offsets=[nf, nf, j, j])
         facet(p, [(s * w1, ybelt, zs), (s * w0, ybelt, zn), (s * 0.68, yr, -1.45), (s * 0.78, yr, zb)], (0.9 * s, 0.4, -0.15), STEEL)
         lo, hi = sorted((s * 0.9, s * 0.96))
         hide(p, (lo, 0.3, zs), (hi, ybelt, zb - 0.9))

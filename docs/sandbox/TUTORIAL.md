@@ -46,7 +46,7 @@ of the packet; nothing is allocated.
 - The Esc menu (Sandbox): **Skip the induction** while it runs; **Resume** a skipped one where it stopped, or **Start it again**;
   **Replay the induction** once finished.
 
-## Network (protocol 198)
+## Network (protocol 200)
 
 `Msg.Tutorial`, a `TutorialOp` first, reliable ordered. Server to one client: `State` (u8 step, u8 state) whenever it changes
 and when they arrive (late joiners included). Client to server: `Cue` (u8 cue), `Skip`, `Replay`, `Resume`. The host's own

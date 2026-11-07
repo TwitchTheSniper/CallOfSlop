@@ -176,7 +176,17 @@ public sealed class StoryScenarioRun
         _nextLive = engine.Time;
         var owns = engine.Rules.Relation("Owns")?.Id ?? -1;
         foreach (var t in scenario.Things)
-            _ids[t.Name] = engine.World.Create(t.Kind, t.Name, 0, engine.Time, scripted: true);
+        {
+            // A faction of the data's, or one of its members, is the one the story has (Story/Factions); a construct a faction claims by name is its.
+            var fs = engine.Factions;
+            fs.Ensure();
+            var id = t.Kind == StoryKind.Faction && fs.Find(t.Name) is var f and >= 0 ? fs.EntityOf(f)
+                : t.Kind == StoryKind.Person && engine.World.Find(t.Name) is var m and >= 0 && engine.World[m].Kind == StoryKind.Person && fs.OwnerOf(m) >= 0 ? m
+                : engine.World.Create(t.Kind, t.Name, 0, engine.Time, scripted: true);
+            _ids[t.Name] = id;
+            if (t.Kind == StoryKind.Construct)
+                fs.Claim(id, t.Name);
+        }
         foreach (var t in scenario.Things)
             if (t.Owner.Length > 0 && owns >= 0)
                 engine.World.Set(_ids[t.Owner], owns, _ids[t.Name], 1);

@@ -54,17 +54,20 @@ public sealed partial class Game
         SandboxOn && TutorialStateNow == TutorialState.Running && TutorialStepNow < Tutorial.Steps.Length ? Tutorial.Steps[TutorialStepNow] : null;
 
     /// <summary>The story opening (GameSandboxOpening.cs) is playing for this person: the induction doesn't start by itself.</summary>
-    internal void TutorialDefer(byte id)
+    partial void TutorialDefer(byte id)
     {
-        if (id < MaxPlayers)
-            _tutDeferred[id] = true;
+        if (id >= MaxPlayers)
+            return;
+        if (Players.TryGetValue(id, out var p) && _tutWho[id] != p)
+            TutorialFresh(p); // (claimed before the induction first met them: the claim must outlast that)
+        _tutDeferred[id] = true;
     }
 
     /// <summary>
     /// Server: start this person's induction now (the opening, when they wake in the colony). A person who finished or skipped
     /// it in this world isn't asked again; the Esc menu replays it.
     /// </summary>
-    internal void TutorialBegin(byte id)
+    partial void TutorialBegin(byte id)
     {
         if (id >= MaxPlayers || !IsServer)
             return;
@@ -121,10 +124,10 @@ public sealed partial class Game
     private void TutorialFresh(Player p)
     {
         var id = p.Id;
+        _tutDeferred[id] = _tutWho[id] == p && _tutDeferred[id]; // (the same person met again on arriving in a world: the opening's claim stands)
         _tutWho[id] = p;
         _tutState[id] = TutorialState.None;
         _tutStep[id] = 0;
-        _tutDeferred[id] = false;
         _tutArrivedAt[id] = SandboxNow;
         _tutSaw[id] = 0;
         _tutAmount[id] = 0;
@@ -165,7 +168,7 @@ public sealed partial class Game
             var state = _tutState[id];
             if (state == TutorialState.None)
             {
-                if (!_tutDeferred[id] && !SandboxInfiniteParts && p.Alive && now - _tutArrivedAt[id] >= TutorialAutoDelay && Phase == MatchPhase.Playing)
+                if (!_tutDeferred[id] && !OpeningHas(id) && !SandboxInfiniteParts && p.Alive && now - _tutArrivedAt[id] >= TutorialAutoDelay && Phase == MatchPhase.Playing)
                     TutorialGo(id, 0, TutorialState.Running); // (a new person in a survival world)
                 continue;
             }

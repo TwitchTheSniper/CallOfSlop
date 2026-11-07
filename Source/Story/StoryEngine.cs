@@ -32,6 +32,9 @@ public sealed class StoryEngine
     /// <summary>Places that change with what happens in them (phase 5, Kenshi): their states.</summary>
     public readonly StoryPlaces Places;
 
+    /// <summary>The factions (living factions, F1): entities with standing towards each group, and a memory of deeds.</summary>
+    public readonly StoryFactions Factions;
+
     /// <summary>Seconds of play in this world.</summary>
     public double Time;
 
@@ -50,6 +53,7 @@ public sealed class StoryEngine
         Talk = new StoryTalk(this);
         Plays = new StoryPlays(this);
         Places = new StoryPlaces(this);
+        Factions = new StoryFactions(this);
     }
 
     public void Clear()
@@ -62,6 +66,7 @@ public sealed class StoryEngine
         Talk.Clear();
         Plays.Clear();
         Places.Clear();
+        Factions.Clear();
         Time = 0;
         _sweepAt = 0;
         LastSiftMs = WorstSiftMs = TotalSiftMs = 0;
@@ -76,6 +81,7 @@ public sealed class StoryEngine
     {
         if (!(dt > 0))
             return;
+        Factions.Ensure(); // (once: a new story, a loaded one)
         while (dt > 0)
         {
             var step = Agents.Count > 0 ? Math.Min(dt, 1.0) : dt;
@@ -86,6 +92,7 @@ public sealed class StoryEngine
                 _sweepAt = Time + 1;
                 Sifter.Sweep(Time);
                 Drama.Update(Time);
+                Factions.Update(Time);
             }
             Agents.Tick(Time);
             Talk.Update(Time);
@@ -103,6 +110,7 @@ public sealed class StoryEngine
         if ((uint)verb >= (uint)Rules.Verbs.Length)
             return -1;
         var clock = Stopwatch.GetTimestamp();
+        Factions.Ensure();
         Span<int> slots = [actor, target, owner, place, item];
         World.Apply(Rules.Verbs[verb].Effects, slots);
         ref var ev = ref Chronicle.Add(new StoryEvent
@@ -143,11 +151,14 @@ public sealed class StoryEngine
             Talk.OnEvent(copy); // (what they say about it: after they learnt of it, so the rules see how they feel)
             Places.OnEvent(copy);
             Plays.OnEvent(copy);
+            Factions.OnEvent(copy); // (a deed against a faction: what it remembers, its standing)
         }
         finally
         {
             _depth--;
         }
+        if (_depth == 0)
+            Factions.Flush(); // (standings that came to a new tier: Rate events, after the deed's own)
         if (_depth == 0)
         {
             LastSiftMs = Stopwatch.GetElapsedTime(clock).TotalMilliseconds;

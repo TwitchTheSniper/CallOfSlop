@@ -201,6 +201,7 @@ public sealed partial class Game
             s.Players[k].FactionLeader = faction != 0 && FactionTable.Leader[faction] == who;
         }
         s.FactionNames = (string[])FactionTable.Names.Clone();
+        s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
         if (DigGroundIfMade is { } g)
@@ -472,6 +473,11 @@ public sealed partial class Game
             Constructs.RelinkAfterSkips();
         Constructs.StructureDirty.Clear();
         Constructs.Removed.Clear();
+        if (_opLoaded is { } opening)
+        {
+            _opLoaded = null;
+            OpeningLoad(opening); // (the survival opening's colony, now its construct is in: GameSandboxOpening.cs)
+        }
         var loaded = clock.Elapsed.TotalMilliseconds;
         foreach (var p in Players.Values)
             if (WorldKnown(p))
@@ -560,6 +566,22 @@ public sealed partial class Game
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
                 break;
+            case WorldSaveWriter.Opening:
+            {
+                var op = new OpeningSave { Map = r.Str(), Colony = r.U16(), Crash = r.Vec() };
+                var n = r.Count(16);
+                for (var k = 0; k < n; k++)
+                {
+                    var key = r.U64();
+                    var steam = r.U64();
+                    foreach (var rec in ws.Players)
+                        if (key != 0 && rec.Key == key || steam != 0 && rec.SteamId == steam)
+                            rec.Opened = true;
+                }
+                if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
+                    _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
+                break;
+            }
             case WorldSaveWriter.SpaceSeats:
             {
                 var n = r.Count(12);

@@ -16,7 +16,15 @@ public sealed partial class Vehicle
     public Room Hull(string tag, float z0, float under, string[] bays, (float X, float Z)[]? seatSpots = null)
     {
         var names = Look != null ? Look.Names(bays) : bays.Select(b => b == "Door" ? "Hull Door Bay T" : "Hull " + b).ToArray(); // (kit 5: lofted bays in the style's body language)
-        var lengths = names.Select(n => MathF.Round(Def(n).BoundsMax.Z - Def(n).BoundsMin.Z, 2)).ToArray();
+        if (Look != null && Look.Spoken(bays.Length) is var spoken && spoken != Look.Language.Name)
+            Modules.Add($"sections {spoken}"); // (a mixing style's room: its stations' languages, front to back)
+        var lengths = new float[names.Length];
+        for (var k = 0; k < names.Length; k++)
+        {
+            var d = Def(names[k]); // (a lofted bay is made the first time its key is asked for: a few milliseconds, so a spawn hands back to the tick after each)
+            lengths[k] = MathF.Round(d.BoundsMax.Z - d.BoundsMin.Z, 2);
+            VehicleGenJob.Yield();
+        }
         var z1 = z0 + lengths.Sum();
         var r = new Rect(-BayHalf, BayHalf, z0, z1);
         var room = new Room { Tag = tag, R = r, DoorFace = Vector3.UnitX, FloorTop = under + 0.05f, Plan = bays.ToList() };
@@ -74,6 +82,8 @@ public sealed partial class Vehicle
         foreach (var bay in bays)
             foreach (var side in new[] { "-x0", "+x0" })
             {
+                if (Look != null && !BaySpots.Pannier([bay.Def.Name], 0))
+                    break; // (a lofted bay whose side stands out just over its waist: an eave, a ledge)
                 var at = Array.FindIndex(bay.Def.Sockets, s => s.Name == side);
                 if (at < 0 || C.SocketUsed(bay.Index, at) || !d.Chance(chance))
                     continue;

@@ -6,6 +6,9 @@ going to implement, I want this feature to be good on the toolkit before I move 
 "still too boxy overall, and rounding corners won't fix that", "few slopes and bends; the kit needs vehicle-appropriate contour and body pieces; make more parts if
 needed", "interiors too alike", "cabs too alike: no roll cages, just a flat wall".
 
+**Status (2026-11-07): phase 1 is built** (section 6): kit 5 is the current kit, every committed faction vehicle was made again by it, the tools see sections, and
+the user's decisions are in section 5. Sections 1 to 4 are the investigation as it was written, before the build.
+
 This file is the investigation: what the kit makes today (with numbers), every way found to break the sameness with what each costs, a working prototype of the first
 one (lofted hull bays in a body language per style, `--kit 5`), a recommended plan, and the questions the user should answer before the big build. Pictures for the
 decision are in `/home/claude/vk-bodies-sheets/` on the agent box (not committed): see "Pictures".
@@ -198,7 +201,7 @@ with a rear three-quarter view (the current sheet's views are too far to show a 
 Paint by row (lower hull, upper hull, roof) and by panel edge instead of by part, so faceting reads at a distance: the Bandit wear layer currently turns most rooms
 one brown. Cost: 0.5 day (wear and `PaintAll` rules; a lofted bay already has three colour rows).
 
-## 3. The prototype (kit 5)
+## 3. The prototype (kit 5; as it was before phase 1, section 6 has what changed)
 
 **What it is.** `VehicleKitVersion.Lofted = 5`: kit 3 (or 4) with each room lofted in its style's body language. Only `--kit 5` makes it; `Current` stays kit 3,
 so `--gen-vehicles` still reports every committed file identical (checked on this branch), and the dynamic spawn is unchanged. The language is rolled on the body
@@ -258,6 +261,12 @@ itself" comes from.
 
 ## 5. Open questions for the user
 
+**Answered (the user, 2026-11-07):** 1. smooth for IT, British and future high-tech (8 to 12 facets a side), flat-faceted for Bandit and Militia (3 to 6); 2. Bandits
+mix their shapes per bay, other styles keep one per vehicle; 3. rooms may be non-rectangular inside (later); 4. cabs may merge into the body for some styles (later);
+5. kit 5 becomes the default and every committed faction vehicle is made again by it; 6. a salvaged bay is the shaped section itself, buildable on players' own
+vehicles; 7 to 9: new spaces, no room size limit, Bandit paint by rows (later); 10. the front profile joins diversity and identity at a moderate weight. The
+questions as they were asked:
+
 1. **How far toward smooth?** The prototype's sections are 3 to 6 facets a side (visibly faceted, like the parts around them). Should IT, British and high-tech bodies
    be smoother (8 to 12 facets: costs boxes and drawing) or stay faceted to match the rest of the game?
 2. **Which styles get which language?** The table in D is a first guess: is the Call Centre a site cabin? Is Highland boat-like? Should Bandits mix languages on one
@@ -276,6 +285,83 @@ itself" comes from.
 10. **The metric.** Should the front profile join the diversity distance with its own weight (say 0.15, taken from parts), and should "reads as its style" include the
     section (a pod on a Bandit truck would then lose identity)?
 
+## 6. Phase 1, as built (2026-11-07)
+
+**Kit 5 is current** (`VehicleKitVersion.Current = Lofted`) for every path: a shape's seed, the dynamic spawn, and a role's, family's, convoy's and context's
+vehicle (kit 4's role on lofted rooms; `--kit 4` still makes the fixed-bay role vehicle, `--kit 3` the fixed-bay kit). The language is rolled on the body
+layer, so a family's marks share theirs. Shapes without a recipe (Technical, Fuel Trailer, Tanker Rig, Double Decker) stay kit 1: the Double Decker (Karl's
+generator) keeps its fixed bays.
+
+**Languages per faction** (`BodyStyleRule`, VehicleBodyLanguage.cs; data, a row per style): Bandit slab, ledge and armour, faceted as written (3 to 5 facets a
+side), each station between two bays a new language half the time (cobbled from wrecks: a bay lofts from one language's section to another's, the fewer-pointed one
+split along its longest side rows so the shapes match point for point); IT pod and van and British bus and coach drawn smooth, 8 to 12 facets a side by the seed
+(the control polygon cut at its corners three times, then walked at even steps; the last row stays level, so the roof is one panel); Scam, Highland and Militia
+(armour) as written, one language a vehicle. A room whose stations mix says so in its kit line (`sections slab+ledge+armour`).
+
+**Turret and gear spots from the real bays** (`BaySpots`): a roof turret only on a bay whose roof is level along it, as tall as the room's tallest and with no
+neighbour higher (a gable or a crown falling away under the turntable is fine); a side gun only where nothing (an eave, a ledge, a lower neighbour's roof edge)
+stands out more than 3 cm over the waist from 0.15 to 1.3 m above it, on the bay and its neighbours; a pannier only with 0.35 m clear above it; a roof rack only on
+roofs flat to 0.55 m either side. The two kit-5 failures of the prototype were side guns, not roof guns: Scam War Bus 5's sponson turret ran under a lower bay's
+roof edge, and a ledge's waist landed on its slanted step, so the sponson's back sat in the wall above; a waist now sits on an upright stretch of wall.
+
+**The part** (`HullLoft`): sections up to 16 points, in a compact key (`~` and three characters a point, `=` for a back section that is the front's: protocol 198),
+so a 13-point smooth bay's name stays under 128 characters (the first prototype's text keys still read). Facets are mitred where they meet (no overlap whose end
+faces share a plane), a pitched roof's halves meet on a mitred ridge with a strip over it (a ray straight up the middle passed along the seam), caps stand 3 mm off
+the floor. A spawn hands back to the tick after each new bay is made.
+
+**Salvage.** A lofted bay is a welder part, so physics-only ("structural"): taken off a vehicle (the attach tool, survival or creative) it is cut free as a body of
+its own holding that exact part, by its key; the attach tool builds it onto anything, like any hull bay. Checked in a throwaway harness on a host and a joined client
+(30 ms lag, 8 ms jitter, 2 % loss), Bandit War Bus 1: the client's truck had the same bay by its key; the bay salvaged by the client's own Remove message came off as
+a body (owner the player) the client saw by its key; it went onto a player's Bolt Deck 1x2 m by the build rules and the client saw that too; a paste of that
+construct kept it on host and client, a blueprint saved from it built it back, and a world save read it back; no packet dropped. Recycling gives by mass and class as
+for any panel (a 148 kg brow: 74 metal; the fixed T bay, 120 kg: 60). There is no Assembling recipe for a lofted bay: a player gets one only by salvage (decision 6).
+
+**Tools see sections** (`FrontProfile`: half width in 12 bands of the thing's own height; edge-sampled, so a fixed T, L and N bay, one profile at three sizes,
+now read alike, 0.001, where the first report's vertex sampling gave 0.03 of noise). `VehicleDiversity` has a front term (weight 0.15, from silhouette 0.05, parts
+0.05 and layout 0.05): the rooms' and the whole body's profile, the mean difference times 3. `VehicleIdentity` has a section part (0.10, from palette 0.05 and
+silhouette 0.05): each room bay's two sections against the nearest of the style's languages. `--no-sections` measures both as they were.
+
+### Measured (2-core box, loaded by other agents: times are noisy)
+
+| | before: kit 3 | after: kit 5 |
+| --- | --- | --- |
+| full check (`--sweep-vehicle --seeds 6`), every style (6, Militia included) x 5 recipe shapes | 178 of 180 | 178 of 180 |
+| the failures | Bandit Scrap Tanker 3 (no socket takes the barrel), British Flatbed Fort 1 (a Firebreather 22 degrees off its gunner's look) | Bandit Scrap Tanker 3 (the same), British War Bus 6 (a Firebreather 23 degrees off) |
+| the 75 committed kit-5 seeds, full check | - | 75 of 75 |
+| parts a vehicle, mean over the sweeps | 133 | 129 |
+| generation (sweep's wall clock, mean of shape means) | 1968 ms | 1465 ms |
+| sweeps' CPU (user), all 30 | 482 s | 372 s |
+| room sections from the front, mean pair within a style (`--body-report`, 6 seeds) | 0.001 (every style the same profile) | 0.009 (Militia) to 0.027 (Scam) |
+| ... between two styles | 0.001 | 0.020 (IT against British, both smooth) to 0.078 (Scam against Militia) |
+| distinct bay parts a style | 11 to 14 | 70 to 78 |
+| facets a side (`--body-report`) | 3 (fixed) | Bandit 3 to 5 (mean 4.2), Militia 4, Highland and Scam 3 to 5, IT 8 to 12 (9.9), British 8 to 12 (10.1) |
+| generation alone (`--body-report`, mean a style; worst) | 300 to 630 ms; 5.6 s | 300 to 500 ms; 5.1 s (a Bandit seed of many plans) |
+| coplanar pairs inside lofted bays (the new in-part check) | - | 311 before the ridge and cap fixes, 0 after |
+| diversity, mean pair over a style's 5 shapes, old metric (Bandit, IT, Highland, Scam, British) | 0.223, 0.210, 0.231, 0.224, 0.207 | 0.219, 0.205, 0.228, 0.220, 0.208 |
+| diversity, new metric (with the front term) | 0.208, 0.206, 0.225, 0.219, 0.205 | 0.206, 0.199, 0.221, 0.219, 0.204 |
+| the front term alone, mean pair within a shape | 0.18 to 0.25 | 0.19 to 0.27 |
+| identity, mean (Bandit, IT, Highland, Scam, British), new score | 0.93, 0.94, 0.95, 0.93, 0.96 | 0.96, 0.97, 0.96, 0.96, 0.98 |
+| identity's section part alone | 0.23, 0.43, 0.65, 0.29, 0.69 | 1.00, 1.00, 1.00, 1.00, 0.92 |
+| identity, old score (`--no-sections`) | 0.96, 0.96, 0.96, 0.96, 0.98 | 0.96, 0.96, 0.96, 0.96, 0.98 |
+
+What the numbers say: lofted sections make the styles differ from each other from the front (between-style distance 20 to 78 times the fixed bays'), and a
+vehicle's section now counts for its faction (a fixed-bay room reads 0.23 to 0.69 for its style, a lofted one 0.92 to 1). They don't make seeds of one shape and
+one style differ more: within a shape the front term is about the same in both kits (a style keeps one language a vehicle, and the whole-body front is cab,
+wheels and rails), so the diversity total moved by at most 0.01, down, the front term being smaller than the parts term it took weight from. The variety within a
+style is phase 3's (proportions, a curved roofline). Two languages read alike to the profile: IT's van and Bandit's slab (a slab body on an IT bus still scores
+0.95 for section; a pod on a Bandit bus 0, a cabin on anything but Scam 0).
+
+**Committed seeds** (Styles.cs, the most different passing seeds of a 10-seed kit-5 sweep, seed 1 always among them): Bandit Box Truck 1 8 2, War Bus 1 10 6,
+Flatbed Fort 1 6 7, Gun Wagon 1 4 8, Scrap Tanker 1 10 5; IT 1 2 9, 1 10 7, 1 6 3, 1 9 8, 1 2 10; Highland 1 3 7, 1 7 6, 1 8 9, 1 6 2, 1 7 4; Scam 1 6 9, 1 4 6,
+1 6 2, 1 2 5, 1 6 2; British 1 9 8, 1 10 4, 1 6 2, 1 4 9, 1 8 2 (same order of shapes). 75 files replaced 75; `--gen-vehicles` reports all 123 identical.
+
+**Foundations for the later archetypes** (muscle cars, supercars, European trucks, monster trucks, sci-fi buggies, prototypes): a language, a style's rule and the
+front profile are data and general; what limits them today, and what each needs: a section is a walk-in room's (`BodyLook` keeps the half width at least 1.0 m below 1.6 m;
+`HullLoft.Section.Parse` caps it at 1.30 m and the height at 3.0 m, where the 9-bit key would go to 5.11 m), bays stand on the Bolt Deck grid by feet at x = 0.75 m and are 1 m
+long (1.5 m the door bay; the key allows 0.5 to 2 m), the door is fixed at x = 1.0 m and 2 m tall, and `BaySpots` uses one turret's size. A car's cabin or a
+buggy's cage needs its own module (a cab or hood loft, phase 4), a scale class needs those limits per class, and a profile along the length (a hog, a wedge) needs
+bay lengths and heights from the language rather than the plan's T, L and N.
+
 ## Pictures
 
 In `/home/claude/vk-bodies-sheets/` (agent box; PNG):
@@ -288,8 +374,9 @@ In `/home/claude/vk-bodies-sheets/` (agent box; PNG):
 ## Measuring it again
 
 ```
---body-report all --seeds 4 --kit 3      # today's sections
---body-report all --seeds 4 --kit 5      # the prototype
+--body-report all --seeds 4 --kit 3      # the fixed bays
+--body-report all --seeds 4              # kit 5, current (and coplanar pairs inside lofted bays)
+--diversity-style IT --seeds 6 --no-sections   # the old distance and identity, to compare
 --sweep-vehicle "IT War Bus" --seeds 6 --kit 5
 --vehicle-shots "Bandit War Bus 2" --kit 5 --language cabin   (xvfb)
 ```

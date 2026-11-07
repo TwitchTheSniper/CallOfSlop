@@ -61,9 +61,19 @@ public sealed class ConvexHull
             }
             if (outside)
                 continue;
+            // The same face again only when every point on this plane lies on that one too: two faces of a slightly twisted
+            // panel have normals within 1e-6 of each other but are different faces, and dropping one left a hole in the drawn skin.
             var dup = false;
-            foreach (var m in normals)
-                dup |= Vector3.Dot(m, n) > 1 - 1e-6f;
+            for (var f = 0; f < normals.Count && !dup; f++)
+            {
+                if (Vector3.Dot(normals[f], n) <= 1 - 1e-6f)
+                    continue;
+                var dm = Vector3.Dot(normals[f], pts[faces[f][0]]);
+                var all = true;
+                foreach (var k in on)
+                    all &= MathF.Abs(Vector3.Dot(normals[f], pts[k]) - dm) <= Eps;
+                dup = all;
+            }
             if (dup)
                 continue;
             // Its corners in order round the face (points in the middle of a side stay out: the face's own hull by angle).

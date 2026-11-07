@@ -131,6 +131,8 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
         if (int.TryParse(args.SkipWhile(a => !a.Equals("--kit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var vehicleKit))
             VehicleKit.VehicleKitVersion.Force = vehicleKit; // --kit N: every vehicle seed by that kit (1: the shapes as whole generators, 2: the shape grammar), to measure one against the other
+        if (args.Any(a => a.Equals("--no-sections", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleDiversity.SectionsOn = false; // the diversity distance without its front term and identity without its section, as before 2026-11-07 (to measure them)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
             VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
         if (args.SkipWhile(a => !a.Equals("--layers", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } layerText)
@@ -755,7 +757,9 @@ public static unsafe partial class Program
                 var benchCovers = Ui.WorkbenchOpen;
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiHud);
-                if (!benchCovers)
+                if (!benchCovers && g.OpeningActive)
+                    DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
+                else if (!benchCovers)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                     TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
@@ -1496,6 +1500,8 @@ public static unsafe partial class Program
         if (_game.Local is { Alive: false })
             _crouchToggle = _proneToggle = false; // respawn standing
 
+        if (OpeningInput(now))
+            return; // the survival opening: lying there, only the skip key (Program.Opening.cs)
         ThirdPersonAim(); // Sandbox third person: shots and tools aim from the crosshair (Program.ThirdPerson.cs)
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
@@ -1811,8 +1817,11 @@ public static unsafe partial class Program
             pilotView = PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
             _game.Audio.SetListener(eye, fwd);
         }
+        var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: lying at the crash site, waking in the colony; Program.Opening.cs)
+        if (openingView)
+            _game.Audio.SetListener(eye, fwd);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
-        RenderOrigin(local, tp || pilotView, eye, shake, out var origin, out var eyeFromOrigin);
+        RenderOrigin(local, tp || pilotView || openingView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);
         var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
@@ -1985,7 +1994,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat)
+        if (local is { Alive: true } && !tp && !_game.OpeningActive && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2226,6 +2235,12 @@ public static unsafe partial class Program
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
         DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
+        if (_game.OpeningActive)
+        {
+            Gfx.SetBlend(false);
+            Gfx.SetDepthTest(true);
+            return; // (the survival opening has the screen: no crosshair or bars, Program.Opening.cs)
+        }
 
         if (local is { Alive: true })
         {

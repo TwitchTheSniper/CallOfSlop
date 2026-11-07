@@ -112,7 +112,7 @@ public static class VehicleRegistry
         if (lay.Any && kit == null)
             k = Math.Max(k, VehicleKitVersion.Layered);
         if (role != null && kit == null && VehicleKitVersion.Force is null or >= VehicleKitVersion.Roles)
-            k = VehicleKitVersion.Roles; // (kit 4: a role's vehicle, VehicleRoles.cs; --kit 3 makes the seed without its role)
+            k = VehicleKitVersion.Force ?? Math.Max(VehicleKitVersion.Current, VehicleKitVersion.Roles); // (a role's vehicle: kit 5, kit 4's role on kit 5's lofted rooms; --kit 4 makes it with fixed bays, --kit 3 the seed without its role)
         if (k >= VehicleKitVersion.Grammar && ShapeGrammar.RecipeOf(g) is { } recipe)
         {
             if (lay.Any && k < VehicleKitVersion.Layered)

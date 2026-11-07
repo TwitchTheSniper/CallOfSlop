@@ -77,6 +77,7 @@ public sealed partial class Game
         StoryWorkForget();
         StoryBodiesForget();
         StoryChatForget(); // (talking to people: GameStoryChat.cs)
+        Array.Fill(_storyGroup, (-1, -1)); // (the groups: GameStoryFactions.cs)
     }
 
     /// <summary>Server, the end of a Sandbox tick: the story clock, who came and who sat down, and the constructs' notes.</summary>
@@ -109,6 +110,7 @@ public sealed partial class Game
             StoryNote(notes[i]);
         notes.Clear();
         StoryWorkTick();
+        StoryGroupsTick(); // (the players' groups: GameStoryFactions.cs)
         StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
         if (StoryPlaying is { } run)
         {
@@ -216,11 +218,14 @@ public sealed partial class Game
             return id;
         if (Constructs.Get(body) is not { } c)
             return -1;
+        var named = what;
         what ??= c.DriveSeat >= 0 ? "vehicle" : c.Anchored ? "base" : "construct";
         var owner = StoryOwnerName(c.Owner);
         id = s.World.Get(StoryKind.Construct, body, owner != null ? $"{owner}'s {what} ({body})" : $"the {what} ({body})", s.Time);
         if (StoryByte(c.Owner) is var o and >= 0 && _rOwns >= 0)
             s.World.Set(o, _rOwns, id, 1);
+        if (named != null && id >= 0)
+            s.Factions.Claim(id, named); // (a faction's vehicle by its name: "IT Box Truck 1" is the IT Department's)
         return id;
     }
 
@@ -310,6 +315,8 @@ public sealed partial class Game
                 if (Constructs.Get(n.Body) is not { } c || StoryByte(n.By) is not (var actor and >= 0))
                     break;
                 var t = StoryConstruct(n.Body);
+                if (t >= 0 && (c.Owner == 255 || Factions.Shares(c.Owner, n.By)) && s.Factions.OwnerOf(t) < 0)
+                    break; // (one's own or nobody's: a story only when a faction claims it)
                 if (t >= 0 && !StoryRepeat(_vStrip, actor, t))
                     s.Record(_vStrip, actor, t, StoryByte(c.Owner), StoryPlace());
                 break;

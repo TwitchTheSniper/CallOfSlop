@@ -1,0 +1,26 @@
+{
+  // The survival opening (docs/story/OPENING.md; Game/GameSandboxOpening.cs): what a new survival world's players go
+  // through on arriving. Times are seconds. Text is ASCII. The lines are said by the bodies standing over the player
+  // ("by": the rescuer's number from 0, or "warden") at "at" seconds into their beat, and only that player hears them.
+  "format": "call-of-slop-opening/1",
+  "colony": "Penal Colony", // the blueprint everyone wakes in (its cell block), with the cast below living there
+  "cast": "Penal Colony", // Story/Casts
+  "warden": "Warden Pettigrew", // the cast's person who says the wake line (and runs the induction)
+  "wreck": "Crashed Plane", // the blueprint left at the crash site (a wreck, salvageable)
+  "crashFrom": 70, "crashTo": 140, // m from the colony's middle: where the crash site goes
+  "rescuers": ["Recovery Officer Dunt", "Recovery Officer Plimsoll", "Stretcher Bearer Gubbins"],
+  "beats": {
+    "crash": { "time": 3.5, "caption": "Your ship is coming down." },
+    "out": { "time": 3.0, "caption": "..." },
+    "cometo": { "time": 8.0, "lines": [
+      { "at": 1.2, "by": 0, "text": "There's one over here!" },
+      { "at": 3.4, "by": 1, "text": "Still breathing. Shame, that's more paperwork." },
+      { "at": 5.6, "by": 2, "text": "Ministry wants them alive. Get the stretcher." }
+    ] },
+    "under": { "time": 3.5, "caption": "Some time later..." },
+    "wake": { "time": 4.5, "lines": [
+      { "at": 1.5, "by": "warden", "text": "On your feet, convict. Welcome to the colony." }
+    ] }
+  },
+  "skip": "skip the opening" // (shown after the jump key's name)
+}
