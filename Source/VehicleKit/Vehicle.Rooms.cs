@@ -122,8 +122,9 @@ public sealed partial class Vehicle
                         placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, z), o, 0.2f, onTop: true);
                         taken.Add((side, z, run, deep));
                     }
-                    catch (VehicleKitException)
+                    catch (VehicleKitException e)
                     {
+                        if (Environment.GetEnvironmentVariable("VKDBG") == "1") Console.WriteLine($"DBG furnish {slot} {e.Message}");
                         // (a seat or a turret's module there: on down the wall)
                     }
                 }
@@ -174,8 +175,9 @@ public sealed partial class Vehicle
                     Loot(placed, Style.LootTable);
                 return true;
             }
-            catch (VehicleKitException)
+            catch (VehicleKitException e)
             {
+                if (Environment.GetEnvironmentVariable("VKDBG") == "1") Console.WriteLine("DBG endchest " + e.Message);
                 // (the end wall rakes in, or a seat's there: further in)
             }
         return false;

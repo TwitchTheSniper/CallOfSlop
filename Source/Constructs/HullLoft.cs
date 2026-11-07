@@ -27,8 +27,12 @@ public static class HullLoft
     /// </summary>
     public const int MaxCm = 200, MaxHeightCm = 400;
 
-    /// <summary>Where a bay's feet stand from its middle: on the Bolt Deck's quarter grid, a quarter and a bit in from its floor's edge (0.75 m on a truck's 1.0 to 1.2 m edge).</summary>
-    public static float FootX(float floorHalf) => Math.Clamp(MathF.Floor((floorHalf - 0.2f) / 0.25f + 1e-4f) * 0.25f, 0.25f, 1.5f);
+    /// <summary>
+    /// Where a bay's feet stand from its middle, on the Bolt Deck's quarter grid: 0.75 m for every walk-in floor edge from 0.76 m to 1.25 m (phase 1's, which a room's
+    /// seats half a metre out are laid around), further out on a wider floor, further in on a narrower one (a non-room body).
+    /// </summary>
+    public static float FootX(float floorHalf) =>
+        floorHalf < 0.76f ? MathF.Max(0.25f, 0.25f * MathF.Floor((floorHalf - 0.01f) / 0.25f)) : floorHalf < 1.26f ? 0.75f : MathF.Min(1.75f, 0.75f + 0.25f * MathF.Floor((floorHalf - 1.01f) / 0.25f));
 
     /// <summary>A bay's feet, from the narrower of its two floor edges.</summary>
     public static float FootX(Shape s) => FootX(MathF.Min(s.A.P[0].X, s.B.P[0].X));

@@ -342,7 +342,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 196: lofted hull bays (HullLoft.cs): a run-time part named by its key goes on the wire after Extrusion.WireMark as kind 245 and its name as text.
     // 197: massive ordnance (ConstructMegaBlast.cs, docs/sandbox/CONSTRUCTS.md "Massive blasts"): CFireKind.ShellLand ends with the blast's look (u8: 0 plain, 1 fission, 2 fusion, 3 antimatter); a DigOp whose kind byte has 0x80 set is one band of a sliced crater and carries its slice and slices (two u8).
     // 198: lofted bays' keys in their compact form ("~" and three characters a point, "=" for a back section that is the front's; HullLoft.Section.Key): a 196 peer reads them as stand-ins.
-    public const byte ProtocolVersion = 198;
+    // 199: body styles phase 2 (docs/vehiclekit/BODY-STYLES.md): a lofted bay's key may reach 2 m of half width and 4 m of height, and the part a key names changed (its feet 12 cm in from its ends, its wall rows toned by height, a door bay's ends closed out to a wider section), so both ends must make the same part from it.
+    public const byte ProtocolVersion = 199;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

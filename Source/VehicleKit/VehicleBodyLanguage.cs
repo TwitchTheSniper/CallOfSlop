@@ -153,8 +153,8 @@ public sealed record BodyScale(string Name, string Words, bool WalkIn, float Hal
 
     public static readonly BodyScale[] All = [Compact, Standard, Heavy, Giant];
 
-    /// <summary>Where a bay's feet stand from its middle, from its floor's half width (0.75 m on a truck's 1 to 1.24 m floor edge): on the Bolt Deck's quarter grid, a quarter in from the edge.</summary>
-    public static float Foot(float floorHalf) => Math.Clamp(MathF.Floor((floorHalf - 0.2f) / 0.25f + 1e-4f) * 0.25f, 0.25f, 1.5f);
+    /// <summary>Where a bay's feet stand from its middle, from its floor's half width (the part's own rule: <see cref="HullLoft.FootX(float)"/>).</summary>
+    public static float Foot(float floorHalf) => HullLoft.FootX(floorHalf);
 }
 
 /// <summary>
@@ -364,7 +364,7 @@ public sealed class BodyLook
     /// The section a plan's token stands for in language <paramref name="l"/> at this look's proportions, at a station whose roofline factors are <paramref name="h"/>
     /// (height) and <paramref name="w"/> (the width above the furniture and the overhang).
     /// </summary>
-    public HullLoft.Section Section(BodyLanguage l, string token, int end = 0, float h = 1, float w = 1)
+    public HullLoft.Section Section(BodyLanguage l, string token, int end = 0, float h = 1, float w = 1, float minTop = 0)
     {
         var t = l.Drawn(Facets);
         var ky = Height * h / t.Top;
@@ -386,6 +386,7 @@ public sealed class BodyLook
             (kx, ky) = (kx * TailNarrow, ky * TailRake);
         if (walkIn)
             kx = MathF.Max(kx, 0.76f / t.P[0].X); // (a seat or a crate stands half a metre out by a brow or a tail: the fixed bays' narrowest end is 0.74 m)
+        ky = MathF.Max(ky, minTop / t.Top); // (a door bay's doorway; a long brow's or tail's room where the check's rays start: Names)
         var s = t.Scaled(kx, ky);
         // The taper (the upper body only: the furniture's metre stays) and the overhang over the wheels, coming in over the language's blend.
         var flare = Flare * w * (token == "N" ? 0.5f : 1) * (end != 0 ? 0.6f : 1);
@@ -488,7 +489,7 @@ public sealed class BodyLook
         var ones = Enumerable.Range(1, Math.Max(0, n - 2)).Where(k => bays[k] != "Door").ToList();
         float Lo() => MathF.Max(0.75f, Scale.BayMin);
         float Hi() => MathF.Min(1.5f, Scale.BayMax);
-        var (brow, tail) = (BrowLength, TailLength);
+        var (brow, tail) = ones.Count > 0 ? (BrowLength, TailLength) : (1f, 1f); // (a short room's walls are its brow and tail: a wedge there leaves no wall for its loot)
         for (var tries = 0; tries < 6; tries++)
         {
             var extra = (brow - 1) + (tail - 1); // (what the metre bays give back, in quarters)
@@ -544,6 +545,9 @@ public sealed class BodyLook
         return at;
     }
 
+    /// <summary>A door bay's least height (its doorway is 2 m: HullLoft wants 2.1 m), and a brow's or a tail's where the room check's rays start.</summary>
+    private const float DoorTop = 2.14f, EndRays = 1.68f;
+
     /// <summary>A plan's bay names ("Brow T", "Door", "Bay T-L", "Tail L") as lofted parts' keys, front to back; bay k lofts from station k to station k + 1.</summary>
     public string[] Names(string[] bays)
     {
@@ -555,7 +559,7 @@ public sealed class BodyLook
             var b = bays[k];
             if (b == "Door")
             {
-                var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W));
+                var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, DoorTop), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, DoorTop));
                 // (a door on the left: the right-hand door bay turned round, so its front section is the room's back one: Vehicle.Hull stands it by its back right foot)
                 names[k] = DoorSide > 0 ? HullLoft.Key(1.5f, true, false, false, ta, tb) : HullLoft.Key(1.5f, true, false, false, tb, ta);
                 continue;
@@ -563,10 +567,13 @@ public sealed class BodyLook
             var parts = b.Split(' ');
             var tokens = parts[1].Split('-');
             var (front, back) = (tokens[0], tokens[^1]);
+            // A brow or a tail is as low at its end as its rake says, but no lower than keeps a room's height where the check's rays start (0.35 m in from the
+            // front, 0.3 m from the back, 1.6 m up: VehicleChecks.Gaps): a long wedge would put its roof under them (Militia War Bus 2, phase 2).
+            static float Least(float far, float at, float len) => (EndRays - far * (at / len)) / (1 - at / len);
             var (fa, fb) = parts[0] switch
             {
-                "Brow" => (Section(At(1), front, -1, st[0].H, st[0].W), Section(At(1), front, 0, st[1].H, st[1].W)),
-                "Tail" => (Section(At(k), back, 0, st[k].H, st[k].W), Section(At(k), back, 1, st[k + 1].H, st[k + 1].W)),
+                "Brow" => Section(At(1), front, 0, st[1].H, st[1].W) is var bb ? (Section(At(1), front, -1, st[0].H, st[0].W, Least(bb.Top, 0.35f, lengths[k])), bb) : default,
+                "Tail" => Section(At(k), back, 0, st[k].H, st[k].W) is var tf ? (tf, Section(At(k), back, 1, st[k + 1].H, st[k + 1].W, Least(tf.Top, 0.3f, lengths[k]))) : default,
                 _ => (Section(At(k), front, 0, st[k].H, st[k].W), Section(At(k + 1), back, 0, st[k + 1].H, st[k + 1].W)),
             };
             var (ma, mb) = Match(fa, fb);
@@ -860,7 +867,7 @@ public static class BaySpots
     }
 
     /// <summary>Does anything stand out over a mount on bay <paramref name="k"/>'s waist, from <paramref name="from"/> to <paramref name="to"/> above it, on it or the bays within <paramref name="reach"/>?</summary>
-    private static bool ClearAbove(string[] loft, int k, float from, float to, float reach)
+    private static bool ClearAbove(string[] loft, int k, float from, float to, float reach, float proud = SideProud)
     {
         if (Of(loft[k]) is not { } s)
             return true;
@@ -868,7 +875,7 @@ public static class BaySpots
         foreach (var j in Near(loft, k, reach).Append(k))
             if (Of(loft[j]) is { } n)
                 foreach (var sec in new[] { n.A, n.B })
-                    if (sec.WidestBetween(wy + from, wy + to) > wx + SideProud)
+                    if (sec.WidestBetween(MathF.Max(0, wy + from), wy + to) > wx + proud)
                         return false;
         return true;
     }
@@ -877,10 +884,18 @@ public static class BaySpots
     /// Can bay <paramref name="k"/> take a side gun (a sponson, its turntable, an arm a metre long either way, the hinge and the gun)? Not on the door bay, and not
     /// where an eave, a ledge or a neighbour's roof edge stands out over the turret (Bandit War Bus 5's ledge, a cabin's eaves: 2026-11-07), within the turret's reach.
     /// </summary>
-    public static bool Side(string[] plan, string[]? loft, int k) => plan[k] != "Door" && (loft == null || ClearAbove(loft, k, SideFrom, SideTo, Turret.Kit.Reach + 0.25f));
+    public static bool Side(string[] plan, string[]? loft, int k) => plan[k] != "Door" && (loft == null ||
+        ClearAbove(loft, k, SideFrom, SideTo, Turret.Kit.Reach + 0.25f, 0.005f) && ClearAbove(loft, k, -SponsonHalf, SponsonHalf, 0, 0.005f)); // (phase 2: a flared wall meets a sponson's back or its turntable face to face: nothing out past the waist at all)
 
-    /// <summary>Can a pannier hang on bay <paramref name="k"/>'s waist (0.3 m above it clear on the bay itself)?</summary>
-    public static bool Pannier(string[]? loft, int k) => loft == null || ClearAbove(loft, k, 0.05f, PannierTo, 0);
+    private const float SponsonHalf = 0.28f; // (a Gun Sponson is 0.52 m tall about its back socket)
+
+    /// <summary>
+    /// Can a pannier hang on bay <paramref name="k"/>'s waist: nothing of the bay's side out past the waist over the pannier's height (its flat back stands in the skin,
+    /// so a wall above or below that stands out meets it face to face: IT Box Truck 3's flare, phase 2), and 0.35 m above it clear?
+    /// </summary>
+    public static bool Pannier(string[]? loft, int k) => loft == null || ClearAbove(loft, k, -PannierHalf, PannierHalf, 0, 0.005f) && ClearAbove(loft, k, 0.05f, PannierTo, 0);
+
+    private const float PannierHalf = 0.32f; // (a Hull Pannier 1 m is 0.6 m tall about its back socket)
 }
 
 /// <summary>

@@ -218,6 +218,8 @@ public class BlueprintScript
                             continue;
                         VehicleGenJob.Yield();
                         var why = ConstructBuild.Place(C, i, s, def, ds, sp, out _);
+                        if (def.Name == "Seat" && Environment.GetEnvironmentVariable("VKDBG") == "1" && d < 0.3f)
+                            Console.WriteLine($"DBG seat try on {td.Name} s{s} at {FromRest(at).X:0.000},{FromRest(at).Z:0.000} d {d:0.000} why {why ?? "ok"} want {centre.X:0.00},{centre.Z:0.00}");
                         if (why == null && d <= reach)
                         {
                             bestD = d;

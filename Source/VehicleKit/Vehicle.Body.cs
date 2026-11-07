@@ -79,6 +79,11 @@ public sealed partial class Vehicle
                 if (!used[i, j] && Plate(y, r, used, nx, nz, i, j, Style.Part(d, slot), d, list, aligned ? 2 : smallest, aligned))
                     progress = true;
         }
+        if (Environment.GetEnvironmentVariable("VKDBG") == "1")
+            for (var i = 0; i < nx; i++)
+            for (var j = 0; j < nz; j++)
+                if (!used[i, j])
+                    Console.WriteLine($"DBG deck {tag} hole at {r.X0 + (i + 0.5f) * Cell:0.000},{r.Z0 + (j + 0.5f) * Cell:0.000} aligned {aligned}");
         if (wanted.Count > 0)
             throw new VehicleKitException($"{Name}: the {tag} deck: nothing beside the whole plate at {wanted[0]}");
         return this;
