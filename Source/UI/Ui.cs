@@ -229,6 +229,8 @@ public sealed partial class Ui : IDisposable
         // Sandbox has no arena layer: nothing top left (the invite and the keys are in Esc), the plain lines bottom right, no
         // health number, score, level or perks (UiSandboxHud.cs).
         var arena = game.Module.ArenaExtras;
+        if (!arena)
+            DrawTutorial(game, pos, size, settings); // the warden's induction, top left (UiTutorial.cs)
 
         // ---- Top-left: session info -------------------------------------------------
         if (arena)

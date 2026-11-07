@@ -128,6 +128,8 @@ public sealed class WorldPlayer
     public bool FactionLeader;
     public byte FactionRank; // their rank in it (FactionRanks.Player; saved in the FCT2 section)
     public bool Opened; // has been through the survival opening here (GameSandboxOpening.cs; saved in the Opening section)
+    public TutorialState TutorialState; // the warden's induction (GameTutorial.cs): not started, running, finished or skipped, and at which step
+    public byte TutorialStep;
 
     public WorldPlayer Copy()
     {

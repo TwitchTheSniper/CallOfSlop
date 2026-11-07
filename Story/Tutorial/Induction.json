@@ -1,0 +1,122 @@
+{
+ "format": "call-of-slop-tutorial/1",
+ "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings).",
+ "speaker": "Warden Pettigrew",
+ "steps": [
+  {
+   "id": "welcome",
+   "title": "Induction",
+   "text": "Welcome to the colony, by order of the Ministry of Slop. This induction is compulsory, brief and largely unpaid.",
+   "warden": "Do try to keep up. The last intake didn't, and we're still filling in the forms.",
+   "cue": "wait",
+   "seconds": 7
+  },
+  {
+   "id": "look",
+   "title": "Look around",
+   "text": "Move the mouse to look around. Take in the facilities.",
+   "warden": "Yes, that's all of them.",
+   "cue": "look"
+  },
+  {
+   "id": "move",
+   "title": "Walk",
+   "text": "Walk with {MoveForward} {MoveLeft} {MoveBack} {MoveRight}.",
+   "warden": "One foot in front of the other. We'll have you filing in no time.",
+   "cue": "move"
+  },
+  {
+   "id": "sprint",
+   "title": "Run",
+   "text": "Hold {Sprint} while you walk to run.",
+   "warden": "Running in the corridors is permitted. Running away is a separate form.",
+   "cue": "sprint"
+  },
+  {
+   "id": "jump",
+   "title": "Jump",
+   "text": "Press {Jump} to jump.",
+   "warden": "Lovely. Very spirited. Noted on your file.",
+   "cue": "jump"
+  },
+  {
+   "id": "crouch",
+   "title": "Crouch",
+   "text": "Press {CrouchToggle} to crouch, or tap {CrouchHold} (hold it to go prone).",
+   "warden": "Mind your head. The ceilings were budgeted for shorter convicts.",
+   "cue": "crouch"
+  },
+  {
+   "id": "inventory",
+   "title": "Your inventory",
+   "text": "Press {SandboxInventory} to open your inventory: parts, materials and tools you carry. {SandboxInventory} or Esc closes it.",
+   "warden": "Your personal effects have been confiscated, catalogued and lost. That's what's left.",
+   "cue": "inventory"
+  },
+  {
+   "id": "toolwheel",
+   "title": "The tool wheel",
+   "text": "Hold {ToolWheel} for the tool wheel. Flick the mouse to a tool and let go to take it out; let go in the middle to cancel.",
+   "warden": "Prison issue. Sign for it and don't lick it.",
+   "cue": "toolwheel"
+  },
+  {
+   "id": "hold",
+   "title": "Pick up a part",
+   "text": "Pick up a loose part: look at it and press {Interact}, or take one from your inventory or a shelf. It goes into your hands.",
+   "warden": "Lift with the knees. The Ministry does not cover backs.",
+   "cue": "hold"
+  },
+  {
+   "id": "attach",
+   "title": "The attach tool",
+   "text": "Take out the attach tool from the tool wheel ({ToolWheel}), or press {Weapon3}.",
+   "warden": "The attach tool. Our most trusted inmate. Unlike you.",
+   "cue": "tool",
+   "tool": "attach"
+  },
+  {
+   "id": "place",
+   "title": "Build",
+   "text": "With a part in your hands and the attach tool out, aim at a socket or the ground and hold {Fire} to fit it. Turn the ghost with {RotateLeft} {RotateRight} {RotateUp} {RotateDown}. {Aim} takes a part back off.",
+   "warden": "Build something. Anything. The rehabilitation figures need a lift.",
+   "cue": "place"
+  },
+  {
+   "id": "weld",
+   "title": "Join two pieces",
+   "text": "Set a part down so it touches another construct, then with the attach tool out aim at it and press {Interact} to join the two into one.",
+   "warden": "Two pieces become one. Rather like a merger, only less paperwork.",
+   "cue": "weld"
+  },
+  {
+   "id": "power",
+   "title": "Power",
+   "text": "Machines need power. Take out the linking tool ({Streak2}), press {Fire} on a genset's power port, then {Fire} on a machine's to run a power cable. {Aim} takes the last node off.",
+   "warden": "The generator runs on fuel, not goodwill. We tried goodwill. It was a cold winter.",
+   "cue": "power"
+  },
+  {
+   "id": "drill",
+   "title": "Dig",
+   "text": "Take out the ground drill from the tool wheel and hold {Fire} on the ground to dig dirt, stone and sand. {Aim} puts it back.",
+   "warden": "Every convict digs. It builds character, and the character is cheap.",
+   "cue": "drill"
+  },
+  {
+   "id": "assembler",
+   "title": "The Assembler",
+   "text": "The Assembler makes parts from materials. Pick a recipe with the configure tool ({Fire} on the Assembler), or press {Interact} on it to tip in what you carry.",
+   "warden": "Your labour quota is posted on the wall. The wall is also your quota.",
+   "cue": "assembler"
+  },
+  {
+   "id": "done",
+   "title": "Induction complete",
+   "text": "That's the induction. Gather, build and survive. The Esc menu replays this whenever you like.",
+   "warden": "Off you go. And do remember: we're all in this together. Some of us more than others.",
+   "cue": "wait",
+   "seconds": 9
+  }
+ ]
+}

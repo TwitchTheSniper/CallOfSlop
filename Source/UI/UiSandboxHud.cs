@@ -48,6 +48,7 @@ public sealed partial class Ui
     {
         string K(GameAction a) => Keybinds.Name(s.Bind(a));
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MenuButtonWidth * _scale);
+        DrawPauseTutorial(game); // skip, resume or replay the induction (UiTutorial.cs)
         if (game.IsServer && !game.Net.IsOffline && joinInfo.Length > 0)
         {
             ImGui.Spacing();
