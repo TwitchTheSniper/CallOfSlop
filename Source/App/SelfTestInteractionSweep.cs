@@ -396,6 +396,7 @@ public static partial class SelfTest
 
     private static readonly SweepTool[] SweepTools = Enum.GetValues<SweepTool>();
 
+    private static float DiagMin = 1e9f, DiagMax = -1e9f, DiagLast, DiagDrillMin = 1e9f, DiagDrillLast; // DIAG
     private static void SweepOffline(Map yard, SandboxMap sb, List<string> problems, HashSet<string> seen)
     {
         yard.RestoreProps();
@@ -412,6 +413,11 @@ public static partial class SelfTest
         if (OpenSpot(g.Constructs) is not { } spot)
         {
             Fail("interaction sweep: no open level ground on the yard");
+            return;
+        }
+        if (SweepDrillSpot(spot) is not { } drillSpot)
+        {
+            Fail("interaction sweep: no second open level ground on the yard for the Ground Drill cases");
             return;
         }
         var w = g.Constructs;
@@ -447,9 +453,12 @@ public static partial class SelfTest
                 {
                     while (w.Bodies.Count > 0)
                         w.Remove(w.Bodies[^1]);
-                    if (SweepBuild(w, d, st, spot, out var part) is not { } c)
+                    // (the Ground Drill digs where it is aimed: its cases stand at a spot of their own, so the craters
+                    // can't sink the other cases' constructs and drift the look rate; the section's finally restores the yard)
+                    if (SweepBuild(w, d, st, tool == SweepTool.GroundDrill ? drillSpot : spot, out var part) is not { } c)
                         break;
                     var parts = c.PartCount;
+                    if (tool == SweepTool.GroundDrill) { DiagDrillMin = MathF.Min(DiagDrillMin, c.Pos.Y); DiagDrillLast = c.Pos.Y; } else { DiagMin = MathF.Min(DiagMin, c.Pos.Y); DiagMax = MathF.Max(DiagMax, c.Pos.Y); DiagLast = c.Pos.Y; } // DIAG
                     var keepMoving = st == SweepState.Moving;
                     if (keepMoving)
                     {
@@ -471,11 +480,31 @@ public static partial class SelfTest
         }
         while (w.Bodies.Count > 0)
             w.Remove(w.Bodies[^1]);
+        Line($"DIAG sweep spot {spot} drill {drillSpot}: others y min {DiagMin:0.00} max {DiagMax:0.00} last {DiagLast:0.00}; drill y min {DiagDrillMin:0.00} last {DiagDrillLast:0.00}"); // DIAG
         Line($"interaction sweep offline: {defs.Count} part types ({kinds.Count} kinds), {cases} cases, {run.Frames} frames ({run.Looked} with a look line), {run.Climbs} grab-ons, in {clock.Elapsed.TotalSeconds:0.0} s");
         if (run.Looked < run.Frames / 3)
             problems.Add($"offline: only {run.Looked} of {run.Frames} frames had the crosshair on something (the sweep isn't reaching the parts)");
         if (run.Climbs == 0)
             problems.Add("offline: F at a mounted part never grabbed on (the developer's crash path wasn't reached)");
+    }
+
+    /// <summary>An open, level spot on the yard at least 20 m from <paramref name="away"/> (the sweep's Ground Drill cases dig there).</summary>
+    private static Vector3? SweepDrillSpot(Vector3 away)
+    {
+        for (var x = -26f; x <= 26f; x += 2f)
+        for (var z = -26f; z <= 26f; z += 2f)
+        {
+            if (Vector2.Distance(new Vector2(x, z), new Vector2(away.X, away.Z)) < 20f)
+                continue;
+            var g0 = ConstructWorld.Ground(World.Query, x, z);
+            var flat = true;
+            for (var dx = -2f; dx <= 2f && flat; dx += 1f)
+            for (var dz = -2f; dz <= 4f && flat; dz += 1f)
+                flat = MathF.Abs(ConstructWorld.Ground(World.Query, x + dx, z + dz).Y - g0.Y) < 0.002f;
+            if (flat && (World.Map.Sandbox is not { } s || Vector3.Distance(s.Rack, new Vector3(x, 0, z)) >= 6f))
+                return g0;
+        }
+        return null;
     }
 
     private static void SweepOnline(Map yard, SandboxMap sb, List<string> problems, HashSet<string> seen)
