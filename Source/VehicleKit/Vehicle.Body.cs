@@ -254,15 +254,18 @@ public sealed partial class Vehicle
         return Dress("spike", [bar], -Vector3.UnitZ, d.Int(2, 3), d);
     }
 
-    /// <summary>The cab behind an engine at z -1.425: a seat sill, the driver on the left, sometimes a passenger, the style's cab shell, a floor on the rails.</summary>
-    public Vehicle OpenCab(float edge = 0.875f)
+    /// <summary>
+    /// The cab behind an engine at z -1.425: a seat sill, the driver on the left, sometimes a passenger, the style's cab shell, a floor on the rails.
+    /// <paramref name="shell"/>: the cab part a shape grammar chose (null: the style's "cab" slot rolls one, as kit 1 always did).
+    /// </summary>
+    public Vehicle OpenCab(float edge = 0.875f, string? shell = null)
     {
         const float sill = 0.375f;
         Sill(-0.175f, 0.5f);
         Driver(new Vector3(-0.5f, sill, -0.175f));
         if (Dice.Fork("crew").Chance(Style.Limit("thirdSeat")))
             Passenger(new Vector3(0.5f, sill, -0.175f));
-        var cab = Style.Part(Dice.Fork("cab"), Slot("cab"));
+        var cab = shell ?? Style.Part(Dice.Fork("cab"), Slot("cab"));
         if (cab != "none")
         {
             var feet = cab == "Windscreen Frame" ? -0.675f : 0.075f;
@@ -272,18 +275,21 @@ public sealed partial class Vehicle
         return Deck("cab", Half, new Rect(-edge, edge, -0.8f, -0.3f), "deck");
     }
 
-    /// <summary>The hood: one of the style's "hood" parts on the engine ("plates": tiled from sheets), its grille or plow, fenders over the front wheels.</summary>
-    public Vehicle Hood()
+    /// <summary>
+    /// The hood: one of the style's "hood" parts on the engine ("plates": tiled from sheets), its grille or plow, fenders over the front wheels.
+    /// <paramref name="part"/>, <paramref name="noseOf"/>: what a shape grammar's nose module chose (null: the style's slots roll them, as kit 1 always did).
+    /// </summary>
+    public Vehicle Hood(string? part = null, string[]? noseOf = null)
     {
         if (Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Cab Over Shell") == true)
             return this; // (the cab is its own nose)
         var d = Dice.Fork("hood");
-        var kind = Style.Part(d, "hood");
+        var kind = part ?? Style.Part(d, "hood");
         if (kind == "plates")
             return PlatedHood();
         var hood = Stand(kind, SocketPoint(Engine!, "+y"), Orient.Forward, Engine!, "engine");
         PanelList("hood").Add(hood);
-        var nose = Style.Part(d, "nose");
+        var nose = noseOf != null ? FactionStyle.Noted("nose", d.Pick(noseOf)) : Style.Part(d, "nose");
         if (nose != "none")
             PanelList("hoodsides").Add(Onto(hood, "front", nose, "back", 0));
         var fender = Style.Part(d, "fender");

@@ -77,8 +77,10 @@ public sealed partial class Vehicle
     /// <summary>
     /// The room's furniture, standing on its floor: a layout from the style ("layout" picks one, "layout NAME" lists its slots), down the side walls from the end away from the door.
     /// What has slots rolls from the loot table at each spawn. What won't fit (a seat, a door) is skipped.
+    /// <paramref name="clearMiddle"/>: the last-resort chest keeps out of the room's middle too, where a player stands (the shape grammar's rooms; kit 1's
+    /// rooms let it stand anywhere, and a short room could put it in the way).
     /// </summary>
-    public Vehicle Furnish(Room room)
+    public Vehicle Furnish(Room room, bool clearMiddle = false)
     {
         var d = Dice.Fork("furnish " + room.Tag);
         var layout = Style.Part(d, "layout");
@@ -111,7 +113,7 @@ public sealed partial class Vehicle
                 for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
                 {
                     var z = from + way * at;
-                    if (InDoorway(room, x, z, deep, run) || slot != "chest" && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
+                    if (InDoorway(room, x, z, deep, run) || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
                         taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try
@@ -139,6 +141,38 @@ public sealed partial class Vehicle
             }
         }
         return this;
+    }
+
+    /// <summary>
+    /// The style's chest against the room's far end wall, in the middle of it, when no side wall took a container (the shape grammar's last resort: a short room's
+    /// walls go to seats, the door and the magazine). Tried a quarter metre further in at a time, up to a metre; false when nothing takes it.
+    /// </summary>
+    public bool EndChest(Room room)
+    {
+        var part = Style.Part(Dice.Fork("end chest " + room.Tag), "chest");
+        var def = Def(part);
+        var size = def.BoundsMax - def.BoundsMin;
+        var alongWall = size.X >= size.Z;
+        var deep = alongWall ? size.Z : size.X;
+        var away = room.DoorMid.Z > room.Middle.Z ? -1f : 1f; // (the end away from the door's half)
+        var wall = away < 0 ? room.R.Z0 : room.R.Z1;
+        var inward = new Vector3(0, 0, -away);
+        var o = alongWall ? new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, inward, Vector3.UnitY, Vector3.UnitY);
+        for (var In = 0.15f; In <= 1.01f; In += 0.25f)
+            try
+            {
+                var placed = Put(part, new Vector3(-0.25f, room.FloorTop + size.Y / 2, wall - away * (deep / 2 + In)), o, 0.2f, onTop: true);
+                PanelList("furniture").Add(placed);
+                room.Furniture.Add(placed);
+                room.Containers.Add(placed);
+                Loot(placed, Style.LootTable);
+                return true;
+            }
+            catch (VehicleKitException)
+            {
+                // (the end wall rakes in, or a seat's there: further in)
+            }
+        return false;
     }
 
     /// <summary>An exposed fuel tank on a plate: a whole 1 m plate with the deck's hole round it is the caller's. Stands on the plate's corner nearest <paramref name="near"/>.</summary>

@@ -124,6 +124,18 @@ public sealed class FactionStyle
     /// <summary>Shapes only some styles build (<see cref="VehicleRegistry.Extras"/>), by name ("Double Decker"): this style ships them too.</summary>
     public string[] Extra { get; init; } = [];
 
+    /// <summary>
+    /// Shape grammar weights (kit 2: <see cref="ShapeGrammar"/>, docs/vehiclekit/VEHICLEKIT.md "Shape grammar"), by family ("nose", "cab", "body", "rear", "under", "flank", "sides")
+    /// and module name ("long hood", "caged", "room", "porch"...): how much likelier this faction makes a module than the default. A family or a module not named
+    /// keeps its default, which comes from the style's own slots (a nose from its "hood" list, a cab from its "heavyCab" list), so a style that names none works unchanged.
+    /// 0 rules a module out; a module whose parts the style doesn't list is never made, whatever its weight.
+    /// </summary>
+    public Dictionary<string, Dictionary<string, double>> Modules { get; init; } = [];
+
+    /// <summary>A module's weight in this style: its default times the style's own factor (<see cref="Modules"/>).</summary>
+    public double ModuleWeight(string family, string module, double fallback) =>
+        Modules.TryGetValue(family, out var f) && f.TryGetValue(module, out var w) ? fallback * w : fallback;
+
     /// <summary>Limits on variation by name ("crookedPlates", "tiltDegrees"...).</summary>
     public required Dictionary<string, double> Limits { get; init; }
 

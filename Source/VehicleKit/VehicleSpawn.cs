@@ -31,6 +31,11 @@ public sealed class VehicleGenJob
     /// <summary>The text's FNV-1a hash: the same seed and build give the same one on any machine (the kit allows nothing that varies).</summary>
     public ulong Hash;
 
+    /// <summary>Which kit made it (<see cref="VehicleKitVersion"/>) and the grammar's modules, as in the blueprint's kit line; logged when it is done.</summary>
+    public int Kit;
+
+    public string Modules = "";
+
     /// <summary>Done (built or failed): <see cref="Step"/> returns true from then on.</summary>
     public bool Done { get; private set; }
 
@@ -107,6 +112,8 @@ public sealed class VehicleGenJob
             Tow = _tow;
             Error = _error;
             Done = true;
+            if (Kit > 0)
+                Console.WriteLine($"[vehicles] {Name}: kit {Kit}{(Modules.Length > 0 ? " (" + Modules + ")" : "")}");
         }
         return Done;
     }
@@ -152,6 +159,7 @@ public sealed class VehicleGenJob
         var v = VehicleRegistry.Make(Generator, Seed);
         var text = v.Text();
         Hash = Fnv(text);
+        (Kit, Modules) = (v.Kit, string.Join(", ", v.Modules));
         Yield();
         var bp = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(Generator, Seed));
         if (bp.Tow.Length > 0 && ConstructBuild.FindBlueprint(bp.Tow) == null)
