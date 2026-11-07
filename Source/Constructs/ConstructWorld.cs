@@ -502,6 +502,7 @@ public sealed partial class ConstructWorld
         var def = c.DefOf(index);
         if (c.Parts[index].Store != 0)
             Spill(c, index); // (a container that goes spills what it holds: physical storage)
+        c.FuseNoteRemoval(index); // (a fused part: does its unit still hold together without it? ConstructFuse.cs)
         var keepDriver = c.Driver;
         // Every part, by component: what still reaches the root (or part 0 when the root is the one going) stays.
         using var scratch = Scratch.Begin();

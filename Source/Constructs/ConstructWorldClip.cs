@@ -61,6 +61,7 @@ public sealed partial class ConstructWorld
             c.Joints[c.JointCount++] = copy;
             segMap[j + 1] = c.JointCount;
         }
+        Dictionary<uint, uint>? fuseTags = null; // (a copy's fused units are units of their own: new tags, ConstructFuse.cs)
         foreach (var i in order)
         {
             ref var s = ref src.Parts[i];
@@ -87,6 +88,13 @@ public sealed partial class ConstructWorld
             d.Cfg = s.Cfg.Copy();
             d.Paint = s.Paint;
             d.Finish = s.Finish;
+            if (s.Fuse != 0)
+            {
+                fuseTags ??= new Dictionary<uint, uint>();
+                if (!fuseTags.TryGetValue(s.Fuse, out var tag))
+                    fuseTags[s.Fuse] = tag = ConstructFuse.NewTag();
+                d.Fuse = tag;
+            }
             ConstructConfig.StartState(ref d, d.D);
         }
         for (var l = 0; l < src.LinkCount; l++)

@@ -134,6 +134,7 @@ public sealed partial class Construct
             {
                 _needFull = true;
                 _specialsLive = false;
+                _fuseLive = false; // (the units follow the parts again at the rebuild: ConstructFuse.cs)
             }
         }
     }
@@ -155,6 +156,7 @@ public sealed partial class Construct
     {
         _dirty = true;
         _specialsLive = false;
+        _fuseLive = false;
         _editSerial++;
     }
 
@@ -344,7 +346,7 @@ public sealed partial class Construct
     private double[] _ssOwnM = [], _ssM = [], _ssSq = []; // each segment's own and carried mass, and its spin term (big bodies only: made at the first sum)
     private Vector3D[] _ssOwnC = [], _ssC = [];
 
-    private struct Vector3D
+    internal struct Vector3D
     {
         public double X, Y, Z;
 
@@ -380,7 +382,9 @@ public sealed partial class Construct
         }
         SumBounds();
         for (var i = 0; i < PartCount; i++)
-            AddPartSums(i, 1);
+            if (!FuseMassHeld(i))
+                AddPartSums(i, 1);
+        FuseAddMass(); // (each fused unit's plain parts as one share, summed again only when the unit changed: ConstructFuse.cs)
         _plainCount = 0;
     }
 
@@ -799,6 +803,8 @@ public sealed partial class Construct
         MapSpecials();
         ColliderJournal();
         TreeJournal();
+        if (FuseRefresh())
+            _colliderStale = true; // (a fused unit lost members or wants fitting: its rough boxes are made again with the collider, ConstructFuse.cs)
         for (var i = added; i < PartCount; i++)
         {
             AddPartSums(i, 1);

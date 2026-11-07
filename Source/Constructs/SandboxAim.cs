@@ -142,6 +142,8 @@ public static class SandboxAim
                 return t.Distance <= ConstructBuild.Reach ? Paint(d, t.PaintMode, t.Contested) : AimCall.No;
             case ConstructTool.Texture:
                 return t.Distance <= ConstructBuild.Reach ? Texture(d, t.TextureMode, t.Contested) : AimCall.No;
+            case ConstructTool.Fuse:
+                return t.Distance <= ConstructBuild.Reach ? t.Contested == null ? AimCall.Ok : AimCall.Refuse(t.Contested) : AimCall.No; // (any part: a piece, a selection or a unit to un-fuse)
             case ConstructTool.Remover:
                 return t.Distance <= ConstructBuild.Reach ? Remover(c, t.Player, t.Creative, t.Contested) : AimCall.No;
             case ConstructTool.Hands:

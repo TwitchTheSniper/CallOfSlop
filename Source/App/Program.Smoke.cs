@@ -244,6 +244,14 @@ public static unsafe partial class Program
                 k = (k + 1) % Surfaces.File.Rows.Length;
             }
             _textureWheel.WantList = true;
+            // The fuse tool's units (ConstructFuse.cs): the row fused whole, as ConstructEdits.Fuse does past the tool's reach, so its
+            // rough collider, its unit chunks and the rebuild after it run in a real window.
+            g.Constructs.AutoLinkMany(row, 0, row.PartCount); // (a unit is parts linked together: the row was laid without links)
+            var tag = ConstructFuse.NewTag();
+            for (var i = 0; i < row.PartCount; i++)
+                row.Parts[i].Fuse = tag;
+            row.Dirty = true;
+            g.Constructs.StructureDirty.Add(row.Id);
             _smokeScript = 2;
         }
         if (g.SandboxOn && _smokeScript == 2 && t > 2.9)
@@ -251,6 +259,14 @@ public static unsafe partial class Program
             Console.WriteLine($"[smoke] {label}: texture paint tool: {(_smokeBig != null ? ConstructFinish.Finished(_smokeBig) : 0)} parts textured, the list open {Ui.SandboxTexturePickerOpen}, {SurfaceThumbs.Rendered} swatches drawn, GL error 0x{GlDebug.Error():X}");
             SaveScreenshot("sandbox_textures");
             Ui.CloseSandboxTexturePicker();
+            if (_smokeBig is { } fused)
+            {
+                if (fused.Dirty)
+                    fused.Rebuild();
+                Console.WriteLine($"[smoke] {label}: fuse tool: {fused.UnitCount} unit, {fused.FusedParts} of {fused.PartCount} parts fused, {fused.Collider.LeafCount} collider leaves");
+            }
+            if (g.IsServer)
+                g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Fuse); // (its model and screen drawn in the hands)
             _smokeScript = 3;
         }
         if (t > 3.0)

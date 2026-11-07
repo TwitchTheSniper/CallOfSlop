@@ -296,6 +296,7 @@ public sealed class ConstructClip
             sb.Append(",\n  \"description\": ").Append(Quote(description));
         sb.Append(",\n  \"exactLinks\": true,\n  \"steps\": [\n");
         var taken = new HashSet<(int, int)>(c.LinkCount); // (step, socket): what earlier steps hold (a socket can carry two links: only one is a step's way on)
+        var fuseOf = new Dictionary<uint, int>(); // (fused units numbered 1, 2, ... in this blueprint: ConstructFuse.cs)
         for (var k = 0; k < c.PartCount; k++)
         {
             ref var p = ref c.Parts[k];
@@ -343,6 +344,12 @@ public sealed class ConstructClip
                 sb.Append(", \"paint\": \"").Append(ConstructPaint.ToHex(p.Paint)).Append('"');
             if (ConstructFinish.Name(p.Finish) is { Length: > 0 } finish)
                 sb.Append(", \"finish\": \"").Append(finish).Append('"'); // (the texture paint tool's material, by name)
+            if (p.Fuse != 0)
+            {
+                if (!fuseOf.TryGetValue(p.Fuse, out var unit))
+                    fuseOf[p.Fuse] = unit = fuseOf.Count + 1;
+                sb.Append(", \"fuse\": ").Append(unit); // (its fused unit, by number: a build gives it a new tag)
+            }
             sb.Append(k + 1 < c.PartCount ? " },\n" : " }\n");
         }
         sb.Append("  ]");
