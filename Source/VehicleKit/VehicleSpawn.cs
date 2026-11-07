@@ -319,6 +319,8 @@ public sealed class VehicleGenJob
                 _ = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(g, g.Seeds[0]));
                 _ = v.Stability();
                 _ = v.Fill();
+                if (BriefsOn)
+                    _ = VehicleBriefMake.ForGenerated(v, text, "Technical"); // (the behaviour brief's rays and the drive check it builds for: compiled before the first spawn)
             }
             if (VehicleRegistry.Find("Bandit Box Truck") is { } grammar)
                 ShapeGrammar.PlanOnly(grammar, 1); // (the shape grammar's planner: a plan, nothing built)

@@ -112,6 +112,8 @@ public static class VehicleBriefMake
             Array.Fill(Start, -1);
             for (var t = 0; t < owner.Length; t++)
             {
+                if ((t & 4095) == 4095)
+                    VehicleGenJob.Yield();
                 var i = owner[t];
                 if (i < 0 || i >= n)
                     continue;
@@ -211,22 +213,27 @@ public static class VehicleBriefMake
                 {
                     var to = mid + off - eye;
                     var len = to.Length();
-                    if (len > 1e-3f && FirstHit(eye, to / len, len + 1) == part)
+                    var hit = len > 1e-3f && FirstHit(eye, to / len, len + 1) == part;
+                    VehicleGenJob.Yield(); // (a ray through a big body is 0.1 to 0.5 ms: a slice may end after any)
+                    if (hit)
                     {
                         mask |= (ushort)(1 << k);
                         break;
                     }
                 }
-                VehicleGenJob.Yield();
             }
             var top = false;
             var above = Hi.Y + 2;
             foreach (var off in offs)
-                if (FirstHit(new Vector3(mid.X + off.X, above, mid.Z + off.Z), -Vector3.UnitY, above - Lo.Y + 1) == part)
+            {
+                var hit = FirstHit(new Vector3(mid.X + off.X, above, mid.Z + off.Z), -Vector3.UnitY, above - Lo.Y + 1) == part;
+                VehicleGenJob.Yield();
+                if (hit)
                 {
                     top = true;
                     break;
                 }
+            }
             return (mask, top);
         }
 
@@ -572,14 +579,14 @@ public static class VehicleBriefMake
                     var d = Vector3.Transform(dir0, qp);
                     m = yPivot + Vector3.Transform(m - yPivot, qy);
                     d = Vector3.Normalize(Vector3.Transform(d, qy));
-                    if (g.FirstHit(m + d * 0.02f, d, GunReach, skip) >= 0)
+                    var blocked = g.FirstHit(m + d * 0.02f, d, GunReach, skip) >= 0;
+                    VehicleGenJob.Yield();
+                    if (blocked)
                         continue;
                     gun.Clear |= 1u << bin;
                     if (pitch[s] == levelAt)
                         gun.Level |= 1u << bin;
                 }
-                if ((bin & 3) == 3)
-                    VehicleGenJob.Yield();
             }
             for (var bin = 0; bin < VehicleBrief.Bins; bin++)
                 if ((gun.Clear >> bin & 1) != 0)
