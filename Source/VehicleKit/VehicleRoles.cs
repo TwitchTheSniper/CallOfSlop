@@ -96,18 +96,73 @@ public sealed class RoleAsk
         Tier = Math.Clamp(tier, 1, VehicleRoles.MaxTier);
         Style = style;
         Needs = NeedsAt(role, Tier, style);
+        FrameAt = Tier;
     }
+
+    /// <summary>
+    /// A family's mark (VehicleFamilies.cs, docs/vehiclekit/VEHICLEKIT.md "Families and convoys"): asked at <paramref name="tier"/>, its frame (body and chassis
+    /// leans: lengths, the axles, cabs, bed sides, plate materials, running gear) at <paramref name="frameTier"/>, the family's base tier, so Mk1, Mk2 and Mk3 share
+    /// one body on one chassis; the kit, appliqué and loot follow the mark's tier and the model's variant.
+    /// </summary>
+    public RoleAsk(VehicleRole role, int tier, FactionStyle style, VehicleModel model, int frameTier) : this(role, tier, style)
+    {
+        Model = model;
+        FrameAt = Math.Clamp(frameTier, 1, VehicleRoles.MaxTier);
+        if (model.Variant == VehicleFamilies.GunTruck)
+            Needs.GunsMax += 1; // (a gun truck carries one more than its role's mark would)
+    }
+
+    /// <summary>The tier the frame leans by: <see cref="Tier"/>, except for a family's later marks (the family's base tier).</summary>
+    public readonly int FrameAt;
+
+    /// <summary>The family model this vehicle is a mark of (VehicleFamilies.cs), or null for every other role vehicle.</summary>
+    public readonly VehicleModel? Model;
+
+    /// <summary>A convoy's shared paint (<see cref="FactionStyle.Scheme"/>, VehicleConvoys.cs): set while it is made; null for every other vehicle.</summary>
+    public Dictionary<string, string[]>? Scheme { get; init; }
+
+    /// <summary>A family member: made from its first plan that builds, never planned again for its role, so every mark keeps one body (a miss is reported).</summary>
+    public bool Family => Model != null;
+
+    /// <summary>The model's variant ("" for none).</summary>
+    public string Variant => Model?.Variant ?? "";
+
+    /// <summary>A rare named unique (<see cref="VehicleModel.IsNamed"/>): the best loot, an extra chest, one more mark.</summary>
+    public bool Named => Model?.IsNamed == true;
 
     public string Label => $"{Role.Name}, tier {Tier}";
 
     /// <summary>What a blueprint's name adds: " [raider, tier 2]", so it never reads as a committed seed's.</summary>
     public string Suffix => $" [{Label}]";
 
-    /// <summary>The loot table tier: the role's base plus one a tier, 1 to 4.</summary>
-    public int LootTier => Math.Clamp(Role.LootBase + Tier - 1, 1, 4);
+    /// <summary>The loot table tier: the role's base plus one a tier, 1 to 4; a named unique's is the best.</summary>
+    public int LootTier => Named ? 4 : Math.Clamp(Role.LootBase + Tier - 1 + (Variant == VehicleFamilies.TankerConversion ? 1 : 0), 1, 4);
 
-    /// <summary>How far the plates lean to armour, with the tier.</summary>
-    public double ArmourLean => Math.Clamp(Role.Armour + 0.15 * (Tier - 2), 0, 1);
+    /// <summary>How far the plates (and cabs, bed sides) lean to armour, with the frame's tier (<see cref="FrameAt"/>: the tier, but for a family's later marks).</summary>
+    public double ArmourLean => Math.Clamp(Role.Armour + 0.15 * (FrameAt - 2), 0, 1);
+
+    /// <summary>
+    /// How far the kit leans to armour (appliqué, loaded flanks): <see cref="ArmourLean"/> for every vehicle but a family's, whose Mk2 and Mk3 take appliqué at
+    /// the mark's tier (at least 0.3 and 0.5, so a raider's Mk2 is the same truck plated) and whose up-armoured variant more.
+    /// </summary>
+    public double KitArmourLean
+    {
+        get
+        {
+            if (!Family)
+                return ArmourLean;
+            var a = Math.Clamp(Role.Armour + 0.15 * (Tier - 2), 0, 1);
+            var mark = Model!.Mark;
+            if (mark >= 2)
+                a = Math.Max(a, 0.3 + 0.2 * (mark - 2));
+            if (Variant == VehicleFamilies.UpArmoured)
+                a = Math.Max(a, 0.5) + 0.3;
+            return Math.Clamp(a, 0, 1);
+        }
+    }
+
+    /// <summary>The chance an open bed carries a gun: the role's, every bed for a gun truck.</summary>
+    public double BedGun => Variant == VehicleFamilies.GunTruck ? 1 : Role.BedGun;
 
     private static RoleNeeds NeedsAt(VehicleRole r, int tier, FactionStyle st)
     {
@@ -135,7 +190,7 @@ public sealed class RoleAsk
     public double Module(string family, string name)
     {
         var f = Role.Modules.TryGetValue(family, out var m) && m.TryGetValue(name, out var w) ? w : 1;
-        var a = ArmourLean;
+        var a = family == "flank" ? KitArmourLean : ArmourLean; // (the flanks are the kit's: a family's later marks load them; the rest is the frame's)
         if (a > 0)
             f *= (family, name) switch
             {
@@ -155,12 +210,12 @@ public sealed class RoleAsk
     public double Body(BodyPattern b) => b.Segments.Aggregate(1.0, (w, s) => w * Module("body", s.Kind));
 
     /// <summary>The length lean: the style's plus the role's plus a little a tier.</summary>
-    public double LengthBias(double style) => Math.Clamp(style + Role.LengthBias + 0.15 * (Tier - 2), -1, 1);
+    public double LengthBias(double style) => Math.Clamp(style + Role.LengthBias + 0.15 * (FrameAt - 2), -1, 1);
 
     /// <summary>The gun count to roll from, within the recipe's.</summary>
     public (int Lo, int Hi) GunRange(int min, int max)
     {
-        var lo = Math.Clamp(Needs.GunsMin + (Role.Combat && Tier >= 4 ? 1 : 0), min, max); // (a tier 4 fighter rolls one more where its shape has room: a lean, not a need, as a Technical carries one)
+        var lo = Math.Clamp(Needs.GunsMin + (Role.Combat && Tier >= 4 ? 1 : 0) + (Variant == VehicleFamilies.GunTruck ? 1 : 0), min, max); // (a tier 4 fighter rolls one more where its shape has room: a lean, not a need, as a Technical carries one)
         return (lo, Math.Clamp(Needs.GunsMax, lo, max));
     }
 
@@ -204,7 +259,7 @@ public sealed class RoleAsk
     public ChassisRange Chassis(ChassisRange r)
     {
         var f = Role.Fast;
-        var heavier = Math.Max(0, -f) + Math.Max(0, (Tier - 2) * 0.2 * (Role.Armour > 0.4 ? 1 : 0));
+        var heavier = Math.Max(0, -f) + Math.Max(0, (FrameAt - 2) * 0.2 * (Role.Armour > 0.4 ? 1 : 0));
         return r with
         {
             Single = r.Single * (1 + 2 * Math.Max(0, f)),
@@ -244,7 +299,7 @@ public sealed class RoleAsk
         var (lo, hi) = (tiers.Min(), tiers.Max());
         if (lo == hi)
             return null;
-        var target = lo + (hi - lo) * (Tier - 1) / 3.0;
+        var target = lo + (hi - lo) * (FrameAt - 1) / 3.0; // (running gear is the frame's: a family's marks keep their base's)
         return (list, tiers.Select(t => Math.Pow(2.0, -Math.Abs(t - target))).ToArray());
     }
 }
@@ -574,8 +629,8 @@ public sealed partial class Vehicle
         var n = ask.Needs;
         if (n.Winch && !Parts.Any(p => p.Name.Contains("Winch", StringComparison.Ordinal)))
             OnDeck("Cargo Winch 16 m", null, Dice.Fork("kit role winch"));
-        if (ask.ArmourLean >= 0.3)
-            UpArmour(ask.ArmourLean, Dice.Fork("kit role armour"));
+        if (ask.KitArmourLean >= 0.3)
+            UpArmour(ask.KitArmourLean, Dice.Fork("kit role armour"));
         if (n.SignalsMin > 0)
         {
             var slot = Style.Parts.ContainsKey("mast") ? "mast" : "trophy";
@@ -591,7 +646,7 @@ public sealed partial class Vehicle
             }
         }
         room ??= Rooms.FirstOrDefault();
-        var chests = ask.Role.ExtraChests + (ask.Tier >= 4 ? 1 : 0);
+        var chests = ask.Role.ExtraChests + (ask.Tier >= 4 ? 1 : 0) + (ask.Named ? 1 : 0);
         for (var k = 0; k < chests && room != null; k++)
         {
             VehicleGenJob.Yield();
@@ -609,6 +664,8 @@ public sealed partial class Vehicle
                 Loot(chest, Style.LootTable);
             }
         }
+        if (ask.Family)
+            FamilyKit(ask); // (a family's variant and a named unique's extra mark: VehicleFamilies.cs)
         var tier = ask.LootTier;
         RetableLoot(t => VehicleRoles.LootTable(t, tier));
         return this;
@@ -618,7 +675,7 @@ public sealed partial class Vehicle
     /// <paramref name="part"/> (by its socket <paramref name="by"/>, null: the build's pick) on the first free up-facing socket of the porch, the bed, the rack, a tank or
     /// the tail rails that takes it clear of the guns and under open sky: a recovery vehicle's winch, a roomless vehicle's chest. Null when none does.
     /// </summary>
-    private VPart? OnDeck(string part, string? by, Dice d)
+    private VPart? OnDeck(string part, string? by, Dice d, bool clear = false)
     {
         var def = Def(part);
         IEnumerable<VPart> Tag(string t) => Panels.GetValueOrDefault(t) ?? [];
@@ -634,7 +691,7 @@ public sealed partial class Vehicle
                         continue;
                     try
                     {
-                        return Onto(p, socket, part, by);
+                        return Onto(p, socket, part, by, clear: clear);
                     }
                     catch (VehicleKitException)
                     {
@@ -765,6 +822,8 @@ public static class VehicleRoleMake
         var article = "aeiou".Contains(ask.Role.Name[0]) ? "An" : "A";
         if (!v.Description.StartsWith(article + " " + ask.Role.Name, StringComparison.Ordinal))
             v.Description = $"{article} {ask.Role.Name} (tier {ask.Tier}). {v.Description}";
+        if (ask.Model is { } model)
+            VehicleFamilies.Note(v, ask, model, shape); // (a family's mark: its model's name and key)
     }
 
     /// <summary>
@@ -785,8 +844,8 @@ public static class VehicleRoleMake
             var s = k == 0 ? seed : VehicleSpawnKit.Reroll(seed, 100 + k);
             VehicleGenJob.Yield();
             var v = new Vehicle(VehicleRegistry.BlueprintName(g, s) + ask.Suffix, g.Name, g.Style, s) { Role = ask };
-            var weigh = FactionStyle.Weigh;
-            FactionStyle.Weigh = ask.Weigh;
+            var (weigh, scheme) = (FactionStyle.Weigh, FactionStyle.Scheme);
+            (FactionStyle.Weigh, FactionStyle.Scheme) = (ask.Weigh, ask.Scheme);
             try
             {
                 g.Build(v);
@@ -803,7 +862,7 @@ public static class VehicleRoleMake
             }
             finally
             {
-                FactionStyle.Weigh = weigh;
+                (FactionStyle.Weigh, FactionStyle.Scheme) = (weigh, scheme);
             }
             v.Kit = VehicleKitVersion.Roles;
             var id = VehicleIdentity.Of(v);
@@ -812,7 +871,7 @@ public static class VehicleRoleMake
             var rank = Rank(v, id);
             if (best == null || rank.CompareTo(bestRank) < 0)
                 (best, bestRank) = (v, rank);
-            if (rank.Item1 == 0 && rank.Item2 == 0 && rank.Item3 == 0)
+            if (rank.Item1 == 0 && rank.Item2 == 0 && rank.Item3 == 0 || ask.Family) // (a family's mark keeps the seed that built: its marks share it)
                 break;
             if (k + 1 < Plans)
             {

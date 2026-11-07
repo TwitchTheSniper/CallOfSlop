@@ -333,7 +333,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 187: ordnance section lengths (OrdnanceDesign.cs): each section of a designed weapon on the wire carries its length (u16 mm at 25 cm).
     // 188: the Ordnance Rack (ModularRack.cs): a run-time rack shape in a Full's part list is a mark and nine bytes (layout and old size, rows or layers, columns or segments, count, max ordnance length and diameter in mm), CfgKey.RackRows to RackDiameter, part settings and sockets up to 56 stations.
     // 189: limits audit (docs/perf/LIMITS.md): a pose's rotor and control surface window starts at a u16 (it was a byte, which wrapped past 255 on a body with many control surfaces).
-    public const byte ProtocolVersion = 189;
+    // 190: faction vehicles by role and by convoy (GameSandboxVehicles.cs): CActKind.FactionVehicle asks the server for one by role and tier, or for a convoy, in front of the player.
+    public const byte ProtocolVersion = 190;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

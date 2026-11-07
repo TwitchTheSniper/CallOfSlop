@@ -211,8 +211,8 @@ public static class ShapeGrammar
         (int, int, int, double) bestRank = default;
         Exception? last = null;
         var built = 0;
-        var weigh = FactionStyle.Weigh;
-        FactionStyle.Weigh = role.Weigh;
+        var (weigh, scheme) = (FactionStyle.Weigh, FactionStyle.Scheme);
+        (FactionStyle.Weigh, FactionStyle.Scheme) = (role.Weigh, role.Scheme); // (a convoy's shared paint, VehicleConvoys.cs; null for every other vehicle)
         try
         {
             for (var attempt = 0; attempt < Attempts + VehicleRoleMake.Plans - 1 && built < VehicleRoleMake.Plans; attempt++)
@@ -232,6 +232,7 @@ public static class ShapeGrammar
                     continue;
                 }
                 built++;
+                v.PlanAttempt = attempt;
                 VehicleGenJob.Yield();
                 var id = VehicleIdentity.Of(v);
                 v.Identity = id;
@@ -241,7 +242,7 @@ public static class ShapeGrammar
                 var rank = VehicleRoleMake.Rank(v, id);
                 if (best == null || rank.CompareTo(bestRank) < 0)
                     (best, bestRank) = (v, rank);
-                if (rank.Item1 == 0 && rank.Item2 == 0 && rank.Item3 == 0)
+                if (rank.Item1 == 0 && rank.Item2 == 0 && rank.Item3 == 0 || role.Family) // (a family's mark keeps its first plan that builds: its marks share one body)
                     break;
                 if (built < VehicleRoleMake.Plans)
                 {
@@ -252,7 +253,7 @@ public static class ShapeGrammar
         }
         finally
         {
-            FactionStyle.Weigh = weigh;
+            (FactionStyle.Weigh, FactionStyle.Scheme) = (weigh, scheme);
         }
         if (best == null)
             throw last ?? new VehicleKitException($"no plan of the {g.Name} built for a {role.Role.Name}");
@@ -573,7 +574,7 @@ public static class ShapeGrammar
                     break;
                 case "gun bed":
                 case "bed":
-                    if (s.Kind == "bed" && (count >= want || !d.Chance(role?.Role.BedGun ?? 0.5)))
+                    if (s.Kind == "bed" && (count >= want || !d.Chance(role?.BedGun ?? 0.5)))
                         break;
                     var behindRoom = ahead is { Kind: "room" };
                     var w = Pick(count, behindRoom);

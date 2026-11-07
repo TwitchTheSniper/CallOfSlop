@@ -76,6 +76,7 @@ public enum CActKind : byte
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
     Ordnance, // u32 length, text: build this design at the Ordnance Bench in reach (protocol 180; GameSandboxOrdnance.cs)
     Vehicle, // text style, text shape, u32 seed (0: the server picks): a faction vehicle made at spawn time, in front of the player (protocol 186; GameSandboxVehicles.cs)
+    FactionVehicle, // u8 (0 by role, 1 a convoy), text style, text role (empty: any), u8 tier, u8 count (a convoy's; 0: 5), u32 seed (0: the server picks) (protocol 190; GameSandboxVehicles.cs)
 }
 
 /// <summary>
@@ -767,6 +768,8 @@ public sealed partial class Game
                 return SandboxOrdnanceBuild(p, ReadLong(ref r));
             case CActKind.Vehicle:
                 return SandboxVehicleAct(p, ref r); // a faction vehicle made at spawn time (GameSandboxVehicles.cs)
+            case CActKind.FactionVehicle:
+                return SandboxFactionVehicleAct(p, ref r); // by role and tier, or a convoy (GameSandboxVehicles.cs)
             case CActKind.Sculpt:
                 return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:
