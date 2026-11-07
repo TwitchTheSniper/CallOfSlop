@@ -52,7 +52,7 @@ public static class ConstructFluid
     public const int MaxEntries = 100; // tanks a packet carries (it stays under the MTU)
     private const float Least = 1e-4f; // litres below which a tank is empty
     public const float LitresPerCubicMetre = 1000f;
-    public const int MaxVolumes = 4; // Tank Volumes a construct
+    public const int MaxVolumes = 32; // Tank Volumes a construct (a sanity check when fitted, was 4: each is sealed at a rebuild, nothing is sized by it)
 
     private static string[] MakeOptions()
     {

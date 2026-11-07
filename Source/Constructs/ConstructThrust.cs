@@ -29,8 +29,8 @@ public struct CThruster
 /// </summary>
 public sealed partial class Construct
 {
-    public const int MaxThrusters = 64;
-    public readonly CThruster[] Thrusters = new CThruster[MaxThrusters];
+    public const int MaxThrusters = 512; // (was 64; a raycast-free force each a tick. Past this a thruster is a plain part: logged, docs/perf/LIMITS.md)
+    public CThruster[] Thrusters = []; // (sized to the construct's thrusters at a rebuild, doubling; never shrinks)
     public int ThrusterCount;
     public bool HubSkid; // hub motors and no steered wheel: the steering drives the sides against each other
     public bool HasHubMotor;
@@ -83,10 +83,20 @@ public sealed partial class Construct
             keepPart[k] = Thrusters[k].Part;
         }
         ThrusterCount = 0;
+        var want = 0;
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].D.Role == PartRole.Thruster)
+                want++;
+        if (want > MaxThrusters)
+            Caps.Hit("thrusters a construct", MaxThrusters, want);
+        want = Math.Min(want, MaxThrusters);
+        if (Thrusters.Length < want)
+            Array.Resize(ref Thrusters, Math.Min(MaxThrusters, Math.Max(want, Math.Max(8, Thrusters.Length * 2))));
         var most = 1e-3f;
         var mostRoll = 1e-3f;
         var fwd = SeatForward();
-        for (var i = 0; i < PartCount && ThrusterCount < MaxThrusters; i++)
+        var kept = 0; // (the old list is in part order, as the new one is: one walk through both)
+        for (var i = 0; i < PartCount && ThrusterCount < want; i++)
         {
             ref var p = ref Parts[i];
             var d = p.D;
@@ -101,12 +111,13 @@ public sealed partial class Construct
             most = MathF.Max(most, MathF.Abs(t.MixYaw));
             t.MixRoll = Vector3.Dot(Vector3.Cross(at - Com, dir), fwd) * d.ThrustForce; // (a roll to the right turns about the way it faces, clockwise from behind)
             mostRoll = MathF.Max(mostRoll, MathF.Abs(t.MixRoll));
-            for (var k = 0; k < old; k++)
-                if (keepPart[k] == i)
-                {
-                    t.Level = keep[k];
-                    t.Ab = keepAb[k];
-                }
+            while (kept < old && keepPart[kept] < i)
+                kept++;
+            if (kept < old && keepPart[kept] == i)
+            {
+                t.Level = keep[kept];
+                t.Ab = keepAb[kept];
+            }
             ThrusterCount++;
         }
         for (var k = 0; k < ThrusterCount; k++)

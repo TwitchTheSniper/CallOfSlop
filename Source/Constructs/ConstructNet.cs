@@ -1495,7 +1495,7 @@ public static class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 2 + Math.Min(c.RotorCount + c.ControlCount, PoseAir);
+    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir);
 
     /// <summary>Rotors and control surfaces a pose carries at most: a window that turns (protocol 120).</summary>
     public const int PoseAir = 24;
@@ -1505,7 +1505,7 @@ public static class ConstructNet
         var total = c.RotorCount + c.ControlCount;
         var n = Math.Min(total, PoseAir);
         var first = total <= PoseAir ? 0 : c.PoseAirAt % total;
-        w.U8((byte)first).U8((byte)n);
+        w.U16((ushort)first).U8((byte)n); // (protocol 189: first was a byte, and a body has up to 32 rotors and 512 surfaces)
         for (var k = 0; k < n; k++)
         {
             var at = (first + k) % total;
@@ -1527,7 +1527,7 @@ public static class ConstructNet
 
     private static void ReadAir(ref PacketReader r, Construct? c)
     {
-        int first = r.U8();
+        int first = r.U16();
         int n = r.U8();
         for (var k = 0; k < n; k++)
         {

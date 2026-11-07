@@ -47,9 +47,9 @@ public readonly record struct RackShape(RackLayout Layout, byte A, byte B, byte 
 /// </summary>
 public static class ModularRack
 {
-    public const string Prefix = "Ord Rack ("; // (a run-time shape's name: a part's name is at most 32 characters)
+    public const string Prefix = "Ord Rack ("; // (a run-time shape's name; run-time parts may be named up to ConstructParts.MaxRuntimeName characters)
     public const string LegacyPrefix = "Bomb Rack (";
-    public const int MaxStations = ConstructParts.MaxSockets - 8; // in all (56: a part's sockets, with room for its mounts), for the engine's sake too (a salvo lets one go a tick)
+    public const int MaxStations = ConstructParts.MaxSockets - 8; // in all (247: a part's 255 sockets, with room for its five mounts; a station's socket is a byte on the wire). A salvo lets one go a tick (about 4 s for a full rack), each a shell (ConstructWorld.MaxShells)
     public const float MaxReach = 190f; // m from its middle to its farthest edge (a part's boxes reach at most ConstructParts.MaxPartReach)
     public const int MaxSide = 16; // rows, columns, layers or segments
     public const int MinLengthMm = 250, MaxLengthMm = 60_000, MinDiameterMm = 50, MaxDiameterMm = 20_000;
