@@ -458,7 +458,8 @@ public static class ShapeGrammar
 
         // The rear, then fuel: one tank feeds the engine (an engine has one fuel inlet).
         var rearWeights = r.Rears.ToDictionary(x => x.Rear, x => x.Weight);
-        p.Rear = Ch(D(VehicleLayer.Body, "rear"), "rear", m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name]) ?? Module("rear", "bare");
+        var backDoor = v.Look?.WantsRearDoor == true && tags.Contains("room last") && tags.Contains("long room") ? 4.0 : 1.0; // (phase 2: a body whose door would be in its back leans to a tail it can open onto)
+        p.Rear = Ch(D(VehicleLayer.Body, "rear"), "rear", m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name] * (m.Name is "bare" or "hitch" ? backDoor : 1)) ?? Module("rear", "bare");
         foreach (var t in p.Rear.Provides)
             tags.Add(t);
         if (!tags.Contains("fuel"))
@@ -478,7 +479,7 @@ public static class ShapeGrammar
         // Phase 2: a room that is last, with only a hitch or a bare tail behind it, may have its door in its back (the look's roll; BodyStyleRule.DoorRear).
         if (v.Look is { } look)
         {
-            look.RearDoor = look.WantsRearDoor && tags.Contains("room last") && p.Rear.Name is "bare" or "hitch";
+            look.RearDoor = look.WantsRearDoor && tags.Contains("room last") && p.Rear.Name is "bare" or "hitch" && tags.Contains("long room"); // (a 3.5 m room's end walls are its loot's and its magazine's)
             if (look.RearDoor)
                 v.Modules.Add("door rear");
         }
