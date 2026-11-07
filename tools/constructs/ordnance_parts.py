@@ -219,7 +219,7 @@ def rail(name, load, length, mass, desc):
     p.sock("back", (0, 0.03, z), "+z")
     p.sock("front", (0, 0.03, -z), "-z")
     p.stats(mass, 120, 3, 2.0)
-    p.set(logic={"kind": "bombrack", "load": load, "rail": True})
+    p.set(logic={"kind": "bombrack", "load": load, "rail": True}, legacy=True)  # (an old mount: the Ordnance Rack launches missiles; it loads and works but isn't offered)
     return "Rails", p
 
 
@@ -265,10 +265,10 @@ def plane(name, desc, rack, weapon):
 
 def blueprints():
     return [
-        ("StrikePlane.json", plane("Strike Plane", "The Light Plane with a heat-seeking missile on a Launch Rail under each wing. Point at what flies and fire: each locks what is nearest straight ahead.",
-                                   "Launch Rail", "Ordnance:M25:Heat Seeker+Proximity Fuse+Warhead HE+Tail Fins+Solid Motor")),
+        ("StrikePlane.json", plane("Strike Plane", "The Light Plane with a heat-seeking missile on a Launch Rack under each wing. Point at what flies and fire: each locks what is nearest straight ahead.",
+                                   "Launch Rack", "Ordnance:M25:Heat Seeker+Proximity Fuse+Warhead HE+Tail Fins+Solid Motor")),
         ("GlideBomber.json", plane("Glide Bomber", "The Light Plane with a GPS glide bomb under each wing: set the Flight Stabilizer's waypoint, let go from high up, and they glide there.",
-                                   "Bomb Rack", "Ordnance:B25:GPS Unit+Impact Fuse+Warhead HE+Pop-out Wings+Glide Guidance Kit")),
+                                   "Launch Rack", "Ordnance:B25:GPS Unit+Impact Fuse+Warhead HE+Pop-out Wings+Glide Guidance Kit")),
     ]
 
 

@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Triple Ordnance Rack",
+  "description": "Three side by side.",
+  "modularRack": {
+    "layout": "grid",
+    "rows": 1,
+    "columns": 3,
+    "length": 2.5,
+    "diameter": 0.25
+  }
+}

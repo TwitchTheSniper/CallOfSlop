@@ -189,11 +189,8 @@ HAND = [
     rec("Tea Urn", 4, m={"steel": 3, "planks": 1}),
     # Air weapons (tools/constructs/air_weapons_parts.py): a rack and a bomb early, what steers itself late.
     rec("Light Bomb", 3, 2, m={"steel": 6, "concrete": 2}),
-    rec("Bomb Rack", 4, 2, m={"steel": 5}),
-    rec("Twin Bomb Rack", 6, 2, m={"steel": 9}),
     rec("AA Gun", 20, 3, m={"steel": 40}, p={"Gear Set": 1}),
     rec("Rocket Pod Mk2", 12, 3, m={"steel": 18, "copper": 3}),
-    rec("Missile Rail", 20, 4, m={"steel": 20, "copper": 6}, p={"Control Unit": 1, "Servo Motor": 1}),
     rec("Flare Dispenser", 6, 2, m={"steel": 6, "copper": 1}),
     rec("AA Sight", 8, 3, m={"steel": 3, "glass": 2}, p={"Lens": 1, "Circuit Board": 1}),
     rec("Seeker Head", 12, 4, m={"steel": 3, "glass": 2}, p={"Lens": 2, "Control Unit": 1}),
@@ -248,8 +245,6 @@ HAND = [
     rec("Retard Chute", 4, 2, m={"cloth": 3, "steel": 1}),
     rec("Ballute", 4, 2, m={"rubber": 3, "steel": 1}),
     rec("Ring Tail", 3, 2, m={"steel": 4}),
-    rec("Launch Rail", 6, 3, m={"steel": 8, "bronze": 1}),
-    rec("Heavy Launch Rail", 12, 4, m={"steel": 30, "bronze": 4}),
     # What a pilot wears (tools/constructs/pilot_parts.py): a parachute early, a jetpack late.
     rec("Parachute", 3, m={"rubber": 2, "planks": 2}),
     rec("Backpack Glider", 4, 2, m={"rubber": 3, "steel": 2}),
@@ -270,22 +265,26 @@ HAND = [
 ]
 
 
-def rack_recipe(name, stations, layout, size):
-    """A Modular Bomb Rack preset (air_weapons_parts.py MODULAR): its cost goes with its stations; a drum adds its gears, a heavy rack its wiring."""
-    if size == "light":
-        m, extra, tier, seconds = {"steel": 3 + 3 * stations}, {}, 2, 3 + stations
-    elif size == "heavy":
-        m, extra, tier, seconds = {"steel": 10 + 12 * stations, "copper": 2}, {"Circuit Board": 1}, 3, 6 + 2 * stations
+def rack_recipe(name, layout, a, b, length, diameter):
+    """An Ordnance Rack preset (air_weapons_parts.py ORDNANCE_RACKS): its cost goes with its stations and their size (the cube root of a station's
+    volume against the old light one's, 25 cm by 1 m, as ModularRack.Cost does); a drum adds its gears, a big rack its wiring."""
+    n = a * b
+    g = (diameter * diameter * length / 0.0625) ** (1 / 3)
+    steel = min(2000, round(3 + 3 * n * g ** 2.3))
+    if g <= 1.6:
+        m, extra, tier, seconds = {"steel": steel}, {}, 2, 3 + n * g
+    elif g <= 4:
+        m, extra, tier, seconds = {"steel": steel, "copper": 2}, {"Circuit Board": 1}, 3, 6 + 2 * n * g
     else:
-        m, extra, tier, seconds = {"steel": min(2000, 40 + 80 * stations), "copper": 6}, {"Control Unit": 1}, 4, 20 + 5 * stations
+        m, extra, tier, seconds = {"steel": steel, "copper": 6}, {"Control Unit": 1}, 4, 20 + 5 * n * g
     if layout == "drum":
-        extra["Gear Set"] = 1 if size == "light" else 2
-    return rec(name, seconds, tier, m=m, p=extra or None)
+        extra["Gear Set"] = 1 if g <= 1.6 else 2
+    return rec(name, min(600, round(seconds, 1)), tier, m=m, p=extra or None)
 
 
-from air_weapons_parts import MODULAR  # noqa: E402
+from air_weapons_parts import ORDNANCE_RACKS  # noqa: E402
 
-HAND += [rack_recipe(name, n, layout, size) for name, n, layout, size, _ in MODULAR]
+HAND += [rack_recipe(name, layout, a, b, length, diameter) for name, layout, a, b, length, diameter, _ in ORDNANCE_RACKS]
 
 # What a role adds, beyond the mass in material. Parts per 50 kg, at least one.
 ROLE_PARTS = {
@@ -446,7 +445,7 @@ def main():
     tail = []
     for p in known:
         name = p["name"]
-        if name in hand or p.get("stage") or name in SKIP_NAMES or p["_folder"].startswith(SKIP_FOLDERS):
+        if name in hand or p.get("stage") or name in SKIP_NAMES or p["_folder"].startswith(SKIP_FOLDERS) or p.get("legacy") and p["_folder"].startswith(("AirWeapons", "Ordnance")):
             continue
         tail.append(flight_recipe(p) if machine_of(p) else long_tail(p))
     tail.sort(key=lambda r: r.get("machine", ""))  # (stable: a family's recipes are in file order, and the plain Assembler's keep their places)

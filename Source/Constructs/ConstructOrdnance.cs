@@ -31,7 +31,7 @@ public sealed partial class Construct
 /// </summary>
 public static class ConstructOrdnance
 {
-    public const int MaxHeld = 16; // bombs a rack lets go of in turn
+    public const int MaxHeld = ModularRack.MaxStations; // bombs a rack lets go of in turn (an Ordnance Rack's most stations)
     public const int RackInterval = World.TickRate / 3; // ticks between bombs while its input stays on
     public const int RackRetry = World.TickRate / 6; // ticks before it looks again at a blocked way down
     public const float DropClear = 8f; // m under a bomb that must be free of its own construct
@@ -66,8 +66,8 @@ public static class ConstructOrdnance
 
     /// <summary>
     /// The working explosive parts bolted or welded to a rack. A designed weapon over the rack's rated load isn't held: it stays bolted on and won't let go (the look line says why);
-    /// the rack and bombs of older saves keep working whatever they weigh. A Modular Bomb Rack (ModularRack.cs) weighs everything on it: one over a
-    /// station's rating isn't held, nor one that takes the whole past the rack's.
+    /// the rack and bombs of older saves keep working whatever they weigh. An Ordnance Rack (ModularRack.cs) weighs and measures everything on it: one over a
+    /// station's rating, longer or wider than a station takes, isn't held, nor one that takes the whole past the rack's (an old Modular Bomb Rack's shape only weighs).
     /// </summary>
     public static int Held(Construct c, int rack, Span<ushort> into)
     {
@@ -93,19 +93,73 @@ public static class ConstructOrdnance
         return n;
     }
 
-    /// <summary>A modular rack's limits: a station's rating, and the whole rack's with what it already holds.</summary>
+    /// <summary>An Ordnance Rack's limits: a station's length, diameter and rating, and the whole rack's with what it already holds.</summary>
     private static bool Takes(ConstructPartDef rack, ConstructPartDef bomb, ref float total)
     {
-        if (bomb.Mass > rack.RackStation || total + bomb.Mass > rack.RackLoad)
+        if (bomb.Mass > rack.RackStation || total + bomb.Mass > rack.RackLoad || !Fits(rack, bomb))
             return false;
         total += bomb.Mass;
         return true;
     }
 
-    /// <summary>Why a modular rack won't take one more of this weight on top of <paramref name="carried"/> kg, or null.</summary>
-    public static string? LoadWhy(ConstructPartDef rack, float carried, float mass) =>
-        mass > rack.RackStation ? $"too heavy: {mass:0} kg, and a station of the {rack.Name} takes {rack.RackStation:0} kg"
-        : carried + mass > rack.RackLoad ? $"too heavy: {carried + mass:0} kg on a {rack.Name} rated for {rack.RackLoad:0} kg in all" : null;
+    private const float SizeSlack = 0.0015f; // m an Ordnance Rack's length and diameter allow past themselves (the bench's rounding)
+
+    /// <summary>
+    /// A piece of ordnance's length and body diameter (m), as an Ordnance Rack measures it: a design's own, from the bench; an old part file's its
+    /// length along it and its body under the lug (the lug stands 5 cm proud of the body, as the part generators make it).
+    /// </summary>
+    public static void Dims(ConstructPartDef d, out float length, out float diameter)
+    {
+        if (d.OrdStats is { } st)
+        {
+            (length, diameter) = (st.Length, st.Diameter);
+            return;
+        }
+        length = d.BoundsMax.Z - d.BoundsMin.Z;
+        var lug = LugOf(d);
+        diameter = lug >= 0 ? MathF.Max(0.05f, 2f * (d.Sockets[lug].At.Y - 0.05f)) : MathF.Min(d.BoundsMax.X - d.BoundsMin.X, d.BoundsMax.Y - d.BoundsMin.Y);
+    }
+
+    /// <summary>Does it fit a station of this rack (an old rack's shape: anything does)?</summary>
+    private static bool Fits(ConstructPartDef rack, ConstructPartDef bomb)
+    {
+        if (!rack.IsModularRack || rack.Rack.IsLegacy)
+            return true;
+        Dims(bomb, out var len, out var dia);
+        return len <= rack.Rack.Length + SizeSlack && dia <= rack.Rack.Diameter + SizeSlack;
+    }
+
+    /// <summary>Why an Ordnance Rack won't take one more of this on top of <paramref name="carried"/> kg, or null: which limit.</summary>
+    public static string? LoadWhy(ConstructPartDef rack, float carried, ConstructPartDef bomb)
+    {
+        if (rack.IsModularRack && !rack.Rack.IsLegacy)
+        {
+            Dims(bomb, out var len, out var dia);
+            if (len > rack.Rack.Length + SizeSlack)
+                return $"too long: {len:0.##} m, and a station of the {rack.Name} takes {rack.Rack.Length:0.##} m";
+            if (dia > rack.Rack.Diameter + SizeSlack)
+                return $"too wide: {dia * 100:0.#} cm, and a station of the {rack.Name} takes {rack.Rack.Diameter * 100:0.#} cm";
+        }
+        var mass = bomb.Mass;
+        return mass > rack.RackStation ? $"too heavy: {mass:0} kg, and a station of the {rack.Name} takes {rack.RackStation:0} kg"
+            : carried + mass > rack.RackLoad ? $"too heavy: {carried + mass:0} kg on the {rack.Name}, rated for {rack.RackLoad:0} kg in all" : null;
+    }
+
+    /// <summary>
+    /// Does this rack send this forward, as a missile leaves, rather than drop it? A Launch Rail sends anything; an Ordnance Rack a design that is a
+    /// missile (its motor lights as it leaves: <see cref="OrdnanceDesign.Powered"/>, as the bench writes it in the key). Everything else drops.
+    /// </summary>
+    public static bool Launches(ConstructPartDef rack, ConstructPartDef weapon) =>
+        rack.RackRail || rack.IsModularRack && weapon.OrdDesign is { Kind: OrdKind.Missile };
+
+    /// <summary>The way a launched weapon leaves (world): an Ordnance Rack's forward (its -Z, the front socket's side), a rail's the weapon's own nose.</summary>
+    public static Vector3 LaunchDir(Construct c, int rack, int weapon)
+    {
+        var onRack = (uint)rack < (uint)c.PartCount && c.DefOf(rack).IsModularRack;
+        var part = onRack ? rack : weapon;
+        c.WorldFrame(c.Parts[part].Seg, out var q, out _);
+        return Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, q * Rot24.Quat(c.Parts[part].Rot)));
+    }
 
     /// <summary>
     /// Where a bomb leaves its rack (world): where it hangs, or on a drum the bottom of its ring (the drum turns it there). Its way down and its
@@ -227,8 +281,8 @@ public static class ConstructOrdnance
         var pull = ConstructShells.GravityAt(at);
         c.WorldFrame(c.Parts[bomb].Seg, out var q, out _);
         var down = pull.LengthSquared() > 0.01f ? Vector3.Normalize(pull) : Vector3.Transform(-Vector3.UnitY, q);
-        if (rack >= 0 && c.DefOf(rack).RackRail)
-            down = Vector3.Transform(-Vector3.UnitZ, q * Rot24.Quat(c.Parts[bomb].Rot)); // (a rail's way out is ahead of what it holds)
+        if (rack >= 0 && Launches(c.DefOf(rack), c.DefOf(bomb)))
+            down = LaunchDir(c, rack, bomb); // (a launch's way out is ahead of what it holds)
         c.PartBounds(bomb, out var mn, out var mx);
         var half = (mx - mn) * 0.5f;
         var local = Vector3.Abs(Vector3.Transform(down, Quaternion.Conjugate(q)));
@@ -253,7 +307,7 @@ public static class ConstructOrdnance
                 carried += c.DefOf(held[k]).Mass;
             for (var e = c.FirstLink(part); e >= 0; e = c.NextLink(e))
                 if (c.DefOf(c.OtherEnd(e)) is { Explosive: not null } over && held[..n].IndexOf((ushort)c.OtherEnd(e)) < 0)
-                    return LoadWhy(rd, carried, over.Mass) ?? $"the {over.Name} isn't held";
+                    return LoadWhy(rd, carried, over) ?? $"the {over.Name} isn't held";
         }
         if (n == 0)
         {
@@ -272,7 +326,7 @@ public static class ConstructOrdnance
         for (var k = 0; k < n; k++)
             if (!Blocked(world, c, held[k], out by))
                 return null;
-        return by == null ? null : c.DefOf(part).RackRail ? $"the {by.Name} is in the way out" : $"the {by.Name} is in the way down";
+        return by == null ? null : n > 0 && Launches(rd, c.DefOf(held[0])) ? $"the {by.Name} is in the way out" : $"the {by.Name} is in the way down";
     }
 
     // ---- The physics gun: snapping on and pulling off -----------------------------------------------------------------------
@@ -344,18 +398,22 @@ public static class ConstructOrdnance
                     var want = Quaternion.Conjugate(q) * held.Rot * Rot24.Quat(hp.Rot);
                     var mine = d.Sockets[lug].Dir;
                     var theirs = Rot24.ApplyDir(rp.Rot, rd.Sockets[s].Dir);
+                    var ahead = Rot24.Apply(rp.Rot, -Vector3.UnitZ); // (an Ordnance Rack's forward: what it holds lies along it, nose first)
                     var most = -1f;
-                    for (byte r = 0; r < Rot24.Count; r++)
-                    {
-                        if (Vector3.Dot(Rot24.Apply(r, ConstructParts.DirVector(mine)), ConstructParts.DirVector(theirs)) > -0.9f)
-                            continue;
-                        var dot = MathF.Abs(Quaternion.Dot(Rot24.Quat(r), want));
-                        if (dot > most)
+                    for (var pass = rd.IsModularRack ? 0 : 1; pass < 2 && most < 0; pass++)
+                        for (byte r = 0; r < Rot24.Count; r++)
                         {
-                            most = dot;
-                            spot.Rot = r;
+                            if (Vector3.Dot(Rot24.Apply(r, ConstructParts.DirVector(mine)), ConstructParts.DirVector(theirs)) > -0.9f)
+                                continue;
+                            if (pass == 0 && Vector3.Dot(Rot24.Apply(r, -Vector3.UnitZ), ahead) < 0.9f)
+                                continue;
+                            var dot = MathF.Abs(Quaternion.Dot(Rot24.Quat(r), want));
+                            if (dot > most)
+                            {
+                                most = dot;
+                                spot.Rot = r;
+                            }
                         }
-                    }
                     spot.At = ConstructWorld.Quantise(sAt - Rot24.Apply(spot.Rot, d.Sockets[lug].At));
                     spot.WorldAt = t + Vector3.Transform(spot.At, q);
                     spot.WorldRot = q * Rot24.Quat(spot.Rot);
@@ -363,25 +421,28 @@ public static class ConstructOrdnance
                     for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
                         if (c.DefOf(c.OtherEnd(e)).Explosive != null)
                             carried += c.DefOf(c.OtherEnd(e)).Mass;
-                    spot.Why = rd.IsModularRack ? LoadWhy(rd, carried, d.Mass)
+                    spot.Why = rd.IsModularRack ? LoadWhy(rd, carried, d)
                         : rd.RackLoad > 0 && carried + d.Mass > rd.RackLoad ? $"too heavy: {carried + d.Mass:0} kg on a {rd.Name} rated for {rd.RackLoad:0} kg"
                         : null;
                     spot.Why ??= c.PartCount >= Construct.MaxParts ? "that construct is full"
-                        : !Room(c, rack, d, spot.At, spot.Rot, rp.Seg) ? "something is in the way" : null;
+                        : !Room(c, rack, d, spot.At, spot.Rot, rp.Seg, rd.IsModularRack) ? "something is in the way" : null;
                 }
             }
         }
         return found;
     }
 
-    /// <summary>Does it clear the other parts of the hook's segment? (Rest-frame boxes, a centimetre in. Only at a snap.)</summary>
-    private static bool Room(Construct c, int rack, ConstructPartDef d, Vector3 at, byte rot, int seg)
+    /// <summary>
+    /// Does it clear the other parts of the hook's segment? (Rest-frame boxes, a centimetre in. Only at a snap.) On an Ordnance Rack its
+    /// neighbours on the same rack don't count: the rack spaces its stations for bodies, and fins may overlap the next one's.
+    /// </summary>
+    private static bool Room(Construct c, int rack, ConstructPartDef d, Vector3 at, byte rot, int seg, bool spaced)
     {
         var half = Rot24.ApplyHalf(rot, (d.BoundsMax - d.BoundsMin) * 0.5f) - new Vector3(0.01f);
         var mid = at + Rot24.Apply(rot, (d.BoundsMin + d.BoundsMax) * 0.5f);
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (i == rack || c.Parts[i].Seg != seg)
+            if (i == rack || c.Parts[i].Seg != seg || spaced && c.DefOf(i).Explosive != null && RackOf(c, i) == rack)
                 continue;
             c.PartBounds(i, out var mn, out var mx);
             var far = Vector3.Abs((mn + mx) * 0.5f - mid) - (mx - mn) * 0.5f;

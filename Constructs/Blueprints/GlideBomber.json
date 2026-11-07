@@ -179,7 +179,7 @@
       "by": "axle"
     },
     {
-      "part": "Bomb Rack",
+      "part": "Launch Rack",
       "on": 11,
       "socket": "-y",
       "by": "top"
@@ -191,7 +191,7 @@
       "by": "lug"
     },
     {
-      "part": "Bomb Rack",
+      "part": "Launch Rack",
       "on": 12,
       "socket": "-y",
       "by": "top"

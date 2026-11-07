@@ -331,7 +331,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 185: bombs and missiles look like themselves in the air (ShellLooks.cs): ShellOut of a bomb, rocket or missile carries its model (a part file's id or a design's hash) and its turn on the rack.
     // 186: dynamic spawn of faction vehicles (GameSandboxVehicles.cs): CActKind.Vehicle asks the server to make one by style, shape and seed; the built vehicle comes as ordinary bodies.
     // 187: ordnance section lengths (OrdnanceDesign.cs): each section of a designed weapon on the wire carries its length (u16 mm at 25 cm).
-    public const byte ProtocolVersion = 187;
+    // 188: the Ordnance Rack (ModularRack.cs): a run-time rack shape in a Full's part list is a mark and nine bytes (layout and old size, rows or layers, columns or segments, count, max ordnance length and diameter in mm), CfgKey.RackRows to RackDiameter, part settings and sockets up to 56 stations.
+    public const byte ProtocolVersion = 188;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

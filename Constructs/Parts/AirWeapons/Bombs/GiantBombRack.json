@@ -16,6 +16,7 @@
     "kind": "bombrack",
     "load": 2000000
   },
+  "legacy": true,
   "boxes": [
     {
       "min": [

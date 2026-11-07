@@ -172,11 +172,15 @@ public enum CfgKey : byte
     Throw, // control surface, nozzle: a share of its full deflection (ConstructAero.ThrowOf)
     Expo, // control surface, nozzle: soft around the middle, %
     HomeY, WaypointY, // Flight Stabilizer: on a round world, the rest of the point
-    Stations, // Modular Bomb Rack: how many hooks (its shape follows: ModularRack.cs)
-    RackLayout, // Modular Bomb Rack: single row, double row or drum
-    RackSize, // Modular Bomb Rack: light, heavy or giant stations
+    Stations, // retired: the Modular Bomb Rack's station count (no part has it; the Ordnance Rack's RackRows and RackColumns took over)
+    RackLayout, // Ordnance Rack: grid or drum (its shape follows: ModularRack.cs)
+    RackSize, // retired: the Modular Bomb Rack's light, heavy or giant (RackLength and RackDiameter took over)
     FireOrder, // bomb rack: one at a time, or a salvo (everything it holds on one press)
     RackInterval, // bomb rack: seconds between drops one at a time (a drum's turn)
+    RackRows, // Ordnance Rack: a grid's rows fore and aft, a drum's layers along its axis
+    RackColumns, // Ordnance Rack: a grid's columns across, a drum's segments round it
+    RackLength, // Ordnance Rack: the longest ordnance a station takes, m
+    RackDiameter, // Ordnance Rack: the widest ordnance a station takes, m
     COUNT,
 }
 
@@ -836,7 +840,7 @@ public static class ConstructConfig
                 CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.FlightStabilizer,
                 CfgKey.Friction or CfgKey.DirtGrip or CfgKey.SideGrip or CfgKey.Rolling or CfgKey.Bounciness => d.Role == PartRole.Wheel,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
-                CfgKey.Stations or CfgKey.RackLayout or CfgKey.RackSize => d.IsModularRack,
+                CfgKey.RackLayout or CfgKey.RackRows or CfgKey.RackColumns or CfgKey.RackLength or CfgKey.RackDiameter => d.IsModularRack,
                 CfgKey.FireOrder or CfgKey.RackInterval => d.Logic == CLogic.BombRack && !d.RackRail,
                 _ => false,
             };
@@ -878,7 +882,7 @@ public static class ConstructConfig
             };
             if (e.Type == CfgType.Number && (v < e.Min || v > e.Max))
                 throw new ConstructPartException($"{where}: \"{p.Name}\" is {v.ToString(CultureInfo.InvariantCulture)}, it must be {e.Min.ToString(CultureInfo.InvariantCulture)} to {e.Max.ToString(CultureInfo.InvariantCulture)}");
-            if (e.Id is CfgKey.Stations or CfgKey.RackLayout or CfgKey.RackSize && e.Clamp(v) != e.Default)
+            if (e.Id is CfgKey.RackLayout or CfgKey.RackRows or CfgKey.RackColumns or CfgKey.RackLength or CfgKey.RackDiameter && e.Clamp(v) != e.Default)
                 throw new ConstructPartException($"{where}: a rack's shape is its part, not a setting: name the part \"{ModularRack.Key(ModularRack.WithSetting(d.Rack, e.Id, v))}\"");
             list.Add((slot, v));
         }

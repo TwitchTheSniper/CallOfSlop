@@ -623,7 +623,7 @@ public sealed class ConstructPartDef
     public OrdSectionDef? Ord; // "ordnance": a section of a modular bomb or missile
     public float RackLoad; // a Bomb Rack's rated load, kg (ConstructOrdnance.cs)
     public bool RackRail; // ...a launch rail: what it lets go leaves forward along it, a missile under its own thrust (OrdnanceFlight.cs)
-    public RackShape Rack; // a Modular Bomb Rack's shape (ModularRack.cs; "logic.modular"): Stations is 0 for every other part
+    public RackShape Rack; // an Ordnance Rack's shape (ModularRack.cs; "logic.modular"): Stations is 0 for every other part
     public float RackStation; // ...its rated load a station, kg (RackLoad is the whole rack's)
     public bool IsRackRuntime; // ...made at run time for a shape no part file has: its Name is its key, its id this machine's own
     public bool IsModularRack => Rack.Stations > 0;
@@ -1081,8 +1081,8 @@ public static partial class ConstructParts
             return Ordnance.Parse(name); // (a design names itself, as a piece does)
         if (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
-        if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase))
-            return ModularRack.Parse(name); // (a rack of a shape no file has names itself too)
+        if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
+            return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)
         if (_byName.Value.TryGetValue(name, out var hit) && hit.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
             return hit; // (a blueprint names a part a step: a lookup, not a walk over every part)
         foreach (var d in All)
@@ -1212,7 +1212,7 @@ public static partial class ConstructParts
         if (root.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: a part file is one JSON object");
         if (Opt(root, "modularRack") is { } rackShape)
-            return Parse(ModularRack.Expand(root, rackShape, file), file); // (a preset of the Modular Bomb Rack: its shape is made from its settings, ModularRack.cs)
+            return Parse(ModularRack.Expand(root, rackShape, file), file); // (a preset of the Ordnance Rack: its shape is made from its settings, ModularRack.cs)
         Known(root, TopKeys, file);
         if (Opt(root, "format") is { } fmt && fmt.GetString() != Format)
             throw new ConstructPartException($"{file}: \"format\" must be \"{Format}\"");
