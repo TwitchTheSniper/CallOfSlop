@@ -115,6 +115,8 @@ public static class VehicleFamilies
             Scheme = m.Scheme is { } s ? VehicleConvoys.SchemeOf(st, s) : null,
         };
         var layers = ShapeGrammar.RecipeOf(g) != null ? m.Layers : default; // (a shape the grammar doesn't make has no layers: its marks are the seed's)
+        if (m.Variant is UpArmoured or GunTruck && ShapeGrammar.RecipeOf(g) != null && layers.Kit == null)
+            layers = layers with { Kit = VehicleSpawnKit.Reroll(m.Seed, 300 + Array.IndexOf(Variants, m.Variant)) }; // (the layer it changes on purpose: its own kit, on the family's body and chassis)
         return (st, role, g, ask, layers);
     }
 
@@ -175,11 +177,88 @@ public sealed partial class Vehicle
     }
 
     /// <summary>
+    /// Appliqué for a vehicle with no room (a family's Mk2 and Mk3, its up-armoured variant): the style's heaviest armour plate, a metre square, welded upright a few
+    /// centimetres proud of the outermost plate or beam of the body at a station along each side, 0.35 m and more over the ground, only where it meets nothing
+    /// else (wheels, guns, ladders, drums), a metre and more from any other weld. As many as the lean asks, from a third of the stations at 0.3 up.
+    /// </summary>
+    private void SideArmour(double lean, Dice d)
+    {
+        var material = Style.Parts.GetValueOrDefault("armour")?.OrderByDescending(VehicleRoles.PlateArmour).ThenBy(x => x, StringComparer.Ordinal).FirstOrDefault() ?? "Plate Steel";
+        if (ConstructParts.Find(material + " 1 m") is not { } def)
+            return;
+        var e = def.BoundsMax - def.BoundsMin;
+        var thick = MathF.Min(e.X, MathF.Min(e.Y, e.Z));
+        // The fixed parts' boxes in vehicle coordinates (not on joints, not welded, not wheels), and the ground under the wheels.
+        var boxes = new List<(int Index, Vector3 Lo, Vector3 Hi, bool Host)>();
+        var ground = float.MaxValue;
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            C.PartBounds(i, out var mn, out var mx);
+            var (lo, hi) = (FromRest(mn), FromRest(mx));
+            var role = C.DefOf(i).Role;
+            if (role == PartRole.Wheel)
+            {
+                ground = MathF.Min(ground, lo.Y);
+                continue;
+            }
+            var seg = C.Parts[i].Seg;
+            if (seg != 0 && (seg > C.JointCount || C.Joints[seg - 1].Freeform || !C.Rigid(seg)))
+                continue;
+            boxes.Add((i, lo, hi, role is PartRole.Panel or PartRole.Frame));
+        }
+        if (boxes.Count == 0 || ground == float.MaxValue)
+            return;
+        var z0 = boxes.Min(b => b.Lo.Z) + 0.6f;
+        var z1 = boxes.Max(b => b.Hi.Z) - 0.6f;
+        var spots = new List<(VPart Host, Vector3 At, float Side)>();
+        for (var z = z0; z <= z1; z += 1.1f)
+            foreach (var side in new[] { -1f, 1f })
+            {
+                // The outermost thing on this side at this station, between knee and head height over the ground.
+                (int Index, Vector3 Lo, Vector3 Hi, bool Host)? out_ = null;
+                foreach (var b in boxes)
+                {
+                    if (b.Lo.Z > z + 0.3f || b.Hi.Z < z - 0.3f || b.Hi.Y < ground + 0.5f || b.Lo.Y > ground + 2.2f)
+                        continue;
+                    var edge = side > 0 ? b.Hi.X : -b.Lo.X;
+                    if (out_ is not { } o || edge > (side > 0 ? o.Hi.X : -o.Lo.X))
+                        out_ = b;
+                }
+                if (out_ is not { Host: true } host)
+                    continue;
+                var y = MathF.Max(ground + 0.9f, MathF.Min((host.Lo.Y + host.Hi.Y) * 0.5f, host.Hi.Y - 0.1f));
+                var x = (side > 0 ? host.Hi.X : host.Lo.X) + side * (thick * 0.5f + 0.04f);
+                if (Parts.FirstOrDefault(p => p.Index == host.Index) is { } vp)
+                    spots.Add((vp, new Vector3(x, y, Math.Clamp(z, host.Lo.Z - 0.3f, host.Hi.Z + 0.3f)), side));
+            }
+        var want = Math.Max(2, (int)MathF.Round((float)(lean * spots.Count * 0.35)));
+        var placed = new List<Vector3>();
+        foreach (var (host, at, side) in d.Shuffled(spots))
+        {
+            if (placed.Count >= want)
+                break;
+            VehicleGenJob.Yield(); // (each try reads every part's bounds)
+            if (placed.Any(p => Vector3.Distance(p, at) < 1.05f) || _welded.Any(w => Vector3.Distance(w, at) < 0.9f) || !Clear(host, at, new Vector3(thick * 0.5f + 0.02f, 0.5f, 0.5f)))
+                continue;
+            var p = Weld(def.Name, host, at, Orient.Facing(new Vector3(side, 0, 0)), 0, 0, 0);
+            PanelList("armour").Add(p);
+            _welded.Add(at);
+            placed.Add(at);
+            if (Style.Palette.ContainsKey("body"))
+                Paint(p, Style.Colour(d, "body"));
+        }
+        if (placed.Count > 0)
+            MarksPlaced.Add($"armour: {placed.Count} {def.Name} on the sides");
+    }
+
+    /// <summary>
     /// A family's own pass, inside the role pass and on forks of the kit layer: a tanker conversion's drums on its open deck (up to three, clear of the guns, under
     /// open sky, never coplanar with what is there), and a named unique's one more mark (the style's masts, else its trophies) on the marks pass's spots.
     /// </summary>
     internal void FamilyKit(RoleAsk ask)
     {
+        if (ask.KitArmourLean >= 0.3 && Rooms.Count == 0)
+            SideArmour(ask.KitArmourLean, Dice.Fork("kit family armour")); // (no hull to take appliqué: the sides take it)
         if (ask.Variant == VehicleFamilies.TankerConversion)
         {
             var d = Dice.Fork("kit family drums");

@@ -257,6 +257,42 @@ public static class VehicleFamiliesCli
         return bad + (w < b ? 0 : 1);
     }
 
+    /// <summary>What reaches within 10 cm of the wheels' bottoms, as built from the text: a part that drags tilts a vehicle and stops it.</summary>
+    private static string LowParts(string text)
+    {
+        var bp = ConstructBuild.ParseBlueprint(text, "low.json");
+        var c = ConstructBuild.BuildOnGround(new ConstructWorld(), bp, System.Numerics.Vector3.Zero, 0, out var why);
+        if (c == null)
+            return "it doesn't build: " + why;
+        var low = float.MaxValue;
+        for (var k = 0; k < c.WheelCount; k++)
+            low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
+        var hits = new List<string>();
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (c.DefOf(i).Role == PartRole.Wheel)
+                continue;
+            c.PartBounds(i, out var a, out var b);
+            if (a.Y < low + 0.1f)
+                hits.Add($"{c.DefOf(i).Name} {a.Y - low:+0.00;-0.00} m at z {(a.Z + b.Z) * 0.5f:0.0}");
+        }
+        var wheels = string.Join(", ", Enumerable.Range(0, c.WheelCount).Select(k => $"{c.DefOf(c.Wheels[k].Part).Name} at z {c.Wheels[k].Centre.Z:0.0} carries {c.Wheels[k].MaxLoad:0} kg"));
+        for (var k = 0; k < c.WheelCount; k++)
+        {
+            ref var w = ref c.Wheels[k];
+            c.PartBounds(w.Part, out var wa, out var wb);
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                if (i == w.Part || i == w.Suspension || c.DefOf(i).Role is PartRole.Wheel or PartRole.Suspension or PartRole.Differential)
+                    continue;
+                c.PartBounds(i, out var a, out var b);
+                if (a.X < wb.X - 0.02f && b.X > wa.X + 0.02f && a.Y < wb.Y - 0.02f && b.Y > wa.Y + 0.02f && a.Z < wb.Z - 0.02f && b.Z > wa.Z + 0.02f)
+                    hits.Add($"{c.DefOf(i).Name} in wheel {k}'s box (top {wb.Y:0.00}, its bottom {a.Y:0.00})");
+            }
+        }
+        return (hits.Count == 0 ? "none" : string.Join(", ", hits)) + $"; {c.Mass:0} kg, centre of mass z {c.Com.Z:0.0}; wheels: {wheels}";
+    }
+
     /// <summary>
     /// <c>--convoy "Style" [--seed S] [--count N] [--tier T] [--mix raider,tanker] [--no-check]</c>: the convoy's plan (members, roles, models, the scheme), then each member
     /// made, measured and checked (the full check, as <c>--sweep-vehicle</c> runs it: seconds a member; <c>--no-check</c> skips it), with where it stands in the formation;
@@ -299,12 +335,19 @@ public static class VehicleFamiliesCli
             else
                 back[m.Lane + 1] = at + rear;
             Console.WriteLine($"    stands {at:0.0} m behind the leader's origin{(m.Lane != 0 ? $", {m.Lane * VehicleConvoys.Lane:+0;-0} m to the side" : "")}; {front + rear:0.0} m long");
+            if (Flag(args, "--write") is { } dir)
+            {
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(Path.Combine(dir, VehicleRegistry.Slug(v.Name) + ".json"), o.Text);
+            }
             if (check)
             {
                 var g = VehicleFamilies.Resolve(m.Model).G;
                 var r = VehicleChecks.Check(o.Text, VehicleRegistry.Slug(v.Name) + ".json", g.Checks, v.Rooms);
                 bad += r.Passed ? 0 : 1;
                 Console.WriteLine(r.Passed ? "    check: passed" : $"    check: FAILED {string.Join("; ", r.Failures)}");
+                if (!r.Passed)
+                    Console.WriteLine($"    low parts: {LowParts(o.Text)}");
             }
         }
         if (made[0].V != null)

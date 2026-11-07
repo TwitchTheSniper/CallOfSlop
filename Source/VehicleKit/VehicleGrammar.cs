@@ -225,6 +225,8 @@ public static class ShapeGrammar
                     var plan = Plan(v, recipe, attempt);
                     VehicleGenJob.Yield();
                     Build(v, plan);
+                    if (role.Family && v.Stability() is var stable && stable < (g.Checks ?? new VehicleCheckOptions()).MinStability + 0.02f)
+                        throw new VehicleKitException($"stability {stable:0.00}: under the check's"); // (a family's mark isn't planned again for its role, so it is held to the check's stability as it builds: VehicleFamilies.cs)
                 }
                 catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
                 {
