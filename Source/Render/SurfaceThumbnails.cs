@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static unsafe class SurfaceThumbs
 {
     public const int Size = 96;
-    public const int PerFrame = 6;
+    public const int PerFrame = 4;
 
     /// <summary>The colour a swatch is drawn in: a mid grey, so a material that keeps the part's colour shows its own pattern and shine.</summary>
     public static readonly Vector3 Grey = new(0.62f, 0.64f, 0.66f);

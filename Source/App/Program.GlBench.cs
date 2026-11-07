@@ -515,7 +515,7 @@ public static unsafe partial class Program
 
     /// <summary>
     /// <c>--bench-edit</c>: the constructs change as they are drawn, the same way in every configuration (frame by frame, until
-    /// 12 frames before the end, so the last pictures compare): a part painted and one damaged every frame, one taken off
+    /// 12 frames before the end, so the last pictures compare): a part painted, one textured and one damaged every frame, one taken off
     /// every 8th (merged meshes: looks rewritten alone, a chunk rebuilt; docs/render/MERGED-MESHES.md).
     /// </summary>
     private static void BenchEdit(int frame)
@@ -530,6 +530,8 @@ public static unsafe partial class Program
             if (c.PartCount < 4)
                 continue;
             c.Parts[(frame * 7 + k) % c.PartCount].Paint = 0x01000000u | (uint)(frame * 0x3A71F + k * 0x1F3) & 0xFFFFFF;
+            var tex = (byte)(Surfaces.FirstShaded + (frame + k) % Math.Max(1, Surfaces.File.Rows.Length - Surfaces.FirstShaded));
+            c.Parts[(frame * 11 + k) % c.PartCount].Finish = ConstructFinish.Offered(tex) ? tex : (byte)0; // (the texture paint tool: looks rewritten alone)
             ref var hurt = ref c.Parts[(frame * 13 + k) % c.PartCount];
             hurt.Health = MathF.Max(1, hurt.D.Health * (0.2f + 0.08f * (frame % 10)));
         }
