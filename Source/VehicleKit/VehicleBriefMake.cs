@@ -18,6 +18,21 @@ public sealed class BriefFacts
     public List<(int Part, string Table)> Loot = new();
 
     public int Cargo;
+
+    /// <summary>What its blueprint stows in slots (container part index, slot, part, count), and the loose cargo it carries (part, place in the rest frame).</summary>
+    public List<(int Part, int Slot, string Name, int Count)> Stored = new();
+
+    public List<(string Name, Vector3 At)> Loose = new();
+
+    /// <summary>Its stowed parts and loose cargo, from a blueprint and the steps' parts on the body built from it.</summary>
+    public void CargoOf(ConstructBuild.Blueprint bp, int[] partOf)
+    {
+        foreach (var (step, slot, name, count) in bp.Stored)
+            if (step >= 0 && step < partOf.Length && partOf[step] >= 0)
+                Stored.Add((partOf[step], slot, name, count));
+        foreach (var spec in bp.Cargo)
+            Loose.Add((spec.Part, spec.At));
+    }
 }
 
 /// <summary>
@@ -51,6 +66,7 @@ public static class VehicleBriefMake
         foreach (var (step, table) in bp.Loot)
             if (step >= 0 && step < partOf.Length && partOf[step] >= 0)
                 f.Loot.Add((partOf[step], table));
+        f.CargoOf(bp, partOf);
         return Make(body, f);
     }
 
@@ -678,6 +694,48 @@ public static class VehicleBriefMake
 
     // ---- Cargo, loot, hitches -------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Its own cargo as the brief lists it: each stowed stack and each loose piece the cargo pass's kinds name (<see cref="Vehicle.StowKindOf"/>; anything else in its
+    /// cargo is loot), with the guns each serves: a magazine the guns that take it (the workbench's rule), rounds every gun that loads them, fuel a flame gun, a gun's
+    /// parts the guns with the same receiver. Loose pieces of the same kind are one entry a place.
+    /// </summary>
+    private static BriefStow[] Stowed(Construct c, VehicleBrief b, Geometry g, BriefFacts f)
+    {
+        var list = new List<BriefStow>();
+        uint GunsFor(ConstructPartDef d, StowKind kind)
+        {
+            uint bits = 0;
+            for (var k = 0; k < b.Guns.Length && k < 32; k++)
+            {
+                var gun = ConstructParts.Def(b.Guns[k].Part.Def);
+                var flame = false;
+                for (var j = 0; j < c.GunCount; j++)
+                    if (c.Guns[j].Part == b.Guns[k].Part.Index)
+                        flame = (c.Guns[j].Effects & GunEffect.Flame) != 0;
+                var ok = kind switch
+                {
+                    StowKind.Magazine => ConstructAmmo.GunTakes(gun, d) == null,
+                    StowKind.Ammo => !flame,
+                    StowKind.Fuel => flame,
+                    StowKind.GunPart => d.Role == PartRole.Gun ? d.Id == gun.Id : true,
+                    _ => false,
+                };
+                if (ok)
+                    bits |= 1u << k;
+            }
+            return bits;
+        }
+        foreach (var (part, slot, name, count) in f.Stored)
+            if (part >= 0 && part < c.PartCount && ConstructParts.Find(name) is { } d && Vehicle.StowKindOf(d) is { } kind)
+            {
+                list.Add(new BriefStow { Part = name, Kind = kind, Count = (byte)Math.Min(count, 255), Container = Ref(g, part), Slot = (sbyte)slot, Guns = GunsFor(d, kind) });
+            }
+        foreach (var (name, at) in f.Loose)
+            if (ConstructParts.Find(name) is { } d && Vehicle.StowKindOf(d) is { } kind)
+                list.Add(new BriefStow { Part = name, Kind = kind, Count = 1, Loose = true, At = at, Slot = -1, CooksOff = d.Role == PartRole.AmmoBox, Guns = GunsFor(d, kind) });
+        return list.ToArray();
+    }
+
     private static void Cargo(Construct c, VehicleBrief b, Geometry g, BriefFacts f)
     {
         var loot = new List<BriefLoot>();
@@ -689,6 +747,7 @@ public static class VehicleBriefMake
             }
         b.Loot = loot.ToArray();
         b.Cargo = f.Cargo;
+        b.Stowed = Stowed(c, b, g, f);
         var hitches = new List<BriefHitch>();
         var winches = new List<BriefRef>();
         for (var i = 0; i < c.PartCount; i++)
@@ -792,6 +851,7 @@ public static class VehicleBriefCli
         foreach (var (step, table) in r.Blueprint.Loot)
             if (step >= 0 && step < partOf.Length && partOf[step] >= 0)
                 f.Loot.Add((partOf[step], table));
+        f.CargoOf(r.Blueprint, partOf);
         var brief = VehicleBriefMake.Make(body, f);
         Print(brief, $"built, drive-checked and briefed in {watch.Elapsed.TotalMilliseconds:0} ms");
         return 0;

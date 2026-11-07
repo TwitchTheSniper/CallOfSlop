@@ -570,12 +570,12 @@ public sealed partial class Vehicle
         }
         var size = hi - lo;
         var power = Engine is { } en ? en.Def.EngineTorque * en.Def.PeakRpm * MathF.Tau / 60f : 0;
-        var speed = VehicleRoles.Speed(power, c.Mass, size.X * size.Y);
+        var speed = VehicleRoles.Speed(power, c.Mass + SpareMass, size.X * size.Y); // (with the cargo pass's loose pieces aboard: VehicleCargo.cs)
         var best = Turrets.Select(t => VehicleRoles.ClassOf(t.Weapon)).DefaultIfEmpty(GunClass.None).Max();
         var signalSlot = Style.Parts.ContainsKey("mast") ? "mast" : "trophy";
         var signalNames = Style.Parts.GetValueOrDefault(signalSlot) ?? [];
         var signals = Parts.Count(p => Array.IndexOf(signalNames, p.Name) >= 0);
-        var loot = LootSpots + CargoPieces;
+        var loot = LootSpots + CargoPieces - SparePieces; // (its own spares and ammo aren't the role's loot: VehicleCargo.cs)
         var lootTier = LootSpots == 0 ? 0 : LootTables.Max(t => t.Length > 2 && t[^2] == ' ' && char.IsDigit(t[^1]) ? t[^1] - '0' : 2);
         var deck = Panels.TryGetValue("bed", out var bed) && bed.Count > 0 || Panels.TryGetValue("porch", out var porch) && porch.Count > 0;
         var room = Rooms.Count > 0;
@@ -669,6 +669,7 @@ public sealed partial class Vehicle
             FamilyKit(ask); // (a family's variant and a named unique's extra mark: VehicleFamilies.cs)
         var tier = ask.LootTier;
         RetableLoot(t => VehicleRoles.LootTable(t, tier));
+        StowCargo(); // (its ammo, spares and spare guns, stowed as a crew would: VehicleCargo.cs)
         return this;
     }
 
@@ -820,6 +821,8 @@ public static class VehicleRoleMake
             v.KitNotes.Add($"role plans {v.RolePlans + 1}");
         if (v.Fit != null)
             v.KitNotes.Add($"fit {v.Fit}");
+        if (v.CargoNote is { Length: > 0 } cargo)
+            v.KitNotes.Add(cargo);
         var article = "aeiou".Contains(ask.Role.Name[0]) ? "An" : "A";
         if (!v.Description.StartsWith(article + " " + ask.Role.Name, StringComparison.Ordinal))
             v.Description = $"{article} {ask.Role.Name} (tier {ask.Tier}). {v.Description}";
