@@ -254,10 +254,10 @@ have layers: the Technical, the trailers, the Tanker Rig and the Double Decker r
 
 **What "independent" means.** Each layer's dice are its own, but what it builds sits on the others: a new chassis moves the rear axle, so the guns' spots clear of it can move
 (kit decides which gun, the axles where it may stand), and a different kit puts panniers on, so the wear's rust lands on a different set of panels. Measured on Bandit Box
-Truck 5 with each layer varied over 8 seeds (`--vary`): wear moved no part and no trait but paint and patches (distance 0.000); kit moved only guns, stores and dressing
-(mean pair 0.066; length, wheelbase, track, suspension, body and cab never varied); chassis moved the running gear (wheelbase 3 values, track 4, suspension 7 kinds) with
-the body the same in 7 of 8 (the eighth planned again: a plan that fails rerolls every layer, from the next fork of each); body moved the outline and its lengths with the
-axle layout the same in all 8.
+Truck 5 with each layer varied over 8 seeds (`--vary`, mean pair distance): wear 0.000 (it moved no part and no trait, only paint, patches and deck edges, which the
+distance doesn't count); kit 0.068 (only the guns, stores and dressing: length, wheelbase, track, suspension, body and cab never varied); chassis 0.099 (wheelbase and
+track 4 and 3 values, 4 kinds of suspension; length, body, cab and guns never varied); body 0.191 (outline, length 6 values, cab 4; the axle layout 7 of 8 the same, and
+the suspension follows the body where a body module limits the gear, as a walled bed or a tank does).
 
 **Ranges.** `LayerTables` (`VehicleLayers.cs`) holds a table per layer by style name, so `Styles.cs` is untouched and a style not named (Militia) gets the defaults:
 
@@ -290,7 +290,25 @@ and plan fill limits, not half a point: one built at 62.0 % after measuring 61.6
 
 **Measured** (2-core box shared with other agents, load 3 to 8, so times are rough; `--kit 2` against `--kit 3` on the same build, which makes kit 2 byte for byte as before):
 
-@@LAYERED@@
+| | kit 2 | kit 3 |
+| --- | --- | --- |
+| Bandit Box Truck, seeds 1-20: mean pair / nearest neighbour / least | 0.222 / 0.128 / 0.074 | 0.238 / 0.179 / 0.157 |
+| the same: layout part / silhouette part; seeds closer than 0.08 | 0.266 / 0.116; 2 | 0.306 / 0.118; none |
+| the same, traits: wheelbase / wheelbase share of length / track / wheel sets / suspension kinds (values) | 8 / 7 / 3 / 4 / 5 | 10 / 7 / 6 / 8 / 10 |
+| Highland Box Truck, seeds 1-12: mean pair / nearest / layout; suspension kinds, wheel sets, 3-axle share | 0.220 / 0.143 / 0.260; 4, 3, 33 % | 0.239 / 0.167 / 0.315; 8, 7, 58 % |
+| IT War Bus, seeds 1-12: mean pair / nearest / layout; suspension kinds, wheel sets | 0.180 / 0.128 / 0.210; 5, 4 | 0.203 / 0.143 / 0.227; 6, 5 |
+| Highland, every shape, 6 seeds each: mean pair / nearest neighbour | 0.328 / 0.126 | 0.333 / 0.140 |
+| IT, every shape, 6 seeds each: mean pair / nearest neighbour | 0.326 / 0.119 | 0.332 / 0.134 |
+| Identity mean by style, `--kit-report --seeds 4` (Bandit, IT, Highland, Call Centre, British, Militia) | 0.95, 0.90, 0.95, 0.88, 0.91, 0.91 | 0.96, 0.89, 0.95, 0.88, 0.91, 0.91 |
+| Weak points all there and hittable, same run | 31/31, 26/32, 32/32, 21/32, 34/34, 32/32 | 30/30, 24/32, 32/32, 21/32, 34/34, 32/32 |
+| Generation failures over every style and shape, 4 seeds | 3 of 196 (Technical, kit 1) | 4 of 196 (the same 3, a Bandit Scrap Tanker) |
+| Full check (`--sweep-vehicle --seeds 6`): Bandit Box Truck, IT War Bus, Highland Flatbed Fort, British Gun Wagon | 6, 6, 6, 6 of 6 | 6, 5, 6, 6 of 6 |
+| Generation, mean over every style and shape (load varied) | 312 ms (worst 2182) | 348 ms (worst 1840) |
+
+Kit 3's one full-check failure (IT War Bus 5) is a Network Switch trophy on a Long Hood's top socket, coplanar with the V8 Engine under it: a pairing kit 2 can roll too, not
+the layers' doing; it wants fixing where trophies stand on a hood. The IT War Bus's lower identity is its old missing mast (5 of 12 against 3 of 12): a bus that plans again
+more often (a boxy plan, an ammo reel) has fewer plans left for the identity re-plan, and that is what the guaranteed-marks pass is for. Generation cost is within the
+box's noise: more plans are made (the fill margin is a point now) and each costs the same.
 
 ## Quality tools
 
