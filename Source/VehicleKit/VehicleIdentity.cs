@@ -143,7 +143,7 @@ public static class VehicleIdentity
         {
             Marks =
             [
-                new("a mast or a dish", PartPick.Of(ItMasts)),
+                new("mast or dish", PartPick.Of(ItMasts)),
                 new("office gear", PartPick.Of(ItGear)),
             ],
             Parts = Merge(W(1, ItMasts), W(1, ItGear), W(0.5, "Slat Grille", "Cab Over Shell", "Tin Roof Cab")),
@@ -160,7 +160,7 @@ public static class VehicleIdentity
         {
             Marks =
             [
-                new("a phone mast or a loudhailer", PartPick.Of(ScamMasts)),
+                new("phone mast or loudhailer", PartPick.Of(ScamMasts)),
                 new("call centre gear", PartPick.Of(ScamGear)),
             ],
             Parts = Merge(W(1, ScamMasts), W(1, ScamGear), W(0.5, "Server Rack", "Computer", "Slat Grille")),
@@ -177,7 +177,7 @@ public static class VehicleIdentity
         {
             Marks =
             [
-                new("a Pipe Box", PartPick.Of("Pipe Box")),
+                new("Pipe Box", PartPick.Of("Pipe Box")),
                 new("clan dressing", PartPick.Of(HighlandDress)),
             ],
             Parts = Merge(W(1, HighlandDress), W(1.5, "Pipe Box"), W(0.5, "Bull Bar", "Ram Plow", "Wood Planks")),
@@ -672,6 +672,35 @@ public static class VehicleIdentity
         return kept;
     }
 
+    // ---- The marks pass's questions (Vehicle.GuaranteeMarks) ----------------------------------------------------------------
+
+    /// <summary>
+    /// The marks of the vehicle's signature that apply to it and that it has too few parts of, by name: what <see cref="Vehicle.GuaranteeMarks"/> places. A mark picked by
+    /// role (a Bandit's fuel in the open) is the shape's to carry, not a part to add, and isn't listed. Cheap: names only, no geometry.
+    /// </summary>
+    internal static List<StyleMark> Lacking(Vehicle v)
+    {
+        var list = new List<StyleMark>();
+        var seat = v.Parts.Any(p => p.Def.Role == PartRole.Seat);
+        foreach (var m in SignatureOf(v.Style).Marks)
+            if (m.Pick.Role.Length == 0 && m.Pick.Names.Length > 0 && Applies(v, seat, m.When) && Count(v, m.Pick) < m.Min)
+                list.Add(m);
+        return list;
+    }
+
+    /// <summary>How many of the vehicle's parts a pick names.</summary>
+    internal static int Count(Vehicle v, PartPick p) => v.Parts.Count(x => Array.IndexOf(p.Names, x.Name) >= 0);
+
+    private static bool Applies(Vehicle v, bool seat, string when) =>
+        when.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).All(w => w switch
+        {
+            "seat" => seat,
+            "room" => v.Rooms.Count > 0,
+            "heavy" => v.IsHeavy,
+            "light" => !v.IsHeavy && seat,
+            _ => true,
+        });
+
     // ---- Reports -----------------------------------------------------------------------------------------------------
 
     /// <summary>One vehicle's scores against every style: its own, the best other, and whether it reads more as that one.</summary>
@@ -725,6 +754,8 @@ public static class VehicleIdentity
                     Console.WriteLine($"    best other: {r.BestOther.Style} {r.BestOther.Total:0.00}{(r.Confused ? "  READS AS " + r.BestOther.Style.ToUpperInvariant() : "")}");
                     if (raw)
                         Console.WriteLine($"    made in {made:0} ms (scoring included where kit 2 checks it), scored against its own style in {scored:0} ms ({own.Total:0.00})");
+                    if (raw && v.MarksPlaced.Count > 0)
+                        Console.WriteLine($"    marks placed: {string.Join("; ", v.MarksPlaced)}");
                     if (raw)
                         Console.WriteLine($"    outline: side {r.Own.Outline[0]:0.000} plan {r.Own.Outline[1]:0.000} height/length {r.Own.Outline[2]:0.000} roofline {r.Own.Outline[3]:0.000} rake {r.Own.Outline[4]:0.000}");
                 }

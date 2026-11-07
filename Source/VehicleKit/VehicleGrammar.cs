@@ -724,6 +724,7 @@ public static class ShapeGrammar
         v.Hood(p.HoodPart, p.NoseParts);
         VehicleGenJob.Yield();
         v.Trim(walls.ToArray());
+        v.GuaranteeMarks(); // (every mark the style's signature asks for: VehicleMarks.cs)
 
         // The check holds a heavy vehicle to a stability of 0.6 (half its track over its centre of mass's height): a plan that stacks too much up high is planned again.
         VehicleGenJob.Yield(); // (each measure rebuilds the construct whole: a slice of its own)
