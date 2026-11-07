@@ -1083,11 +1083,22 @@ public static partial class ConstructParts
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too)
+        if (_byName.Value.TryGetValue(name, out var hit) && hit.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            return hit; // (a blueprint names a part a step: a lookup, not a walk over every part)
         foreach (var d in All)
             if (d.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 return d;
         return Renamed(name) is { } now ? Find(now) : null;
     }
+
+    // Every part by name, the first of a name as the walk in Find would give it (read-only once made: parse threads read it too).
+    private static readonly Lazy<Dictionary<string, ConstructPartDef>> _byName = new(() =>
+    {
+        var map = new Dictionary<string, ConstructPartDef>(All.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var d in All)
+            map.TryAdd(d.Name, d);
+        return map;
+    }, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>A part's current name when an older save, blueprint or map still uses a former one (decision 28: one fluid hose), else null.</summary>
     public static string? Renamed(string name) => name.ToLowerInvariant() switch

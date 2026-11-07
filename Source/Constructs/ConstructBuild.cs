@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Text.Json;
 
@@ -285,30 +286,34 @@ public static class ConstructBuild
         var reachOut = new Vector3(0.05f);
         imn -= reachOut;
         imx += reachOut;
-        var touching = new List<int>(16); // (an edit, not a tick)
+        var touching = _touching ??= new int[Construct.MaxParts]; // (one walk over the parts, in part order: no list a part)
+        var touchingN = 0;
+        var seg = c.Parts[i].Seg;
         for (var j = 0; j < c.PartCount; j++)
         {
-            if (j == i || c.Parts[j].Seg != c.Parts[i].Seg)
+            if (j == i || c.Parts[j].Seg != seg)
                 continue;
             c.PartBounds(j, out var jmn, out var jmx);
             if (jmn.X <= imx.X && jmx.X >= imn.X && jmn.Y <= imx.Y && jmx.Y >= imn.Y && jmn.Z <= imx.Z && jmx.Z >= imn.Z)
-                touching.Add(j);
+                touching[touchingN++] = j;
         }
         for (var s = 0; s < d.Sockets.Length; s++)
         {
             if (c.SocketUsed(i, s) || d.Sockets[s].Kind != SocketKind.Struct || (d.HasJoint && s == d.LeafIndex))
                 continue;
             c.SocketAt(i, s, out var at, out var dir);
-            foreach (var j in touching)
+            var facing = Opposite(dir);
+            for (var tj = 0; tj < touchingN; tj++)
             {
+                var j = touching[tj];
                 var od = c.DefOf(j);
                 var done = false;
                 for (var t = 0; t < od.Sockets.Length && !done; t++)
                 {
-                    if (od.Sockets[t].Kind != SocketKind.Struct || od.Sockets[t].Class != d.Sockets[s].Class || c.SocketUsed(j, t) || (od.HasJoint && t == od.LeafIndex)) // (a joint's leaf only takes what hangs on it)
+                    if (od.Sockets[t].Kind != SocketKind.Struct || od.Sockets[t].Class != d.Sockets[s].Class || (od.HasJoint && t == od.LeafIndex)) // (a joint's leaf only takes what hangs on it)
                         continue;
                     c.SocketAt(j, t, out var oat, out var odir);
-                    if (odir == Opposite(dir) && Vector3.DistanceSquared(oat, at) < 0.0004f)
+                    if (odir == facing && Vector3.DistanceSquared(oat, at) < 0.0004f && !c.SocketUsed(j, t)) // (where it is first: walking the part's links costs more)
                     {
                         world.AddLink(c, i, s, j, t);
                         done = true;
@@ -319,6 +324,9 @@ public static class ConstructBuild
             }
         }
     }
+
+    [ThreadStatic]
+    private static int[]? _touching; // (AutoLink's parts near the new one: the vehicle kit's thread builds too)
 
     public const float WireReach = 8f; // the longest wire (between the two parts' centres)
 
@@ -683,6 +691,8 @@ public static class ConstructBuild
         public string Why = "";
         public bool KeepPartOf; // the caller wants each step's part
         public int[]? PartOf;
+        public bool StepsOnly; // stop after the steps (GroundJob): Body and PartOf hold them, FinishBuild does the rest
+        public Construct? Body;
     }
 
     /// <summary>
@@ -803,33 +813,53 @@ public static class ConstructBuild
             SetConfig(world, c, partOf[k], def, bp, k);
             yield return k;
         }
+        if (run.StepsOnly)
+        {
+            run.Body = c; // (the rest goes on in the world it joins: FinishBuild)
+            run.PartOf = partOf;
+            yield break;
+        }
+        FinishBuild(world, c, bp, partOf, run);
+    }
+
+    /// <summary>
+    /// What follows a blueprint's steps (paint, wires, routed links, hoses, ropes, tracks, what was frozen, the rebuild, its
+    /// cargo): in the world the construct stays in, all at once. <see cref="BuildRun.Built"/> is set when it built; on a refusal
+    /// the construct (and any cargo made) goes.
+    /// </summary>
+    public static void FinishBuild(ConstructWorld world, Construct c, Blueprint bp, int[] partOf, BuildRun run)
+    {
         for (var k = 0; k < bp.Steps.Count && k < bp.StepPaint.Count; k++)
             if (bp.StepPaint[k] != 0)
                 c.Parts[partOf[k]].Paint = bp.StepPaint[k]; // (the paint tool's colours; a part with nothing to paint just carries it)
         // The wires, through the linking tool's rules.
+        if (bp.Wires.Count > 0 && c.Dirty)
+            c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)
         foreach (var (from, to) in bp.Wires)
         {
             if (from < 0 || from >= bp.Steps.Count || to < 0 || to >= bp.Steps.Count)
             {
                 run.Why = $"wire {from} -> {to}: no such step";
                 world.Remove(c);
-                yield break;
+                return;
             }
             if (CanWire(world, c, partOf[from], partOf[to]) is { } bad)
             {
                 run.Why = $"wire {from} -> {to} ({c.DefOf(partOf[from]).Name} to {c.DefOf(partOf[to]).Name}): {bad}";
                 world.Remove(c);
-                yield break;
+                return;
             }
-            world.AddWire(c, partOf[from], partOf[to]);
+            world.AddWire(c, partOf[from], partOf[to], rebuild: false);
         }
+        if (bp.Wires.Count > 0 && c.Dirty)
+            c.Rebuild();
         // The routed links, through the linking tool's rules.
         for (var k = 0; k < bp.Links.Count; k++)
             if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
             {
                 run.Why = $"links[{k}]: {bad}";
                 world.Remove(c);
-                yield break;
+                return;
             }
         foreach (var (reel, inlet) in bp.Hoses)
             if (reel >= 0 && reel < bp.Steps.Count && inlet >= 0 && inlet < bp.Steps.Count)
@@ -839,14 +869,14 @@ public static class ConstructBuild
             {
                 run.Why = $"connectors[{k}]: {bad}";
                 world.Remove(c);
-                yield break;
+                return;
             }
         for (var k = 0; k < bp.NoCollide.Count; k++)
             if (world.BuildNoCollide(c, bp.NoCollide[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
             {
                 run.Why = $"noCollide[{k}]: {bad}";
                 world.Remove(c);
-                yield break;
+                return;
             }
         // Fuel line parts and plain drive shafts become pipe and shaft links (blueprints auto-converted).
         ConstructRoutes.MigrateLegacy(world, c);
@@ -855,7 +885,7 @@ public static class ConstructBuild
             {
                 run.Why = $"tracks[{k}]: {bad}";
                 world.Remove(c);
-                yield break;
+                return;
             }
         // What was frozen when it was saved.
         foreach (var step in bp.FrozenJoints)
@@ -875,7 +905,7 @@ public static class ConstructBuild
                 foreach (var m in made)
                     world.Remove(m);
                 world.Remove(c);
-                yield break;
+                return;
             }
         }
         for (var k = 0; k < bp.Loot.Count; k++)
@@ -883,7 +913,7 @@ public static class ConstructBuild
             {
                 run.Why = $"loot[{k}]: step {bp.Loot[k].Step} isn't a container with slots";
                 world.Remove(c);
-                yield break;
+                return;
             }
         if (run.KeepPartOf)
             run.PartOf = partOf;
@@ -922,10 +952,11 @@ public static class ConstructBuild
     /// <summary>
     /// A blueprint's construct set down standing on the ground at <paramref name="ground"/> (its lowest point there),
     /// upright along the local up there (a planetoid: away from its centre; <paramref name="yaw"/> turns it about that up).
+    /// All at once: a big blueprint costs a tick 10 to 20 ms, so the game's spawns of big ones go through <see cref="GroundJob"/>.
     /// </summary>
     public static Construct? BuildOnGround(ConstructWorld world, Blueprint bp, Vector3 ground, float yaw, out string why, Blueprint? tow = null)
     {
-        var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationY(-yaw) * GravityFrames.Basis(ground)));
+        var rot = GroundRot(ground, yaw);
         var run = new BuildRun { KeepPartOf = bp.Loot.Count > 0 };
         foreach (var _ in BuildSteps(world, bp, ground, rot, run))
         {
@@ -934,8 +965,21 @@ public static class ConstructBuild
         var c = run.Built;
         if (c == null)
             return null;
-        if (run.PartOf != null)
-            ConstructLoot.Fill(world, c, bp, run.PartOf); // (a spawn rolls fresh; a scratch build or a stamp doesn't)
+        SetDown(world, c, bp, run.PartOf, ground, rot);
+        if ((tow ?? (bp.Tow.Length > 0 ? FindBlueprint(bp.Tow) : null)) is { } behind)
+            SpawnTow(world, c, behind, ground, yaw, rot, null);
+        return c;
+    }
+
+    /// <summary>Upright on the ground there, turned by <paramref name="yaw"/> about its up.</summary>
+    private static Quaternion GroundRot(Vector3 ground, float yaw) =>
+        Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationY(-yaw) * GravityFrames.Basis(ground)));
+
+    /// <summary>A built construct's loot rolled and its lowest point stood on the ground (its cargo moves with it).</summary>
+    private static void SetDown(ConstructWorld world, Construct c, Blueprint bp, int[]? partOf, Vector3 ground, Quaternion rot)
+    {
+        if (partOf != null && bp.Loot.Count > 0)
+            ConstructLoot.Fill(world, c, bp, partOf); // (a spawn rolls fresh; a scratch build or a stamp doesn't)
         // Lowest point: the parts' bounds, or the wheels' bottoms.
         var low = c.LocalMin.Y;
         for (var k = 0; k < c.WheelCount; k++)
@@ -945,18 +989,19 @@ public static class ConstructBuild
         c.NetHistReset();
         if (bp.Cargo.Count > 0)
             ConstructCargo.FollowAll(world); // (its cargo moves with it)
-        if ((tow ?? (bp.Tow.Length > 0 ? FindBlueprint(bp.Tow) : null)) is { } behind)
-            SpawnTow(world, c, behind, ground, yaw, rot);
-        return c;
     }
 
-    /// <summary>A towed blueprint, spawned with its first eye on the tower's first ball and coupled. A tower with no ball, or a trailer with no eye, stands alone: the blueprint is at fault, not the spawn.</summary>
-    private static void SpawnTow(ConstructWorld world, Construct c, Blueprint bp, Vector3 ground, float yaw, Quaternion rot)
+    /// <summary>
+    /// A towed blueprint, spawned with its first eye on the tower's first ball and coupled. A tower with no ball, or a trailer
+    /// with no eye, stands alone: the blueprint is at fault, not the spawn. <paramref name="built"/>: its steps already done (GroundJob).
+    /// </summary>
+    private static void SpawnTow(ConstructWorld world, Construct c, Blueprint bp, Vector3 ground, float yaw, Quaternion rot, GroundJob? built)
     {
         var ball = HitchOf(c, HitchKind.Ball);
         if (ball < 0)
             return;
-        var t = BuildOnGround(world, bp, ground + Vector3.Transform(new Vector3(0, 0, c.LocalMax.Z + 6), rot), yaw, out _);
+        var at = ground + Vector3.Transform(new Vector3(0, 0, c.LocalMax.Z + 6), rot);
+        var t = built != null ? built.Join(at, yaw, out _) : BuildOnGround(world, bp, at, yaw, out _);
         var eye = t == null ? -1 : HitchOf(t, HitchKind.Eye);
         if (t == null || eye < 0)
             return;
@@ -967,6 +1012,113 @@ public static class ConstructBuild
         t.NetHistReset();
         if (world.CanCouple(c, ball, t, eye) == null)
             world.Couple(c, ball, t, eye);
+    }
+
+    /// <summary>
+    /// <see cref="BuildOnGround"/> over several ticks (docs/vehiclekit/VEHICLEKIT.md, "Dynamic spawn"): the steps run a slice
+    /// at a time (<see cref="Step"/>) on a world of their own, which nothing simulates, saves or sends, and the construct
+    /// joins the real world whole (<see cref="Join"/>, on one tick: what follows the steps, its loot and its tow), the same
+    /// construct <see cref="BuildOnGround"/> makes. Where it stands is chosen only at the join, so a spawn in front of a
+    /// player goes where they are then. A blueprint that tows something builds the tow's steps next, the same way.
+    /// </summary>
+    public sealed class GroundJob
+    {
+        public readonly ConstructWorld World;
+        public readonly Blueprint Bp;
+        private readonly Blueprint? _tow;
+        private readonly ConstructWorld _scratch;
+        private readonly BuildRun _run = new() { StepsOnly = true };
+        private IEnumerator<int>? _steps;
+        private GroundJob? _towJob;
+        private bool _ready, _joined;
+
+        /// <summary>Its steps (and its tow's) are done: <see cref="Join"/> may be called.</summary>
+        public bool Ready => _ready;
+
+        /// <summary>Why its steps refused (once <see cref="Step"/> is true), or "".</summary>
+        public string Why = "";
+
+        /// <summary>What it cost: the slices' time, the longest, how many (the tow's included).</summary>
+        public double CpuMs, WorstSliceMs;
+        public int Slices;
+
+        public GroundJob(ConstructWorld world, Blueprint bp, Blueprint? tow = null)
+        {
+            World = world;
+            Bp = bp;
+            _tow = tow ?? (bp.Tow.Length > 0 ? FindBlueprint(bp.Tow) : null);
+            _scratch = new ConstructWorld { CreativeRecycling = world.CreativeRecycling }; // (creative-only settings keep or go as the real world's would)
+        }
+
+        /// <summary>Its steps, and its tow's, for about <paramref name="budgetMs"/> (at least one step). True once they are done (or refused: <see cref="Why"/>).</summary>
+        public bool Step(double budgetMs)
+        {
+            if (_ready)
+                return true;
+            var start = Stopwatch.GetTimestamp();
+            var until = start + (long)(budgetMs * Stopwatch.Frequency / 1000);
+            do
+            {
+                if (_towJob != null)
+                {
+                    _ready = _towJob.Step(Math.Max(0, (until - Stopwatch.GetTimestamp()) * 1000.0 / Stopwatch.Frequency)); // (a tow that refuses stays behind, as in BuildOnGround)
+                    continue;
+                }
+                _steps ??= BuildSteps(_scratch, Bp, Vector3.Zero, Quaternion.Identity, _run).GetEnumerator();
+                if (_steps.MoveNext())
+                    continue;
+                _steps.Dispose();
+                if (_run.Body is not { } body)
+                {
+                    Why = _run.Why;
+                    _ready = true;
+                }
+                else if (_tow != null && HitchOf(body, HitchKind.Ball) >= 0)
+                    _towJob = new GroundJob(World, _tow);
+                else
+                    _ready = true;
+            } while (!_ready && Stopwatch.GetTimestamp() < until);
+            var ms = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+            CpuMs += ms;
+            WorstSliceMs = Math.Max(WorstSliceMs, ms);
+            Slices++;
+            return _ready;
+        }
+
+        /// <summary>
+        /// Once <see cref="Step"/> is true: the construct joins <see cref="World"/> standing on the ground at
+        /// <paramref name="ground"/> facing <paramref name="yaw"/>, as <see cref="BuildOnGround"/> would set it down. Null and why when it can't.
+        /// </summary>
+        public Construct? Join(Vector3 ground, float yaw, out string why)
+        {
+            if (!_ready || _joined)
+                throw new InvalidOperationException(_joined ? "a ground build joins once" : "its steps aren't done");
+            _joined = true;
+            if (_run.Body is not { } body)
+            {
+                why = Why;
+                return null;
+            }
+            var rot = GroundRot(ground, yaw);
+            var c = World.Adopt(_scratch, body, ground, rot, out why);
+            if (c == null)
+            {
+                if (why != ConstructWorld.AdoptUnusual)
+                    return null;
+                Console.WriteLine($"[build] {Bp.Name}: {why}: built again at once");
+                return BuildOnGround(World, Bp, ground, yaw, out why, _tow); // (what a vehicle never holds: correct, at a tick's cost)
+            }
+            var partOf = _run.PartOf!;
+            _run.Why = "";
+            FinishBuild(World, c, Bp, partOf, _run);
+            why = _run.Why;
+            if (_run.Built == null)
+                return null;
+            SetDown(World, c, Bp, partOf, ground, rot);
+            if (_towJob != null)
+                SpawnTow(World, c, _tow!, ground, yaw, rot, _towJob);
+            return c;
+        }
     }
 
     private static int HitchOf(Construct c, HitchKind kind)

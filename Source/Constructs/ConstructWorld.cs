@@ -349,11 +349,7 @@ public sealed partial class ConstructWorld
         if (Bodies.Count >= BodyCap || Bodies.Count >= ushort.MaxValue - 1)
             return null;
         if (id == 0)
-        {
-            while (_byId.ContainsKey(_nextId) || _nextId == 0)
-                _nextId++; // (wraps round past 65535 to the ids freed since)
-            id = _nextId++;
-        }
+            id = FreeId();
         else if (_byId.ContainsKey(id))
             return null;
         var c = new Construct { Id = id, Pos = pos, Rot = rot, PrevPos = pos, PrevRot = rot, NetPos = pos, NetFromPos = pos, NetRot = rot, NetFromRot = rot, StorePool = Stores };
@@ -466,15 +462,16 @@ public sealed partial class ConstructWorld
     /// <summary>
     /// A wire from part <paramref name="from"/>'s output into part <paramref name="to"/> (call <see cref="ConstructBuild.CanWire"/>
     /// first): since the routed links, a data link routed straight between the two (the logic's wires are rebuilt from the
-    /// data links). False when full.
+    /// data links). False when full. <paramref name="rebuild"/> false: the caller rebuilds once after a batch (a blueprint's wires).
     /// </summary>
-    public bool AddWire(Construct c, int from, int to)
+    public bool AddWire(Construct c, int from, int to, bool rebuild = true)
     {
         if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= WireCap)
             return false;
         if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, ConstructModules.IsBus(c.DefOf(from), 255) ? ConstructRoutes.DataPortByte(ConstructModules.BusPort(c.DefOf(to))) : (byte)255) < 0) // (a drive link goes into the drive port)
             return false;
-        c.Rebuild(); // (the wire is there at once, as it always was)
+        if (rebuild)
+            c.Rebuild(); // (the wire is there at once, as it always was)
         return true;
     }
 
