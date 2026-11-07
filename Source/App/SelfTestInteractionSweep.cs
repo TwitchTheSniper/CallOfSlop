@@ -414,6 +414,11 @@ public static partial class SelfTest
             Fail("interaction sweep: no open level ground on the yard");
             return;
         }
+        if (SweepDrillSpot(spot) is not { } drillSpot)
+        {
+            Fail("interaction sweep: no second open level ground on the yard for the digging cases");
+            return;
+        }
         var w = g.Constructs;
         var clock = Stopwatch.StartNew();
         var run = new SweepRunner { G = g, Problems = problems, Seen = seen, Now = now };
@@ -447,7 +452,9 @@ public static partial class SelfTest
                 {
                     while (w.Bodies.Count > 0)
                         w.Remove(w.Bodies[^1]);
-                    if (SweepBuild(w, d, st, spot, out var part) is not { } c)
+                    // (the Ground Drill digs where it is aimed, and a spawner's bots blast craters: those cases stand at a spot of
+                    // their own, so the digging can't sink the other cases' constructs and drift the look rate; the section's finally restores the yard)
+                    if (SweepBuild(w, d, st, tool == SweepTool.GroundDrill || d.IsSpawner ? drillSpot : spot, out var part) is not { } c)
                         break;
                     var parts = c.PartCount;
                     var keepMoving = st == SweepState.Moving;
@@ -461,6 +468,8 @@ public static partial class SelfTest
                     run.Where = $"offline {d.Name}{(d.Generated ? " (generated)" : "")} {st}, {tool}";
                     cases++;
                     run.Case(tool, d, () => w.Get(c.Id) == c && c.PartCount == parts, tail: first || st != SweepState.Mounted || d.Role == PartRole.Gun); // (the wheel and MMB, which depend on the tool, not the part: once per kind)
+                    if (d.IsSpawner)
+                        g.SandboxClearAll(); // (its bots and zombies go with it: left alive they follow the player back to the main spot and their blasts dig it)
                     if (me.Alive == false)
                     {
                         g.SelfTestRespawn(me, run.Now);
@@ -476,6 +485,25 @@ public static partial class SelfTest
             problems.Add($"offline: only {run.Looked} of {run.Frames} frames had the crosshair on something (the sweep isn't reaching the parts)");
         if (run.Climbs == 0)
             problems.Add("offline: F at a mounted part never grabbed on (the developer's crash path wasn't reached)");
+    }
+
+    /// <summary>An open, level spot on the yard at least 20 m from <paramref name="away"/> (the sweep's Ground Drill and spawner cases dig there).</summary>
+    private static Vector3? SweepDrillSpot(Vector3 away)
+    {
+        for (var x = -26f; x <= 26f; x += 2f)
+        for (var z = -26f; z <= 26f; z += 2f)
+        {
+            if (Vector2.Distance(new Vector2(x, z), new Vector2(away.X, away.Z)) < 20f)
+                continue;
+            var g0 = ConstructWorld.Ground(World.Query, x, z);
+            var flat = true;
+            for (var dx = -2f; dx <= 2f && flat; dx += 1f)
+            for (var dz = -2f; dz <= 4f && flat; dz += 1f)
+                flat = MathF.Abs(ConstructWorld.Ground(World.Query, x + dx, z + dz).Y - g0.Y) < 0.002f;
+            if (flat && (World.Map.Sandbox is not { } s || Vector3.Distance(s.Rack, new Vector3(x, 0, z)) >= 6f))
+                return g0;
+        }
+        return null;
     }
 
     private static void SweepOnline(Map yard, SandboxMap sb, List<string> problems, HashSet<string> seen)
