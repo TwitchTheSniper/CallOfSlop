@@ -114,10 +114,11 @@ public static class VehicleChassis
         var ld = c.Fork("layout");
         var wide = gear.Floor >= 0.5f && gear.Differential.StartsWith("Wide", StringComparison.Ordinal);
         var layouts = new List<(string, double)> { ("", r.Single) };
+        var longer = Math.Clamp((end - 4.2) / 2.5, 0.3, 2); // (a second axle earns its place under a long body)
         if (wide && only.Contains("tandem"))
-            layouts.AddRange([("tag", r.Tag), ("pusher", r.Pusher)]);
+            layouts.AddRange([("tag", r.Tag * longer), ("pusher", r.Pusher * longer)]);
         if (wide && only.Contains("six"))
-            layouts.Add(("tandem", r.Tandem));
+            layouts.Add(("tandem", r.Tandem * longer));
         var extra = Weighted(ld, layouts.Where(x => x.Item2 > 0).ToList());
         var spacing = extra.Length > 0 ? ld.Pick(r.Spacings) : 0;
         if (extra == "tandem")
@@ -138,6 +139,12 @@ public static class VehicleChassis
             least = MathF.Max(least, spacing); // (the stern gun deck stands a metre past the body: the tag stays under it)
         var steps = Math.Max(0, (int)MathF.Round((most - least) / 0.25f));
         var inset = fixedInset ?? MathF.Min(most, least + 0.25f * pd.Int(0, steps));
+        if (extra == "pusher" && end - inset - spacing < 0.8f)
+        {
+            extra = !gunDeck || inset >= spacing ? "tag" : ""; // (a pusher would stand under the cab: it goes behind instead, or not at all)
+            if (extra == "")
+                gear = gear with { Tag = null, TagWheel = null };
+        }
         var wing = Weighted(pd, r.FrontWings);
         if (front != -1.675f)
             wing = 0.5f; // (one change at a time at the front: a moved axle keeps kit 2's track)

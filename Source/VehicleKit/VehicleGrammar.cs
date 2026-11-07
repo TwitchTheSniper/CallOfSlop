@@ -184,6 +184,7 @@ public static class ShapeGrammar
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && attempt + 1 < Attempts)
             {
+                if (Environment.GetEnvironmentVariable("VK_DEBUG") != null) Console.WriteLine($"DIAG {v.Name} plan {attempt + 1}: {ex.Message}"); // TEMP
                 // (the next plan)
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && kept != null)
@@ -868,7 +869,8 @@ public static class ShapeGrammar
         VehicleGenJob.Yield();
         var (side, top) = v.Fill(); // (and the Silhouette rule's limits, with a margin: a plan that came out a box is planned again)
         var limits = new VehicleCheckOptions();
-        if (side > limits.MaxSideFill - 0.005f || top > limits.MaxTopFill - 0.005f)
+        var margin = layered ? 0.01f : 0.005f; // (kit 3: a plan that measured 61.6 % built at 62 %; a point keeps a seed off the check's own limit)
+        if (side > limits.MaxSideFill - margin || top > limits.MaxTopFill - margin)
             throw new VehicleKitException($"it fills {side:P0} of its side box and {top:P0} of its plan box: a box");
         VehicleGenJob.Yield();
 

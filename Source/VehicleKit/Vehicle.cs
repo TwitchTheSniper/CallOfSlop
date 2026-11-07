@@ -286,7 +286,11 @@ public sealed partial class Vehicle : BlueprintScript
             var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1); // (on its side: its branch would land on the seat's sill)
             var back = CentreOf(Diff2).Z;
             Link("shaft", split, Diff!, "Output shaft", "Input shaft");
-            Link("shaft", split, Diff2, "Branch shaft", "Input shaft", laid: true, nodes: [new Vector3(0.45f, CentreOf(split).Y, CentreOf(split).Z), new Vector3(0.45f, -0.4f, CentreOf(split).Z), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)]);
+            var from = CentreOf(split).Z;
+            Vector3[] run = back - 0.5f - from > 7.9f // (a shaft's segment reaches at most 8 m: a long kit-3 wheelbase takes a node halfway; anything shorter is laid as it always was)
+                ? [new Vector3(0.45f, CentreOf(split).Y, from), new Vector3(0.45f, -0.4f, from), new Vector3(0.45f, -0.4f, (from + back - 0.5f) / 2), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)]
+                : [new Vector3(0.45f, CentreOf(split).Y, from), new Vector3(0.45f, -0.4f, from), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)];
+            Link("shaft", split, Diff2, "Branch shaft", "Input shaft", laid: true, nodes: run);
         }
         else
             Link("shaft", Gearbox, Diff!, "Output shaft", "Input shaft");

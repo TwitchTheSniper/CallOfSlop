@@ -5,7 +5,8 @@ namespace CallOfSlop.VehicleKit;
 
 /// <summary>
 /// The wear layer (kit 3; docs/vehiclekit/VEHICLEKIT.md, "Layered variety"): a vehicle's age and damage, from its style's <see cref="WearProfile"/> and the wear layer's own
-/// dice, so the same truck can come new or wrecked. Rust and road dirt mixed into the panels' paint, soot round the guns and the exhaust, patch repairs welded over panels
+/// dice, so the same truck can come new or wrecked. Panels gone over to rust and road dirt, soot round the guns and the exhaust (all in the style's own colours, so a worn
+/// vehicle still reads as its faction by its paint), patch repairs welded over panels
 /// (on top of the style's crooked plates, whose fork is the wear layer's too), and an open deck's edge rusted out. It never touches a room's hull (the Gaps check), a
 /// fuel tank, a tyre or a gun (the weak points), the frame (stacked beams of one colour don't fight) or anything with slots (loot).
 /// </summary>
@@ -26,8 +27,6 @@ public sealed partial class Vehicle
 
     private static readonly string[] OpenDecks = ["bed", "porch", "rack", "hood"];
     private static readonly string[] PatchOn = ["hoodsides", "sides", "skirts", "panniers"];
-    private static readonly string[] RealRust = ["#7a4326", "#8c5230", "#6b3a22", "#5e3320", "#94603a"];
-    private const string Dirt = "#4b4134", Soot = "#1d1b19";
 
     /// <summary>How much this vehicle wore, for the kit line: rusty, dirty and scorched panels, patches, missing deck cells.</summary>
     private int _rusty, _dirty, _scorched, _patched, _missing;
@@ -77,12 +76,12 @@ public sealed partial class Vehicle
             var was = colour;
             if (d.Chance(w.Rust * Age))
             {
-                colour = Mix(colour, d.Pick(RealRust), (float)Math.Min(0.9, w.RustDepth * Age * d.Between(0.5, 1)));
+                colour = Style.Colour(d, "rust"); // (a panel gone over to the style's rust; its own colours only, so the faction still reads by its paint)
                 _rusty++;
             }
             if (CentreOf(p).Y < 1.2f && d.Chance(w.Dirt * Age))
             {
-                colour = Mix(colour, Dirt, (float)Math.Min(0.6, 0.35 * Age * d.Between(0.4, 1)));
+                colour = Style.Colour(d, "frame"); // (road dirt: the frame's dark)
                 _dirty++;
             }
             if (colour != was)
@@ -91,6 +90,7 @@ public sealed partial class Vehicle
 
         // Soot: round a gun that has fired a lot, and the hood over the exhaust.
         var sd = Dice.Fork("wear scorch");
+        var soot = Style.Palette.Values.SelectMany(x => x).OrderBy(Luma).ThenBy(x => x, StringComparer.Ordinal).First(); // (the style's darkest colour)
         var near = new List<Vector3>();
         foreach (var (gun, _, _) in Turrets)
             if (sd.Chance(w.Scorch * Age))
@@ -103,7 +103,7 @@ public sealed partial class Vehicle
                 var colour = ConstructPaint.ToHex(C.Parts[p.Index].Paint);
                 if (colour.Length == 0)
                     continue;
-                Paint(p, Mix(colour, Soot, (float)sd.Between(0.35, 0.7)));
+                Paint(p, soot);
                 _scorched++;
             }
 
@@ -122,7 +122,7 @@ public sealed partial class Vehicle
             if (!ClearOf(p, at, face))
                 continue;
             var patch = Crooked("patches", Style.Part(pd, "patch"), p, at, face, pd);
-            Paint(patch, Mix(Style.Colour(pd, "rust"), pd.Pick(RealRust), (float)pd.Between(0, 0.5 * Age)));
+            Paint(patch, Style.Colour(pd, "rust"));
             _patched++;
         }
         Modules.Add($"wear age {Age:0.0#} ({_rusty} rusty, {_dirty} dirty, {_scorched} sooty, {_patched} patched, {_missing} rusted out)");
@@ -151,13 +151,7 @@ public sealed partial class Vehicle
         return true;
     }
 
-    /// <summary>Two "#rrggbb" colours mixed, <paramref name="t"/> of the way from the first to the second.</summary>
-    public static string Mix(string a, string b, float t)
-    {
-        static (int, int, int) Rgb(string h) => (int.Parse(h.AsSpan(1, 2), NumberStyles.HexNumber), int.Parse(h.AsSpan(3, 2), NumberStyles.HexNumber), int.Parse(h.AsSpan(5, 2), NumberStyles.HexNumber));
-        var (r1, g1, b1) = Rgb(a);
-        var (r2, g2, b2) = Rgb(b);
-        int L(int x, int y) => Math.Clamp((int)MathF.Round(x + (y - x) * t), 0, 255);
-        return $"#{L(r1, r2):x2}{L(g1, g2):x2}{L(b1, b2):x2}";
-    }
+    /// <summary>A "#rrggbb" colour's brightness, for the darkest of a palette.</summary>
+    private static int Luma(string h) =>
+        2 * int.Parse(h.AsSpan(1, 2), NumberStyles.HexNumber) + 7 * int.Parse(h.AsSpan(3, 2), NumberStyles.HexNumber) + int.Parse(h.AsSpan(5, 2), NumberStyles.HexNumber);
 }
