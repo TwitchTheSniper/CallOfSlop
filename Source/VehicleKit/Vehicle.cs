@@ -283,7 +283,6 @@ public sealed partial class Vehicle : BlueprintScript
         var sill = Sill(z);
         Engine = Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y");
         Gearbox = Onto(Engine, "+z", gb, "-z", 0);
-        ElectricKit(); // (off world: an Electric Motor's Battery Pack; nothing for any other engine)
         if (Diff2 != null)
         {
             var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1); // (on its side: its branch would land on the seat's sill)

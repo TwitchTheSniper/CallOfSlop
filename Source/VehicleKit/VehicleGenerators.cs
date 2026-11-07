@@ -125,11 +125,11 @@ public static class VehicleRegistry
             return VehicleRoleMake.Kit1(g, seed, role); // (a shape the grammar doesn't make: its generator, with the role's part weights, measured and tried again)
         var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
         g.Build(v);
-        if (ShapeGrammar.RecipeOf(g) == null && (kit ?? VehicleKitVersion.Force ?? (g.Seeds.Contains(seed) ? VehicleKitVersion.Legacy : VehicleKitVersion.Current)) >= VehicleKitVersion.Grammar)
-        {
+        var shipsNowhere = ShapeGrammar.RecipeOf(g) == null && (kit ?? VehicleKitVersion.Force ?? (g.Seeds.Contains(seed) ? VehicleKitVersion.Legacy : VehicleKitVersion.Current)) >= VehicleKitVersion.Grammar;
+        if (shipsNowhere)
             v.GuaranteeMarks(); // (a shape the grammar doesn't make is kit 1, but its seeds that ship nowhere get kit 2's marks: VehicleMarks.cs)
-            v.DriveGate(); // (and the spawn's drive check: a seed that fails it rerolls in the spawner)
-        }
+        if (shipsNowhere || v.Context is { Matters: true })
+            v.DriveGate(); // (and the spawn's drive check, as any vehicle no file holds: a seed that fails it rerolls in the spawner)
         return v;
     }
 

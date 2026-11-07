@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 
 namespace CallOfSlop.VehicleKit;
@@ -472,24 +473,47 @@ public sealed partial class Vehicle
     /// </summary>
     public bool Electric => Engine is { } e && e.Def.Role == PartRole.Engine && e.Def.FuelKind == EngineFuel.Electric;
 
-    private void ElectricKit()
+    /// <summary>
+    /// The context's kit once everything else is on (<see cref="DriveGate"/> calls it first, so it is never in the way of a seat or a nose): an Electric Motor's
+    /// Battery Pack on a free side of the motor or its gearbox, else on the frame near them. Nothing for any other vehicle.
+    /// </summary>
+    internal void ContextKit()
     {
-        if (!Electric)
+        if (!Electric || _batteried)
             return;
-        foreach (var side in new[] { "-x", "+x", "-z" })
+        _batteried = true;
+        foreach (var (on, side) in new[] { (Engine!, "-x"), (Engine!, "+x"), (Gearbox!, "-x"), (Gearbox!, "+x"), (Gearbox!, "-y"), (Engine!, "-z") }) // (the frame is the circuit: any part linked to the motor carries its power)
         {
+            if (!FreeSocket(on, side))
+                continue;
             try
             {
-                Onto(Engine!, side, "Battery Pack", "-y");
+                Onto(on, side, "Battery Pack", "-y");
                 VehicleContext.Note("electric drive: an Electric Motor and a Battery Pack");
                 return;
             }
             catch (VehicleKitException)
             {
-                // (that side is taken: the next)
+                // (it doesn't fit there: the next)
             }
         }
-        throw new VehicleKitException("no air here, and the Electric Motor has nowhere to carry its Battery Pack");
+        try
+        {
+            Put("Battery Pack", CentreOf(Gearbox!) + new Vector3(0, -0.2f, 0.6f), Orient.Upright, 1.5f);
+            VehicleContext.Note("electric drive: an Electric Motor and a Battery Pack on the frame");
+        }
+        catch (VehicleKitException ex)
+        {
+            throw new VehicleKitException($"no air here, and the Electric Motor has nowhere to carry its Battery Pack ({ex.Message})");
+        }
+    }
+
+    private bool _batteried;
+
+    private bool FreeSocket(VPart on, string socket)
+    {
+        var k = Array.FindIndex(on.Def.Sockets, x => x.Name == socket);
+        return k >= 0 && !C.SocketUsed(on.Index, k);
     }
 }
 
@@ -524,7 +548,14 @@ public static class VehicleContextCli
             Console.WriteLine("--context: give --biome, --gravity, --air, --wood or --ore, or --sweep");
             return 1;
         }
-        // What to make: "Style Shape" (a generator) or "Style role" (kit 4).
+        // What to make: a model's key (a family's: only its kit may change), "Style Shape" (a generator) or "Style role" (kit 4).
+        if (what.Contains('/'))
+        {
+            if (VehicleModel.TryParse(what, out var model, out var whyNot))
+                return Model(model!, contexts, check);
+            Console.WriteLine($"--context {what}: {whyNot}");
+            return 1;
+        }
         IVehicleGenerator? gen = VehicleRegistry.Find(what);
         FactionStyle? st = null;
         VehicleRole? role = null;
@@ -602,6 +633,41 @@ public static class VehicleContextCli
         return failed;
     }
 
+    /// <summary>A family's model in each context against neutral: the same body and chassis (its outline and its axles), only its kit changed.</summary>
+    private static int Model(VehicleModel m, IReadOnlyList<SpawnContext> contexts, bool check)
+    {
+        var neutral = VehicleFamilies.Make(m);
+        var outline = neutral.Outline();
+        Console.WriteLine($"  neutral        {neutral.Name}: {neutral.Outline()}");
+        var failed = 0;
+        foreach (var ctx in contexts)
+        {
+            Vehicle v;
+            try
+            {
+                v = VehicleFamilies.Make(m, ctx);
+            }
+            catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+            {
+                failed++;
+                Console.WriteLine($"  {ctx.Label,-14} REFUSED: {ex.Message}");
+                continue;
+            }
+            var same = v.Outline() == outline;
+            Console.WriteLine($"  {ctx.Label,-14} {v.Name}: {(v.ContextNotes.Count > 0 ? string.Join("; ", v.ContextNotes) : "nothing to change")}");
+            var diff = Diff(neutral, v);
+            Console.WriteLine($"    vs neutral: {(diff.Length > 0 ? diff : "the same parts")}; body and chassis {(same ? "the same" : "DIFFER: " + v.Outline())}");
+            if (!same)
+                failed++;
+            if (check)
+            {
+                var rep = VehicleChecks.Check(v.Text(), VehicleRegistry.Slug(v.Name) + ".json", VehicleFamilies.Resolve(m).G.Checks, v.Rooms);
+                Console.WriteLine($"    full check: {(rep.Passed ? "OK" : string.Join("; ", rep.Failures))}");
+            }
+        }
+        return failed;
+    }
+
     /// <summary>What differs in parts between two vehicles: "+2 Large Wheel, -2 Off-Road Wheel, mass +120 kg, paint on 14 parts".</summary>
     public static string Diff(Vehicle a, Vehicle b)
     {
@@ -614,10 +680,7 @@ public static class VehicleContextCli
             if (d != 0)
                 bits.Add($"{(d > 0 ? "+" : "")}{d} {k}");
         }
-        var paint = 0;
-        for (var i = 0; i < Math.Min(pa.Length, pb.Length); i++)
-            if (pa[i] != pb[i])
-                paint++;
+        var paint = pa.Except(pb).Count(); // (by part and colour: an extra part shifts the indices)
         var sb = new StringBuilder(string.Join(", ", bits.Take(12)));
         if (bits.Count > 12)
             sb.Append($", {bits.Count - 12} more kinds");
@@ -632,17 +695,39 @@ public static class VehicleContextCli
 
 public sealed partial class Vehicle
 {
+    /// <summary>
+    /// Its body and chassis in one line: the kit line's modules (cab, nose, body, rear, under...), the axles' stations and the bounding box to the centimetre, so a family's
+    /// model in a context can be held to its family's (tyres and paint aside: a wheel 3 cm smaller moves no axle).
+    /// </summary>
+    internal string Outline()
+    {
+        var axles = new SortedSet<int>();
+        float lx = float.MaxValue, ly = float.MaxValue, lz = float.MaxValue, hx = float.MinValue, hy = float.MinValue, hz = float.MinValue;
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            var d = C.DefOf(i);
+            if (d.Role == PartRole.Suspension)
+                axles.Add((int)MathF.Round(C.Parts[i].Pos.Z * 4));
+            if (d.Role is PartRole.Wheel or PartRole.Suspension)
+                continue;
+            C.PartBounds(i, out var a, out var b);
+            (lx, ly, lz) = (MathF.Min(lx, a.X), MathF.Min(ly, a.Y), MathF.Min(lz, a.Z));
+            (hx, hy, hz) = (MathF.Max(hx, b.X), MathF.Max(hy, b.Y), MathF.Max(hz, b.Z));
+        }
+        return string.Create(CultureInfo.InvariantCulture, $"{string.Join(", ", Modules.Where(x => !x.StartsWith("seeds", StringComparison.Ordinal) && !x.StartsWith("wear", StringComparison.Ordinal)))}; axles at {string.Join("/", axles.Select(a => (a / 4f).ToString("0.##", CultureInfo.InvariantCulture)))} m; box {hx - lx:0.0} x {hy - ly:0.0} x {hz - lz:0.0} m"); // (to the decimetre: a plate of another material is a few millimetres thicker)
+    }
+
     /// <summary>Its parts by name, its mass and every part's paint (<c>--context</c>'s comparison).</summary>
-    internal (Dictionary<string, int> Kinds, float Mass, uint[] Paints) Summary()
+    internal (Dictionary<string, int> Kinds, float Mass, string[] Paints) Summary()
     {
         C.Rebuild();
         var d = new Dictionary<string, int>(StringComparer.Ordinal);
-        var paints = new uint[C.PartCount];
+        var paints = new string[C.PartCount];
         for (var i = 0; i < C.PartCount; i++)
         {
             var n = C.DefOf(i).Name;
             d[n] = d.GetValueOrDefault(n) + 1;
-            paints[i] = C.Parts[i].Paint;
+            paints[i] = $"{n} {C.Parts[i].Paint:x8} {d[n]}"; // (the nth of its name in that colour)
         }
         return (d, C.Mass, paints);
     }

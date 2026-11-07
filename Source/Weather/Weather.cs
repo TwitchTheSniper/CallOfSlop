@@ -234,6 +234,15 @@ public static unsafe class Weather
         }
     }
 
+    /// <summary>The rain at the player as a share of a downpour (8 mm/h and more is 1; 0 with no weather): the vehicle kit's spawn context reads it (docs/vehiclekit/VEHICLEKIT.md, "Spawn context").</summary>
+    public static float RainHere()
+    {
+        if (_settings == null)
+            return 0;
+        lock (Lock)
+            return Math.Clamp(_local.Rain / 8f, 0, 1);
+    }
+
     /// <summary>The wind at the player, low and at cloud height (m/s, u east, v north): what flight reads (ConstructAir.cs). Called a few times a second.</summary>
     public static void ReadWind(out Vector2 low, out Vector2 high)
     {

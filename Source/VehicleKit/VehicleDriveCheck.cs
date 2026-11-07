@@ -197,6 +197,7 @@ public sealed partial class Vehicle
     /// </summary>
     public void DriveGate()
     {
+        ContextKit(); // (the spawn context's last parts first: an electric drive's battery, VehicleContext.cs)
         if (!VehicleDriveCheck.GateOn)
             return;
         VehicleGenJob.Yield();
