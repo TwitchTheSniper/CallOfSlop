@@ -59,7 +59,7 @@ public sealed partial class Construct
         for (var j = 0; j < JointCount; j++)
             Joints[j].Rail = false;
         var any = false;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials) // (rails and swivels are special parts)
         {
             if (Parts[i].D.IsRail)
                 any = true;
@@ -72,7 +72,7 @@ public sealed partial class Construct
             RailOf = new short[Math.Max(PartCount, Parts.Length)];
         Array.Fill(RailOf, (short)-1);
         Span<ushort> chain = stackalloc ushort[MaxRailSections];
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials)
         {
             if (!Parts[i].D.IsRail || RailOf[i] >= 0)
                 continue;

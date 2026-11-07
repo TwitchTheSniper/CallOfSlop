@@ -415,7 +415,7 @@ public static class ConstructFluid
     public static void Build(Construct c)
     {
         var n = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (tanks are special parts)
             if (c.Parts[i].D.Role == PartRole.FluidTank)
                 n++;
         if (n > c.FluidTanks.Length)
@@ -426,7 +426,7 @@ public static class ConstructFluid
         }
         c.FluidTankCount = 0;
         if (n > 0)
-            for (var i = 0; i < c.PartCount; i++)
+            foreach (var i in c.Specials)
                 if (c.Parts[i].D.Role == PartRole.FluidTank)
                 {
                     c.FluidTanks[c.FluidTankCount] = (ushort)i;

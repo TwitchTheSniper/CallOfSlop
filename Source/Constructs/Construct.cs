@@ -429,7 +429,6 @@ public sealed partial class Construct
 
     /// <summary>The next time this copy looks for where its wheels meet the ground, for the springs drawn (ConstructRender.FitWheels).</summary>
     public double FitAt;
-    public bool Dirty = true;
     public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
     internal ushort[] SigList = []; // the signal parts in part order (ConstructNet.Signals: kept for the poses)
     internal int SigListCount, SigListStamp = -1, SigListParts = -1;
@@ -1019,13 +1018,13 @@ public sealed partial class Construct
     /// <summary>The part the root should be: the first seat, else the first foundation, else part 0.</summary>
     public int PickRoot()
     {
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials) // (seats, foundations and cores are special parts)
             if (Parts[i].D.Role == PartRole.Seat)
                 return i;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials)
             if (Parts[i].D.Role == PartRole.Foundation)
                 return i;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials)
             if (Parts[i].D.Core)
                 return i;
         return 0;
@@ -1042,10 +1041,34 @@ public sealed partial class Construct
 
     // ---- Caches: mass, inertia, contact points, wheels, the drivetrain ------------------------------------------
 
-    /// <summary>Rebuilds everything that follows from the parts (after any edit, break or split). Keeps the world pose.</summary>
+    /// <summary>
+    /// Rebuilds everything that follows from the parts (after any edit, break or split). Keeps the world pose. A big body
+    /// whose edits since its last rebuild were all plain rebuilds by the journal instead (<see cref="RebuildPlain"/>,
+    /// ConstructRebuild.cs): the same result, at the cost of what changed.
+    /// </summary>
     public void Rebuild()
     {
-        Dirty = false;
+        if (_dirty && Journalling)
+        {
+            if (!RebuildCheck)
+            {
+                RebuildPlain();
+                return;
+            }
+            RebuildPlain();
+            var seen = CheckTake();
+            RebuildFull();
+            CheckAgainst(seen);
+            return;
+        }
+        RebuildFull();
+    }
+
+    private void RebuildFull()
+    {
+        FullRuns++;
+        _dirty = false;
+        _specialsLive = false; // (made again below, after the merges)
         FinishExtrusions();
         RebuildStamp++;
         RideAxes = null; // (its up is worked out again when someone next boards: ConstructRideMove.cs)
@@ -1057,10 +1080,19 @@ public sealed partial class Construct
                 FreeformCount++;
             else
                 MovingJoints++;
-        BuildMass();
+        BuildSpecials();
+        _sumsValid = PartCount >= IncrementalMin;
+        if (_sumsValid)
+        {
+            SumParts();
+            FinishMass();
+        }
+        else
+            BuildMass();
         BuildSeamLinks();
         BuildRails(); // (stacked linear rails: a joint's limits, so before the reach below)
         ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
+        BuildSpecials(); // (again: a link it dropped or moved no longer makes its parts special)
         ConstructModules.Build(this); // (which seat drives and which turrets it has: before the wheels, which take forward from it)
         ConstructTracks.Rebuild(this); // (before the colliders: a track's wheels are raycast wheels, sprung or not)
         ColliderChanged();
@@ -1082,8 +1114,18 @@ public sealed partial class Construct
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);
         ConstructWeapons.BuildGuns(this);
+        CountSpecials();
+        BuildFreeChain(); // (frozen pieces and chains: after what anchors it)
+        Root = PickRoot();
+        FinishRebuild();
+        JournalReset();
+    }
+
+    /// <summary>The belts, launchers, gravity parts and jump drives, and whether a foundation anchors it (all special parts).</summary>
+    private void CountSpecials()
+    {
         BeltCount = LaunchCount = GravityCount = JumpCount = 0;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials)
             if (Parts[i].D.Logic == CLogic.Conveyor)
                 BeltCount++;
             else if (Parts[i].D.Logic is CLogic.GravityWell or CLogic.GravityGen)
@@ -1093,15 +1135,18 @@ public sealed partial class Construct
             else if (Parts[i].D.Logic is CLogic.Launch or CLogic.Arrest or CLogic.Mooring || Parts[i].D.DockPull > 0)
                 LaunchCount++;
         Anchored = (Pinned || Frozen) && PartCount > 0;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
                 Anchored = true;
-        BuildFreeChain(); // (frozen pieces and chains: after what anchors it)
-        Root = PickRoot();
+    }
+
+    /// <summary>The fuel and charge a body starts with, kept within what it holds; a driver whose seat went is out.</summary>
+    private void FinishRebuild()
+    {
         if (Fuel <= 0 && !_fuelSet)
         {
             Fuel = 0;
-            for (var i = 0; i < PartCount; i++)
+            foreach (var i in Specials)
                 if (Parts[i].D.Role == PartRole.FuelTank && Parts[i].Working)
                     Fuel += Parts[i].D.FuelCapacity;
             _fuelSet = PartCount > 0;
@@ -1140,9 +1185,9 @@ public sealed partial class Construct
             return; // (a rebuild is coming)
         RebuildStamp++; // (its boxes in a big body's batch: ConstructRenderBatch.cs)
         ColliderChanged(); // (a piece growing on a die: a rebuild of its tree at the Extruder's rate, not the part tree's: ConstructPartTree.cs)
-        BuildMass();
-        Radius = MathF.Max(Radius, JointReach() + 0.5f);
-        BuildSegMass();
+        if (_sumsValid)
+            SumParts(); // (a part's shape changed: summed again)
+        MassAndSegments();
     }
 
     /// <summary>
@@ -1282,12 +1327,24 @@ public sealed partial class Construct
     /// A change of load alone (ConstructWorld.LoadStep): the mass properties again, without the rest of <see cref="Rebuild"/>.
     /// The pose stays; the velocity stays with the centre of mass. Allocates nothing.
     /// </summary>
-    public void RefreshMass()
+    public void RefreshMass() => MassAndSegments();
+
+    /// <summary>The mass and the segments' masses: a big body from its sums and its special parts' loads (no walk over every part), else from the parts.</summary>
+    private void MassAndSegments()
     {
-        BuildMass();
+        var sums = _sumsValid && !_dirty; // (edits waiting: from the parts, as before; the rebuild follows)
+        if (sums)
+            FinishMass();
+        else
+            BuildMass();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
-        BuildSegMass();
+        if (sums)
+            FinishSegMass();
+        else
+            BuildSegMass();
     }
+
+    private bool _sumsValid; // (a big body: the mass sums follow every part since the last full rebuild)
 
     /// <summary>
     /// What bin part <paramref name="i"/> holds: its weight (Constructs/Recycling.json) and its fill box in the part's
@@ -1402,7 +1459,10 @@ public sealed partial class Construct
     /// <summary>Each segment's carried mass and its centre (its parts and every segment hanging on it); whether logic runs.</summary>
     private void BuildSegments()
     {
-        BuildSegMass();
+        if (_sumsValid)
+            FinishSegMass();
+        else
+            BuildSegMass();
         HasLogic = WireCount > 0;
         HasRecycler = false;
         HasGatherer = false;
@@ -1416,7 +1476,7 @@ public sealed partial class Construct
         HasBin = false;
         HasVolumeStore = false;
         HasTankVolume = false;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials) // (every flag below is a special part's: ConstructRebuild.cs)
         {
             var d = Parts[i].D;
             if (d.IsSizedBox)
@@ -1447,7 +1507,7 @@ public sealed partial class Construct
         }
         var media = 0;
         var speakers = 0;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials)
         {
             if (Parts[i].D.IsMedia)
                 media++;
@@ -1459,7 +1519,7 @@ public sealed partial class Construct
         if (speakers > 0)
         {
             speakers = 0;
-            for (var i = 0; i < PartCount; i++)
+            foreach (var i in Specials)
                 if (Parts[i].D.IsSpeaker)
                     SpeakerParts[speakers++] = (ushort)i;
         }
@@ -1468,7 +1528,7 @@ public sealed partial class Construct
         if (media > 0)
         {
             media = 0;
-            for (var i = 0; i < PartCount; i++)
+            foreach (var i in Specials)
                 if (Parts[i].D.IsMedia)
                     MediaParts[media++] = (ushort)i;
         }
@@ -1477,7 +1537,7 @@ public sealed partial class Construct
         if (cameras > 0)
         {
             cameras = 0;
-            for (var i = 0; i < PartCount; i++)
+            foreach (var i in Specials)
                 if (Parts[i].D.IsCamera)
                     CameraParts[cameras++] = (ushort)i;
         }
@@ -1486,7 +1546,7 @@ public sealed partial class Construct
         if (panels > 0)
         {
             panels = 0;
-            for (var i = 0; i < PartCount; i++)
+            foreach (var i in Specials)
                 if (Parts[i].D.Panels.Length > 0)
                     PanelParts[panels++] = (ushort)i;
         }
@@ -1648,7 +1708,7 @@ public sealed partial class Construct
     public float FuelCapacity()
     {
         var cap = 0f;
-        for (var i = 0; i < PartCount; i++)
+        foreach (var i in Specials) // (tanks are special parts; every part while the list waits for a rebuild)
             if (Parts[i].D.Role == PartRole.FuelTank && Parts[i].Working)
                 cap += Parts[i].D.FuelCapacity;
         return cap;

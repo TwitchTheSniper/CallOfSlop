@@ -158,7 +158,7 @@ public static class ConstructBoost
             c.HasBoost |= kind == ThrustKind.Air;
             c.RepulsorCount += kind == ThrustKind.Repulsor ? 1 : 0;
         }
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (generators are special parts)
             if (c.Parts[i].D.Logic == CLogic.AntiGrav)
                 c.AntiCount++;
         if (c.AntiCount == 0)
@@ -169,7 +169,7 @@ public static class ConstructBoost
         // What each generator's field holds: a share of the mass, in its radius. Big ships get a kinder radius, as lift gets a kinder scale.
         var size = c.LocalMax - c.LocalMin;
         var soft = ConstructLift.SoftScale(MathF.Max(0, size.X * size.Y * size.Z));
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials)
         {
             ref var g = ref c.Parts[i];
             if (g.D.Logic != CLogic.AntiGrav)

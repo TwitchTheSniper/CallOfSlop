@@ -104,11 +104,72 @@ linked on four sides (two links a part), one driven and pushed at 3 m/s, one par
 The steady tick holds easily. The cost that grows is the **rebuild** (an edit, a part broken off, a split): mostly
 `BuildMass`, `BuildSegments`, `ConstructPower.Rebuild` and the drive line, each a walk over every part, at 16,000 parts
 about as long as the 8 ms budget in this container. That is why the cap stops at 16,000 and not at the 21,845 the link
-count allows: going further wants an incremental rebuild (only the systems an edit touches) first. The "Compound
+count allows: going further wants an incremental rebuild (only the systems an edit touches) first. (Since done for plain
+edits: "Rebuilds" below.) The "Compound
 collision" cost scenes build hulls of the cap: at 16,000 one hull sliding 0.83 ms a tick, one on half-metre ground with 40
 blocks 3.7 ms, eight stacked 126 ms (59 ms at 8,000 on the same box; it was over budget already). Not measured on Windows. Steam's default send buffer is 512 KB (`k_ESteamNetworkingConfig_SendBufferSize`, not set by the game), so a
 Full near that size sent while other reliable data waits may be refused; the transport logs it and the far side drops the
 part it has when the next first piece comes. Raising the buffer is a backend setting worth adding.
+
+## Rebuilds: by the journal (branch `feat/incr-rebuild`)
+
+What a rebuild costs a big body after an edit, and how it is kept down (the design: docs/sandbox/CONSTRUCTS.md,
+"Rebuilds"; the code: `Source/Constructs/ConstructRebuild.cs`):
+
+- **One rebuild a tick.** An edit only marks the body; the tick's first look at it rebuilds it once, so ten edits in a
+  tick are one rebuild (as before; now counted in the measurements below).
+- **The journal.** A body of 1,024 parts or more (`Construct.IncrementalMin`) keeps the plain edits since its last rebuild
+  (plain structure added, linked or taken off, a part breaking off, a plain piece cut away). After those only it rebuilds
+  by the journal (`RebuildPlain`): the mass, centre of mass and inertia from sums kept in doubles (each part adds or takes
+  off its own share; summed from the parts again every 256 plain rebuilds), the collider and the part tree renumbered
+  (new parts in a small tree of their own), the circuit flooded only if a powered part's neighbours don't meet round it
+  within 512 parts, every system built from the special parts alone (`Construct.Specials`). `RemovePart` skips its flood
+  over the whole body when the part's neighbours meet round it.
+- **Full rebuilds are cheaper too.** The systems walk the special parts, not every part; the drive line's walk reads each
+  part's links, not every link for every part it reaches; a big collider's trees are built from Morton order (radix
+  sort, cut at the lattice's cells: O(n)) instead of sorting the leaves at every level; compacting moves each run of parts
+  that stay in one copy.
+- **Still full**: an edit on a special part (a gun, a wheel, a battery, a seat, anything with a role, sockets other than
+  structural, a store, a routed link on it), a part on a joint's segment, a body with freeform welds or merged receivers,
+  a joint added or cut, a split that takes a special part with it, a change of load alone (that is `RefreshMass`: for a
+  big body now from the sums and the special parts' loads, O(special parts)), and any other `Dirty = true`.
+- **A split of a big piece can't be spread over ticks.** The flood that finds what is cut off, copying the piece into its
+  own body and that body's mass and collider are all needed before the next physics step moves the two bodies apart;
+  what could wait (the new wreck's systems) is now a walk over its special parts, a fraction of a millisecond. The piece's
+  collider is already built only when the physics step first asks for it.
+- **The debug check.** `CALLOFSLOP_REBUILD_CHECK=1` (or `Construct.RebuildCheck`) follows every plain rebuild with a full
+  one and compares mass, centre of mass, inertia, bounds, segments, circuit, drive line, wheels, special parts, the
+  collider's leaves and trees, and the part tree. Over 1,300 random ticks of edits (removes, adds, breaks, new links, on
+  bodies of 1,500, 3,000 and 5,000 parts, with and without a battery, with horns as special parts on the frame): 1,261
+  plain rebuilds checked, none different.
+
+Measured in the container (a throwaway harness, not committed; the 2-core box at load 5 to 15 with other agents building,
+so numbers are min / median of repeats; main and this branch run back to back). A Wired Buggy with a grid of Frame Blocks
+linked on four sides, driven at 3 m/s; "edit + step" is the edit and the tick that rebuilds it, less a steady tick:
+
+| | 8,000 parts, before | 8,000, now | 16,000 parts, before | 16,000, now |
+| --- | --- | --- | --- | --- |
+| `Rebuild`, full | 1.7-1.9 / 2.3-2.8 ms | 0.8-1.1 / 1.0-1.3 ms | 5.2-6.5 / 5.9-16 ms | 2.7-3.3 / 3.5-5.9 ms |
+| Collider built | 16-21 / 22-23 ms | 0.7-0.9 / 0.7-1.0 ms | 9-17 / 15-21 ms | 1.4-1.9 / 1.7-2.0 ms |
+| Add a block (edit + step) | 7-10 / 11-23 ms | 0.05-0.08 / 0.10-0.13 ms | 20-42 / 21-48 ms | 0.08-0.24 / 0.15-0.32 ms |
+| Take off an inner block (edit + step) | 6 / 10-14 ms | 0.25-0.39 / 0.35-0.47 ms | 18-23 / 21-28 ms | 0.6-0.8 / 0.8-1.3 ms |
+| Take off the last block on a face of the bounds | 10-13 / 17-18 ms | 0.4-0.6 / 0.5-0.7 ms | 20-23 / 24-32 ms | 0.9-1.2 / 1.0-1.4 ms |
+| Ten blocks off in one tick | 13-17 / 22 ms | 1.3-1.4 / 1.4-1.6 ms | 30-33 / 34-37 ms | 3.0-6.9 / 3.6-9.0 ms |
+| Four blocks shot off a tick (each a debris body) | 8-13 / 14-17 ms | 0.9-1.0 / 1.4-1.7 ms | 20-25 / 30 ms | 1.9-2.0 / 2.3-5.7 ms |
+| A split: the whole grid falls away (with the step) | 16-20 / 21-47 ms | 7-21 / 8-21 ms | 30-32 / 32-64 ms | 19-42 / 19-59 ms |
+| Steady allocation, ten removes and their ticks | 0 B | 0 B | 0 B | 0 B |
+
+A typical edit at 16,000 parts is under the 2 ms target (0.15-1.4 ms) and ten in a tick are 3.6 to 9 ms in this container
+(each take-off still compacts the arrays and indexes the links again: O(parts) memory moves, 0.2 ms at 16,000). A split
+of a big piece is O(its parts) and stays over the budget, as it was. "Compound collision" with the Morton trees (same
+runs): one 16,000-part hull sliding 0.84-0.97 ms (main 0.59-0.83), a hull and 40 blocks on half-metre ground 2.2-4.2 ms
+(main 3.2-4.5), eight stacked 98 ms (main 111-126 ms): over the budget either way.
+
+**`MaxParts` stays at 16,000.** For edits the numbers would hold the 21,845 parts the wire's link count allows (about 1.4
+times these: a take-off under 2 ms). What doesn't hold: a split of a big piece (already 19 to 59 ms here), big hulls
+pressed together (98 ms at 16,000), and a Full of a plate grid (482 KB at 16,000, Steam's 512 KB message: fragmented, but
+a client reads it in 6 to 15 ms). Raising it wants a split that doesn't copy the piece part by part and cheaper big
+contact pairs first.
 
 ## The inventory
 
@@ -153,7 +214,7 @@ where it has one. Line numbers are those of this audit.
 | Wire width | `MaxQueriesPerSecond` | `Net/ServerBrowser.cs:774` | `4` | - | Kept |
 | Wire width | `MaxParts` | `Net/Snapshot.cs:112` | `8` | - | Kept (player model parts, not constructs) |
 | Wire width | `MaxMessageSize` | `Net/SteamTransport.cs:19` | `512 * 1024` | - | Kept |
-| Cost budget | `MaxParts` | `Constructs/Construct.cs:231` | `16000` (was 8,000) | - | **Raised** (see "Parts a construct" above): part-sized spans in `Scratch`, keys and the engine union-find widened, settings count u32 and Steam fragments (protocol 190); a rebuild at 16,000 parts is about the 8 ms budget, so no further |
+| Cost budget | `MaxParts` | `Constructs/Construct.cs:231` | `16000` (was 8,000) | - | **Raised** (see "Parts a construct" above): part-sized spans in `Scratch`, keys and the engine union-find widened, settings count u32 and Steam fragments (protocol 190); a full rebuild at 16,000 parts was about the 8 ms budget; since the journal (see "Rebuilds") a typical edit is 0.15-1.4 ms, but a big split and big contact pairs keep it here |
 | Cost budget | `MaxGuns` | `Constructs/Construct.cs:235` | `256` | guns a construct (8 until the capital parts, 64 until docs/perf/LIMITS.md): a turn through the gun step each a tick; per gun arrays grow... | **Raised 64 to 256**, logged when reached; per-gun arrays already grow (`ReserveGuns`), recoil folds per segment (`MaxRecoils` 64, unchanged memory) |
 | Cost budget | `MaxSurfaces` | `Constructs/ConstructAero.cs:21` | `512` | - | Kept. With rotors, up to 544 items: the pose window's start was a byte (wrapped past 255): **fixed, u16, protocol 189** |
 | Cost budget | `MaxVolumes` | `Constructs/ConstructCargo.cs:26` | `32` | cargo volumes a construct (more are refused when fitted; was 4: a carrier has a hangar a deck). Each frozen one is a broadphase look ever... | **Raised 4 to 32**: each frozen volume is one broadphase look every `ScanEvery` ticks |

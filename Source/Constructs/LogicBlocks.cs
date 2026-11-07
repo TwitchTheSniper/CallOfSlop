@@ -64,7 +64,7 @@ public static class LogicBlocks
     public static void Rebuild(Construct c)
     {
         int reading = 0, graphs = 0, radios = 0, wide = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (logic parts are special parts: ConstructRebuild.cs)
         {
             var d = c.Parts[i].D;
             if (d.Role != PartRole.Logic)
@@ -96,11 +96,12 @@ public static class LogicBlocks
             }
         }
         int ra = 0, gr = 0, rd = 0, at = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        if (wide > 0)
+            for (var i = 0; i < c.PartCount; i++)
+                c.PortBase[i] = c.Parts[i].D.WidePorts ? at++ * PortWidth : -1; // (every part: -1 for most)
+        foreach (var i in c.Specials)
         {
             var d = c.Parts[i].D;
-            if (wide > 0)
-                c.PortBase[i] = d.WidePorts ? at++ * PortWidth : -1;
             if (d.Role != PartRole.Logic)
                 continue;
             if (d.HasReading)

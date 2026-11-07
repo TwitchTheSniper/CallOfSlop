@@ -140,7 +140,7 @@ public static class ConstructHydraulics
     {
         c.HydHeadCount = c.HydPumpCount = c.HydValveCount = c.TrayCount = 0;
         c.HydLoad = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (trays and hydraulic parts are special parts)
         {
             var d = c.Parts[i].D;
             if (d.TrayLanes > 0)

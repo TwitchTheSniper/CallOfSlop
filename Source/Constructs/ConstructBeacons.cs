@@ -392,7 +392,7 @@ public sealed partial class ConstructBeacons
     {
         var h = 2166136261u;
         var any = false;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (a part with a store is special)
         {
             ref var p = ref c.Parts[i];
             if (p.Store == 0)

@@ -98,7 +98,7 @@ public static partial class ConstructLift
     {
         var cells = 0;
         var burners = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (cells, burners and compressors are special parts)
         {
             var d = c.Parts[i].D;
             if (d.IsEnvelope)
@@ -122,7 +122,7 @@ public static partial class ConstructLift
             c.Burners = new CBurner[burners];
         c.CellCount = c.BurnerCount = 0;
         c.CellVolume = c.CellFront = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials)
         {
             ref var p = ref c.Parts[i];
             var d = p.D;
@@ -147,7 +147,7 @@ public static partial class ConstructLift
             }
         }
         c.CompressorCount = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials)
             if (c.Parts[i].D.GasLitres > 0)
             {
                 if (c.CompressorCount == c.Compressors.Length)

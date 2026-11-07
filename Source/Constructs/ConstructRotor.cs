@@ -69,7 +69,7 @@ public static class ConstructRotor
     public static void Build(Construct c)
     {
         var n = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (rotors are special parts)
             if (c.Parts[i].D.Rotor != null)
                 n++;
         if (n > Construct.MaxRotors)
@@ -83,8 +83,10 @@ public static class ConstructRotor
         c.RotorCount = 0;
         c.RotorEngine = c.RotorGoverned = false;
         c.RpmGovern = 0;
-        for (var i = 0; i < c.PartCount && c.RotorCount < n; i++)
+        foreach (var i in c.Specials)
         {
+            if (c.RotorCount >= n)
+                break;
             ref var p = ref c.Parts[i];
             if (p.D.Rotor is not { } d)
                 continue;
