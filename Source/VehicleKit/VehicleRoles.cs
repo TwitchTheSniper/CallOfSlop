@@ -1069,7 +1069,7 @@ public static class VehicleRolesCli
         Problems();
         Make(Styles.Bandit, VehicleRoles.All[0], 2, 1); // (a throwaway: the JIT's first generation isn't counted)
         var rows = new List<(string Style, string Role, int Tier, List<Outcome> O)>();
-        Console.WriteLine($"role report: {seeds.Count} seed(s) a cell ({seeds.FirstOrDefault()} to {seeds.LastOrDefault()}), kit {VehicleKitVersion.Force?.ToString() ?? "4"}, generation only");
+        Console.WriteLine($"role report: {seeds.Count} seed(s) a cell ({seeds.FirstOrDefault()} to {seeds.LastOrDefault()}), kit {VehicleKitVersion.Force?.ToString() ?? VehicleKitVersion.Current.ToString()}, generation only");
         foreach (var st in Styles.All.Where(s => styleOnly == null || s.Name.Equals(styleOnly, StringComparison.OrdinalIgnoreCase)))
             foreach (var role in VehicleRoles.All.Where(r => roleOnly == null || r.Name.Equals(roleOnly, StringComparison.OrdinalIgnoreCase)))
                 foreach (var tier in tiers)

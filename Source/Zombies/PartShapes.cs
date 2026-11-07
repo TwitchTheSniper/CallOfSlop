@@ -36,7 +36,7 @@ public static class PartShapes
         _ => [],
     };
 
-    private const int FloatsPerVertex = 6;
+    internal const int FloatsPerVertex = 6;
 
     private static readonly object Gate = new();
     private static readonly Dictionary<string, ushort> Ids = new(StringComparer.Ordinal);
