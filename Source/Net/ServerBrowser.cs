@@ -337,7 +337,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 191: faction vehicles by role and by convoy (GameSandboxVehicles.cs): CActKind.FactionVehicle asks the server for one by role and tier, or for a convoy, in front of the player.
     // 192: the texture paint tool (ConstructFinish.cs): tool byte 16, CActKind.Texture and CBodyKind.Finish at the ends of their enums, and a Full ends with the textured parts; a material always goes by its name, never its row.
     // 193: the fuse tool (ConstructFuse.cs): tool byte 17, CActKind.Fuse at the end of its enum, and a Full ends with the fused units (runs of parts with their u32 tag).
-    public const byte ProtocolVersion = 193;
+    // 194: lofted hull bays (HullLoft.cs): a run-time part named by its key goes on the wire after Extrusion.WireMark as kind 246 and its name as text.
+    public const byte ProtocolVersion = 194;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -16,6 +16,7 @@ public sealed class Room
     public List<VPart> Containers = new();
     public List<VPart> Seats = new();
     public List<VPart> Furniture = new();
+    public List<string> Plan = new(); // the bays as planned ("Brow T", "Door", "Bay T-L"): a lofted bay's part name is its key, not its plan (VehicleBodyLanguage.cs)
     public List<VPart> Bays = new();
 
     public Vector3 FloorRest; // vehicle coordinates to the construct's rest frame

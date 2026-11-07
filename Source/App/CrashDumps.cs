@@ -46,7 +46,7 @@ public static class CrashDumps
     private static readonly string[] Headless =
     [
         "--selftest", "--selftest-only", "--selftest-list", "--net-client", "--crowd-bench", "--export-maps", "--check-map", "--check-maps", "--map-ops", "--weather-sim",
-        "--gen-map", "--gen-maps", "--gen-plan", "--gen-vehicle", "--gen-vehicles", "--check-vehicle", "--sweep-vehicle", "--diversity", "--diversity-style", "--kit-report", "--role", "--family", "--convoy", "--context", "--brief", "--drive-check", "--identity", "--grade-vehicle", "--grade-report", "--check-devedit", "--check-weapon", "--export-weapons", "--check-part", "--check-construct-parts", "--check-mods",
+        "--gen-map", "--gen-maps", "--gen-plan", "--gen-vehicle", "--gen-vehicles", "--check-vehicle", "--sweep-vehicle", "--diversity", "--diversity-style", "--body-report", "--kit-report", "--role", "--family", "--convoy", "--context", "--brief", "--drive-check", "--identity", "--grade-vehicle", "--grade-report", "--check-devedit", "--check-weapon", "--export-weapons", "--check-part", "--check-construct-parts", "--check-mods",
         "--check-parts", "--export-parts", "--bench-fuse", "--bench-fuse-net", "--master", "--bake", "--stuck-report", "--verify-update",
     ];
 

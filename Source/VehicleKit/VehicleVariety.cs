@@ -24,6 +24,8 @@ public static class VehicleVariety
     /// <summary>A part's kind: plates are plates and beams beams, whatever their material or size; anything else is itself.</summary>
     public static string Kind(string part)
     {
+        if (part.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
+            return "Hull Loft " + part[HullLoft.Prefix.Length..].TakeWhile(c => c != ' ').Where(char.IsLetter).Aggregate("", (s, c) => s + c); // (a lofted bay's key is its shape: count it as a bay, a door bay, a brow or a tail, or every seed's bays would read as new kinds)
         foreach (var plate in (string[])["Plate Steel", "Sheet Steel", "Tread Plate", "Wood Planks", "Bolt Deck"])
             if (part.StartsWith(plate, StringComparison.Ordinal))
                 return "plate";

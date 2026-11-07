@@ -949,6 +949,12 @@ public static class Extrusion
             Ordnance.Write(w, d);
             return;
         }
+        if (d.IsNamedRuntime)
+        {
+            w.U8(HullLoft.WireKind);
+            HullLoft.Write(w, d);
+            return;
+        }
         if (d.IsRackRuntime)
         {
             w.U8(ModularRack.WireKind);
@@ -993,6 +999,8 @@ public static class Extrusion
             return Ordnance.Read(ref r);
         if (profile == ModularRack.WireKind)
             return ModularRack.Read(ref r);
+        if (profile == HullLoft.WireKind)
+            return HullLoft.Read(ref r);
         var mask = 0ul;
         var shape = ExShape.Section;
         ushort wall = 0;
