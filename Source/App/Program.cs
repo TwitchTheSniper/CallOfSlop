@@ -1933,6 +1933,7 @@ public static unsafe partial class Program
         TacticalRender.DrawGlow(Gfx, _game, now); // cover walls, flash and stun bursts, device lights (TacticalRender.cs)
         LauncherRender.DrawGlow(Gfx, _game, now); // rocket flames and smoke trails (LauncherRender.cs)
         EmitBlasts(now); // new blasts: particles (Source/Render/Fx/Fx.cs)
+        _game.MegaFxFrame(now, (float)FrameDt); // massive blasts: fireball, shock ring, plume, late bang (Source/Render/Fx/MegaBlastFx.cs)
         DrawGrenadeZones(now); // built grenades' fires, gas clouds and lures (Program.Grenades.cs)
         foreach (var cloud in _game.Smokes)
         {
@@ -2270,6 +2271,7 @@ public static unsafe partial class Program
         if (now < _game.ShieldFlashUntil) // your Last Stand shield blocked a hit
             Gfx.Rect(0, 0, w, h, new Vector3(0.35f, 0.85f, 1f), Math.Clamp((float)((_game.ShieldFlashUntil - now) / 0.3) * 0.3f, 0f, 0.3f));
         TacticalHud.DrawOverlay(Gfx, _game, now, w, h); // flashbang white-out, stun edges (TacticalHud.cs)
+        MegaBlastFx.DrawOverlay(Gfx, now, local?.RenderEye ?? Vector3.Zero, w, h); // a massive blast's flash (Source/Render/Fx/MegaBlastFx.cs)
         if (local is { Alive: false })
             Gfx.Rect(0, 0, w, h, new Vector3(0.5f, 0f, 0f), 0.35f);
         if (Ui.SceneDim(_mouseCaptured, DimmingMenusOpen) is > 0 and var dim)

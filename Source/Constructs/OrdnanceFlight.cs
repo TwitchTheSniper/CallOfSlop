@@ -58,6 +58,7 @@ public sealed class OrdCharge
     public int Count; // bomblets as designed
     public float SubLife, SubProx; // a mine's life (s) and range (m)
     public bool Kinetic; // a penetrator: its damage is its speed's when it hits
+    public byte Look; // how its blast looks (MegaLook: a fission, fusion or antimatter warhead in it; the strongest wins)
 }
 
 /// <summary>A design's flight: its stages, steering, seeker, fuses and charges, worked out with its numbers (<see cref="OrdnanceDesign.Stats"/>).</summary>
@@ -235,6 +236,7 @@ public sealed class OrdFlightStats
                     damageK += o.Damage * kg;
                     craterK += o.Crater * kg;
                     charge.Kinetic |= o.Text == "kinetic";
+                    charge.Look = Math.Max(charge.Look, (byte)MegaBlasts.LookOf(o.Text));
                     if (SubOf(o.Text) is var sub and not OrdSub.None && charge.Sub == OrdSub.None)
                     {
                         charge.Sub = sub;
@@ -286,7 +288,9 @@ public sealed class OrdFlightStats
         var life = OrdnanceFlight.LifeSeconds(f);
         if (life > ConstructWorld.ShellMaxAge / (float)World.TickRate)
             f.Limits.Add($"it flies up to {life:0} s, past the {ConstructWorld.ShellMaxAge / World.TickRate} s a shell is usually given");
-        if (st.Blast > 30)
+        if (st.Blast >= ConstructWorld.MegaRadius)
+            MegaBlasts.Limits(f, st);
+        else if (st.Blast > 30)
             f.Limits.Add($"its {st.Blast:0} m blast walks {ConstructWorld.ShellPartsPerTick} parts a tick over up to {ConstructWorld.ShellMaxBodies} bodies: on a big target it takes several ticks");
         if ((f.Fuses & OrdFuse.Remote) != 0)
             f.Limits.Add("its remote fuse hears its channel at any range");

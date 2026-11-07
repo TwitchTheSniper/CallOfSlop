@@ -178,6 +178,7 @@ public sealed class OrdStats
 {
     public float Mass, Length, Diameter, Payload, Blast, Damage, Crater, Fuse;
     public int Sections, Items; // lines, and section parts it takes in survival
+    public byte Look; // its strongest charge's blast look (MegaBlasts): what it looks like if it is set off where it hangs
     public string Problem = ""; // why it won't be built ("" when it will)
     public readonly OrdFlightStats Flight = new(); // stages, steering, seeker, fuses and charges (OrdnanceFlight.cs)
     public short[] BoxPiece = []; // its run-time part's boxes: the piece each draws (-1: hidden), so a shell in the air drops a spent stage's (ShellLooks.cs)
@@ -368,6 +369,8 @@ public sealed class OrdnanceDesign
         if (payload > 0)
             (st.Blast, st.Damage, st.Crater) = Charge(blastK, damageK, craterK, payload);
         OrdFlightStats.Fill(this, st);
+        foreach (var c in st.Flight.Charges)
+            st.Look = Math.Max(st.Look, c.Look);
         if (Pieces.Count == 0)
             st.Problem = "add a section";
         else if (Kind == OrdKind.Spent)

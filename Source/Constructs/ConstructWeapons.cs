@@ -101,6 +101,7 @@ public struct CCookOff
     public int Ticks;
     public ushort Body; // where it came from (credit)
     public PropBreakable? Bomb; // an explosive part going off (its own blast, ConstructWorld.Arm), else a cook-off
+    public byte Look; // ...a designed weapon's blast look (MegaBlasts), for a massive one
 }
 
 /// <summary>Who and what a construct gun can hit besides construct parts and the map (the game: players, bots, zombies).</summary>
@@ -129,6 +130,12 @@ public interface IConstructTargets
 
     /// <summary>A shell went off: the players and zombies in reach and the crater, at once (the parts are walked by <see cref="ConstructWorld.StepShells"/>).</summary>
     void ShellBlast(Vector3 at, float radius, float damage, float crater, bool burns, Construct? by, int gunPart);
+
+    /// <summary>A massive blast's shock front went from <paramref name="from"/> to <paramref name="to"/> m this tick (from -1 on its first): the players and zombies it passed (ConstructMegaBlast.cs).</summary>
+    void MegaFront(Vector3 at, float radius, float damage, float from, float to, Construct? by, int gunPart);
+
+    /// <summary>A massive blast's crater of <paramref name="crater"/> m: dug in bands over ticks (Game.MegaDigTick).</summary>
+    void MegaGround(Vector3 at, float crater);
 }
 
 /// <summary>
@@ -1370,7 +1377,9 @@ public static class ConstructWeapons
             var at = co;
             world.CookOffs[k] = world.CookOffs[--world.CookOffCount];
             k--;
-            if (at.Bomb != null)
+            if (at.Bomb != null && at.Bomb.ExplodeRadius >= ConstructWorld.MegaRadius)
+                world.MegaCookOff(at); // (a massive warhead set off where it hangs: a shock front, not a prop's blast; ConstructMegaBlast.cs)
+            else if (at.Bomb != null)
                 world.Targets?.ExplodePart(at.At, at.Bomb, world.Get(at.Body));
             else
                 Explode(world, at.At, at.Radius, at.Damage, world.Get(at.Body), CFireKind.CookOff);

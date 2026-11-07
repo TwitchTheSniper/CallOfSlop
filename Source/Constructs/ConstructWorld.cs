@@ -240,7 +240,7 @@ public sealed partial class ConstructWorld
             CookOffs[CookOffCount++] = new CCookOff
             {
                 At = ConstructRender.PartCentre(c, part), Radius = bomb.ExplodeRadius, Damage = bomb.ExplodeDamage,
-                Ticks = Math.Max(1, (int)MathF.Round(bomb.ExplodeFuse * World.TickRate)), Body = c.Id, Bomb = bomb,
+                Ticks = Math.Max(1, (int)MathF.Round(bomb.ExplodeFuse * World.TickRate)), Body = c.Id, Bomb = bomb, Look = c.Parts[part].D.OrdStats?.Look ?? MegaBlasts.Plain,
             };
         Events.Add($"construct {c.Id}: the {c.Parts[part].D.Name} is armed");
     }

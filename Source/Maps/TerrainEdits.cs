@@ -2,14 +2,40 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>One change to the ground: what it was and where (the server's log, sent to every client and to joiners).</summary>
-public readonly record struct DigOp(DigKind Kind, Vector3 At, float Radius)
+/// <summary>One change to the ground: what it was and where (the server's log, sent to every client and to joiners).
+/// <para><paramref name="Slice"/> of <paramref name="Slices"/> (protocol 195): a big crater is dug a band of its footprint's rows at a time over several
+/// ticks (Game.MegaDigTick), each band an op of its own in the log, so no tick and no peer digs a whole one at once (docs/sandbox/TERRAIN-DIGGING.md,
+/// "Big craters"). Slices 0 or 1: the whole op.</para></summary>
+public readonly record struct DigOp(DigKind Kind, Vector3 At, float Radius, byte Slice = 0, byte Slices = 0)
 {
-    /// <summary>Bytes of an op on the wire: kind, centre, radius in centimetres.</summary>
+    /// <summary>Bytes of an op on the wire: kind, centre, radius in centimetres (a sliced op adds its slice and slices: <see cref="SliceBytes"/>).</summary>
     public const int WireBytes = 1 + 12 + 2;
+
+    /// <summary>The extra bytes of a sliced op (its kind byte carries <see cref="SlicedMark"/>).</summary>
+    public const int SliceBytes = 2;
+
+    /// <summary>The kind byte's mark for a sliced op.</summary>
+    public const byte SlicedMark = 0x80;
 
     /// <summary>The op as the wire carries it (radius rounded to a centimetre), so the server applies exactly what clients will.</summary>
     public DigOp Quantised => this with { Radius = MathF.Round(Math.Clamp(Radius, 0.05f, 600f) * 100f) / 100f };
+
+    /// <summary>Is this one band of a sliced op?</summary>
+    public bool Sliced => Slices > 1;
+
+    /// <summary>The rows <paramref name="lo"/>..<paramref name="hi"/> of a footprint's <paramref name="cj0"/>..<paramref name="cj1"/> this op digs: all of them, or its band.</summary>
+    public void Rows(int cj0, int cj1, out int lo, out int hi)
+    {
+        if (!Sliced || cj1 < cj0)
+        {
+            (lo, hi) = (cj0, cj1);
+            return;
+        }
+        var n = cj1 - cj0 + 1;
+        var k = Math.Min((int)Slice, Slices - 1);
+        lo = cj0 + n * k / Slices;
+        hi = cj0 + n * (k + 1) / Slices - 1;
+    }
 }
 
 /// <summary>Kinds of ground change. Wire bytes: add new kinds at the end.</summary>
@@ -344,6 +370,7 @@ public sealed partial class TerrainEdits : IDigGround
         var r2 = r * r;
         var c = op.At;
         Footprint(c, r, out var ci0, out var ci1, out var cj0, out var cj1);
+        op.Rows(cj0, cj1, out cj0, out cj1); // (a big crater's band: Game.MegaDigTick)
         var changed = 0;
         for (var cj = cj0; cj <= cj1; cj++)
         for (var ci = ci0; ci <= ci1; ci++)

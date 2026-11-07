@@ -345,6 +345,7 @@ public sealed partial class Game
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
+        MegaDigTick(); // (a big crater's next band: GameSandboxMegaBlast.cs)
         if (Constructs.ShellCount > 0)
             ShellTrails(); // (artillery in the air, as drawn here: GameSandboxShells.cs)
         SandboxRidersFollow(); // (riders are where their constructs now put them: GameSandboxRide.cs)

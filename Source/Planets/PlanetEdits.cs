@@ -259,6 +259,9 @@ public sealed class PlanetEdits : IDigGround
         {
             if (!Footprint(op.At, op.Radius, f, out var ci0, out var ci1, out var cj0, out var cj1))
                 continue;
+            op.Rows(cj0, cj1, out cj0, out cj1); // (a big crater's band of each face: Game.MegaDigTick)
+            if (cj1 < cj0)
+                continue;
             var here = 0;
             for (var cj = cj0; cj <= cj1; cj++)
             for (var ci = ci0; ci <= ci1; ci++)

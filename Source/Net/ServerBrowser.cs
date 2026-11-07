@@ -338,7 +338,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 192: the texture paint tool (ConstructFinish.cs): tool byte 16, CActKind.Texture and CBodyKind.Finish at the ends of their enums, and a Full ends with the textured parts; a material always goes by its name, never its row.
     // 193: the fuse tool (ConstructFuse.cs): tool byte 17, CActKind.Fuse at the end of its enum, and a Full ends with the fused units (runs of parts with their u32 tag).
     // 194: vehicle kit phase 9, cargo and spares (VehicleCargo.cs): no message changed; a faction vehicle's saved brief is format 2 (its own cargo, VehicleBrief.Stowed), and a blueprint may stow parts in its containers' slots ("stored", filled on the server at spawn).
-    public const byte ProtocolVersion = 194;
+    // 195: massive ordnance (ConstructMegaBlast.cs, docs/sandbox/CONSTRUCTS.md "Massive blasts"): CFireKind.ShellLand ends with the blast's look (u8: 0 plain, 1 fission, 2 fusion, 3 antimatter); a DigOp whose kind byte has 0x80 set is one band of a sliced crater and carries its slice and slices (two u8).
+    public const byte ProtocolVersion = 195;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

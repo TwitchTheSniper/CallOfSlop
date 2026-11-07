@@ -83,20 +83,32 @@ public sealed partial class Game
                 c.Wake();
     }
 
-    public static void WriteDigOp(PacketWriter w, in DigOp op) =>
-        w.U8((byte)op.Kind).Vec(op.At).U16((ushort)MathF.Round(op.Radius * 100f));
+    public static void WriteDigOp(PacketWriter w, in DigOp op)
+    {
+        w.U8((byte)((byte)op.Kind | (op.Sliced ? DigOp.SlicedMark : 0))).Vec(op.At).U16((ushort)MathF.Round(op.Radius * 100f));
+        if (op.Sliced)
+            w.U8(op.Slice).U8(op.Slices); // (protocol 195: a band of a big crater)
+    }
 
     public static bool ReadDigOp(ref PacketReader r, out DigOp op)
     {
         op = default;
         if (!r.Has(DigOp.WireBytes))
             return false;
-        var kind = (DigKind)r.U8();
+        var b = r.U8();
+        var kind = (DigKind)(b & ~DigOp.SlicedMark);
         var at = r.Vec();
         var radius = r.U16() / 100f;
         if (kind > DigKind.FillSand)
             return false;
-        op = new DigOp(kind, at, radius);
+        byte slice = 0, slices = 0;
+        if ((b & DigOp.SlicedMark) != 0)
+        {
+            if (!r.Has(DigOp.SliceBytes))
+                return false;
+            (slice, slices) = (r.U8(), r.U8());
+        }
+        op = new DigOp(kind, at, radius, slice, slices);
         return true;
     }
 

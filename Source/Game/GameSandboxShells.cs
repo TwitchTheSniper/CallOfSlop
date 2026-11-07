@@ -92,6 +92,11 @@ public sealed partial class Game
         ShellsLandedSeen++;
         ConstructBlastsSeen++;
         var r = MathF.Max(1f, e.Radius);
+        if (r >= ConstructWorld.MegaRadius)
+        {
+            MegaBlastFx.Add(e.At, r, e.Ext, now); // (a massive blast: its own flash, fireball, ring, plume and late bang, Render/Fx/MegaBlastFx.cs)
+            return;
+        }
         if (kind == ShellKind.Smoke)
             for (var i = 0; i < 3; i++)
             {

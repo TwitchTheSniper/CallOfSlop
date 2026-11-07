@@ -33,6 +33,7 @@ public sealed class Settings
     public ulong WorldKey; // who this PC is to a saved world (made once, sent to the host: GameWorldSave.cs)
     public int WorldAutosaveMinutes = 5; // minutes between a saved world's autosaves (0: off)
     public bool SandboxSurvival; // hosting Sandbox: Survival rather than Creative (the lobby room's Match tab; GameSandboxSurvival.cs)
+    public int SandboxMaxBlast; // hosting Sandbox: the biggest blast's radius in metres (0: no limit but the engine's 2 km; the lobby room's Match tab, ConstructMegaBlast.cs)
     public int SandboxMaxBodies = ConstructWorld.DefaultBodyCap; // hosting Sandbox: the safety cap on constructs, wrecks and loose parts (board item cl01; the lobby room's Match tab)
     public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
     public bool TravelTogether; // host setting: a ship lands on another planetoid only with everyone aboard (off: free travel, each lands alone; docs/space/FREE-TRAVEL.md)
@@ -434,6 +435,7 @@ public sealed class Settings
                     case "world_autosave" when int.TryParse(v, out var was): s.WorldAutosaveMinutes = Math.Clamp(was, 0, 120); break;
                     case "sandbox_survival": s.SandboxSurvival = v == "1"; break;
                     case "sandbox_max_bodies" when int.TryParse(v, out var smb): s.SandboxMaxBodies = Math.Clamp(smb, 100, ConstructWorld.MostBodies); break;
+                    case "sandbox_max_blast" when int.TryParse(v, out var sbl): s.SandboxMaxBlast = Math.Clamp(sbl, 0, (int)ConstructWorld.MegaMaxRadius); break;
                     case "sandbox_max_per_player" when int.TryParse(v, out var smp): s.SandboxMaxPerPlayer = Math.Clamp(smp, 0, 10000); break;
                     case "travel_together": s.TravelTogether = v == "1"; break;
                     case "hold_to_paint": s.HoldToPaint = v != "0"; break;
@@ -588,6 +590,7 @@ public sealed class Settings
                     $"world_autosave={WorldAutosaveMinutes}",
                     $"sandbox_survival={(SandboxSurvival ? 1 : 0)}",
                     $"sandbox_max_bodies={SandboxMaxBodies}",
+                    $"sandbox_max_blast={SandboxMaxBlast}",
                     $"sandbox_max_per_player={SandboxMaxPerPlayer}",
                     $"travel_together={(TravelTogether ? 1 : 0)}",
                     $"hold_to_paint={(HoldToPaint ? 1 : 0)}",
