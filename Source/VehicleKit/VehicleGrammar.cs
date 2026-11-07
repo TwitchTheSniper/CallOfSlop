@@ -1025,7 +1025,8 @@ public static class ShapeGrammar
     private static void Magazine(Vehicle v, Room room, float z0, VPart[] guns)
     {
         var y = room.FloorTop + 0.2f;
-        v.Feeds(new Vector3(0.5f, y, z0 + 0.625f), new Vector3(0f, y, z0 + 0.625f), "FMJ", v.Dice.Fork("rounds").Pick((string[])["Armour Piercing", "Explosive Tip", "Dragon's Breath"]), room.Bays[0], "lever", guns[0], guns[1..]);
+        var side = v.Look?.DoorSide ?? 1; // (the crates on the door's side, the seats on the other)
+        v.Feeds(new Vector3(0.5f * side, y, z0 + 0.625f), new Vector3(0f, y, z0 + 0.625f), "FMJ", v.Dice.Fork("rounds").Pick((string[])["Armour Piercing", "Explosive Tip", "Dragon's Breath"]), room.Bays[0], "lever", guns[0], guns[1..]);
     }
 
     /// <summary>A plated porch behind the body with the fuel drum on it (HeavyShape.Porch).</summary>

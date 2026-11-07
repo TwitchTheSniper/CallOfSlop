@@ -466,7 +466,7 @@ public static class HullLoft
             foreach (var (fz0, fz1) in new[] { (z0, z0 + 0.125f), (z1 - 0.125f, z1) })
             {
                 p.Facet([new(DoorPlane, 0, fz0), new(DoorPlane, DoorTop, fz0), new(DoorPlane, DoorTop, fz1), new(DoorPlane, 0, fz1)], Vector3.UnitX, Rust, off: [Vector3.UnitX, Off(FrameTop(a), 1), Off(FrameTop(b), 1), Vector3.UnitX]);
-                p.Hide(new Vector3(DoorPlane - 0.03f, 0, fz0), new Vector3(DoorPlane + 0.03f, DoorTop, fz1));
+                p.Hide(new Vector3(DoorPlane - 0.03f, 0, MathF.Max(fz0, z0 + 0.01f)), new Vector3(DoorPlane + 0.03f, DoorTop, MathF.Min(fz1, z1 - 0.01f))); // (a centimetre short of the bay's ends: a neighbour's wall slab stands in line with it)
             }
             p.Hide(new Vector3(DoorPlane - 0.03f, DoorTop, z0), new Vector3(DoorPlane + 0.03f, DoorTop + 0.1f, z1));
             // Where the section stands out past the doorway's plane (a flare, an overhang over the wheels, a strake), the bays either side are wider than the frame:
@@ -576,7 +576,10 @@ public static class HullLoft
             Cap(p, a, 0);
         if (back)
             Cap(p, b, length);
-        foreach (var (k, z) in new[] { (0, 0.125f), (1, length - 0.125f) })
+        // The feet 12 cm in from each end (phase 2; 12.5 before): a part's place is kept to the centimetre, and a deck's sockets are on the quarter metre, so a foot an
+        // eighth in put a bay's front on a half centimetre that rounded one way after one length and the other way after another (a 0.75 m bay after a metre one met
+        // its neighbour). A bay stands by its front foot ("footL0"), or turned round by its back one ("footR1"), so both ends are 12 cm in.
+        foreach (var (k, z) in new[] { (0, 0.12f), (1, length - 0.12f) })
         {
             var foot = FootX(MathF.Min(a.P[0].X, b.P[0].X)); // (0.75 m on every truck's room: phase 1's)
             p.Sock($"footL{k}", new Vector3(-foot, 0, z), "-y");

@@ -29,14 +29,20 @@ public sealed partial class Vehicle
         for (var k = 0; k < names.Length; k++)
         {
             var d = Def(names[k]); // (a lofted bay is made the first time its key is asked for: a few milliseconds, so a spawn hands back to the tick after each)
-            lengths[k] = MathF.Round(d.BoundsMax.Z - d.BoundsMin.Z, 2);
+            lengths[k] = HullLoft.ShapeOf(names[k])?.Length ?? MathF.Round(d.BoundsMax.Z - d.BoundsMin.Z, 2); // (a lofted bay's own length: its caps and door ends stand a little past it)
             VehicleGenJob.Yield();
         }
         var z1 = z0 + lengths.Sum();
         var r = new Rect(-BayHalf, BayHalf, z0, z1);
         var floorHalf = Look?.Scale.FloorHalf ?? 1.125f;
         var room = new Room { Tag = tag, R = r, DoorFace = new Vector3(doorSide, 0, 0), FloorTop = floorTop, Plan = bays.ToList() };
-        Deck(tag + "floor", under, new Rect(-floorHalf, floorHalf, z0, z1), "floor");
+        // The floor: plates on a half-metre lattice where the bays' feet stand (a quarter-metre plate's centre is half a centimetre off the grid, so a foot on one
+        // stood its bay 5 mm off, and bays of different lengths then met in each other: phase 2); an odd column at the +x edge in plates of any size.
+        var cols = (int)MathF.Round(2 * floorHalf / Cell);
+        var main = cols % 2 == 0 ? floorHalf : floorHalf - Cell;
+        Deck(tag + "floor", under, new Rect(-floorHalf, main, z0, z1), "floor", aligned: true);
+        if (main < floorHalf)
+            Deck(tag + "floor", under, new Rect(main, floorHalf, z0, z1), "floor");
         var walls = PanelList(tag + "walls");
         var z = z0;
         var ceiling = 0f;
