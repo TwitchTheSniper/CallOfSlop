@@ -34,15 +34,22 @@ public static class HullLoft
             return -1;
         }
 
-        /// <summary>The waist, where a pannier or a sponson hangs: the widest height from 0.4 m to 1.5 m (the one nearest 0.85 m among equals), on a 5 cm grid.</summary>
+        /// <summary>
+        /// The waist, where a pannier or a sponson hangs: the height from 0.4 m to 1.5 m nearest 0.85 m among those within 3 cm of the widest (an upright wall that
+        /// leans out a little keeps its waist low, clear of eaves or a ledge above), on a 5 cm grid.
+        /// </summary>
         public float WaistY
         {
             get
             {
-                var (best, wx) = (0.85f, XAt(0.85f));
+                var most = 0f;
                 for (var y = 0.4f; y <= 1.501f; y += 0.05f)
-                    if (XAt(y) is var x && (x > wx + 0.002f || MathF.Abs(x - wx) <= 0.002f && MathF.Abs(y - 0.85f) < MathF.Abs(best - 0.85f)))
-                        (best, wx) = (y, x);
+                    most = MathF.Max(most, XAt(y));
+                var best = 0.85f;
+                var gap = float.MaxValue;
+                for (var y = 0.4f; y <= 1.501f; y += 0.05f)
+                    if (XAt(y) >= most - 0.03f && MathF.Abs(y - 0.85f) < gap)
+                        (best, gap) = (y, MathF.Abs(y - 0.85f));
                 return MathF.Round(best * 100) / 100;
             }
         }

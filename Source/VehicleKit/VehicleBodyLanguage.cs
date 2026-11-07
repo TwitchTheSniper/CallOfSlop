@@ -59,11 +59,14 @@ public sealed class BodyLook
         TailNarrow = l.TailNarrow * (float)d.Between(0.97, 1.0);
     }
 
+    /// <summary><c>--language NAME</c>: every kit-5 body in that language, whatever its style (to compare languages on one vehicle).</summary>
+    public static BodyLanguage? Force;
+
     /// <summary>A body's look from the style's languages, on the body layer's "language" fork.</summary>
     public static BodyLook Roll(Vehicle v)
     {
         var d = v.Dice.Fork("language");
-        var list = BodyLanguage.Of(v.Style);
+        var list = Force is { } forced ? [(forced, 1.0)] : BodyLanguage.Of(v.Style);
         var roll = d.Next() * list.Sum(x => x.W);
         var pick = list[^1].L;
         foreach (var (l, w) in list)
@@ -267,28 +270,3 @@ public static class BodyReportCli
     }
 }
 
-public static class LoftProbe // TEMP
-{
-    public static int Run(string[] args)
-    {
-        VehicleKitVersion.Force = 5;
-        var g = VehicleRegistry.All.First(x => x.Name == "Bandit War Bus");
-        var v = VehicleRegistry.Make(g, 1);
-        var room = v.Rooms[0];
-        var (tris, owner) = VehiclePlan.PartTriangles(v.Built);
-        var off = room.FloorRest;
-        Console.WriteLine($"room z {room.R.Z0}..{room.R.Z1} floortop {room.FloorTop} off {off}");
-        foreach (var b in room.Bays)
-            Console.WriteLine($"bay {b.Index} centre {v.CentreOf(b)} {b.Def.Name} boxes {b.Def.Boxes.Length}");
-        for (var z = room.R.Z0 + 0.35f; z < room.R.Z1 - 0.3f; z += 0.25f)
-        {
-            var from = new Vector3(0, room.FloorTop + 1.1f, z) + off;
-            var hits = new List<string>();
-            for (var k = 0; k + 2 < tris.Length; k += 3)
-                if (VehiclePlan.Hits(tris[k..(k + 3)], from, -Vector3.UnitX, 3.5f))
-                    hits.Add(owner[k / 3] + ":" + v.Built.DefOf(owner[k / 3]).Name[..Math.Min(14, v.Built.DefOf(owner[k / 3]).Name.Length)]);
-            Console.WriteLine($"z {z:0.00}: {string.Join(", ", hits.Distinct())}");
-        }
-        return 0;
-    }
-}
