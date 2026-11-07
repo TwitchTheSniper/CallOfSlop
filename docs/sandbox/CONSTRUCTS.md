@@ -1171,7 +1171,7 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
   moves and the tree with it. A freeform-attached box is a leaf turned in its group. The tree is built on first use after the
   parts change (`Construct.Collider`, in the physics step: a client never builds one) and reuses its arrays. From 2,048
   leaves (`ConstructCollider.FastMin`) a group's tree is built from Morton order: the leaf centres on a lattice of 1,024 cubes
-  along the group's longest side, radix sorted, halved by count, the bounds made bottom up (O(n); sorting the leaves at every
+  along the group's longest side, radix sorted, cut where the codes first differ (a cell boundary), the bounds made bottom up (O(n); sorting the leaves at every
   level cost 13 to 18 ms at 16,000 parts, and a tree-ordered list made the median split's selection slow). Smaller trees are
   built as before. A big body's plain edits renumber the tree instead of building it ([Rebuilds](#rebuilds)).
 - **Against other constructs** (`PairContacts`). The two trees are walked together to the leaf pairs within this tick's

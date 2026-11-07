@@ -341,8 +341,8 @@ public sealed partial class Construct
     private double _sXX, _sYY, _sZZ, _sXY, _sXZ, _sYZ; // second moments of the boxes' mass about the body origin
     private double _jXX, _jYY, _jZZ, _jXY, _jXZ, _jYZ; // the boxes' own inertia, summed
     private Vector3 _sMin, _sMax; // the parts' bounds (structure: a merged receiver's and an envelope's drawn boxes too)
-    private readonly double[] _ssOwnM = new double[MaxJoints + 1], _ssM = new double[MaxJoints + 1], _ssSq = new double[MaxJoints + 1];
-    private readonly Vector3D[] _ssOwnC = new Vector3D[MaxJoints + 1], _ssC = new Vector3D[MaxJoints + 1];
+    private double[] _ssOwnM = [], _ssM = [], _ssSq = []; // each segment's own and carried mass, and its spin term (big bodies only: made at the first sum)
+    private Vector3D[] _ssOwnC = [], _ssC = [];
 
     private struct Vector3D
     {
@@ -365,6 +365,14 @@ public sealed partial class Construct
         _sC = _sB = default;
         _sXX = _sYY = _sZZ = _sXY = _sXZ = _sYZ = 0;
         _jXX = _jYY = _jZZ = _jXY = _jXZ = _jYZ = 0;
+        if (_ssM.Length == 0)
+        {
+            _ssOwnM = new double[MaxJoints + 1];
+            _ssM = new double[MaxJoints + 1];
+            _ssSq = new double[MaxJoints + 1];
+            _ssOwnC = new Vector3D[MaxJoints + 1];
+            _ssC = new Vector3D[MaxJoints + 1];
+        }
         for (var s = 0; s <= MaxJoints; s++)
         {
             _ssOwnM[s] = _ssM[s] = _ssSq[s] = 0;
@@ -587,8 +595,8 @@ public sealed partial class Construct
         Span<double> ownM = stackalloc double[MaxJoints + 1];
         Span<double> m = stackalloc double[MaxJoints + 1];
         Span<double> sq = stackalloc double[MaxJoints + 1];
-        var ownC = _ownCScratch;
-        var cc = _cScratch;
+        Span<Vector3D> ownC = stackalloc Vector3D[MaxJoints + 1];
+        Span<Vector3D> cc = stackalloc Vector3D[MaxJoints + 1];
         for (var s = 0; s <= JointCount; s++)
         {
             ownM[s] = _ssOwnM[s];
@@ -617,7 +625,6 @@ public sealed partial class Construct
         }
     }
 
-    private readonly Vector3D[] _ownCScratch = new Vector3D[MaxJoints + 1], _cScratch = new Vector3D[MaxJoints + 1];
 
     /// <summary>AddSegMass into double sums (the same walk up the joints, the same frames).</summary>
     private void SegSums(int i, Vector3 at, Vector3 half, float mass, double sign, Span<double> ownM, Span<Vector3D> ownC, Span<double> segM, Span<Vector3D> segC, Span<double> sq)

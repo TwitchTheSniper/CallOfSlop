@@ -196,7 +196,7 @@ internal sealed partial class ConstructCollider
     /// <summary>
     /// Leaves from which the trees are built from Morton order instead (docs/perf/LIMITS.md, "Rebuilds"): each group's
     /// leaf centres on a lattice of 1,024 cells along its longest side (cubes: a long hull is cut along its length), interleaved, radix sorted (no compare, so no branch a tree-ordered list can
-    /// fool), then halved by count all the way down, the bounds made bottom-up: O(n), the leaves moved once. Below this
+    /// fool), then cut where the codes first differ all the way down (a lattice cell's boundary), the bounds made bottom-up: O(n), the leaves moved once. Below this
     /// the old sort is kept, so small bodies' trees (and the contacts they give) are what they were.
     /// </summary>
     internal const int FastMin = 2048;
@@ -382,7 +382,7 @@ internal sealed partial class ConstructCollider
         return v;
     }
 
-    /// <summary>A node over Leaves[start .. start + count] in Morton order: halved by count, its bounds from its children's.</summary>
+    /// <summary>A node over Leaves[start .. start + count] in Morton order: cut where the codes first differ, its bounds from its children's.</summary>
     private void FastNode(int node, int start, int count)
     {
         Vector3 lo, hi;
@@ -404,7 +404,25 @@ internal sealed partial class ConstructCollider
             n.Count = count;
             return;
         }
+        // Split where the codes first differ (a cell boundary of the lattice: the two halves' boxes barely overlap), or in
+        // the middle when they are all the same cell.
         var half = count / 2;
+        var first = _code[start];
+        var last = _code[start + count - 1];
+        if (first != last)
+        {
+            var bit = 1u << (31 - System.Numerics.BitOperations.LeadingZeroCount(first ^ last));
+            int a0 = start, a1 = start + count - 1; // (the first code with that bit set: the codes are sorted)
+            while (a0 < a1)
+            {
+                var mid = (a0 + a1) >> 1;
+                if ((_code[mid] & bit) != 0)
+                    a1 = mid;
+                else
+                    a0 = mid + 1;
+            }
+            half = a0 - start;
+        }
         var left = NodeCount;
         NodeCount += 2;
         FastNode(left, start, half);
