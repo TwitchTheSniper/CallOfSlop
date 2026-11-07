@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-part/1",
   "name": "5-Station Bomb Rack",
   "description": "Five bombs side by side.",
+  "legacy": true,
   "modularRack": {
     "stations": 5,
     "layout": "row",

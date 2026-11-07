@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ordnance Rack",
+  "description": "One station for a bomb or a missile, set by the configure tool: a grid or a drum, its stations, and the largest ordnance it takes.",
+  "modularRack": {
+    "layout": "grid",
+    "rows": 1,
+    "columns": 1,
+    "length": 2.5,
+    "diameter": 0.25
+  }
+}

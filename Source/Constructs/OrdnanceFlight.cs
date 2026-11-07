@@ -409,16 +409,16 @@ public static class OrdnanceFlight
 
     // ---- Launch -----------------------------------------------------------------------------------------------------
 
-    /// <summary>Why a designed missile on a rail stays there (its first stage's push below its weight here), or null.</summary>
+    /// <summary>Why a designed missile on a rail or an Ordnance Rack stays there (its first stage's push below its weight here), or null.</summary>
     public static string? Grounded(Construct c, int rack, int part)
     {
-        if (!c.DefOf(rack).RackRail || c.DefOf(part).OrdStats is not { } st || c.DefOf(part).OrdDesign?.Kind != OrdKind.Missile || st.Flight.Stages.Count == 0)
+        if (!ConstructOrdnance.Launches(c.DefOf(rack), c.DefOf(part)) || c.DefOf(part).OrdStats is not { } st || c.DefOf(part).OrdDesign?.Kind != OrdKind.Missile || st.Flight.Stages.Count == 0)
             return null;
         var g = st.Flight.Stages[0];
         var at = ConstructRender.PartCentre(c, part);
         var push = g.Thrust - g.AirThrust + (g.MinSpeed <= RailKick ? g.AirThrust * MathF.Min(1f, ConstructAir.Density(at)) : 0);
         var weight = st.Mass * ConstructShells.GravityAt(at).Length();
-        return push >= weight ? null : $"its thrust ({push / 1000f:0.#} kN) is below its weight ({weight / 1000f:0.#} kN): it won't leave the rail";
+        return push >= weight ? null : $"its thrust ({push / 1000f:0.#} kN) is below its weight ({weight / 1000f:0.#} kN): it won't leave the {(c.DefOf(rack).RackRail ? "rail" : "rack")}";
     }
 
     /// <summary>Server: a designed weapon leaves its rack. False when the pool is full (it waits on its hook).</summary>
@@ -428,10 +428,9 @@ public static class OrdnanceFlight
         var st = def.OrdStats!;
         var f = st.Flight;
         var design = def.OrdDesign!;
-        var rail = c.DefOf(rack).RackRail;
+        var rail = ConstructOrdnance.Launches(c.DefOf(rack), def); // (a rail, or a missile on an Ordnance Rack: it leaves forward and lights at once)
         var at = ConstructOrdnance.ReleaseAt(c, rack, part); // (a drum turns it to the bottom first)
-        c.WorldFrame(c.Parts[part].Seg, out var q, out _);
-        var fwd = Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, q * Rot24.Quat(c.Parts[part].Rot)));
+        var fwd = ConstructOrdnance.LaunchDir(c, rack, part);
         var vel = c.PointVel(at) + c.SegPointVel(c.Parts[part].Seg, at) + (rail ? fwd * RailKick : Vector3.Zero);
         var first = f.Charges.Count > 0 ? f.Charges[0] : null;
         var s = new CShell

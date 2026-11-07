@@ -68,7 +68,7 @@ public static class ConstructReplace
     /// Can part <paramref name="part"/> become an <paramref name="e"/>? Null and the pose, or why not. The same turn is tried
     /// first, so a beam stays a beam's way round; a part of another size goes where its sockets meet the old links.
     /// </summary>
-    public static string? Plan(ConstructWorld world, Construct c, int part, ConstructPartDef e, out Swap swap)
+    public static string? Plan(ConstructWorld world, Construct c, int part, ConstructPartDef e, out Swap swap, bool lugsFree = false)
     {
         swap = default;
         if (part < 0 || part >= c.PartCount)
@@ -112,6 +112,8 @@ public static class ConstructReplace
         {
             if (!Fits(e.Sockets[k], first.Kind, first.Class) || e.HasJoint && k == e.LeafIndex)
                 continue;
+            if (lugsFree && e.Sockets[k].Name.StartsWith("lug", StringComparison.Ordinal))
+                continue; // (an Ordnance Rack reshaped hangs by a mount, never by a hook: ModularRack.Reshape)
             var n = Rot24.Matching(e.Sockets[k].Dir, (byte)(first.Dir ^ 1), turns);
             for (var t = 0; t < n; t++)
             {

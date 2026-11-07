@@ -425,6 +425,9 @@ public sealed partial class Ui
                 }
             }
 
+            if (d.IsModularRack && d.CfgSlot[(int)CfgKey.RackRows] >= 0 && d.CfgSlot[(int)CfgKey.RackColumns] >= 0)
+                SandboxConfigRackCap((int)MathF.Round(_cfVals[d.CfgSlot[(int)CfgKey.RackRows]]), (int)MathF.Round(_cfVals[d.CfgSlot[(int)CfgKey.RackColumns]]));
+
             // Wiring.
             if (_cfWireRows.Length > 0)
             {
@@ -753,6 +756,22 @@ public sealed partial class Ui
             SandboxConfigFlipCell(game, clicked, now);
         if (Extrusion.ShapeOf((int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]]) == ExShape.Section && Extrusion.Refusal(mask) is { } why)
             ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), why);
+    }
+
+    private int _cfRackCapKey = -1;
+    private string? _cfRackCapText;
+
+    /// <summary>An Ordnance Rack's rows (layers) by columns (segments) past its station cap: the panel says so (the text made once a pair).</summary>
+    private void SandboxConfigRackCap(int a, int b)
+    {
+        var key = a * 1000 + b;
+        if (key != _cfRackCapKey)
+        {
+            _cfRackCapKey = key;
+            _cfRackCapText = ModularRack.TooMany(a, b);
+        }
+        if (_cfRackCapText != null)
+            ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), _cfRackCapText);
     }
 
     /// <summary>The wiring rows (made again only when the construct's wires change).</summary>

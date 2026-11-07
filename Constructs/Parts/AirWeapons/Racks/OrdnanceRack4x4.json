@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ordnance Rack 4x4",
+  "description": "Sixteen small bombs: a bay's worth.",
+  "modularRack": {
+    "layout": "grid",
+    "rows": 4,
+    "columns": 4,
+    "length": 1.0,
+    "diameter": 0.25
+  }
+}

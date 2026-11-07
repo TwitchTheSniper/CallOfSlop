@@ -17,6 +17,7 @@
     "load": 8000,
     "rail": true
   },
+  "legacy": true,
   "boxes": [
     {
       "min": [

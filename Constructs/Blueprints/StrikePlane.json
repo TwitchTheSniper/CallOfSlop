@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Strike Plane",
-  "description": "The Light Plane with a heat-seeking missile on a Launch Rail under each wing. Point at what flies and fire: each locks what is nearest straight ahead.",
+  "description": "The Light Plane with a heat-seeking missile on a Launch Rack under each wing. Point at what flies and fire: each locks what is nearest straight ahead.",
   "steps": [
     {
       "part": "Frame Block"
@@ -179,7 +179,7 @@
       "by": "axle"
     },
     {
-      "part": "Launch Rail",
+      "part": "Launch Rack",
       "on": 11,
       "socket": "-y",
       "by": "top"
@@ -191,7 +191,7 @@
       "by": "lug"
     },
     {
-      "part": "Launch Rail",
+      "part": "Launch Rack",
       "on": 12,
       "socket": "-y",
       "by": "top"

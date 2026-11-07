@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Heavy Ordnance Drum",
+  "description": "A heavy drum for a bomb bay, eight round it, mounted by its yoke or its ends.",
+  "modularRack": {
+    "layout": "drum",
+    "layers": 1,
+    "segments": 8,
+    "length": 2.5,
+    "diameter": 0.625
+  }
+}

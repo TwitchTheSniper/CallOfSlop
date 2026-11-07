@@ -11,7 +11,7 @@
     { "name": "Joints and Motion", "sections": ["Hinges", "Motor hinges", "Pistons", "Linear", "Hydraulics", "Turntables", "Free rotation", "Flexible joints", "Hitches and chains", "Cranes and lifts", "Launch and docking"] },
     { "name": "Power and Fuel", "sections": ["Fuel tanks", "Fluid tanks", "Fuel lines", "Batteries", "Alternators", "Power plants"] },
     { "name": "Flight", "sections": ["Wings", "Control surfaces", "Rotors", "Lift cells", "Burners", "Gas", "Flight control", "Jets", "Rockets", "Repulsors", "Pilot gear"] },
-    { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Bomb racks", "Sights", "Ordnance sections", "Workbenches"] },
+    { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Ordnance racks", "Sights", "Ordnance sections", "Workbenches"] },
     { "name": "Weapon parts", "sections": ["Receivers", "Actions", "Barrels", "Muzzles", "Magazines", "Ammo", "Grips", "Stocks", "Optics", "Utility", "Upgrades", "Melee", "Grenades"] },
     { "name": "Production", "sections": ["Drills", "Saws", "Scoops", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Presses", "Dies", "Components"] },
     { "name": "Storage and Logistics", "sections": ["Chests and cargo", "Shelves", "Beacons and recycling", "Hoses and leads", "Conveyors"] },
