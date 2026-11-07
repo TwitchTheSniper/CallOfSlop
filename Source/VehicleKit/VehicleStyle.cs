@@ -136,6 +136,12 @@ public sealed class FactionStyle
     public double ModuleWeight(string family, string module, double fallback) =>
         Modules.TryGetValue(family, out var f) && f.TryGetValue(module, out var w) ? fallback * w : fallback;
 
+    /// <summary>
+    /// What every vehicle of the style must read as (<see cref="VehicleIdentity"/>, docs/vehiclekit/VEHICLEKIT.md "Identity and weak points"): its marks, characteristic parts and modules,
+    /// silhouette range and designed weak points. Null: <see cref="VehicleIdentity.Signatures"/>' entry under the style's name, else one derived from the style's own slots.
+    /// </summary>
+    public StyleSignature? Signature { get; init; }
+
     /// <summary>Limits on variation by name ("crookedPlates", "tiltDegrees"...).</summary>
     public required Dictionary<string, double> Limits { get; init; }
 

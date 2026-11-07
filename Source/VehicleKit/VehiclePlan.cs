@@ -207,10 +207,42 @@ public static class VehiclePlan
             }
     }
 
-    private static void AddBody(Construct b, Quaternion toPlan, Vector3 planPos, List<Face> faces, bool all = true)
+    /// <summary>
+    /// <see cref="Triangles"/> with the part each triangle belongs to (every part, wheels and what's on joints in their rest pose), for rays that must say what they hit first
+    /// (<see cref="VehicleIdentity"/>'s weak points).
+    /// </summary>
+    public static (Vector3[] Tris, int[] Owner) PartTriangles(Construct c)
+    {
+        var faces = new List<Face>();
+        var owners = new List<int>();
+        AddBody(c, Quaternion.Inverse(c.Rot), c.Pos, faces, true, owners);
+        var t = new List<Vector3>(faces.Count * 6);
+        var o = new List<int>(faces.Count * 2);
+        for (var k = 0; k < faces.Count; k++)
+        {
+            var f = faces[k];
+            t.Add(f.A);
+            t.Add(f.B);
+            t.Add(f.C);
+            o.Add(owners[k]);
+            if (f.C != f.D)
+            {
+                t.Add(f.A);
+                t.Add(f.C);
+                t.Add(f.D);
+                o.Add(owners[k]);
+            }
+        }
+        return (t.ToArray(), o.ToArray());
+    }
+
+    private static void AddBody(Construct b, Quaternion toPlan, Vector3 planPos, List<Face> faces, bool all = true, List<int>? owners = null)
     {
         for (var i = 0; i < b.PartCount; i++)
         {
+            if (owners != null)
+                while (owners.Count < faces.Count)
+                    owners.Add(i - 1);
             var d = b.DefOf(i);
             if (!all && (d.Role is PartRole.Wheel or PartRole.Suspension || b.Parts[i].Seg != 0 && !b.Rigid(b.Parts[i].Seg)))
                 continue;
@@ -231,6 +263,9 @@ public static class VehiclePlan
                 AddBox(Vector3.Transform(world - planPos, toPlan), box.Half, toPlan * b.Rot * rot, colour, faces);
             }
         }
+        if (owners != null)
+            while (owners.Count < faces.Count)
+                owners.Add(b.PartCount - 1);
     }
 
     /// <summary>A shaped box's real triangles (its mesh is in unit-cube space, 6 floats a vertex), so a slope reads as a slope.</summary>

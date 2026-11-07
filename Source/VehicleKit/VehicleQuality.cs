@@ -36,6 +36,7 @@ public static class VehicleQualityCli
         public readonly List<(int Seed, string Why)> Failed = new();
         public readonly List<VehicleVariety.Signature> Signatures = new();
         public readonly List<double> Ms = new();
+        public readonly List<VehicleIdentity.Reading> Identity = new(); // (each passing seed against every style: VehicleIdentity)
     }
 
     private static Run Sweep(IVehicleGenerator g, IReadOnlyList<int> seeds, bool check, bool quiet)
@@ -56,6 +57,7 @@ public static class VehicleQualityCli
                 }
                 run.Ok.Add(f);
                 run.Signatures.Add(VehicleVariety.Of(seed, v));
+                run.Identity.Add(VehicleIdentity.Read(v));
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
             {
@@ -149,6 +151,14 @@ public static class VehicleQualityCli
             foreach (var c in clusters.Take(8))
                 Console.WriteLine($"    {string.Join(" ", c.Select(f => f.Seed))}");
         }
+        if (run.Identity.Count > 0)
+        {
+            var ids = run.Identity;
+            Console.WriteLine($"  identity (VehicleIdentity): mean {ids.Average(x => x.Own.Total):0.00}, least {ids.Min(x => x.Own.Total):0.00} (seed {ids.MinBy(x => x.Own.Total)!.Seed}), weak points pass on {ids.Count(x => x.Own.WeakPassed)}/{ids.Count}{(ids.Any(x => x.Confused) ? $", read as another style: {string.Join(" ", ids.Where(x => x.Confused).Select(x => $"{x.Seed} ({x.BestOther.Style})"))}" : "")}");
+            if (traits)
+                foreach (var x in ids)
+                    Console.WriteLine($"    seed {x.Seed}: {x.Own}");
+        }
         var want = Math.Max(3, g.Seeds.Count);
         var spread = VehicleVariety.Spread(run.Signatures, want);
         Console.WriteLine($"  most different {spread.Count}: {string.Join(" ", spread.Select(x => x.Seed))}, closest pair {VehicleVariety.Closest(spread).D:0.00} (VehicleVariety), shipped: {string.Join(" ", g.Seeds)}");
@@ -227,13 +237,24 @@ public static class VehicleQualityCli
                 Console.WriteLine($"  {g.Name}: {r.Ok.Count}/{seeds.Count}");
             }
         Console.WriteLine();
-        Console.WriteLine($"{"Style",-10} {"Shape",-14} {"ok",6} {"fail",5} {"ms mean",8} {"ms worst",8} {"parts",6} {"kg",6}  top refusal");
+        Console.WriteLine($"{"Style",-10} {"Shape",-14} {"ok",6} {"fail",5} {"ms mean",8} {"ms worst",8} {"parts",6} {"kg",6} {"ident",6} {"weak",5}  top refusal");
         foreach (var (style, shape, r) in rows)
         {
             var n = r.Ok.Count + r.Failed.Count;
             var top = r.Failed.GroupBy(f => Reason(f.Why)).OrderByDescending(x => x.Count()).FirstOrDefault();
-            Console.WriteLine($"{style,-10} {shape,-14} {$"{r.Ok.Count}/{n}",6} {(n == 0 ? 0 : r.Failed.Count / (float)n),5:P0} {r.Ms.DefaultIfEmpty().Average(),8:0} {r.Ms.DefaultIfEmpty().Max(),8:0} {r.Ok.Select(f => (double)f.Parts).DefaultIfEmpty().Average(),6:0} {r.Ok.Select(f => (double)f.Mass).DefaultIfEmpty().Average(),6:0}  {(top == null ? "" : $"{top.Count()}x {top.Key}")}");
+            var ident = r.Identity.Count == 0 ? "-" : r.Identity.Average(x => x.Own.Total).ToString("0.00");
+            var weak = r.Identity.Count == 0 ? "-" : (r.Identity.Count(x => x.Own.WeakPassed) / (float)r.Identity.Count).ToString("P0");
+            Console.WriteLine($"{style,-10} {shape,-14} {$"{r.Ok.Count}/{n}",6} {(n == 0 ? 0 : r.Failed.Count / (float)n),5:P0} {r.Ms.DefaultIfEmpty().Average(),8:0} {r.Ms.DefaultIfEmpty().Max(),8:0} {r.Ok.Select(f => (double)f.Parts).DefaultIfEmpty().Average(),6:0} {r.Ok.Select(f => (double)f.Mass).DefaultIfEmpty().Average(),6:0} {ident,6} {weak,5}  {(top == null ? "" : $"{top.Count()}x {top.Key}")}");
         }
+        foreach (var st in rows.GroupBy(r => r.Style))
+        {
+            var ids = st.SelectMany(r => r.R.Identity).ToList();
+            if (ids.Count > 0)
+                Console.WriteLine($"identity {st.Key}: mean {ids.Average(x => x.Own.Total):0.00}, weak points pass on {ids.Count(x => x.Own.WeakPassed)}/{ids.Count}, read as another style {ids.Count(x => x.Confused)}");
+        }
+        foreach (var (style, shape, r) in rows)
+            foreach (var x in r.Identity.Where(x => x.Confused))
+                Console.WriteLine($"  {style} {shape} {x.Seed} reads as {x.BestOther.Style}: {x.BestOther.Total:0.00} against {x.Own.Total:0.00} as its own");
         var reasons = rows.SelectMany(r => r.R.Failed.Select(f => (r.Style, r.Shape, f.Seed, Why: Reason(f.Why)))).GroupBy(f => f.Why).OrderByDescending(g => g.Count()).Take(10).ToList();
         if (reasons.Count > 0)
         {
