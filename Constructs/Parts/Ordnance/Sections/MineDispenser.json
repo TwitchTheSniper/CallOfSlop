@@ -17,6 +17,16 @@
     "length": 0.9,
     "group": "Sub-payloads",
     "groupOrder": 5,
+    "lengths": {
+      "min": 0.45,
+      "max": 5.4,
+      "step": 0.05,
+      "presets": [
+        0.9,
+        1.8,
+        2.7
+      ]
+    },
     "kind": "mines",
     "payload": 16,
     "settings": [
@@ -27,7 +37,8 @@
         "min": 2,
         "max": 120,
         "step": 1,
-        "default": 8
+        "default": 8,
+        "perLength": true
       },
       {
         "key": "life",

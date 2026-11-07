@@ -100,8 +100,27 @@ public sealed partial class Ui
                 ImGuiSafe.TextDisabled(group);
             }
             ImGui.PushID(d.Id);
+            var presets = o.PresetLabels;
+            if (presets.Length > 1)
+            {
+                // A section of any length: its name adds it at its own length, a preset at that one (the lengths at 25 cm; the design's diameter scales them).
+                if (ImGui.Selectable(d.Name, false, ImGuiSelectableFlags.None, new float2(MathF.Max(40 * _scale, ImGui.GetContentRegionAvail().X - presets.Length * 52 * _scale), 0)))
+                    OrdAdd(d, o.Length);
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetTooltip(d.Description);
+                for (var k = 0; k < presets.Length; k++)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton(presets[k]))
+                        OrdAdd(d, o.Presets[k]);
+                    if (ImGui.IsItemHovered())
+                        ImGuiSafe.SetTooltip("Add it at this length (at 25 cm across; it scales with the diameter). Set any length in the design.");
+                }
+                ImGui.PopID();
+                continue;
+            }
             if (ImGui.Selectable(d.Name))
-                OrdAdd(d);
+                OrdAdd(d, o.Length);
             ImGui.PopID();
             if (ImGui.IsItemHovered())
                 ImGuiSafe.SetTooltip(d.Description);
@@ -109,25 +128,30 @@ public sealed partial class Ui
         ImGui.EndChild();
     }
 
-    /// <summary>A section goes in where it is built: after the last section of its group or one before it, nose to tail (a plain section next to its twin adds one to the row).</summary>
-    private void OrdAdd(ConstructPartDef d)
+    /// <summary>
+    /// A section goes in where it is built: after the last section of its group or one before it, nose to tail (a plain section next to its twin of
+    /// the same length adds one to the row). <paramref name="len"/>: its length, m at 25 cm.
+    /// </summary>
+    private void OrdAdd(ConstructPartDef d, float len)
     {
         var o = d.Ord!;
+        len = o.Snap(len);
+        var stretch = len / o.Length;
         var values = new float[o.Settings.Length];
         for (var k = 0; k < values.Length; k++)
-            values[k] = o.Settings[k].Default;
+            values[k] = o.Settings[k].DefaultAt(stretch);
         var at = 0;
         for (var i = 0; i < _ord.Pieces.Count; i++)
             if (_ord.Pieces[i].Section.Ord!.GroupOrder <= o.GroupOrder)
                 at = i + 1;
-        if (at > 0 && _ord.Pieces[at - 1].Section == d && values.Length == 0)
+        if (at > 0 && _ord.Pieces[at - 1].Section == d && values.Length == 0 && MathF.Abs(_ord.Pieces[at - 1].Length - len) < 1e-4f)
         {
             _ord.Pieces[at - 1] = _ord.Pieces[at - 1] with { Count = Math.Min(OrdnanceDesign.MaxCount, _ord.Pieces[at - 1].Count + 1) };
             _ordSel = at - 1;
         }
         else
         {
-            _ord.Pieces.Insert(at, new OrdPiece(d, 1, values));
+            _ord.Pieces.Insert(at, new OrdPiece(d, 1, values, o.Lengthable ? len : 0));
             _ordSel = at;
         }
         _ordScroll = true;
@@ -171,12 +195,16 @@ public sealed partial class Ui
             ImGui.SetNextItemWidth(110 * _scale);
             var count = p.Count;
             if (ImGui.InputInt("in a row"u8, ref count))
-                _ord.Pieces[i] = p with { Count = Math.Clamp(count, 1, OrdnanceDesign.MaxCount) };
-            var s = p.Section.Ord!.Settings;
+                _ord.Pieces[i] = p = p with { Count = Math.Clamp(count, 1, OrdnanceDesign.MaxCount) };
+            var o = p.Section.Ord!;
+            if (o.Lengthable)
+                p = OrdLength(i, p);
+            var s = o.Settings;
+            var stretch = p.Stretch;
             for (var k = 0; k < s.Length && k < p.Values.Length; k++)
             {
                 ImGui.SetNextItemWidth(160 * _scale);
-                ImGui.SliderFloat($"{s[k].Label} {s[k].Unit}##ords{k}", ref p.Values[k], s[k].Min, s[k].Max);
+                ImGui.SliderFloat($"{s[k].Label} {s[k].Unit}##ords{k}", ref p.Values[k], s[k].MinAt(stretch), s[k].MaxAt(stretch));
             }
             ImGui.PopID();
             ImGui.Separator();
@@ -191,6 +219,75 @@ public sealed partial class Ui
             ImGuiSafe.TextDisabled("Empty: pick sections on the left. Each goes in where it is built, nose to tail.");
         ImGui.EndChild();
         ImGui.TextColored(Orange, "TAIL"u8);
+    }
+
+    /// <summary>
+    /// A lengthable section's length: a slider in metres at the design's diameter (the key keeps it at 25 cm), its presets, and Merge, which makes a row
+    /// of it, or it and the same section after it, one longer section (per-length settings add up). Returns the piece as it is now.
+    /// </summary>
+    private OrdPiece OrdLength(int i, OrdPiece p)
+    {
+        var o = p.Section.Ord!;
+        var s = _ord.Scale;
+        var shown = p.Length * s;
+        ImGui.SetNextItemWidth(160 * _scale);
+        if (ImGui.SliderFloat("Length, m##ordlen"u8, ref shown, o.LenMin * s, o.LenMax * s, "%.2f"u8))
+            _ord.Pieces[i] = p = OrdResized(p, o.Snap(shown / s));
+        for (var k = 0; k < o.Presets.Length; k++) // (on a line of their own, with Merge: the column is narrow)
+        {
+            if (k > 0)
+                ImGui.SameLine();
+            ImGui.PushID(k);
+            if (ImGui.SmallButton(o.PresetLabels[k]))
+                _ord.Pieces[i] = p = OrdResized(p, o.Presets[k]);
+            ImGui.PopID();
+        }
+        // Merge: the row, or this and its twin behind it (same settings that don't go with length), into one section if it fits.
+        var next = i + 1 < _ord.Pieces.Count ? _ord.Pieces[i + 1] : null;
+        var twin = next != null && next.Section == p.Section && OrdSameFixed(p, next);
+        var total = p.Span + (twin ? next!.Span : 0);
+        if ((p.Count > 1 || twin) && total <= o.LenMax + 1e-4f)
+        {
+            if (o.Presets.Length > 0)
+                ImGui.SameLine();
+            if (ImGui.SmallButton("Merge"u8))
+            {
+                var values = (float[])p.Values.Clone();
+                for (var k = 0; k < values.Length && k < o.Settings.Length; k++)
+                    if (o.Settings[k].PerLength)
+                        values[k] = p.Values[k] * p.Count + (twin && k < next!.Values.Length ? next.Values[k] * next.Count : 0);
+                _ord.Pieces[i] = p = new OrdPiece(p.Section, 1, values, o.Snap(total));
+                if (twin)
+                    _ord.Pieces.RemoveAt(i + 1);
+                _ordSel = _ordSel > i && twin ? _ordSel - 1 : _ordSel;
+            }
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetTooltip("One section as long as these together: the same mass, filling and fuel. A tank keeps one pair of ends; a motor burns as long as all of them but pushes as one.");
+        }
+        return p;
+    }
+
+    /// <summary>A section at a new length: its per-length settings go with it (a tank twice as long, twice as full).</summary>
+    private static OrdPiece OrdResized(OrdPiece p, float len)
+    {
+        var o = p.Section.Ord!;
+        var was = p.Stretch;
+        var now = len / o.Length;
+        var values = (float[])p.Values.Clone();
+        for (var k = 0; k < values.Length && k < o.Settings.Length; k++)
+            if (o.Settings[k].PerLength)
+                values[k] = Math.Clamp(values[k] * now / was, o.Settings[k].MinAt(now), o.Settings[k].MaxAt(now));
+        return p with { Len = len, Values = values };
+    }
+
+    /// <summary>Whether two pieces of one section have the same settings that don't go with length (thrust class, a mine's life).</summary>
+    private static bool OrdSameFixed(OrdPiece a, OrdPiece b)
+    {
+        var set = a.Section.Ord!.Settings;
+        for (var k = 0; k < set.Length; k++)
+            if (!set[k].PerLength && MathF.Abs(a.Value(set[k].Key) - b.Value(set[k].Key)) > 1e-4f)
+                return false;
+        return true;
     }
 
     // ---- The picture ----------------------------------------------------------------------------------------------
@@ -225,11 +322,11 @@ public sealed partial class Ui
         float length = 0, wide = _ord.DiameterCm / 200f, massZ = 0, mass = 0;
         foreach (var p in pieces)
         {
-            var len = p.Section.Ord!.Length * p.Count * s;
+            var len = p.Span * s;
             foreach (var b in p.Section.Boxes)
                 if (!b.Hidden)
                     wide = MathF.Max(wide, (MathF.Abs(b.Center.X) + b.Half.X) * s);
-            var kg = (p.Section.Mass + OrdFlightStats.SettingMass(p)) * p.Count * cube;
+            var kg = p.Kg * cube;
             massZ += kg * (length + len * 0.5f);
             mass += kg;
             length += len;
@@ -251,7 +348,7 @@ public sealed partial class Ui
             var z = 0f;
             for (var i = 0; i < pieces.Count && hovered; i++)
             {
-                var len = pieces[i].Section.Ord!.Length * pieces[i].Count * s;
+                var len = pieces[i].Span * s;
                 if (zMouse >= z && zMouse < z + len)
                     over = i;
                 z += len;
@@ -270,7 +367,8 @@ public sealed partial class Ui
             for (var i = 0; i < pieces.Count; i++)
             {
                 var p = pieces[i];
-                var len = p.Section.Ord!.Length * p.Count * s;
+                var len = p.Span * s;
+                var stretch = p.Amount;
                 var hue = OrdHues[i % OrdHues.Length];
                 var lit = i == over ? 1.25f : 1f;
                 var first = true;
@@ -280,8 +378,8 @@ public sealed partial class Ui
                         continue;
                     if (first == (pass == 1))
                     {
-                        var cz = zAt + len * 0.5f + b.Center.Z * s * p.Count;
-                        var hz = b.Half.Z * s * p.Count;
+                        var cz = zAt + len * 0.5f + b.Center.Z * s * stretch;
+                        var hz = b.Half.Z * s * stretch;
                         var a = At(cz - hz, b.Center.X * s - b.Half.X * s);
                         var c = At(cz + hz, b.Center.X * s + b.Half.X * s);
                         ImDrawListExtensions.AddRectFilled(dl, in a, in c, OrdShade(hue, (first ? 1f : 0.55f) * lit), first ? 2 * _scale : 0, ImDrawFlags.None);
@@ -318,7 +416,7 @@ public sealed partial class Ui
         {
             var end = i == pieces.Count;
             var isSep = !end && pieces[i].Section.Ord!.Slot == "stage";
-            var len = end ? 0 : pieces[i].Section.Ord!.Length * pieces[i].Count * s;
+            var len = end ? 0 : pieces[i].Span * s;
             if (isSep || end)
             {
                 var number = count - seg; // (1: the tail's)
@@ -364,8 +462,8 @@ public sealed partial class Ui
         {
             var p = pieces[over];
             ImGuiSafe.SetTooltip(p.Count > 1
-                ? $"{p.Section.Name} x{p.Count}: {p.Section.Ord!.Length * p.Count * s:0.##} m, {(p.Section.Mass + OrdFlightStats.SettingMass(p)) * p.Count * cube:0.#} kg. Click to pick it."
-                : $"{p.Section.Name}: {p.Section.Ord!.Length * s:0.##} m, {(p.Section.Mass + OrdFlightStats.SettingMass(p)) * cube:0.#} kg. Click to pick it.");
+                ? $"{p.Section.Name} x{p.Count}: {p.Span * s:0.##} m, {p.Kg * cube:0.#} kg. Click to pick it."
+                : $"{p.Section.Name}: {p.Length * s:0.##} m, {p.Kg * cube:0.#} kg. Click to pick it.");
         }
     }
 
@@ -379,7 +477,7 @@ public sealed partial class Ui
         foreach (var p in pieces)
         {
             var o = p.Section.Ord!;
-            var len = o.Length * p.Count * s;
+            var len = p.Span * s;
             if (k == seg && o.Slot == "motor" && o.Num("thrust") > 0)
                 (motorFrom, motorTo) = (zAt, zAt + len);
             if (o.Slot == "stage")

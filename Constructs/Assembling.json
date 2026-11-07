@@ -126,7 +126,6 @@
     {"output": "Ramjet", "materials": {"steel": 12, "bronze": 4}, "seconds": 15, "minTier": 4},
     {"output": "Turbojet", "materials": {"steel": 10, "bronze": 4}, "parts": {"Bearing": 2}, "seconds": 18, "minTier": 4},
     {"output": "Missile Fuel Tank", "materials": {"steel": 4, "rubber": 1}, "seconds": 4, "minTier": 2},
-    {"output": "Long Missile Fuel Tank", "materials": {"steel": 7, "rubber": 1}, "seconds": 6, "minTier": 2},
     {"output": "Stage Separator", "materials": {"steel": 3, "copper": 1}, "seconds": 4, "minTier": 3},
     {"output": "Body Tube", "materials": {"steel": 3}, "seconds": 3, "minTier": 2},
     {"output": "Tail Fins", "materials": {"steel": 3}, "seconds": 3, "minTier": 2},

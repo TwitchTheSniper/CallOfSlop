@@ -17,6 +17,16 @@
     "length": 1.0,
     "group": "Sub-payloads",
     "groupOrder": 5,
+    "lengths": {
+      "min": 0.5,
+      "max": 6.0,
+      "step": 0.05,
+      "presets": [
+        1.0,
+        2.0,
+        3.0
+      ]
+    },
     "kind": "rods",
     "payload": 25,
     "blast": 0.4,
@@ -30,7 +40,8 @@
         "min": 2,
         "max": 60,
         "step": 1,
-        "default": 8
+        "default": 8,
+        "perLength": true
       }
     ]
   },

@@ -214,7 +214,6 @@ HAND = [
     rec("Ramjet", 15, 4, m={"steel": 12, "bronze": 4}),
     rec("Turbojet", 18, 4, m={"steel": 10, "bronze": 4}, p={"Bearing": 2}),
     rec("Missile Fuel Tank", 4, 2, m={"steel": 4, "rubber": 1}),
-    rec("Long Missile Fuel Tank", 6, 2, m={"steel": 7, "rubber": 1}),
     rec("Stage Separator", 4, 3, m={"steel": 3, "copper": 1}),
     rec("Body Tube", 3, 2, m={"steel": 3}),
     rec("Tail Fins", 3, 2, m={"steel": 3}),

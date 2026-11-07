@@ -20,8 +20,10 @@ GROUP = "Weapons"
 OLIVE, DARK, STEEL, BRASS, RED, WHITE, GREY = "#4a5530", "#2a2c26", "#7c838c", "#c8a838", "#a83428", "#d8d8d0", "#565a5e"
 
 
-def section(name, slot, length, mass, color, desc, band=None, fins=False, nose=False, wings=0.0, canards=False, nozzle=False, pack=False, glass=False, ring=False, **ordnance):
-    """A round section, with a coloured band, fins, wings, canards, a nozzle, a chute pack, a glass eye, a ring tail or a tapered nose."""
+def section(name, slot, length, mass, color, desc, band=None, fins=False, nose=False, wings=0.0, canards=False, nozzle=False, pack=False, glass=False, ring=False,
+            lengths=None, **ordnance):
+    """A round section, with a coloured band, fins, wings, canards, a nozzle, a chute pack, a glass eye, a ring tail or a tapered nose.
+    lengths: (shortest, longest) as shares of its own length, when the bench may set its length (sizes(), below)."""
     p = Part(name, SMALL, "Ordnance sections", desc, tool="wrench", color=color, group=GROUP)
     z = length / 2
     p.add(box((-R, -R, -z), (R, R, z), hidden=True))
@@ -52,6 +54,8 @@ def section(name, slot, length, mass, color, desc, band=None, fins=False, nose=F
     p.stats(mass, 40, 1, 1.0)
     group = group_of(name, slot, ordnance.get("kind"))
     block = {"slot": slot, "length": length, "group": group, "groupOrder": GROUPS.index(group) + 1}
+    if lengths:
+        block["lengths"] = sizes(length, *lengths)
     numbers = {k: v for k, v in ordnance.items() if k not in TOP}
     block.update({k: v for k, v in ordnance.items() if k in TOP})
     if numbers:
@@ -77,12 +81,30 @@ def group_of(name, slot, kind):
             "motor": "Propulsion", "stage": "Propulsion", "stabilizer": "Stabilizers and brakes"}[slot]
 
 
-TOP = ("payload", "blast", "damage", "crater", "fuseDelay", "settings", "kind")  # (the rest are the flight's numbers)
+TOP = ("payload", "blast", "damage", "crater", "fuseDelay", "settings", "kind", "massFixed")  # (the rest are the flight's numbers)
+STEP = 0.05  # m at 25 cm: a length's step on the bench
+
+
+def sizes(length, lo, hi, presets=None):
+    """A lengthable section's lengths (m at 25 cm): its shortest and longest as shares of its own length, and the bench picker's presets
+    (its own length, then twice and three times it, unless given). Its mass, filling, built-in fuel, propellant and the per-length settings
+    go with the length; a section's own length is still the one its numbers are written at."""
+    snap = lambda x: round(round(x / STEP) * STEP, 3)  # noqa: E731
+    lo, hi = max(STEP, snap(length * lo)), snap(length * hi)
+    presets = presets or [length, length * 2, length * 3]
+    return {"min": lo, "max": hi, "step": STEP, "presets": [round(p, 3) for p in presets if lo <= p <= hi]}
+
+
+WARHEAD, MOTOR, BODY = (0.5, 6), (0.5, 4), (0.2, 8)  # a section's shortest and longest, as shares of its own length
 DELAY = {"key": "delay", "label": "Delay", "unit": "s", "min": 0.05, "max": 30, "step": 0.05, "default": 1}
 
 
-def setting(key, label, unit, lo, hi, step, default):
-    return {"key": key, "label": label, "unit": unit, "min": lo, "max": hi, "step": step, "default": default}
+def setting(key, label, unit, lo, hi, step, default, per_length=False):
+    """A setting; per_length: its least, most and default are for the section's own length and go with its length (a tank's fuel, a motor's burn)."""
+    s = {"key": key, "label": label, "unit": unit, "min": lo, "max": hi, "step": step, "default": default}
+    if per_length:
+        s["perLength"] = True
+    return s
 
 
 CLASS = setting("class", "Thrust class", "", 1, 5, 1, 1)
@@ -94,9 +116,9 @@ def stage1():
     return [
         section("Impact Fuse", "fuse", 0.2, 3, GREY, "Goes off the moment it hits.", nose=True, fuseDelay=0.05),
         section("Delay Fuse", "fuse", 0.25, 4, GREY, "Goes off a set time after it hits: through a deck first.", band=BRASS, nose=True, settings=[DELAY]),
-        section("Warhead HE", "payload", 0.5, 25, OLIVE, "25 kg of high explosive. Stack as many as the airframe can lift.", band=BRASS, payload=20),
-        section("Warhead Blast", "payload", 0.6, 28, "#5a4a30", "Thin-cased: a wider blast for its weight, and less damage.", band=RED, payload=22, blast=1.5, damage=0.6),
-        section("Warhead Bunker", "payload", 0.6, 45, "#3a3d40", "A thick steel case: a deep crater.", band=WHITE, payload=20, damage=1.2, crater=2.2),
+        section("Warhead HE", "payload", 0.5, 25, OLIVE, "25 kg of high explosive for its 0.5 m. Set its length for a bigger charge.", band=BRASS, payload=20, lengths=WARHEAD),
+        section("Warhead Blast", "payload", 0.6, 28, "#5a4a30", "Thin-cased: a wider blast for its weight, and less damage.", band=RED, payload=22, blast=1.5, damage=0.6, lengths=WARHEAD),
+        section("Warhead Bunker", "payload", 0.6, 45, "#3a3d40", "A thick steel case: a deep crater.", band=WHITE, payload=20, damage=1.2, crater=2.2, lengths=WARHEAD),
         section("Bomb Tail Fins", "stabilizer", 0.4, 6, DARK, "Keeps a bomb nose down.", fins=True, drag=0.2),
     ]
 
@@ -106,25 +128,24 @@ def stage3():
     return [
         # Motors: thrust in N at 25 cm (with the cube of the scale), fuel use kg/s, built-in fuel kg, "air": breathes air.
         section("Solid Motor", "motor", 0.8, 20, WHITE2, "A solid rocket: strong and simple. Set its burn; it can't be stopped.", nozzle=True, kind="solid",
-                settings=[setting("burn", "Burn time", "s", 0.5, 12, 0.5, 3), CLASS], thrust=9000, mass_burn=4, mass_class=6),
+                settings=[setting("burn", "Burn time", "s", 0.5, 12, 0.5, 3, True), CLASS], thrust=9000, mass_burn=4, mass_class=6, lengths=MOTOR),
         section("Boost Motor", "motor", 0.7, 24, ORANGE, "A short, hard kick off the rail: put it behind a Stage Separator.", nozzle=True, kind="solid",
-                settings=[setting("burn", "Burn time", "s", 0.3, 4, 0.1, 1.2), CLASS], thrust=22000, mass_burn=6, mass_class=8),
+                settings=[setting("burn", "Burn time", "s", 0.3, 4, 0.1, 1.2, True), CLASS], thrust=22000, mass_burn=6, mass_class=8, lengths=MOTOR),
         section("Liquid Motor", "motor", 0.6, 18, STEEL, "Burns what its stage's tanks hold, and gimbals while it burns.", nozzle=True, kind="liquid",
                 settings=[CLASS], thrust=6000, use=1.0, gimbal=30, mass_class=4),
         section("Hybrid Motor", "motor", 0.7, 22, GREY, "A solid grain and a liquid oxidiser: six seconds on its own, longer with a tank.", nozzle=True, kind="hybrid",
-                settings=[CLASS], thrust=7000, use=1.2, fuel=7, mass_class=5),
+                settings=[CLASS], thrust=7000, use=1.2, fuel=7, mass_class=5, lengths=MOTOR),
         section("Cold Gas Thruster", "motor", 0.4, 8, STEEL, "A bottle of gas: a gentle push that works anywhere, air or none, and no flame.", nozzle=True, kind="cold gas",
-                thrust=1500, use=0.5, fuel=3),
+                thrust=1500, use=0.5, fuel=3, lengths=MOTOR),
         section("Ramjet", "motor", 1.0, 25, GREY, "Breathes air, and only works at 150 m/s or more: boost it first. Nothing in thin air.", band=ORANGE, nozzle=True, kind="air",
                 settings=[CLASS], thrust=12000, use=1.2, air=1, minSpeed=150, mass_class=5),
         section("Turbojet", "motor", 0.9, 30, DARK, "A small jet: weak, but it sips fuel. Breathes air: nothing in thin air. With wings, a cruise missile.", band=STEEL, nozzle=True, kind="air",
                 settings=[CLASS], thrust=2500, use=0.2, air=1, mass_class=6),
-        section("Missile Fuel Tank", "fuel", 0.5, 6, STEEL, "Fuel for the liquid, hybrid and air motors of its stage.", band=BLUE,
-                settings=[setting("fuel", "Fuel load", "kg", 2, 60, 1, 15)], mass_fuel=1),
-        section("Long Missile Fuel Tank", "fuel", 1.0, 10, STEEL, "More fuel for the motors of its stage.", band=BLUE,
-                settings=[setting("fuel", "Fuel load", "kg", 5, 150, 1, 40)], mass_fuel=1),
+        # One tank of any length (the Long Missile Fuel Tank was this at 1 m: OrdnanceDesign.Folded). 3 kg of it are its ends, the same at any length.
+        section("Missile Fuel Tank", "fuel", 0.5, 6, STEEL, "Fuel for the liquid, hybrid and air motors of its stage. Set its length for more.", band=BLUE,
+                settings=[setting("fuel", "Fuel load", "kg", 2, 75, 1, 15, True)], mass_fuel=1, massFixed=3, lengths=(0.2, 8, [0.5, 1.0, 2.0])),
         section("Stage Separator", "stage", 0.12, 4, RED, "Splits a missile into stages: what is behind it burns first and drops when it burns out.", band=DARK),
-        section("Body Tube", "body", 0.5, 5, WHITE2, "An empty length of airframe: room, and weight."),
+        section("Body Tube", "body", 0.5, 5, WHITE2, "An empty length of airframe: room, and weight.", lengths=BODY),
         # Steering: degrees a second of turn. Fins and canards need air and speed; a gimbal and vanes need a burning motor; reaction jets work anywhere.
         section("Tail Fins", "control", 0.4, 6, DARK, "Steer in the air at speed. Nothing in thin air.", fins=True, turnAir=60, drag=0.03),
         section("Canards", "control", 0.3, 5, DARK, "Small fins near the nose: a sharp turn in the air, and some drag.", canards=True, turnAir=90, drag=0.05),
@@ -145,7 +166,7 @@ def stage3():
 
 def stage4():
     """Bombs and payloads: fuses, sub-payloads, series charges, glide and cruise kits, rocket assist, stabilizers."""
-    count = lambda lo, hi, d: setting("count", "Count", "", lo, hi, 1, d)  # noqa: E731
+    count = lambda lo, hi, d: setting("count", "Count", "", lo, hi, 1, d, True)  # noqa: E731 (a longer bay holds more)
     return [
         # Fuses: any together; impact always works.
         section("Proximity Fuse", "fuse", 0.2, 4, GREY, "Goes off when something flying comes within its range.", band=RED, nose=True, kind="prox",
@@ -160,17 +181,17 @@ def stage4():
                 settings=[CHANNEL]),
         # Sub-payloads: the charge's filling shared among what it lets go, on the game's own shells and blasts.
         section("Cluster Dispenser", "payload", 0.8, 30, OLIVE, "Opens and scatters bomblets that go off where they land. Give it an Altitude Fuse.", band=BRASS,
-                kind="cluster", payload=18, blast=1.1, damage=0.9, settings=[count(4, 400, 24)]),
+                kind="cluster", payload=18, blast=1.1, damage=0.9, settings=[count(4, 400, 24)], lengths=WARHEAD),
         section("Fire Bomblets", "payload", 0.8, 28, "#6a3a20", "Scatters bomblets that set fire to what is near where they land.", band=RED,
-                kind="incendiary", payload=15, settings=[count(4, 200, 12)]),
+                kind="incendiary", payload=15, settings=[count(4, 200, 12)], lengths=WARHEAD),
         section("Mine Dispenser", "payload", 0.9, 34, OLIVE, "Sows mines that lie until something moves near them, or their life runs out.", band=WHITE,
-                kind="mines", payload=16, prox=4, settings=[count(2, 120, 8), setting("life", "Mine life", "s", 10, 900, 10, 180)]),
+                kind="mines", payload=16, prox=4, settings=[count(2, 120, 8), setting("life", "Mine life", "s", 10, 900, 10, 180)], lengths=WARHEAD),
         section("MIRV Bus", "payload", 0.9, 40, WHITE2, "Splits into small guided warheads that fan out round what it steers for.", band=RED,
-                kind="mirv", payload=24, settings=[count(2, 24, 4)]),
+                kind="mirv", payload=24, settings=[count(2, 24, 4)], lengths=WARHEAD),
         section("Rod Bundle", "payload", 1.0, 60, STEEL, "Steel rods thrown down fast: what they hit takes their speed. Drop them from high up.",
-                kind="rods", payload=25, blast=0.4, damage=2.5, crater=1.5, settings=[count(2, 60, 8)]),
+                kind="rods", payload=25, blast=0.4, damage=2.5, crater=1.5, settings=[count(2, 60, 8)], lengths=WARHEAD),
         section("Kinetic Penetrator", "payload", 0.8, 70, "#3a3d40", "A dense rod with a little filling: the faster it hits, the harder.", band=STEEL, nose=True,
-                kind="kinetic", payload=12, blast=0.5, damage=3, crater=2.5),
+                kind="kinetic", payload=12, blast=0.5, damage=3, crater=2.5, lengths=WARHEAD),
         section("Tandem Spacer", "spacer", 0.15, 3, DARK, "Splits the payload ahead of it from the one behind: they go off one after the other, the later one deeper.", band=BRASS),
         # Glide, cruise and rocket assist (bombs).
         section("Glide Wings", "wings", 0.8, 30, OLIVE, "Wings: it glides a long way from high up. Add a Glide Guidance Kit and a seeker to steer it.", wings=0.9, lift=1.0, drag=0.04),
@@ -178,7 +199,7 @@ def stage4():
         section("Cruise Wings", "wings", 0.9, 26, STEEL, "Long thin wings that hold it up at speed: with a Turbojet, a cruise missile.", wings=1.3, lift=1.3, drag=0.025),
         section("Glide Guidance Kit", "control", 0.35, 8, DARK, "Moving tail fins and a computer: it steers for what its seeker finds.", fins=True, turnAir=40, drag=0.02),
         section("Rocket Assist", "motor", 0.6, 22, ORANGE, "A rocket that lights a second after the drop and drives the bomb on: further, and harder into what it hits.", nozzle=True, kind="solid",
-                settings=[setting("burn", "Burn time", "s", 0.5, 8, 0.5, 2)], thrust=7000, wait=1, mass_burn=4),
+                settings=[setting("burn", "Burn time", "s", 0.5, 8, 0.5, 2, True)], thrust=7000, wait=1, mass_burn=4, lengths=MOTOR),
         # Stabilizers.
         section("Retard Chute", "stabilizer", 0.3, 6, DARK, "A chute that opens off the rack: it falls slow and steep, and the plane is long gone.", pack=True, drag=1.4, deploy=0.3),
         section("Ballute", "stabilizer", 0.3, 5, DARK, "A balloon brake: slower and steeper than fins alone.", pack=True, drag=0.5, deploy=0.2),

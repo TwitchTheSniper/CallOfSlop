@@ -56,7 +56,7 @@ public sealed partial class Game
             var each = Math.Max(1, (int)MathF.Ceiling(cube));
             var want = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (var piece in design.Pieces)
-                want[piece.Section.Name] = want.GetValueOrDefault(piece.Section.Name) + piece.Count * each;
+                want[piece.Section.Name] = want.GetValueOrDefault(piece.Section.Name) + piece.Items(each); // (one part for each own length begun)
             hands.BenchCollect(Constructs, p.Id, bench, part, _ordHave, OrdNameOf);
             foreach (var (name, n) in want)
                 if (_ordHave.GetValueOrDefault(name) < n)
