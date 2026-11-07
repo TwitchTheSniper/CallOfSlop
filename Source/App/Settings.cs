@@ -90,7 +90,7 @@ public sealed class Settings
     public DisplayMode Display = DisplayMode.Windowed;
     public int Width = 1600; // windowed size, or fullscreen resolution
     public int Height = 900;
-    public float UiScale = 1f; // multiplier on the automatic scale (which follows window height)
+    public int TextSize; // Settings > Video > Text size: 0 = Auto (follows the monitor's scaling), else a percent, Ui.TextSizeMin to Ui.TextSizeMax
     public HudWidth HudWidth = HudWidth.Wide16x9; // in-match HUD kept inside a centred area this wide
     public FoliageQuality FoliageQuality = FoliageQuality.Medium; // grass, bushes and tree canopies (Off draws none)
     public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
@@ -529,7 +529,8 @@ public sealed class Settings
                     case "display" when Enum.TryParse<DisplayMode>(v, out var dm): s.Display = dm; break;
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
-                    case "ui_scale" when float.TryParse(v, inv, out var f): s.UiScale = Math.Clamp(f, 0.6f, 2.5f); break;
+                    case "text_size": s.TextSize = Ui.ParseTextSize(v); break;
+                    case "ui_scale" when float.TryParse(v, inv, out var f) && MathF.Abs(f - 1f) > 0.01f: s.TextSize = Ui.SnapTextSize((int)MathF.Round(f * 100)); break; // (the old UI scale slider, before text_size: a size the player chose stays)
                     case "hud_width" when Enum.TryParse<HudWidth>(v, out var hw) && Enum.IsDefined(hw): s.HudWidth = hw; break;
                     case "name_tags" when Enum.TryParse<NameTagMode>(v, out var nt) && Enum.IsDefined(nt): s.NameTags = nt; break;
                     case "name_tag_health": s.NameTagHealth = v == "1"; break;
@@ -672,7 +673,7 @@ public sealed class Settings
                     $"display={Display}",
                     $"width={Width}",
                     $"height={Height}",
-                    $"ui_scale={UiScale.ToString(inv)}",
+                    $"text_size={Ui.TextSizeKey(TextSize)}",
                     $"hud_width={HudWidth}",
                     $"foliage={FoliageQuality}",
                     $"sky={SkyQuality}",
