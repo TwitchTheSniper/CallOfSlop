@@ -341,7 +341,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 195: the material painter (PartMaterials.cs): tool byte 18, CActKind.Material at the end of its enum, and in a Full a part of another material after Extrusion.WireMark (kind 246: its file part's id and the material's name, never a row).
     // 196: lofted hull bays (HullLoft.cs): a run-time part named by its key goes on the wire after Extrusion.WireMark as kind 245 and its name as text.
     // 197: massive ordnance (ConstructMegaBlast.cs, docs/sandbox/CONSTRUCTS.md "Massive blasts"): CFireKind.ShellLand ends with the blast's look (u8: 0 plain, 1 fission, 2 fusion, 3 antimatter); a DigOp whose kind byte has 0x80 set is one band of a sliced crater and carries its slice and slices (two u8).
-    public const byte ProtocolVersion = 197;
+    // 198: the warden's induction (GameTutorial.cs, docs/sandbox/TUTORIAL.md): Msg.Tutorial at the end of Msg.
+    public const byte ProtocolVersion = 198;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

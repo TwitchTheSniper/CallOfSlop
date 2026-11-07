@@ -121,6 +121,8 @@ public sealed class WorldPlayer
     public byte Offline = 255; // the owner byte their constructs carry while they're away (255: more people than bytes)
     public byte Faction; // their faction's index in WorldSnapshot.FactionNames + 1 (0: none; GameSandboxFactions.cs)
     public bool FactionLeader;
+    public TutorialState TutorialState; // the warden's induction (GameTutorial.cs): not started, running, finished or skipped, and at which step
+    public byte TutorialStep;
 
     public WorldPlayer Copy()
     {
