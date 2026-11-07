@@ -218,6 +218,7 @@ public static partial class SelfTest
             var fitMs = ConstructFuseFit.FitMs;
             BenchFuseAll(c);
             var unit = c.Unit(0);
+            Console.WriteLine($"[fuse bench] capital {name}: rough fit alone {Ms(Times(3, () => ConstructFuseFit.Fit(c, unit, c.UnitMembers(0))))}");
             Console.WriteLine($"[fuse bench] capital {name}: {c.PartCount} parts, rough fit {(ConstructFuseFit.FitMs - fitMs) / Math.Max(1, ConstructFuseFit.Fits - fits):0.00} ms, {unit.RoughCount} boxes over {unit.Covered} parts, cell {unit.Cell * 100:0.0} cm, rough {unit.RoughVolume:0} m3 against {unit.ExactVolume:0} m3");
         }
         Console.WriteLine($"[fuse bench] capital {name}: rebuild, full: {Ms(Times(5, () => c.Rebuild(), () => c.Dirty = true))}");

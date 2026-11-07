@@ -134,6 +134,16 @@ internal static class ConstructFuseFit
                 var bmin = bmn[serial];
                 var bmax = bmx[serial];
                 Range(bmin, bmax, lo, h, nx, ny, nz, out var x0, out var y0, out var z0, out var x1, out var y1, out var z1);
+                var first = occ[(z0 * ny + y0) * nx + x0];
+                if (first >= 0 && first == occ[(z1 * ny + y1) * nx + x1])
+                {
+                    // (both far corners in one box: a box is a block of cells, so every cell between is in it too)
+                    var cmin = lo + new Vector3(cellBox[first * 6], cellBox[first * 6 + 1], cellBox[first * 6 + 2]) * h;
+                    var cmax = lo + new Vector3(cellBox[first * 6 + 3] + 1, cellBox[first * 6 + 4] + 1, cellBox[first * 6 + 5] + 1) * h;
+                    u.RMin[first] = Vector3.Min(u.RMin[first], Vector3.Max(bmin, cmin));
+                    u.RMax[first] = Vector3.Max(u.RMax[first], Vector3.Min(bmax, cmax));
+                    continue;
+                }
                 for (var z = z0; z <= z1; z++)
                     for (var y = y0; y <= y1; y++)
                     {
