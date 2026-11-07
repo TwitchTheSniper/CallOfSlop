@@ -390,7 +390,8 @@ public static class ShapeGrammar
         var tags = p.Tags;
         var role = v.Role; // (kit 4: the role leans each choice; null: kit 3's choices exactly)
         VehicleModule? Ch(Dice dd, string family, Func<VehicleModule, bool>? also = null, Func<VehicleModule, double>? weight = null) =>
-            role == null ? Choose(dd, st, family, tags, also, weight) : Choose(dd, st, family, tags, also, m => (weight?.Invoke(m) ?? 1) * role.Module(family, m.Name));
+            role == null && !VehicleContext.LeansModules ? Choose(dd, st, family, tags, also, weight)
+                : Choose(dd, st, family, tags, also, m => (weight?.Invoke(m) ?? 1) * (role?.Module(family, m.Name) ?? 1) * VehicleContext.Module(family, m.Name)); // (a role's and a spawn context's leans: the same one roll)
 
         // The body: a pattern, weighted by the style's liking for each kind of segment, then lengths.
         var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)) * (role?.Body(b) ?? 1))).ToList());

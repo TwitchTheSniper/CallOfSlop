@@ -290,7 +290,8 @@ public sealed partial class Vehicle
         var kind = part ?? Style.Part(d, "hood");
         if (kind == "plates")
             return PlatedHood();
-        var hood = Stand(kind, SocketPoint(Engine!, "+y"), Orient.Forward, Engine!, "engine");
+        var on = HoodOn ?? Engine!;
+        var hood = Stand(kind, SocketPoint(on, "+y"), Orient.Forward, on, "engine");
         PanelList("hood").Add(hood);
         var nose = noseOf != null ? FactionStyle.Noted("nose", d.Pick(noseOf)) : Style.Part(d, "nose");
         if (nose != "none")
@@ -312,7 +313,7 @@ public sealed partial class Vehicle
 
     private Vehicle PlatedHood()
     {
-        var y = SocketPoint(Engine!, "+y").Y;
+        var y = SocketPoint(HoodOn ?? Engine!, "+y").Y;
         Deck("hood", y, new Rect(-0.625f, 0.625f, -2.05f, -0.8f), "sheet", smallest: 2); // (no quarter plates: their bolts land on an engine's details, and a slot in the hood is a vent)
         foreach (var s in new[] { -1f, 1f })
             Wall("hoodsides", new Vector3(s, 0, 0), s * 0.625f, -2.05f, -0.8f, y - 0.42f, 0.5f, "sheet", 0.3);

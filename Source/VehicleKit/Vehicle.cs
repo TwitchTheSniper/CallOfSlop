@@ -272,6 +272,9 @@ public sealed partial class Vehicle : BlueprintScript
     public VPart? Diff2 { get; private set; }
 
     public VPart? Engine { get; private set; }
+
+    /// <summary>What a hood stands on: the engine, or off world a riser on the smaller Electric Motor (VehicleContext.cs).</summary>
+    public VPart? HoodOn { get; private set; }
     public VPart? Gearbox { get; private set; }
 
     /// <summary>An engine on a sill over the rails at <paramref name="z"/>, its gearbox behind it and a drive shaft to the differential.</summary>
@@ -282,6 +285,9 @@ public sealed partial class Vehicle : BlueprintScript
         var gb = gearbox ?? Style.Part(d, Slot("gearbox"));
         var sill = Sill(z);
         Engine = Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y");
+        HoodOn = Engine;
+        if (engine == null && Def(en).FuelKind == EngineFuel.Electric && Def(en).BoundsMax.Y - Def(en).BoundsMin.Y < 0.45f)
+            HoodOn = Onto(Engine, "+y", "Drone Battery", "-y", 0); // (a spawn context off world: the Electric Motor is 10 cm lower than an engine, so a hood stands on a Drone Battery on its top, within 2 cm of where it always does)
         Gearbox = Onto(Engine, "+z", gb, "-z", 0);
         if (Diff2 != null)
         {

@@ -224,6 +224,14 @@ public static class VehicleContext
             Note($"{slot} Electric Motor (no air: nothing burns)");
             return (["Electric Motor"], [1]);
         }
+        if (ctx.NoAir && slot == "hood" && items.Contains("plates") && items.Distinct().Count() > 1 && !SpawnContext.KitOnly)
+        {
+            Note("a plated hood (no air: the motor is small)");
+            var hw = weights?.ToArray() ?? Enumerable.Repeat(1.0, items.Length).ToArray();
+            for (var i = 0; i < items.Length; i++)
+                hw[i] *= items[i] == "plates" ? 10 : 1;
+            return (items, hw);
+        }
         if (!PlateSlots.Contains(slot) || cs.Strength <= 0 || items.Distinct().Count() < 2)
             return null;
         var w = weights?.ToArray() ?? Enumerable.Repeat(1.0, items.Length).ToArray();
@@ -305,6 +313,20 @@ public static class VehicleContext
             Note($"chassis table leaned ({Name(ctx.Biome)}{(ctx.LowGravity ? ", low gravity" : ctx.HighGravity ? ", high gravity" : "")})");
         return r;
     }
+
+    /// <summary>Does the current context lean the grammar's modules (<see cref="Module"/>)? Off world it does: a hood stands on the engine, and the Electric Motor is smaller.</summary>
+    public static bool LeansModules => SpawnContext.Current is { NoAir: true } && !SpawnContext.KitOnly;
+
+    /// <summary>
+    /// A grammar module's factor in this context: off world, a cab-over (its engine under the cab, no hood) and a plated hood (decked over at the engine's height, so it fits
+    /// any engine) weigh far more, since a moulded hood stands on the engine's top and the Electric Motor's is 10 cm lower and half as long as a V8's. 1 otherwise.
+    /// </summary>
+    public static double Module(string family, string name) => !LeansModules ? 1 : (family, name) switch
+    {
+        ("cab", "cab-over") => 6,
+        ("nose", "plated hood") => 10,
+        _ => 1,
+    };
 
     /// <summary>A segment's length lean (kit 3's body range plus a role's): a forest wants short, a road a little long. Not for a model.</summary>
     public static double LengthBias(double bias)
