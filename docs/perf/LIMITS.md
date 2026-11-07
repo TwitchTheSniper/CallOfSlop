@@ -43,15 +43,6 @@ their log. Add a call wherever a new silent cap goes in.
 
 ## Risky, not changed (proposed)
 
-- **Parts a construct, `Construct.MaxParts` 8,000.** Not raised. (1) About 80 `stackalloc` spans are sized to
-  `PartCount` or `LinkCount` (the drive line alone puts ~400 KB on the stack at 8,000 parts, in `ConstructDrive`; the
-  logic step, merges, floods and the router add their own); Windows gives the main thread 1 MB, so doubling it risks a
-  stack overflow, which is a native crash. They need a growable scratch first: a thread-static LIFO pool of arrays a type,
-  grown when a construct reserves parts (`ReserveParts`), cleared on rent, returned by a `using` lease. (2) The CBody link
-  count is a u16: 21,845 parts at three links each is the most without a protocol change. (3) `PaintStroke.Key` and
-  `ConstructRemover.Key` hold a part index in 15 bits (32,766), and `ConstructEngine` keeps a construct's pieces in
-  `short`. (4) The 8,000-part cost scenes in "Collision" would have to be rerun at the new size on Windows.
-  Plan: scratch pool, then 16,000 (wire-safe), measure the 8 ms tick with a capital hull, then decide on more.
 - **Joints a construct, 255.** A segment is a byte everywhere (parts, joints, the pose's window, saves). Widening is a
   protocol-wide change; freeform welds (192 now) and joints share it.
 - **Wheel and track rays, spring feet, 256.** A raycast each a tick. A traction city on many track units may reach it;
@@ -66,6 +57,59 @@ their log. Add a call wherever a new silent cap goes in.
   which draw a static part's boxes in its chunk's few draws. Moving parts are still drawn box by box; designed ordnance keeps
   32 (`OrdnanceDesign.MaxBoxes`).
 
+## Parts a construct: 8,000 to 16,000 (branch `feat/max-parts`, protocol 190)
+
+What was done:
+
+- **Scratch, not the stack.** The ~80 spans sized to `PartCount` or `LinkCount` (floods, the drive line, the drill feeds, the
+  logic step, merges, power, guns, routes' legacy migration, splits, the engine union-find) take their memory from
+  `Scratch` (`Source/Constructs/Scratch.cs`): one byte arena a thread, used last in, first out (`using var scratch =
+  Scratch.Begin();` then `scratch.Take<T>(n)`, cleared as `stackalloc` was). It grows by doubling when a frame needs more
+  than ever before, and `Construct.ReserveParts` / `ReserveLinks` grow it on the edit (`Construct.ScratchBytes`), so a
+  steady tick allocates nothing; spans taken before a growth stay valid. Small spans with a fixed bound (a part's
+  sockets, the joints, a track's wheels, `Rot24`) stay on the stack. A 16,000-part scene ran on a thread with a 1 MB
+  stack (Windows' main thread). The gun step's per-gun span had been a `stackalloc` inside the loop (a part count of stack
+  for every gun, never given back until the method returned); it is a frame a gun now.
+- **Widened.** `ConstructEngine`'s union-find is `int` (was `short`); `PaintStroke.Key` and `RemoverSelection.Key` hold a
+  31-bit index (were 15 bits; local hash keys, not on the wire). Seat keys that packed a part index in 8 bits (the
+  stabilised look `_stabSeat`, `_sbViewSeat`, the third-person seat key, the configure look key) mixed seats past part
+  255 even at 8,000; they hold 16 bits now.
+- **On the wire (protocol 190).** Part indices and the link count were u16 already (48,000 links fit). A Full's count of
+  part settings off their defaults was a u16, which wraps past four settings a part at 16,000 parts: it is a u32. A Full
+  of a 16,000-part plate grid is 482 KB, at Steam's 512 KB message limit (`SteamTransport.MaxMessageSize`), so a reliable
+  message over it goes as `Msg.Fragment` pieces of 256 KB on its own lane and is put back together before the game reads
+  it (tried with a 1.2 MB message on the recorded backend). RakNet splits big messages itself.
+- **Poses.** A pose found its signal parts by walking every part three times a body (16,000 parts each pose tick); the
+  list is kept with the construct now (`ConstructNet.Signals`, found again after a rebuild or a part count change).
+- `MaxParts` 16,000, `MaxLinks` 48,000.
+
+Measured in the container (a throwaway harness, not committed; a 2-core box at load 8 to 12 with other agents building,
+so numbers are min / median of repeats and real PCs are faster). Each world: a Wired Buggy with a grid of Frame Blocks
+linked on four sides (two links a part), one driven and pushed at 3 m/s, one parked:
+
+| | 8,000 parts (15,752 links) | 16,000 parts (31,689 links) | Against |
+| --- | --- | --- | --- |
+| `Rebuild` (one edit) | 1.7-2.5 / 2-8 ms | 5.4-8.7 / 6-13 ms | 8 ms a tick: **at the edge** at 16,000 |
+| Add a part and take it off (two rebuilds, a split check) | 3.9-4.8 / 4-8 ms | 10-22 / 14-44 ms | a tick with one edit each way |
+| World step, both bodies | 0.73-0.78 / 0.9-1.2 ms | 1.1-1.3 / 1.3-1.8 ms | 8 ms: fine |
+| Logic step, one body | 0.11-0.16 ms | 0.38-0.48 ms | |
+| `WriteFull` | 240 KB, 0.4 ms | 482 KB, 0.9 ms | Steam's 512 KB (fragments past it) |
+| `ConstructPatch.Write` (one change) | 0.8 ms | 1.7 ms | at most every 6 ticks a dirty big body |
+| `StructureHash` | 0.12 ms | 0.3-0.4 ms | |
+| `WritePoses` (both bodies) | 0.15-0.2 ms before the signal list, ~0 after | 0.6-0.8 ms before, ~0 after | per pose tick per client |
+| A client reading the Full | 2-5 ms | 6-15 ms | once a structure change, a client |
+| Steady allocation | 0 B a tick | 0 B a tick | |
+| Scratch arena | 1 MB | 2 MB a thread | |
+
+The steady tick holds easily. The cost that grows is the **rebuild** (an edit, a part broken off, a split): mostly
+`BuildMass`, `BuildSegments`, `ConstructPower.Rebuild` and the drive line, each a walk over every part, at 16,000 parts
+about as long as the 8 ms budget in this container. That is why the cap stops at 16,000 and not at the 21,845 the link
+count allows: going further wants an incremental rebuild (only the systems an edit touches) first. The "Compound
+collision" cost scenes build hulls of the cap: at 16,000 one hull sliding 0.83 ms a tick, one on half-metre ground with 40
+blocks 3.7 ms, eight stacked 126 ms (59 ms at 8,000 on the same box; it was over budget already). Not measured on Windows. Steam's default send buffer is 512 KB (`k_ESteamNetworkingConfig_SendBufferSize`, not set by the game), so a
+Full near that size sent while other reliable data waits may be refused; the transport logs it and the far side drops the
+part it has when the next first piece comes. Raising the buffer is a backend setting worth adding.
+
 ## The inventory
 
 Grouped by class; the rows changed in this audit come first in each group. "What it protects" is the code's own comment
@@ -79,7 +123,7 @@ where it has one. Line numbers are those of this audit.
 | Wire width | Pose air window start | `Constructs/ConstructNet.cs:1508` | u8, now u16 | which rotors and control surfaces a pose carries (`PoseAir` 24 of them, a window that turns) | **Fixed** (narrowing bug): `first` wrapped past 255 on a body with many surfaces, so clients set the wrong surfaces. Protocol 189, one byte more a pose with air. Round trip tried with 600 surfaces |
 | Wire width | `MaxStations` | `Constructs/ModularRack.cs:52` | `ConstructParts.MaxSockets - 8` | in all (247: a part's 255 sockets, with room for its five mounts; a station's socket is a byte on the wire). A salvo lets one go a tick (... | **Now 247** (`MaxSockets - 8`, follows ba67442a's 255 sockets; was 56). Tried: 16x15 grid (16 boxes, 245 sockets), 15x16 drum (23 boxes, 243 sockets), keys round-trip, 16x16 refused. A salvo is one a tick (about 4 s), each a shell |
 | Wire width | `MaxWorldLinks` | `Constructs/WorldLinks.cs:53` | `255` | in the world (was 64): its count is a byte on the wire (ConstructNet), so 255 is the most; docs/perf/LIMITS.md | **Raised 64 to 255 in the world** (byte count); nodes still share `MaxWorldNodes` |
-| Wire width | `MaxLinks` | `Constructs/Construct.cs:230` | `MaxParts * 3` | - | Kept: the CBody link count is a u16 (65,535) |
+| Wire width | `MaxLinks` | `Constructs/Construct.cs:232` | `MaxParts * 3` | - | **48,000** (follows `MaxParts`): the CBody link count is a u16 (65,535), so 21,845 parts at most without widening it |
 | Wire width | `MaxJoints` | `Constructs/Construct.cs:231` | `255` | a segment is a byte: 0 is the body, k hangs on joint k - 1 | Kept: a segment is a byte everywhere (CPart.Seg, CJoint.ParentSeg, the pose's joint window); widening is a protocol-wide change |
 | Wire width | `MaxBeacons` | `Constructs/ConstructBeacons.cs:340` | `64` | a network is a bit of a player's mask: this many networks at most | Kept: a network is a bit of a 64-bit mask |
 | Wire width | `MaxEntries` | `Constructs/ConstructBeacons.cs:979` | `240` | kinds a message carries (4 bytes each); a longer change takes more messages, a tick each | Kept |
@@ -104,12 +148,12 @@ where it has one. Line numbers are those of this audit.
 | Wire width | `MaxTracks` | `Constructs/ConstructTracks.cs:169` | `64` | - | Kept: TrackCount is a byte on the wire |
 | Wire width | `MostBodies` | `Constructs/ConstructWorld.cs:32` | `60000` | - | Kept: body ids are u16 |
 | Wire width | `MaxCount` | `Constructs/OrdnanceDesign.cs:196` | `1000` | of a section in a row (two bytes on the wire; a safety for the numbers, far past any airframe | Kept: two bytes |
-| Wire width | `PaintStroke.Key` / `ConstructRemover.Key` | `Constructs/PaintStroke.cs:17` | 15 bits | a part or route index in a selection key (0x7FFF whole, 0x8000 a route) | Kept: safe to 32,766 parts; must widen before `MaxParts` passes that |
+| Wire width | `PaintStroke.Key` / `ConstructRemover.Key` | `Constructs/PaintStroke.cs:17` | 31 bits (was 15) | a part or route index in a selection key (0x7FFFFFFF whole, 0x80000000 a route) | **Widened** (local hash keys, not on the wire) |
 | Wire width | `MaxGames` | `Net/ServerBrowser.cs:771` | `512` | - | Kept |
 | Wire width | `MaxQueriesPerSecond` | `Net/ServerBrowser.cs:774` | `4` | - | Kept |
 | Wire width | `MaxParts` | `Net/Snapshot.cs:112` | `8` | - | Kept (player model parts, not constructs) |
 | Wire width | `MaxMessageSize` | `Net/SteamTransport.cs:19` | `512 * 1024` | - | Kept |
-| Cost budget | `MaxParts` | `Constructs/Construct.cs:229` | `8000` | - | **Kept, proposed** (see Risky below): ~80 `stackalloc` spans sized to `PartCount` (about 400 KB of stack in the drive line at 8,000 parts, on a 1 MB Windows main thread), link count u16 on the wire (so at most 21,845 parts at 3 links each), `PaintStroke`/`ConstructRemover` keys hold an index in 15 bits, `ConstructEngine` keeps part indices in `short` |
+| Cost budget | `MaxParts` | `Constructs/Construct.cs:231` | `16000` (was 8,000) | - | **Raised** (see "Parts a construct" above): part-sized spans in `Scratch`, keys and the engine union-find widened, settings count u32 and Steam fragments (protocol 190); a rebuild at 16,000 parts is about the 8 ms budget, so no further |
 | Cost budget | `MaxGuns` | `Constructs/Construct.cs:235` | `256` | guns a construct (8 until the capital parts, 64 until docs/perf/LIMITS.md): a turn through the gun step each a tick; per gun arrays grow... | **Raised 64 to 256**, logged when reached; per-gun arrays already grow (`ReserveGuns`), recoil folds per segment (`MaxRecoils` 64, unchanged memory) |
 | Cost budget | `MaxSurfaces` | `Constructs/ConstructAero.cs:21` | `512` | - | Kept. With rotors, up to 544 items: the pose window's start was a byte (wrapped past 255): **fixed, u16, protocol 189** |
 | Cost budget | `MaxVolumes` | `Constructs/ConstructCargo.cs:26` | `32` | cargo volumes a construct (more are refused when fitted; was 4: a carrier has a hangar a deck). Each frozen one is a broadphase look ever... | **Raised 4 to 32**: each frozen volume is one broadphase look every `ScanEvery` ticks |
@@ -150,13 +194,13 @@ where it has one. Line numbers are those of this audit.
 | Cost budget | `MaxLog` | `Constructs/ConstructDrillShaft.cs:26` | `TerrainEdits.MaxOps / 2` | drills stop digging here, so blasts always have room in the log | Kept |
 | Cost budget | `MaxGates` | `Constructs/ConstructDrive.cs:26` | `16` | - | Kept |
 | Cost budget | `MaxGroups` | `Constructs/ConstructDrive.cs:27` | `12` | - | Kept |
-| Cost budget | Stack spans sized to `PartCount` / `LinkCount` | `Constructs/ConstructDrive.cs:283 (and ~80 more)` | `MaxParts` x up to 22 B | zero-allocation scratch for floods, the drive line, logic, merges | Kept: the reason `MaxParts` stays 8,000 (see Risky) |
+| Pool size | Part-sized scratch (`Scratch`) | `Constructs/Scratch.cs` | grows by doubling, 2 MB a thread at 16,000 parts | zero-allocation scratch for floods, the drive line, logic, merges (was ~80 `stackalloc` spans) | **New**: grown at `ReserveParts` / `ReserveLinks` or when a frame needs more, never shrinks |
 | Cost budget | `MaxRemoveTargets` | `Constructs/ConstructEditsRemover.cs:19` | `1024` | - | Kept |
 | Cost budget | `MaxChunk` | `Constructs/ConstructEditsSelect.cs:28` | `256` | part indices a message | Kept |
 | Cost budget | `MaxDrops` | `Constructs/ConstructEditsSelect.cs:33` | `16` | parts a delete hands back one at a time; more with nowhere to go stay together as a body | Kept |
 | Cost budget | `Max` | `Constructs/ConstructEffectors.cs:50` | `96` | - | Kept |
 | Cost budget | `MaxEmits` | `Constructs/ConstructEngine.cs:137` | `4` | - | Kept |
-| Cost budget | Engine union-find in `short` | `Constructs/ConstructEngine.cs:206` | 32,767 | part indices of a construct's engine pieces | Kept: fine under 32,767 parts |
+| Cost budget | Engine union-find | `Constructs/ConstructEngine.cs:207` | `int` (was `short`, 32,767) | part indices of a construct's engine pieces | **Widened** |
 | Cost budget | `MaxRects` | `Constructs/ConstructExtrusion.cs:55` | `16` | solid boxes a section may mesh into (each is a draw and a collision box | Kept |
 | Cost budget | `MaxWallCm` | `Constructs/ConstructExtrusion.cs:60` | `200` | and is at most this thick | Kept |
 | Cost budget | `MaxStations` | `Constructs/ConstructExtrusion.cs:769` | `9` | - | Kept |

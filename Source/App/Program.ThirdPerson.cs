@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static uint _tpSeatKey;
+    private static ulong _tpSeatKey;
     private static float _tpHeading;
 
     /// <summary>Before the mouse look: the keys, and which context the view is in. True when the mouse orbits the seat camera instead of turning the player.</summary>
@@ -144,7 +144,7 @@ public static unsafe partial class Program
             }
             ref var h = ref _game.SandboxHands.Hand(local.Id);
             var drone = _game.LocalDrone();
-            var key = drone != null ? 0x80000000u | drone.Id : ((uint)h.SeatBody << 8) | (uint)(h.SeatPart + 1);
+            var key = drone != null ? 1UL << 40 | drone.Id : (ulong)h.SeatBody << 16 | (uint)(h.SeatPart + 1); // (a part index is up to 16 bits: the old body << 8 mixed seats past part 255)
             if (key != _tpSeatKey)
             {
                 _tpSeatKey = key;

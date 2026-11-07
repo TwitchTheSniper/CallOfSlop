@@ -55,14 +55,23 @@ public sealed class VehicleGenJob
     [ThreadStatic]
     private static VehicleGenJob? _current;
 
-    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default)
+    /// <summary>Kit 4's role and tier the request asked for (VehicleRoles.cs); null: by shape, as before.</summary>
+    public readonly RoleAsk? Role;
+
+    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default, RoleAsk? role = null)
     {
         Generator = generator;
         Seed = seed;
         Layers = layers;
+        Role = role;
     }
 
-    public string Name => VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix;
+    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "");
+
+    private string _made = ""; // (the vehicle's own name once made: a kit-1 shape's role may have taken a seed derived from the one asked)
+
+    /// <summary>Kit 4: "role raider, tier 2, shape Box Truck, role met" and what it measured, as in the kit line; empty without a role.</summary>
+    public string RoleNotes = "";
 
     /// <summary>
     /// A point where a generation may hand back to the game (between the game's own build calls, never inside one). Only the
@@ -225,12 +234,12 @@ public sealed class VehicleGenJob
 
     private void Generate()
     {
-        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers);
+        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role);
         Yield();
         var text = v.Text();
         Yield();
         Hash = Fnv(text);
-        (Kit, Modules) = (v.Kit, string.Join(", ", v.Modules));
+        (Kit, Modules, RoleNotes, _made) = (v.Kit, string.Join(", ", v.Modules), string.Join(", ", v.KitNotes), v.Name);
         Yield();
         var bp = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(Generator, Seed));
         if (bp.Tow.Length > 0 && ConstructBuild.FindBlueprint(bp.Tow) == null)

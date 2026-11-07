@@ -178,7 +178,8 @@ public static class ConstructWeapons
         c.Burning = 0;
         for (var j = 0; j < c.JointCount; j++)
             c.Joints[j].Aimed = false;
-        Span<bool> taken = stackalloc bool[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> taken = scratch.Take<bool>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
         {
             if (c.Parts[i].Burn > 0)
@@ -195,7 +196,8 @@ public static class ConstructWeapons
             c.ReserveGuns(c.GunCount + 1);
             ref var g = ref c.Guns[c.GunCount];
             g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1, FeedSocket = -1, MagPart = -1 };
-            Span<bool> mine = stackalloc bool[c.PartCount];
+            using var gunScratch = Scratch.Begin(); // (a frame a gun: given back each turn of the loop, as the old stackalloc never was)
+            Span<bool> mine = gunScratch.Take<bool>(c.PartCount);
             try
             {
                 if (c.Parts[i].D.IsReceiverGun)
@@ -675,8 +677,9 @@ public static class ConstructWeapons
     {
         ref var g = ref c.Guns[k];
         g.BoxCount = 0;
-        Span<bool> seen = stackalloc bool[c.PartCount];
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> seen = scratch.Take<bool>(c.PartCount);
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         int head = 0, tail = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (mine[i])

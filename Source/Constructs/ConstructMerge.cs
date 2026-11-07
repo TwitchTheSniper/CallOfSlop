@@ -284,10 +284,11 @@ public static class ConstructMerge
         var rules = ReceiverMergeRules.Current;
         mergeOf.Clear();
         var count = 0;
-        Span<bool> classed = stackalloc bool[c.PartCount];
-        Span<ushort> members = stackalloc ushort[c.PartCount];
-        Span<short> cx = stackalloc short[c.PartCount], cy = stackalloc short[c.PartCount];
-        Span<bool> used = stackalloc bool[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> classed = scratch.Take<bool>(c.PartCount);
+        Span<ushort> members = scratch.Take<ushort>(c.PartCount);
+        Span<short> cx = scratch.Take<short>(c.PartCount), cy = scratch.Take<short>(c.PartCount);
+        Span<bool> used = scratch.Take<bool>(c.PartCount);
         Span<byte> grid = stackalloc byte[1024];
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -409,7 +410,8 @@ public static class ConstructMerge
         c.PartScale.AsSpan().Clear();
         if (c.MergeCount == 0)
             return;
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         for (var l = 0; l < c.LinkCount; l++)
         {
             ref var link = ref c.Links[l];
@@ -530,17 +532,18 @@ public static class ConstructMerge
     public static int Settle(ConstructWorld world, Construct c, int exclude, int keep)
     {
         Span<CMerge> oldGroups = stackalloc CMerge[Construct.MaxMerges];
-        Span<byte> oldOf = stackalloc byte[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<byte> oldOf = scratch.Take<byte>(c.PartCount);
         var oldCount = c.MergeCount;
         c.Merges.AsSpan(0, oldCount).CopyTo(oldGroups);
         c.MergeOf.AsSpan(0, c.PartCount).CopyTo(oldOf);
         Span<CMerge> groups = stackalloc CMerge[Construct.MaxMerges];
-        Span<byte> mergeOf = stackalloc byte[c.PartCount];
+        Span<byte> mergeOf = scratch.Take<byte>(c.PartCount);
         var count = Detect(c, exclude, groups, mergeOf);
         if (oldCount == 0 && count == 0)
             return keep;
-        Span<bool> pop = stackalloc bool[c.PartCount];
-        Span<bool> tree = stackalloc bool[c.PartCount];
+        Span<bool> pop = scratch.Take<bool>(c.PartCount);
+        Span<bool> tree = scratch.Take<bool>(c.PartCount);
         // Gun parts on the members' own sockets: off.
         for (var l = 0; l < c.LinkCount; l++)
         {
@@ -656,7 +659,8 @@ public static class ConstructMerge
     /// <summary>A gun part and every gun part bolted on through it (never through a receiver), into <paramref name="tree"/>.</summary>
     private static void Tree(Construct c, int start, Span<bool> tree, Span<bool> skip, int exclude)
     {
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         int head = 0, tail = 0;
         tree[start] = true;
         queue[tail++] = (ushort)start;
@@ -683,12 +687,13 @@ public static class ConstructMerge
         CentreSocket(c, from, socket, out var oldAt, out _);
         CentreSocket(c, to, socket, out var newAt, out _);
         var ratio = (float)to.N / from.N;
-        Span<bool> hang = stackalloc bool[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> hang = scratch.Take<bool>(c.PartCount);
         for (var b = 0; b < c.PartCount; b++)
             hang[b] = !tree[b] && b != exclude && HangsOn(c, b, tree, exclude, out _, out _);
         // The merge's other centre parts (and what is bolted through them) move too, by the same scaling about the merge's origin, so
         // they stay clear of this tree whenever they were clear of it (ms02: a splitter 3x wide and a magazine 3x big, both onto a 2x2).
-        Span<bool> mates = stackalloc bool[c.PartCount];
+        Span<bool> mates = scratch.Take<bool>(c.PartCount);
         var ownLen = c.DefOf(from.Lead).Sockets.Length;
         for (var l = 0; l < c.LinkCount; l++)
         {
@@ -805,7 +810,8 @@ public sealed partial class ConstructWorld
             MergePopCount++;
             Events.Add($"construct {c.Id}: {c.DefOf(i).Name} popped off a merged receiver");
         }
-        Span<int> comp = stackalloc int[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> comp = scratch.Take<int>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = gone[i] ? -2 : -1;
         var root = c.Root < c.PartCount && !gone[c.Root] ? c.Root : -1;

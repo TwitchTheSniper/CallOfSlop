@@ -64,9 +64,9 @@ public static class VehicleChassis
     /// <paramref name="cabOver"/>: a cab-over shell stands over the front axle, so it stays where kit 2 put it. <paramref name="fixedInset"/>: a hutch's gun stands
     /// where the Gun Wagon's frame puts it.
     /// </summary>
-    public static ChassisPlan Roll(Dice c, FactionStyle st, string[] only, float end, int segments, bool cabOver, float? fixedInset, bool gunDeck)
+    public static ChassisPlan Roll(Dice c, FactionStyle st, string[] only, float end, int segments, bool cabOver, float? fixedInset, bool gunDeck, ChassisRange? range = null)
     {
-        var r = LayerTables.ChassisOf(st);
+        var r = range ?? LayerTables.ChassisOf(st); // (kit 4: a role's chassis, the style's table leaned by what the role needs: VehicleRoles.cs)
         var gears = st.HeavyGear.Where(g => only.Contains(g.Name)).ToArray();
         if (gears.Length == 0)
             throw new VehicleKitException($"style {st.Name} has no gear named {string.Join(", ", only)}");

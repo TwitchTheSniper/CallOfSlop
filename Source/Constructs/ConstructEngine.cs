@@ -177,7 +177,7 @@ public static class ConstructEngine
         return a >= 0 && a < c.PartCount && b >= 0 && b < c.PartCount;
     }
 
-    private static int Find(Span<short> up, int i)
+    private static int Find(Span<int> up, int i)
     {
         while (up[i] != i)
             i = up[i] = up[up[i]];
@@ -203,16 +203,17 @@ public static class ConstructEngine
         var rules = EngineRules.Current;
         var edges = c.LinkCount + c.SeamCount + c.JointCount;
         // Pieces that touch, working and on one rigid piece, are one engine.
-        Span<short> up = stackalloc short[n];
+        using var scratch = Scratch.Begin(); // (part-sized spans: Scratch.cs)
+        Span<int> up = scratch.Take<int>(n); // (was short: an index a part, past 32,767 parts it would wrap)
         for (var i = 0; i < n; i++)
-            up[i] = (short)i;
+            up[i] = i;
         for (var k = 0; k < edges; k++)
         {
             if (!Edge(c, k, out var a, out var b) || !Joins(c, a) || !Joins(c, b) || c.MoveSeg(c.Parts[a].Seg) != c.MoveSeg(c.Parts[b].Seg))
                 continue;
             int ra = Find(up, a), rb = Find(up, b);
             if (ra != rb)
-                up[Math.Max(ra, rb)] = (short)Math.Min(ra, rb);
+                up[Math.Max(ra, rb)] = Math.Min(ra, rb);
         }
         for (var i = 0; i < n; i++)
         {
@@ -241,7 +242,7 @@ public static class ConstructEngine
             return;
         // On the crank: the cylinders (each on a bank, by which way it points; a wrecked one keeps its place and gives
         // nothing), the flywheel.
-        Span<sbyte> bank = stackalloc sbyte[n];
+        Span<sbyte> bank = scratch.Take<sbyte>(n);
         bank.Fill(-1);
         var bankSlots = MaxEngines * MaxBanks;
         Span<Vector3> bankDir = stackalloc Vector3[bankSlots];

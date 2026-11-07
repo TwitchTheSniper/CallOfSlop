@@ -23,7 +23,7 @@ namespace CallOfSlop;
 ///   --test-kit                     hosting Zombies: the test kit on maps that allow it (Horde Test; not saved)
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Release: --bake DIR (baked nav graphs for every shipped map, BotNavBake.cs).
-/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --sweep-vehicle NAME, --diversity NAME, --diversity-style STYLE, --kit-report, --grade-vehicle, --grade-report, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --sweep-vehicle NAME, --diversity NAME, --diversity-style STYLE, --kit-report [--roles], --role "STYLE ROLE" --tier N, --grade-vehicle, --grade-report, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
@@ -168,6 +168,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
         if (args.Any(a => a.Equals("--kit-report", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleQualityCli.KitReport(args); // every style and shape: failures, their reasons, cost, parts, mass
+        if (args.SkipWhile(a => !a.Equals("--role", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } roleOf)
+            return VehicleKit.VehicleRolesCli.Role(roleOf, args); // kit 4: a style's vehicles for a role and tier, what they measured against it (VehicleRoles.cs)
         if (args.Any(a => a.Equals("--grade-vehicle", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleQualityCli.GradeVehicle(args); // the user's grade of a seed, into docs/vehiclekit/grades.json
         if (args.Any(a => a.Equals("--grade-report", StringComparison.OrdinalIgnoreCase)))

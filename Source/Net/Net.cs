@@ -100,6 +100,7 @@ public enum Msg : byte
     Travel, // server -> one client: free travel: purpose 1, join a planetoid the host runs (world, map, its number); 2, back in the host's space (reliable ordered; GameTravel.cs, GameTravelVisit.cs, protocol 162)
     Relay, // client <-> server: free travel: a packet between a traveller's game and a planetoid's game on the host (kind: 0 data (planetoid number, up: reliability, the packet), 1 opened, 2 closed) (as the packet's own reliability; RelayTransport.cs, GameTravelVisit.cs, protocol 162)
     Factions, // server -> all and each joiner: Sandbox player factions, the whole table (names, leaders, members, invites) when it changes (reliable ordered; GameSandboxFactions.cs, protocol 161)
+    Fragment, // either way, Steam transport only: a piece of a reliable message over Steam's 512 KB limit (u8 lane, u8 first piece, u32 whole length, the bytes); put back together by SteamTransport before the game sees it (a 16,000-part construct's Full; protocol 190)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
@@ -213,6 +214,7 @@ public sealed class PacketWriter
 
     /// <summary>Overwrites two bytes already written (for lengths filled in afterwards).</summary>
     public void PatchU16(int at, ushort v) => BinaryPrimitives.WriteUInt16LittleEndian(_buf.AsSpan(at), v);
+    public void PatchU32(int at, uint v) => BinaryPrimitives.WriteUInt32LittleEndian(_buf.AsSpan(at), v);
 }
 
 /// <summary>

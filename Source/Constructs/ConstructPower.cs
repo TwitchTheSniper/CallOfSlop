@@ -26,7 +26,8 @@ public static class ConstructPower
         c.HasBattery = false;
         c.ChargeCapacity = 0;
         c.AlternatorRate = 0;
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         int head = 0, tail = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -42,7 +43,7 @@ public static class ConstructPower
             queue[tail++] = (ushort)i;
         }
         // Only the parts at the end of a seam, a bead or a cable look through those lists below (a big hull's plates don't).
-        Span<bool> ends = stackalloc bool[c.PartCount];
+        Span<bool> ends = scratch.Take<bool>(c.PartCount);
         ends.Clear();
         void Mark(Span<bool> list, int a, int b)
         {

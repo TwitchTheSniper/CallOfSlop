@@ -501,7 +501,8 @@ public sealed partial class ConstructWorld
             Spill(c, index); // (a container that goes spills what it holds: physical storage)
         var keepDriver = c.Driver;
         // Every part, by component: what still reaches the root (or part 0 when the root is the one going) stays.
-        Span<int> comp = stackalloc int[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> comp = scratch.Take<int>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = -1;
         comp[index] = -2;
@@ -539,7 +540,8 @@ public sealed partial class ConstructWorld
 
     private static void Flood(Construct c, int start, int id, Span<int> comp)
     {
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         int head = 0, tail = 0;
         comp[start] = id;
         queue[tail++] = (ushort)start;
@@ -590,7 +592,8 @@ public sealed partial class ConstructWorld
             return null; // the caps are full: the piece is simply lost
         }
         // Copy the parts; segments other than the base keep their joints (when their hinge came along).
-        Span<int> map = stackalloc int[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> map = scratch.Take<int>(c.PartCount);
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
         for (var s = 0; s <= Construct.MaxJoints; s++)
             segMap[s] = -1;
@@ -680,7 +683,8 @@ public sealed partial class ConstructWorld
                 }
                 break;
             }
-        Span<int> map = stackalloc int[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> map = scratch.Take<int>(c.PartCount);
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
