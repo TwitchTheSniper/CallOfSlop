@@ -145,7 +145,7 @@ public sealed partial class Vehicle
 
     /// <summary>
     /// The style's chest against the room's far end wall, in the middle of it, when no side wall took a container (the shape grammar's last resort: a short room's
-    /// walls go to seats, the door and the magazine). Tried a quarter metre further in at a time, up to a metre; false when nothing takes it.
+    /// walls go to seats, the door and the magazine). Tried a quarter metre further in at a time, never into the room's middle; false when nothing takes it.
     /// </summary>
     public bool EndChest(Room room)
     {
@@ -158,10 +158,11 @@ public sealed partial class Vehicle
         var wall = away < 0 ? room.R.Z0 : room.R.Z1;
         var inward = new Vector3(0, 0, -away);
         var o = alongWall ? new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, inward, Vector3.UnitY, Vector3.UnitY);
-        for (var In = 0.15f; In <= 1.01f; In += 0.25f)
+        for (var In = 0.15f; MathF.Abs(wall - away * (deep / 2 + In) - room.Middle.Z) >= deep / 2 + CallOfSlop.World.PlayerRadius + 0.1f; In += 0.25f) // (never into the middle, where a player stands)
+        foreach (var x in (float[])[-0.25f, 0.25f])
             try
             {
-                var placed = Put(part, new Vector3(-0.25f, room.FloorTop + size.Y / 2, wall - away * (deep / 2 + In)), o, 0.2f, onTop: true);
+                var placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, wall - away * (deep / 2 + In)), o, 0.1f, onTop: true);
                 PanelList("furniture").Add(placed);
                 room.Furniture.Add(placed);
                 room.Containers.Add(placed);

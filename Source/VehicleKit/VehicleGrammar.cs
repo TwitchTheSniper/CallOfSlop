@@ -97,17 +97,17 @@ public static class ShapeGrammar
     private static BodySegment Room(int minBays, int maxBays) => new("room", 3.5f + minBays, 3.5f + maxBays);
     private static BodySegment Bed(float min, float max) => new("bed", min, max);
     private static BodySegment GunBed(float min, float max) => new("gun bed", min, max);
-    private static readonly BodySegment Hutch = new("hutch", 4f, 4f), GunBay = new("gun bay", 2f, 2f);
+    private static readonly BodySegment Hutch = new("hutch", 4f, 4f), GunBay = new("gun bay", 2f, 2f), Gap = new("gap", 0.5f, 1f);
     private static BodySegment Tank(float min, float max) => new("tank", min, max);
 
     /// <summary>The recipes, by shape name: kit 1's shapes as module families. A shape not here (the Technical, the trailers, the Double Decker) is made by its generator.</summary>
     public static readonly Dictionary<string, ShapeRecipe> Recipes = new(StringComparer.Ordinal)
     {
         ["Box Truck"] = new("Box Truck", "box", "box truck",
-            [new(3, Room(0, 1)), new(2, Room(0, 1), Bed(1.5f, 2f)), new(1, GunBed(2f, 2f), Room(0, 0)), new(1.5, Room(0, 0), GunBed(2f, 2.5f))],
+            [new(3, Room(0, 1)), new(1.5, Gap, Room(0, 1)), new(2, Room(0, 1), Bed(1.5f, 2f)), new(1, GunBed(2f, 2f), Room(0, 0)), new(1.5, Room(0, 0), GunBed(2f, 2.5f))],
             [("porch", 3), ("porch hitch", 1), ("gun deck", 1.5), ("hitch", 1), ("bare", 1)], 1, 3),
         ["War Bus"] = new("War Bus", "bus", "war bus",
-            [new(4, Room(2, 4)), new(1, Room(2, 3), Bed(1.5f, 2f)), new(1, Room(2, 3), GunBed(2f, 2.5f))],
+            [new(4, Room(2, 4)), new(1.5, Gap, Room(2, 3)), new(1, Room(2, 3), Bed(1.5f, 2f)), new(1, Room(2, 3), GunBed(2f, 2.5f))],
             [("porch", 3), ("porch hitch", 1), ("gun deck", 2), ("hitch", 1)], 2, 4, BusGears),
         ["Flatbed Fort"] = new("Flatbed Fort", "bunker", "flatbed fort",
             [new(3, GunBed(2f, 3f), Room(0, 0)), new(2, Room(0, 0), GunBed(2f, 3f)), new(1, GunBed(2f, 2.5f), Room(0, 1))],
@@ -137,6 +137,7 @@ public static class ShapeGrammar
         new("body", "gun bed", "a gun bed"),
         new("body", "hutch", "an ammo hutch and a stern gun on a flat deck"),
         new("body", "gun bay", "a gun behind the cab"),
+        new("body", "gap", "bare rails behind the cab"),
         new("body", "tank", "a big round tank of fuel") { Gears = TankGears },
         new("rear", "porch", "a drum on the rear porch") { Excludes = ["fuel"], Provides = ["fuel"] },
         new("rear", "porch hitch", "a drum on the rear porch over a tow hitch") { Excludes = ["fuel"], Provides = ["fuel"] },
@@ -149,6 +150,8 @@ public static class ShapeGrammar
         new("flank", "bare", "flat flanks") { Needs = ["room"] },
         new("flank", "panniers", "panniers") { Needs = ["room"], Weight = 2 },
         new("flank", "loaded", "panniers all along") { Needs = ["room"] },
+        new("roof", "none", "") { Needs = ["room"], Weight = 2 },
+        new("roof", "rack", "a railed rack on the roof") { Needs = ["long room"] }, // (two flat bays side by side need a room with a metre bay)
         new("sides", "walls", "walled sides") { Needs = ["bed"], Gears = FortGears, Weight = 2 },
         new("sides", "rails", "tube rails") { Needs = ["bed"] },
         new("sides", "open", "open sides") { Needs = ["bed"] },
@@ -174,7 +177,6 @@ public static class ShapeGrammar
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && attempt + 1 < Attempts)
             {
-                if (Environment.GetEnvironmentVariable("VKG_TRACE") != null) Console.WriteLine($"DIAG attempt {attempt}: {ex.Message}"); // DIAG
                 // (the next plan)
             }
         }
@@ -205,7 +207,7 @@ public static class ShapeGrammar
         public Gear Gear = null!;
         public float Rails, Tail, RearAxle, End;
         public VehicleModule Cab = null!, Nose = null!, Rear = null!, UnderKind = null!;
-        public VehicleModule? Flank, Sides;
+        public VehicleModule? Flank, Sides, Roof;
         public string CabPart = "";
         public string? HoodPart;
         public string[]? NoseParts;
@@ -265,6 +267,8 @@ public static class ShapeGrammar
         if (p.Segs.Count(s => s.Kind == "room") > 1 || p.Segs.Count(s => s.Kind is "bed" or "gun bed") > 1)
             throw new VehicleKitException("a recipe has two rooms or two beds"); // (a recipe's mistake: panels are tagged by kind)
         p.End = z;
+        if (p.Segs.Any(s => s.Kind == "room" && s.Len >= 4.5f))
+            tags.Add("long room");
         tags.Add(p.Segs[^1].Kind is "room" ? "room last" : p.Segs[^1].Kind is "bed" or "gun bed" ? "bed last" : p.Segs[^1].Kind + " last");
         if (tags.Contains("tank"))
             tags.Add("fuel");
@@ -346,9 +350,9 @@ public static class ShapeGrammar
 
         p.UnderKind = p.Gear.Floor < 0.5f ? Module("under", "stilts") : Choose(d.Fork("under"), st, "under", tags) ?? Module("under", "stilts");
         p.Flank = Choose(d.Fork("flank"), st, "flank", tags);
+        p.Roof = Choose(d.Fork("roof"), st, "roof", tags);
 
         Guns(v, p, d.Fork("guns"));
-        if (Environment.GetEnvironmentVariable("VKG_TRACE") != null) Console.WriteLine($"DIAG plan {attempt}: gear {p.Gear.Name} floor {p.Gear.Floor} rails {p.Rails} " + string.Join(" + ", p.Segs.Select(x => $"{x.Kind}[{x.Z0}-{x.Z1}] {string.Join(",", x.Bays)} roof {string.Join(",", x.RoofBays)} side {x.SideBay} gun {x.Gun}@{x.GunZ}"))); // DIAG
         return p;
     }
 
@@ -442,7 +446,7 @@ public static class ShapeGrammar
 
         // The room: the guns it works from inside (roof turrets, a sponson), up to the four belts a magazine feeds.
         var inRoom = Math.Clamp(want - count, count == 0 ? 1 : 0, room.Len >= 5.5f ? 3 : room.Len >= 4.5f ? 2 : 1); // (each is a seat on a wall that loot would take)
-        room.Bays = Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f));
+        room.Bays = Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack");
         var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => room.Bays[k] is "Door" or "Bay T" or "Tail T").ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
         var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => room.Bays[k] != "Door").ToList();
         var side = inRoom >= 2 || inRoom == 1 && d.Chance(0.3) ? middle.Count > 0 : false;
@@ -471,7 +475,7 @@ public static class ShapeGrammar
     /// A room's bays, front to back: a brow, <paramref name="ones"/> metre bays and the door bay in a seeded order, a tail. Heights walk between tall, low and narrow
     /// sections (a "Bay A-B" changes from one to the next), the door bay is tall, and the roofline changes at least once.
     /// </summary>
-    public static string[] Bays(Dice d, int ones)
+    public static string[] Bays(Dice d, int ones, bool flatPair = false)
     {
         static string H(Dice d) => d.Pick((string[])["T", "T", "T", "L", "L", "N"]);
         var slots = ones + 1;
@@ -481,19 +485,26 @@ public static class ShapeGrammar
         for (var i = 1; i <= slots; i++)
             bounds[i] = d.Chance(0.45) ? H(d) : bounds[i - 1];
         bounds[door] = bounds[door + 1] = "T";
+        var keep = new List<int> { door, door + 1 };
+        if (flatPair && slots >= 2) // (a roof rack wants two flat tall bays together: the door's and a "Bay T" beside it)
+        {
+            var n = door + 1 < slots ? door + 1 : door - 1;
+            bounds[n] = bounds[n + 1] = "T";
+            keep.AddRange([n, n + 1]);
+        }
         if (bounds.All(b => b == "T"))
         {
             var ends = new List<int>();
-            if (door != 0)
+            if (!keep.Contains(0))
                 ends.Add(0);
-            if (door != slots - 1)
+            if (!keep.Contains(slots))
                 ends.Add(slots);
             if (ends.Count > 0) // (a brow, a door and a tail stay flat: the brow and the tail rake its ends)
                 bounds[d.Pick(ends)] = d.Chance(0.6) ? "L" : "N";
         }
         // A long room steps twice: one change in six metres of hull still reads as a box from the side.
         var changes = Enumerable.Range(1, slots).Count(i => bounds[i] != bounds[i - 1]);
-        var free = Enumerable.Range(0, slots + 1).Where(i => i != door && i != door + 1).ToList();
+        var free = Enumerable.Range(0, slots + 1).Where(i => !keep.Contains(i)).ToList();
         for (var tries = 0; changes < (slots >= 3 ? 2 : 1) && free.Count > 0 && tries < 8; tries++)
         {
             var i = d.Pick(free);
@@ -565,6 +576,8 @@ public static class ShapeGrammar
                     s.Aft = dice.Fork("aft").Chance(0.5);
                     break;
                 }
+                case "gap": // (bare rails: air between the cab and the body)
+                    break;
                 case "gun bay": // (Generators/ScrapTanker.cs: a gun on its own sill behind the cab)
                     bedSills[s] = v.Sill(s.GunZ, layers: 2);
                     break;
@@ -638,6 +651,8 @@ public static class ShapeGrammar
         }
         if (room != null)
         {
+            if (roomSeg!.Len < 4.5f)
+                v.EndChest(room); // (a short room's walls go to seats, the door and the magazine: its loot takes the end wall first)
             v.Furnish(room, clearMiddle: true);
             if (room.Containers.Count == 0 && !v.EndChest(room))
                 throw new VehicleKitException($"the {room.Tag}: no wall took a container"); // (seats and the door took the walls: plan again)
@@ -645,6 +660,9 @@ public static class ShapeGrammar
             if (chance > 0)
                 v.Panniers(room.Bays, dice.Fork("panniers"), chance);
         }
+
+        if (room != null && p.Roof?.Name == "rack" && !Rack(v, room, roomSeg!.RoofBays))
+            p.Roof = Module("roof", "none"); // (no two flat tall bays side by side to lay it on)
 
         // The rear.
         switch (p.Rear.Name)
@@ -691,6 +709,35 @@ public static class ShapeGrammar
             throw new VehicleKitException($"it fills {side:P0} of its side box and {top:P0} of its plan box: a box");
 
         Describe(v, p);
+    }
+
+    /// <summary>
+    /// A railed rack on the room's roof (Generators/DoubleDecker.cs's top deck, smaller): deck plates over the longest run of flat tall bays (a door bay, "Bay T"), their
+    /// "top" sockets on the deck cells' centres, holes round the turrets standing there, tube rails down both edges. False when no two such bays stand together.
+    /// </summary>
+    private static bool Rack(Vehicle v, Room room, IReadOnlyList<int> turretBays)
+    {
+        var flat = room.Bays.Select(b => b.Name is "Hull Door Bay T" or "Hull Bay T").ToArray();
+        var (bestFrom, bestLen) = (0, 0);
+        for (var i = 0; i < flat.Length; i++)
+        {
+            var n = 0;
+            while (i + n < flat.Length && flat[i + n])
+                n++;
+            if (n > bestLen)
+                (bestFrom, bestLen) = (i, n);
+        }
+        if (bestLen < 2)
+            return false;
+        var (front, back) = (room.Bays[bestFrom], room.Bays[bestFrom + bestLen - 1]);
+        var roof = room.FloorTop + front.Def.BoundsMax.Y;
+        var z0 = v.CentreOf(front).Z - (front.Def.BoundsMax.Z - front.Def.BoundsMin.Z) / 2 + 0.125f;
+        var z1 = z0 + 0.25f * MathF.Floor((v.CentreOf(back).Z + (back.Def.BoundsMax.Z - back.Def.BoundsMin.Z) / 2 - z0) / 0.25f);
+        var holes = turretBays.Where(k => k >= bestFrom && k < bestFrom + bestLen).Select(k => v.CentreOf(room.Bays[k]).Z).Select(z => new Vehicle.Rect(-0.375f, 0.375f, z - 0.375f, z + 0.375f)).ToArray();
+        v.Deck("rack", roof, new Vehicle.Rect(-Edge, Edge, z0, z1), "deck", holes);
+        foreach (var s in new[] { -1f, 1f })
+            v.TubeRails(s * Edge, z0 + 0.125f, z1, roof, s);
+        return v.Panels.TryGetValue("rack", out var laid) && laid.Count > 0;
     }
 
     /// <summary>A room's seats at x -0.5 (clear of the door, which is on +x): the front, the back, and a third a metre ahead of the back one.</summary>
@@ -756,6 +803,8 @@ public static class ShapeGrammar
             Note("flank", p.Flank.Name);
         if (p.Sides != null)
             Note("sides", p.Sides.Name);
+        if (p.Roof != null)
+            Note("roof", p.Roof.Name);
         v.Modules.Add("layout " + body);
         if (p.Attempt > 0)
             v.Modules.Add("plan " + (p.Attempt + 1));
@@ -763,6 +812,8 @@ public static class ShapeGrammar
         var article = "aeiou".Contains(p.Recipe.Noun[0]) ? "An" : "A";
         sb.Append($"{article} {p.Recipe.Noun}: {p.Nose.Label}, {p.Cab.Label}, ");
         sb.Append(string.Join(", ", p.Segs.Select(s => s.Kind == "tank" ? Module("body", "tank").Label : s.Gun && s.Kind is "bed" ? "a gun bed" : Module("body", s.Kind).Label)));
+        if (p.Roof?.Name == "rack")
+            sb.Append(", ").Append(p.Roof.Label);
         sb.Append(p.Rear.Name == "bare" ? "." : $", {p.Rear.Label}.");
         sb.Append($" {v.Turrets.Count} gun{(v.Turrets.Count == 1 ? "" : "s")}.");
         v.Description = sb.ToString();
