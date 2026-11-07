@@ -988,7 +988,7 @@ public static class ConstructWeapons
         var eye = SeatEye(c, seat);
         var look = GravityFrames.Forward(c.WorldCom, c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);
         var d = query.Raycast(eye, look, reach, QueryFilter.Shots);
-        if (world.Raycast(eye, look, d, out var hit, c) && hit.Distance < d)
+        if (world.Raycast(eye, look, d, out var hit, c, ignoreCargo: true) && hit.Distance < d) // (its own load, riding frozen in its cargo volumes, is part of it: never what its gunner aims at)
             d = hit.Distance;
         if (world.Targets != null && world.Targets.RayTarget(eye, look, d, c.Id, out var td, out _) && td < d)
             d = td;

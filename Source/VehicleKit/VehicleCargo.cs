@@ -565,9 +565,9 @@ public sealed partial class Vehicle
     }
 
     /// <summary>Each turret's ring: its axis, its top and how far round it what it carries reaches (a piece within that stays under the ring's top).</summary>
-    private List<(Vector2 Axis, float Top, float Reach)> TurretSweeps()
+    private List<(Vector2 Axis, float Top, float Reach, float Slope)> TurretSweeps()
     {
-        var list = new List<(Vector2, float, float)>();
+        var list = new List<(Vector2, float, float, float)>();
         foreach (var t in Parts)
         {
             if (t.Name != "Turntable")
@@ -589,13 +589,24 @@ public sealed partial class Vehicle
                 if (r < 4f)
                     reach = MathF.Max(reach, r);
             }
-            list.Add((axis, hi.Y, reach + 0.1f));
+            list.Add((axis, hi.Y, reach + 0.1f, 0f));
+        }
+        // Each gun's line of fire as it turns: a piece stays under its muzzle by a margin that grows with the distance by its spread (a flame's licks and a pump
+        // gun's pellets spread wide), out to where its rounds would have left the vehicle behind. A gun firing over its own deck mustn't hit its own load.
+        foreach (var (gun, _, weapon) in Turrets)
+        {
+            var pivot = CentreOf(gun);
+            foreach (var t in Parts)
+                if (t.Name == "Turntable" && Vector2.Distance(new Vector2(CentreOf(t).X, CentreOf(t).Z), new Vector2(pivot.X, pivot.Z)) < 1.6f)
+                    pivot = pivot with { X = CentreOf(t).X, Z = CentreOf(t).Z };
+            var wide = weapon.Box == null || weapon.Build.Contains("Pump", StringComparison.Ordinal) || weapon.Build.Contains("Scatter", StringComparison.Ordinal);
+            list.Add((new Vector2(pivot.X, pivot.Z), CentreOf(gun).Y, 14f, wide ? 0.13f : 0.03f));
         }
         return list;
     }
 
     /// <summary>One piece on the first deck that takes it, nearest <paramref name="near"/>: on a pile of its own kind when it stacks, else on the deck's grid. Null: no room.</summary>
-    private DeckSpot? PlaceLoose(List<DeckSpot> decks, ConstructPartDef def, List<byte> turns, int stack, Vector3 near, List<(Vector2 Axis, float Top, float Reach)> rings, Dice d)
+    private DeckSpot? PlaceLoose(List<DeckSpot> decks, ConstructPartDef def, List<byte> turns, int stack, Vector3 near, List<(Vector2 Axis, float Top, float Reach, float Slope)> rings, Dice d)
     {
         foreach (var spot in decks)
         {
@@ -629,7 +640,7 @@ public sealed partial class Vehicle
                 continue;
             if (spot.Volume == null) // (the deck's first piece: its volume's control box goes on first, and the spot is looked for again round it)
             {
-                if (!PlaceVolume(spot))
+                if (!PlaceVolume(spot, rings))
                     continue;
                 parts = NearParts(spot);
                 if ((best = Search(spot, def, turns, near, parts, rings) ?? (upright != null ? Search(spot, def, upright, near, parts, rings) : null)) == null)
@@ -651,7 +662,7 @@ public sealed partial class Vehicle
     /// nearest first, so the first that fits is the answer (most pieces find one in a few tries).
     /// </summary>
     private static (Vector3 At, byte Turn, (Vector3 Min, Vector3 Max) Box)? Search(DeckSpot spot, ConstructPartDef def, List<byte> turns, Vector3 near, List<(Vector3 Min, Vector3 Max)> parts,
-        List<(Vector2 Axis, float Top, float Reach)> rings)
+        List<(Vector2 Axis, float Top, float Reach, float Slope)> rings)
     {
         var tries = new List<(float Score, Vector3 Min, byte Turn)>();
         var tallest = 0f;
@@ -698,6 +709,9 @@ public sealed partial class Vehicle
 
     private readonly List<Pile> _piles = new();
 
+    /// <summary>A deck under everything: <see cref="Fits"/> on it asks only the turrets' sweep and the boxes given.</summary>
+    private static readonly DeckSpot Anywhere = new() { Rects = [(float.MinValue, float.MaxValue, float.MinValue, float.MaxValue)] };
+
     private int _cargoBefore;
 
     /// <summary>The solid boxes standing over a deck (vehicle coordinates), the deck's own plates left out.</summary>
@@ -732,19 +746,20 @@ public sealed partial class Vehicle
     }
 
     /// <summary>Does a piece's box stand there: on the deck's plates at every corner, clear of every part and piece by a margin, and under any turret's ring within its reach?</summary>
-    private static bool Fits(DeckSpot spot, (Vector3 Min, Vector3 Max) box, List<(Vector3 Min, Vector3 Max)> parts, List<(Vector2 Axis, float Top, float Reach)> rings, List<(Vector3 Min, Vector3 Max)>? ignore = null)
+    private static bool Fits(DeckSpot spot, (Vector3 Min, Vector3 Max) box, List<(Vector3 Min, Vector3 Max)> parts, List<(Vector2 Axis, float Top, float Reach, float Slope)> rings, List<(Vector3 Min, Vector3 Max)>? ignore = null)
     {
         var (mn, mx) = box;
         const float In = 0.02f;
         if (!spot.Supports(mn.X + In, mn.Z + In) || !spot.Supports(mx.X - In, mn.Z + In) || !spot.Supports(mn.X + In, mx.Z - In) || !spot.Supports(mx.X - In, mx.Z - In)
             || !spot.Supports((mn.X + mx.X) * 0.5f, (mn.Z + mx.Z) * 0.5f))
             return false;
-        foreach (var (axis, top, reach) in rings)
+        foreach (var (axis, top, reach, slope) in rings)
         {
             var dx = MathF.Max(MathF.Max(mn.X - axis.X, axis.X - mx.X), 0);
             var dz = MathF.Max(MathF.Max(mn.Z - axis.Y, axis.Y - mx.Z), 0);
-            if (dx * dx + dz * dz < reach * reach && mx.Y > top - 0.03f)
-                return false;
+            var d2 = dx * dx + dz * dz;
+            if (d2 < reach * reach && mx.Y > top - (slope == 0 ? 0.03f : 0.25f + MathF.Sqrt(d2) * slope))
+                return false; // (under a turret's ring within its arm's sweep; under a gun's line of fire, and its spread, wherever it turns)
         }
         var (gmn, gmx) = (mn - new Vector3(CargoGap * 0.5f), mx + new Vector3(CargoGap * 0.5f));
         foreach (var (pmn, pmx) in parts)
@@ -764,7 +779,7 @@ public sealed partial class Vehicle
     /// A deck's Cargo Volume, before anything is laid on it: its control box on a free socket on the side of one of the deck's plates (out of the way of what is laid
     /// and of a player on the deck), else on top at the deck's edge. False (and the deck carries nothing) when no socket takes it.
     /// </summary>
-    private bool PlaceVolume(DeckSpot spot)
+    private bool PlaceVolume(DeckSpot spot, List<(Vector2 Axis, float Top, float Reach, float Slope)> rings)
     {
         var middle = new Vector3((spot.X0 + spot.X1) * 0.5f, spot.Top, (spot.Z0 + spot.Z1) * 0.5f);
         foreach (var dir in (Vector3[])[new(-1, 0, 0), new(1, 0, 0), new(0, 0, 1), new(0, 0, -1), Vector3.UnitY])
@@ -772,6 +787,9 @@ public sealed partial class Vehicle
                 foreach (var socket in FreeSockets(p, dir))
                 {
                     VehicleGenJob.Yield();
+                    var at = SocketPoint(p, socket) + dir * 0.1f; // (the control box's middle: a 0.2 m cube on the socket)
+                    if (!Fits(Anywhere, (at - new Vector3(0.1f), at + new Vector3(0.1f)), [], rings))
+                        continue; // (where a turret's arm, seat or gun swings: the arm would meet it)
                     try
                     {
                         var volume = Onto(p, socket, "Cargo Volume", "-y", clear: true);
@@ -929,6 +947,14 @@ public static class VehicleCargoProbe
         var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out var why);
         if (c == null) { Console.WriteLine($"probe: doesn't build: {why}"); return 1; }
         int Carried() => w.Bodies.Count(b => b.CarriedBy == c.Id);
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).Name is "Turntable" or "Motor Hinge" || c.DefOf(i).Role == PartRole.Gun || c.DefOf(i).Name == "Cargo Volume")
+            {
+                c.PartBounds(i, out var mn, out var mx);
+                Console.WriteLine($"probe: {c.DefOf(i).Name} #{i} seg {c.Parts[i].Seg} rest {mn} .. {mx} world {c.ToWorld((mn + mx) * 0.5f)}");
+            }
+        foreach (var b in w.Bodies.Where(b => b.CarriedBy == c.Id))
+            Console.WriteLine($"probe: carried {b.DefOf(0).Name} at world {b.ToWorld(b.Parts[0].Pos)} rest {c.ToLocal(b.ToWorld(b.Parts[0].Pos))}");
         int LooseSingles() => w.Bodies.Count(b => b != c && b.PartCount == 1 && b.CarriedBy == 0);
         Console.WriteLine($"probe: {bp.Name}: {c.PartCount} parts, {bp.Stored.Count} stored lines, {bp.Cargo.Count} cargo; carried now {Carried()}, mass {c.Mass:0} kg (cargo {c.CargoMass:0})");
         var full = -1;
@@ -943,8 +969,14 @@ public static class VehicleCargoProbe
                         full = i;
                 }
             }
-        for (var k = 0; k < 60; k++) w.Step(q, 1 / 60f);
-        Console.WriteLine($"probe: settled 1 s: carried {Carried()}, loose {LooseSingles()}");
+        Console.WriteLine($"probe: parts {c.PartCount}, guns {string.Join(",", Enumerable.Range(0, c.GunCount).Select(k => c.Guns[k].Part))}, bodies {w.Bodies.Count}");
+        for (var k = 0; k < 600; k++)
+        {
+            w.Step(q, 1 / 60f);
+            if (k % 100 == 99)
+                Console.WriteLine($"probe: tick {k}: parts {c.PartCount}, guns {string.Join(",", Enumerable.Range(0, c.GunCount).Select(g => c.Guns[g].Part))}, bodies {w.Bodies.Count}, carried {Carried()}");
+        }
+        Console.WriteLine($"probe: settled: carried {Carried()}, loose {LooseSingles()}");
         if (full >= 0)
         {
             var before = LooseSingles();
