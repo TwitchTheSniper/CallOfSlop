@@ -75,6 +75,7 @@ public enum CActKind : byte
     Notice = 200, // server -> one client: why its action was refused (text)
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
     Ordnance, // u32 length, text: build this design at the Ordnance Bench in reach (protocol 180; GameSandboxOrdnance.cs)
+    Vehicle, // text style, text shape, u32 seed (0: the server picks): a faction vehicle made at spawn time, in front of the player (protocol 186; GameSandboxVehicles.cs)
 }
 
 /// <summary>
@@ -145,6 +146,7 @@ public sealed partial class Game
         SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
+        _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
         if (!IsServer)
             return;
         StoryReset(); // (a fresh story in Sandbox, none elsewhere; a saved world's comes with its load: GameStory.cs)
@@ -348,6 +350,7 @@ public sealed partial class Game
         SandboxScamTick(now); // (the Scammers' adverts: GameSandboxScams.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
+        _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();
@@ -760,6 +763,8 @@ public sealed partial class Game
                 return SandboxBenchAct(p, ref r);
             case CActKind.Ordnance:
                 return SandboxOrdnanceBuild(p, ReadLong(ref r));
+            case CActKind.Vehicle:
+                return SandboxVehicleAct(p, ref r); // a faction vehicle made at spawn time (GameSandboxVehicles.cs)
             case CActKind.Sculpt:
                 return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:
@@ -1353,6 +1358,22 @@ public sealed partial class Game
     /// </summary>
     internal string? SandboxSpawnBlueprint(Player p, int index)
     {
+        if (SandboxMenuSpawnRefusal(p) is { } no)
+            return no;
+        var all = ConstructBuild.Blueprints;
+        if (index < 0 || index >= all.Count)
+            return "no such blueprint";
+        var bp = all[index];
+        if (SandboxBuildInFront(p, bp, null, out var why) is not { } c)
+            return why;
+        Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
+        StoryFound(p, c, bp.Name); // (GameStory.cs)
+        return null;
+    }
+
+    /// <summary>Why the parts menu can't spawn a blueprint or a faction vehicle for this player now, or null.</summary>
+    private string? SandboxMenuSpawnRefusal(Player p)
+    {
         if (!SandboxOn)
             return "blueprints spawn only in Sandbox";
         if (!SandboxPartsMenu)
@@ -1361,15 +1382,24 @@ public sealed partial class Game
             return "you are dead";
         if (SandboxHands.Hand(p.Id).Seated)
             return "get out of the seat first";
-        var all = ConstructBuild.Blueprints;
-        if (index < 0 || index >= all.Count)
-            return "no such blueprint";
-        var bp = all[index];
+        return null;
+    }
+
+    /// <summary>
+    /// Server: a blueprint built standing on the ground in front of the player, facing the way they look, far enough out
+    /// that it doesn't land on them; theirs. Null and why when it can't be.
+    /// </summary>
+    internal Construct? SandboxBuildInFront(Player p, ConstructBuild.Blueprint bp, ConstructBuild.Blueprint? tow, out string why)
+    {
         var fwd = GravityFrames.FlatForward(p.Position, p.Yaw); // (a planetoid: along its ground there)
         var probe = p.Position + fwd * 6f;
-        var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe), p.Yaw, out var why);
+        var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe), p.Yaw, out why, tow);
         if (c == null)
-            return why.Length > 0 ? why : "the world is full of constructs";
+        {
+            if (why.Length == 0)
+                why = "the world is full of constructs";
+            return null;
+        }
         c.Owner = p.Id; // (spawned from the menu: theirs)
         // Out past its own size (a buggy is longer than a gate): its widest reach from its origin, plus a metre and a half.
         var reach = MathF.Max(MathF.Max(MathF.Abs(c.LocalMin.X), MathF.Abs(c.LocalMax.X)), MathF.Max(MathF.Abs(c.LocalMin.Z), MathF.Abs(c.LocalMax.Z)));
@@ -1384,9 +1414,7 @@ public sealed partial class Game
             c.NetHistReset();
             ConstructCargo.FollowAll(Constructs); // (what its cargo volumes carry moves with it)
         }
-        Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
-        StoryFound(p, c, bp.Name); // (GameStory.cs)
-        return null;
+        return c;
     }
 
     // ---- Players in and on constructs ------------------------------------------------------------------------------

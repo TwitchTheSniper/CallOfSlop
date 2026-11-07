@@ -3,7 +3,8 @@ namespace CallOfSlop.VehicleKit;
 /// <summary>
 /// A vehicle generator: code that fills a <see cref="Vehicle"/> for a seed. It is a shape: everything about the look comes from its <see cref="Style"/>, so
 /// one shape works for any faction with the slots it asks for. Register it in <see cref="VehicleRegistry.Shapes"/> and run it with <c>CallOfSlop --gen-vehicle &lt;Name&gt;</c>
-/// (docs/vehiclekit/VEHICLEKIT.md). The game never runs a generator: it loads the blueprint files in Constructs/Blueprints, so a generated vehicle is salvaged part by part like any other.
+/// (docs/vehiclekit/VEHICLEKIT.md). The game loads the committed blueprint files in Constructs/Blueprints, and a server also runs a generator at spawn time for a new seed
+/// (<see cref="VehicleGenJob"/>, "Dynamic spawn"); either way a vehicle is an ordinary construct, salvaged part by part like any other.
 /// </summary>
 public interface IVehicleGenerator
 {

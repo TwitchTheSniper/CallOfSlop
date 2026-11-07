@@ -486,7 +486,7 @@ public sealed partial class Ui
                 SandboxPartsPick(game, it.Part);
                 break;
             case SbTab.Blueprints:
-                SandboxPartsSpawn(game, it.Index);
+                SbSpawnBlueprintTile(game, it.Index); // (a faction vehicle may be made new: UiSandboxVehicles.cs)
                 break;
             case SbTab.Tools when it.Usable:
                 SandboxPartsTool(game, it.Tool);
@@ -637,7 +637,10 @@ public sealed partial class Ui
             // Right: what's in your hands and the recent row, then the grid.
             ImGui.BeginGroup();
             if (_sbTab == SbTab.Blueprints)
+            {
                 SbDrawSaved(game, 150 * _scale); // (the player's own above the shipped ones: UiSandboxBlueprints.cs)
+                SbDrawVehicleSeeds(game); // (faction vehicles made new: UiSandboxVehicles.cs)
+            }
             ref var hand = ref game.SandboxHands.Hand(me.Id);
             var held = ConstructParts.Get(hand.Held);
             var items = _sbItems[(int)_sbTab];
