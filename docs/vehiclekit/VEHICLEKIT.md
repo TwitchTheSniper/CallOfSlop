@@ -694,18 +694,21 @@ with other agents):
 | | without (`--no-cargo`) | with |
 | --- | --- | --- |
 | roles met | 166/192 | 166/192, the same vehicles |
-| identity | | every vehicle's the same score |
-| drive check | 283 plans, 4 refused | 283 plans, 4 refused (the same); the throttle pulse 0.08 m shorter on average (-0.7 to +1.1), at least 2.0 m on every vehicle (the gate is 1 m) |
-| generation, warm | 668 ms a vehicle | 719 ms (the cargo pass 17 ms a plan, worst 52) |
-| carries something | | 181 of 192 (11 scouts and Militia Technicals with no deck and nothing rolled) |
+| identity | | every vehicle's score the same |
+| drive check | 283 plans, 4 refused | 283 plans, 4 refused (the same); the throttle pulse 0.07 m shorter on average (-0.7 to +1.1), at least 2.0 m on every vehicle (the gate is 1 m) |
+| generation, warm | 650 ms a vehicle | 713 ms (the cargo pass 17 ms a plan, worst 65) |
+| carries something | | 181 of 192 (Militia and Call Centre scouts and Militia raiders, Technicals with no deck and nothing rolled) |
+| full check (`--role ... --tier 3 --seed-list 5 --check`, Bandit, IT, Highland, British x every role) | | 32 of 32 passed |
 
-Pieces and loose mass a vehicle by role: scout 1.9 (19 kg), raider 6.0 (64 kg), gun platform 16.0 (162 kg), carrier 14.8 (78 kg), tanker 7.0 (98 kg), recovery 11.4
-(115 kg), command 16.9 (73 kg), boss 21.5 (96 kg); 88 kg a vehicle, 3.7 % of its mass. Over the 192, in slots / loose: ammo 402 / 274, magazines 64 / 550, gun parts
-14 / 520, fuel 10 / 148, springs 1 / 54, and wheels 76, plates 94, beams 86 all loose. Left behind for want of deck room (a room-only War Bus or Box Truck has no open
-deck; a Gun Wagon's hutch is small): beams 66 times, plates 59 and 43 (armour), wheels 110, fuel tanks and drums 85, crates 40.
+Pieces and loose mass a vehicle by role: scout 1.9 (19 kg), raider 6.0 (61 kg), gun platform 15.7 (147 kg), carrier 13.7 (70 kg), tanker 6.9 (92 kg), recovery 11.3
+(111 kg), command 16.1 (68 kg), boss 21.5 (91 kg); 82 kg a vehicle, 3.5 % of its mass. Over the 192, in slots / loose: ammo 402 / 269, magazines 64 / 542, gun parts
+14 / 515, fuel 10 / 141, springs 1 / 57, and wheels 61, plates 86, beams 69 all loose. Left behind for want of deck room (a room-only War Bus or Box Truck has no open
+deck, a Gun Wagon's hutch is small, and nothing stands in a gun's line of fire): beams 81 times, plates 68 and armour plates 44, wheels 124, fuel tanks and drums 91,
+crates 43. The first seed of a role made as the dynamic spawn makes it (`--role "Highland tanker" --tier 2 --sliced`) gave the same hash as made directly; a convoy
+(`--convoy Bandit --seed 3`) made every member and its leader twice to the same text; a brief with its cargo saved and read back the same (`--brief`, 1,460 bytes).
 
-A probe (a throwaway command, not kept) built role vehicles from their text in a world of their own: the stowed items were in their slots beside the rolled loot; a
-destroyed Chest spilled its three pieces; a destroyed Cargo Volume let its 11 and 18 carried pieces go; a loose Ammo Box held 300 rounds, and bolted to the vehicle's
+A probe (a throwaway command, not kept) built role vehicles from their text in a world of their own, as a spawn does: the stowed items were in their slots beside the
+rolled loot; a destroyed Chest and a destroyed Crate Stack spilled their pieces (3 and 5); a destroyed Cargo Volume let its 11 and 18 carried pieces go; a loose Ammo Box held 300 rounds, and bolted to the vehicle's
 gun (the attach rules, `ConstructBuild.Place` and `Attach`) it added its 300 rounds to what the gun could draw.
 
 **Not done.** No new part: there is no gun rack or tool rack part, so spare guns lie as parts in slots or on a deck, and a style's racks are its shelves. A room-only vehicle
