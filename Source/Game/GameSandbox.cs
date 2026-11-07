@@ -149,6 +149,8 @@ public sealed partial class Game
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
         if (!IsServer)
             return;
+        if (SandboxOn)
+            VehicleKit.VehicleGenJob.Warm(); // (once a process: the first faction vehicle's compile cost here, at the match's start, not on its ticks: VehicleSpawn.cs)
         StoryReset(); // (a fresh story in Sandbox, none elsewhere; a saved world's comes with its load: GameStory.cs)
         if (had || SandboxOn)
         {

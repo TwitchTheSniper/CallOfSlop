@@ -154,6 +154,7 @@ public class BlueprintScript
         var i = ConstructBuild.Attach(World, C, def, g);
         if (i < 0)
             throw new VehicleKitException($"a {def.Name}: too many parts");
+        VehicleGenJob.Yield();
         C.Rebuild();
         VehicleGenJob.Yield(); // (a spawn in the game hands back to the tick here: VehicleSpawn.cs)
         _steps.Add(new Step { Part = def.Name, On = onStep, Socket = C.DefOf(onIndex).Sockets[ts].Name, By = def.Sockets[ds].Name, Spin = spin });
@@ -178,6 +179,7 @@ public class BlueprintScript
         Span<byte> turns = stackalloc byte[4];
         for (var i = on?.Index ?? 0; i < (on == null ? C.PartCount : on.Index + 1); i++)
         {
+            VehicleGenJob.Yield();
             if (on == null && C.Parts[i].Seg != 0)
                 continue;
             var td = C.DefOf(i);
@@ -221,6 +223,7 @@ public class BlueprintScript
         }
         if (best.I < 0)
             throw new VehicleKitException($"{Name}: no socket takes a {def.Name} at {Show(centre)}: {nearWhy}");
+        VehicleGenJob.Yield();
         ConstructBuild.Place(C, best.I, best.S, def, best.Own, best.Spin, out var g);
         return Commit(best.I, _parts.First(p => p.Index == best.I).Step, best.S, def, best.Own, best.Spin, g);
     }
@@ -286,6 +289,7 @@ public class BlueprintScript
         var i = World.AddFreeform(C, on.Index, def, pos, rot);
         if (i < 0)
             throw new VehicleKitException($"{Name}: a {def.Name} won't weld on: at most {Freeform.MaxPerConstruct} freeform welds a construct");
+        VehicleGenJob.Yield();
         C.Rebuild();
         VehicleGenJob.Yield();
         _steps.Add(new Step
@@ -306,6 +310,7 @@ public class BlueprintScript
     {
         if (ConstructBuild.CanWire(World, C, from.Index, to.Index) is { } bad)
             throw new VehicleKitException($"a wire {from.Name} -> {to.Name}: {bad}");
+        VehicleGenJob.Yield();
         World.AddWire(C, from.Index, to.Index);
         C.Rebuild();
         VehicleGenJob.Yield();
@@ -341,10 +346,12 @@ public class BlueprintScript
         var partOf = new int[_steps.Count];
         foreach (var p in _parts)
             partOf[p.Step] = p.Index;
+        VehicleGenJob.Yield();
         if (ConstructRoutes.BuildLink(World, C, spec, partOf) is { } bad)
             throw new VehicleKitException($"a {type} link {from.Name} -> {to.Name}: {bad}");
         for (var k = 0; k < C.RouteCount; k++)
             C.Routes[k].Cursor = 0;
+        VehicleGenJob.Yield();
         C.Rebuild();
         VehicleGenJob.Yield();
         _links.Add(text.ToString());
@@ -413,6 +420,8 @@ public class BlueprintScript
         sb.Append("  \"description\": ").Append(Quote(Description)).Append(",\n  \"steps\": [\n");
         for (var k = 0; k < _steps.Count; k++)
         {
+            if (k % 64 == 63)
+                VehicleGenJob.Yield(); // (a big vehicle's text is a millisecond or two)
             var s = _steps[k];
             sb.Append("    {\"part\": ").Append(Quote(s.Part));
             if (s.Weld != null)

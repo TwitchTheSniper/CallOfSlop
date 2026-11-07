@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 using CallOfSlop.MapKit;
 
 namespace CallOfSlop.VehicleKit;
@@ -54,6 +55,12 @@ public static class VehiclePlan
         var faces = new List<Face>();
         AddBody(c, Quaternion.Inverse(c.Rot), c.Pos, faces, all);
         var t = new List<Vector3>(faces.Count * 3);
+        ToTriangles(faces, t);
+        return t.ToArray();
+    }
+
+    private static void ToTriangles(List<Face> faces, List<Vector3> t)
+    {
         foreach (var f in faces)
         {
             t.Add(f.A);
@@ -66,8 +73,12 @@ public static class VehiclePlan
                 t.Add(f.D);
             }
         }
-        return t.ToArray();
     }
+
+    // (Outline's buffers, kept for the next call: a big body's faces and triangles are a megabyte or more each, which a spawn would otherwise put on the large
+    // object heap every plan. Taken while in use, so a second caller at the same time just makes its own.)
+    private static List<Face>? _spareFaces;
+    private static List<Vector3>? _spareTriangles;
 
     /// <summary>Does a ray meet any of the triangles within <paramref name="reach"/>?</summary>
     public static bool Hits(Vector3[] tris, Vector3 from, Vector3 way, float reach)
@@ -99,7 +110,28 @@ public static class VehiclePlan
     /// </summary>
     public static (float Side, float Top, float Roof) Outline(Construct c)
     {
-        var t = Triangles(c, false);
+        var faces = Interlocked.Exchange(ref _spareFaces, null) ?? new List<Face>();
+        var list = Interlocked.Exchange(ref _spareTriangles, null) ?? new List<Vector3>();
+        try
+        {
+            faces.Clear();
+            list.Clear();
+            AddBody(c, Quaternion.Inverse(c.Rot), c.Pos, faces, false);
+            ToTriangles(faces, list);
+            VehicleGenJob.Yield();
+            return Outline(CollectionsMarshal.AsSpan(list));
+        }
+        finally
+        {
+            faces.Clear();
+            list.Clear();
+            _spareFaces = faces;
+            _spareTriangles = list;
+        }
+    }
+
+    private static (float Side, float Top, float Roof) Outline(ReadOnlySpan<Vector3> t)
+    {
         var (min, max) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
         foreach (var p in t)
         {
@@ -110,10 +142,13 @@ public static class VehiclePlan
         var (nz, ny, nx) = ((int)((max.Z - min.Z) / cell) + 1, (int)((max.Y - min.Y) / cell) + 1, (int)((max.X - min.X) / cell) + 1);
         var side = new bool[nz, ny];
         var top = new bool[nz, nx];
+        Func<Vector3, Vector2> toSide = p => new Vector2(p.Z - min.Z, p.Y - min.Y) / cell, toTop = p => new Vector2(p.Z - min.Z, p.X - min.X) / cell; // (made once: a lambda in the loop is two allocations a triangle)
         for (var k = 0; k + 2 < t.Length; k += 3)
         {
-            Fill(side, t[k], t[k + 1], t[k + 2], p => new Vector2(p.Z - min.Z, p.Y - min.Y) / cell);
-            Fill(top, t[k], t[k + 1], t[k + 2], p => new Vector2(p.Z - min.Z, p.X - min.X) / cell);
+            if (k % 384 == 0)
+                VehicleGenJob.Yield(); // (a big body's raster is several milliseconds: a spawn hands back between triangles)
+            Fill(side, t[k], t[k + 1], t[k + 2], toSide);
+            Fill(top, t[k], t[k + 1], t[k + 2], toTop);
         }
         static float Share(bool[,] m)
         {
@@ -211,6 +246,7 @@ public static class VehiclePlan
     {
         for (var i = 0; i < b.PartCount; i++)
         {
+            VehicleGenJob.Yield();
             var d = b.DefOf(i);
             if (!all && (d.Role is PartRole.Wheel or PartRole.Suspension || b.Parts[i].Seg != 0 && !b.Rigid(b.Parts[i].Seg)))
                 continue;

@@ -167,7 +167,7 @@ public sealed class VehicleSpawner(Game game)
         if (job.Blueprint is { } bp)
         {
             Generated++;
-            Console.WriteLine($"[vehicles] generated {job.Name} (hash {job.Hash:x16}) in {job.CpuMs:0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms");
+            Console.WriteLine($"[vehicles] generated {job.Name} (hash {job.Hash:x16}, kit {job.Kit}{(job.Modules.Length > 0 ? ": " + job.Modules : "")}) in {job.CpuMs:0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt})");
             Place(_now, bp, job.Tow, job.Name);
             return;
         }

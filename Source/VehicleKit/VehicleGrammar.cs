@@ -168,10 +168,13 @@ public static class ShapeGrammar
     {
         for (var attempt = 0; ; attempt++)
         {
+            VehicleGenJob.Yield(); // (a plan again starts a world of its own: a span of its own)
             var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed), g.Style, seed) { Kit = VehicleKitVersion.Grammar };
+            VehicleGenJob.Yield();
             try
             {
                 var plan = Plan(v, recipe, attempt);
+                VehicleGenJob.Yield();
                 Build(v, plan);
                 return v;
             }
@@ -179,6 +182,22 @@ public static class ShapeGrammar
             {
                 // (the next plan)
             }
+        }
+    }
+
+    /// <summary>The first plan of a seed, nothing built: <see cref="VehicleGenJob.Warm"/> compiles the planner this way. False when it doesn't plan.</summary>
+    internal static bool PlanOnly(IVehicleGenerator g, int seed)
+    {
+        if (RecipeOf(g) is not { } recipe)
+            return false;
+        try
+        {
+            Plan(new Vehicle(VehicleRegistry.BlueprintName(g, seed), g.Style, seed) { Kit = VehicleKitVersion.Grammar }, recipe, 0);
+            return true;
+        }
+        catch (VehicleKitException)
+        {
+            return false;
         }
     }
 
@@ -697,6 +716,7 @@ public static class ShapeGrammar
         }
 
         v.Hood(p.HoodPart, p.NoseParts);
+        VehicleGenJob.Yield();
         v.Trim(walls.ToArray());
 
         // The check holds a heavy vehicle to a stability of 0.6 (half its track over its centre of mass's height): a plan that stacks too much up high is planned again.
@@ -709,6 +729,7 @@ public static class ShapeGrammar
         var limits = new VehicleCheckOptions();
         if (side > limits.MaxSideFill - 0.005f || top > limits.MaxTopFill - 0.005f)
             throw new VehicleKitException($"it fills {side:P0} of its side box and {top:P0} of its plan box: a box");
+        VehicleGenJob.Yield();
 
         Describe(v, p);
     }
