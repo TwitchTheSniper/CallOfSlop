@@ -171,6 +171,54 @@ pressed together (98 ms at 16,000), and a Full of a plate grid (482 KB at 16,000
 a client reads it in 6 to 15 ms). Raising it wants a split that doesn't copy the piece part by part and cheaper big
 contact pairs first.
 
+## Fused units (branch `feat/fuse`, protocol 193)
+
+What fusing a big build buys (the design and the rules: docs/sandbox/CONSTRUCTS.md, "Fusing"). Measured with
+`--bench-fuse 16000 --capital --sheet --stack` in the container (2-core box at load 5 to 12 with other agents building:
+min / median of repeats; both columns in one run). The sheet: 15,920 Frame Blocks in a 12-wide sheet linked on four
+sides and 80 Lamps (special parts, left out of the unit); "fused" has the blocks in one unit. "Edit + step" is the edit and
+the tick that rebuilds it, less a steady tick measured just before.
+
+| | Plain | Fused |
+| --- | --- | --- |
+| Collider: leaves, memory in use | 16,000, 1,767 KB | 123 (43 rough boxes and the lamps' own), 13 KB |
+| Collider built | 4.9 / 5.1 ms | 0.19 / 0.21 ms |
+| Rough fit (when made, after a split, after an eighth gone) | | 3.0 / 3.2 ms |
+| `Rebuild`, full | 15.0 / 15.3 ms | 5.5 / 5.7 ms (the mass sums: 7.7 of the plain one's ms, 1.7 fused) |
+| Sliding on a floor | 2.7 / 3.0 ms a tick | 0.82 / 0.93 ms |
+| 40 blocks dropped on it (construct against construct) | 4.7 / 5.2 ms | 1.5 / 2.3 ms |
+| On half-metre ground | 3.4 / 6.7 ms | 0.77 / 3.1 ms |
+| Eight such hulls stacked, the top ones sliding | 32 / 45 ms | 4.2 / 4.8 ms |
+| A part placed beside it | 0.44 / 0.36 ms | 0.13 / 0.14 ms |
+| Take off an inner block | 1.96 / 1.91 ms | 1.89 / 1.84 ms |
+| Ten blocks off in one tick | 8.0 / 9.7 ms | 5.9 / 14.5 ms (one median caught a stall; 6.0 to 6.6 in other runs) |
+| Four blocks shot off a tick | 6.5 / 6.0 ms | 4.5 / 4.7 ms |
+| A special part added (a full rebuild) | 10.2 / 8.8 ms | 6.1 / 6.3 ms |
+| Cut in half (a split) | 38 ms | 37 ms |
+| Steady allocation, 30 ticks | 0 B | 0 B |
+
+A capital hull (`SelfTest.CapHull`, 15,600 decks and plates, 300 by 416 m, 400,000 t): collider 54,600 leaves built in
+17.6 ms against 609 rough boxes in 1.0 ms, the fit 5.6 ms, a full rebuild 3.9 against 2.3 ms, a tick on the floor 0.87
+against 0.34 ms. (At this size the joint tests' floor holds it in neither form: it sinks through, plain more slowly. At 4,050
+parts both rest on it, within a millimetre of each other.) Drawing is unchanged (docs/render/MERGED-MESHES.md, "Draw
+groups and fused units"). Mass, centre of mass and inertia were the same, plain and fused, in every scene; with
+`CALLOFSLOP_REBUILD_CHECK=1` 44 journalled rebuilds of fused and plain bodies matched a full one.
+
+Where fused is not cheaper:
+
+- **Take off an inner block** is level (1.9 ms either way): the journal already made it cheap; fused it builds the small
+  collider again where plain remaps the big one, which comes out the same.
+- **The fit itself** is new work, 3 to 6 ms at 16,000 parts, done in the tick that needs the collider after the unit is
+  made or grows, after a split, or after an eighth of its members have gone. On a slow PC it can pass the 8 ms budget for the
+  biggest units; between fits the rough shape stays loose round what went.
+- **A split** costs the same: it is the split's copying, not the unit.
+- The ground scene allocated in both forms (6.5 MB plain, 0.5 MB fused in 40 ticks, the ground's own lists growing at first
+  use); it is not new.
+
+The network (`--bench-fuse-net 120 3`: a host and a client over RakNet on one PC, the client at 120 ms and 3% loss): the
+client's own requests fused a 240-block sheet, un-fused it, fused half of it as a selection, and a row the host shot across
+the fused half split it; each step reached the client's copy within 0.2 s, no packet dropped.
+
 ## The inventory
 
 Grouped by class; the rows changed in this audit come first in each group. "What it protects" is the code's own comment

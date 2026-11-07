@@ -78,6 +78,7 @@ public enum CActKind : byte
     Vehicle, // text style, text shape, u32 seed (0: the server picks): a faction vehicle made at spawn time, in front of the player (protocol 186; GameSandboxVehicles.cs)
     FactionVehicle, // u8 (0 by role, 1 a convoy), text style, text role (empty: any), u8 tier, u8 count (a convoy's; 0: 5), u32 seed (0: the server picks) (protocol 191; GameSandboxVehicles.cs)
     Texture, // u16 body, u8 PaintMode, u16 part, u8 length and the material's name (ASCII): the texture paint tool (protocol 192; GameSandboxTexture.cs)
+    Fuse, // u16 body, u8 FuseMode, u16 part, u16 count, then count u16 parts: the fuse tool (protocol 193; GameSandboxFuse.cs)
 }
 
 /// <summary>
@@ -872,6 +873,22 @@ public sealed partial class Game
                 var index = r.U16();
                 var finish = ConstructFinish.ReadName(ref r);
                 return hands.Finish(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), index, finish);
+            }
+            case CActKind.Fuse:
+            {
+                var body = r.U16();
+                var mode = (FuseMode)r.U8();
+                var index = r.U16();
+                int n = r.U16();
+                if (n > ConstructEdits.MaxFuseParts)
+                    return "too many parts selected";
+                var list = new ushort[n];
+                for (var k = 0; k < n; k++)
+                    list[k] = r.U16();
+                var why = hands.Fuse(Constructs, p.Id, eye, body, mode, index, list, out var done);
+                if (why == null && done.Length > 0)
+                    hands.Notices.Add((p.Id, done));
+                return why;
             }
             case CActKind.Remover:
             {
@@ -2039,7 +2056,7 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Texture => "Texture paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Nudge => "Nudge tool", ConstructTool.NoCollide => "No-collide tool", ConstructTool.Tracks => "Track tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Texture => "Texture paint tool", ConstructTool.Fuse => "Fuse tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Nudge => "Nudge tool", ConstructTool.NoCollide => "No-collide tool", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;

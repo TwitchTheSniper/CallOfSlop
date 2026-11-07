@@ -143,8 +143,8 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
-Swap weapon, and the middle button was free everywhere) and twelve segments appear around the middle of the screen,
-clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool** (east), configure tool, **no-collide tool**, **hands** (south; [below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **linking tool** (west), **paint tool** ([below](#the-paint-tool-board-item-pp01)), **texture paint tool** ([below](#the-texture-paint-tool)). Hands hang due south, the attach tool and linking tool due east and west (an odd wheel, after a player takes a tool off, turns half a step to keep hands south: `RadialMenu.Tilt`). A saved wheel keeps its own order (by name); a tool new since it was saved joins at its end
+Swap weapon, and the middle button was free everywhere) and thirteen segments appear around the middle of the screen,
+clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool** (east), configure tool, **no-collide tool**, **hands** (south; [below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **linking tool** (west), **paint tool** ([below](#the-paint-tool-board-item-pp01)), **texture paint tool** ([below](#the-texture-paint-tool)), **fuse tool** ([Fusing](#fusing)). Hands hang due south, the attach tool and linking tool due east and west (an odd wheel, after a player takes a tool off, turns half a step to keep hands south: `RadialMenu.Tilt`). A saved wheel keeps its own order (by name); a tool new since it was saved joins at its end
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
@@ -630,9 +630,8 @@ last rebuild (`Source/Constructs/ConstructRebuild.cs`):
   leaf a box meets) and the part tree; a difference goes to `Construct.CheckLog`.
 
 A smaller body rebuilds as it always did (its numbers, collider and contacts are what they were). The costs and what a split
-still costs are in docs/perf/LIMITS.md, "Rebuilds". The journal and the plain-part rule are what a later fused unit (cached
-mass, a rough collider, rebuilt at most once a tick when pieces break) can build on: a fused unit is a run of plain parts
-whose share of the sums and leaves it keeps.
+still costs are in docs/perf/LIMITS.md, "Rebuilds". The journal and the plain-part rule are what fused units build on ([Fusing](#fusing), below): a unit's plain parts keep
+their own share of the sums, and a full rebuild adds the unit's cached share instead of summing them.
 
 ### The drivetrain (it only works when connected)
 
@@ -1266,6 +1265,116 @@ edge direction (`ConstructNarrow.HullHull`), and is only reached when something 
 
 A frozen construct is drawn with an icy outline round each part (no more than 24 parts; bigger ones show the frost tint
 alone): one box round the whole read as its collider, and it never was.
+
+## Fusing
+
+The user's design (the project doc `claude/part-merging.md`): fusing is for performance. A group of parts is fused into one
+**unit**, and the engine treats the unit as one thing where it can, while every part inside stays a real part.
+
+### The fuse tool
+
+`ConstructTool.Fuse` (wire byte 17), on the tool wheel after the texture paint tool (thirteen segments; Hands still straight
+down). Code: `Source/App/Program.SandboxFuse.cs` (input), `Source/Constructs/ConstructEditsFuse.cs` (the server),
+`Source/Game/GameSandboxFuse.cs` (the request, `CActKind.Fuse`), `Constructs/Tools/FuseTool.json` (the model).
+
+- **LMB** fuses. With a Selector selection on the construct under the crosshair (two parts or more), the selection: pick the
+  group with the Selector as for copy or delete (its box drag, Shift to add), then take the fuse tool; the selection stays
+  outlined while the fuse tool is out. Without one, the aimed part's whole rigid piece: everything linked to it on its own
+  segment. Parts already in a unit join the new one.
+- **RMB** un-fuses the unit under the crosshair: free, at once, and the parts and links are exactly as they were (nothing was
+  ever taken away from them).
+- The unit under the crosshair is outlined orange (up to 2,048 parts), and the look line says "fused, N parts".
+- A selection that isn't one linked piece is fused as its linked groups ("fused 300 parts into 2 units"); a part alone is
+  left as it is. Every member of a unit is on one segment: parts across a joint or a freeform weld can't share a unit.
+- The rules are the paint tool's: no seat, the tool out, the aimed part in reach, the contested-construct rule. Free and
+  instant in creative and survival.
+
+Choices made (the developer may change them): the Selector picks groups (rather than a stroke of the fuse tool's own); a
+click with no selection fuses the whole piece; un-fuse is RMB rather than a ring option.
+
+### What a unit is
+
+The truth is a tag on every part, `CPart.Fuse` (a `uint`, 0: not fused; the server gives new ones, `ConstructFuse.NewTag`).
+It moves with the part through every compaction, split, merge and weld. Everything else is a cache made from the tags at each
+rebuild (`Construct.FuseRefresh`, `Source/Constructs/ConstructFuse.cs`): the units, their members, and per unit a rough
+collider and a share of the mass sums. A unit is the parts with one tag, on one segment, linked to each other.
+
+- **Mass.** A full rebuild of a big body (the sums of [Rebuilds](#rebuilds)) adds each unit's cached share of the sums
+  for its plain parts (frames, panels, wedges) instead of summing them; the share is summed again only when the unit changed.
+  The result is the same to the last bit (mass, centre of mass and inertia were compared on every scene in the bench).
+  A journalled edit takes a part's own share off as before. Bodies under 1,024 parts sum as they always did.
+- **Collision.** The collider ([Compound collision](#compound-collision)) has the unit's **rough boxes** in place of its
+  plain parts' own leaves, for construct against construct and against the map and the ground. Special parts in a unit
+  (wheels, scoops, guns, anything with a role) keep their exact leaves, so a wheel still rides on its rays and cylinder.
+  A rough leaf stands for the unit's first plain member (friction and no-collide pairs are a plain part's).
+- **Exact everywhere else.** The part tree is untouched, so rays, bullets, blasts and damage find the exact piece; players
+  walk, stand and ride on the exact parts (decks, slopes, doors, rooms); building, ghosts and sockets see the exact parts.
+  Every part keeps its own health and breaks off on its own.
+- **Systems.** Every system already walks only the special parts (`Construct.Specials`), so the plain parts of a unit cost
+  the systems nothing, fused or not, and the special parts inside a unit (engines, wheels, guns, logic, links) work
+  exactly as before. Summarising them (a unit's combined thrust, drive or power) is not done: there was nothing left to save
+  on the plain parts, and the special parts are few.
+- **Drawing.** A unit's parts are merged-mesh chunks of their own (`ConstructRenderBatch.Plan`: the unit's tag in the
+  chunk key), so an edit beside a unit never plans its chunks again ([MERGED-MESHES.md](../render/MERGED-MESHES.md)).
+- **Uses.** A unit that is a body of its own is moved as any body: the physics gun, a cargo volume, socket and point welds of
+  the whole body (its tags come along). `Construct.IsOneUnit` says when a body is one unit. It never goes into the hands or
+  the inventory (a fused unit is not a custom part: not wanted for now).
+
+### The rough collider
+
+`ConstructFuseFit.Fit`, in the unit's segment frame, when the collider is next built (so a client never fits one):
+
+1. The plain members' solid boxes (the collider's own: `SolidCount`/`SolidBox`, wedges by their hidden boxes) are marked on a
+   grid of cubes over their bounds, at most 131,072 cells (the cell is the bounds' volume over that, cube-rooted, at least
+   5 cm). A cell is full when any box reaches into it.
+2. Full cells are merged greedily into boxes: along x, then whole rows along y, then whole slabs along z, in a fixed order,
+   no side longer than 16 m (`MaxSide`). Past 1,024 boxes the cells grow 1.6 times and it starts again.
+3. Each box is shrunk to the union of the real boxes clipped to it. The boxes together still cover every real box
+   (conservative: nothing real is outside), and a face the real boxes reach is where they are, so a flat deck rests on its
+   own underside, to the millimetre.
+
+Deterministic (the same parts in the same order give the same boxes). **The error** is a cell: a point of a rough box is
+within one cell diagonal of real geometry (a partly filled cell, the steps of a wedge), and a hollow narrower than a cell is
+filled. Measured: a 16,000-block sheet, 43 boxes, cell 28.5 cm, rough volume 1,990.3 m3 against 1,990.0 m3 of boxes; a
+15,600-part capital hull (decks and plates, 300 by 416 m), 609 boxes, cell 1.83 m, 524,160 m3 against 232,148 m3 (its
+plates stand at several heights, so its rough top is the highest plate's). A sheet on half-metre ground came to rest at
+628 mm against 629 mm unfused. The 16 m limit is from a measurement: a 300 m hull fitted as one box stood on four corner
+contacts and sank through a floor its parts stood on; with the limit it rests as its parts do.
+
+Cost: 3 ms for the sheet, 6 ms for the capital hull (container, loaded). It runs when a unit is made or grows, after a split,
+and when an eighth of its members have gone since the last fit; until then the rough shape stays as it was: loose round
+what went, never short. **A fit is a one-off cost in a tick** and can pass the 8 ms budget for the biggest units on a slow PC.
+
+### Damage, splits and rebuilds
+
+- **Batched.** Removals only mark the body; the unit is looked at in the tick's one rebuild, so a unit is rebuilt at most
+  once a tick however many of its parts went.
+- **Splits.** A part going is looked round (`FuseNoteRemoval`, before the arrays are compacted): if its unit's members linked
+  to it still meet each other within 512 parts over members, the unit is whole and isn't flooded. Otherwise (or when a unit
+  that isn't the whole body lost parts some other way) the refresh floods it: each linked group of two parts or more stays
+  fused as a unit of its own (the largest keeps the tag), and a part left alone is an ordinary part again. A ship cut in half
+  is two units, in one body or two.
+- **The journal.** Fused parts are plain parts to the journal, so their edits stay journalled. A unit that lost members has
+  its collider built again (cheap: a few hundred leaves), not remapped.
+
+### Saves, blueprints and the wire
+
+- **Wire (protocol 193).** A Full ends with the fused units as runs of parts (first part, length, tag). Fusing, un-fusing and
+  splits are structure changes: the body goes out again (a big body as a patch on its last Full).
+- **World saves.** A part's unit is a part setting an older reader skips, `fuse:unit`, numbered 1, 2, ... in its body;
+  loading gives new tags.
+- **Blueprints.** A step's `"fuse": n` (1, 2, ...: the steps with one number are one unit), written by Save as blueprint and
+  the clipboard, given new tags at each build. A paste of a copy gets new tags too.
+
+The bench's round trips: two units (300 and 240 parts) on one sheet came back as 300+240 through a blueprint, a client's Full
+and a world save, and a strip cut across one of them left 144 on the hull and 240+144 in the piece that fell away.
+
+### Measuring
+
+`--bench-fuse [PARTS] [--capital] [--stack] [--sheet]` builds each scene plain and fused and prints min / median times
+(`Source/App/BenchFuse.cs`, a command-line benchmark, not a self-test section). `--bench-fuse-net [LAG] [LOSS]` runs a host
+and a client over RakNet on one PC with the client's network simulated bad, and drives the client's own fuse requests. The
+numbers are in [LIMITS.md](../perf/LIMITS.md), "Fused units".
 
 ## Doors
 

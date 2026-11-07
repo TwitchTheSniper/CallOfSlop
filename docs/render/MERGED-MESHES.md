@@ -56,10 +56,19 @@ where the float maths runs in another order. One program for both GL tiers (`#ve
 ## Draw groups and fused units
 
 `Renderer.MergedMesh` knows nothing about constructs: it is a set of slots (matrix and look) in one frame, drawn with
-`DrawMerged(mesh, frame)` between `BeginMerged` and `EndMerged`. A construct chunk owns one today. A later **fused unit**
-(several parts the player fuses into one, with a rough collider and cached mass, each piece keeping its own health) can own
-one the same way: fill its slots from its pieces in the unit's frame, write the looks again when a piece's health or paint
-changes, and when a cut leaves two units, build two meshes. Nothing in the merged path needs a part to belong to a chunk.
+`DrawMerged(mesh, frame)` between `BeginMerged` and `EndMerged`. A construct chunk owns one.
+
+A **fused unit** (docs/sandbox/CONSTRUCTS.md, "Fusing") owns its own chunks: a fused part's chunk key holds its segment
+and the low bits of its unit's tag in place of the segment alone (`ConstructRenderBatch.Plan`), still cut into 32 m cells
+and 2,048 boxes, so a unit is drawn as its own merged meshes and an edit beside it (a part added or shot off another
+piece) never plans its chunks again. A piece of the unit breaking off rebuilds only the chunk it was in; when a cut makes
+two units, their parts go into chunks of their own at the next plan. Looks (paint, damage, frost) are rewritten as for any
+chunk. What a part needs to be merged is unchanged: a unit's special parts that move or light are walked as before.
+
+Measured with `--gl-bench --bench-capital 15000 --bench-fused` against the same without `--bench-fused` (llvmpipe, 640x360,
+2026-11-07): the same 2 merged draw calls in the overview and 6 at the spawns, the body walk 0.16 to 0.18 ms either way, the
+frames within the run-to-run noise. Fusing changes nothing in a steady frame; what it keeps from being redone is the plan
+of the unit's chunks after edits elsewhere.
 
 ## Part box cap
 

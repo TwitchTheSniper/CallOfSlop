@@ -478,6 +478,16 @@ public static unsafe partial class Program
             if (SelfTest.CapHull(_benchWorld, new Vector3(0, 2f, -40f), Math.Clamp(cap, 100, 20000), out var why) is { } hull)
             {
                 hull.Rebuild();
+                if (args.Any(x => x.Equals("--bench-fused", StringComparison.OrdinalIgnoreCase)))
+                {
+                    // --bench-fused: the hull fused whole (ConstructFuse.cs): its parts are chunks of their own unit
+                    var tag = ConstructFuse.NewTag();
+                    for (var i = 0; i < hull.PartCount; i++)
+                        hull.Parts[i].Fuse = tag;
+                    hull.Dirty = true;
+                    hull.Rebuild();
+                    Console.WriteLine($"[glbench] the capital hull fused: {hull.UnitCount} unit, {hull.FusedParts} parts");
+                }
                 parts += hull.PartCount;
                 made++;
             }

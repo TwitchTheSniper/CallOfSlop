@@ -243,6 +243,9 @@ public sealed partial class ConstructWorld
     /// <summary>The setting key a part's texture (ConstructFinish.cs) is saved under, followed by the material's name.</summary>
     public const string FinishKey = "finish:";
 
+    /// <summary>The setting key a part's fused unit (ConstructFuse.cs) is saved under: its number in the body (1, 2, ...), new tags when read.</summary>
+    public const string FuseKey = "fuse:unit";
+
     /// <summary>One body as bytes: its fields, then its parts as columns (like values side by side, which packs far smaller).</summary>
     public static void WriteBody(SaveWriter w, WorldSnapshot s, in BodySnap b, WorldNames names)
     {
@@ -297,10 +300,20 @@ public sealed partial class ConstructWorld
         // Settings off their defaults, by key: a part file's schema may gain or reorder slots.
         var countAt = new SaveWriter(4096);
         var settings = 0;
+        Dictionary<uint, int>? fused = null; // (the fused units, numbered 1, 2, ... in this body: ConstructFuse.cs)
         for (var i = 0; i < parts.Length; i++)
         {
             ref var p = ref parts[i];
             var d = p.D;
+            // (the fuse tool's unit, numbered in this body, as a setting an older reader skips: ConstructFuse.cs)
+            if (p.Fuse != 0)
+            {
+                fused ??= new Dictionary<uint, int>();
+                if (!fused.TryGetValue(p.Fuse, out var unit))
+                    fused[p.Fuse] = unit = fused.Count + 1;
+                countAt.U16((ushort)i).U16(names.Key(FuseKey)).F32(unit);
+                settings++;
+            }
             for (var k = 0; k < d.Config.Length; k++)
                 if (!d.Config[k].Bound && p.Cfg[k] != d.Config[k].Default)
                 {
@@ -547,6 +560,7 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < n; i++)
             ConstructConfig.Init(ref parts[i], parts[i].D);
         var settings = r.Count(8);
+        ConstructFuse.Renumber? units = null;
         for (var k = 0; k < settings; k++)
         {
             var part = r.U16();
@@ -554,6 +568,12 @@ public sealed partial class ConstructWorld
             var v = r.F32();
             if (part >= n || key >= names.Keys.Length)
                 throw new WorldFileException("a setting of a part that isn't there");
+            if (names.Keys[key] == FuseKey)
+            {
+                if (float.IsFinite(v) && v >= 1 && v < 1 << 24)
+                    parts[part].Fuse = (units ??= new ConstructFuse.Renumber()).Tag((int)v); // (new tags: a unit is one by its number in this body)
+                continue;
+            }
             if (names.Keys[key].StartsWith(FinishKey, StringComparison.Ordinal))
             {
                 parts[part].Finish = ConstructFinish.Of(names.Keys[key][FinishKey.Length..]); // (a material this build doesn't have: the part's own)

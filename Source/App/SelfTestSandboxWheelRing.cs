@@ -139,7 +139,7 @@ public static partial class SelfTest
         Run(g, ref now, 0.05);
         Hold();
         var before = w.Ring;
-        Flick(new Vector2(-45, -6));
+        Flick(new Vector2(-45, -2));
         var ring = w.Ring;
         var shown = w.Items[Linker].Options?.Length ?? 0;
         var ringIn0 = w.RingIn;
@@ -165,7 +165,7 @@ public static partial class SelfTest
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             Run(g, ref now, 0.05);
             Hold();
-            Flick(new Vector2(-45, -6));
+            Flick(new Vector2(-45, -2));
             wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false); // (out through the tool's own wedge, then along the arc)
             var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length) + w.Items[Linker].OptionShift, w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
             wheel.Step(g, true, target - w.Pointer, false);
@@ -185,7 +185,7 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, -6));
+        Flick(new Vector2(-45, -2));
         wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false);
         var straightOut = w.HoveredOption;
         wheel.Menu.Close();
@@ -201,20 +201,20 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, -6));
+        Flick(new Vector2(-45, -2));
         var marked = w.Items[Linker].OptionCurrent;
         var innerTool = LetGo();
         var kept = links.Mode == LinkMode.Delete;
         links.Choose((int)SandboxLinkWheel.Option.Reroute);
         Hold();
-        Flick(new Vector2(-45, -6));
+        Flick(new Vector2(-45, -2));
         LetGo(); // (already out: still the linking tool, still re-routing)
         var keptMode = links.Mode == LinkMode.Reroute && Tool() == ConstructTool.Linker;
         // Letting go in the dead zone after the ring showed: a cancel, nothing changed.
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, -6));
+        Flick(new Vector2(-45, -2));
         wheel.Step(g, true, -w.Pointer, false);
         var cancelTool = LetGo();
         Line($"outer ring, let go on the tool: the linking tool out {innerTool}, delete mode kept {kept} (marked {marked}); a re-route kept {keptMode}; let go in the middle kept the {cancelTool} (mode {links.Mode})");
@@ -227,14 +227,14 @@ public static partial class SelfTest
 
         // A partial arc (the welder with two test modes, east): an option picked; outside the arc the inner ring turns.
         Hold();
-        Flick(new Vector2(45, -5));
+        Flick(new Vector2(45, 2));
         var welderRing = w.Ring;
-        var cutAt = At(RadialMenu.OptionAngle(1, (int)SandboxToolWheel.Slot.Welder, N, 2) - 0.05f, w.Reach + w.OuterGap + 25); // (a little inside: on a twelve-segment wheel a two-option arc's outer option is centred on the welder's edge)
+        var cutAt = At(RadialMenu.OptionAngle(1, (int)SandboxToolWheel.Slot.Welder, N, 2) - 0.05f, w.Reach + w.OuterGap + 25); // (a little inside: a two-option arc's outer option is centred on the welder's edge)
         wheel.Step(g, true, cutAt - w.Pointer, false);
         var cutHovered = w.HoveredOption;
         var welder = LetGo();
         Hold();
-        Flick(new Vector2(45, -5));
+        Flick(new Vector2(45, 2));
         wheel.Step(g, true, At(RadialMenu.SegmentAngle((int)SandboxToolWheel.Slot.PhysicsGun, N), w.Reach + w.OuterGap + 25) - w.Pointer, false); // (far out, outside the arc, over the physics gun)
         var outsideInner = w.Hovered;
         var outsideRing = w.Ring;
@@ -315,10 +315,10 @@ public static partial class SelfTest
             Line($"tool wheel, every tool: {count} segments, {count - bad.Count} took their tool out; default wheel {SandboxToolWheel.DefaultTools}");
             if (bad.Count > 0)
                 Fail($"tool wheel, every tool: {bad[0]}");
-            // The default wheel: twelve even hit sizes with Hands straight down, and a saved wheel from before the tool gains it, Hands kept south.
+            // The default wheel: thirteen even hit sizes (the fuse tool came) with Hands straight down, and a saved wheel from before the tool gains it, Hands kept south.
             var dflt = SandboxToolWheel.DefaultLayout().ToList();
             var downAt = RadialMenu.SegmentAngle((int)SandboxToolWheel.Slot.Hands, dflt.Count);
-            if (dflt.Count != 12 || !SandboxToolWheel.HandsSouth(dflt) || MathF.Abs(MathF.Cos(downAt) + 1) > 1e-3f || MathF.Abs(RadialMenu.SegmentAngle(1, dflt.Count) - RadialMenu.SegmentAngle(0, dflt.Count) - MathF.Tau / 12) > 1e-4f)
+            if (dflt.Count != 13 || !SandboxToolWheel.HandsSouth(dflt) || MathF.Abs(MathF.Cos(downAt) + 1) > 1e-3f || MathF.Abs(RadialMenu.SegmentAngle(1, dflt.Count) - RadialMenu.SegmentAngle(0, dflt.Count) - MathF.Tau / 13) > 1e-4f)
                 Fail($"tool wheel: the default wheel has {dflt.Count} tools, Hands south {SandboxToolWheel.HandsSouth(dflt)}");
             var names = new[] { "Nudge", "PhysicsGun", "Tracks", "Welder", "Configure", "Hands", "Remover", "GroundDrill", "Linker", "Paint" };
             var saved = SandboxToolWheel.Resolve(names, []);
@@ -477,9 +477,9 @@ public static partial class SelfTest
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             Run(g, ref now, 0.05);
             wheel.Step(g, true, Vector2.Zero, false);
-            wheel.Step(g, true, new Vector2(45, -5), false);
-            wheel.Step(g, true, new Vector2(45, -5), false);
-            wheel.Step(g, true, new Vector2(45, -5), false);
+            wheel.Step(g, true, new Vector2(45, 2), false);
+            wheel.Step(g, true, new Vector2(45, 2), false);
+            wheel.Step(g, true, new Vector2(45, 2), false);
         }
         ConstructTool LetGo()
         {

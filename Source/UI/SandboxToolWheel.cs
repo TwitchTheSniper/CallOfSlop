@@ -41,6 +41,7 @@ public sealed class SandboxToolWheel
         Linker, // (west)
         Paint, // (NW: where the hand drill was going to be)
         Texture, // (beside the paint tool: the texture paint tool, ConstructFinish.cs)
+        Fuse, // (the fuse tool, ConstructFuse.cs: thirteen segments, and Hands, segment 6, still hangs straight down)
         Selector, // (not on the default wheel: a player adds it; new tools go after it)
         COUNT,
     }
@@ -154,6 +155,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Remover, "Remover", "delete");
         Set(Slot.Paint, "Paint tool", "colour");
         Set(Slot.Texture, "Texture paint tool", "materials");
+        Set(Slot.Fuse, "Fuse tool", "parts into one unit");
         Set(Slot.GroundDrill, "Ground drill", "dig, fill");
         Set(Slot.Tracks, "Track tool", "wheels, loop");
         Set(Slot.Selector, "Selector", "select, copy, paste");
@@ -184,6 +186,7 @@ public sealed class SandboxToolWheel
             Slot.PhysicsGun => ConstructTool.PhysicsGun,
             Slot.Paint => ConstructTool.Paint,
             Slot.Texture => ConstructTool.Texture,
+            Slot.Fuse => ConstructTool.Fuse,
             Slot.Remover => ConstructTool.Remover,
             Slot.GroundDrill => ConstructTool.GroundDrill,
             Slot.Tracks => ConstructTool.Tracks,
@@ -203,6 +206,7 @@ public sealed class SandboxToolWheel
             ConstructTool.PhysicsGun => Slot.PhysicsGun,
             ConstructTool.Paint => Slot.Paint,
             ConstructTool.Texture => Slot.Texture,
+            ConstructTool.Fuse => Slot.Fuse,
             ConstructTool.Remover => Slot.Remover,
             ConstructTool.GroundDrill => Slot.GroundDrill,
             ConstructTool.Tracks => Slot.Tracks,
@@ -532,6 +536,13 @@ public sealed class SandboxToolWheel
                 Line(0.85f, -0.05f, 0.2f, 0.6f, 0.12f);
                 break;
             }
+            case Slot.Fuse: // three blocks pressed into one: their outlines, and a band round them
+                Box(-0.85f, -0.55f, -0.3f, 0.55f, col, 0.1f);
+                Box(-0.28f, -0.55f, 0.28f, 0.55f, col, 0.1f);
+                Box(0.3f, -0.55f, 0.85f, 0.55f, col, 0.1f);
+                Line(-0.95f, 0.75f, 0.95f, 0.75f, 0.1f);
+                Line(-0.95f, -0.75f, 0.95f, -0.75f, 0.1f);
+                break;
             case Slot.Texture: // a roller: its handle, the frame, and a drum striped with a pattern
                 Line(-0.15f, 0.95f, -0.15f, 0.25f, 0.14f);
                 Line(-0.15f, 0.25f, 0.55f, 0.25f, 0.09f);

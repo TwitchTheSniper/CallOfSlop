@@ -477,6 +477,14 @@ public static unsafe partial class Program
         }
         TextureIdle();
 
+        // The fuse tool: LMB fuses the selection or the aimed piece into one unit, RMB un-fuses (Program.SandboxFuse.cs).
+        if (h.Tool == ConstructTool.Fuse)
+        {
+            SandboxFuseInput(g, me, aimed, hit);
+            return true;
+        }
+        FuseIdle();
+
         // Hands: LMB takes what lies loose or stored, RMB drops what they hold (Program.SandboxHands.cs).
         if (h.Tool == ConstructTool.Hands)
         {

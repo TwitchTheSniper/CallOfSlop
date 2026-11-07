@@ -270,8 +270,8 @@ public static partial class SelfTest
         var heldOut = !m.InOptions && m.Hovered == (int)SandboxToolWheel.Slot.PhysicsGun && m.Pointer.Length() < m.Reach + m.OuterGap;
         m.Close();
         m.Open();
-        To(centre + 0.25f, 80f); // (near the wedge's edge)
-        To(centre + 0.25f, m.RowDistance(0));
+        To(centre + 0.2f, 80f); // (near the wedge's edge: thirteen segments, 0.24 rad each side)
+        To(centre + 0.2f, m.RowDistance(0));
         var throughWedge = m.InOptions && m.Hovered == Paint;
         if (!heldOut || !throughWedge)
             bad.Add($"entering tier 2: held outside the wedge {heldOut}, through it near its edge {throughWedge}");
@@ -455,7 +455,7 @@ public static partial class SelfTest
         Pump(server, [a], 0.4, ref now, clock);
         var wheel = new SandboxToolWheel();
         wheel.Step(a, true, Vector2.Zero, false);
-        wheel.Step(a, true, new Vector2(-45, -6), false); // (west-north-west: the linking tool)
+        wheel.Step(a, true, new Vector2(-45, -2), false); // (just north of west: the linking tool)
         wheel.Step(a, false, Vector2.Zero, false);
         Pump(server, [a], 0.4, ref now, clock);
         var onServer = server.SandboxHands.Hand(sp.Id).Tool;

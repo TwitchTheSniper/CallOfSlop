@@ -170,6 +170,7 @@ public static partial class ConstructRender
         BalanceBody = null;
         RemoverSel = null;
         PartSel = null;
+        FuseShow = null;
         SelBoxBody = null;
         SelWorldOn = false;
         SelGhostClip = null;

@@ -1,0 +1,385 @@
+using System.Diagnostics;
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// <c>--bench-fuse [PARTS] [--capital] [--stack] [--sheet]</c> (the sheet scenes run alone, or with --sheet beside the others): what fusing buys (docs/sandbox/CONSTRUCTS.md, "Fusing"; numbers in
+/// docs/perf/LIMITS.md, "Fused units"). A command-line benchmark, not a self-test section: it fails nothing. Every scene is
+/// built twice, once plain and once with the hull fused whole (the fuse tool's own tags), and measured the same way: the full
+/// rebuild, the collider build, the rough fit, the physics step against the floor, rolling ground and another construct,
+/// edits and breaks, memory and steady allocation. Prints min / median of repeats.
+/// </summary>
+public static partial class SelfTest
+{
+    public static int BenchFuse(string[] args)
+    {
+        var parts = Construct.MaxParts;
+        var at = Array.FindIndex(args, a => a.Equals("--bench-fuse", StringComparison.OrdinalIgnoreCase));
+        if (at >= 0 && at + 1 < args.Length && int.TryParse(args[at + 1], out var n))
+            parts = Math.Clamp(n, 64, Construct.MaxParts);
+        var block = ConstructParts.Need("Frame Block");
+        var q = new JointTestWorld();
+        Console.WriteLine($"[fuse bench] {parts} parts a hull (Frame Blocks in a 12-wide sheet linked on four sides, a Lamp on every 200th; the blocks fused), plain against fused; ms min / median");
+        // Warm the paths.
+        foreach (var fused in new[] { false, true })
+        {
+            var ww = new ConstructWorld();
+            var wc = BenchHull(ww, new Vector3(0, -block.BoundsMin.Y + 0.02f, 0), 2048, block, fused);
+            for (var t = 0; t < 30; t++)
+                ww.Step(q, World.TickDt);
+            ww.RemovePart(wc, 1000);
+            ww.Step(q, World.TickDt);
+        }
+        BenchRoundTrip(block);
+        var only = args.Any(a => a.Equals("--capital", StringComparison.OrdinalIgnoreCase) || a.Equals("--stack", StringComparison.OrdinalIgnoreCase));
+        if (!only || args.Any(a => a.Equals("--sheet", StringComparison.OrdinalIgnoreCase)))
+            foreach (var fused in new[] { false, true })
+                BenchSheet(parts, block, q, fused);
+        if (args.Any(a => a.Equals("--capital", StringComparison.OrdinalIgnoreCase)))
+            foreach (var fused in new[] { false, true })
+                BenchCapital(parts, q, fused);
+        if (args.Any(a => a.Equals("--stack", StringComparison.OrdinalIgnoreCase)))
+            foreach (var fused in new[] { false, true })
+                BenchStack(parts, block, q, fused);
+        if (Construct.RebuildCheck)
+            Console.WriteLine($"[fuse bench] rebuild check: {Construct.CheckRuns} plain rebuilds checked, {Construct.CheckFails} different{(Construct.CheckLog.Count > 0 ? ": " + Construct.CheckLog[0] : "")}");
+        return 0;
+    }
+
+    private static string Label(bool fused) => fused ? "fused" : "plain";
+
+    /// <summary>A sheet hull (CostHull's), fused whole when asked, rebuilt.</summary>
+    private static Construct BenchHull(ConstructWorld w, Vector3 at, int parts, ConstructPartDef block, bool fused)
+    {
+        var lamps = parts / 200;
+        var c = CostHull(w, at, parts - lamps, block);
+        var lamp = ConstructParts.Need("Lamp");
+        var size = block.BoundsMax - block.BoundsMin;
+        for (var k = 0; k < lamps; k++)
+            w.AddPart(c, lamp, c.Parts[k * 200 % c.PartCount].Pos + new Vector3(0, size.Y, 0), 0); // (a few fittings on top, not fused: special parts)
+        w.AutoLinkMany(c, 0, c.PartCount); // (linked on four sides, as a player's sheet is: CostHull's own isn't)
+        c.Rebuild();
+        if (fused)
+            BenchFuseAll(c);
+        return c;
+    }
+
+    private static void BenchFuseAll(Construct c)
+    {
+        if (c.Dirty)
+            c.Rebuild();
+        var (m0, c0, i0) = (c.Mass, c.Com, c.InvInertiaLocal);
+        var tag = ConstructFuse.NewTag();
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).Name != "Lamp")
+                c.Parts[i].Fuse = tag; // (the hull, as the fuse tool's selection would take it: the fittings stay out)
+        c.Dirty = true;
+        c.Rebuild();
+        _ = c.Collider;
+        Console.WriteLine($"[fuse bench] fused {c.PartCount} parts: mass {m0:0.###} -> {c.Mass:0.###} kg, centre of mass moved {Vector3.Distance(c0, c.Com) * 1000:0.000} mm, inverse inertia diagonal {i0.M11:E3} {i0.M22:E3} {i0.M33:E3} -> {c.InvInertiaLocal.M11:E3} {c.InvInertiaLocal.M22:E3} {c.InvInertiaLocal.M33:E3}");
+    }
+
+    private static (double Min, double Med) Times(int repeats, Action run, Action? before = null)
+    {
+        var t = new double[repeats];
+        var sw = new Stopwatch();
+        for (var k = 0; k < repeats; k++)
+        {
+            before?.Invoke();
+            sw.Restart();
+            run();
+            t[k] = sw.Elapsed.TotalMilliseconds;
+        }
+        Array.Sort(t);
+        return (t[0], t[repeats / 2]);
+    }
+
+    private static string Ms((double Min, double Med) t) => $"{t.Min:0.000} / {t.Med:0.000}";
+
+    private static string Steps(ConstructWorld w, IWorldQuery q, int ticks, Action? each = null)
+    {
+        var t = new double[ticks];
+        var sw = new Stopwatch();
+        long bytes = 0;
+        var contacts = 0;
+        int builds = ConstructCollider.Builds, rebuilds = Construct.FullRuns + Construct.PlainRuns;
+        for (var k = 0; k < ticks; k++)
+        {
+            each?.Invoke();
+            var b0 = GC.GetAllocatedBytesForCurrentThread();
+            sw.Restart();
+            w.Step(q, World.TickDt);
+            t[k] = sw.Elapsed.TotalMilliseconds;
+            bytes += GC.GetAllocatedBytesForCurrentThread() - b0;
+            contacts = Math.Max(contacts, ConstructPhysics.LastContacts);
+        }
+        Array.Sort(t);
+        return $"{t[0]:0.000} / {t[ticks / 2]:0.000} ms a tick, up to {contacts} contacts, {bytes} B in {ticks} ticks ({Construct.FullRuns + Construct.PlainRuns - rebuilds} rebuilds, {ConstructCollider.Builds - builds} colliders built)";
+    }
+
+    private static void BenchSheet(int parts, ConstructPartDef block, IWorldQuery q, bool fused)
+    {
+        var name = Label(fused);
+        var w = new ConstructWorld();
+        var c = BenchHull(w, new Vector3(0, -block.BoundsMin.Y + 0.02f, 0), parts, block, fused);
+        var fits = ConstructFuseFit.Fits;
+        var fitMs = ConstructFuseFit.FitMs;
+        if (fused)
+        {
+            c.FuseMassStale();
+            c.Dirty = true;
+            c.Rebuild();
+            c.ColliderChanged();
+            for (var u = 0; u < c.UnitCount; u++)
+                c.Unit(u).NeedFit = true;
+            _ = c.Collider;
+            var unit = c.Unit(0);
+            var fitTimes = Times(5, () => ConstructFuseFit.Fit(c, unit, c.UnitMembers(0)));
+            Console.WriteLine($"[fuse bench] {name}: rough fit alone {Ms(fitTimes)}");
+            Console.WriteLine($"[fuse bench] {name}: rough fit {(ConstructFuseFit.FitMs - fitMs) / Math.Max(1, ConstructFuseFit.Fits - fits):0.00} ms, {unit.RoughCount} boxes over {unit.Covered} parts, cell {unit.Cell * 100:0.0} cm, rough volume {unit.RoughVolume:0.0} m3 against {unit.ExactVolume:0.0} m3 of boxes");
+        }
+        Console.WriteLine($"[fuse bench] {name}: rebuild, full: {Ms(Times(7, () => c.Rebuild(), () => c.Dirty = true))}");
+        Console.WriteLine($"[fuse bench] {name}: collider built: {Ms(Times(7, () => _ = c.Collider, c.ColliderChanged))}");
+        var col = c.Collider;
+        long bytes = (long)col.LeafCount * System.Runtime.CompilerServices.Unsafe.SizeOf<ConstructCollider.Leaf>() + (long)col.NodeCount * System.Runtime.CompilerServices.Unsafe.SizeOf<ConstructCollider.Node>();
+        Console.WriteLine($"[fuse bench] {name}: collider {col.LeafCount} leaves, {col.NodeCount} nodes, {bytes / 1024} KB in use ({(long)col.Leaves.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<ConstructCollider.Leaf>() / 1024} KB of leaf arrays)");
+        Console.WriteLine($"[fuse bench] {name}: sliding on a floor: {Steps(w, q, 40, () => { c.Vel = new Vector3(3, c.Vel.Y, 0); c.Wake(); })}; its lowest box at {c.ToWorld(new Vector3(0, block.BoundsMin.Y, 0)).Y * 1000:0.0} mm, tilt {MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.00} deg");
+        // Another construct: 40 blocks dropped on the hull (construct against construct).
+        for (var i = 0; i < 40; i++)
+            ConstructBuild.PlaceNew(w, block, c.ToWorld(new Vector3(0.6f + i % 8 * 0.4f, 0.6f, 4 + i / 8 * 1.5f)), 0);
+        Console.WriteLine($"[fuse bench] {name}: 40 blocks on it, settling: {Steps(w, q, 40, () => { c.Vel = new Vector3(0, c.Vel.Y, 0); c.Wake(); })}");
+        // Rolling ground of half-metre cells.
+        var rolling = CostGround();
+        var land = new ConstructWorld();
+        var track = BenchHull(land, new Vector3(0, 1.6f, 0), parts, block, fused);
+        Console.WriteLine($"[fuse bench] {name}: on half-metre ground: {Steps(land, rolling, 40, () => { track.Vel = new Vector3(3, track.Vel.Y, 0); track.Wake(); })}; centre of mass at {track.WorldCom.Y * 1000:0} mm, tilt {MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, track.Rot).Y, -1, 1)) * 180 / MathF.PI:0.00} deg");
+        // Edits and breaks, each with the tick that rebuilds it, less a steady tick measured just before.
+        var rng = new Random(5);
+        void Edit(string what, int repeats, Action edit)
+        {
+            var steady = Times(7, () => w.Step(q, World.TickDt), c.Wake);
+            var t = Times(repeats, () =>
+            {
+                edit();
+                w.Step(q, World.TickDt);
+            }, c.Wake);
+            Console.WriteLine($"[fuse bench] {name}: {what} (edit + step, less a steady tick of {steady.Min:0.000} / {steady.Med:0.000}): {t.Min - steady.Min:0.000} / {t.Med - steady.Med:0.000}");
+        }
+        Edit("a part placed beside it", 9, () => ConstructBuild.PlaceNew(w, block, c.ToWorld(new Vector3(0, 0.3f, -0.6f)), 0));
+        Edit("take off an inner block", 9, () => w.RemovePart(c, c.PartCount / 2 + rng.Next(100)));
+        Edit("ten blocks off in one tick", 5, () =>
+        {
+            for (var k = 0; k < 10; k++)
+                w.RemovePart(c, c.PartCount / 3 + rng.Next(200));
+        });
+        Edit("four blocks shot off a tick", 5, () =>
+        {
+            for (var k = 0; k < 4; k++)
+                w.DamagePart(c, Math.Min(c.PartCount - 1, 24 + rng.Next(c.PartCount - 48)), 1e6f, out _, raw: true);
+        });
+        var lamp = ConstructParts.Need("Lamp");
+        Edit("a special part added (a full rebuild)", 5, () => w.AddPart(c, lamp, c.Parts[0].Pos + new Vector3(0, 0.3f, 0), 0));
+        var steadyCut = Times(7, () => w.Step(q, World.TickDt), c.Wake).Min;
+        // A split: the sheet cut in half (a row of blocks across it taken off).
+        var before = w.Bodies.Count;
+        var cut = Times(1, () =>
+        {
+            var row = c.PartCount / 2 / 12 * 12;
+            Span<int> gone = stackalloc int[12];
+            for (var k = 0; k < 12; k++)
+                gone[k] = row + 11 - k;
+            foreach (var i in gone)
+                if (i < c.PartCount)
+                    w.RemovePart(c, i);
+            w.Step(q, World.TickDt);
+        }, c.Wake);
+        Console.WriteLine($"[fuse bench] {name}: cut in half (12 off, split, edit + step): {cut.Min - steadyCut:0.000} ms, bodies {before} -> {w.Bodies.Count}, units on the hull {c.UnitCount}");
+        var b0 = GC.GetAllocatedBytesForCurrentThread();
+        for (var t = 0; t < 30; t++)
+        {
+            c.Wake();
+            w.Step(q, World.TickDt);
+        }
+        Console.WriteLine($"[fuse bench] {name}: steady allocation {GC.GetAllocatedBytesForCurrentThread() - b0} B in 30 ticks");
+    }
+
+    /// <summary>
+    /// <c>--bench-fuse-net [LAG] [LOSS]</c>: a host and a client over RakNet on this PC, the client's network simulated bad.
+    /// The client's own fuse tool requests (CActKind.Fuse) fuse a sheet, un-fuse it and fuse it again; the host shoots parts off;
+    /// each step waits (bounded) for the client's copy to show the host's units.
+    /// </summary>
+    public static int BenchFuseNet(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals("--bench-fuse-net", StringComparison.OrdinalIgnoreCase));
+        var lag = at >= 0 && at + 1 < args.Length && int.TryParse(args[at + 1], out var l) ? l : 120;
+        var loss = at >= 0 && at + 2 < args.Length && float.TryParse(args[at + 2], System.Globalization.CultureInfo.InvariantCulture, out var p) ? p : 3f;
+        Brutal.GlfwApi.Glfw.Init();
+        if (Maps.Find(ConstructYardMap) is not { } yard)
+        {
+            Console.WriteLine("[fuse net] no yard map");
+            return 1;
+        }
+        const ushort port = 26391;
+        var clock = Stopwatch.StartNew();
+        var now = 0.0;
+        yard.RestoreProps();
+        World.SetMap(yard);
+        using var server = new Game(NetPeer.Host(port, 4), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id) { MapVoteEnabled = false };
+        server.Mode = GameMode.Sandbox;
+        using var a = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
+        Console.WriteLine($"[fuse net] simulating {lag} ms and {loss}% loss on the client: {a.Net.SimulateBadNetwork(lag, lag / 5, loss)}");
+        Pump(server, [a], 1.0, ref now, clock);
+        for (var wait = 0; wait < 60 && (server.Phase != MatchPhase.Playing || a.LocalId == byte.MaxValue); wait++)
+            Pump(server, [a], 0.25, ref now, clock);
+        if (a.LocalId == byte.MaxValue || !server.Players.TryGetValue(a.LocalId, out var sp))
+        {
+            Console.WriteLine("[fuse net] the client didn't join");
+            return 1;
+        }
+        if (!sp.Alive)
+            server.SelfTestRespawn(sp, now);
+        Pump(server, [a], 0.5, ref now, clock);
+        var block = ConstructParts.Need("Frame Block");
+        var w = server.Constructs;
+        var c = w.Create(sp.Position + new Vector3(1.5f, 0.2f, 0), Quaternion.Identity)!;
+        var size = block.BoundsMax - block.BoundsMin;
+        for (var i = 0; i < 240; i++)
+            w.AddPart(c, block, new Vector3(i % 12 * size.X, 0, i / 12 * size.Z), 0);
+        w.AutoLinkMany(c, 0, c.PartCount);
+        c.Pinned = true;
+        c.Rebuild();
+        w.StructureDirty.Add(c.Id);
+        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Fuse);
+        var fails = 0;
+        bool Wait(string what, Func<bool> ok)
+        {
+            for (var t = 0; t < 40 && !ok(); t++)
+                Pump(server, [a], 0.1, ref now, clock);
+            var got = ok();
+            var copy = a.Constructs.Get(c.Id);
+            Console.WriteLine($"[fuse net] {what}: {(got ? "ok" : "NOT REACHED")} after {clock.Elapsed.TotalSeconds:0.0} s; host {UnitSizes(c)}, client {(copy != null ? UnitSizes(copy) : "no copy")}; notice \"{a.SandboxNotice}\"");
+            fails += got ? 0 : 1;
+            return got;
+        }
+        Wait("the client has the fuse tool and the sheet", () => server.SandboxHands.Hand(sp.Id).Tool == ConstructTool.Fuse && a.Constructs.Get(c.Id) is { PartCount: 240 });
+        a.SandboxFuse(c.Id, FuseMode.Piece, 5, default);
+        Wait("fused by the client's request", () => c.UnitSize(0) == 240 && a.Constructs.Get(c.Id) is { } k && k.UnitSize(0) == 240);
+        a.SandboxFuse(c.Id, FuseMode.Unfuse, 5, default);
+        Wait("un-fused by the client's request", () => c.UnitSize(0) == 0 && a.Constructs.Get(c.Id) is { } k && k.UnitSize(0) == 0 && k.FusedParts == 0);
+        Span<ushort> half = stackalloc ushort[120];
+        for (var i = 0; i < half.Length; i++)
+            half[i] = (ushort)i;
+        a.SandboxFuse(c.Id, FuseMode.Parts, 5, half);
+        Wait("half fused as a selection", () => c.UnitSize(0) == 120 && a.Constructs.Get(c.Id) is { } k && k.UnitSize(0) == 120 && k.UnitSize(200) == 0);
+        for (var k = 0; k < 12; k++)
+            w.DamagePart(c, 60 + 11 - k, 1e6f, out _, raw: true); // (a row across the fused half shot away: the unit and the sheet come apart)
+        Wait("a row shot off the fused half", () => !c.Dirty && a.Constructs.Get(c.Id) is { } k && UnitSizes(k) == UnitSizes(c));
+        Console.WriteLine($"[fuse net] done: {fails} step(s) not reached, {NetSafety.Dropped} packets dropped{(NetSafety.LastDrop.Length > 0 ? ": " + NetSafety.LastDrop : "")}");
+        return fails;
+    }
+
+    /// <summary>The units as sizes, largest first: what a round trip must give back.</summary>
+    private static string UnitSizes(Construct c)
+    {
+        if (c.Dirty)
+            c.Rebuild();
+        var sizes = new List<int>();
+        for (var u = 0; u < c.UnitCount; u++)
+            sizes.Add(c.Unit(u).Count);
+        sizes.Sort((a, b) => b.CompareTo(a));
+        return sizes.Count == 0 ? "none" : string.Join("+", sizes);
+    }
+
+    /// <summary>Two units on one sheet with a plain strip between: through a blueprint, the wire and a split, they come back the same.</summary>
+    private static void BenchRoundTrip(ConstructPartDef block)
+    {
+        var w = new ConstructWorld();
+        var c = CostHull(w, new Vector3(0, -block.BoundsMin.Y + 0.02f, 0), 600, block);
+        w.AutoLinkMany(c, 0, c.PartCount);
+        c.Rebuild();
+        uint a = ConstructFuse.NewTag(), b = ConstructFuse.NewTag();
+        for (var i = 0; i < c.PartCount; i++)
+            c.Parts[i].Fuse = i < 300 ? a : i >= 360 ? b : 0;
+        c.Dirty = true;
+        var source = UnitSizes(c);
+        var clip = ConstructClip.Of(c, "fuse round trip", w);
+        var json = clip.ToBlueprint("fuse round trip", "", out var why);
+        var built = json == null ? null : ConstructBuild.Build(new ConstructWorld(), ConstructBuild.ParseBlueprint(json, "fuse round trip"), Vector3.Zero, Quaternion.Identity, out why);
+        var full = new PacketWriter(1 << 16);
+        ConstructNet.WriteFull(full, c, 1);
+        var other = new ConstructWorld();
+        var r = new PacketReader(full.Span);
+        r.U8();
+        ConstructNet.Read(ref r, other, 0);
+        var copy = other.Get(c.Id);
+        // A world save: the body written and read back into a world of its own.
+        var snap = new WorldSnapshot();
+        w.CaptureInto(snap);
+        var names = new WorldNames();
+        var bodyBytes = new SaveWriter();
+        ConstructWorld.WriteBody(bodyBytes, snap, snap.Bodies[0], names);
+        var nameBytes = new SaveWriter();
+        names.Write(nameBytes);
+        var read = new WorldNamesRead();
+        read.Read(new SaveReader(nameBytes.Span.ToArray()));
+        var loaded = new ConstructWorld().ReadBody(new SaveReader(bodyBytes.Span.ToArray()), read, _ => 0);
+        Console.WriteLine($"[fuse bench] round trip: a world save {(loaded != null ? UnitSizes(loaded) : "none")}, tags new: {loaded != null && loaded.PartCount > 0 && loaded.Parts[0].Fuse != a}");
+        // A strip across one unit taken off: it comes apart into two units (and the strip's ends are plain parts again).
+        for (var k = 0; k < 12; k++)
+            w.RemovePart(c, 144 + 11 - k);
+        var after = UnitSizes(c);
+        var pieces = string.Join(", ", w.Bodies.Where(o => o != c).Select(UnitSizes));
+        Console.WriteLine($"[fuse bench] round trip: units {source}; blueprint {(built != null ? UnitSizes(built) : "refused: " + why)}; a client's copy {(copy != null ? UnitSizes(copy) : "none")}; a strip of unit 1 taken off: {after}, pieces cut off: {(pieces.Length > 0 ? pieces : "none")}");
+    }
+
+    private static void BenchCapital(int parts, IWorldQuery q, bool fused)
+    {
+        var name = Label(fused);
+        var w = new ConstructWorld();
+        if (CapHull(w, new Vector3(0, 2f, 0), Math.Min(parts, Construct.MaxParts - 400), out var why) is not { } c)
+        {
+            Console.WriteLine($"[fuse bench] capital hull didn't build: {why}");
+            return;
+        }
+        c.Rebuild();
+        c.Pos = c.PrevPos = c.Pos + new Vector3(0, 0.5f - c.ToWorld(c.LocalMin).Y, 0); // (half a metre over the floor, all of it)
+        if (fused)
+        {
+            var fits = ConstructFuseFit.Fits;
+            var fitMs = ConstructFuseFit.FitMs;
+            BenchFuseAll(c);
+            var unit = c.Unit(0);
+            Console.WriteLine($"[fuse bench] capital {name}: rough fit alone {Ms(Times(3, () => ConstructFuseFit.Fit(c, unit, c.UnitMembers(0))))}");
+            Console.WriteLine($"[fuse bench] capital {name}: {c.PartCount} parts, rough fit {(ConstructFuseFit.FitMs - fitMs) / Math.Max(1, ConstructFuseFit.Fits - fits):0.00} ms, {unit.RoughCount} boxes over {unit.Covered} parts, cell {unit.Cell * 100:0.0} cm, rough {unit.RoughVolume:0} m3 against {unit.ExactVolume:0} m3");
+        }
+        Console.WriteLine($"[fuse bench] capital {name}: rebuild, full: {Ms(Times(5, () => c.Rebuild(), () => c.Dirty = true))}");
+        Console.WriteLine($"[fuse bench] capital {name}: collider built: {Ms(Times(5, () => _ = c.Collider, c.ColliderChanged))}, {c.Collider.LeafCount} leaves");
+        var path = "";
+        for (var t = 0; t < 120; t++)
+        {
+            if (t % 20 == 0)
+                path += $" {c.WorldCom.Y:0.00}";
+            w.Step(q, World.TickDt);
+        }
+        Console.WriteLine($"[fuse bench] capital {name}: centre of mass height every 20 ticks from the start:{path}");
+        Console.WriteLine($"[fuse bench] capital {name}: falling onto the floor, sliding: {Steps(w, q, 60, () => { c.Vel = new Vector3(2, c.Vel.Y, 0); c.Wake(); })}, centre of mass at {c.WorldCom.Y:0.000} m, its lowest bound at {c.ToWorld(c.LocalMin).Y:0.000} m, tilt {MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.00} deg");
+    }
+
+    private static void BenchStack(int parts, ConstructPartDef block, IWorldQuery q, bool fused)
+    {
+        var size = block.BoundsMax - block.BoundsMin;
+        var many = new ConstructWorld();
+        var hulls = new List<Construct>();
+        for (var i = 0; i < 8; i++)
+            hulls.Add(BenchHull(many, new Vector3(i * 0.2f, 0.3f + i * size.Y * 1.5f, i * 0.2f), parts, block, fused));
+        Console.WriteLine($"[fuse bench] {Label(fused)}: eight hulls stacked: {Steps(many, q, 20, () =>
+        {
+            for (var i = 1; i < hulls.Count; i += 2)
+            {
+                hulls[i].Vel = new Vector3(1, hulls[i].Vel.Y, 0);
+                hulls[i].Wake();
+            }
+        })}");
+    }
+}

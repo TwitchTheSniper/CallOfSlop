@@ -22,6 +22,10 @@ public static partial class ConstructRender
     public static Quaternion SelGhostRot = Quaternion.Identity;
     public static bool SelGhostValid;
 
+    // The fuse tool (Program.SandboxFuse.cs): the unit under the crosshair, outlined, while the construct is as it was at that rebuild.
+    public static Construct? FuseShow;
+    public static int FuseShowUnit, FuseShowStamp;
+
     private static ConstructClip? _selBoxesOf;
     private static Matrix4x4[] _selBoxes = [];
     private static Vector3[] _selBoxColours = [];
@@ -32,6 +36,14 @@ public static partial class ConstructRender
     private static void DrawSelection(Renderer gfx, float pulse)
     {
         var blue = new Vector3(0.3f, 0.75f, 1f);
+        if (FuseShow is { } fc && fc.RebuildStamp == FuseShowStamp && FuseShowUnit < fc.UnitCount)
+        {
+            var orange = new Vector3(1f, 0.6f, 0.15f);
+            var mem = fc.UnitMembers(FuseShowUnit);
+            var n = Math.Min(mem.Length, MaxOutlines);
+            for (var k = 0; k < n; k++)
+                Outline(gfx, fc, mem[k], orange, 0.25f + 0.1f * pulse);
+        }
         if (PartSel is { Count: > 0, Body: { } c } sel)
         {
             var left = MaxOutlines;

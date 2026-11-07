@@ -67,6 +67,10 @@ public struct CPart
     // it has its own. This build's own number: saves, blueprints and the wire carry the material's name. It moves with the part.
     public byte Finish;
 
+    // Fuse (the fuse tool; ConstructFuse.cs): the fused unit the part is in, a tag the server gives (0: none). Parts with one tag on one
+    // segment, linked together, are one unit to the collider and the mass sums. It moves with the part; saves and blueprints renumber it.
+    public uint Fuse;
+
     public const ushort Occupied = 0x8000;
 
     public readonly ConstructPartDef D => ConstructParts.Def(Def);
@@ -1082,6 +1086,7 @@ public sealed partial class Construct
             else
                 MovingJoints++;
         BuildSpecials();
+        FuseRefresh(); // (the fused units from the parts' tags: before the mass sums and the collider, ConstructFuse.cs)
         _sumsValid = PartCount >= IncrementalMin;
         if (_sumsValid)
         {
@@ -1187,7 +1192,10 @@ public sealed partial class Construct
         RebuildStamp++; // (its boxes in a big body's batch: ConstructRenderBatch.cs)
         ColliderChanged(); // (a piece growing on a die: a rebuild of its tree at the Extruder's rate, not the part tree's: ConstructPartTree.cs)
         if (_sumsValid)
+        {
+            FuseMassStale(); // (a unit's member may be the part that changed)
             SumParts(); // (a part's shape changed: summed again)
+        }
         MassAndSegments();
     }
 
