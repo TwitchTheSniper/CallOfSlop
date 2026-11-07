@@ -75,4 +75,25 @@ configuration, prints the constructs pass's draw calls and CPU (the body loop, t
 and the box batch), the merged meshes' chunks, slots and GPU bytes, and with `--bench-shots` compares every picture with the
 merged one. `--bench-edit` paints, damages and removes parts while it draws, the same in every configuration.
 
-NUMBERS
+### Numbers (2026-11-07, Mesa llvmpipe under xvfb, 640x360, the 4.6 path; medians of 16 frames)
+
+"Before" is main as it was (a body of 64 parts or more had one instanced draw for its plain frames and panels, the rest box
+by box); "after" is merged meshes. The constructs pass's CPU is the walk over the bodies (our code, plus the draws of what
+is still walked); on llvmpipe the vertex work of the merged draws runs on the CPU in the flush, where a real GPU does it
+alone, so the flush and the frame times here are not what a GPU would show.
+
+| Scene | Draw calls (constructs) | Body walk CPU | Frame (llvmpipe) |
+| --- | --- | --- | --- |
+| Mixed fleet: 9 faction vehicles x 4 (36 bodies, 3,768 parts) | 1,204 -> 958 | 28-32 ms -> 2.6-2.8 ms | 38-45 -> 33-46 ms |
+| Buses: Double Decker 13 and IT War Bus 6 x 16 (32 bodies, 6,560 parts) | 3,861 -> 3,137 | 66-105 ms -> 23 ms | 78-116 -> 104-124 ms |
+| Capital hull, 4,050 parts (the self-test's) | 1 -> 6 | 14-15 ms -> 0.05 ms | 42-45 -> 64 ms |
+
+The frame columns were measured minutes apart on a shared 2-core box with a load of 6 to 15, so they move by tens of percent
+on their own; within one run, merged against `--no-merge`, the merged frame was lower in every scene. Most of the draws left
+in the bus scene are merged shape groups (2,324 of 3,137: about 15 segments a bus, a draw per contoured shape in each); the
+rest are walked parts and glass. Memory on the GPU: 64 bytes a box (1.2 MB for the 32 buses, 1.4 MB for the hull's 22,275
+boxes). Nothing allocated in a steady frame. Pictures merged against `--no-merge`: at most 24 of 230,400 pixels differed, on
+edges (float rounding), the same on the 4.1 path; with `--bench-edit` (paint, damage, parts removed) 2 pixels.
+
+Not measured: a real GPU (desktop or Apple), Windows. Ways on: fold freeform segments into the segment they are rigid with
+(fewer chunks), one draw for all of a chunk's shapes (vertex pulling, or multi-draw indirect on 4.6).
