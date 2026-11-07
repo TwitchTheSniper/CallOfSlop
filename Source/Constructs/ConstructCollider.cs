@@ -77,8 +77,12 @@ internal sealed partial class ConstructCollider
     private int[] _wheelOf = [];
 
     /// <summary>The boxes of the construct as it is now (rest pose; the joints' frames carry them after that).</summary>
+    /// <summary>Colliders built (every body, every thread, roughly: a harness's count).</summary>
+    internal static int Builds;
+
     public void Build(Construct c)
     {
+        Builds++;
         _dead = 0;
         _mainLeaves = _mainNodes = 0;
         _extraGroup = -1;

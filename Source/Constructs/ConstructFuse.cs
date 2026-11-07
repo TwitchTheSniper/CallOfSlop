@@ -129,6 +129,8 @@ public sealed partial class Construct
             if (!any)
             {
                 FusedParts = 0;
+                _fuseNoteCount = 0;
+                _fuseNotesOver = false;
                 _fuseLive = true;
                 return false;
             }
@@ -213,14 +215,17 @@ public sealed partial class Construct
                     continue;
                 changed = true;
                 unit.SumsOk = false;
-                if (unit.Count < 2 || !FuseConnected(u))
+                // (a unit that was the whole body and still is stays one piece: a body is always one piece, what a removal cuts off leaves as a wreck)
+                var whole = unit.Members >= 0 && unit.Count == n && _unitCount == 1;
+                var explained = unit.Members >= 0 && pass == 0 && FuseLossExplained(unit.Tag, unit.Members - unit.Count);
+                if (unit.Count < 2 || !whole && !explained && !FuseConnected(u))
                 {
                     FuseSplit(u);
                     split = true;
                     continue;
                 }
-                if (unit.Members < 0 || unit.Count > unit.FitMembers || (unit.FitMembers - unit.Count) * 16 >= unit.FitMembers)
-                    unit.NeedFit = true; // (new, grown, or a sixteenth gone since it was fitted: the rough shape stays loose until then, never short)
+                if (unit.Members < 0 || unit.Count > unit.FitMembers || (unit.FitMembers - unit.Count) * 8 >= unit.FitMembers)
+                    unit.NeedFit = true; // (new, grown, or an eighth gone since it was fitted: the rough shape stays loose until then, never short)
                 unit.Members = unit.Count;
             }
             if (!split)
@@ -229,6 +234,8 @@ public sealed partial class Construct
         for (var u = 0; u < _unitCount; u++)
             if (_units[u].NeedFit)
                 changed = true;
+        _fuseNoteCount = 0;
+        _fuseNotesOver = false;
         _fuseLive = true;
         return changed;
     }
@@ -346,6 +353,107 @@ public sealed partial class Construct
                 tags[g] = ConstructFuse.NewTag();
             Parts[i].Fuse = tags[g];
         }
+    }
+
+    // ---- Removals: a part going is looked round, so a big unit isn't flooded to see whether it came apart -----------
+
+    private (uint Tag, int Passed, bool Failed)[] _fuseNotes = new (uint, int, bool)[8];
+    private int _fuseNoteCount;
+    private bool _fuseNotesOver;
+    private int[] _fuseMeet = [];
+    private int _fuseMeetSerial;
+
+    /// <summary>
+    /// Part <paramref name="gone"/> is about to be taken off (ConstructWorld.RemovePart, before the arrays are compacted): when
+    /// it is fused, do its unit's members linked to it still meet each other without it within a short walk over members? The
+    /// next refresh then knows the unit didn't come apart without flooding it.
+    /// </summary>
+    internal void FuseNoteRemoval(int gone)
+    {
+        var tag = Parts[gone].Fuse;
+        if (tag == 0)
+            return;
+        var ok = FuseMeetsRound(gone, tag);
+        for (var k = 0; k < _fuseNoteCount; k++)
+            if (_fuseNotes[k].Tag == tag)
+            {
+                _fuseNotes[k].Passed += ok ? 1 : 0;
+                _fuseNotes[k].Failed |= !ok;
+                return;
+            }
+        if (_fuseNoteCount == _fuseNotes.Length)
+        {
+            _fuseNotesOver = true; // (more units than the notes hold: each that lost parts is flooded)
+            return;
+        }
+        _fuseNotes[_fuseNoteCount++] = (tag, ok ? 1 : 0, !ok);
+    }
+
+    /// <summary>Did every removal from unit <paramref name="tag"/> since the last refresh leave its members meeting, and is that all it lost?</summary>
+    private bool FuseLossExplained(uint tag, int lost)
+    {
+        if (_fuseNotesOver)
+            return false;
+        for (var k = 0; k < _fuseNoteCount; k++)
+            if (_fuseNotes[k].Tag == tag)
+                return !_fuseNotes[k].Failed && _fuseNotes[k].Passed == lost;
+        return false;
+    }
+
+    /// <summary><see cref="MeetsRound"/> over the members of unit <paramref name="tag"/> only.</summary>
+    private bool FuseMeetsRound(int gone, uint tag)
+    {
+        Span<int> want = stackalloc int[16];
+        var wants = 0;
+        for (var e = FirstLink(gone); e >= 0; e = NextLink(e))
+        {
+            var o = OtherEnd(e);
+            if (o == gone || Parts[o].Fuse != tag)
+                continue;
+            var dup = false;
+            for (var k = 0; k < wants; k++)
+                dup |= want[k] == o;
+            if (dup)
+                continue;
+            if (wants == want.Length)
+                return false;
+            want[wants++] = o;
+        }
+        if (wants <= 1)
+            return true; // (an end of the unit: nothing of it hangs on this part alone)
+        if (_fuseMeet.Length < PartCount)
+            _fuseMeet = new int[Math.Max(PartCount, _fuseMeet.Length * 2)];
+        if (++_fuseMeetSerial == int.MaxValue)
+        {
+            Array.Clear(_fuseMeet);
+            _fuseMeetSerial = 1;
+        }
+        var stamp = _fuseMeetSerial;
+        const int Budget = 512;
+        Span<int> queue = stackalloc int[Budget];
+        int head = 0, tail = 0;
+        _fuseMeet[gone] = stamp;
+        _fuseMeet[want[0]] = stamp;
+        queue[tail++] = want[0];
+        var found = 1;
+        while (head < tail)
+        {
+            var at = queue[head++];
+            for (var e = FirstLink(at); e >= 0; e = NextLink(e))
+            {
+                var o = OtherEnd(e);
+                if (_fuseMeet[o] == stamp || Parts[o].Fuse != tag)
+                    continue;
+                _fuseMeet[o] = stamp;
+                for (var k = 1; k < wants; k++)
+                    if (want[k] == o && ++found == wants)
+                        return true;
+                if (tail == Budget)
+                    return false;
+                queue[tail++] = o;
+            }
+        }
+        return false;
     }
 
     // ---- The mass sums: a unit's plain parts as one share --------------------------------------------------------

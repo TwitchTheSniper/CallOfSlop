@@ -21,7 +21,7 @@ namespace CallOfSlop;
 /// </summary>
 internal static class ConstructFuseFit
 {
-    public const int MaxRough = 256, CellBudget = 1 << 18, Attempts = 8;
+    public const int MaxRough = 256, CellBudget = 1 << 17, Attempts = 8;
     public const float MinCell = 0.05f;
 
     public static int Fits; // (counts for the harness)
@@ -38,16 +38,27 @@ internal static class ConstructFuseFit
         var hi = new Vector3(float.MinValue);
         var boxes = 0;
         foreach (var i in members)
+            if (c.FuseCovers(i))
+            {
+                u.Covered++;
+                boxes += c.SolidCount(i);
+            }
+        using var scratch = Scratch.Begin();
+        var bmn = scratch.Take<Vector3>(boxes);
+        var bmx = scratch.Take<Vector3>(boxes);
+        boxes = 0;
+        foreach (var i in members)
         {
             if (!c.FuseCovers(i))
                 continue;
-            u.Covered++;
             var n = c.SolidCount(i);
             for (var b = 0; b < n; b++)
             {
                 c.SolidBox(i, b, out var centre, out var half);
-                lo = Vector3.Min(lo, centre - half);
-                hi = Vector3.Max(hi, centre + half);
+                bmn[boxes] = centre - half;
+                bmx[boxes] = centre + half;
+                lo = Vector3.Min(lo, bmn[boxes]);
+                hi = Vector3.Max(hi, bmx[boxes]);
                 u.ExactVolume += 8.0 * half.X * half.Y * half.Z;
                 boxes++;
             }
@@ -66,31 +77,19 @@ internal static class ConstructFuseFit
                 break;
             h *= 1.15f;
         }
-        using var scratch = Scratch.Begin();
-        var occ = scratch.Take<int>(CellBudget); // -1: empty; -2: full, no box yet; k >= 0: box k
+        var occ = scratch.Take<int>(nx * ny * nz); // -1: empty; -2: full, no box yet; k >= 0: box k
         Span<int> cellBox = stackalloc int[6 * MaxRough];
         var count = 0;
         for (var attempt = 0; attempt < Attempts; attempt++)
         {
             var cells = nx * ny * nz;
             occ[..cells].Fill(-1);
-            foreach (var i in members)
+            for (var b = 0; b < boxes; b++)
             {
-                if (!c.FuseCovers(i))
-                    continue;
-                var n = c.SolidCount(i);
-                for (var b = 0; b < n; b++)
-                {
-                    c.SolidBox(i, b, out var centre, out var half);
-                    Range(centre - half, centre + half, lo, h, nx, ny, nz, out var x0, out var y0, out var z0, out var x1, out var y1, out var z1);
-                    for (var z = z0; z <= z1; z++)
-                        for (var y = y0; y <= y1; y++)
-                        {
-                            var row = (z * ny + y) * nx;
-                            for (var x = x0; x <= x1; x++)
-                                occ[row + x] = -2;
-                        }
-                }
+                Range(bmn[b], bmx[b], lo, h, nx, ny, nz, out var x0, out var y0, out var z0, out var x1, out var y1, out var z1);
+                for (var z = z0; z <= z1; z++)
+                    for (var y = y0; y <= y1; y++)
+                        occ.Slice((z * ny + y) * nx + x0, x1 - x0 + 1).Fill(-2);
             }
             count = Greedy(occ, nx, ny, nz, cellBox);
             if (count >= 0 || attempt == Attempts - 1)
@@ -123,17 +122,11 @@ internal static class ConstructFuseFit
         }
         Span<int> seen = stackalloc int[MaxRough];
         seen.Fill(-1);
-        var serial = 0;
-        foreach (var i in members)
+        for (var serial = 0; serial < boxes; serial++)
         {
-            if (!c.FuseCovers(i))
-                continue;
-            var n = c.SolidCount(i);
-            for (var b = 0; b < n; b++, serial++)
             {
-                c.SolidBox(i, b, out var centre, out var half);
-                var bmin = centre - half;
-                var bmax = centre + half;
+                var bmin = bmn[serial];
+                var bmax = bmx[serial];
                 Range(bmin, bmax, lo, h, nx, ny, nz, out var x0, out var y0, out var z0, out var x1, out var y1, out var z1);
                 for (var z = z0; z <= z1; z++)
                     for (var y = y0; y <= y1; y++)

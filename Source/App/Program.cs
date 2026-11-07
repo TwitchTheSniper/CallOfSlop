@@ -166,6 +166,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleQualityCli.Diversity(diversityOf, args); // the vehicle kit's quality tools (VehicleQuality.cs): how alike a shape's seeds are, what never varies
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
+        if (args.Any(a => a.Equals("--bench-fuse", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchFuse(args); // what fusing buys: plain against fused hulls (Source/App/BenchFuse.cs)
         if (args.Any(a => a.Equals("--kit-report", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleQualityCli.KitReport(args); // every style and shape: failures, their reasons, cost, parts, mass
         if (args.SkipWhile(a => !a.Equals("--family", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } familyOf)
