@@ -190,22 +190,54 @@ public static class VehicleChecks
     {
         var boxes = new List<ZFight.ZBox>();
         for (var i = 0; i < c.PartCount; i++)
-        {
-            var d = c.DefOf(i);
-            c.RestPose(c.Parts[i].Seg, out var q, out var t);
-            var rot = q * Rot24.Quat(c.Parts[i].Rot);
-            foreach (var b in ZFight.Boxes(d))
-            {
-                var centre = t + Vector3.Transform(c.Parts[i].Pos + Rot24.Apply(c.Parts[i].Rot, b.C), q);
-                var look = c.Parts[i].Paint != 0 ? (int)c.Parts[i].Paint : 1 + d.Id;
-                boxes.Add(ZFight.ZBox.Of($"{i}:{d.Name}", centre, b.H, rot) with { Look = look, Moving = d.Role is PartRole.Wheel or PartRole.Suspension || c.Parts[i].Seg != 0 && !c.Rigid(c.Parts[i].Seg) }); // (a wheel and what's on a joint never stay at rest)
-            }
-        }
+            AddBoxes(c, boxes, $"{i}:{c.DefOf(i).Name}", c.DefOf(i), c.Parts[i].Pos, c.Parts[i].Rot, c.Parts[i].Seg, c.Parts[i].Paint);
         var all = ZFight.Find(boxes, sameLookOk: true).Where(h => boxes[h.A].Name != boxes[h.B].Name).ToList();
         var hits = all.Where(h => h.Area >= TinyFight).ToList(); // (sockets land on a 1 cm grid, so a quarter plate's edge can sit in a wall's end: a few cm2 of a plate's edge)
         r.Notes.Add($"coplanar faces between parts: {hits.Count} among {boxes.Count} boxes, and {all.Count - hits.Count} slivers");
         foreach (var h in hits.Take(8))
             r.Failures.Add($"z-fighting: {ZFight.Describe(boxes, h)}");
+    }
+
+    /// <summary>One part's boxes as <see cref="ZFighting"/> sees them: rest frame, its paint or colour, a wheel and what's on a joint never at rest.</summary>
+    private static void AddBoxes(Construct c, List<ZFight.ZBox> boxes, string name, ConstructPartDef d, Vector3 pos, byte rot24, byte seg, uint paint)
+    {
+        c.RestPose(seg, out var q, out var t);
+        var rot = q * Rot24.Quat(rot24);
+        var look = paint != 0 ? (int)paint : 1 + d.Id;
+        var moving = d.Role is PartRole.Wheel or PartRole.Suspension || seg != 0 && !c.Rigid(seg);
+        foreach (var b in ZFight.Boxes(d))
+            boxes.Add(ZFight.ZBox.Of(name, t + Vector3.Transform(pos + Rot24.Apply(rot24, b.C), q), b.H, rot) with { Look = look, Moving = moving });
+    }
+
+    /// <summary>
+    /// What the z-fighting check would say about <paramref name="def"/> placed as <paramref name="g"/> says, against the parts already on <paramref name="c"/>
+    /// near it (null: nothing). Dressing asks before it fits a part (<see cref="Vehicle.Dress"/>): a trophy on a hood's top socket can hang a cable down the
+    /// side of an engine's rocker cover that pokes up under the hood, and only the faces tell.
+    /// </summary>
+    public static string? ZFightsWith(Construct c, ConstructPartDef def, in ConstructGhost g)
+    {
+        var boxes = new List<ZFight.ZBox>();
+        AddBoxes(c, boxes, "new:" + def.Name, def, g.Pos, g.Rot, g.Seg, 0);
+        var mine = boxes.Count;
+        if (mine == 0)
+            return null;
+        var (lo, hi) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        foreach (var b in boxes)
+            (lo, hi) = (Vector3.Min(lo, b.C - new Vector3(b.Reach)), Vector3.Max(hi, b.C + new Vector3(b.Reach)));
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.DefOf(i);
+            c.RestPose(c.Parts[i].Seg, out var q, out var t);
+            var mid = t + Vector3.Transform(c.Parts[i].Pos + Rot24.Apply(c.Parts[i].Rot, (d.BoundsMin + d.BoundsMax) * 0.5f), q);
+            var r = (d.BoundsMax - d.BoundsMin).Length() * 0.5f + 0.01f;
+            if (mid.X + r < lo.X || mid.Y + r < lo.Y || mid.Z + r < lo.Z || mid.X - r > hi.X || mid.Y - r > hi.Y || mid.Z - r > hi.Z)
+                continue; // (too far to share a face, or to cover one)
+            AddBoxes(c, boxes, $"{i}:{d.Name}", d, c.Parts[i].Pos, c.Parts[i].Rot, c.Parts[i].Seg, c.Parts[i].Paint);
+        }
+        foreach (var h in ZFight.Find(boxes, sameLookOk: true))
+            if ((h.A < mine) != (h.B < mine) && h.Area >= TinyFight)
+                return ZFight.Describe(boxes, h);
+        return null;
     }
 
     private static void Rest(Construct c, VehicleReport r)

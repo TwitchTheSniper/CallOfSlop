@@ -115,13 +115,13 @@ public sealed partial class Vehicle
         foreach (var part in parts)
             try
             {
-                var placed = Onto(on, socket, part, "base", 0);
+                var placed = Onto(on, socket, part, "base", 0, clear: true);
                 _markHost = on.Name;
                 return placed;
             }
             catch (VehicleKitException)
             {
-                // (no room for that one there: the next part, then the next socket)
+                // (no room for that one there, or a face on one already there: the next part, then the next socket)
             }
         return null;
     }

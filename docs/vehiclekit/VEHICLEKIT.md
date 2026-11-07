@@ -108,7 +108,7 @@ A step can't be invalid: what the game refuses throws a `VehicleKitException` wh
 - **Rooms.** `Hull(tag, z0, under, bays, seatSpots)`: a Bolt Deck floor and a run of faceted bays from `Constructs/Parts/Hull`, named less "Hull ": `["Brow T", "Door", "Bay T-L", "Tail L"]`. Sections are T tall, L low, N narrow; "Bay T-L" goes from one to the other, "Door" is the Door Bay (a flush door on a Long Door Hinge in its +x side). Always start with a Brow and end with a Tail: a Bay's ends are open, and the check finds the hole. `room.Bays` gives a turret's mount (a bay's "top") and a side gun's ("+x0", "-x0"). `Furnish(room)`: furniture standing on the floor down the side walls by a layout from the style ("layout" picks one, "layout NAME" lists its slots; bunkroom, workshop, hold, mess), never in the doorway, keeping the middle clear (a player is 0.8 m across), a chest if nothing else takes loot. What has slots rolls from the loot table at each spawn.
 - **Body and armour.** `Deck(tag, y, rect, slot, holes, smallest)`: a flat deck patched from seeded plate sizes. `Wall(tag, face, at, from, to, bottom, height, slot, gap)`: upright plates along an edge. Armour is a `Deck` or `Wall` on a slot of armour plate names ("Armour Plate"). Both remember their panels under `tag` in `v.Panels`.
 - **Off the grid.** `Crooked(tag, part, on, at, face, dice)`: a welded plate tilted up to the style's `tiltDegrees`.
-- **Dress.** `Hood()`: a style "hood" part on the engine (or "plates", tiled), its "nose" and "fender"; `Sides`, `TubeRails`, `DrumOn`, `Crates` for beds. `Trim(wallTags...)` (ram bars, crooked patches, spikes, trophies, paint: everything a shape shares), `RamBars(top, z, dice)`, `Dress(slot, panels, dir, count, dice)` (spikes and trophies on free sockets facing `dir`), `CargoBay(volume, centre, size, slot, count, spots...)`, `PaintAll(parts, role, dice)`.
+- **Dress.** `Hood()`: a style "hood" part on the engine (or "plates", tiled), its "nose" and "fender"; `Sides`, `TubeRails`, `DrumOn`, `Crates` for beds. `Trim(wallTags...)` (ram bars, crooked patches, spikes, trophies, paint: everything a shape shares), `RamBars(top, z, dice)`, `Dress(slot, panels, dir, count, dice)` (spikes and trophies on free sockets facing `dir`, never where a face would z-fight with a part already there), `CargoBay(volume, centre, size, slot, count, spots...)`, `PaintAll(parts, role, dice)`.
 
 A deck or wall plate that no socket takes leaves a gap, on purpose: rust. Anything else that doesn't fit throws.
 
@@ -306,7 +306,10 @@ and plan fill limits, not half a point: one built at 62.0 % after measuring 61.6
 | Generation, mean over every style and shape (load varied) | 312 ms (worst 2182) | 348 ms (worst 1840) |
 
 Kit 3's one full-check failure (IT War Bus 5) is a Network Switch trophy on a Long Hood's top socket, coplanar with the V8 Engine under it: a pairing kit 2 can roll too, not
-the layers' doing; it wants fixing where trophies stand on a hood. The IT War Bus's lower identity is its old missing mast (5 of 12 against 3 of 12): a bus that plans again
+the layers' doing. Fixed where dressing stands (2026-11-06): `Dress` and the marks fit with `Onto(..., clear: true)`, which refuses a spot where a face would be
+coplanar with a part already there (`VehicleChecks.ZFightsWith`, the check's own rule on the parts nearby), and the part goes to the next panel. The cause is in the
+data: every kit engine's details stand above its +y socket (the V8's rocker covers 12 cm, the Engine's 11 cm) and poke through a Long or Snub Hood's skin (5.5 to 6.5 cm
+at its middle), which a hood's shape would have to change to hide. The IT War Bus's lower identity is its old missing mast (5 of 12 against 3 of 12): a bus that plans again
 more often (a boxy plan, an ammo reel) has fewer plans left for the identity re-plan, and that is what the guaranteed-marks pass is for. Generation cost is within the
 box's noise: more plans are made (the fill margin is a point now) and each costs the same.
 
