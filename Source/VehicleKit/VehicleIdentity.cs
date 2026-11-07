@@ -96,7 +96,7 @@ public static class VehicleIdentity
     private static readonly string[] BritishTea = ["Teapot", "Traffic Cone", "Garden Gnome", "Queue Post", "Pillar Box", "Phone Box", "Tea Urn"];
 
     private static readonly WeakPointRule Tyres = new("tyres", PartPick.ByRole("tyres"), MinSides: 2, MinBearings: 4, Min: 2, When: "");
-    private static readonly WeakPointRule Fuel = new("fuel", PartPick.ByRole("fuel"), MinSides: 2, MinBearings: 2);
+    private static readonly WeakPointRule Fuel = new("fuel", PartPick.ByRole("fuel"), MinSides: 2, MinBearings: 2, When: ""); // (a trailer's barrel too)
 
     private static Dictionary<string, double> W(double w, params string[] names) => names.ToDictionary(n => n, _ => w);
 
@@ -132,7 +132,7 @@ public static class VehicleIdentity
             },
             WeakPoints =
             [
-                new("fuel drum", PartPick.ByRole("fuel")),
+                new("fuel drum", PartPick.ByRole("fuel"), When: ""),
                 Tyres,
                 new("open driver", PartPick.ByRole("driver"), MinSides: 2, MinBearings: 2, When: "light"),
                 new("ammo crate", PartPick.ByRole("ammo"), MinSides: 1, MinBearings: 1, When: "light", Optional: true), // (a technical's loose crate blows; a room's magazine is meant to be safe)
@@ -657,15 +657,16 @@ public static class VehicleIdentity
         var sig = SignatureOf(v.Style);
         if (s.Total >= sig.Threshold && s.Missing.Count == 0)
             return v;
+        var second = kept != null; // (identity re-plans once: a seed whose shape can't carry a mark would otherwise pay for every plan, 4 times the time at spawn)
         if (kept?.Identity is not { } k || (s.Missing.Count, -s.Total).CompareTo((k.Missing.Count, -k.Total)) < 0)
             kept = v; // (fewest marks missing, then the highest score)
-        if (attempt + 1 < attempts)
+        if (attempt + 1 < attempts && !second)
         {
             Interlocked.Increment(ref Replanned);
             Console.WriteLine($"[vehicles] {v.Name}: plan {attempt + 1} reads {s.Total:0.00} as {s.Style} ({(s.Missing.Count > 0 ? "no " + string.Join(", no ", s.Missing) : $"under {sig.Threshold:0.00}")}): {s.Breakdown}; planning again");
             return null;
         }
-        Console.WriteLine($"[vehicles] {v.Name}: no plan of {attempts} reads as {v.Style.Name} with every mark; the best was {kept.Identity!.Total:0.00}{(kept.Identity.Missing.Count > 0 ? ", no " + string.Join(", no ", kept.Identity.Missing) : "")}");
+        Console.WriteLine($"[vehicles] {v.Name}: plan {attempt + 1} reads {s.Total:0.00} as {s.Style} too; keeping the best plan checked, {kept.Identity!.Total:0.00}{(kept.Identity.Missing.Count > 0 ? ", no " + string.Join(", no ", kept.Identity.Missing) : "")}");
         return kept;
     }
 
@@ -710,11 +711,18 @@ public static class VehicleIdentity
                 try
                 {
                     var before = Replanned;
+                    var clock = System.Diagnostics.Stopwatch.StartNew();
                     var v = VehicleRegistry.Make(g, seed);
+                    var made = clock.Elapsed.TotalMilliseconds;
+                    clock.Restart();
+                    var own = Of(v);
+                    var scored = clock.Elapsed.TotalMilliseconds;
                     var r = Read(v);
                     readings.Add((g.Name, r));
-                    Console.WriteLine($"  seed {seed} (kit {v.Kit}{(v.Modules.FirstOrDefault(m => m.StartsWith("plan ", StringComparison.Ordinal)) is { } p ? ", " + p : "")}{(Replanned > before ? $", {Replanned - before} identity re-plan(s)" : "")}): {r.Own}");
+                    Console.WriteLine($"  seed {seed} (kit {v.Kit}{(v.Modules.FirstOrDefault(m => m.StartsWith("plan ", StringComparison.Ordinal)) is { } p ? ", " + p : "")}{(Replanned > before ? $", {Replanned - before} identity re-plan{(Replanned - before == 1 ? "" : "s")}" : "")}): {r.Own}");
                     Console.WriteLine($"    best other: {r.BestOther.Style} {r.BestOther.Total:0.00}{(r.Confused ? "  READS AS " + r.BestOther.Style.ToUpperInvariant() : "")}");
+                    if (raw)
+                        Console.WriteLine($"    made in {made:0} ms (scoring included where kit 2 checks it), scored against its own style in {scored:0} ms ({own.Total:0.00})");
                     if (raw)
                         Console.WriteLine($"    outline: side {r.Own.Outline[0]:0.000} plan {r.Own.Outline[1]:0.000} height/length {r.Own.Outline[2]:0.000} roofline {r.Own.Outline[3]:0.000} rake {r.Own.Outline[4]:0.000}");
                 }
