@@ -150,6 +150,59 @@ public static class ConstructLoot
         return put;
     }
 
+    /// <summary>A blueprint's <c>"stored"</c> entry: <c>{"step": n, "slot": k, "part": "Box Mag", "count": 2}</c>, an item (never physics-only) for that container's slot.</summary>
+    public static (int Step, int Slot, string Part, int Count) ParseStored(JsonElement e, string file, int k)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ConstructPartException($"{file}: stored[{k}] is {{\"step\", \"slot\", \"part\", \"count\"}}");
+        int step = -1, slot = -1, count = 1;
+        var part = "";
+        foreach (var f in e.EnumerateObject())
+            switch (f.Name)
+            {
+                case "step": step = f.Value.GetInt32(); break;
+                case "slot": slot = f.Value.GetInt32(); break;
+                case "part": part = f.Value.GetString() ?? ""; break;
+                case "count": count = f.Value.GetInt32(); break;
+                default: throw new ConstructPartException($"{file}: stored[{k}]: unknown key \"{f.Name}\" (step, slot, part, count)");
+            }
+        if (ConstructParts.Find(part) is not { } d)
+            throw new ConstructPartException($"{file}: stored[{k}]: no part named \"{part}\"");
+        if (d.PhysicsOnly)
+            throw new ConstructPartException($"{file}: stored[{k}]: the {part} is physics-only, and slots hold items");
+        if (step < 0 || slot < 0 || slot >= CStore.MaxSlots || count < 1 || count > 48)
+            throw new ConstructPartException($"{file}: stored[{k}]: a step, a slot 0 to {CStore.MaxSlots - 1} and a count 1 to 48");
+        return (step, slot, part, count);
+    }
+
+    /// <summary>
+    /// A blueprint's stowed parts, each set in its container's slot as a player would set it there (<see cref="ConstructStorage.Check"/>: what doesn't fit, or a slot
+    /// that holds another kind, is left out). Before <see cref="Fill"/>, so a loot roll takes what is left. Returns how many went in. Only a server's spawn gets here.
+    /// </summary>
+    public static int Stow(ConstructWorld world, Construct c, ConstructBuild.Blueprint bp, ReadOnlySpan<int> partOf)
+    {
+        var put = 0;
+        foreach (var (step, slot, name, count) in bp.Stored)
+        {
+            if (step >= partOf.Length || world.StoreOf(c, partOf[step]) is not { } st || ConstructParts.Find(name) is not { } d)
+                continue;
+            var cd = c.DefOf(partOf[step]);
+            var before = put;
+            for (var n = 0; n < count && ConstructStorage.Check(cd, st, slot, d, out var rot) == SlotCheck.Ok; n++)
+            {
+                st.Def[slot] = d.Id;
+                st.Rot[slot] = rot;
+                st.Count[slot]++;
+                st.Health[slot] = 1f;
+                st.Version++;
+                put++;
+            }
+            if (put > before)
+                world.StoreDirty.Add(st.Handle);
+        }
+        return put;
+    }
+
     private static LootItem Pick(LootTable t, ref uint s)
     {
         var w = Between(ref s, 1, t.TotalWeight);

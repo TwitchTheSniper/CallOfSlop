@@ -117,6 +117,23 @@ public struct BriefLoot
     public byte Tier; // the table's tier: "bandit 3" is 3, a style's own table 2
 }
 
+/// <summary>
+/// A piece of its own cargo (docs/vehiclekit/VEHICLEKIT.md, "Cargo and spares"): what it is for, how many, and where: in a container's slot (Container, Slot), or loose
+/// in a frozen Cargo Volume (At, its place in the body's rest frame; a carried body's <see cref="Construct.CarriedBy"/> is the vehicle). A loose Ammo Box or Crate cooks off.
+/// </summary>
+public struct BriefStow
+{
+    public string Part;
+    public StowKind Kind;
+    public byte Count;
+    public bool Loose;
+    public BriefRef Container; // (loose: none, Def 0)
+    public sbyte Slot;
+    public Vector3 At;
+    public bool CooksOff; // a loose box of rounds: shot, it blows
+    public uint Guns; // bit k: gun k (VehicleBrief.Guns) can use it (a magazine it takes, rounds or fuel for it, its spare parts)
+}
+
 /// <summary>A tow hitch (At: its coupling point) and its kind.</summary>
 public struct BriefHitch
 {
@@ -134,7 +151,7 @@ public struct BriefHitch
 public sealed class VehicleBrief
 {
     /// <summary>The save format's version (the first byte); a brief of a later version is skipped on load.</summary>
-    public const byte FormatVersion = 1;
+    public const byte FormatVersion = 2; // (2: its cargo, Stowed; a version 1 brief reads with none)
 
     /// <summary>Gun bearings: 32 bins of 11.25 degrees. Weak point bearings: 16 bins of 22.5.</summary>
     public const int Bins = 32, WeakBins = 16;
@@ -197,6 +214,9 @@ public sealed class VehicleBrief
     public int Cargo; // loose cargo pieces it was built carrying
     public byte FuelOpen; // fuel weak points that can be hit
 
+    /// <summary>Its own cargo: ammo, spares and spare guns, in its slots or loose on its decks (kit 4's cargo pass; empty for anything else).</summary>
+    public BriefStow[] Stowed = [];
+
     /// <summary>The construct's rebuild stamp when the references were last resolved (not saved).</summary>
     private int _stamp = int.MinValue;
 
@@ -247,6 +267,9 @@ public sealed class VehicleBrief
             Find(c, ref Hitches[k].Part);
         for (var k = 0; k < Winches.Length; k++)
             Find(c, ref Winches[k]);
+        for (var k = 0; k < Stowed.Length; k++)
+            if (!Stowed[k].Loose)
+                Find(c, ref Stowed[k].Container);
     }
 
     private static void Find(Construct c, ref BriefRef r)
@@ -307,6 +330,9 @@ public sealed class VehicleBrief
             Check(h.Part, "a hitch");
         foreach (var w in Winches)
             Check(w, "a winch");
+        foreach (var x in Stowed)
+            if (!x.Loose)
+                Check(x.Container, "a store");
         if (why != null)
             return why;
         for (var k = 0; k < Guns.Length; k++)
@@ -327,6 +353,9 @@ public sealed class VehicleBrief
             Tag(c, ref Hitches[k].Part);
         for (var k = 0; k < Winches.Length; k++)
             Tag(c, ref Winches[k]);
+        for (var k = 0; k < Stowed.Length; k++)
+            if (!Stowed[k].Loose)
+                Tag(c, ref Stowed[k].Container);
         _stamp = int.MinValue;
         c.Brief = this;
         return null;
@@ -395,6 +424,15 @@ public sealed class VehicleBrief
         foreach (var r in Winches)
             Ref(w, r);
         w.I32(Cargo).U8(FuelOpen);
+        w.I32(Stowed.Length);
+        foreach (var x in Stowed)
+        {
+            w.Str(x.Part).U8((byte)x.Kind).U8(x.Count).U8((byte)((x.Loose ? 1 : 0) | (x.CooksOff ? 2 : 0))).U8((byte)x.Slot).U32(x.Guns);
+            if (x.Loose)
+                w.Vec(x.At);
+            else
+                Ref(w, x.Container);
+        }
     }
 
     private static void Ref(SaveWriter w, in BriefRef r) => w.U16(r.Index).U16(r.Tag).Vec(r.At);
@@ -405,7 +443,8 @@ public sealed class VehicleBrief
     /// </summary>
     public static VehicleBrief? Read(SaveReader r)
     {
-        if (r.U8() != FormatVersion)
+        var version = r.U8();
+        if (version is < 1 or > FormatVersion)
             return null;
         var b = new VehicleBrief
         {
@@ -447,6 +486,21 @@ public sealed class VehicleBrief
         for (var k = 0; k < b.Winches.Length; k++)
             b.Winches[k] = ReadRef(r);
         (b.Cargo, b.FuelOpen) = (r.I32(), r.U8());
+        if (version >= 2)
+        {
+            b.Stowed = new BriefStow[r.Count(12)];
+            for (var k = 0; k < b.Stowed.Length; k++)
+            {
+                ref var x = ref b.Stowed[k];
+                (x.Part, x.Kind, x.Count) = (r.Str(), (StowKind)r.U8(), r.U8());
+                var flags = r.U8();
+                (x.Loose, x.CooksOff, x.Slot, x.Guns) = ((flags & 1) != 0, (flags & 2) != 0, (sbyte)r.U8(), r.U32());
+                if (x.Loose)
+                    x.At = r.Vec();
+                else
+                    x.Container = ReadRef(r);
+            }
+        }
         return b;
 
         static BriefRef ReadRef(SaveReader r) => new() { Index = r.U16(), Tag = r.U16(), At = r.Vec(), Live = -1 };
@@ -480,6 +534,9 @@ public sealed class VehicleBrief
             Def(ref Hitches[k].Part);
         for (var k = 0; k < Winches.Length; k++)
             Def(ref Winches[k]);
+        for (var k = 0; k < Stowed.Length; k++)
+            if (!Stowed[k].Loose)
+                Def(ref Stowed[k].Container);
         c.Brief = this;
     }
 
@@ -573,6 +630,13 @@ public sealed class VehicleBrief
         l.Add($"  loot: {Loot.Length} containers{(Loot.Length > 0 ? " (" + string.Join(", ", Loot.GroupBy(x => x.Table).Select(g => $"{g.Count()} {g.Key}")) + ")" : "")}, {Cargo} cargo pieces"
             + (Hitches.Length > 0 ? "; hitches " + string.Join(", ", Hitches.Select(h => $"{h.Kind.ToString().ToLowerInvariant()} {Part(h.Part)}")) : "")
             + (Winches.Length > 0 ? "; winches " + string.Join(", ", Winches.Select(w => Part(w))) : ""));
+        if (Stowed.Length > 0)
+        {
+            l.Add($"  its own cargo: {Stowed.Sum(x => x.Count)} pieces, {Stowed.Where(x => x.Loose).Sum(x => x.Count)} loose ({Stowed.Where(x => x.CooksOff).Sum(x => x.Count)} cook off)");
+            foreach (var x in Stowed)
+                l.Add($"    {Vehicle.KindWord(x.Kind)}: {x.Count} {x.Part} {(x.Loose ? $"loose at [{F(x.At.X, "0.0")}, {F(x.At.Y, "0.0")}, {F(x.At.Z, "0.0")}]{(x.CooksOff ? ", cooks off" : "")}" : $"in {Part(x.Container)} slot {x.Slot}")}"
+                    + (x.Guns != 0 ? ", for gun " + string.Join("+", Enumerable.Range(0, 32).Where(i => (x.Guns >> i & 1) != 0)) : ""));
+        }
         return l;
     }
 
@@ -582,5 +646,6 @@ public sealed class VehicleBrief
     public string Summary =>
         new StringBuilder().Append(Guns.Length).Append(Guns.Length == 1 ? " gun" : " guns")
             .Append(Guns.Length > 0 ? $" engage {F(Engage, "0")} m, best {SideNames[BestSide]}" : "")
-            .Append($"; {Weak.Length} weak points{(KeepAway < 4 ? ", keep the " + SideNames[KeepAway] + " away" : "")}; {Seats.Length} seats; top {F(TopSpeed, "0")} m/s, {Steer.ToString().ToLowerInvariant()} steer").ToString();
+            .Append($"; {Weak.Length} weak points{(KeepAway < 4 ? ", keep the " + SideNames[KeepAway] + " away" : "")}; {Seats.Length} seats; top {F(TopSpeed, "0")} m/s, {Steer.ToString().ToLowerInvariant()} steer")
+            .Append(Stowed.Length > 0 ? $"; cargo {Stowed.Sum(x => x.Count)} ({Stowed.Where(x => x.Kind is StowKind.Ammo or StowKind.Magazine).Sum(x => x.Count)} ammo and magazines, {Stowed.Where(x => x.CooksOff).Sum(x => x.Count)} loose rounds)" : "").ToString();
 }

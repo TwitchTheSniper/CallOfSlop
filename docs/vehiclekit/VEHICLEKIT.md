@@ -26,6 +26,7 @@ like any other. **Fix the generator, not its files.** No AI is in here yet: each
 | `CallOfSlop --convoy Bandit [--seed S] [--count N] [--tier T] [--mix raider,tanker] [--no-check] [--write DIR]` | A convoy's plan (members, roles, models, the paint scheme, where each stands), each member made and given the full check, the leader made twice. See "Families and convoys". |
 | `CallOfSlop --context "Bandit Box Truck"` (or `"Bandit raider" --tier 2`, or a model's key) `--biome desert\|snow\|swamp\|forest\|road --gravity G --air 0\|1 --wood W --ore O [--seeds N] [--from S] [--check]`, or `--sweep` for every context | What a spawn context changes against neutral, seed by seed: what each lean did, the parts and mass that differ, the identity, and the full check with `--check`; a model's line says whether its body and chassis stayed its family's. See "Spawn context". |
 | `CallOfSlop --brief "Bandit Box Truck" [--seed S]`, `--brief "Bandit raider" [--tier T] [--seed S]`, `--brief MODEL_KEY` or `--brief FILE` | The behaviour brief of a vehicle made as the spawn makes it (or of any blueprint file): driving, guns and their arcs, weak points, crew, loot, and that its save bytes read back the same. See "Behaviour data". |
+| `CallOfSlop --cargo "Bandit gun platform" [--tier T \| --tiers 1,4] [--seeds N] [--list] [--write DIR] [--no-cargo]`, or `--cargo all [--style S] [--role R]` | Kit 4's cargo: what each role vehicle carries for itself (by kind, in slots and loose, the loose mass), its role, drive pulse and identity, what was left behind and why, and the totals; `--no-cargo` makes the same seeds without the pass (also on any other tool). See "Cargo and spares". |
 | `CallOfSlop --drive-check FILE [--gravity G]` | The spawn's drive check on any blueprint: level, and a throttle pulse moves it. `--no-drive-gate` on any of the tools turns the check off in generation, to measure it. See "Dynamic spawn", "The drive check". |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
@@ -159,6 +160,10 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 - A routed link with nodes is refused through solids unless `laid`. A shaft with no nodes runs straight and is only checked at its ends.
 - Stacked beams' bands, and bolts on a plate under an engine's details, are coplanar. Paint a frame one colour (one look doesn't fight); the hood uses `smallest: 2`.
 - `Freeform` parts aren't checked against the rest for overlap. Keep a crooked plate proud of what it covers: 6 cm clears 5 degrees on a 0.5 m plate.
+- A gun fires over its own deck: a flame gun's licks and a pump gun's pellets spread, and they hit the vehicle's own loose cargo (a separate body: its own construct is
+  skipped, its load isn't). The first cargo pass put Small Fuel Tanks on a War Bus's roof rack in front of a roof Firebreather; the full check's firing set them off, the
+  blast took parts off and the turret no longer followed its gunner (104 to 160 degrees off). Loose cargo now stays under every gun's muzzle by a margin growing with the
+  distance (`VehicleCargo` `TurretSweeps`: 0.25 m plus 13 cm a metre for flame and pump guns, 3 cm a metre for the rest), and under a turret's ring within its arm's sweep.
 - A pogo strut hangs its axle 0.6 to 2.5 m below its mount (the Heavy Pogo Strut 1.375 m); every other spring holds it level with its mount. Kit 3's chassis once mixed the stilt recipe's front (Heavy Pogo Struts) with another recipe's rear on Heavy Suspension: Bandit convoy 3's leader stood 10.5 degrees nose up on its tail rails and didn't move, and only a build was checked at spawn. A mix now keeps corners that hang alike (`VehicleChassis.Hang`, `Level`: within 0.3 m), and every generated vehicle passes the drive check ("Dynamic spawn").
 
 ## Shape grammar
@@ -383,6 +388,7 @@ their armour (only its own: an Armour Plate deck or wall, tried first, stands th
 - a command vehicle's signals on the marks pass's spots (the roof, the cab, a post);
 - the role's extra chests: against a room's end wall, or for a vehicle with no room (a tanker), on its deck in the open;
 - every loot container's table set to the role's loot tier (`BlueprintScript.RetableLoot`).
+- its own cargo: ammo for its guns, spares from its own build and spare guns, stowed as a crew would ("Cargo and spares").
 
 **Re-plan.** Each plan that builds is measured and scored for its faction; a plan that misses the role, or has a mark missing or an identity under the style's threshold,
 plans again, up to three built plans (`VehicleRoleMake.Plans`; plans the game refuses as it builds don't count, up to six tries), and the best is kept: fewest role misses,
@@ -619,6 +625,96 @@ Rerolls and fallbacks keep the context; off world, a request with the host's com
 
 Generation in a context costs what it does neutral plus the drive check (15 to 50 ms a plan); a context's own work is a few dictionary lookups a part pick. In slices
 (`VehicleGenJob` with a context, 2.5 ms a slice) a desert-and-ore Box Truck wrote the same hash as made directly.
+
+## Cargo and spares
+
+Roadmap phase 9 (`VehicleCargo.cs`): a kit-4 vehicle (asked for by role, or a family's model, or a convoy's member) carries what its crew would carry for itself: **ammo
+for its own guns, spare parts for its own repairs and spare guns**, stowed the way a player would stow them. All of it is real parts, so players shoot it, spill it, steal
+it and salvage it like anything else; nothing is abstract and nothing unlocks. Every other vehicle (a request by shape, a committed seed, kit 1 to 3) carries nothing new:
+`--gen-vehicles` reports all 123 identical, and kit 3 seeds write the same text as before.
+
+**What it carries** (`Vehicle.StowCargo`, at the end of the role pass, on forks of the kit layer: "kit cargo" for the amounts, "kit cargo shelf" for a spares shelf; the layout rolls nothing):
+
+- **Ammo it uses.** For each gun, magazines of the kind its build takes (the build's `feed`: a Box Magazine for a carbine, an Extended Mag for a Scrap MG, a Shell Feed for
+  a pump gun, a Harpoon Breech for a Whaler, a Fuel Canister for a flame gun); Ammo Boxes for the guns that load from boxes; and on a gun deck a loose Ammo Crate. Rounds
+  are universal (docs/sandbox/CONSTRUCTS.md, "Ammo feeds": any type fits any gun, the bore sets the calibre), so a box serves every gun but a flame gun, whose ammo is fuel:
+  it gets Small Fuel Tanks instead. A box or crate comes full (300 and 1,200 rounds), of FMJ: a slot or a cargo piece holds no setting, so the type is the default; a
+  magazine out of a store comes empty, as any does (fill it at a box).
+- **Spares from its own build**, chosen from its parts, the commonest first: wheels of its own kinds (front and rear may differ), its commonest spring, plates of its own
+  materials and sizes (0.5 m and 1 m before quarter plates: a patch must cover a hole), its commonest frame beam (1 m and under), fuel for its engine (Small Fuel Tanks, and a
+  Fuel Drum when it already runs on drums), a Battery Pack for an electric drive (a no-air context, "Spawn context").
+- **Spare guns** by their parts: a receiver, barrel, muzzle device, action and magazine of a gun it mounts (the commonest first), and a spare barrel.
+
+How much, at tier 2 (`VehicleCargoTables.ByRole`, keyed by role; a fraction is the chance of one more; ammo per gun):
+
+| Role | magazines | boxes | crates | wheels | springs | plates | beams | fuel | spare guns | barrels |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| scout | 1 | 0.5 | 0 | 0.5 | 0 | 0 | 0.3 | 0.5 | 0 | 0.3 |
+| raider | 1.5 | 1 | 0.3 | 1 | 0.3 | 1 | 0.5 | 1 | 0.3 | 0.5 |
+| gun platform | 2 | 2 | 1 | 1 | 0.5 | 2 | 1 | 1 | 1 | 1 |
+| carrier | 1.5 | 2 | 0.3 | 1 | 0.5 | 3 | 1 | 1 | 0.5 | 0.5 |
+| tanker | 1 | 1 | 0.5 | 2 | 1 | 2 | 2 | 2 | 0.3 | 0.5 |
+| recovery | 1 | 1 | 0 | 2 | 2 | 4 | 4 | 1 | 0.3 | 1 |
+| command | 2 | 2 | 0.5 | 1 | 0.5 | 2 | 1 | 1 | 1 | 1 |
+| boss | 3 | 3 | 1 | 2 | 1 | 3 | 2 | 2 | 2 | 1 |
+
+A tier scales every amount (0.7 at tier 1, 1 at 2, then 0.3 a tier more), and a style its ammo and its spares (`VehicleCargoTables.ByStyle`, additive: `Styles.cs` is
+untouched): the Bandits carry 1.3 times the spares (they scavenge everything), the IT Department 0.8 of both (it travels light), the Call Centre 0.8 and 0.9, Highland 1.1
+times the ammo, the British 1.1 times the spares; a style not named (Militia) 1 and 1. A vehicle carries at most 18 loose pieces, of at most 12 % of its own mass.
+`Constructs/Loot.json` is untouched: the spares come from the vehicle's own parts, not a table, and a role's loot still rolls as before.
+
+**Stowed as a crew would** (the order when room runs short: Ammo Boxes, magazines, crates, fuel, wheels, a gun's parts, springs, plates, beams):
+
+- **In slots** first, for anything that is an item: the free slots of its storage (room furniture, chests, shelves, a deck chest), nearest the gun for ammo, by the game's
+  own slot rule (`ConstructStorage.Fits`: the size class and shape; a shelf's rack slot piles as many of one kind as fit). A container that rolls loot keeps at least half
+  its slots for its loot. A room with no slot left gets one **spares shelf** (the style's `shelf`, else its `chest`) against its end wall, out of the room's middle, which
+  rolls no loot. The blueprint lists them as `"stored"` (docs/sandbox/CONSTRUCTS.md, "Blueprints"): set in at spawn (`ConstructLoot.Stow`), the same every spawn, before
+  the loot rolls into what is left.
+- **Loose**, for physics-only pieces (plates, beams, Dually Wheels, a Battery Pack, Ammo Crates) and what no slot took: on its open decks (the bed, a fort's deck, the porch,
+  then a roof rack for pieces of 16 kg and under), each deck with a frozen **Cargo Volume** (its control box on a free socket on a deck plate's side, its box round what was
+  laid with 15 cm to spare, on the configure tool's 10 cm steps). Pieces lie on the deck's 12.5 cm grid nearest where they are used (ammo by its gun, spares at the back),
+  3 cm apart and from anything built, plates, beams and wheels flat in their thinnest turn (a wheel that won't lie flat stands on its tread), plates stacked four high,
+  beams three and wheels two, each a few millimetres off the one below so no faces lie flush. Nothing stands where a turret's arm or seat swings (under the ring's top within
+  its reach), on a hole or over a deck's edge. A Technical's own crates (the shape's `CargoBay`) keep their place; the pass lays round them.
+
+**In play.** A stored item is a slot's part: taken by hand (F), shot with its container, spilled when the container goes; it doesn't cook off. A loose piece is a body of its
+own riding in the frozen volume: shot, lifted out and carried off; shoot the volume's control box and everything it held goes free at the vehicle's speed. **A loose Ammo
+Box or Crate cooks off when shot**, as any box does (`ConstructWorld.DamagePart`), so a gun platform's crate on its open deck is a weak point the brief names
+(`BriefStow.CooksOff`); a Fuel Drum or tank on the deck burns as it would anywhere. The loose pieces' mass is real: the drive check builds the vehicle with them aboard,
+and the role's speed estimate counts them (`Vehicle.SpareMass`); the role's loot need counts neither (`SparePieces`), so a scout isn't over its loot for a spare magazine.
+
+**What it says.** The kit line carries a note (`cargo 4 ammo (1 loose), 3 magazine loose, 2 wheel loose, 4 plate loose, 1 fuel loose; 170 kg loose`), `Vehicle.Stowage`
+holds the manifest (kind, part, count, where, what for) and `Vehicle.KitCargoMisses` what was left behind and why. The brief's `Stowed` ("Behaviour data") lists each stack
+and loose piece with the guns it serves (a magazine the guns that take it, by the workbench's rule; rounds every gun but a flame gun; fuel the flame gun), so an AI can
+rearm and patch from its own cargo; the brief's summary ends `cargo 17 (6 ammo and magazines, 1 loose rounds)`.
+
+**Measured** (2026-11-07, `--cargo all --seeds 1` and the same with `--no-cargo`: six styles x eight roles x tiers 1 to 4, seed 1, 192 vehicles; the 2-core box shared
+with other agents):
+
+| | without (`--no-cargo`) | with |
+| --- | --- | --- |
+| roles met | 166/192 | 166/192, the same vehicles |
+| identity | | every vehicle's score the same |
+| drive check | 283 plans, 4 refused | 283 plans, 4 refused (the same); the throttle pulse 0.07 m shorter on average (-0.7 to +1.1), at least 2.0 m on every vehicle (the gate is 1 m) |
+| generation, warm | 650 ms a vehicle | 713 ms (the cargo pass 17 ms a plan, worst 65) |
+| carries something | | 181 of 192 (Militia and Call Centre scouts and Militia raiders, Technicals with no deck and nothing rolled) |
+| full check (`--role ... --tier 3 --seed-list 5 --check`, Bandit, IT, Highland, British x every role) | | 32 of 32 passed |
+
+Pieces and loose mass a vehicle by role: scout 1.9 (19 kg), raider 6.0 (61 kg), gun platform 15.7 (147 kg), carrier 13.7 (70 kg), tanker 6.9 (92 kg), recovery 11.3
+(111 kg), command 16.1 (68 kg), boss 21.5 (91 kg); 82 kg a vehicle, 3.5 % of its mass. Over the 192, in slots / loose: ammo 402 / 269, magazines 64 / 542, gun parts
+14 / 515, fuel 10 / 141, springs 1 / 57, and wheels 61, plates 86, beams 69 all loose. Left behind for want of deck room (a room-only War Bus or Box Truck has no open
+deck, a Gun Wagon's hutch is small, and nothing stands in a gun's line of fire): beams 81 times, plates 68 and armour plates 44, wheels 124, fuel tanks and drums 91,
+crates 43. The first seed of a role made as the dynamic spawn makes it (`--role "Highland tanker" --tier 2 --sliced`) gave the same hash as made directly; a convoy
+(`--convoy Bandit --seed 3`) made every member and its leader twice to the same text; a brief with its cargo saved and read back the same (`--brief`, 1,460 bytes).
+
+A probe (a throwaway command, not kept) built role vehicles from their text in a world of their own, as a spawn does: the stowed items were in their slots beside the
+rolled loot; a destroyed Chest and a destroyed Crate Stack spilled their pieces (3 and 5); a destroyed Cargo Volume let its 11 and 18 carried pieces go; a loose Ammo Box held 300 rounds, and bolted to the vehicle's
+gun (the attach rules, `ConstructBuild.Place` and `Attach`) it added its 300 rounds to what the gun could draw.
+
+**Not done.** No new part: there is no gun rack or tool rack part, so spare guns lie as parts in slots or on a deck, and a style's racks are its shelves. A room-only vehicle
+leaves its physics-only spares behind (a cargo volume on a room floor would stand in the aisle the room check walks). A box's ammo type is the default (slots and cargo hold
+no settings). Spares aren't added to the identity's weak points (they ride on another body): the brief's `Stowed` names them instead. Nothing was tried through a
+player's own input in the game window (taking a box out with F, the attach tool).
 
 ## Quality tools
 
@@ -922,7 +1018,7 @@ a kit-4 role seed made in slices gives the same hash as made directly).
 
 **Where it is.** `Construct.Brief` (a `VehicleBrief`), on the server only. It is never sent to clients (nothing on the wire, no protocol change): an AI runs where the
 physics does. It saves with the world, at the end of the body's bytes after its tracks (docs/sandbox/WORLD-SAVES.md), 600 to 950 bytes a vehicle; an old save has none, an
-older build stops reading before it, and a brief that doesn't read is left off with a log line, never the body. A brief of a later `FormatVersion` is skipped.
+older build stops reading before it, and a brief that doesn't read is left off with a log line, never the body. A brief of a later `FormatVersion` is skipped. Format 2 (phase 9) adds `Stowed` at the end; a format 1 brief reads with none.
 
 **When it is made.** In the generation's own sliced job (`VehicleGenJob.MakeBrief`, after the blueprint text and its hash, so it can't change them), from a body built from
 that very text: the drive check's ("The drive check"), when the plan kept was checked with the same steps (kit 4 notes its role after the check, so the names differ but the
@@ -964,6 +1060,7 @@ and `VehicleBrief.Index(r)` (-1: gone).
 | `Seats[]` | each seat: what it controls (drive, guns: a bit per gun, winch, signals: horns, lamps, sirens, a radio, beacons; other wired parts), and `Open`: its sitter can be shot (seen from above, or from four bearings) | the drive seat, the guns' seats, the wires one module on |
 | `Entries[]` | doors, ladders and hatches, with where they are | the parts |
 | `Loot[]`, `Cargo` | the containers that rolled loot, their table and its tier ("bandit 3" is 3, a style's own 2); loose cargo pieces | the blueprint's loot list |
+| `Stowed[]` | its own cargo ("Cargo and spares"): each stowed stack (`Container` and `Slot`) or loose piece (`At`, rest frame; the body is carried by this vehicle), its kind, part and count, `CooksOff` (a loose box of rounds) and `Guns` (bit k: gun k can use it: a magazine it takes, rounds, a flame gun's fuel) | the blueprint's `"stored"` and `"cargo"` lists |
 | `Hitches[]`, `Winches[]`, `FuelOpen` | tow points (`At` the coupling point) and their kind; winches; how many fuel tanks can be hit | the parts and the weak points |
 
 What it doesn't know: anything that changes while it lives (damage, ammo, fuel left, who sits where: read the construct), a gun's arc against other vehicles or the ground,

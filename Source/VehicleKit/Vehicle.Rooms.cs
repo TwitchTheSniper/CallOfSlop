@@ -147,9 +147,12 @@ public sealed partial class Vehicle
     /// The style's chest against the room's far end wall, in the middle of it, when no side wall took a container (the shape grammar's last resort: a short room's
     /// walls go to seats, the door and the magazine). Tried a quarter metre further in at a time, never into the room's middle; false when nothing takes it.
     /// </summary>
-    public bool EndChest(Room room)
+    public bool EndChest(Room room) => EndChest(room, "chest", true);
+
+    /// <summary>As <see cref="EndChest(Room)"/>, the style's <paramref name="slot"/> part (a shelf for the cargo pass's spares: VehicleCargo.cs), filling from the loot table only when <paramref name="loot"/>.</summary>
+    public bool EndChest(Room room, string slot, bool loot)
     {
-        var part = Style.Part(Dice.Fork("end chest " + room.Tag), "chest");
+        var part = Style.Part(Dice.Fork((loot ? "end chest " : "end chest spares ") + room.Tag), slot);
         var def = Def(part);
         var size = def.BoundsMax - def.BoundsMin;
         var alongWall = size.X >= size.Z;
@@ -166,7 +169,8 @@ public sealed partial class Vehicle
                 PanelList("furniture").Add(placed);
                 room.Furniture.Add(placed);
                 room.Containers.Add(placed);
-                Loot(placed, Style.LootTable);
+                if (loot)
+                    Loot(placed, Style.LootTable);
                 return true;
             }
             catch (VehicleKitException)

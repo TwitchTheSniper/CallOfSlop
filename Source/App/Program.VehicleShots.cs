@@ -29,6 +29,8 @@ public static unsafe partial class Program
                 rooms = v.Rooms.ToArray();
                 bp = ConstructBuild.ParseBlueprint(v.Text(), "shot.json");
             }
+            else if (name.EndsWith(".json", StringComparison.OrdinalIgnoreCase) && File.Exists(name))
+                bp = ConstructBuild.ParseBlueprint(File.ReadAllText(name), Path.GetFileName(name)); // (any blueprint file: a role vehicle written by --cargo --write)
             else
                 bp = ConstructBuild.FindBlueprint(name);
             if (bp == null)
@@ -58,7 +60,7 @@ public static unsafe partial class Program
                 var inside = c.ToWorld(rooms[0].Middle + rooms[0].FloorRest + new Vector3(0, 1.5f, -1));
                 views.Add(("inside", inside, inside + new Vector3(0.1f, -0.3f, 1), 1.4f));
             }
-            var file = name.Replace(' ', '_');
+            var file = Path.GetFileNameWithoutExtension(name).Replace(' ', '_');
             foreach (var view in views)
                 ShootVehicleView(w, map, view.Eye, view.Look, view.Fov, () => SaveScreenshot($"vehicle_{file}_{view.Name}"));
             Console.WriteLine($"[vehicleshots] {name}: {views.Count} pictures");

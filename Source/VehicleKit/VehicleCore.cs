@@ -61,6 +61,8 @@ public class BlueprintScript
     private readonly List<string> _links = new();
     private readonly List<string> _cargo = new();
     private readonly List<(int Step, string Table)> _loot = new();
+    private readonly List<(int Step, int Slot, string Part, int Count)> _stored = new();
+    private readonly List<(Vector3 Min, Vector3 Max)> _cargoBoxes = new();
     private Vector3 _origin;
 
     public string Name { get; internal set; } // (set again only for a family's mark, named for its model: VehicleFamilies.cs)
@@ -412,10 +414,51 @@ public class BlueprintScript
     /// <summary>A loose part riding in a frozen Cargo Volume, its origin at <paramref name="at"/>. It stays a body of its own: shot off, stolen or salvaged like anything loose.</summary>
     public void Cargo(string part, Vector3 at, int turn = 0)
     {
-        _ = Def(part);
+        var def = Def(part);
         var r = ToRest(at);
         _cargo.Add($"{{\"part\": \"{part}\", \"at\": [{N(r.X)}, {N(r.Y)}, {N(r.Z)}], \"turn\": {turn}}}");
+        var (lo, hi) = TurnedBounds(def, turn);
+        _cargoBoxes.Add((at + lo, at + hi)); // (where it stands, in vehicle coordinates: VehicleCargo.cs lays more round it)
+        CargoMass += def.Mass;
     }
+
+    /// <summary>A part's bounds turned by Rot24 turn <paramref name="turn"/>, about its origin.</summary>
+    public static (Vector3 Min, Vector3 Max) TurnedBounds(ConstructPartDef def, int turn)
+    {
+        var (lo, hi) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        for (var k = 0; k < 8; k++)
+        {
+            var corner = new Vector3((k & 1) != 0 ? def.BoundsMax.X : def.BoundsMin.X, (k & 2) != 0 ? def.BoundsMax.Y : def.BoundsMin.Y, (k & 4) != 0 ? def.BoundsMax.Z : def.BoundsMin.Z);
+            var t = Rot24.Apply((byte)turn, corner);
+            (lo, hi) = (Vector3.Min(lo, t), Vector3.Max(hi, t));
+        }
+        return (lo, hi);
+    }
+
+    /// <summary>The loose cargo's boxes so far, in vehicle coordinates, and what it weighs (kg).</summary>
+    public IReadOnlyList<(Vector3 Min, Vector3 Max)> CargoBoxes => _cargoBoxes;
+
+    public float CargoMass { get; private set; }
+
+    /// <summary>
+    /// Parts set in a container's slot when the vehicle is spawned, before its loot rolls into the rest (a blueprint's <c>"stored"</c>: what its crew stowed, the same
+    /// every spawn). The caller has checked the slot takes them (<see cref="ConstructStorage.Fits"/>); an item only.
+    /// </summary>
+    public void Store(VPart container, int slot, string part, int count)
+    {
+        var def = Def(part);
+        if (slot < 0 || slot >= C.DefOf(container.Index).Slots.Length)
+            throw new VehicleKitException($"a {container.Name} has no slot {slot}");
+        if (def.PhysicsOnly)
+            throw new VehicleKitException($"the {part} is physics-only: it rides as cargo, not in a slot");
+        _stored.Add((container.Step, slot, part, count));
+    }
+
+    /// <summary>What is stowed in slots: step, slot, part, count.</summary>
+    public IReadOnlyList<(int Step, int Slot, string Part, int Count)> StoredParts => _stored;
+
+    /// <summary>The steps of the containers that fill from a loot table.</summary>
+    public IEnumerable<int> LootSteps => _loot.Select(l => l.Step);
 
     private static string JsonValue(object v) => v switch
     {
@@ -480,6 +523,8 @@ public class BlueprintScript
             sb.Append(",\n  \"tow\": ").Append(Quote(Tow));
         if (_loot.Count > 0)
             sb.Append(",\n  \"loot\": [").Append(string.Join(", ", _loot.Select(l => $"{{\"step\": {l.Step}, \"table\": {Quote(l.Table)}}}"))).Append(']');
+        if (_stored.Count > 0)
+            sb.Append(",\n  \"stored\": [\n    ").Append(string.Join(",\n    ", _stored.Select(x => $"{{\"step\": {x.Step}, \"slot\": {x.Slot}, \"part\": {Quote(x.Part)}, \"count\": {x.Count}}}"))).Append("\n  ]");
         sb.Append("\n}\n");
         return sb.ToString();
     }
