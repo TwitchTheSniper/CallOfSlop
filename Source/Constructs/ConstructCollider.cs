@@ -82,7 +82,11 @@ internal sealed partial class ConstructCollider
         _dead = 0;
         _mainLeaves = _mainNodes = 0;
         _extraGroup = -1;
+        if (c.FuseFitDue)
+            c.FuseFitNow(); // (fused units' rough shapes: fitted here, so only a body that collides pays for it; ConstructFuseFit.cs)
         var total = c.WheelCount;
+        for (var u = 0; u < c.UnitCount; u++)
+            total += c.Unit(u).RoughCount;
         var hulls = 0;
         if (_wheelOf.Length < c.PartCount)
             _wheelOf = new int[c.PartCount];
@@ -91,6 +95,8 @@ internal sealed partial class ConstructCollider
             _wheelOf[c.Wheels[k].Part] = k;
         for (var i = 0; i < c.PartCount; i++)
         {
+            if (c.FuseRough(i))
+                continue; // (inside its unit's rough shape)
             total += Math.Max(1, c.SolidCount(i));
             if (c.MergeOf[i] == 0)
             {
@@ -110,6 +116,8 @@ internal sealed partial class ConstructCollider
         GroupCount = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
+            if (c.FuseRough(i))
+                continue; // (its unit's rough boxes stand for it: below)
             ref var p = ref c.Parts[i];
             int seg = p.Seg;
             var gs = c.MoveSeg(seg);
@@ -161,6 +169,7 @@ internal sealed partial class ConstructCollider
                 AddCylinder(c, _wheelOf[i], i, seg);
             }
         }
+        AddRough(c);
         // Group by joint, in segment order, and build each group's tree.
         var nodesNeeded = Math.Max(1, LeafCount * 2);
         if (Nodes.Length < nodesNeeded)
@@ -477,6 +486,43 @@ internal sealed partial class ConstructCollider
             l.AX = Vector3.Transform(Vector3.UnitX, rq);
             l.AY = Vector3.Transform(Vector3.UnitY, rq);
             l.AZ = Vector3.Transform(Vector3.UnitZ, rq);
+        }
+    }
+
+    /// <summary>
+    /// Every fused unit's rough boxes (ConstructFuse.cs), in its segment's group as its parts' boxes would be, turned the same
+    /// way for a freeform-welded unit. A rough leaf stands for its unit's first member: what a leaf's part decides (friction,
+    /// no-collide pairs) is a plain part's, the same for every member.
+    /// </summary>
+    private void AddRough(Construct c)
+    {
+        for (var u = 0; u < c.UnitCount; u++)
+        {
+            var unit = c.Unit(u);
+            if (unit.RoughCount == 0)
+                continue;
+            int seg = unit.Seg;
+            var gs = c.MoveSeg(seg);
+            var rq = Quaternion.Identity;
+            var rt = Vector3.Zero;
+            for (int s = seg, guard = 0; s != gs && guard <= Construct.MaxJoints; guard++)
+            {
+                ref var j = ref c.Joints[s - 1];
+                rt = j.FixPos + Vector3.Transform(rt, j.FixRot);
+                rq = j.FixRot * rq;
+                s = j.ParentSeg;
+            }
+            var rep = -1;
+            foreach (var i in c.UnitMembers(u))
+                if (c.FuseCovers(i))
+                {
+                    rep = i;
+                    break;
+                }
+            if (rep < 0)
+                continue;
+            for (var k = 0; k < unit.RoughCount; k++)
+                Add((unit.RMin[k] + unit.RMax[k]) * 0.5f, (unit.RMax[k] - unit.RMin[k]) * 0.5f, rq, rt, seg != gs, rep, seg, false, -1);
         }
     }
 
