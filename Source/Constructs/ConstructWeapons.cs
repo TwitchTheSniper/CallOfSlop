@@ -183,8 +183,13 @@ public static class ConstructWeapons
         {
             if (c.Parts[i].Burn > 0)
                 c.Burning++;
-            if (c.Parts[i].D.Role != PartRole.Gun || c.GunCount >= Construct.MaxGuns)
+            if (c.Parts[i].D.Role != PartRole.Gun)
                 continue;
+            if (c.GunCount >= Construct.MaxGuns)
+            {
+                Caps.Hit("guns a construct", Construct.MaxGuns); // (past this a gun is a plain part)
+                continue;
+            }
             if (c.MergeOf[i] != 0 && !c.MergeLead(i))
                 continue; // (a merged receiver's other members: its lead is the gun)
             c.ReserveGuns(c.GunCount + 1);
@@ -215,7 +220,7 @@ public static class ConstructWeapons
             c.GunCount++;
         }
         if (c.GunCount > 0)
-            c.Recoils ??= new CRecoil[Construct.MaxGuns]; // (gr01: made with the guns, never at a shot)
+            c.Recoils ??= new CRecoil[Construct.MaxRecoils]; // (gr01: made with the guns, never at a shot)
     }
 
     private static int GunNeighbour(Construct c, int part, int k)

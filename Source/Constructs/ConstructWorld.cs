@@ -155,6 +155,8 @@ public sealed partial class ConstructWorld
         }
         if (FireCount < Fires.Length)
             Fires[FireCount++] = e;
+        else
+            Caps.Hit("gun events a tick", Fires.Length); // (shots, blasts and shatters the clients are told of; the shots still hit)
     }
 
     public void NoteAmmo(Construct c, int part)

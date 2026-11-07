@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class Freeform
 {
     public const float MaxGap = 3f; // the closest points of the two parts' boxes at most this far apart (touching not needed: the bead bridges it)
-    public const int MaxPerConstruct = 64; // freeform welds a construct (they share Construct.MaxJoints with the joints)
+    public const int MaxPerConstruct = 192; // freeform welds a construct (they share Construct.MaxJoints with the joints: a segment is a byte, so 255 in all; was 64, this leaves 63 for moving joints)
     public const float WeldSeconds = 2.5f; // survival: a freeform weld takes as long as welding a part on (creative: at once)
     public const float SeamReach = 0.6f; // the welder this near a seam's bead (on one of its two parts) cuts it
 

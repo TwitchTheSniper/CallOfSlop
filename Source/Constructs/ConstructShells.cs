@@ -236,7 +236,7 @@ public static class ConstructShells
 /// <summary>The world's shells (see <see cref="ConstructShells"/>).</summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxShells = 256; // in the air at once: a gun holds its fire while it is full (designed weapons' bomblets share it: OrdnanceFlight.cs)
+    public const int MaxShells = 1024; // in the air at once: a gun holds its fire while it is full (designed weapons' bomblets share it: OrdnanceFlight.cs). Was 256: a full Ordnance Rack's salvo is 247. The tick's cost doesn't grow with it (ShellTestsPerTick), a crowded sky is looked at less often (docs/perf/LIMITS.md)
     public const int ShellTestEvery = 3; // a shell looks for what it hit one tick in this many, over all of them (more with more in the air: ShellTestsPerTick)
     public const int ShellTestsPerTick = 22; // ...so that no tick tests many more than this
     public const int ShellPartsPerTick = 400; // parts of a blast walked a tick
@@ -263,7 +263,10 @@ public sealed partial class ConstructWorld
     public ushort AddShell(CShell s)
     {
         if (ShellCount >= MaxShells)
+        {
+            Caps.Hit("shells in the air", MaxShells); // (guns and racks hold their fire until one lands)
             return 0;
+        }
         if (Shells.Length == 0)
             Shells = new CShell[MaxShells];
         s.Id = _nextShell++;

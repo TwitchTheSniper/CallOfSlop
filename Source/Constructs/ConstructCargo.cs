@@ -23,8 +23,8 @@ public readonly record struct CCargoMass(float Mass, Vector3 Centre, Vector3 Hal
 /// </summary>
 public static class ConstructCargo
 {
-    public const int MaxVolumes = 4; // cargo volumes a construct (more are refused when fitted)
-    public const int MaxPerConstruct = 24; // bodies a construct carries at once (the rest stay loose)
+    public const int MaxVolumes = 32; // cargo volumes a construct (more are refused when fitted; was 4: a carrier has a hangar a deck). Each frozen one is a broadphase look every ScanEvery ticks
+    public const int MaxPerConstruct = 128; // bodies a construct carries at once (the rest stay loose; was 24: a carrier's air wing). Its cargo list grows with what it carries (Construct.Cargo)
     public const float MinSide = 0.2f, MaxSide = 8f; // a volume's box, each side (metres)
     public const int ScanEvery = 6; // ticks between looks for what entered or left (10 Hz)
     public const float SettleSpeed = 1f; // m/s relative to the carrier under which something entering is caught
@@ -395,6 +395,8 @@ public static class ConstructCargo
                     MathF.Abs(m.M12) * h.X + MathF.Abs(m.M22) * h.Y + MathF.Abs(m.M32) * h.Z,
                     MathF.Abs(m.M13) * h.X + MathF.Abs(m.M23) * h.Y + MathF.Abs(m.M33) * h.Z);
                 var entry = new CCargoMass(b.Mass, c.ToLocal(b.WorldCom), half);
+                if (n == c.Cargo.Length)
+                    Array.Resize(ref c.Cargo, Math.Min(MaxPerConstruct, Math.Max(4, n * 2))); // (only when it carries more than ever before: never shrinks)
                 if (n >= c.CargoCount || MathF.Abs(c.Cargo[n].Mass - entry.Mass) > 0.01f || Vector3.DistanceSquared(c.Cargo[n].Centre, entry.Centre) > 1e-4f)
                     changed = true;
                 c.Cargo[n++] = entry;

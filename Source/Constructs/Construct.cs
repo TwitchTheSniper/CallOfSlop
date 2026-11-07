@@ -232,7 +232,7 @@ public sealed partial class Construct
     public const int MaxWheels = 256;
     public const int MaxSprings = 256;
     public const int MaxWires = 1024;
-    public const int MaxGuns = 64; // guns a construct (8 until the capital parts)
+    public const int MaxGuns = 256; // guns a construct (8 until the capital parts, 64 until docs/perf/LIMITS.md): a turn through the gun step each a tick; per gun arrays grow with the guns (ReserveGuns)
     public const int BoxesPerGun = 4; // ammo boxes a gun's feed chain reaches (the nearest first)
 
     public ushort Id;
@@ -293,7 +293,7 @@ public sealed partial class Construct
     public byte CarrySeg;
     public Vector3 CarryPos;
     public Quaternion CarryRot = Quaternion.Identity;
-    public readonly CCargoMass[] Cargo = new CCargoMass[ConstructCargo.MaxPerConstruct];
+    public CCargoMass[] Cargo = []; // (grows by doubling to ConstructCargo.MaxPerConstruct as it carries more: a loose block pays nothing)
     public int CargoCount;
     public float CargoMass; // what Cargo adds up to (kg)
 
@@ -305,8 +305,9 @@ public sealed partial class Construct
     public Vector3 Vel, AngVel; // the centre of mass's velocity; angular velocity (world)
     public Vector3 Accel; // server: the centre of mass's acceleration over the last physics step, smoothed a little (a crash throws riders off; ConstructRide.cs)
     // Server: the recoil of this tick's shots (board item gr01; ConstructPhysics.AddRecoil), one entry a segment, put into
-    // the next physics step (the guns step first). Made with its guns (BuildGuns), sized for every gun on a segment of its own.
+    // the next physics step (the guns step first). Made with its guns (BuildGuns), MaxRecoils entries.
     internal CRecoil[]? Recoils;
+    internal const int MaxRecoils = 64; // segments with a shot's recoil in one tick; past this the last entry takes the rest (AddRecoil)
     internal int RecoilCount;
     internal Vector3 VelBefore, VelThen; // (its velocity at this step's start, and at the one before)
 
