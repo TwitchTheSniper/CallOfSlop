@@ -6,7 +6,7 @@ result is **checked by the real game** before anyone drives it: the file goes ba
 
 Namespace `CallOfSlop.VehicleKit`. The committed files are what reviews, tests and the menu's tiles use: the game loads `Constructs/Blueprints/*.json`. A server can also run a
 generator while the game plays, for a seed nobody committed ("Dynamic spawn" below). Either way the vehicle is an ordinary construct, spawned, driven, shot and salvaged part by part
-like any other. **Fix the generator, not its files.** No AI is in here: crew and behaviour are a later job.
+like any other. **Fix the generator, not its files.** No AI is in here yet: each generated vehicle carries the data one will need ("Behaviour data").
 
 ## Commands
 
@@ -25,6 +25,7 @@ like any other. **Fix the generator, not its files.** No AI is in here: crew and
 | `CallOfSlop --family "Bandit raider" [--seed S] [--tier T] [--check]` | A model line: its Mk1 to Mk3, its variants, a named unique and two other families of the role, with their distances; the family must read closer to itself than to the others. See "Families and convoys". |
 | `CallOfSlop --convoy Bandit [--seed S] [--count N] [--tier T] [--mix raider,tanker] [--no-check] [--write DIR]` | A convoy's plan (members, roles, models, the paint scheme, where each stands), each member made and given the full check, the leader made twice. See "Families and convoys". |
 | `CallOfSlop --context "Bandit Box Truck"` (or `"Bandit raider" --tier 2`, or a model's key) `--biome desert\|snow\|swamp\|forest\|road --gravity G --air 0\|1 --wood W --ore O [--seeds N] [--from S] [--check]`, or `--sweep` for every context | What a spawn context changes against neutral, seed by seed: what each lean did, the parts and mass that differ, the identity, and the full check with `--check`; a model's line says whether its body and chassis stayed its family's. See "Spawn context". |
+| `CallOfSlop --brief "Bandit Box Truck" [--seed S]`, `--brief "Bandit raider" [--tier T] [--seed S]`, `--brief MODEL_KEY` or `--brief FILE` | The behaviour brief of a vehicle made as the spawn makes it (or of any blueprint file): driving, guns and their arcs, weak points, crew, loot, and that its save bytes read back the same. See "Behaviour data". |
 | `CallOfSlop --drive-check FILE [--gravity G]` | The spawn's drive check on any blueprint: level, and a throttle pulse moves it. `--no-drive-gate` on any of the tools turns the check off in generation, to measure it. See "Dynamic spawn", "The drive check". |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
@@ -911,3 +912,70 @@ at tier 1 (0.4 m; 6.8 m in 6 s). Each was planned again into a plan that passes 
 (Technicals are quick), 15 to 50 ms for a Box Truck warm, 126 ms worst (cold); in slices, no span of its own showed among a generation's longest.
 
 A towed vehicle (the Tanker Rig's trailer) comes with it: a committed trailer when its blueprint ships, else made by its own generator in the same job.
+
+## Behaviour data
+
+Roadmap phase 8 (`VehicleBrief.cs`, `VehicleBriefMake.cs`, `Source/App/Program.VehicleBrief.cs`): every generated vehicle carries a **brief**, what an AI driver or gunner
+needs to know about it, worked out once when it is made, so whoever writes the AI never has to analyse a vehicle. It is data only: nothing reads it yet but the debug view.
+It changes nothing that is built: every committed seed, kit 3 and kit 4 seed, model and context makes the same text and hash as before (`--gen-vehicles`: all 123 identical;
+a kit-4 role seed made in slices gives the same hash as made directly).
+
+**Where it is.** `Construct.Brief` (a `VehicleBrief`), on the server only. It is never sent to clients (nothing on the wire, no protocol change): an AI runs where the
+physics does. It saves with the world, at the end of the body's bytes after its tracks (docs/sandbox/WORLD-SAVES.md), 600 to 950 bytes a vehicle; an old save has none, an
+older build stops reading before it, and a brief that doesn't read is left off with a log line, never the body. A brief of a later `FormatVersion` is skipped.
+
+**When it is made.** In the generation's own sliced job (`VehicleGenJob.MakeBrief`, after the blueprint text and its hash, so it can't change them), from a body built from
+that very text: the drive check's ("The drive check"), when the plan kept was checked with the same steps (kit 4 notes its role after the check, so the names differ but the
+steps don't: `VehicleBriefMake.SameBuild`), else a drive check run for it, whose verdict isn't a gate. It reads only the body's rest frame, so the pulse the check drove
+doesn't matter. Every ray yields, so it adds slices, not long ones; 20 to 110 ms of a generation on the 2-core box under load (a Highland Box Truck 49, an IT War Bus 104; the rays dominate). When the vehicle is down,
+the spawner puts the brief on its construct (`VehicleSpawner.Brief`): each part reference takes the built body's tag after its def is checked against the part at its index
+(a brief that doesn't fit is left off, logged), with its convoy place and model. The warm-up compiles the path once. `VehicleGenJob.BriefsOn = false` turns it off.
+
+**What has none:** a committed seed that stands in for a failed one, a blueprint from the parts menu, a tow, a player's own build, and anything in an old save.
+`VehicleBriefMake.Rebuild(construct, name, style)` makes one from any construct (no role, no drive numbers, no loot list), at once on the calling thread: run it off the
+tick, or accept 20 to 110 ms.
+
+**Part references** (`BriefRef`): the part's stable `CPart.Tag` (the server's; saved), its index when last found (a hint), its def, and a point on it in the body's rest frame
+(`construct.ToWorld(r.At)` for anything rigid with the body; a turret's points are at rest). Parts break, are shot off and reload in another order, so before reading
+indices call `brief.Refresh(construct)`: nothing to do unless the construct was rebuilt since (`RebuildStamp`); then each reference checks its hint and otherwise finds its tag
+(a scan of the body's parts). It allocates nothing either way (measured: 0 B; 1000 refreshes with good hints 0.24 ms). Then `VehicleBrief.Has(c, r)` (there and not broken)
+and `VehicleBrief.Index(r)` (-1: gone).
+
+**Directions** are the vehicle's own: `Forward` is the drive line's forward (`Construct.DriveFwd`, level), bearing 0 is dead ahead and bearings go clockwise seen from above
+(90 is its right; `Way(bearing)` gives the body-frame direction). Gun arcs use 32 bins of 11.25 degrees, weak points 16 of 22.5. Sides are 0 front (-45 to 45), 1 right, 2 back,
+3 left (`SideOf`).
+
+| Field | What it holds | Where it comes from |
+| --- | --- | --- |
+| `Name`, `Style`, `Shape`, `Role`, `Tier`, `Kit`, `Model` | Who it is: the role and tier (kit 4), the family model's key | the kit |
+| `Slot`, `Convoy`, `Formation`, `ConvoyIndex`, `Lane`, `Leader` | A convoy member's place (leader, escort, cargo), its convoy's seed, column or wedge, its place behind the leader (0 the leader), its lane (-1, 0, 1), the leader's construct id | the spawner, when it is set down |
+| `Mass`, `Length`, `Width`, `Height` | kg; metres along, across and up | the body |
+| `TopSpeed` | the cheap estimate (`VehicleRoles.Speed`, as `RoleFit`) | the engine's power, mass, frontal box |
+| `Measured`, `PulseMoved`, `PulseSpeed`, `Accel` | the drive check's 1.25 s throttle pulse from rest: metres, the speed it reached, and 2d/t2 | the drive check |
+| `Steer`, `MaxSteer`, `TurnRadius`, `Wheelbase`, `Track`, `Wheels`, `Driven` | steered wheels (lock in degrees: a radian at most, the steering pivots' limits) or skid steer (turns on the spot, radius 0); the turning radius is wheelbase over tan(lock) plus half the track | the wheels and steering joints |
+| `Clearance`, `ComHeight`, `TipSide`, `TipEnd` | the lowest fixed part over the ground; the centre of mass's height; the static tip angles sideways and end on (the wheels' spread round the centre of mass over its height) | the body at rest |
+| `Climb` | degrees: a hint, the lesser of what 60 % of peak power pulls at 3 m/s and the driven wheels' grip (0.8 of their share) | estimate |
+| `Fuel`, `Burn`, `Electric`, `Charge`, `Endurance`, `Range` | litres and litres a second at full throttle (the engines' `BurnRate`), or an electric drive's kJ; minutes at full throttle, and km at the estimated top speed | the parts |
+| `Guns[]` | each gun: its part (`At` the muzzle), `Mount` (turret, hinge or fixed), `Class` (light, medium, heavy: flame, harpoons, shells and big blasts heavy, full-auto medium), `Band` and `Range` (full-damage range: close under 25 m, short under 60, medium under 150), `MaxRange`, `Dps`; its turntable's range (`FullCircle` or `YawMin`/`YawMax` from rest) and the hinge's `ElevMin`/`ElevMax`; `Clear` (the bins it can turn to and fire clear of its own vehicle at some elevation) and `Level` (clear at the elevation nearest level, for a target on the ground); `Pivot`; `Seat` (index into `Seats`) or `Input` (a logic part wired into it) | the guns (`CGun`), the aim chain's joints and their limits, and rays from the muzzle swept round the turntable at five elevations through the vehicle's own drawn parts (what turns with the gun doesn't count) |
+| `Engage` | the range to fight at: the guns' full-damage ranges, weighed by damage (a median) | the guns |
+| `BestBin`, `BestSide`, `BestDps` | the bearing where the most gun damage reaches clear (a tie goes to a broadside), its side and how much | the guns' `Clear` |
+| `Weak[]` | each weak point: its part, its kind (the style's rule label, "fuel drum", "open driver", "antenna", "pipe box"..., else fuel, tyres, ammo, engine), `Bearings` (a standing player 20 m off hits it first from there) and `Top` (seen from straight above) | the style's identity rules (`VehicleIdentity.SignatureOf(style).WeakPoints`) plus the plain ones, the identity check's own rays |
+| `KeepAway` | the side to keep from the enemy: where its weak points show most, fuel and ammo weighed 3, the engine and driver 2, the rest 1 | the weak points |
+| `Seats[]` | each seat: what it controls (drive, guns: a bit per gun, winch, signals: horns, lamps, sirens, a radio, beacons; other wired parts), and `Open`: its sitter can be shot (seen from above, or from four bearings) | the drive seat, the guns' seats, the wires one module on |
+| `Entries[]` | doors, ladders and hatches, with where they are | the parts |
+| `Loot[]`, `Cargo` | the containers that rolled loot, their table and its tier ("bandit 3" is 3, a style's own 2); loose cargo pieces | the blueprint's loot list |
+| `Hitches[]`, `Winches[]`, `FuelOpen` | tow points (`At` the coupling point) and their kind; winches; how many fuel tanks can be hit | the parts and the weak points |
+
+What it doesn't know: anything that changes while it lives (damage, ammo, fuel left, who sits where: read the construct), a gun's arc against other vehicles or the ground,
+and the climb and range are hints, not drives. A weak point's exposure and a gun's clear bins are judged on the vehicle as made: a plate shot off later can expose more.
+
+**Seeing it.** `--brief` prints a vehicle's (made as the spawn makes it, or any blueprint file); its last line gives the cost and the save bytes' round trip. In a dev build,
+on the host, with the look-at inspector open (F6), the faction vehicle under the crosshair shows its brief: each gun's clear bins as spokes from its pivot (green clear at
+level, amber only lifted), the engagement range as a ring on the ground with the best bearing drawn across it, the weak points (red hittable, grey covered), a "keep away"
+arrow, and the brief as text down the left. A client sees nothing (the brief is the server's). The "generated" log line ends with the brief's summary ("brief: 2 guns
+engage 31 m, best right; 10 weak points, keep the back away; 4 seats; top 23 m/s, wheels steer").
+
+**Checked** (2026-11-07, by hand: an offline host on Construct Yard through the real spawner, the box at load 9 to 10): a Bandit raider (a Gun Wagon) and IT convoy 11 (a
+command War Bus, a raider Box Truck, a tanker Scrap Tanker) each got a brief that fitted its body, the convoy's with its slots, place and leader; a gun's part marked broken
+read as gone; taking part 0 off moved every reference down by one and they followed their tags (0 B); the world saved and loaded with 4 briefs and the same text. No brief
+span was among a generation's long ones.

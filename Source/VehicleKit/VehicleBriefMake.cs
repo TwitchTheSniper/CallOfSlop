@@ -24,7 +24,7 @@ public sealed class BriefFacts
 /// Works out a <see cref="VehicleBrief"/> from a built construct (docs/vehiclekit/VEHICLEKIT.md, "Behaviour data"): its wheels, guns, joints, wires and parts in the rest
 /// pose, and rays through what is drawn (the triangles <see cref="VehicleIdentity"/> shoots, <see cref="VehiclePlan.PartTriangles"/>). It reads only the rest frame, so a
 /// construct that has been driven (the drive check's) or one standing in the world gives the same answer. It yields as the kit does (it runs in a generation's slices) and
-/// allocates freely: it never runs on a tick. 10 to 60 ms for a big vehicle on the 2-core box.
+/// allocates freely: it never runs on a tick. 20 to 110 ms for a big vehicle on the 2-core box.
 /// </summary>
 public static class VehicleBriefMake
 {
@@ -61,7 +61,7 @@ public static class VehicleBriefMake
 
     /// <summary>
     /// A brief for any construct, from what it is (a committed seed's, an old save's, a player's truck): no role, no drive check, loot as the blueprint
-    /// <paramref name="bp"/> names it when given. Runs at once on the calling thread: off the tick, or accept the cost (10 to 60 ms for a big vehicle).
+    /// <paramref name="bp"/> names it when given. Runs at once on the calling thread: off the tick, or accept the cost (20 to 110 ms for a big vehicle).
     /// </summary>
     public static VehicleBrief Rebuild(Construct c, string name = "", FactionStyle? style = null)
     {
