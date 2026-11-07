@@ -128,6 +128,8 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenMaps(args); // every generator: which outputs differ from the committed files
         if (args.SkipWhile(a => !a.Equals("--gen-plan", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var planMap, var planPng])
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
+        if (int.TryParse(args.SkipWhile(a => !a.Equals("--kit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var vehicleKit))
+            VehicleKit.VehicleKitVersion.Force = vehicleKit; // --kit N: every vehicle seed by that kit (1: the shapes as whole generators, 2: the shape grammar), to measure one against the other
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)

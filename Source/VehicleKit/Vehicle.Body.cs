@@ -254,15 +254,18 @@ public sealed partial class Vehicle
         return Dress("spike", [bar], -Vector3.UnitZ, d.Int(2, 3), d);
     }
 
-    /// <summary>The cab behind an engine at z -1.425: a seat sill, the driver on the left, sometimes a passenger, the style's cab shell, a floor on the rails.</summary>
-    public Vehicle OpenCab(float edge = 0.875f)
+    /// <summary>
+    /// The cab behind an engine at z -1.425: a seat sill, the driver on the left, sometimes a passenger, the style's cab shell, a floor on the rails.
+    /// <paramref name="shell"/>: the cab part a shape grammar chose (null: the style's "cab" slot rolls one, as kit 1 always did).
+    /// </summary>
+    public Vehicle OpenCab(float edge = 0.875f, string? shell = null)
     {
         const float sill = 0.375f;
         Sill(-0.175f, 0.5f);
         Driver(new Vector3(-0.5f, sill, -0.175f));
         if (Dice.Fork("crew").Chance(Style.Limit("thirdSeat")))
             Passenger(new Vector3(0.5f, sill, -0.175f));
-        var cab = Style.Part(Dice.Fork("cab"), Slot("cab"));
+        var cab = shell ?? Style.Part(Dice.Fork("cab"), Slot("cab"));
         if (cab != "none")
         {
             var feet = cab == "Windscreen Frame" ? -0.675f : 0.075f;
@@ -272,18 +275,21 @@ public sealed partial class Vehicle
         return Deck("cab", Half, new Rect(-edge, edge, -0.8f, -0.3f), "deck");
     }
 
-    /// <summary>The hood: one of the style's "hood" parts on the engine ("plates": tiled from sheets), its grille or plow, fenders over the front wheels.</summary>
-    public Vehicle Hood()
+    /// <summary>
+    /// The hood: one of the style's "hood" parts on the engine ("plates": tiled from sheets), its grille or plow, fenders over the front wheels.
+    /// <paramref name="part"/>, <paramref name="noseOf"/>: what a shape grammar's nose module chose (null: the style's slots roll them, as kit 1 always did).
+    /// </summary>
+    public Vehicle Hood(string? part = null, string[]? noseOf = null)
     {
         if (Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Cab Over Shell") == true)
             return this; // (the cab is its own nose)
         var d = Dice.Fork("hood");
-        var kind = Style.Part(d, "hood");
+        var kind = part ?? Style.Part(d, "hood");
         if (kind == "plates")
             return PlatedHood();
         var hood = Stand(kind, SocketPoint(Engine!, "+y"), Orient.Forward, Engine!, "engine");
         PanelList("hood").Add(hood);
-        var nose = Style.Part(d, "nose");
+        var nose = noseOf != null ? FactionStyle.Noted("nose", d.Pick(noseOf)) : Style.Part(d, "nose");
         if (nose != "none")
             PanelList("hoodsides").Add(Onto(hood, "front", nose, "back", 0));
         var fender = Style.Part(d, "fender");
@@ -308,6 +314,31 @@ public sealed partial class Vehicle
         foreach (var s in new[] { -1f, 1f })
             Wall("hoodsides", new Vector3(s, 0, 0), s * 0.625f, -2.05f, -0.8f, y - 0.42f, 0.5f, "sheet", 0.3);
         return Wall("grille", -Vector3.UnitZ, -2.05f, -0.625f, 0.625f, y - 0.42f, 0.5f, "grille");
+    }
+
+    /// <summary>
+    /// What the check calls stability, on the vehicle as built so far: half the wheels' track over the centre of mass's height above the lowest tyre's foot
+    /// (VehicleChecks; the check measures it on the spawned body, a little lower on its springs).
+    /// </summary>
+    public float Stability()
+    {
+        C.Rebuild();
+        float left = 0, right = 0, ground = float.MaxValue;
+        for (var k = 0; k < C.WheelCount; k++)
+        {
+            ref var wh = ref C.Wheels[k];
+            (left, right) = (MathF.Min(left, wh.Centre.X), MathF.Max(right, wh.Centre.X));
+            ground = MathF.Min(ground, wh.Centre.Y - wh.Travel * 0.5f - wh.Radius);
+        }
+        return C.WheelCount == 0 ? 0 : (right - left) * 0.5f / MathF.Max(0.1f, C.Com.Y - ground);
+    }
+
+    /// <summary>How much of its bounding box the body fills from the side and from above, as the check's silhouette rule measures it (<see cref="VehiclePlan.Outline"/>).</summary>
+    public (float Side, float Top) Fill()
+    {
+        C.Rebuild();
+        var (side, top, _) = VehiclePlan.Outline(C);
+        return (side, top);
     }
 
     /// <summary>Every part's name, for <see cref="VehicleVariety"/>.</summary>

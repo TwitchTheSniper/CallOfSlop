@@ -16,6 +16,7 @@ like any other. **Fix the generator, not its files.** No AI is in here: crew and
 | `CallOfSlop --gen-vehicles [--out DIR]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. Exit code: how many aren't identical. |
 | `CallOfSlop --sweep-vehicle "Bandit War Bus" [--seeds N]` | Seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, on what, and what a generation costs. Run it before calling a shape done: a shipped seed proves only itself. It also compares seeds (`VehicleVariety`: kinds of part, plate and beam materials not counted, plus bounding shape): it prints the most different seeds it found, and fails when two shipped seeds are closer than 0.25. Choose `Seeds` from that line. |
 | `CallOfSlop --diversity "Bandit Box Truck" [--seeds N]`, `--diversity-style Bandit`, `--kit-report`, `--vehicle-sheet "Bandit Box Truck"`, `--grade-vehicle "Bandit Box Truck 7" 4 "note"`, `--grade-report` | The quality tools: how alike seeds are, what never varies, what fails and what it costs, contact sheets and grades. See "Quality tools". |
+| `... --kit 1` or `--kit 2` on any of these | Every seed by that kit (see "Shape grammar"), to compare the two: without it a seed is made by its own kit. `--gen-vehicles --kit 2` reports the committed files as differing, as it should. |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
@@ -149,6 +150,76 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 - Stacked beams' bands, and bolts on a plate under an engine's details, are coplanar. Paint a frame one colour (one look doesn't fight); the hood uses `smallest: 2`.
 - `Freeform` parts aren't checked against the rest for overlap. Keep a crooked plate proud of what it covers: 6 cm clears 5 degrees on a 0.5 m plate.
 
+## Shape grammar
+
+Kit 1 made each shape with one generator: a Box Truck was always a hull on a chassis with the same nose, room and tail in the same places, so seeds differed in parts
+and hardly at all in outline (Bandit Box Truck, November 2026: silhouette 0.057 of the distance against 0.39 for parts). **Kit 2** (`VehicleGrammar.cs`) assembles the
+heavy shapes from **modules** instead, so the outline varies with the seed while every part still comes from the style.
+
+**Which kit.** `VehicleKitVersion.For(generator, seed)`: a seed committed before the grammar (`VehicleKitVersion.Frozen`, the 123 files of 2026-11-06) and every seed of a
+shape with no recipe (the Technical, the Fuel Trailer, the Tanker Rig, the Double Decker, and any new generator) is kit 1, made exactly as before, so `--gen-vehicles`
+stays identical; every other seed, the dynamic spawn's included, is kit 2. A kit-2 file says so in a comment after its first brace (`// kit 2; body room+bed, cab caged,
+nose ram, rear porch, ...`; blueprints allow comments), `Vehicle.Kit` and `Vehicle.Modules` hold the same, and the spawn logs it (`[vehicles] Bandit Box Truck 733786:
+kit 2 (body room, cab enclosed, ...)`). A seed committed from now on is made by the kit current when it was committed: grade and commit from a sweep of that kit. A kit 3
+adds kit 2's committed seeds to `Frozen` under their kit.
+
+**Modules** (`ShapeGrammar.Catalogue`). Each has a family, a name, the style parts it is made of (a module whose parts the style doesn't list is never made), and its
+connection rules as tags: what it needs, what it provides, what it can't stand beside, and the gear recipes it allows.
+
+| Family | Modules | Rules |
+| --- | --- | --- |
+| cab | caged, enclosed, armoured, cab-over | from the style's `heavyCab` list; cab-over provides "cabover" |
+| nose | long hood, short hood, plated hood, ram, flat | from the style's `hood` list (ram: its `nose` list's Ram Plow or Bull Bar on any hood); flat needs a cab-over, the rest exclude it |
+| body | room, bed, gun bed, hutch, gun bay, tank, gap | segments front to back (below); a tank allows only the Scrap Tanker's gear |
+| rear | porch, porch hitch, gun deck, hitch, bare | porch carries the drum; a gun deck needs a room last; hitch and bare need fuel or a drum carried ahead |
+| under | stilts, tub, skirted | tub and skirted need a high floor (a low one is always on stilts); skirted needs a room; tub can't go round a tag or tandem axle |
+| flank | bare, panniers, loaded | a room's waists |
+| sides | walls, rails, open | a bed's edges; walls allow only the Flatbed Fort's gear (they hang under the floor's edge) |
+| roof | none, rack | a rack needs a room with a metre bay: deck plates and tube rails over two flat tall bays side by side |
+
+**Body segments** run back from behind the cab (z 0.2): a **room** is a hull of 3.5 m and up (brow, metre bays, the 1.5 m door bay, tail) whose bays the seed walks
+between tall, low and narrow, with its roofline changing at least once (twice from three metre bays), the door bay tall; a **bed** (gun bed: with a deck gun) an open
+deck in half metres; a **hutch** the Gun Wagon's deck; a **gun bay** the Scrap Tanker's gun on its own sill; a **tank** its barrel on cradles; a **gap** bare rails between
+the cab and the body. The rear axle stands 1.25 to 2.25 m in from the body's end, by the seed.
+
+**Recipes** (`ShapeGrammar.Recipes`): a shape name is a set of body patterns, rears, a gun count and gear. The Box Truck is a room, sometimes behind a gap, with an open
+bed or a gun bed behind it or a gun bed ahead of it; the War Bus a long room (5.5 to 7.5 m); the Flatbed Fort a gun bed and a bunker either way round; the Gun Wagon a
+hutch, a gun bay and a gun bed, or a crew room and a gun bed; the Scrap Tanker a gun bay or a crew room before its tank. So the spawn API's and the committed files'
+shape names all still work.
+
+**What the assembler keeps to.** One fuel tank feeds the engine (an engine has one inlet): a tank segment, else a drum on a bed, the hutch or the gun deck, else a porch.
+Guns go where their mounts clear: deck guns half a metre from the stilts and clear of every axle, a gun behind a room faces aft (never a Whaler, whose magazine is
+where the seat goes); roof turrets only on flat tall bays (on a sloped one the arm runs into the next bay), a flame gun never on a sponson (it doesn't follow the look
+round), and a long gun on a low mount near the front not at all (it would want a pedestal). Only a room's guns are fed from its magazine, worked from its seats: a belt
+from the room to a bed gun would cross the room where a player walks; the others carry their own box, a hutch's gun its feed. A short room has one seat and its loot
+against the end wall first (`Vehicle.EndChest`), never in the middle, where the check stands a player, and Trim's crooked patches stay off the hull bays (they would land
+inside). Finally the built body is measured as the check measures it: stability under 0.63 or a side or plan fill within half a point of `MaxSideFill`/`MaxTopFill`
+throws, and so does anything the game refuses; then **the seed plans again** from the next fork (`"grammar 1"`...), gear included, up to four times. A retry shows in the
+kit line as "plan 2".
+
+**Seeds.** All of it rolls from forks of `v.Dice` ("grammar", "grammar build", by attempt); the module bodies use the same forks kit 1's code does ("deck bed", "hood",
+"weapon"...), so a seed is the same text on every machine. Generation yields where `BlueprintScript` does.
+
+**Measured** (2-core box, generation only unless said; kit 1 is `--kit 1` or the committed seeds' state before the change):
+
+| | kit 1 | kit 2 |
+| --- | --- | --- |
+| Bandit Box Truck, seeds 1-20: silhouette part / nearest neighbour / mean pair | 0.057 / 0.066 / 0.162 | 0.116 / 0.128 / 0.222 |
+| Bandit Box Truck: seeds closer than 0.08 | 14 in 6 groups | 2 in 1 group |
+| Highland Box Truck, seeds 1-20: silhouette / nearest neighbour | 0.051 / 0.076 | 0.103 / 0.120 |
+| Bandit, every shape, 6 seeds each: nearest neighbour | 0.112 | 0.134 |
+| Highland, every shape: nearest neighbour; Box Truck and War Bus apart | 0.103; 0.212 | 0.126; 0.230 |
+| Generation failures, Bandit and Highland, 10 seeds of each recipe shape | 1 of 100 | 0 of 100 (with retries) |
+| Full check (`--sweep-vehicle`), Bandit Box Truck / War Bus / Flatbed Fort | 8 of 12 / 4 of 10 / 2 of 10 | 12 of 12 / 12 of 12 / 10 of 10 |
+| Generation, mean (worst) per seed, Bandit | 247 ms (652) | 242 ms (1196, a retry) |
+
+Kit 1's check failures (a chest in a short room's middle, a crooked patch inside a hull, a boxy bus) are what the grammar's rules above avoid; kit 1's committed seeds
+passed, and its code is unchanged. The Silhouette rules are the grammar's rules: separate masses (a cab, a gap, a room, a bed or a tank, each its own height), a roofline
+that steps, wheels in the open, a room only for a crew and loot.
+
+**Adding to it.** A module is a row in `Catalogue` plus its body in `ShapeGrammar.Build` (reuse the kit-1 generator's code for it, put where the plan says); a recipe is a
+row in `Recipes`. Sweep the shapes it can appear in with `--sweep-vehicle "Bandit Box Truck" --seeds 12 --kit 2` (the full check) and measure with `--diversity ... --kit 2`.
+
 ## Quality tools
 
 The kit will make vehicles during play with nobody looking, so these tools keep variety up and each faction looking like itself. They generate and measure (0.1 to 1 s a seed on the 2-core box); none runs the drive or gun checks unless asked, and the defaults stay small. Everything prints to `callofslop.log`. Source: `VehicleDiversity.cs` (the metric), `VehicleQuality.cs` (the commands), `Program.VehicleSheet.cs` (the sheet).
@@ -202,6 +273,23 @@ public static readonly FactionStyle Militia = new()
 ```
 
 A slot a generator asks for and the style lacks throws, naming the slot. Sheet slots hold a material's first words ("Plate Steel"): the kit adds the size.
+A style needs `LightGear` and `HeavyGear` recipes (`Gear`); Militia now borrows the Bandits' (without them nothing of it generated).
+
+**Module weights** (the shape grammar, kit 2). `FactionStyle.Modules` scales how likely the grammar makes each module, by family and name:
+
+```csharp
+Modules = new()
+{
+    ["nose"] = new() { ["plated hood"] = 2 },      // twice as likely as the style's hood list makes it
+    ["body"] = new() { ["room"] = 0.5, ["bed"] = 2 }, // body patterns weigh the product of their segments' factors
+    ["rear"] = new() { ["gun deck"] = 0 },          // never
+},
+```
+
+A family or module not named keeps its default, and the defaults come from the style's own slots: a cab or a nose weighs as many entries as the style's `heavyCab` or
+`hood` list has of its parts, so a style with three Long Hoods and one Snub Hood makes long hoods three times as often, and a style that lists no Cab Over Shell never
+makes a cab-over. A style that names no modules (all of them so far) works unchanged, and its identity comes through: the IT Department's cabs are enclosed or
+cab-over, the Bandits' anything. `--diversity` lists the modules a seed chose as traits (`module nose`, `module body`...).
 
 **Its own seeds.** A seed's dice fall differently over another style's lists, so a shape's seeds that pass in one style can fail in another. `FactionStyle.Seeds` names the seeds a style ships for a shape (`["Box Truck"] = [1, 20, 21]`); a shape it doesn't name ships its own. Pick them with `--sweep-vehicle "IT Box Truck"` ("most different").
 
@@ -281,6 +369,10 @@ Measured in game (host and a `--net-client` over RakNet at 80 ms and 2% loss, Co
 The parts menu's big blueprints (a faction vehicle's file with "new seed" off, the RV) queue in the same `VehicleSpawner` (`RequestBlueprint`: the same limits, "placing the ..." then "the ... is down"), so they arrive a few ticks later rather than on the click. The survival start kit and a map's own constructs are still built at once: that is the match's start, not a tick in play. Self-tests and the kit's checks build at once too (`BuildOnGround`, unchanged).
 
 What a spawn still costs above 8 ms is the generation itself: its slices overran now and then to 8 to 30 ms in the same run (`VehicleGenJob`, the step between two yields, or a garbage collection; the box was busy with other builds).
+
+**Which kit.** A request's seed is made by its own kit ("Shape grammar"): a committed seed as its file, anything else by the grammar where the shape has a recipe. The
+job logs it when it is done (`[vehicles] Bandit Box Truck 733786: kit 2 (body room+bed, cab caged, ...)`, `VehicleGenJob.Kit` and `Modules`), and the vehicle's blueprint
+text carries it in its kit line. A grammar seed that fails as it is built plans again inside the generation (up to four plans), before the rerolls below.
 
 **Seeds that fail.** A seed whose generator throws (some seeds have nowhere to stand a part; the sweep skips them) or whose text doesn't load rerolls up to 3 times, each new seed derived from the last (`VehicleSpawnKit.Reroll`: the same seed always rerolls the same way), then a committed seed of that style and shape stands in (`VehicleSpawnKit.Committed`). A style that ships nothing (Militia) has nothing to fall back to: the player is told. Failures are logged, the first 10 and then every 100th. The in-game check is that it builds: `VehicleChecks` (driving, turning, firing for simulated seconds) doesn't run at spawn, so a seed that builds but drives badly is spawned anyway. `--sweep-vehicle` gives a shape's pass rate; run it before calling a shape fit for dynamic spawn.
 

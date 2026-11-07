@@ -333,7 +333,7 @@ public sealed partial class Vehicle : BlueprintScript
     private const float CabBack = 0.25f; // (the back of a cab shell, and the front wall of a room behind it)
 
     /// <summary>How far a gun reaches ahead of its mount: its receiver and barrel run, and a muzzle device on the barrel.</summary>
-    private float GunReach(WeaponOption w)
+    public float GunReach(WeaponOption w)
     {
         var (receiver, children) = WeaponOption.Parse(w.Build);
         var reach = 0.6f + Size(GunDef(receiver));

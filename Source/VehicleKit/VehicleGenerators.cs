@@ -81,9 +81,14 @@ public static class VehicleRegistry
     /// <summary>Runs a generator for a seed: the blueprint's text.</summary>
     public static string Run(IVehicleGenerator g, int seed) => Make(g, seed).Text();
 
-    /// <summary>Runs a generator for a seed: the built vehicle, with what the check needs to know about it.</summary>
-    public static Vehicle Make(IVehicleGenerator g, int seed)
+    /// <summary>
+    /// Runs a generator for a seed: the built vehicle, with what the check needs to know about it. <paramref name="kit"/> null: the seed's own
+    /// (<see cref="VehicleKitVersion.For"/>: the committed seeds as they were, everything else the shape grammar where the shape has a recipe).
+    /// </summary>
+    public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null)
     {
+        if ((kit ?? VehicleKitVersion.For(g, seed)) >= VehicleKitVersion.Grammar && ShapeGrammar.RecipeOf(g) is { } recipe)
+            return ShapeGrammar.Make(g, seed, recipe);
         var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
         g.Build(v);
         return v;

@@ -366,6 +366,8 @@ public static class Styles
             ["spike"] = ["Iron Spike"],
             ["trophy"] = ["Hubcap Plate"],
         },
+        LightGear = Bandit.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)
+        HeavyGear = Bandit.HeavyGear,
         Weapons = [new("Service MG", "Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Box Mag}")],
         LootTable = "bandit",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },

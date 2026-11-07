@@ -67,6 +67,14 @@ public class BlueprintScript
     public string Description { get; set; } = "";
     public string Group { get; set; } = "";
 
+    /// <summary>
+    /// Which kit made it (<see cref="VehicleKitVersion"/>) and, from the shape grammar on, the modules it chose ("nose long hood", "body room+bed"...).
+    /// A file from kit 2 or later carries both in a comment line after its first brace (blueprints allow comments); kit 1's text is as it always was.
+    /// </summary>
+    public int Kit { get; set; } = VehicleKitVersion.Legacy;
+
+    public List<string> Modules { get; } = new();
+
     public int Count => _steps.Count;
     public IReadOnlyList<VPart> Parts => _parts;
     private readonly List<VPart> _parts = new();
@@ -396,7 +404,10 @@ public class BlueprintScript
     public string Text()
     {
         var sb = new StringBuilder();
-        sb.Append("{\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(Name)).Append(",\n");
+        sb.Append('{');
+        if (Kit > VehicleKitVersion.Legacy)
+            sb.Append("\n  // kit ").Append(Kit).Append(Modules.Count > 0 ? "; " + string.Join(", ", Modules) : "");
+        sb.Append("\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(Name)).Append(",\n");
         if (Group.Length > 0)
             sb.Append("  \"group\": ").Append(Quote(Group)).Append(",\n");
         sb.Append("  \"description\": ").Append(Quote(Description)).Append(",\n  \"steps\": [\n");
