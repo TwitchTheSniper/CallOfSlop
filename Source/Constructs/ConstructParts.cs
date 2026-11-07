@@ -625,7 +625,7 @@ public sealed class ConstructPartDef
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
     public ExtrusionKey ExKey; // ...what it is
     public bool IsOrdnance; // a modular bomb or missile off an Ordnance Bench (OrdnanceDesign.cs): its Name is its key, its id this machine's own
-    public bool RuntimeMade => IsExtrusion || IsOrdnance || IsRackRuntime || MatBase != null; // (never on the wire or in a hash by id)
+    public bool RuntimeMade => IsExtrusion || IsOrdnance || IsRackRuntime || IsNamedRuntime || MatBase != null; // (never on the wire or in a hash by id)
     public ConstructPartDef? MatBase; // a part the material painter made of another material (PartMaterials.cs): the part file's own def. Its Name is its key, its id this machine's own
     public string MatName = ""; // ...the bulk material it is made of (a name in Recycling.json; its Material is that row's salvage class)
     public OrdSectionDef? Ord; // "ordnance": a section of a modular bomb or missile
@@ -634,6 +634,7 @@ public sealed class ConstructPartDef
     public RackShape Rack; // an Ordnance Rack's shape (ModularRack.cs; "logic.modular"): Stations is 0 for every other part
     public float RackStation; // ...its rated load a station, kg (RackLoad is the whole rack's)
     public bool IsRackRuntime; // ...made at run time for a shape no part file has: its Name is its key, its id this machine's own
+    public bool IsNamedRuntime; // a part made at run time from its name alone (HullLoft.cs, a vehicle kit's lofted hull bay): its Name is its key on the wire and in saves, its id this machine's own
     public bool IsModularRack => Rack.Stations > 0;
     public OrdnanceDesign? OrdDesign; // a designed weapon's design and numbers (IsOrdnance)
     public OrdStats? OrdStats;
@@ -1091,6 +1092,8 @@ public static partial class ConstructParts
             return Ordnance.Parse(name); // (a design names itself, as a piece does)
         if (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
+        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
+            return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)
         if (_byName.Value.TryGetValue(name, out var hit) && hit.Name.Equals(name, StringComparison.OrdinalIgnoreCase))

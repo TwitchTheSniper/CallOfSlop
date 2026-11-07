@@ -15,11 +15,11 @@ public sealed partial class Vehicle
     /// </summary>
     public Room Hull(string tag, float z0, float under, string[] bays, (float X, float Z)[]? seatSpots = null)
     {
-        var names = bays.Select(b => b == "Door" ? "Hull Door Bay T" : "Hull " + b).ToArray();
+        var names = Look != null ? Look.Names(bays) : bays.Select(b => b == "Door" ? "Hull Door Bay T" : "Hull " + b).ToArray(); // (kit 5: lofted bays in the style's body language)
         var lengths = names.Select(n => MathF.Round(Def(n).BoundsMax.Z - Def(n).BoundsMin.Z, 2)).ToArray();
         var z1 = z0 + lengths.Sum();
         var r = new Rect(-BayHalf, BayHalf, z0, z1);
-        var room = new Room { Tag = tag, R = r, DoorFace = Vector3.UnitX, FloorTop = under + 0.05f };
+        var room = new Room { Tag = tag, R = r, DoorFace = Vector3.UnitX, FloorTop = under + 0.05f, Plan = bays.ToList() };
         Deck(tag + "floor", under, new Rect(-1.125f, 1.125f, z0, z1), "floor");
         var walls = PanelList(tag + "walls");
         var z = z0;

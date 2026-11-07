@@ -16,7 +16,7 @@ public static class VehicleKitVersion
     /// Kit 4 (<see cref="Roles"/>) is kit 3 with a role and a tier (VehicleRoles.cs): only a vehicle asked for by role is made by it, so every seed asked for by shape
     /// is kit 3's as before and <see cref="Current"/> stays kit 3; <c>--kit 3</c> makes a role's seed without its role (measured against it all the same).
     /// </remarks>
-    public const int Legacy = 1, Grammar = 2, Layered = 3, Roles = 4, Current = Layered;
+    public const int Legacy = 1, Grammar = 2, Layered = 3, Roles = 4, Lofted = 5, Current = Layered; // (Lofted: kit 3 or 4 with rooms lofted in the style's body language, VehicleBodyLanguage.cs; only by --kit 5 so far)
 
     /// <summary>The command line's <c>--kit N</c>: every seed by that kit (to measure one against the other). Null: each seed's own.</summary>
     public static int? Force;
@@ -290,6 +290,11 @@ public static class ShapeGrammar
         var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed) + layers.Suffix + (role?.Suffix ?? ""), g.Name, g.Style, seed) { Kit = kit, Role = role };
         v.UseLayers(layers);
         v.StartWear(LayerTables.WearOf(g.Style));
+        if (kit >= VehicleKitVersion.Lofted)
+        {
+            v.Look = BodyLook.Roll(v); // (kit 5: the body layer's "language" fork, so nothing else of a seed moves)
+            v.Modules.Add("language " + v.Look.Label);
+        }
         return v;
     }
 
@@ -625,7 +630,7 @@ public static class ShapeGrammar
         // The room: the guns it works from inside (roof turrets, a sponson), up to the four belts a magazine feeds.
         var inRoom = Math.Clamp(want - count, count == 0 ? 1 : 0, room.Len >= 5.5f ? 3 : room.Len >= 4.5f ? 2 : 1); // (each is a seat on a wall that loot would take)
         room.Bays = p.Body is { } body ? Bays(p.BayDice!, (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack", body) : Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack");
-        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => room.Bays[k] is "Door" or "Bay T" or "Tail T").ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
+        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => room.Bays[k] is "Door" or "Bay T" || room.Bays[k] is "Tail T" && v.Look == null).ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
         var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => room.Bays[k] != "Door").ToList();
         var side = inRoom >= 2 || inRoom == 1 && d.Chance(0.3) ? middle.Count > 0 : false;
         if (side)
@@ -966,7 +971,7 @@ public static class ShapeGrammar
     /// </summary>
     private static bool Rack(Vehicle v, Room room, IReadOnlyList<int> turretBays)
     {
-        var flat = room.Bays.Select(b => b.Name is "Hull Door Bay T" or "Hull Bay T").ToArray();
+        var flat = room.Plan.Select(b => b is "Door" or "Bay T").ToArray(); // (by the plan: a lofted bay is named by its key)
         var (bestFrom, bestLen) = (0, 0);
         for (var i = 0; i < flat.Length; i++)
         {

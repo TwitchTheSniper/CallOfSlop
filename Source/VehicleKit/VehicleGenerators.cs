@@ -59,7 +59,7 @@ public static class VehicleRegistry
         s => new Generators.DoubleDecker(s),
     ];
 
-    private static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>
+    internal static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>
         Shapes.Select(f => f(st)).Concat(Extras.Select(f => f(st)).Where(g => all || g is VehicleShape v && st.Extra.Contains(v.Shape)));
 
     /// <summary>What ships: every shape in every shipped style.</summary>

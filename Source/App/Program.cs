@@ -131,6 +131,8 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
         if (int.TryParse(args.SkipWhile(a => !a.Equals("--kit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var vehicleKit))
             VehicleKit.VehicleKitVersion.Force = vehicleKit; // --kit N: every vehicle seed by that kit (1: the shapes as whole generators, 2: the shape grammar), to measure one against the other
+        if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
+            VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
         if (args.SkipWhile(a => !a.Equals("--layers", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } layerText)
         {
             if (!VehicleKit.VehicleLayers.TryParse(layerText, out var layers, out var why))
@@ -172,6 +174,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleIdentity.Cli(identityOf, args); // how much each seed reads as its faction, its weak points, and which read as another (VehicleIdentity.cs)
         if (args.SkipWhile(a => !a.Equals("--diversity", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityOf)
             return VehicleKit.VehicleQualityCli.Diversity(diversityOf, args); // the vehicle kit's quality tools (VehicleQuality.cs): how alike a shape's seeds are, what never varies
+        if (args.SkipWhile(a => !a.Equals("--body-report", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } bodyStyle)
+            return VehicleKit.BodyReportCli.Run(bodyStyle, args); // what a style's rooms are made of, and how their cross-sections differ (docs/vehiclekit/BODY-STYLES.md)
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
         if (args.Any(a => a.Equals("--bench-material", StringComparison.OrdinalIgnoreCase)))

@@ -339,7 +339,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 193: the fuse tool (ConstructFuse.cs): tool byte 17, CActKind.Fuse at the end of its enum, and a Full ends with the fused units (runs of parts with their u32 tag).
     // 194: vehicle kit phase 9, cargo and spares (VehicleCargo.cs): no message changed; a faction vehicle's saved brief is format 2 (its own cargo, VehicleBrief.Stowed), and a blueprint may stow parts in its containers' slots ("stored", filled on the server at spawn).
     // 195: the material painter (PartMaterials.cs): tool byte 18, CActKind.Material at the end of its enum, and in a Full a part of another material after Extrusion.WireMark (kind 246: its file part's id and the material's name, never a row).
-    public const byte ProtocolVersion = 195;
+    // 196: lofted hull bays (HullLoft.cs): a run-time part named by its key goes on the wire after Extrusion.WireMark as kind 245 and its name as text.
+    public const byte ProtocolVersion = 196;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
