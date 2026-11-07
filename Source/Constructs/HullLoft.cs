@@ -178,11 +178,11 @@ public static class HullLoft
     private static int Cm(float m) => (int)MathF.Round(m * 100);
     private static float Snap(float m) => Cm(m) / 100f;
 
-    public static string Key(float length, bool door, bool front, bool back, Section a, Section b)
-        => $"{Prefix}{Cm(length)}{(door ? "d" : "")}{(front ? "f" : "")}{(back ? "r" : "")} {a.Key()} {(b.SameAs(a) ? "=" : b.Key())})"; // ("=": the back section is the front's)
+    public static string Key(float length, bool door, bool front, bool back, Section a, Section b, bool backDoor = false)
+        => $"{Prefix}{Cm(length)}{(door ? "d" : "")}{(front ? "f" : "")}{(back ? "r" : "")}{(backDoor ? "b" : "")} {a.Key()} {(b.SameAs(a) ? "=" : b.Key())})"; // ("=": the back section is the front's; "b": a doorway in its closed back, phase 2)
 
     /// <summary>What a key says: the bay's length, its door and closed ends, and its two sections.</summary>
-    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B);
+    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B, bool BackDoor = false);
 
     /// <summary>A key read back (null: not a lofted bay's, or one no machine would write). The vehicle kit reads a bay's real roof and flanks from it.</summary>
     public static Shape? ShapeOf(string name)
@@ -197,14 +197,14 @@ public static class HullLoft
         if (digits == 0 || !int.TryParse(head[..digits], NumberStyles.Integer, CultureInfo.InvariantCulture, out var cm) || cm is < 50 or > 200)
             return null;
         var flags = head[digits..];
-        if (flags.Any(c => c is not ('d' or 'f' or 'r')))
+        if (flags.Any(c => c is not ('d' or 'f' or 'r' or 'b')) || flags.Contains('b') && (!flags.Contains('r') || flags.Contains('d')))
             return null;
         if (Section.Parse(words[1]) is not { } a)
             return null;
         var b = words[2] == "=" ? a : Section.Parse(words[2]);
         if (b == null || a.P.Length != b.P.Length)
             return null;
-        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b);
+        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b, flags.Contains('b'));
     }
 
     private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
@@ -231,10 +231,12 @@ public static class HullLoft
         var (door, a, b) = (sh.Door, sh.A, sh.B);
         if (door && (a.Top < DoorTop + 0.1f || b.Top < DoorTop + 0.1f))
             return null; // (a doorway is 2 m tall)
+        if (sh.BackDoor && (b.Top < DoorTop + 0.1f || b.P[0].X < RearJamb + 0.12f || b.XAt(DoorTop) < RearJamb + 0.12f))
+            return null; // (a doorway in the back: 2 m tall, its jambs 0.625 m out and a frame beside them)
         ConstructPartDef def;
         try
         {
-            def = ConstructParts.Parse(Json(name, sh.Length, door, sh.Front, sh.Back, a, b), name);
+            def = ConstructParts.Parse(Json(name, sh.Length, door, sh.Front, sh.Back, a, b, sh.BackDoor), name);
         }
         catch (ConstructPartException e)
         {
@@ -552,7 +554,46 @@ public static class HullLoft
     }
 
     /// <summary>Closes an end: a strip from the centreline to each row of the section, so a section with a ledge closes without filling it.</summary>
-    private static void Cap(Builder p, Section s, float z)
+    /// <summary>A back doorway's half width: its jambs, the door's 1.25 m opening.</summary>
+    public const float RearJamb = 0.625f;
+
+    /// <summary>A strip of a back cap with the doorway cut out under its top: one either side of the opening below the lintel, the whole width above it.</summary>
+    private static void CapDoorway(Builder p, Vector2 from, Vector2 b, float z)
+    {
+        void Strip(Vector2 lo, Vector2 hi, bool open)
+        {
+            if (hi.Y - lo.Y < 0.012f)
+                return;
+            var y0 = lo.Y < 0.001f ? 0.003f : lo.Y;
+            if (!open)
+            {
+                p.Facet([new(-lo.X, y0, z), new(lo.X, y0, z), new(hi.X, hi.Y, z), new(-hi.X, hi.Y, z)], Vector3.UnitZ, Steel, 0.05f);
+                var w = MathF.Min(lo.X, hi.X) - 0.05f;
+                if (w > 0.05f)
+                    p.Hide(new Vector3(-w, lo.Y, z - 0.03f), new Vector3(w, hi.Y, z + 0.03f));
+                return;
+            }
+            foreach (var sx in (float[])[-1, 1]) // (the jambs: the cap either side of the opening, its own frame)
+            {
+                p.Facet([new(sx * RearJamb, y0, z), new(sx * lo.X, y0, z), new(sx * hi.X, hi.Y, z), new(sx * RearJamb, hi.Y, z)], Vector3.UnitZ, Rust, 0.05f);
+                var (x0, x1) = (RearJamb + 0.01f, MathF.Min(lo.X, hi.X) - 0.05f);
+                if (x1 - x0 > 0.0099f)
+                    p.Hide(new Vector3(sx > 0 ? x0 : -x1, lo.Y, z - 0.03f), new Vector3(sx > 0 ? x1 : -x0, hi.Y, z + 0.03f));
+            }
+        }
+        if (b.Y <= DoorTop + 1e-4f)
+            Strip(from, b, true);
+        else if (from.Y >= DoorTop - 1e-4f)
+            Strip(from, b, false);
+        else
+        {
+            var mid = Vector2.Lerp(from, b, (DoorTop - from.Y) / (b.Y - from.Y));
+            Strip(from, mid, true);
+            Strip(mid, b, false);
+        }
+    }
+
+    private static void Cap(Builder p, Section s, float z, bool doorway = false)
     {
         var from = s.P[0];
         for (var k = 1; k < s.P.Length; k++)
@@ -560,7 +601,9 @@ public static class HullLoft
             var b = s.P[k];
             if (b.Y - from.Y < 0.02f && k + 1 < s.P.Length)
                 continue; // (a row too flat to stand on its own: the next strip takes it in)
-            if (b.Y - from.Y >= 0.012f)
+            if (doorway && b.Y - from.Y >= 0.012f)
+                CapDoorway(p, from, b, z);
+            else if (b.Y - from.Y >= 0.012f)
             {
                 var y0 = from.Y < 0.001f ? 0.003f : from.Y; // (3 mm off the floor: its underside would share the floor's plane with the walls' undersides)
                 p.Facet([new(-from.X, y0, z), new(from.X, y0, z), new(b.X, b.Y, z), new(-b.X, b.Y, z)], Vector3.UnitZ, Steel, 0.05f);
@@ -572,14 +615,14 @@ public static class HullLoft
         }
     }
 
-    private static string Json(string name, float length, bool door, bool front, bool back, Section a, Section b)
+    private static string Json(string name, float length, bool door, bool front, bool back, Section a, Section b, bool backDoor = false)
     {
         var p = new Builder();
         Sides(p, a, b, 0, length, door);
         if (front)
             Cap(p, a, 0);
         if (back)
-            Cap(p, b, length);
+            Cap(p, b, length, backDoor);
         // The feet 12 cm in from each end (phase 2; 12.5 before): a part's place is kept to the centimetre, and a deck's sockets are on the quarter metre, so a foot an
         // eighth in put a bay's front on a half centimetre that rounded one way after one length and the other way after another (a 0.75 m bay after a metre one met
         // its neighbour). A bay stands by its front foot ("footL0"), or turned round by its back one ("footR1"), so both ends are 12 cm in.
@@ -601,7 +644,7 @@ public static class HullLoft
         float Around(Section s) => 2 * Enumerable.Range(0, s.P.Length - 1).Sum(k => Vector2.Distance(s.P[k], s.P[k + 1]));
         var skin = (Around(a) + Around(b)) / 2 * length + (front ? a.Top * a.P[0].X * 2 : 0) + (back ? b.Top * b.P[0].X * 2 : 0);
         var mass = MathF.Round(Math.Clamp(skin * 19.5f, 20, 600), 1);
-        var what = door ? "a doorway in its side" : front ? "its front closed" : back ? "its back closed" : "open at both ends";
+        var what = door ? "a doorway in its side" : backDoor ? "a doorway in its closed back" : front ? "its front closed" : back ? "its back closed" : "open at both ends";
         var part = new JsonObject
         {
             ["format"] = "call-of-slop-construct-part/1",

@@ -139,6 +139,9 @@ public sealed record Roofline(string Name, string Words, float Crown = 0, float 
 public sealed record BodyScale(string Name, string Words, bool WalkIn, float HalfMin, float HalfMax, float HeightMin, float HeightMax, float BayMin, float BayMax, float FloorHalf,
     float FlareMin, float FlareMax)
 {
+    /// <summary>The ride height bands the class leans to (factors on the style's: a heavy room high on stilts rolls, so it seldom goes there).</summary>
+    public (double Low, double Mid, double High) Ride { get; init; } = (1, 1, 1);
+
     /// <summary>A car's or a buggy's body: nothing walks in it; the half width 0.6 to 1.0 m, 0.8 to 1.9 m tall, bays of half a metre to a metre.</summary>
     public static readonly BodyScale Compact = new("compact", "a car's or a buggy's: engine covers, cargo boxes, cabins nobody walks in", false, 0.3f, 1.0f, 0.5f, 1.9f, 0.5f, 1.0f, 0.875f, 0, 0.1f);
 
@@ -146,10 +149,10 @@ public sealed record BodyScale(string Name, string Words, bool WalkIn, float Hal
     public static readonly BodyScale Standard = new("standard", "a truck's walk-in room", true, 1.0f, 1.24f, 2.02f, 2.62f, 0.75f, 1.25f, 1.125f, 0, 0.14f);
 
     /// <summary>A heavy truck's or a bus's: taller, and wider over the wheels.</summary>
-    public static readonly BodyScale Heavy = new("heavy", "a heavy truck's or a bus's: taller, wider over the wheels", true, 1.0f, 1.42f, 2.1f, 3.0f, 0.75f, 1.5f, 1.125f, 0.08f, 0.3f);
+    public static readonly BodyScale Heavy = new("heavy", "a heavy truck's or a bus's: taller, wider over the wheels", true, 1.0f, 1.42f, 2.1f, 3.0f, 0.75f, 1.5f, 1.125f, 0.08f, 0.3f) { Ride = (0.7, 1.5, 0.25) };
 
     /// <summary>A land train's or a mobile base's: the biggest the kit has a name for (no style draws it yet: the chassis it needs is a later phase's).</summary>
-    public static readonly BodyScale Giant = new("giant", "a land train's or a mobile base's", true, 1.0f, 1.9f, 2.4f, 3.8f, 1.0f, 2.0f, 1.125f, 0.2f, 0.7f);
+    public static readonly BodyScale Giant = new("giant", "a land train's or a mobile base's", true, 1.0f, 1.9f, 2.4f, 3.8f, 1.0f, 2.0f, 1.125f, 0.2f, 0.7f) { Ride = (0.3, 1, 0) };
 
     public static readonly BodyScale[] All = [Compact, Standard, Heavy, Giant];
 
@@ -183,8 +186,14 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     public (float L, double W)[] Brows { get; init; } = [(1f, 2), (1.25f, 1.5), (1.5f, 1)];
     public (float L, double W)[] Tails { get; init; } = [(1f, 2), (0.75f, 1), (1.25f, 1)];
 
+    /// <summary>How the style's chassis ride, as weights of the bands (low between arms, mid, high on stilts), before the scale class's own (<see cref="BodyScale.Ride"/>).</summary>
+    public (double Low, double Mid, double High) Ride { get; init; } = (1, 1, 1);
+
     /// <summary>The chance a room's door is in its left (-x) side; the rest in its right (+x).</summary>
     public double DoorLeft { get; init; } = 0.5;
+
+    /// <summary>The chance a room that is the vehicle's last, with nothing behind it but a hitch or a bare tail, has its door in its back instead (a van's, an APC's).</summary>
+    public double DoorRear { get; init; } = 0.2;
 
     /// <summary>
     /// Paint by sections (phase 2, the user's: "so the shapes read through the wear"): a room's bays are painted in runs of <see cref="RunMin"/> to <see cref="RunMax"/>
@@ -199,13 +208,13 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     {
         // (each station after the first: a new language half the time; tall and short, hard ledges over the wheels)
         ["Bandit"] = new([(BodyLanguage.Slab, 2), (BodyLanguage.Ledge, 1.5), (BodyLanguage.Armour, 0.5)], Mix: 0.5)
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.95f, TallMax = 1.16f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body" },
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.95f, TallMax = 1.16f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25 },
         // (low and wide, flat-faceted: little height, a glacis brow)
         ["Militia"] = new([(BodyLanguage.Armour, 1)])
-            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.02f, FlareShare = 0.8f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)] },
+            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.02f, FlareShare = 0.8f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.5 },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
         ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12)
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.95f, TallMax = 1.08f, FlareShare = 0.7f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3 },
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.95f, TallMax = 1.08f, FlareShare = 0.7f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35 },
         // (a portacabin on a chassis: boxy, square ends, tall)
         ["Scam"] = new([(BodyLanguage.Cabin, 2), (BodyLanguage.Van, 1)])
             { Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.98f, TallMax = 1.12f, FlareShare = 0.4f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)] },
@@ -214,7 +223,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
             { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.94f, TallMax = 1.08f, FlareShare = 0.9f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)] },
         // (tall, upright buses: the heavy class first, the door kerbside)
         ["British"] = new([(BodyLanguage.Bus, 2.5), (BodyLanguage.Coach, 1.5)], 8, 12)
-            { Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.18f, FlareShare = 0.6f, DoorLeft = 0.2 },
+            { Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.18f, FlareShare = 0.6f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0 },
     };
 
     /// <summary>A style not named: military armour, faceted, one language.</summary>
@@ -244,12 +253,21 @@ public sealed class BodyLook
 {
     public BodyLanguage Language { get; }
     public BodyScale Scale { get; }
+
+    /// <summary>The ride height bands the chassis rolls by: the style's times the scale class's (<see cref="VehicleChassis.RideOf"/>).</summary>
+    public (double Low, double Mid, double High) Ride => (_rule.Ride.Low * Scale.Ride.Low, _rule.Ride.Mid * Scale.Ride.Mid, _rule.Ride.High * Scale.Ride.High);
     public Roofline Line { get; }
     public float Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow, Flare, LineAmount, BrowLength, TailLength;
     public int Facets;
 
     /// <summary>+1: the door in the room's right side (+x), -1 its left.</summary>
     public float DoorSide = 1;
+
+    /// <summary>Whether this look would put its door in the room's back (<see cref="BodyStyleRule.DoorRear"/>); the plan says whether it may (<see cref="RearDoor"/>).</summary>
+    public bool WantsRearDoor;
+
+    /// <summary>The room's door is in its tail's back (a doorway in its cap), set by the plan when the room is last and nothing stands behind it.</summary>
+    public bool RearDoor;
 
     /// <summary>
     /// Where the overhang starts, above the room's floor: over the wheels' tops with room for their travel (measured over every chassis recipe on 2026-11-07:
@@ -283,6 +301,7 @@ public sealed class BodyLook
         BrowLength = BodyStyleRule.Weighted(p.Fork("brow"), _rule.Brows);
         TailLength = BodyStyleRule.Weighted(p.Fork("tail"), _rule.Tails);
         DoorSide = p.Fork("door").Chance(_rule.DoorLeft) ? -1 : 1;
+        WantsRearDoor = p.Fork("rear door").Chance(_rule.DoorRear);
         _lengths = p.Fork("lengths");
     }
 
@@ -311,6 +330,7 @@ public sealed class BodyLook
         (Language, Scale, Line, _rule, _mix, _lengths) = (o.Language, o.Scale, line, o._rule, o._mix, o._lengths);
         (Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow, Flare, LineAmount, BrowLength, TailLength, Facets, DoorSide, FlareFrom) =
             (o.Height, o.Width, o.BrowRake, o.TailRake, o.BrowNarrow, o.TailNarrow, o.Flare, o.LineAmount, o.BrowLength, o.TailLength, o.Facets, o.DoorSide, o.FlareFrom);
+        (WantsRearDoor, RearDoor) = (o.WantsRearDoor, o.RearDoor);
     }
 
     private BodyLook WithLine(Roofline line) => new(this, line);
@@ -545,6 +565,17 @@ public sealed class BodyLook
         return at;
     }
 
+    /// <summary>A tail's back section widened where a back doorway needs it: out to the jamb and its frame from the floor to the lintel (HullLoft.RearJamb).</summary>
+    private static HullLoft.Section RearFrame(HullLoft.Section s)
+    {
+        const float least = HullLoft.RearJamb + 0.15f, lintel = 2.06f;
+        var pts = s.P.ToList();
+        var k = pts.FindIndex(p => p.Y > lintel);
+        if (k > 0 && pts[k].Y - lintel > 0.02f && lintel - pts[k - 1].Y > 0.02f && pts.Count < HullLoft.MaxPoints)
+            pts.Insert(k, new Vector2(MathF.Max(least, s.XAt(lintel)), lintel)); // (a point at the lintel, so the side reaches the frame up to it)
+        return new HullLoft.Section(pts.Select((p, i) => i < pts.Count - 1 && p.Y <= lintel + 0.001f ? p with { X = MathF.Round(MathF.Max(p.X, least) * 100) / 100 } : p).ToArray());
+    }
+
     /// <summary>A door bay's least height (its doorway is 2 m: HullLoft wants 2.1 m), and a brow's or a tail's where the room check's rays start.</summary>
     private const float DoorTop = 2.14f, EndRays = 1.68f;
 
@@ -557,6 +588,13 @@ public sealed class BodyLook
         for (var k = 0; k < bays.Length; k++)
         {
             var b = bays[k];
+            if (b == "Door" && RearDoor)
+            {
+                // (the door is in the back: this bay is a plain tall one, level, 1.5 m, as the plan laid it out)
+                var (ra, rb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, DoorTop), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, DoorTop));
+                names[k] = HullLoft.Key(lengths[k], false, false, false, ra, rb);
+                continue;
+            }
             if (b == "Door")
             {
                 var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, DoorTop), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, DoorTop));
@@ -573,11 +611,12 @@ public sealed class BodyLook
             var (fa, fb) = parts[0] switch
             {
                 "Brow" => Section(At(1), front, 0, st[1].H, st[1].W) is var bb ? (Section(At(1), front, -1, st[0].H, st[0].W, Least(bb.Top, 0.35f, lengths[k])), bb) : default,
+                "Tail" when RearDoor => Section(At(k), "T", 0, st[k].H, st[k].W, DoorTop) is var td ? (td, RearFrame(Section(At(k), "T", 1, st[k + 1].H, st[k + 1].W, DoorTop + 0.02f))) : default, // (a doorway in its back: tall and wide enough at its end)
                 "Tail" => Section(At(k), back, 0, st[k].H, st[k].W) is var tf ? (tf, Section(At(k), back, 1, st[k + 1].H, st[k + 1].W, Least(tf.Top, 0.3f, lengths[k]))) : default,
                 _ => (Section(At(k), front, 0, st[k].H, st[k].W), Section(At(k + 1), back, 0, st[k + 1].H, st[k + 1].W)),
             };
             var (ma, mb) = Match(fa, fb);
-            names[k] = HullLoft.Key(lengths[k], false, parts[0] == "Brow", parts[0] == "Tail", ma, mb);
+            names[k] = HullLoft.Key(lengths[k], false, parts[0] == "Brow", parts[0] == "Tail", ma, mb, parts[0] == "Tail" && RearDoor);
         }
         return names;
     }
@@ -587,7 +626,7 @@ public sealed class BodyLook
         HullLoft.ShapeOf(name) is { } s ? turned ? s with { A = s.B, B = s.A } : s : null;
 
     public string Label => string.Create(CultureInfo.InvariantCulture,
-        $"{Language.Name} {Scale.Name} {Height:0.00} m, flare {Flare:0.00}, {Line.Name} {LineAmount:0.0}, brow {BrowRake:0.00} {BrowLength:0.##} m, tail {TailRake:0.00} {TailLength:0.##} m, door {(DoorSide > 0 ? "right" : "left")}{(Facets > 0 ? $", {Facets} facets" : "")}");
+        $"{Language.Name} {Scale.Name} {Height:0.00} m, flare {Flare:0.00}, {Line.Name} {LineAmount:0.0}, brow {BrowRake:0.00} {BrowLength:0.##} m, tail {TailRake:0.00} {TailLength:0.##} m, door {(RearDoor ? "rear" : DoorSide > 0 ? "right" : "left")}{(Facets > 0 ? $", {Facets} facets" : "")}");
 }
 
 public sealed partial class Vehicle

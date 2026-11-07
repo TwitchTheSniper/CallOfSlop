@@ -25,6 +25,7 @@ public sealed partial class Vehicle
         if (Look != null && Look.Spoken(bays.Length) is var spoken && spoken != Look.Language.Name)
             Modules.Add($"sections {spoken}"); // (a mixing style's room: its stations' languages, front to back)
         var doorSide = Look?.DoorSide ?? 1;
+        var rear = Look?.RearDoor == true; // (phase 2: the door in the tail's back)
         var lengths = new float[names.Length];
         for (var k = 0; k < names.Length; k++)
         {
@@ -35,7 +36,7 @@ public sealed partial class Vehicle
         var z1 = z0 + lengths.Sum();
         var r = new Rect(-BayHalf, BayHalf, z0, z1);
         var floorHalf = Look?.Scale.FloorHalf ?? 1.125f;
-        var room = new Room { Tag = tag, R = r, DoorFace = new Vector3(doorSide, 0, 0), FloorTop = floorTop, Plan = bays.ToList() };
+        var room = new Room { Tag = tag, R = r, DoorFace = rear ? Vector3.UnitZ : new Vector3(doorSide, 0, 0), FloorTop = floorTop, Plan = bays.ToList() };
         // The floor: plates on a half-metre lattice where the bays' feet stand (a quarter-metre plate's centre is half a centimetre off the grid, so a foot on one
         // stood its bay 5 mm off, and bays of different lengths then met in each other: phase 2); an odd column at the +x edge in plates of any size.
         var cols = (int)MathF.Round(2 * floorHalf / Cell);
@@ -49,7 +50,7 @@ public sealed partial class Vehicle
         for (var k = 0; k < names.Length; k++)
         {
             // A bay stands on its feet (the Bolt Deck's quarter grid, from its floor's width: HullLoft.FootX); a left door bay is the right one turned round.
-            var turned = bays[k] == "Door" && doorSide < 0 && Look != null;
+            var turned = bays[k] == "Door" && doorSide < 0 && Look != null && !rear;
             var foot = HullLoft.ShapeOf(names[k]) is { } sh ? HullLoft.FootX(sh) : 0.75f;
             var bay = turned
                 ? Stand(names[k], new Vector3(-foot, room.FloorTop, z + 0.125f), new Orient(Vector3.UnitY, Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ), null, "footR1", 0.06f)
@@ -57,8 +58,10 @@ public sealed partial class Vehicle
             walls.Add(bay);
             room.Bays.Add(bay);
             ceiling = MathF.Max(ceiling, room.FloorTop + Def(names[k]).BoundsMax.Y); // (the tallest bay: a brow or a tail comes down)
-            if (bays[k] == "Door")
+            if (bays[k] == "Door" && !rear)
                 HullDoorIn(room, bay, z, tag, doorSide);
+            else if (rear && k == names.Length - 1)
+                RearDoorIn(room, bay, z + lengths[k], tag);
             z += lengths[k];
         }
         room.Walls.AddRange(walls);
@@ -104,6 +107,22 @@ public sealed partial class Vehicle
         room.Door = Onto(room.Hinge, "leaf", HullDoor, "hang", 0);
         Paint(room.Door, Style.Colour(Dice.Fork("door " + tag), "rust"));
         room.Ladder = Boarding(new Vector3(side * 1.13f, room.FloorTop, mid), tag + "walls");
+    }
+
+    /// <summary>
+    /// The flush door in a tail's back doorway (phase 2, HullLoft's "b" flag): the side door's hinge and leaf turned a quarter round, the hinge on the left jamb, the
+    /// door swung shut across the opening, a ladder under it.
+    /// </summary>
+    private void RearDoorIn(Room room, VPart bay, float zBack, string tag)
+    {
+        room.DoorMid = new Vector3(0, room.FloorTop, zBack);
+        var turn = new Orient(Vector3.UnitX, Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitZ);
+        var def = Def(HullHinge);
+        var at = new Vector3(-(DoorWidth - HingeWidth) * 0.5f, room.FloorTop + 1f, zBack + 0.025f + (DoorPlane - 0.02f));
+        room.Hinge = Weld(HullHinge, bay, at + Rot24.Apply(FirstTurn(turn), (def.BoundsMin + def.BoundsMax) * 0.5f), turn, 0, 0, 0);
+        room.Door = Onto(room.Hinge, "leaf", HullDoor, "hang", 0);
+        Paint(room.Door, Style.Colour(Dice.Fork("door " + tag), "rust"));
+        room.Ladder = Boarding(new Vector3(0, room.FloorTop, zBack + 0.13f), tag + "walls");
     }
 
     /// <summary>A gun on a side: a Gun Sponson on <paramref name="on"/>'s waist socket, a turntable and the gun on it. <paramref name="seat"/> works it from inside.</summary>
