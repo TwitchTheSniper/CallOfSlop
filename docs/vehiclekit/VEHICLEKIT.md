@@ -413,7 +413,38 @@ rate and commonest misses; the first seed is made again and must write the same 
 thread), whose hash must match; `--check` runs the full check on each. `--kit-report --roles [--seeds N] [--style S] [--role R] [--tier N] [--raw]`: every style, role and
 tier (default 3 seeds a cell): a line a cell, then a table (met, failed, identity, every mark, plans, cost, shapes) and the same by role, by tier and by style.
 
-@@ROLES_MEASURED@@
+**Measured** (2026-11-07, `--kit-report --roles --seeds 3`: every style (Bandit, IT, Highland, Call Centre, British, Militia) x every role x tiers 1 to 4, seeds 1 to 3,
+576 vehicles, generation only; the 2-core box shared with other agents, load 6 to 12, so times are rough. Kit 3 is the same run with `--kit 3`: the same shapes and
+seeds made without the role, measured against it):
+
+| | kit 3 (no role) met | kit 4 met | kit 4 identity | kit 4 mean ms (kit 3) | kit 4's commonest misses |
+| --- | --- | --- | --- | --- | --- |
+| scout | 44/72 | 62/72 | 0.95 | 308 (276) | 9 est. top speed under 27 |
+| raider | 40/72 | 59/72 | 0.96 | 369 (316) | 7 no loot (a Technical), 5 over 9.5 m |
+| gun platform | 40/72 | 67/72 | 0.97 | 569 (485) | 5 under 2 guns |
+| carrier | 4/72 | 62/72 | 0.97 | 1383 (760) | 10 armour under the need |
+| tanker | 0/72 | 72/72 | 0.94 | 183 (203) | |
+| recovery | 0/72 | 68/72 | 0.96 | 429 (421) | 4 no winch |
+| command | 4/72 | 62/72 | 0.97 | 875 (638) | 10 armour under the need |
+| boss | 1/72 | 45/72 | 0.98 | 1628 (751) | 18 armour, 9 under 3 guns |
+| tier 1 / 2 / 3 / 4 | 35 / 34 / 32 / 32 of 144 | 130 / 127 / 125 / 115 of 144 | 0.96 / 0.96 / 0.96 / 0.97 | 645 / 695 / 744 / 787 | tier 4: 19 armour |
+| all | 133/576, 24 failed to generate | 497/576 (86 %), 2 failed | 0.96, every mark on 574/574 | 718 (481), worst 3314 | |
+
+Kit 3's misses are what the roles are for: no winch, no chest on a tanker, no signals, too little armour, a single gun on a gun deck. Kit 3's 24 failures are kit-1
+Technical seeds with nowhere to stand a part; kit 4 tries a derived seed. Kit 4 re-planned 305 plans for a role over the 576 (about half a plan more a vehicle), which is its
+cost; the slowest are the armoured War Buses, whose appliqué tests every part's bounds per plate. By style kit 4 met 79 % (Call Centre) to 91 % (Highland); identity held at
+every tier (0.92 Militia, its derived signature, to 0.99 British), and every vehicle that generated carried every mark.
+
+What is left over: armour is the hard need. A room's area is its hull bays (armour 8), and appliqué covers at most half their sides (plates a metre apart, so no two share
+a face), so a War Bus tops out near 13 to 14 and the tier 4 needs (carrier and command 12, boss 12.5) miss about one in eight. A heavy vehicle's engine is the style's only
+heavy engine, so a tier shows on it in armour, guns, size and loot, not part quality. The speed is an estimate, not a drive.
+
+**Checked** (the full check, `--role ... --check`: drive, turn, guns, coplanar faces, rooms): Bandit, IT, Highland and British, every role, tier 3, seed 5: 32 of 32 passed.
+Earlier samples found two things now fixed: Armour Plate in a style's decks (the style's own plate materials only now) and a tier 1 Militia Technical under the check's
+stability (a kit-1 shape's role vehicle is held to its check's stability now), and one not the roles' doing: the Network Switch hood trophy z-fight (IT Box Truck 2), fixed on
+main by the dressing fix. A role seed made twice writes the same text, and made as the dynamic spawn makes it (`--sliced`) the same hash; the dynamic kit-3 seeds tried
+(Bandit Box Truck 1000, IT War Bus 77, Highland Flatbed Fort 55, Call Centre Gun Wagon 12, British Scrap Tanker 40, Militia Box Truck 5, Bandit Technical 30) write the
+same files as before kit 4, byte for byte.
 
 ## Quality tools
 
