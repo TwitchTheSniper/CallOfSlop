@@ -195,8 +195,8 @@ public static class SandboxAim
             return AimCall.Refuse("someone is driving it");
         if (ConstructEdits.WreckedAlone(c))
             return AimCall.Refuse("a wrecked part already: haul it to a Recycler");
-        if (ConstructEdits.SalvageRefusal(c, player) is { } theirs)
-            return AimCall.Refuse(theirs);
+        if ((ConstructEdits.SalvageRefusal(c, player) ?? (ConstructEdits.Salvageable(c, player) ? null : Factions.RankRefusal(c.Owner, player))) is { } theirs)
+            return AimCall.Refuse(theirs); // (a faction rank may not take a mate's parts off)
         if (contested != null)
             return AimCall.Refuse(contested);
         if (c.DefOf(part).IsVolumeStore && c.StoreHolds(part))

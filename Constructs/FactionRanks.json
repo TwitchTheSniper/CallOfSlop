@@ -1,0 +1,25 @@
+{
+  // Faction ranks (docs/sandbox/CONSTRUCTS.md, "Factions", "Ranks"): each set is a ladder, lowest rank first; the last rank
+  // is the leader's and may do everything. "join" is the rank a new member gets. Permissions ("may"):
+  //   Dismantle  take apart (remover, salvage) what a mate owns; using, driving and building on it needs no rank
+  //   Give       give a construct you own to a mate
+  //   Invite     invite people, and answer those who ask to join
+  //   Remove     take out a member of a lower rank
+  //   Promote    move a member of a lower rank up or down, to below one's own
+  //   Relations  set the faction's stance toward another faction (allied, neutral, at war)
+  //   Looks      the faction's colour and tag, and whether anyone may join
+  // Player factions use the "Player" set. Other sets are for story factions with ladders of their own (later).
+  "format": "call-of-slop-faction-ranks/1",
+  "sets": [
+    {
+      "name": "Player",
+      "join": "Recruit",
+      "ranks": [
+        { "name": "Recruit" },
+        { "name": "Member", "may": [ "Dismantle", "Give" ] },
+        { "name": "Officer", "may": [ "Dismantle", "Give", "Invite", "Remove", "Promote", "Relations" ] },
+        { "name": "Leader" }
+      ]
+    }
+  ]
+}

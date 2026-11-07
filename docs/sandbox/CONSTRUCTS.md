@@ -1404,8 +1404,29 @@ Players group into factions and share what they own (`Source/Constructs/Factions
 - **Found, invite, join.** Anyone not in a faction can found one by naming it (2 to 24 ASCII characters, no two alike in any
   case); its founder leads it. The leader invites players who are here (not bots or the story's people); an invite shows in
   the invited player's window with Join and No thanks, and lasts the session. Joining another faction leaves the old one.
-  The leader can remove a member. A leader who leaves hands over to a member who is here (else anyone in it); the last one
-  out ends the faction. At most 31 factions.
+  A faction is **invite only** or **open** (anyone joins from the list); for an invite-only one the list has **Ask to join**,
+  which tells its members who may invite, and they **Let in** or **Turn away** from the Invite list (an invite to someone who
+  asked lets them in). A leader who leaves hands over to the highest rank who is here (else anyone in it); the last one out
+  ends the faction. At most 31 factions.
+- **Colour and tag.** Each faction has a colour and a tag of 1 to 5 letters or digits (no two factions alike), started from
+  its name (a hue from its letters, its initials) and changed under **Colour, tag and joining**. Name tags over players' heads
+  show `[TAG]` in the colour before the name (`UiNameTags.cs`; `FactionTable.TagLabel` is made when the tag changes, so a
+  frame makes no text). The faction's name can't be changed: the story keeps a player faction's standing by its name.
+- **Ranks** (`Constructs/FactionRanks.json`, `FactionRanks.cs`). A rank set is a ladder of 2 to 8 ranks, lowest first, the
+  last the leader's, each with what it `may` do: `Dismantle` (take apart a mate's things with the remover or the attach tool;
+  using, driving and building on them needs no rank), `Give` (give a construct away), `Invite` (and answer those asking),
+  `Remove` and `Promote` (only members of a lower rank, and only to ranks below one's own), `Relations` and `Looks`. Player
+  factions use the `Player` set: Recruit (joins at it: may use and build on what is shared, nothing more), Member, Officer,
+  Leader. The leader can **Make leader** another member and steps down to the rank below. Sets are generic data, so a story
+  faction's ladder (the Ministry's colony, later) is one more set. A refused file falls back to the same ladder built in.
+- **Other factions.** Toward each other faction a faction is neutral, offers an alliance, or declares war
+  (`FactionTable.Stance`): two factions are **allied** when both want it and **at war** when either says so. For now this is
+  shown in the window and told to both sides, and the story hears of it (below); it changes no rule of who may use what.
+- **The story's factions** (docs/story/STORY.md "Factions"). The window lists how each story faction (the IT Department...)
+  stands with your faction, -100 to 100 in words, and a **Notorious** faction is marked in red: the server copies it from the
+  story once a second (`GameStoryFactions.StoryStandingsTick`) and sends it in the table when it changes. Founding a faction
+  is a `Unite` event, and alliances, wars and their ends `Ally`, `Feud` and `Truce` between the two groups, which the radio
+  can tell (Story/Lines/Radio.json).
 - **Sharing.** A faction mate's constructs and beacons count as your own (`Factions.Shares(owner, player)`, which every
   ownership check now asks instead of `Owner == player`): you may drive, build on, take apart, configure, grab, key-turn and
   remote-control them, a mate's damaged construct is not salvage to you, its beacon network serves you, and it is never
@@ -1417,14 +1438,17 @@ Players group into factions and share what they own (`Source/Constructs/Factions
   backpack, else at their feet). A magazine or a hose stays with you.
 - **Saved worlds.** The faction table is keyed by owner byte, the same byte `Construct.Owner` holds, so a member who leaves a
   saved world stays in their faction under their offline byte (still sharing what they own) and is back in it on return.
-  The world file keeps the factions in a `FCTN` section (docs/sandbox/WORLD-SAVES.md). Without a saved world, leaving the game
+  The world file keeps the factions in a `FCTN` section and their colours, tags, joining, stances and ranks in `FCT2`
+  (docs/sandbox/WORLD-SAVES.md); a world from before `FCT2` gets colours and tags from the names, and its members are Members. Without a saved world, leaving the game
   leaves the faction.
-- **Network** (protocol 161). The server sends the whole table (`Msg.Factions`: names, leaders, members with their names,
-  invites) when it changes and to each joiner; actions are `CActKind.Faction` with a `FactionOp`, refused with a notice. Each
+- **Network** (protocol 161, 200 for colours and ranks). The server sends the whole table (`Msg.Factions`: names, leaders,
+  colours, tags, joining, Notorious, the story factions' standing, members with their names and ranks, invites, asks,
+  stances, the story factions' names) when it changes and to each joiner; actions are `CActKind.Faction` with a `FactionOp`, refused with a notice. Each
   Game has its own table (`WorldContext` swaps `Factions.Now`).
 
-Not done yet: factions for bots or the story's people, a faction's own name or colour on its constructs, and carrying a
-faction across free travel to another planetoid's game.
+Not done yet: factions for bots or the story's people (hiring them as crew: a member is an owner byte, so a story person
+would need one), a faction's colour or flag on its constructs (a buildable banner part), rules that follow from alliances
+and wars, and carrying a faction across free travel to another planetoid's game.
 
 ## Creative or Survival
 

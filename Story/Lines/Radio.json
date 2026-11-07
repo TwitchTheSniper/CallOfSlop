@@ -16,6 +16,10 @@
     { "on": "Radio", "about": "Discover", "say": [ "{here} radio. Big news: {news}." ] },
     { "on": "Radio", "about": "Insult", "say": [ "{here} radio, and in local news: {news}. Again." ] },
     { "on": "Radio", "about": "Give", "say": [ "{here} radio. Some good news for once: {news}." ] },
+    { "on": "Radio", "about": "Unite", "say": [ "{here} radio. There's a new outfit about: {news}. Be nice to them, or don't.", "News from {here}: {news}. Another lot with a flag." ] },
+    { "on": "Radio", "about": "Ally", "say": [ "{here} radio. {news}. Mind how you go near either of them." ] },
+    { "on": "Radio", "about": "Feud", "say": [ "{here} radio, and it's bad: {news}. Keep your heads down." ] },
+    { "on": "Radio", "about": "Truce", "say": [ "{here} radio. {news}. For now." ] },
     { "on": "Radio", "about": "Turn", "say": [ "{here} radio, on how things stand: {news}.", "News from around: {news}. Plan your trips accordingly." ] },
     { "on": "Radio", "about": "Turn", "if": "?place Lawless", "say": [ "{here} radio. {news}. Stay away from {place} if you can." ] }
   ]
