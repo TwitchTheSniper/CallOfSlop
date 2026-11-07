@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--bench-fuse [PARTS] [--stack] [--capital]</c>: what fusing buys (docs/sandbox/CONSTRUCTS.md, "Fusing"; numbers in
+/// <c>--bench-fuse [PARTS] [--capital] [--stack] [--sheet]</c> (the sheet scenes run alone, or with --sheet beside the others): what fusing buys (docs/sandbox/CONSTRUCTS.md, "Fusing"; numbers in
 /// docs/perf/LIMITS.md, "Fused units"). A command-line benchmark, not a self-test section: it fails nothing. Every scene is
 /// built twice, once plain and once with the hull fused whole (the fuse tool's own tags), and measured the same way: the full
 /// rebuild, the collider build, the rough fit, the physics step against the floor, rolling ground and another construct,
@@ -31,8 +31,10 @@ public static partial class SelfTest
             ww.RemovePart(wc, 1000);
             ww.Step(q, World.TickDt);
         }
-        foreach (var fused in new[] { false, true })
-            BenchSheet(parts, block, q, fused);
+        var only = args.Any(a => a.Equals("--capital", StringComparison.OrdinalIgnoreCase) || a.Equals("--stack", StringComparison.OrdinalIgnoreCase));
+        if (!only || args.Any(a => a.Equals("--sheet", StringComparison.OrdinalIgnoreCase)))
+            foreach (var fused in new[] { false, true })
+                BenchSheet(parts, block, q, fused);
         if (args.Any(a => a.Equals("--capital", StringComparison.OrdinalIgnoreCase)))
             foreach (var fused in new[] { false, true })
                 BenchCapital(parts, q, fused);
@@ -62,6 +64,9 @@ public static partial class SelfTest
 
     private static void BenchFuseAll(Construct c)
     {
+        if (c.Dirty)
+            c.Rebuild();
+        var (m0, c0, i0) = (c.Mass, c.Com, c.InvInertiaLocal);
         var tag = ConstructFuse.NewTag();
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i).Name != "Lamp")
@@ -69,6 +74,7 @@ public static partial class SelfTest
         c.Dirty = true;
         c.Rebuild();
         _ = c.Collider;
+        Console.WriteLine($"[fuse bench] fused {c.PartCount} parts: mass {m0:0.###} -> {c.Mass:0.###} kg, centre of mass moved {Vector3.Distance(c0, c.Com) * 1000:0.000} mm, inverse inertia diagonal {i0.M11:E3} {i0.M22:E3} {i0.M33:E3} -> {c.InvInertiaLocal.M11:E3} {c.InvInertiaLocal.M22:E3} {c.InvInertiaLocal.M33:E3}");
     }
 
     private static (double Min, double Med) Times(int repeats, Action run, Action? before = null)
@@ -135,7 +141,7 @@ public static partial class SelfTest
         var col = c.Collider;
         long bytes = (long)col.LeafCount * System.Runtime.CompilerServices.Unsafe.SizeOf<ConstructCollider.Leaf>() + (long)col.NodeCount * System.Runtime.CompilerServices.Unsafe.SizeOf<ConstructCollider.Node>();
         Console.WriteLine($"[fuse bench] {name}: collider {col.LeafCount} leaves, {col.NodeCount} nodes, {bytes / 1024} KB in use ({(long)col.Leaves.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<ConstructCollider.Leaf>() / 1024} KB of leaf arrays)");
-        Console.WriteLine($"[fuse bench] {name}: sliding on a floor: {Steps(w, q, 40, () => { c.Vel = new Vector3(3, c.Vel.Y, 0); c.Wake(); })}");
+        Console.WriteLine($"[fuse bench] {name}: sliding on a floor: {Steps(w, q, 40, () => { c.Vel = new Vector3(3, c.Vel.Y, 0); c.Wake(); })}; its lowest box at {c.ToWorld(new Vector3(0, block.BoundsMin.Y, 0)).Y * 1000:0.0} mm, tilt {MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.00} deg");
         // Another construct: 40 blocks dropped on the hull (construct against construct).
         for (var i = 0; i < 40; i++)
             ConstructBuild.PlaceNew(w, block, c.ToWorld(new Vector3(0.6f + i % 8 * 0.4f, 0.6f, 4 + i / 8 * 1.5f)), 0);
@@ -199,12 +205,13 @@ public static partial class SelfTest
     {
         var name = Label(fused);
         var w = new ConstructWorld();
-        if (CapHull(w, new Vector3(0, 2f, 0), parts, out var why) is not { } c)
+        if (CapHull(w, new Vector3(0, 2f, 0), Math.Min(parts, Construct.MaxParts - 400), out var why) is not { } c)
         {
             Console.WriteLine($"[fuse bench] capital hull didn't build: {why}");
             return;
         }
         c.Rebuild();
+        c.Pos = c.PrevPos = c.Pos + new Vector3(0, 0.5f - c.ToWorld(c.LocalMin).Y, 0); // (half a metre over the floor, all of it)
         if (fused)
         {
             var fits = ConstructFuseFit.Fits;
@@ -215,7 +222,15 @@ public static partial class SelfTest
         }
         Console.WriteLine($"[fuse bench] capital {name}: rebuild, full: {Ms(Times(5, () => c.Rebuild(), () => c.Dirty = true))}");
         Console.WriteLine($"[fuse bench] capital {name}: collider built: {Ms(Times(5, () => _ = c.Collider, c.ColliderChanged))}, {c.Collider.LeafCount} leaves");
-        Console.WriteLine($"[fuse bench] capital {name}: falling onto the floor, sliding: {Steps(w, q, 60, () => { c.Vel = new Vector3(2, c.Vel.Y, 0); c.Wake(); })}, rests at {c.WorldCom.Y:0.000} m");
+        var path = "";
+        for (var t = 0; t < 120; t++)
+        {
+            if (t % 20 == 0)
+                path += $" {c.WorldCom.Y:0.00}";
+            w.Step(q, World.TickDt);
+        }
+        Console.WriteLine($"[fuse bench] capital {name}: centre of mass height every 20 ticks from the start:{path}");
+        Console.WriteLine($"[fuse bench] capital {name}: falling onto the floor, sliding: {Steps(w, q, 60, () => { c.Vel = new Vector3(2, c.Vel.Y, 0); c.Wake(); })}, centre of mass at {c.WorldCom.Y:0.000} m, its lowest bound at {c.ToWorld(c.LocalMin).Y:0.000} m, tilt {MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.00} deg");
     }
 
     private static void BenchStack(int parts, ConstructPartDef block, IWorldQuery q, bool fused)

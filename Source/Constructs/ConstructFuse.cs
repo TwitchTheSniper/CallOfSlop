@@ -45,6 +45,7 @@ public sealed partial class Construct
     private FuseUnit[] _units = [];
     private int _unitCount;
     private int[] _fuseIx = []; // part -> unit index, -1: none (valid while _fuseLive)
+    private bool[] _fuseCov = []; // part -> FuseCovers, for the members (valid while _fuseLive)
     private int[] _fuseMem = []; // every unit's members, unit by unit, in part order
     private int[] _fuseSeen = [];
     private int _fuseStamp;
@@ -60,7 +61,7 @@ public sealed partial class Construct
     public int FusedParts { get; private set; }
 
     /// <summary>The unit part <paramref name="i"/> is in (as of the last rebuild), or -1.</summary>
-    internal int UnitOf(int i) => _fuseLive && (uint)i < (uint)PartCount && i < _fuseIx.Length ? _fuseIx[i] : -1;
+    internal int UnitOf(int i) => _fuseLive && _unitCount > 0 && (uint)i < (uint)PartCount && i < _fuseIx.Length ? _fuseIx[i] : -1;
 
     /// <summary>The members of unit <paramref name="u"/>, in part order.</summary>
     internal ReadOnlySpan<int> UnitMembers(int u) => _fuseMem.AsSpan(_units[u].First, _units[u].Count);
@@ -72,13 +73,13 @@ public sealed partial class Construct
     public bool IsOneUnit => _fuseLive && _unitCount == 1 && FusedParts == PartCount && PartCount > 1;
 
     /// <summary>Part <paramref name="i"/>'s boxes are inside its unit's rough shape (its own leaves are left out of the collider).</summary>
-    internal bool FuseRough(int i) => UnitOf(i) is var u and >= 0 && _units[u].RoughCount > 0 && FuseCovers(i);
+    internal bool FuseRough(int i) => UnitOf(i) is var u and >= 0 && _fuseCov[i] && _units[u].RoughCount > 0;
 
     /// <summary>Does a unit's rough shape and mass share take part <paramref name="i"/> in: plain structure (frames, panels, wedges), not a merged receiver.</summary>
     internal bool FuseCovers(int i) => (i >= MergeOf.Length || MergeOf[i] == 0) && PlainParts.Of(Parts[i].D);
 
     /// <summary>Is part <paramref name="i"/>'s share of the mass sums held by its unit (a full rebuild adds the unit's share instead)?</summary>
-    private bool FuseMassHeld(int i) => UnitOf(i) is var u and >= 0 && _units[u].Seg == 0 && FuseCovers(i);
+    private bool FuseMassHeld(int i) => UnitOf(i) is var u and >= 0 && _fuseCov[i] && _units[u].Seg == 0;
 
     /// <summary>A unit wants its rough shape fitted (the collider fits it when it is next built).</summary>
     internal bool FuseFitDue
@@ -203,9 +204,14 @@ public sealed partial class Construct
                 _units[u].Count = 0;
             }
             FusedParts = at;
+            if (_fuseCov.Length < n)
+                _fuseCov = new bool[Math.Max(n, _fuseCov.Length * 2)];
             for (var i = 0; i < n; i++)
                 if (_fuseIx[i] is var u and >= 0)
+                {
                     _fuseMem[_units[u].First + _units[u].Count++] = i;
+                    _fuseCov[i] = FuseCovers(i);
+                }
             // What changed since the last rebuild.
             var split = false;
             for (var u = 0; u < _unitCount; u++)

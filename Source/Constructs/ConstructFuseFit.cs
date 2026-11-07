@@ -21,8 +21,14 @@ namespace CallOfSlop;
 /// </summary>
 internal static class ConstructFuseFit
 {
-    public const int MaxRough = 256, CellBudget = 1 << 17, Attempts = 8;
+    public const int MaxRough = 1024, CellBudget = 1 << 17, Attempts = 8;
     public const float MinCell = 0.05f;
+
+    /// <summary>
+    /// The longest side a rough box may have (metres): a hull's floor stands on many boxes, as its parts would, so its contacts
+    /// spread under it (a 300 m box on four corner points sank into a floor the parts stood on).
+    /// </summary>
+    public const float MaxSide = 16f;
 
     public static int Fits; // (counts for the harness)
     public static double FitMs;
@@ -78,7 +84,7 @@ internal static class ConstructFuseFit
             h *= 1.15f;
         }
         var occ = scratch.Take<int>(nx * ny * nz); // -1: empty; -2: full, no box yet; k >= 0: box k
-        Span<int> cellBox = stackalloc int[6 * MaxRough];
+        var cellBox = scratch.Take<int>(6 * MaxRough);
         var count = 0;
         for (var attempt = 0; attempt < Attempts; attempt++)
         {
@@ -91,7 +97,7 @@ internal static class ConstructFuseFit
                     for (var y = y0; y <= y1; y++)
                         occ.Slice((z * ny + y) * nx + x0, x1 - x0 + 1).Fill(-2);
             }
-            count = Greedy(occ, nx, ny, nz, cellBox);
+            count = Greedy(occ, nx, ny, nz, cellBox, Math.Max(1, (int)(MaxSide / h)));
             if (count >= 0 || attempt == Attempts - 1)
                 break;
             h *= 1.6f;
@@ -120,7 +126,7 @@ internal static class ConstructFuseFit
             u.RMin[k] = new Vector3(float.MaxValue);
             u.RMax[k] = new Vector3(float.MinValue);
         }
-        Span<int> seen = stackalloc int[MaxRough];
+        var seen = scratch.Take<int>(MaxRough);
         seen.Fill(-1);
         for (var serial = 0; serial < boxes; serial++)
         {
@@ -177,7 +183,7 @@ internal static class ConstructFuseFit
     }
 
     /// <summary>The full cells as boxes (cell ranges into <paramref name="box"/>, each cell numbered with its box), or -1 past <see cref="MaxRough"/>.</summary>
-    private static int Greedy(Span<int> occ, int nx, int ny, int nz, Span<int> box)
+    private static int Greedy(Span<int> occ, int nx, int ny, int nz, Span<int> box, int side)
     {
         var count = 0;
         for (var z = 0; z < nz; z++)
@@ -189,13 +195,13 @@ internal static class ConstructFuseFit
                     if (count == MaxRough)
                         return -1;
                     var x1 = x;
-                    while (x1 + 1 < nx && occ[(z * ny + y) * nx + x1 + 1] == -2)
+                    while (x1 + 1 < nx && x1 + 1 - x < side && occ[(z * ny + y) * nx + x1 + 1] == -2)
                         x1++;
                     var y1 = y;
-                    while (y1 + 1 < ny && Row(occ, nx, ny, x, x1, y1 + 1, z))
+                    while (y1 + 1 < ny && y1 + 1 - y < side && Row(occ, nx, ny, x, x1, y1 + 1, z))
                         y1++;
                     var z1 = z;
-                    while (z1 + 1 < nz && Slab(occ, nx, ny, x, x1, y, y1, z1 + 1))
+                    while (z1 + 1 < nz && z1 + 1 - z < side && Slab(occ, nx, ny, x, x1, y, y1, z1 + 1))
                         z1++;
                     for (var zz = z; zz <= z1; zz++)
                         for (var yy = y; yy <= y1; yy++)
