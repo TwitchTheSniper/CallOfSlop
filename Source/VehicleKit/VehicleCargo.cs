@@ -125,6 +125,22 @@ public sealed partial class Vehicle
     {
         if (Role is not { } ask || !CargoOn)
             return;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            StowCargo(ask);
+        }
+        finally
+        {
+            CargoMs = clock.Elapsed.TotalMilliseconds; // (this plan's: the report adds the kept plan's)
+        }
+    }
+
+    /// <summary>What the cargo pass took on this vehicle (ms, wall clock: in slices, its own spans).</summary>
+    public double CargoMs { get; private set; }
+
+    private void StowCargo(RoleAsk ask)
+    {
         var profile = VehicleCargoTables.ByRole.GetValueOrDefault(ask.Role.Name);
         if (profile == null)
             return;
@@ -290,7 +306,84 @@ public sealed partial class Vehicle
 
     private void Stow(List<Want> wants, Dice d)
     {
-        // The slots: every storage part's, but a loot container keeps at least half its slots for its loot.
+        var slots = Slots();
+        var spareSlots = SpareSlots(slots);
+        var loose = new List<(Want W, int Count)>();
+        var shelves = 0;
+        foreach (var w in wants)
+        {
+            var def = Def(w.Part);
+            // A loose Ammo Crate is the point: it cooks off where it stands. Everything else goes in a slot when one takes it.
+            var left = def.PhysicsOnly || w.Kind == StowKind.Ammo && w.Part == "Ammo Crate" ? w.Count : InSlots(w, def, w.Count, slots, spareSlots);
+            // A room with no slot left gets a shelf (or a chest) of the style's against its end wall, for its crew's spares: one a vehicle, when three or more items
+            // are still to stow.
+            while (left > 0 && !(w.Kind == StowKind.Ammo && w.Part == "Ammo Crate") && !def.PhysicsOnly && shelves < 1 && Rooms.Count > 0
+                   && left + wants.Skip(wants.IndexOf(w) + 1).Where(x => !Def(x.Part).PhysicsOnly && x.Part != "Ammo Crate").Sum(x => x.Count) >= 3)
+            {
+                VehicleGenJob.Yield();
+                var room = Rooms[shelves % Rooms.Count];
+                var slot = Style.Parts.ContainsKey("shelf") ? "shelf" : "chest";
+                var added = SpareShelf(room, slot) ?? (slot != "chest" ? SpareShelf(room, "chest") : null);
+                if (added == null)
+                {
+                    shelves = 1;
+                    break;
+                }
+                shelves++;
+                for (var s = 0; s < added.Def.Slots.Length; s++)
+                    slots.Add(new SlotUse { Container = added, Slot = s });
+                spareSlots[added.Step] = added.Def.Slots.Length;
+                left = InSlots(w, def, left, slots, spareSlots);
+            }
+            if (left > 0)
+                loose.Add((w, left));
+        }
+        if (loose.Count > 0)
+            Lay(loose, d);
+    }
+
+    /// <summary>
+    /// The style's <paramref name="slot"/> part (a shelf, else a chest) for the crew's spares against the room's far end wall, as <see cref="EndChest(Room)"/> stands one but
+    /// searching only the floor plate under each spot (a whole body's sockets cost 10 to 40 ms a try), never into the room's middle. No loot rolls in it. Null: nowhere.
+    /// </summary>
+    private VPart? SpareShelf(Room room, string slot)
+    {
+        var part = Style.Part(Dice.Fork("kit cargo shelf " + room.Tag), slot);
+        var def = Def(part);
+        if (def.Slots.Length == 0)
+            return null;
+        var size = def.BoundsMax - def.BoundsMin;
+        var alongWall = size.X >= size.Z;
+        var deep = alongWall ? size.Z : size.X;
+        var away = room.DoorMid.Z > room.Middle.Z ? -1f : 1f;
+        var wall = away < 0 ? room.R.Z0 : room.R.Z1;
+        var inward = new Vector3(0, 0, -away);
+        var o = alongWall ? new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, inward, Vector3.UnitY, Vector3.UnitY);
+        var floor = Panels.GetValueOrDefault(room.Tag + "floor") ?? [];
+        for (var In = 0.15f; MathF.Abs(wall - away * (deep / 2 + In) - room.Middle.Z) >= deep / 2 + CallOfSlop.World.PlayerRadius + 0.1f; In += 0.25f)
+            foreach (var x in (float[])[0.25f, -0.25f])
+            {
+                var at = new Vector3(x, room.FloorTop + size.Y / 2, wall - away * (deep / 2 + In));
+                foreach (var under in floor.OrderBy(p => Vector3.DistanceSquared(CentreOf(p), at with { Y = room.FloorTop })).ThenBy(p => p.Step).Take(2))
+                    try
+                    {
+                        var placed = Put(part, at, o, 0.1f, under, onTop: true);
+                        PanelList("furniture").Add(placed);
+                        room.Furniture.Add(placed);
+                        room.Containers.Add(placed);
+                        return placed;
+                    }
+                    catch (VehicleKitException)
+                    {
+                        // (the end wall rakes in, a seat or a chest is there: the next spot)
+                    }
+            }
+        return null;
+    }
+
+    /// <summary>Every storage part's slots, rigid with the body.</summary>
+    private List<SlotUse> Slots()
+    {
         var slots = new List<SlotUse>();
         var lootSteps = LootSteps.ToHashSet();
         foreach (var p in Parts)
@@ -301,41 +394,43 @@ public sealed partial class Vehicle
             for (var s = 0; s < cd.Slots.Length; s++)
                 slots.Add(new SlotUse { Container = p, Slot = s, Loot = lootSteps.Contains(p.Step) });
         }
-        var spareSlots = new Dictionary<int, int>(); // container step: slots the pass may take
+        return slots;
+    }
+
+    /// <summary>Slots the pass may take in each container (by step): a loot container keeps at least half its slots for its loot.</summary>
+    private static Dictionary<int, int> SpareSlots(List<SlotUse> slots)
+    {
+        var spare = new Dictionary<int, int>();
         foreach (var g in slots.GroupBy(s => s.Container.Step))
-            spareSlots[g.Key] = g.First().Loot ? g.Count() / 2 : g.Count();
-        var loose = new List<(Want W, int Count)>();
-        foreach (var w in wants)
+            spare[g.Key] = g.First().Loot ? g.Count() / 2 : g.Count();
+        return spare;
+    }
+
+    /// <summary>Up to <paramref name="count"/> of a want into free slots, nearest the place it is for first. Returns how many are left over.</summary>
+    private int InSlots(Want w, ConstructPartDef def, int count, List<SlotUse> slots, Dictionary<int, int> spareSlots)
+    {
+        var left = count;
+        foreach (var s in slots.OrderBy(s => Vector3.DistanceSquared(CentreOf(s.Container), w.Near)).ThenBy(s => s.Container.Step).ThenBy(s => s.Slot))
         {
-            var def = Def(w.Part);
-            var left = w.Count;
-            // A loose Ammo Crate is the point: it cooks off where it stands. Everything else goes in a slot when one takes it.
-            if (!def.PhysicsOnly && !(w.Kind == StowKind.Ammo && w.Part == "Ammo Crate"))
-                foreach (var s in slots.OrderBy(s => Vector3.DistanceSquared(CentreOf(s.Container), w.Near)).ThenBy(s => s.Container.Step).ThenBy(s => s.Slot))
-                {
-                    if (left == 0)
-                        break;
-                    if (s.Kind != null && s.Kind != def || s.Kind != null && s.Count >= s.Room)
-                        continue;
-                    if (s.Kind == null)
-                    {
-                        var room = spareSlots[s.Container.Step] <= 0 ? 0 : SlotRoom(s.Container.Def, s.Slot, def);
-                        if (room <= 0)
-                            continue;
-                        spareSlots[s.Container.Step]--;
-                        (s.Kind, s.Room) = (def, room);
-                    }
-                    var n = Math.Min(left, s.Room - s.Count);
-                    s.Count += n;
-                    left -= n;
-                    Store(s.Container, s.Slot, w.Part, n);
-                    Stowage.Add(new Stowed(w.Kind, w.Part, n, $"{s.Container.Name} slot {s.Slot}", w.For, false));
-                }
-            if (left > 0)
-                loose.Add((w, left));
+            if (left == 0)
+                break;
+            if (s.Kind != null && (s.Kind != def || s.Count >= s.Room))
+                continue;
+            if (s.Kind == null)
+            {
+                var room = spareSlots[s.Container.Step] <= 0 ? 0 : SlotRoom(s.Container.Def, s.Slot, def);
+                if (room <= 0)
+                    continue;
+                spareSlots[s.Container.Step]--;
+                (s.Kind, s.Room) = (def, room);
+            }
+            var n = Math.Min(left, s.Room - s.Count);
+            s.Count += n;
+            left -= n;
+            Store(s.Container, s.Slot, w.Part, n);
+            Stowage.Add(new Stowed(w.Kind, w.Part, n, $"{s.Container.Name} slot {s.Slot}", w.For, false));
         }
-        if (loose.Count > 0)
-            Lay(loose, d);
+        return left;
     }
 
     /// <summary>How many of <paramref name="d"/> slot <paramref name="slot"/> of container <paramref name="cd"/> takes (0: none), by the game's own slot rule.</summary>
@@ -455,6 +550,20 @@ public sealed partial class Vehicle
         return list;
     }
 
+    /// <summary>A wheel's turns standing on its tread: its axle level, its diameter up.</summary>
+    private static List<byte> Standing(ConstructPartDef def)
+    {
+        var list = new List<byte>();
+        for (byte t = 0; t < Rot24.Count; t++)
+        {
+            var (lo, hi) = TurnedBounds(def, t);
+            var e = hi - lo;
+            if (e.Y >= MathF.Max(e.X, e.Z) - 0.001f && MathF.Min(e.X, e.Z) < e.Y - 0.05f)
+                list.Add(t);
+        }
+        return list;
+    }
+
     /// <summary>Each turret's ring: its axis, its top and how far round it what it carries reaches (a piece within that stays under the ring's top).</summary>
     private List<(Vector2 Axis, float Top, float Reach)> TurretSweeps()
     {
@@ -513,6 +622,9 @@ public sealed partial class Vehicle
                     }
                 }
             var best = Search(spot, def, turns, near, parts, rings);
+            var upright = def.Role == PartRole.Wheel ? Standing(def) : null; // (a wheel that won't lie flat stands on its tread, as a spare does against a bed's side)
+            if (best == null && upright != null)
+                best = Search(spot, def, upright, near, parts, rings);
             if (best == null)
                 continue;
             if (spot.Volume == null) // (the deck's first piece: its volume's control box goes on first, and the spot is looked for again round it)
@@ -520,7 +632,7 @@ public sealed partial class Vehicle
                 if (!PlaceVolume(spot))
                     continue;
                 parts = NearParts(spot);
-                if ((best = Search(spot, def, turns, near, parts, rings)) == null)
+                if ((best = Search(spot, def, turns, near, parts, rings) ?? (upright != null ? Search(spot, def, upright, near, parts, rings) : null)) == null)
                     continue;
             }
             var (at0, turn0, box0) = best.Value;
@@ -534,35 +646,45 @@ public sealed partial class Vehicle
         return null;
     }
 
-    /// <summary>The free spot on the deck's grid nearest <paramref name="near"/> that takes the piece in one of its turns: its origin, turn and box. Null: none.</summary>
+    /// <summary>
+    /// The free spot on the deck's grid nearest <paramref name="near"/> that takes the piece in one of its turns: its origin, turn and box. Null: none. The spots are tried
+    /// nearest first, so the first that fits is the answer (most pieces find one in a few tries).
+    /// </summary>
     private static (Vector3 At, byte Turn, (Vector3 Min, Vector3 Max) Box)? Search(DeckSpot spot, ConstructPartDef def, List<byte> turns, Vector3 near, List<(Vector3 Min, Vector3 Max)> parts,
         List<(Vector2 Axis, float Top, float Reach)> rings)
     {
-        var best = (Score: float.MaxValue, At: Vector3.Zero, Turn: (byte)0, Box: (Vector3.Zero, Vector3.Zero));
+        var tries = new List<(float Score, Vector3 Min, byte Turn)>();
+        var tallest = 0f;
+        foreach (var turn in turns)
+        {
+            var (tlo, thi) = TurnedBounds(def, turn);
+            tallest = MathF.Max(tallest, thi.Y - tlo.Y);
+        }
+        var (yLo, yHi) = (spot.Top - CargoGap, spot.Top + tallest + 0.01f + CargoGap);
+        parts = parts.Where(b => b.Min.Y < yHi && b.Max.Y > yLo).ToList(); // (only what stands in the band the piece would fill)
         foreach (var turn in turns)
         {
             var (lo, hi) = TurnedBounds(def, turn);
             var size = hi - lo;
-            if (size.X > spot.X1 - spot.X0 || size.Z > spot.Z1 - spot.Z0)
-                continue;
             for (var x = spot.X0 + CargoGap; x + size.X <= spot.X1 - CargoGap + 0.001f; x += Grid)
-            {
-                VehicleGenJob.Yield();
                 for (var z = spot.Z0 + CargoGap; z + size.Z <= spot.Z1 - CargoGap + 0.001f; z += Grid)
                 {
-                    var min = new Vector3(x, spot.Top + 0.005f, z);
-                    var centre = min + size * 0.5f;
-                    var score = new Vector2(centre.X - near.X, centre.Z - near.Z).LengthSquared();
-                    if (score >= best.Score)
-                        continue;
-                    var box = (min, min + size);
-                    if (!Fits(spot, box, parts, rings))
-                        continue;
-                    best = (score, min - lo, turn, box);
+                    var c = new Vector2(x + size.X * 0.5f - near.X, z + size.Z * 0.5f - near.Z);
+                    tries.Add((c.LengthSquared(), new Vector3(x, spot.Top + 0.005f, z), turn));
                 }
-            }
         }
-        return best.Score == float.MaxValue ? null : (best.At, best.Turn, best.Box);
+        tries.Sort((a, b) => a.Score != b.Score ? a.Score.CompareTo(b.Score) : a.Turn != b.Turn ? a.Turn.CompareTo(b.Turn) : a.Min.X != b.Min.X ? a.Min.X.CompareTo(b.Min.X) : a.Min.Z.CompareTo(b.Min.Z));
+        for (var k = 0; k < tries.Count; k++)
+        {
+            if (k % 64 == 63)
+                VehicleGenJob.Yield();
+            var (_, min, turn) = tries[k];
+            var (lo, hi) = TurnedBounds(def, turn);
+            var box = (min, min + (hi - lo));
+            if (Fits(spot, box, parts, rings))
+                return (min - lo, turn, box);
+        }
+        return null;
     }
 
     private sealed class Pile
@@ -728,8 +850,8 @@ public static class VehicleCargoCli
         Console.WriteLine($"cargo pass {(Vehicle.CargoOn ? "on" : "OFF")}: {cells.Count} cells x tiers {string.Join(",", tiers)} x {seeds.Count} seeds");
         var kinds = Enum.GetValues<StowKind>();
         var total = new Dictionary<StowKind, (int All, int Loose)>();
-        int made = 0, failed = 0, met = 0, gated = 0, withCargo = 0;
-        double ms = 0, worst = 0, mass = 0, share = 0;
+        int made = 0, failed = 0, met = 0, withCargo = 0;
+        double ms = 0, worst = 0, mass = 0, share = 0, cargoMs = 0, cargoWorst = 0;
         var misses = new Dictionary<string, int>();
         var byRole = new Dictionary<string, (int N, int Met, int Pieces, double Kg)>();
         var gate0 = VehicleDriveCheck.Caught;
@@ -738,8 +860,11 @@ public static class VehicleCargoCli
                 foreach (var seed in seeds)
                 {
                     var o = VehicleRolesCli.Make(st, role, tier, seed);
-                    ms += o.Ms;
-                    worst = Math.Max(worst, o.Ms);
+                    if (made + failed > 0) // (the first is cold: the parts, the weapon builder and the kit compile and load in it)
+                    {
+                        ms += o.Ms;
+                        worst = Math.Max(worst, o.Ms);
+                    }
                     if (o.V is not { } v)
                     {
                         failed++;
@@ -747,6 +872,8 @@ public static class VehicleCargoCli
                         continue;
                     }
                     made++;
+                    cargoMs += v.CargoMs;
+                    cargoWorst = Math.Max(cargoWorst, v.CargoMs);
                     var ok = v.Fit is { Met: true };
                     met += ok ? 1 : 0;
                     var pieces = v.Stowage.Sum(x => x.Count);
@@ -786,7 +913,78 @@ public static class VehicleCargoCli
         foreach (var (m, n) in misses.OrderByDescending(x => x.Value).Take(8))
             Console.WriteLine($"    {n}x left behind: {m}");
         Console.WriteLine($"all: {made} made, {failed} failed, {met}/{made} met their role, {withCargo} carry something, {mass / Math.Max(1, made):0} kg loose a vehicle ({share / Math.Max(1, made):P1} of its mass), "
-            + $"{ms / Math.Max(1, made + failed):0} ms a vehicle, worst {worst:0}; drive check refused {VehicleDriveCheck.Caught - gate0} plans");
+            + $"{ms / Math.Max(1, made + failed - 1):0} ms a vehicle warm, worst {worst:0} (the cargo pass {cargoMs / Math.Max(1, made):0.0} ms, worst {cargoWorst:0}, on the plan kept); drive check refused {VehicleDriveCheck.Caught - gate0} plans");
         return failed;
+    }
+}
+
+// THROWAWAY PROBE (removed before the final push)
+public static class VehicleCargoProbe
+{
+    public static int Run(string file)
+    {
+        var bp = ConstructBuild.ParseBlueprint(File.ReadAllText(file), Path.GetFileName(file));
+        var q = new SelfTest.DriveWorld();
+        var w = new ConstructWorld();
+        var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out var why);
+        if (c == null) { Console.WriteLine($"probe: doesn't build: {why}"); return 1; }
+        int Carried() => w.Bodies.Count(b => b.CarriedBy == c.Id);
+        int LooseSingles() => w.Bodies.Count(b => b != c && b.PartCount == 1 && b.CarriedBy == 0);
+        Console.WriteLine($"probe: {bp.Name}: {c.PartCount} parts, {bp.Stored.Count} stored lines, {bp.Cargo.Count} cargo; carried now {Carried()}, mass {c.Mass:0} kg (cargo {c.CargoMass:0})");
+        var full = -1;
+        for (var i = 0; i < c.PartCount; i++)
+            if (w.StoreOf(c, i) is { } st)
+            {
+                var items = Enumerable.Range(0, st.SlotCount).Where(s => st.Def[s] != ConstructParts.None).Select(s => $"{st.Count[s]}x {ConstructParts.Def(st.Def[s]).Name}").ToList();
+                if (items.Count > 0)
+                {
+                    Console.WriteLine($"probe:   {c.DefOf(i).Name} #{i}: {string.Join(", ", items)}");
+                    if (full < 0 && bp.Stored.Count > 0 && Enumerable.Range(0, st.SlotCount).Any(s => st.Def[s] != ConstructParts.None && bp.Stored.Any(x => x.Part == ConstructParts.Def(st.Def[s]).Name)))
+                        full = i;
+                }
+            }
+        for (var k = 0; k < 60; k++) w.Step(q, 1 / 60f);
+        Console.WriteLine($"probe: settled 1 s: carried {Carried()}, loose {LooseSingles()}");
+        if (full >= 0)
+        {
+            var before = LooseSingles();
+            var name = c.DefOf(full).Name;
+            w.DamagePart(c, full, 1e6f, out _, raw: true);
+            for (var k = 0; k < 30; k++) w.Step(q, 1 / 60f);
+            Console.WriteLine($"probe: shot the {name} to nothing: loose pieces {before} -> {LooseSingles()} (spilled)");
+        }
+        var vol = Enumerable.Range(0, c.PartCount).FirstOrDefault(i => c.DefOf(i).Name == "Cargo Volume" && c.Parts[i].Out > 0, -1);
+        if (vol >= 0)
+        {
+            var before = Carried();
+            w.DamagePart(c, vol, 1e6f, out _, raw: true);
+            for (var k = 0; k < 30; k++) w.Step(q, 1 / 60f);
+            Console.WriteLine($"probe: shot a Cargo Volume to nothing: carried {before} -> {Carried()}, loose {LooseSingles()}");
+        }
+        var box = w.Bodies.FirstOrDefault(b => b != c && b.PartCount == 1 && b.DefOf(0).Role == PartRole.AmmoBox && b.DefOf(0).Name == "Ammo Box");
+        if (box != null && c.GunCount > 0)
+        {
+            Console.WriteLine($"probe: a loose Ammo Box holds {ConstructAmmo.RoundsIn(w, box, 0)} rounds");
+            for (var k = 0; k < c.GunCount; k++)
+            {
+                var gp = c.Guns[k].Part;
+                var before = ConstructWeapons.BoxRounds(c, k, w);
+                var boxDef = box.DefOf(0);
+                foreach (var s in Enumerable.Range(0, c.DefOf(gp).Sockets.Length).Where(s => !c.SocketUsed(gp, s)))
+                    for (var ds = 0; ds < boxDef.Sockets.Length; ds++)
+                        if (ConstructBuild.Place(c, gp, s, boxDef, ds, 0, out var ghost) == null)
+                        {
+                            var at = ConstructBuild.Attach(w, c, boxDef, ghost);
+                            if (at < 0) continue;
+                            c.Parts[at].Rounds = box.Parts[0].Rounds; // (the box the player carried, with its rounds)
+                            w.Remove(box);
+                            c.Rebuild();
+                            Console.WriteLine($"probe: picked it up and bolted it to gun {k} ({c.DefOf(gp).Name}, socket {c.DefOf(gp).Sockets[s].Name}): rounds the gun can draw {before} -> {ConstructWeapons.BoxRounds(c, k, w)}, boxes {c.Guns[k].BoxCount}");
+                            return 0;
+                        }
+            }
+            Console.WriteLine("probe: no free socket on a gun took the box");
+        }
+        return 0;
     }
 }
