@@ -432,6 +432,14 @@ public static class HullLoft
                     }
                 }
             }
+        if (!flatRoof && a.P[^1].X == 0 && b.P[^1].X == 0)
+        {
+            // A strip along a pitched roof's ridge, just clear of the two halves' outer faces: they meet on the centreline's plane, and a ray straight up the
+            // middle would pass along their seam (the Gaps check's hole, Scam Box Truck, 2026-11-07).
+            float Apex(Section sec) => sec.Top + T / 2 / MathF.Max(0.3f, RowNormal(sec.P[^2], sec.P[^1]).Y) + 0.011f;
+            var (ya, yb) = (Apex(a), Apex(b));
+            p.Facet([new(-0.02f, ya, z0), new(0.02f, ya, z0), new(0.02f, yb, z1), new(-0.02f, yb, z1)], Vector3.UnitY, Roof, 0.02f, paint: false);
+        }
         if (door)
         {
             // The flat frame round the doorway (hull_parts.py's door bay), the door's plane at x = 1.
