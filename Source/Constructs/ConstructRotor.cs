@@ -72,6 +72,8 @@ public static class ConstructRotor
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].D.Rotor != null)
                 n++;
+        if (n > Construct.MaxRotors)
+            Caps.Hit("rotors a construct", Construct.MaxRotors, n);
         n = Math.Min(n, Construct.MaxRotors);
         Span<CRotor> keep = stackalloc CRotor[Math.Min(c.RotorCount, Construct.MaxRotors)];
         for (var k = 0; k < keep.Length; k++)

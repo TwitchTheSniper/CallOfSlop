@@ -159,7 +159,7 @@ public sealed class ModEngine
 /// </summary>
 public static class ConstructEngine
 {
-    public const int MaxEngines = 8, MaxBanks = 8;
+    public const int MaxEngines = 32, MaxBanks = 8; // modular engines a construct (was 8; EngineOf is a byte, the bank scratch is 256 slots on the stack); past this the pieces are logged and left out
 
     public static readonly string[] SizeNames = ["small", "medium", "large", "capital"];
 
@@ -219,6 +219,8 @@ public static class ConstructEngine
             if (!Joins(c, i))
                 continue;
             var root = Find(up, i);
+            if (c.EngineOf[root] == 0 && c.ModCount >= MaxEngines && Joins(c, root))
+                Caps.Hit("modular engines a construct", MaxEngines);
             if (c.EngineOf[root] == 0 && c.ModCount < MaxEngines)
             {
                 var m = c.ModEngines[c.ModCount] ??= new ModEngine();

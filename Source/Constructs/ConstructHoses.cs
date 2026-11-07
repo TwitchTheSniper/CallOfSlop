@@ -31,7 +31,7 @@ public struct CHose
 /// </summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxHoses = 32;
+    public const int MaxHoses = 255; // in the world (was 32): its count is a byte on the wire (ConstructNet), so 255 is the most; docs/perf/LIMITS.md
     public const float HoseSlip = 0.25f; // a held hose slips from the hands this far past its length
 
     public readonly CHose[] Hoses = new CHose[MaxHoses];

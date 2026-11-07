@@ -36,8 +36,8 @@ public struct CXWire
 /// </summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxCouplings = 32;
-    public const int MaxXWires = 64;
+    public const int MaxCouplings = 255; // in the world (was 32): its count is a byte on the wire (ConstructNet), so 255 is the most; docs/perf/LIMITS.md (a contact pair looks through them: ConstructPhysics._exA)
+    public const int MaxXWires = 255; // in the world (was 64): its count is a byte on the wire (ConstructNet), so 255 is the most; docs/perf/LIMITS.md
     public const float XWireReach = 12f; // a wire between constructs reaches this far (part centre to part centre)
     public const float CoupleReach = 0.6f; // a ball and an eye couple when their points are this close
     public const float TearSlack = 1.5f; // a coupling pulled this far past its length tears (a teleport, a blast)

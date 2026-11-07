@@ -417,6 +417,7 @@ public static class ConstructNet
     /// <summary>Protocol 83: every coupling and wire between constructs, as the server has them now (resolved: construct ids and part indices).</summary>
     public static void WriteLinks(PacketWriter w, ConstructWorld world)
     {
+        w.Reserve(16 + world.CouplingCount * 10 + world.XWireCount * 8); // (255 of each is 4.6 KB)
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Links).U8((byte)world.CouplingCount);
         for (var k = 0; k < world.CouplingCount; k++)
         {

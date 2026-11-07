@@ -50,7 +50,7 @@ public struct WLink
 /// </summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxWorldLinks = 64;
+    public const int MaxWorldLinks = 255; // in the world (was 64): its count is a byte on the wire (ConstructNet), so 255 is the most; docs/perf/LIMITS.md
     public const int MaxWorldNodes = Construct.MaxRouteNodes; // the world's storage for world link nodes; a link's length has no limit of its own
     public const float SnapMetres = 0.05f; // a free construct's point moved this far since the link was made: it snaps (settling suspension stays inside)
     public const float SnapDegrees = 3f; // ...or turned this much
