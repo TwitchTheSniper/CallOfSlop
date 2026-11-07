@@ -246,6 +246,7 @@ public static unsafe partial class Program
             _textureWheel.WantList = true;
             // The fuse tool's units (ConstructFuse.cs): the row fused whole, as ConstructEdits.Fuse does past the tool's reach, so its
             // rough collider, its unit chunks and the rebuild after it run in a real window.
+            g.Constructs.AutoLinkMany(row, 0, row.PartCount); // (a unit is parts linked together: the row was laid without links)
             var tag = ConstructFuse.NewTag();
             for (var i = 0; i < row.PartCount; i++)
                 row.Parts[i].Fuse = tag;

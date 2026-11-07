@@ -42,6 +42,8 @@ public static partial class SelfTest
         if (args.Any(a => a.Equals("--stack", StringComparison.OrdinalIgnoreCase)))
             foreach (var fused in new[] { false, true })
                 BenchStack(parts, block, q, fused);
+        if (Construct.RebuildCheck)
+            Console.WriteLine($"[fuse bench] rebuild check: {Construct.CheckRuns} plain rebuilds checked, {Construct.CheckFails} different{(Construct.CheckLog.Count > 0 ? ": " + Construct.CheckLog[0] : "")}");
         return 0;
     }
 
@@ -151,7 +153,7 @@ public static partial class SelfTest
         var rolling = CostGround();
         var land = new ConstructWorld();
         var track = BenchHull(land, new Vector3(0, 1.6f, 0), parts, block, fused);
-        Console.WriteLine($"[fuse bench] {name}: on half-metre ground: {Steps(land, rolling, 40, () => { track.Vel = new Vector3(3, track.Vel.Y, 0); track.Wake(); })}");
+        Console.WriteLine($"[fuse bench] {name}: on half-metre ground: {Steps(land, rolling, 40, () => { track.Vel = new Vector3(3, track.Vel.Y, 0); track.Wake(); })}; centre of mass at {track.WorldCom.Y * 1000:0} mm, tilt {MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, track.Rot).Y, -1, 1)) * 180 / MathF.PI:0.00} deg");
         // Edits and breaks, each with the tick that rebuilds it, less a steady tick measured just before.
         var rng = new Random(5);
         void Edit(string what, int repeats, Action edit)
@@ -200,6 +202,81 @@ public static partial class SelfTest
             w.Step(q, World.TickDt);
         }
         Console.WriteLine($"[fuse bench] {name}: steady allocation {GC.GetAllocatedBytesForCurrentThread() - b0} B in 30 ticks");
+    }
+
+    /// <summary>
+    /// <c>--bench-fuse-net [LAG] [LOSS]</c>: a host and a client over RakNet on this PC, the client's network simulated bad.
+    /// The client's own fuse tool requests (CActKind.Fuse) fuse a sheet, un-fuse it and fuse it again; the host shoots parts off;
+    /// each step waits (bounded) for the client's copy to show the host's units.
+    /// </summary>
+    public static int BenchFuseNet(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals("--bench-fuse-net", StringComparison.OrdinalIgnoreCase));
+        var lag = at >= 0 && at + 1 < args.Length && int.TryParse(args[at + 1], out var l) ? l : 120;
+        var loss = at >= 0 && at + 2 < args.Length && float.TryParse(args[at + 2], System.Globalization.CultureInfo.InvariantCulture, out var p) ? p : 3f;
+        Brutal.GlfwApi.Glfw.Init();
+        if (Maps.Find(ConstructYardMap) is not { } yard)
+        {
+            Console.WriteLine("[fuse net] no yard map");
+            return 1;
+        }
+        const ushort port = 26391;
+        var clock = Stopwatch.StartNew();
+        var now = 0.0;
+        yard.RestoreProps();
+        World.SetMap(yard);
+        using var server = new Game(NetPeer.Host(port, 4), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id) { MapVoteEnabled = false };
+        server.Mode = GameMode.Sandbox;
+        using var a = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
+        Console.WriteLine($"[fuse net] simulating {lag} ms and {loss}% loss on the client: {a.Net.SimulateBadNetwork(lag, lag / 5, loss)}");
+        Pump(server, [a], 1.0, ref now, clock);
+        for (var wait = 0; wait < 60 && (server.Phase != MatchPhase.Playing || a.LocalId == byte.MaxValue); wait++)
+            Pump(server, [a], 0.25, ref now, clock);
+        if (a.LocalId == byte.MaxValue || !server.Players.TryGetValue(a.LocalId, out var sp))
+        {
+            Console.WriteLine("[fuse net] the client didn't join");
+            return 1;
+        }
+        if (!sp.Alive)
+            server.SelfTestRespawn(sp, now);
+        Pump(server, [a], 0.5, ref now, clock);
+        var block = ConstructParts.Need("Frame Block");
+        var w = server.Constructs;
+        var c = w.Create(sp.Position + new Vector3(1.5f, 0.2f, 0), Quaternion.Identity)!;
+        var size = block.BoundsMax - block.BoundsMin;
+        for (var i = 0; i < 240; i++)
+            w.AddPart(c, block, new Vector3(i % 12 * size.X, 0, i / 12 * size.Z), 0);
+        w.AutoLinkMany(c, 0, c.PartCount);
+        c.Pinned = true;
+        c.Rebuild();
+        w.StructureDirty.Add(c.Id);
+        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Fuse);
+        var fails = 0;
+        bool Wait(string what, Func<bool> ok)
+        {
+            for (var t = 0; t < 40 && !ok(); t++)
+                Pump(server, [a], 0.1, ref now, clock);
+            var got = ok();
+            var copy = a.Constructs.Get(c.Id);
+            Console.WriteLine($"[fuse net] {what}: {(got ? "ok" : "NOT REACHED")} after {clock.Elapsed.TotalSeconds:0.0} s; host {UnitSizes(c)}, client {(copy != null ? UnitSizes(copy) : "no copy")}; notice \"{a.SandboxNotice}\"");
+            fails += got ? 0 : 1;
+            return got;
+        }
+        Wait("the client has the fuse tool and the sheet", () => server.SandboxHands.Hand(sp.Id).Tool == ConstructTool.Fuse && a.Constructs.Get(c.Id) is { PartCount: 240 });
+        a.SandboxFuse(c.Id, FuseMode.Piece, 5, default);
+        Wait("fused by the client's request", () => c.UnitSize(0) == 240 && a.Constructs.Get(c.Id) is { } k && k.UnitSize(0) == 240);
+        a.SandboxFuse(c.Id, FuseMode.Unfuse, 5, default);
+        Wait("un-fused by the client's request", () => c.UnitSize(0) == 0 && a.Constructs.Get(c.Id) is { } k && k.UnitSize(0) == 0 && k.FusedParts == 0);
+        Span<ushort> half = stackalloc ushort[120];
+        for (var i = 0; i < half.Length; i++)
+            half[i] = (ushort)i;
+        a.SandboxFuse(c.Id, FuseMode.Parts, 5, half);
+        Wait("half fused as a selection", () => c.UnitSize(0) == 120 && a.Constructs.Get(c.Id) is { } k && k.UnitSize(0) == 120 && k.UnitSize(200) == 0);
+        for (var k = 0; k < 12; k++)
+            w.DamagePart(c, 60 + 11 - k, 1e6f, out _, raw: true); // (a row across the fused half shot away: the unit and the sheet come apart)
+        Wait("a row shot off the fused half", () => !c.Dirty && a.Constructs.Get(c.Id) is { } k && UnitSizes(k) == UnitSizes(c));
+        Console.WriteLine($"[fuse net] done: {fails} step(s) not reached, {NetSafety.Dropped} packets dropped{(NetSafety.LastDrop.Length > 0 ? ": " + NetSafety.LastDrop : "")}");
+        return fails;
     }
 
     /// <summary>The units as sizes, largest first: what a round trip must give back.</summary>
