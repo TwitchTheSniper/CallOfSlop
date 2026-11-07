@@ -162,6 +162,8 @@ public static unsafe partial class Program
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
         if (args.SkipWhile(a => !a.Equals("--drive-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } driveFile)
             return VehicleKit.VehicleDriveCheck.Cli(driveFile, args); // the spawn's drive check on any blueprint: level, and a throttle pulse moves it
+        if (args.SkipWhile(a => !a.Equals("--brief", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } briefOf)
+            return VehicleKit.VehicleBriefCli.Run(briefOf, args); // phase 8: a vehicle's behaviour brief for an AI (VehicleBrief.cs)
         if (args.SkipWhile(a => !a.Equals("--context", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } contextOf)
             return VehicleKit.VehicleContextCli.Run(contextOf, args); // phase 7: what a spawn context changes against neutral (VehicleContext.cs)
         if (args.Any(a => a.Equals("--gen-vehicles", StringComparison.OrdinalIgnoreCase)))
