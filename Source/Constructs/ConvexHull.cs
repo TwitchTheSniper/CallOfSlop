@@ -74,6 +74,23 @@ public sealed class ConvexHull
             var u = Vector3.Normalize(pts[on[0]] - mid);
             var v = Vector3.Cross(n, u);
             on.Sort((x, y) => MathF.Atan2(Vector3.Dot(pts[x] - mid, v), Vector3.Dot(pts[x] - mid, u)).CompareTo(MathF.Atan2(Vector3.Dot(pts[y] - mid, v), Vector3.Dot(pts[y] - mid, u))));
+            // Only the face's corners stay: a point inside it (a capped cylinder's centre, from its fan) or along a side
+            // would make a notch in the ring, and counted as a corner it took a 16-sided cylinder past MaxCorners.
+            for (var changed = true; changed && on.Count > 3;)
+            {
+                changed = false;
+                for (var k = 0; k < on.Count && on.Count > 3; k++)
+                {
+                    var p = pts[on[k]];
+                    var prev = pts[on[(k + on.Count - 1) % on.Count]];
+                    var next = pts[on[(k + 1) % on.Count]];
+                    if (Vector3.Dot(Vector3.Cross(p - prev, next - p), n) > Eps * Eps)
+                        continue;
+                    on.RemoveAt(k);
+                    changed = true;
+                    k--;
+                }
+            }
             normals.Add(n);
             faces.Add(on.ToArray());
             foreach (var k in on)
