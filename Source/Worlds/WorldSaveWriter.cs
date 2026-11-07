@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, Opening = 0x4E45504F;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -84,6 +84,20 @@ public static class WorldSaveWriter
                 w.I32(s.Players.Length);
                 foreach (var p in s.Players)
                     w.U64(p.Key).U64(p.SteamId).U8(p.Faction).U8((byte)(p.FactionLeader ? 1 : 0));
+            });
+        if (s.Opening is { } op)
+            w.Section(Opening, () =>
+            {
+                // (the survival opening, GameSandboxOpening.cs: a section of its own, so an older reader skips it)
+                w.Str(op.Map).U16(op.Colony).Vec(op.Crash);
+                var n = 0;
+                foreach (var p in s.Players)
+                    if (p.Opened)
+                        n++;
+                w.I32(n);
+                foreach (var p in s.Players)
+                    if (p.Opened)
+                        w.U64(p.Key).U64(p.SteamId);
             });
         w.Section(Stores, () =>
         {
