@@ -120,7 +120,7 @@ public sealed partial class Vehicle
 
     private sealed record Want(StowKind Kind, string Part, int Count, string For, Vector3 Near);
 
-    /// <summary>The cargo pass: after the role pass (<see cref="RoleKit"/>), on forks of the kit layer ("kit cargo"...). Nothing without a role.</summary>
+    /// <summary>The cargo pass: after the role pass (<see cref="RoleKit"/>), on forks of the kit layer ("kit cargo", "kit cargo shelf"). Nothing without a role.</summary>
     internal void StowCargo()
     {
         if (Role is not { } ask || !CargoOn)
@@ -218,7 +218,7 @@ public sealed partial class Vehicle
             if (np / 3 > 0)
                 wants.Add(new Want(StowKind.Plate, plates.Count > 1 ? plates[1] : plates[0], np / 3, "patching its plates", back));
         }
-        if (Commonest(p => p.Def.Role == PartRole.Frame && p.Name.StartsWith(Beam + " ", StringComparison.Ordinal) && p.Def.BoundsMax.Z - p.Def.BoundsMin.Z <= 1.05f) is { } beam
+        if (Commonest(p => p.Def.Role == PartRole.Frame && p.Name.StartsWith(Beam + " ", StringComparison.Ordinal) && Longest(p.Def) <= 1.05f) is { } beam
             && Roll(profile.Beams * sparesK * tierK) is > 0 and var nf)
             wants.Add(new Want(StowKind.Frame, beam, nf, "its frame", back));
         if (Electric)
@@ -234,7 +234,7 @@ public sealed partial class Vehicle
                 wants.Add(new Want(StowKind.Fuel, "Fuel Drum", 1, "its engine", back));
         }
         VehicleGenJob.Yield();
-        Stow(wants.OrderBy(w => Priority(w)).ToList(), d.Fork("kit cargo layout")); // (what matters most is stowed first: rounds, then the rest as a crew would pack)
+        Stow(wants.OrderBy(w => Priority(w)).ToList()); // (what matters most is stowed first: rounds, then the rest as a crew would pack; the layout itself rolls nothing)
     }
 
     /// <summary>The order things are stowed in when room runs short: rounds, magazines, fuel, a spare gun, wheels, springs, plates, beams, a battery.</summary>
@@ -287,6 +287,8 @@ public sealed partial class Vehicle
          || name.StartsWith("Wood Planks ", StringComparison.Ordinal) || name.StartsWith("Armour Plate ", StringComparison.Ordinal))
         && (name.EndsWith(" 0.5 m", StringComparison.Ordinal) || name.EndsWith(" 1 m", StringComparison.Ordinal) || name.EndsWith(" 0.25 m", StringComparison.Ordinal));
 
+    private static float Longest(ConstructPartDef d) => MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
+
     private List<string> Ranked(Func<VPart, bool> which) =>
         Parts.Where(which).GroupBy(p => p.Name).OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key).ToList();
 
@@ -304,7 +306,7 @@ public sealed partial class Vehicle
         public bool Loot;
     }
 
-    private void Stow(List<Want> wants, Dice d)
+    private void Stow(List<Want> wants)
     {
         var slots = Slots();
         var spareSlots = SpareSlots(slots);
@@ -339,7 +341,7 @@ public sealed partial class Vehicle
                 loose.Add((w, left));
         }
         if (loose.Count > 0)
-            Lay(loose, d);
+            Lay(loose);
     }
 
     /// <summary>
@@ -464,7 +466,7 @@ public sealed partial class Vehicle
     }
 
     /// <summary>The loose pieces on the open decks (bed, deck, porch, then a roof rack for light ones), each deck with a frozen Cargo Volume round what it carries.</summary>
-    private void Lay(List<(Want W, int Count)> loose, Dice d)
+    private void Lay(List<(Want W, int Count)> loose)
     {
         var decks = new List<DeckSpot>();
         foreach (var tag in (string[])["bed", "deck", "porch", "rack"])
@@ -510,13 +512,12 @@ public sealed partial class Vehicle
                     break;
                 }
                 VehicleGenJob.Yield(); // (each try reads the deck's parts)
-                if (PlaceLoose(decks, def, turns, stack, w.Near, rings, d) is not { } spot)
+                if (PlaceLoose(decks, def, turns, stack, w.Near, rings) is null)
                 {
                     KitCargoMisses.Add($"{count - k} {w.Part}: no room on its decks");
                     break;
                 }
                 placed++;
-                _ = spot;
             }
             if (placed > 0)
                 Stowage.Add(new Stowed(w.Kind, w.Part, placed, "loose on the " + string.Join("/", decks.Where(s => s.Laid.Count > 0).Select(s => s.Tag).Distinct()), w.For, true));
@@ -606,7 +607,7 @@ public sealed partial class Vehicle
     }
 
     /// <summary>One piece on the first deck that takes it, nearest <paramref name="near"/>: on a pile of its own kind when it stacks, else on the deck's grid. Null: no room.</summary>
-    private DeckSpot? PlaceLoose(List<DeckSpot> decks, ConstructPartDef def, List<byte> turns, int stack, Vector3 near, List<(Vector2 Axis, float Top, float Reach, float Slope)> rings, Dice d)
+    private DeckSpot? PlaceLoose(List<DeckSpot> decks, ConstructPartDef def, List<byte> turns, int stack, Vector3 near, List<(Vector2 Axis, float Top, float Reach, float Slope)> rings)
     {
         foreach (var spot in decks)
         {
@@ -933,90 +934,5 @@ public static class VehicleCargoCli
         Console.WriteLine($"all: {made} made, {failed} failed, {met}/{made} met their role, {withCargo} carry something, {mass / Math.Max(1, made):0} kg loose a vehicle ({share / Math.Max(1, made):P1} of its mass), "
             + $"{ms / Math.Max(1, made + failed - 1):0} ms a vehicle warm, worst {worst:0} (the cargo pass {cargoMs / Math.Max(1, made):0.0} ms, worst {cargoWorst:0}, on the plan kept); drive check refused {VehicleDriveCheck.Caught - gate0} plans");
         return failed;
-    }
-}
-
-// THROWAWAY PROBE (removed before the final push)
-public static class VehicleCargoProbe
-{
-    public static int Run(string file)
-    {
-        var bp = ConstructBuild.ParseBlueprint(File.ReadAllText(file), Path.GetFileName(file));
-        var q = new SelfTest.DriveWorld();
-        var w = new ConstructWorld();
-        var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out var why);
-        if (c == null) { Console.WriteLine($"probe: doesn't build: {why}"); return 1; }
-        int Carried() => w.Bodies.Count(b => b.CarriedBy == c.Id);
-        for (var i = 0; i < c.PartCount; i++)
-            if (c.DefOf(i).Name is "Turntable" or "Motor Hinge" || c.DefOf(i).Role == PartRole.Gun || c.DefOf(i).Name == "Cargo Volume")
-            {
-                c.PartBounds(i, out var mn, out var mx);
-                Console.WriteLine($"probe: {c.DefOf(i).Name} #{i} seg {c.Parts[i].Seg} rest {mn} .. {mx} world {c.ToWorld((mn + mx) * 0.5f)}");
-            }
-        foreach (var b in w.Bodies.Where(b => b.CarriedBy == c.Id))
-            Console.WriteLine($"probe: carried {b.DefOf(0).Name} at world {b.ToWorld(b.Parts[0].Pos)} rest {c.ToLocal(b.ToWorld(b.Parts[0].Pos))}");
-        int LooseSingles() => w.Bodies.Count(b => b != c && b.PartCount == 1 && b.CarriedBy == 0);
-        Console.WriteLine($"probe: {bp.Name}: {c.PartCount} parts, {bp.Stored.Count} stored lines, {bp.Cargo.Count} cargo; carried now {Carried()}, mass {c.Mass:0} kg (cargo {c.CargoMass:0})");
-        var full = -1;
-        for (var i = 0; i < c.PartCount; i++)
-            if (w.StoreOf(c, i) is { } st)
-            {
-                var items = Enumerable.Range(0, st.SlotCount).Where(s => st.Def[s] != ConstructParts.None).Select(s => $"{st.Count[s]}x {ConstructParts.Def(st.Def[s]).Name}").ToList();
-                if (items.Count > 0)
-                {
-                    Console.WriteLine($"probe:   {c.DefOf(i).Name} #{i}: {string.Join(", ", items)}");
-                    if (full < 0 && bp.Stored.Count > 0 && Enumerable.Range(0, st.SlotCount).Any(s => st.Def[s] != ConstructParts.None && bp.Stored.Any(x => x.Part == ConstructParts.Def(st.Def[s]).Name)))
-                        full = i;
-                }
-            }
-        Console.WriteLine($"probe: parts {c.PartCount}, guns {string.Join(",", Enumerable.Range(0, c.GunCount).Select(k => c.Guns[k].Part))}, bodies {w.Bodies.Count}");
-        for (var k = 0; k < 600; k++)
-        {
-            w.Step(q, 1 / 60f);
-            if (k % 100 == 99)
-                Console.WriteLine($"probe: tick {k}: parts {c.PartCount}, guns {string.Join(",", Enumerable.Range(0, c.GunCount).Select(g => c.Guns[g].Part))}, bodies {w.Bodies.Count}, carried {Carried()}");
-        }
-        Console.WriteLine($"probe: settled: carried {Carried()}, loose {LooseSingles()}");
-        if (full >= 0)
-        {
-            var before = LooseSingles();
-            var name = c.DefOf(full).Name;
-            w.DamagePart(c, full, 1e6f, out _, raw: true);
-            for (var k = 0; k < 30; k++) w.Step(q, 1 / 60f);
-            Console.WriteLine($"probe: shot the {name} to nothing: loose pieces {before} -> {LooseSingles()} (spilled)");
-        }
-        var vol = Enumerable.Range(0, c.PartCount).FirstOrDefault(i => c.DefOf(i).Name == "Cargo Volume" && c.Parts[i].Out > 0, -1);
-        if (vol >= 0)
-        {
-            var before = Carried();
-            w.DamagePart(c, vol, 1e6f, out _, raw: true);
-            for (var k = 0; k < 30; k++) w.Step(q, 1 / 60f);
-            Console.WriteLine($"probe: shot a Cargo Volume to nothing: carried {before} -> {Carried()}, loose {LooseSingles()}");
-        }
-        var box = w.Bodies.FirstOrDefault(b => b != c && b.PartCount == 1 && b.DefOf(0).Role == PartRole.AmmoBox && b.DefOf(0).Name == "Ammo Box");
-        if (box != null && c.GunCount > 0)
-        {
-            Console.WriteLine($"probe: a loose Ammo Box holds {ConstructAmmo.RoundsIn(w, box, 0)} rounds");
-            for (var k = 0; k < c.GunCount; k++)
-            {
-                var gp = c.Guns[k].Part;
-                var before = ConstructWeapons.BoxRounds(c, k, w);
-                var boxDef = box.DefOf(0);
-                foreach (var s in Enumerable.Range(0, c.DefOf(gp).Sockets.Length).Where(s => !c.SocketUsed(gp, s)))
-                    for (var ds = 0; ds < boxDef.Sockets.Length; ds++)
-                        if (ConstructBuild.Place(c, gp, s, boxDef, ds, 0, out var ghost) == null)
-                        {
-                            var at = ConstructBuild.Attach(w, c, boxDef, ghost);
-                            if (at < 0) continue;
-                            c.Parts[at].Rounds = box.Parts[0].Rounds; // (the box the player carried, with its rounds)
-                            w.Remove(box);
-                            c.Rebuild();
-                            Console.WriteLine($"probe: picked it up and bolted it to gun {k} ({c.DefOf(gp).Name}, socket {c.DefOf(gp).Sockets[s].Name}): rounds the gun can draw {before} -> {ConstructWeapons.BoxRounds(c, k, w)}, boxes {c.Guns[k].BoxCount}");
-                            return 0;
-                        }
-            }
-            Console.WriteLine("probe: no free socket on a gun took the box");
-        }
-        return 0;
     }
 }

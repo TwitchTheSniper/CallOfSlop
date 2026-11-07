@@ -1008,6 +1008,8 @@ control box's lamp shows the same colour.
   body: it can be shot, stood on and picked up (an item), and other bodies hit it.
 - **Unfrozen** (or the volume broken or gone, or the box resized away from it), everything goes free at the carrier's
   velocity at that point.
+- **A gunner's look** passes through what their own construct carries (`ConstructWeapons.GunnerPoint`, `ConstructWorld.Raycast`'s
+  `ignoreCargo`), as it passes through the construct itself: a seated gun doesn't converge on its own load. Rounds still hit it.
 - **Things entering while frozen** (the open choice): caught once they have settled, moving with the construct under
   1 m/s relative to it (checked ten times a second); freezing catches everything inside at once, moving or not. A body
   held by the physics gun is never caught, and grabbing a carried body takes it out. Not caught: anything anchored or

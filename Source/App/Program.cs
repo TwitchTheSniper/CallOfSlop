@@ -180,8 +180,6 @@ public static unsafe partial class Program
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleFamiliesCli.Family(familyOf, args)); // a model line's marks and variants and how close they read (VehicleConvoys.cs)
         if (args.SkipWhile(a => !a.Equals("--convoy", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } convoyOf)
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleFamiliesCli.Convoy(convoyOf, args)); // a convoy's plan, each member made and checked (VehicleConvoys.cs)
-        if (args.SkipWhile(a => !a.Equals("--cargo-probe", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } probeOf)
-            return VehicleKit.VehicleCargoProbe.Run(probeOf); // THROWAWAY PROBE
         if (args.SkipWhile(a => !a.Equals("--cargo", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } cargoOf)
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleCargoCli.Run(cargoOf, args)); // phase 9: what kit-4 vehicles carry for themselves (VehicleCargo.cs)
         if (args.Any(a => a.Equals("--no-cargo", StringComparison.OrdinalIgnoreCase)))

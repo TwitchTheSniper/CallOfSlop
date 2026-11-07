@@ -160,6 +160,10 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 - A routed link with nodes is refused through solids unless `laid`. A shaft with no nodes runs straight and is only checked at its ends.
 - Stacked beams' bands, and bolts on a plate under an engine's details, are coplanar. Paint a frame one colour (one look doesn't fight); the hood uses `smallest: 2`.
 - `Freeform` parts aren't checked against the rest for overlap. Keep a crooked plate proud of what it covers: 6 cm clears 5 degrees on a 0.5 m plate.
+- A gun fires over its own deck: a flame gun's licks and a pump gun's pellets spread, and they hit the vehicle's own loose cargo (a separate body: its own construct is
+  skipped, its load isn't). The first cargo pass put Small Fuel Tanks on a War Bus's roof rack in front of a roof Firebreather; the full check's firing set them off, the
+  blast took parts off and the turret no longer followed its gunner (104 to 160 degrees off). Loose cargo now stays under every gun's muzzle by a margin growing with the
+  distance (`VehicleCargo` `TurretSweeps`: 0.25 m plus 13 cm a metre for flame and pump guns, 3 cm a metre for the rest), and under a turret's ring within its arm's sweep.
 - A pogo strut hangs its axle 0.6 to 2.5 m below its mount (the Heavy Pogo Strut 1.375 m); every other spring holds it level with its mount. Kit 3's chassis once mixed the stilt recipe's front (Heavy Pogo Struts) with another recipe's rear on Heavy Suspension: Bandit convoy 3's leader stood 10.5 degrees nose up on its tail rails and didn't move, and only a build was checked at spawn. A mix now keeps corners that hang alike (`VehicleChassis.Hang`, `Level`: within 0.3 m), and every generated vehicle passes the drive check ("Dynamic spawn").
 
 ## Shape grammar
@@ -629,7 +633,7 @@ for its own guns, spare parts for its own repairs and spare guns**, stowed the w
 it and salvage it like anything else; nothing is abstract and nothing unlocks. Every other vehicle (a request by shape, a committed seed, kit 1 to 3) carries nothing new:
 `--gen-vehicles` reports all 123 identical, and kit 3 seeds write the same text as before.
 
-**What it carries** (`Vehicle.StowCargo`, at the end of the role pass, on forks of the kit layer: "kit cargo", "kit cargo layout", "kit cargo shelf"):
+**What it carries** (`Vehicle.StowCargo`, at the end of the role pass, on forks of the kit layer: "kit cargo" for the amounts, "kit cargo shelf" for a spares shelf; the layout rolls nothing):
 
 - **Ammo it uses.** For each gun, magazines of the kind its build takes (the build's `feed`: a Box Magazine for a carbine, an Extended Mag for a Scrap MG, a Shell Feed for
   a pump gun, a Harpoon Breech for a Whaler, a Fuel Canister for a flame gun); Ammo Boxes for the guns that load from boxes; and on a gun deck a loose Ammo Crate. Rounds
