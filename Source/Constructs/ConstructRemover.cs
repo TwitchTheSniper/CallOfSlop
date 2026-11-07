@@ -45,7 +45,7 @@ public sealed class RemoverSelection
 
     public Mark this[int i] => _items[i];
 
-    public static long Key(ushort body, bool route, int index) => ((long)body << 16) | (route ? 0x8000L : 0) | (uint)index;
+    public static long Key(ushort body, bool route, int index) => ((long)body << 32) | (route ? 0x80000000L : 0) | (uint)index; // (31 bits of index: was 15, 32,766 parts)
 
     public bool Contains(ushort body, bool route, int index) => _keys.Contains(Key(body, route, index));
 

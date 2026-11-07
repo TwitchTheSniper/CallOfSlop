@@ -280,8 +280,9 @@ public sealed partial class Construct
         }
         // The drive line's edges: the attachments, then the shaft links (routed links: a shaft from port to port, its U
         // joints each losing a little). A shaft link may end on a suspension: a half shaft (ConstructHalfShaft.cs).
-        Span<CLink> edges = stackalloc CLink[LinkCount + SeamCount + ShaftEdgeCount];
-        Span<float> edgeEff = stackalloc float[LinkCount + SeamCount + ShaftEdgeCount];
+        using var scratch = Scratch.Begin();
+        Span<CLink> edges = scratch.Take<CLink>(LinkCount + SeamCount + ShaftEdgeCount);
+        Span<float> edgeEff = scratch.Take<float>(LinkCount + SeamCount + ShaftEdgeCount);
         var edgeCount = 0;
         for (var k = 0; k < LinkCount; k++)
         {
@@ -322,14 +323,14 @@ public sealed partial class Construct
         HasPowertrain = true; // (an engine that runs a transmission: its rpm is worked out each tick, for wheels or a power take-off)
         // The drive line, breadth first from the transmission: each part fed once, with the reduction, efficiency, torque
         // cap and gates of the way it was reached, and the differential or hub its axle output belongs to.
-        Span<bool> fed = stackalloc bool[PartCount];
-        Span<float> ratio = stackalloc float[PartCount];
-        Span<float> eff = stackalloc float[PartCount];
-        Span<float> cap = stackalloc float[PartCount];
-        Span<ushort> mask = stackalloc ushort[PartCount];
-        Span<ushort> group = stackalloc ushort[PartCount];
-        Span<ushort> queue = stackalloc ushort[PartCount];
-        Span<bool> halfFed = stackalloc bool[PartCount]; // a suspension a half shaft feeds: its numbers are in ratio, eff, cap, mask, group
+        Span<bool> fed = scratch.Take<bool>(PartCount);
+        Span<float> ratio = scratch.Take<float>(PartCount);
+        Span<float> eff = scratch.Take<float>(PartCount);
+        Span<float> cap = scratch.Take<float>(PartCount);
+        Span<ushort> mask = scratch.Take<ushort>(PartCount);
+        Span<ushort> group = scratch.Take<ushort>(PartCount);
+        Span<ushort> queue = scratch.Take<ushort>(PartCount);
+        Span<bool> halfFed = scratch.Take<bool>(PartCount); // a suspension a half shaft feeds: its numbers are in ratio, eff, cap, mask, group
         halfFed.Clear();
         int head = 0, tail = 0;
         queue[tail++] = (ushort)Transmission;

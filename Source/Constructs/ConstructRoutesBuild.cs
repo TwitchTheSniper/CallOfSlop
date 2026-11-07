@@ -218,10 +218,11 @@ public static partial class ConstructRoutes
 
     private static bool MigrateOne(ConstructWorld world, Construct c)
     {
-        Span<bool> tried = stackalloc bool[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> tried = scratch.Take<bool>(c.PartCount);
         tried.Clear();
-        Span<bool> comp = stackalloc bool[c.PartCount];
-        Span<ushort> order = stackalloc ushort[c.PartCount];
+        Span<bool> comp = scratch.Take<bool>(c.PartCount);
+        Span<ushort> order = scratch.Take<ushort>(c.PartCount);
         for (var start = 0; start < c.PartCount; start++)
         {
             var sd = c.DefOf(start);
@@ -355,8 +356,9 @@ public static partial class ConstructRoutes
 
     private static bool StaysWhole(Construct c, ReadOnlySpan<bool> comp)
     {
-        Span<bool> seen = stackalloc bool[c.PartCount];
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> seen = scratch.Take<bool>(c.PartCount);
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         seen.Clear();
         var root = c.Root >= 0 && c.Root < c.PartCount && !comp[c.Root] ? c.Root : -1;
         for (var i = 0; i < c.PartCount && root < 0; i++)
@@ -389,8 +391,9 @@ public static partial class ConstructRoutes
     /// <summary>The chain's part centres in order from <paramref name="first"/> to <paramref name="last"/> (a walk along its links).</summary>
     private static int ChainPath(Construct c, ReadOnlySpan<bool> comp, int first, int last, Span<Vector3> path)
     {
-        Span<int> prevOf = stackalloc int[c.PartCount];
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<int> prevOf = scratch.Take<int>(c.PartCount);
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
             prevOf[i] = -2;
         int head = 0, tail = 0;

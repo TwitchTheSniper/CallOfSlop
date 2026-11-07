@@ -112,8 +112,9 @@ public static class ConstructExtruder
         var at = new Vector2(d.ExtDieAt.X, d.ExtDieAt.Y);
         var min = at - half;
         var max = at + half;
-        Span<bool> seen = stackalloc bool[c.PartCount];
-        Span<ushort> queue = stackalloc ushort[c.PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> seen = scratch.Take<bool>(c.PartCount);
+        Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         int head = 0, tail = 0;
         seen[part] = true;
         queue[tail++] = (ushort)part;

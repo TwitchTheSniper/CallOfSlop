@@ -14,7 +14,7 @@ public sealed class PaintStroke
 
     /// <summary>The key of part (or link) <paramref name="index"/> of construct <paramref name="body"/> (<paramref name="whole"/>: the construct itself).</summary>
     public static long Key(ushort body, bool route, int index, bool whole = false) =>
-        ((long)body << 16) | (whole ? 0x7FFFL : route ? 0x8000L | (uint)index : (uint)index);
+        ((long)body << 32) | (whole ? 0x7FFFFFFFL : route ? 0x80000000L | (uint)index : (uint)index); // (31 bits of index: was 15, 32,766 parts; docs/perf/LIMITS.md)
 
     /// <summary>True the first time a target comes up in this stroke (act on it), false after (leave it).</summary>
     public bool Try(ushort body, bool route, int index, bool whole = false) => _done.Add(Key(body, route, index, whole));
