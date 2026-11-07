@@ -477,6 +477,14 @@ public static unsafe partial class Program
         }
         TextureIdle();
 
+        // The material painter: LMB remakes the part in the material in hand, RMB picks a part's, R opens the list (Program.SandboxMaterial.cs).
+        if (h.Tool == ConstructTool.Material)
+        {
+            SandboxMaterialInput(g, me, aimed, hit);
+            return true;
+        }
+        MaterialIdle();
+
         // The fuse tool: LMB fuses the selection or the aimed piece into one unit, RMB un-fuses (Program.SandboxFuse.cs).
         if (h.Tool == ConstructTool.Fuse)
         {
@@ -1173,6 +1181,7 @@ public static unsafe partial class Program
         ConstructTool.Nudge => (_nudgeModes.Rotating ? "rotate, " : "move, ") + (_nudgeModes.Local ? "local" : "world"),
         ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
         ConstructTool.Texture => _textureWheel.ModeText,
+        ConstructTool.Material => _materialWheel.ModeText,
         ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", _ => "socket" },
         _ => "",
     };

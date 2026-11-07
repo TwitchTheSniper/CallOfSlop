@@ -36,6 +36,13 @@ public sealed class ExtrusionTable
     public ExtrusionMaterial[] WingRows = [];
     public string Problem = "";
 
+    /// <summary>
+    /// The material painter's choice (the file's "painter": PartMaterials.cs): the bulk materials it offers, each a row of
+    /// "materials" (whose numbers make the part's), and the roles of the parts it may remake. Empty: the tool offers nothing.
+    /// </summary>
+    public string[] PainterMaterials = [];
+    public PartRole[] PainterRoles = [];
+
     private readonly Dictionary<string, ExtrusionMaterial> _by = new();
     private readonly Dictionary<string, WheelMaterial> _wheels = new();
     private readonly Dictionary<string, ExtrusionMaterial> _fans = new();
@@ -98,6 +105,7 @@ public sealed class ExtrusionTable
             var kinds = new List<FanKind>();
             var wings = new List<ExtrusionMaterial>();
             var frames = new List<AirframeKind>();
+            JsonElement? painter = null;
             foreach (var p in root.EnumerateObject())
                 switch (p.Name)
                 {
@@ -134,6 +142,9 @@ public sealed class ExtrusionTable
                         foreach (var row in p.Value.EnumerateArray())
                             frames.Add(Frame(row, frames.Count + 1));
                         break;
+                    case "painter":
+                        painter = p.Value.Clone();
+                        break;
                     default: throw new FormatException($"unknown key \"{p.Name}\"");
                 }
             if (rows.Count == 0)
@@ -152,6 +163,8 @@ public sealed class ExtrusionTable
                 t._fans[r.Material] = r;
             foreach (var r in wings)
                 t._wings[r.Material] = r;
+            if (painter is { } pt)
+                t.Painter(pt);
             return t;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)
@@ -183,6 +196,44 @@ public sealed class ExtrusionTable
             throw new FormatException($"row {n}: \"class\" \"{cls}\" isn't a class in Recycling.json");
         return new ExtrusionMaterial(material, units, health, armour, max, cls);
     }
+
+    /// <summary>"painter": {"materials": [names of rows of "materials"], "roles": [part roles]}.</summary>
+    private void Painter(JsonElement e)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new FormatException("\"painter\" is an object");
+        var mats = new List<string>();
+        var roles = new List<PartRole>();
+        foreach (var p in e.EnumerateObject())
+            switch (p.Name)
+            {
+                case "about": break;
+                case "materials":
+                    foreach (var m in p.Value.EnumerateArray())
+                    {
+                        var name = m.GetString() ?? "";
+                        if (!_by.ContainsKey(name))
+                            throw new FormatException($"painter: \"{name}\" isn't a row of \"materials\"");
+                        if (name.Length is 0 or > PartMaterials.MaxName || name.Any(ch => ch is < ' ' or > '~' or '(' or ')'))
+                            throw new FormatException($"painter: \"{name}\" is 1 to {PartMaterials.MaxName} plain characters, no brackets");
+                        if (!mats.Contains(name))
+                            mats.Add(name);
+                    }
+                    break;
+                case "roles":
+                    foreach (var r in p.Value.EnumerateArray())
+                        roles.Add(Enum.TryParse<PartRole>(r.GetString(), true, out var role) ? role : throw new FormatException($"painter: \"{r.GetString()}\" isn't a part role"));
+                    break;
+                default: throw new FormatException($"painter: unknown key \"{p.Name}\"");
+            }
+        if (mats.Count > PartMaterials.MaxMaterials)
+            throw new FormatException($"painter: at most {PartMaterials.MaxMaterials} materials");
+        PainterMaterials = mats.ToArray();
+        PainterRoles = roles.ToArray();
+    }
+
+    /// <summary>The row of "materials" for a bulk material by name, or null.</summary>
+    public ExtrusionMaterial? FindByName(string material) => _by.TryGetValue(material, out var r) ? r : null;
 
     private static AirfoilRow Foil(JsonElement e, int n)
     {

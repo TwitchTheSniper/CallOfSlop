@@ -955,6 +955,12 @@ public static class Extrusion
             ModularRack.Write(w, d);
             return;
         }
+        if (d.MatBase != null)
+        {
+            w.U8(PartMaterials.WireKind);
+            PartMaterials.Write(w, d); // (protocol 194: a part of another material, by its file part and the material's name)
+            return;
+        }
         switch (k.Shape)
         {
             case ExShape.Round:
@@ -993,6 +999,8 @@ public static class Extrusion
             return Ordnance.Read(ref r);
         if (profile == ModularRack.WireKind)
             return ModularRack.Read(ref r);
+        if (profile == PartMaterials.WireKind)
+            return PartMaterials.Read(ref r);
         var mask = 0ul;
         var shape = ExShape.Section;
         ushort wall = 0;
