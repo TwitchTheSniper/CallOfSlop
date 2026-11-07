@@ -331,9 +331,11 @@ silhouette 0.05): each room bay's two sections against the nearest of the style'
 | parts a vehicle, mean over the sweeps | 133 | 129 |
 | generation (sweep's wall clock, mean of shape means) | 1968 ms | 1465 ms |
 | sweeps' CPU (user), all 30 | 482 s | 372 s |
-| room sections from the front, mean pair within a style (`--body-report`, 6 seeds) | 0.001 (every style the same profile) | 0.009 (Militia) to 0.025 (Scam) |
-| ... between two styles | 0.001 | 0.020 (IT against British, both smooth) to 0.073 (Scam against Militia) |
-| distinct bay parts a style | 11 to 14 | 70 to 75 |
+| room sections from the front, mean pair within a style (`--body-report`, 6 seeds) | 0.001 (every style the same profile) | 0.009 (Militia) to 0.027 (Scam) |
+| ... between two styles | 0.001 | 0.020 (IT against British, both smooth) to 0.078 (Scam against Militia) |
+| distinct bay parts a style | 11 to 14 | 70 to 78 |
+| facets a side (`--body-report`) | 3 (fixed) | Bandit 3 to 5 (mean 4.2), Militia 4, Highland and Scam 3 to 5, IT 8 to 12 (9.9), British 8 to 12 (10.1) |
+| generation alone (`--body-report`, mean a style; worst) | 300 to 630 ms; 5.6 s | 300 to 500 ms; 5.1 s (a Bandit seed of many plans) |
 | coplanar pairs inside lofted bays (the new in-part check) | - | 311 before the ridge and cap fixes, 0 after |
 | diversity, mean pair over a style's 5 shapes, old metric (Bandit, IT, Highland, Scam, British) | 0.223, 0.210, 0.231, 0.224, 0.207 | 0.219, 0.205, 0.228, 0.220, 0.208 |
 | diversity, new metric (with the front term) | 0.208, 0.206, 0.225, 0.219, 0.205 | 0.206, 0.199, 0.221, 0.219, 0.204 |
@@ -342,7 +344,7 @@ silhouette 0.05): each room bay's two sections against the nearest of the style'
 | identity's section part alone | 0.23, 0.43, 0.65, 0.29, 0.69 | 1.00, 1.00, 1.00, 1.00, 0.92 |
 | identity, old score (`--no-sections`) | 0.96, 0.96, 0.96, 0.96, 0.98 | 0.96, 0.96, 0.96, 0.96, 0.98 |
 
-What the numbers say: lofted sections make the styles differ from each other from the front (between-style distance 20 to 70 times the fixed bays'), and a
+What the numbers say: lofted sections make the styles differ from each other from the front (between-style distance 20 to 78 times the fixed bays'), and a
 vehicle's section now counts for its faction (a fixed-bay room reads 0.23 to 0.69 for its style, a lofted one 0.92 to 1). They don't make seeds of one shape and
 one style differ more: within a shape the front term is about the same in both kits (a style keeps one language a vehicle, and the whole-body front is cab,
 wheels and rails), so the diversity total moved by at most 0.01, down, the front term being smaller than the parts term it took weight from. The variety within a
