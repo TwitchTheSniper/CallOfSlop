@@ -138,7 +138,57 @@ public static class VehiclePlan
         return (Share(side), Share(top), spread / ny);
     }
 
-    private static void Fill(bool[,] m, Vector3 a3, Vector3 b3, Vector3 c3, Func<Vector3, Vector2> to)
+    /// <summary>
+    /// The outline along the length in <paramref name="bins"/> slices, nose first, over the fixed parts (as <see cref="Outline"/>, 5 cm cells), each 0 to 1 of its own bounding box:
+    /// how much of the slice's side is filled, how much of its plan width, and how high its top outline stands. Size is left out, so a longer copy reads the same (<see cref="VehicleDiversity"/>).
+    /// </summary>
+    public static (float[] Side, float[] Top, float[] Height) Profiles(Construct c, int bins)
+    {
+        var t = Triangles(c, false);
+        var (side, top, height) = (new float[bins], new float[bins], new float[bins]);
+        if (t.Length < 3)
+            return (side, top, height);
+        var (min, max) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        foreach (var p in t)
+        {
+            min = Vector3.Min(min, p);
+            max = Vector3.Max(max, p);
+        }
+        const float cell = 0.05f;
+        var (nz, ny, nx) = ((int)((max.Z - min.Z) / cell) + 1, (int)((max.Y - min.Y) / cell) + 1, (int)((max.X - min.X) / cell) + 1);
+        var sideCells = new bool[nz, ny];
+        var topCells = new bool[nz, nx];
+        for (var k = 0; k + 2 < t.Length; k += 3)
+        {
+            Fill(sideCells, t[k], t[k + 1], t[k + 2], p => new Vector2(p.Z - min.Z, p.Y - min.Y) / cell);
+            Fill(topCells, t[k], t[k + 1], t[k + 2], p => new Vector2(p.Z - min.Z, p.X - min.X) / cell);
+        }
+        var columns = new int[bins];
+        for (var z = 0; z < nz; z++)
+        {
+            var b = Math.Min(bins - 1, z * bins / nz);
+            columns[b]++;
+            var highest = -1;
+            for (var y = 0; y < ny; y++)
+                if (sideCells[z, y])
+                {
+                    side[b]++;
+                    highest = y;
+                }
+            height[b] = MathF.Max(height[b], (highest + 1) / (float)ny);
+            for (var x = 0; x < nx; x++)
+                top[b] += topCells[z, x] ? 1 : 0;
+        }
+        for (var b = 0; b < bins; b++)
+            if (columns[b] > 0)
+            {
+                side[b] /= columns[b] * (float)ny;
+                top[b] /= columns[b] * (float)nx;
+            }
+        return (side, top, height);
+    }
+
+    private static void Fill(bool[,] m,Vector3 a3, Vector3 b3, Vector3 c3, Func<Vector3, Vector2> to)
     {
         Vector2 a = to(a3), b = to(b3), c = to(c3);
         var area = (b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X);

@@ -22,7 +22,7 @@ namespace CallOfSlop;
 ///   --test-kit                     hosting Zombies: the test kit on maps that allow it (Horde Test; not saved)
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Release: --bake DIR (baked nav graphs for every shipped map, BotNavBake.cs).
-/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --sweep-vehicle NAME, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --sweep-vehicle NAME, --diversity NAME, --diversity-style STYLE, --kit-report, --grade-vehicle, --grade-report, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
@@ -136,6 +136,16 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--gen-vehicles", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleKitCli.GenVehicles(args); // every vehicle generator: which outputs differ from the committed files
+        if (args.SkipWhile(a => !a.Equals("--diversity", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityOf)
+            return VehicleKit.VehicleQualityCli.Diversity(diversityOf, args); // the vehicle kit's quality tools (VehicleQuality.cs): how alike a shape's seeds are, what never varies
+        if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
+            return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
+        if (args.Any(a => a.Equals("--kit-report", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleQualityCli.KitReport(args); // every style and shape: failures, their reasons, cost, parts, mass
+        if (args.Any(a => a.Equals("--grade-vehicle", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleQualityCli.GradeVehicle(args); // the user's grade of a seed, into docs/vehiclekit/grades.json
+        if (args.Any(a => a.Equals("--grade-report", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleQualityCli.GradeReport(args); // grades turned into suggestions
         if (args.SkipWhile(a => !a.Equals("--check-devedit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } devEditDir)
             return DevEditPackage.Cli(devEditDir); // a prop editor change package (or a folder of them): does it load? (DevEditPackage.cs)
         if (args.SkipWhile(a => !a.Equals("--check-weapon", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponFile)
@@ -176,7 +186,8 @@ public static unsafe partial class Program
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
         _vehicleShots = args.Any(a => a.Equals("--vehicle-shots", StringComparison.OrdinalIgnoreCase)); // (Program.VehicleShots.cs)
-        _shotTool |= _stressShots | _ragdollShots | _vehicleShots;
+        _vehicleSheet = args.Any(a => a.Equals("--vehicle-sheet", StringComparison.OrdinalIgnoreCase)); // (Program.VehicleSheet.cs)
+        _shotTool |= _stressShots | _ragdollShots | _vehicleShots | _vehicleSheet;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -269,6 +280,8 @@ public static unsafe partial class Program
                 RunStressShots(args); // --stress-shots: Horde Stress's hordes staging, descending, merged and advancing, then quit (Program.StressShots.cs)
             else if (_vehicleShots)
                 RunVehicleShots(args); // --vehicle-shots: shaded pictures of generated vehicles, then quit (Program.VehicleShots.cs)
+            else if (_vehicleSheet)
+                RunVehicleSheet(args); // --vehicle-sheet: a contact sheet of a shape's seeds for grading, then quit (Program.VehicleSheet.cs)
             else if (_ragdollShots)
                 RunRagdollShots(args); // --ragdoll-shots: picture strips of ragdoll deaths, then quit (Program.RagdollShots.cs)
             else if (_shotTool)

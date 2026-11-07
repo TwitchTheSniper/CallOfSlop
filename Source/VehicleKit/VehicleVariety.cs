@@ -21,7 +21,8 @@ public static class VehicleVariety
             wheels.Max(p => p.Z) - wheels.Min(p => p.Z), wheels.Max(p => p.X) - wheels.Min(p => p.X), wheels.Select(p => MathF.Round(p.Z, 1)).Distinct().Count());
     }
 
-    private static string Kind(string part)
+    /// <summary>A part's kind: plates are plates and beams beams, whatever their material or size; anything else is itself.</summary>
+    public static string Kind(string part)
     {
         foreach (var plate in (string[])["Plate Steel", "Sheet Steel", "Tread Plate", "Wood Planks", "Bolt Deck"])
             if (part.StartsWith(plate, StringComparison.Ordinal))

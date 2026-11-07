@@ -1,0 +1,4 @@
+{
+  "about": "The user's grades of generated vehicles, 1 (bin it) to 5 (ship it): --grade-vehicle adds one, --grade-report reads them (docs/vehiclekit/VEHICLEKIT.md, Quality tools).",
+  "grades": []
+}
