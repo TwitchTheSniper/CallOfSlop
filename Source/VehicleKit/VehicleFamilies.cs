@@ -180,8 +180,9 @@ public sealed partial class Vehicle
     }
 
     /// <summary>
-    /// Appliqué for a vehicle with no room (a family's Mk2 and Mk3, its up-armoured variant): the style's heaviest armour plate, a metre square, welded upright a few
-    /// centimetres proud of the outermost plate or beam of the body at a station along each side, 0.35 m and more over the ground, only where it meets nothing
+    /// Appliqué on the sides (a family's Mk2 and Mk3, its up-armoured variant, a roomless vehicle that leans to armour): the style's heaviest armour plate, a metre square,
+    /// welded upright a few centimetres proud of the outermost plate or beam of the body at a station along each side, 0.35 m and more over the ground and its middle under
+    /// the centre of mass (so it only steadies the vehicle), only where it meets nothing
     /// else (wheels, guns, ladders, drums), a metre and more from any other weld (the hull's appliqué included). As many as the lean asks, from a third of the stations
     /// at 0.3 up, and at least <paramref name="least"/> (a Mk2 two, a Mk3 and an up-armoured variant four) where there is room.
     /// </summary>
@@ -212,6 +213,8 @@ public sealed partial class Vehicle
         }
         if (boxes.Count == 0 || ground == float.MaxValue)
             return;
+        C.Rebuild();
+        var com = FromRest(C.Com).Y; // (every plate's middle stays under the centre of mass, so the plating only ever steadies it)
         var z0 = boxes.Min(b => b.Lo.Z) + 0.6f;
         var z1 = boxes.Max(b => b.Hi.Z) - 0.6f;
         var spots = new List<(VPart Host, Vector3 At, float Side)>();
@@ -230,7 +233,9 @@ public sealed partial class Vehicle
                 }
                 if (out_ is not { Host: true } host)
                     continue;
-                var y = MathF.Max(ground + 0.9f, MathF.Min((host.Lo.Y + host.Hi.Y) * 0.5f, host.Hi.Y - 0.1f));
+                var y = MathF.Min(MathF.Max(ground + 0.9f, MathF.Min((host.Lo.Y + host.Hi.Y) * 0.5f, host.Hi.Y - 0.1f)), com - 0.05f);
+                if (y - 0.5f < ground + 0.35f || y + 0.5f < host.Lo.Y + 0.1f)
+                    continue; // (too low to clear the ground, or hanging below its host)
                 var x = (side > 0 ? host.Hi.X : host.Lo.X) + side * (thick * 0.5f + 0.04f);
                 if (Parts.FirstOrDefault(p => p.Index == host.Index) is { } vp)
                     spots.Add((vp, new Vector3(x, y, Math.Clamp(z, host.Lo.Z - 0.3f, host.Hi.Z + 0.3f)), side));

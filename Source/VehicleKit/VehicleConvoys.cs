@@ -194,7 +194,7 @@ public static class VehicleFamiliesCli
             return;
         }
         Console.WriteLine($"  {o.What,-22} {v.Name}: {VehicleFamilies.Resolve(o.M).Ask.Shape}, plan {v.PlanAttempt + 1}, {o.Ms:0} ms, {(v.Fit?.Met == true ? "role met" : "role MISSED " + string.Join("; ", v.Fit?.Misses ?? []))}");
-        Console.WriteLine($"    key {o.M.Key}");
+        Console.WriteLine($"    key {o.M.Key}, hash {VehicleGenJob.Fnv(o.Text):x16}");
         if (v.Fit != null)
             Console.WriteLine($"    {v.Fit}");
         Console.WriteLine($"    identity {v.Identity}");

@@ -629,8 +629,9 @@ public sealed partial class Vehicle
         var n = ask.Needs;
         if (n.Winch && !Parts.Any(p => p.Name.Contains("Winch", StringComparison.Ordinal)))
             OnDeck("Cargo Winch 16 m", null, Dice.Fork("kit role winch"));
-        if (ask.KitArmourLean >= 0.3)
-            UpArmour(ask.KitArmourLean, Dice.Fork("kit role armour"));
+        var hull = ask.Family ? ask.ArmourLean : ask.KitArmourLean; // (a family's marks keep Mk1's hull appliqué: their own goes on low, VehicleFamilies.cs)
+        if (hull >= 0.3)
+            UpArmour(hull, Dice.Fork("kit role armour"));
         if (n.SignalsMin > 0)
         {
             var slot = Style.Parts.ContainsKey("mast") ? "mast" : "trophy";
