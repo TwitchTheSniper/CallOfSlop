@@ -310,10 +310,6 @@ public static class Keybinds
         }
     }
 
-    /// <summary>
-    /// Every binding's default, slot by slot (<see cref="At"/>): the primaries, then the second and third bindings, which
-    /// are unbound but where a laptop lacks the primary (<see cref="SecondDefaults"/>).
-    /// </summary>
     private static int[] MakeDefaults()
     {
         var d = new int[Total];
@@ -414,7 +410,11 @@ public static class Keybinds
         Key(GlfwKey.L), // Eject, in an ejection seat
     ];
 
-    /// <summary>(Declared after the lists it is made from: static fields start in the order they are written.)</summary>
+    /// <summary>
+    /// Every binding's default, slot by slot (<see cref="At"/>): the primaries, then the second and third bindings, which
+    /// are unbound but where a laptop lacks the primary (<see cref="SecondDefaults"/>). Declared after the lists it is
+    /// made from: static fields start in the order they are written.
+    /// </summary>
     public static readonly int[] Defaults = MakeDefaults();
 
     /// <summary>
@@ -520,7 +520,7 @@ public static class Keybinds
     /// actions on one key is skipped (that binding keeps its old key), so migrating never creates a conflict. Changes
     /// name a binding (<see cref="At"/>), so a later version can add a second binding as it would add an action.
     /// </summary>
-    /// <returns>The actions that moved.</returns>
+    /// <returns>The actions that moved, each once.</returns>
     public static List<GameAction> Migrate(int[] binds, int fromVersion)
     {
         var moved = new List<GameAction>();
@@ -576,7 +576,7 @@ public static class Keybinds
                 }
             }
         }
-        return moved;
+        return moved.Count > 1 ? moved.Distinct().ToList() : moved; // (an action named once, however many of its bindings moved)
     }
 
     /// <summary>Does no other action live beside <paramref name="a"/> hold <paramref name="code"/> (in any of its bindings)?</summary>

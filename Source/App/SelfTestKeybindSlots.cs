@@ -1,4 +1,6 @@
 using Brutal.GlfwApi;
+using Brutal.ImGuiApi;
+using Brutal.Numerics;
 
 namespace CallOfSlop;
 
@@ -154,7 +156,73 @@ public static partial class SelfTest
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         Want(bytes == 0, $"resolving the bindings allocated {bytes} bytes");
 
-        Line($"slots: {Keybinds.Slots} per action; tool wheel {Keybinds.Name(d[(int)GameAction.ToolWheel])} / {Keybinds.Name(d[wheel1])}; {string.Join("; ", trace)}; {bytes} bytes in 600 resolves");
+        // 11. The Controls screen drawn headless: defaults, a clash, a slot waiting for a key, a clear and a reset noted by
+        // their buttons and done after the table (the 2026-11-07 crash rule). Nothing throws, no ImGui error.
+        var ctx = ImGui.CreateContext();
+        var errors0 = Ui.ImGuiErrors;
+        var drawn = 0;
+        try
+        {
+            var io = ImGui.GetIO();
+            io.IniFilename = default;
+            io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset | ImGuiBackendFlags.RendererHasTextures;
+            io.DisplaySize = new float2(1280, 720);
+            io.DeltaTime = 1f / 60;
+            Ui.SafeErrors(io);
+            var ui = new Ui();
+            var st = new Settings();
+            void Draw()
+            {
+                ImGui.NewFrame();
+                ImGui.SetNextWindowSize(new float2(1200, 700), ImGuiCond.Always);
+                ImGui.Begin("controls test"u8);
+                try
+                {
+                    ui.ControlsSettings(st);
+                    drawn++;
+                }
+                finally
+                {
+                    ImGui.End();
+                    ImGui.Render();
+                    FakeTextureUploads(ImGui.GetDrawData());
+                    Ui.CountImGuiErrors();
+                }
+            }
+            Draw();
+            Keybinds.Assign(st.Binds, GameAction.ToolWheel, 1, alt); // (a clash with the gantry's orbit: drawn in red)
+            Draw();
+            ui.Rebinding = GameAction.ToolWheel;
+            ui.RebindSlot = 2;
+            Draw();
+            ui.BindEditTest(Ui.BindEdit.Clear, GameAction.ToolWheel, 2); // (clearing the slot that waits for a key also stops the wait)
+            Draw();
+            Want(ui.Rebinding == null && st.Binds[wheel2] == Keybinds.Unbound, "clearing the slot waiting for a key didn't stop the wait");
+            ui.BindEditTest(Ui.BindEdit.Clear, GameAction.ToolWheel, 0);
+            Draw();
+            Draw();
+            Want(st.Binds[(int)GameAction.ToolWheel] == Keybinds.Unbound && st.Binds[wheel1] == alt, "the clear button's action didn't clear only its slot");
+            foreach (var a in Enum.GetValues<GameAction>().Where(a => a < GameAction.COUNT))
+                for (var slot = 0; slot < Keybinds.Slots; slot++)
+                    Keybinds.Clear(st.Binds, a, slot); // (everything unbound)
+            Draw();
+            ui.BindEditTest(Ui.BindEdit.Reset, default, 0);
+            Draw();
+            Draw();
+            Want(st.Binds.SequenceEqual(d), "Reset to defaults didn't put the defaults back");
+        }
+        catch (Exception ex)
+        {
+            problems.Add($"the Controls screen threw: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            ImGui.DestroyContext(ctx);
+        }
+        Want(Ui.ImGuiErrors == errors0, $"the Controls screen made {Ui.ImGuiErrors - errors0} ImGui error(s)");
+        Ui.ImGuiErrors = errors0;
+
+        Line($"controls screen: {drawn} frames drawn; slots: {Keybinds.Slots} per action; tool wheel {Keybinds.Name(d[(int)GameAction.ToolWheel])} / {Keybinds.Name(d[wheel1])}; {string.Join("; ", trace)}; {bytes} bytes in 600 resolves");
         if (problems.Count > 0)
             Fail("keybind slots: " + string.Join("; ", problems));
     }

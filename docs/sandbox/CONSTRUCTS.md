@@ -143,7 +143,8 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
-Swap weapon, and the middle button was free everywhere) and thirteen segments appear around the middle of the screen,
+Swap weapon, and the middle button was free everywhere; binds version 24 gave it a second binding, the grave accent key, for
+laptops: Left Alt was the gantry camera's orbit, which is live while the wheel is) and thirteen segments appear around the middle of the screen,
 clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool** (east), configure tool, **no-collide tool**, **hands** (south; [below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **linking tool** (west), **paint tool** ([below](#the-paint-tool-board-item-pp01)), **texture paint tool** ([below](#the-texture-paint-tool)), **fuse tool** ([Fusing](#fusing)). Hands hang due south, the attach tool and linking tool due east and west (an odd wheel, after a player takes a tool off, turns half a step to keep hands south: `RadialMenu.Tilt`). A saved wheel keeps its own order (by name); a tool new since it was saved joins at its end
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to

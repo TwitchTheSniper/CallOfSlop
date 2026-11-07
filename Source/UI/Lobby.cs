@@ -625,12 +625,15 @@ public sealed partial class Ui
     public double RebindStarted;
 
     /// <summary>A Controls button's action, done after the table is drawn (the 2026-11-07 rule: an ImGui button only notes its action).</summary>
-    private enum BindEdit : byte { None, Clear, Reset }
+    internal enum BindEdit : byte { None, Clear, Reset }
 
     private (BindEdit Edit, GameAction Action, int Slot) _bindEdit;
 
+    /// <summary>The self-test's click on a Controls button (applied on the next draw, as a click is).</summary>
+    internal void BindEditTest(BindEdit edit, GameAction a, int slot) => _bindEdit = (edit, a, slot);
+
     /// <summary>Settings > Controls: each action's bindings side by side, a clear button on each, a warning on a key two live actions share.</summary>
-    private void ControlsSettings(Settings s)
+    internal void ControlsSettings(Settings s)
     {
         ImGui.TextColored(Dim, "Click a binding, then press a key or mouse button (Esc cancels). x clears it. Any of an action's bindings works it."u8);
         ImGui.TextColored(Dim, "Sandbox keys only work in Sandbox, so they can share a key with one that only works in the other modes. Sandbox keys may be Shift + a key."u8);
