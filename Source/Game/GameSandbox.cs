@@ -1364,11 +1364,38 @@ public sealed partial class Game
         if (index < 0 || index >= all.Count)
             return "no such blueprint";
         var bp = all[index];
+        if (!VehicleSpawner.AtOnce(bp, null))
+        {
+            // Too big for one tick (a faction vehicle's file, the RV): set down a slice a tick, in front of them when it is ready.
+            var ground = ConstructWorld.Ground(World.Query, p.Position + GravityFrames.FlatForward(p.Position, p.Yaw) * 6f);
+            if (VehicleSpawn.RequestBlueprint(bp, ground, p.Yaw, p.Id, p.Id, _blueprintSpawned ??= BlueprintSpawned) is { } busy)
+                return busy;
+            SandboxHands.Notices.Add((p.Id, VehicleSpawn.Pending > 1 ? $"placing the {bp.Name} ({VehicleSpawn.Pending - 1} ahead of it)" : $"placing the {bp.Name}"));
+            return null;
+        }
         if (SandboxBuildInFront(p, bp, null, out var why) is not { } c)
             return why;
         Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
         StoryFound(p, c, bp.Name); // (GameStory.cs)
         return null;
+    }
+
+    private VehicleSpawner.Finished? _blueprintSpawned;
+
+    /// <summary>A big parts-menu blueprint is down (or isn't): the player who asked is told, and the story hears of it.</summary>
+    private void BlueprintSpawned(Construct? c, string name, string why, byte who)
+    {
+        if (c == null)
+        {
+            SandboxHands.Notices.Add((who, why.Length > 0 ? why : $"the {name} couldn't be set down"));
+            return;
+        }
+        Constructs.Events.Add($"player {who} spawned the {name} blueprint as construct {c.Id} (parts menu)");
+        if (Players.TryGetValue(who, out var p))
+        {
+            SandboxHands.Notices.Add((who, $"the {name} is down"));
+            StoryFound(p, c, name); // (GameStory.cs)
+        }
     }
 
     /// <summary>Why the parts menu can't spawn a blueprint or a faction vehicle for this player now, or null.</summary>
@@ -1387,13 +1414,15 @@ public sealed partial class Game
 
     /// <summary>
     /// Server: a blueprint built standing on the ground in front of the player, facing the way they look, far enough out
-    /// that it doesn't land on them; theirs. Null and why when it can't be.
+    /// that it doesn't land on them; theirs. Null and why when it can't be. <paramref name="job"/>: its steps done already
+    /// (a big blueprint's, a slice a tick: GameSandboxVehicles.cs), joined to the world here.
     /// </summary>
-    internal Construct? SandboxBuildInFront(Player p, ConstructBuild.Blueprint bp, ConstructBuild.Blueprint? tow, out string why)
+    internal Construct? SandboxBuildInFront(Player p, ConstructBuild.Blueprint bp, ConstructBuild.Blueprint? tow, out string why, ConstructBuild.GroundJob? job = null)
     {
         var fwd = GravityFrames.FlatForward(p.Position, p.Yaw); // (a planetoid: along its ground there)
         var probe = p.Position + fwd * 6f;
-        var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe), p.Yaw, out why, tow);
+        var ground = ConstructWorld.Ground(World.Query, probe);
+        var c = job != null ? job.Join(ground, p.Yaw, out why) : ConstructBuild.BuildOnGround(Constructs, bp, ground, p.Yaw, out why, tow);
         if (c == null)
         {
             if (why.Length == 0)
