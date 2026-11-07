@@ -31,6 +31,7 @@ public static partial class SelfTest
             ww.RemovePart(wc, 1000);
             ww.Step(q, World.TickDt);
         }
+        BenchRoundTrip(block);
         var only = args.Any(a => a.Equals("--capital", StringComparison.OrdinalIgnoreCase) || a.Equals("--stack", StringComparison.OrdinalIgnoreCase));
         if (!only || args.Any(a => a.Equals("--sheet", StringComparison.OrdinalIgnoreCase)))
             foreach (var fused in new[] { false, true })
@@ -199,6 +200,60 @@ public static partial class SelfTest
             w.Step(q, World.TickDt);
         }
         Console.WriteLine($"[fuse bench] {name}: steady allocation {GC.GetAllocatedBytesForCurrentThread() - b0} B in 30 ticks");
+    }
+
+    /// <summary>The units as sizes, largest first: what a round trip must give back.</summary>
+    private static string UnitSizes(Construct c)
+    {
+        if (c.Dirty)
+            c.Rebuild();
+        var sizes = new List<int>();
+        for (var u = 0; u < c.UnitCount; u++)
+            sizes.Add(c.Unit(u).Count);
+        sizes.Sort((a, b) => b.CompareTo(a));
+        return sizes.Count == 0 ? "none" : string.Join("+", sizes);
+    }
+
+    /// <summary>Two units on one sheet with a plain strip between: through a blueprint, the wire and a split, they come back the same.</summary>
+    private static void BenchRoundTrip(ConstructPartDef block)
+    {
+        var w = new ConstructWorld();
+        var c = CostHull(w, new Vector3(0, -block.BoundsMin.Y + 0.02f, 0), 600, block);
+        w.AutoLinkMany(c, 0, c.PartCount);
+        c.Rebuild();
+        uint a = ConstructFuse.NewTag(), b = ConstructFuse.NewTag();
+        for (var i = 0; i < c.PartCount; i++)
+            c.Parts[i].Fuse = i < 300 ? a : i >= 360 ? b : 0;
+        c.Dirty = true;
+        var source = UnitSizes(c);
+        var clip = ConstructClip.Of(c, "fuse round trip", w);
+        var json = clip.ToBlueprint("fuse round trip", "", out var why);
+        var built = json == null ? null : ConstructBuild.Build(new ConstructWorld(), ConstructBuild.ParseBlueprint(json, "fuse round trip"), Vector3.Zero, Quaternion.Identity, out why);
+        var full = new PacketWriter(1 << 16);
+        ConstructNet.WriteFull(full, c, 1);
+        var other = new ConstructWorld();
+        var r = new PacketReader(full.Span);
+        r.U8();
+        ConstructNet.Read(ref r, other, 0);
+        var copy = other.Get(c.Id);
+        // A world save: the body written and read back into a world of its own.
+        var snap = new WorldSnapshot();
+        w.CaptureInto(snap);
+        var names = new WorldNames();
+        var bodyBytes = new SaveWriter();
+        ConstructWorld.WriteBody(bodyBytes, snap, snap.Bodies[0], names);
+        var nameBytes = new SaveWriter();
+        names.Write(nameBytes);
+        var read = new WorldNamesRead();
+        read.Read(new SaveReader(nameBytes.Span.ToArray()));
+        var loaded = new ConstructWorld().ReadBody(new SaveReader(bodyBytes.Span.ToArray()), read, _ => 0);
+        Console.WriteLine($"[fuse bench] round trip: a world save {(loaded != null ? UnitSizes(loaded) : "none")}, tags new: {loaded != null && loaded.PartCount > 0 && loaded.Parts[0].Fuse != a}");
+        // A strip across one unit taken off: it comes apart into two units (and the strip's ends are plain parts again).
+        for (var k = 0; k < 12; k++)
+            w.RemovePart(c, 144 + 11 - k);
+        var after = UnitSizes(c);
+        var pieces = string.Join(", ", w.Bodies.Where(o => o != c).Select(UnitSizes));
+        Console.WriteLine($"[fuse bench] round trip: units {source}; blueprint {(built != null ? UnitSizes(built) : "refused: " + why)}; a client's copy {(copy != null ? UnitSizes(copy) : "none")}; a strip of unit 1 taken off: {after}, pieces cut off: {(pieces.Length > 0 ? pieces : "none")}");
     }
 
     private static void BenchCapital(int parts, IWorldQuery q, bool fused)
