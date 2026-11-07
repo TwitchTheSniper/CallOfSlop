@@ -102,7 +102,7 @@ public enum Msg : byte
     Factions, // server -> all and each joiner: Sandbox player factions, the whole table (names, leaders, members, invites) when it changes (reliable ordered; GameSandboxFactions.cs, protocol 161)
     Fragment, // either way, Steam transport only: a piece of a reliable message over Steam's 512 KB limit (u8 lane, u8 first piece, u32 whole length, the bytes); put back together by SteamTransport before the game sees it (a 16,000-part construct's Full; protocol 190)
     Opening, // server -> one client: Sandbox survival opening, that player's beat (u8 OpeningStage, f32 time into it, f32 its length, vec the camera's focus, text caption, text the line just said) (reliable ordered; GameSandboxOpening.cs, protocol 199)
-    Tutorial, // either way, Sandbox: the warden's induction (a TutorialOp first): server -> one client, State (u8 step, u8 TutorialState) when it changes and on arrival; client -> server, Cue (u8 TutorialCue), Skip, Replay, Resume (reliable ordered; GameTutorial.cs, protocol 200)
+    Tutorial, // either way, Sandbox: the warden's induction (a TutorialOp first): server -> one client, State (u8 step, u8 TutorialState) when it changes and on arrival; client -> server, Cue (u8 TutorialCue), Skip, Replay, Resume (reliable ordered; GameTutorial.cs, protocol 201)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -25,7 +25,7 @@ public static unsafe partial class Program
             SetAudioMixerOpen(false);
             return true;
         }
-        if (key == Brutal.GlfwApi.GlfwKey.Unknown || Keybinds.Key(key) != _settings.Bind(GameAction.AudioMixer) || Ui.ChatOpen || Ui.WantsTextInput)
+        if (key == Brutal.GlfwApi.GlfwKey.Unknown || !_settings.HasBind(GameAction.AudioMixer, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput)
             return false;
         SetAudioMixerOpen(!Ui.AudioMixerOpen);
         return true;

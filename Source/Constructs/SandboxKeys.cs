@@ -45,7 +45,7 @@ public static class SandboxKeys
     /// <summary>Bumped when a bind changes (for a cached line's key).</summary>
     public static int Stamp;
 
-    private static readonly int[] Seen = new int[(int)GameAction.COUNT];
+    private static readonly int[] Seen = new int[Keybinds.Total]; // (every binding, slot by slot: a key line names an action's first)
     private static bool _any;
 
     static SandboxKeys() => Compose(Keybinds.Defaults, named: false);
@@ -71,7 +71,7 @@ public static class SandboxKeys
 
     private static void Compose(int[] b, bool named)
     {
-        string K(GameAction a) => named ? Short(b[(int)a]) : a switch
+        string K(GameAction a) => named ? Short(Keybinds.First(b, a)) : a switch
         {
             GameAction.MoveForward => "W", GameAction.MoveBack => "S", GameAction.MoveLeft => "A", GameAction.MoveRight => "D", GameAction.Jump => "Space",
             GameAction.CrouchHold => "Left Ctrl", GameAction.Sprint or GameAction.FreeRouting => "Left Shift", GameAction.Interact => "F", GameAction.Fire => "LMB",

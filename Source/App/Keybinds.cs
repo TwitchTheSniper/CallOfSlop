@@ -89,10 +89,86 @@ public enum GameAction
 /// <summary>
 /// Key and mouse bindings. A binding is an int: a <see cref="GlfwKey"/> value for keys, or
 /// <c>-(button + 2)</c> for mouse buttons, so both fit in one settings value.
+/// <para>
+/// Each action has <see cref="Slots"/> bindings (primary, secondary, third), any of which works it: the action is down
+/// while any of its bindings is held, so it is pressed when the first goes down and released when the last comes up.
+/// A binds array holds them slot by slot: <c>binds[slot * COUNT + action]</c> (<see cref="At"/>), so <c>binds[(int)a]</c>
+/// is the primary binding and code that only knows one binding per action still reads that. settings.txt keeps the
+/// primary in <c>bind_X=CODE</c> (as before) and the others in <c>bind2_X</c> and <c>bind3_X</c>, which older builds ignore.
+/// </para>
 /// </summary>
 public static class Keybinds
 {
     public const int Unbound = int.MinValue;
+
+    /// <summary>Bindings per action: primary, secondary, third.</summary>
+    public const int Slots = 3;
+
+    /// <summary>Actions.</summary>
+    public const int Count = (int)GameAction.COUNT;
+
+    /// <summary>Length of a binds array: every action's every slot.</summary>
+    public const int Total = Count * Slots;
+
+    /// <summary>The index of <paramref name="a"/>'s binding in <paramref name="slot"/> (0 is the primary).</summary>
+    public static int At(GameAction a, int slot) => slot * Count + (int)a;
+
+    /// <summary>The action a binds index belongs to.</summary>
+    public static GameAction ActionAt(int index) => (GameAction)(index % Count);
+
+    /// <summary>The first binding <paramref name="a"/> has (the primary unless that is cleared), or <see cref="Unbound"/>: what the HUD names.</summary>
+    public static int First(int[] binds, GameAction a)
+    {
+        for (var s = 0; s < Slots; s++)
+            if (binds[s * Count + (int)a] is var c and not Unbound)
+                return c;
+        return Unbound;
+    }
+
+    /// <summary>Is <paramref name="code"/> one of <paramref name="a"/>'s bindings?</summary>
+    public static bool Has(int[] binds, GameAction a, int code)
+    {
+        if (code == Unbound)
+            return false;
+        for (var s = 0; s < Slots; s++)
+            if (binds[s * Count + (int)a] == code)
+                return true;
+        return false;
+    }
+
+    /// <summary>Do <paramref name="a"/> and <paramref name="b"/> have a binding in common?</summary>
+    public static bool ShareKey(int[] binds, GameAction a, GameAction b)
+    {
+        for (var s = 0; s < Slots; s++)
+            if (Has(binds, b, binds[s * Count + (int)a]))
+                return true;
+        return false;
+    }
+
+    /// <summary>Is any of <paramref name="a"/>'s bindings held (the real keys and buttons)?</summary>
+    public static bool IsDown(GlfwWindow window, int[] binds, GameAction a)
+    {
+        for (var s = 0; s < Slots; s++)
+            if (IsDown(window, binds[s * Count + (int)a]))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Another action live beside the binding at <paramref name="index"/> on the same key (a clash the controls screen
+    /// warns about), or -1. Nothing allocates.
+    /// </summary>
+    public static int ClashAt(int[] binds, int index)
+    {
+        var code = binds[index];
+        if (code == Unbound)
+            return -1;
+        var a = ActionAt(index);
+        for (var i = 0; i < binds.Length; i++)
+            if (binds[i] == code && ActionAt(i) != a && Overlap(ActionAt(i), a))
+                return (int)ActionAt(i);
+        return -1;
+    }
 
     public static int Mouse(GlfwMouseButton b) => -((int)b + 2);
 
@@ -169,23 +245,58 @@ public static class Keybinds
         };
 
     /// <summary>
-    /// This frame's raw key states (<paramref name="down"/>[i]: action i's binding is held) made into what the game reads:
-    /// an action whose context isn't live is off, while a Shift chord is held the plain actions on the same key are
-    /// off (Shift + Left rolls instead of also turning), and in a seat a roll key held turns off whatever else is on its
-    /// key (Q and E roll, not swap weapons or use equipment). Nothing allocates.
+    /// This frame's raw key states made into what the game reads. <paramref name="down"/> is either one entry per
+    /// binding (<see cref="Total"/>, <c>down[i]</c>: binding i is held) or one per action (<see cref="Count"/>: the
+    /// primary bindings only, as the older tests give it). An action whose context isn't live is off, while a Shift
+    /// chord is held the plain bindings on the same key are off (Shift + Left rolls instead of also turning), and in a
+    /// seat a roll key held turns off whatever else is on its key (Q and E roll, not swap weapons or use equipment).
+    /// Each rule works on bindings, so an action stays down through another binding the rule didn't touch. Nothing allocates.
     /// </summary>
     public static void Resolve(int[] binds, bool sandbox, bool[] down, bool seated = false)
     {
+        if (down.Length == binds.Length)
+        {
+            ResolveSlots(binds, sandbox, down, seated);
+            return;
+        }
+        // (one per action: the primaries, put through the same rules in a scratch row)
+        lock (Scratch)
+        {
+            Array.Clear(Scratch);
+            for (var i = 0; i < down.Length && i < Count; i++)
+                Scratch[i] = down[i];
+            ResolveSlots(binds, sandbox, Scratch, seated);
+            for (var i = 0; i < down.Length && i < Count; i++)
+                down[i] = Scratch[i];
+        }
+    }
+
+    private static readonly bool[] Scratch = new bool[Total];
+
+    /// <summary>Per-binding states (from <see cref="Resolve"/>) into per-action ones: an action is down while any of its bindings is.</summary>
+    public static void Collapse(bool[] slotDown, bool[] down)
+    {
+        for (var a = 0; a < down.Length; a++)
+        {
+            var on = false;
+            for (var s = 0; s < Slots; s++)
+                on |= slotDown[s * Count + a];
+            down[a] = on;
+        }
+    }
+
+    private static void ResolveSlots(int[] binds, bool sandbox, bool[] down, bool seated)
+    {
         for (var i = 0; i < down.Length; i++)
-            if (down[i] && !ActiveIn((GameAction)i, sandbox, seated))
+            if (down[i] && !ActiveIn(ActionAt(i), sandbox, seated))
                 down[i] = false;
         if (sandbox && seated)
-            for (var i = (int)GameAction.SeatRollLeft; i <= (int)GameAction.SeatEject; i++)
+            for (var i = 0; i < down.Length; i++)
             {
-                if (!down[i])
+                if (!down[i] || ActionAt(i) is < GameAction.SeatRollLeft or > GameAction.SeatEject)
                     continue;
                 for (var j = 0; j < down.Length; j++)
-                    if (j != i && binds[j] == binds[i])
+                    if (ActionAt(j) != ActionAt(i) && binds[j] == binds[i])
                         down[j] = false;
             }
         for (var i = 0; i < down.Length; i++)
@@ -199,7 +310,26 @@ public static class Keybinds
         }
     }
 
-    public static readonly int[] Defaults =
+    private static int[] MakeDefaults()
+    {
+        var d = new int[Total];
+        Array.Fill(d, Unbound);
+        PrimaryDefaults.CopyTo(d, 0);
+        foreach (var (a, code) in SecondDefaults)
+            d[At(a, 1)] = code;
+        return d;
+    }
+
+    /// <summary>
+    /// Second bindings by default, for what a laptop can't press: the tool wheel (the middle mouse button) also on the key
+    /// left of 1 (grave accent; Left Alt is the gantry camera's orbit key, live with the wheel). Binds version 24.
+    /// </summary>
+    private static readonly (GameAction Action, int Code)[] SecondDefaults =
+    [
+        (GameAction.ToolWheel, Key(GlfwKey.GraveAccent)),
+    ];
+
+    private static readonly int[] PrimaryDefaults =
     [
         Key(GlfwKey.W),
         Key(GlfwKey.S),
@@ -281,6 +411,13 @@ public static class Keybinds
     ];
 
     /// <summary>
+    /// Every binding's default, slot by slot (<see cref="At"/>): the primaries, then the second and third bindings, which
+    /// are unbound but where a laptop lacks the primary (<see cref="SecondDefaults"/>). Declared after the lists it is
+    /// made from: static fields start in the order they are written.
+    /// </summary>
+    public static readonly int[] Defaults = MakeDefaults();
+
+    /// <summary>
     /// Version of <see cref="Defaults"/>, saved as <c>binds_version</c> in settings.txt. Files from before a change get
     /// <see cref="Migrate"/>d once on load. 1 (no line in the file): Equipment F, Interact E. 2: Interact F, Equipment E.
     /// 3: chat and voice keys added (Chat all Enter, Chat team Y, Push to talk X), each only if no other action has the key.
@@ -300,66 +437,70 @@ public static class Keybinds
     /// 19: the build stations' keys (Sandbox): Mirror M, Line O, Replace P, Gantry U, build plane Page Up / Down, orbit Left Alt (same rule). The selector on the full stop, its actions on M, O, P, U and comma (the first four share those keys: see <see cref="Overlap"/>).
     /// 20: the Story window (Sandbox) on F4 added (same rule). 21: the Faction window (Sandbox) on F2 added (same rule).
     /// 22: roll left and right in a seat on Q and E added (same rule; they share those keys, see <see cref="Overlap"/> and <see cref="Resolve"/>).
+    /// 23: Hook / launch / undock G and Eject L in a seat added (same rule).
+    /// 24: several bindings per action (<see cref="Slots"/>; <c>bind2_X</c> and <c>bind3_X</c> lines); the tool wheel's second
+    /// binding on the grave accent key added (same rule: left unbound when the player uses that key for something live beside it).
     /// </summary>
-    public const int DefaultsVersion = 23;
+    public const int DefaultsVersion = 24;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
-    private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
+    private static readonly (int Version, int Index, int Old, int New)[] Changes =
     [
-        (2, GameAction.Interact, Key(GlfwKey.E), Key(GlfwKey.F)),
-        (2, GameAction.Equipment, Key(GlfwKey.F), Key(GlfwKey.E)),
+        (2, (int)GameAction.Interact, Key(GlfwKey.E), Key(GlfwKey.F)),
+        (2, (int)GameAction.Equipment, Key(GlfwKey.F), Key(GlfwKey.E)),
         // Added actions (old default Unbound): an old file has no line for them, so they start on the new default; they are
         // put through the same clash check, so a key the player already uses elsewhere is never taken (the action stays unbound).
-        (3, GameAction.ChatAll, Unbound, Key(GlfwKey.Enter)),
-        (3, GameAction.ChatTeam, Unbound, Key(GlfwKey.Y)),
-        (3, GameAction.PushToTalk, Unbound, Key(GlfwKey.X)),
-        (4, GameAction.AudioMixer, Unbound, Key(GlfwKey.F8)),
-        (5, GameAction.SpectateNext, Unbound, Key(GlfwKey.Right)),
-        (5, GameAction.SpectatePrev, Unbound, Key(GlfwKey.Left)),
-        (6, GameAction.WeaponTweaks, Unbound, Key(GlfwKey.F7)),
-        (7, GameAction.DropItem, Unbound, Key(GlfwKey.T)),
-        (7, GameAction.Inventory, Unbound, Key(GlfwKey.I)),
-        (8, GameAction.PerfWindow, Unbound, Key(GlfwKey.F9)),
-        (9, GameAction.LookAtInspector, Unbound, Key(GlfwKey.F6)),
-        (9, GameAction.CopyLookAt, Unbound, Key(GlfwKey.F5)),
-        (9, GameAction.PropEditor, Unbound, Key(GlfwKey.F10)),
-        (10, GameAction.ToolWheel, Unbound, Mouse(GlfwMouseButton.Middle)),
-        (11, GameAction.Stow, Unbound, Key(GlfwKey.H)),
-        (11, GameAction.DrawPack, Unbound, Key(GlfwKey.J)),
-        (12, GameAction.RotateLeft, Unbound, Key(GlfwKey.Left)),
-        (12, GameAction.RotateRight, Unbound, Key(GlfwKey.Right)),
-        (12, GameAction.RotateUp, Unbound, Key(GlfwKey.Up)),
-        (12, GameAction.RotateDown, Unbound, Key(GlfwKey.Down)),
-        (12, GameAction.RollLeft, Unbound, Shift(GlfwKey.Left)),
-        (12, GameAction.RollRight, Unbound, Shift(GlfwKey.Right)),
-        (13, GameAction.SandboxInventory, Unbound, Key(GlfwKey.Tab)),
-        (14, GameAction.FreeRouting, Unbound, Key(GlfwKey.LeftShift)),
-        (15, GameAction.SnapSwitch, Unbound, Key(GlfwKey.K)),
-        (15, GameAction.RecentParts, Unbound, Key(GlfwKey.L)),
-        (16, GameAction.ThirdPerson, Unbound, Key(GlfwKey.T)),
-        (16, GameAction.ThirdPersonSide, Unbound, Key(GlfwKey.N)),
-        (16, GameAction.SandboxDrop, Unbound, Key(GlfwKey.Delete)),
-        (17, GameAction.WeatherMap, Unbound, Key(GlfwKey.F11)),
-        (18, GameAction.Noclip, Unbound, Key(GlfwKey.V)),
-        (19, GameAction.BuildMirror, Unbound, Key(GlfwKey.M)),
-        (19, GameAction.BuildLine, Unbound, Key(GlfwKey.O)),
-        (19, GameAction.BuildReplace, Unbound, Key(GlfwKey.P)),
-        (19, GameAction.BuildGantry, Unbound, Key(GlfwKey.U)),
-        (19, GameAction.BuildPlaneUp, Unbound, Key(GlfwKey.PageUp)),
-        (19, GameAction.BuildPlaneDown, Unbound, Key(GlfwKey.PageDown)),
-        (19, GameAction.GantryOrbit, Unbound, Key(GlfwKey.LeftAlt)),
-        (19, GameAction.SelectMove, Unbound, Key(GlfwKey.M)),
-        (19, GameAction.SelectCopy, Unbound, Key(GlfwKey.O)),
-        (19, GameAction.SelectPaint, Unbound, Key(GlfwKey.P)),
-        (19, GameAction.SelectWeld, Unbound, Key(GlfwKey.U)),
-        (19, GameAction.SelectSave, Unbound, Key(GlfwKey.Comma)),
-        (19, GameAction.SelectTool, Unbound, Key(GlfwKey.Period)),
-        (20, GameAction.StoryWindow, Unbound, Key(GlfwKey.F4)),
-        (21, GameAction.FactionWindow, Unbound, Key(GlfwKey.F2)),
-        (22, GameAction.SeatRollLeft, Unbound, Key(GlfwKey.Q)),
-        (22, GameAction.SeatRollRight, Unbound, Key(GlfwKey.E)),
-        (23, GameAction.SeatHook, Unbound, Key(GlfwKey.G)),
-        (23, GameAction.SeatEject, Unbound, Key(GlfwKey.L)),
+        (3, (int)GameAction.ChatAll, Unbound, Key(GlfwKey.Enter)),
+        (3, (int)GameAction.ChatTeam, Unbound, Key(GlfwKey.Y)),
+        (3, (int)GameAction.PushToTalk, Unbound, Key(GlfwKey.X)),
+        (4, (int)GameAction.AudioMixer, Unbound, Key(GlfwKey.F8)),
+        (5, (int)GameAction.SpectateNext, Unbound, Key(GlfwKey.Right)),
+        (5, (int)GameAction.SpectatePrev, Unbound, Key(GlfwKey.Left)),
+        (6, (int)GameAction.WeaponTweaks, Unbound, Key(GlfwKey.F7)),
+        (7, (int)GameAction.DropItem, Unbound, Key(GlfwKey.T)),
+        (7, (int)GameAction.Inventory, Unbound, Key(GlfwKey.I)),
+        (8, (int)GameAction.PerfWindow, Unbound, Key(GlfwKey.F9)),
+        (9, (int)GameAction.LookAtInspector, Unbound, Key(GlfwKey.F6)),
+        (9, (int)GameAction.CopyLookAt, Unbound, Key(GlfwKey.F5)),
+        (9, (int)GameAction.PropEditor, Unbound, Key(GlfwKey.F10)),
+        (10, (int)GameAction.ToolWheel, Unbound, Mouse(GlfwMouseButton.Middle)),
+        (11, (int)GameAction.Stow, Unbound, Key(GlfwKey.H)),
+        (11, (int)GameAction.DrawPack, Unbound, Key(GlfwKey.J)),
+        (12, (int)GameAction.RotateLeft, Unbound, Key(GlfwKey.Left)),
+        (12, (int)GameAction.RotateRight, Unbound, Key(GlfwKey.Right)),
+        (12, (int)GameAction.RotateUp, Unbound, Key(GlfwKey.Up)),
+        (12, (int)GameAction.RotateDown, Unbound, Key(GlfwKey.Down)),
+        (12, (int)GameAction.RollLeft, Unbound, Shift(GlfwKey.Left)),
+        (12, (int)GameAction.RollRight, Unbound, Shift(GlfwKey.Right)),
+        (13, (int)GameAction.SandboxInventory, Unbound, Key(GlfwKey.Tab)),
+        (14, (int)GameAction.FreeRouting, Unbound, Key(GlfwKey.LeftShift)),
+        (15, (int)GameAction.SnapSwitch, Unbound, Key(GlfwKey.K)),
+        (15, (int)GameAction.RecentParts, Unbound, Key(GlfwKey.L)),
+        (16, (int)GameAction.ThirdPerson, Unbound, Key(GlfwKey.T)),
+        (16, (int)GameAction.ThirdPersonSide, Unbound, Key(GlfwKey.N)),
+        (16, (int)GameAction.SandboxDrop, Unbound, Key(GlfwKey.Delete)),
+        (17, (int)GameAction.WeatherMap, Unbound, Key(GlfwKey.F11)),
+        (18, (int)GameAction.Noclip, Unbound, Key(GlfwKey.V)),
+        (19, (int)GameAction.BuildMirror, Unbound, Key(GlfwKey.M)),
+        (19, (int)GameAction.BuildLine, Unbound, Key(GlfwKey.O)),
+        (19, (int)GameAction.BuildReplace, Unbound, Key(GlfwKey.P)),
+        (19, (int)GameAction.BuildGantry, Unbound, Key(GlfwKey.U)),
+        (19, (int)GameAction.BuildPlaneUp, Unbound, Key(GlfwKey.PageUp)),
+        (19, (int)GameAction.BuildPlaneDown, Unbound, Key(GlfwKey.PageDown)),
+        (19, (int)GameAction.GantryOrbit, Unbound, Key(GlfwKey.LeftAlt)),
+        (19, (int)GameAction.SelectMove, Unbound, Key(GlfwKey.M)),
+        (19, (int)GameAction.SelectCopy, Unbound, Key(GlfwKey.O)),
+        (19, (int)GameAction.SelectPaint, Unbound, Key(GlfwKey.P)),
+        (19, (int)GameAction.SelectWeld, Unbound, Key(GlfwKey.U)),
+        (19, (int)GameAction.SelectSave, Unbound, Key(GlfwKey.Comma)),
+        (19, (int)GameAction.SelectTool, Unbound, Key(GlfwKey.Period)),
+        (20, (int)GameAction.StoryWindow, Unbound, Key(GlfwKey.F4)),
+        (21, (int)GameAction.FactionWindow, Unbound, Key(GlfwKey.F2)),
+        (22, (int)GameAction.SeatRollLeft, Unbound, Key(GlfwKey.Q)),
+        (22, (int)GameAction.SeatRollRight, Unbound, Key(GlfwKey.E)),
+        (23, (int)GameAction.SeatHook, Unbound, Key(GlfwKey.G)),
+        (23, (int)GameAction.SeatEject, Unbound, Key(GlfwKey.L)),
+        (24, At(GameAction.ToolWheel, 1), Unbound, Key(GlfwKey.GraveAccent)), // (a second binding: the laptop's way to the wheel)
     ];
 
     /// <summary>
@@ -374,20 +515,21 @@ public static class Keybinds
     ];
 
     /// <summary>
-    /// Updates binds saved under binds version <paramref name="fromVersion"/> to today's defaults: an action still on its
+    /// Updates binds saved under binds version <paramref name="fromVersion"/> to today's defaults: a binding still on its
     /// old default key moves to the new one, and a bind the player changed stays as it is. A move that would put two
-    /// actions on one key is skipped (that action keeps its old key), so migrating never creates a conflict.
+    /// actions on one key is skipped (that binding keeps its old key), so migrating never creates a conflict. Changes
+    /// name a binding (<see cref="At"/>), so a later version can add a second binding as it would add an action.
     /// </summary>
-    /// <returns>The actions that moved.</returns>
+    /// <returns>The actions that moved, each once.</returns>
     public static List<GameAction> Migrate(int[] binds, int fromVersion)
     {
         var moved = new List<GameAction>();
-        // Every action added after the file's version that sits on its new default is unbound first (and checked like a
+        // Every binding added after the file's version that sits on its new default is unbound first (and checked like a
         // move at its own version), so an action added later can't hold a key while an earlier version's carry asks
         // whether that key is free (a v12 file's rebound inventory key K and v15's SnapSwitch on K).
         foreach (var c in Changes)
-            if (c.Version > fromVersion && c.Old == Unbound && binds[(int)c.Action] == c.New)
-                binds[(int)c.Action] = Unbound;
+            if (c.Version > fromVersion && c.Index < binds.Length && c.Old == Unbound && binds[c.Index] == c.New)
+                binds[c.Index] = Unbound;
         foreach (var version in Changes.Select(c => c.Version).Distinct().Order())
         {
             if (version <= fromVersion)
@@ -398,22 +540,22 @@ public static class Keybinds
                     binds[(int)c.To] = binds[(int)c.From]; // a custom key carries over to the split-off action (when nothing live beside it has the key)
                     moved.Add(c.To);
                 }
-            var step = Changes.Where(c => c.Version == version && binds[(int)c.Action] == c.Old).ToList();
+            var step = Changes.Where(c => c.Version == version && c.Index < binds.Length && binds[c.Index] == c.Old).ToList();
             var before = (int[])binds.Clone();
             foreach (var c in step)
-                binds[(int)c.Action] = c.New;
-            // Undo any move that lands on a key another action now holds; undoing one can clash again, so repeat.
+                binds[c.Index] = c.New;
+            // Undo any move that lands on a key another binding now holds; undoing one can clash again, so repeat.
             for (var changed = true; changed;)
             {
                 changed = false;
                 foreach (var c in step)
                 {
-                    var a = (int)c.Action;
+                    var a = c.Index;
                     if (binds[a] == before[a])
                         continue;
                     var clash = false;
                     for (var i = 0; i < binds.Length; i++)
-                        clash |= i != a && binds[i] == binds[a] && Overlap((GameAction)i, c.Action);
+                        clash |= i != a && binds[i] == binds[a] && (ActionAt(i) == ActionAt(a) || Overlap(ActionAt(i), ActionAt(a)));
                     if (clash)
                     {
                         binds[a] = before[a];
@@ -421,7 +563,7 @@ public static class Keybinds
                     }
                 }
             }
-            moved.AddRange(step.Where(c => binds[(int)c.Action] != before[(int)c.Action]).Select(c => c.Action));
+            moved.AddRange(step.Where(c => binds[c.Index] != before[c.Index]).Select(c => ActionAt(c.Index)));
             // A split-off action whose new default was taken: it keeps the old action's key instead, when that is free in its context.
             foreach (var c in Carries)
             {
@@ -434,14 +576,14 @@ public static class Keybinds
                 }
             }
         }
-        return moved;
+        return moved.Count > 1 ? moved.Distinct().ToList() : moved; // (an action named once, however many of its bindings moved)
     }
 
-    /// <summary>Does no other action live beside <paramref name="a"/> hold <paramref name="code"/>?</summary>
+    /// <summary>Does no other action live beside <paramref name="a"/> hold <paramref name="code"/> (in any of its bindings)?</summary>
     private static bool FreeFor(int[] binds, GameAction a, int code)
     {
         for (var i = 0; i < binds.Length; i++)
-            if (i != (int)a && binds[i] == code && Overlap((GameAction)i, a))
+            if (ActionAt(i) != a && binds[i] == code && Overlap(ActionAt(i), a))
                 return false;
         return true;
     }
@@ -617,18 +759,30 @@ public static class Keybinds
     }
 
     /// <summary>
-    /// Binds <paramref name="code"/> to <paramref name="action"/>. If another action live at the same time had it, the two
-    /// swap (an action of another context keeps the key: no clash). A Shift chord on an action that doesn't take chords
-    /// binds the plain key.
+    /// Binds <paramref name="code"/> to <paramref name="action"/>'s binding in <paramref name="slot"/>. Another action live
+    /// at the same time on that key keeps it: the two clash, and the controls screen warns (<see cref="ClashAt"/>) rather
+    /// than moving the other one. The same key in another of this action's slots is cleared (it would do nothing twice).
+    /// A Shift chord on an action that doesn't take chords binds the plain key.
     /// </summary>
-    public static void Assign(int[] binds, GameAction action, int code)
+    public static void Assign(int[] binds, GameAction action, int slot, int code)
     {
+        if ((uint)slot >= Slots || (uint)At(action, slot) >= (uint)binds.Length)
+            return;
         if (IsChord(code) && !TakesChord(action))
             code &= ~ShiftFlag;
-        var old = binds[(int)action];
-        for (var i = 0; i < binds.Length; i++)
-            if (i != (int)action && binds[i] == code && Overlap((GameAction)i, action))
-                binds[i] = IsChord(old) && !TakesChord((GameAction)i) ? old & ~ShiftFlag : old;
-        binds[(int)action] = code;
+        for (var s = 0; s < Slots; s++)
+            if (s != slot && At(action, s) < binds.Length && binds[At(action, s)] == code)
+                binds[At(action, s)] = Unbound;
+        binds[At(action, slot)] = code;
+    }
+
+    /// <summary>The primary binding (<see cref="Assign(int[], GameAction, int, int)"/> in slot 0).</summary>
+    public static void Assign(int[] binds, GameAction action, int code) => Assign(binds, action, 0, code);
+
+    /// <summary>Clears <paramref name="action"/>'s binding in <paramref name="slot"/>.</summary>
+    public static void Clear(int[] binds, GameAction action, int slot)
+    {
+        if ((uint)slot < Slots && (uint)At(action, slot) < (uint)binds.Length)
+            binds[At(action, slot)] = Unbound;
     }
 }

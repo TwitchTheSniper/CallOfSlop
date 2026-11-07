@@ -301,6 +301,7 @@ public static unsafe partial class Program
             {
                 _settings.MediaBlockAds = MediaDirector.BlockAds;
                 _settings.MediaBlockWebAds = MediaDirector.BlockWebAds;
+                _settings.MediaOthersWeb = MediaDirector.OthersWeb;
                 _settings.Save();
             };
             MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
@@ -1068,7 +1069,7 @@ public static unsafe partial class Program
                 // Shift held with another key: a Shift chord (Sandbox actions only take one; Keybinds.Assign drops it for the rest).
                 var shift = key is not (GlfwKey.LeftShift or GlfwKey.RightShift)
                             && (window.GetKey(GlfwKey.LeftShift) == GlfwKeyAction.Press || window.GetKey(GlfwKey.RightShift) == GlfwKeyAction.Press);
-                Keybinds.Assign(_settings.Binds, rebind, shift ? Keybinds.Shift(key) : Keybinds.Key(key));
+                Keybinds.Assign(_settings.Binds, rebind, Ui.RebindSlot, shift ? Keybinds.Shift(key) : Keybinds.Key(key));
             }
             Ui.Rebinding = null;
             return;
@@ -1140,7 +1141,7 @@ public static unsafe partial class Program
         }
         if (key == GlfwKey.Escape && Ui.SandboxPartsOpen && Ui.ClearSandboxPartsSearch())
             return; // Esc with text in the inventory's search box clears it (back to the category), the next Esc closes
-        if (key == GlfwKey.Tab && Ui.SandboxPartsOpen && Ui.WantsTextInput && _settings.Bind(GameAction.SandboxInventory) == Keybinds.Key(GlfwKey.Tab))
+        if (key == GlfwKey.Tab && Ui.SandboxPartsOpen && Ui.WantsTextInput && _settings.HasBind(GameAction.SandboxInventory, Keybinds.Key(GlfwKey.Tab)))
         {
             Ui.CloseSandboxParts(); // (the search box has the keyboard, so the game's keys are off: the inventory key still closes it)
             _sbMenuKeyEaten = true; // (this press closed it: the poll must not read it as a new press and open it again)
@@ -1271,7 +1272,7 @@ public static unsafe partial class Program
         {
             if (Glfw.Time - Ui.RebindStarted > 0.25)
             {
-                Keybinds.Assign(_settings.Binds, rebind, Keybinds.Mouse(button));
+                Keybinds.Assign(_settings.Binds, rebind, Ui.RebindSlot, Keybinds.Mouse(button));
                 Ui.Rebinding = null;
             }
             return;
@@ -1295,6 +1296,21 @@ public static unsafe partial class Program
 
     // ---- Keybind polling: one down/previous state per action ------------------------
     private static readonly bool[] _down = new bool[(int)GameAction.COUNT];
+    private static readonly bool[] _slotDown = new bool[Keybinds.Total]; // (each binding's: Keybinds.Resolve works on these, then any binding down puts its action down)
+    private static readonly bool[] _slotPrev = new bool[Keybinds.Total];
+
+    /// <summary>Did one of <paramref name="a"/>'s bindings that <paramref name="other"/> doesn't also have go down this frame?</summary>
+    private static bool PressedNotOn(GameAction a, GameAction other)
+    {
+        var binds = _settings.Binds;
+        for (var s = 0; s < Keybinds.Slots; s++)
+        {
+            var i = Keybinds.At(a, s);
+            if (_slotDown[i] && !_slotPrev[i] && !Keybinds.Has(binds, other, binds[i]))
+                return true;
+        }
+        return false;
+    }
     private static readonly bool[] _prev = new bool[(int)GameAction.COUNT];
 
     private static bool Down(GameAction a) => _down[(int)a];
@@ -1307,10 +1323,13 @@ public static unsafe partial class Program
     private static void PollActions()
     {
         Array.Copy(_down, _prev, _down.Length);
+        Array.Copy(_slotDown, _slotPrev, _slotDown.Length);
         var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen || _webTyping; // typing in the chat suspends the game controls
-        for (var i = 0; i < _down.Length; i++)
-            _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
-        Keybinds.Resolve(_settings.Binds, _session != null && _game is { SandboxOn: true }, _down, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
+        var binds = _settings.Binds;
+        for (var i = 0; i < _slotDown.Length; i++)
+            _slotDown[i] = !blocked && binds[i] != Keybinds.Unbound && Keybinds.IsDown(_window, binds[i]);
+        Keybinds.Resolve(binds, _session != null && _game is { SandboxOn: true }, _slotDown, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
+        Keybinds.Collapse(_slotDown, _down); // (an action is down while any of its bindings is: pressed with the first, released with the last)
     }
 
     private static void UpdateLocalPlayer(double now)

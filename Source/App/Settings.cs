@@ -125,9 +125,14 @@ public sealed class Settings
     [NonSerialized] public bool DisplayDirty;
 
     // Controls
+    /// <summary>Every action's bindings, slot by slot (<see cref="Keybinds.At"/>): <c>Binds[(int)a]</c> is the primary.</summary>
     public readonly int[] Binds = (int[])Keybinds.Defaults.Clone();
 
-    public int Bind(GameAction a) => Binds[(int)a];
+    /// <summary>The binding the HUD names for <paramref name="a"/>: its first (the primary, unless that is cleared). To ask whether a key works an action, use <see cref="HasBind"/>.</summary>
+    public int Bind(GameAction a) => Keybinds.First(Binds, a);
+
+    /// <summary>Is <paramref name="code"/> one of <paramref name="a"/>'s bindings?</summary>
+    public bool HasBind(GameAction a, int code) => Keybinds.Has(Binds, a, code);
 
     // Single player
     public int Bots = 3; // 0 = "No bots (test mode)": you alone, the match never ends on its own
@@ -552,8 +557,12 @@ public sealed class Settings
                     case "gore" when Enum.TryParse<GoreMode>(v, true, out var gm) && Enum.IsDefined(gm): s.Gore = gm; break;
                     case "frenzy_gunsound" when Enum.TryParse<FrenzyGunSoundMode>(v, true, out var fg) && Enum.IsDefined(fg): s.FrenzyGunSound = fg; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
-                                    && action < GameAction.COUNT && int.TryParse(v, out var code):
-                        s.Binds[(int)action] = code;
+                                    && action is >= 0 and < GameAction.COUNT && int.TryParse(v, out var code):
+                        s.Binds[(int)action] = code; // the primary (every build reads this line)
+                        break;
+                    case var k when (k.StartsWith("bind2_") || k.StartsWith("bind3_")) && Enum.TryParse<GameAction>(k[6..], out var action2)
+                                    && action2 is >= 0 and < GameAction.COUNT && int.TryParse(v, out var code2):
+                        s.Binds[Keybinds.At(action2, k[4] - '1')] = code2; // a second or third binding (binds version 24; older builds skip these lines)
                         break;
                     case "binds_version" when int.TryParse(v, out var bv): bindsVersion = bv; break;
                 }
@@ -696,6 +705,7 @@ public sealed class Settings
                     $"wb_show_all_grips={(WorkbenchShowAllGrips ? 1 : 0)}",
                     $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
+                    .. Enumerable.Range(1, Keybinds.Slots - 1).SelectMany(slot => Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind{slot + 1}_{(GameAction)i}={Binds[Keybinds.At((GameAction)i, slot)]}")),
                     .. VoicePlayerLines(),
                 ],
                 SaveVersion

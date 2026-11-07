@@ -10,13 +10,10 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class Program
 {
-    /// <summary>Does the melee key belong to noclip here (creative Sandbox, the two on one key)?</summary>
-    private static bool NoclipHasMeleeKey(Game g) => g.NoclipCreative && _settings.Bind(GameAction.Noclip) == _settings.Bind(GameAction.Melee);
-
-    /// <summary>The melee key, unless noclip has it (the one-shot actions of the main input).</summary>
+    /// <summary>The melee key, unless noclip has it (creative Sandbox, the two on one key: a melee binding noclip doesn't share still swings; the one-shot actions of the main input).</summary>
     private static void MeleeInput(Game g, double now)
     {
-        if (Pressed(GameAction.Melee) && !NoclipHasMeleeKey(g))
+        if (g.NoclipCreative ? PressedNotOn(GameAction.Melee, GameAction.Noclip) : Pressed(GameAction.Melee))
             g.TryMelee(now);
     }
 

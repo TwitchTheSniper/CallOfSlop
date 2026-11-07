@@ -620,7 +620,116 @@ public sealed partial class Ui
     /// <summary>Settings controls shared by the lobby and the pause menu. Changes apply live.</summary>
     // ---- Keybind capture (driven by Program's key/mouse callbacks) -------------------
     public GameAction? Rebinding;
+    /// <summary>Which of <see cref="Rebinding"/>'s bindings the next key goes to (0 is the primary; Keybinds.Slots).</summary>
+    public int RebindSlot;
     public double RebindStarted;
+
+    /// <summary>A Controls button's action, done after the table is drawn (the 2026-11-07 rule: an ImGui button only notes its action).</summary>
+    internal enum BindEdit : byte { None, Clear, Reset }
+
+    private (BindEdit Edit, GameAction Action, int Slot) _bindEdit;
+
+    /// <summary>The self-test's click on a Controls button (applied on the next draw, as a click is).</summary>
+    internal void BindEditTest(BindEdit edit, GameAction a, int slot) => _bindEdit = (edit, a, slot);
+
+    /// <summary>Settings > Controls: each action's bindings side by side, a clear button on each, a warning on a key two live actions share.</summary>
+    internal void ControlsSettings(Settings s)
+    {
+        ImGui.TextColored(Dim, "Click a binding, then press a key or mouse button (Esc cancels). x clears it. Any of an action's bindings works it."u8);
+        ImGui.TextColored(Dim, "Sandbox keys only work in Sandbox, so they can share a key with one that only works in the other modes. Sandbox keys may be Shift + a key."u8);
+        var clashes = 0;
+        for (var i = 0; i < s.Binds.Length; i++)
+            if (Keybinds.ClashAt(s.Binds, i) >= 0)
+                clashes++;
+        if (clashes > 0)
+            ImGui.TextColored(Red, $"{clashes} binding(s) share a key with another action live at the same time (in red): both act on that key.");
+        if (ImGui.BeginTable("##binds"u8, 1 + Keybinds.Slots, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
+        {
+            ImGui.TableSetupColumn("Action"u8, ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Primary"u8, ImGuiTableColumnFlags.WidthFixed, 170 * _scale);
+            ImGui.TableSetupColumn("Second"u8, ImGuiTableColumnFlags.WidthFixed, 170 * _scale);
+            ImGui.TableSetupColumn("Third"u8, ImGuiTableColumnFlags.WidthFixed, 170 * _scale);
+            ImGui.TableHeadersRow();
+            // Everything but Sandbox first, then the Sandbox keys under their own heading (Keybinds.Context).
+            for (var n = 0; n < 2 * (int)GameAction.COUNT; n++)
+            {
+                var i = n % (int)GameAction.COUNT;
+                var action = (GameAction)i;
+                if ((Keybinds.Context(action) is Keybinds.BindContext.Sandbox or Keybinds.BindContext.Seat) != (n >= (int)GameAction.COUNT))
+                    continue;
+                if (action == Keybinds.FirstSandboxAction)
+                {
+                    // (the heading row, once, before the first Sandbox action)
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TextColored(Orange, "Sandbox"u8);
+                    for (var c = 0; c < Keybinds.Slots; c++)
+                        ImGui.TableNextColumn();
+                }
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.AlignTextToFramePadding();
+                ImGui.Text(Keybinds.Label(action));
+                for (var slot = 0; slot < Keybinds.Slots; slot++)
+                {
+                    ImGui.TableNextColumn();
+                    var at = Keybinds.At(action, slot);
+                    var code = s.Binds[at];
+                    var waiting = Rebinding == action && RebindSlot == slot;
+                    var clash = waiting ? -1 : Keybinds.ClashAt(s.Binds, at);
+                    if (waiting)
+                        ImGui.PushStyleColor(ImGuiCol.Button, Orange);
+                    if (clash >= 0)
+                        ImGui.PushStyleColor(ImGuiCol.Text, Red);
+                    var label = waiting ? $"press a key...##bind{slot}_{i}" : $"{Keybinds.Name(code)}##bind{slot}_{i}";
+                    var clearW = code != Keybinds.Unbound && !waiting ? ImGui.GetFrameHeight() : 0;
+                    if (ImGui.Button(label, new float2(clearW > 0 ? -clearW - ImGui.GetStyle().ItemSpacing.X : -1, 0)) && !waiting)
+                    {
+                        Rebinding = action;
+                        RebindSlot = slot;
+                        RebindStarted = Brutal.GlfwApi.Glfw.Time;
+                    }
+                    if (clash >= 0)
+                    {
+                        ImGui.PopStyleColor();
+                        ImGuiSafe.SetItemTooltip($"{Keybinds.Name(code)} is also on: {Keybinds.Label((GameAction)clash)}. Both act on it.");
+                    }
+                    if (waiting)
+                        ImGui.PopStyleColor();
+                    if (clearW > 0)
+                    {
+                        ImGui.SameLine();
+                        if (ImGui.Button($"x##clear{slot}_{i}", new float2(clearW, 0)))
+                            _bindEdit = (BindEdit.Clear, action, slot);
+                    }
+                }
+            }
+            ImGui.EndTable();
+        }
+        ImGui.TextColored(Dim, "Esc (menu) and the mouse wheel (swap weapon) are fixed."u8);
+        if (ImGui.Button("Reset to defaults"u8))
+            _bindEdit = (BindEdit.Reset, default, 0);
+        BindsApply(s);
+    }
+
+    /// <summary>Does the Controls button noted this frame (after the table: no list changes while it is drawn).</summary>
+    private void BindsApply(Settings s)
+    {
+        var (edit, action, slot) = _bindEdit;
+        _bindEdit = default;
+        switch (edit)
+        {
+            case BindEdit.Clear:
+                Keybinds.Clear(s.Binds, action, slot);
+                if (Rebinding == action && RebindSlot == slot)
+                    Rebinding = null;
+                break;
+            case BindEdit.Reset:
+                Keybinds.Defaults.CopyTo(s.Binds, 0);
+                Rebinding = null;
+                break;
+        }
+    }
     private float _pendingUiScale = -1;
 
     private void SettingsPanel(Settings s, Audio audio)
@@ -713,53 +822,7 @@ public sealed partial class Ui
         if (ImGui.BeginTabItem("Controls"u8))
         {
             ImGui.BeginChild("##controls"u8, panel);
-            ImGui.TextColored(Dim, "Click a binding, then press a key or mouse button. Esc cancels. Taken keys swap."u8);
-            ImGui.TextColored(Dim, "Sandbox keys only work in Sandbox, so they can share a key with one that only works in the other modes. Sandbox keys may be Shift + a key."u8);
-            if (ImGui.BeginTable("##binds"u8, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
-            {
-                ImGui.TableSetupColumn("Action"u8, ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Binding"u8, ImGuiTableColumnFlags.WidthFixed, 260 * _scale);
-                ImGui.TableHeadersRow();
-                // Everything but Sandbox first, then the Sandbox keys under their own heading (Keybinds.Context).
-                for (var n = 0; n < 2 * (int)GameAction.COUNT; n++)
-                {
-                    var i = n % (int)GameAction.COUNT;
-                    var action = (GameAction)i;
-                    if ((Keybinds.Context(action) is Keybinds.BindContext.Sandbox or Keybinds.BindContext.Seat) != (n >= (int)GameAction.COUNT))
-                        continue;
-                    if (action == Keybinds.FirstSandboxAction)
-                    {
-                        // (the heading row, once, before the first Sandbox action)
-                        ImGui.TableNextRow();
-                        ImGui.TableNextColumn();
-                        ImGui.TextColored(Orange, "Sandbox"u8);
-                        ImGui.TableNextColumn();
-                    }
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.Text(Keybinds.Label(action));
-                    ImGui.TableNextColumn();
-                    var waiting = Rebinding == action;
-                    if (waiting)
-                        ImGui.PushStyleColor(ImGuiCol.Button, Orange);
-                    var label = waiting ? "press a key...##bind" + i : Keybinds.Name(s.Binds[i]) + "##bind" + i;
-                    if (ImGui.Button(label, new float2(-1, 0)) && !waiting)
-                    {
-                        Rebinding = action;
-                        RebindStarted = Brutal.GlfwApi.Glfw.Time;
-                    }
-                    if (waiting)
-                        ImGui.PopStyleColor();
-                }
-                ImGui.EndTable();
-            }
-            ImGui.TextColored(Dim, "Esc (menu) and the mouse wheel (swap weapon) are fixed."u8);
-            if (ImGui.Button("Reset to defaults"u8))
-            {
-                Keybinds.Defaults.CopyTo(s.Binds, 0);
-                Rebinding = null;
-            }
+            ControlsSettings(s);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
