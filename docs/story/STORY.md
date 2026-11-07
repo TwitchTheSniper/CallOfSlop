@@ -630,6 +630,10 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
 - **Groups**: standing is kept for a player's group: the player faction they are in (`Source/Constructs/Factions.cs`,
   a Faction entity `"group:NAME"` the game keeps them `MemberOf`, once a second), or themselves when in none. A deed
   counts towards both the doer and their group; a group's is the one the fax reads.
+- **Notorious** (the world-wide state on top of each faction's own): an Atrocity event (nothing records one yet; later,
+  an antimatter bomb dropped on a town or colony) makes the doer and their group `Notorious`, a quality every faction
+  reads: their standing with all of them is -100 whatever it was, so every faction hunts them. Each faction gets a
+  notice on `"Notorious"`, and pages can ask `?them Notorious`.
 - **Verbs**: Email (a player at a Computer to a faction; its effect counts `Emails`), Fax (a faction's page printed for a
   group: `Faxed`, which "per my last fax" reads), Keep (a player plugs in a faction's fax: its first page), Rate.
 - **Strip**: a wreck's part taken off is noted whoever owns it, and the story keeps a Strip of one's own or nobody's

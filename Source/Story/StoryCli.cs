@@ -186,6 +186,13 @@ public static class StoryCli
         }
         var pl = engine.Plays;
         if (rules.Places.States.Length > 0)
+            for (var f = 0; f < engine.Factions.Count; f++)
+            {
+                var fd = engine.Factions.Def(f);
+                var players = Enumerable.Range(0, engine.World.Count).Where(i => engine.World[i].Kind == StoryKind.Player).Select(i => engine.Factions.Party(i)).Distinct().ToList();
+                if (players.Count > 0)
+                    Console.WriteLine($"Faction {fd.Name}: {string.Join(", ", players.Select(p => $"{engine.World.NameOf(p)} {fd.TierName(engine.Factions.Standing(f, p))} ({engine.Factions.Standing(f, p):+0;-0;0}){(engine.Factions.Notorious(p) ? ", notorious" : "")}"))}");
+            }
             Console.WriteLine($"Places: {engine.Places.Turns} changes; now {string.Join(", ", Enumerable.Range(0, engine.World.Count).Where(i => engine.World[i].Kind == StoryKind.Place && !engine.World[i].Gone).Select(i => $"{engine.World.NameOf(i)} {(engine.Places.StateOf(i) is var st and >= 0 ? rules.Places.States[st].Name : "as it was")}"))}");
         Console.WriteLine($"Plays: {pl.Started} started, {pl.Finished} played out, {pl.BrokenOff} broken off ({engine.Rules.Plays.Plays.Length} in the data, {pl.Looks} looks for one)");
         Console.WriteLine($"Talk: {engine.Talk.Lines} lines{(lines ? "" : " (--lines prints them, with each step's)")}, {engine.Talk.Broadcasts} on the radio, {engine.Talk.Quiet} times a rule kept quiet");
@@ -457,8 +464,8 @@ public static class StoryCli
                 var desk = ItDesk.Read(File.ReadAllText(deskFile), "Office/IT.json", rules);
                 if (rules.Factions.Find(desk.From) is { } its)
                     foreach (var (on, _) in desk.Notices)
-                        if (!its.Deeds.Any(d => d.Name.Equals(on, StringComparison.OrdinalIgnoreCase)) && !its.Tiers.Any(t => t.Name.Equals(on, StringComparison.OrdinalIgnoreCase)))
-                            errors.Add($"Office/IT.json: a notice is on \"{on}\", which is no deed or tier of {its.Name} (Story/Factions)");
+                        if (!on.Equals("Notorious", StringComparison.OrdinalIgnoreCase) && !its.Deeds.Any(d => d.Name.Equals(on, StringComparison.OrdinalIgnoreCase)) && !its.Tiers.Any(t => t.Name.Equals(on, StringComparison.OrdinalIgnoreCase)))
+                            errors.Add($"Office/IT.json: a notice is on \"{on}\", which is no deed or tier of (nor Notorious) {its.Name} (Story/Factions)");
                 Console.WriteLine($"  the IT desk (Office/IT.json): {desk.StepCount} pages ({desk.All.Length} with their alternatives and notices), the first in {StoryRules.Span(desk.FirstMin)} to {StoryRules.Span(desk.FirstMax)}; {desk.Replies.Length} replies");
             }
             catch (StoryException ex)

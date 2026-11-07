@@ -427,6 +427,13 @@
   "noFax": "Email sent. IT replies by fax, and no fax is plugged in near this computer.",
   "notices": [
     {
+      "on": "Notorious",
+      "lines": [
+        "ALL STAFF, ALL DEVICES: This user is no longer a user. This user is a security incident.",
+        "Every faction has their description. So does Gary. Do not reply to them."
+      ]
+    },
+    {
       "on": "Wrecked our hardware",
       "when": "?us WreckedOurs ?them >= 3",
       "lines": [

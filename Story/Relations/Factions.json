@@ -14,6 +14,7 @@
     { "name": "Threats", "about": "a faction and a player or group: threats they have sent it" }
   ],
   "qualities": [
+    { "name": "Notorious", "about": "a player or group: atrocities they have done (an antimatter bomb on a town, later); every faction hunts them, standing -100" },
     { "name": "Hardware", "about": "faction want: its kit, from 0 (stripped bare) to 100 (all of it back)" },
     { "name": "Respect", "about": "faction want: how well it feels it is treated, from 0 to 100" },
     { "name": "Uptime", "about": "faction want: its network's reach, from 0 (dark) to 100" }

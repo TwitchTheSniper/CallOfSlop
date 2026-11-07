@@ -7,6 +7,8 @@
       "about": "a faction's page prints on a fax near a player (actor: the faction, target: the reader's group)", "effects": [ "actor Faxed target +1" ] },
     { "name": "Keep", "players": true, "sentence": "{actor} plugged in {target}'s {item}",
       "about": "a faction's hardware on a player's circuit: its first page prints (target: the faction, item: the part)" },
+    { "name": "Atrocity", "sentence": "{actor} committed an atrocity at {place}",
+      "about": "something no faction forgives (later: an antimatter bomb dropped on a town or colony); the doer and their group are Notorious, hunted by every faction", "effects": [ "actor Notorious +1" ] },
     { "name": "Rate", "sentence": "{actor} now rates {target}: {item}",
       "about": "a faction's standing with a group comes to a new tier (item: the tier, value: the standing)" }
   ]

@@ -68,7 +68,7 @@ public sealed partial class Ui
                     if (e.Pairs[k].Target == p && e.Pairs[k].Rel != fr.Likes && e.Pairs[k].Rel != fr.Grudge)
                         memory.Add($"{rules.Relations[e.Pairs[k].Rel].Name} {e.Pairs[k].Value}");
                 var group = w[p].Kind == StoryKind.Faction ? " (group)" : fs.Party(p) != p ? $" (in {w.NameOf(fs.Party(p))})" : "";
-                ImGuiSafe.TextColored(st < 0 ? StoryBad : st > 0 ? StoryGood : StoryPlain, $"{w.NameOf(p)}{group}: {def.TierName(st)} ({st:+0;-0;0}){(memory.Count > 0 ? "  " + string.Join(", ", memory) : "")}");
+                ImGuiSafe.TextColored(st < 0 ? StoryBad : st > 0 ? StoryGood : StoryPlain, $"{w.NameOf(p)}{group}: {def.TierName(st)} ({st:+0;-0;0}){(fs.Notorious(p) ? ", NOTORIOUS: hunted by every faction" : "")}{(memory.Count > 0 ? "  " + string.Join(", ", memory) : "")}");
             }
             if (ImGui.TreeNode("Deeds it counts"u8))
             {

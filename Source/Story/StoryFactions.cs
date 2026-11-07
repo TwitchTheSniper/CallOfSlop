@@ -53,6 +53,9 @@ public sealed class FactionDef
     }
 
     public string TierName(int standing) => TierOf(standing) is var t and >= 0 ? Tiers[t].Name : "";
+
+    /// <summary>What a notice names: a deed, a tier, or "Notorious" (an atrocity: every faction hunts them).</summary>
+    public string NoticeName(int deed, int tier) => deed >= 0 ? Deeds[deed].Name : tier >= 0 ? Tiers[tier].Name : "Notorious";
 }
 
 /// <summary>The factions from Story/Factions/*.json. A bad file is refused whole with its reason (<see cref="StoryRules.Errors"/>).</summary>
@@ -63,7 +66,8 @@ public sealed class FactionRules
 
     public FactionDef[] Factions = [];
     public int MemberOf = -1, Claims = -1, Home = -1, Likes = -1, Grudge = -1; // relations
-    public int Email = -1, Fax = -1, Keep = -1, Rate = -1; // verbs
+    public int Email = -1, Fax = -1, Keep = -1, Rate = -1, Atrocity = -1; // verbs
+    public int Notorious = -1; // the quality on a player or group every faction hunts
 
     public FactionDef? Find(string name) => Array.Find(Factions, f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
@@ -79,7 +83,8 @@ public sealed class FactionRules
         {
             MemberOf = rules.Relation("MemberOf")?.Id ?? -1, Claims = rules.Relation("Claims")?.Id ?? -1, Home = rules.Relation("Home")?.Id ?? -1,
             Likes = rules.Relation("Likes")?.Id ?? -1, Grudge = rules.Relation("Grudge")?.Id ?? -1,
-            Email = rules.VerbId("Email"), Fax = rules.VerbId("Fax"), Keep = rules.VerbId("Keep"), Rate = rules.VerbId("Rate"),
+            Email = rules.VerbId("Email"), Fax = rules.VerbId("Fax"), Keep = rules.VerbId("Keep"), Rate = rules.VerbId("Rate"), Atrocity = rules.VerbId("Atrocity"),
+            Notorious = rules.Quality("Notorious")?.Id ?? -1,
         };
         var all = new List<FactionDef>();
         foreach (var f in StoryRules.Files(Path.Combine(folder, "Factions")))
@@ -196,7 +201,7 @@ public sealed class FactionRules
             var deed = new FactionDeed { Name = StoryRules.Str(e, "name", at, true), About = StoryRules.Str(e, "about", at), Id = deeds.Count };
             at = $"{where}: {deed.Name}";
             Plain(deed.Name, at, 40);
-            if (deeds.Any(o => o.Name.Equals(deed.Name, StringComparison.OrdinalIgnoreCase)) || tiers.Any(o => o.Name.Equals(deed.Name, StringComparison.OrdinalIgnoreCase)))
+            if (deeds.Any(o => o.Name.Equals(deed.Name, StringComparison.OrdinalIgnoreCase)) || tiers.Any(o => o.Name.Equals(deed.Name, StringComparison.OrdinalIgnoreCase)) || deed.Name.Equals("Notorious", StringComparison.OrdinalIgnoreCase))
                 throw new StoryException($"{at}: deeds and tiers share names (a fax's notices name them)");
             var verb = StoryRules.Str(e, "verb", at, true);
             deed.Verb = rules.VerbId(verb) is var vid and >= 0 ? vid : throw new StoryException($"{at}: no verb {verb}");
@@ -256,7 +261,7 @@ file static class StringExt
     public static string DefaultIfEmpty(this string s, string or) => s.Length > 0 ? s : or;
 }
 
-/// <summary>Something a faction would say about: a deed (its index) or a tier its standing with a party came to (<see cref="Deed"/> -1).</summary>
+/// <summary>Something a faction would say about: a deed (its index), a tier its standing with a party came to (<see cref="Deed"/> -1), or, both -1, the party became Notorious.</summary>
 public readonly record struct FactionNotice(int Faction, int Deed, int Tier, int Actor, int Party);
 
 /// <summary>
@@ -467,8 +472,15 @@ public sealed class StoryFactions
     public int Standing(int f, int party)
     {
         var id = EntityOf(f);
-        return id < 0 ? 0 : W.Get(id, R.Likes, party) - W.Get(id, R.Grudge, party);
+        if (id < 0)
+            return 0;
+        if (Notorious(party))
+            return -FactionRules.MaxStanding; // (every faction hunts them, whatever it thought before)
+        return W.Get(id, R.Likes, party) - W.Get(id, R.Grudge, party);
     }
+
+    /// <summary>A party every faction hunts: it has done something none forgives (an Atrocity: the world-wide state on top of each faction's own).</summary>
+    public bool Notorious(int party) => R.Notorious >= 0 && W.Valid(party) && W.Quality(party, R.Notorious) > 0;
 
     private void SetStanding(int id, int party, int s)
     {
@@ -500,6 +512,8 @@ public sealed class StoryFactions
     /// <summary>The engine, after each event: the deeds it is, and what the factions make of them.</summary>
     public void OnEvent(in StoryEvent ev)
     {
+        if (ev.Verb == R.Atrocity && R.Atrocity >= 0 && W.Valid(ev.Actor))
+            Atrocity(ev.Actor);
         if (_ids.Length == 0 || (uint)ev.Verb >= (uint)_verbs.Length || !_verbs[ev.Verb] || !W.Valid(ev.Actor) || W[ev.Actor].Kind != StoryKind.Player)
             return;
         var fs = R.Factions;
@@ -519,6 +533,20 @@ public sealed class StoryFactions
                 Done(f, d, ev.Actor, party);
             }
         }
+    }
+
+    /// <summary>An atrocity: the doer's group is Notorious (the doer too), and every faction has something to say about it.</summary>
+    private void Atrocity(int actor)
+    {
+        var party = Party(actor);
+        if (R.Notorious < 0)
+            return;
+        if (party != actor)
+            W.SetQuality(party, R.Notorious, W.Quality(party, R.Notorious) + 1); // (the verb's own effect counts the doer)
+        Ensure();
+        for (var f = 0; f < _ids.Length; f++)
+            if (_ids[f] >= 0 && Notices.Count < 64)
+                Notices.Add(new FactionNotice(f, -1, -1, actor, party));
     }
 
     private bool Said(FactionDeed d)
