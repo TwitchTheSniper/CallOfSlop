@@ -16,6 +16,8 @@ like any other. **Fix the generator, not its files.** No AI is in here: crew and
 | `CallOfSlop --gen-vehicles [--out DIR]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. Exit code: how many aren't identical. |
 | `CallOfSlop --sweep-vehicle "Bandit War Bus" [--seeds N]` | Seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, on what, and what a generation costs. Run it before calling a shape done: a shipped seed proves only itself. It also compares seeds (`VehicleVariety`: kinds of part, plate and beam materials not counted, plus bounding shape): it prints the most different seeds it found, and fails when two shipped seeds are closer than 0.25. Choose `Seeds` from that line. |
 | `CallOfSlop --diversity "Bandit Box Truck" [--seeds N]`, `--diversity-style Bandit`, `--kit-report`, `--vehicle-sheet "Bandit Box Truck"`, `--grade-vehicle "Bandit Box Truck 7" 4 "note"`, `--grade-report` | The quality tools: how alike seeds are, what never varies, what fails and what it costs, contact sheets and grades. See "Quality tools". |
+| `CallOfSlop --identity "IT War Bus" [--seeds N] [--shipped] [--raw]`, or `--identity IT` for every shape of a style | How much each seed reads as its faction (0 to 1) with the breakdown, its weak points, the style it reads as best after its own, then the mean, the weak-point pass rate and every vehicle that reads more as another style. Default 6 seeds; `--shipped`: the committed seeds. See "Identity and weak points". |
+| `... --no-identity-gate` on any of these | Kit 2 without its identity re-plan, to measure what the check changes. |
 | `... --kit 1` or `--kit 2` on any of these | Every seed by that kit (see "Shape grammar"), to compare the two: without it a seed is made by its own kit. `--gen-vehicles --kit 2` reports the committed files as differing, as it should. |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
@@ -195,7 +197,8 @@ from the room to a bed gun would cross the room where a player walks; the others
 against the end wall first (`Vehicle.EndChest`), never in the middle, where the check stands a player, and Trim's crooked patches stay off the hull bays (they would land
 inside). Finally the built body is measured as the check measures it: stability under 0.63 or a side or plan fill within half a point of `MaxSideFill`/`MaxTopFill`
 throws, and so does anything the game refuses; then **the seed plans again** from the next fork (`"grammar 1"`...), gear included, up to four times. A retry shows in the
-kit line as "plan 2".
+kit line as "plan 2". A plan that builds is then scored for its faction ("Identity and weak points"): under the style's threshold, or missing one of its marks, it is
+planned again once, and the better of the two is kept.
 
 **Seeds.** All of it rolls from forks of `v.Dice` ("grammar", "grammar build", by attempt); the module bodies use the same forks kit 1's code does ("deck bed", "hood",
 "weapon"...), so a seed is the same text on every machine. Generation yields where `BlueprintScript` does.
@@ -250,11 +253,84 @@ A trait is a style slot the seed picked from (the choice it picked most, when it
 
 **`--kit-report [--seeds N] [--style S] [--shape NAME] [--extras] [--check]`** (default 10 seeds; every style in `Styles.All`, its shipped shapes and the extras it names): a table of seeds that generate, the failure rate, generation time (mean and worst; one throwaway generation first, so the JIT isn't counted), part count, mass, and the commonest refusal; then the ten commonest refusals over everything, numbers and quoted names taken out so one reason on several seeds counts once. `--check` also runs the full check and counts its first failure as the reason. Eight shapes of one style at 10 seeds take about half a minute; the whole matrix about four minutes, so filter with `--style` and `--shape`.
 
+**Identity.** `--kit-report` has two more columns: `ident`, the shape's mean identity over the seeds that generated, and `weak`, the share whose designed weak points are all there and hittable; under the table, each style's mean and weak-point pass rate, and every seed that reads more as another style. `--diversity` prints the same for its shape and each seed's breakdown ("Identity and weak points").
+
 **`--vehicle-sheet "Style Shape" [--seeds N] [--from S] [--seed-list A,B,C]`** (default 12) under xvfb, as `--vehicle-shots`: one PNG next to the log, `vehicle_sheet_<Name>.png`, three seeds a row, each with its side and front three-quarter views, labelled with the seed, its grade if it has one, and "shipped". A seed that doesn't generate gets a dark cell. About 4 s a seed. It is for the user to grade when they ask for it: don't send sheets to anyone, and don't make them only to show work.
 
 **Grades.** `docs/vehiclekit/grades.json` holds the user's grades, one a line, sorted: `{ "style", "shape", "seed", "grade" (1 bin it, 5 ship it), "note", "date" }`. `--grade-vehicle "Bandit Box Truck 7" 4 "good stance, dull hood"` adds one, or replaces that seed's grade; it writes only from a checkout's build. Only the user's grades go in: an agent records what the user said, never its own opinion. `--grade-report [Style]` turns them into suggestions per shape: the mean, seeds graded 4 or 5 that don't ship yet (commit them: add them to the style's `Seeds` and run `--gen-vehicle`), shipped seeds graded 2 or less (drop them), low grades' notes; then per style, trait values whose seeds grade a point or more under the style's mean (two seeds or more each; each graded seed is generated again to read its traits). It is data only: nothing changes a weight or a list by itself.
 
 **A round of grading.** `--diversity` (or `--kit-report`) for the numbers; `--vehicle-sheet` of the most different set and a few from each too-alike group when the user wants to grade; their grades with `--grade-vehicle`; `--grade-report` for what to ship and which traits to look at in the generator or style.
+
+## Identity and weak points
+
+As the grammar makes more kinds of outline, every vehicle must still read as its faction, and it must still have the cheap, exposed parts a player shoots to stop it
+without wrecking what is worth salvaging (the loot loop: disable, then strip). `VehicleIdentity.cs` scores a built vehicle for both. It runs no physics and uses no dice: 15
+to 50 ms a vehicle on the 2-core box.
+
+**A style's signature** (`StyleSignature`). `FactionStyle.Signature` when a style sets one; else the table `VehicleIdentity.Signatures`, by style name (the shipped
+styles, written from what this file and their slots say; `Styles.cs` is untouched); else one derived from the style's own dressing slots (`Derived`: its spike, trophy, mast,
+gear and piper parts are its characteristic parts and its one mark; tyres and fuel its weak points), which is what Militia gets. A signature holds:
+
+| Field | What it is |
+| --- | --- |
+| `Marks` | Features every vehicle carries (`StyleMark`): at least `Min` of some parts, on every vehicle that meets `When` ("seat", "room", "heavy", "light"; empty: all), and with `Open` > 0 seen from that many of the six directions. |
+| `Parts`, `PartTarget` | Characteristic parts and how much each says "this style" (a name counts at most three times); `PartTarget` of it reads as fully this style. |
+| `Modules` | Characteristic grammar modules by family (`cab`, `nose`, `flank`...), each family judged against its best; a module not named counts 0.3. Kit 2 only. |
+| `Silhouette` | The outline range (`SilhouetteRange`): side fill, plan fill, height over length, roofline wander and rake (how far the ends drop below the highest point). |
+| `WeakPoints` | The designed weak points (`WeakPointRule`), below. |
+| `Threshold` | Under this (default 0.75), or with a mark missing, a kit-2 plan is planned again. |
+
+A part is picked by name or by a role keyword (`PartPick`): "fuel" (any fuel tank: a drum, a tanker's barrel), "tyres", "driver" (the driver's seat), "seat", "engine",
+"ammo" (ammo boxes and crates).
+
+**The score**, 0 to 1, five parts weighted into one; a part with nothing to judge (no paint, no marks that apply, no seat for traits: a trailer's dressing is its tower's) is
+left out and the rest weighed up:
+
+| Part | Weight | What it measures |
+| --- | --- | --- |
+| marks | 0.30 | The share of the marks that apply which are there (and in the open where asked). |
+| palette | 0.20 | Painted parts in the style's colours (0.6) and how many of its palette roles show at all (0.4). |
+| traits | 0.20 | Characteristic parts against `PartTarget`, and for a grammar vehicle the mean of its modules' weights; the mean of the two. |
+| silhouette | 0.15 | Each of the five outline numbers in range scores 1, falling to 0 a quarter of the range (plus 0.05) outside it. |
+| weak points | 0.15 | Each rule that applies: 1 there and hittable, 0.25 there but covered, 0 missing. |
+
+The breakdown reads `0.78 as IT: marks 1/2 (no a mast or a dish); palette 100 % (4/4 roles); traits 0.92 (parts 1.00, modules 0.83); silhouette 5/5; weak points 2/3
+(antenna missing, tyres 6/6 hittable, fuel 1/1 hittable)`.
+
+**Weak points.** A rule names a part pick and how exposed it must be: seen from `MinSides` of the six directions (a ray from far off along each axis, at the part's middle or
+one of four points round it, meets that part first), and hit first by a ray from a standing player's eye (1.6 m over the ground under the wheels) `Range` metres away (20 by
+default, and outside the vehicle's footprint) from `MinBearings` of 16 bearings round it. Rays go through what is drawn, every part's real boxes and meshes in the rest pose,
+wheels and turrets included (`VehiclePlan.PartTriangles`, the triangles `VehicleChecks.Gaps` shoots through, each tagged with its part), so a drum behind a bed wall, a
+crate in a room's magazine or an antenna under a rack counts as covered. `Min` of the picked parts must pass; `Optional`: none there doesn't count against it. The rays
+are a geometric test: they don't know a part's health, armour or what a round does on the way, and a hit on a part's own other face counts as a hit.
+
+**In generation.** `ShapeGrammar.Make` hands each built plan to `VehicleIdentity.Gate`. Under the threshold or with a mark missing, the seed plans again from the next fork
+(logged: `[vehicles] IT War Bus 1: plan 1 reads 0.78 as IT (no a mast or a dish): ...; planning again`); the second plan is kept if it is better, else the first, so identity
+costs at most one more plan (a shape that can't carry a mark would otherwise pay for all four). If every later plan fails as it is built, the best plan scored is kept.
+Kit 1, the committed seeds included, is never re-planned: it is only reported. `--no-identity-gate` turns the re-plan off.
+
+**Against every style.** `--identity` and the quality tools score each vehicle against every style in `Styles.All` and report any that reads more as another style than its own.
+Bandit is nearly always the runner-up: many styles start from the Bandit slots, every vehicle carries its fuel in the open, and an Iron Spike is a Bandit mark.
+
+**Measured** (6 seeds of every shape a style ships, generation only, 2026-11-06; kit 1 for the Technical, the trailers, the Tanker Rig and the Double Decker, kit 2 for the
+rest; `--kit-report --seeds 6`):
+
+| Style | Mean identity | Weak points all pass | Read as another style | Kit 2 with every mark, gate off / on | Closest margin to another style |
+| --- | --- | --- | --- | --- | --- |
+| Bandit | 0.94 | 47/47 | 0 | 22/22 / 22/22 | 0.23 (Militia) |
+| IT | 0.89 | 35/48 | 0 | 19/26 / 22/26 | 0.11 (Bandit) |
+| Call Centre | 0.89 | 35/48 | 0 | 14/23 / 20/23 | 0.07 (Bandit) |
+| Highland | 0.96 | 48/48 | 0 | 20/20 / 20/20 | 0.18 (Bandit) |
+| British | 0.89 | 52/52 | 0 | 13/24 / 15/24 | 0.10 (Bandit) |
+| Militia | 0.91 | 48/48 | 0 | 30/30 / 30/30 | 0.10 (Bandit) |
+
+What it found: the IT and Call Centre vehicles carry no mast or dish on 16 and 19 of 42 vehicles with a seat, the most on the Technical (kit 1: one in six has one) and the
+War Bus (kit 2: its roof's sockets go to turrets first, and a re-plan doesn't always help: 2 of the 5 kit-2 IT seeds measured still have none); the British Scrap Tanker often has neither a flag nor
+anything for tea (no room, no cab shell to dress). Those are a generator's job (a mast pass that guarantees one, as the Pipe Box does), not the score's. Tyres and fuel are
+hittable on every vehicle; the only covered weak points seen are the rounds in a room's magazine, which is why the Bandit's "ammo crate" applies to light vehicles only.
+Generation with the gate cost IT and the Call Centre about a fifth more over all their shapes (a War Bus 1.2 s on average, 2.3 s at worst), the rest nothing measurable.
+The silhouette range is the same for every style: outlines come from the shapes, which every style shares, and the styles' 5th to 95th percentiles agreed to a few points,
+so for now the range keeps a style off a box or a sliver rather than telling one from another.
 
 ## A faction style
 
@@ -273,7 +349,7 @@ public static readonly FactionStyle Militia = new()
 ```
 
 A slot a generator asks for and the style lacks throws, naming the slot. Sheet slots hold a material's first words ("Plate Steel"): the kit adds the size.
-A style needs `LightGear` and `HeavyGear` recipes (`Gear`); Militia now borrows the Bandits' (without them nothing of it generated).
+A style needs `LightGear` and `HeavyGear` recipes (`Gear`); Militia now borrows the Bandits' (without them nothing of it generated). Its identity signature is optional (`Signature`, "Identity and weak points"): Militia names none and gets one derived from its dressing slots.
 
 **Module weights** (the shape grammar, kit 2). `FactionStyle.Modules` scales how likely the grammar makes each module, by family and name:
 
@@ -299,29 +375,29 @@ cab-over, the Bandits' anything. `--diversity` lists the modules a seed chose as
 
 Rust and bare metal, one colour of frame, war paint on a few panels, plates that don't match and some that are missing. `tools/constructs/bandit_parts.py` writes what the game didn't have (`Constructs/Parts/Bandit`): the Fuel Drum, spikes, skulls and a hubcap. Run `tools/constructs/assembling.py` after it for their recipes.
 
-The designed weak points: the Fuel Drum (55 health, and on the technical the only fuel) stands in the open, its pipe under the floor; nothing covers the tyres; the driver sits in the open with no roof or glass. On the Scrap Tanker the big tanks stand in the open too. A technical's crates ride loose in a Cargo Volume under the bed, so they stay aboard until the volume breaks or someone lifts them out.
+The designed weak points: the Fuel Drum (55 health, and on the technical the only fuel) stands in the open, its pipe under the floor; nothing covers the tyres; the driver sits in the open with no roof or glass. On the Scrap Tanker the big tanks stand in the open too. **Signature** (`VehicleIdentity.Signatures["Bandit"]`): marks, fuel in the open (seen from two sides) and spikes or trophies (Iron Spikes, skulls, a Hubcap Plate); characteristic parts those, the drum, a Ram Plow, mesh-guard and slit cabs; modules caged and armoured cabs, ram and plated noses, panniers. Weak points: the fuel, two tyres or more, the open driver on light vehicles, and a light vehicle's ammo crate when it has one. A technical's crates ride loose in a Cargo Volume under the bed, so they stay aboard until the volume breaks or someone lifts them out.
 
 Loot: containers in rooms roll from the `bandit` table in `Constructs/Loot.json` (docs/sandbox/CONSTRUCTS.md, "Loot"). Tier 1 and 2 parts, common and uncommon weapon parts. **Ammo Crates stay out of it on purpose:** a stored item doesn't cook off, and a crate is 45 kg, physics-only, so it couldn't go in a slot anyway. An Ammo Box in a slot is safe loot; a technical's loose Ammo Crate is the one that blows.
 
 ### The IT style
 
-The IT Department (`Styles.It`, group "IT Department"), a parody of modern office work and the first faction to try faction work with. Beige cases and carpet-tile grey on the panels, corporate blue on the hoods, war paint in lanyard yellow, link blue, paper white and failed-build red; plates that line up (it passed an audit). `tools/constructs/office_parts.py` writes its dressing (`Constructs/Parts/Office`): a CRT Monitor, an Office Plant, a Desk Fan and an Employee of the Month plaque as trophies, Router Antennas and a Wi-Fi Mast as spikes. Rooms are an open plan, a server room, a stationery cupboard or a break room. Guns are named for the job: the Ticket Closer (a carbine), Reply All (a machine gun) and Hard Reset (a pump gun). It is the tech faction, and its vehicles carry IT hardware: a Satellite Dish, a Network Switch and a Cable Reel join the trophies, and a Satellite Dish the spikes. Rooms are an open plan, a server room, a stationery cupboard or a break room, furnished with Server Racks (loot on their shelves), Computers and Fax Machines: the Computer and the Fax Machine are the only line to the IT Department (docs/story/STORY.md, "The IT Department's fax"). Guns are named for the job: the Ticket Closer (a carbine), Reply All (a machine gun) and Hard Reset (a pump gun). Loot rolls from the `it` table: circuit boards, wiring, controls and readouts up to tier 3, Fax Machines, Computers and Server Racks, common and uncommon weapon parts. Every IT shape ships its own seeds.
+The IT Department (`Styles.It`, group "IT Department"), a parody of modern office work and the first faction to try faction work with. Beige cases and carpet-tile grey on the panels, corporate blue on the hoods, war paint in lanyard yellow, link blue, paper white and failed-build red; plates that line up (it passed an audit). `tools/constructs/office_parts.py` writes its dressing (`Constructs/Parts/Office`): a CRT Monitor, an Office Plant, a Desk Fan and an Employee of the Month plaque as trophies, Router Antennas and a Wi-Fi Mast as spikes. Rooms are an open plan, a server room, a stationery cupboard or a break room. Guns are named for the job: the Ticket Closer (a carbine), Reply All (a machine gun) and Hard Reset (a pump gun). It is the tech faction, and its vehicles carry IT hardware: a Satellite Dish, a Network Switch and a Cable Reel join the trophies, and a Satellite Dish the spikes. Rooms are an open plan, a server room, a stationery cupboard or a break room, furnished with Server Racks (loot on their shelves), Computers and Fax Machines: the Computer and the Fax Machine are the only line to the IT Department (docs/story/STORY.md, "The IT Department's fax"). Guns are named for the job: the Ticket Closer (a carbine), Reply All (a machine gun) and Hard Reset (a pump gun). Loot rolls from the `it` table: circuit boards, wiring, controls and readouts up to tier 3, Fax Machines, Computers and Server Racks, common and uncommon weapon parts. Every IT shape ships its own seeds. **Signature**: marks, a mast or a dish (Satellite Dish, Wi-Fi Mast, Router Antenna) and office gear (monitors, switches, reels, plants, fans, plaques, racks, computers, fax machines); modules enclosed and cab-over cabs, short and flat noses, bare flanks. Weak points: the antenna (two sides, two bearings), two tyres, the fuel.
 
 **More dressing (`Vehicle.Kit`).** A style with a `"mast"` slot gets a last pass of its own (its own fork, so nothing else of a seed moves, and a style without the slot never rolls it): masts on the rooms' roofs and the cab, spikes down the rooms' outer walls, and its `"gear"` standing on open beds and porches. The IT style's masts are dishes and antennas, its gear reels, switches, monitors and dishes.
 
 ### The Call Centre style
 
-The Call Centre (`Styles.Scam`, group "The Call Centre"): the Scammers (docs/story/STORY.md, "The Scammers") on wheels, a parody of the scam call centre. Cubicle-fabric greys on the panels, corporate teal on the hoods, war paint in WINNER yellow, hot pink and dollar green. It starts from the IT style's slots and swaps the dressing: `tools/constructs/callcentre_parts.py` writes `Constructs/Parts/CallCentre`: an Office Phone, a Call Headset on a stand, a GIFT CARDS sign and a Prize Wheel as trophies and gear, Loudhailers down the flanks as spikes, Phone Masts on the roofs. Rooms are a call floor (rows of Cubicle Desks round a Water Cooler), the manager's office (a Computer, a cubicle, a Server Rack) or a break room; each Cubicle Desk has a drawer of loot. Guns are named for the job: the Cold Caller (a carbine), Robocall (a machine gun) and Final Notice (a pump gun). They run on other people's batteries, so loot rolls from the `scam` table: batteries, circuit boards and wiring up to tier 3, the odd Computer, common and uncommon weapon parts. Every shape ships its own seeds (the sweep's most different passing ones).
+The Call Centre (`Styles.Scam`, group "The Call Centre"): the Scammers (docs/story/STORY.md, "The Scammers") on wheels, a parody of the scam call centre. Cubicle-fabric greys on the panels, corporate teal on the hoods, war paint in WINNER yellow, hot pink and dollar green. It starts from the IT style's slots and swaps the dressing: `tools/constructs/callcentre_parts.py` writes `Constructs/Parts/CallCentre`: an Office Phone, a Call Headset on a stand, a GIFT CARDS sign and a Prize Wheel as trophies and gear, Loudhailers down the flanks as spikes, Phone Masts on the roofs. Rooms are a call floor (rows of Cubicle Desks round a Water Cooler), the manager's office (a Computer, a cubicle, a Server Rack) or a break room; each Cubicle Desk has a drawer of loot. Guns are named for the job: the Cold Caller (a carbine), Robocall (a machine gun) and Final Notice (a pump gun). They run on other people's batteries, so loot rolls from the `scam` table: batteries, circuit boards and wiring up to tier 3, the odd Computer, common and uncommon weapon parts. Every shape ships its own seeds (the sweep's most different passing ones). **Signature**: marks, a Phone Mast or a Loudhailer and call centre gear (phones, headsets, GIFT CARDS signs, the prize wheel, cubicles, the water cooler); modules as IT's. Weak points: the antenna (a mast or loudhailer), two tyres, the fuel.
 
 ### The Highland style
 
 The Clan MacSlop (`Styles.Highland`, group "Clan MacSlop"), a Highland clan on wheels and the loudest faction on the map. Tartan reds, hunting green, navy and tweed on the panels, Saltire blue and white on the hoods, war paint in pillar-box red, lion-rampant yellow, white and black; plates a little crooked (well loved, not neglected). `tools/constructs/highland_parts.py` writes its parts (`Constructs/Parts/Highland`): Saltire Flags on the roofs (masts), Thistles, a Haggis on a Post and a Coo Heid as trophies, Wee Cabers down the flanks as spikes, Wee Kegs on the beds, and Whisky Casks in the rooms (two loot slots each). Rooms are a bothy, a distillery, a ceilidh hall or a kit room. Guns are named for the glen: the Claymore (a pump gun), the Sgian Dubh (a carbine), the Highland Charge (a machine gun) and the Caber Toss (the harpoon). Loot rolls from the `highland` table: tier 1 and 2 drive parts, pump guns and carbines, and the odd Pipe Box.
 
-**The Pipe Box (`Vehicle.Piper`).** A style with a `"piper"` slot stands exactly one on every vehicle with a seat, before the trophies take the sockets: on the hood, else the cab, a room's roof, the bed, a porch, the headboard or a flank. Its own fork, so nothing else of a seed moves, and a seed with nowhere to stand one throws, so the sweep skips it. A trailer has no seat and gets none. The box strikes up the pipes while someone drives (docs/sandbox/MEDIA.md, "Pipe Boxes"), so you hear the clan coming.
+**The Pipe Box (`Vehicle.Piper`).** A style with a `"piper"` slot stands exactly one on every vehicle with a seat, before the trophies take the sockets: on the hood, else the cab, a room's roof, the bed, a porch, the headboard or a flank. Its own fork, so nothing else of a seed moves, and a seed with nowhere to stand one throws, so the sweep skips it. A trailer has no seat and gets none. The box strikes up the pipes while someone drives (docs/sandbox/MEDIA.md, "Pipe Boxes"), so you hear the clan coming. **Signature**: marks, the Pipe Box and clan dressing (Saltires, thistles, the coo's heid, haggis, wee cabers, kegs, casks); modules long hoods and rams, caged cabs, panniers. Weak points: the Pipe Box (shoot it and the pipes stop), two tyres, the fuel.
 
 ### The British style
 
-The Ministry of Slop (`Styles.British`, group "Ministry of Slop"), a very British faction, affectionate and mostly understated rather than on the nose. Bus red on most panels with the odd racing green, cream or wet-Tuesday grey; racing green, cream and navy on the hoods; war paint in the flag's blue, red and white and double-yellow-line yellow; plates neat but not new. `tools/constructs/british_parts.py` writes its parts (`Constructs/Parts/British`): Union Flags, Belisha beacons and rain gauges on the roofs (masts), a Teapot in its cosy, a Traffic Cone nobody will move, a Garden Gnome and a Rain Gauge as trophies, Furled Brollies down the flanks as spikes (it's that sort of day), Queue Posts on the beds and porches (gear), and in the rooms a Pillar Box (two loot slots) and a cut-down red Phone Box (loot under the shelf) round a Tea Urn. Rooms are a tea room, a post office, lost property or a snug. Guns are named the way the British complain: Terribly Sorry (a machine gun), Bit of Bother (a carbine), the Strongly Worded Letter (a pump gun) and Builder's Tea (the flamer). Loot rolls from the `british` table: tier 1 and 2 drive parts, carbines and pump guns.
+The Ministry of Slop (`Styles.British`, group "Ministry of Slop"), a very British faction, affectionate and mostly understated rather than on the nose. Bus red on most panels with the odd racing green, cream or wet-Tuesday grey; racing green, cream and navy on the hoods; war paint in the flag's blue, red and white and double-yellow-line yellow; plates neat but not new. `tools/constructs/british_parts.py` writes its parts (`Constructs/Parts/British`): Union Flags, Belisha beacons and rain gauges on the roofs (masts), a Teapot in its cosy, a Traffic Cone nobody will move, a Garden Gnome and a Rain Gauge as trophies, Furled Brollies down the flanks as spikes (it's that sort of day), Queue Posts on the beds and porches (gear), and in the rooms a Pillar Box (two loot slots) and a cut-down red Phone Box (loot under the shelf) round a Tea Urn. Rooms are a tea room, a post office, lost property or a snug. Guns are named the way the British complain: Terribly Sorry (a machine gun), Bit of Bother (a carbine), the Strongly Worded Letter (a pump gun) and Builder's Tea (the flamer). Loot rolls from the `british` table: tier 1 and 2 drive parts, carbines and pump guns. **Signature**: marks, flags, beacons or brollies (Union Flag, Belisha Beacon, Furled Brolly, Rain Gauge) and tea, cones or a queue (teapot, cone, gnome, queue post, pillar box, phone box, tea urn); modules enclosed cabs, long hoods, bare flanks. Weak points: two tyres, the fuel, and a flag or beacon when it carries one.
 
 **The Double Decker (`Generators/DoubleDecker.cs`).** An open-top double-decker bus: a long walk-in hull below (side door, loot, the seats that work the guns) and a railed top deck on the tall bays' roofs, with the two roof guns standing up through holes in it. The deck is laid from the bays' `top` sockets (each sits on a deck cell's centre), stops where the tail slopes down (a stepped roof), and a ladder hangs from its back edge, else down the right side. It is an **extra shape**: `VehicleRegistry.Extras` holds shapes a style ships only when it names them in `FactionStyle.Extra` (`Extra = ["Double Decker"]`), so no other faction's committed files change; any style can still run one by name (`--gen-vehicle "Bandit Double Decker" --out DIR`).
 

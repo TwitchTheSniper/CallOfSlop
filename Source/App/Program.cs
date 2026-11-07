@@ -130,6 +130,8 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
         if (int.TryParse(args.SkipWhile(a => !a.Equals("--kit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var vehicleKit))
             VehicleKit.VehicleKitVersion.Force = vehicleKit; // --kit N: every vehicle seed by that kit (1: the shapes as whole generators, 2: the shape grammar), to measure one against the other
+        if (args.Any(a => a.Equals("--no-identity-gate", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleIdentity.GateOn = false; // kit 2 without its identity re-plan, to measure what the check changes
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
@@ -138,6 +140,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--gen-vehicles", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleKitCli.GenVehicles(args); // every vehicle generator: which outputs differ from the committed files
+        if (args.SkipWhile(a => !a.Equals("--identity", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } identityOf)
+            return VehicleKit.VehicleIdentity.Cli(identityOf, args); // how much each seed reads as its faction, its weak points, and which read as another (VehicleIdentity.cs)
         if (args.SkipWhile(a => !a.Equals("--diversity", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityOf)
             return VehicleKit.VehicleQualityCli.Diversity(diversityOf, args); // the vehicle kit's quality tools (VehicleQuality.cs): how alike a shape's seeds are, what never varies
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)

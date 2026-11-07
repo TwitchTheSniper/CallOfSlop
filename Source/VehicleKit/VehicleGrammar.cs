@@ -166,6 +166,7 @@ public static class ShapeGrammar
     /// </summary>
     public static Vehicle Make(IVehicleGenerator g, int seed, ShapeRecipe recipe)
     {
+        Vehicle? kept = null; // (the best plan the identity check turned down: VehicleIdentity.Gate)
         for (var attempt = 0; ; attempt++)
         {
             var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed), g.Style, seed) { Kit = VehicleKitVersion.Grammar };
@@ -173,11 +174,16 @@ public static class ShapeGrammar
             {
                 var plan = Plan(v, recipe, attempt);
                 Build(v, plan);
-                return v;
+                if (VehicleIdentity.Gate(v, attempt, Attempts, ref kept) is { } done)
+                    return done;
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && attempt + 1 < Attempts)
             {
                 // (the next plan)
+            }
+            catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && kept != null)
+            {
+                return kept; // (every later plan failed: the best that built)
             }
         }
     }
