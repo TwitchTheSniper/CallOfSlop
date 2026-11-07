@@ -12,7 +12,11 @@ namespace CallOfSlop.VehicleKit;
 /// </summary>
 public static class VehicleKitVersion
 {
-    public const int Legacy = 1, Grammar = 2, Layered = 3, Current = Layered;
+    /// <remarks>
+    /// Kit 4 (<see cref="Roles"/>) is kit 3 with a role and a tier (VehicleRoles.cs): only a vehicle asked for by role is made by it, so every seed asked for by shape
+    /// is kit 3's as before and <see cref="Current"/> stays kit 3; <c>--kit 3</c> makes a role's seed without its role (measured against it all the same).
+    /// </remarks>
+    public const int Legacy = 1, Grammar = 2, Layered = 3, Roles = 4, Current = Layered;
 
     /// <summary>The command line's <c>--kit N</c>: every seed by that kit (to measure one against the other). Null: each seed's own.</summary>
     public static int? Force;
@@ -166,8 +170,10 @@ public static class ShapeGrammar
     /// A seed by the grammar. A plan that the game refuses as it is built (a part with nowhere to go) is planned again from the next fork of the seed, up to
     /// <see cref="Attempts"/> times, so a seed fails only when every plan does; the same seed always takes the same attempts.
     /// </summary>
-    public static Vehicle Make(IVehicleGenerator g, int seed, ShapeRecipe recipe, int kit = VehicleKitVersion.Current, VehicleLayers layers = default)
+    public static Vehicle Make(IVehicleGenerator g, int seed, ShapeRecipe recipe, int kit = VehicleKitVersion.Current, VehicleLayers layers = default, RoleAsk? role = null)
     {
+        if (role != null && kit >= VehicleKitVersion.Roles)
+            return MakeRole(g, seed, recipe, kit, layers, role);
         Vehicle? kept = null; // (the best plan the identity check turned down: VehicleIdentity.Gate)
         for (var attempt = 0; ; attempt++)
         {
@@ -193,6 +199,68 @@ public static class ShapeGrammar
         }
     }
 
+    /// <summary>
+    /// Kit 4: a seed for a role (VehicleRoles.cs). The plan leans to the role (<see cref="Plan"/> reads <see cref="Vehicle.Role"/>), the style's parts weigh by the role's
+    /// armour and the tier (<see cref="FactionStyle.Weigh"/>), and each plan that builds is measured against the role and scored for its faction; one that misses
+    /// either is planned again, up to <see cref="VehicleRoleMake.Plans"/> built plans (and <see cref="Attempts"/> more for plans the game refuses), and the best is kept:
+    /// fewest role misses, then fewest marks missing, then the identity score.
+    /// </summary>
+    private static Vehicle MakeRole(IVehicleGenerator g, int seed, ShapeRecipe recipe, int kit, VehicleLayers layers, RoleAsk role)
+    {
+        Vehicle? best = null;
+        (int, int, int, double) bestRank = default;
+        Exception? last = null;
+        var built = 0;
+        var weigh = FactionStyle.Weigh;
+        FactionStyle.Weigh = role.Weigh;
+        try
+        {
+            for (var attempt = 0; attempt < Attempts + VehicleRoleMake.Plans - 1 && built < VehicleRoleMake.Plans; attempt++)
+            {
+                VehicleGenJob.Yield();
+                var v = New(g, seed, kit, layers, role);
+                VehicleGenJob.Yield();
+                try
+                {
+                    var plan = Plan(v, recipe, attempt);
+                    VehicleGenJob.Yield();
+                    Build(v, plan);
+                }
+                catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+                {
+                    last = ex; // (the next plan)
+                    continue;
+                }
+                built++;
+                VehicleGenJob.Yield();
+                var id = VehicleIdentity.Of(v);
+                v.Identity = id;
+                VehicleGenJob.Yield();
+                v.Fit = VehicleRoles.Measure(v, role, id);
+                v.RolePlans = built - 1;
+                var rank = VehicleRoleMake.Rank(v, id);
+                if (best == null || rank.CompareTo(bestRank) < 0)
+                    (best, bestRank) = (v, rank);
+                if (rank.Item1 == 0 && rank.Item2 == 0 && rank.Item3 == 0)
+                    break;
+                if (built < VehicleRoleMake.Plans)
+                {
+                    Interlocked.Increment(ref VehicleRoleMake.Replanned);
+                    Console.WriteLine($"[vehicles] {v.Name}: plan {attempt + 1} {(v.Fit.Met ? $"reads {id.Total:0.00} as {id.Style}{(id.Missing.Count > 0 ? " (no " + string.Join(", no ", id.Missing) + ")" : "")}" : "misses the " + role.Role.Name + ": " + string.Join("; ", v.Fit.Misses))}; planning again");
+                }
+            }
+        }
+        finally
+        {
+            FactionStyle.Weigh = weigh;
+        }
+        if (best == null)
+            throw last ?? new VehicleKitException($"no plan of the {g.Name} built for a {role.Role.Name}");
+        best.RolePlans = built - 1; // (how many it took in all, whichever was kept)
+        VehicleRoleMake.Note(best, role, recipe.Shape);
+        return best;
+    }
+
     /// <summary>The first plan of a seed, nothing built: <see cref="VehicleGenJob.Warm"/> compiles the planner this way. False when it doesn't plan.</summary>
     internal static bool PlanOnly(IVehicleGenerator g, int seed)
     {
@@ -210,11 +278,11 @@ public static class ShapeGrammar
     }
 
     /// <summary>A plan's vehicle: kit 2's plain, kit 3's with its layers and its wear started.</summary>
-    private static Vehicle New(IVehicleGenerator g, int seed, int kit, VehicleLayers layers)
+    private static Vehicle New(IVehicleGenerator g, int seed, int kit, VehicleLayers layers, RoleAsk? role = null)
     {
         if (kit < VehicleKitVersion.Layered)
             return new Vehicle(VehicleRegistry.BlueprintName(g, seed), g.Style, seed) { Kit = kit };
-        var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed) + layers.Suffix, g.Name, g.Style, seed) { Kit = kit };
+        var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed) + layers.Suffix + (role?.Suffix ?? ""), g.Name, g.Style, seed) { Kit = kit, Role = role };
         v.UseLayers(layers);
         v.StartWear(LayerTables.WearOf(g.Style));
         return v;
@@ -315,15 +383,18 @@ public static class ShapeGrammar
         };
         var p = new PlanData { Recipe = r, Attempt = attempt, Body = layered ? LayerTables.BodyOf(st) : null };
         var tags = p.Tags;
+        var role = v.Role; // (kit 4: the role leans each choice; null: kit 3's choices exactly)
+        VehicleModule? Ch(Dice dd, string family, Func<VehicleModule, bool>? also = null, Func<VehicleModule, double>? weight = null) =>
+            role == null ? Choose(dd, st, family, tags, also, weight) : Choose(dd, st, family, tags, also, m => (weight?.Invoke(m) ?? 1) * role.Module(family, m.Name));
 
         // The body: a pattern, weighted by the style's liking for each kind of segment, then lengths.
-        var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)))).ToList());
+        var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)) * (role?.Body(b) ?? 1))).ToList());
         var z = Front;
         var ld = D(VehicleLayer.Body, "lengths");
         foreach (var s in pattern.Segments)
         {
             var step = s.Kind is "room" or "tank" ? 1f : 0.5f;
-            var len = p.Body is { } body ? Steps(ld, s.Min, s.Max, step, body.LengthBias) : Steps(ld, s.Min, s.Max, step);
+            var len = p.Body is { } body ? Steps(ld, s.Min, s.Max, step, role?.LengthBias(body.LengthBias) ?? body.LengthBias) : Steps(ld, s.Min, s.Max, step);
             var seg = new Seg { Kind = s.Kind, Z0 = z, Z1 = z + len };
             p.Segs.Add(seg);
             tags.Add(s.Kind is "gun bed" ? "bed" : s.Kind);
@@ -342,7 +413,7 @@ public static class ShapeGrammar
 
         // Bed sides before the gear: walls hang under the floor's edge, so they rule out some recipes.
         if (tags.Contains("bed"))
-            p.Sides = Choose(D(VehicleLayer.Body, "sides"), st, "sides", tags);
+            p.Sides = Ch(D(VehicleLayer.Body, "sides"), "sides");
 
         // The gear: what every chosen module allows.
         var allowed = (r.Gears ?? (st.HeavyGear.Select(x => x.Name).ToArray())).AsEnumerable();
@@ -366,11 +437,11 @@ public static class ShapeGrammar
         }
 
         // Cab and nose: the style's own parts.
-        p.Cab = Choose(D(VehicleLayer.Body, "cab"), st, "cab", tags) ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
+        p.Cab = Ch(D(VehicleLayer.Body, "cab"), "cab") ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
         foreach (var t in p.Cab.Provides)
             tags.Add(t);
         p.CabPart = FactionStyle.Noted("heavyCab", D(VehicleLayer.Body, "cab part").Pick(p.Cab.PartsIn(st)));
-        p.Nose = Choose(D(VehicleLayer.Body, "nose"), st, "nose", tags) ?? throw new VehicleKitException($"style {st.Name} lists no hood the grammar knows");
+        p.Nose = Ch(D(VehicleLayer.Body, "nose"), "nose") ?? throw new VehicleKitException($"style {st.Name} lists no hood the grammar knows");
         var nd = D(VehicleLayer.Body, "nose part");
         if (p.Nose.Name == "ram")
         {
@@ -382,7 +453,7 @@ public static class ShapeGrammar
 
         // The rear, then fuel: one tank feeds the engine (an engine has one fuel inlet).
         var rearWeights = r.Rears.ToDictionary(x => x.Rear, x => x.Weight);
-        p.Rear = Choose(D(VehicleLayer.Body, "rear"), st, "rear", tags, m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name]) ?? Module("rear", "bare");
+        p.Rear = Ch(D(VehicleLayer.Body, "rear"), "rear", m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name]) ?? Module("rear", "bare");
         foreach (var t in p.Rear.Provides)
             tags.Add(t);
         if (!tags.Contains("fuel"))
@@ -418,7 +489,8 @@ public static class ShapeGrammar
         else
         {
             // Kit 3: the chassis layer, fitted under the body: corners, axles, where they stand, the track.
-            var c = VehicleChassis.Roll(D(VehicleLayer.Chassis, "roll"), st, only, p.End, p.Segs.Count, tags.Contains("cabover"), p.Segs[0].Kind == "hutch" ? 1.75f : null, p.Rear.Name == "gun deck");
+            var c = VehicleChassis.Roll(D(VehicleLayer.Chassis, "roll"), st, only, p.End, p.Segs.Count, tags.Contains("cabover"), p.Segs[0].Kind == "hutch" ? 1.75f : null, p.Rear.Name == "gun deck",
+                role?.Chassis(LayerTables.ChassisOf(st)));
             p.Chassis = c;
             p.Gear = c.Gear;
             GearTags(p);
@@ -437,9 +509,9 @@ public static class ShapeGrammar
         if (p.Rails < 1.5f)
             throw new VehicleKitException("too short a body for a frame");
 
-        p.UnderKind = p.Gear.Floor < 0.5f ? Module("under", "stilts") : Choose(D(VehicleLayer.Chassis, "under"), st, "under", tags) ?? Module("under", "stilts");
-        p.Flank = Choose(D(VehicleLayer.Kit, "flank"), st, "flank", tags);
-        p.Roof = Choose(D(VehicleLayer.Body, "roof"), st, "roof", tags);
+        p.UnderKind = p.Gear.Floor < 0.5f ? Module("under", "stilts") : Ch(D(VehicleLayer.Chassis, "under"), "under") ?? Module("under", "stilts");
+        p.Flank = Ch(D(VehicleLayer.Kit, "flank"), "flank");
+        p.Roof = Ch(D(VehicleLayer.Body, "roof"), "roof");
 
         if (layered)
             p.BayDice = D(VehicleLayer.Body, "bays");
@@ -472,12 +544,15 @@ public static class ShapeGrammar
     {
         var st = v.Style;
         var r = p.Recipe;
-        var want = d.Int(r.MinGuns, r.MaxGuns);
+        var role = v.Role;
+        var (gunsLo, gunsHi) = role?.GunRange(r.MinGuns, r.MaxGuns) ?? (r.MinGuns, r.MaxGuns);
+        var want = d.Int(gunsLo, gunsHi);
         var count = 0;
         var noWhaler = st.Weapons.Where(w => w.Name != "Whaler" && !w.Build.StartsWith("Whaler", StringComparison.Ordinal)).ToArray();
         WeaponOption Pick(int k, bool aft)
         {
-            var w = d.Fork("weapon " + k).Pick(aft && noWhaler.Length > 0 ? noWhaler : st.Weapons);
+            var list = aft && noWhaler.Length > 0 ? noWhaler : st.Weapons;
+            var w = role != null ? role.Pick(d.Fork("weapon " + k), list) : d.Fork("weapon " + k).Pick(list);
             FactionStyle.Noted("weapon", w.Name);
             return w;
         }
@@ -498,7 +573,7 @@ public static class ShapeGrammar
                     break;
                 case "gun bed":
                 case "bed":
-                    if (s.Kind == "bed" && (count >= want || !d.Chance(0.5)))
+                    if (s.Kind == "bed" && (count >= want || !d.Chance(role?.Role.BedGun ?? 0.5)))
                         break;
                     var behindRoom = ahead is { Kind: "room" };
                     var w = Pick(count, behindRoom);
@@ -855,6 +930,7 @@ public static class ShapeGrammar
         VehicleGenJob.Yield();
         v.Trim(walls.ToArray());
         v.GuaranteeMarks(); // (every mark the style's signature asks for: VehicleMarks.cs)
+        v.RoleKit(room); // (kit 4: what the role is for that the shape didn't bring, and its loot tier: VehicleRoles.cs; nothing without a role)
         if (layered)
         {
             VehicleGenJob.Yield();
@@ -928,7 +1004,7 @@ public static class ShapeGrammar
         // A flame gun on a sponson doesn't follow its gunner's look round (it swings 20 degrees and more off), and a long gun on a roof low and far forward would
         // want a pedestal over the cab, which a roof has no socket for: the next of the style's guns, in a seeded order.
         var at = v.CentreOf(mount);
-        var order = d.Fork("weapon " + v.Turrets.Count).Shuffled(v.Style.Weapons);
+        var order = v.Role is { } role ? role.Order(d.Fork("weapon " + v.Turrets.Count), v.Style.Weapons) : d.Fork("weapon " + v.Turrets.Count).Shuffled(v.Style.Weapons);
         var w = order.FirstOrDefault(x => !(side && x.Box == null) && !((side || at.Y < 1.5f) && at.Z - v.GunReach(x) < 0.25f)) ?? order[0]; // (a sponson hangs low on the waist)
         FactionStyle.Noted("weapon", w.Name);
         return w;

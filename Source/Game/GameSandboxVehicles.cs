@@ -59,6 +59,7 @@ public sealed class VehicleSpawner(Game game)
         public IVehicleGenerator Gen;
         public int Seed, Tries;
         public VehicleLayers Layers; // kit 3's per-layer seeds (none: the seed's own); kept through rerolls of the seed
+        public RoleAsk? Role; // kit 4's role and tier (null: asked for by shape); kept through rerolls, with the shape it picked
         public bool Picked; // the server chose the seed
         public Vector3 Ground;
         public float Yaw;
@@ -123,6 +124,53 @@ public sealed class VehicleSpawner(Game game)
     }
 
     /// <summary>
+    /// Asks for a faction vehicle by what it is for (docs/vehiclekit/VEHICLEKIT.md, "Roles and tiers"): <paramref name="role"/> by name ("scout", "raider", "gun platform",
+    /// "carrier", "tanker", "recovery", "command", "boss"; null or empty: one the style fields, by its weights) at <paramref name="tier"/> (1 to 4, the threat ladder within the
+    /// faction). The server picks the shape from the role and the seed (<see cref="VehicleRoles.ShapeFor"/>), the vehicle is made by kit 4 and measured against the role,
+    /// and its role, tier and shape are in its kit line and the "generated" log line. Everything else is as <see cref="Request(string, string, int?, Vector3, float, byte, byte, Finished?, VehicleLayers?)"/>.
+    /// </summary>
+    public string? Request(string style, string? role, int tier, int? seed, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, VehicleLayers? layers = null)
+    {
+        if (Styles.All.FirstOrDefault(s => s.Name.Equals(style, StringComparison.OrdinalIgnoreCase)) is not { } st)
+            return $"no faction style \"{style}\"";
+        if (seed is < 1)
+            return "a seed is 1 or more";
+        if (tier is < 1 or > VehicleRoles.MaxTier)
+            return $"a tier is 1 to {VehicleRoles.MaxTier}";
+        var s = seed ?? VehicleSpawnKit.Next(ref _seedState);
+        var r = string.IsNullOrWhiteSpace(role) ? VehicleRoles.PickRole(st, s) : VehicleRoles.Find(role);
+        if (r == null)
+            return $"no role \"{role}\": {string.Join(", ", VehicleRoles.All.Select(x => x.Name))}";
+        IVehicleGenerator g;
+        try
+        {
+            g = VehicleRoles.ShapeFor(st, r, s);
+        }
+        catch (VehicleKitException ex)
+        {
+            return ex.Message;
+        }
+        if (layers is { Any: true } lay && (ShapeGrammar.RecipeOf(g) == null || VehicleLayers.All.Any(l => lay[l] is < 1)))
+            return ShapeGrammar.RecipeOf(g) == null ? $"the {g.Name} has no layers" : "a layer's seed is 1 or more";
+        if (Full(owner) is { } full)
+            return full;
+        _queue.Enqueue(new Ask
+        {
+            Gen = g,
+            Seed = s,
+            Picked = seed == null,
+            Layers = layers ?? default,
+            Role = new RoleAsk(r, tier, st) { Shape = VehicleSpawnKit.Names(g).Shape },
+            Ground = ground,
+            Yaw = yaw,
+            Owner = owner,
+            Front = frontOf,
+            Done = done,
+        });
+        return null;
+    }
+
+    /// <summary>
     /// Asks for a blueprint to be set down as it is (the parts menu's, too big for one tick: <see cref="AtOnce"/>), in the same
     /// queue and the same way as a made vehicle, where <see cref="Request"/> says. Returns why it was refused, or null: queued.
     /// </summary>
@@ -173,7 +221,7 @@ public sealed class VehicleSpawner(Game game)
         if (job.Blueprint is { } bp)
         {
             Generated++;
-            Console.WriteLine($"[vehicles] generated {job.Name} (hash {job.Hash:x16}, kit {job.Kit}{(job.Modules.Length > 0 ? ": " + job.Modules : "")}) in {job.CpuMs:0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt})");
+            Console.WriteLine($"[vehicles] generated {job.Name} (hash {job.Hash:x16}, kit {job.Kit}{(job.RoleNotes.Length + job.Modules.Length > 0 ? ": " + string.Join(", ", new[] { job.RoleNotes, job.Modules }.Where(x => x.Length > 0)) : "")}) in {job.CpuMs:0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt})");
             Place(_now, bp, job.Tow, job.Name);
             return;
         }
@@ -203,7 +251,7 @@ public sealed class VehicleSpawner(Game game)
             FallBack(a, "");
             return;
         }
-        _job = new VehicleGenJob(a.Gen, a.Seed, a.Layers);
+        _job = new VehicleGenJob(a.Gen, a.Seed, a.Layers, a.Role);
     }
 
     private void FallBack(Ask a, string why)
