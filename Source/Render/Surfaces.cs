@@ -92,33 +92,59 @@ public static class Surfaces
             return mix(mix(SurfHash(i), SurfHash(i + vec2(1.0, 0.0)), f.x), mix(SurfHash(i + vec2(0.0, 1.0)), SurfHash(i + vec2(1.0, 1.0)), f.x), f.y);
         }
 
-        // A pattern's height at uv (metres; side: the length of the face along uv.x, so streaks run the long way): -1..1 about 0.
-        float SurfPattern(int kind, vec2 uv, float scale)
+        // How much of a detail of this size (pattern units) survives a pixel that covers fp of them: 1 while the pixel is well
+        // under half its size, 0 once it covers it, so nothing finer than a pixel is drawn to crawl and flicker as the camera moves.
+        float SurfKeep(float size, float fp) { return 1.0 - smoothstep(0.3 * size, 0.8 * size, fp); }
+
+        // A line's cover (0..1) at distance d from its middle, half as wide as hw, seen through a pixel fp wide (all in pattern
+        // units), every period: sharp up close, an even shade of its share of the area once the pixel is wider than the line.
+        float SurfLine(float d, float hw, float fp, float period)
+        {
+            float cover = 1.0 - smoothstep(hw - 0.5 * fp, hw + 0.5 * fp, d);
+            return mix(cover, min(2.0 * hw / period, 1.0), smoothstep(hw, 4.0 * hw, fp));
+        }
+
+        // A pattern's height at uv (metres; streaks run the long way of the face), -1..1 about 0, filtered by the pixel's size fp
+        // (metres): each detail fades to its own mean as it gets smaller than a pixel. hs: half the face's size (the panel pattern
+        // fits whole panels to the box, so its seams meet the box's own edges, never cut across it at random).
+        float SurfPattern(int kind, vec2 uv, float scale, float fp, vec2 hs)
         {
             vec2 p = uv * scale;
+            float f = fp * scale; // the pixel in pattern units
             if (kind == 1) // brushed: fine streaks along u
-                return SurfNoise(vec2(p.x * 0.04, p.y)) * 2.0 - 1.0;
+                return (SurfNoise(vec2(p.x * 0.04, p.y)) * 2.0 - 1.0) * SurfKeep(1.0, f);
             if (kind == 2) // speckle: grit
-                return (SurfNoise(p) + SurfNoise(p * 2.7 + 11.0) * 0.5) * 1.33 - 1.0;
+                return ((SurfNoise(p) - 0.5) * SurfKeep(1.0, f) + (SurfNoise(p * 2.7 + 11.0) - 0.5) * 0.5 * SurfKeep(1.0, f * 2.7)) * 1.33;
             if (kind == 3) // grain: planks with long wavy lines
             {
                 float plank = floor(p.y * 0.42);
-                float seam = smoothstep(0.92, 1.0, abs(fract(p.y * 0.42) * 2.0 - 1.0));
-                float g = sin((p.y + SurfNoise(vec2(p.x * 0.25, p.y + plank * 7.0)) * 2.2) * 9.0);
-                return g * 0.6 + (SurfHash(vec2(plank, 3.0)) - 0.5) - seam * 1.6;
+                float seam = SurfLine(0.5 - abs(fract(p.y * 0.42) - 0.5), 0.03, f * 0.42, 1.0);
+                float g = sin((p.y + SurfNoise(vec2(p.x * 0.25, p.y + plank * 7.0)) * 2.2) * 9.0) * SurfKeep(0.7, f);
+                return g * 0.6 + (SurfHash(vec2(plank, 3.0)) - 0.5) * SurfKeep(2.4, f) - seam * 1.6;
             }
             if (kind == 4) // weave: over and under
             {
                 vec2 c = fract(p) - 0.5;
                 float over = mod(floor(p.x) + floor(p.y), 2.0);
-                return (over > 0.5 ? c.x * c.x : c.y * c.y) * 8.0 - 1.0;
+                float w = (over > 0.5 ? c.x * c.x : c.y * c.y) * 8.0 - 1.0;
+                return mix(-1.0 / 3.0, w, SurfKeep(1.0, f));
             }
             if (kind == 5) // tread: ribs
-                return sin(p.y * 6.2832) * 0.8 + (fract(p.x * 0.5) < 0.12 ? -0.8 : 0.0);
-            if (kind == 6) // panel: a seam a few times a metre
             {
-                vec2 c = abs(fract(p) - 0.5);
-                return -smoothstep(0.482, 0.495, max(c.x, c.y)) * 2.0;
+                float rib = sin(p.y * 6.2832) * 0.8 * SurfKeep(1.0, f);
+                float groove = SurfLine(abs(fract(p.x * 0.5 + 0.44) - 0.5), 0.06, f * 0.5, 1.0); // (a groove every 2 units, 0.12 of them wide)
+                return rib - groove * 0.8;
+            }
+            if (kind == 6) // panel: whole panels about 1 / scale a side, fitted to the box, with a seam between them
+            {
+                vec2 n = max(floor(hs * 2.0 * scale + 0.5), 1.0);
+                vec2 q = (uv + hs) / max(hs * 2.0, 1e-4) * n; // panels across the face
+                vec2 c = abs(fract(q) - 0.5);
+                vec2 pq = f / max(scale * hs * 2.0 / n, 1e-4); // (the pixel in panel units, per axis)
+                vec2 inner = step(vec2(1.5), n); // (a seam only between panels: the box's own edges have their wear)
+                float sx = SurfLine(0.5 - c.x, 0.012, pq.x, 1.0) * inner.x;
+                float sy = SurfLine(0.5 - c.y, 0.012, pq.y, 1.0) * inner.y;
+                return -max(sx, sy) * 2.0;
             }
             return 0.0;
         }
@@ -126,7 +152,9 @@ public static class Surfaces
         // A surface at world point p, normal n: lp is the point in the box (metres from its middle), ln its face's normal there, size
         // the box (0: no box edges to wear, a prop), and code the row with the box's wear in its fraction (Surfaces.Code).
         // uSurfQ.x is the setting: 1 Medium, 2 High (Low never comes here: it takes the classic light). All of it is maths on what the
-        // pixel already has: no textures. Detail fades with distance, so a far hull pays for the light and nothing else.
+        // pixel already has: no textures. Every detail is filtered by the pixel's own size (its uv's screen derivatives), so it
+        // fades to its mean where it would be finer than a pixel instead of crawling as the camera moves, and fades out between
+        // 18 and 60 m besides, so a far hull pays for the light and nothing else.
         vec3 SurfaceLit(vec3 base, vec3 n, vec3 p, vec3 lp, vec3 ln, vec3 size, float code)
         {
             int row = int(code);
@@ -142,49 +170,58 @@ public static class Surfaces
             float dist = length(toEye);
             vec3 v = toEye / max(dist, 1e-3);
             float near = 1.0 - smoothstep(18.0, 60.0, dist);
+            // The face's own uv (a face is one primitive, so this choice is the same over a pixel quad and the derivatives
+            // below are sound; they are taken here, before any branch that differs from pixel to pixel).
+            vec3 an = abs(ln);
+            bool xFace = an.x > an.y && an.x > an.z;
+            bool yFace = an.y > an.z;
+            vec2 uv = xFace ? lp.yz : yFace ? lp.xz : lp.xy;
+            vec2 hs = (xFace ? size.yz : yFace ? size.xz : size.xy) * 0.5;
+            if (hs.y > hs.x) // (streaks and grain run the long way of the face)
+            {
+                uv = uv.yx;
+                hs = hs.yx;
+            }
+            vec2 dx = dFdx(uv), dy = dFdy(uv);
+            float fp = max(max(length(dx), length(dy)), 1e-5); // metres a pixel on this face (the long side of its footprint)
             vec3 nn = n;
             if (near > 0.0)
             {
-                vec3 an = abs(ln);
-                bool xFace = an.x > an.y && an.x > an.z;
-                bool yFace = an.y > an.z;
-                vec2 uv = xFace ? lp.yz : yFace ? lp.xz : lp.xy;
-                vec2 hs = (xFace ? size.yz : yFace ? size.xz : size.xy) * 0.5;
-                if (hs.y > hs.x) // (streaks and grain run the long way of the face)
-                {
-                    uv = uv.yx;
-                    hs = hs.yx;
-                }
                 vec2 off = vec2(float(row) * 3.1, dot(size, vec3(7.3, 3.7, 11.1)));
+                vec2 puv = rd.x > 5.5 ? uv : uv + off; // (panels are fitted to the box: no offset)
                 if (rd.x > 0.5 && rd.z > 0.0)
                 {
-                    float h = SurfPattern(int(rd.x + 0.5), uv + off, rd.y) * rd.z * near;
+                    int kind = int(rd.x + 0.5);
+                    float h = SurfPattern(kind, puv, rd.y, fp, hs) * rd.z * near;
                     albedo *= 1.0 + 0.5 * h;
                     rough = clamp(rough - h * 0.25, 0.04, 1.0);
                     if (uSurfQ.x > 1.5)
                     {
-                        // High: the pattern tilts the normal a little (its slope along u and v), so light catches it.
-                        float e = 0.012;
-                        float hu = SurfPattern(int(rd.x + 0.5), uv + off + vec2(e, 0.0), rd.y) * rd.z * near - h;
-                        float hv = SurfPattern(int(rd.x + 0.5), uv + off + vec2(0.0, e), rd.y) * rd.z * near - h;
+                        // High: the pattern tilts the normal a little (its slope along u and v), so light catches it. The step
+                        // is at least the pixel, so the slope is filtered the same way as the pattern.
+                        float e = max(0.012, fp);
+                        float hu = SurfPattern(kind, puv + vec2(e, 0.0), rd.y, fp, hs) * rd.z * near - h;
+                        float hv = SurfPattern(kind, puv + vec2(0.0, e), rd.y, fp, hs) * rd.z * near - h;
                         vec3 t = normalize(cross(n, abs(n.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
-                        nn = normalize(n - (t * hu + cross(n, t) * hv) * 1.2);
+                        nn = normalize(n - (t * hu + cross(n, t) * hv) * 1.2 * (0.012 / e));
                     }
                 }
-                float nw = SurfNoise(uv * 5.0 + off);
+                float nw = mix(0.5, SurfNoise(uv * 5.0 + off), SurfKeep(1.0, fp * 5.0));
                 if (ra.z > 0.0 && size.x > 0.0)
                 {
                     // Edge wear: how far the nearest edge of this face is, read from the box itself: no mesh or texture knows it.
+                    // A band thinner than the pixel is spread over the pixel at its share of the cover, so box edges don't sparkle.
                     vec2 ed = hs - abs(uv);
                     float edge = min(ed.x, ed.y);
-                    float rub = (1.0 - smoothstep(0.0, 0.006 + 0.03 * nw * (0.5 + wear), edge)) * ra.z * near;
+                    float band = 0.006 + 0.03 * nw * (0.5 + wear);
+                    float rub = (1.0 - smoothstep(0.0, band + fp, edge)) * band / (band + fp) * ra.z * near;
                     albedo = mix(albedo, rc.rgb, rub);
                     metal = mix(metal, min(metal + 0.5, 0.9), rub);
                 }
                 if (ra.w > 0.0 && wear > 0.02)
                 {
                     // Hurt parts rust from their patches inward, and a wreck is scorched and flaking.
-                    float n2 = uSurfQ.x > 1.5 ? nw * 0.6 + SurfNoise(uv * 13.0 + off) * 0.4 : nw;
+                    float n2 = uSurfQ.x > 1.5 ? nw * 0.6 + mix(0.5, SurfNoise(uv * 13.0 + off), SurfKeep(1.0, fp * 13.0)) * 0.4 : nw;
                     float rust = smoothstep(1.02 - wear * ra.w * 0.95, 1.14 - wear * ra.w * 0.95, n2 + wear * 0.34) * near;
                     vec3 rustCol = mix(vec3(0.33, 0.17, 0.09), vec3(0.09, 0.07, 0.06), smoothstep(0.7, 1.0, wear)) * (0.7 + 0.6 * nw);
                     albedo = mix(albedo, rustCol, rust);

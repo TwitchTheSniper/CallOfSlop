@@ -858,7 +858,7 @@ public sealed unsafe partial class Renderer
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, (int)GL_REPEAT);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, (int)GL_REPEAT);
-        Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY, 8);
+        RenderCaps.Anisotropy(GL_TEXTURE_2D_ARRAY, 8f);
     }
 
     /// <summary>Screen-space rectangle in pixels (origin bottom-left). Use with an ortho camera.</summary>
