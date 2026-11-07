@@ -80,7 +80,8 @@ internal sealed partial class ConstructCollider
     public void Build(Construct c)
     {
         _dead = 0;
-        BenchTmp.Mark(2, null);
+        _mainLeaves = _mainNodes = 0;
+        _extraGroup = -1;
         var total = c.WheelCount;
         var hulls = 0;
         if (_wheelOf.Length < c.PartCount)
@@ -104,7 +105,6 @@ internal sealed partial class ConstructCollider
             Array.Resize(ref Hulls, hulls);
         if (Groups.Length < c.JointCount + 1)
             Groups = new Group[c.JointCount + 1];
-        BenchTmp.Mark(2, "col count");
         LeafCount = 0;
         var hullAt = 0;
         GroupCount = 0;
@@ -161,7 +161,6 @@ internal sealed partial class ConstructCollider
                 AddCylinder(c, _wheelOf[i], i, seg);
             }
         }
-        BenchTmp.Mark(2, "col leaves");
         // Group by joint, in segment order, and build each group's tree.
         var nodesNeeded = Math.Max(1, LeafCount * 2);
         if (Nodes.Length < nodesNeeded)
@@ -170,8 +169,8 @@ internal sealed partial class ConstructCollider
             _keys = new float[LeafCount];
         if (LeafCount >= FastMin)
         {
+            ReserveExtra(c);
             BuildFast(c);
-            BenchTmp.Mark(2, "col tree");
             return;
         }
         for (var k = 0; k < LeafCount; k++)
@@ -196,7 +195,7 @@ internal sealed partial class ConstructCollider
 
     /// <summary>
     /// Leaves from which the trees are built from Morton order instead (docs/perf/LIMITS.md, "Rebuilds"): each group's
-    /// leaf centres on a 1,024 cell lattice, interleaved, radix sorted (no compare, so no branch a tree-ordered list can
+    /// leaf centres on a lattice of 1,024 cells along its longest side (cubes: a long hull is cut along its length), interleaved, radix sorted (no compare, so no branch a tree-ordered list can
     /// fool), then halved by count all the way down, the bounds made bottom-up: O(n), the leaves moved once. Below this
     /// the old sort is kept, so small bodies' trees (and the contacts they give) are what they were.
     /// </summary>
@@ -248,6 +247,92 @@ internal sealed partial class ConstructCollider
         (Leaves, _spare) = (_spare, Leaves);
         for (var g = 0; g < GroupCount; g++)
             FastNode(Groups[g].Root, Groups[g].First, Groups[g].Count);
+        _mainLeaves = LeafCount;
+        _mainNodes = NodeCount;
+        _extraGroup = -1;
+    }
+
+    // ---- Parts added by the journal (ConstructRebuild.cs): a small tree of their own beside the big one ----------------
+
+    /// <summary>Leaves the added parts' own group may hold before the collider is built again.</summary>
+    private const int ExtraMax = 512;
+
+    private int _mainLeaves, _mainNodes, _extraGroup = -1;
+
+    /// <summary>Room for <see cref="ExtraMax"/> more leaves, their nodes and their group, made with the big tree (never in a tick).</summary>
+    private void ReserveExtra(Construct c)
+    {
+        var leaves = LeafCount + ExtraMax;
+        if (Leaves.Length < leaves)
+            Array.Resize(ref Leaves, leaves);
+        if (Nodes.Length < leaves * 2)
+            Nodes = new Node[leaves * 2];
+        if (_keys.Length < leaves)
+            _keys = new float[leaves];
+        if (Groups.Length < c.JointCount + 2)
+            Array.Resize(ref Groups, c.JointCount + 2);
+    }
+
+    /// <summary>
+    /// Plain parts <paramref name="from"/> to <paramref name="to"/> (just added) into a group of the body's own segment
+    /// with a small tree of its own (the big one stays as it is). False when there's no room for them, or a part has a
+    /// convex hull: built again then.
+    /// </summary>
+    public bool AddParts(Construct c, int from, int to)
+    {
+        if (_mainLeaves < FastMin || _mainLeaves > LeafCount)
+            return false;
+        for (var i = from; i < to; i++)
+            if (ConstructHulls.Of(c.Parts[i].D).Length > 0 || c.Parts[i].Seg != 0)
+                return false;
+        if (_extraGroup < 0 && (GroupCount >= Groups.Length || GroupCount > Construct.MaxJoints))
+            return false;
+        // The group's leaves so far, without the holes parts that went left.
+        var at = _mainLeaves;
+        for (var k = _mainLeaves; k < LeafCount; k++)
+            if (!Leaves[k].Dead)
+                Leaves[at++] = Leaves[k];
+            else
+                _dead--;
+        LeafCount = at;
+        for (var i = from; i < to; i++)
+        {
+            var boxes = c.SolidCount(i);
+            if (LeafCount + Math.Max(1, boxes) > Math.Min(Leaves.Length, _mainLeaves + ExtraMax))
+                return false;
+            for (var b = 0; b < boxes; b++)
+            {
+                c.SolidBox(i, b, out var centre, out var half);
+                Add(centre, half, Quaternion.Identity, Vector3.Zero, false, i, 0, false, -1);
+            }
+            if (boxes == 0)
+            {
+                c.PartBounds(i, out var mn, out var mx);
+                Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, Quaternion.Identity, Vector3.Zero, false, i, 0, false, -1);
+            }
+        }
+        var count = LeafCount - _mainLeaves;
+        if (_extraGroup < 0)
+            _extraGroup = GroupCount++;
+        NodeCount = _mainNodes;
+        if (Nodes.Length < NodeCount + count * 2 + 1)
+            return false;
+        ref var g = ref Groups[_extraGroup];
+        g.Seg = 0;
+        g.First = _mainLeaves;
+        g.Count = count;
+        g.Root = NodeCount++;
+        if (count == 0)
+        {
+            ref var n = ref Nodes[g.Root];
+            n.Centre = Vector3.Zero;
+            n.Half = new Vector3(-1e30f);
+            n.Start = g.First;
+            n.Count = 0;
+            return false; // (an empty group's root would read as inner: built again)
+        }
+        BuildNode(g.Root, g.First, count);
+        return true;
     }
 
     /// <summary>Sorts _order[start .. start + count] by the Morton code of each leaf's centre in the group's centre bounds (stable: ties stay in part order).</summary>
@@ -261,7 +346,8 @@ internal sealed partial class ConstructCollider
             lo = Vector3.Min(lo, m);
             hi = Vector3.Max(hi, m);
         }
-        var scale = new Vector3(1023f) / Vector3.Max(hi - lo, new Vector3(1e-6f));
+        var ext = hi - lo;
+        var scale = new Vector3(1023f / MathF.Max(MathF.Max(ext.X, ext.Y), MathF.Max(ext.Z, 1e-6f))); // (one scale for every axis: a long hull is cut along its length first)
         for (var k = start; k < start + count; k++)
         {
             var q = (Leaves[_order[k]].Centre - lo) * scale;

@@ -582,6 +582,58 @@ what you look at, the edit's progress, refusals and, when driving, speed, fuel a
   that the part fits (matching socket kinds, facing each other, nothing in the way); the one nearest the crosshair shows
   the whole part, green when it fits.
 
+### Rebuilds
+
+Everything that follows from the parts (mass, centre of mass and inertia, the segments, the collider and the part tree,
+wheels, the drive line, the circuit, guns, every system's list of its parts) is worked out by `Construct.Rebuild`. An edit
+(a part added, linked, taken off, broken or split away) only marks the body `Dirty`; the first thing in the next tick that
+needs it (the power step, the gun step, the physics step) rebuilds it once, so ten edits in a tick cost one rebuild. Code
+that sets `Dirty = true` gets a full rebuild, as always.
+
+A **big body** (`Construct.IncrementalMin`, 1,024 parts or more) also keeps a **journal** of its **plain** edits since its
+last rebuild (`Source/Constructs/ConstructRebuild.cs`):
+
+- **Plain parts.** A part type is plain (`PlainParts.Of`) when it is a frame or a panel whose file sets nothing any system
+  looks for: every field of `ConstructPartDef` is compared with a new one, and only the fields that shape structure (mass,
+  health, armour, boxes, struct sockets, looks, the inventory's words) may differ, so a field added later counts against
+  plainness until it is listed there. A part is plain (`IsPlainPart`) when its type is, it is on the body's own segment,
+  holds nothing, is in no merge, and no routed link ends on it or runs over it. Frame blocks, beams, plates and wedges are
+  plain; everything else is a **special part**.
+- **What the journal takes.** `ConstructWorld.AddPart` of a plain part, `AddLink` between two plain parts, and `RemovePart`
+  of a plain part whose every neighbour is plain (a part breaking off under fire goes the same way), including a split
+  whose cut-off pieces are all plain (they become wrecks of their own, each a full rebuild of its own small body). The body
+  must have no freeform welds and no merged receivers. Anything else, before or after in the same tick, makes it a full
+  rebuild.
+- **What it does with it** (`RebuildPlain`). The mass, both first moments and the boxes' second moments about the body's
+  origin are kept as sums in doubles (`SumParts`): a part that goes takes its own share off, a new part adds its own, and
+  the centre of mass and the inertia about it follow from the sums (`FinishMass`, O(special parts): the loads and the cargo
+  are added on top). The bounds keep a count of the parts on each face and are summed again only when the last part on a
+  face goes. The sums are summed from the parts again every 256 plain rebuilds, so rounding never builds up. The collider
+  and the part tree are renumbered through the journal's map and lose the leaves of the parts that went (their bounds stay
+  as they were: a little loose, never short); new parts go into a small tree of their own beside the collider's big one
+  (`ConstructCollider.AddParts`); either is built again when that isn't safe (a quarter gone, no room, built at another
+  point of the journal). The circuit (the frame is the circuit) is flooded again only when a powered part went and its
+  working neighbours don't meet round it within a short walk (`MeetsRound`, 512 parts), or a plain piece was cut off; a
+  new part next to a powered one is powered and passes it on. The same short walk tells `RemovePart` that nothing was cut
+  off, so a part off a big hull doesn't flood the whole body to look for a split.
+- **The special parts.** Every system that looks for parts of its own kind (wheels, springs, the drive line's engine,
+  plants, thrusters, cells, surfaces, rotors, stabilizers, racks, tanks, hydraulics, volumes, logic, scoops, rails, guns,
+  modules, seats and roots) walks `Construct.Specials`, the list of special parts, not every part; a plain edit changes no
+  special part, only the numbers. The list is made at every full rebuild and mapped at a plain one; between an edit and its
+  rebuild `Specials` hands back every part, so code reading it early still sees everything. A part that matters to every
+  system (any part can burn: the gun step's count of burning parts) is still counted over every part.
+- **The drive line's walk** reads each part's links through the link index (`EdgesAt`, in the edge order a walk over every
+  link would have met them) instead of every link for every part it reaches.
+- **The debug check.** `Construct.RebuildCheck` (off; `CALLOFSLOP_REBUILD_CHECK=1` turns it on) follows every plain
+  rebuild with a full one and compares mass, centre of mass, inertia, bounds, radius, the segments, the circuit, batteries,
+  the drive line, wheels, root, guns, anchoring, the special parts, the collider's leaves (and that its trees find every
+  leaf a box meets) and the part tree; a difference goes to `Construct.CheckLog`.
+
+A smaller body rebuilds as it always did (its numbers, collider and contacts are what they were). The costs and what a split
+still costs are in docs/perf/LIMITS.md, "Rebuilds". The journal and the plain-part rule are what a later fused unit (cached
+mass, a rough collider, rebuilt at most once a tick when pieces break) can build on: a fused unit is a run of plain parts
+whose share of the sums and leaves it keeps.
+
 ### The drivetrain (it only works when connected)
 
 (Since the drivetrain families the drive line can also run through shafts, gearboxes, chains, clutches and transfer cases
@@ -1117,7 +1169,11 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
   box). Leaves are grouped by **rigid group**: the body and its freeform attachments are group 0, each real joint's parts another
   (`Construct.MoveSeg`). Each group has a bounding volume tree in its own frame, so a joint moving costs nothing: the frame
   moves and the tree with it. A freeform-attached box is a leaf turned in its group. The tree is built on first use after the
-  parts change (`Construct.Collider`, in the physics step: a client never builds one) and reuses its arrays.
+  parts change (`Construct.Collider`, in the physics step: a client never builds one) and reuses its arrays. From 2,048
+  leaves (`ConstructCollider.FastMin`) a group's tree is built from Morton order: the leaf centres on a lattice of 1,024 cubes
+  along the group's longest side, radix sorted, halved by count, the bounds made bottom up (O(n); sorting the leaves at every
+  level cost 13 to 18 ms at 16,000 parts, and a tree-ordered list made the median split's selection slow). Smaller trees are
+  built as before. A big body's plain edits renumber the tree instead of building it ([Rebuilds](#rebuilds)).
 - **Against other constructs** (`PairContacts`). The two trees are walked together to the leaf pairs within this tick's
   travel plus 2 cm, then the separating-axis test: the three face axes of each box and the nine edge crosses
   (`ConstructNarrow.BoxBox`). A face gives its incident face clipped to the reference face, up to four points; an edge pair

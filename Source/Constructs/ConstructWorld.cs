@@ -538,9 +538,17 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < c.PartCount; i++)
             if (comp[i] == -1)
                 Flood(c, i, comps++, comp);
-        if (plain && comps == 1)
+        if (plain && comps > 1)
+            for (var i = 0; i < c.PartCount && plain; i++)
+                if (comp[i] > 0 && !c.IsPlainPart(i))
+                    plain = false; // (a piece that falls away with a special part in it: the systems change)
+        if (plain)
         {
-            c.JournalRemove(index); // (the flood found nothing cut off: still by the journal)
+            // Nothing cut off, or only plain pieces (they become wrecks of their own): still by the journal.
+            c.JournalRemove(index);
+            for (var i = 0; i < c.PartCount; i++)
+                if (comp[i] > 0)
+                    c.JournalRemove(i, quiet: true);
             c.DirtyPlain();
         }
         else
@@ -708,10 +716,21 @@ public sealed partial class ConstructWorld
         Span<int> map = scratch.Take<int>(c.PartCount);
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
+            map[i] = comp[i] == keep ? n++ : -1;
+        for (int i = 0, to = 0; i < c.PartCount;)
         {
-            map[i] = comp[i] == keep ? n : -1;
-            if (comp[i] == keep)
-                c.Parts[n++] = c.Parts[i];
+            // Each run of kept parts moves down at once (a big hull losing one part moves the rest in one copy, not part by part).
+            if (map[i] < 0)
+            {
+                i++;
+                continue;
+            }
+            var from = i;
+            while (i < c.PartCount && map[i] >= 0)
+                i++;
+            if (to != from)
+                Array.Copy(c.Parts, from, c.Parts, to, i - from);
+            to += i - from;
         }
         var oldCount = c.PartCount;
         c.PartCount = n;
@@ -1697,18 +1716,12 @@ public sealed partial class ConstructWorld
 
     public void Step(IWorldQuery query, float dt)
     {
-        BenchTmp.Mark(1, null);
         _partTally = -1; // (counted again when next asked)
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
-        BenchTmp.Mark(1, "StepLinks");
         StepHydraulics(); // (the circuits, a few times a second: ConstructHydraulics.cs)
-        BenchTmp.Mark(1, "StepHydraulics");
         StepNoCollide(); // no-collide pairs (ConstructNoCollide.cs): each finds its parts, or goes
-        BenchTmp.Mark(1, "StepNoCollide");
         StepConnectors(query); // ropes and springs (ConstructConnectors.cs): resolved, snapped when overloaded, what they hold woken
-        BenchTmp.Mark(1, "StepConnectors");
         StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
-        BenchTmp.Mark(1, "StepWorldLinks");
         foreach (var c in Bodies)
         {
             ConstructPower.Step(this, c, dt);
@@ -1726,51 +1739,29 @@ public sealed partial class ConstructWorld
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
-        BenchTmp.Mark(1, "ConstructWeapons.Step");
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
-        BenchTmp.Mark(1, "FlushSnaps");
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
-        BenchTmp.Mark(1, "RadioGather");
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
-        BenchTmp.Mark(1, "ConstructBoost.Separate");
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
-        BenchTmp.Mark(1, "ConstructOrdnance.Release");
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
-        BenchTmp.Mark(1, "ConstructLauncher.Step");
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
-        BenchTmp.Mark(1, "ConstructRide.BeforePhysics");
         ConstructPhysics.Step(this, query, dt);
-        BenchTmp.Mark(1, "ConstructPhysics.Step");
         OverloadDamage();
-        BenchTmp.Mark(1, "OverloadDamage");
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
-        BenchTmp.Mark(1, "ConstructRecycler.Step");
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
-        BenchTmp.Mark(1, "ConstructGatherer.Step");
         ConstructScoops.Step(this, query, dt); // (scoops dig where they are really pushed in, and pour when tipped)
-        BenchTmp.Mark(1, "ConstructScoops.Step");
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
-        BenchTmp.Mark(1, "ConstructRefining.Step");
         ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
-        BenchTmp.Mark(1, "ConstructAssembling.Step");
         ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
-        BenchTmp.Mark(1, "ConstructExtruder.Step");
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
-        BenchTmp.Mark(1, "ConstructPress.Step");
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
-        BenchTmp.Mark(1, "Beacons.Step");
         ConstructSeal.Step(this, query, ref _sealTicks, server: true);
-        BenchTmp.Mark(1, "ConstructSeal.Step");
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
-        BenchTmp.Mark(1, "ConstructLift.Step");
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
-        BenchTmp.Mark(1, "LoadStep");
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
-        BenchTmp.Mark(1, "ConstructCargo.Step");
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)
-        BenchTmp.Mark(1, "ConstructGravity.Refresh");
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {
             Bodies[i].RecoilCount = 0; // (recoil on a body the step didn't simulate is dropped, never kept for later)

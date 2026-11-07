@@ -37,10 +37,10 @@ internal static class PlainParts
     {
         if (d.Id >= ConstructParts.MaxTypes)
             return false; // (a run-time part: an extrusion, a design)
-        if (!ReferenceEquals(_seen[d.Id], d))
+        if (!ReferenceEquals(Volatile.Read(ref _seen[d.Id]), d))
         {
             _plain[d.Id] = Work(d, null);
-            _seen[d.Id] = d;
+            Volatile.Write(ref _seen[d.Id], d); // (after the answer: a vehicle kit thread building at the same time reads it whole)
         }
         return _plain[d.Id];
     }
@@ -202,8 +202,8 @@ public sealed partial class Construct
     {
         if (!Journalling || (uint)a >= (uint)PartCount || (uint)b >= (uint)PartCount || !IsPlainPart(a) || !IsPlainPart(b))
             return false;
-        if (HasBattery && (Parts[a].Powered != Parts[b].Powered))
-            _jPower = true; // (a new way for the circuit: flooded again; cheap next to the edit that made it)
+        if (HasBattery && a < _jSurvivors && b < _jSurvivors && Parts[a].Powered != Parts[b].Powered)
+            _jPower = true; // (a new way for the circuit between parts that were here: flooded again. A new part's own way is PowerAdded's)
         DirtyPlain();
         return true;
     }
@@ -224,9 +224,10 @@ public sealed partial class Construct
 
     /// <summary>
     /// Part <paramref name="i"/> (plain, now numbered) is about to go: its share comes off the sums (if it was there at
-    /// the last rebuild) and the bounds are noted. Called before the parts are compacted.
+    /// the last rebuild) and the bounds are noted. Called before the parts are compacted. <paramref name="quiet"/>: a part
+    /// of a plain piece that is cut off with it (the circuit is flooded again rather than looked at round each).
     /// </summary>
-    internal void JournalRemove(int i)
+    internal void JournalRemove(int i, bool quiet = false)
     {
         if (i < _jSurvivors)
         {
@@ -234,7 +235,9 @@ public sealed partial class Construct
             if (OnBounds(i))
                 _jBounds = true;
         }
-        if (Parts[i].Powered && HasBattery && !_jPower && !PowerMeetsRound(i))
+        if (quiet)
+            _jPower |= HasBattery; // (a piece cut off: the circuit is flooded again, it is cheap next to the split)
+        else if (Parts[i].Powered && HasBattery && !_jPower && !PowerMeetsRound(i))
             _jPower = true;
     }
 
@@ -781,18 +784,14 @@ public sealed partial class Construct
     /// </summary>
     private void RebuildPlain()
     {
-        BenchTmp.Mark(0, null);
         _dirty = false;
         PlainRuns++;
         RebuildStamp++;
         RideAxes = null;
         var added = _jSurvivors; // (parts from here on came since the last rebuild)
         MapSpecials();
-        BenchTmp.Mark(0, "p MapSpecials");
         ColliderJournal();
-        BenchTmp.Mark(0, "p ColliderJournal");
         TreeJournal();
-        BenchTmp.Mark(0, "p TreeJournal");
         for (var i = added; i < PartCount; i++)
         {
             AddPartSums(i, 1);
@@ -805,59 +804,35 @@ public sealed partial class Construct
         if (++_plainCount >= ResumEvery)
             SumParts();
         FinishMass();
-        BenchTmp.Mark(0, "p FinishMass");
         BuildRails(); // (the rails' parts by number)
         ConstructRoutes.Rebuild(this); // (renumbered with the parts: the logic's wires, shafts' and cables' edges)
         ConstructModules.Build(this);
-        BenchTmp.Mark(0, "p ConstructModules.Build");
         ConstructTracks.Rebuild(this);
-        BenchTmp.Mark(0, "p ConstructTracks.Rebuild");
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
-        BenchTmp.Mark(0, "p Radius = MathF.Max");
         BuildWheels();
-        BenchTmp.Mark(0, "p BuildWheels");
         BuildDrivetrain();
-        BenchTmp.Mark(0, "p BuildDrivetrain");
         BuildPlants();
-        BenchTmp.Mark(0, "p BuildPlants");
         BuildThrusters();
-        BenchTmp.Mark(0, "p BuildThrusters");
         ConstructFluid.Build(this);
-        BenchTmp.Mark(0, "p ConstructFluid.Build");
         ConstructLift.Build(this);
-        BenchTmp.Mark(0, "p ConstructLift.Build");
         ConstructAero.Build(this);
-        BenchTmp.Mark(0, "p ConstructAero.Build");
         ConstructRotor.Build(this);
-        BenchTmp.Mark(0, "p ConstructRotor.Build");
         ConstructBoost.Build(this);
-        BenchTmp.Mark(0, "p ConstructBoost.Build");
         ConstructFlight.Build(this);
-        BenchTmp.Mark(0, "p ConstructFlight.Build");
         ConstructOrdnance.Build(this);
-        BenchTmp.Mark(0, "p ConstructOrdnance.Build");
         ConstructHydraulics.Build(this);
-        BenchTmp.Mark(0, "p ConstructHydraulics.Build");
         ConstructSeal.Build(this);
-        BenchTmp.Mark(0, "p ConstructSeal.Build");
         BuildSegments();
-        BenchTmp.Mark(0, "p BuildSegments");
         if (!_jPower && added < PartCount)
             PowerAdded(added);
         if (_jPower)
             ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);
-        BenchTmp.Mark(0, "p StoreNetKey = ConstructBeacons");
         ConstructWeapons.BuildGuns(this);
-        BenchTmp.Mark(0, "p ConstructWeapons.BuildGuns");
         CountSpecials();
-        BenchTmp.Mark(0, "p CountSpecials");
         BuildFreeChain();
-        BenchTmp.Mark(0, "p BuildFreeChain");
         Root = PickRoot();
-        BenchTmp.Mark(0, "p Root = PickRoot");
         FinishRebuild();
-        BenchTmp.Mark(0, "p FinishRebuild");
         JournalReset();
     }
 }
@@ -867,7 +842,6 @@ public sealed partial class Construct
     // ---- The collider and the part tree through the journal ------------------------------------------------------
 
     private int _colliderSerial = -1, _treeSerial = -1;
-    internal static readonly int[] DbgCol = new int[5];
 
     /// <summary>The collider as it was at the last rebuild, renumbered and without the parts that went; built again (when next asked) if parts came or it wasn't current.</summary>
     private void ColliderJournal()
@@ -875,13 +849,13 @@ public sealed partial class Construct
         if (_collider == null || _colliderStale)
         {
             _colliderStale = true;
-            DbgCol[0]++;
             return;
         }
-        if (_colliderSerial != _serialAtRebuild) { DbgCol[1]++; _colliderStale = true; return; }
-        if (_jAdded) { DbgCol[2]++; _colliderStale = true; return; }
-        if (_jMapped && !_collider.Remap(_jMap, _jBase)) { DbgCol[3]++; _colliderStale = true; return; }
-        DbgCol[4]++;
+        if (_colliderSerial != _serialAtRebuild || _jMapped && !_collider.Remap(_jMap, _jBase) || _jAdded && !_collider.AddParts(this, _jSurvivors, PartCount))
+        {
+            _colliderStale = true; // (built at another point of the journal, too many holes, or no room for what came)
+            return;
+        }
         _colliderSerial = _editSerial; // (current again: as of this rebuild)
     }
 
@@ -1006,6 +980,38 @@ public sealed partial class Construct
         public int[] SpecialList = [];
         public List<(int Part, Vector3 C, Vector3 H)>? Leaves;
         public List<int>? Hits;
+        public int TreeMissed;
+    }
+
+    /// <summary>Leaves a box query through each group's tree missed, against a walk over the group's leaves (must be none).</summary>
+    private int ColliderProbe()
+    {
+        var col = Collider;
+        var missed = 0;
+        var rng = new Random(PartCount + 7);
+        var into = new int[col.LeafCount + 8];
+        for (var g = 0; g < col.GroupCount; g++)
+            for (var q = 0; q < 6; q++)
+            {
+                var root = col.Nodes[col.Groups[g].Root];
+                var at = root.Centre + root.Half * new Vector3(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1);
+                var half = new Vector3(1.2f);
+                var n = col.Collect(g, at, half, into);
+                var got = new HashSet<int>(into.Take(n));
+                for (var k = col.Groups[g].First; k < col.Groups[g].First + col.Groups[g].Count; k++)
+                {
+                    ref var l = ref col.Leaves[k];
+                    if (l.Dead || l.Turned)
+                        continue;
+                    var d = Vector3.Abs(l.Centre - at) - l.Half - half;
+                    if (d.X <= 0 && d.Y <= 0 && d.Z <= 0 && !got.Contains(k))
+                        missed++;
+                }
+                foreach (var k in got)
+                    if (col.Leaves[k].Dead)
+                        missed++; // (a hole handed back)
+            }
+        return missed;
     }
 
     private Seen CheckTake()
@@ -1025,7 +1031,10 @@ public sealed partial class Construct
         for (var k = 0; k < WheelCount; k++)
             s.WheelRows[k] = (Wheels[k].Part, Wheels[k].Driven, Wheels[k].Group, Wheels[k].Ratio);
         if (_collider != null && !_colliderStale)
+        {
             s.Leaves = LeafSet();
+            s.TreeMissed = ColliderProbe();
+        }
         s.Hits = TreeProbe();
         return s;
     }
@@ -1038,7 +1047,8 @@ public sealed partial class Construct
             for (var k = col.Groups[g].First; k < col.Groups[g].First + col.Groups[g].Count; k++)
                 if (!col.Leaves[k].Dead)
                     list.Add((col.Leaves[k].Part, col.Leaves[k].Centre, col.Leaves[k].Half));
-        list.Sort((a, b) => a.Item1 != b.Item1 ? a.Item1.CompareTo(b.Item1) : a.Item2.X != b.Item2.X ? a.Item2.X.CompareTo(b.Item2.X) : a.Item2.Y != b.Item2.Y ? a.Item2.Y.CompareTo(b.Item2.Y) : a.Item2.Z.CompareTo(b.Item2.Z));
+        list.Sort((a, b) => a.Item1 != b.Item1 ? a.Item1.CompareTo(b.Item1) : a.Item2.X != b.Item2.X ? a.Item2.X.CompareTo(b.Item2.X) : a.Item2.Y != b.Item2.Y ? a.Item2.Y.CompareTo(b.Item2.Y)
+            : a.Item2.Z != b.Item2.Z ? a.Item2.Z.CompareTo(b.Item2.Z) : a.Item3.X != b.Item3.X ? a.Item3.X.CompareTo(b.Item3.X) : a.Item3.Y != b.Item3.Y ? a.Item3.Y.CompareTo(b.Item3.Y) : a.Item3.Z.CompareTo(b.Item3.Z));
         return list;
     }
 
@@ -1111,8 +1121,13 @@ public sealed partial class Construct
         {
             var full = LeafSet();
             if (a.Leaves.Count != full.Count || a.Leaves.Zip(full).Any(p => p.First.Part != p.Second.Item1 || !NearV(p.First.C, p.Second.Item2, 1e-4f) || !NearV(p.First.H, p.Second.Item3, 1e-4f)))
-                bad.Add($"collider: {a.Leaves.Count} leaves vs {full.Count}");
+            {
+                var at = a.Leaves.Zip(full).Select((p, k) => (p, k)).First(x => x.p.First.Part != x.p.Second.Item1 || !NearV(x.p.First.C, x.p.Second.Item2, 1e-4f) || !NearV(x.p.First.H, x.p.Second.Item3, 1e-4f));
+                bad.Add($"collider: {a.Leaves.Count} leaves vs {full.Count}; at {at.k}: {at.p.First} vs {at.p.Second}");
+            }
         }
+        if (a.TreeMissed > 0)
+            bad.Add($"collider tree: {a.TreeMissed} leaves missed by a query");
         if (a.Hits!.Any(h => h < 0) || !a.Hits!.SequenceEqual(b.Hits!))
             bad.Add($"part tree: {a.Hits!.Count(h => h < 0)} missed");
         if (bad.Count == 0)

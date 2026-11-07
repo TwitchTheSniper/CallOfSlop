@@ -1062,18 +1062,14 @@ public sealed partial class Construct
 
     private void RebuildFull()
     {
-        BenchTmp.Mark(0, null);
         FullRuns++;
         _dirty = false;
         _specialsLive = false; // (made again below, after the merges)
         FinishExtrusions();
-        BenchTmp.Mark(0, "FinishExtrusions");
         RebuildStamp++;
         RideAxes = null; // (its up is worked out again when someone next boards: ConstructRideMove.cs)
         TreeStale();
-        BenchTmp.Mark(0, "TreeStale");
         ConstructMerge.Refresh(this); // (merged receivers first: they scale gun parts)
-        BenchTmp.Mark(0, "ConstructMerge.Refresh");
         FreeformCount = MovingJoints = 0;
         for (var j = 0; j < JointCount; j++)
             if (Joints[j].Freeform)
@@ -1089,60 +1085,34 @@ public sealed partial class Construct
         }
         else
             BuildMass();
-        BenchTmp.Mark(0, "BuildMass");
         BuildSeamLinks();
-        BenchTmp.Mark(0, "BuildSeamLinks");
         BuildRails(); // (stacked linear rails: a joint's limits, so before the reach below)
-        BenchTmp.Mark(0, "BuildRails");
         ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
         BuildSpecials(); // (again: a link it dropped or moved no longer makes its parts special)
-        BenchTmp.Mark(0, "ConstructRoutes.Rebuild");
         ConstructModules.Build(this); // (which seat drives and which turrets it has: before the wheels, which take forward from it)
-        BenchTmp.Mark(0, "ConstructModules.Build");
         ConstructTracks.Rebuild(this); // (before the colliders: a track's wheels are raycast wheels, sprung or not)
-        BenchTmp.Mark(0, "ConstructTracks.Rebuild");
         ColliderChanged();
-        BenchTmp.Mark(0, "ColliderChanged");
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
-        BenchTmp.Mark(0, "Radius = MathF.Max");
         BuildWheels();
-        BenchTmp.Mark(0, "BuildWheels");
         BuildDrivetrain();
-        BenchTmp.Mark(0, "BuildDrivetrain");
         BuildPlants();
-        BenchTmp.Mark(0, "BuildPlants");
         BuildThrusters();
-        BenchTmp.Mark(0, "BuildThrusters");
         ConstructFluid.Build(this);
-        BenchTmp.Mark(0, "ConstructFluid.Build");
         ConstructLift.Build(this);
-        BenchTmp.Mark(0, "ConstructLift.Build");
         ConstructAero.Build(this);
-        BenchTmp.Mark(0, "ConstructAero.Build");
         ConstructRotor.Build(this);
-        BenchTmp.Mark(0, "ConstructRotor.Build");
         ConstructBoost.Build(this);
-        BenchTmp.Mark(0, "ConstructBoost.Build");
         ConstructFlight.Build(this);
-        BenchTmp.Mark(0, "ConstructFlight.Build");
         ConstructOrdnance.Build(this);
-        BenchTmp.Mark(0, "ConstructOrdnance.Build");
         ConstructHydraulics.Build(this);
-        BenchTmp.Mark(0, "ConstructHydraulics.Build");
         ConstructSeal.Build(this);
-        BenchTmp.Mark(0, "ConstructSeal.Build");
         BuildSegments();
-        BenchTmp.Mark(0, "BuildSegments");
         ConstructPower.Rebuild(this);
-        BenchTmp.Mark(0, "ConstructPower.Rebuild");
         StoreNetKey = ConstructBeacons.KeyOf(this);
-        BenchTmp.Mark(0, "StoreNetKey = ConstructBeacons.KeyOf");
         ConstructWeapons.BuildGuns(this);
-        BenchTmp.Mark(0, "ConstructWeapons.BuildGuns");
         CountSpecials();
         BuildFreeChain(); // (frozen pieces and chains: after what anchors it)
         Root = PickRoot();
-        BenchTmp.Mark(0, "Root = PickRoot");
         FinishRebuild();
         JournalReset();
     }
@@ -1734,14 +1704,7 @@ public sealed partial class Construct
     public float FuelCapacity()
     {
         var cap = 0f;
-        if (_dirty)
-        {
-            for (var i = 0; i < PartCount; i++)
-                if (Parts[i].D.Role == PartRole.FuelTank && Parts[i].Working)
-                    cap += Parts[i].D.FuelCapacity;
-            return cap;
-        }
-        foreach (var i in Specials)
+        foreach (var i in Specials) // (tanks are special parts; every part while the list waits for a rebuild)
             if (Parts[i].D.Role == PartRole.FuelTank && Parts[i].Working)
                 cap += Parts[i].D.FuelCapacity;
         return cap;
