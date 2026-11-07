@@ -768,7 +768,16 @@ public sealed partial class Ui
         if (ImGui.BeginTabItem("Tool wheel"u8))
         {
             ImGui.BeginChild("##toolwheel"u8, panel);
-            DrawToolWheelEditor(s);
+            try
+            {
+                DrawToolWheelEditor(s);
+            }
+            catch (Exception ex)
+            {
+                // (never the game's end: ImGui's error recovery closes what was left open, and the lists are made again)
+                Console.WriteLine($"[ui] tool wheel screen: {ex}");
+                _twSeenStamp = -1;
+            }
             ImGui.EndChild();
             ImGui.EndTabItem();
         }

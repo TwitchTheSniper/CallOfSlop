@@ -174,6 +174,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleQualityCli.Diversity(diversityOf, args); // the vehicle kit's quality tools (VehicleQuality.cs): how alike a shape's seeds are, what never varies
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
+        if (args.Any(a => a.Equals("--bench-material", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchMaterial(args); // the material painter: parts of other materials, round trips, a client's requests over RakNet (Source/App/BenchMaterial.cs)
         if (args.Any(a => a.Equals("--bench-fuse-net", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchFuseNet(args); // the fuse tool's requests and units between a host and a client over RakNet (Source/App/BenchFuse.cs)
         if (args.Any(a => a.Equals("--bench-fuse", StringComparison.OrdinalIgnoreCase)))
@@ -1017,7 +1019,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1106,6 +1108,12 @@ public static unsafe partial class Program
             Ui.CloseReplacePicker();
             SetMouseCaptured(true);
             _swallowClick = true;
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.SandboxMaterialPickerOpen)
+        {
+            Ui.CloseSandboxMaterialPicker(); // Esc closes the material painter's list (back to painting)
+            SetMouseCaptured(true);
             return;
         }
         if (key == GlfwKey.Escape && Ui.SandboxTexturePickerOpen)

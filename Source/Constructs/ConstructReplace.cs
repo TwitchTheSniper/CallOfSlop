@@ -231,6 +231,7 @@ public static class ConstructReplace
                     ConstructConfig.Set(ref p, e, s, v);
                 }
         c.TreeStale();
+        c.FuseMassStale(); // (a fused unit holds its members' share of the mass sums: the part's mass changed)
         c.Dirty = true;
         c.Wake();
         world.StructureDirty.Add(c.Id);

@@ -86,6 +86,7 @@ public static unsafe partial class Program
             Ui.CloseSandboxConfig();
             Ui.CloseSandboxPaintPicker();
             Ui.CloseSandboxTexturePicker();
+            Ui.CloseSandboxMaterialPicker();
             if (Ui.WorkbenchOpen)
                 Ui.CloseBench();
             ConstructRender.ClearAim();
@@ -116,6 +117,7 @@ public static unsafe partial class Program
             DrawSandboxTrackInMatch();
             DrawSandboxPaintInMatch();
             DrawSandboxTextureInMatch();
+            DrawSandboxMaterialInMatch();
             DrawToolWheelInMatch();
             DrawNudgeInMatch();
             DrawPhysGunHud();

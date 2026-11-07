@@ -71,6 +71,7 @@ public static class SandboxAim
         public bool Routing; // ... and a link is being routed
         public PaintMode PaintMode;
         public PaintMode TextureMode; // (the texture paint tool's ring)
+        public PaintMode MaterialMode; // (the material painter's ring)
         public bool Creative; // the map has infinite parts (the remover deletes anything there)
         public bool Freeform; // the welder is in freeform mode
         public bool Tying; // the attach tool (the welder) is tying a rope or spring: any point will do, and the part isn't taken off
@@ -142,6 +143,8 @@ public static class SandboxAim
                 return t.Distance <= ConstructBuild.Reach ? Paint(d, t.PaintMode, t.Contested) : AimCall.No;
             case ConstructTool.Texture:
                 return t.Distance <= ConstructBuild.Reach ? Texture(d, t.TextureMode, t.Contested) : AimCall.No;
+            case ConstructTool.Material:
+                return t.Distance <= ConstructBuild.Reach ? Material(d, t.MaterialMode, t.Contested) : AimCall.No;
             case ConstructTool.Fuse:
                 return t.Distance <= ConstructBuild.Reach ? t.Contested == null ? AimCall.Ok : AimCall.Refuse(t.Contested) : AimCall.No; // (any part: a piece, a selection or a unit to un-fuse)
             case ConstructTool.Remover:
@@ -213,6 +216,14 @@ public static class SandboxAim
             return AimCall.No;
         var why = contested ?? configWhy;
         return why == null ? AimCall.Ok : AimCall.Refuse(why);
+    }
+
+    /// <summary>The material painter: a part it can remake (any part, for the whole construct), the contested rule.</summary>
+    public static AimCall Material(ConstructPartDef d, PaintMode mode, string? contested)
+    {
+        if (!PartMaterials.Paintable(d) && mode != PaintMode.Whole)
+            return AimCall.No;
+        return contested == null ? AimCall.Ok : AimCall.Refuse(contested);
     }
 
     /// <summary>The paint tool on a paintable part (any part in the whole-construct mode), refused while contested.</summary>

@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Material Painter",
+  "tool": "material",
+  "display": { "mount": [0.0, 0.018, 0.0] },
+  "description": "Remakes parts in another material: the same shape, new mass, health and armour.",
+  "boxes": [
+    { "size": [0.035, 0.035, 0.14], "at": [0, 0, 0], "color": "#2b2b2e" },
+    { "size": [0.03, 0.03, 0.03], "at": [0, 0, -0.082], "color": "#b8bcc2" },
+    { "size": [0.012, 0.09, 0.012], "at": [0, 0.04, -0.1], "color": "#9aa0a6" },
+    { "size": [0.012, 0.012, 0.09], "at": [0, 0.085, -0.145], "color": "#9aa0a6" },
+    { "size": [0.12, 0.05, 0.05], "at": [0, 0.085, -0.2], "color": "#3d4045" },
+    { "size": [0.03, 0.03, 0.008], "at": [-0.04, 0.085, -0.2275], "color": "#6f7d8c" },
+    { "size": [0.03, 0.03, 0.008], "at": [0, 0.085, -0.2275], "color": "#a9814f" },
+    { "size": [0.03, 0.03, 0.008], "at": [0.04, 0.085, -0.2275], "color": "#9a9a92" }
+  ],
+  "grip": { "at": [0, -0.01, 0.02], "rot": [-12, 0, 0], "shape": "wrap" },
+  "hold": [6, 8, 0],
+  "tip": [0, 0.085, -0.235]
+}

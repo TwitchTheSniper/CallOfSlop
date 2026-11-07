@@ -68,8 +68,11 @@ public sealed partial class Ui
         s.ToolWheel = dflt ? null : _twOn.Select(TwName).ToList();
         s.ToolWheelOff = dflt ? new List<string>() : _twOff.Select(TwName).ToList();
         s.ToolWheelStamp++;
-        s.Save();
+        if (!TwNoSaveTest)
+            s.Save();
     }
+
+    internal bool TwNoSaveTest; // (the self-test changes a Settings of its own and writes nothing)
 
     /// <summary>The screen's body (the Settings tab's, and the window's in a match).</summary>
     public void DrawToolWheelEditor(Settings s)
@@ -98,9 +101,13 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, SandboxToolWheel.EmptyText);
         ImGui.SameLine();
         ImGui.BeginGroup();
-        var changed = false;
+        // A button only notes what it asks for; the lists change after the group is drawn (TwApply), so nothing drawn
+        // later in the frame reads a list that a button has just shortened (the crash: taking off the last tool on the list).
+        var act = TwAct.None;
+        var actAt = -1;
         ImGui.TextColored(Orange, "On the wheel, clockwise from the top"u8);
-        for (var i = 0; i < _twOn.Count; i++)
+        var rows = Math.Min(_twOn.Count, _twPicture.Menu.Items.Length);
+        for (var i = 0; i < rows; i++)
             if (ImGui.Selectable($"{_twPicture.Menu.Items[i].Label}##twon{i}", i == _twSel))
             {
                 _twSel = i;
@@ -109,29 +116,13 @@ public sealed partial class Ui
         var has = _twSel >= 0 && _twSel < _twOn.Count;
         ImGui.BeginDisabled(!has);
         if (ImGui.Button("Take off"u8) && has)
-        {
-            var south = SandboxToolWheel.HandsSouth(_twOn);
-            _twOn.RemoveAt(_twSel);
-            if (south)
-                SandboxToolWheel.TurnHandsSouth(_twOn);
-            changed = true;
-        }
+            act = TwAct.TakeOff;
         ImGui.SameLine();
-        if (ImGui.Button("Move earlier"u8) && has && _twOn.Count > 1)
-        {
-            var to = (_twSel - 1 + _twOn.Count) % _twOn.Count;
-            (_twOn[_twSel], _twOn[to]) = (_twOn[to], _twOn[_twSel]);
-            _twSel = to;
-            changed = true;
-        }
+        if (ImGui.Button("Move earlier"u8) && has)
+            act = TwAct.Earlier;
         ImGui.SameLine();
-        if (ImGui.Button("Move later"u8) && has && _twOn.Count > 1)
-        {
-            var to = (_twSel + 1) % _twOn.Count;
-            (_twOn[_twSel], _twOn[to]) = (_twOn[to], _twOn[_twSel]);
-            _twSel = to;
-            changed = true;
-        }
+        if (ImGui.Button("Move later"u8) && has)
+            act = TwAct.Later;
         ImGui.EndDisabled();
         if (has)
             TwRingOrder(s, _twOn[_twSel]);
@@ -143,11 +134,8 @@ public sealed partial class Ui
         {
             if (ImGui.SmallButton($"Add##twoff{i}"))
             {
-                var south = SandboxToolWheel.HandsSouth(_twOn);
-                _twOn.Add(_twOff[i]);
-                if (south || _twOff[i] == (int)SandboxToolWheel.Slot.Hands && _twOn.Count == 1)
-                    SandboxToolWheel.TurnHandsSouth(_twOn);
-                changed = true;
+                act = TwAct.Add;
+                actAt = i;
             }
             ImGui.SameLine();
             ImGui.Text(_twPicture.ItemLabel(_twOff[i]));
@@ -157,21 +145,68 @@ public sealed partial class Ui
         }
         ImGui.Spacing();
         if (ImGui.Button("Default wheel"u8))
-        {
-            _twOn.Clear();
-            _twOn.AddRange(SandboxToolWheel.DefaultLayout());
-            _twOff.Clear();
-            changed = true;
-        }
+            act = TwAct.Default;
         ImGui.EndGroup();
-        if (!changed)
-            return;
+        TwApply(s, act, actAt);
+    }
+
+    internal enum TwAct { None, TakeOff, Earlier, Later, Add, Default }
+
+    /// <summary>
+    /// One change to the wheel's lists, outside any drawing: <paramref name="act"/> on the selected tool, or (Add) on entry
+    /// <paramref name="offAt"/> of the off list. Anything out of range does nothing. Saves and moves the stamp, so the lists,
+    /// the picture and the reach text are made again on the next frame.
+    /// </summary>
+    internal void TwApply(Settings s, TwAct act, int offAt = -1)
+    {
+        var has = _twSel >= 0 && _twSel < _twOn.Count;
+        switch (act)
+        {
+            case TwAct.TakeOff when has:
+            {
+                var south = SandboxToolWheel.HandsSouth(_twOn);
+                _twOn.RemoveAt(_twSel);
+                if (south)
+                    SandboxToolWheel.TurnHandsSouth(_twOn);
+                _twSel = Math.Min(_twSel, _twOn.Count - 1);
+                break;
+            }
+            case TwAct.Earlier or TwAct.Later when has && _twOn.Count > 1:
+            {
+                var to = (_twSel + (act == TwAct.Earlier ? -1 : 1) + _twOn.Count) % _twOn.Count;
+                (_twOn[_twSel], _twOn[to]) = (_twOn[to], _twOn[_twSel]);
+                _twSel = to;
+                break;
+            }
+            case TwAct.Add when offAt >= 0 && offAt < _twOff.Count && !_twOn.Contains(_twOff[offAt]):
+            {
+                var south = SandboxToolWheel.HandsSouth(_twOn);
+                var tool = _twOff[offAt];
+                _twOn.Add(tool);
+                if (south || tool == (int)SandboxToolWheel.Slot.Hands && _twOn.Count == 1)
+                    SandboxToolWheel.TurnHandsSouth(_twOn);
+                break;
+            }
+            case TwAct.Default:
+                _twOn.Clear();
+                _twOn.AddRange(SandboxToolWheel.DefaultLayout());
+                _twSel = Math.Min(_twSel, _twOn.Count - 1);
+                break;
+            default:
+                return;
+        }
         _twOff.Clear();
         for (var i = 0; i < (int)SandboxToolWheel.Slot.COUNT; i++)
             if (!_twOn.Contains(i))
                 _twOff.Add(i);
         TwSave(s); // (the stamp moved: the lists, the picture and the reach text are made again next frame)
     }
+
+    /// <summary>For the self-test: the lists as the screen holds them, and a pick on the on list.</summary>
+    internal IReadOnlyList<int> TwOnTest => _twOn;
+    internal IReadOnlyList<int> TwOffTest => _twOff;
+    internal void TwSelectTest(int i) => _twSel = i;
+    internal void TwLoadTest(Settings s) => TwLoad(s);
 
     /// <summary>The picked tool's outer ring, in order, and the buttons that change it. A player's order is saved by label; the default order isn't saved.</summary>
     private void TwRingOrder(Settings s, int slot)

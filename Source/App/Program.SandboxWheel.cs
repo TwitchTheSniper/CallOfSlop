@@ -45,6 +45,8 @@ public static partial class Program
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Paint, _paintWheel); // (the paint tool's: modes, swatches, custom, recent colours; board item pp01)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Texture) == null)
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Texture, _textureWheel); // (the texture paint tool's: modes, the list, recent textures)
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Material) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Material, _materialWheel); // (the material painter's: modes, the list, recent materials)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Nudge) == null)
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Nudge, _nudgeModes); // (move, or rotate snapped or free: Program.SandboxNudge.cs)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.GroundDrill) == null)

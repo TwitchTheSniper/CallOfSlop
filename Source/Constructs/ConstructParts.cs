@@ -221,6 +221,7 @@ public enum ConstructTool : byte
     Nudge = 14, // the Nudge tool (ConstructNudge.cs, Program.SandboxNudge.cs): moves and turns whole constructs by a triad and arcs; never fits or removes a part
     NoCollide = 15, // the no-collide tool (ConstructNoCollide.cs, Program.SandboxNoCollide.cs): two pieces stop colliding, or collide again; never fits or removes a part
     Texture = 16, // the texture paint tool (ConstructFinish.cs): puts a material on parts; never fits or removes a part
+    Material = 18, // the material painter (PartMaterials.cs, Program.SandboxMaterial.cs): makes parts of another material, the same shape; swaps the part's type in place
     Fuse = 17, // the fuse tool (ConstructFuse.cs, Program.SandboxFuse.cs): fuses parts into one unit and un-fuses them; never fits or removes a part
     PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
 }
@@ -235,7 +236,7 @@ public static class ConstructToolWire
     public static ConstructTool Current(ConstructTool t) => t == ConstructTool.Wrench ? ConstructTool.Welder : t;
 
     /// <summary>A tool from the wire (anything unknown: none; the retired wrench byte: the attach tool).</summary>
-    public static ConstructTool From(byte b) => b == (byte)ConstructTool.Wrench ? ConstructTool.Welder : b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks or (byte)ConstructTool.Nudge or (byte)ConstructTool.NoCollide or (byte)ConstructTool.Texture or (byte)ConstructTool.Fuse ? (ConstructTool)b : ConstructTool.None;
+    public static ConstructTool From(byte b) => b == (byte)ConstructTool.Wrench ? ConstructTool.Welder : b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks or (byte)ConstructTool.Nudge or (byte)ConstructTool.NoCollide or (byte)ConstructTool.Texture or (byte)ConstructTool.Fuse or (byte)ConstructTool.Material ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -392,6 +393,9 @@ public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketK
 /// <summary>One part type, from a JSON file in Constructs/Parts (loaded by <see cref="ConstructParts"/>).</summary>
 public sealed class ConstructPartDef
 {
+    /// <summary>A copy sharing every array (the material painter's parts: PartMaterials.cs replaces what differs).</summary>
+    internal ConstructPartDef ShallowCopy() => (ConstructPartDef)MemberwiseClone();
+
     public ushort Id; // index in ConstructParts.All (the wire id: two bytes since the routed links, 2026-10-30)
     public string Name = "";
     public string File = "";
@@ -621,7 +625,9 @@ public sealed class ConstructPartDef
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
     public ExtrusionKey ExKey; // ...what it is
     public bool IsOrdnance; // a modular bomb or missile off an Ordnance Bench (OrdnanceDesign.cs): its Name is its key, its id this machine's own
-    public bool RuntimeMade => IsExtrusion || IsOrdnance || IsRackRuntime; // (never on the wire or in a hash by id)
+    public bool RuntimeMade => IsExtrusion || IsOrdnance || IsRackRuntime || MatBase != null; // (never on the wire or in a hash by id)
+    public ConstructPartDef? MatBase; // a part the material painter made of another material (PartMaterials.cs): the part file's own def. Its Name is its key, its id this machine's own
+    public string MatName = ""; // ...the bulk material it is made of (a name in Recycling.json; its Material is that row's salvage class)
     public OrdSectionDef? Ord; // "ordnance": a section of a modular bomb or missile
     public float RackLoad; // a Bomb Rack's rated load, kg (ConstructOrdnance.cs)
     public bool RackRail; // ...a launch rail: what it lets go leaves forward along it, a missile under its own thrust (OrdnanceFlight.cs)
@@ -1089,6 +1095,8 @@ public static partial class ConstructParts
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)
         if (_byName.Value.TryGetValue(name, out var hit) && hit.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
             return hit; // (a blueprint names a part a step: a lookup, not a walk over every part)
+        if (PartMaterials.Parse(name) is { } remade)
+            return remade; // (a part of another material names itself: "Plate Steel 0.5 m (wood)")
         foreach (var d in All)
             if (d.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 return d;
@@ -1235,7 +1243,7 @@ public static partial class ConstructParts
         // "wrench", or left out: an item unless it is heavy or bulky). The wrench is gone from the game and the attach tool fits
         // both, but the value keeps its meaning, so 533 part files and the generators stay as they are.
         var hint = Opt(root, "tool") is { } th ? EnumOf<ConstructTool>(Str(th, file, "tool"), file, "tool") : ConstructTool.Wrench;
-        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill or ConstructTool.Selector or ConstructTool.Tracks or ConstructTool.Nudge or ConstructTool.NoCollide or ConstructTool.Texture or ConstructTool.Fuse)
+        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill or ConstructTool.Selector or ConstructTool.Tracks or ConstructTool.Nudge or ConstructTool.NoCollide or ConstructTool.Texture or ConstructTool.Fuse or ConstructTool.Material)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");

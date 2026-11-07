@@ -35,6 +35,8 @@ internal static class PlainParts
     /// <summary>Is this part type plain structure? Cached by type (a reloaded file is looked at again).</summary>
     public static bool Of(ConstructPartDef d)
     {
+        if (d.MatBase is { } b)
+            return Of(b); // (a part of another material differs from its file part only in structural fields: PartMaterials.cs)
         if (d.Id >= ConstructParts.MaxTypes)
             return false; // (a run-time part: an extrusion, a design)
         if (!ReferenceEquals(Volatile.Read(ref _seen[d.Id]), d))

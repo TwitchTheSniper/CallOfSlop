@@ -265,6 +265,28 @@ public static unsafe partial class Program
                     fused.Rebuild();
                 Console.WriteLine($"[smoke] {label}: fuse tool: {fused.UnitCount} unit, {fused.FusedParts} of {fused.PartCount} parts fused, {fused.Collider.LeafCount} collider leaves");
             }
+            if (g.IsServer && _smokeBig is { } remade && g.Local is { } who && PartMaterials.IndexOf("wood") is var wood and >= 0)
+            {
+                // The material painter (PartMaterials.cs): the fused row remade in wood and back, as ConstructEdits.Rematerial does,
+                // so the run-time parts' looks, the rebuild and the fused unit's mass sums run in a real window.
+                ref var hand = ref g.SandboxHands.Hand(who.Id);
+                var was = hand.Tool;
+                hand.Tool = ConstructTool.Material;
+                var m0 = remade.Mass;
+                var eye = remade.WorldCom + new System.Numerics.Vector3(0, 2, 0);
+                var why = g.SandboxHands.Rematerial(g.Constructs, who.Id, eye, remade.Id, PaintMode.Whole, 0, wood);
+                remade.Rebuild();
+                var m1 = remade.Mass;
+                var woodParts = 0;
+                for (var i = 0; i < remade.PartCount; i++)
+                    if (remade.DefOf(i).MatName == "wood")
+                        woodParts++;
+                var back = g.SandboxHands.Rematerial(g.Constructs, who.Id, eye, remade.Id, PaintMode.Whole, 0, PartMaterials.IndexOf("steel")); // (its own material: the file part again)
+                remade.Rebuild();
+                hand.Tool = was;
+                Console.WriteLine($"[smoke] {label}: material painter: {woodParts} of {remade.PartCount} parts made of wood ({why ?? "ok"}), mass {m0:0} kg, in wood {m1:0} kg, back {remade.Mass:0} kg ({back ?? "ok"}), {remade.FusedParts} parts still fused");
+                _materialWheel.WantList = true;
+            }
             if (g.IsServer)
                 g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Fuse); // (its model and screen drawn in the hands)
             _smokeScript = 3;

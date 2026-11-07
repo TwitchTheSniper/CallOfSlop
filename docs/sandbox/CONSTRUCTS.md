@@ -175,7 +175,8 @@ The wheel is the player's: **Settings > Tool wheel**, or in a match the Reload k
 - **Nothing is lost.** Every wheel tool has a tile in the Tab inventory's Tools tab (Hands too: `Constructs/Tools/Hands.json`, whose model is only that tile, since hands are never drawn as a tool); the Attach tool and the linking tool keep their keys. The guns on Hands' outer ring keep their number keys.
 - **Any number works**, none to all. An empty wheel doesn't open: a tap of its key still does what a tap does, and held it says where the wheel is set. Odd counts tilt as ever (`RadialMenu.Tilt`), so segment n / 2 hangs straight down on any wheel.
 - **Hands stays at the bottom**: taking a tool off or adding one turns the wheel to keep Hands south, if it was. Moving Hands yourself is allowed, and then it stays where you put it.
-- **Every tool can sit on it.** The Selector isn't on the default wheel: it is on the Off the wheel list to add, and a slot past `SandboxToolWheel.DefaultTools` joins a wheel only when you add it.
+- **Every tool can sit on it.** The Selector and the [material painter](#the-material-painter) aren't on the default wheel: they are on the Off the wheel list to add, and a slot past `SandboxToolWheel.DefaultTools` joins a wheel only when you add it. Any tool the settings don't name, new since they were saved, shows on the wheel (a default wheel's tool) or on the Off list (any other): never neither.
+- **A change is made after the screen is drawn** (`Ui.TwApply`): a button only notes what it asks for, so nothing later in the frame reads a list it has just shortened (2026-11-07: taking the last tool on the list off closed the game). The settings tab also catches and logs anything the screen throws; "Tool wheel settings" (`SelfTestToolWheelSettings.cs`) takes off, adds and moves every tool from several saved wheels.
 - **Each tool's outer ring** is yours too: pick a tool on the list and its options show in order, with Move earlier, Move later and Default order. That order is what the ring draws and picks from (`SetOrder`, `tool_wheel_order`, by option label); labels it doesn't know are dropped, and options it doesn't name land at the end. A default order keeps the default in the middle of its arc; yours is as you set it. The options aren't hidden or removed.
 - **Tools that used to be ring options** join a saved wheel like any new tool; a saved ring order that names one simply drops the label.
 - **Saved** in settings.txt (`tool_wheel`, `tool_wheel_off`, by slot name; `tool_wheel=default` follows the game's default). A default wheel's tool in neither list is new since you saved, so it joins the wheel: taking a tool off is remembered, and a tool the game adds later isn't hidden. This PC only: nothing on the wire.
@@ -5394,6 +5395,73 @@ server), `GameSandboxTexture.cs` (the request), `Program.SandboxTexture.cs` (inp
 - An explicit texture wins over the row paint would choose: chrome painted red stays chrome-shiny under a red tint.
 - The no-collide tool moved from the north-north-west to the south-south-east to keep hands due south on a twelve-segment wheel.
 - The recent textures are not saved between sessions.
+## The material painter
+
+User request (2026-11-07): "to complement the texture painter, add a material painter as well". The texture paint tool changes how
+a part **looks** (a shared surface, `CPart.Finish`); the material painter changes what it **is made of**: a steel plate becomes a
+wooden or a stone plate of the same shape, lighter or heavier, weaker or stronger, salvaging as wood or stone, drawn in that
+material. `ConstructTool.Material`, byte 18; model `Constructs/Tools/MaterialPainter.json`. Code: `PartMaterials.cs` (the parts
+and the wire), `ConstructEditsMaterial.cs` (the server), `GameSandboxMaterial.cs` (the request), `Program.SandboxMaterial.cs`
+(input), `SandboxMaterialWheel.cs` (its ring), `UiSandboxMaterial.cs` (the list), `BenchMaterial.cs` (`--bench-material`).
+
+- **What a material is.** A part file's `"material"` (steel, wood, stone, concrete...) was already the part's physical material: it
+  picks the salvage class (Recycling.json), the build sounds, whether it burns and its surface rules; mass, health and armour are
+  the file's own numbers. A material's physical numbers already existed for extrusions: `Constructs/Extrusion.json`'s
+  `"materials"`, per cubic metre (`unitsPerM3` times Recycling.json's `kgPerUnit` is its density, `healthPerM3`, `armourPerCm` up
+  to `maxArmour`, `class` for salvage). The painter uses those rows: no second table.
+- **Which materials, which parts**: Extrusion.json's `"painter"`: `"materials"` (steel, metal, bronze, copper, wood, planks, laminate,
+  stone, concrete; each a row of `"materials"`) and `"roles"` (frame, panel, foundation). A part can be remade when its role is
+  listed and its own material is a listed row; never glass, a bomb, a material bundle, a core, a joint, or a part a machine made
+  (an extrusion, a design, a rack): 1,008 of 2,211 part types today. A material Recycling.json doesn't have isn't offered.
+- **The part it becomes** is a run-time type (`PartMaterials.Variant`), made the first time it is asked for, as an extrusion is:
+  a copy of the file part with the same boxes and sockets, its mass, health and armour scaled by the two rows (mass by density,
+  health by `healthPerM3`, armour by `armourPerCm`, at most the new row's `maxArmour`), `Material` the new row's class, its plain
+  boxes in the material's colour (Recycling.json's `"colours"`) and surface (`SurfaceRules.OfBulk`; bolts, trim and glass keep
+  theirs). Remade in its own material it is the file part again (**Own material** on the ring). Always physics-only (never an item:
+  an inventory or a store would have to carry its key). It counts as plain structure when its file part does (journalled
+  rebuilds, fused units' rough shapes). A steel plate of 0.5 m (5 kg, 70 hp, armour 20) is 1.4 kg, 25 hp, armour 0.7 in wood,
+  7.5 kg, 42 hp, armour 6.7 in concrete (`--bench-material` prints every material).
+- **The swap** (`ConstructEdits.Rematerial`): the part's type changes in place. The two types have the same boxes and sockets, so
+  its index, place, links, wires, settings, paint, texture and fuse tag stay and its health keeps its share. The body is rebuilt
+  once (a full rebuild: the journal can't say a type changed), a fused unit sums its mass again (`FuseMassStale`; the Replacer
+  does that now too), and the body goes to the clients again (`StructureDirty`), so merged meshes rebuild with the new looks.
+- **Keys**: **LMB** remakes the part under the crosshair in the material in hand; **hold LMB and sweep** for each part passed over,
+  once per stroke (`PaintStroke`); **RMB** picks up what the aimed part is made of; **R** opens the list. The look line says what
+  the part is made of, or why it can't be remade.
+- **The list** (R, or "Materials..." on the ring): each material with its swatch, density, health and armour a cm (and at most),
+  what it salvages as, and for the part last aimed at what it would become (mass, health, armour, the units it takes). Click one
+  to take it; Close or Esc leaves it.
+- **The ring** (`SandboxMaterialWheel`): **Part** (the default), **Whole construct** (every part that can be; in survival the first
+  click asks for a second within four seconds), **Own material**, **Materials...** and **Recent materials** (the last eight, as the
+  third tier, each a swatch).
+- **Cost**: creative is free. In survival a part takes its mass in units of the new material (mass over `kgPerUnit`, rounded up)
+  out of what the player carries (`SandboxInventory`, as the ground drill's fill does), and gives back what the old part would
+  salvage for at the Recycler (`RecyclingTable.YieldOf`), so remaking is never better than recycling. Not enough: "not enough
+  wood: a Plate Steel 0.5 m (wood) takes 2, you carry 1". The whole construct is all or nothing. A beacon network's bins aren't
+  drawn on yet.
+- **Rules**: the tool out, no seat, the reach, decision 19's contested-construct check, and nobody else driving it.
+- **By name, never a number.** A remade part's name is its key: "Plate Steel 0.5 m (wood)" (`PartMaterials.KeyOf`).
+  `ConstructParts.Find` reads it, so world saves and blueprints keep it as any part name, and copy and paste keep the type. On
+  the wire it goes in a Full as a run-time part (after `Extrusion.WireMark`, kind 246): the file part's id and the material's
+  name as ASCII bytes. A name this build doesn't offer reads as the file part.
+- **Network (protocol 194)**: tool byte 18, `CActKind.Material` (construct, mode, part, the material's name) at the end of
+  `CActKind`, and the Full's run-time part kind. Nothing allocates while aiming; the look line is made when the aim changes.
+- **The tool wheel**: its own slot (`SandboxToolWheel.Slot.Material`), off the default wheel as the Selector is (a fourteenth
+  segment would move every tool off its compass point): add it in Settings > Tool wheel, or take it from Tab > Tools.
+- Tried by hand (2026-11-07): `--bench-material 120 3` (a host and a client over RakNet, 120 ms and 3% loss on the client: one
+  part, a swept row, Own material and the whole sheet agree on both; blueprint, Full and world save round trips keep every
+  part's name; the survival cost, a refusal and the salvage back); the smoke test remakes its fused row of 80 parts in wood
+  (19,200 kg to 5,376 kg) and back, with the unit still whole.
+
+### Choices made (the developer may change them)
+
+- Off the default wheel (see above). R opens the list, RMB is the eyedropper, as with the texture paint tool.
+- Remade parts are physics-only, so a plank that was an item becomes a welded piece once remade.
+- Survival pays from what the player carries only, and refunds at the Recycler's rate (no exploit, at some loss).
+- Glass is not offered (a pane is blended and drawn apart), nor rubber or cloth (no row in `"materials"`).
+- A part keeps its texture (`Finish`) and paint when remade: the texture paint tool still decides how it looks if it has one.
+- The recent materials are not saved between sessions.
+
 ## The remover tool (board item rt01)
 
 The developer's request (2026-10-31). A red-banded eraser on the tool wheel's south-west segment (it took the scanner's place:
