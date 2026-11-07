@@ -61,11 +61,11 @@ public sealed partial class Vehicle
     }
 
     /// <summary>A gun on a side: a Gun Sponson on <paramref name="on"/>'s waist socket, a turntable and the gun on it. <paramref name="seat"/> works it from inside.</summary>
-    public Vehicle SideGun(VPart on, float side, VPart? seat = null)
+    public Vehicle SideGun(VPart on, float side, VPart? seat = null, WeaponOption? weapon = null)
     {
         var sponson = Onto(on, side > 0 ? "+x0" : "-x0", "Gun Sponson", "back", 0);
         PanelList("sponsons").Add(sponson);
-        return Turret(sponson, seat: seat);
+        return Turret(sponson, weapon, seat: seat);
     }
 
     /// <summary>Faceted boxes hung on the free waist sockets of some bays: a broken flank.</summary>

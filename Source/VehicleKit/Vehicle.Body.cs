@@ -316,6 +316,31 @@ public sealed partial class Vehicle
         return Wall("grille", -Vector3.UnitZ, -2.05f, -0.625f, 0.625f, y - 0.42f, 0.5f, "grille");
     }
 
+    /// <summary>
+    /// What the check calls stability, on the vehicle as built so far: half the wheels' track over the centre of mass's height above the lowest tyre's foot
+    /// (VehicleChecks; the check measures it on the spawned body, a little lower on its springs).
+    /// </summary>
+    public float Stability()
+    {
+        C.Rebuild();
+        float left = 0, right = 0, ground = float.MaxValue;
+        for (var k = 0; k < C.WheelCount; k++)
+        {
+            ref var wh = ref C.Wheels[k];
+            (left, right) = (MathF.Min(left, wh.Centre.X), MathF.Max(right, wh.Centre.X));
+            ground = MathF.Min(ground, wh.Centre.Y - wh.Travel * 0.5f - wh.Radius);
+        }
+        return C.WheelCount == 0 ? 0 : (right - left) * 0.5f / MathF.Max(0.1f, C.Com.Y - ground);
+    }
+
+    /// <summary>How much of its bounding box the body fills from the side and from above, as the check's silhouette rule measures it (<see cref="VehiclePlan.Outline"/>).</summary>
+    public (float Side, float Top) Fill()
+    {
+        C.Rebuild();
+        var (side, top, _) = VehiclePlan.Outline(C);
+        return (side, top);
+    }
+
     /// <summary>Every part's name, for <see cref="VehicleVariety"/>.</summary>
     public IEnumerable<string> PartNames() => Enumerable.Range(0, C.PartCount).Select(i => C.DefOf(i).Name);
 

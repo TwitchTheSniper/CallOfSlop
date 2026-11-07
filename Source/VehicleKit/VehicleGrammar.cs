@@ -88,8 +88,10 @@ public static class ShapeGrammar
 {
     private const float Under = 0.625f, Edge = 1.125f, Front = 0.2f; // (as HeavyShape: a floor on two-layer sills, the odd eighth nearest 2.25 m wide; a body starts behind the cab)
     private const int Attempts = 4;
+    private const float MinStability = 0.63f; // (HeavyShape's checks want 0.6; a little over, as the built body settles on its springs)
 
     private static readonly string[] FortGears = ["leaf", "hydraulic", "tandem", "six", "stilt"];
+    private static readonly string[] BusGears = ["leaf", "hydraulic", "swing", "wishbone", "tandem", "six", "dually", "crawler"]; // (no stilts: a long tall hull on them rolls)
     private static readonly string[] TankGears = ["leaf", "hydraulic", "tandem", "dually", "six", "stilt"];
 
     private static BodySegment Room(int minBays, int maxBays) => new("room", 3.5f + minBays, 3.5f + maxBays);
@@ -106,7 +108,7 @@ public static class ShapeGrammar
             [("porch", 3), ("porch hitch", 1), ("gun deck", 1.5), ("hitch", 1), ("bare", 1)], 1, 3),
         ["War Bus"] = new("War Bus", "bus", "war bus",
             [new(4, Room(2, 4)), new(1, Room(2, 3), Bed(1.5f, 2f)), new(1, Room(2, 3), GunBed(2f, 2.5f))],
-            [("porch", 3), ("porch hitch", 1), ("gun deck", 2), ("hitch", 1)], 2, 4),
+            [("porch", 3), ("porch hitch", 1), ("gun deck", 2), ("hitch", 1)], 2, 4, BusGears),
         ["Flatbed Fort"] = new("Flatbed Fort", "bunker", "flatbed fort",
             [new(3, GunBed(2f, 3f), Room(0, 0)), new(2, Room(0, 0), GunBed(2f, 3f)), new(1, GunBed(2f, 2.5f), Room(0, 1))],
             [("bare", 2), ("porch", 2), ("porch hitch", 1), ("hitch", 1)], 2, 3, FortGears),
@@ -142,7 +144,7 @@ public static class ShapeGrammar
         new("rear", "hitch", "a tow hitch") { Needs = ["fuel or drum"] },
         new("rear", "bare", "a bare tail") { Needs = ["fuel or drum"] },
         new("under", "stilts", "on stilts") { Weight = 0.5 },
-        new("under", "tub", "on a closed tub") { Needs = ["high floor"] },
+        new("under", "tub", "on a closed tub") { Needs = ["high floor"], Excludes = ["six", "tag axle"] }, // (a tub runs along the rails: a second axle's beams break them)
         new("under", "skirted", "skirted") { Needs = ["high floor", "room"] },
         new("flank", "bare", "flat flanks") { Needs = ["room"] },
         new("flank", "panniers", "panniers") { Needs = ["room"], Weight = 2 },
@@ -172,6 +174,7 @@ public static class ShapeGrammar
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && attempt + 1 < Attempts)
             {
+                if (Environment.GetEnvironmentVariable("VKG_TRACE") != null) Console.WriteLine($"DIAG attempt {attempt}: {ex.Message}"); // DIAG
                 // (the next plan)
             }
         }
@@ -280,11 +283,20 @@ public static class ShapeGrammar
         if (only.Length == 0)
             throw new VehicleKitException("no gear recipe fits every module");
         v.Heavy();
-        p.Gear = v.PickGear(only);
+        if (attempt == 0)
+            p.Gear = v.PickGear(only);
+        else // (a plan again rolls its gear again: one recipe may be what failed, a stilt's height say)
+        {
+            var fits = st.HeavyGear.Where(x => only.Contains(x.Name)).ToArray();
+            p.Gear = d.Fork("gear").Pick(fits.Length > 0 ? fits : throw new VehicleKitException($"style {st.Name} has no gear named {string.Join(", ", only)}"));
+            FactionStyle.Noted("gear", p.Gear.Name);
+        }
         if (p.Gear.Floor >= 0.5f)
             tags.Add("high floor");
         if (p.Gear.Tandem > 0)
             tags.Add("six");
+        if (p.Gear.Tag != null)
+            tags.Add("tag axle");
 
         // Cab and nose: the style's own parts.
         p.Cab = Choose(d.Fork("cab"), st, "cab", tags) ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
@@ -324,7 +336,7 @@ public static class ShapeGrammar
         var shift = p.Segs[0].Kind == "hutch" ? 0.5f : 0.5f * d.Fork("wheelbase").Int(0, p.Segs.Count > 1 || p.End > 5.5f ? 2 : 1); // (a hutch's gun stands where Gun Wagon's frame puts it)
         p.Rails = p.End - Front + 0.25f - shift;
         p.RearAxle = -1.3f + p.Rails;
-        var rearLen = p.Rear.Name is "porch" or "porch hitch" or "gun deck" ? 1.25f : p.Rear.Name == "hitch" ? 0.25f : 0f;
+        var rearLen = p.Rear.Name is "porch" or "porch hitch" ? 1.25f : p.Rear.Name == "gun deck" ? 1.75f : p.Rear.Name == "hitch" ? 0.25f : 0f;
         p.Tail = p.End - p.RearAxle + rearLen;
         var least = p.Gear.Tandem > 0 ? p.Gear.Tandem + 0.75f : p.Gear.Tag != null ? 1.5f : 0.75f;
         if (p.Tail < least)
@@ -336,6 +348,7 @@ public static class ShapeGrammar
         p.Flank = Choose(d.Fork("flank"), st, "flank", tags);
 
         Guns(v, p, d.Fork("guns"));
+        if (Environment.GetEnvironmentVariable("VKG_TRACE") != null) Console.WriteLine($"DIAG plan {attempt}: gear {p.Gear.Name} floor {p.Gear.Floor} rails {p.Rails} " + string.Join(" + ", p.Segs.Select(x => $"{x.Kind}[{x.Z0}-{x.Z1}] {string.Join(",", x.Bays)} roof {string.Join(",", x.RoofBays)} side {x.SideBay} gun {x.Gun}@{x.GunZ}"))); // DIAG
         return p;
     }
 
@@ -394,7 +407,7 @@ public static class ShapeGrammar
                     for (var at = s.Z0 + 0.625f; at + 0.375f <= s.Z1 + 0.01f; at += 0.5f) // (half a metre from the stilts, or in place of one)
                         spots.Add(at);
                     var next = p.Segs.SkipWhile(x => x != s).Skip(1).FirstOrDefault();
-                    foreach (var at in behindRoom ? spots.Where(a => a >= s.Z0 + 1.1f) : spots)
+                    foreach (var at in behindRoom ? spots.Where(a => a >= s.Z0 + 1.6f) /* (an aft gun's seat rides the arm's front end, towards the room) */ : spots)
                     {
                         var gz = RailZ(p, at);
                         if (gz - 0.375f < s.Z0 - 0.01f || gz + 0.375f > s.Z1 + 0.01f || !Clear(p, gz))
@@ -414,7 +427,7 @@ public static class ShapeGrammar
         }
         if (p.Rear.Name == "gun deck") // (a metre and more behind the tag axle, which is at most at the body's end)
         {
-            p.RearGunZ = RailZ(p, p.End + 0.625f);
+            p.RearGunZ = RailZ(p, p.End + 1.125f); // (an aft gun's arm and seat reach forward from its turntable: clear of the room's tail)
             p.RearWeapon = Pick(count, true);
             count++;
         }
@@ -430,7 +443,7 @@ public static class ShapeGrammar
         // The room: the guns it works from inside (roof turrets, a sponson), up to the four belts a magazine feeds.
         var inRoom = Math.Clamp(want - count, count == 0 ? 1 : 0, room.Len >= 5.5f ? 3 : room.Len >= 4.5f ? 2 : 1); // (each is a seat on a wall that loot would take)
         room.Bays = Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f));
-        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => room.Bays[k] == "Door" || room.Bays[k].Split(' ')[1].Contains('T')).ToList(); // (a turret's arm clears a tall roof; on a low one over a low floor it would want a pedestal)
+        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => room.Bays[k] is "Door" or "Bay T" or "Tail T").ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
         var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => room.Bays[k] != "Door").ToList();
         var side = inRoom >= 2 || inRoom == 1 && d.Chance(0.3) ? middle.Count > 0 : false;
         if (side)
@@ -477,6 +490,15 @@ public static class ShapeGrammar
                 ends.Add(slots);
             if (ends.Count > 0) // (a brow, a door and a tail stay flat: the brow and the tail rake its ends)
                 bounds[d.Pick(ends)] = d.Chance(0.6) ? "L" : "N";
+        }
+        // A long room steps twice: one change in six metres of hull still reads as a box from the side.
+        var changes = Enumerable.Range(1, slots).Count(i => bounds[i] != bounds[i - 1]);
+        var free = Enumerable.Range(0, slots + 1).Where(i => i != door && i != door + 1).ToList();
+        for (var tries = 0; changes < (slots >= 3 ? 2 : 1) && free.Count > 0 && tries < 8; tries++)
+        {
+            var i = d.Pick(free);
+            bounds[i] = bounds[i] == "T" ? (d.Chance(0.6) ? "L" : "N") : "T";
+            changes = Enumerable.Range(1, slots).Count(k => bounds[k] != bounds[k - 1]);
         }
         var names = new List<string> { "Brow " + bounds[0] };
         for (var i = 0; i < slots; i++)
@@ -569,7 +591,7 @@ public static class ShapeGrammar
         {
             rearSill = v.Sill(p.RearGunZ, layers: Vehicle.SillsFor(v.FloorY));
             var spot = new Vehicle.Rect(0.375f, 1.375f, p.End + 0.25f, p.End + 1.25f);
-            v.Deck("porch", v.FloorY, new Vehicle.Rect(-Edge, Edge, p.End, p.End + 1.25f), "deck", [new Vehicle.Rect(-0.375f, 0.375f, p.RearGunZ - 0.375f, p.RearGunZ + 0.375f)], whole: p.RearDrum ? [spot] : null);
+            v.Deck("porch", v.FloorY, new Vehicle.Rect(-Edge, Edge, p.End, p.End + 1.5f), "deck", [new Vehicle.Rect(-0.375f, 0.375f, p.RearGunZ - 0.375f, p.RearGunZ + 0.375f)], whole: p.RearDrum ? [spot] : null);
             if (p.RearDrum)
                 v.FuelUnderFloor(v.TankOn(v.Wholes[("porch", spot)], new Vector3(1, 0, spot.Z0 + 0.05f)), 1);
         }
@@ -587,9 +609,12 @@ public static class ShapeGrammar
                 return best;
             }
             foreach (var k in roomSeg.RoofBays)
-                v.Turret(room.Bays[k], WeaponFor(v, dice), seat: Seat(v.CentreOf(room.Bays[k]).Z));
+                v.Turret(room.Bays[k], WeaponFor(v, dice, room.Bays[k], false), seat: Seat(v.CentreOf(room.Bays[k]).Z));
             if (roomSeg.SideBay >= 0)
-                v.SideGun(room.Bays[roomSeg.SideBay], roomSeg.SideSide, Seat(v.CentreOf(room.Bays[roomSeg.SideBay]).Z));
+            {
+                var bay = room.Bays[roomSeg.SideBay];
+                v.SideGun(bay, roomSeg.SideSide, Seat(v.CentreOf(bay).Z), WeaponFor(v, dice, bay, true));
+            }
         }
         var fedGuns = v.Turrets.Select(t => t.Gun).ToArray();
         foreach (var s in p.Segs.Where(s => s.Gun))
@@ -656,10 +681,19 @@ public static class ShapeGrammar
         v.Hood(p.HoodPart, p.NoseParts);
         v.Trim(walls.ToArray());
 
+        // The check holds a heavy vehicle to a stability of 0.6 (half its track over its centre of mass's height): a plan that stacks too much up high is planned again.
+        var stable = v.Stability();
+        if (stable < MinStability)
+            throw new VehicleKitException($"stability {stable:0.00}: too much up high for its track");
+        var (side, top) = v.Fill(); // (and the Silhouette rule's limits, with a margin: a plan that came out a box is planned again)
+        var limits = new VehicleCheckOptions();
+        if (side > limits.MaxSideFill - 0.005f || top > limits.MaxTopFill - 0.005f)
+            throw new VehicleKitException($"it fills {side:P0} of its side box and {top:P0} of its plan box: a box");
+
         Describe(v, p);
     }
 
-    /// <summary>A room's seats at x -0.5 (clear of the door, which is on +x): the front, the back, and a third a metre behind the first.</summary>
+    /// <summary>A room's seats at x -0.5 (clear of the door, which is on +x): the front, the back, and a third a metre ahead of the back one.</summary>
     private static (float X, float Z)[] SeatSpots(Seg s)
     {
         var list = new List<(float, float)>();
@@ -668,7 +702,7 @@ public static class ShapeGrammar
         if (s.SeatCount >= 2)
             list.Add((-0.5f, s.Z1 - 0.875f));
         if (s.SeatCount >= 3)
-            list.Add((-0.5f, s.Z0 + 1.375f)); // (behind the first, clear of the room's middle where a player stands)
+            list.Add((-0.5f, s.Z1 - 1.875f)); // (a metre ahead of the back one: clear of the magazine's reels at the front and of the room's middle, where a player stands)
         return list.ToArray();
     }
 
@@ -676,9 +710,13 @@ public static class ShapeGrammar
     private static Vehicle.Rect DrumSpot(Seg s) => new(0.375f, 1.375f, s.Z1 - 1.25f + (s.Len >= 2f ? 0f : 0.25f), s.Z1 - 0.25f + (s.Len >= 2f ? 0f : 0.25f));
 
     /// <summary>The weapon for a roof or flank gun, from the style's list by the order the guns go on.</summary>
-    private static WeaponOption WeaponFor(Vehicle v, Dice d)
+    private static WeaponOption WeaponFor(Vehicle v, Dice d, VPart mount, bool side)
     {
-        var w = d.Fork("weapon " + v.Turrets.Count).Pick(v.Style.Weapons);
+        // A flame gun on a sponson doesn't follow its gunner's look round (it swings 20 degrees and more off), and a long gun on a roof low and far forward would
+        // want a pedestal over the cab, which a roof has no socket for: the next of the style's guns, in a seeded order.
+        var at = v.CentreOf(mount);
+        var order = d.Fork("weapon " + v.Turrets.Count).Shuffled(v.Style.Weapons);
+        var w = order.FirstOrDefault(x => !(side && x.Box == null) && !((side || at.Y < 1.5f) && at.Z - v.GunReach(x) < 0.25f)) ?? order[0]; // (a sponson hangs low on the waist)
         FactionStyle.Noted("weapon", w.Name);
         return w;
     }

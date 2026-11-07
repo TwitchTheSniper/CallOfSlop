@@ -189,6 +189,9 @@ public sealed partial class Vehicle
             route.AddRange([new(lane, 0.25f, -0.92f), new(-0.42f, 0.25f, -0.92f)]); // (over the rails, under the gearbox, to the left)
         var fuelIn = CentreOf(Engine!) + new Vector3(-0.42f, 0, 0);
         route.AddRange([new(-0.42f, fuelIn.Y, -0.92f), new(-0.42f, fuelIn.Y, CentreOf(Engine!).Z)]);
+        for (var k = 1; k < route.Count; k++) // (a pipe's segment reaches 8 m: a tank further back than that gets a node half way; nothing shorter changes)
+            if (Vector3.Distance(route[k - 1], route[k]) > 8f)
+                route.Insert(k, (route[k - 1] + route[k]) * 0.5f);
         return FuelFrom(tank, route.ToArray());
     }
 }
