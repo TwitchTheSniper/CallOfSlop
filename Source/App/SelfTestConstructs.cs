@@ -647,7 +647,11 @@ public static partial class SelfTest
         }
         var writer = new PacketWriter(16384);
         var cursor = 0;
-        StepConstructs(w, 60, _ => ConstructEdits.DriveInput(car, Buttons.Forward | Buttons.Left, World.TickDt)); // (warm up: JIT, caches)
+        StepConstructs(w, 60, t =>
+        {
+            ConstructEdits.DriveInput(car, Buttons.Forward | Buttons.Left, World.TickDt);
+            ConstructNet.WritePoses(writer, w, (uint)t, ref cursor); // (each body's signal list is filled on its first pose: ConstructNet.Signals)
+        }); // (warm up: JIT, caches)
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var t = 0; t < 120; t++)
