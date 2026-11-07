@@ -219,6 +219,55 @@ The network (`--bench-fuse-net 120 3`: a host and a client over RakNet on one PC
 client's own requests fused a 240-block sheet, un-fused it, fused half of it as a selection, and a row the host shot across
 the fused half split it; each step reached the client's copy within 0.2 s, no packet dropped.
 
+## Massive blasts (branch `feat/ord-mega`, protocol 195)
+
+The Fission, Fusion and Antimatter Warheads (docs/sandbox/CONSTRUCTS.md, "Massive blasts") go off 166, 380 and 612 m
+across at their own length and 25 cm, kilometres more when built wider; the engine holds any blast to 2 km. A blast of
+`MegaRadius` (100 m) or more is a shock front, not a one-tick blast (`Constructs/ConstructMegaBlast.cs`):
+
+- **The front** grows at `MegaFrontSpeed` (340 m/s), faster for the biggest so none takes more than `MegaFrontSeconds`
+  (4 s) to reach its edge. Each tick the players it passed take their share (the game's `MegaFront`, one distance and at
+  most one ray each), and the bodies it reached are walked nearest first: about `MegaPartsPerTick` (800) parts a tick over
+  every massive blast at once, a body at a time (the budget may run over by one body's parts), its broken parts taken out
+  together by `RemoveParts` (one structure rebuild; one by one, a 60-part hull cost 0.1 ms a part and a fusion blast
+  over 300 hulls took 49 ms in one tick). A body wholly inside `MegaVaporiseShare` (half) of the radius is removed at once.
+- **The bodies**: the nearest `MegaMaxBodies` (2,048; `[caps]` past it), sorted once at the start. At most `MaxMegas` (4)
+  at once (`[caps]`); a fifth landing goes off as a plain blast, a fifth set off on its rack waits half a second.
+- **Wrecks**: pieces it cuts off fall as wrecks up to `MegaDebrisMax` (96) a blast, then are gone, and it throws a body
+  at most `MegaShoveMax` (30 m/s): the cost after a blast is the physics of what it threw (the fission row below).
+- **The crater** (`Game/GameSandboxMegaBlast.cs`): at most `MegaCraterMax` (120 m), dug behind the front (it waits
+  until the front is past it) a band of rows a tick, each band at most `MegaDigColumnsPerTick` (3,500) columns: one
+  `DigOp` with its slice and slices (two more bytes; at most 255 bands), logged and sent as any op (17 bytes), so the log
+  takes a 120 m crater in 52 ops and a joiner replays them. At most `MaxMegaDigs` (8) craters wait; a ninth digs a prop
+  bomb's 60 m at once. The first big crater on a map makes its columns (about 48 B each, 6 MB for 120 m); later ones
+  reuse them.
+- **The host's cap**: the lobby's "Biggest blast" (Settings `sandbox_max_blast`: no limit, 1,000, 500, 250 or 100 m)
+  shrinks any blast's radius and its crater with it (`ConstructWorld.CapRadius`).
+- **The look** (`Render/Fx/MegaBlastFx.cs`): at most 4 drawn at once (the oldest gives way), about 140 particle births a
+  sixtieth of a second each for 16 s (the pool's own caps still apply), a full-screen rect, one dynamic light, two sounds.
+
+Measured with `--bench-mega KEY --map "Proving Ground"` (a host and a client over loopback; 300 hulls of 60 Frame
+Blocks out to 202 m, two players; the second of two runs; 2-core box with other agents building), every server tick of
+the blast's life timed:
+
+| Warhead (25 cm, own length) | Server tick median / worst over 5 s | Over 8 ms | The front's walk, worst tick | A crater band, worst | Allocated | Sent to the client | Left |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Before (steady, the same scene) | 1.2 / 1.6 ms | 0 | | | 0 | | 321 bodies |
+| Fission, 166 m, crater 60 m | 2.1 / 7.1 ms | 0 | 0.37 ms | 0.88 ms | 1.1 MB (wrecks made) | 441 KB, worst tick 10 KB | 278 bodies, 9,248 parts |
+| Fusion, 380 m, crater 110 m | 0.43 / 1.9 ms | 0 | 0.23 ms | 0.48 ms | 294 KB | 106 KB, worst tick 2.7 KB | 31 bodies |
+| Antimatter, 612 m, crater 99 m | 0.04 / 3.8 ms | 0 | 0.14 ms | 3.7 ms | 21 KB | 56 KB, worst tick 0.7 KB | 2 bodies |
+| Without a crater (`--no-crater`), antimatter | 0.05 / 1.5 ms | 0 | 0.09 ms | | 16 KB | 35 KB | 2 bodies |
+
+The biggest the engine allows (`Ordnance:B200:...Antimatter Warhead@length=5.4...`, 8.9 km asked, held to 2 km, a 120 m
+crater in 52 bands) on Streamed Terrain over 300 hulls out to 600 m: the front's walk 0.15 ms and a band 0.46 ms at
+worst; the ticks stayed at the scene's own 11 ms (a hundred hulls sliding on its slopes before the blast) until it had
+removed them all, then 0.04 ms. The client applied every band (49 ops), at worst 7 ms of its update in one tick.
+
+Before the crater waited for the front, digging it under the hulls woke them all onto dug ground every tick: 6 to 9 ms
+ticks for half a second. A blast with nothing to walk costs a hundredth of a millisecond a tick. Frames: under llvmpipe
+the effect's particles cost nothing measurable beside the 100 ms frames; its births are 0 bytes (the pool's), checked on
+the 4.6 and 4.1 paths.
+
 ## The inventory
 
 Grouped by class; the rows changed in this audit come first in each group. "What it protects" is the code's own comment
@@ -359,6 +408,14 @@ where it has one. Line numbers are those of this audit.
 | Cost budget | `ShellMaxBodies` | `Constructs/ConstructShells.cs:243` | `256` | bodies one blast reaches (the nearest the broadphase gives | Kept |
 | Cost budget | `ShellMaxAge` | `Constructs/ConstructShells.cs:244` | `90 * World.TickRate` | ticks in the air before it is given up on | Kept |
 | Cost budget | `MaxBlastsPerTick` | `Constructs/ConstructShells.cs:435` | `12` | each sends its own event and walks the broadphase once | Kept |
+| Cost budget | `MegaPartsPerTick` | `Constructs/ConstructMegaBlast.cs:63` | `800` | parts a massive blast's front walks a tick, over all of them | **New** ("Massive blasts" above) |
+| Cost budget | `MegaMaxBodies` | `Constructs/ConstructMegaBlast.cs:62` | `2048` | bodies one massive blast reaches, the nearest | **New** |
+| Cost budget | `MaxMegas` | `Constructs/ConstructMegaBlast.cs:61` | `4` | massive blasts under way at once | **New** |
+| Cost budget | `MegaDebrisMax` | `Constructs/ConstructMegaBlast.cs:65` | `96` | wrecks one massive blast cuts off; past it the pieces are gone | **New** |
+| Cost budget | `MegaMaxRadius` | `Constructs/ConstructMegaBlast.cs:56` | `2000` | m: any blast's radius (a host may set less) | **New** |
+| Cost budget | `MegaCraterMax` | `Constructs/ConstructMegaBlast.cs:59` | `120` | m: a crater's radius (columns of dug ground: memory) | **New** |
+| Cost budget | `MegaDigColumnsPerTick` | `Game/GameSandboxMegaBlast.cs:14` | `3500` | columns a band of a big crater digs (one band a tick) | **New** |
+| Wire width | `DigOp.Slices` | `Maps/TerrainEdits.cs` | `255` | bands of one crater (a byte) | **New**: a 120 m crater is 52 |
 | Cost budget | `MaxMix` | `Constructs/ConstructStorage.cs:44` | `8` | a mixed input's materials (a Foundry's or an Assembler's: ConstructRefining.cs, ConstructAssembling.cs | Kept |
 | Cost budget | `MaxStack` | `Constructs/ConstructStorage.cs:249` | `12` | - | Kept |
 | Cost budget | `MaxBulk` | `Constructs/ConstructStorage.cs:251` | `60000` | - | Kept |

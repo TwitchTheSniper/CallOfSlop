@@ -35,6 +35,16 @@ overhangs, tunnels and caves above caves are all just spans.
 - **Not yet.** Bot nav graphs, foliage, baked decals and baked lighting still see the map as built. A tree on dug ground
   stays where it was, floating over a hole or sunk in a heap, and can still be felled.
 
+## Big craters
+
+A massive blast's crater (docs/sandbox/CONSTRUCTS.md, "Massive blasts"; up to 120 m) is not dug in one op: 120 m is
+about 180,000 columns, tens of milliseconds on the server and on every client at once. The server (`Game.MegaDigTick`)
+waits until the shock front is past it, then digs it a band of the footprint's rows a tick: op k of n (`DigOp.Slice`,
+`Slices`) takes rows `cj0 + rows * k / n` to `cj0 + rows * (k + 1) / n - 1` of the same ball, on flat ground and on each face
+of a planetoid, so every peer digs the same columns in the same order. A band is at most 3,500 columns (about 0.5 ms;
+the first time a map digs its columns, up to 4 ms, making them). On the wire a sliced op's kind byte has 0x80 set and two
+bytes follow, its slice and slices (protocol 195); it is logged and sent like any op, so a joiner replays the bands.
+
 ## Planetoids
 
 A planetoid digs too, with radial columns instead of vertical ones (`Source/Planets/PlanetEdits.cs`, docs/planets/PLANETS.md "Digging"). Game code reaches either ground through `IDigGround` (`Game.DigGround`).
@@ -44,7 +54,8 @@ A planetoid digs too, with radial columns instead of vertical ones (`Source/Plan
 - **Who digs.** In Sandbox, with the lobby's Destruction setting on, on a map with terrain
   (`Game.TerrainDigLive`), a blast digs a crater. That covers grenades, launchers, kill streaks and explosive props
   (`SandboxBlast`), and construct guns' explosive rounds and cook-offs (`BlastTargets`). The crater's radius is 0.4 of the
-  blast's (0.75 to 6 m), and its depth is 0.55 of its radius.
+  blast's (0.75 to 6 m), and its depth is 0.55 of its radius. A bomb's own crater goes to 60 m, a massive blast's to 120 m
+  ([Big craters](#big-craters)).
 - **Drills.** A working Drill Module takes scoops out under its bit (`DrillShaft`, `ConstructDrillShaft.cs`; docs/sandbox/
   CONSTRUCTS.md "Gathering"): at most 6 ops a hole, 1.5 m deep under the surface as built, at most one op a gather step in
   the world, and only up to half of `MaxOps`. Each scoop keeps R(k)^2 = R(k-1)^2 - step^2, so it always meets the one

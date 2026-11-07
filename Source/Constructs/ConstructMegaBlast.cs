@@ -56,7 +56,7 @@ public sealed partial class ConstructWorld
     public const float MegaMaxRadius = 2000f; // m: the engine's cap on any blast (a 20 m wide antimatter design would ask for kilometres more)
     public const float MegaFrontSpeed = 340f; // m/s the front grows at least (arcade: about sound's speed)...
     public const float MegaFrontSeconds = 4f; // ...and faster still for the biggest, so none takes longer than this to reach its edge
-    public const float MegaCraterMax = 120f; // m: the biggest crater a blast digs (memory: about 230,000 columns of dug ground)
+    public const float MegaCraterMax = 120f; // m: the biggest crater a blast digs (memory: about 180,000 columns of dug ground, 48 B each the first time a map digs them)
     public const float MegaShoveMax = 30f; // m/s the most a massive blast throws a body
     public const int MaxMegas = 4; // under way at once; a fifth waits as a plain blast (bounded work, never lost)
     public const int MegaMaxBodies = 2048; // bodies one massive blast reaches, the nearest

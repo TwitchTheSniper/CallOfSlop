@@ -4,10 +4,10 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--bench-mega [KEY] [--bodies N] [--parts P] [--map NAME] [--cap M] [--no-crater] [--once]</c>: what a massive blast costs (docs/perf/LIMITS.md, "Massive blasts").
+/// <c>--bench-mega [KEY] [--bodies N] [--parts P] [--map NAME] [--cap M] [--no-crater] [--shell] [--once]</c>: what a massive blast costs (docs/perf/LIMITS.md, "Massive blasts").
 /// A command-line benchmark, not a self-test section: it fails nothing. A host and one client over the real loopback transport on a Sandbox map
 /// with terrain; N hulls of P Frame Blocks (300 of 60 by default) laid out round the middle, the two players at a few hundred metres; then the
-/// design (by default the biggest the engine allows: an antimatter bomb past the 2 km cap) is set off in the middle. Every server tick of the
+/// design (by default the biggest the engine allows: an antimatter bomb past the 2 km cap) is set off in the middle (shot to pieces where it lies; --shell: landed as from a rack). Every server tick of the
 /// blast's life is stepped by hand and timed (and the client's update beside it): the worst, the median, the ticks over 8 ms, bytes allocated
 /// and bytes sent, then what it did (parts walked, bodies left, crater bands, ops the client applied). Runs twice (the first warms the JIT; --once: one). Prints one line a phase.
 /// </summary>
@@ -133,7 +133,18 @@ public static partial class SelfTest
         var walked0 = w.MegaPartsWalked;
         var dug0 = server.DigOps;
         var cOps0 = client.DigOpsRead;
-        w.DamagePart(bomb, 0, def.Health * 100f, out _);
+        var shown0 = MegaBlastFx.Shown;
+        if (args.Any(a => a.Equals("--shell", StringComparison.OrdinalIgnoreCase)))
+        {
+            // As if it had landed there from a rack (ConstructShells.StartBlast), not set off where it lies.
+            var st = def.OrdStats!;
+            var ch = st.Flight.Charges[0];
+            w.Remove(bomb);
+            if (w.AddShell(new CShell { Kind = ShellKind.Bomb, Pos = centre + new Vector3(0, 0.3f, 0), Prev = centre, Tested = centre, Landed = true, Delay = 1, Blast = ch.Blast, Damage = ch.Damage, Crater = ch.Crater, Design = def, By = 255, Flags = ShellFlags.Designed }) != 0)
+                w.ShellBlastsWaiting++;
+        }
+        else
+            w.DamagePart(bomb, 0, def.Health * 100f, out _);
         var ticks = new List<double>();
         var clientMs = new List<double>();
         var bytesTick = new List<long>();
@@ -141,25 +152,15 @@ public static partial class SelfTest
         var startedAt = -1;
         var over8 = 0;
         var after = 0;
-        var areas = Enum.GetValues<PerfArea>().Where(a => (int)a < Perf.Count).ToArray();
-        var worstAreas = "";
-        var worstSeen = 0.0;
-        Perf.SetOn(true);
         for (var i = 0; i < 20 * World.TickRate; i++)
         {
             var sent = server.Net.BytesSent;
-            Perf.EndFrame();
             var a0 = GC.GetAllocatedBytesForCurrentThread();
             var sw = Stopwatch.StartNew();
             now += dt;
             server.Update(now, dt);
             var ms = sw.Elapsed.TotalMilliseconds;
             var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
-            if (startedAt >= 0 && ms > worstSeen)
-            {
-                worstSeen = ms;
-                worstAreas = string.Join(", ", areas.Where(a => Perf.Depth[(int)a] >= 3 && Perf.OpenFrameMs(a) >= 0.3).OrderByDescending(a => Perf.OpenFrameMs(a)).Take(8).Select(a => $"{a} {Perf.OpenFrameMs(a):0.0}"));
-            }
             sw.Restart();
             client.Update(now, dt);
             clientMs.Add(sw.Elapsed.TotalMilliseconds);
@@ -178,7 +179,6 @@ public static partial class SelfTest
             }
             Thread.Sleep(1);
         }
-        Perf.SetOn(false);
         Pump(server, [client], 1.0, ref now, clock); // (what is still on the wire arrives)
         if (startedAt < 0)
         {
@@ -193,11 +193,11 @@ public static partial class SelfTest
             partsAfter += c.PartCount;
         clientMs.Sort();
         Console.WriteLine($"[mega bench] blast: {ticks.Count} ticks timed ({ticks.Count / (float)World.TickRate:0.0} s); server tick median {sorted[sorted.Count / 2]:0.00} ms, 95th {sorted[(int)(sorted.Count * 0.95)]:0.00} ms, worst {sorted[^1]:0.00} ms (tick {worstAt}), {over8} over 8 ms; sum {ticks.Sum():0} ms");
-        Console.WriteLine($"[mega bench] the worst tick's areas (ms, F9's): {worstAreas}");
         Console.WriteLine($"[mega bench] the first ticks: {string.Join(" ", ticks.Take(12).Select(v => v.ToString("0.0")))} ms");
         Console.WriteLine($"[mega bench] allocated {allocAll / 1024} KB over the blast, worst tick {allocWorst / 1024} KB");
         Console.WriteLine($"[mega bench] sent {(server.Net.BytesSent - sent0) / 1024} KB to the client in all, worst tick {bytesTick.Max() / 1024.0:0.0} KB, {bytesTick.Take(60).Sum() / 1024} KB in the first second");
         Console.WriteLine($"[mega bench] did: {w.MegaPartsWalked - walked0} parts walked, {partsBefore} parts before and {partsAfter} after in {w.Bodies.Count} bodies; {server.MegaDigBands} crater bands, {server.MegaDigColumns} columns dug, {server.DigOps - dug0} ops logged; client applied {client.DigOpsRead - cOps0} ops; players: host {(server.Local?.Alive == true ? "alive" : "dead")}, client {(cp.Alive ? "alive" : "dead")} at 350 m");
+        Console.WriteLine($"[mega bench] effects started: {MegaBlastFx.Shown - shown0} (the host's and the client's, from the ShellLand)");
         Console.WriteLine($"[mega bench] client update: median {clientMs[clientMs.Count / 2]:0.00} ms, worst {clientMs[^1]:0.00} ms");
         Console.WriteLine($"[mega bench] inside the server ticks: the front and walk worst {w.MegaStepWorstMs:0.00} ms a tick, a crater band worst {server.MegaDigWorstMs:0.00} ms; {w.MegaBodiesGone} bodies gone whole");
         t?.Edits.Clear();
