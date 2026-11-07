@@ -66,6 +66,8 @@ public static unsafe partial class Program
         var configs = new List<string> { "all on" };
         if (RenderCaps.Gl46)
             configs.AddRange(RenderCaps.Experiments.Select(e => "no " + e.Name).Append("all off"));
+        if (_benchWorld != null)
+            configs.Add("no merge"); // constructs box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
         var gpu = GlGpuStamps.Create(2);
         _passGpu = GlGpuStamps.Create(BenchPassNames.Length);
         _passOn = true;
@@ -105,15 +107,20 @@ public static unsafe partial class Program
                 var n = new int[nc];
                 var propDraws = new long[nc];
                 var propRuns = new long[nc];
+                var drawCalls = new long[nc];
+                var dLoop = new double[nc];
+                var dFlush = new double[nc];
                 Gfx.BatchBoxes = Gfx.BatchDraws = 0;
                 for (var f = -10 * nc; f < frames * nc && !_window.ShouldClose; f++) // 10 warm-up frames each (render data is built on the first)
                 {
                     var c = (f % nc + nc) % nc;
                     foreach (var (e, _) in RenderCaps.Experiments)
                         RenderCaps.Force(e, !(configs[c] == "all off" || configs[c] == "no " + e));
+                    ConstructRender.MergeOn = configs[c] != "no merge";
                     Glfw.PollEvents();
                     Native.glFinish();
                     _passMarks = 0;
+                    ConstructRender.DiagLoop = ConstructRender.DiagFlush = 0;
                     var t0 = Stopwatch.GetTimestamp();
                     gpu?.Stamp(0);
                     BenchFrame(map, view.Eye, view.Target, view.Fov, zombies, f / nc);
@@ -166,6 +173,9 @@ public static unsafe partial class Program
                         }
                         passN[c]++;
                     }
+                    drawCalls[c] += _benchConstructDraws; // (the constructs pass's draw calls)
+                    dLoop[c] += ConstructRender.DiagLoop;
+                    dFlush[c] += ConstructRender.DiagFlush;
                     propDraws[c] += PropGfx.LastDraws; // this frame's prop draw calls and visible runs
                     propRuns[c] += PropGfx.LastRuns;
                     var k = c * frames + n[c]++;
@@ -179,7 +189,7 @@ public static unsafe partial class Program
                     var (mc, mf, mg) = (Median(cpu, c * frames, n[c]), Median(full, c * frames, n[c]), Median(gpuMs, c * frames, n[c]));
                     var pd = propDraws[c] / Math.Max(n[c], 1.0);
                     Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                        $"[glbench] {map.Name,-22} {view.Name,-8} {configs[c],-14} cpu {mc,7:0.000}  frame {mf,8:0.000}  gpu {(mg >= 0 ? mg.ToString("0.000", CultureInfo.InvariantCulture) : "n/a"),8}  ({n[c]} frames{(zombies > 0 ? $", {boxes} batched boxes a frame" : "")}{(pd > 0 ? $", props {pd:0.0} draw calls for {propRuns[c] / Math.Max(n[c], 1.0):0.0} runs" : "")})"));
+                        $"[glbench] {map.Name,-22} {view.Name,-8} {configs[c],-14} cpu {mc,7:0.000}  frame {mf,8:0.000}  gpu {(mg >= 0 ? mg.ToString("0.000", CultureInfo.InvariantCulture) : "n/a"),8}  ({n[c]} frames, {drawCalls[c] / Math.Max(n[c], 1.0):0} construct draw calls, DIAG loop {dLoop[c] / Math.Max(n[c], 1):0.000} flush {dFlush[c] / Math.Max(n[c], 1):0.000}{(zombies > 0 ? $", {boxes} batched boxes a frame" : "")}{(pd > 0 ? $", props {pd:0.0} draw calls for {propRuns[c] / Math.Max(n[c], 1.0):0.0} runs" : "")})"));
                     var key = $"{map.Name}|{configs[c]}";
                     totals.TryGetValue(key, out var acc);
                     totals[key] = (acc.Cpu + mc, acc.Full + mf, acc.Gpu + Math.Max(mg, 0), acc.Views + 1);
@@ -199,6 +209,7 @@ public static unsafe partial class Program
             }
         }
         _passOn = false;
+        ConstructRender.MergeOn = true;
         foreach (var (e, _) in RenderCaps.Experiments)
             RenderCaps.Force(e, null);
         foreach (var (key, t) in totals)
@@ -346,6 +357,7 @@ public static unsafe partial class Program
     }
 
     private static ConstructWorld? _benchWorld;
+    private static int _benchConstructDraws;
     private static readonly Dictionary<Construct, Vector3> _benchHome = new();
 
     /// <summary>
@@ -355,8 +367,9 @@ public static unsafe partial class Program
     private static void BuildBenchConstructs(string[] args)
     {
         var names = args.SkipWhile(a => !a.Equals("--bench-bp", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
-        if (names == null)
+        if (names == null && FlagAfter(args, "--bench-capital", 0) <= 0)
             return;
+        names ??= "";
         var copies = Math.Clamp(FlagAfter(args, "--bench-copies", 1), 1, 400);
         _benchWorld = new ConstructWorld();
         var cols = Math.Max(1, (int)MathF.Ceiling(MathF.Sqrt(copies)));
@@ -382,9 +395,26 @@ public static unsafe partial class Program
                 else
                     Console.WriteLine($"[glbench] {name} didn't build: {why}");
         }
+        if (FlagAfter(args, "--bench-capital", 0) is var cap and > 0)
+        {
+            // A capital hull (the self-test's: decks and plates, 300 m long) beside the blueprints.
+            if (SelfTest.CapHull(_benchWorld, new Vector3(0, 2f, -40f), Math.Clamp(cap, 100, 20000), out var why) is { } hull)
+            {
+                hull.Rebuild();
+                parts += hull.PartCount;
+                made++;
+            }
+            else
+                Console.WriteLine($"[glbench] the capital hull didn't build: {why}");
+        }
         var boxes = ConstructParts.All.Sum(d => d.Boxes.Length);
         Console.WriteLine($"[glbench] constructs: {made} bodies, {parts} parts");
-        Console.WriteLine($"[glbench] materials: {ConstructParts.All.Count} part types, {boxes} boxes at {System.Runtime.CompilerServices.Unsafe.SizeOf<CPartBox>()} B a box, {BoxLooks.Count} looks at {System.Runtime.CompilerServices.Unsafe.SizeOf<BoxLooks.Row>()} B a look, {Surfaces.File.Rows.Length} materials ({SurfaceGpu.Bytes} B on the GPU); body batch box {sizeof(Renderer.BodyBox)} B");
+        foreach (var b in _benchWorld.Bodies)
+        {
+            var (mb, walked, shaped) = ConstructRender.BatchCounts(b);
+            Console.WriteLine($"DIAG body {b.PartCount} parts: {mb} merged boxes ({shaped} contoured), {walked} walked: {ConstructRender.WalkedNames(b)}");
+        }
+        Console.WriteLine($"[glbench] materials: {ConstructParts.All.Count} part types, {boxes} boxes at {System.Runtime.CompilerServices.Unsafe.SizeOf<CPartBox>()} B a box, {BoxLooks.Count} looks at {System.Runtime.CompilerServices.Unsafe.SizeOf<BoxLooks.Row>()} B a look, {Surfaces.File.Rows.Length} materials ({SurfaceGpu.Bytes} B on the GPU); merged mesh slot {(Renderer.MergeXformFloats + Renderer.MergeLookFloats) * sizeof(float)} B");
     }
 
     private static void DrawBenchConstructs(Vector3 eye, Vector3 target)
@@ -405,8 +435,10 @@ public static unsafe partial class Program
             c.Rot = c.PrevRot = turn;
         }
         ConstructRender.Now = Glfw.Time;
+        var draws0 = PerfCounters.Draws;
         ConstructRender.Draw(Gfx, _benchWorld, 1f, blendTicks: false);
         ConstructRender.DrawGlass(Gfx, eye);
+        _benchConstructDraws = PerfCounters.Draws - draws0;
         Gfx.SetBlend(false);
         Gfx.SetDepthWrite(true);
         BenchPass(9);

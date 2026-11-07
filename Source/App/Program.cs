@@ -18,6 +18,7 @@ namespace CallOfSlop;
 ///   CallOfSlop join &lt;ip&gt; [port]   join immediately
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
+///   --no-merge                     draw constructs box by box, not as merged meshes (docs/render/MERGED-MESHES.md)
 ///   --zombies-round N              hosting Zombies: runs start at round N (the lobby's Start round, not saved)
 ///   --test-kit                     hosting Zombies: the test kit on maps that allow it (Horde Test; not saved)
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
@@ -245,6 +246,8 @@ public static unsafe partial class Program
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
         _frameCapOff = _smoke || _shotTool || perfShot || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
+        if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();

@@ -223,6 +223,9 @@ public static partial class ConstructRender
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
         gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)
+        var merge = MergeOn && gfx.MergedMeshes; // (static parts as merged meshes: ConstructRenderBatch.cs)
+        BeginMergedFrame();
+        var diagT0 = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var c in world.Bodies)
         {
             if (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0)
@@ -253,8 +256,9 @@ public static partial class ConstructRender
                 lod++;
                 continue;
             }
-            if (c.PartCount >= BatchMinParts && gfx.BodyBatches)
-                n += DrawBatched(gfx, world, c, body, blendTicks ? alpha : 1f);
+            if (merge && DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n))
+            {
+            }
             else
                 for (var i = 0; i < c.PartCount; i++)
                 {
@@ -285,7 +289,11 @@ public static partial class ConstructRender
             gfx.Relative = false;
             n += DrawWheel(gfx, c, alpha, blendTicks); // (from the seat's world pose)
         }
+        var diagT1 = System.Diagnostics.Stopwatch.GetTimestamp();
+        FlushMerged(gfx);
         gfx.EndBatch();
+        DiagLoop += System.Diagnostics.Stopwatch.GetElapsedTime(diagT0, diagT1).TotalMilliseconds;
+        DiagFlush += System.Diagnostics.Stopwatch.GetElapsedTime(diagT1).TotalMilliseconds;
         BatchSweep(gfx, world);
         LastCulled = culled;
         LastLod = lod;
@@ -314,6 +322,7 @@ public static partial class ConstructRender
         LastBoxes = n;
     }
 
+    public static double DiagLoop, DiagFlush;
     private const int FrozenOutlineParts = 24;
 
     private static Matrix4x4 Basis(Vector3 z)
