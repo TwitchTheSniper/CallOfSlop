@@ -23,9 +23,9 @@ The rules every part of a class keeps (the "Capital parts" self-test checks them
   is of one class, its front sockets of another. The socket weld and the freeform weld don't look at classes.
 - Set a part's class with Part(..., cls=CAPITAL): it writes "sizeClass" in the file, and every socket takes that class
   unless Part.sock is given cls=.
-- A part has at most 32 boxes and 64 sockets, and reaches at most 200 m from its origin (ConstructParts.MaxBoxes,
-  MaxSockets, MaxPartReach). Boxes cost draw time and collision work: spend them where they show, and keep a hollow
-  part to its walls.
+- A part has at most 256 boxes and 255 sockets, and reaches at most 200 m from its origin (ConstructParts.MaxBoxes,
+  MaxSockets, MaxPartReach). A static part's boxes are drawn as merged meshes (docs/render/MERGED-MESHES.md), but they
+  still cost collision work and memory: spend them where they show, and keep a hollow part to its walls.
 - The inventory: Part's group defaults to the class's group ("Medium", "Large", "Capital"), the section is the family.
   Small parts stay in the old groups.
 
@@ -179,7 +179,7 @@ class Part:
         return self
 
     def json(self):
-        assert 0 < len(self.boxes) <= 32, (self.d["name"], len(self.boxes))
+        assert 0 < len(self.boxes) <= 256, (self.d["name"], len(self.boxes))
         assert 0 < len(self.sockets) <= 64, (self.d["name"], len(self.sockets))
         assert len(self.d["name"]) <= 32, self.d["name"]
         zfight.resolve(self.boxes, self.sockets)  # no two drawn faces on one plane (CLAUDE.md, "No coplanar faces")

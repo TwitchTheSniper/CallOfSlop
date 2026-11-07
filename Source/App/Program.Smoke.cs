@@ -230,7 +230,7 @@ public static unsafe partial class Program
             Console.WriteLine($"[smoke] {label}: {World.Map.Name}: alive {g.Local?.Alive}, phase {g.Phase}, players {g.Players.Count}, "
                 + $"{(_smokeFrames - _smokeRunFrames) / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}"
                 + (g.SandboxOn && World.Map.Planetoid != null ? $", dug ground: {g.DigOps} ops, {TerrainGfx.PlanetDugStats.MaskedPages} pages masked, {TerrainGfx.PlanetDugStats.Chunks} chunks of blocks drawn ({TerrainGfx.PlanetDugStats.Triangles} triangles)"
-                   : g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles), {ConstructRender.LastBatchBoxes} boxes in batched bodies" : ""));
+                   : g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles), {ConstructRender.LastBatchBoxes} boxes in {ConstructRender.LastMergedChunks} merged mesh chunks" : ""));
             EndSmokeRun(now);
         }
     }

@@ -28,7 +28,7 @@ public static partial class ConstructRender
     public const int MergeMinBoxes = 24;
 
     /// <summary>A chunk's side (metres in its segment's frame) and most boxes; boxes rebuilt a frame at most (one chunk always goes).</summary>
-    public const float MergeCell = 16f;
+    public const float MergeCell = 32f;
     public const int MergeChunkBoxes = 2048, MergeBudgetBoxes = 8192;
     private const int MergeCheckFrames = 4;
 
@@ -54,7 +54,7 @@ public static partial class ConstructRender
     {
         public int Stamp = -1;
         public long Dyn;
-        public int Seen, Draws;
+        public int Seen, Draws, Parts;
         public bool On; // enough static boxes to merge
         public MergeChunk[] Chunks = [];
         public int ChunkCount;
@@ -435,10 +435,11 @@ public static partial class ConstructRender
             _merges[c] = set = new MergeSet();
         set.Seen = _mergeFrame;
         var check = (++set.Draws + c.Id) % MergeCheckFrames == 0; // (counted in its own draws: a camera pass or a frame it is culled in doesn't skip a check)
-        if (set.Stamp != c.RebuildStamp)
+        if (set.Stamp != c.RebuildStamp || set.Parts != c.PartCount) // (parts taken out and not yet rebuilt: the indices moved)
         {
             Plan(gfx, set, c);
             set.Stamp = c.RebuildStamp;
+            set.Parts = c.PartCount;
             set.Dyn = DynKey(c);
         }
         else if (check && DynKey(c) is var dyn && dyn != set.Dyn)

@@ -1947,7 +1947,7 @@ Fitting time grows from x1 to x2.
 
   Fixed at every tier: the rates, bins, power, mass, health, armour, widths, the bit's reach, every socket and port, the trays, and the aisle. A building's height is a range of its width (`TierHeights` in the self-test); a drill's top is always its shaft socket. A big shape is a solid box drawn as a detail shape, the box itself `"hidden"`, so the collider stays boxes. Every machine says `"collider": "boxes"`, so with the compound collider a wedge or cylinder detail stays a look.
   **"Machine tier looks"** checks that tiers of a line differ pairwise in solid shape (cells of its own size) and in colour, that each keeps the line's signature, and that details stay clear of sockets, ports, bins, trays, aisles and the assembler's open front and near the machine.
-  `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 16 m from its origin
+  `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 256 boxes (it was 32 while each box was a draw; static parts are merged meshes now, docs/render/MERGED-MESHES.md), and a box may reach 16 m from its origin
   (`ConstructParts.MaxPartReach`), for the tier 5 stacks. No part animates its work yet: only wheels, joints, dials and pistons move.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
   default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
@@ -3321,11 +3321,12 @@ Nothing grows in a tick.
 - Physics: joints are laid out end to end for the bodies simulated (`LayOutJoints`), not a fixed 255 slots a body. The inertia
   inverts in doubles (a float determinant of a 100,000 t hull's terms is close to overflowing). Spin counts as still by what
   it does at the body's far end, so a slow 300 m hull doesn't fall asleep rolling.
-- Drawing (`Source/Render/ConstructRenderBatch.cs`): a body of 64 parts or more keeps its plain structure as boxes in the
-  body's frame in a GPU buffer, one instanced draw at its pose (`Renderer.DrawBody`, the same box shader with a `uBody`
-  matrix). Only what changes frame to frame or has its own mesh is walked: joints, wheels, logic, glass, burning parts, and
-  plain parts' contoured boxes (one shared mesh draw each). The boxes are remade when the body rebuilds, or a look each half
-  second finds health, paint or fire changed. A big body is never drawn as one far box, and is drawn to 3,000 m.
+- Drawing (`Source/Render/ConstructRenderBatch.cs`, docs/render/MERGED-MESHES.md): every body's static parts (a capital
+  hull's included) are merged meshes, chunks of up to 2,048 boxes 32 m a side per segment on the GPU, one draw for a chunk's
+  plain boxes and one per contoured shape in it, culled chunk by chunk. Only what moves or changes on its own is walked:
+  joints, wheels, rigs, levers, lamps, glass, engines, burning parts and stores. Looks are rewritten alone when health,
+  paint or frost change; an edit rebuilds only the chunks it touched. A big body is never drawn as one far box, and is drawn
+  to 3,000 m.
 - Network ([below](#network-protocol-82-84-for-free-placement-86-for-the-drivetrains-rpm-87-for-glass-shattering-88-for-the-physics-gun)): u16 indices, positions in 3 bytes a coordinate
   (+-83 km on the 1 cm grid), and patches.
 

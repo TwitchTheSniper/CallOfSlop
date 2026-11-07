@@ -108,6 +108,7 @@ public static unsafe partial class Program
                 var propDraws = new long[nc];
                 var propRuns = new long[nc];
                 var drawCalls = new long[nc];
+                var mergedCalls = new long[nc];
                 var dLoop = new double[nc];
                 var dFlush = new double[nc];
                 Gfx.BatchBoxes = Gfx.BatchDraws = 0;
@@ -174,6 +175,7 @@ public static unsafe partial class Program
                         passN[c]++;
                     }
                     drawCalls[c] += _benchConstructDraws; // (the constructs pass's draw calls)
+                    mergedCalls[c] += _benchMergedDraws;
                     dLoop[c] += ConstructRender.LoopMs;
                     dFlush[c] += ConstructRender.FlushMs;
                     propDraws[c] += PropGfx.LastDraws; // this frame's prop draw calls and visible runs
@@ -189,7 +191,7 @@ public static unsafe partial class Program
                     var (mc, mf, mg) = (Median(cpu, c * frames, n[c]), Median(full, c * frames, n[c]), Median(gpuMs, c * frames, n[c]));
                     var pd = propDraws[c] / Math.Max(n[c], 1.0);
                     Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                        $"[glbench] {map.Name,-22} {view.Name,-8} {configs[c],-14} cpu {mc,7:0.000}  frame {mf,8:0.000}  gpu {(mg >= 0 ? mg.ToString("0.000", CultureInfo.InvariantCulture) : "n/a"),8}  ({n[c]} frames, {drawCalls[c] / Math.Max(n[c], 1.0):0} construct draw calls, bodies {dLoop[c] / Math.Max(n[c], 1):0.000} ms + flush {dFlush[c] / Math.Max(n[c], 1):0.000} ms{(zombies > 0 ? $", {boxes} batched boxes a frame" : "")}{(pd > 0 ? $", props {pd:0.0} draw calls for {propRuns[c] / Math.Max(n[c], 1.0):0.0} runs" : "")})"));
+                        $"[glbench] {map.Name,-22} {view.Name,-8} {configs[c],-14} cpu {mc,7:0.000}  frame {mf,8:0.000}  gpu {(mg >= 0 ? mg.ToString("0.000", CultureInfo.InvariantCulture) : "n/a"),8}  ({n[c]} frames, {drawCalls[c] / Math.Max(n[c], 1.0):0} construct draw calls ({mergedCalls[c] / Math.Max(n[c], 1.0):0} merged), bodies {dLoop[c] / Math.Max(n[c], 1):0.000} ms + flush {dFlush[c] / Math.Max(n[c], 1):0.000} ms{(zombies > 0 ? $", {boxes} batched boxes a frame" : "")}{(pd > 0 ? $", props {pd:0.0} draw calls for {propRuns[c] / Math.Max(n[c], 1.0):0.0} runs" : "")})"));
                     var key = $"{map.Name}|{configs[c]}";
                     totals.TryGetValue(key, out var acc);
                     totals[key] = (acc.Cpu + mc, acc.Full + mf, acc.Gpu + Math.Max(mg, 0), acc.Views + 1);
@@ -213,7 +215,7 @@ public static unsafe partial class Program
         if (_benchWorld != null)
         {
             var (mb, mc, ms, mbytes) = ConstructRender.MergedStats();
-            Console.WriteLine($"[glbench] merged meshes: {mb} bodies, {mc} chunks, {ms} box slots, {mbytes / 1024} KB on the GPU ({_benchWorld.Bodies.Sum(c => c.PartCount)} parts now)");
+            Console.WriteLine($"[glbench] merged meshes: {mb} bodies, {mc} chunks, {ms} box slots, {mbytes / 1024} KB on the GPU ({_benchWorld.Bodies.Sum(c => c.PartCount)} parts now); most allocated by the constructs pass in a steady frame: {_benchConstructAlloc} B");
         }
         foreach (var (e, _) in RenderCaps.Experiments)
             RenderCaps.Force(e, null);
@@ -363,7 +365,8 @@ public static unsafe partial class Program
     }
 
     private static ConstructWorld? _benchWorld;
-    private static int _benchConstructDraws;
+    private static int _benchConstructDraws, _benchMergedDraws;
+    private static long _benchConstructAlloc;
     private static readonly Dictionary<Construct, Vector3> _benchHome = new();
 
     /// <summary>
@@ -472,9 +475,14 @@ public static unsafe partial class Program
         }
         ConstructRender.Now = Glfw.Time;
         var draws0 = PerfCounters.Draws;
+        Gfx.MergedDraws = 0;
+        var alloc0 = GC.GetAllocatedBytesForCurrentThread();
         ConstructRender.Draw(Gfx, _benchWorld, 1f, blendTicks: false);
+        if (frame > 2 && (frame < 0 || frame >= _benchEdit))
+            _benchConstructAlloc = Math.Max(_benchConstructAlloc, GC.GetAllocatedBytesForCurrentThread() - alloc0); // (steady frames: edits allocate, by design)
         ConstructRender.DrawGlass(Gfx, eye);
         _benchConstructDraws = PerfCounters.Draws - draws0;
+        _benchMergedDraws = Gfx.MergedDraws;
         Gfx.SetBlend(false);
         Gfx.SetDepthWrite(true);
         BenchPass(9);

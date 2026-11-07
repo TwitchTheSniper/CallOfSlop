@@ -256,10 +256,7 @@ public static partial class ConstructRender
                 lod++;
                 continue;
             }
-            if (merge && DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n))
-            {
-            }
-            else
+            if (!merge || !DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n)) // (too few static boxes, or merging off: part by part)
                 for (var i = 0; i < c.PartCount; i++)
                 {
                     n += DrawPart(gfx, world, c, i, body, blendTicks ? alpha : 1f, 1f);
