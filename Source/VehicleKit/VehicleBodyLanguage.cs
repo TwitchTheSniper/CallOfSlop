@@ -290,7 +290,13 @@ public static class BodyReportCli
     private static float Dist(float[] a, float[] b) => FrontProfile.Dist(a, b);
 
     /// <summary>Coplanar faces inside one lofted bay (its own facets against each other), as --check-parts would find in a part file.</summary>
-    private static int OwnFights(ConstructPartDef d) => ZFight.Find(ZFight.Boxes(d)).Count;
+    private static int OwnFights(ConstructPartDef d, out string first)
+    {
+        var boxes = ZFight.Boxes(d);
+        var hits = ZFight.Find(boxes);
+        first = hits.Count > 0 ? ZFight.Describe(boxes, hits[0]) : "";
+        return hits.Count;
+    }
 
     public static int Run(string styleName, string[] args)
     {
@@ -325,10 +331,10 @@ public static class BodyReportCli
                         parts.Add(v.Built.PartCount);
                         foreach (var b in v.Rooms.SelectMany(r => r.Bays))
                         {
-                            if (keys.Add(b.Def.Name) && OwnFights(b.Def) is var own and > 0)
+                            if (keys.Add(b.Def.Name) && OwnFights(b.Def, out var first) is var own and > 0)
                             {
                                 fights += own;
-                                Console.WriteLine($"  {g.Name} {seed}: {own} coplanar pair(s) inside {b.Def.Name}");
+                                Console.WriteLine($"  {g.Name} {seed}: {own} coplanar pair(s) inside {b.Def.Name}: {first}");
                             }
                             if (HullLoft.ShapeOf(b.Def.Name) is { } sh)
                             {

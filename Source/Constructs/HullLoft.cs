@@ -347,6 +347,13 @@ public static class HullLoft
 
     private static Vector3 Off(Vector2 m, float s) => new(s * m.X, m.Y, 0);
 
+    /// <summary>The ridge of a pitched roof: the mitre of a half's last row and its mirror, straight up (x 0), so both halves' offsets meet there.</summary>
+    private static Vector2 Ridge(Vector2 p0, Vector2 p1)
+    {
+        var n = RowNormal(p0, p1);
+        return new Vector2(0, 1 / MathF.Max(0.3f, n.Y)); // (at most 3.3 times the thickness, as Mitre)
+    }
+
     /// <summary>A door bay's +x side: the cant over the doorway starts at the doorway's top, so the mitres there and where it meets the next row are its own.</summary>
     private static Vector2[] DoorMitres(Section s, Vector2[] own)
     {
@@ -395,10 +402,7 @@ public static class HullLoft
                 }
                 var q = new[] { new Vector3(s * a0.X, a0.Y, z0), new Vector3(s * a1.X, a1.Y, z0), new Vector3(s * b1.X, b1.Y, z1), new Vector3(s * b0.X, b0.Y, z1) };
                 if (a1.X == 0 && b1.X == 0)
-                {
-                    (q[1].X, q[2].X) = (-s * 0.01f, -s * 0.01f); // (the two halves of a pitched roof overlap a centimetre at the centreline: a ray straight up the middle meets one)
-                    (oa1, ob1) = (RowNormal(a0, a1), RowNormal(b0, b1));
-                }
+                    (oa1, ob1) = (Ridge(a0, a1), Ridge(b0, b1)); // (a pitched roof's two halves meet on the centreline's plane: the ridge's mitre, so their ends don't overlap there)
                 var n = new Vector3((a1.Y - a0.Y) * s, -(a1.X - a0.X), 0);
                 if (n.LengthSquared() < 1e-6f)
                     continue;
@@ -484,7 +488,8 @@ public static class HullLoft
                 continue; // (a row too flat to stand on its own: the next strip takes it in)
             if (b.Y - from.Y >= 0.012f)
             {
-                p.Facet([new(-from.X, from.Y, z), new(from.X, from.Y, z), new(b.X, b.Y, z), new(-b.X, b.Y, z)], Vector3.UnitZ, Steel, 0.05f);
+                var y0 = from.Y < 0.001f ? 0.003f : from.Y; // (3 mm off the floor: its underside would share the floor's plane with the walls' undersides)
+                p.Facet([new(-from.X, y0, z), new(from.X, y0, z), new(b.X, b.Y, z), new(-b.X, b.Y, z)], Vector3.UnitZ, Steel, 0.05f);
                 var w = MathF.Min(from.X, b.X) - 0.05f;
                 if (w > 0.05f)
                     p.Hide(new Vector3(-w, from.Y, z - 0.03f), new Vector3(w, b.Y, z + 0.03f));
