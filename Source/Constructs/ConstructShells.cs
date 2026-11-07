@@ -331,6 +331,7 @@ public sealed partial class ConstructWorld
     /// <summary>Server, each tick with the guns: shells fly, a third of them look for what they hit, and the next blast goes on.</summary>
     public void StepShells(IWorldQuery query, float dt)
     {
+        StepMegas(dt); // (massive blasts' fronts and walks: ConstructMegaBlast.cs)
         if (ShellCount == 0 && !_blast.Active)
             return;
         FlyShells(dt);
@@ -450,16 +451,23 @@ public sealed partial class ConstructWorld
         Shells[k] = Shells[--ShellCount];
         ShellBlastsWaiting--;
         ShellsLanded++;
+        var look = s.Design?.OrdStats?.Flight.Charges is { } charges && s.Charge < charges.Count ? charges[s.Charge].Look : MegaBlasts.Plain;
         if (s.Design != null)
             OrdnanceFlight.GoOff(this, ref s); // (the next charge of a series, bomblets, mines, warheads, rods)
-        AddFire(new CFireEvent { Kind = CFireKind.ShellLand, Shell = s.Id, At = s.Pos, Radius = s.Blast, Muzzle = (byte)s.Kind });
+        if (s.Blast > 0 && CapRadius(s.Blast) is var capped && capped < s.Blast)
+        {
+            s.Crater *= capped / s.Blast; // (the engine's cap and the host's: the crater shrinks with it, the damage at the middle stays)
+            s.Blast = capped;
+        }
+        var mega = s.Blast >= MegaRadius && s.Damage > 0 && s.Kind != ShellKind.Flare && StartMega(s.Pos, s.Blast, s.Damage, s.Crater, look, s.By, s.Gun, s.GunPart);
+        AddFire(new CFireEvent { Kind = CFireKind.ShellLand, Shell = s.Id, At = s.Pos, Radius = s.Blast, Muzzle = (byte)s.Kind, Ext = look });
         if (s.Kind == ShellKind.Flare)
         {
             FlareCount--;
             return; // (it burnt out)
         }
-        if (s.Damage <= 0)
-            return; // (a dispenser's pop)
+        if (s.Damage <= 0 || mega)
+            return; // (a dispenser's pop; a massive blast goes on in StepMegas)
         var by = Get(s.Gun);
         Targets?.ShellBlast(s.Pos, s.Blast, s.Damage, s.Crater, s.Kind == ShellKind.Incendiary, by, s.GunPart);
         var near = Near(s.Pos, s.Blast + 1f, _blastNear);
@@ -553,5 +561,6 @@ public sealed partial class ConstructWorld
         Drops.Clear();
         StageDrops.Clear();
         _blast = default;
+        ClearMegas();
     }
 }

@@ -236,6 +236,10 @@ HAND = [
     rec("MIRV Bus", 18, 4, m={"steel": 12, "copper": 3}, p={"Control Unit": 1}),
     rec("Rod Bundle", 10, 3, m={"steel": 40}),
     rec("Kinetic Penetrator", 10, 3, m={"steel": 40, "bronze": 4}),
+    # Massive warheads (ordnance_parts.py massive()): the top Assembler, rare materials, minutes of work each.
+    rec("Fission Warhead", 120, 4, m={"steel": 120, "concrete": 40, "gold": 25}, p={"Control Unit": 2, "Circuit Board": 4}),
+    rec("Fusion Warhead", 240, 4, m={"steel": 200, "gold": 40, "hydrogen": 120, "helium": 60}, p={"Control Unit": 3}),
+    rec("Antimatter Warhead", 480, 4, m={"steel": 160, "gold": 60, "levite": 80, "helium": 40}, p={"Levite Core": 2, "Control Unit": 4}),
     rec("Tandem Spacer", 3, 3, m={"steel": 2}),
     rec("Glide Wings", 8, 3, m={"steel": 8, "laminate": 2}),
     rec("Pop-out Wings", 8, 3, m={"steel": 6, "laminate": 1}, p={"Servo Motor": 1}),

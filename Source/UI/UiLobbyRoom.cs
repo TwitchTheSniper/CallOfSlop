@@ -489,6 +489,8 @@ public sealed partial class Ui
     // The host's Sandbox safety caps (board item cl01): choices and their labels, made once.
     private static readonly int[] SbBodyChoices = [1000, 2500, 5000, 10000, 25000, 50000];
     private static readonly string[] SbBodyLabels = SbBodyChoices.Select(n => $"{n:N0} constructs").ToArray();
+    private static readonly int[] SbBlastChoices = [0, 1000, 500, 250, 100];
+    private static readonly string[] SbBlastLabels = SbBlastChoices.Select(n => n == 0 ? "No limit (2 km)" : $"{n} m").ToArray();
     private static readonly int[] SbPlayerChoices = [3, 6, 12, 25, 50, 100, 0];
     private static readonly string[] SbPlayerLabels = SbPlayerChoices.Select(n => n == 0 ? "No limit" : $"{n} each").ToArray();
 
@@ -524,6 +526,21 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Sandbox: how many constructs each player may own (wrecks and loose parts don't count). Lower it on a public server."u8);
         game.SetSandboxLimits(s.SandboxMaxBodies, s.SandboxMaxPerPlayer);
+        var xi = Math.Max(0, Array.IndexOf(SbBlastChoices, s.SandboxMaxBlast));
+        ImGui.SetNextItemWidth(240 * _scale);
+        if (ImGui.BeginCombo("Biggest blast##room"u8, SbBlastLabels[xi]))
+        {
+            for (var k = 0; k < SbBlastChoices.Length; k++)
+                if (ImGui.Selectable(SbBlastLabels[k], k == xi))
+                {
+                    s.SandboxMaxBlast = SbBlastChoices[k];
+                    s.Save();
+                }
+            ImGui.EndCombo();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Sandbox: the widest any blast may be. Fission, fusion and antimatter warheads go off hundreds of metres across; a smaller cap keeps them to it (their craters shrink too)."u8);
+        game.SetBlastCap(s.SandboxMaxBlast);
         var together = s.TravelTogether;
         if (ImGui.Checkbox("Travel together##room"u8, ref together))
         {

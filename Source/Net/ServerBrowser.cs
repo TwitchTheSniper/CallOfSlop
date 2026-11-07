@@ -340,7 +340,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 194: vehicle kit phase 9, cargo and spares (VehicleCargo.cs): no message changed; a faction vehicle's saved brief is format 2 (its own cargo, VehicleBrief.Stowed), and a blueprint may stow parts in its containers' slots ("stored", filled on the server at spawn).
     // 195: the material painter (PartMaterials.cs): tool byte 18, CActKind.Material at the end of its enum, and in a Full a part of another material after Extrusion.WireMark (kind 246: its file part's id and the material's name, never a row).
     // 196: lofted hull bays (HullLoft.cs): a run-time part named by its key goes on the wire after Extrusion.WireMark as kind 245 and its name as text.
-    public const byte ProtocolVersion = 196;
+    // 197: massive ordnance (ConstructMegaBlast.cs, docs/sandbox/CONSTRUCTS.md "Massive blasts"): CFireKind.ShellLand ends with the blast's look (u8: 0 plain, 1 fission, 2 fusion, 3 antimatter); a DigOp whose kind byte has 0x80 set is one band of a sliced crater and carries its slice and slices (two u8).
+    public const byte ProtocolVersion = 197;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

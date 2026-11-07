@@ -1,0 +1,119 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fusion Warhead",
+  "description": "Bigger than the big one. A 380 m blast at its own length that flattens a valley and leaves a lake-sized hole. Strictly for capital bombers.",
+  "group": "Weapons",
+  "section": "Ordnance sections",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 3200.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#c8ccc8",
+  "attachSeconds": 1.0,
+  "ordnance": {
+    "slot": "payload",
+    "length": 1.6,
+    "group": "Warheads",
+    "groupOrder": 4,
+    "lengths": {
+      "min": 0.8,
+      "max": 9.6,
+      "step": 0.05,
+      "presets": [
+        1.6,
+        3.2,
+        4.8
+      ]
+    },
+    "kind": "fusion",
+    "payload": 60,
+    "blast": 40000,
+    "damage": 30000,
+    "crater": 0.8
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.8
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.8
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.8
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.8
+      ],
+      "color": "#c8ccc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.1263,
+        -0.1263,
+        -0.4
+      ],
+      "max": [
+        0.1263,
+        0.1263,
+        -0.24
+      ],
+      "color": "#3a4c68",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.16
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.64
+      ],
+      "color": "#2a2c26",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.8
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.8
+      ],
+      "dir": "+z"
+    }
+  ]
+}

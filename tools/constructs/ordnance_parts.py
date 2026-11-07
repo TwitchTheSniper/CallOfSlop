@@ -207,6 +207,20 @@ def stage4():
     ]
 
 
+def massive():
+    """Massive warheads (docs/sandbox/CONSTRUCTS.md, "Massive blasts"): arcade game items with made-up numbers, nothing modelled on anything real.
+    A tiny filling with a huge blast weight puts them on the same curve as every charge, hundreds of metres across; they are heavy for their size,
+    so only big rack stations and big airframes lift them. "kind" picks the blast's look (MegaBlasts.LookOf). Late-game recipes in assembling.py."""
+    return [
+        section("Fission Warhead", "payload", 1.2, 1400, "#c8a020", "The big one. A 166 m blast at its own length: everything near it is gone, everything far off hears it. "
+                "Needs a heavy rack and a long runway.", band=DARK, kind="fission", payload=50, blast=4000, damage=22000, crater=1.0, lengths=WARHEAD),
+        section("Fusion Warhead", "payload", 1.6, 3200, WHITE2, "Bigger than the big one. A 380 m blast at its own length that flattens a valley and leaves a lake-sized hole. "
+                "Strictly for capital bombers.", band=BLUE, ring=True, kind="fusion", payload=60, blast=40000, damage=30000, crater=0.8, lengths=WARHEAD),
+        section("Antimatter Warhead", "payload", 0.9, 2200, "#2c2440", "A few grams of the wrong kind of matter in a very nervous bottle. A 612 m white-violet blast "
+                "at its own length. Do not drop.", band="#9a5cd8", glass=True, kind="antimatter", payload=4, blast=2500000, damage=1200000, crater=0.45, lengths=WARHEAD),
+    ]
+
+
 def rail(name, load, length, mass, desc):
     """A launch rail: a beam with a slide under it whose lug takes a designed weapon. What it lets go leaves forward along it; a missile lights on it."""
     p = Part(name, SMALL, "Bombs", desc + f" Rated for {load:g} kg.", role="logic", tool="welder", color=DARK, group=GROUP)
@@ -246,7 +260,7 @@ def bench():
 
 
 def parts():
-    return [bench()] + stage1() + stage3() + stage4() + rails()
+    return [bench()] + stage1() + stage3() + stage4() + massive() + rails()
 
 
 def plane(name, desc, rack, weapon):

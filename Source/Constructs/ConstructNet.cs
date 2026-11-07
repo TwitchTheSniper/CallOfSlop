@@ -274,7 +274,7 @@ public static class ConstructNet
             else if (e.Kind == CFireKind.RoundOut)
                 w.Vec(e.At).Vec(e.To);
             else if (e.Kind == CFireKind.ShellLand)
-                w.U16(e.Shell).Vec(e.At).F32(e.Radius).U8(e.Muzzle); // (protocol 150)
+                w.U16(e.Shell).Vec(e.At).F32(e.Radius).U8(e.Muzzle).U8(e.Ext); // (protocol 150; the look, protocol 195: MegaLook)
             else if (e.Kind == CFireKind.ShellStop)
                 w.U16(e.Shell).Vec(e.At);
             else if (e.Kind == CFireKind.ShellSteer)
@@ -361,7 +361,7 @@ public static class ConstructNet
             else if (kind == CFireKind.RoundOut)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec() };
             else if (kind == CFireKind.ShellLand)
-                e = new CFireEvent { Kind = kind, Shell = r.U16(), At = r.Vec(), Radius = r.F32(), Muzzle = r.U8() };
+                e = new CFireEvent { Kind = kind, Shell = r.U16(), At = r.Vec(), Radius = r.F32(), Muzzle = r.U8(), Ext = r.U8() };
             else if (kind == CFireKind.ShellStop)
                 e = new CFireEvent { Kind = kind, Shell = r.U16(), At = r.Vec() };
             else if (kind == CFireKind.ShellSteer)
