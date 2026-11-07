@@ -166,6 +166,7 @@ public sealed class StoryRules
         rules.Lines = LineRules.Load(rules, folder);
         rules.Plays = PlayRules.Load(rules, folder);
         rules.Places = PlaceRules.Load(rules, folder);
+        rules.Factions = FactionRules.Load(rules, folder);
         return rules;
     }
 
@@ -184,6 +185,9 @@ public sealed class StoryRules
 
     /// <summary>The states places can be in (Story/Places). Empty when there are none.</summary>
     public PlaceRules Places = new();
+
+    /// <summary>The factions (Story/Factions): who they are, what is theirs and what they remember. Empty when there are none.</summary>
+    public FactionRules Factions = new();
 
     private StoryRules WithStoryVerb()
     {

@@ -483,8 +483,8 @@ public sealed partial class ConstructEdits
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
                 var salvage = Salvageable(c, player);
-                if (salvage && !Factions.Shares(c.Owner, player) && c.Owner != 255)
-                    world.Note(CNoteKind.Strip, c.Id, player); // (someone else's wreck: the story, ConstructWorldNotes.cs)
+                if (salvage || c.Damaged)
+                    world.Note(CNoteKind.Strip, c.Id, player); // (a wreck: the story keeps someone else's, and any a faction claims: ConstructWorldNotes.cs, Game/GameStory.cs)
                 var wrecked = c.Parts[h.Part].Broken;
                 var wreckedPart = c.Parts[h.Part];
                 var magPack = c.Parts[h.Part].Rounds;

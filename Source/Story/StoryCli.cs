@@ -444,6 +444,8 @@ public static class StoryCli
             Console.WriteLine("  place states: there is no Turn verb, so a place's change isn't an event (nobody hears of it)");
         foreach (var p in rules.Plays.Plays)
             Console.WriteLine($"  play {p.Name} ({p.File}): cast {p.Cast.Text}{(p.Extra != null ? $"; extra {p.Extra.Text}" : "")}; {p.Beats.Length} beats, every {StoryRules.Span(p.Every)}{(p.Once ? p.OnceRoles == (1 << p.Roles.Length) - 1 ? ", once per cast" : $", once per {string.Join(" and ", p.Roles.Where((_, k) => (p.OnceRoles & 1 << k) != 0).Select(r => "?" + r))}" : "")}");
+        foreach (var f in rules.Factions.Factions)
+            Console.WriteLine($"  faction {f.Name} ({f.File}): home {(f.Home.Length > 0 ? f.Home : "none")}, {f.Members.Length} members, claims {(f.Claims.Length > 0 ? string.Join(", ", f.Claims.Select(c => $"\"{c}...\"")) : "nothing")}; wants {string.Join(", ", f.Wants.Select(w => $"{w.Name} {w.Start} ({w.PerHour:+0.##;-0.##;0}/h)"))}; tiers {string.Join(", ", f.Tiers.Select(t => t.Name))}; {f.Deeds.Length} deeds");
         var errors = new List<string>(rules.Errors);
         var scenarios = StoryScenario.LoadFolder(rules, Path.Combine(folder, StoryScenario.FolderName), errors);
         foreach (var s in scenarios)
@@ -452,8 +454,12 @@ public static class StoryCli
         if (File.Exists(deskFile))
             try
             {
-                var desk = ItDesk.Read(File.ReadAllText(deskFile), "Office/IT.json");
-                Console.WriteLine($"  the IT desk (Office/IT.json): {desk.Pages.Length} pages, the first in {StoryRules.Span(desk.FirstMin)} to {StoryRules.Span(desk.FirstMax)}; {desk.Replies.Length} replies");
+                var desk = ItDesk.Read(File.ReadAllText(deskFile), "Office/IT.json", rules);
+                if (rules.Factions.Find(desk.From) is { } its)
+                    foreach (var (on, _) in desk.Notices)
+                        if (!its.Deeds.Any(d => d.Name.Equals(on, StringComparison.OrdinalIgnoreCase)) && !its.Tiers.Any(t => t.Name.Equals(on, StringComparison.OrdinalIgnoreCase)))
+                            errors.Add($"Office/IT.json: a notice is on \"{on}\", which is no deed or tier of {its.Name} (Story/Factions)");
+                Console.WriteLine($"  the IT desk (Office/IT.json): {desk.StepCount} pages ({desk.All.Length} with their alternatives and notices), the first in {StoryRules.Span(desk.FirstMin)} to {StoryRules.Span(desk.FirstMax)}; {desk.Replies.Length} replies");
             }
             catch (StoryException ex)
             {

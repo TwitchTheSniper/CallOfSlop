@@ -1,0 +1,13 @@
+{
+  // Factions (docs/story/STORY.md "Factions"): what players do with a faction's channels, and what a faction does back.
+  "verbs": [
+    { "name": "Email", "players": true, "sentence": "{actor} emailed {target}",
+      "about": "a player at a plugged-in Computer types to a faction (target: the faction); its deeds can read the words", "effects": [ "target Emails actor +1" ] },
+    { "name": "Fax", "sentence": "{actor} faxed {target}",
+      "about": "a faction's page prints on a fax near a player (actor: the faction, target: the reader's group)", "effects": [ "actor Faxed target +1" ] },
+    { "name": "Keep", "players": true, "sentence": "{actor} plugged in {target}'s {item}",
+      "about": "a faction's hardware on a player's circuit: its first page prints (target: the faction, item: the part)" },
+    { "name": "Rate", "sentence": "{actor} now rates {target}: {item}",
+      "about": "a faction's standing with a group comes to a new tier (item: the tier, value: the standing)" }
+  ]
+}

@@ -6,7 +6,7 @@ public enum CNoteKind : byte
     Disabled, // its first part shot or blown off (By: the attacker, when known)
     Piece, // Body split off from Other (a wreck piece is its construct's remains)
     Gone, // Body left the world
-    Strip, // By took a part off Body, someone else's wreck or disabled construct
+    Strip, // By took a part off Body, a wreck or disabled construct (the story keeps someone else's, and those a faction claims)
     Tow, // By coupled a hitch of Body to Other
     Made, // an Assembler on Body (owned by By) finished a part of def Other, on a machine of tier Tier
 }

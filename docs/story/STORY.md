@@ -591,9 +591,57 @@ Code: `Source/Constructs/OfficeParts.cs` (the parts and their panels), `Source/G
 - **Malware**: when the scammers (below) hook a computer, IT notices and faxes its `"malware"` page to the nearest fax,
   with the cure.
 
-This is the channel; the IT Department isn't a story entity yet. Next: an IT Department faction in the story world, faxes
-and emails as events its patterns and the drama manager can use (a reply that depends on what the player did to its
-convoys), and pages that wait for an answer.
+- **Standing** (living factions, "Factions" below): the IT Department is a faction in the story world, and what it faxes
+  follows what it remembers of the reader. A page may have `"alts"`, each with a `"when"`: a story query over `?us` (the
+  IT Department) and `?them` (the reader's group); the first that holds prints instead, the most specific first. A reply
+  may have a `"when"` too (a rule with words and a `"when"` answers only when both hold; rules with no words but a `"when"`
+  come before the plain last one). `"notices"` are pages about something a player did: `"on"` names one of the faction's
+  deeds or tiers, and the first whose `"when"` holds is faxed to that player, wherever they are, on the nearest plugged-in
+  fax, a reply's time later (waiting up to an hour for them to come near one). Who reads a story page is the fax's owner
+  when they are near, else the nearest player, and the first page is the IT Department noticing its fax (a Keep).
+- Page ids stay as before (the story's pages, the replies, the malware notice), with the alternatives and notices after
+  them, so a fax saved before keeps its page. `--check-story` refuses a notice on no deed or tier.
+
+## Factions
+
+A faction (living factions, F1; code `Source/Story/StoryFactions.cs`, the game's side `Source/Game/GameStoryFactions.cs`, the
+Story window's *Factions* tab `Source/UI/UiStoryFactions.cs`; data `Story/Factions/*.json`, relations in
+`Story/Relations/Factions.json`, verbs in `Story/Verbs/Factions.json`) is a Faction entity in the story world. The IT
+Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlop and the Ministry of Slop follow as data.
+
+- **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
+  with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
+- **What is theirs**: the faction itself, its members, and the constructs it `Claims`: a construct the story meets with a
+  name that starts with one of `"claims"` (`"IT "`: every IT style vehicle and blueprint, spawned from the parts menu or by
+  the vehicle kit; the game reads the name when the construct is set down, `Game.StoryConstruct`). A scenario's construct
+  is claimed by its own name, and a scenario's faction or member of the data's is the story's own.
+- **Wants** (`"wants"`): qualities of the faction from 0 to 100 that start at `"start"` and drift by `"perHour"` (once a
+  story minute). The IT Department wants Hardware, Respect and Uptime. Deeds move them; pages can ask about them.
+- **Deeds** (`"deeds"`): an event of `"verb"` whose `"theirs"` role (the target unless named: target, owner, place, item)
+  is the faction's, done by a player. It adds 1 to the `"remember"` relation the faction holds towards the doer and their
+  group (`WreckedOurs`, `LootedOurs`, `KeptOurs`, `Courtesy`, `Threats`, `KilledOurs`), moves the faction's standing with
+  both by `"standing"`, and its wants by `"wants"`. An Email deed asks for `"words"` (any one, any case) in the email;
+  `"every"` counts a deed once in that long per group. The IT Department counts wrecking its vehicles (-20), stripping
+  them (-8), plugging in its fax (+5), polite emails (+3, once in ten minutes), threats (-10) and rudeness (-4).
+- **Standing** runs from -100 to 100 and is held as the faction's `Likes` (above 0) or `Grudge` (below) towards a party,
+  so queries, patterns, the drama manager and the fax read it like any feeling (`?us Grudge ?them >= 16`). `"tiers"`
+  name its bands from the worst up (IT: Blacklisted below -50, Flagged below -15, Unregistered, Registered from 15, Admin
+  from 50); coming to a new one is a Rate event ("IT Department now rates Rook: Flagged"), and the desk can fax a notice.
+- **Groups**: standing is kept for a player's group: the player faction they are in (`Source/Constructs/Factions.cs`,
+  a Faction entity `"group:NAME"` the game keeps them `MemberOf`, once a second), or themselves when in none. A deed
+  counts towards both the doer and their group; a group's is the one the fax reads.
+- **Verbs**: Email (a player at a Computer to a faction; its effect counts `Emails`), Fax (a faction's page printed for a
+  group: `Faxed`, which "per my last fax" reads), Keep (a player plugs in a faction's fax: its first page), Rate.
+- **Strip**: a wreck's part taken off is noted whoever owns it, and the story keeps a Strip of one's own or nobody's
+  construct only when a faction claims it (stripping the IT van you spawned yourself still counts against you with IT).
+- Everything is world state (entities, relations, qualities), so it is saved with the story; a faction new to the data
+  is put in an old save's story when it loads. Notices waiting to be faxed are not saved.
+- **Trying it**: `--story-sim Story/Scenarios/ITDepartment.json` plays a fax kept, two vans wrecked and stripped, and
+  prints the IT Department's standing at the end; in the game, the Story window's Factions tab shows each faction's
+  wants, members, claims, and its standing and memory of every player and group.
+
+Next (the living factions plan): F2 voices for the other factions (Call Centre scams that remember who fell for them,
+Ministry memos, MacSlop challenges on the radio), F3 visits on foot through the drama manager, F4 turf on planetoids.
 
 ## The Scammers
 
@@ -621,7 +669,7 @@ that answer what the player says more closely, and a Call Centre that remembers 
 
 ## Next
 
-- **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.
+- **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions with minds of their own (factions themselves: "Factions").
 - **Phase 3** (done): the drama manager nudging the people, pacing them (quiet stretches between big stories) and
   bringing strangers in to join stories in progress. Next for it: strangers who leave again, tension per place (today it
   is one for the whole world), and casting plays for its stories.

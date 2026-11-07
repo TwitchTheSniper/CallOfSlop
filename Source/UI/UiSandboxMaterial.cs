@@ -101,7 +101,7 @@ public sealed partial class Ui
                     ImGui.Dummy(new float2(0, 3 * _scale));
                 }
                 if (_mtIds.Length == 0)
-                    ImGui.TextColored(Dim, "The material painter offers nothing (Constructs/Extrusion.json, \"painter\")."u8);
+                    ImGuiSafe.TextColored(Dim, "The material painter offers nothing (Constructs/Extrusion.json, \"painter\").");
             }
             ImGui.EndChild();
             ImGui.TextColored(Dim, "Click a material to take it, then click parts to remake them in it."u8);

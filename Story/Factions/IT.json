@@ -1,0 +1,51 @@
+{
+  // A faction (docs/story/STORY.md "Factions"): who they are, where they live, what is theirs, what they want, how they rate
+  // the players, and the deeds they remember. A deed is an event of "verb" whose "theirs" role (the target unless named) is
+  // the faction's: the faction itself, one of its members, or a construct it claims. The doer must be a player; the deed
+  // adds 1 to the "remember" relation the faction holds towards them and their group, moves its standing with both by
+  // "standing" (from -100 to 100), and its "wants" by theirs. Standing is the faction's Likes (above 0) or Grudge (below).
+  // Its words are in Story/Office/IT.json, whose pages, replies and notices can ask about all of this ("when").
+  "format": "call-of-slop-faction/1",
+  "name": "IT Department",
+  "about": "the people who kept the servers running when everything else stopped; they still think they run the network",
+  "home": "The Server Farm",
+  "claims": [ "IT " ],
+  "members": [
+    { "name": "Deborah Lyle", "about": "Head of IT Service Delivery, has never been seen outside a meeting",
+      "qualities": { "Sociable": 40, "Honest": 60, "Brave": 35, "Vengeful": 70, "Gossipy": 30, "Greedy": 45 } },
+    { "name": "Gary Pruitt", "about": "senior technician; he has a van",
+      "qualities": { "Sociable": 55, "Honest": 50, "Brave": 70, "Vengeful": 55, "Gossipy": 60, "Greedy": 30 } },
+    { "name": "Phil Ransome", "about": "network admin who sleeps in the server room and talks to the switches",
+      "qualities": { "Sociable": 15, "Honest": 75, "Brave": 40, "Vengeful": 40, "Gossipy": 10, "Greedy": 20 } },
+    { "name": "Moira Kemp", "about": "procurement; procurement is a fax machine, and the fax machine is Moira",
+      "qualities": { "Sociable": 50, "Honest": 40, "Brave": 30, "Vengeful": 60, "Gossipy": 75, "Greedy": 80 } },
+    { "name": "Kev Bassett", "about": "service desk intern, has read the script and believes it",
+      "qualities": { "Sociable": 80, "Honest": 85, "Brave": 25, "Vengeful": 10, "Gossipy": 70, "Greedy": 15 } }
+  ],
+  "wants": [
+    { "name": "Hardware", "about": "its kit back: falls as its trucks are stripped", "start": 70, "perHour": 0.5 },
+    { "name": "Respect", "about": "being thanked now and then; it fades if nobody writes", "start": 50, "perHour": -1 },
+    { "name": "Uptime", "about": "its network's reach: every fax plugged in is a node", "start": 30, "perHour": -0.5 }
+  ],
+  "tiers": [
+    { "name": "Blacklisted", "below": -50 },
+    { "name": "Flagged", "below": -15 },
+    { "name": "Unregistered", "below": 15 },
+    { "name": "Registered", "below": 50 },
+    { "name": "Admin" }
+  ],
+  "deeds": [
+    { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40, "wants": { "Respect": -20 } },
+    { "name": "Wrecked our hardware", "verb": "Wreck", "remember": "WreckedOurs", "standing": -20, "wants": { "Hardware": -10 } },
+    { "name": "Stripped our hardware", "verb": "Strip", "remember": "LootedOurs", "standing": -8, "wants": { "Hardware": -5 } },
+    { "name": "Plugged in our fax", "verb": "Keep", "remember": "KeptOurs", "standing": 5, "wants": { "Uptime": 15 },
+      "about": "IT notices a fax of its on someone's circuit: a new node on the network, and a user to register" },
+    { "name": "Polite email", "verb": "Email", "words": [ "please", "thank", "thanks", "cheers", "sorry", "apolog", "it-7" ],
+      "remember": "Courtesy", "standing": 3, "wants": { "Respect": 4 }, "every": "10m",
+      "about": "manners count, once in ten minutes (the service desk can tell)" },
+    { "name": "Threatening email", "verb": "Email", "words": [ "attack", "kill", "shoot", "destroy", "burn", " war", " die " ],
+      "remember": "Threats", "standing": -10, "wants": { "Respect": -8 }, "every": "5m" },
+    { "name": "Rude email", "verb": "Email", "words": [ "useless", "idiot", "stupid", "rubbish", "hate", "worst" ],
+      "standing": -4, "wants": { "Respect": -5 }, "every": "5m" }
+  ]
+}
