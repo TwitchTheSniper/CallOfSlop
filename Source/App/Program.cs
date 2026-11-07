@@ -158,6 +158,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
+        if (args.Length > 1 && args[0] == "--zz-context-probe")
+            return ZzContextProbe.Run(args[1..]);
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
         if (args.SkipWhile(a => !a.Equals("--drive-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } driveFile)
