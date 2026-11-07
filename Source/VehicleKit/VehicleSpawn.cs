@@ -58,15 +58,22 @@ public sealed class VehicleGenJob
     /// <summary>Kit 4's role and tier the request asked for (VehicleRoles.cs); null: by shape, as before.</summary>
     public readonly RoleAsk? Role;
 
-    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default, RoleAsk? role = null)
+    /// <summary>Where it is being made for (phase 7: VehicleContext.cs); null or neutral: as every vehicle before.</summary>
+    public readonly SpawnContext? Context;
+
+    /// <summary>The spawn context's line, as in the blueprint ("desert, gravity 1.00, ...; changed ..."); "" in a neutral one.</summary>
+    public string ContextNotes = "";
+
+    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default, RoleAsk? role = null, SpawnContext? context = null)
     {
         Generator = generator;
         Seed = seed;
         Layers = layers;
         Role = role;
+        Context = context is { Matters: true } ? context : null;
     }
 
-    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "");
+    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "") + (Context?.Suffix ?? "");
 
     private string _made = ""; // (the vehicle's own name once made: a kit-1 shape's role may have taken a seed derived from the one asked)
 
@@ -237,9 +244,10 @@ public sealed class VehicleGenJob
 
     private void Generate()
     {
-        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role);
+        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role, context: Context);
         Yield();
         var text = v.Text();
+        ContextNotes = v.Context is { Matters: true } c ? $"{c.Detail}; {(v.ContextNotes.Count > 0 ? "changed " + string.Join(", ", v.ContextNotes) : "nothing to change")}" : "";
         Yield();
         Hash = Fnv(text);
         (Kit, Modules, RoleNotes, _made) = (v.Kit, string.Join(", ", v.Modules), string.Join(", ", v.KitNotes), v.Name);

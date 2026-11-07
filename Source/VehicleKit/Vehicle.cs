@@ -63,6 +63,7 @@ public sealed partial class Vehicle : BlueprintScript
         _stem = name.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
         Dice = Dice.Of(seed).Fork(_stem); // (one seed number never means one recipe across shapes)
         Group = style.Group;
+        TakeContext(); // (a spawn context, while one is being made in: VehicleContext.cs)
     }
 
     /// <summary>A vehicle whose name isn't "Name seed" (kit 3's overridden layers add to it): its dice still come from the generator's name.</summary>
@@ -73,6 +74,7 @@ public sealed partial class Vehicle : BlueprintScript
         _stem = stem;
         Dice = Dice.Of(seed).Fork(stem);
         Group = style.Group;
+        TakeContext();
     }
 
     // ---- The frame ------------------------------------------------------------------------------------------------
@@ -281,6 +283,7 @@ public sealed partial class Vehicle : BlueprintScript
         var sill = Sill(z);
         Engine = Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y");
         Gearbox = Onto(Engine, "+z", gb, "-z", 0);
+        ElectricKit(); // (off world: an Electric Motor's Battery Pack; nothing for any other engine)
         if (Diff2 != null)
         {
             var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1); // (on its side: its branch would land on the seat's sill)
@@ -301,7 +304,8 @@ public sealed partial class Vehicle : BlueprintScript
     public Vehicle FuelFrom(VPart tank, params Vector3[] nodes)
     {
         Tanks.Add(tank);
-        Link("pipe", tank, Engine!, laid: true, nodes: nodes);
+        if (!Electric) // (an Electric Motor burns nothing: the tank stays, unpiped)
+            Link("pipe", tank, Engine!, laid: true, nodes: nodes);
         return this;
     }
 

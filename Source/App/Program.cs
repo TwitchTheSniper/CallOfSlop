@@ -155,11 +155,15 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
-            return VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args); // many seeds of a shape, built and checked, nothing written
+            return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
-        if (args.SkipWhile(a => !a.Equals("--diag-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diagFile)
-            return VehicleKit.VehicleDriveDiag.Cli(diagFile);
+        if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.SkipWhile(a => !a.Equals("--drive-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } driveFile)
+            return VehicleKit.VehicleDriveCheck.Cli(driveFile, args); // the spawn's drive check on any blueprint: level, and a throttle pulse moves it
+        if (args.SkipWhile(a => !a.Equals("--context", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } contextOf)
+            return VehicleKit.VehicleContextCli.Run(contextOf, args); // phase 7: what a spawn context changes against neutral (VehicleContext.cs)
         if (args.Any(a => a.Equals("--gen-vehicles", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleKitCli.GenVehicles(args); // every vehicle generator: which outputs differ from the committed files
         if (args.SkipWhile(a => !a.Equals("--identity", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } identityOf)
@@ -169,13 +173,13 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
         if (args.Any(a => a.Equals("--kit-report", StringComparison.OrdinalIgnoreCase)))
-            return VehicleKit.VehicleQualityCli.KitReport(args); // every style and shape: failures, their reasons, cost, parts, mass
+            return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleQualityCli.KitReport(args)); // every style and shape: failures, their reasons, cost, parts, mass
         if (args.SkipWhile(a => !a.Equals("--family", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } familyOf)
-            return VehicleKit.VehicleFamiliesCli.Family(familyOf, args); // a model line's marks and variants and how close they read (VehicleConvoys.cs)
+            return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleFamiliesCli.Family(familyOf, args)); // a model line's marks and variants and how close they read (VehicleConvoys.cs)
         if (args.SkipWhile(a => !a.Equals("--convoy", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } convoyOf)
-            return VehicleKit.VehicleFamiliesCli.Convoy(convoyOf, args); // a convoy's plan, each member made and checked (VehicleConvoys.cs)
+            return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleFamiliesCli.Convoy(convoyOf, args)); // a convoy's plan, each member made and checked (VehicleConvoys.cs)
         if (args.SkipWhile(a => !a.Equals("--role", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } roleOf)
-            return VehicleKit.VehicleRolesCli.Role(roleOf, args); // kit 4: a style's vehicles for a role and tier, what they measured against it (VehicleRoles.cs)
+            return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleRolesCli.Role(roleOf, args)); // kit 4: a style's vehicles for a role and tier, what they measured against it (VehicleRoles.cs)
         if (args.Any(a => a.Equals("--grade-vehicle", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleQualityCli.GradeVehicle(args); // the user's grade of a seed, into docs/vehiclekit/grades.json
         if (args.Any(a => a.Equals("--grade-report", StringComparison.OrdinalIgnoreCase)))

@@ -164,7 +164,7 @@ public sealed class FactionStyle
 
     public string Colour(Dice d, string role) =>
         Palette.TryGetValue(role, out var c)
-            ? Noted("colour " + role, d.Pick(Scheme != null && Scheme.TryGetValue(role, out var own) && own.Length > 0 ? own : c)) // (a convoy's scheme: the same one roll, over its share of the palette)
+            ? Noted("colour " + role, d.Pick(VehicleContext.Colours(this, role, Scheme != null && Scheme.TryGetValue(role, out var own) && own.Length > 0 ? own : c))) // (a convoy's scheme: the same one roll, over its share of the palette; a spawn context's: the share that suits the ground, VehicleContext.cs)
             : throw new VehicleKitException($"style {Name} has no \"{role}\" colours");
 
     /// <summary>
@@ -178,12 +178,15 @@ public sealed class FactionStyle
     {
         if (!Parts.TryGetValue(slot, out var c))
             throw new VehicleKitException($"style {Name} has no \"{slot}\" parts");
-        if (Weigh?.Invoke(this, slot, c) is { } w) // (kit 4's role and tier: the same one roll, over weighted choices)
+        var w = Weigh?.Invoke(this, slot, c);
+        if (SpawnContext.Current is { Matters: true } ctx && VehicleContext.Weigh(ctx, this, slot, w?.Items ?? c, w?.Weights) is { } cw)
+            w = cw; // (a spawn context's lean, on top of a role's: VehicleContext.cs; a neutral context leaves the pick as it was)
+        if (w is { } ww && ww.Items.Length > 0) // (kit 4's role and tier: the same one roll, over weighted choices)
         {
-            var roll = d.Next() * w.Weights.Sum();
-            for (var i = 0; i < w.Items.Length; i++)
-                if ((roll -= w.Weights[i]) < 0 || i == w.Items.Length - 1)
-                    return Noted(slot, w.Items[i]);
+            var roll = d.Next() * ww.Weights.Sum();
+            for (var i = 0; i < ww.Items.Length; i++)
+                if ((roll -= ww.Weights[i]) < 0 || i == ww.Items.Length - 1)
+                    return Noted(slot, ww.Items[i]);
         }
         return Noted(slot, d.Pick(c));
     }

@@ -93,7 +93,7 @@ public static class VehicleChassis
     /// </summary>
     public static ChassisPlan Roll(Dice c, FactionStyle st, string[] only, float end, int segments, bool cabOver, float? fixedInset, bool gunDeck, ChassisRange? range = null)
     {
-        var r = range ?? LayerTables.ChassisOf(st); // (kit 4: a role's chassis, the style's table leaned by what the role needs: VehicleRoles.cs)
+        var r = VehicleContext.Chassis(range ?? LayerTables.ChassisOf(st), st); // (kit 4: a role's chassis, the style's table leaned by what the role needs: VehicleRoles.cs)
         var gears = st.HeavyGear.Where(g => only.Contains(g.Name)).ToArray();
         if (gears.Length == 0)
             throw new VehicleKitException($"style {st.Name} has no gear named {string.Join(", ", only)}");
@@ -183,6 +183,7 @@ public static class VehicleChassis
         if (front != -1.675f)
             wing = 0.5f; // (one change at a time at the front: a moved axle keeps kit 2's track)
         gear = gear with { FrontWing = wing, Name = mixed.Count > 0 ? gear.Name + "/" + string.Join("/", mixed) : gear.Name };
+        gear = VehicleContext.Gear(gear, st, true); // (a spawn context's tyres and springs: VehicleContext.cs; neutral: unchanged)
 
         var label = $"{(extra == "" ? "2 axles" : "3 axles, " + extra + $" {spacing:0.##} m")}, front {(front == -1.675f ? "under the hood" : front < -1.7f ? "forward" : "set back")}, inset {inset:0.##} m, "
             + $"{TypeOf(gear.FrontSpring)}/{TypeOf(gear.RearSpring)}{(gear.Tag != null ? "/" + TypeOf(gear.Tag) : "")}, wing {wing:0.##}";

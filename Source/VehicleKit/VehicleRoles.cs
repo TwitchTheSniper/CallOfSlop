@@ -855,6 +855,7 @@ public static class VehicleRoleMake
                 var least = (g.Checks ?? new VehicleCheckOptions()).MinStability + 0.02f; // (a kit-1 generator has no stability gate of its own: a role's parts can stand it taller)
                 if (v.Stability() is var stable && stable < least)
                     throw new VehicleKitException($"stability {stable:0.00}: under the check's {least - 0.02f:0.00}");
+                v.DriveGate();
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
             {

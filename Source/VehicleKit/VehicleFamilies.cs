@@ -121,10 +121,10 @@ public static class VehicleFamilies
     }
 
     /// <summary>A model's vehicle, made as the dynamic spawn makes it (<see cref="VehicleGenJob"/> runs the same).</summary>
-    public static Vehicle Make(VehicleModel m)
+    public static Vehicle Make(VehicleModel m, SpawnContext? context = null)
     {
         var (_, _, g, ask, layers) = Resolve(m);
-        return VehicleRegistry.Make(g, m.Seed, layers: layers.Any ? layers : null, role: ask);
+        return VehicleRegistry.Make(g, m.Seed, layers: layers.Any ? layers : null, role: ask, context: context); // (a context changes a model's kit only: VehicleContext.cs)
     }
 
     /// <summary>The model's name, as players read it: "Bandit Rustbucket Mk2 Gun Truck"; a named unique's own ("Bandit Old Mother Rust").</summary>
