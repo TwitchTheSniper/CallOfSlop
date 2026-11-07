@@ -184,7 +184,6 @@ public static class ShapeGrammar
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && attempt + 1 < Attempts)
             {
-                if (Environment.GetEnvironmentVariable("VK_DEBUG") != null) Console.WriteLine($"DIAG {v.Name} plan {attempt + 1}: {ex.Message}"); // TEMP
                 // (the next plan)
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && kept != null)

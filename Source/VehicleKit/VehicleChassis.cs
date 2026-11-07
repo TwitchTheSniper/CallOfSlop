@@ -70,7 +70,23 @@ public static class VehicleChassis
         var gears = st.HeavyGear.Where(g => only.Contains(g.Name)).ToArray();
         if (gears.Length == 0)
             throw new VehicleKitException($"style {st.Name} has no gear named {string.Join(", ", only)}");
-        var gear = c.Fork("recipe").Pick(gears);
+
+        // The axle layout first: a second axle needs a high floor on a wide differential (a low one sits between wheels thrown out on arms), so when one is
+        // rolled the rear corners come from the recipes that have one.
+        static bool Wide(Gear g) => g.Floor >= 0.5f && g.Differential.StartsWith("Wide", StringComparison.Ordinal);
+        var wides = gears.Where(Wide).ToArray();
+        var ld = c.Fork("layout");
+        var layouts = new List<(string, double)> { ("", r.Single) };
+        var longer = Math.Clamp((end - 4.2) / 2.5, 0.3, 2); // (a second axle earns its place under a long body)
+        if (wides.Length > 0 && only.Contains("tandem"))
+            layouts.AddRange([("tag", r.Tag * longer), ("pusher", r.Pusher * longer)]);
+        if (wides.Length > 0 && only.Contains("six"))
+            layouts.Add(("tandem", r.Tandem * longer));
+        var extra = Weighted(ld, layouts.Where(x => x.Item2 > 0).ToList());
+        var spacing = extra.Length > 0 ? ld.Pick(r.Spacings) : 0;
+        var rears = extra.Length > 0 ? wides : gears;
+
+        var gear = c.Fork("recipe").Pick(rears);
         FactionStyle.Noted("gear", gear.Name);
         var mixed = new List<string>();
 
@@ -78,10 +94,11 @@ public static class VehicleChassis
         var md = c.Fork("mix");
         if (gears.Length > 1 && md.Chance(r.Mix))
         {
-            var other = md.Pick(gears);
+            var swapFront = md.Chance(0.5);
+            var other = md.Pick(swapFront ? gears : rears);
             if (other != gear)
             {
-                if (md.Chance(0.5))
+                if (swapFront)
                     gear = gear with { FrontSpring = other.FrontSpring, FrontWheel = other.FrontWheel };
                 else // (the rear brings its differential and the floor it allows: a swing arm's throw is what lets a floor sit low)
                     gear = gear with { RearSpring = other.RearSpring, RearWheel = other.RearWheel, Differential = other.Differential, Floor = other.Floor };
@@ -99,9 +116,9 @@ public static class VehicleChassis
         }
         if (sw.Chance(r.WheelSwap) && gear.RearWheel != "Dually Wheel")
         {
-            var rears = UnderWheels.Where(w => w != gear.RearWheel && Radius(w) <= Radius(gear.RearWheel) + 0.001f).ToArray(); // (no bigger: a wheel's top under a floor meets the walls hung below it)
-            if (rears.Length > 0)
-                gear = gear with { RearWheel = sw.Pick(rears) };
+            var under = UnderWheels.Where(w => w != gear.RearWheel && Radius(w) <= Radius(gear.RearWheel) + 0.001f).ToArray(); // (no bigger: a wheel's top under a floor meets the walls hung below it)
+            if (under.Length > 0)
+                gear = gear with { RearWheel = sw.Pick(under) };
         }
         string Swap(string spring) => SpringClasses.FirstOrDefault(k => k.Contains(spring)) is { } cls ? sw.Pick(cls) : spring;
         if (sw.Chance(r.SpringSwap))
@@ -109,18 +126,8 @@ public static class VehicleChassis
         if (sw.Chance(r.SpringSwap))
             gear = gear with { RearSpring = Swap(gear.RearSpring) };
 
-        // The axle layout: a second axle needs a high floor on a wide differential (a low one sits between wheels thrown out on arms).
+        // The second axle on that rear.
         gear = gear with { Tag = null, TagWheel = null, Tandem = 0 };
-        var ld = c.Fork("layout");
-        var wide = gear.Floor >= 0.5f && gear.Differential.StartsWith("Wide", StringComparison.Ordinal);
-        var layouts = new List<(string, double)> { ("", r.Single) };
-        var longer = Math.Clamp((end - 4.2) / 2.5, 0.3, 2); // (a second axle earns its place under a long body)
-        if (wide && only.Contains("tandem"))
-            layouts.AddRange([("tag", r.Tag * longer), ("pusher", r.Pusher * longer)]);
-        if (wide && only.Contains("six"))
-            layouts.Add(("tandem", r.Tandem * longer));
-        var extra = Weighted(ld, layouts.Where(x => x.Item2 > 0).ToList());
-        var spacing = extra.Length > 0 ? ld.Pick(r.Spacings) : 0;
         if (extra == "tandem")
             gear = gear with { Tandem = spacing };
         else if (extra.Length > 0)

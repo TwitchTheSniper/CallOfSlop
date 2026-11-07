@@ -28,6 +28,9 @@ public sealed partial class Vehicle
     private static readonly string[] OpenDecks = ["bed", "porch", "rack", "hood"];
     private static readonly string[] PatchOn = ["hoodsides", "sides", "skirts", "panniers"];
 
+    /// <summary>Where every crooked plate was welded (<see cref="Crooked"/>), Trim's and the wear's.</summary>
+    private readonly List<Vector3> _welded = new();
+
     /// <summary>How much this vehicle wore, for the kit line: rusty, dirty and scorched panels, patches, missing deck cells.</summary>
     private int _rusty, _dirty, _scorched, _patched, _missing;
 
@@ -131,6 +134,9 @@ public sealed partial class Vehicle
     /// <summary>Whether a half-metre patch at <paramref name="at"/>, facing <paramref name="face"/> over <paramref name="on"/>, meets nothing but <paramref name="on"/>.</summary>
     private bool ClearOf(VPart on, Vector3 at, Vector3 face)
     {
+        foreach (var w in _welded)
+            if (Vector3.Distance(w, at) < 0.6f)
+                return false; // (another patch there: a freeform part's bounds aren't the body's frame, so it is checked by where it was asked for)
         C.PartBounds(on.Index, out var omn, out var omx);
         var k = MathF.Abs(face.X) > 0.5f ? 0 : 2; // (patches face out sideways or along z)
         var s = k == 0 ? face.X : face.Z;
@@ -141,8 +147,9 @@ public sealed partial class Vehicle
         mx[k] = MathF.Max(near, far);
         for (var i = 0; i < C.PartCount; i++)
         {
-            if (i == on.Index)
-                continue;
+            var seg = C.Parts[i].Seg;
+            if (i == on.Index || seg > 0 && seg <= C.JointCount && C.Joints[seg - 1].Freeform)
+                continue; // (a weld's numbers are its own segment's: it is judged by its spot above)
             C.PartBounds(i, out var bmn, out var bmx);
             var (qmn, qmx) = (FromRest(bmn), FromRest(bmx));
             if (qmn.X < mx.X && qmx.X > mn.X && qmn.Y < mx.Y && qmx.Y > mn.Y && qmn.Z < mx.Z && qmx.Z > mn.Z)

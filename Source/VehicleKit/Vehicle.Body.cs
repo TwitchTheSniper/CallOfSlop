@@ -182,6 +182,7 @@ public sealed partial class Vehicle
         var tilt = Style.Limit("tiltDegrees");
         var p = Weld(part, on, at, Orient.Facing(face), d.Between(-tilt, tilt), d.Between(-tilt, tilt), d.Between(-tilt, tilt));
         PanelList(tag).Add(p);
+        _welded.Add(at);
         return p;
     }
 

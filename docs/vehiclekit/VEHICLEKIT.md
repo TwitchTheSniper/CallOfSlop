@@ -18,7 +18,9 @@ like any other. **Fix the generator, not its files.** No AI is in here: crew and
 | `CallOfSlop --diversity "Bandit Box Truck" [--seeds N]`, `--diversity-style Bandit`, `--kit-report`, `--vehicle-sheet "Bandit Box Truck"`, `--grade-vehicle "Bandit Box Truck 7" 4 "note"`, `--grade-report` | The quality tools: how alike seeds are, what never varies, what fails and what it costs, contact sheets and grades. See "Quality tools". |
 | `CallOfSlop --identity "IT War Bus" [--seeds N] [--shipped] [--raw]`, or `--identity IT` for every shape of a style | How much each seed reads as its faction (0 to 1) with the breakdown, its weak points, the style it reads as best after its own, then the mean, the weak-point pass rate and every vehicle that reads more as another style. Default 6 seeds; `--shipped`: the committed seeds. See "Identity and weak points". |
 | `... --no-identity-gate` on any of these | Kit 2 without its identity re-plan, to measure what the check changes. |
-| `... --kit 1` or `--kit 2` on any of these | Every seed by that kit (see "Shape grammar"), to compare the two: without it a seed is made by its own kit. `--gen-vehicles --kit 2` reports the committed files as differing, as it should. |
+| `... --kit 1`, `--kit 2` or `--kit 3` on any of these | Every seed by that kit (see "Shape grammar" and "Layered variety"), to compare them: without it a seed is made by its own kit. `--gen-vehicles --kit 2` reports the committed files as differing, as it should. |
+| `... --layers chassis=5,wear=9` on any of these | Kit 3's layer seeds on every vehicle made: the seed's own vehicle with those layers rolled from other seeds ("Layered variety"). `--gen-vehicle` then writes `BanditBoxTruck7chassis5wear9.json`, never a committed seed's file. |
+| `... --vary wear [--base S]` on any of these | The seeds a tool loops over become one layer's seeds on base seed S (default 1): `--diversity "Bandit Box Truck" --vary chassis --base 5 --seeds 8` is seed 5's body and kit on eight chassis. |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
@@ -160,10 +162,12 @@ heavy shapes from **modules** instead, so the outline varies with the seed while
 
 **Which kit.** `VehicleKitVersion.For(generator, seed)`: a seed committed before the grammar (`VehicleKitVersion.Frozen`, the 123 files of 2026-11-06) and every seed of a
 shape with no recipe (the Technical, the Fuel Trailer, the Tanker Rig, the Double Decker, and any new generator) is kit 1, made exactly as before, so `--gen-vehicles`
-stays identical; every other seed, the dynamic spawn's included, is kit 2. A kit-2 file says so in a comment after its first brace (`// kit 2; body room+bed, cab caged,
+stays identical; every other seed, the dynamic spawn's included, is the current kit: kit 3 since 2026-11-06 ("Layered variety"), kit 2's grammar with its variety in
+layers. Kit 3 gives a kit-2 seed another vehicle; no kit-2 seed was ever committed, and a saved world holds built constructs, not seeds, so nothing changed under anyone
+(`--kit 2` still makes kit 2's, byte for byte). A kit-2 or kit-3 file says so in a comment after its first brace (`// kit 2; body room+bed, cab caged,
 nose ram, rear porch, ...`; blueprints allow comments), `Vehicle.Kit` and `Vehicle.Modules` hold the same, and the spawn logs it (`[vehicles] Bandit Box Truck 733786:
-kit 2 (body room, cab enclosed, ...)`). A seed committed from now on is made by the kit current when it was committed: grade and commit from a sweep of that kit. A kit 3
-adds kit 2's committed seeds to `Frozen` under their kit.
+kit 2 (body room, cab enclosed, ...)`). A seed committed from now on is made by the kit current when it was committed: grade and commit from a sweep of that kit. No kit-2
+seed was committed, so `Frozen` still holds kit 1's only; when a kit 4 comes, the kit-3 seeds committed by then go into a list of their own, with `For` returning their kit.
 
 **Modules** (`ShapeGrammar.Catalogue`). Each has a family, a name, the style parts it is made of (a module whose parts the style doesn't list is never made), and its
 connection rules as tags: what it needs, what it provides, what it can't stand beside, and the gear recipes it allows.
@@ -201,7 +205,7 @@ kit line as "plan 2". A plan that builds is then scored for its faction ("Identi
 planned again once, and the better of the two is kept.
 
 **Seeds.** All of it rolls from forks of `v.Dice` ("grammar", "grammar build", by attempt); the module bodies use the same forks kit 1's code does ("deck bed", "hood",
-"weapon"...), so a seed is the same text on every machine. Generation yields where `BlueprintScript` does.
+"weapon"...), so a seed is the same text on every machine. Generation yields where `BlueprintScript` does. Kit 3 splits these forks into layers ("Layered variety").
 
 **Measured** (2-core box, generation only unless said; kit 1 is `--kit 1` or the committed seeds' state before the change):
 
@@ -222,6 +226,71 @@ that steps, wheels in the open, a room only for a crew and loot.
 
 **Adding to it.** A module is a row in `Catalogue` plus its body in `ShapeGrammar.Build` (reuse the kit-1 generator's code for it, put where the plan says); a recipe is a
 row in `Recipes`. Sweep the shapes it can appear in with `--sweep-vehicle "Bandit Box Truck" --seeds 12 --kit 2` (the full check) and measure with `--diversity ... --kit 2`.
+
+## Layered variety
+
+The user's reviews of kit 2: "all use about the same wheelbase and suspension", "still too boxy", "interiors are too alike". **Kit 3** (`VehicleKitVersion.Layered`, the current
+kit) is kit 2's grammar with its variety in four independent layers, each rolled from a root of its own (`Vehicle.UseLayers`, `Dice.Routed`), so one can be kept while
+another rerolls:
+
+| Layer | What it decides | Where |
+| --- | --- | --- |
+| chassis | the corners (spring and wheel at the front, at the rear with its differential and the floor height it allows), wheel and spring swaps within a class, the axle layout (one rear axle, a tag, a pusher, a driven tandem, at 1.25 or 1.5 m), where the front axle stands, how far in from the body's end the rear one is, the front track, what the floor stands on (stilts, tub, skirts) | `VehicleChassis.cs`, `LayerTables.Chassis` |
+| body | the body pattern and segment lengths, cab, nose, rear, bed sides, roof, the room's bays (heights, steps, rake), the decks' and walls' plates, the hood, the ladder, paint | `ShapeGrammar.Plan`, `LayerTables.Body` |
+| kit | the guns (how many, where, which), the flanks' panniers, the room's furniture and chest, the ammo, ram bars, spikes, trophies, masts, the Pipe Box, a passenger | `ShapeGrammar.Guns`, `LayerTables` has no kit table: the style's own lists |
+| wear | an age; panels gone over to the style's rust, low panels dark with road dirt (the frame colour), soot round guns and the exhaust (the palette's darkest), patch repairs welded over outer panels, an open deck's edge rusted out; the style's crooked plates (Trim's "crooked" fork) | `VehicleWear.cs`, `LayerTables.Wear` |
+
+**How a fork finds its layer.** `VehicleLayers.LayerOf` maps a root fork's topic to a layer: "chassis", "gear", "axles", "drive" are the chassis's; "wear", "crooked" the wear's;
+"grammar kit", "weapon", "rounds", "ram", "show", "kit", "piper", "furnish", "end chest", "cargo", "crew", "panniers" the kit's; anything else the body's. So `Vehicle`'s
+own methods (`Deck` forks "deck bed", `Turret` "weapon 2", `Trim` "paint") roll from the right layer without knowing about layers. A new fork in a kit-3 path picks its
+layer by its name: name it for what it decides. A layer left unset takes the seed, and a root of the seed's own number forks exactly as the plain dice would.
+
+**The API.** `VehicleLayers(Chassis, Body, Kit, Wear)`, each an optional seed. `VehicleRegistry.Make(g, seed, layers: new(Wear: 99))` is seed 7's truck with seed 99's wear;
+`new(Chassis: 42)` the same body on another chassis. `game.VehicleSpawn.Request(style, shape, seed, ground, yaw, ..., layers: new(Wear: 99))` does the same in game
+(nothing on the wire: only the server generates). A vehicle with overrides is named for them, "Bandit Box Truck 7 [wear 99]", so it never reads as a committed seed, and
+`Vehicle.Layers`, `VehicleGenJob.Layers` and the kit line carry every layer's seed: `// kit 3; seeds chassis 42 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front
+under the hood, inset 1 m, coil/hydraulic, wing 0.5, wear age 0.64 (11 rusty, 15 dirty, 0 sooty, 1 patched, 1 rusted out), body room, ...`. Only the grammar's shapes
+have layers: the Technical, the trailers, the Tanker Rig and the Double Decker refuse them (kit 1), and so does a request for them.
+
+**What "independent" means.** Each layer's dice are its own, but what it builds sits on the others: a new chassis moves the rear axle, so the guns' spots clear of it can move
+(kit decides which gun, the axles where it may stand), and a different kit puts panniers on, so the wear's rust lands on a different set of panels. Measured on Bandit Box
+Truck 5 with each layer varied over 8 seeds (`--vary`): wear moved no part and no trait but paint and patches (distance 0.000); kit moved only guns, stores and dressing
+(mean pair 0.066; length, wheelbase, track, suspension, body and cab never varied); chassis moved the running gear (wheelbase 3 values, track 4, suspension 7 kinds) with
+the body the same in 7 of 8 (the eighth planned again: a plan that fails rerolls every layer, from the next fork of each); body moved the outline and its lengths with the
+axle layout the same in all 8.
+
+**Ranges.** `LayerTables` (`VehicleLayers.cs`) holds a table per layer by style name, so `Styles.cs` is untouched and a style not named (Militia) gets the defaults:
+
+- `ChassisRange`: the rear axle's inset (quarter metres, kit 2: 1.25 to 2.25 in halves), the front axle's stations and their weights (-1.675 under the hood's back, kit 2's;
+  -1.925 forward; -0.925 set back beside the cab), the front wing (0.5 or 0.75 m), the axle layouts' weights (second axles weigh 0.3 times under a 4 m body up to twice
+  under a 9 m one), their spacings, and the chances of mixing recipes' corners, of a wheel or spring swap, and of a dead tag axle on Rigid Mounts. A cab-over keeps kit 2's
+  front axle; a moved front axle keeps kit 2's track and leaves the hood's fenders off (`Vehicle.NoFenders`), which stand where kit 2's wheels are.
+- `BodyRange`: how segment lengths lean in the recipe's range, the room sections' height weights (tall, low, narrow), how often the roofline steps, how often a brow and
+  a tail are raked down. The defaults are kit 2's rolls.
+- `WearProfile`: the shares of rusty, dirty and sooty panels, patch repairs, rusted-out deck edges, and the age range that scales them. Bandit heavy, the IT Department
+  light, the Clan "well loved" (mud and mended, little rust), the Ministry and the Call Centre between.
+
+The corners come from the style's own `HeavyGear`: a chassis takes one of its recipes, then (by the table's odds) the front or the rear of another recipe (the rear with its
+differential and floor height: a swing arm's throw is what lets a floor sit low), a wheel of the same class (at the rear under a body, never a bigger one: a wheel's top meets
+the walls hung under the floor) and a spring of the same mount (Leaf Spring, Heavy Suspension, Hydraulic Suspension; Double Wishbone, Heavy Double Wishbone; Swing Arm,
+Heavy Swing Arm). A second axle needs a high floor on a wide differential and the shape's own gear list to allow it ("tandem" for tag and pusher axles, "six" for a driven
+tandem), so a Flatbed Fort's walled bed or a tanker keeps to what kit 2 let them have. A pusher that would stand under the cab goes behind instead. "Walking beam" and "bogie"
+suspensions have no part of a size for these vehicles (the Bogie parts are tracks a metre and a half across): a close tandem stands for a bogie. "None" is the dead axle.
+
+**Wear and the checks.** Wear never touches a room's hull (rays out of a room find no new hole), a fuel tank, a tyre, a gun, the frame (stacked beams of one colour don't
+fight) or anything with slots, and its paint is only ever one of the style's own colours, because the identity score counts a painted part as the style's only when its colour
+is in the palette: a mixed "rusty beige" read as foreign paint and cost the Bandit Box Truck 0.04 of identity before it was changed. So for every style but the Bandits, whose
+"rust" role is rust, rust shows as their panel colours and the wear reads mostly as dirt, soot, patches and missing plates. A patch is a freeform weld, which the build rules
+don't check, so `Vehicle.ClearOf` tests its box against every part's bounds first. Deck cells only rust out on an open deck's edge (bed, porch, rack, plated hood) and never
+beside a hole or a whole plate. **Not done:** broken glass (no vehicle carries a glass part: a cab shell is one part) and bent trim.
+
+**Two fixes the wider ranges needed.** A driven tandem under a long kit-3 wheelbase ran its laid shaft more than 8 m in one segment, which the game refuses: past 7.9 m the
+shaft takes a node halfway (`Vehicle.Powertrain`; shorter shafts are laid as before, so kit 1 and 2 are unchanged). And a kit-3 plan must measure a point under the side
+and plan fill limits, not half a point: one built at 62.0 % after measuring 61.6 %.
+
+**Measured** (2-core box shared with other agents, load 3 to 8, so times are rough; `--kit 2` against `--kit 3` on the same build, which makes kit 2 byte for byte as before):
+
+@@LAYERED@@
 
 ## Quality tools
 
@@ -424,10 +493,10 @@ Parked vehicles sleep, so a map of them costs little; a spawn is 4 to 16 ms, so 
 The server makes a faction vehicle when it is asked for, from (style, shape, seed), by running the generator in the game (`Source/Game/GameSandboxVehicles.cs`, `Source/VehicleKit/VehicleSpawn.cs`).
 
 ```csharp
-game.VehicleSpawn.Request("Bandit", "Box Truck", seed: null, ground, yaw, owner: 255, frontOf: 255, done: (built, name, why, owner) => ...);
+game.VehicleSpawn.Request("Bandit", "Box Truck", seed: null, ground, yaw, owner: 255, frontOf: 255, done: (built, name, why, owner) => ..., layers: new(Wear: 99));
 ```
 
-`seed` null: the server picks one (1 to 999,999). `ground` and `yaw` say where it stands, or `frontOf` names a player it is set down in front of, as they stand when it is ready (the parts menu's way). The return is why it was refused, or null: queued. `done` hears how it went, on the tick. At most 8 wait, 2 from one player.
+`seed` null: the server picks one (1 to 999,999). `layers` (optional): kit 3's per-layer seeds ("Layered variety"), kept if the seed rerolls. `ground` and `yaw` say where it stands, or `frontOf` names a player it is set down in front of, as they stand when it is ready (the parts menu's way). The return is why it was refused, or null: queued. `done` hears how it went, on the tick. At most 8 wait, 2 from one player.
 
 **The parts menu.** The Blueprints tab has "Faction vehicles: new seed" (on by default) and a seed box (0: any). With it on, a faction vehicle's tile (a blueprint named "Style Shape seed") asks for a new one of that style and shape (`CActKind.Vehicle`: the style's and the shape's names and a seed; protocol 186); off, the tile spawns the committed file as before (`CActKind.Blueprint`, which tests and every other blueprint still use). The host also has "Server generates them": off (`VehicleSeeds.Committed`), every request gets a committed seed of its style and shape, the asked one when it ships, so a session plays only what CI checks.
 
