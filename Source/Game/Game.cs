@@ -2340,6 +2340,7 @@ public sealed partial class Game : IDisposable
         ClosePlaces(); // free travel: the planetoids running beside it saved into the world first (GameTravel.cs)
         World.Enter(Place); // (its last save and goodbyes run in its own world)
         WorldOnExit(); // a saved world's last save, finished before anything closes (GameWorldSave.cs)
+        _vehicleSpawn?.Reset(); // a faction vehicle being made is dropped, its thread ended (GameSandboxVehicles.cs)
         StressSummary("session over"); // a horde stress round's figures, if not written yet (ZombiesCrowdStress.cs)
         SayHostBye(); // the host tells everyone why before the connections close (GameHostBye.cs)
         UnhookSteamAuth(); // cancel my ticket / end every session (GameSteamAuth.cs)

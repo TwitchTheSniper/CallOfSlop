@@ -4,8 +4,9 @@ A vehicle generator is C# code inside the game assembly that fills a `Vehicle` a
 without working out sockets by hand, in the same way the map kit (docs/mapkit/MAPKIT.md) lets it make maps. Everything goes through the game's own rules as it is added, and the
 result is **checked by the real game** before anyone drives it: the file goes back through the blueprint loader, and the real physics and weapons drive, turn and fire it.
 
-Namespace `CallOfSlop.VehicleKit`. The committed files stay the product: the game loads `Constructs/Blueprints/*.json`, never a generator, so a generated vehicle is spawned, driven,
-shot and salvaged part by part like any other. **Fix the generator, not its files.** No AI is in here: crew and behaviour are a later job.
+Namespace `CallOfSlop.VehicleKit`. The committed files are what reviews, tests and the menu's tiles use: the game loads `Constructs/Blueprints/*.json`. A server can also run a
+generator while the game plays, for a seed nobody committed ("Dynamic spawn" below). Either way the vehicle is an ordinary construct, spawned, driven, shot and salvaged part by part
+like any other. **Fix the generator, not its files.** No AI is in here: crew and behaviour are a later job.
 
 ## Commands
 
@@ -252,4 +253,26 @@ Measured on this box (2 cores) with a mix of the 19 shipped vehicles on Proving 
 
 Parked vehicles sleep, so a map of them costs little; a spawn is 4 to 16 ms, so spread big groups over ticks. A blueprint file is 9 to 21 KB. Generating one takes 0.2 to 1.1 s (the socket search, on the same thread), so it can't run in a tick.
 
-**Files or generated at load.** Keep shipped vehicles as a few seeds a shape, for review and the menu. Don't commit hundreds: the game builds each blueprint once at start-up to check it (about 8 ms each), and the Blueprints tab's spawn message carries the index as a byte (`CActKind.Blueprint`), so 255 is a hard limit. For maps, take a small set of seeds per shape: paint and loot are what a player sees differ, and loot rolls at spawn anyway. If a map needs true variety, generate on the server at map load on a worker: clients get the bodies, so nothing about a generated vehicle needs to be on their disk. That path isn't built.
+**Files or generated.** Keep shipped vehicles as a few seeds a shape, for review and the menu. Don't commit hundreds: the game builds each blueprint once at start-up to check it (about 8 ms each), and the Blueprints tab's spawn message carries the index as a byte (`CActKind.Blueprint`), so 255 files is a hard limit (204 blueprints ship today). Variety comes from dynamic spawn instead: any seed, made on the server when it is asked for, with nothing on anyone's disk.
+
+## Dynamic spawn
+
+The server makes a faction vehicle when it is asked for, from (style, shape, seed), by running the generator in the game (`Source/Game/GameSandboxVehicles.cs`, `Source/VehicleKit/VehicleSpawn.cs`).
+
+```csharp
+game.VehicleSpawn.Request("Bandit", "Box Truck", seed: null, ground, yaw, owner: 255, frontOf: 255, done: (built, name, why, owner) => ...);
+```
+
+`seed` null: the server picks one (1 to 999,999). `ground` and `yaw` say where it stands, or `frontOf` names a player it is set down in front of, as they stand when it is ready (the parts menu's way). The return is why it was refused, or null: queued. `done` hears how it went, on the tick. At most 8 wait, 2 from one player.
+
+**The parts menu.** The Blueprints tab has "Faction vehicles: new seed" (on by default) and a seed box (0: any). With it on, a faction vehicle's tile (a blueprint named "Style Shape seed") asks for a new one of that style and shape (`CActKind.Vehicle`: the style's and the shape's names and a seed; protocol 186); off, the tile spawns the committed file as before (`CActKind.Blueprint`, which tests and every other blueprint still use). The host also has "Server generates them": off (`VehicleSeeds.Committed`), every request gets a committed seed of its style and shape, the asked one when it ships, so a session plays only what CI checks.
+
+**Only the server generates.** A built vehicle is an ordinary construct: clients get it as bodies (`CBody`), as they get anything built, so nothing about the seed is on the wire and a client never runs the kit. That is simpler and safer than clients regenerating: no machine-to-machine determinism to trust, no fallback to send a blueprint when a hash disagrees, and nothing changes when a client's build differs in a way the protocol doesn't catch. The text's FNV-1a hash is in the log line (`[vehicles] generated Bandit Box Truck 733786 (hash ...)`), and a seed always writes the same text: in game and in `--gen-vehicle` alike (the first shipped seed of every shape in every shipped style, made in slices this way, matched its committed file byte for byte). It saves and loads with the world and is salvaged like anything else, because that is all it is.
+
+**Off the tick, but never beside it.** A generation costs 5 to 900 ms (measured on this box, warm: a Fuel Trailer 5, a Box Truck 180 to 400, a War Bus 420 to 560, the Double Decker 900), far past the 8 ms tick. `VehicleGenJob` runs it on a thread of its own, but that thread only runs inside `Step`, while the tick that called it waits: the tick gives it `VehicleSpawner.SliceMs` (2.5 ms) and it hands back at the next `VehicleGenJob.Yield`, which the kit's own steps call (each socket try in `Put`, after each part, weld, wire and link; between steps of the game's own build code, never inside one). So the two threads never run at once, nothing the game shares (the snap build's caches, the weapon builder, the statics `World.Enter` swaps) is touched by two threads, and no part of the game had to be made thread-safe. The cost: a generation's time comes off the tick's, a slice at a time, so a Box Truck takes about 100 ticks (under 2 s) and a Double Decker about 200. The step between two yields averages under 0.6 ms; on this busy 2-core box a slice now and then ran to 10 to 20 ms (garbage collection and the other agents' builds). A generator stuck between yields for 10 s is abandoned (logged) and the request falls back. `Yield` costs one thread-static read anywhere else, so the command line and the self-tests run as before.
+
+Setting it down is the ordinary blueprint spawn (`ConstructBuild.BuildOnGround`), on the tick it is ready: 1 to 20 ms by size (37 ms for the Double Decker), as every parts-menu spawn always was. Spreading that build over ticks is the next step if it matters.
+
+**Seeds that fail.** A seed whose generator throws (some seeds have nowhere to stand a part; the sweep skips them) or whose text doesn't load rerolls up to 3 times, each new seed derived from the last (`VehicleSpawnKit.Reroll`: the same seed always rerolls the same way), then a committed seed of that style and shape stands in (`VehicleSpawnKit.Committed`). A style that ships nothing (Militia) has nothing to fall back to: the player is told. Failures are logged, the first 10 and then every 100th. The in-game check is that it builds: `VehicleChecks` (driving, turning, firing for simulated seconds) doesn't run at spawn, so a seed that builds but drives badly is spawned anyway. `--sweep-vehicle` gives a shape's pass rate; run it before calling a shape fit for dynamic spawn.
+
+A towed vehicle (the Tanker Rig's trailer) comes with it: a committed trailer when its blueprint ships, else made by its own generator in the same job.

@@ -147,6 +147,7 @@ public class BlueprintScript
         if (i < 0)
             throw new VehicleKitException($"a {def.Name}: too many parts");
         C.Rebuild();
+        VehicleGenJob.Yield(); // (a spawn in the game hands back to the tick here: VehicleSpawn.cs)
         _steps.Add(new Step { Part = def.Name, On = onStep, Socket = C.DefOf(onIndex).Sockets[ts].Name, By = def.Sockets[ds].Name, Spin = spin });
         return Added(i, def);
     }
@@ -194,6 +195,7 @@ public class BlueprintScript
                         var d = Vector3.Distance(pos + Rot24.Apply(turns[sp], mid), want);
                         if (d >= bestD - 1e-4f || d > reach + 0.5f)
                             continue;
+                        VehicleGenJob.Yield();
                         var why = ConstructBuild.Place(C, i, s, def, ds, sp, out _);
                         if (why == null && d <= reach)
                         {
@@ -277,6 +279,7 @@ public class BlueprintScript
         if (i < 0)
             throw new VehicleKitException($"{Name}: a {def.Name} won't weld on: at most {Freeform.MaxPerConstruct} freeform welds a construct");
         C.Rebuild();
+        VehicleGenJob.Yield();
         _steps.Add(new Step
         {
             Part = def.Name,
@@ -297,6 +300,7 @@ public class BlueprintScript
             throw new VehicleKitException($"a wire {from.Name} -> {to.Name}: {bad}");
         World.AddWire(C, from.Index, to.Index);
         C.Rebuild();
+        VehicleGenJob.Yield();
         _wires.Add((from.Step, to.Step));
     }
 
@@ -305,6 +309,7 @@ public class BlueprintScript
     {
         World.PlugHose(C, reel.Index, C, inlet.Index);
         C.Rebuild();
+        VehicleGenJob.Yield();
         _hoses.Add((reel.Step, inlet.Step));
     }
 
@@ -333,6 +338,7 @@ public class BlueprintScript
         for (var k = 0; k < C.RouteCount; k++)
             C.Routes[k].Cursor = 0;
         C.Rebuild();
+        VehicleGenJob.Yield();
         _links.Add(text.ToString());
     }
 
