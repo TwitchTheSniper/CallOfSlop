@@ -54,11 +54,12 @@ public sealed partial class Construct
     /// </summary>
     private void FeedShafts(int start, bool geared, Span<CLink> edges, Span<float> edgeEff)
     {
-        Span<bool> fed = stackalloc bool[PartCount];
-        Span<float> ratio = stackalloc float[PartCount];
-        Span<float> eff = stackalloc float[PartCount];
-        Span<ushort> mask = stackalloc ushort[PartCount];
-        Span<ushort> queue = stackalloc ushort[PartCount];
+        using var scratch = Scratch.Begin();
+        Span<bool> fed = scratch.Take<bool>(PartCount);
+        Span<float> ratio = scratch.Take<float>(PartCount);
+        Span<float> eff = scratch.Take<float>(PartCount);
+        Span<ushort> mask = scratch.Take<ushort>(PartCount);
+        Span<ushort> queue = scratch.Take<ushort>(PartCount);
         int head = 0, tail = 0;
         queue[tail++] = (ushort)start;
         fed[start] = true;

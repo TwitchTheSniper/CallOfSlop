@@ -916,7 +916,7 @@ public static class ConstructConfig
     public static void Write(PacketWriter w, Construct c)
     {
         var at = w.Length;
-        w.U16(0);
+        w.U32(0); // (a u32 since protocol 190: 16,000 parts with five settings each would wrap a u16)
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -929,15 +929,17 @@ public static class ConstructConfig
                     n++;
                 }
         }
-        w.PatchU16(at, (ushort)n);
+        w.PatchU32(at, (uint)n);
     }
 
     public static void Read(ref PacketReader r, Construct c)
     {
         for (var i = 0; i < c.PartCount; i++)
             Init(ref c.Parts[i], c.Parts[i].D);
-        int n = r.U16();
-        for (var k = 0; k < n; k++)
+        var n = r.U32();
+        if (n > (uint)c.PartCount * 256)
+            throw new MalformedPacketException($"{n} construct settings on {c.PartCount} parts");
+        for (var k = 0u; k < n; k++)
         {
             var part = r.U16();
             var slot = r.U8();
