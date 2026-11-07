@@ -53,8 +53,9 @@ their log. Add a call wherever a new silent cap goes in.
 - **`ConstructTerminal.MaxTerminals` 64** (more read as having no stores) and **`MaxEdges` 2,048**: a big base may reach
   them; the hop search's cost would need measuring.
 - **Beacon networks 64** (a bit of a 64-bit mask) and **routed links 254 a construct** (a parent byte): wire widths.
-- **`ConstructParts.MaxBoxes` 32** (a draw call a box): untouched on purpose; merging part meshes is the user's design
-  decision now.
+- **`ConstructParts.MaxBoxes` 256** (was 32, a draw call a box): raised with merged meshes (docs/render/MERGED-MESHES.md),
+  which draw a static part's boxes in its chunk's few draws. Moving parts are still drawn box by box; designed ordnance keeps
+  32 (`OrdnanceDesign.MaxBoxes`).
 
 ## Parts a construct: 8,000 to 16,000 (branch `feat/max-parts`, protocol 190)
 
@@ -157,7 +158,7 @@ where it has one. Line numbers are those of this audit.
 | Cost budget | `MaxSurfaces` | `Constructs/ConstructAero.cs:21` | `512` | - | Kept. With rotors, up to 544 items: the pose window's start was a byte (wrapped past 255): **fixed, u16, protocol 189** |
 | Cost budget | `MaxVolumes` | `Constructs/ConstructCargo.cs:26` | `32` | cargo volumes a construct (more are refused when fitted; was 4: a carrier has a hangar a deck). Each frozen one is a broadphase look ever... | **Raised 4 to 32**: each frozen volume is one broadphase look every `ScanEvery` ticks |
 | Cost budget | `MaxEngines` | `Constructs/ConstructEngine.cs:162` | `32` | modular engines a construct (was 8; EngineOf is a byte, the bank scratch is 256 slots on the stack); past this the pieces are logged and... | **Raised 8 to 32**, logged when reached; `EngineOf` is a byte, bank scratch 256 slots on the stack |
-| Cost budget | `MaxBoxes` | `Constructs/ConstructParts.cs:796` | `32` | a part's boxes: each is a draw call | **Not touched** (the part-mesh merge is the user's design decision): each box is a draw call |
+| Cost budget | `MaxBoxes` | `Constructs/ConstructParts.cs:796` | `256` | a part's boxes (a box index fits a byte) | **Raised** from 32 with merged meshes (docs/render/MERGED-MESHES.md): static parts' boxes are drawn per chunk, not per box |
 | Cost budget | `MaxThrusters` | `Constructs/ConstructThrust.cs:32` | `512` | was 64; a raycast-free force each a tick. Past this a thruster is a plain part: logged, docs/perf/LIMITS.md | **Raised 64 to 512**; the array is no longer 64 a body (every loose block paid ~4 KB): it grows by doubling at a rebuild, and the old-level match is one walk, not n x old; logged when reached |
 | Cost budget | `MaxSpots` | `App/Program.SandboxSculpt.cs:14` | `128` | - | Kept |
 | Cost budget | `MaxMasters` | `App/Settings.cs:202` | `8` | - | Kept |

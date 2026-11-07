@@ -793,7 +793,7 @@ public static partial class ConstructParts
 
     /// <summary>The most part types (ids are two bytes on the wire since protocol 87; 65535 means none).</summary>
     public const int MaxTypes = 4096;
-    public const int MaxBoxes = 32; // a part's boxes: each is a draw call
+    public const int MaxBoxes = 256; // a part's boxes (was 32 while each was a draw call: static parts are merged meshes now, docs/render/MERGED-MESHES.md; a box index fits a byte)
     public const int MaxTier = 5; // a machine's highest tier
     public const int MaxSockets = 255; // a part's sockets: indices 0-254 (one byte on the wire, CLink.SA/SB; 255 means "no socket" in places such as ConstructModules.LinkWhy)
     public const float MaxPartReach = 200f; // how far a box goes from a part's origin (a capital hull section, a 128 m keel from its end cell)

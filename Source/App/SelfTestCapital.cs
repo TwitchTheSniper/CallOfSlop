@@ -45,7 +45,7 @@ public static partial class SelfTest
     /// A hull of about <paramref name="parts"/> parts (a grid of chassis decks 300 m long, a riveted plate on each), built through
     /// the calls an edit makes, about 100,000 t at 4,000 parts. Anchored to nothing: it lies on the ground.
     /// </summary>
-    private static Construct? CapHull(ConstructWorld w, Vector3 at, int parts, out string? why)
+    internal static Construct? CapHull(ConstructWorld w, Vector3 at, int parts, out string? why)
     {
         why = null;
         var deck = ConstructParts.Need(CapDeckName);

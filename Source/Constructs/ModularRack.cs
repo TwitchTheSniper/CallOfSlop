@@ -382,11 +382,13 @@ public static class ModularRack
                 top = r + 0.08f * sc;
                 boxes.Add(Box(-0.05f * sc, r * 0.8f, -half - cap * 0.5f, 0.05f * sc, top, half + cap * 0.5f, Dark)); // (the hanger spine along its top)
             }
-            // The hooks: a rail along the layers for each place round the drum (a part has at most 32 boxes), as long as its first and last hooks.
-            for (var k = 0; k < s.B && k < n; k++)
+            // The hooks: one a station while the part's boxes allow (ConstructParts.MaxBoxes; merged meshes draw them all as
+            // one), else a rail along the layers for each place round the drum, as long as its first and last hooks.
+            var own = boxes.Count + n <= ConstructParts.MaxBoxes;
+            for (var k = 0; k < (own ? n : Math.Min(s.B, n)); k++)
             {
                 var (at, dir) = Station(s, k);
-                var last = Station(s, k + s.B * ((n - 1 - k) / s.B)).At.Z;
+                var last = own ? at.Z : Station(s, k + s.B * ((n - 1 - k) / s.B)).At.Z;
                 var inset = dir is "-x" or "+x" ? Math.Clamp(0.004f * sc, 0.002f, 0.02f) : 0f; // (the side rails a little shorter: no face shared with a bottom or top one at a corner)
                 float lo = r + 0.04f * sc, hi = r - 0.02f * sc, wide = 0.05f * sc, deep = HookDeep(s), z0 = at.Z - deep + inset, z1 = last + deep - inset;
                 boxes.Add(dir switch
@@ -407,14 +409,22 @@ public static class ModularRack
             var w = s.Diameter * s.B / 2;
             var d = PitchZ(s) * (s.A - 1) / 2 + 0.2f * s.Length;
             boxes.Add(Box(-w, -0.04f * sc, -d, w, 0.08f * sc, d));
-            // The hooks: a rail fore and aft for each column (a part has at most 32 boxes), its top inside the beam.
-            for (var col = 0; col * s.A < n; col++)
-            {
-                var (at, _) = Station(s, col * s.A);
-                var last = Station(s, Math.Min(n - 1, col * s.A + s.A - 1)).At.Z;
-                var deep = HookDeep(s);
-                boxes.Add(Box(at.X - 0.05f * sc, -0.08f * sc, at.Z - deep, at.X + 0.05f * sc, -0.035f * sc, last + deep, Brass, detail: true));
-            }
+            // The hooks, their tops inside the beam: one a station while the part's boxes allow (ConstructParts.MaxBoxes; merged
+            // meshes draw them all as one), else a rail fore and aft for each column.
+            var deep = HookDeep(s);
+            if (boxes.Count + n <= ConstructParts.MaxBoxes)
+                for (var k = 0; k < n; k++)
+                {
+                    var (at, _) = Station(s, k);
+                    boxes.Add(Box(at.X - 0.05f * sc, -0.08f * sc, at.Z - deep, at.X + 0.05f * sc, -0.035f * sc, at.Z + deep, Brass, detail: true));
+                }
+            else
+                for (var col = 0; col * s.A < n; col++)
+                {
+                    var (at, _) = Station(s, col * s.A);
+                    var last = Station(s, Math.Min(n - 1, col * s.A + s.A - 1)).At.Z;
+                    boxes.Add(Box(at.X - 0.05f * sc, -0.08f * sc, at.Z - deep, at.X + 0.05f * sc, -0.035f * sc, last + deep, Brass, detail: true));
+                }
             sockets.Add(Sock("top", 0, 0.08f * sc, 0, "+y"));
             sockets.Add(Sock("back", 0, 0, d, "+z"));
             sockets.Add(Sock("front", 0, 0, -d, "-z"));
