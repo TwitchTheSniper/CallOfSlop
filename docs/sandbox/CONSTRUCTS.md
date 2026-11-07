@@ -1181,7 +1181,9 @@ each. Everything else is cheaper or level, because the trees only ever reach the
 the solve short. These rows were measured at 96 parts a construct. At 8,000 (container, full suite): one hull sliding 0.49 ms,
 one hull and 40 blocks on half-metre ground 2.5 ms, a buggy on a capital deck 0.53 ms (was 23 to 39 ms with sampled hull
 points). Eight 8,000-part hulls stacked cost 84 ms a tick, over the 8 ms budget: each pair walks every piece of the faces that
-touch before the candidates are thinned.
+touch before the candidates are thinned. Since `MaxParts` went to 16,000 these scenes build hulls of the new cap (container, the
+section alone, 2026-11-07): one hull sliding 0.83 ms (0.65 at 8,000 the same day), one hull and 40 blocks on half-metre
+ground 3.7 ms, eight 16,000-part hulls stacked 126 ms (59 ms at 8,000): the stacked case doubles with the parts.
 
 #### Shaped parts
 
@@ -1757,7 +1759,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 
 Choices made (the developer may change them): the cut is at the die and takes the whole piece (a saw could stand anywhere along the path, and left the rest on the die); Cut every moved from the saw to the Extruder rather than going, so a line needs no logic; a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
 table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a u64, a simple panel; finer needs a second word); 5 cm steps; the piece on the machine's
-own construct, not a body of its own (so it uses one of the construct's 8,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the table of limits by class;
+own construct, not a body of its own (so it uses one of the construct's 16,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the table of limits by class;
 one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data.
 
 ## The Wheel Former
@@ -3295,8 +3297,8 @@ boxes and 255 sockets and reaches at most 200 m from its origin.
 
 | What | Before | Now | What stopped it there |
 | --- | --- | --- | --- |
-| Parts a construct | 96 | 8,000 | stack spans sized to the part count, on a 1 MB main thread on Windows; indices are u16, so up to 65,534 with those moved to scratch arrays |
-| Links | 288 | 24,000 | three a part, indexed by part (`Construct.FirstLink`) |
+| Parts a construct | 96 | 16,000 (8,000 until docs/perf/LIMITS.md) | a rebuild's cost (about 2 ms at 8,000 parts, 5-9 ms at 16,000 in the container), and the link count: a u16 on the wire, so 21,845 parts at three links each without widening it. The part-sized spans are per-thread scratch now (`Scratch.cs`), not the stack |
+| Links | 288 | 48,000 | three a part, indexed by part (`Construct.FirstLink`); the count is a u16 on the wire |
 | Joints + freeform attachments | 16 (8 joins) | 255 (192) | a segment is a byte everywhere |
 | Wheels and track rays, spring feet | 12 | 256 | a raycast each a tick; the wire doesn't care |
 | Guns | 8 | 256 | a turn through the gun step |
@@ -5435,12 +5437,12 @@ alone (they must keep identical sockets). Generated weapon parts and joints are 
 
 ## Performance and caps
 
-A construct holds at most 8,000 parts, 24,000 links, 255 joints and freeform attachments (64 joins), 256 wheels and track rays,
+A construct holds at most 16,000 parts, 48,000 links, 255 joints and freeform attachments (64 joins), 256 wheels and track rays,
 256 spring feet, 256 guns, 512 thrusters, 32 modular engines, 254 routed links and 3,000 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
 says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 255 of those), 255 couplings, 16,384
 contacts a tick (each rigid group's points against one thing thinned to nine a normal). Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
-the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
+the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans of per-thread scratch (`Scratch.cs`: part-sized spans are never on the stack). Sleeping bodies cost
 nothing. Other modes never touch any of it (every hook returns at once outside Sandbox; the seeded mode digests are
 unchanged).
 
