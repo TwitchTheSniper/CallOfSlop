@@ -47,6 +47,33 @@ public static class VehicleChassis
         _ => "coil",
     };
 
+    /// <summary>
+    /// How far a spring hangs its axle below its mount (m): 0 for every spring bolted on beside its wheel, 0.6 to 2.5 m for a pogo strut, which stands its
+    /// wheel on stilts under a mount on its top. A front and a rear corner that hang differently stand the frame on a slope.
+    /// </summary>
+    public static float Hang(string spring)
+    {
+        if (ConstructParts.Find(spring) is not { } d)
+            return 0;
+        CSocket? mount = null, axle = null;
+        foreach (var s in d.Sockets)
+            if (s.Name == "mount")
+                mount = s;
+            else if (s.Name == "axle")
+                axle = s;
+        return mount is { } m && axle is { } a ? MathF.Max(0, m.At.Y - a.At.Y) : 0;
+    }
+
+    /// <summary>The most two corners of one chassis may differ in <see cref="Hang"/> (m): a wheel swap moves the axle by a tenth, a strut on one end a metre and more.</summary>
+    public const float MaxHangDiff = 0.3f;
+
+    /// <summary>
+    /// Can a front corner on <paramref name="front"/> go with a rear on <paramref name="rear"/>? Not when one hangs its wheel far lower than the other: Bandit
+    /// convoy 3's leader (<c>Bandit/command/3/553571/mk1</c>) mixed the stilt recipe's Heavy Pogo Struts in front with a rear on Heavy Suspension, stood nose up
+    /// 10.5 degrees with its tail rails on the ground and couldn't drive. A mix that would is not made (the roll is the same, so every other seed is unchanged).
+    /// </summary>
+    public static bool Level(string front, string rear) => MathF.Abs(Hang(front) - Hang(rear)) <= MaxHangDiff;
+
     private static float Radius(string wheel) => ConstructParts.Find(wheel) is { } d && d.WheelRadius > 0 ? d.WheelRadius : 0.45f;
 
     private static T Weighted<T>(Dice d, IReadOnlyList<(T Item, double W)> items)
@@ -96,7 +123,7 @@ public static class VehicleChassis
         {
             var swapFront = md.Chance(0.5);
             var other = md.Pick(swapFront ? gears : rears);
-            if (other != gear)
+            if (other != gear && Level(swapFront ? other.FrontSpring : gear.FrontSpring, swapFront ? gear.RearSpring : other.RearSpring))
             {
                 if (swapFront)
                     gear = gear with { FrontSpring = other.FrontSpring, FrontWheel = other.FrontWheel };

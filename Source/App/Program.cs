@@ -158,6 +158,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args); // many seeds of a shape, built and checked, nothing written
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
+        if (args.SkipWhile(a => !a.Equals("--diag-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diagFile)
+            return VehicleKit.VehicleDriveDiag.Cli(diagFile);
         if (args.Any(a => a.Equals("--gen-vehicles", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleKitCli.GenVehicles(args); // every vehicle generator: which outputs differ from the committed files
         if (args.SkipWhile(a => !a.Equals("--identity", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } identityOf)
