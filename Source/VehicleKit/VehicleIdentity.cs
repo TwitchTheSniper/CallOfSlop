@@ -451,7 +451,7 @@ public static class VehicleIdentity
         return new Score(st.Name, total, marks, palette, traits, silhouette, weakScore, weak, string.Join("; ", notes)) { Outline = [b.Side, b.Top, b.Height, b.Roof, b.Rake], Missing = missing, Section = section };
     }
 
-    /// <summary>The mean over the vehicle's room bays of how near each bay's front profile is to the nearest of the style's languages (as the style draws them); NaN without a room.</summary>
+    /// <summary>The mean over the vehicle's room bays of how near each bay's front profile (a lofted bay's: each of its two sections) is to the nearest of the style's languages (as the style draws them); NaN without a room.</summary>
     private static double SectionScore(Body b, FactionStyle st)
     {
         if (b.V.Rooms.Count == 0)
@@ -467,9 +467,13 @@ public static class VehicleIdentity
             var i = bay.Index;
             if (i < 0 || i >= b.Start.Length || b.Start[i] < 0)
                 continue;
-            var prof = FrontProfile.Of(b.Tris, [(b.Start[i], b.End[i])]);
-            var near = langs.Min(l => FrontProfile.Dist(prof, l));
-            sum += Math.Clamp(1 - (near - SectionFloor) / SectionScale, 0, 1);
+            // A lofted bay is its two sections (read from its key): each against the languages, so a bay that steps from a tall section to a low one isn't read as
+            // the union of the two. A fixed bay (kits 1 to 4) by its drawn triangles.
+            double Score(float[] prof) => Math.Clamp(1 - (langs.Min(l => FrontProfile.Dist(prof, l)) - SectionFloor) / SectionScale, 0, 1);
+            if (HullLoft.ShapeOf(bay.Def.Name) is { } sh)
+                sum += (Score(FrontProfile.Of(sh.A)) + Score(FrontProfile.Of(sh.B))) / 2;
+            else
+                sum += Score(FrontProfile.Of(b.Tris, [(b.Start[i], b.End[i])]));
             n++;
         }
         return n == 0 ? double.NaN : sum / n;
