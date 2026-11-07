@@ -144,6 +144,8 @@ public sealed partial class Construct
                     ConstructTracks.LeadRays(this, along, centre, d, keep, old);
             }
         }
+        if (WheelCount >= MaxWheels)
+            Caps.Hit("wheel and track rays a construct", MaxWheels); // (a raycast each a tick: past this a wheel is a plain part)
         ConstructTracks.BuildStations(this, keep, old);
         BuildSprings();
         BuildHubMotors();

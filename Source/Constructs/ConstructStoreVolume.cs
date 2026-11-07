@@ -19,7 +19,7 @@ public readonly record struct CHolding(bool IsPart, ushort Id, int Count);
 /// </summary>
 public static class ConstructStoreVolume
 {
-    public const int MaxPerConstruct = 4;
+    public const int MaxPerConstruct = 32; // (a sanity check when fitted, was 4: nothing is sized by it)
     public const float MaxSide = 40f; // a box's side (metres; the part file's settings stop here too)
     public const int MaxBulk = 10_000_000; // units, whatever the box's size: every weight stays exact in a float and the inertia in range
     public const int MaxSpill = 24; // bundles or loose parts a destroyed volume leaves; the rest is lost

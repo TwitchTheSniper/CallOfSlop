@@ -799,6 +799,8 @@ public static partial class ConstructParts
     public const float MaxPartReach = 200f; // how far a box goes from a part's origin (a capital hull section, a 128 m keel from its end cell)
     public const float MaxPartMass = 50_000_000f, MaxPartHealth = 16_000_000f; // (kg, hp, which three bytes carry; a capital chassis deck)
     public const float MaxAttachSeconds = 60f, MaxPistonTravel = 64f, MaxHitchReach = 64f;
+    public const int MaxName = 32; // a part file's name (a sanity check: the inventory's tiles and lists show it whole)
+    public const int MaxRuntimeName = 128; // a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a save's names are length-prefixed, a packet's text is at most 255 bytes)
 
     // The size classes (docs/sandbox/CONSTRUCTS.md, "Size classes"; tools/constructs/scale.py): wire and file values of a socket's class.
     public const byte Small = 0, Medium = 1, Large = 2, Capital = 3;
@@ -1218,8 +1220,9 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"format\" must be \"{Format}\"");
         var d = new ConstructPartDef { File = file };
         d.Name = StrKey(root, "name", file);
-        if (d.Name.Length is 0 or > 32 || d.Name.Any(c => c < 32 || c > 126))
-            throw new ConstructPartException($"{file}: \"name\" must be 1-32 plain ASCII characters");
+        var most = Opt(root, "stage") is { ValueKind: JsonValueKind.True } ? MaxRuntimeName : MaxName;
+        if (d.Name.Length == 0 || d.Name.Length > most || d.Name.Any(c => c < 32 || c > 126))
+            throw new ConstructPartException($"{file}: \"name\" must be 1-{most} plain ASCII characters");
         d.Description = Opt(root, "description") is { } desc ? AsciiText(desc, file, "description") : "";
         d.Group = Opt(root, "group") is { } grp ? AsciiText(grp, file, "group") : "";
         d.Section = Opt(root, "section") is { } sec ? AsciiText(sec, file, "section") : "";

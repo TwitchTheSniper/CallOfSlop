@@ -967,7 +967,7 @@ public static partial class ConstructPhysics
             return;
         if (seg < 0 || seg > c.JointCount)
             seg = 0;
-        var list = c.Recoils ??= new CRecoil[Construct.MaxGuns];
+        var list = c.Recoils ??= new CRecoil[Construct.MaxRecoils];
         RecoilQueued += j.Length();
         c.Wake();
         for (var k = 0; k < c.RecoilCount; k++)

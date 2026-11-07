@@ -3291,19 +3291,19 @@ ground bearing and height:
 A hollow part spends boxes where it shows: state of it, about 5.5 boxes a part in the test hull. A part has at most 32
 boxes and 255 sockets and reaches at most 200 m from its origin.
 
-**Limits**, and what set each:
+**Limits**, and what set each (every fixed cap in the game, its class and what was done about it: [docs/perf/LIMITS.md](../perf/LIMITS.md)):
 
 | What | Before | Now | What stopped it there |
 | --- | --- | --- | --- |
 | Parts a construct | 96 | 8,000 | stack spans sized to the part count, on a 1 MB main thread on Windows; indices are u16, so up to 65,534 with those moved to scratch arrays |
 | Links | 288 | 24,000 | three a part, indexed by part (`Construct.FirstLink`) |
-| Joints + freeform attachments | 16 (8 joins) | 255 (64) | a segment is a byte everywhere |
+| Joints + freeform attachments | 16 (8 joins) | 255 (192) | a segment is a byte everywhere |
 | Wheels and track rays, spring feet | 12 | 256 | a raycast each a tick; the wire doesn't care |
-| Guns | 8 | 64 | a turn through the gun step |
+| Guns | 8 | 256 | a turn through the gun step |
 | Routed links, nodes | 64, 768 | 254, 3,000 | a route's parent is a byte with 255 meaning none (a hundred sites and the tests); widening it is mechanical if a ship needs more |
 | Wires | 64 | 1,024 | |
 | Part mass, health | 50 t, 100,000 | 50,000 t, 16,000,000 | health is u24 on the wire |
-| Part reach, sockets | 5 m, 40 | 200 m, 64 | |
+| Part reach, sockets | 5 m, 40 | 200 m, 255 | a socket index is a byte |
 | Piston travel, hitch reach | 4 m, 1.5 m | 64 m, 64 m | |
 
 Every per-construct array is sized to the construct now and grows by doubling on an edit (`ReserveParts`, `ReserveLinks`,
@@ -5436,8 +5436,8 @@ alone (they must keep identical sockets). Generated weapon parts and joints are 
 ## Performance and caps
 
 A construct holds at most 8,000 parts, 24,000 links, 255 joints and freeform attachments (64 joins), 256 wheels and track rays,
-256 spring feet, 64 guns, 254 routed links and 3,000 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
-says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 16,384
+256 spring feet, 256 guns, 512 thrusters, 32 modular engines, 254 routed links and 3,000 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
+says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 255 of those), 255 couplings, 16,384
 contacts a tick (each rigid group's points against one thing thinned to nine a normal). Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
