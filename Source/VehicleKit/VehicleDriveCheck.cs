@@ -38,13 +38,21 @@ public static class VehicleDriveCheck
     public readonly record struct Result(bool Built, float Tilt, float Moved, float Speed, double Ms, string Why)
     {
         public bool Ok => Why.Length == 0;
+
+        /// <summary>The body it built (in a world of its own, driven by the pulse: its rest frame is what the behaviour brief reads), the blueprint, each step's part, and the text it was built from.</summary>
+        public Construct? Body { get; init; }
+
+        public ConstructBuild.Blueprint? Blueprint { get; init; }
+        public int[]? PartOf { get; init; }
+        public string Text { get; init; } = "";
     }
 
     /// <summary>
     /// The check on a blueprint's text: built, settled, measured and pulsed, at <paramref name="gravity"/> times the world's standard gravity. Yields between steps
     /// and ticks; allocates (it runs in a generation, never on a tick).
     /// </summary>
-    public static Result Run(string text, string file, float gravity = 1)
+    /// <remarks><paramref name="gate"/> false: run for its body and numbers only (the behaviour brief: VehicleBriefMake.cs), not counted in the gate's tally.</remarks>
+    public static Result Run(string text, string file, float gravity = 1, bool gate = true)
     {
         var place = Place(gravity); // (first: on the command line it loads the maps once, which isn't the check's cost)
         var start = Stopwatch.GetTimestamp();
@@ -60,7 +68,8 @@ public static class VehicleDriveCheck
         using (place.In())
             c = job.Join(Vector3.Zero, 0, out why);
         if (c == null)
-            return Done(start, new Result(false, 0, 0, 0, 0, $"it doesn't build: {why}"));
+            return Done(start, new Result(false, 0, 0, 0, 0, $"it doesn't build: {why}") { Text = text }, gate);
+        var kept = new Result(true, 0, 0, 0, 0, "") { Body = c, Blueprint = bp, PartOf = job.PartOf, Text = text };
         var q = new SelfTest.DriveWorld();
         for (var t = 0; t < SettleTicks; t++)
         {
@@ -70,9 +79,9 @@ public static class VehicleDriveCheck
         }
         var tilt = Tilt(c);
         if (tilt > MaxTilt)
-            return Done(start, new Result(true, tilt, 0, 0, 0, $"it stands {tilt:0.0} degrees off level (at most {MaxTilt:0})"));
+            return Done(start, kept with { Tilt = tilt, Why = $"it stands {tilt:0.0} degrees off level (at most {MaxTilt:0})" }, gate);
         if (c.DriveSeat < 0 || !c.CanDrive)
-            return Done(start, new Result(true, tilt, 0, 0, 0, $"it can't drive: {c.DriveProblem}"));
+            return Done(start, kept with { Tilt = tilt, Why = $"it can't drive: {c.DriveProblem}" }, gate);
         c.Driver = 1;
         c.DriverSeat = c.DriveSeat;
         using (place.In())
@@ -94,17 +103,19 @@ public static class VehicleDriveCheck
         }
         var moved = Vector3.Dot(c.WorldCom - p0, fwd);
         var after = Tilt(c);
-        var r = new Result(true, MathF.Max(tilt, after), moved, top, 0, "");
+        var r = kept with { Tilt = MathF.Max(tilt, after), Moved = moved, Speed = top };
         if (moved < MinMove)
             r = r with { Why = $"a {PulseTicks / (float)World.TickRate:0.##} s throttle pulse moved it {moved:0.00} m (at least {MinMove:0.#}; rpm {c.Rpm:0}{(c.DriveProblem.Length > 0 ? ", " + c.DriveProblem : "")})" };
         else if (after > 25)
             r = r with { Why = $"it tipped {after:0} degrees on the throttle pulse" };
-        return Done(start, r);
+        return Done(start, r, gate);
     }
 
-    private static Result Done(long start, Result r)
+    private static Result Done(long start, Result r, bool gate)
     {
         var ms = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+        if (!gate)
+            return r with { Ms = ms };
         lock (Lock)
         {
             Checked++;
