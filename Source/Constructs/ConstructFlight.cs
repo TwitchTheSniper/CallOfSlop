@@ -99,7 +99,7 @@ public static partial class ConstructFlight
     public static void Build(Construct c)
     {
         var n = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (stabilizers and panels are special parts)
             if (c.Parts[i].D.Logic == CLogic.FlightStabilizer)
                 n++;
         n = Math.Min(n, MaxStabs);
@@ -117,8 +117,10 @@ public static partial class ConstructFlight
         if (c.Stabs.Length < n)
             c.Stabs = new CStab[n];
         c.StabCount = 0;
-        for (var i = 0; i < c.PartCount && c.StabCount < n; i++)
+        foreach (var i in c.Specials)
         {
+            if (c.StabCount >= n)
+                break;
             if (c.Parts[i].D.Logic != CLogic.FlightStabilizer || !c.Parts[i].Working)
                 continue;
             ref var s = ref c.Stabs[c.StabCount];
@@ -135,7 +137,7 @@ public static partial class ConstructFlight
             c.StabCount++;
         }
         c.HasFlightDiag = false;
-        for (var i = 0; i < c.PartCount && !c.HasFlightDiag; i++)
+        foreach (var i in c.Specials)
             foreach (var pd in c.Parts[i].D.Panels)
                 c.HasFlightDiag |= pd.Source == "flight.diagnostic";
         c.Effectors ??= new FlightEffectors();

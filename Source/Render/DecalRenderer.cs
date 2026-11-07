@@ -444,7 +444,7 @@ public sealed unsafe class DecalRenderer
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, (int)GL_LINEAR);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
-        Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY, 4);
+        RenderCaps.Anisotropy(GL_TEXTURE_2D_ARRAY, 4f);
         Native.glActiveTexture(GL_TEXTURE0);
         _atlasGeneration = generation;
         _atlasPack = pack;

@@ -53,7 +53,7 @@ public static class ConstructAero
     public static void Build(Construct c)
     {
         var n = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (surfaces are special parts)
             if (c.Parts[i].D.Surface != null && !c.Parts[i].Broken)
                 n++;
         n = Math.Min(n, Construct.MaxSurfaces);
@@ -75,8 +75,10 @@ public static class ConstructAero
         var farF = Vector3.Zero;
         var lo = new Vector3(float.MaxValue);
         var hi = new Vector3(float.MinValue);
-        for (var i = 0; i < c.PartCount && c.SurfaceCount < n; i++)
+        foreach (var i in c.Specials)
         {
+            if (c.SurfaceCount >= n)
+                break;
             ref var p = ref c.Parts[i];
             if (p.D.Surface is not { } d || p.Broken)
                 continue;

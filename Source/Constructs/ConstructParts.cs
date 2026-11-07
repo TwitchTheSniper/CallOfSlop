@@ -220,6 +220,7 @@ public enum ConstructTool : byte
     Hands = 12, // bare hands out (ConstructEditsHands.cs, Program.SandboxHands.cs): LMB takes a loose part or a stored one into the hands, RMB drops what they hold; never fits or removes a part
     Nudge = 14, // the Nudge tool (ConstructNudge.cs, Program.SandboxNudge.cs): moves and turns whole constructs by a triad and arcs; never fits or removes a part
     NoCollide = 15, // the no-collide tool (ConstructNoCollide.cs, Program.SandboxNoCollide.cs): two pieces stop colliding, or collide again; never fits or removes a part
+    Texture = 16, // the texture paint tool (ConstructFinish.cs): puts a material on parts; never fits or removes a part
     PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
 }
 
@@ -233,7 +234,7 @@ public static class ConstructToolWire
     public static ConstructTool Current(ConstructTool t) => t == ConstructTool.Wrench ? ConstructTool.Welder : t;
 
     /// <summary>A tool from the wire (anything unknown: none; the retired wrench byte: the attach tool).</summary>
-    public static ConstructTool From(byte b) => b == (byte)ConstructTool.Wrench ? ConstructTool.Welder : b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks or (byte)ConstructTool.Nudge or (byte)ConstructTool.NoCollide ? (ConstructTool)b : ConstructTool.None;
+    public static ConstructTool From(byte b) => b == (byte)ConstructTool.Wrench ? ConstructTool.Welder : b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks or (byte)ConstructTool.Nudge or (byte)ConstructTool.NoCollide or (byte)ConstructTool.Texture ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -1233,7 +1234,7 @@ public static partial class ConstructParts
         // "wrench", or left out: an item unless it is heavy or bulky). The wrench is gone from the game and the attach tool fits
         // both, but the value keeps its meaning, so 533 part files and the generators stay as they are.
         var hint = Opt(root, "tool") is { } th ? EnumOf<ConstructTool>(Str(th, file, "tool"), file, "tool") : ConstructTool.Wrench;
-        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill or ConstructTool.Selector or ConstructTool.Tracks or ConstructTool.Nudge or ConstructTool.NoCollide)
+        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill or ConstructTool.Selector or ConstructTool.Tracks or ConstructTool.Nudge or ConstructTool.NoCollide or ConstructTool.Texture)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");

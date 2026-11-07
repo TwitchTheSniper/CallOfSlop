@@ -43,6 +43,8 @@ public static partial class Program
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Welder, _weldModes); // (the welder's: socket or freeform weld, board item fw01)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Paint) == null)
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Paint, _paintWheel); // (the paint tool's: modes, swatches, custom, recent colours; board item pp01)
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Texture) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Texture, _textureWheel); // (the texture paint tool's: modes, the list, recent textures)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Nudge) == null)
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Nudge, _nudgeModes); // (move, or rotate snapped or free: Program.SandboxNudge.cs)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.GroundDrill) == null)

@@ -64,9 +64,9 @@ public static unsafe partial class Program
         Console.WriteLine($"[glbench] compute self-check: {GlCompute.SelfCheck()}"); // the compute hook works (4.6 path) or is off (4.1)
         Console.WriteLine($"[glbench] {frames} frames a view and configuration, horde {horde} on Zombies maps; times are medians in ms");
         var configs = new List<string> { "all on" };
-        if (RenderCaps.Gl46)
+        if (RenderCaps.Gl46 && !args.Any(a => a.Equals("--bench-one", StringComparison.OrdinalIgnoreCase))) // (--bench-one: "all on" alone)
             configs.AddRange(RenderCaps.Experiments.Select(e => "no " + e.Name).Append("all off"));
-        if (_benchWorld != null)
+        if (_benchWorld != null && !args.Any(a => a.Equals("--bench-one", StringComparison.OrdinalIgnoreCase)))
             configs.Add("no merge"); // constructs box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
         var gpu = GlGpuStamps.Create(2);
         _passGpu = GlGpuStamps.Create(BenchPassNames.Length);
@@ -93,7 +93,15 @@ public static unsafe partial class Program
             var views = new List<(string Name, Vector3 Eye, Vector3 Target, float Fov)>();
             var (oe, ot, ofov, _) = MapThumbs.Camera(map);
             views.Add(("overview", oe, ot, ofov));
-            for (var i = 0; i < Math.Min(2, map.Spawns.Count); i++)
+            if (args.SkipWhile(a => !a.Equals("--bench-view", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?.Split(',') is { Length: 6 } bv)
+            {
+                // --bench-view "ex,ey,ez,tx,ty,tz": this one view instead (relative to the first spawn)
+                var v = bv.Select(x => float.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+                var s0 = map.Spawns.Count > 0 ? map.Spawns[0] : Vector3.Zero;
+                views.Clear();
+                views.Add(("view", s0 + new Vector3(v[0], v[1], v[2]), s0 + new Vector3(v[3], v[4], v[5]), 1.2f));
+            }
+            for (var i = 0; i < Math.Min(2, map.Spawns.Count) && views.Count > 0 && views[0].Name != "view"; i++)
             {
                 var s = map.Spawns[i * (map.Spawns.Count - 1)];
                 views.Add(($"spawn{i}", s + new Vector3(0, 1.7f, 0), new Vector3(0, 1.5f, 0), 1.2f));
@@ -156,6 +164,8 @@ public static unsafe partial class Program
                                 pictureFailures++;
                         }
                     }
+                    if (_benchMove > 0 && f >= 0)
+                        BenchShimmer(c, nc, ReadFrame(), _window.FramebufferSize.X, _window.FramebufferSize.Y);
                     _window.SwapBuffers();
                     if (f < 0)
                         continue;
@@ -186,6 +196,15 @@ public static unsafe partial class Program
                     gpuMs[k] = gpu != null && gpu.Ready(1) ? (gpu.Read(1) - (double)gpu.Read(0)) / 1e6 : -1;
                 }
                 var boxes = Gfx.BatchBoxes / Math.Max((frames + 10) * nc, 1);
+                if (_benchMove > 0 && _shimSum != null && _shimN != null)
+                {
+                    for (var c = 0; c < nc; c++)
+                        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                            $"[glbench] shimmer {map.Name,-22} {view.Name,-8} {configs[c],-14} {_shimSum[c] / Math.Max(_shimN[c], 1):0.000} (mean |a - 2b + c| a channel over the middle of the picture, {_shimN[c]} frames, camera {_benchMove} mm a frame)"));
+                    _shimPrev = _shimPrev2 = null;
+                    _shimSum = null;
+                    _shimN = null;
+                }
                 for (var c = 0; c < nc; c++)
                 {
                     var (mc, mf, mg) = (Median(cpu, c * frames, n[c]), Median(full, c * frames, n[c]), Median(gpuMs, c * frames, n[c]));
@@ -294,7 +313,8 @@ public static unsafe partial class Program
         var fb = _window.FramebufferSize;
         Glfw.SetTime(ShotTime + frame / 60.0); // a steady 60 fps clock: wind, flicker and the horde move as in play
         Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
-        Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY),
+        var drift = BenchDrift(eye, target, frame); // (--bench-move: the camera alone moves; the bench's constructs stay put)
+        Gfx.SetCamera(Matrix4x4.CreateLookAt(eye + drift, target + drift, Vector3.UnitY),
             Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
         Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
         ApplyVideoLevels();
@@ -310,7 +330,54 @@ public static unsafe partial class Program
     }
 
     private static int _benchFx;
+    private static int _benchMove; // mm a frame (--bench-move): sideways, plus half of it forward
     private static bool _benchFull;
+
+    private static Vector3 BenchDrift(Vector3 eye, Vector3 target, int frame)
+    {
+        if (_benchMove <= 0)
+            return Vector3.Zero;
+        var fwd = target - eye;
+        fwd.Y = 0;
+        fwd = fwd.LengthSquared() > 1e-4f ? Vector3.Normalize(fwd) : new Vector3(0, 0, -1);
+        var side = new Vector3(-fwd.Z, 0, fwd.X);
+        return (side + fwd * 0.5f) * (Math.Max(frame, 0) * _benchMove * 0.001f);
+    }
+
+    /// <summary>
+    /// <c>--bench-move MM</c>'s shimmer measure, per configuration: the mean over the middle of the picture of each channel's second
+    /// difference in time, |a - 2b + c| over three frames in a row. The camera glides at a steady speed, so a picture that is
+    /// filtered changes smoothly (a small number) and a pattern that aliases crawls and flickers (a large one).
+    /// </summary>
+    private static void BenchShimmer(int c, int nc, byte[] px, int w, int h)
+    {
+        _shimPrev ??= new byte[nc][];
+        _shimPrev2 ??= new byte[nc][];
+        _shimSum ??= new double[nc];
+        _shimN ??= new int[nc];
+        var a = _shimPrev2[c];
+        var b = _shimPrev[c];
+        if (a != null && b != null && a.Length == px.Length)
+        {
+            long sum = 0, n = 0;
+            for (var y = h / 4; y < h * 3 / 4; y++)
+                for (var x = w / 4; x < w * 3 / 4; x++)
+                {
+                    var i = (y * w + x) * 4;
+                    for (var k = 0; k < 3; k++)
+                        sum += Math.Abs(a[i + k] - 2 * b[i + k] + px[i + k]);
+                    n += 3;
+                }
+            _shimSum[c] += sum / (double)Math.Max(n, 1);
+            _shimN[c]++;
+        }
+        _shimPrev2[c] = b!;
+        _shimPrev[c] = px;
+    }
+
+    private static byte[][]? _shimPrev, _shimPrev2;
+    private static double[]? _shimSum;
+    private static int[]? _shimN;
     private static float _benchDist = 24f;
 
     /// <summary>
@@ -323,6 +390,7 @@ public static unsafe partial class Program
         _settings.Particles = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-particles", (int)_settings.Particles), 0, 2);
         _settings.PostEffects = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-post", (int)_settings.PostEffects), 0, 2);
         _benchFx = Math.Clamp(FlagAfter(args, "--bench-fx", 0), 0, 500000);
+        _benchMove = Math.Clamp(FlagAfter(args, "--bench-move", 0), 0, 1000);
         _benchDist = Math.Clamp(FlagAfter(args, "--bench-dist", 24), 3, 400);
         _benchFull = args.Any(a => a.Equals("--bench-full", StringComparison.OrdinalIgnoreCase));
         _benchEdit = args.Any(a => a.Equals("--bench-edit", StringComparison.OrdinalIgnoreCase)) ? Math.Clamp(FlagAfter(args, "--frames", 60), 5, 2000) - 12 : 0;
@@ -367,7 +435,7 @@ public static unsafe partial class Program
     private static ConstructWorld? _benchWorld;
     private static int _benchConstructDraws, _benchMergedDraws;
     private static long _benchConstructAlloc;
-    private static readonly Dictionary<Construct, Vector3> _benchHome = new();
+    private static readonly Dictionary<Construct, (Vector3 Pos, Quaternion Rot)> _benchHome = new();
 
     /// <summary>
     /// <c>--bench-bp "A,B" [--bench-copies N]</c>: N copies of each named blueprint on a grid in front of the camera, drawn by the
@@ -376,7 +444,7 @@ public static unsafe partial class Program
     private static void BuildBenchConstructs(string[] args)
     {
         var names = args.SkipWhile(a => !a.Equals("--bench-bp", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
-        if (names == null && FlagAfter(args, "--bench-capital", 0) <= 0)
+        if (names == null && FlagAfter(args, "--bench-capital", 0) <= 0 && !args.Any(a => a.Equals("--bench-wall", StringComparison.OrdinalIgnoreCase)))
             return;
         names ??= "";
         var copies = Math.Clamp(FlagAfter(args, "--bench-copies", 1), 1, 400);
@@ -416,6 +484,35 @@ public static unsafe partial class Program
             else
                 Console.WriteLine($"[glbench] the capital hull didn't build: {why}");
         }
+        if (args.Any(a => a.Equals("--bench-wall", StringComparison.OrdinalIgnoreCase)))
+        {
+            // --bench-wall: the case surfaces shimmer in: a floor of 2 m steel plates (half of them painted grey) seen at a grazing
+            // angle, and a wall of them square on, both 24 m on a side, from the camera's feet outwards.
+            var plate = ConstructParts.Need("Plate Steel 2 m");
+            var texWall = args.Any(a => a.Equals("--bench-wall-textures", StringComparison.OrdinalIgnoreCase));
+            for (var k = 0; k < 2; k++)
+            {
+                var turn = k == 0 ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI / 2);
+                if (_benchWorld.Create(k == 0 ? new Vector3(0, 1.02f, 4f) : new Vector3(9f, 1.02f, -14f), turn) is not { } wall)
+                    continue;
+                for (var x = 0; x < 12; x++)
+                    for (var z = 0; z < 12; z++)
+                    {
+                        var i = _benchWorld.AddPart(wall, plate, new Vector3(x * 2.02f - 12f, 0, -z * 2.02f), 0);
+                        if (i >= 0 && (x + z) % 2 == 0)
+                            wall.Parts[i].Paint = 0x01000000u | 0x8a8e92u;
+                        if (i >= 0 && k == 1 && texWall)
+                        {
+                            // --bench-wall-textures: the wall's plates take the texture paint tool's materials in turn, a column each
+                            var row = (byte)(Surfaces.FirstShaded + x % Math.Max(1, Surfaces.File.Rows.Length - Surfaces.FirstShaded));
+                            wall.Parts[i].Finish = ConstructFinish.Offered(row) ? row : (byte)0;
+                        }
+                    }
+                wall.Rebuild();
+                parts += wall.PartCount;
+                made++;
+            }
+        }
         var boxes = ConstructParts.All.Sum(d => d.Boxes.Length);
         Console.WriteLine($"[glbench] constructs: {made} bodies, {parts} parts");
         Console.WriteLine($"[glbench] materials: {ConstructParts.All.Count} part types, {boxes} boxes at {System.Runtime.CompilerServices.Unsafe.SizeOf<CPartBox>()} B a box, {BoxLooks.Count} looks at {System.Runtime.CompilerServices.Unsafe.SizeOf<BoxLooks.Row>()} B a look, {Surfaces.File.Rows.Length} materials ({SurfaceGpu.Bytes} B on the GPU); merged mesh slot {(Renderer.MergeXformFloats + Renderer.MergeLookFloats) * sizeof(float)} B");
@@ -425,7 +522,7 @@ public static unsafe partial class Program
 
     /// <summary>
     /// <c>--bench-edit</c>: the constructs change as they are drawn, the same way in every configuration (frame by frame, until
-    /// 12 frames before the end, so the last pictures compare): a part painted and one damaged every frame, one taken off
+    /// 12 frames before the end, so the last pictures compare): a part painted, one textured and one damaged every frame, one taken off
     /// every 8th (merged meshes: looks rewritten alone, a chunk rebuilt; docs/render/MERGED-MESHES.md).
     /// </summary>
     private static void BenchEdit(int frame)
@@ -440,6 +537,8 @@ public static unsafe partial class Program
             if (c.PartCount < 4)
                 continue;
             c.Parts[(frame * 7 + k) % c.PartCount].Paint = 0x01000000u | (uint)(frame * 0x3A71F + k * 0x1F3) & 0xFFFFFF;
+            var tex = (byte)(Surfaces.FirstShaded + (frame + k) % Math.Max(1, Surfaces.File.Rows.Length - Surfaces.FirstShaded));
+            c.Parts[(frame * 11 + k) % c.PartCount].Finish = ConstructFinish.Offered(tex) ? tex : (byte)0; // (the texture paint tool: looks rewritten alone)
             ref var hurt = ref c.Parts[(frame * 13 + k) % c.PartCount];
             hurt.Health = MathF.Max(1, hurt.D.Health * (0.2f + 0.08f * (frame % 10)));
         }
@@ -469,9 +568,9 @@ public static unsafe partial class Program
         foreach (var c in _benchWorld.Bodies)
         {
             if (!_benchHome.TryGetValue(c, out var home))
-                _benchHome[c] = home = c.Pos;
-            c.Pos = c.PrevPos = at + Vector3.Transform(home, turn);
-            c.Rot = c.PrevRot = turn;
+                _benchHome[c] = home = (c.Pos, c.Rot);
+            c.Pos = c.PrevPos = at + Vector3.Transform(home.Pos, turn);
+            c.Rot = c.PrevRot = Quaternion.Normalize(turn * home.Rot); // (its own turn, then the view's)
         }
         ConstructRender.Now = Glfw.Time;
         var draws0 = PerfCounters.Draws;

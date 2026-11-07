@@ -341,6 +341,8 @@ public sealed class ConstructClip
                 sb.Append(", \"media\": ").Append(media);
             if (ConstructPaint.IsSet(p.Paint))
                 sb.Append(", \"paint\": \"").Append(ConstructPaint.ToHex(p.Paint)).Append('"');
+            if (ConstructFinish.Name(p.Finish) is { Length: > 0 } finish)
+                sb.Append(", \"finish\": \"").Append(finish).Append('"'); // (the texture paint tool's material, by name)
             sb.Append(k + 1 < c.PartCount ? " },\n" : " }\n");
         }
         sb.Append("  ]");

@@ -162,7 +162,52 @@ public static unsafe class RenderCaps
             Native.glGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &blocks);
             VertexStorage = blocks >= 2;
         }
+        MaxAnisotropy = ReadMaxAnisotropy();
         Console.WriteLine("[gl] " + Describe());
+    }
+
+    /// <summary>
+    /// The most anisotropic filtering a texture may ask for (1: none). Core on 4.6; on the 4.1 path only with
+    /// GL_ARB_texture_filter_anisotropic or GL_EXT_texture_filter_anisotropic (every desktop driver, macOS included, has one).
+    /// </summary>
+    public static float MaxAnisotropy { get; private set; } = 1f;
+
+    private const uint GlNumExtensions = 0x821D, GlExtensions = 0x1F03, GlMaxTextureMaxAnisotropy = 0x84FF;
+
+    private static float ReadMaxAnisotropy()
+    {
+        if (Native.glGetFloatv == null)
+            return 1f;
+        var has = Gl46;
+        if (!has && Native.glGetStringi != null && Native.glGetIntegerv != null)
+        {
+            int n = 0;
+            Native.glGetIntegerv(GlNumExtensions, &n);
+            for (var i = 0; i < n && !has; i++)
+            {
+                var p = Native.glGetStringi(GlExtensions, (uint)i);
+                if (p == null)
+                    continue;
+                var e = new string((sbyte*)p);
+                has = e is "GL_ARB_texture_filter_anisotropic" or "GL_EXT_texture_filter_anisotropic";
+            }
+        }
+        if (!has)
+            return 1f;
+        float max = 1f;
+        Native.glGetFloatv(GlMaxTextureMaxAnisotropy, &max);
+        return max >= 1f ? max : 1f;
+    }
+
+    /// <summary>
+    /// Asks the bound texture on <paramref name="target"/> for anisotropic filtering, up to <paramref name="want"/> and what
+    /// the driver allows; nothing where there is none (so the 4.1 path never raises an invalid-enum error).
+    /// </summary>
+    public static void Anisotropy(uint target, float want)
+    {
+        if (MaxAnisotropy <= 1f)
+            return;
+        Native.glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY, MathF.Min(want, MaxAnisotropy));
     }
 
     /// <summary>For tests: pretend a tier without a context (shader preludes only; no feature is on).</summary>
@@ -184,7 +229,7 @@ public static unsafe class RenderCaps
         if (Dsa) on.Add("DSA");
         var exps = string.Join(", ", Experiments.Select(e => e.Name + (Active(e.Name) ? " on" : " off")));
         return $"OpenGL {(Gl46 ? "4.6 path" : "4.1 path")} (context {Major}.{Minor}: {Version}; {Renderer})"
-               + (Gl46 ? $", features: {(on.Count > 0 ? string.Join(", ", on) : "none")}; experiments: {exps}" : $", fallback: {FallbackReason}");
+               + $", anisotropy {MaxAnisotropy:0}x" + (Gl46 ? $", features: {(on.Count > 0 ? string.Join(", ", on) : "none")}; experiments: {exps}" : $", fallback: {FallbackReason}");
     }
 
     /// <summary>The prelude that replaces <see cref="SourceVersion"/> on this tier.</summary>

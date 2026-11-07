@@ -54,7 +54,7 @@ public static class ConstructOrdnance
     {
         c.RackCount = 0;
         Span<ushort> held = stackalloc ushort[MaxHeld];
-        for (var i = 0; i < c.PartCount; i++)
+        foreach (var i in c.Specials) // (bomb racks are special parts)
         {
             if (c.Parts[i].D.Logic != CLogic.BombRack)
                 continue;

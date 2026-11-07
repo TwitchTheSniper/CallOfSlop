@@ -18,6 +18,7 @@ public sealed partial class Construct
     private Vector3[] _treeMin = [], _treeMax = [], _partMin = [], _partMax = [];
     private int[] _treeLeft = [], _treeStart = [], _treeCount = []; // (a leaf: _treeLeft -1, its parts are _treeOrder[start .. start + count])
     private int _treeNodes, _treeLooseCount, _treeParts = -1;
+    private int _treeOrderCount, _treeDead; // (entries of _treeOrder in the tree; of them, parts gone since: -1, ConstructRebuild.cs)
 
     /// <summary>The parts' bounds or joints changed: the tree is built again when next asked for.</summary>
     internal void TreeStale() => _treeParts = -1;
@@ -71,6 +72,9 @@ public sealed partial class Construct
         if (rigid > 0)
             TreeNode(0, rigid);
         _treeParts = n;
+        _treeOrderCount = rigid;
+        _treeDead = 0;
+        _treeSerial = _editSerial;
     }
 
     private int TreeNode(int start, int count)
@@ -182,6 +186,8 @@ public sealed partial class Construct
             for (int k = _treeStart[node], e = k + _treeCount[node]; k < e; k++)
             {
                 var i = _treeOrder[k];
+                if (i < 0)
+                    continue; // (a part that went: ConstructRebuild.cs)
                 var pa = _partMin[i];
                 var pb = _partMax[i];
                 if (pa.X <= max.X && pb.X >= min.X && pa.Y <= max.Y && pb.Y >= min.Y && pa.Z <= max.Z && pb.Z >= min.Z)
@@ -220,7 +226,7 @@ public sealed partial class Construct
             for (int k = _treeStart[node], e = k + _treeCount[node]; k < e; k++)
             {
                 var i = _treeOrder[k];
-                if (Slab(_partMin[i], _partMax[i], origin, inv, maxDist))
+                if (i >= 0 && Slab(_partMin[i], _partMax[i], origin, inv, maxDist))
                     into[n++] = i;
             }
         }

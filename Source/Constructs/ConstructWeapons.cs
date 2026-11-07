@@ -181,9 +181,10 @@ public static class ConstructWeapons
         using var scratch = Scratch.Begin();
         Span<bool> taken = scratch.Take<bool>(c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
-        {
             if (c.Parts[i].Burn > 0)
-                c.Burning++;
+                c.Burning++; // (any part can burn)
+        foreach (var i in c.Specials) // (guns are special parts)
+        {
             if (c.Parts[i].D.Role != PartRole.Gun)
                 continue;
             if (c.GunCount >= Construct.MaxGuns)

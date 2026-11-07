@@ -86,6 +86,7 @@ public sealed partial class ConstructWorld
             d.Setting = s.Setting;
             d.Cfg = s.Cfg.Copy();
             d.Paint = s.Paint;
+            d.Finish = s.Finish;
             ConstructConfig.StartState(ref d, d.D);
         }
         for (var l = 0; l < src.LinkCount; l++)

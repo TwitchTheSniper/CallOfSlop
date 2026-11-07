@@ -651,7 +651,7 @@ public static partial class ConstructRender
                 continue;
             }
             else
-                gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape, surface: Surfaces.Code(Surfaces.OnPaint(box.Surface, p.Paint, box.Paintable), wear)); // (frozen by the physics gun: an icy tint; overloaded: red)
+                gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape, surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear)); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
         }
         return drawn;

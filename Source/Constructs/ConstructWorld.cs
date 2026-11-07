@@ -339,6 +339,7 @@ public sealed partial class ConstructWorld
         ClearFeedBurns();
         AmmoDirty.Clear();
         PaintDirty.Clear();
+        FinishDirty.Clear();
         Shattered.Clear();
         FireCount = 0;
         CookOffCount = 0;
@@ -400,7 +401,8 @@ public sealed partial class ConstructWorld
         c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag(), Rounds = (ushort)Math.Min(def.BoxRounds, ushort.MaxValue) };
         ConstructConfig.Init(ref c.Parts[i], def);
         AllocStore(ref c.Parts[i], def);
-        c.Dirty = true;
+        if (!c.JournalAdd(i))
+            c.Dirty = true; // (plain structure on a big body goes by the journal: ConstructRebuild.cs)
         c.Wake();
         StructureDirty.Add(c.Id);
         if (def.Role == PartRole.FuelTank && c.PartCount > 1)
@@ -431,7 +433,8 @@ public sealed partial class ConstructWorld
         c.ReserveLinks(c.LinkCount + 1);
         c.Links[c.LinkCount++] = new CLink { A = (ushort)a, B = (ushort)b, SA = (byte)sa, SB = (byte)sb };
         c.LinkAdded(c.LinkCount - 1);
-        c.Dirty = true;
+        if (!c.JournalLink(a, b))
+            c.Dirty = true;
         return true;
     }
 
@@ -503,6 +506,19 @@ public sealed partial class ConstructWorld
         // Every part, by component: what still reaches the root (or part 0 when the root is the one going) stays.
         using var scratch = Scratch.Begin();
         Span<int> comp = scratch.Take<int>(c.PartCount);
+        var plain = c.PlainRemoval(index); // (plain structure on a big body: by the journal, ConstructRebuild.cs)
+        if (plain && index != c.Root && c.Root < c.PartCount && c.StructureMeetsRound(index))
+        {
+            // Its neighbours meet round it a few parts away: nothing is cut off, no flood over the whole body.
+            comp.Clear();
+            comp[index] = -2;
+            c.JournalRemove(index);
+            c.DirtyPlain();
+            Compact(c, comp, 0);
+            c.Wake();
+            StructureDirty.Add(c.Id);
+            return def;
+        }
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = -1;
         comp[index] = -2;
@@ -523,12 +539,26 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < c.PartCount; i++)
             if (comp[i] == -1)
                 Flood(c, i, comps++, comp);
+        if (plain && comps > 1)
+            for (var i = 0; i < c.PartCount && plain; i++)
+                if (comp[i] > 0 && !c.IsPlainPart(i))
+                    plain = false; // (a piece that falls away with a special part in it: the systems change)
+        if (plain)
+        {
+            // Nothing cut off, or only plain pieces (they become wrecks of their own): still by the journal.
+            c.JournalRemove(index);
+            for (var i = 0; i < c.PartCount; i++)
+                if (comp[i] > 0)
+                    c.JournalRemove(i, quiet: true);
+            c.DirtyPlain();
+        }
+        else
+            c.Dirty = true;
         // Pieces cut off become wrecks (a body each), in part order, so every run splits the same way.
         for (var k = 1; k < comps; k++)
             SplitOff(c, comp, k);
         // What's left: compact the arrays (parts of the removed part and the split pieces go).
         Compact(c, comp, 0);
-        c.Dirty = true;
         c.Wake();
         StructureDirty.Add(c.Id);
         if (c.PartCount == 0)
@@ -687,10 +717,21 @@ public sealed partial class ConstructWorld
         Span<int> map = scratch.Take<int>(c.PartCount);
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
+            map[i] = comp[i] == keep ? n++ : -1;
+        for (int i = 0, to = 0; i < c.PartCount;)
         {
-            map[i] = comp[i] == keep ? n : -1;
-            if (comp[i] == keep)
-                c.Parts[n++] = c.Parts[i];
+            // Each run of kept parts moves down at once (a big hull losing one part moves the rest in one copy, not part by part).
+            if (map[i] < 0)
+            {
+                i++;
+                continue;
+            }
+            var from = i;
+            while (i < c.PartCount && map[i] >= 0)
+                i++;
+            if (to != from)
+                Array.Copy(c.Parts, from, c.Parts, to, i - from);
+            to += i - from;
         }
         var oldCount = c.PartCount;
         c.PartCount = n;
@@ -706,7 +747,10 @@ public sealed partial class ConstructWorld
         }
         c.LinkCount = ln;
         c.LinksChanged();
-        c.TreeStale();
+        if (c.JournalOpen)
+            c.JournalCompact(map[..oldCount], oldCount); // (a plain removal: the journal maps the tree, not a new one)
+        else
+            c.TreeStale();
         ConstructRoutes.Remap(c, map[..oldCount], c); // (routed links: renumbered, or gone with an end; the wires are rebuilt from them)
         ConstructTracks.Remap(c, map[..oldCount], c); // (tracks: renumbered, each wheel that went out of its loop)
         // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).

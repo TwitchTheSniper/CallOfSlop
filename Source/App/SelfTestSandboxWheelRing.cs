@@ -227,14 +227,14 @@ public static partial class SelfTest
 
         // A partial arc (the welder with two test modes, east): an option picked; outside the arc the inner ring turns.
         Hold();
-        Flick(new Vector2(43, 14));
+        Flick(new Vector2(45, -5));
         var welderRing = w.Ring;
-        var cutAt = At(RadialMenu.OptionAngle(1, (int)SandboxToolWheel.Slot.Welder, N, 2), w.Reach + w.OuterGap + 25);
+        var cutAt = At(RadialMenu.OptionAngle(1, (int)SandboxToolWheel.Slot.Welder, N, 2) - 0.05f, w.Reach + w.OuterGap + 25); // (a little inside: on a twelve-segment wheel a two-option arc's outer option is centred on the welder's edge)
         wheel.Step(g, true, cutAt - w.Pointer, false);
         var cutHovered = w.HoveredOption;
         var welder = LetGo();
         Hold();
-        Flick(new Vector2(43, 14));
+        Flick(new Vector2(45, -5));
         wheel.Step(g, true, At(RadialMenu.SegmentAngle((int)SandboxToolWheel.Slot.PhysicsGun, N), w.Reach + w.OuterGap + 25) - w.Pointer, false); // (far out, outside the arc, over the physics gun)
         var outsideInner = w.Hovered;
         var outsideRing = w.Ring;
@@ -315,10 +315,10 @@ public static partial class SelfTest
             Line($"tool wheel, every tool: {count} segments, {count - bad.Count} took their tool out; default wheel {SandboxToolWheel.DefaultTools}");
             if (bad.Count > 0)
                 Fail($"tool wheel, every tool: {bad[0]}");
-            // The default wheel: eleven even hit sizes with Hands straight down, and a saved wheel from before the tool gains it, Hands kept south.
+            // The default wheel: twelve even hit sizes with Hands straight down, and a saved wheel from before the tool gains it, Hands kept south.
             var dflt = SandboxToolWheel.DefaultLayout().ToList();
             var downAt = RadialMenu.SegmentAngle((int)SandboxToolWheel.Slot.Hands, dflt.Count);
-            if (dflt.Count != 11 || !SandboxToolWheel.HandsSouth(dflt) || MathF.Abs(MathF.Cos(downAt) + 1) > 1e-3f || MathF.Abs(RadialMenu.SegmentAngle(1, dflt.Count) - RadialMenu.SegmentAngle(0, dflt.Count) - MathF.Tau / 11) > 1e-4f)
+            if (dflt.Count != 12 || !SandboxToolWheel.HandsSouth(dflt) || MathF.Abs(MathF.Cos(downAt) + 1) > 1e-3f || MathF.Abs(RadialMenu.SegmentAngle(1, dflt.Count) - RadialMenu.SegmentAngle(0, dflt.Count) - MathF.Tau / 12) > 1e-4f)
                 Fail($"tool wheel: the default wheel has {dflt.Count} tools, Hands south {SandboxToolWheel.HandsSouth(dflt)}");
             var names = new[] { "Nudge", "PhysicsGun", "Tracks", "Welder", "Configure", "Hands", "Remover", "GroundDrill", "Linker", "Paint" };
             var saved = SandboxToolWheel.Resolve(names, []);
@@ -477,9 +477,9 @@ public static partial class SelfTest
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             Run(g, ref now, 0.05);
             wheel.Step(g, true, Vector2.Zero, false);
-            wheel.Step(g, true, new Vector2(43, 14), false);
-            wheel.Step(g, true, new Vector2(43, 14), false);
-            wheel.Step(g, true, new Vector2(43, 14), false);
+            wheel.Step(g, true, new Vector2(45, -5), false);
+            wheel.Step(g, true, new Vector2(45, -5), false);
+            wheel.Step(g, true, new Vector2(45, -5), false);
         }
         ConstructTool LetGo()
         {

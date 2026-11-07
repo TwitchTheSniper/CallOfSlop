@@ -143,8 +143,8 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
-Swap weapon, and the middle button was free everywhere) and ten segments appear around the middle of the screen,
-clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). Hands hang due south, the attach tool and linking tool just past east and west (an odd wheel, after a player takes a tool off, turns half a step to keep it so: `RadialMenu.Tilt`)
+Swap weapon, and the middle button was free everywhere) and twelve segments appear around the middle of the screen,
+clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool** (east), configure tool, **no-collide tool**, **hands** (south; [below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **linking tool** (west), **paint tool** ([below](#the-paint-tool-board-item-pp01)), **texture paint tool** ([below](#the-texture-paint-tool)). Hands hang due south, the attach tool and linking tool due east and west (an odd wheel, after a player takes a tool off, turns half a step to keep hands south: `RadialMenu.Tilt`). A saved wheel keeps its own order (by name); a tool new since it was saved joins at its end
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
@@ -581,6 +581,58 @@ what you look at, the edit's progress, refusals and, when driving, speed, fuel a
 - **Ghost sockets**: holding a part with a tool out shows a marker on every free socket of the construct you look at
   that the part fits (matching socket kinds, facing each other, nothing in the way); the one nearest the crosshair shows
   the whole part, green when it fits.
+
+### Rebuilds
+
+Everything that follows from the parts (mass, centre of mass and inertia, the segments, the collider and the part tree,
+wheels, the drive line, the circuit, guns, every system's list of its parts) is worked out by `Construct.Rebuild`. An edit
+(a part added, linked, taken off, broken or split away) only marks the body `Dirty`; the first thing in the next tick that
+needs it (the power step, the gun step, the physics step) rebuilds it once, so ten edits in a tick cost one rebuild. Code
+that sets `Dirty = true` gets a full rebuild, as always.
+
+A **big body** (`Construct.IncrementalMin`, 1,024 parts or more) also keeps a **journal** of its **plain** edits since its
+last rebuild (`Source/Constructs/ConstructRebuild.cs`):
+
+- **Plain parts.** A part type is plain (`PlainParts.Of`) when it is a frame or a panel whose file sets nothing any system
+  looks for: every field of `ConstructPartDef` is compared with a new one, and only the fields that shape structure (mass,
+  health, armour, boxes, struct sockets, looks, the inventory's words) may differ, so a field added later counts against
+  plainness until it is listed there. A part is plain (`IsPlainPart`) when its type is, it is on the body's own segment,
+  holds nothing, is in no merge, and no routed link ends on it or runs over it. Frame blocks, beams, plates and wedges are
+  plain; everything else is a **special part**.
+- **What the journal takes.** `ConstructWorld.AddPart` of a plain part, `AddLink` between two plain parts, and `RemovePart`
+  of a plain part whose every neighbour is plain (a part breaking off under fire goes the same way), including a split
+  whose cut-off pieces are all plain (they become wrecks of their own, each a full rebuild of its own small body). The body
+  must have no freeform welds and no merged receivers. Anything else, before or after in the same tick, makes it a full
+  rebuild.
+- **What it does with it** (`RebuildPlain`). The mass, both first moments and the boxes' second moments about the body's
+  origin are kept as sums in doubles (`SumParts`): a part that goes takes its own share off, a new part adds its own, and
+  the centre of mass and the inertia about it follow from the sums (`FinishMass`, O(special parts): the loads and the cargo
+  are added on top). The bounds keep a count of the parts on each face and are summed again only when the last part on a
+  face goes. The sums are summed from the parts again every 256 plain rebuilds, so rounding never builds up. The collider
+  and the part tree are renumbered through the journal's map and lose the leaves of the parts that went (their bounds stay
+  as they were: a little loose, never short); new parts go into a small tree of their own beside the collider's big one
+  (`ConstructCollider.AddParts`); either is built again when that isn't safe (a quarter gone, no room, built at another
+  point of the journal). The circuit (the frame is the circuit) is flooded again only when a powered part went and its
+  working neighbours don't meet round it within a short walk (`MeetsRound`, 512 parts), or a plain piece was cut off; a
+  new part next to a powered one is powered and passes it on. The same short walk tells `RemovePart` that nothing was cut
+  off, so a part off a big hull doesn't flood the whole body to look for a split.
+- **The special parts.** Every system that looks for parts of its own kind (wheels, springs, the drive line's engine,
+  plants, thrusters, cells, surfaces, rotors, stabilizers, racks, tanks, hydraulics, volumes, logic, scoops, rails, guns,
+  modules, seats and roots) walks `Construct.Specials`, the list of special parts, not every part; a plain edit changes no
+  special part, only the numbers. The list is made at every full rebuild and mapped at a plain one; between an edit and its
+  rebuild `Specials` hands back every part, so code reading it early still sees everything. A part that matters to every
+  system (any part can burn: the gun step's count of burning parts) is still counted over every part.
+- **The drive line's walk** reads each part's links through the link index (`EdgesAt`, in the edge order a walk over every
+  link would have met them) instead of every link for every part it reaches.
+- **The debug check.** `Construct.RebuildCheck` (off; `CALLOFSLOP_REBUILD_CHECK=1` turns it on) follows every plain
+  rebuild with a full one and compares mass, centre of mass, inertia, bounds, radius, the segments, the circuit, batteries,
+  the drive line, wheels, root, guns, anchoring, the special parts, the collider's leaves (and that its trees find every
+  leaf a box meets) and the part tree; a difference goes to `Construct.CheckLog`.
+
+A smaller body rebuilds as it always did (its numbers, collider and contacts are what they were). The costs and what a split
+still costs are in docs/perf/LIMITS.md, "Rebuilds". The journal and the plain-part rule are what a later fused unit (cached
+mass, a rough collider, rebuilt at most once a tick when pieces break) can build on: a fused unit is a run of plain parts
+whose share of the sums and leaves it keeps.
 
 ### The drivetrain (it only works when connected)
 
@@ -1117,7 +1169,11 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
   box). Leaves are grouped by **rigid group**: the body and its freeform attachments are group 0, each real joint's parts another
   (`Construct.MoveSeg`). Each group has a bounding volume tree in its own frame, so a joint moving costs nothing: the frame
   moves and the tree with it. A freeform-attached box is a leaf turned in its group. The tree is built on first use after the
-  parts change (`Construct.Collider`, in the physics step: a client never builds one) and reuses its arrays.
+  parts change (`Construct.Collider`, in the physics step: a client never builds one) and reuses its arrays. From 2,048
+  leaves (`ConstructCollider.FastMin`) a group's tree is built from Morton order: the leaf centres on a lattice of 1,024 cubes
+  along the group's longest side, radix sorted, cut where the codes first differ (a cell boundary), the bounds made bottom up (O(n); sorting the leaves at every
+  level cost 13 to 18 ms at 16,000 parts, and a tree-ordered list made the median split's selection slow). Smaller trees are
+  built as before. A big body's plain edits renumber the tree instead of building it ([Rebuilds](#rebuilds)).
 - **Against other constructs** (`PairContacts`). The two trees are walked together to the leaf pairs within this tick's
   travel plus 2 cm, then the separating-axis test: the three face axes of each box and the nine edge crosses
   (`ConstructNarrow.BoxBox`). A face gives its incident face clipped to the reference face, up to four points; an edge pair
@@ -5174,6 +5230,58 @@ separate client and a late joiner agree.
 - A box keeps its tone against the part's main colour instead of going flat.
 - The recent colours are not saved between sessions.
 
+## The texture paint tool
+
+User request (2026-11-07). A roller beside the paint tool on the tool wheel (`ConstructTool.Texture`, byte 16; model
+`Constructs/Tools/TexturePaintTool.json`). It puts a **shared material** (a row of `Materials/Surfaces.json`,
+docs/render/MATERIALS.md) on parts: **texture and colour are separate**, so a textured part keeps its own colour or its paint,
+and the colour paint tool keeps a part's texture. Code: `ConstructFinish.cs` (data and wire), `ConstructEditsFinish.cs` (the
+server), `GameSandboxTexture.cs` (the request), `Program.SandboxTexture.cs` (input), `SandboxTextureWheel.cs` (its ring),
+`UiSandboxTexture.cs` (the list), `Source/Render/SurfaceThumbnails.cs` (the swatches).
+
+- **Keys**: **LMB** puts the roller's material on the part under the crosshair; **hold LMB and sweep** to texture every part
+  passed over, each once per stroke (the colour paint tool's `PaintStroke`: a stroke never acts on what it already did, and a
+  stationary press acts once); **RMB** picks up the aimed part's material (its texture, else what its first box is drawn
+  with; read off this PC's copy, nothing is sent); **R** opens the list.
+- **The list** (R, or "Textures..." on the ring): every material the file offers, each a swatch drawn by the real box shader
+  on a grey block (so a swatch is what a part will look like; drawn a few a frame and kept for the session), with its name, a
+  search box (name or category) and the categories as buttons (All, then each row's `"category"`: Metal, Painted, Other, Wood,
+  Stone). Clicking one puts it on the roller and closes the list; Close or Esc leaves the roller as it was.
+- **The ring** (`SandboxTextureWheel`): **Part** (the default), **Whole construct** (every part; in survival the first click
+  asks for a second within four seconds), **Reset texture** (back to the part's own materials), **Textures...** and **Recent
+  textures** (the last eight used, each drawn with its swatch, as the third tier).
+- **What is offered**: rows from 7 up (0 to 6 are the old texture layers) whose `"offer"` isn't false (glass isn't: a pane is
+  blended and drawn apart). Seven rows were added for the tool: tread plate, plated steel (panels fitted to each box, seams
+  only between whole panels), painted plating, matte paint, gloss paint, chrome and carbon weave.
+- **Per part for now**: `CPart.Finish` (a byte, 0: its own materials) is the row every box of the part is drawn with, glass and
+  glowing boxes aside (`ConstructFinish.Takes`), in place of its own row and of the row paint would turn it to. A per-box (or
+  per-face) texture would be a short list of (box, row) beside the part, carried by name the same way, with the tool aiming at
+  the box the crosshair's ray hit; the merged meshes already hold a material per box slot, so drawing it costs nothing more.
+- **Never a row number outside this machine.** The byte is this build's own (rows are worked out at load). The wire, saves and
+  blueprints carry the material's **name** (at most 32 ASCII characters, checked when the file loads); a name this build
+  doesn't have reads as "its own materials". Saves: a part's texture is a setting `"finish:<name>"` in the body's settings
+  list, which an older build skips (no format change). Blueprints: a step's `"finish": "tread plate"`. Copy and paste keep it.
+- **Free and instant** in both modes, with the colour paint tool's rules (`ConstructEdits.Finish`): the tool out, no seat, the
+  reach, decision 19's contested-construct check; a part with nothing that takes a texture says so.
+- **Network (protocol 192)**: `CActKind.Texture` (construct, mode, part, the name) at the end of `CActKind`; the server sends
+  changes in `CBodyKind.Finish` (at the end of `CBodyKind`: construct, part, name; at most 100 a message, after the paint
+  changes each tick), and a `CBody` Full ends with the textured parts (a late joiner, a structure resend, a big body's patch).
+  No string is made either side: names go as ASCII bytes and are matched against the table. Nothing allocates while painting.
+- **Drawing**: a texture change is a look change. A merged chunk's look hash takes `Finish`, so only that chunk's looks are
+  written again (docs/render/MERGED-MESHES.md), never its geometry. On Materials Low a texture draws the classic way, as every
+  material does.
+- Tried by hand (2026-11-07): a host and a client over RakNet with 100 ms and 3% loss on the client: part, whole construct,
+  reset and a late joiner agree; the save, blueprint and Full round trips; the merged pictures with textures changing every
+  frame match the unmerged ones (1 pixel of 230,400, one level); the list and swatches in a real window on both GL paths.
+  The smoke test textures its row of parts with every offered material and opens the list.
+
+### Choices made (the developer may change them)
+
+- R opens the list (no new key to bind); RMB is the texture eyedropper, as RMB picks a colour with the paint tool.
+- Every box but glass and glow takes the texture, tyres included (a steel tyre is the player's choice).
+- An explicit texture wins over the row paint would choose: chrome painted red stays chrome-shiny under a red tint.
+- The no-collide tool moved from the north-north-west to the south-south-east to keep hands due south on a twelve-segment wheel.
+- The recent textures are not saved between sessions.
 ## The remover tool (board item rt01)
 
 The developer's request (2026-10-31). A red-banded eraser on the tool wheel's south-west segment (it took the scanner's place:
