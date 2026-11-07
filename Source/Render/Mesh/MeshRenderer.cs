@@ -549,7 +549,7 @@ public sealed unsafe partial class MeshRenderer : IMeshDrawer
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, (int)GL_LINEAR);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, (int)GL_REPEAT);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, (int)GL_REPEAT);
-        Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY, 8);
+        RenderCaps.Anisotropy(GL_TEXTURE_2D_ARRAY, 8f);
         Native.glActiveTexture(GL_TEXTURE0);
         _modelTexLayers = layers.Length;
         Console.WriteLine($"[mesh] model textures: {layers.Length} layer(s) of {size}x{size}, {pixels.Length / 1024} KB");

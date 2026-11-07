@@ -436,25 +436,28 @@ public static class Ordnance
         return null;
     }
 
+    /// <summary>A designed weapon's boxes at most: it is drawn box by box (its wings fold), so it keeps the old part cap, not <see cref="ConstructParts.MaxBoxes"/>.</summary>
+    public const int MaxBoxes = 32;
+
     private static ConstructPartDef Build(OrdnanceDesign d, OrdStats st, string key)
     {
         var s = d.Scale;
         float r = st.Diameter * 0.5f, half = st.Length * 0.5f;
-        var boxes = new List<CPartBox>(ConstructParts.MaxBoxes)
+        var boxes = new List<CPartBox>(MaxBoxes)
         {
             new(Vector3.Zero, new Vector3(r, r, half), new Vector3(0.3f, 0.34f, 0.2f), Hidden: true),
             new(new Vector3(0, r + LugHeight * 0.5f, 0), new Vector3(0.05f, LugHeight * 0.5f + 0.01f, 0.08f), new Vector3(0.16f), Hidden: true),
         };
         var solid = boxes.Count;
-        var budget = ConstructParts.MaxBoxes - solid;
+        var budget = MaxBoxes - solid;
         var drawn = 0;
         foreach (var p in d.Pieces)
             foreach (var b in p.Section.Boxes)
                 drawn += !b.Hidden ? 1 : 0;
         var firstOnly = drawn > budget; // (each box is a draw call: past the budget a section is its first box)
         var z = -half;
-        var pieceOf = new List<short>(ConstructParts.MaxBoxes) { -1, -1 };
-        var fold = new List<float>(ConstructParts.MaxBoxes) { 0, 0 };
+        var pieceOf = new List<short>(MaxBoxes) { -1, -1 };
+        var fold = new List<float>(MaxBoxes) { 0, 0 };
         for (var pi = 0; pi < d.Pieces.Count; pi++)
         {
             var p = d.Pieces[pi];
@@ -464,7 +467,7 @@ public static class Ordnance
             {
                 if (b.Hidden)
                     continue;
-                if (boxes.Count >= ConstructParts.MaxBoxes)
+                if (boxes.Count >= MaxBoxes)
                     break;
                 boxes.Add(b with
                 {

@@ -73,6 +73,9 @@ public sealed class VehicleGenJob
     /// <summary>Kit 4: "role raider, tier 2, shape Box Truck, role met" and what it measured, as in the kit line; empty without a role.</summary>
     public string RoleNotes = "";
 
+    /// <summary>How far the vehicle reaches ahead of its origin and behind it (m), once made (<see cref="Vehicle.ExtentZ"/>).</summary>
+    public float Front, Rear;
+
     /// <summary>
     /// A point where a generation may hand back to the game (between the game's own build calls, never inside one). Only the
     /// generation thread ever stops here, and only once its slice is spent. The compiler fills in the caller's file and line (constants: nothing is
@@ -240,6 +243,7 @@ public sealed class VehicleGenJob
         Yield();
         Hash = Fnv(text);
         (Kit, Modules, RoleNotes, _made) = (v.Kit, string.Join(", ", v.Modules), string.Join(", ", v.KitNotes), v.Name);
+        (Front, Rear) = v.ExtentZ(); // (a convoy spaces its members by these)
         Yield();
         var bp = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(Generator, Seed));
         if (bp.Tow.Length > 0 && ConstructBuild.FindBlueprint(bp.Tow) == null)

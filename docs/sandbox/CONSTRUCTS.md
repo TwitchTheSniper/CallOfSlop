@@ -143,8 +143,8 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
-Swap weapon, and the middle button was free everywhere) and ten segments appear around the middle of the screen,
-clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). Hands hang due south, the attach tool and linking tool just past east and west (an odd wheel, after a player takes a tool off, turns half a step to keep it so: `RadialMenu.Tilt`)
+Swap weapon, and the middle button was free everywhere) and twelve segments appear around the middle of the screen,
+clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool** (east), configure tool, **no-collide tool**, **hands** (south; [below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **linking tool** (west), **paint tool** ([below](#the-paint-tool-board-item-pp01)), **texture paint tool** ([below](#the-texture-paint-tool)). Hands hang due south, the attach tool and linking tool due east and west (an odd wheel, after a player takes a tool off, turns half a step to keep hands south: `RadialMenu.Tilt`). A saved wheel keeps its own order (by name); a tool new since it was saved joins at its end
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
@@ -2005,7 +2005,7 @@ Fitting time grows from x1 to x2.
 
   Fixed at every tier: the rates, bins, power, mass, health, armour, widths, the bit's reach, every socket and port, the trays, and the aisle. A building's height is a range of its width (`TierHeights` in the self-test); a drill's top is always its shaft socket. A big shape is a solid box drawn as a detail shape, the box itself `"hidden"`, so the collider stays boxes. Every machine says `"collider": "boxes"`, so with the compound collider a wedge or cylinder detail stays a look.
   **"Machine tier looks"** checks that tiers of a line differ pairwise in solid shape (cells of its own size) and in colour, that each keeps the line's signature, and that details stay clear of sockets, ports, bins, trays, aisles and the assembler's open front and near the machine.
-  `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 16 m from its origin
+  `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 256 boxes (it was 32 while each box was a draw; static parts are merged meshes now, docs/render/MERGED-MESHES.md), and a box may reach 16 m from its origin
   (`ConstructParts.MaxPartReach`), for the tier 5 stacks. No part animates its work yet: only wheels, joints, dials and pistons move.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
   default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
@@ -3379,11 +3379,12 @@ Nothing grows in a tick.
 - Physics: joints are laid out end to end for the bodies simulated (`LayOutJoints`), not a fixed 255 slots a body. The inertia
   inverts in doubles (a float determinant of a 100,000 t hull's terms is close to overflowing). Spin counts as still by what
   it does at the body's far end, so a slow 300 m hull doesn't fall asleep rolling.
-- Drawing (`Source/Render/ConstructRenderBatch.cs`): a body of 64 parts or more keeps its plain structure as boxes in the
-  body's frame in a GPU buffer, one instanced draw at its pose (`Renderer.DrawBody`, the same box shader with a `uBody`
-  matrix). Only what changes frame to frame or has its own mesh is walked: joints, wheels, logic, glass, burning parts, and
-  plain parts' contoured boxes (one shared mesh draw each). The boxes are remade when the body rebuilds, or a look each half
-  second finds health, paint or fire changed. A big body is never drawn as one far box, and is drawn to 3,000 m.
+- Drawing (`Source/Render/ConstructRenderBatch.cs`, docs/render/MERGED-MESHES.md): every body's static parts (a capital
+  hull's included) are merged meshes, chunks of up to 2,048 boxes 32 m a side per segment on the GPU, one draw for a chunk's
+  plain boxes and one per contoured shape in it, culled chunk by chunk. Only what moves or changes on its own is walked:
+  joints, wheels, rigs, levers, lamps, glass, engines, burning parts and stores. Looks are rewritten alone when health,
+  paint or frost change; an edit rebuilds only the chunks it touched. A big body is never drawn as one far box, and is drawn
+  to 3,000 m.
 - Network ([below](#network-protocol-82-84-for-free-placement-86-for-the-drivetrains-rpm-87-for-glass-shattering-88-for-the-physics-gun)): u16 indices, positions in 3 bytes a coordinate
   (+-83 km on the 1 cm grid), and patches.
 
@@ -5229,6 +5230,58 @@ separate client and a late joiner agree.
 - A box keeps its tone against the part's main colour instead of going flat.
 - The recent colours are not saved between sessions.
 
+## The texture paint tool
+
+User request (2026-11-07). A roller beside the paint tool on the tool wheel (`ConstructTool.Texture`, byte 16; model
+`Constructs/Tools/TexturePaintTool.json`). It puts a **shared material** (a row of `Materials/Surfaces.json`,
+docs/render/MATERIALS.md) on parts: **texture and colour are separate**, so a textured part keeps its own colour or its paint,
+and the colour paint tool keeps a part's texture. Code: `ConstructFinish.cs` (data and wire), `ConstructEditsFinish.cs` (the
+server), `GameSandboxTexture.cs` (the request), `Program.SandboxTexture.cs` (input), `SandboxTextureWheel.cs` (its ring),
+`UiSandboxTexture.cs` (the list), `Source/Render/SurfaceThumbnails.cs` (the swatches).
+
+- **Keys**: **LMB** puts the roller's material on the part under the crosshair; **hold LMB and sweep** to texture every part
+  passed over, each once per stroke (the colour paint tool's `PaintStroke`: a stroke never acts on what it already did, and a
+  stationary press acts once); **RMB** picks up the aimed part's material (its texture, else what its first box is drawn
+  with; read off this PC's copy, nothing is sent); **R** opens the list.
+- **The list** (R, or "Textures..." on the ring): every material the file offers, each a swatch drawn by the real box shader
+  on a grey block (so a swatch is what a part will look like; drawn a few a frame and kept for the session), with its name, a
+  search box (name or category) and the categories as buttons (All, then each row's `"category"`: Metal, Painted, Other, Wood,
+  Stone). Clicking one puts it on the roller and closes the list; Close or Esc leaves the roller as it was.
+- **The ring** (`SandboxTextureWheel`): **Part** (the default), **Whole construct** (every part; in survival the first click
+  asks for a second within four seconds), **Reset texture** (back to the part's own materials), **Textures...** and **Recent
+  textures** (the last eight used, each drawn with its swatch, as the third tier).
+- **What is offered**: rows from 7 up (0 to 6 are the old texture layers) whose `"offer"` isn't false (glass isn't: a pane is
+  blended and drawn apart). Seven rows were added for the tool: tread plate, plated steel (panels fitted to each box, seams
+  only between whole panels), painted plating, matte paint, gloss paint, chrome and carbon weave.
+- **Per part for now**: `CPart.Finish` (a byte, 0: its own materials) is the row every box of the part is drawn with, glass and
+  glowing boxes aside (`ConstructFinish.Takes`), in place of its own row and of the row paint would turn it to. A per-box (or
+  per-face) texture would be a short list of (box, row) beside the part, carried by name the same way, with the tool aiming at
+  the box the crosshair's ray hit; the merged meshes already hold a material per box slot, so drawing it costs nothing more.
+- **Never a row number outside this machine.** The byte is this build's own (rows are worked out at load). The wire, saves and
+  blueprints carry the material's **name** (at most 32 ASCII characters, checked when the file loads); a name this build
+  doesn't have reads as "its own materials". Saves: a part's texture is a setting `"finish:<name>"` in the body's settings
+  list, which an older build skips (no format change). Blueprints: a step's `"finish": "tread plate"`. Copy and paste keep it.
+- **Free and instant** in both modes, with the colour paint tool's rules (`ConstructEdits.Finish`): the tool out, no seat, the
+  reach, decision 19's contested-construct check; a part with nothing that takes a texture says so.
+- **Network (protocol 192)**: `CActKind.Texture` (construct, mode, part, the name) at the end of `CActKind`; the server sends
+  changes in `CBodyKind.Finish` (at the end of `CBodyKind`: construct, part, name; at most 100 a message, after the paint
+  changes each tick), and a `CBody` Full ends with the textured parts (a late joiner, a structure resend, a big body's patch).
+  No string is made either side: names go as ASCII bytes and are matched against the table. Nothing allocates while painting.
+- **Drawing**: a texture change is a look change. A merged chunk's look hash takes `Finish`, so only that chunk's looks are
+  written again (docs/render/MERGED-MESHES.md), never its geometry. On Materials Low a texture draws the classic way, as every
+  material does.
+- Tried by hand (2026-11-07): a host and a client over RakNet with 100 ms and 3% loss on the client: part, whole construct,
+  reset and a late joiner agree; the save, blueprint and Full round trips; the merged pictures with textures changing every
+  frame match the unmerged ones (1 pixel of 230,400, one level); the list and swatches in a real window on both GL paths.
+  The smoke test textures its row of parts with every offered material and opens the list.
+
+### Choices made (the developer may change them)
+
+- R opens the list (no new key to bind); RMB is the texture eyedropper, as RMB picks a colour with the paint tool.
+- Every box but glass and glow takes the texture, tyres included (a steel tyre is the player's choice).
+- An explicit texture wins over the row paint would choose: chrome painted red stays chrome-shiny under a red tint.
+- The no-collide tool moved from the north-north-west to the south-south-east to keep hands due south on a twelve-segment wheel.
+- The recent textures are not saved between sessions.
 ## The remover tool (board item rt01)
 
 The developer's request (2026-10-31). A red-banded eraser on the tool wheel's south-west segment (it took the scanner's place:

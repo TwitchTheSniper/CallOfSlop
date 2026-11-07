@@ -430,94 +430,8 @@ public sealed unsafe partial class Renderer
         _vao.Bind();
     }
 
-    private GlProgram _bodyProgram;
-    private int _bLocViewProj, _bLocBody, _bLocOrigin, _bLocCam, _bLocFog, _bLocFogRange, _bLocGlow;
-
-    /// <summary>One box of a body batch as the GPU holds it: where and how big in the body's frame, its tint, its wear and its material's row. 32 bytes.</summary>
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
-    public struct BodyBox
-    {
-        public Vector3 Centre, Size;
-        public byte R, G, B, Wear;
-        public byte Surface, Mode;
-        public ushort Pad;
-    }
-
     /// <summary>While set, what is drawn opaque and unlit (mode 2: a lit lamp, a glowing box) marks the back buffer's alpha for the bloom (PostFx.cs).</summary>
     public bool MarkGlow;
-
-    /// <summary>A big construct's plain boxes in the body's frame, kept on the GPU between edits and drawn with one call however many they are (ConstructRender.cs).</summary>
-    public sealed class BodyBatch
-    {
-        internal GlVertexArray Vao;
-        internal GlBuffer Vbo;
-        internal int Capacity;
-        public int Count;
-    }
-
-    /// <summary>Can bodies be drawn as batches here (a real GL context and the instanced shader)?</summary>
-    public bool BodyBatches => Recorder == null && !_instBroken && (_instReady || InitInstanced());
-
-    /// <summary>Puts <paramref name="count"/> boxes into a batch.</summary>
-    public void UploadBody(BodyBatch b, BodyBox[] data, int count)
-    {
-        FlushBatch();
-        if (b.Capacity == 0)
-        {
-            b.Vbo = GenBuffer();
-            b.Vao = GenVertexArray();
-            b.Vao.Bind();
-            BodyInstanceAttributes(b.Vbo);
-            GlDebug.Label(GL_VERTEX_ARRAY, b.Vao.Id, "Renderer.bodyBatch");
-        }
-        Native.glBindBuffer(GL_ARRAY_BUFFER, b.Vbo);
-        var bytes = (nint)count * sizeof(BodyBox);
-        if (count > b.Capacity)
-        {
-            b.Capacity = count;
-            Native.glBufferData(GL_ARRAY_BUFFER, bytes, null, GL_STATIC_DRAW);
-        }
-        fixed (BodyBox* p = data)
-            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, p);
-        b.Count = count;
-        _vao.Bind();
-    }
-
-    /// <summary>Draws a batch at the body's pose.</summary>
-    public void DrawBody(BodyBatch b, in Matrix4x4 body)
-    {
-        if (b.Count == 0)
-            return;
-        FlushBatch();
-        _bodyProgram.Use();
-        var vp = _viewProjRel;
-        Native.glUniformMatrix4fv(_bLocViewProj, 1, false, &vp.M11);
-        Native.glUniform3f(_bLocOrigin, Origin.X, Origin.Y, Origin.Z);
-        var m = FromOrigin(body);
-        Native.glUniformMatrix4fv(_bLocBody, 1, false, &m.M11);
-        var cam = CameraPosition;
-        Native.glUniform3f(_bLocCam, cam.X, cam.Y, cam.Z);
-        Native.glUniform3f(_bLocFog, FogColor.X, FogColor.Y, FogColor.Z);
-        Native.glUniform2f(_bLocFogRange, FogRange.X, FogRange.Y);
-        Native.glUniform1f(_bLocGlow, MarkGlow ? 0f : 1f);
-        PerfCounters.Draw(36, b.Count);
-        b.Vao.Bind();
-        Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, b.Count);
-        _program.Use();
-        _vao.Bind();
-    }
-
-    /// <summary>Frees a batch's GL objects.</summary>
-    public void FreeBody(BodyBatch b)
-    {
-        if (b.Capacity == 0)
-            return;
-        var vbo = b.Vbo;
-        Native.glDeleteBuffers(1, &vbo);
-        var vao = b.Vao;
-        Native.glDeleteVertexArrays(1, &vao);
-        b.Capacity = b.Count = 0;
-    }
 
     private StreamRing? _ring;
     private GlVertexArray _ringVao;
@@ -579,59 +493,6 @@ public sealed unsafe partial class Renderer
         Native.glVertexAttribDivisor(7, 1);
     }
 
-    private void MakeBodyProgram(string vsSrc, string fsSrc)
-    {
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vsSrc)).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fsSrc)).Compile();
-        _bodyProgram = CreateProgram();
-        Native.glAttachShader(_bodyProgram, vs);
-        Native.glAttachShader(_bodyProgram, fs);
-        Native.glLinkProgram(_bodyProgram);
-        GlDebug.Label(GL_PROGRAM, _bodyProgram.Id, "Renderer.bodyProgram");
-        int linked;
-        Native.glGetProgramiv(_bodyProgram, GL_LINK_STATUS, &linked);
-        if (linked == 0)
-            throw new InvalidOperationException("body batch shader link failed");
-        vs.Dispose();
-        fs.Dispose();
-        Lighting.Upload(_bodyProgram);
-        int Loc(ReadOnlySpan<byte> name)
-        {
-            fixed (byte* p = name)
-                return Native.glGetUniformLocation(_bodyProgram, p);
-        }
-        _bLocViewProj = Loc("uViewProj\0"u8);
-        _bLocBody = Loc("uBody\0"u8);
-        _bLocOrigin = Loc("uOrigin\0"u8);
-        _bLocCam = Loc("uCam\0"u8);
-        _bLocFog = Loc("uFog\0"u8);
-        _bLocFogRange = Loc("uFogRange\0"u8);
-        _bLocGlow = Loc("uGlowAlpha\0"u8);
-        Native.glUniform1i(Loc("uTex\0"u8), 0);
-    }
-
-    /// <summary>A body batch VAO's attributes: the cube, then a <see cref="BodyBox"/> an instance (bound VAO).</summary>
-    private void BodyInstanceAttributes(GlBuffer instances)
-    {
-        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        const int stride = 6 * sizeof(float);
-        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
-        EnableVertexAttribArray(0);
-        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
-        EnableVertexAttribArray(1);
-        Native.glBindBuffer(GL_ARRAY_BUFFER, instances);
-        var s = sizeof(BodyBox);
-        Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, s, (void*)0);
-        Native.glVertexAttribPointer(3, 3, GL_FLOAT, false, s, (void*)12);
-        Native.glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, s, (void*)24);
-        Native.glVertexAttribPointer(5, 2, GL_UNSIGNED_BYTE, false, s, (void*)28);
-        for (uint a = 2; a <= 5; a++)
-        {
-            EnableVertexAttribArray(a);
-            Native.glVertexAttribDivisor(a, 1);
-        }
-    }
-
     private bool InitInstanced()
     {
         try
@@ -672,42 +533,6 @@ public sealed unsafe partial class Renderer
                     gl_Position = uViewProj * w;
                 }
                 """;
-            // A body batch's boxes: no rotation of their own (Plain parts' boxes sit square in the body), so the instance is a
-            // centre, a size, a packed tint (alpha: wear) and a material row: 32 bytes, not the 88 above (BodyBox).
-            const string bodyVsSrc = """
-                #version 410 core
-                layout(location = 0) in vec3 aPos;
-                layout(location = 1) in vec3 aNormal;
-                layout(location = 2) in vec3 iCentre;
-                layout(location = 3) in vec3 iSize;
-                layout(location = 4) in vec4 iTint;
-                layout(location = 5) in vec2 iInfo;
-                uniform mat4 uViewProj;
-                uniform mat4 uBody;
-                uniform vec3 uOrigin;
-                uniform float uGlowAlpha;
-                out vec3 vWorld;
-                out vec3 vNormal;
-                out vec3 vLocal;
-                out vec3 vLocalN;
-                flat out vec3 vSize;
-                out vec4 vColorI;
-                flat out float vModeI;
-                flat out float vLayerI;
-                void main()
-                {
-                    vSize = iSize;
-                    vLocal = aPos * iSize;
-                    vLocalN = aNormal;
-                    vec4 w = uBody * vec4(iCentre + vLocal, 1.0);
-                    vWorld = w.xyz + uOrigin;
-                    vNormal = mat3(uBody) * aNormal;
-                    vModeI = iInfo.y;
-                    vColorI = vec4(iTint.rgb, iInfo.y > 1.5 ? uGlowAlpha : 1.0);
-                    vLayerI = iInfo.x + iTint.a * 0.99;
-                    gl_Position = uViewProj * w;
-                }
-                """;
             // The box shader's own fragment code, with the per-draw uniforms coming from the instance instead.
             var fsSrc = FragmentSrc.Replace("uniform vec4 uColor;", "in vec4 vColorI;\n#define uColor vColorI")
                 .Replace("uniform float uMode;", "flat in float vModeI;\n#define uMode vModeI")
@@ -741,7 +566,6 @@ public sealed unsafe partial class Renderer
             fixed (byte* p = "uTex\0"u8)
                 _iLocTex = Native.glGetUniformLocation(_instProgram, p);
             Native.glUniform1i(_iLocTex, 0);
-            MakeBodyProgram(bodyVsSrc, fsSrc);
 
             _instVao = GenVertexArray();
             _instVao.Bind();
@@ -1034,7 +858,7 @@ public sealed unsafe partial class Renderer
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, (int)GL_REPEAT);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, (int)GL_REPEAT);
-        Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY, 8);
+        RenderCaps.Anisotropy(GL_TEXTURE_2D_ARRAY, 8f);
     }
 
     /// <summary>Screen-space rectangle in pixels (origin bottom-left). Use with an ortho camera.</summary>

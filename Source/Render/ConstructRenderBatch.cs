@@ -1,205 +1,598 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CallOfSlop;
 
 /// <summary>
-/// Big constructs in one draw (the capital parts; docs/sandbox/CONSTRUCTS.md, "Size classes"). A body of
-/// <see cref="BatchMinParts"/> parts or more keeps its plain structure (frames and panels on the body itself: no joint, no
-/// wheel, no signal, no glass, not burning, no contents) as boxes in the body's frame in a buffer on the GPU, drawn with one
-/// instanced draw at its pose. Only what changes frame by frame or needs its own mesh is walked: the other parts, as
-/// always, and the plain parts' contoured boxes (one draw each, shared meshes, not rebuilt). The boxes are made again when
-/// the construct rebuilds, is frozen or thawed, or a look every half second finds a part's health, paint or fire changed. No
-/// allocation in a steady frame.
+/// Merged meshes (docs/render/MERGED-MESHES.md): a construct's static parts drawn as a few GPU-resident draw groups instead
+/// of box by box, so draw cost no longer grows with box count. Each rigid moving piece (a segment: the body, or what hangs
+/// on a joint) is cut into chunks of space (<see cref="MergeCell"/> metres a side, at most <see cref="MergeChunkBoxes"/>
+/// boxes); a chunk's boxes sit in the segment's frame on the GPU (<see cref="Renderer.MergedMesh"/>) and are drawn at the
+/// segment's pose this frame, one call for the plain boxes and one for the contoured ones. Parts that animate or change on
+/// their own (wheels, joints, rigs, rotors, levers, lamps, glass, engines, burning or holding stored parts, merged guns) are
+/// walked every frame as before. A part's look (paint, damage, frost) is a texel of its own, checked every
+/// <see cref="MergeCheckFrames"/> frames and rewritten alone; an edit re-plans the construct (cheap) and rebuilds only the
+/// chunks whose parts changed, at most <see cref="MergeBudgetBoxes"/> boxes a frame, a chunk waiting its turn walked as
+/// before. Render only: the same on host and clients, nothing on the wire or in a save. <c>--no-merge</c> turns it off.
+/// Nothing allocates in a steady frame.
 /// </summary>
 public static partial class ConstructRender
 {
+    /// <summary>Parts from which a body is "big" (drawn whole from far off: ConstructRenderCull.cs).</summary>
     public const int BatchMinParts = 64;
-    private const int BatchCheckFrames = 30;
 
-    private sealed class Batch
+    /// <summary>Merged meshes on (the default) or every part walked as before (<c>--no-merge</c>; the bench compares both).</summary>
+    public static bool MergeOn = true;
+
+    /// <summary>A body with fewer static boxes than this is walked: a draw of its own would cost more than its boxes in the shared batch.</summary>
+    public const int MergeMinBoxes = 24;
+
+    /// <summary>A chunk's side (metres in its segment's frame) and most boxes; boxes rebuilt a frame at most (one chunk always goes).</summary>
+    public const float MergeCell = 32f;
+    public const int MergeChunkBoxes = 2048, MergeBudgetBoxes = 8192;
+    private const int MergeCheckFrames = 4;
+
+    /// <summary>One chunk of a segment: its parts, its boxes on the GPU, the hashes that say whether they are still right.</summary>
+    private sealed class MergeChunk
     {
-        public readonly Renderer.BodyBatch Gl = new();
-        public Construct? Body;
-        public int[] Moving = []; // the parts walked every frame
-        public int MovingCount;
-        public Shaped[] Shapes = [];
-        public int ShapeCount;
+        public readonly Renderer.MergedMesh Gl = new();
+        public long Key; // segment and cell
+        public int Sub; // the cell's overflow chunk
+        public int Seg;
+        public long Geo; // its parts' types, places and turns, in order
+        public long Look; // their health, paint and frost
+        public int[] Members = [];
+        public int MemberCount, Boxes;
+        public int[] SlotPart = []; // slot k's member (its place in Members: an edit can renumber the parts) and box
+        public byte[] SlotBox = [];
+        public bool Dirty = true, LookDue = true;
+        public Vector3 Centre; // a sphere round its boxes, in the segment's frame
+        public float Radius;
+    }
+
+    private sealed class MergeSet
+    {
         public int Stamp = -1;
-        public bool Frozen;
-        public long Key;
-        public int Age, Seen;
+        public long Dyn;
+        public int Seen, Draws, Parts;
+        public bool On; // enough static boxes to merge
+        public MergeChunk[] Chunks = [];
+        public int ChunkCount;
+        public int[] Walked = [];
+        public int WalkedCount, Boxes;
     }
 
-    private struct Shaped
+    private struct MergeDraw
     {
-        public Matrix4x4 Model;
-        public Vector3 Colour;
-        public int Shape;
-        public float Surface;
+        public Renderer.MergedMesh Mesh;
+        public Matrix4x4 Frame;
     }
 
-    private static Renderer.BodyBox[] _fillData = []; // (one scratch for every batch: the boxes live on the GPU, not twice)
-    private static readonly Dictionary<Construct, Batch> _batches = new();
-    private static readonly List<Construct> _batchGone = new();
-    private static int _batchFrame;
+    private static readonly Dictionary<Construct, MergeSet> _merges = new();
+    private static readonly List<Construct> _mergeGone = new();
+    private static readonly Dictionary<ConstructPartDef, int> _defBoxes = new(ReferenceEqualityComparer.Instance as IEqualityComparer<ConstructPartDef>); // a type's drawn boxes, or -1: it moves or changes on its own
+    private static readonly Dictionary<long, int> _open = new();
+    private static readonly Dictionary<(long, int), int> _oldChunk = new();
+    private static int[] _partEntry = [], _wheelMark = [], _memberAt = [];
+    private static int _wheelToken;
+    private static long[] _eKey = [], _eGeo = [];
+    private static int[] _eSub = [], _eSeg = [], _eCount = [], _eBoxes = [], _eFirst = [];
+    private static bool[] _oldClaimed = [];
+    private static float[] _mergeXform = [], _mergeLook = [];
+    private static long[] _slotKey = [];
+    private static MergeDraw[] _mergeQueue = new MergeDraw[64];
+    private static int _mergeQueued, _mergeBudget, _mergeFrame;
+    private static Matrix4x4[] _segFrame = new Matrix4x4[Construct.MaxJoints + 1];
+    private static int[] _segToken = new int[Construct.MaxJoints + 1];
+    private static int _segTok;
 
-    /// <summary>Plain boxes and walked parts of the batches drawn last frame (the F9 window, the self-test).</summary>
+    /// <summary>Static boxes in merged meshes and parts walked in merged bodies, last frame (the F9 window, the smoke test).</summary>
     public static int LastBatchBoxes { get; private set; }
     public static int LastBatchWalked { get; private set; }
 
-    /// <summary>Is part <paramref name="i"/> plain structure, the same from one frame to the next?</summary>
-    public static bool Plain(Construct c, int i)
+    /// <summary>Merged chunks drawn last frame, chunks rebuilt, chunks waiting (walked) and bytes the merged meshes hold on the GPU.</summary>
+    public static int LastMergedChunks { get; private set; }
+    public static int LastMergedBuilt { get; private set; }
+    public static int LastMergedWaiting { get; private set; }
+    public static long MergedBytes { get; private set; }
+
+    /// <summary>Drawn boxes of a type that never moves or changes on its own, or -1.</summary>
+    private static int StaticBoxes(ConstructPartDef d)
     {
-        ref var p = ref c.Parts[i];
-        var d = p.D;
-        return p.Seg == 0 && d.Role is PartRole.Frame or PartRole.Panel or PartRole.Foundation && p.Store == 0 && p.Burn == 0 && !d.HasGlass
-            && c.MergeOf[i] == 0 && c.PartScale[i] <= 1 && !d.IsBeacon && !d.HasDial && d.Surface is not { Control: > 0 };
+        if (_defBoxes.TryGetValue(d, out var n))
+            return n;
+        n = 0;
+        if (d.Role == PartRole.Joint || d.IsRail || d.HasRig || d.HasGlass || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner || d.IsOrdnance
+            || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever or CLogic.Lamp || d.Surface is { Control: > 0 })
+            n = -1;
+        else
+            foreach (var box in d.Boxes.AsSpan())
+            {
+                if (box.Rig != BoxRig.None || box.Spin || box.Roll || box.IsLeaf || box.IsGlass || box.Pump != 0)
+                {
+                    n = -1;
+                    break;
+                }
+                if (!box.Hidden)
+                    n++;
+            }
+        _defBoxes[d] = n;
+        return n;
     }
 
-    private static long LookKey(Construct c)
+    /// <summary>Boxes part <paramref name="i"/> puts in a merged mesh (0: none, it is walked or draws nothing).</summary>
+    private static int MergeBoxes(Construct c, int i)
     {
-        var h = 17L;
+        ref var p = ref c.Parts[i];
+        if (p.Burn > 0 || p.Store != 0 || c.MergeOf[i] != 0 || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
+            return 0;
+        return Math.Max(0, StaticBoxes(p.D));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static long Mix(long h, long v) => (h ^ v) * 0x100000001B3L + (h >> 29);
+
+    /// <summary>What decides which parts are merged, beyond a rebuild: the types, fires and stored parts.</summary>
+    private static long DynKey(Construct c)
+    {
+        var h = (long)c.PartCount;
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            var shade = (int)(16 * Math.Clamp(p.Health / MathF.Max(1, p.D.Health), 0, 1));
-            h = h * 31 + (shade | (p.Broken ? 32 : 0) | (p.Burn > 0 ? 64 : 0) | (long)p.Paint << 8);
+            h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0));
         }
         return h;
     }
 
-    /// <summary>The batch's boxes, moving parts and contoured boxes, as the construct is now. Returns the plain boxes (the self-test calls it with no GL).</summary>
-    private static int Fill(Batch b, Construct c)
+    private static long PartGeo(in CPart p) =>
+        Mix(Mix(Mix(Mix(RuntimeHelpers.GetHashCode(p.D), BitConverter.SingleToInt32Bits(p.Pos.X)), BitConverter.SingleToInt32Bits(p.Pos.Y)), BitConverter.SingleToInt32Bits(p.Pos.Z)), p.Rot);
+
+    private static bool Frosted(Construct c, int i) => (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i);
+
+    private static long ChunkLook(Construct c, MergeChunk ch)
     {
-        var boxes = 0;
-        var shapes = 0;
-        for (var i = 0; i < c.PartCount; i++)
-            if (Plain(c, i))
-                foreach (var box in c.Parts[i].D.Boxes.AsSpan())
-                    if (!box.Hidden)
-                    {
-                        if (box.Shape == 0)
-                            boxes++;
-                        else
-                            shapes++;
-                    }
-        if (_fillData.Length < boxes)
-            _fillData = new Renderer.BodyBox[boxes * 5 / 4];
-        if (b.Moving.Length < c.PartCount)
-            b.Moving = new int[c.PartCount];
-        if (b.Shapes.Length < shapes)
-            b.Shapes = new Shaped[shapes];
-        b.MovingCount = b.ShapeCount = 0;
-        var o = 0;
-        var data = _fillData;
-        for (var i = 0; i < c.PartCount; i++)
+        var h = 23L;
+        for (var k = 0; k < ch.MemberCount; k++)
         {
-            if (!Plain(c, i))
+            ref var p = ref c.Parts[ch.Members[k]];
+            h = Mix(Mix(h, BitConverter.SingleToInt32Bits(p.Health) ^ ((long)p.Paint << 32) ^ (p.Broken ? 1L << 62 : 0) ^ (Frosted(c, ch.Members[k]) ? 1L << 61 : 0)), p.Finish); // (the texture paint tool: a finish rewrites the looks alone, ConstructFinish.cs)
+        }
+        return h;
+    }
+
+    private static void Grow<T>(ref T[] a, int n)
+    {
+        if (a.Length < n)
+            Array.Resize(ref a, Math.Max(n, a.Length * 3 / 2)); // (keeps what is in it: the plan and the shape scratch grow as they fill)
+    }
+
+    /// <summary>
+    /// Which parts go in which chunk, as the construct is now. Chunks whose parts are the same types in the same places keep
+    /// their GPU data (their part indices are updated); the others are marked to be rebuilt. Returns the static boxes.
+    /// </summary>
+    private static int Plan(Renderer? gfx, MergeSet set, Construct c)
+    {
+        var n = c.PartCount;
+        Grow(ref _partEntry, n);
+        Grow(ref _wheelMark, n);
+        Grow(ref _memberAt, n);
+        Grow(ref set.Walked, n);
+        if (++_wheelToken == int.MaxValue)
+        {
+            Array.Clear(_wheelMark);
+            _wheelToken = 1;
+        }
+        for (var k = 0; k < c.WheelCount; k++)
+            if ((uint)c.Wheels[k].Part < (uint)n)
+                _wheelMark[c.Wheels[k].Part] = _wheelToken;
+        _open.Clear();
+        var entries = 0;
+        var total = 0;
+        set.WalkedCount = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var nb = MergeBoxes(c, i);
+            if (nb == 0)
             {
-                b.Moving[b.MovingCount++] = i;
+                _partEntry[i] = -1;
+                if (StaticBoxes(c.Parts[i].D) != 0 || c.Parts[i].Store != 0 || c.Parts[i].Burn > 0)
+                    set.Walked[set.WalkedCount++] = i; // (a static part with no box drawn needs no walk unless it burns or holds parts)
                 continue;
             }
             ref var p = ref c.Parts[i];
-            var d = p.D;
-            var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
-            var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
-            var wear = p.Broken ? 1f : 1f - health;
-            for (var k = 0; k < d.Boxes.Length; k++)
+            var seg = p.Seg > 0 && p.Seg <= c.JointCount ? p.Seg : 0;
+            var key = (long)seg << 48 | (long)((int)MathF.Floor(p.Pos.X / MergeCell) & 0xFFFF) << 32
+                | (long)((int)MathF.Floor(p.Pos.Y / MergeCell) & 0xFFFF) << 16 | (long)((int)MathF.Floor(p.Pos.Z / MergeCell) & 0xFFFF);
+            if (!_open.TryGetValue(key, out var e) || _eBoxes[e] + nb > MergeChunkBoxes)
             {
-                ref readonly var box = ref d.Boxes[k];
-                if (box.Hidden)
-                    continue;
-                c.BoxOf(i, k, out var centre, out _);
-                var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
-                if (c.Frozen)
-                    tint = Vector3.Lerp(tint, Frost, 0.45f);
-                var surface = Surfaces.OnPaint(box.Surface, p.Paint, box.Paintable);
-                if (box.Shape != 0)
-                {
-                    b.Shapes[b.ShapeCount++] = new Shaped { Model = box.Model(p.Rot, centre), Colour = tint, Shape = box.Shape, Surface = Surfaces.Code(surface, wear) };
-                    continue;
-                }
-                ref var o1 = ref data[o++];
-                o1.Centre = centre;
-                var half = box.Half;
-                if (d.IsOrdnance && d.OrdStats is { BoxFold.Length: > 0 } fold && k < fold.BoxFold.Length && fold.BoxFold[k] > 0)
-                    half.X = fold.BoxFold[k]; // (a pop-out wing, folded on its rack: ConstructRenderShells.cs)
-                o1.Size = Rot24.ApplyHalf(p.Rot, half) * 2;
-                o1.R = (byte)MathF.Min(tint.X * 255f + 0.5f, 255f);
-                o1.G = (byte)MathF.Min(tint.Y * 255f + 0.5f, 255f);
-                o1.B = (byte)MathF.Min(tint.Z * 255f + 0.5f, 255f);
-                o1.Wear = (byte)(wear * 255f + 0.5f);
-                o1.Surface = surface;
-                o1.Mode = box.Glow ? (byte)2 : (byte)0;
+                var sub = _open.ContainsKey(key) ? _eSub[e] + 1 : 0;
+                Grow(ref _eKey, entries + 1);
+                Grow(ref _eGeo, entries + 1);
+                Grow(ref _eSub, entries + 1);
+                Grow(ref _eSeg, entries + 1);
+                Grow(ref _eCount, entries + 1);
+                Grow(ref _eBoxes, entries + 1);
+                Grow(ref _eFirst, entries + 1);
+                e = entries++;
+                _eKey[e] = key;
+                _eSub[e] = sub;
+                _eSeg[e] = seg;
+                _eCount[e] = _eBoxes[e] = 0;
+                _eGeo[e] = 17;
+                _open[key] = e;
             }
+            _partEntry[i] = e;
+            _eCount[e]++;
+            _eBoxes[e] += nb;
+            _eGeo[e] = Mix(_eGeo[e], PartGeo(in p));
+            total += nb;
         }
-        return boxes;
+        set.Boxes = total;
+        var on = gfx != null && total >= MergeMinBoxes;
+        if (!on)
+        {
+            for (var k = 0; k < set.ChunkCount; k++)
+                gfx?.FreeMerged(set.Chunks[k].Gl);
+            set.ChunkCount = 0;
+            set.On = false;
+            return total;
+        }
+        // Members in part order, chunk by chunk.
+        var at = 0;
+        for (var e = 0; e < entries; e++)
+        {
+            _eFirst[e] = at;
+            at += _eCount[e];
+        }
+        for (var e = 0; e < entries; e++)
+            _eCount[e] = 0;
+        for (var i = 0; i < n; i++)
+            if (_partEntry[i] is var e and >= 0)
+                _memberAt[_eFirst[e] + _eCount[e]++] = i;
+        // The old chunks by place: kept where nothing in them changed.
+        _oldChunk.Clear();
+        Grow(ref _oldClaimed, set.ChunkCount);
+        for (var k = 0; k < set.ChunkCount; k++)
+        {
+            _oldChunk[(set.Chunks[k].Key, set.Chunks[k].Sub)] = k;
+            _oldClaimed[k] = false;
+        }
+        var old = set.Chunks;
+        var oldCount = set.ChunkCount;
+        var chunks = old.Length >= entries ? old : new MergeChunk[Math.Max(entries, 4)];
+        var made = new MergeChunk[entries]; // (plan time only: an edit, never a steady frame)
+        for (var e = 0; e < entries; e++)
+        {
+            MergeChunk ch;
+            if (_oldChunk.TryGetValue((_eKey[e], _eSub[e]), out var k) && !_oldClaimed[k])
+            {
+                _oldClaimed[k] = true;
+                ch = old[k];
+                if (ch.Geo != _eGeo[e] || ch.Boxes != _eBoxes[e] || ch.MemberCount != _eCount[e] || ch.Seg != _eSeg[e])
+                    ch.Dirty = true;
+            }
+            else
+                ch = new MergeChunk { Dirty = true };
+            ch.Key = _eKey[e];
+            ch.Sub = _eSub[e];
+            ch.Seg = _eSeg[e];
+            ch.Geo = _eGeo[e];
+            ch.Boxes = _eBoxes[e];
+            Grow(ref ch.Members, _eCount[e]);
+            Array.Copy(_memberAt, _eFirst[e], ch.Members, 0, _eCount[e]);
+            ch.MemberCount = _eCount[e];
+            ch.LookDue = true;
+            made[e] = ch;
+        }
+        for (var k = 0; k < oldCount; k++)
+            if (!_oldClaimed[k])
+                gfx!.FreeMerged(old[k].Gl);
+        if (chunks == old)
+            Array.Clear(chunks);
+        Array.Copy(made, chunks, entries);
+        set.Chunks = chunks;
+        set.ChunkCount = entries;
+        set.On = true;
+        return total;
     }
 
-    /// <summary>The self-test: how a construct splits, with no GL: plain boxes in the one draw, parts still walked each frame, contoured boxes.</summary>
+    /// <summary>A chunk's looks into the scratch, slot by slot (the order <see cref="BuildChunk"/> laid them in).</summary>
+    private static int FillLooks(Construct c, MergeChunk ch)
+    {
+        var n = ch.Gl.Slots;
+        Grow(ref _mergeLook, n * Renderer.MergeLookFloats);
+        var look = _mergeLook;
+        var lastPart = -1;
+        float shade = 1, wear = 0;
+        var frost = false;
+        for (var s = 0; s < n; s++)
+        {
+            var i = ch.Members[ch.SlotPart[s]];
+            ref var p = ref c.Parts[i];
+            var d = p.D;
+            if (i != lastPart)
+            {
+                lastPart = i;
+                var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
+                shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
+                wear = p.Broken ? 1f : 1f - health;
+                frost = Frosted(c, i);
+            }
+            ref readonly var box = ref d.Boxes[ch.SlotBox[s]];
+            Vector3 tint;
+            float code;
+            if (box.Glow)
+            {
+                tint = box.Color * shade;
+                code = -1f;
+            }
+            else
+            {
+                tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
+                if (frost)
+                    tint = Vector3.Lerp(tint, Frost, 0.45f);
+                code = Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear);
+            }
+            var o = s * 4;
+            look[o] = tint.X;
+            look[o + 1] = tint.Y;
+            look[o + 2] = tint.Z;
+            look[o + 3] = code;
+        }
+        return n;
+    }
+
+    /// <summary>
+    /// A chunk's boxes onto the GPU, grouped by shape (plain boxes first, then each contoured shape: one instanced draw a
+    /// group), each slot's part and box kept so its look can be written again alone.
+    /// </summary>
+    private static void BuildChunk(Renderer gfx, Construct c, MergeChunk ch)
+    {
+        var n = ch.Boxes;
+        Grow(ref _mergeXform, n * Renderer.MergeXformFloats);
+        Grow(ref _slotKey, n);
+        Grow(ref ch.SlotPart, n);
+        Grow(ref ch.SlotBox, n);
+        var keys = _slotKey;
+        var s = 0;
+        for (var k = 0; k < ch.MemberCount; k++)
+        {
+            var i = ch.Members[k];
+            var boxes = c.Parts[i].D.Boxes;
+            for (var b = 0; b < boxes.Length; b++)
+                if (!boxes[b].Hidden)
+                    keys[s++] = (long)boxes[b].Shape << 40 | (long)k << 8 | (long)b; // (shape, then the member's place, then box)
+        }
+        Array.Sort(keys, 0, s);
+        var xf = _mergeXform;
+        var mn = new Vector3(float.MaxValue);
+        var mx = new Vector3(float.MinValue);
+        var gl = ch.Gl;
+        gl.Groups = 0;
+        var lastShape = -1;
+        for (var k = 0; k < s; k++)
+        {
+            var shape = (int)(keys[k] >> 40);
+            var member = (int)(keys[k] >> 8 & 0xFFFFFFFF);
+            var i = ch.Members[member];
+            var b = (int)(keys[k] & 0xFF);
+            ref var p = ref c.Parts[i];
+            ref readonly var box = ref p.D.Boxes[b];
+            if (shape != lastShape)
+            {
+                Grow(ref gl.GroupShape, gl.Groups + 1);
+                Grow(ref gl.GroupFirst, gl.Groups + 1);
+                Grow(ref gl.GroupCount, gl.Groups + 1);
+                gl.GroupShape[gl.Groups] = shape;
+                gl.GroupFirst[gl.Groups] = k;
+                gl.GroupCount[gl.Groups] = 0;
+                gl.Groups++;
+                lastShape = shape;
+            }
+            gl.GroupCount[gl.Groups - 1]++;
+            ch.SlotPart[k] = member;
+            ch.SlotBox[k] = (byte)b;
+            c.BoxOf(i, b, out var centre, out var half);
+            mn = Vector3.Min(mn, centre - half);
+            mx = Vector3.Max(mx, centre + half);
+            var m = box.Model(p.Rot, centre);
+            var o = k * Renderer.MergeXformFloats;
+            xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
+            xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
+            xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
+        }
+        gfx.UploadMergedXforms(gl, xf, s);
+        var looks = FillLooks(c, ch); // (after the slots: it reads them, and it can grow the scratch)
+        gfx.UploadMergedLooks(gl, _mergeLook, looks);
+        ch.Look = ChunkLook(c, ch);
+        ch.LookDue = false;
+        ch.Centre = s > 0 ? (mn + mx) * 0.5f : Vector3.Zero;
+        ch.Radius = s > 0 ? (mx - mn).Length() * 0.5f + 0.05f : 0f;
+        ch.Dirty = false;
+    }
+
+    /// <summary>The self-test: how a construct splits, with no GL: static boxes in merged meshes, parts still walked each frame, contoured boxes among the merged.</summary>
     public static (int Boxes, int Walked, int Shaped) BatchCounts(Construct c)
     {
-        var b = new Batch();
-        var boxes = Fill(b, c);
-        return (boxes, b.MovingCount, b.ShapeCount);
+        var set = new MergeSet();
+        var boxes = Plan(null, set, c);
+        var shaped = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (_partEntry[i] >= 0)
+                foreach (var box in c.Parts[i].D.Boxes.AsSpan())
+                    if (!box.Hidden && box.Shape != 0)
+                        shaped++;
+        return (boxes, set.WalkedCount, shaped);
     }
 
-    private static int DrawBatched(Renderer gfx, ConstructWorld world, Construct c, in Matrix4x4 body, float alpha)
+    /// <summary>
+    /// Draws <paramref name="c"/> through its merged meshes, the walked parts box by box. Returns false (nothing drawn) when
+    /// the body has too few static boxes to merge: the caller walks it all.
+    /// </summary>
+    private static bool DrawMergedBody(Renderer gfx, ConstructWorld world, Construct c, in Matrix4x4 body, float alpha, bool cull, ref int drawn)
     {
-        if (!_batches.TryGetValue(c, out var b))
-            _batches[c] = b = new Batch { Body = c };
-        b.Seen = _batchFrame;
-        var stale = b.Stamp != c.RebuildStamp || b.Frozen != c.Frozen;
-        if (!stale && ++b.Age >= BatchCheckFrames)
+        if (!_merges.TryGetValue(c, out var set))
+            _merges[c] = set = new MergeSet();
+        set.Seen = _mergeFrame;
+        var check = (++set.Draws + c.Id) % MergeCheckFrames == 0; // (counted in its own draws: a camera pass or a frame it is culled in doesn't skip a check)
+        if (set.Stamp != c.RebuildStamp || set.Parts != c.PartCount) // (parts taken out and not yet rebuilt: the indices moved)
         {
-            b.Age = 0;
-            stale = LookKey(c) != b.Key;
+            Plan(gfx, set, c);
+            set.Stamp = c.RebuildStamp;
+            set.Parts = c.PartCount;
+            set.Dyn = DynKey(c);
         }
-        if (stale)
+        else if (check && DynKey(c) is var dyn && dyn != set.Dyn)
         {
-            var count = Fill(b, c);
-            gfx.UploadBody(b.Gl, _fillData, count);
-            b.Stamp = c.RebuildStamp;
-            b.Frozen = c.Frozen;
-            b.Key = LookKey(c);
+            Plan(gfx, set, c);
+            set.Dyn = dyn;
         }
-        gfx.DrawBody(b.Gl, body);
-        var n = b.Gl.Count;
-        for (var k = 0; k < b.ShapeCount; k++)
+        if (!set.On)
+            return false;
+        if (++_segTok == int.MaxValue)
         {
-            ref var s = ref b.Shapes[k];
-            gfx.Draw(s.Model * body, s.Colour, 1f, mode: 0, shape: s.Shape, surface: s.Surface);
+            Array.Clear(_segToken);
+            _segTok = 1;
         }
-        n += b.ShapeCount;
-        for (var k = 0; k < b.MovingCount; k++)
+        var n = 0;
+        var origin = gfx.Origin;
+        for (var k = 0; k < set.ChunkCount; k++)
         {
-            var i = b.Moving[k];
+            var ch = set.Chunks[k];
+            if (ch.Dirty && _mergeBudget > 0)
+            {
+                BuildChunk(gfx, c, ch);
+                _mergeBudget -= ch.Boxes;
+                LastMergedBuilt++;
+            }
+            if (ch.Dirty)
+            {
+                // Waiting its turn to be rebuilt: drawn part by part, as it was before merged meshes.
+                LastMergedWaiting++;
+                for (var m = 0; m < ch.MemberCount; m++)
+                    if (ch.Members[m] < c.PartCount)
+                        n += DrawPart(gfx, world, c, ch.Members[m], body, alpha, 1f);
+                continue;
+            }
+            if (ch.LookDue || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws)
+            {
+                var look = ChunkLook(c, ch);
+                if (look != ch.Look || ch.LookDue)
+                {
+                    if (look != ch.Look && FillLooks(c, ch) is var looks)
+                        gfx.UploadMergedLooks(ch.Gl, _mergeLook, looks);
+                    ch.Look = look;
+                    ch.LookDue = false;
+                }
+            }
+            ref var frame = ref _segFrame[ch.Seg];
+            if (_segToken[ch.Seg] != _segTok)
+            {
+                frame = ch.Seg == 0 ? body : SegMatrix(c, ch.Seg, alpha) * body;
+                _segToken[ch.Seg] = _segTok;
+            }
+            if (cull)
+            {
+                var at = Vector3.Transform(ch.Centre, frame) + origin;
+                var outside = false;
+                for (var q = 0; q < 6 && !outside; q++)
+                {
+                    var pl = _planes[q];
+                    outside = pl.X * at.X + pl.Y * at.Y + pl.Z * at.Z + pl.W < -ch.Radius;
+                }
+                if (outside)
+                    continue;
+            }
+            if (_mergeQueued == _mergeQueue.Length)
+                Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame };
+            LastMergedChunks++;
+            LastBatchBoxes += ch.Gl.Slots;
+            n += ch.Gl.Slots;
+        }
+        for (var k = 0; k < set.WalkedCount; k++)
+        {
+            var i = set.Walked[k];
             if (i >= c.PartCount)
                 continue;
             n += DrawPart(gfx, world, c, i, body, alpha, 1f);
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
         }
-        LastBatchBoxes += b.Gl.Count;
-        LastBatchWalked += b.MovingCount + b.ShapeCount;
-        return n;
+        LastBatchWalked += set.WalkedCount;
+        drawn += n;
+        return true;
     }
 
-    /// <summary>After a frame: the batches of bodies not drawn for a while go (their GL objects with them).</summary>
+    /// <summary>The merged meshes as they stand: bodies, chunks, box slots and bytes on the GPU (the bench; walks them, so not every frame).</summary>
+    public static (int Bodies, int Chunks, int Slots, long Bytes) MergedStats()
+    {
+        int bodies = 0, chunks = 0, slots = 0;
+        long bytes = 0;
+        foreach (var (_, s) in _merges)
+        {
+            if (!s.On)
+                continue;
+            bodies++;
+            for (var k = 0; k < s.ChunkCount; k++)
+            {
+                chunks++;
+                slots += s.Chunks[k].Gl.Slots;
+                bytes += s.Chunks[k].Gl.Bytes;
+            }
+        }
+        return (bodies, chunks, slots, bytes);
+    }
+
+    /// <summary>Starts a frame's merged drawing (the rebuild budget and the counters).</summary>
+    private static void BeginMergedFrame()
+    {
+        _mergeBudget = MergeBudgetBoxes;
+        _mergeQueued = 0;
+        LastMergedChunks = LastMergedBuilt = LastMergedWaiting = 0;
+    }
+
+    /// <summary>The chunks queued this frame, in one run of the merged shader (opaque, so their order with the box batch doesn't matter).</summary>
+    private static void FlushMerged(Renderer gfx)
+    {
+        if (_mergeQueued == 0)
+            return;
+        gfx.BeginMerged();
+        var rel = gfx.Relative;
+        gfx.Relative = true; // (the frames are relative to the render origin already)
+        for (var k = 0; k < _mergeQueued; k++)
+        {
+            gfx.DrawMerged(_mergeQueue[k].Mesh, in _mergeQueue[k].Frame);
+            _mergeQueue[k].Mesh = null!;
+        }
+        gfx.Relative = rel;
+        gfx.EndMerged();
+        _mergeQueued = 0;
+    }
+
+    /// <summary>After a frame: the merged meshes of bodies not drawn for a while go (their GL objects with them).</summary>
     private static void BatchSweep(Renderer gfx, ConstructWorld world)
     {
         _ = world;
-        _batchFrame++;
-        if (_batchFrame % 120 != 0 || _batches.Count == 0)
+        _mergeFrame++;
+        if (_mergeFrame % 120 != 0 || _merges.Count == 0)
             return;
-        foreach (var (c, b) in _batches)
-            if (_batchFrame - b.Seen > 600)
-                _batchGone.Add(c);
-        foreach (var c in _batchGone)
+        long bytes = 0;
+        foreach (var (c, s) in _merges)
         {
-            gfx.FreeBody(_batches[c].Gl);
-            _batches.Remove(c);
+            if (_mergeFrame - s.Seen > 600)
+                _mergeGone.Add(c);
+            for (var k = 0; k < s.ChunkCount; k++)
+                bytes += s.Chunks[k].Gl.Bytes;
         }
-        _batchGone.Clear();
+        foreach (var c in _mergeGone)
+        {
+            var s = _merges[c];
+            for (var k = 0; k < s.ChunkCount; k++)
+                gfx.FreeMerged(s.Chunks[k].Gl);
+            _merges.Remove(c);
+        }
+        _mergeGone.Clear();
+        MergedBytes = bytes;
     }
 }

@@ -18,11 +18,12 @@ namespace CallOfSlop;
 ///   CallOfSlop join &lt;ip&gt; [port]   join immediately
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
+///   --no-merge                     draw constructs box by box, not as merged meshes (docs/render/MERGED-MESHES.md)
 ///   --zombies-round N              hosting Zombies: runs start at round N (the lobby's Start round, not saved)
 ///   --test-kit                     hosting Zombies: the test kit on maps that allow it (Horde Test; not saved)
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Release: --bake DIR (baked nav graphs for every shipped map, BotNavBake.cs).
-/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --sweep-vehicle NAME, --diversity NAME, --diversity-style STYLE, --kit-report [--roles], --role "STYLE ROLE" --tier N, --grade-vehicle, --grade-report, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --sweep-vehicle NAME, --diversity NAME, --diversity-style STYLE, --kit-report [--roles], --role "STYLE ROLE" --tier N, --family "STYLE ROLE", --convoy STYLE, --grade-vehicle, --grade-report, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
@@ -167,6 +168,10 @@ public static unsafe partial class Program
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
         if (args.Any(a => a.Equals("--kit-report", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleQualityCli.KitReport(args); // every style and shape: failures, their reasons, cost, parts, mass
+        if (args.SkipWhile(a => !a.Equals("--family", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } familyOf)
+            return VehicleKit.VehicleFamiliesCli.Family(familyOf, args); // a model line's marks and variants and how close they read (VehicleConvoys.cs)
+        if (args.SkipWhile(a => !a.Equals("--convoy", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } convoyOf)
+            return VehicleKit.VehicleFamiliesCli.Convoy(convoyOf, args); // a convoy's plan, each member made and checked (VehicleConvoys.cs)
         if (args.SkipWhile(a => !a.Equals("--role", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } roleOf)
             return VehicleKit.VehicleRolesCli.Role(roleOf, args); // kit 4: a style's vehicles for a role and tier, what they measured against it (VehicleRoles.cs)
         if (args.Any(a => a.Equals("--grade-vehicle", StringComparison.OrdinalIgnoreCase)))
@@ -247,6 +252,8 @@ public static unsafe partial class Program
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
         _frameCapOff = _smoke || _shotTool || perfShot || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
+        if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();
@@ -691,6 +698,7 @@ public static unsafe partial class Program
             perf = Perf.Measure(PerfArea.Render);
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
+            SurfaceThumbs.Pump(Gfx); // the texture paint tool's material swatches, while its list asks for them (Source/Render/SurfaceThumbnails.cs)
             if (Ui.WorkbenchOpen)
                 PartThumbs.Pump(Gfx); // workbench part pictures: a few per frame, cached (Source/Render/PartThumbnails.cs)
             SandboxTiles.Pump(Gfx); // the Sandbox inventory's tile atlas: made over a few frames once the window wants it, then kept (Source/Render/SandboxTiles.cs)
@@ -993,7 +1001,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1082,6 +1090,12 @@ public static unsafe partial class Program
             Ui.CloseReplacePicker();
             SetMouseCaptured(true);
             _swallowClick = true;
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.SandboxTexturePickerOpen)
+        {
+            Ui.CloseSandboxTexturePicker(); // Esc closes the texture paint tool's list (back to painting)
+            SetMouseCaptured(true);
             return;
         }
         if (key == GlfwKey.Escape && Ui.SandboxPaintPickerOpen)

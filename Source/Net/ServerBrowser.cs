@@ -334,7 +334,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 188: the Ordnance Rack (ModularRack.cs): a run-time rack shape in a Full's part list is a mark and nine bytes (layout and old size, rows or layers, columns or segments, count, max ordnance length and diameter in mm), CfgKey.RackRows to RackDiameter, part settings and sockets up to 56 stations.
     // 189: limits audit (docs/perf/LIMITS.md): a pose's rotor and control surface window starts at a u16 (it was a byte, which wrapped past 255 on a body with many control surfaces).
     // 190: parts a construct to 16,000 (docs/perf/LIMITS.md): Msg.Fragment carries a reliable message over Steam's 512 KB limit in pieces (SteamTransport.cs), since a capital construct's Full can pass it; a Full's part settings count is a u32 (a u16 wrapped past 4 settings a part at 16,000 parts); part indices and the link count were u16 already.
-    public const byte ProtocolVersion = 190;
+    // 191: faction vehicles by role and by convoy (GameSandboxVehicles.cs): CActKind.FactionVehicle asks the server for one by role and tier, or for a convoy, in front of the player.
+    // 192: the texture paint tool (ConstructFinish.cs): tool byte 16, CActKind.Texture and CBodyKind.Finish at the ends of their enums, and a Full ends with the textured parts; a material always goes by its name, never its row.
+    public const byte ProtocolVersion = 192;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

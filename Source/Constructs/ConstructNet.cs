@@ -29,6 +29,7 @@ public enum CBodyKind : byte
     NoCollide, // protocol 154: the no-collide pairs, the whole list: u16 count, each u16 body, u16 part, u16 body, u16 part, u8 flags (ConstructNet.WriteNoCollides)
     Flight, // protocol 174: what a stabilizer commands, for Flight Diagnostic Panels (ConstructFlight.WriteDiagnostic)
     WebState, // protocol 181: one Browser Screen's page: u16 body, u16 part, u8 lead, u16 scroll, u8 inner, u32 tick, f32 seconds (ConstructMedia.cs)
+    Finish, // protocol 192: texture changes (the texture paint tool): (id, part, material name) each (ConstructFinish.WriteChanges)
 }
 
 /// <summary>
@@ -157,6 +158,7 @@ public static class ConstructNet
         // Protocol 98: the paint tool's colours (board item pp01): the painted parts, then the painted links.
         ConstructPaint.WriteFull(w, c);
         ConstructTracks.Write(w, c); // (protocol 136)
+        ConstructFinish.WriteFull(w, c); // (protocol 192: the texture paint tool's materials, by name)
     }
 
     /// <summary>
@@ -928,6 +930,9 @@ public static class ConstructNet
             case CBodyKind.Paint:
                 ConstructPaint.ReadChanges(ref r, world);
                 break;
+            case CBodyKind.Finish:
+                ConstructFinish.ReadChanges(ref r, world);
+                break;
             case CBodyKind.Digest:
                 ReadDigest(ref r, world);
                 break;
@@ -1114,6 +1119,7 @@ public static class ConstructNet
             throw new MalformedPacketException("a freeform weld without its pose");
         ConstructPaint.ReadFull(ref r, c); // protocol 98: the paint
         ConstructTracks.Read(ref r, c, parts); // protocol 136: the tracks
+        ConstructFinish.ReadFull(ref r, c); // protocol 192: the texture paint tool's materials
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");

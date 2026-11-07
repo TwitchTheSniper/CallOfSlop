@@ -163,7 +163,16 @@ public sealed class FactionStyle
     [ThreadStatic] public static List<(string Slot, string Value)>? Trace;
 
     public string Colour(Dice d, string role) =>
-        Palette.TryGetValue(role, out var c) ? Noted("colour " + role, d.Pick(c)) : throw new VehicleKitException($"style {Name} has no \"{role}\" colours");
+        Palette.TryGetValue(role, out var c)
+            ? Noted("colour " + role, d.Pick(Scheme != null && Scheme.TryGetValue(role, out var own) && own.Length > 0 ? own : c)) // (a convoy's scheme: the same one roll, over its share of the palette)
+            : throw new VehicleKitException($"style {Name} has no \"{role}\" colours");
+
+    /// <summary>
+    /// A convoy's shared paint scheme (VehicleConvoys.cs, docs/vehiclekit/VEHICLEKIT.md "Families and convoys"): while one of its vehicles is made on this thread,
+    /// the colours each palette role may take, a share of the style's own. Per thread, as <see cref="Weigh"/>; null whenever no convoy is being made, so every
+    /// other vehicle paints exactly as before.
+    /// </summary>
+    [ThreadStatic] public static Dictionary<string, string[]>? Scheme;
 
     public string Part(Dice d, string slot)
     {

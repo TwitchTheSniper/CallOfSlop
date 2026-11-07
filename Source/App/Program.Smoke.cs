@@ -30,6 +30,7 @@ public static unsafe partial class Program
     private static double _smokeStepStart, _smokeWorstDt;
     private static int _smokeFrames, _smokeRunFrames;
     private static int _smokeScript; // the match run's sub-steps, below
+    private static Construct? _smokeBig; // the Sandbox run's row of parts (textured by the texture paint tool)
     private static Buttons _smokeButtons; // held movement keys (ORed into the real input)
     private static bool _smokeFireHeld; // held trigger (ORed into the real one)
 
@@ -108,6 +109,7 @@ public static unsafe partial class Program
         _smokeStep = SmokeStep.Waiting;
         _smokeStepStart = now;
         _smokeScript = 0;
+        _smokeBig = null;
         _smokeButtons = Buttons.None;
         _smokeFireHeld = false;
     }
@@ -222,15 +224,41 @@ public static unsafe partial class Program
                 for (var i = 1; i < 80; i++)
                     g.Constructs.AddPart(big, deck, new System.Numerics.Vector3(i, 0, 0), 0);
                 big.Rebuild();
+                _smokeBig = big;
             }
             _smokeScript = 1;
+            if (g.IsServer)
+                g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Texture); // (the texture paint tool, below)
+        }
+        if (g.SandboxOn && _smokeScript == 1 && t > 1.6 && _smokeBig is { } row && g.Constructs.Get(row.Id) == row)
+        {
+            // The texture paint tool: every material the list offers on the row (merged meshes rewrite their looks alone), and its
+            // list opened over the match, so its swatches are drawn in a real window (UiSandboxTexture.cs, SurfaceThumbnails.cs).
+            var k = 0;
+            for (var i = 0; i < row.PartCount; i++)
+            {
+                for (var tries = 0; tries < Surfaces.MaxRows && !ConstructFinish.Offered(k); tries++)
+                    k = (k + 1) % Surfaces.File.Rows.Length;
+                row.Parts[i].Finish = (byte)k; // (as ConstructEdits.Finish does, past the tool's reach)
+                g.Constructs.NoteFinish(row, i);
+                k = (k + 1) % Surfaces.File.Rows.Length;
+            }
+            _textureWheel.WantList = true;
+            _smokeScript = 2;
+        }
+        if (g.SandboxOn && _smokeScript == 2 && t > 2.9)
+        {
+            Console.WriteLine($"[smoke] {label}: texture paint tool: {(_smokeBig != null ? ConstructFinish.Finished(_smokeBig) : 0)} parts textured, the list open {Ui.SandboxTexturePickerOpen}, {SurfaceThumbs.Rendered} swatches drawn, GL error 0x{GlDebug.Error():X}");
+            SaveScreenshot("sandbox_textures");
+            Ui.CloseSandboxTexturePicker();
+            _smokeScript = 3;
         }
         if (t > 3.0)
         {
             Console.WriteLine($"[smoke] {label}: {World.Map.Name}: alive {g.Local?.Alive}, phase {g.Phase}, players {g.Players.Count}, "
                 + $"{(_smokeFrames - _smokeRunFrames) / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}"
                 + (g.SandboxOn && World.Map.Planetoid != null ? $", dug ground: {g.DigOps} ops, {TerrainGfx.PlanetDugStats.MaskedPages} pages masked, {TerrainGfx.PlanetDugStats.Chunks} chunks of blocks drawn ({TerrainGfx.PlanetDugStats.Triangles} triangles)"
-                   : g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles), {ConstructRender.LastBatchBoxes} boxes in batched bodies" : ""));
+                   : g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles), {ConstructRender.LastBatchBoxes} boxes in {ConstructRender.LastMergedChunks} merged mesh chunks" : ""));
             EndSmokeRun(now);
         }
     }
