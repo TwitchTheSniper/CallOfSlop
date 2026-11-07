@@ -616,6 +616,7 @@ public static class VehicleIdentity
                     break;
                 }
             }
+            VehicleGenJob.Yield(); // (a spawn's slice may end between directions)
         }
         var bearings = 0;
         if (range > 0)
@@ -636,6 +637,7 @@ public static class VehicleIdentity
                         break;
                     }
                 }
+                VehicleGenJob.Yield();
             }
         }
         return b.Seen[(part, range)] = (sides, bearings);
