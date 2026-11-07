@@ -16,6 +16,8 @@ public sealed partial class Vehicle
     public Room Hull(string tag, float z0, float under, string[] bays, (float X, float Z)[]? seatSpots = null)
     {
         var names = Look != null ? Look.Names(bays) : bays.Select(b => b == "Door" ? "Hull Door Bay T" : "Hull " + b).ToArray(); // (kit 5: lofted bays in the style's body language)
+        if (Look != null && Look.Spoken(bays.Length) is var spoken && spoken != Look.Language.Name)
+            Modules.Add($"sections {spoken}"); // (a mixing style's room: its stations' languages, front to back)
         var lengths = names.Select(n => MathF.Round(Def(n).BoundsMax.Z - Def(n).BoundsMin.Z, 2)).ToArray();
         var z1 = z0 + lengths.Sum();
         var r = new Rect(-BayHalf, BayHalf, z0, z1);

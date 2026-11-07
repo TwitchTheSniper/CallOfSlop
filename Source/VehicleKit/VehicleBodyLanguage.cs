@@ -278,40 +278,19 @@ public sealed partial class Vehicle
 /// </summary>
 public static class BodyReportCli
 {
-    private const int Bins = 12;
+    private const int Bins = FrontProfile.Bins;
 
-    /// <summary>A room's cross-section from the front: its half width in <see cref="Bins"/> bands of its own height, each over its widest.</summary>
+    /// <summary>A room's cross-section from the front (<see cref="FrontProfile"/>).</summary>
     private static float[] Front(Vehicle v)
     {
-        var bins = new float[Bins];
-        if (v.Rooms.Count == 0)
-            return bins;
-        var bays = new HashSet<int>(v.Rooms.SelectMany(r => r.Bays).Select(b => b.Index));
         var (tris, owner) = VehiclePlan.PartTriangles(v.Built);
-        float lo = float.MaxValue, hi = float.MinValue;
-        for (var i = 0; i < tris.Length; i++)
-            if (bays.Contains(owner[i / 3]))
-                (lo, hi) = (MathF.Min(lo, tris[i].Y), MathF.Max(hi, tris[i].Y));
-        if (hi <= lo)
-            return bins;
-        var mid = v.Rooms[0].Middle.X;
-        for (var i = 0; i < tris.Length; i++)
-            if (bays.Contains(owner[i / 3]))
-            {
-                var b = Math.Clamp((int)((tris[i].Y - lo) / (hi - lo) * Bins), 0, Bins - 1);
-                bins[b] = MathF.Max(bins[b], MathF.Abs(tris[i].X - mid));
-            }
-        var most = bins.Max();
-        for (var b = 0; b < Bins; b++)
-            bins[b] = most > 0 ? bins[b] / most : 0;
-        // Fill a band no vertex fell in from the one below (a tall flat wall has vertices only at its ends).
-        for (var b = 1; b < Bins; b++)
-            if (bins[b] == 0)
-                bins[b] = bins[b - 1];
-        return bins;
+        return FrontProfile.OfVehicle(v, tris, owner).Room;
     }
 
-    private static float Dist(float[] a, float[] b) => Enumerable.Range(0, Bins).Sum(i => MathF.Abs(a[i] - b[i])) / Bins;
+    private static float Dist(float[] a, float[] b) => FrontProfile.Dist(a, b);
+
+    /// <summary>Coplanar faces inside one lofted bay (its own facets against each other), as --check-parts would find in a part file.</summary>
+    private static int OwnFights(ConstructPartDef d) => ZFight.Find(ZFight.Boxes(d)).Count;
 
     public static int Run(string styleName, string[] args)
     {
@@ -326,6 +305,7 @@ public static class BodyReportCli
         }
         var fronts = new List<(string Style, float[] F)>();
         var failures = 0;
+        var fights = 0;
         foreach (var st in styles)
         {
             var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -334,6 +314,7 @@ public static class BodyReportCli
             var mine = new List<float[]>();
             var ms = new List<double>();
             var parts = new List<int>();
+            var facets = new List<int>();
             foreach (var g in VehicleRegistry.For(st, false).Where(g => ShapeGrammar.RecipeOf(g) != null))
                 for (var seed = from; seed < from + seeds; seed++)
                 {
@@ -344,10 +325,17 @@ public static class BodyReportCli
                         parts.Add(v.Built.PartCount);
                         foreach (var b in v.Rooms.SelectMany(r => r.Bays))
                         {
-                            keys.Add(b.Def.Name);
-                            if (b.Def.Name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
-                                foreach (var s in b.Def.Name[HullLoft.Prefix.Length..^1].Split(' ').Skip(1))
-                                    sections.Add(s);
+                            if (keys.Add(b.Def.Name) && OwnFights(b.Def) is var own and > 0)
+                            {
+                                fights += own;
+                                Console.WriteLine($"  {g.Name} {seed}: {own} coplanar pair(s) inside {b.Def.Name}");
+                            }
+                            if (HullLoft.ShapeOf(b.Def.Name) is { } sh)
+                            {
+                                sections.Add(sh.A.Key());
+                                sections.Add(sh.B.Key());
+                                facets.Add(sh.A.P.Length - 1);
+                            }
                             else
                                 sections.Add(b.Def.Name);
                         }
@@ -371,6 +359,7 @@ public static class BodyReportCli
                 for (var j = i + 1; j < mine.Count; j++)
                     pairs.Add(Dist(mine[i], mine[j]));
             Console.WriteLine($"{st.Name}: {ms.Count} vehicles, {mine.Count} with rooms; bay parts {keys.Count} distinct, sections {sections.Count} distinct; languages {string.Join(", ", langs.Select(x => $"{x.Key} {x.Value}"))}");
+            Console.WriteLine($"  facets a side {(facets.Count > 0 ? $"{facets.Min()} to {facets.Max()}, mean {facets.Average():0.0}" : "-")}");
             Console.WriteLine($"  front profile: mean pair {(pairs.Count > 0 ? pairs.Average() : 0):0.000}; generation mean {(ms.Count > 0 ? ms.Average() : 0):0} ms, worst {(ms.Count > 0 ? ms.Max() : 0):0} ms; parts mean {(parts.Count > 0 ? parts.Average() : 0):0}");
             if (mine.Count > 0)
                 Console.WriteLine("  mean front: " + string.Join(" ", Enumerable.Range(0, Bins).Select(b => mine.Average(x => x[b]).ToString("0.00", CultureInfo.InvariantCulture))));
@@ -394,8 +383,8 @@ public static class BodyReportCli
                 Console.WriteLine(sb.ToString());
             }
         }
-        Console.WriteLine($"failures: {failures}");
-        return failures;
+        Console.WriteLine($"failures: {failures}; coplanar pairs inside lofted bays: {fights}");
+        return failures + fights;
     }
 }
 
@@ -471,4 +460,117 @@ public static class BaySpots
 
     /// <summary>Can a pannier hang on bay <paramref name="k"/>'s waist (0.3 m above it clear on the bay itself)?</summary>
     public static bool Pannier(string[]? loft, int k) => loft == null || ClearAbove(loft, k, 0.05f, PannierTo, 0);
+}
+
+/// <summary>
+/// A cross-section seen from the front (docs/vehiclekit/BODY-STYLES.md, "Measuring"): the half width in <see cref="Bins"/> bands of the thing's own height, each over
+/// the widest, so a box reads 1 all the way up and a triangle falls to 0. <see cref="VehicleDiversity"/> compares two vehicles' rooms and bodies by it, and
+/// <see cref="VehicleIdentity"/> each room bay against its style's languages; <c>--body-report</c> prints it. Works on any drawn triangles or any section, so a
+/// later archetype (a car's cabin, a buggy's cage) is measured the same way.
+/// </summary>
+public static class FrontProfile
+{
+    public const int Bins = 12;
+
+    /// <summary>The mean difference per band: 0 the same section, about 0.3 a box against a triangle.</summary>
+    public static float Dist(float[] a, float[] b)
+    {
+        var s = 0f;
+        for (var i = 0; i < Bins; i++)
+            s += MathF.Abs(a[i] - b[i]);
+        return s / Bins;
+    }
+
+    private static void Add(float[] bins, Vector2 a, Vector2 b, float lo, float hi)
+    {
+        var n = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(a, b) / 0.04f));
+        for (var k = 0; k <= n; k++)
+        {
+            var p = Vector2.Lerp(a, b, k / (float)n);
+            var i = Math.Clamp((int)((p.Y - lo) / (hi - lo) * Bins), 0, Bins - 1);
+            bins[i] = MathF.Max(bins[i], MathF.Abs(p.X));
+        }
+    }
+
+    private static float[] Finish(float[] bins)
+    {
+        var most = bins.Max();
+        for (var b = 0; b < Bins; b++)
+            bins[b] = most > 0 ? bins[b] / most : 0;
+        for (var b = 1; b < Bins; b++)
+            if (bins[b] == 0)
+                bins[b] = bins[b - 1]; // (a band nothing fell in takes the one below)
+        return bins;
+    }
+
+    /// <summary>Of the triangles <paramref name="ranges"/> pick out of <paramref name="tris"/> (three points each; ranges in triangles, end exclusive), about their middle in x.</summary>
+    public static float[] Of(Vector3[] tris, IEnumerable<(int From, int To)> ranges)
+    {
+        var bins = new float[Bins];
+        float lo = float.MaxValue, hi = float.MinValue, xl = float.MaxValue, xh = float.MinValue;
+        var list = ranges.Where(r => r.From >= 0 && r.To > r.From).ToList();
+        foreach (var (f, t) in list)
+            for (var i = f * 3; i < t * 3; i++)
+                (lo, hi, xl, xh) = (MathF.Min(lo, tris[i].Y), MathF.Max(hi, tris[i].Y), MathF.Min(xl, tris[i].X), MathF.Max(xh, tris[i].X));
+        var mid = (xl + xh) / 2;
+        if (hi <= lo + 0.05f)
+            return bins;
+        foreach (var (f, t) in list)
+            for (var i = f; i < t; i++)
+                for (var e = 0; e < 3; e++)
+                {
+                    var (p, q) = (tris[i * 3 + e], tris[i * 3 + (e + 1) % 3]);
+                    Add(bins, new Vector2(p.X - mid, p.Y), new Vector2(q.X - mid, q.Y), lo, hi);
+                }
+        return Finish(bins);
+    }
+
+    /// <summary>Of a half section (floor edge to the centreline).</summary>
+    public static float[] Of(HullLoft.Section s)
+    {
+        var bins = new float[Bins];
+        for (var k = 0; k + 1 < s.P.Length; k++)
+            Add(bins, s.P[k], s.P[k + 1], 0, s.Top);
+        return Finish(bins);
+    }
+
+    private static readonly Dictionary<(string, int), float[]> Langs = new();
+
+    /// <summary>A language's tall section as a style draws it (cached).</summary>
+    public static float[] Of(BodyLanguage l, int facets)
+    {
+        lock (Langs)
+        {
+            if (!Langs.TryGetValue((l.Name, facets), out var p))
+                Langs[(l.Name, facets)] = p = Of(l.Drawn(facets));
+            return p;
+        }
+    }
+
+    /// <summary>The facets a style draws with, for its languages' profiles: the middle of its range (0: as written).</summary>
+    public static int FacetsOf(BodyStyleRule r) => r.FacetsMax > 0 ? (r.FacetsMin + r.FacetsMax) / 2 : 0;
+
+    /// <summary>A built vehicle's rooms (every bay of every room) and its whole body (every part but its wheels), from the front. Empty rooms: zeros.</summary>
+    public static (float[] Room, float[] Body) OfVehicle(Vehicle v, Vector3[] tris, int[] owner)
+    {
+        var c = v.Built;
+        var bays = new HashSet<int>(v.Rooms.SelectMany(r => r.Bays).Select(b => b.Index));
+        var rooms = new List<(int, int)>();
+        var body = new List<(int, int)>();
+        var (start, prev) = (0, owner.Length > 0 ? owner[0] : -1);
+        for (var t = 0; t <= owner.Length; t++)
+            if (t == owner.Length || owner[t] != prev)
+            {
+                if (prev >= 0 && prev < c.PartCount)
+                {
+                    if (bays.Contains(prev))
+                        rooms.Add((start, t));
+                    if (c.DefOf(prev).Role is not (PartRole.Wheel or PartRole.Suspension))
+                        body.Add((start, t));
+                }
+                if (t < owner.Length)
+                    (start, prev) = (t, owner[t]);
+            }
+        return (rooms.Count > 0 ? Of(tris, rooms) : new float[Bins], Of(tris, body));
+    }
 }

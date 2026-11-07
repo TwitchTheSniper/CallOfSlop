@@ -13,27 +13,21 @@ namespace CallOfSlop.VehicleKit;
 public static class VehicleKitVersion
 {
     /// <remarks>
-    /// Kit 4 (<see cref="Roles"/>) is kit 3 with a role and a tier (VehicleRoles.cs): only a vehicle asked for by role is made by it, so every seed asked for by shape
-    /// is kit 3's as before and <see cref="Current"/> stays kit 3; <c>--kit 3</c> makes a role's seed without its role (measured against it all the same).
+    /// Kit 4 (<see cref="Roles"/>) is kit 3 with a role and a tier (VehicleRoles.cs). Kit 5 (<see cref="Lofted"/>, current since 2026-11-07, the user's decision) is kit 3,
+    /// or kit 4 for a role, with its rooms lofted in the style's body language (VehicleBodyLanguage.cs): every seed asked for by shape is kit 5, and so is every role's,
+    /// family's, convoy's and context's vehicle; <c>--kit 3</c> and <c>--kit 4</c> still make the older kits, to measure against.
     /// </remarks>
-    public const int Legacy = 1, Grammar = 2, Layered = 3, Roles = 4, Lofted = 5, Current = Layered; // (Lofted: kit 3 or 4 with rooms lofted in the style's body language, VehicleBodyLanguage.cs; only by --kit 5 so far)
+    public const int Legacy = 1, Grammar = 2, Layered = 3, Roles = 4, Lofted = 5, Current = Lofted;
 
     /// <summary>The command line's <c>--kit N</c>: every seed by that kit (to measure one against the other). Null: each seed's own.</summary>
     public static int? Force;
 
     /// <summary>
-    /// The seeds committed before the shape grammar (2026-11-06), by generator: they are made by kit 1 for good. A seed committed later is made by the kit current
-    /// then (commit it from a sweep or a grade of the same kit). A future kit adds its predecessor's committed seeds here with that kit's number.
-    /// Only shapes with a recipe need listing: a shape without one is kit 1 whatever the seed.
+    /// Seeds made by kit 1 for good, by generator: none since 2026-11-07, when every committed faction vehicle was made again by kit 5 (the user: continuity isn't
+    /// required). A kit that changes a committed seed lists the seeds committed before it here with their kit's number, or the shapes are committed again.
+    /// Only shapes with a recipe need listing: a shape without one is kit 1 whatever the seed (the Technical, the Fuel Trailer, the Tanker Rig, the Double Decker).
     /// </summary>
-    public static readonly Dictionary<string, int[]> Frozen = new(StringComparer.Ordinal)
-    {
-        ["Bandit Box Truck"] = [1, 9, 16], ["Bandit War Bus"] = [3, 6, 7], ["Bandit Flatbed Fort"] = [1, 7, 9], ["Bandit Scrap Tanker"] = [2, 4, 7], ["Bandit Gun Wagon"] = [2, 3, 19],
-        ["IT Box Truck"] = [1, 20, 21], ["IT War Bus"] = [6, 15, 16], ["IT Flatbed Fort"] = [7, 17, 21], ["IT Scrap Tanker"] = [1, 10, 14], ["IT Gun Wagon"] = [1, 10, 14],
-        ["Highland Box Truck"] = [1, 4, 11], ["Highland War Bus"] = [2, 4, 12], ["Highland Flatbed Fort"] = [1, 2, 9], ["Highland Scrap Tanker"] = [1, 6, 9], ["Highland Gun Wagon"] = [1, 3, 15],
-        ["Scam Box Truck"] = [4, 11, 23], ["Scam War Bus"] = [6, 10, 12], ["Scam Flatbed Fort"] = [1, 22, 23], ["Scam Scrap Tanker"] = [1, 5, 23], ["Scam Gun Wagon"] = [1, 5, 11],
-        ["British Box Truck"] = [1, 19, 24], ["British War Bus"] = [1, 8, 15], ["British Flatbed Fort"] = [1, 9, 23], ["British Scrap Tanker"] = [1, 18, 22], ["British Gun Wagon"] = [1, 5, 19],
-    };
+    public static readonly Dictionary<string, int[]> Frozen = new(StringComparer.Ordinal);
 
     /// <summary>The kit a generator's seed is made by: <see cref="Force"/>, else kit 1 for a frozen seed or a shape with no recipe, else <see cref="Current"/>.</summary>
     public static int For(IVehicleGenerator g, int seed) =>

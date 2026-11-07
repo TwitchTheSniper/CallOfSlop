@@ -131,6 +131,8 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
         if (int.TryParse(args.SkipWhile(a => !a.Equals("--kit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var vehicleKit))
             VehicleKit.VehicleKitVersion.Force = vehicleKit; // --kit N: every vehicle seed by that kit (1: the shapes as whole generators, 2: the shape grammar), to measure one against the other
+        if (args.Any(a => a.Equals("--no-sections", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleDiversity.SectionsOn = false; // the diversity distance without its front term and identity without its section, as before 2026-11-07 (to measure them)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
             VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
         if (args.SkipWhile(a => !a.Equals("--layers", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } layerText)

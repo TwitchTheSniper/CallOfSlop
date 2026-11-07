@@ -141,7 +141,7 @@ public static class VehicleQualityCli
             return;
         }
         Console.WriteLine($"  spread: mean pair {s.MeanPair:0.000}, nearest neighbour mean {s.MeanNearest:0.000}, least {s.LeastNearest:0.000} (seeds {s.Closest.A} and {s.Closest.B})");
-        Console.WriteLine($"  mean pair by part: silhouette {s.MeanParts.Silhouette:0.000}, parts {s.MeanParts.Kinds:0.000}, layout {s.MeanParts.Layout:0.000}, size {s.MeanParts.Size:0.000}");
+        Console.WriteLine($"  mean pair by part: silhouette {s.MeanParts.Silhouette:0.000}, parts {s.MeanParts.Kinds:0.000}, layout {s.MeanParts.Layout:0.000}, size {s.MeanParts.Size:0.000}, front {s.MeanParts.Front:0.000}{(VehicleDiversity.SectionsOn ? "" : " (not counted: --no-sections)")}");
         var clusters = VehicleDiversity.Clusters(run.Ok, alike);
         if (clusters.Count == 0)
             Console.WriteLine($"  too alike (under {alike:0.000}): none");

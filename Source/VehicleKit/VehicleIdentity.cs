@@ -74,7 +74,15 @@ public sealed class StyleSignature
 /// </summary>
 public static class VehicleIdentity
 {
-    public const double WMarks = 0.30, WPalette = 0.20, WTraits = 0.20, WSilhouette = 0.15, WWeak = 0.15;
+    public const double WMarks = 0.30, WPalette = 0.15, WTraits = 0.20, WSilhouette = 0.10, WWeak = 0.15, WSection = 0.10; // (2026-11-07: section 0.10 from palette and silhouette, 0.20 and 0.15 before)
+    private const double OldPalette = 0.20, OldSilhouette = 0.15;
+
+    /// <summary>
+    /// A room bay's front profile within <see cref="SectionFloor"/> (mean difference per band) of its style's nearest language reads 1 (what the facets' thickness and
+    /// the centimetre grid leave), and <see cref="SectionScale"/> further reads 0. Measured on IT War Bus seeds (2026-11-07): its own pods and vans 0.0096, a slab on it
+    /// 0.012, kit 3's fixed bays 0.025, a cabin 0.041.
+    /// </summary>
+    public const float SectionFloor = 0.008f, SectionScale = 0.03f;
     private const float Eye = 1.6f;
     private const int Bearings = 16;
 
@@ -252,6 +260,9 @@ public static class VehicleIdentity
         /// <summary>Every weak point that applies is there and hittable.</summary>
         public bool WeakPassed => WeakPoints.All(w => !w.Applies || w.Passed);
 
+        /// <summary>How much the rooms' cross-sections read as the style's body languages, 0 to 1 (NaN: no room, or <c>--no-sections</c>).</summary>
+        public double Section { get; init; } = double.NaN;
+
         public override string ToString() => $"{Total:0.00} as {Style}: {Breakdown}";
     }
 
@@ -428,10 +439,40 @@ public static class VehicleIdentity
         if (applies.Count > 0)
             notes.Add($"weak points {applies.Count(x => x.Passed)}/{applies.Count} ({string.Join(", ", applies.Select(x => $"{x.Label} {x.Why}"))})");
 
-        var parts = new[] { (marks, WMarks), (palette, WPalette), (traits, WTraits), ((double)silhouette, WSilhouette), (weakScore, WWeak) };
+        // Section: each room bay from the front against the style's languages (the nearest one), so a pod on a Bandit truck reads less Bandit.
+        var section = VehicleDiversity.SectionsOn ? SectionScore(b, st) : double.NaN;
+        if (!double.IsNaN(section))
+            notes.Add($"section {section:0.00}");
+
+        var on = VehicleDiversity.SectionsOn;
+        var parts = new[] { (marks, WMarks), (palette, on ? WPalette : OldPalette), (traits, WTraits), ((double)silhouette, on ? WSilhouette : OldSilhouette), (weakScore, WWeak), (section, WSection) };
         var weight = parts.Where(p => !double.IsNaN(p.Item1)).Sum(p => p.Item2);
         var total = weight <= 0 ? 0 : parts.Where(p => !double.IsNaN(p.Item1)).Sum(p => p.Item1 * p.Item2) / weight;
-        return new Score(st.Name, total, marks, palette, traits, silhouette, weakScore, weak, string.Join("; ", notes)) { Outline = [b.Side, b.Top, b.Height, b.Roof, b.Rake], Missing = missing };
+        return new Score(st.Name, total, marks, palette, traits, silhouette, weakScore, weak, string.Join("; ", notes)) { Outline = [b.Side, b.Top, b.Height, b.Roof, b.Rake], Missing = missing, Section = section };
+    }
+
+    /// <summary>The mean over the vehicle's room bays of how near each bay's front profile is to the nearest of the style's languages (as the style draws them); NaN without a room.</summary>
+    private static double SectionScore(Body b, FactionStyle st)
+    {
+        if (b.V.Rooms.Count == 0)
+            return double.NaN;
+        Geometry(b);
+        var rule = BodyStyleRule.Of(st);
+        var facets = FrontProfile.FacetsOf(rule);
+        var langs = rule.Languages.Select(x => FrontProfile.Of(x.L, facets)).ToArray();
+        var sum = 0.0;
+        var n = 0;
+        foreach (var bay in b.V.Rooms.SelectMany(r => r.Bays))
+        {
+            var i = bay.Index;
+            if (i < 0 || i >= b.Start.Length || b.Start[i] < 0)
+                continue;
+            var prof = FrontProfile.Of(b.Tris, [(b.Start[i], b.End[i])]);
+            var near = langs.Min(l => FrontProfile.Dist(prof, l));
+            sum += Math.Clamp(1 - (near - SectionFloor) / SectionScale, 0, 1);
+            n++;
+        }
+        return n == 0 ? double.NaN : sum / n;
     }
 
     private static string Fmt(double x) => double.IsNaN(x) ? "-" : x.ToString("0.00");
@@ -778,7 +819,7 @@ public static class VehicleIdentity
             Console.WriteLine($"  {g.Key}: {g.Count(w => w.Passed)}/{g.Count()} pass, {g.Count(w => w.Found == 0)} missing, {g.Count(w => w.Found > 0 && !w.Passed)} covered");
         var mk = readings.Where(x => !double.IsNaN(x.R.Own.Marks)).ToList();
         if (mk.Count > 0)
-            Console.WriteLine($"  marks {mk.Average(x => x.R.Own.Marks):0.00}, palette {readings.Select(x => x.R.Own.Palette).Where(x => !double.IsNaN(x)).DefaultIfEmpty().Average():0.00}, traits {readings.Select(x => x.R.Own.Traits).Where(x => !double.IsNaN(x)).DefaultIfEmpty().Average():0.00}, silhouette {readings.Average(x => x.R.Own.Silhouette):0.00}");
+            Console.WriteLine($"  marks {mk.Average(x => x.R.Own.Marks):0.00}, palette {readings.Select(x => x.R.Own.Palette).Where(x => !double.IsNaN(x)).DefaultIfEmpty().Average():0.00}, traits {readings.Select(x => x.R.Own.Traits).Where(x => !double.IsNaN(x)).DefaultIfEmpty().Average():0.00}, silhouette {readings.Average(x => x.R.Own.Silhouette):0.00}, section {readings.Select(x => x.R.Own.Section).Where(x => !double.IsNaN(x)).DefaultIfEmpty(double.NaN).Average():0.00}");
         var confused = readings.Where(x => x.R.Confused).ToList();
         Console.WriteLine(confused.Count == 0 ? "  none reads more as another style" : $"  {confused.Count} read more as another style:");
         foreach (var (n, r) in confused)

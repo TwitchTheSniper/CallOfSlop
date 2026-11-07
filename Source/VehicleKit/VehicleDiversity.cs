@@ -5,10 +5,12 @@ namespace CallOfSlop.VehicleKit;
 /// <summary>
 /// How different two generated vehicles are, from cheap features of the built body (docs/vehiclekit/VEHICLEKIT.md, "Quality tools"). Four parts, each 0 to 1:
 /// <list type="bullet">
-/// <item><b>silhouette</b> (weight 0.40): the side fill, plan width and top height along the length in <see cref="Bins"/> slices, each in its own bounding box (<see cref="VehiclePlan.Profiles"/>), plus the
+/// <item><b>front</b> (weight 0.15, since 2026-11-07): the cross-section from the front (<see cref="FrontProfile"/>): the rooms' when both have rooms, and the whole body's
+/// (wheels left out), each the mean difference per band times <see cref="FrontScale"/>; what the user sees from the front and the rear that the side outline can't.</item>
+/// <item><b>silhouette</b> (weight 0.35; 0.40 before the front term): the side fill, plan width and top height along the length in <see cref="Bins"/> slices, each in its own bounding box (<see cref="VehiclePlan.Profiles"/>), plus the
 /// whole side and plan fill that <c>MaxSideFill</c>/<c>MaxTopFill</c> judge; the mean difference per slice.</item>
-/// <item><b>parts</b> (0.20): kinds of part (<see cref="VehicleVariety.Kind"/>, counts capped at <see cref="MostOfAKind"/>), one less their weighted overlap.</item>
-/// <item><b>layout</b> (0.25): rooms, turrets, seats, axles, wheelbase, track, and the sets of wheel and spring parts.</item>
+/// <item><b>parts</b> (0.15; 0.20 before): kinds of part (<see cref="VehicleVariety.Kind"/>, counts capped at <see cref="MostOfAKind"/>), one less their weighted overlap.</item>
+/// <item><b>layout</b> (0.20; 0.25 before): rooms, turrets, seats, axles, wheelbase, track, and the sets of wheel and spring parts.</item>
 /// <item><b>size</b> (0.15): the bounding box, each axis as a fraction of the larger.</item>
 /// </list>
 /// The weighted sum is 0 for the same vehicle and 1 for vehicles that share nothing. Paint and loot don't count: they are not what a player calls "the same truck".
@@ -17,7 +19,16 @@ public static class VehicleDiversity
 {
     public const int Bins = 16;
     public const int MostOfAKind = 8;
-    public const float WSilhouette = 0.40f, WParts = 0.20f, WLayout = 0.25f, WSize = 0.15f;
+    public const float WSilhouette = 0.35f, WParts = 0.15f, WLayout = 0.20f, WSize = 0.15f, WFront = 0.15f;
+
+    /// <summary>The weights before the front term (2026-11-07), for <c>--no-sections</c>: the old distance, to measure against.</summary>
+    public const float OldSilhouette = 0.40f, OldParts = 0.20f, OldLayout = 0.25f;
+
+    /// <summary>A front profile's mean difference (0 to about 0.3, a box against a triangle; styles' rooms differ by 0.05 to 0.16) times this, capped at 1.</summary>
+    public const float FrontScale = 3f;
+
+    /// <summary><c>--no-sections</c>: the distance without the front term and identity without the section, as both were before 2026-11-07.</summary>
+    public static bool SectionsOn = true;
 
     /// <summary>Two seeds closer than this read as the same vehicle to a person looking at them (set from a look at Bandit and IT sweeps).</summary>
     public const float Alike = 0.08f;
@@ -28,12 +39,19 @@ public static class VehicleDiversity
         Dictionary<string, int> Kinds,
         int Rooms, int Turrets, int Seats, int Axles, int Wheels, float Wheelbase, float Track, string[] WheelParts, string[] Springs,
         Vector3 Size, int Parts, float Mass,
-        Dictionary<string, string> Traits);
+        Dictionary<string, string> Traits)
+    {
+        /// <summary>The rooms' cross-section from the front (zeros without a room) and the whole body's, wheels left out (<see cref="FrontProfile"/>).</summary>
+        public float[] RoomFront { get; init; } = new float[FrontProfile.Bins];
+        public float[] BodyFront { get; init; } = new float[FrontProfile.Bins];
+    }
 
     /// <summary>The parts of a distance, and their weighted sum.</summary>
-    public readonly record struct Parts(float Silhouette, float Kinds, float Layout, float Size)
+    public readonly record struct Parts(float Silhouette, float Kinds, float Layout, float Size, float Front = 0)
     {
-        public float Total => WSilhouette * Silhouette + WParts * Kinds + WLayout * Layout + WSize * Size;
+        public float Total => SectionsOn
+            ? WSilhouette * Silhouette + WParts * Kinds + WLayout * Layout + WSize * Size + WFront * Front
+            : OldSilhouette * Silhouette + OldParts * Kinds + OldLayout * Layout + WSize * Size;
     }
 
     /// <summary>Generates one seed with its picks traced, builds it from its own text, and measures it. Throws what the generator throws.</summary>
@@ -90,9 +108,11 @@ public static class VehicleDiversity
             axles.Add(MathF.Round(p.Z * 2) / 2); // (a track unit's rays sit within half a metre of their wheel)
         }
         var size = c.LocalMax - c.LocalMin;
+        var (tris, owner) = VehiclePlan.PartTriangles(v.Built);
+        var (roomFront, bodyFront) = FrontProfile.OfVehicle(v, tris, owner);
         var f = new Features(g.Name, seed, side, top, height, sideFill, topFill, kinds,
             v.Rooms.Count, v.Turrets.Count, seats, axles.Count, c.WheelCount, c.WheelCount > 0 ? zB - zF : 0, c.WheelCount > 0 ? xR - xL : 0,
-            wheelParts.ToArray(), springs.ToArray(), size, c.PartCount, c.Mass, new Dictionary<string, string>(StringComparer.Ordinal));
+            wheelParts.ToArray(), springs.ToArray(), size, c.PartCount, c.Mass, new Dictionary<string, string>(StringComparer.Ordinal)) { RoomFront = roomFront, BodyFront = bodyFront };
         Traits(f, v, trace);
         return f;
     }
@@ -140,7 +160,10 @@ public static class VehicleDiversity
         var layout = (Rel(a.Rooms, b.Rooms) + Rel(a.Turrets, b.Turrets) + Rel(a.Seats, b.Seats) + Rel(a.Axles, b.Axles) + Rel(a.Wheelbase, b.Wheelbase) + Rel(a.Track, b.Track)
             + Jaccard(a.WheelParts, b.WheelParts) + Jaccard(a.Springs, b.Springs)) / 8;
         var size = (Rel(a.Size.X, b.Size.X) + Rel(a.Size.Y, b.Size.Y) + Rel(a.Size.Z, b.Size.Z)) / 3;
-        return new Parts(silhouette, kinds, layout, size);
+        var body = FrontProfile.Dist(a.BodyFront, b.BodyFront);
+        var room = a.Rooms > 0 && b.Rooms > 0 ? FrontProfile.Dist(a.RoomFront, b.RoomFront) : body;
+        var front = MathF.Min(1, FrontScale * (body + room) / 2);
+        return new Parts(silhouette, kinds, layout, size, front);
     }
 
     public static float Distance(Features a, Features b) => Between(a, b).Total;
@@ -163,7 +186,7 @@ public static class VehicleDiversity
         if (list.Count < 2)
             return new Summary(list.Count, 0, 0, 0, (0, 0), default);
         var nearest = Enumerable.Repeat(float.MaxValue, list.Count).ToArray();
-        float sum = 0, s = 0, k = 0, l = 0, z = 0;
+        float sum = 0, s = 0, k = 0, l = 0, z = 0, fr = 0;
         var pairs = 0;
         var closest = (9f, 0, 0);
         for (var i = 0; i < list.Count; i++)
@@ -171,13 +194,13 @@ public static class VehicleDiversity
             {
                 var p = Between(list[i], list[j]);
                 var d = p.Total;
-                (sum, s, k, l, z, pairs) = (sum + d, s + p.Silhouette, k + p.Kinds, l + p.Layout, z + p.Size, pairs + 1);
+                (sum, s, k, l, z, fr, pairs) = (sum + d, s + p.Silhouette, k + p.Kinds, l + p.Layout, z + p.Size, fr + p.Front, pairs + 1);
                 nearest[i] = MathF.Min(nearest[i], d);
                 nearest[j] = MathF.Min(nearest[j], d);
                 if (d < closest.Item1)
                     closest = (d, list[i].Seed, list[j].Seed);
             }
-        return new Summary(list.Count, sum / pairs, nearest.Average(), nearest.Min(), (closest.Item2, closest.Item3), new Parts(s / pairs, k / pairs, l / pairs, z / pairs));
+        return new Summary(list.Count, sum / pairs, nearest.Average(), nearest.Min(), (closest.Item2, closest.Item3), new Parts(s / pairs, k / pairs, l / pairs, z / pairs, fr / pairs));
     }
 
     /// <summary>Groups of seeds joined by any pair closer than <paramref name="below"/> (single linkage): each group reads as one vehicle. Only groups of two or more.</summary>

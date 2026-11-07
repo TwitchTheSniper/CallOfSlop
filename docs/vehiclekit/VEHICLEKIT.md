@@ -19,7 +19,7 @@ like any other. **Fix the generator, not its files.** No AI is in here yet: each
 | `CallOfSlop --identity "IT War Bus" [--seeds N] [--shipped] [--raw]`, or `--identity IT` for every shape of a style | How much each seed reads as its faction (0 to 1) with the breakdown, its weak points, the style it reads as best after its own, then the mean, the weak-point pass rate and every vehicle that reads more as another style. Default 6 seeds; `--shipped`: the committed seeds. See "Identity and weak points". |
 | `... --no-identity-gate` on any of these | Kit 2 without its identity re-plan, to measure what the check changes. |
 | `... --kit 1`, `--kit 2` or `--kit 3` on any of these | Every seed by that kit (see "Shape grammar" and "Layered variety"), to compare them: without it a seed is made by its own kit. `--gen-vehicles --kit 2` reports the committed files as differing, as it should. |
-| `... --kit 5 [--language NAME]`, `--body-report STYLE\|all [--seeds N]` | The body-styles prototype: rooms lofted from run-time hull bays (`HullLoft`) in the style's body language; `--language` puts every kit-5 room in one; the report measures rooms' cross-sections within and between styles. Only by `--kit 5`. See docs/vehiclekit/BODY-STYLES.md. |
+| `... --kit 5 [--language NAME]`, `--body-report STYLE\|all [--seeds N]`, `--no-sections` | Kit 5, the current kit since 2026-11-07: rooms lofted from run-time hull bays (`HullLoft`) in the style's body language (docs/vehiclekit/BODY-STYLES.md). `--language` puts every room in one language; `--body-report` measures rooms' cross-sections within and between styles (and counts coplanar faces inside lofted bays); `--no-sections` measures diversity and identity without their front-profile terms, as they were before. `--kit 3` and `--kit 4` still make the fixed-bay kits. |
 | `... --layers chassis=5,wear=9` on any of these | Kit 3's layer seeds on every vehicle made: the seed's own vehicle with those layers rolled from other seeds ("Layered variety"). `--gen-vehicle` then writes `BanditBoxTruck7chassis5wear9.json`, never a committed seed's file. |
 | `... --vary wear [--base S]` on any of these | The seeds a tool loops over become one layer's seeds on base seed S (default 1): `--diversity "Bandit Box Truck" --vary chassis --base 5 --seeds 8` is seed 5's body and kit on eight chassis. |
 | `CallOfSlop --role "Bandit raider" --tier 2 [--seeds N] [--check] [--sliced]`, `--kit-report --roles` | Kit 4: vehicles for a role and tier, measured against it, and the matrix of every style, role and tier. See "Roles and tiers". |
@@ -173,14 +173,15 @@ Kit 1 made each shape with one generator: a Box Truck was always a hull on a cha
 and hardly at all in outline (Bandit Box Truck, November 2026: silhouette 0.057 of the distance against 0.39 for parts). **Kit 2** (`VehicleGrammar.cs`) assembles the
 heavy shapes from **modules** instead, so the outline varies with the seed while every part still comes from the style.
 
-**Which kit.** `VehicleKitVersion.For(generator, seed)`: a seed committed before the grammar (`VehicleKitVersion.Frozen`, the 123 files of 2026-11-06) and every seed of a
-shape with no recipe (the Technical, the Fuel Trailer, the Tanker Rig, the Double Decker, and any new generator) is kit 1, made exactly as before, so `--gen-vehicles`
-stays identical; every other seed, the dynamic spawn's included, is the current kit: kit 3 since 2026-11-06 ("Layered variety"), kit 2's grammar with its variety in
-layers. Kit 3 gives a kit-2 seed another vehicle; no kit-2 seed was ever committed, and a saved world holds built constructs, not seeds, so nothing changed under anyone
-(`--kit 2` still makes kit 2's, byte for byte). A kit-2 or kit-3 file says so in a comment after its first brace (`// kit 2; body room+bed, cab caged,
-nose ram, rear porch, ...`; blueprints allow comments), `Vehicle.Kit` and `Vehicle.Modules` hold the same, and the spawn logs it (`[vehicles] Bandit Box Truck 733786:
-kit 2 (body room, cab enclosed, ...)`). A seed committed from now on is made by the kit current when it was committed: grade and commit from a sweep of that kit. No kit-2
-seed was committed, so `Frozen` still holds kit 1's only; when a kit that changes a kit-3 seed comes, the kit-3 seeds committed by then go into a list of their own, with `For` returning their kit. Kit 4 ("Roles and tiers") changes none: only a vehicle asked for by role is made by it.
+**Which kit.** `VehicleKitVersion.For(generator, seed)`: `Force` (`--kit N`), else kit 1 for a shape with no recipe (the Technical, the Fuel Trailer, the Tanker Rig,
+the Double Decker, and any new generator) or a seed in `VehicleKitVersion.Frozen`, else the current kit: **kit 5 since 2026-11-07** (the user's decision), kit 3's
+grammar and layers (or kit 4's role) with its rooms lofted in the style's body language ("Body styles" in BODY-STYLES.md). Every committed seed of a shape with a
+recipe was made again by kit 5 that day (continuity wasn't required: a saved world holds built constructs, not seeds), with new seeds picked from each shape's
+sweep, so `Frozen` is empty and `--gen-vehicles` reports every file identical. Kits 1 to 3 still make what they made (`--kit 2` byte for byte). A kit file says
+so in a comment after its first brace (`// kit 5; body room+bed, cab caged, ..., language slab 2.21 m, ...`; blueprints allow comments), `Vehicle.Kit` and
+`Vehicle.Modules` hold the same, and the spawn logs it. A seed committed from now on is made by the kit current when it was committed: grade and commit from a
+sweep of that kit; when a later kit changes a committed seed, either the shapes are committed again or the seeds go into `Frozen` with their kit. A role's,
+family's, convoy's or context's vehicle is kit 5 too (kit 4's role on lofted rooms); `--kit 4` makes it with fixed bays.
 
 **Modules** (`ShapeGrammar.Catalogue`). Each has a family, a name, the style parts it is made of (a module whose parts the style doesn't list is never made), and its
 connection rules as tags: what it needs, what it provides, what it can't stand beside, and the gear recipes it allows.
@@ -721,13 +722,14 @@ player's own input in the game window (taking a box out with F, the attach tool)
 
 The kit will make vehicles during play with nobody looking, so these tools keep variety up and each faction looking like itself. They generate and measure (0.1 to 1 s a seed on the 2-core box); none runs the drive or gun checks unless asked, and the defaults stay small. Everything prints to `callofslop.log`. Source: `VehicleDiversity.cs` (the metric), `VehicleQuality.cs` (the commands), `Program.VehicleSheet.cs` (the sheet).
 
-**The distance** (`VehicleDiversity`). Each seed is built from its own blueprint text, as the game builds it, and measured. Four parts, each 0 to 1, weighted into one number from 0 (the same vehicle) to 1 (nothing shared):
+**The distance** (`VehicleDiversity`). Each seed is built from its own blueprint text, as the game builds it, and measured. Five parts, each 0 to 1, weighted into one number from 0 (the same vehicle) to 1 (nothing shared); the weights in brackets are the old ones, before the front term (2026-11-07), which `--no-sections` still measures:
 
 | Part | Weight | What it compares |
 | --- | --- | --- |
-| silhouette | 0.40 | Along the length in 16 slices, nose first, over the fixed parts (no wheels, no turrets, as `MaxSideFill` sees them): how much of each slice's side is filled, its plan width, and its top's height, each in its own bounding box (`VehiclePlan.Profiles`), plus the whole side and plan fill. The mean difference. |
-| parts | 0.20 | Kinds of part (`VehicleVariety.Kind`: a plate is a plate in any material or size, a beam a beam; counts capped at 8): one less their weighted overlap. |
-| layout | 0.25 | Rooms, turrets, seats, axles (wheels within half a metre are one), wheelbase, track, and the sets of wheel and spring parts. |
+| front | 0.15 (none) | The cross-section from the front (`FrontProfile`, the same measure `--body-report` prints): the half width in 12 bands of its own height, each over the widest, for the rooms when both have rooms and for the whole body without its wheels; the mean of the two mean differences, times `FrontScale` (3), at most 1. What the side outline can't see: a pod against a slab, a gable against a flat roof. |
+| silhouette | 0.35 (0.40) | Along the length in 16 slices, nose first, over the fixed parts (no wheels, no turrets, as `MaxSideFill` sees them): how much of each slice's side is filled, its plan width, and its top's height, each in its own bounding box (`VehiclePlan.Profiles`), plus the whole side and plan fill. The mean difference. |
+| parts | 0.15 (0.20) | Kinds of part (`VehicleVariety.Kind`: a plate is a plate in any material or size, a beam a beam; counts capped at 8): one less their weighted overlap. |
+| layout | 0.20 (0.25) | Rooms, turrets, seats, axles (wheels within half a metre are one), wheelbase, track, and the sets of wheel and spring parts. |
 | size | 0.15 | The bounding box, each axis as a fraction of the larger. |
 
 Paint and loot don't count. Silhouettes are compared in their own box, so a longer copy of a shape reads the same there and differs only in size. Read the parts as well as the total: on the Box Truck in November 2026 the silhouette part was 0.06 on average against 0.39 for parts, which is the user's "they're all too similar" in numbers. Two seeds under 0.08 (`VehicleDiversity.Alike`, set by looking at a Bandit Box Truck sheet: seeds 5, 6 and 7 at 0.05 to 0.07 differ only in their hood) read as one vehicle.
@@ -777,16 +779,17 @@ gear and piper parts are its characteristic parts and its one mark; tyres and fu
 A part is picked by name or by a role keyword (`PartPick`): "fuel" (any fuel tank: a drum, a tanker's barrel), "tyres", "driver" (the driver's seat), "seat", "engine",
 "ammo" (ammo boxes and crates).
 
-**The score**, 0 to 1, five parts weighted into one; a part with nothing to judge (no paint, no marks that apply, no seat for traits: a trailer's dressing is its tower's) is
+**The score**, 0 to 1, six parts weighted into one (brackets: before the section, 2026-11-07, as `--no-sections` measures); a part with nothing to judge (no paint, no marks that apply, no seat for traits: a trailer's dressing is its tower's) is
 left out and the rest weighed up:
 
 | Part | Weight | What it measures |
 | --- | --- | --- |
 | marks | 0.30 | The share of the marks that apply which are there (and in the open where asked). |
-| palette | 0.20 | Painted parts in the style's colours (0.6) and how many of its palette roles show at all (0.4). |
+| palette | 0.15 (0.20) | Painted parts in the style's colours (0.6) and how many of its palette roles show at all (0.4). |
 | traits | 0.20 | Characteristic parts against `PartTarget`, and for a grammar vehicle the mean of its modules' weights; the mean of the two. |
-| silhouette | 0.15 | Each of the five outline numbers in range scores 1, falling to 0 a quarter of the range (plus 0.05) outside it. |
+| silhouette | 0.10 (0.15) | Each of the five outline numbers in range scores 1, falling to 0 a quarter of the range (plus 0.05) outside it. |
 | weak points | 0.15 | Each rule that applies: 1 there and hittable, 0.25 there but covered, 0 missing. |
+| section | 0.10 (none) | Each room bay from the front (`FrontProfile`) against the nearest of the style's body languages as the style draws them (`BodyStyleRule`): within `SectionFloor` (0.008 mean difference) reads 1, `SectionScale` (0.03) further 0; the mean over the bays. No room: left out. A pod on a Bandit truck reads less Bandit; kit 3's fixed bays read about 0.45 on an IT bus. |
 
 The breakdown reads `0.78 as IT: marks 1/2 (no mast or dish); palette 100 % (4/4 roles); traits 0.92 (parts 1.00, modules 0.83); silhouette 5/5; weak points 2/3
 (antenna missing, tyres 6/6 hittable, fuel 1/1 hittable)`.
