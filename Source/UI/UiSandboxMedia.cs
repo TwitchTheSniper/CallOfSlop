@@ -85,6 +85,14 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(new float4(1f, 0.6f, 0.3f, 1f), _cmWhy);
         ImGuiSafe.TextWrapped(MediaDirector.Look(c, part));
         AdsBox(web: true);
+        var others = MediaDirector.OthersWeb;
+        if (ImGui.Checkbox("Show other players' web pages"u8, ref others))
+        {
+            MediaDirector.OthersWeb = others; // this PC's setting, the same box as Settings > Lobby (saved by MediaAdsChanged)
+            MediaAdsChanged?.Invoke();
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip("Off: other players' Browser Screens stay blank on this PC. On: their sites load here, which shows those sites your address and runs what they chose. Your own page is shared with players who have this on.");
         ImGui.SeparatorText("Private page"u8);
         ImGui.TextWrapped("Nothing is saved to disk. Logins, cookies and history end when the game closes."u8);
         ImGui.TextWrapped("Shared: the address with its query, how far the page is scrolled, and its main video or audio. Whoever used it last leads. Other players only load it if they turn on Show other players' web pages."u8);

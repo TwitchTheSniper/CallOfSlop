@@ -301,6 +301,7 @@ public static unsafe partial class Program
             {
                 _settings.MediaBlockAds = MediaDirector.BlockAds;
                 _settings.MediaBlockWebAds = MediaDirector.BlockWebAds;
+                _settings.MediaOthersWeb = MediaDirector.OthersWeb;
                 _settings.Save();
             };
             MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
