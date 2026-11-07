@@ -17,6 +17,16 @@
     "length": 0.4,
     "group": "Propulsion",
     "groupOrder": 8,
+    "lengths": {
+      "min": 0.2,
+      "max": 1.6,
+      "step": 0.05,
+      "presets": [
+        0.4,
+        0.8,
+        1.2
+      ]
+    },
     "kind": "cold gas",
     "numbers": {
       "thrust": 1500,

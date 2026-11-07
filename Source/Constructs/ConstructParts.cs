@@ -1108,6 +1108,7 @@ public static partial class ConstructParts
         "flight panel" => "Flight Control Panel",
         "medium flight panel" => "Medium Flight Control Panel",
         "large flight panel" => "Large Flight Control Panel",
+        "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
         _ => null,
     };
 

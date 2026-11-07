@@ -17,6 +17,16 @@
     "length": 0.8,
     "group": "Warheads",
     "groupOrder": 4,
+    "lengths": {
+      "min": 0.4,
+      "max": 4.8,
+      "step": 0.05,
+      "presets": [
+        0.8,
+        1.6,
+        2.4
+      ]
+    },
     "kind": "kinetic",
     "payload": 12,
     "blast": 0.5,

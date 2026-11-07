@@ -17,6 +17,16 @@
     "length": 0.8,
     "group": "Sub-payloads",
     "groupOrder": 5,
+    "lengths": {
+      "min": 0.4,
+      "max": 4.8,
+      "step": 0.05,
+      "presets": [
+        0.8,
+        1.6,
+        2.4
+      ]
+    },
     "kind": "cluster",
     "payload": 18,
     "blast": 1.1,
@@ -29,7 +39,8 @@
         "min": 4,
         "max": 400,
         "step": 1,
-        "default": 24
+        "default": 24,
+        "perLength": true
       }
     ]
   },

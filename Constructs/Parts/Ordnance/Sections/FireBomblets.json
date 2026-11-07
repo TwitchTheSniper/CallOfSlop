@@ -17,6 +17,16 @@
     "length": 0.8,
     "group": "Sub-payloads",
     "groupOrder": 5,
+    "lengths": {
+      "min": 0.4,
+      "max": 4.8,
+      "step": 0.05,
+      "presets": [
+        0.8,
+        1.6,
+        2.4
+      ]
+    },
     "kind": "incendiary",
     "payload": 15,
     "settings": [
@@ -27,7 +37,8 @@
         "min": 4,
         "max": 200,
         "step": 1,
-        "default": 12
+        "default": 12,
+        "perLength": true
       }
     ]
   },

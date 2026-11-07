@@ -83,14 +83,17 @@ public sealed class OrdFlightStats
     public const float GlideTurn = 0.8f; // a share of a winged weapon's sink a second its wings turn into speed along, at full hold
     public const float RodSpeed = 300f; // m/s at which a rod does its payload's damage
 
-    /// <summary>kg a section's settings add: <c>"mass_KEY"</c> numbers, a kg for each unit of that setting over its least.</summary>
+    /// <summary>kg a section's settings add (one of it): <c>"mass_KEY"</c> numbers, a kg for each unit of that setting over its least at its length.</summary>
     public static float SettingMass(OrdPiece p)
     {
         var o = p.Section.Ord!;
+        if (o.Settings.Length == 0)
+            return 0;
         var kg = 0f;
+        var stretch = p.Stretch;
         for (var k = 0; k < o.Settings.Length && k < p.Values.Length; k++)
             if (o.Nums.TryGetValue("mass_" + o.Settings[k].Key, out var per))
-                kg += per * (p.Values[k] - o.Settings[k].Min);
+                kg += per * (p.Values[k] - o.Settings[k].MinAt(stretch));
         return kg;
     }
 
@@ -99,7 +102,7 @@ public sealed class OrdFlightStats
         var s = p.Section.Ord!.Settings;
         for (var k = 0; k < s.Length; k++)
             if (s[k].Key == key)
-                return k < p.Values.Length ? p.Values[k] : s[k].Default;
+                return k < p.Values.Length ? p.Values[k] : s[k].DefaultAt(p.Stretch);
         return or;
     }
 
@@ -132,7 +135,7 @@ public sealed class OrdFlightStats
             {
                 var p = d.Pieces[i];
                 var o = p.Section.Ord!;
-                stage.Mass += (p.Section.Mass + SettingMass(p)) * p.Count * cube;
+                stage.Mass += p.Kg * cube;
                 if (o.Slot == "motor")
                 {
                     var cls = Set(p, "class", 1);
@@ -142,7 +145,7 @@ public sealed class OrdFlightStats
                         stage.AirThrust += thrust;
                     stage.MinSpeed = MathF.Max(stage.MinSpeed, o.Num("minSpeed"));
                     use += o.Num("use") * cls * p.Count * cube;
-                    stage.Fuel += o.Num("fuel") * p.Count * cube;
+                    stage.Fuel += o.Num("fuel") * p.Amount * cube; // (a longer motor holds more: the same thrust for longer)
                     var burn = Set(p, "burn", o.Num("burn"));
                     solid = MathF.Max(solid, burn);
                     stage.Gimbal += o.Num("gimbal") * p.Count;
@@ -226,7 +229,7 @@ public sealed class OrdFlightStats
                     break;
                 case "payload":
                     charge ??= new OrdCharge();
-                    var kg = o.Payload * p.Count * cube;
+                    var kg = o.Payload * p.Amount * cube;
                     charge.Payload += kg;
                     blastK += o.Blast * kg;
                     damageK += o.Damage * kg;
