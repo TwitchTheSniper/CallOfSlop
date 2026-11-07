@@ -489,6 +489,7 @@ public static unsafe partial class Program
             // --bench-wall: the case surfaces shimmer in: a floor of 2 m steel plates (half of them painted grey) seen at a grazing
             // angle, and a wall of them square on, both 24 m on a side, from the camera's feet outwards.
             var plate = ConstructParts.Need("Plate Steel 2 m");
+            var texWall = args.Any(a => a.Equals("--bench-wall-textures", StringComparison.OrdinalIgnoreCase));
             for (var k = 0; k < 2; k++)
             {
                 var turn = k == 0 ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI / 2);
@@ -500,6 +501,12 @@ public static unsafe partial class Program
                         var i = _benchWorld.AddPart(wall, plate, new Vector3(x * 2.02f - 12f, 0, -z * 2.02f), 0);
                         if (i >= 0 && (x + z) % 2 == 0)
                             wall.Parts[i].Paint = 0x01000000u | 0x8a8e92u;
+                        if (i >= 0 && k == 1 && texWall)
+                        {
+                            // --bench-wall-textures: the wall's plates take the texture paint tool's materials in turn, a column each
+                            var row = (byte)(Surfaces.FirstShaded + x % Math.Max(1, Surfaces.File.Rows.Length - Surfaces.FirstShaded));
+                            wall.Parts[i].Finish = ConstructFinish.Offered(row) ? row : (byte)0;
+                        }
                     }
                 wall.Rebuild();
                 parts += wall.PartCount;
@@ -563,7 +570,7 @@ public static unsafe partial class Program
             if (!_benchHome.TryGetValue(c, out var home))
                 _benchHome[c] = home = (c.Pos, c.Rot);
             c.Pos = c.PrevPos = at + Vector3.Transform(home.Pos, turn);
-            c.Rot = c.PrevRot = Quaternion.Normalize(home.Rot * turn);
+            c.Rot = c.PrevRot = Quaternion.Normalize(turn * home.Rot); // (its own turn, then the view's)
         }
         ConstructRender.Now = Glfw.Time;
         var draws0 = PerfCounters.Draws;
