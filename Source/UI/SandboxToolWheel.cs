@@ -399,7 +399,7 @@ public sealed class SandboxToolWheel
         if (!Menu.IsOpen)
             return;
         var size = ImGui.GetIO().DisplaySize;
-        Menu.Draw(ImGui.GetForegroundDrawList(), new float2(size.X * 0.5f, size.Y * 0.5f), scale, Icons);
+        Menu.Draw(ImGui.GetForegroundDrawList(), new float2(size.X * 0.5f, size.Y * 0.5f), Menu.FitScale(scale, size.Y), Icons); // (kept on screen at big text sizes)
     }
 
     // ---- The icons: simple shapes from lines and boxes, in the HUD's flat style ------------------------------------

@@ -471,6 +471,22 @@ public sealed class RadialMenu
         return l < 0.001f ? Vector2.Zero : Pointer / l * (CursorHud(l) * scale);
     }
 
+    /// <summary>
+    /// <paramref name="scale"/>, made smaller if the wheel with one row of its outer ring and the tooltip under it wouldn't
+    /// fit in half of <paramref name="displayHeight"/>: a big text size on a short window keeps the wheel on screen (the
+    /// default sizes at 720p and 1080p already fit, so they draw as before). The pointer works in scale-1 units, so only
+    /// the picture shrinks.
+    /// </summary>
+    public float FitScale(float scale, float displayHeight)
+    {
+        var ring = false;
+        foreach (var item in Items)
+            ring |= item.Options is { Length: > 0 };
+        var extent = OuterEdge + (ring ? RingGap + RingDepth : 0f) + 10f + 15f + 8f + 8f; // (+ the tooltip and a margin)
+        var room = displayHeight * 0.5f;
+        return room > 0f && extent * scale > room ? MathF.Max(room / extent, 0.1f) : scale;
+    }
+
     /// <summary>Draws the open menu around <paramref name="centre"/> (screen pixels) at HUD scale <paramref name="scale"/>.</summary>
     public void Draw(ImDrawListPtr dl, float2 centre, float scale, RadialIcon? icons)
     {

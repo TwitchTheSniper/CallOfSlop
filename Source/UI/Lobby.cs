@@ -58,8 +58,8 @@ public sealed partial class Ui
     private ImInputString? _addressInput;
     private int _portInput;
 
-    private const ImGuiWindowFlags Panel =
-        ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize;
+    private const ImGuiWindowFlags Panel = // (a scroll bar only when a big text size makes it taller than the screen: CenterNext)
+        ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize;
 
     private void EnsureInputs(Settings s)
     {
@@ -110,18 +110,33 @@ public sealed partial class Ui
         ImGui.Spacing();
     }
 
-    private static void CenterNext()
+    private void CenterNext()
     {
         var vp = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y / 2), ImGuiCond.Always, new float2(0.5f, 0.5f));
+        // Never taller than the screen less the credits line top and bottom (it scrolls instead, at big text sizes).
+        var room = 2 * (16 + ImGui.GetStyle().FontSizeBase + 8) * _scale;
+        ImGui.SetNextWindowSizeConstraints(new float2(0, 0), new float2(MathF.Max(vp.WorkSize.X - 16 * _scale, 1), MathF.Max(vp.WorkSize.Y - room, 1)));
     }
+
+    private static ReadOnlySpan<byte> Credits => "Built with the BRUTAL framework - Copyright (c) 2024 Ahwoo Limited - www.ahwoo.com/brutal"u8;
 
     private void Footer()
     {
         var vp = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y - 16 * _scale), ImGuiCond.Always, new float2(0.5f, 1f));
         if (ImGui.Begin("##credits"u8, Overlay))
-            ImGui.TextColored(Dim, "Built with the BRUTAL framework - Copyright (c) 2024 Ahwoo Limited - www.ahwoo.com/brutal"u8);
+        {
+            // Smaller when it would run into the build's corner (a big text size on a narrow window).
+            var room = vp.WorkSize.X - 2 * (ImGui.CalcTextSize(BuildInfo.Label).X + 40 * _scale);
+            var wide = ImGui.CalcTextSize(Credits).X;
+            var shrink = wide > room && room > 0;
+            if (shrink)
+                ImGui.PushFont(default, ImGui.GetStyle().FontSizeBase * MathF.Max(room / wide * 0.9f, 0.5f)); // (0.9: a pixel font's advances round up at small sizes)
+            ImGui.TextColored(Dim, Credits);
+            if (shrink)
+                ImGui.PopFont();
+        }
         ImGui.End();
         BuildCorner(); // this build's version, bottom-right (UiUpdates.cs)
     }
@@ -745,6 +760,7 @@ public sealed partial class Ui
         if (ImGui.BeginTabItem("Player"u8))
         {
             ImGui.BeginChild("##player"u8, panel);
+            ImGui.PushTextWrapPos(0); // help lines wrap at the panel's edge at any text size
             ImGui.SetNextItemWidth(w);
             try
             {
@@ -805,6 +821,7 @@ public sealed partial class Ui
             if (SavePaths.Warning is { } saveWarning)
                 ImGuiSafe.TextColored(Red, saveWarning);
             UpdateSettings(s); // Updates: check at startup, Check for updates (UiUpdates.cs)
+            ImGui.PopTextWrapPos();
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
@@ -849,6 +866,7 @@ public sealed partial class Ui
         if (ImGui.BeginTabItem("Video"u8))
         {
             ImGui.BeginChild("##video"u8, panel);
+            ImGui.PushTextWrapPos(0); // help lines wrap at the panel's edge at any text size
             ImGui.Text("Display mode"u8);
             var mode = (int)s.Display;
             var changed = ImGui.RadioButton("Windowed"u8, ref mode, 0);
@@ -890,16 +908,7 @@ public sealed partial class Ui
             });
 
             ImGui.Spacing();
-            ImGui.SetNextItemWidth(w);
-            if (_pendingUiScale < 0)
-                _pendingUiScale = s.UiScale;
-            ImGui.SliderFloat("UI scale"u8, ref _pendingUiScale, 0.6f, 2.0f, "%.2fx"u8);
-            if (ImGui.IsItemDeactivatedAfterEdit())
-                s.UiScale = _pendingUiScale; // apply on release so the menu doesn't resize under the mouse
-            ImGui.SameLine();
-            if (ImGui.Button("Reset##ui"u8))
-                s.UiScale = _pendingUiScale = 1f;
-            ImGui.TextColored(Dim, "Menus and HUD text scale with the window size automatically; this adjusts on top of that."u8);
+            TextSizeControl(s, w); // (UiTextSize.cs)
 
             ImGui.Spacing();
             ImGui.Text("HUD width"u8);
@@ -1056,6 +1065,7 @@ public sealed partial class Ui
                 if (ImGui.IsItemHovered())
                     ImGuiSafe.SetItemTooltip($"{Keybinds.Name(s.Bind(GameAction.LookAtInspector))} names what the crosshair is on ({Keybinds.Name(s.Bind(GameAction.CopyLookAt))} copies it for a report); {Keybinds.Name(s.Bind(GameAction.PropEditor))} edits that prop offline and saves a change package. Dev builds always have them.");
             }
+            ImGui.PopTextWrapPos();
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
@@ -1064,6 +1074,7 @@ public sealed partial class Ui
         if (ImGui.BeginTabItem("Audio"u8))
         {
             ImGui.BeginChild("##audio"u8, panel);
+            ImGui.PushTextWrapPos(0); // help lines wrap at the panel's edge at any text size
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Master volume"u8, ref s.Volume, 0f, 1f, "%.2f"u8))
                 audio.MasterVolume = s.Volume;
@@ -1142,6 +1153,7 @@ public sealed partial class Ui
                 AudioMixerOpen = true; // UiAudioMixer.cs
             ImGui.SameLine();
             ImGuiSafe.TextColored(Dim, $"Debug window: a level slider per sound category, meters and test sounds ({Keybinds.Name(s.Bind(GameAction.AudioMixer))} opens it anywhere).");
+            ImGui.PopTextWrapPos();
             ImGui.EndChild();
             ImGui.EndTabItem();
         }

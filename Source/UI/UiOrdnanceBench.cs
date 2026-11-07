@@ -216,7 +216,11 @@ public sealed partial class Ui
             }
         }
         if (_ord.Pieces.Count == 0)
+        {
+            ImGui.PushTextWrapPos(0); // (wraps in the column at any text size)
             ImGuiSafe.TextDisabled("Empty: pick sections on the left. Each goes in where it is built, nose to tail.");
+            ImGui.PopTextWrapPos();
+        }
         ImGui.EndChild();
         ImGui.TextColored(Orange, "TAIL"u8);
     }

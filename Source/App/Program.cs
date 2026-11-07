@@ -477,7 +477,7 @@ public static unsafe partial class Program
         Gfx.Init();
         InitPerf(); // the perf window's GPU timer and music counter (Program.Perf.cs)
         Ui.Init(_window);
-        Ui.UserScale = _settings.UiScale;
+        Ui.TextSize = _settings.TextSize;
         Ui.Progress = _progress;
         ApplyDisplay(); // windowed / borderless / fullscreen from settings.txt
 
@@ -495,6 +495,7 @@ public static unsafe partial class Program
             if (_settings.Display == DisplayMode.Windowed)
                 _windowedPos = pos;
         };
+        _window.OnContentScale += (_, _) => Ui.NoteMonitor(_window, Glfw.PrimaryMonitor); // the monitor's scaling changed: Text size Auto follows (UiTextSize.cs)
 
         _window.OnKey += OnKey;
         _window.OnChar += OnWebChar;
@@ -669,7 +670,7 @@ public static unsafe partial class Program
 
             if (_settings.DisplayDirty)
                 ApplyDisplay();
-            Ui.UserScale = _settings.UiScale;
+            Ui.TextSize = _settings.TextSize;
 
             if (_settings.VSync != _vsync)
             {
@@ -1716,6 +1717,7 @@ public static unsafe partial class Program
             }
         }
         Glfw.SwapInterval(_settings.VSync ? 1 : 0); // some drivers reset this on a mode change
+        Ui.NoteMonitor(_window, monitor); // Text size Auto follows this monitor's scaling (UiTextSize.cs)
         _skipNextMouseDelta = true;
         Console.WriteLine($"Display: {_settings.Display} {_window.FramebufferSize.X}x{_window.FramebufferSize.Y}");
     }
