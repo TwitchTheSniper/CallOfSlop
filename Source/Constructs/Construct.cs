@@ -63,6 +63,10 @@ public struct CPart
     // Paint (the paint tool; ConstructPaint.cs): the colour the part's paintable boxes are drawn in, 0 when it has its own (else 0x01000000 | 0xRRGGBB). It moves with the part.
     public uint Paint;
 
+    // Finish (the texture paint tool; ConstructFinish.cs): the material every box of the part is drawn with, a row of Materials/Surfaces.json, 0 when
+    // it has its own. This build's own number: saves, blueprints and the wire carry the material's name. It moves with the part.
+    public byte Finish;
+
     public const ushort Occupied = 0x8000;
 
     public readonly ConstructPartDef D => ConstructParts.Def(Def);

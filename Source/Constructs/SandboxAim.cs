@@ -70,6 +70,7 @@ public static class SandboxAim
         public LinkMode LinkMode; // ... its mode ...
         public bool Routing; // ... and a link is being routed
         public PaintMode PaintMode;
+        public PaintMode TextureMode; // (the texture paint tool's ring)
         public bool Creative; // the map has infinite parts (the remover deletes anything there)
         public bool Freeform; // the welder is in freeform mode
         public bool Tying; // the attach tool (the welder) is tying a rope or spring: any point will do, and the part isn't taken off
@@ -139,6 +140,8 @@ public static class SandboxAim
                 return Configure(c.DefOf(ConstructDoor.ConfigPart(c, t.Part)), t.Contested, t.ConfigWhy); // (a door is set on its hinge)
             case ConstructTool.Paint:
                 return t.Distance <= ConstructBuild.Reach ? Paint(d, t.PaintMode, t.Contested) : AimCall.No;
+            case ConstructTool.Texture:
+                return t.Distance <= ConstructBuild.Reach ? Texture(d, t.TextureMode, t.Contested) : AimCall.No;
             case ConstructTool.Remover:
                 return t.Distance <= ConstructBuild.Reach ? Remover(c, t.Player, t.Creative, t.Contested) : AimCall.No;
             case ConstructTool.Hands:
@@ -211,6 +214,14 @@ public static class SandboxAim
     }
 
     /// <summary>The paint tool on a paintable part (any part in the whole-construct mode), refused while contested.</summary>
+    /// <summary>The texture paint tool: a part with a box that takes a texture (any part, for the whole construct), the contested rule.</summary>
+    public static AimCall Texture(ConstructPartDef d, PaintMode mode, string? contested)
+    {
+        if (!ConstructFinish.Paintable(d) && mode != PaintMode.Whole)
+            return AimCall.No;
+        return contested == null ? AimCall.Ok : AimCall.Refuse(contested);
+    }
+
     public static AimCall Paint(ConstructPartDef d, PaintMode mode, string? contested)
     {
         if (!ConstructPaint.Paintable(d) && mode != PaintMode.Whole)

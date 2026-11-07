@@ -29,12 +29,13 @@ public static class SandboxKeys
     public static string SocketWeld1 = "", SocketWeld2 = "", SocketWeld3 = "", PointWeld1 = "", PointWeld2 = "", PointWeld3 = "", ConfigHint = "", ConfigHintSelected = "", CargoDraw = "", CargoAim = "";
 
     /// <summary>A tool's main keys when nothing it aims at says more, for its screen (DrawToolCard).</summary>
-    public static string PaintKeys = "", TrackKeys = "";
+    public static string PaintKeys = "", TrackKeys = "", TextureKeys = "";
 
     /// <summary>The main keys of a tool whose own line is empty just now.</summary>
     public static string ToolIdle(ConstructTool tool) => tool switch
     {
         ConstructTool.Paint => PaintKeys,
+        ConstructTool.Texture => TextureKeys,
         ConstructTool.Tracks => TrackKeys,
         _ => "",
     };
@@ -136,6 +137,7 @@ public static class SandboxKeys
         CargoAim = $"Aim at the construct the volume is on, {Reload}: cancel";
         PaintKeys = $"{Fire}: paint, {Aim}: pick a colour";
         TrackKeys = $"{Fire}: wheels in turn round the loop";
+        TextureKeys = $"{Fire}: paint the texture, {Aim}: pick a part's texture, {Reload}: textures";
         PhysGun = $"hold {Fire}: grab, wheel: distance, {Use} + mouse: turn (Shift: snap), {Aim}: freeze, {Reload} {Reload}: unfreeze yours";
     }
 

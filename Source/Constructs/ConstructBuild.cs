@@ -425,6 +425,7 @@ public static class ConstructBuild
         public bool ExactLinks; // saved from a construct ("exactLinks": true): its parts link only as the steps say, nothing by landing on a free socket (ConstructClip.ToBlueprint)
         public List<(int On, string Socket, string Own)[]?> StepAlso = new(); // a saved step's other links to earlier steps ("also": [[step, their socket, its socket]...])
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
+        public List<byte> StepFinish = new(); // each step's texture ("finish": a material's name, Materials/Surfaces.json; 0: its own materials, or a name this build doesn't have; ConstructFinish.cs)
         public string Tow = ""; // a blueprint it spawns coupled behind it ("tow"): its first eye on this one's first ball (BuildOnGround)
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "bandit"}]; ConstructLoot.cs)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
@@ -504,6 +505,7 @@ public static class ConstructBuild
                         string part = "", sock = "", own = "";
                         int on = -1, spin = 0, setting = -1;
                         var paint = 0u;
+                        byte finish = 0;
                         JsonElement? config = null;
                         string[]? texts = null;
                         string[]? media = null;
@@ -536,7 +538,12 @@ public static class ConstructBuild
                                     if (f.Value.ValueKind != JsonValueKind.String || !ConstructPaint.TryParse(f.Value.GetString(), out paint))
                                         throw new ConstructPartException($"{file}: steps[{k}]: \"paint\" is a colour like \"#c04020\"");
                                     break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, also, setting, config, weld, paint)");
+                                case "finish":
+                                    if (f.Value.ValueKind != JsonValueKind.String)
+                                        throw new ConstructPartException($"{file}: steps[{k}]: \"finish\" is a material's name, like \"tread plate\"");
+                                    finish = ConstructFinish.Of(f.Value.GetString()); // (a material this build doesn't have: the part's own)
+                                    break;
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, also, setting, config, weld, paint, finish)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
@@ -546,6 +553,7 @@ public static class ConstructBuild
                         bp.StepAt.Add(stepAt);
                         bp.StepAlso.Add(also);
                         bp.StepPaint.Add(paint);
+                        bp.StepFinish.Add(finish);
                         bp.StepText.Add(texts);
                         bp.StepMedia.Add(media);
                         bp.StepConfig.Add(config is { } cfg
@@ -832,6 +840,9 @@ public static class ConstructBuild
         for (var k = 0; k < bp.Steps.Count && k < bp.StepPaint.Count; k++)
             if (bp.StepPaint[k] != 0)
                 c.Parts[partOf[k]].Paint = bp.StepPaint[k]; // (the paint tool's colours; a part with nothing to paint just carries it)
+        for (var k = 0; k < bp.Steps.Count && k < bp.StepFinish.Count; k++)
+            if (bp.StepFinish[k] != 0)
+                c.Parts[partOf[k]].Finish = bp.StepFinish[k]; // (the texture paint tool's materials, ConstructFinish.cs)
         // The wires, through the linking tool's rules.
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)

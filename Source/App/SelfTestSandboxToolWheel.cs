@@ -103,10 +103,10 @@ public static partial class SelfTest
             Run(g, ref now, 0.05);
             return g.SandboxHands.Hand(me.Id).Tool;
         }
-        var east = Flick(new Vector2(36, 12), out var hE, out var mStart);
-        var north = Flick(new Vector2(30, -26), out var hN, out var mWelder);
-        var west = Flick(new Vector2(-45, -6), out var hW, out var mWrench);
-        var south = Flick(new Vector2(-8, 40), out var hS, out var mLinker); // (nine segments, tilted half a step: hands straight down)
+        var east = Flick(new Vector2(40, 0), out var hE, out var mStart);
+        var north = Flick(new Vector2(20, -35), out var hN, out var mWelder);
+        var west = Flick(new Vector2(-40, 0), out var hW, out var mWrench);
+        var south = Flick(new Vector2(0, 40), out var hS, out var mLinker); // (twelve segments: hands straight down)
         var picks = east == ConstructTool.Welder && north == ConstructTool.PhysicsGun && west == ConstructTool.Linker && south == ConstructTool.Hands
                     && hE == (int)SandboxToolWheel.Slot.Welder && hN == (int)SandboxToolWheel.Slot.PhysicsGun && hW == (int)SandboxToolWheel.Slot.Linker && hS == (int)SandboxToolWheel.Slot.Hands;
         var marks = mStart == (int)SandboxToolWheel.Slot.Hands && mWelder == (int)SandboxToolWheel.Slot.Welder && mWrench == (int)SandboxToolWheel.Slot.PhysicsGun && mLinker == (int)SandboxToolWheel.Slot.Linker;
@@ -119,10 +119,10 @@ public static partial class SelfTest
         // A cancel in the dead zone, the remover on the south-west (where the scanner was going to be), and the number keys' favourites unchanged.
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         var cancel = Flick(new Vector2(8, -6), out var hC, out _);
-        var later = Flick(new Vector2(-30, 30), out var hL, out _);
+        var later = Flick(new Vector2(-20, 35), out var hL, out _);
         Line($"tool wheel: let go in the middle kept the {cancel} (hovered {hC}); the south-west ({(hL >= 0 ? w.Items[hL].Label : "?")}) took out the {later}");
         // The physics gun on the north-east (where the hoist was).
-        var phys = Flick(new Vector2(30, -26), out var hP, out _);
+        var phys = Flick(new Vector2(20, -35), out var hP, out _);
         Line($"tool wheel: the north-east ({(hP >= 0 ? w.Items[hP].Label : "?")}) took out the {phys}");
         if (phys != ConstructTool.PhysicsGun || hP != (int)SandboxToolWheel.Slot.PhysicsGun)
             Fail("tool wheel: the north-east flick didn't take out the physics gun");

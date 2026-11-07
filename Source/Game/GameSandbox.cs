@@ -76,6 +76,7 @@ public enum CActKind : byte
     PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
     Ordnance, // u32 length, text: build this design at the Ordnance Bench in reach (protocol 180; GameSandboxOrdnance.cs)
     Vehicle, // text style, text shape, u32 seed (0: the server picks): a faction vehicle made at spawn time, in front of the player (protocol 186; GameSandboxVehicles.cs)
+    Texture, // u16 body, u8 PaintMode, u16 part, u8 length and the material's name (ASCII): the texture paint tool (protocol 191; GameSandboxTexture.cs)
 }
 
 /// <summary>
@@ -447,6 +448,12 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.PaintDirty.Clear();
+        for (var from = 0; from < Constructs.FinishDirty.Count;)
+        {
+            from = ConstructFinish.WriteChanges(w, Constructs, Constructs.FinishDirty, from);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.FinishDirty.Clear();
         foreach (var handle in Constructs.StoreDirty)
         {
             // (after the structures: a client finds the store by the handle its part came with)
@@ -854,6 +861,14 @@ public sealed partial class Game
                 var index = r.U16();
                 var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
                 return hands.Paint(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), (mode & 4) != 0, index, ConstructPaint.SetBit | rgb);
+            }
+            case CActKind.Texture:
+            {
+                var body = r.U16();
+                var mode = r.U8();
+                var index = r.U16();
+                var finish = ConstructFinish.ReadName(ref r);
+                return hands.Finish(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), index, finish);
             }
             case CActKind.Remover:
             {
@@ -2021,7 +2036,7 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Nudge => "Nudge tool", ConstructTool.NoCollide => "No-collide tool", ConstructTool.Tracks => "Track tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Texture => "Texture paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Nudge => "Nudge tool", ConstructTool.NoCollide => "No-collide tool", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;

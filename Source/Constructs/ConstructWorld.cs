@@ -339,6 +339,7 @@ public sealed partial class ConstructWorld
         ClearFeedBurns();
         AmmoDirty.Clear();
         PaintDirty.Clear();
+        FinishDirty.Clear();
         Shattered.Clear();
         FireCount = 0;
         CookOffCount = 0;

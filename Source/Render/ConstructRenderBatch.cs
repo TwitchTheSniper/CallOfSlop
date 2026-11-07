@@ -155,7 +155,7 @@ public static partial class ConstructRender
         for (var k = 0; k < ch.MemberCount; k++)
         {
             ref var p = ref c.Parts[ch.Members[k]];
-            h = Mix(h, BitConverter.SingleToInt32Bits(p.Health) ^ ((long)p.Paint << 32) ^ (p.Broken ? 1L << 62 : 0) ^ (Frosted(c, ch.Members[k]) ? 1L << 61 : 0));
+            h = Mix(Mix(h, BitConverter.SingleToInt32Bits(p.Health) ^ ((long)p.Paint << 32) ^ (p.Broken ? 1L << 62 : 0) ^ (Frosted(c, ch.Members[k]) ? 1L << 61 : 0)), p.Finish); // (the texture paint tool: a finish rewrites the looks alone, ConstructFinish.cs)
         }
         return h;
     }
@@ -331,7 +331,7 @@ public static partial class ConstructRender
                 tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
                 if (frost)
                     tint = Vector3.Lerp(tint, Frost, 0.45f);
-                code = Surfaces.Code(Surfaces.OnPaint(box.Surface, p.Paint, box.Paintable), wear);
+                code = Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear);
             }
             var o = s * 4;
             look[o] = tint.X;

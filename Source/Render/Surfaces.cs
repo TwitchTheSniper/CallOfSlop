@@ -23,6 +23,8 @@ public sealed class SurfaceRow
     public int Pattern;
     public string PaintedName = "";
     public byte Painted; // the row a painted box uses (itself when none is named)
+    public string Category = ""; // where the texture paint tool lists it (UiSandboxTexture.cs); "" with Offer false: not listed
+    public bool Offer = true; // false: the texture paint tool doesn't offer it (glass)
 }
 
 /// <summary>
@@ -56,6 +58,24 @@ public static class Surfaces
 
     /// <summary>The number of a row by name, or 0 when no row has it.</summary>
     public static byte Id(string name) => File.ByName.TryGetValue(name, out var id) ? id : (byte)0;
+
+    /// <summary>The number of a row by its name as ASCII bytes (off the wire: no string is made), or 0 when no row has it.</summary>
+    public static byte Id(ReadOnlySpan<byte> name)
+    {
+        var rows = File.Rows;
+        for (var i = 0; i < rows.Length; i++)
+        {
+            var n = rows[i].Name;
+            if (n.Length != name.Length)
+                continue;
+            var k = 0;
+            while (k < n.Length && char.ToLowerInvariant(n[k]) == char.ToLowerInvariant((char)name[k]))
+                k++;
+            if (k == n.Length)
+                return (byte)i;
+        }
+        return 0;
+    }
 
     public static SurfaceRow Row(int id) => File.Rows[id < File.Rows.Length ? id : 0];
 
@@ -330,8 +350,12 @@ public sealed class SurfaceFile
                             throw new InvalidDataException($"{r.Name}: no pattern \"{p.Value.GetString()}\"");
                         break;
                     case "painted": r.PaintedName = p.Value.GetString() ?? ""; break;
+                    case "category": r.Category = p.Value.GetString() ?? ""; break;
+                    case "offer": r.Offer = p.Value.GetBoolean(); break;
                     default: throw new InvalidDataException($"{r.Name}: unknown key \"{p.Name}\"");
                 }
+            if (r.Name.Length is 0 or > 32 || r.Name.Any(ch => ch < 32 || ch > 126))
+                throw new InvalidDataException($"\"{r.Name}\": a surface's name is 1 to 32 plain ASCII characters (saves, blueprints and the wire carry it)");
             if (!f.ByName.TryAdd(r.Name, (byte)rows.Count))
                 throw new InvalidDataException($"two surfaces are called \"{r.Name}\"");
             rows.Add(r);

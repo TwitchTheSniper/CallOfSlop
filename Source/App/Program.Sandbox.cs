@@ -469,6 +469,14 @@ public static unsafe partial class Program
         }
         PaintIdle();
 
+        // The texture paint tool: LMB paints the texture, RMB picks a part's, R opens the list (Program.SandboxTexture.cs).
+        if (h.Tool == ConstructTool.Texture)
+        {
+            SandboxTextureInput(g, me, aimed, hit);
+            return true;
+        }
+        TextureIdle();
+
         // Hands: LMB takes what lies loose or stored, RMB drops what they hold (Program.SandboxHands.cs).
         if (h.Tool == ConstructTool.Hands)
         {
@@ -1156,6 +1164,7 @@ public static unsafe partial class Program
         ConstructTool.Linker => _linkWheel.ModeName,
         ConstructTool.Nudge => (_nudgeModes.Rotating ? "rotate, " : "move, ") + (_nudgeModes.Local ? "local" : "world"),
         ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
+        ConstructTool.Texture => _textureWheel.ModeText,
         ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", _ => "socket" },
         _ => "",
     };
