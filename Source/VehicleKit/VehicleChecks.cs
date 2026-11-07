@@ -152,7 +152,7 @@ public static class VehicleChecks
             r.Failures.Add("no seat drives it: link a seat through a Driving Module to the drivetrain");
         if (!c.CanDrive)
             r.Failures.Add($"it can't drive: {c.DriveProblem}");
-        if (c.Engine >= 0 && (c.Fuel <= 0 || !ConstructRoutes.PipeFeeds(c, c.Engine)))
+        if (c.Engine >= 0 && c.DefOf(c.Engine).FuelKind != EngineFuel.Electric && (c.Fuel <= 0 || !ConstructRoutes.PipeFeeds(c, c.Engine))) // (an Electric Motor runs on its battery: a spawn context off world, VehicleContext.cs)
             r.Failures.Add($"no fuel reaches the engine ({c.Fuel:0} l aboard): pipe a tank to its Fuel in");
         r.Notes.Add($"fuel {c.Fuel:0.0} l; power: {(c.ChargeCapacity > 0 ? $"{c.ChargeCapacity:0} of battery" : "no electrics")}");
         var driven = 0;

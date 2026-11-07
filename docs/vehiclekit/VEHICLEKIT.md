@@ -24,6 +24,8 @@ like any other. **Fix the generator, not its files.** No AI is in here: crew and
 | `CallOfSlop --role "Bandit raider" --tier 2 [--seeds N] [--check] [--sliced]`, `--kit-report --roles` | Kit 4: vehicles for a role and tier, measured against it, and the matrix of every style, role and tier. See "Roles and tiers". |
 | `CallOfSlop --family "Bandit raider" [--seed S] [--tier T] [--check]` | A model line: its Mk1 to Mk3, its variants, a named unique and two other families of the role, with their distances; the family must read closer to itself than to the others. See "Families and convoys". |
 | `CallOfSlop --convoy Bandit [--seed S] [--count N] [--tier T] [--mix raider,tanker] [--no-check] [--write DIR]` | A convoy's plan (members, roles, models, the paint scheme, where each stands), each member made and given the full check, the leader made twice. See "Families and convoys". |
+| `CallOfSlop --context "Bandit Box Truck"` (or `"Bandit raider" --tier 2`, or a model's key) `--biome desert\|snow\|swamp\|forest\|road --gravity G --air 0\|1 --wood W --ore O [--seeds N] [--from S] [--check]`, or `--sweep` for every context | What a spawn context changes against neutral, seed by seed: what each lean did, the parts and mass that differ, the identity, and the full check with `--check`; a model's line says whether its body and chassis stayed its family's. See "Spawn context". |
+| `CallOfSlop --drive-check FILE [--gravity G]` | The spawn's drive check on any blueprint: level, and a throttle pulse moves it. `--no-drive-gate` on any of the tools turns the check off in generation, to measure it. See "Dynamic spawn", "The drive check". |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
@@ -156,6 +158,7 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 - A routed link with nodes is refused through solids unless `laid`. A shaft with no nodes runs straight and is only checked at its ends.
 - Stacked beams' bands, and bolts on a plate under an engine's details, are coplanar. Paint a frame one colour (one look doesn't fight); the hood uses `smallest: 2`.
 - `Freeform` parts aren't checked against the rest for overlap. Keep a crooked plate proud of what it covers: 6 cm clears 5 degrees on a 0.5 m plate.
+- A pogo strut hangs its axle 0.6 to 2.5 m below its mount (the Heavy Pogo Strut 1.375 m); every other spring holds it level with its mount. Kit 3's chassis once mixed the stilt recipe's front (Heavy Pogo Struts) with another recipe's rear on Heavy Suspension: Bandit convoy 3's leader stood 10.5 degrees nose up on its tail rails and didn't move, and only a build was checked at spawn. A mix now keeps corners that hang alike (`VehicleChassis.Hang`, `Level`: within 0.3 m), and every generated vehicle passes the drive check ("Dynamic spawn").
 
 ## Shape grammar
 
@@ -529,11 +532,92 @@ by role, model and convoy are refused and the tiles make their shape, as before 
 
 **Checked.** `--convoy STYLE --seed 11 --count 6 --tier 3` for IT, British, Highland and the Call Centre and `--convoy Bandit --seed 3` generate every member, the leader twice
 to the same text. The full check passed every member of the table's four families (36 of 36) and 4 of the 5 of Bandit convoy 3; its leader (a tier 3 command
-Box Truck, plan 1) stands 10.5 degrees off level and doesn't drive, with nothing low, nothing in a wheel's box and its springs rated at nearly four times their share of its 2.7 t: the same plan
-kit 4 makes for that seed and turns down only for its armour, so a kit-4 role vehicle that met its role on such a plan would do the same. In game (an offline host on
+Box Truck, plan 1) stood 10.5 degrees off level and didn't drive: its chassis mixed Heavy Pogo Struts in front (they hang the wheel 1.375 m under the mount) with Heavy
+Suspension behind, so it stood nose up on its tail rails. Fixed in the chassis (2026-11-07, "Things that caught the vehicles so far"): the leader now has its own rear on a
+level front and passes the full check (71 m in 6 s, 1.7 degrees worst tilt); the other 39 members of eight convoys tried came out byte for byte the same. In game (an offline host on
 Construct Yard and a client over RakNet at 80 ms and 2 % loss, the client asking by the wire): Bandit convoy 3 (4 vehicles, column) down in 7.2 s and IT convoy 11 (6, wedge)
 in 20.2 s, spaced and laned as planned, the client with the same parts on every body, and every member's text hash the one `--convoy` prints for it (made in slices as the spawn makes it); the worst ticks were the first slice of a generation (21 to 33 ms, the same for a single role
 spawn on this box) and one 52 ms join with a garbage collection in it.
+
+## Spawn context
+
+Roadmap phase 7 (`VehicleContext.cs`, `Source/Game/GameSandboxVehicleContext.cs`): the place a vehicle is spawned nudges its build, while the faction's style still decides how it
+looks. A desert Bandit truck is a Bandit truck on bigger tyres in the sandier half of its palette; an IT van in the snow has chains.
+
+**The record** (`SpawnContext`): `Biome` (neutral, desert, snow, swamp, forest, road), `Gravity` (times the world's standard), `Air` (density, 1 at sea level, 0 off world),
+`Wood` and `Ore` (0 to 1: how much of the place is forest, how much metal ore lies under it), `Rain` (the weather's, 0 to 1) and `Read` (how the server read it, for the log).
+It *matters* when the biome isn't neutral, gravity is under 0.75 or over 1.3, the air is under 0.2, or wood or ore is 0.5 or more; anything else is neutral, and **a neutral context
+makes exactly today's vehicles**: every hook below is a no-op unless `SpawnContext.Current` matters. Measured: `--gen-vehicles` all 123 identical; on the branch's base and on
+this branch the same 8 convoys (40 members, every style) and 8 dynamic kit-1, kit-3 and kit-4 seeds wrote the same text, but for the one vehicle the chassis fix changed (Bandit
+convoy 3's leader, "Families and convoys"). No kit version: no existing seed changes meaning.
+
+**Reading it** (`SpawnContexts.At(ground)`, server only, at the request): five ground samples (the point and four 8 m round it) through `TerrainData.Sample`, `SampleNormal`,
+`Locate` and `Material` (dug and streamed ground read right; no loop over the grid), the resource field's deposit under each (`KindAt`: a forest for wood, iron, copper, gold or
+levite for ore), `GravityFrames.GravityAt` over `World.Gravity` (the host's setting and a planetoid's field included), `ConstructAir.Density`, and `Weather.RainHere` (the
+weather's own reading, at the player, who is near: the parts menu sets vehicles down in front of them; 8 mm/h is 1). The biome is the first that holds: **snow** within 20 m
+under the surface's snow line or above it; **desert** on sand (the material, or under the sand line) under 3 of the 5 samples; **swamp** within 4 m of the terrain's lowest ground,
+nearly flat, in rain of 0.4 and more (maps have no water yet); **forest** in a wood (3 of 5 samples) or on rough ground (rock or slopes over 15 degrees under 3 of 5); **road** on flat
+bare dirt; else neutral. A map with no terrain (Construct Yard) or a planetoid reads neutral ground (gravity and air still count). 0.01 to 0.08 ms a reading on this box. A
+probe over 100-odd points of each map read Adobe Mesa 86 neutral, 20 rough, 4 desert; Alpine Pass 48 rough, 5 desert (its snow line is above the play area); Proving Ground road 10, forest 21 (8 of them a wood), ore under 18.
+
+**What it leans** (each only among the style's own parts and colours, or a spring's own class as kit 3's swaps are; none rolls a die of its own: a weighted pick takes the same
+one roll the plain pick did, so the rest of the seed rolls as it does in a neutral context):
+
+| Context | Running gear | Body and kit |
+| --- | --- | --- |
+| desert | tyres: the biggest the style's gear has that may go there (a front up to 0.56 m, a rear under a body never bigger, a Dually Wheel at the rear where the style has it); a wide front wing weighs four times | body and panel paint from the style's colours nearest sand |
+| snow | Spiked Wheels (the kit's chains) where the style's gear has them, no bigger; second axles 1.6 times | paint nearest snow |
+| swamp | the biggest tyres, the longest-travel spring of each corner's class (Hydraulic Suspension); second axles twice | paint nearest mud |
+| forest | the biggest tyres, long-travel springs (high clearance); the rear axle half a metre further in and the set-back front station four times as likely (a short wheelbase); second axles 0.6 times | segments lean short (-0.45); paint nearest the woods |
+| road | Slick Wheels where the style has them; the shortest-travel spring of the class (a lower, stiffer ride); one axle twice as likely, second axles 0.4 times | segments lean a little long |
+| low gravity (under 0.75) | second axles twice (more ground contact); a wide front wing | plates lean to the lightest of the style's (sheet over plate steel) |
+| high gravity (over 1.3) | the strongest spring of the class (Heavy Suspension, Heavy Double Wishbone, Heavy Swing Arm); second axles 1.8 times | room sections lean low (tall 0.4 times, low 2.5 times); segments a little short |
+| no air (under 0.2) | | every engine slot is the Electric Motor, a Battery Pack on a free side of it or its gearbox (else on the frame), no fuel line (the tanks stay, still a weak point) |
+| wood (0.5 and up) | | plate slots that list Wood Planks lean to them (up to six times) |
+| ore (0.5 and up) | | plate slots lean to their metal (plate steel, tread, armour: up to four times) |
+
+A kit-1 shape (the Technical, the trailers, the Tanker Rig, the Double Decker) has no chassis layer: its recipe pick leans the same way (`VehicleContext.Pick`), then its tyres and
+springs as above. A swap never makes a chassis whose corners hang differently (`VehicleChassis.Level`). How strongly a style leans is its row in `VehicleContext.ByStyle`
+(additive: `Styles.cs` is untouched): the Bandits 1.2 (they build from whatever is lying about), IT and the Call Centre 0.7, the British 0.6 and only their panels take the
+ground's colours (the bus stays red unless a listed colour is near the ground's), Highland's panels only (the Saltire stays). A style not named takes `VehicleContext.Default`.
+
+**Not done, for want of parts:** dust filters (the only "Filter" is a logic part), cold-weather kit, floats (no buoyant part, and maps have no water), and tracks: no style
+lists a track, so "tracked where the style has tracks" never fires. Gearing isn't touched: every style lists one gearbox and no ratio is configurable on it, so a road vehicle is
+faster by its tyres and its single axle. Off world the Electric Motor is 10 cm lower than an engine and half a V8's length, so a hood stands on a Drone
+Battery on the motor's top (`Vehicle.HoodOn`: within 2 cm of where it always stands), and plated hoods (decked at the engine's height) and cab-overs weigh more in the grammar
+(`VehicleContext.Module`) and a kit-1 hood slot; a moulded hood that still meets the gearbox fails as it is built and the seed plans again, and a request that makes nothing
+electric is refused with "no air here: no ... could be made to run without it" rather than given a committed seed that burns fuel. The full check takes an Electric Motor's
+battery for its fuel.
+
+**A family's model in another context** keeps its family: the same body and chassis (modules, axle stations and outline to the decimetre), so a convoy reads as one fleet
+wherever it is met. Only the context's kit changes: tyres within 5 cm of the model's own size and no bigger (Large Wheel to Slick on a road, Off-Road to Spiked in snow), paint
+from its colours nearest the ground, plate materials (wood, ore, light: the same plates, another material) and the electric drive off world; no chassis table, length, body
+range or spring lean (`SpawnContext.KitOnly`, set when the request is a model's). Its key stays the same: the context is the request's, not the model's.
+`--context "Bandit/command/3/553571/mk1/scheme 292943" --sweep` prints, for each context, the kit that changed and whether the body and chassis stayed the family's.
+
+**What it carries.** A vehicle made in a context that matters is named for it ("Bandit Box Truck 4711 [desert, ore]", after its role and model labels), so it never reads as a
+committed seed or as the neutral vehicle; its blueprint carries a second comment, `// context desert, gravity 1.00, air 1.00, wood 0.00, ore 1.00, rain 0.00; changed chassis
+table leaned (desert), tyres Large Wheel/Dually Wheel, deck plates leaned (ore), rust paint desert (#8c5230/#94603a), ...` (`Vehicle.ContextLine`, `Context`, `ContextNotes`),
+and the spawn's "generated" line ends `; context ... (read: sand under 4 of 5 samples)` (`VehicleGenJob.ContextNotes`). Nothing is on the wire.
+
+**The API.** Every request takes it (`context: null` is neutral): `Request(style, shape, ..., context: SpawnContexts.At(ground))`, `Request(style, role, tier, ...)`,
+`RequestModel(model, ..., context)`, `RequestConvoy(..., context)` (one context for the whole convoy, read at its anchor), and the kit's own `VehicleRegistry.Make(g, seed, ...,
+context)`, `VehicleFamilies.Make(model, context)`, `new VehicleGenJob(g, seed, layers, role, context)`. The parts menu's three requests read the ground they set the vehicle on.
+Rerolls and fallbacks keep the context; off world, a request with the host's committed seeds only is refused at once, and a fallback to a committed file is refused.
+
+**Measured** (2026-11-07, `--context ... --sweep --check`; the 2-core box shared with other agents, so costs are rough):
+
+| Run | Made | Full check | Identity | What changed |
+| --- | --- | --- | --- | --- |
+| Bandit Box Truck 2 and 3, every context | 20 of 20 | 20 of 20 | 0.93 to 0.97 a context | the chassis table in 14 of the 20, tyres in 9 (Large, Spiked, Slick), springs in 5, paint in 5, plates in 5, a low profile in 2 |
+| IT raider tier 2, seeds 1 and 2 (Technicals, kit 1), every context but no air | 18 of 18 | 13 of 18 | 0.94 to 1.00 a context | the recipe pick in 12 of the 18, tyres in 9, springs in 8, paint in 4, plates in 4; the five failures are seed 1's top fill (85 %, at most 84 %), which "wood" fails with nothing changed: not the context's |
+| Bandit Box Truck 2 to 9, no air | 8 of 8 | 4 of 4 tried | 0.92 to 0.95 | Electric Motor, Battery Pack, a Drone Battery riser under the hood |
+| IT raider tier 2, seeds 1 to 4, no air | 3 of 4 | | 0.95 | one Technical's Snub Hood still met the gearbox: refused |
+| Model Highland/carrier/2/5/mk2 (a War Bus), every context | 10 of 10 | 10 of 10 | | body and chassis its family's in all ten; tyres (Spiked, Slick at the rear), panel paint, plates, the electric drive |
+| Model Bandit/command/3/553571/mk1 (Box Truck), every context | 10 of 10 | | | the same body and chassis (modules, axles, outline to 0.1 m) in all ten |
+
+Generation in a context costs what it does neutral plus the drive check (15 to 50 ms a plan); a context's own work is a few dictionary lookups a part pick. In slices
+(`VehicleGenJob` with a context, 2.5 ms a slice) a desert-and-ore Box Truck wrote the same hash as made directly.
 
 ## Quality tools
 
@@ -809,6 +893,21 @@ Idle, the same tick is 0.1 ms. The slices take longer in all (a slice now ends s
 "generated" line names it, one line a spawn (`[vehicles] generated Bandit Box Truck 733786 (hash ..., kit 2: body room+bed, cab caged, ...) in 1305 ms over 489 ticks, longest slice 5.4 ms, longest span 3.3 ms (...)`, `VehicleGenJob.Kit` and `Modules`), and the vehicle's blueprint
 text carries it in its kit line. A grammar seed that fails as it is built plans again inside the generation (up to four plans), before the rerolls below.
 
-**Seeds that fail.** A seed whose generator throws (some seeds have nowhere to stand a part; the sweep skips them) or whose text doesn't load rerolls up to 3 times, each new seed derived from the last (`VehicleSpawnKit.Reroll`: the same seed always rerolls the same way), then a committed seed of that style and shape stands in (`VehicleSpawnKit.Committed`). A style that ships nothing (Militia) has nothing to fall back to: the player is told. Failures are logged, the first 10 and then every 100th. The in-game check is that it builds: `VehicleChecks` (driving, turning, firing for simulated seconds) doesn't run at spawn, so a seed that builds but drives badly is spawned anyway. `--sweep-vehicle` gives a shape's pass rate; run it before calling a shape fit for dynamic spawn.
+**Seeds that fail.** A seed whose generator throws (some seeds have nowhere to stand a part; the sweep skips them) or whose text doesn't load rerolls up to 3 times, each new seed derived from the last (`VehicleSpawnKit.Reroll`: the same seed always rerolls the same way), then a committed seed of that style and shape stands in (`VehicleSpawnKit.Committed`). A style that ships nothing (Militia) has nothing to fall back to: the player is told. Failures are logged, the first 10 and then every 100th. The full check (`VehicleChecks`: driving, turning, firing for simulated seconds) doesn't run at spawn; the drive check below does, so a seed that builds but stands crooked or doesn't move is made again. `--sweep-vehicle` gives a shape's pass rate; run it before calling a shape fit for dynamic spawn.
+
+**The drive check** (`VehicleDriveCheck.cs`, `Vehicle.DriveGate`). Every vehicle no file holds (a grammar plan, a kit-4 plan, a kit-1 seed that ships nowhere, anything in a spawn context
+that matters) is built from its own blueprint text in a world of its own, settled for 60 ticks on a flat floor, measured (at most 8 degrees off level, as the full check), then
+given 75 ticks of full throttle through its seat: its centre of mass must go 1 m forward (a working Box Truck goes 2 to 6 m) and it mustn't tip past 25 degrees. A refusal throws
+as a refused part does, so the grammar takes its next plan (as the identity gate does: a plan that fails it never counts as built), kit 4 its next plan or derived seed, and a kit-1
+seed rerolls in the spawner. A committed seed is never checked (CI checks it), so `--gen-vehicles` is untouched. It yields as the kit does: the build goes a step at a time
+(`ConstructBuild.GroundJob` on a world of its own, 0.4 ms at a time, then `Join`), the physics a tick at a time. The physics runs inside a world context of its own (flat, plain
+straight-down gravity at the spawn context's strength, no gravity parts, no planetoid), entered round each span and left before each yield, so the game's statics (gravity, its
+gravity parts' tables, the ride bodies) are never touched and a seed checks the same in game as on the command line (a sliced job's hash matched a direct run's). The kit line
+doesn't change: what it measured is `Vehicle.DriveCheck`, and a refusal is logged (`[vehicles] Bandit Box Truck 2 [recovery, tier 1]: the drive check refused it (a 1.25 s
+throttle pulse moved it 0.43 m (at least 1; rpm 3040)); planning again`). Measured 2026-11-07: `--kit-report --roles --seeds 2` over every style, role and tier (384 vehicles, 557
+plans checked): 9 plans refused (1.6 %), each a real failure the full check confirms, run with `--no-drive-gate`: an IT Scrap Tanker 2 for a tanker whose wheels spun on the spot
+at every tier (0 m in 6 s, "forward takes it backwards"), a Militia War Bus 1 for a boss at every tier (0.7 m a pulse; 14.4 m in the check's 6 s), a Bandit Box Truck 2 for recovery
+at tier 1 (0.4 m; 6.8 m in 6 s). Each was planned again into a plan that passes it (the full check on those not run). The old leader of Bandit convoy 3 fails it (10.4 degrees). 8 ms mean a plan over the matrix
+(Technicals are quick), 15 to 50 ms for a Box Truck warm, 126 ms worst (cold); in slices, no span of its own showed among a generation's longest.
 
 A towed vehicle (the Tanker Rig's trailer) comes with it: a committed trailer when its blueprint ships, else made by its own generator in the same job.
