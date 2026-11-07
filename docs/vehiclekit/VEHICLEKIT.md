@@ -583,8 +583,11 @@ ground's colours (the bus stays red unless a listed colour is near the ground's)
 
 **Not done, for want of parts:** dust filters (the only "Filter" is a logic part), cold-weather kit, floats (no buoyant part, and maps have no water), and tracks: no style
 lists a track, so "tracked where the style has tracks" never fires. Gearing isn't touched: every style lists one gearbox and no ratio is configurable on it, so a road vehicle is
-faster by its tyres and its single axle. Off world, a vehicle whose hood stands on the engine can fail to build round the smaller motor (the hood sits 10 cm lower): it plans
-again, and a request that makes nothing electric is refused with "no air here: no ... could be made to run without it" rather than given a committed seed that burns fuel.
+faster by its tyres and its single axle. Off world the Electric Motor is 10 cm lower than an engine and half a V8's length, so a hood stands on a Drone
+Battery on the motor's top (`Vehicle.HoodOn`: within 2 cm of where it always stands), and plated hoods (decked at the engine's height) and cab-overs weigh more in the grammar
+(`VehicleContext.Module`) and a kit-1 hood slot; a moulded hood that still meets the gearbox fails as it is built and the seed plans again, and a request that makes nothing
+electric is refused with "no air here: no ... could be made to run without it" rather than given a committed seed that burns fuel. The full check takes an Electric Motor's
+battery for its fuel.
 
 **A family's model in another context** keeps its family: the same body and chassis (modules, axle stations and outline to the decimetre), so a convoy reads as one fleet
 wherever it is met. Only the context's kit changes: tyres within 5 cm of the model's own size and no bigger (Large Wheel to Slick on a road, Off-Road to Spiked in snow), paint
@@ -602,7 +605,19 @@ and the spawn's "generated" line ends `; context ... (read: sand under 4 of 5 sa
 context)`, `VehicleFamilies.Make(model, context)`, `new VehicleGenJob(g, seed, layers, role, context)`. The parts menu's three requests read the ground they set the vehicle on.
 Rerolls and fallbacks keep the context; off world, a request with the host's committed seeds only is refused at once, and a fallback to a committed file is refused.
 
-**Measured** (2026-11-07, `--context ... --sweep`; the 2-core box shared with other agents): @@CONTEXT@@
+**Measured** (2026-11-07, `--context ... --sweep --check`; the 2-core box shared with other agents, so costs are rough):
+
+| Run | Made | Full check | Identity | What changed |
+| --- | --- | --- | --- | --- |
+| Bandit Box Truck 2 and 3, every context | 20 of 20 | 20 of 20 | 0.93 to 0.97 a context | the chassis table in 14 of the 20, tyres in 9 (Large, Spiked, Slick), springs in 5, paint in 5, plates in 5, a low profile in 2 |
+| IT raider tier 2, seeds 1 and 2 (Technicals, kit 1), every context but no air | 18 of 18 | 13 of 18 | 0.94 to 1.00 a context | the recipe pick in 12 of the 18, tyres in 9, springs in 8, paint in 4, plates in 4; the five failures are seed 1's top fill (85 %, at most 84 %), which "wood" fails with nothing changed: not the context's |
+| Bandit Box Truck 2 to 9, no air | 8 of 8 | 4 of 4 tried | 0.92 to 0.95 | Electric Motor, Battery Pack, a Drone Battery riser under the hood |
+| IT raider tier 2, seeds 1 to 4, no air | 3 of 4 | | 0.95 | one Technical's Snub Hood still met the gearbox: refused |
+| Model Highland/carrier/2/5/mk2 (a War Bus), every context | 10 of 10 | 10 of 10 | | body and chassis its family's in all ten; tyres (Spiked, Slick at the rear), panel paint, plates, the electric drive |
+| Model Bandit/command/3/553571/mk1 (Box Truck), every context | 10 of 10 | | | the same body and chassis (modules, axles, outline to 0.1 m) in all ten |
+
+Generation in a context costs what it does neutral plus the drive check (15 to 50 ms a plan); a context's own work is a few dictionary lookups a part pick. In slices
+(`VehicleGenJob` with a context, 2.5 ms a slice) a desert-and-ore Box Truck wrote the same hash as made directly.
 
 ## Quality tools
 
