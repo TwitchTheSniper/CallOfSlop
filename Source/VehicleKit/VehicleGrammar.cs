@@ -700,9 +700,11 @@ public static class ShapeGrammar
         v.Trim(walls.ToArray());
 
         // The check holds a heavy vehicle to a stability of 0.6 (half its track over its centre of mass's height): a plan that stacks too much up high is planned again.
+        VehicleGenJob.Yield(); // (each measure rebuilds the construct whole: a slice of its own)
         var stable = v.Stability();
         if (stable < MinStability)
             throw new VehicleKitException($"stability {stable:0.00}: too much up high for its track");
+        VehicleGenJob.Yield();
         var (side, top) = v.Fill(); // (and the Silhouette rule's limits, with a margin: a plan that came out a box is planned again)
         var limits = new VehicleCheckOptions();
         if (side > limits.MaxSideFill - 0.005f || top > limits.MaxTopFill - 0.005f)
