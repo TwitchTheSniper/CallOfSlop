@@ -6,8 +6,8 @@ namespace CallOfSlop;
 /// Massive blasts (docs/sandbox/CONSTRUCTS.md, "Massive blasts"; numbers in docs/perf/LIMITS.md): a charge whose radius is
 /// <see cref="ConstructWorld.MegaRadius"/> or more (the Fission, Fusion and Antimatter Warheads, or a vast pile of plain filling) does not go off
 /// in one tick. It is a shock front that grows from the centre at <see cref="FrontSpeed"/>: each tick the players it passes take their share
-/// (the game, <see cref="IConstructTargets.MegaFront"/>), and the bodies it has reached, nearest first, are walked a fixed number of parts a tick
-/// (<see cref="ConstructWorld.MegaPartsPerTick"/>, shared by every massive blast at once). Its crater is dug in bands over ticks (Game.MegaDigTick).
+/// (the game, <see cref="IConstructTargets.MegaFront"/>), and the bodies it has reached, nearest first, are walked about a fixed number of parts a
+/// tick (<see cref="ConstructWorld.MegaPartsPerTick"/>, shared by every massive blast at once; a body at a time, its broken parts out together). Its crater is dug in bands over ticks (Game.MegaDigTick).
 /// Every number is arcade: chosen to look and play big, not modelled on anything. Nothing here allocates once a world's arrays are made.
 /// </summary>
 public static class MegaBlasts
@@ -43,7 +43,8 @@ public struct CMegaBlast
     public ushort Gun; // the body it came from (credit), and its rack
     public int GunPart;
     public int Ticks;
-    public int Body, Part, BodyCount; // the walk (as CShellBlast's)
+    public int Body, BodyCount; // the walk: the next body
+    public int Debris; // loose debris it may still make (ConstructWorld.MegaDebrisMax)
     public ushort[] Bodies; // nearest first
     public float[] Reach; // ...how far the front must go to touch each (its centre's distance less its radius)
 }
@@ -56,10 +57,15 @@ public sealed partial class ConstructWorld
     public const float MegaFrontSpeed = 340f; // m/s the front grows at least (arcade: about sound's speed)...
     public const float MegaFrontSeconds = 4f; // ...and faster still for the biggest, so none takes longer than this to reach its edge
     public const float MegaCraterMax = 120f; // m: the biggest crater a blast digs (memory: about 230,000 columns of dug ground)
-    public const float MegaShoveMax = 45f; // m/s the most a massive blast throws a body
+    public const float MegaShoveMax = 30f; // m/s the most a massive blast throws a body
     public const int MaxMegas = 4; // under way at once; a fifth waits as a plain blast (bounded work, never lost)
     public const int MegaMaxBodies = 2048; // bodies one massive blast reaches, the nearest
     public const int MegaPartsPerTick = 800; // parts walked a tick over every massive blast at once
+    public const float MegaVaporiseShare = 0.5f; // a body wholly inside this share of its radius is gone at once
+    public const int MegaDebrisMax = 96; // pieces one massive blast cuts off that fall as wrecks; past that they are gone too
+
+    /// <summary>While a massive blast walks: the wrecks it may still cut off (-1: no blast walking, no limit; ConstructWorld.SplitOff).</summary>
+    public int MegaDebrisLeft = -1;
 
     /// <summary>The host's cap on any blast's radius (Settings.SandboxMaxBlast, the lobby's "Biggest blast"; 0: only the engine's).</summary>
     public float BlastCap;
@@ -75,7 +81,7 @@ public sealed partial class ConstructWorld
     private readonly List<Construct> _megaNear = new(256);
 
     /// <summary>Massive blasts under way, and the parts they have walked (the perf window, the bench).</summary>
-    public int MegaCount, MegaPartsWalked, MegasStarted;
+    public int MegaCount, MegaPartsWalked, MegasStarted, MegaBodiesGone;
 
     /// <summary>Is any part of a massive blast still to come (its front, its walk)?</summary>
     public bool MegaBusy => MegaCount > 0;
@@ -136,8 +142,8 @@ public sealed partial class ConstructWorld
         m.GunPart = gunPart;
         m.Ticks = 0;
         m.Body = 0;
-        m.Part = -1;
         m.BodyCount = n;
+        m.Debris = MegaDebrisMax;
         MegaCount++;
         MegasStarted++;
         if (crater > 0)
@@ -150,6 +156,7 @@ public sealed partial class ConstructWorld
     {
         if (MegaCount == 0)
             return;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var budget = MegaPartsPerTick;
         for (var k = 0; k < _megas.Length; k++)
         {
@@ -167,54 +174,92 @@ public sealed partial class ConstructWorld
                 MegaCount--;
             }
         }
+        MegaStepWorstMs = MathF.Max(MegaStepWorstMs, (float)System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
     }
 
-    /// <summary>The bodies the front has reached, nearest first, <paramref name="budget"/> parts on (as <see cref="WalkBlast"/>, from each body's last part).</summary>
+    /// <summary>The longest tick of <see cref="StepMegas"/> so far (the bench and the perf window; reset by hand).</summary>
+    public float MegaStepWorstMs;
+
+    /// <summary>
+    /// The bodies the front has reached, nearest first, about <paramref name="budget"/> parts a tick. A body is done in one go, whatever its size
+    /// (a part a tick at most over the budget): every part in reach takes its damage, and the parts it breaks come out together through
+    /// <see cref="RemoveParts"/> (one structure rebuild, not one a part: a break one by one costs a flood fill and a split each, 0.1 ms a part on a
+    /// 60-part hull). Parts that stop working rather than fall off (engines, tanks, seats) take their damage the usual way, and an ammo box,
+    /// a tank or a bomb the blast breaks still cooks off or goes off. A body wholly inside <see cref="MegaVaporiseShare"/> of the radius is gone at once.
+    /// </summary>
     private void WalkMega(ref CMegaBlast m, ref int budget)
     {
         DamageBy = m.By;
+        MegaDebrisLeft = m.Debris;
         while (budget > 0 && m.Body < m.BodyCount)
         {
-            if (m.Part == -1 && m.Reach[m.Body] > m.Front)
+            if (m.Reach[m.Body] > m.Front)
                 break; // (the front hasn't got there yet: the rest are further)
-            if (Get(m.Bodies[m.Body]) is not { } c)
+            var c = Get(m.Bodies[m.Body++]);
+            if (c == null)
+                continue;
+            budget -= 1 + c.PartCount;
+            MegaPartsWalked += c.PartCount;
+            if (m.Reach[m.Body - 1] + 2f * c.Radius < m.Radius * MegaVaporiseShare && !c.Anchored)
             {
-                m.Body++;
-                m.Part = -1;
+                MegaBodiesGone++; // (wholly inside the middle: gone at once, with what it held; an anchored base is walked, its foundations may hold)
+                Remove(c);
                 continue;
             }
-            if (m.Part < 0 || m.Part >= c.PartCount)
-                m.Part = c.PartCount; // (from the end)
-            while (budget > 0 && --m.Part >= 0)
-            {
-                budget--;
-                MegaPartsWalked++;
-                var dist = PartDistance(c, m.Part, m.At);
-                if (dist >= m.Radius)
-                    continue;
-                var f = 1f - dist / m.Radius;
-                var dmg = m.Damage * f * f;
-                if (m.Look != MegaBlasts.Plain && f > 0.6f && CanBurn(c, m.Part))
-                    Ignite(c, m.Part); // (the heat near the middle lights what burns)
-                BlastStored(c, m.Part, dmg);
-                DamagePart(c, m.Part, dmg, out _);
-                if (!IsLive(c))
-                    break;
-            }
-            if (!IsLive(c))
-            {
-                m.Body++;
-                m.Part = -1;
-                continue;
-            }
-            if (m.Part > 0)
-                break; // (the budget ran out in this body: on next tick)
-            MegaFinish(c, in m);
-            m.Body++;
-            m.Part = -1;
+            MegaBody(c, in m);
+            if (IsLive(c))
+                MegaFinish(c, in m);
         }
+        m.Debris = Math.Max(0, MegaDebrisLeft);
+        MegaDebrisLeft = -1;
         DamageBy = 255;
     }
+
+    /// <summary>One body's parts under a massive blast (see <see cref="WalkMega"/>).</summary>
+    private void MegaBody(Construct c, in CMegaBlast m)
+    {
+        if (c.Dirty)
+            c.Rebuild();
+        var n = c.PartCount;
+        if (_megaDoomed.Length < n)
+            _megaDoomed = new bool[Math.Max(n, 1024)]; // (once per size)
+        var doomed = 0;
+        for (var i = 0; i < n; i++)
+        {
+            _megaDoomed[i] = false;
+            var dist = PartDistance(c, i, m.At);
+            if (dist >= m.Radius)
+                continue;
+            ref var p = ref c.Parts[i];
+            if (p.Broken)
+                continue;
+            var d = p.D;
+            var f = 1f - dist / m.Radius;
+            var dmg = m.Damage * f * f;
+            if (m.Look != MegaBlasts.Plain && f > 0.6f && CanBurn(c, i))
+                Ignite(c, i); // (the heat near the middle lights what burns)
+            BlastStored(c, i, dmg);
+            if (dmg - d.Armour < p.Health || d.OnBreak == PartBreak.Disable)
+            {
+                DamagePart(c, i, dmg, out _); // (it holds, or it stops working where it is: no change to the structure)
+                continue;
+            }
+            // It breaks and comes off: marked, with what its breaking sets off.
+            p.Health = 0;
+            if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume || d.AmmoStore)
+                CookOff(c, i, ConstructRender.PartCentre(c, i));
+            if (d.Explosive is { } bomb)
+                Arm(c, i, bomb);
+            _megaDoomed[i] = true;
+            doomed++;
+        }
+        if (doomed == 0 || !IsLive(c) || c.PartCount != n)
+            return;
+        Disable(c);
+        RemoveParts(c, new ReadOnlySpan<bool>(_megaDoomed, 0, n));
+    }
+
+    private bool[] _megaDoomed = [];
 
     /// <summary>A body the front has walked: its routed links and tracks, and the shove (held to <see cref="MegaShoveMax"/>).</summary>
     private void MegaFinish(Construct c, in CMegaBlast m)

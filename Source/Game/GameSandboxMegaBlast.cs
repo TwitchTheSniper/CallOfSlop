@@ -10,8 +10,8 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>Columns of ground a band of a big crater digs at most (a 120 m crater: about 30 bands, half a second).</summary>
-    public const int MegaDigColumnsPerTick = 6000;
+    /// <summary>Columns of ground a band of a big crater digs at most (a 120 m crater: about 52 bands, under a second).</summary>
+    public const int MegaDigColumnsPerTick = 3500;
 
     /// <summary>Big craters waiting for their bands at once (more are dug as one op: rare, and still bounded by the crater cap).</summary>
     public const int MaxMegaDigs = 8;
@@ -21,13 +21,20 @@ public sealed partial class Game
         public Vector3 At;
         public float Radius;
         public byte Next, Slices;
+        public int Wait; // ticks before its first band: it is dug behind the shock front, once what stood there is gone
     }
 
     private readonly MegaDig[] _megaDigs = new MegaDig[MaxMegaDigs];
     private int _megaDigCount;
 
+    /// <summary>Big craters still being dug.</summary>
+    public int MegaDigsWaiting => _megaDigCount;
+
     /// <summary>Bands dug and their columns (the bench, the perf window).</summary>
     public int MegaDigBands, MegaDigColumns;
+
+    /// <summary>The longest band dug so far (ms: the bench; reset by hand).</summary>
+    public float MegaDigWorstMs;
 
     /// <summary>The host's cap on any blast's radius in metres (the lobby's "Biggest blast"; 0: only the engine's, <see cref="ConstructWorld.MegaMaxRadius"/>).</summary>
     public void SetBlastCap(int metres) => Constructs.BlastCap = Math.Max(0, metres);
@@ -45,7 +52,8 @@ public sealed partial class Game
             Dig(new DigOp(DigKind.Crater, at, MathF.Min(r, BigCraterMax))); // (a ninth waiting crater: a prop bomb's at most, at once)
             return;
         }
-        _megaDigs[_megaDigCount++] = new MegaDig { At = at, Radius = r, Slices = (byte)slices };
+        var wait = (int)MathF.Ceiling(r * 1.2f / MegaBlasts.FrontSpeed(MathF.Max(r, ConstructWorld.MegaRadius)) * World.TickRate);
+        _megaDigs[_megaDigCount++] = new MegaDig { At = at, Radius = r, Slices = (byte)slices, Wait = wait };
     }
 
     /// <summary>Server, each tick after the constructs' step: the first waiting crater digs its next band.</summary>
@@ -54,8 +62,16 @@ public sealed partial class Game
         if (_megaDigCount == 0)
             return;
         ref var d = ref _megaDigs[0];
+        if (d.Wait > 0)
+        {
+            for (var k = 0; k < _megaDigCount; k++)
+                _megaDigs[k].Wait--;
+            return;
+        }
         var op = d.Slices <= 1 ? new DigOp(DigKind.Crater, d.At, d.Radius) : new DigOp(DigKind.Crater, d.At, d.Radius, d.Next, d.Slices);
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         MegaDigColumns += Dig(op);
+        MegaDigWorstMs = MathF.Max(MegaDigWorstMs, (float)System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
         MegaDigBands++;
         if (++d.Next < Math.Max((byte)1, d.Slices))
             return;

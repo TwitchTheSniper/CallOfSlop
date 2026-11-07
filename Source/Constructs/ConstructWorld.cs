@@ -614,7 +614,9 @@ public sealed partial class ConstructWorld
             baseSeg = BaseSeg(c, comp, k, c.Parts[i].Seg);
         }
         c.WorldFrame(baseSeg, out var q, out var t);
-        var wreck = Create(t, q);
+        var wreck = MegaDebrisLeft == 0 ? null : Create(t, q); // (a massive blast past its debris: the piece is gone, ConstructMegaBlast.cs)
+        if (wreck != null && MegaDebrisLeft > 0)
+            MegaDebrisLeft--;
         if (wreck == null)
         {
             for (var i = 0; i < c.PartCount; i++)
