@@ -168,7 +168,7 @@ layers. Kit 3 gives a kit-2 seed another vehicle; no kit-2 seed was ever committ
 (`--kit 2` still makes kit 2's, byte for byte). A kit-2 or kit-3 file says so in a comment after its first brace (`// kit 2; body room+bed, cab caged,
 nose ram, rear porch, ...`; blueprints allow comments), `Vehicle.Kit` and `Vehicle.Modules` hold the same, and the spawn logs it (`[vehicles] Bandit Box Truck 733786:
 kit 2 (body room, cab enclosed, ...)`). A seed committed from now on is made by the kit current when it was committed: grade and commit from a sweep of that kit. No kit-2
-seed was committed, so `Frozen` still holds kit 1's only; when a kit 4 comes, the kit-3 seeds committed by then go into a list of their own, with `For` returning their kit.
+seed was committed, so `Frozen` still holds kit 1's only; when a kit that changes a kit-3 seed comes, the kit-3 seeds committed by then go into a list of their own, with `For` returning their kit. Kit 4 ("Roles and tiers") changes none: only a vehicle asked for by role is made by it.
 
 **Modules** (`ShapeGrammar.Catalogue`). Each has a family, a name, the style parts it is made of (a module whose parts the style doesn't list is never made), and its
 connection rules as tags: what it needs, what it provides, what it can't stand beside, and the gear recipes it allows.
