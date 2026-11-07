@@ -91,6 +91,8 @@ public static class VehicleRegistry
             return ShapeGrammar.Make(g, seed, recipe);
         var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
         g.Build(v);
+        if (ShapeGrammar.RecipeOf(g) == null && (kit ?? VehicleKitVersion.Force ?? (g.Seeds.Contains(seed) ? VehicleKitVersion.Legacy : VehicleKitVersion.Current)) >= VehicleKitVersion.Grammar)
+            v.GuaranteeMarks(); // (a shape the grammar doesn't make is kit 1, but its seeds that ship nowhere get kit 2's marks: VehicleMarks.cs)
         return v;
     }
 
