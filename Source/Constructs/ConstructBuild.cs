@@ -1063,6 +1063,9 @@ public static class ConstructBuild
         /// <summary>Why its steps refused (once <see cref="Step"/> is true), or "".</summary>
         public string Why = "";
 
+        /// <summary>Each step's part on the body it built (once its steps are done; null before), as <see cref="Build"/>'s <c>partOf</c>.</summary>
+        public int[]? PartOf => _run.PartOf;
+
         /// <summary>What it cost: the slices' time, the longest, how many (the tow's included).</summary>
         public double CpuMs, WorstSliceMs;
         public int Slices;

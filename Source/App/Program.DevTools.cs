@@ -156,6 +156,7 @@ public static unsafe partial class Program
     /// <summary>Draws the inspector and the editor over everything (closed: two bool checks).</summary>
     private static void DrawDevTools(double now)
     {
+        DrawBriefOverlay(); // (a faction vehicle's behaviour brief under the crosshair: Program.VehicleBrief.cs; dev builds, the host, F6 open)
         if (Ui.LookAtOpen && _session != null)
             Ui.DrawLookAt(World.Map, _devHit, _devRef, _devDetails, _devViewProj, _settings.Bind(GameAction.CopyLookAt), _settings.Bind(GameAction.PropEditor), _settings.Bind(GameAction.LookAtInspector));
         if (Ui.PropEditorOpen)

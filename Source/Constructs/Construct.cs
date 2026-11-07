@@ -348,6 +348,7 @@ public sealed partial class Construct
     public CTurretMod[] TurretMods = [];
     public int TurretModCount;
     public string DriveProblem = ""; // why it can't drive (the HUD)
+    public VehicleKit.VehicleBrief? Brief; // server: a generated faction vehicle's behaviour data for an AI (docs/vehiclekit/VEHICLEKIT.md, "Behaviour data"); saved, never sent
 
     // Logic (milestone 2; ConstructLogic.cs)
     public bool HasLogic; // any logic part or wire: the logic step runs

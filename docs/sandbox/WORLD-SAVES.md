@@ -41,7 +41,9 @@ indices into the part's file.
 - **Constructs:** parts (type, position, turn, segment, health, broken, setting, state, signals, tag, rounds, reload, fire,
   store, spawner counts, paint, settings by key), socket links, joints and their angles, freeform attachments, routed links with
   node health, poses and speeds, fuel, charge, gear, hover hold, wreck, damaged, pinned, frozen and by whom, owner, what a cargo
-  volume carries, wrecks and loose bodies. Couplings, wires between constructs, world links and hoses.
+  volume carries, wrecks and loose bodies, and a generated faction vehicle's behaviour brief (after its tracks, at the end of its
+  body, so an older save has none and an older build stops before it: docs/vehiclekit/VEHICLEKIT.md, "Behaviour data"). Couplings,
+  wires between constructs, world links and hoses.
 - **Stores:** bins, Storage Volumes, machines' inputs and mixes, Assembler, Recycler, drill and refining jobs in progress.
 - **The world:** the ground's op log (replayed on load), felled trees, regrowth due times, part-cut trees, deposit amounts, the
   gather clock; the space clock, warp and the ships that are constructs, in the bubble's system and in any other they jumped to

@@ -15,9 +15,12 @@ public sealed partial class Vehicle
     {
         var list = IsHeavy ? Style.HeavyGear : Style.LightGear;
         var fits = only.Length == 0 ? list : list.Where(g => only.Contains(g.Name)).ToArray();
-        var gear = Dice.Fork("gear").Pick(fits.Length > 0 ? fits : throw new VehicleKitException($"style {Style.Name} has no gear named {string.Join(", ", only)}"));
+        var d = Dice.Fork("gear");
+        if (fits.Length == 0)
+            throw new VehicleKitException($"style {Style.Name} has no gear named {string.Join(", ", only)}");
+        var gear = VehicleContext.Pick(d, Style, fits) ?? d.Pick(fits); // (a spawn context leans the one roll: VehicleContext.cs)
         FactionStyle.Noted("gear", gear.Name);
-        return gear;
+        return VehicleContext.Gear(gear, Style, IsHeavy);
     }
 
     /// <summary>Which of a spring's sockets bolts to a frame: a strut hangs from its upper side, everything else by its mount.</summary>

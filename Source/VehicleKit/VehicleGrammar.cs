@@ -185,6 +185,7 @@ public static class ShapeGrammar
                 var plan = Plan(v, recipe, attempt);
                 VehicleGenJob.Yield();
                 Build(v, plan);
+                v.DriveGate(); // (built from its text, settled, level and moving on a throttle pulse, else the next plan: VehicleDriveCheck.cs)
                 if (VehicleIdentity.Gate(v, attempt, Attempts, ref kept) is { } done)
                     return done;
             }
@@ -227,6 +228,7 @@ public static class ShapeGrammar
                     Build(v, plan);
                     if (role.Family && v.Stability() is var stable && stable < (g.Checks ?? new VehicleCheckOptions()).MinStability + 0.02f)
                         throw new VehicleKitException($"stability {stable:0.00}: under the check's"); // (a family's mark isn't planned again for its role, so it is held to the check's stability as it builds: VehicleFamilies.cs)
+                    v.DriveGate();
                 }
                 catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
                 {
@@ -384,11 +386,12 @@ public static class ShapeGrammar
             VehicleLayer.Kit => v.LayerDice(l).Fork("grammar kit" + again).Fork(topic),
             _ => d.Fork(topic),
         };
-        var p = new PlanData { Recipe = r, Attempt = attempt, Body = layered ? LayerTables.BodyOf(st) : null };
+        var p = new PlanData { Recipe = r, Attempt = attempt, Body = layered ? VehicleContext.Body(LayerTables.BodyOf(st)) : null };
         var tags = p.Tags;
         var role = v.Role; // (kit 4: the role leans each choice; null: kit 3's choices exactly)
         VehicleModule? Ch(Dice dd, string family, Func<VehicleModule, bool>? also = null, Func<VehicleModule, double>? weight = null) =>
-            role == null ? Choose(dd, st, family, tags, also, weight) : Choose(dd, st, family, tags, also, m => (weight?.Invoke(m) ?? 1) * role.Module(family, m.Name));
+            role == null && !VehicleContext.LeansModules ? Choose(dd, st, family, tags, also, weight)
+                : Choose(dd, st, family, tags, also, m => (weight?.Invoke(m) ?? 1) * (role?.Module(family, m.Name) ?? 1) * VehicleContext.Module(family, m.Name)); // (a role's and a spawn context's leans: the same one roll)
 
         // The body: a pattern, weighted by the style's liking for each kind of segment, then lengths.
         var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)) * (role?.Body(b) ?? 1))).ToList());
@@ -397,7 +400,7 @@ public static class ShapeGrammar
         foreach (var s in pattern.Segments)
         {
             var step = s.Kind is "room" or "tank" ? 1f : 0.5f;
-            var len = p.Body is { } body ? Steps(ld, s.Min, s.Max, step, role?.LengthBias(body.LengthBias) ?? body.LengthBias) : Steps(ld, s.Min, s.Max, step);
+            var len = p.Body is { } body ? Steps(ld, s.Min, s.Max, step, VehicleContext.LengthBias(role?.LengthBias(body.LengthBias) ?? body.LengthBias)) : Steps(ld, s.Min, s.Max, step);
             var seg = new Seg { Kind = s.Kind, Z0 = z, Z1 = z + len };
             p.Segs.Add(seg);
             tags.Add(s.Kind is "gun bed" ? "bed" : s.Kind);
@@ -825,7 +828,8 @@ public static class ShapeGrammar
                         if (MathF.Abs(front + k - v.RearAxleZ) > 0.3f && Clear(p, front + k))
                             v.Sill(v.RailZ(front + k), layers: 2);
                     var tank = v.Stand(barrel > 2.5f ? "Tanker Barrel 3 m" : "Tanker Barrel 2 m", new Vector3(-0.25f, Vehicle.SillTop(2), v.RailZ(front)), Orient.Forward, null, "footL0", 0.03f);
-                    v.Link("pipe", tank, v.Engine!, laid: true);
+                    if (!v.Electric)
+                        v.Link("pipe", tank, v.Engine!, laid: true);
                     v.Tanks.Add(tank);
                     break;
                 }

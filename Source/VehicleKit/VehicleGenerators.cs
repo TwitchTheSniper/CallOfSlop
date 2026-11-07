@@ -90,7 +90,20 @@ public static class VehicleRegistry
     /// kit 3 even when its own file is kit 1's (that file is the seed without them); a shape with no recipe has no layers and throws. The command line's <c>--vary LAYER</c>
     /// turns <paramref name="seed"/> into that layer's seed on its base seed, so every tool that loops over seeds loops over one layer.
     /// </remarks>
-    public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null, VehicleLayers? layers = null, RoleAsk? role = null)
+    public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null, VehicleLayers? layers = null, RoleAsk? role = null, SpawnContext? context = null)
+    {
+        if (context == null || ReferenceEquals(context, SpawnContext.Current))
+            return MakeHere(g, seed, kit, layers, role);
+        using (SpawnContext.Use(context, kitOnly: role?.Model != null)) // (a family's model keeps its body and chassis: only the context's kit changes)
+        {
+            var v = MakeHere(g, seed, kit, layers, role);
+            if (v.Context is { Matters: true } c)
+                v.Name += c.Suffix; // (never a committed seed's name, nor the neutral vehicle's)
+            return v;
+        }
+    }
+
+    private static Vehicle MakeHere(IVehicleGenerator g, int seed, int? kit, VehicleLayers? layers, RoleAsk? role)
     {
         var lay = layers ?? VehicleLayers.Force ?? default;
         if (VehicleLayers.Vary is { } vary && layers == null)
@@ -112,8 +125,11 @@ public static class VehicleRegistry
             return VehicleRoleMake.Kit1(g, seed, role); // (a shape the grammar doesn't make: its generator, with the role's part weights, measured and tried again)
         var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
         g.Build(v);
-        if (ShapeGrammar.RecipeOf(g) == null && (kit ?? VehicleKitVersion.Force ?? (g.Seeds.Contains(seed) ? VehicleKitVersion.Legacy : VehicleKitVersion.Current)) >= VehicleKitVersion.Grammar)
+        var shipsNowhere = ShapeGrammar.RecipeOf(g) == null && (kit ?? VehicleKitVersion.Force ?? (g.Seeds.Contains(seed) ? VehicleKitVersion.Legacy : VehicleKitVersion.Current)) >= VehicleKitVersion.Grammar;
+        if (shipsNowhere)
             v.GuaranteeMarks(); // (a shape the grammar doesn't make is kit 1, but its seeds that ship nowhere get kit 2's marks: VehicleMarks.cs)
+        if (shipsNowhere || v.Context is { Matters: true })
+            v.DriveGate(); // (and the spawn's drive check, as any vehicle no file holds: a seed that fails it rerolls in the spawner)
         return v;
     }
 

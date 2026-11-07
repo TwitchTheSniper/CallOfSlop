@@ -78,6 +78,9 @@ public class BlueprintScript
     /// <summary>Kit 4: the role, tier and shape and how the vehicle met the role (VehicleRoles.cs), written before <see cref="Modules"/> in the kit line; empty before kit 4.</summary>
     public List<string> KitNotes { get; } = new();
 
+    /// <summary>The spawn context's line for the blueprint's comments (a <see cref="Vehicle"/>'s; "" for none).</summary>
+    protected virtual string ContextLine() => "";
+
     public int Count => _steps.Count;
     public IReadOnlyList<VPart> Parts => _parts;
     private readonly List<VPart> _parts = new();
@@ -440,6 +443,8 @@ public class BlueprintScript
         sb.Append('{');
         if (Kit > VehicleKitVersion.Legacy)
             sb.Append("\n  // kit ").Append(Kit).Append(KitNotes.Count + Modules.Count > 0 ? "; " + string.Join(", ", KitNotes.Concat(Modules)) : "");
+        if (ContextLine() is { Length: > 0 } context)
+            sb.Append("\n  // context ").Append(context); // (the spawn context it was made in: VehicleContext.cs; none in a neutral one)
         sb.Append("\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(Name)).Append(",\n");
         if (Group.Length > 0)
             sb.Append("  \"group\": ").Append(Quote(Group)).Append(",\n");

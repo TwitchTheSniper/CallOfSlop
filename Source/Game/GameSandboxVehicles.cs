@@ -80,6 +80,7 @@ public sealed class VehicleSpawner(Game game)
         public VehicleModel? Model; // a family's model (VehicleFamilies.cs): its role ask is the model's; a reroll is the model on another seed
         public ConvoyRun? Convoy; // a convoy's member: where it stands is worked out when it is ready, behind the one before
         public int Lane, Index; // its lane (0 the middle) and place in the convoy (0 the leader)
+        public SpawnContext? Context; // where it is made for (phase 7: VehicleContext.cs; null or neutral: as before); kept through rerolls
     }
 
     /// <summary>A convoy being set down: its plan, where its leader stands and which way it heads, how far back each lane has reached.</summary>
@@ -94,6 +95,7 @@ public sealed class VehicleSpawner(Game game)
         public int Settled, Built;
         public readonly List<string> Names = new();
         public long Started;
+        public ushort LeaderId; // the leader's construct once it is down (0 before): every member's behaviour brief names it
     }
 
     private readonly Queue<Ask> _queue = new(QueueMax + ConvoyQueueMax + 1);
@@ -101,6 +103,7 @@ public sealed class VehicleSpawner(Game game)
     private VehicleGenJob? _job;
     private ConstructBuild.GroundJob? _place; // the build being set down, for _now
     private string _placeName = "";
+    private VehicleBrief? _placeBrief; // the generated vehicle's behaviour brief, put on its construct when it is down (VehicleBrief.cs)
     private ulong _seedState = (ulong)Environment.TickCount64 * 0x2545F4914F6CDD1DUL;
     private int _failures;
 
@@ -126,8 +129,10 @@ public sealed class VehicleSpawner(Game game)
     /// <paramref name="layers"/>: kit 3's per-layer seeds (docs/vehiclekit/VEHICLEKIT.md, "Layered variety"), so a caller can ask for "the same truck, different wear"
     /// (the seed and a <c>Wear</c> seed) or "the same body, another chassis"; a layer left null takes the seed. Only the shape grammar's shapes have layers.
     /// </summary>
-    public string? Request(string style, string shape, int? seed, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, VehicleLayers? layers = null)
+    public string? Request(string style, string shape, int? seed, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, VehicleLayers? layers = null, SpawnContext? context = null)
     {
+        if (NoAirRefusal(context) is { } air)
+            return air;
         if (VehicleSpawnKit.Find(style, shape) is not { } g)
             return $"no faction vehicle \"{style} {shape}\"";
         if (seed is < 1)
@@ -147,6 +152,7 @@ public sealed class VehicleSpawner(Game game)
             Owner = owner,
             Front = frontOf,
             Done = done,
+            Context = context,
         });
         return null;
     }
@@ -157,10 +163,12 @@ public sealed class VehicleSpawner(Game game)
     /// faction). The server picks the shape from the role and the seed (<see cref="VehicleRoles.ShapeFor"/>), the vehicle is made by kit 4 and measured against the role,
     /// and its role, tier and shape are in its kit line and the "generated" log line. Everything else is as <see cref="Request(string, string, int?, Vector3, float, byte, byte, Finished?, VehicleLayers?)"/>.
     /// </summary>
-    public string? Request(string style, string? role, int tier, int? seed, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, VehicleLayers? layers = null)
+    public string? Request(string style, string? role, int tier, int? seed, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, VehicleLayers? layers = null, SpawnContext? context = null)
     {
         if (!RolesAndConvoys)
             return ShapeOnly;
+        if (NoAirRefusal(context) is { } air)
+            return air;
         if (Styles.All.FirstOrDefault(s => s.Name.Equals(style, StringComparison.OrdinalIgnoreCase)) is not { } st)
             return $"no faction style \"{style}\"";
         if (seed is < 1)
@@ -196,6 +204,7 @@ public sealed class VehicleSpawner(Game game)
             Owner = owner,
             Front = frontOf,
             Done = done,
+            Context = context,
         });
         return null;
     }
@@ -204,10 +213,12 @@ public sealed class VehicleSpawner(Game game)
     /// Asks for a family's model (docs/vehiclekit/VEHICLEKIT.md, "Families and convoys"): the same <paramref name="model"/> always makes the same vehicle, so its key
     /// (<see cref="VehicleModel.Key"/>) is all a world or a log needs to spawn it again. Everything else is as the request by role.
     /// </summary>
-    public string? RequestModel(VehicleModel model, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null)
+    public string? RequestModel(VehicleModel model, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, SpawnContext? context = null)
     {
         if (!RolesAndConvoys)
             return ShapeOnly;
+        if (NoAirRefusal(context) is { } air)
+            return air;
         if (model.Seed < 1)
             return "a seed is 1 or more";
         if (ModelAsk(model, out var ask) is { } no)
@@ -219,6 +230,7 @@ public sealed class VehicleSpawner(Game game)
         ask.Owner = owner;
         ask.Front = frontOf;
         ask.Done = done;
+        ask.Context = context;
         _queue.Enqueue(ask);
         return null;
     }
@@ -247,10 +259,12 @@ public sealed class VehicleSpawner(Game game)
     /// as any request does but have their own cap (<see cref="ConvoyQueueMax"/>, one convoy at a time on the server); <paramref name="done"/> hears each member.
     /// One line is logged when the convoy is down. Returns why it was refused, or null: queued.
     /// </summary>
-    public string? RequestConvoy(string style, int count, int tier, int? seed, Vector3 at, float heading, byte owner = 255, Finished? done = null, IReadOnlyList<string>? mix = null)
+    public string? RequestConvoy(string style, int count, int tier, int? seed, Vector3 at, float heading, byte owner = 255, Finished? done = null, IReadOnlyList<string>? mix = null, SpawnContext? context = null)
     {
         if (!RolesAndConvoys)
             return ShapeOnly;
+        if (NoAirRefusal(context) is { } air)
+            return air;
         if (Styles.All.FirstOrDefault(s => s.Name.Equals(style, StringComparison.OrdinalIgnoreCase)) is not { } st)
             return $"no faction style \"{style}\"";
         if (seed is < 1)
@@ -291,7 +305,7 @@ public sealed class VehicleSpawner(Game game)
         for (var k = 0; k < asks.Count; k++)
         {
             var a = asks[k];
-            (a.Ground, a.Yaw, a.Owner, a.Front, a.Done, a.Convoy, a.Lane, a.Index) = (at, heading, owner, 255, null, run, plan.Members[k].Lane, k);
+            (a.Ground, a.Yaw, a.Owner, a.Front, a.Done, a.Convoy, a.Lane, a.Index, a.Context) = (at, heading, owner, 255, null, run, plan.Members[k].Lane, k, context); // (one context for the convoy: its anchor's)
             _queue.Enqueue(a);
         }
         return null;
@@ -322,6 +336,13 @@ public sealed class VehicleSpawner(Game game)
         _queue.Enqueue(new Ask { Bp = bp, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done });
         return null;
     }
+
+    /// <summary>
+    /// Off world (no air) a vehicle that burns fuel can't run: the kit gives every engine slot the Electric Motor there (VehicleContext.cs). With the host's committed
+    /// seeds only, nothing can be made for it: refused with the reason, as a fallback to a committed file would be.
+    /// </summary>
+    private string? NoAirRefusal(SpawnContext? context) =>
+        context is { NoAir: true } && Seeds == VehicleSeeds.Committed ? "no air here: the committed vehicles burn fuel, and the host makes no others" : null;
 
     private string? Full(byte owner)
     {
@@ -366,7 +387,8 @@ public sealed class VehicleSpawner(Game game)
         if (job.Blueprint is { } bp)
         {
             Generated++;
-            Console.WriteLine($"[vehicles] generated {job.Name} (hash {job.Hash:x16}, kit {job.Kit}{(job.RoleNotes.Length + job.Modules.Length > 0 ? ": " + string.Join(", ", new[] { job.RoleNotes, job.Modules }.Where(x => x.Length > 0)) : "")}) in {job.CpuMs:0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt})");
+            Console.WriteLine($"[vehicles] generated {job.Name} (hash {job.Hash:x16}, kit {job.Kit}{(job.RoleNotes.Length + job.Modules.Length > 0 ? ": " + string.Join(", ", new[] { job.RoleNotes, job.Modules }.Where(x => x.Length > 0)) : "")}{(job.ContextNotes.Length > 0 ? $"; context {job.ContextNotes}{(_now.Context?.Read is { Length: > 0 } read ? $" (read: {read})" : "")}" : "")}) in {job.CpuMs:0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt}){(job.Brief is { } brief ? "; brief: " + brief.Summary : "; no brief")}");
+            _placeBrief = job.Brief;
             Place(_now.Convoy != null ? Slot(_now, job.Front, job.Rear) : _now, bp, job.Tow, job.Name);
             return;
         }
@@ -388,6 +410,7 @@ public sealed class VehicleSpawner(Game game)
     private void Start(Ask a)
     {
         _now = a;
+        _placeBrief = null;
         if (a.Bp is { } bp)
         {
             Place(a, bp, null, bp.Name);
@@ -398,11 +421,18 @@ public sealed class VehicleSpawner(Game game)
             FallBack(a, "");
             return;
         }
-        _job = new VehicleGenJob(a.Gen, a.Seed, a.Layers, a.Role);
+        _job = new VehicleGenJob(a.Gen, a.Seed, a.Layers, a.Role, a.Context);
     }
 
     private void FallBack(Ask a, string why)
     {
+        _placeBrief = null; // (a committed seed stands in: no brief; VehicleBriefMake.Rebuild makes one from the construct when wanted)
+        if (a.Context is { NoAir: true })
+        {
+            Console.WriteLine($"[vehicles] {a.Gen.Name}: no air here and nothing electric could be made{(why.Length > 0 ? $" ({why})" : "")}: refused");
+            Finish(a, null, a.Gen.Name, $"no air here: no {a.Gen.Name} could be made to run without it");
+            return;
+        }
         var bp = VehicleSpawnKit.Committed(a.Gen, a.Seed);
         if (bp == null)
         {
@@ -460,6 +490,7 @@ public sealed class VehicleSpawner(Game game)
         var c = game.SandboxVehicleBuild(a.Front, a.Ground, a.Yaw, bp, tow, null, out var why);
         if (c != null && a.Owner != 255)
             c.Owner = a.Owner;
+        Brief(a, c, name);
         Finish(a, c, name, why);
     }
 
@@ -477,12 +508,36 @@ public sealed class VehicleSpawner(Game game)
         var c = game.SandboxVehicleBuild(_now.Front, _now.Ground, _now.Yaw, job.Bp, null, job, out var why);
         if (c != null && _now.Owner != 255)
             c.Owner = _now.Owner;
+        Brief(_now, c, _placeName);
         LastJoinMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
         LastPlaceCpuMs = job.CpuMs;
         LastPlaceWorstMs = job.WorstSliceMs;
         LastPlaceSlices = job.Slices;
         Console.WriteLine($"[vehicles] set down {_placeName}{(c == null ? $" (refused: {why})" : $" as construct {c.Id}")}: steps {job.CpuMs:0.0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms, joined in {LastJoinMs:0.0} ms");
         Finish(_now, c, _placeName, why);
+    }
+
+    /// <summary>
+    /// The generated vehicle's behaviour brief goes on its construct (VehicleBrief.cs): its part indices take the built body's tags, with its convoy place and model,
+    /// and a convoy's leader is remembered for the members after it. A brief that doesn't fit the body is left off (logged). A few hundred field writes, no allocation.
+    /// </summary>
+    private void Brief(in Ask a, Construct? c, string name)
+    {
+        var brief = _placeBrief;
+        _placeBrief = null;
+        if (c == null)
+            return;
+        if (a.Convoy is { } run && a.Index == 0)
+            run.LeaderId = c.Id;
+        if (brief == null)
+            return;
+        if (a.Convoy is { } r)
+            (brief.Slot, brief.Formation, brief.Convoy, brief.ConvoyIndex, brief.Lane, brief.Leader) =
+                (r.Plan.Members[a.Index].Slot, r.Plan.Formation, r.Plan.Seed, (byte)a.Index, (sbyte)a.Lane, r.LeaderId);
+        if (a.Model is { } m && brief.Model.Length == 0)
+            brief.Model = m.Key;
+        if (brief.Attach(c) is { } why)
+            Console.WriteLine($"[vehicles] {name}: its behaviour brief doesn't fit the body that was built ({why}): left off");
     }
 
     private static void Finish(in Ask a, Construct? c, string name, string why)
@@ -512,6 +567,7 @@ public sealed class VehicleSpawner(Game game)
         _job?.Abandon();
         _job = null;
         _place = null; // (its steps' world goes with it: nothing of it was in this one)
+        _placeBrief = null;
         _queue.Clear();
     }
 }
@@ -552,7 +608,7 @@ public sealed partial class Game
         var fwd = GravityFrames.FlatForward(p.Position, p.Yaw);
         var ground = ConstructWorld.Ground(World.Query, p.Position + fwd * 6f);
         var id = p.Id;
-        if (VehicleSpawn.Request(style, shape, seed > 0 ? seed : null, ground, p.Yaw, id, id, _vehicleSpawned ??= VehicleSpawned) is { } why)
+        if (VehicleSpawn.Request(style, shape, seed > 0 ? seed : null, ground, p.Yaw, id, id, _vehicleSpawned ??= VehicleSpawned, context: SpawnContexts.At(ground)) is { } why)
             return why;
         SandboxHands.Notices.Add((id, VehicleSpawn.Pending > 1 ? $"making a {style} {shape} ({VehicleSpawn.Pending - 1} ahead of it)" : $"making a {style} {shape}"));
         return null;
@@ -604,7 +660,7 @@ public sealed partial class Game
         if (!convoy)
         {
             var ground = ConstructWorld.Ground(World.Query, p.Position + fwd * 6f);
-            if (VehicleSpawn.Request(style, role.Length > 0 ? role : null, tier, seed > 0 ? seed : null, ground, p.Yaw, id, id, _vehicleSpawned ??= VehicleSpawned) is { } why)
+            if (VehicleSpawn.Request(style, role.Length > 0 ? role : null, tier, seed > 0 ? seed : null, ground, p.Yaw, id, id, _vehicleSpawned ??= VehicleSpawned, context: SpawnContexts.At(ground)) is { } why)
                 return why;
             SandboxHands.Notices.Add((id, $"making a {style} {(role.Length > 0 ? role : "vehicle")}, tier {tier}{(VehicleSpawn.Pending > 1 ? $" ({VehicleSpawn.Pending - 1} ahead of it)" : "")}"));
             return null;
@@ -613,7 +669,8 @@ public sealed partial class Game
         var along = GravityFrames.FlatForward(p.Position, heading);
         var n = Math.Clamp(count == 0 ? 5 : count, VehicleConvoys.MinCount, VehicleConvoys.MaxCount);
         var at = p.Position + fwd * 22f + along * (n * 6f); // (about half the column's length ahead along the way it heads: the convoy passes in front)
-        if (VehicleSpawn.RequestConvoy(style, n, tier, seed > 0 ? seed : null, ConstructWorld.Ground(World.Query, at), heading, id, _vehicleSpawned ??= VehicleSpawned) is { } busy)
+        var anchor = ConstructWorld.Ground(World.Query, at);
+        if (VehicleSpawn.RequestConvoy(style, n, tier, seed > 0 ? seed : null, anchor, heading, id, _vehicleSpawned ??= VehicleSpawned, context: SpawnContexts.At(anchor)) is { } busy)
             return busy;
         SandboxHands.Notices.Add((id, $"making a {style} convoy of {n}, tier {tier}"));
         return null;

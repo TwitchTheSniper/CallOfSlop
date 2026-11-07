@@ -27,7 +27,11 @@ public sealed class VehicleGenJob
     public ConstructBuild.Blueprint? Blueprint, Tow;
     public string Error = "";
 
+    /// <summary>When done: the vehicle's behaviour brief (VehicleBrief.cs), its parts by index on the body the blueprint builds; null when it couldn't be made (logged).</summary>
+    public VehicleBrief? Brief;
+
     // (what the generation thread writes; copied to the fields above only after it has handed back)
+    private VehicleBrief? _brief;
     private ConstructBuild.Blueprint? _bp, _tow;
     private string _error = "";
     private bool _finished;
@@ -58,15 +62,22 @@ public sealed class VehicleGenJob
     /// <summary>Kit 4's role and tier the request asked for (VehicleRoles.cs); null: by shape, as before.</summary>
     public readonly RoleAsk? Role;
 
-    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default, RoleAsk? role = null)
+    /// <summary>Where it is being made for (phase 7: VehicleContext.cs); null or neutral: as every vehicle before.</summary>
+    public readonly SpawnContext? Context;
+
+    /// <summary>The spawn context's line, as in the blueprint ("desert, gravity 1.00, ...; changed ..."); "" in a neutral one.</summary>
+    public string ContextNotes = "";
+
+    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default, RoleAsk? role = null, SpawnContext? context = null)
     {
         Generator = generator;
         Seed = seed;
         Layers = layers;
         Role = role;
+        Context = context is { Matters: true } ? context : null;
     }
 
-    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "");
+    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "") + (Context?.Suffix ?? "");
 
     private string _made = ""; // (the vehicle's own name once made: a kit-1 shape's role may have taken a seed derived from the one asked)
 
@@ -177,6 +188,7 @@ public sealed class VehicleGenJob
         {
             Blueprint = _bp;
             Tow = _tow;
+            Brief = _bp != null ? _brief : null;
             Error = _error;
             Done = true;
         }
@@ -237,9 +249,10 @@ public sealed class VehicleGenJob
 
     private void Generate()
     {
-        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role);
+        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role, context: Context);
         Yield();
         var text = v.Text();
+        ContextNotes = v.Context is { Matters: true } c ? $"{c.Detail}; {(v.ContextNotes.Count > 0 ? "changed " + string.Join(", ", v.ContextNotes) : "nothing to change")}" : "";
         Yield();
         Hash = Fnv(text);
         (Kit, Modules, RoleNotes, _made) = (v.Kit, string.Join(", ", v.Modules), string.Join(", ", v.KitNotes), v.Name);
@@ -255,8 +268,29 @@ public sealed class VehicleGenJob
             Yield();
             _tow = ConstructBuild.ParseBlueprint(VehicleRegistry.Run(tg, towSeed, new VehicleLayers()), VehicleRegistry.FileName(tg, towSeed));
         }
+        _brief = MakeBrief(v, text, bp);
         _bp = bp;
     }
+
+    /// <summary>The behaviour brief (VehicleBriefMake.cs), in the generation's slices like the rest. Never a reason for the vehicle not to spawn: a failure is logged and it has none.</summary>
+    private VehicleBrief? MakeBrief(Vehicle v, string text, ConstructBuild.Blueprint bp)
+    {
+        if (!BriefsOn)
+            return null;
+        try
+        {
+            Yield();
+            return VehicleBriefMake.ForGenerated(v, text, VehicleSpawnKit.Names(Generator).Shape, bp);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Console.WriteLine($"[vehicles] {v.Name}: no behaviour brief ({ex.GetType().Name}: {ex.Message})");
+            return null;
+        }
+    }
+
+    /// <summary>Make a behaviour brief with each generated vehicle (on; off only to measure what it costs).</summary>
+    public static bool BriefsOn = true;
 
     private static bool _warm;
 
@@ -285,6 +319,8 @@ public sealed class VehicleGenJob
                 _ = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(g, g.Seeds[0]));
                 _ = v.Stability();
                 _ = v.Fill();
+                if (BriefsOn)
+                    _ = VehicleBriefMake.ForGenerated(v, text, "Technical"); // (the behaviour brief's rays and the drive check it builds for: compiled before the first spawn)
             }
             if (VehicleRegistry.Find("Bandit Box Truck") is { } grammar)
                 ShapeGrammar.PlanOnly(grammar, 1); // (the shape grammar's planner: a plan, nothing built)

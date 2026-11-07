@@ -155,6 +155,7 @@ public sealed partial class ConstructWorld
             b.CarryPos = c.CarryPos;
             b.CarryRot = c.CarryRot;
             b.SpaceShip = c.SpaceShip;
+            b.Brief = c.Brief;
             b.Parts = s.PartCount;
             b.PartCount = c.PartCount;
             b.Links = s.LinkCount;
@@ -379,6 +380,15 @@ public sealed partial class ConstructWorld
             foreach (var p in s.TrackParts.AsSpan(b.TrackParts + t.Start, t.Count))
                 w.U16(p);
         }
+        // A generated faction vehicle's behaviour brief (VehicleBrief.cs), after the tracks the same way: its length, then its bytes (0: none).
+        if (b.Brief is { } brief)
+        {
+            var bw = new SaveWriter(1024);
+            brief.Write(bw);
+            w.I32(bw.Length).Bytes(bw.Span);
+        }
+        else
+            w.I32(0);
     }
 
     public static void WriteStore(SaveWriter w, CStore s, WorldNames names)
@@ -685,6 +695,15 @@ public sealed partial class ConstructWorld
             }
             tracks.Add((wheels, Math.Clamp(tw, ConstructTracks.MinWidth, ConstructTracks.MaxWidth), Math.Clamp(tl, ConstructTracks.MinLink, ConstructTracks.MaxLink), Math.Clamp(tt, 0, 1), Math.Clamp(tg, ConstructTracks.MinGrip, ConstructTracks.MaxGrip), th));
         }
+        byte[]? briefBytes = null; // (a save before the behaviour brief ends at the tracks)
+        if (r.Has(4) && r.Pos + 4 <= bodyEnd)
+        {
+            var len = r.I32();
+            if (len < 0 || len > 1 << 20 || r.Pos + len > bodyEnd || !r.Has(len))
+                throw new WorldFileException($"a behaviour brief of {len} bytes");
+            if (len > 0)
+                briefBytes = r.Bytes(len);
+        }
         var c = Create(pos, rot, freshId ? (ushort)0 : id) ?? throw new WorldFileException($"no room for construct {id}");
         id = c.Id;
         _partTally = -1;
@@ -750,7 +769,22 @@ public sealed partial class ConstructWorld
             if (Get(id) is { Dirty: true } left)
                 left.Rebuild();
         }
+        if (briefBytes != null)
+            LoadBrief(c, briefBytes);
         return c;
+    }
+
+    /// <summary>A body's behaviour brief from its bytes: a brief that doesn't read is left off (logged), never the body.</summary>
+    private static void LoadBrief(Construct c, byte[] bytes)
+    {
+        try
+        {
+            VehicleKit.VehicleBrief.Read(new SaveReader(bytes))?.Loaded(c);
+        }
+        catch (WorldFileException ex)
+        {
+            Console.WriteLine($"[world] construct {c.Id}'s behaviour brief didn't read ({ex.Message}): left off");
+        }
     }
 
     private static ConstructPartDef? _standIn;
