@@ -25,16 +25,25 @@ public static class HullLoft
     {
         public float Top => P[^1].Y;
 
-        /// <summary>The widest point below 1.6 m: where a pannier or a sponson hangs.</summary>
-        public int Waist
+        /// <summary>The side's half width at height <paramref name="y"/> (the first row that reaches it), or -1 above the section.</summary>
+        public float XAt(float y)
+        {
+            for (var k = 0; k + 1 < P.Length; k++)
+                if (y >= P[k].Y && y <= P[k + 1].Y && P[k + 1].Y > P[k].Y)
+                    return P[k].X + (P[k + 1].X - P[k].X) * (y - P[k].Y) / (P[k + 1].Y - P[k].Y);
+            return -1;
+        }
+
+        /// <summary>The waist, where a pannier or a sponson hangs: the widest height from 0.4 m to 1.5 m (the one nearest 0.85 m among equals), on a 5 cm grid.</summary>
+        public float WaistY
         {
             get
             {
-                var best = 0;
-                for (var i = 1; i < P.Length; i++)
-                    if (P[i].Y < 1.6f && P[i].X > P[best].X + 0.001f)
-                        best = i;
-                return best;
+                var (best, wx) = (0.85f, XAt(0.85f));
+                for (var y = 0.4f; y <= 1.501f; y += 0.05f)
+                    if (XAt(y) is var x && (x > wx + 0.002f || MathF.Abs(x - wx) <= 0.002f && MathF.Abs(y - 0.85f) < MathF.Abs(best - 0.85f)))
+                        (best, wx) = (y, x);
+                return MathF.Round(best * 100) / 100;
             }
         }
 
@@ -151,6 +160,7 @@ public static class HullLoft
     private sealed class Builder
     {
         public readonly JsonArray Boxes = new(), Sockets = new();
+        public float Centre = float.MaxValue; // the lowest of the roof's slabs over the centreline: a lever hangs under it
 
         public void Facet(IReadOnlyList<Vector3> q, Vector3 n, string colour, float t = T, bool paint = true)
         {
@@ -169,6 +179,26 @@ public static class HullLoft
             if (!paint)
                 b["paintable"] = false;
             Boxes.Add(b);
+        }
+
+        /// <summary>
+        /// A four-cornered panel: one facet when its corners lie in a plane, else two triangles, each flat. (A twisted quad whose corners are out of plane by a
+        /// fraction of a millimetre makes ConvexHull.Of take its two outer triangles for one face, their normals being within 1e-6 of each other, and drop one:
+        /// a hole the rays find.)
+        /// </summary>
+        public void Panel(Vector3[] q, Vector3 n, string colour, bool paint)
+        {
+            var plane = Vector3.Normalize(Vector3.Cross(q[1] - q[0], q[3] - q[0]));
+            if (MathF.Abs(Vector3.Dot(q[2] - q[0], plane)) < 1e-5f)
+            {
+                Facet(q, n, colour, paint: paint);
+                return;
+            }
+            foreach (var t in new[] { new[] { q[0], q[1], q[2] }, new[] { q[0], q[2], q[3] } })
+            {
+                var tn = Vector3.Normalize(Vector3.Cross(t[1] - t[0], t[2] - t[0]));
+                Facet(t, Vector3.Dot(tn, n) < 0 ? -tn : tn, colour, paint: paint);
+            }
         }
 
         public void Hide(Vector3 a, Vector3 b)
@@ -216,20 +246,35 @@ public static class HullLoft
                 if (door && s > 0 && a0.Y < DoorTop + 0.05f)
                     (a0, b0) = (new Vector2(DoorPlane, DoorTop), new Vector2(DoorPlane, DoorTop)); // (the cant over the doorway starts at its top)
                 var q = new[] { new Vector3(s * a0.X, a0.Y, z0), new Vector3(s * a1.X, a1.Y, z0), new Vector3(s * b1.X, b1.Y, z1), new Vector3(s * b0.X, b0.Y, z1) };
+                if (a1.X == 0 && b1.X == 0)
+                    (q[1].X, q[2].X) = (-s * 0.01f, -s * 0.01f); // (the two halves of a roof overlap a centimetre at the centreline: a ray straight up the middle meets one)
                 var n = new Vector3((a1.Y - a0.Y) * s, -(a1.X - a0.X), 0);
                 if (n.LengthSquared() < 1e-6f)
                     continue;
                 var (colour, paint) = Row(a0, a1, k);
-                p.Facet(q, n, colour, paint: paint);
-                // What stands for it to the build rules and a player's feet: a slab along the row.
-                var x = (a0.X + a1.X + b0.X + b1.X) / 4;
-                if (MathF.Abs(a1.Y - a0.Y) >= MathF.Abs(a1.X - a0.X))
-                    p.Hide(new Vector3(s * (x - 0.03f), MathF.Min(a0.Y, b0.Y), z0), new Vector3(s * (x + 0.03f), MathF.Min(a1.Y, b1.Y), z1));
-                else
+                p.Panel(q, n, colour, paint);
+                // What stands for it to the build rules and a player's feet: slabs along the row, just inside its skin (a sponson or a pannier on the waist
+                // stands against the skin, and furniture reaches a metre out), a slanted row in steps of 30 cm at most.
+                var steps = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(a0, a1) / 0.3f));
+                for (var i = 0; i < steps; i++)
                 {
-                    var y = (a0.Y + a1.Y + b0.Y + b1.Y) / 4;
-                    var (xlo, xhi) = (MathF.Min(MathF.Min(a0.X, a1.X), MathF.Min(b0.X, b1.X)), MathF.Max(MathF.Max(a0.X, a1.X), MathF.Max(b0.X, b1.X)));
-                    p.Hide(new Vector3(s * xlo, y - 0.03f, z0), new Vector3(s * xhi, y + 0.03f, z1));
+                    float L(float u, float v) => u + (v - u) * i / steps;
+                    float H(float u, float v) => u + (v - u) * (i + 1) / steps;
+                    var (c0, c1) = (new Vector2(L(a0.X, a1.X), L(a0.Y, a1.Y)), new Vector2(H(a0.X, a1.X), H(a0.Y, a1.Y)));
+                    var (d0, d1) = (new Vector2(L(b0.X, b1.X), L(b0.Y, b1.Y)), new Vector2(H(b0.X, b1.X), H(b0.Y, b1.Y)));
+                    if (MathF.Abs(c1.Y - c0.Y) >= MathF.Abs(c1.X - c0.X))
+                    {
+                        var x = (c0.X + c1.X + d0.X + d1.X) / 4;
+                        p.Hide(new Vector3(s * (x - 0.05f), MathF.Min(c0.Y, d0.Y), z0), new Vector3(s * (x - 0.01f), MathF.Min(c1.Y, d1.Y), z1));
+                    }
+                    else
+                    {
+                        var y = MathF.Min(MathF.Min(c0.Y, c1.Y), MathF.Min(d0.Y, d1.Y));
+                        var (xlo, xhi) = (MathF.Min(MathF.Min(c0.X, c1.X), MathF.Min(d0.X, d1.X)), MathF.Max(MathF.Max(c0.X, c1.X), MathF.Max(d0.X, d1.X)));
+                        p.Hide(new Vector3(s * xlo, y - 0.05f, z0), new Vector3(s * xhi, y - 0.01f, z1));
+                        if (xlo < 0.05f)
+                            p.Centre = MathF.Min(p.Centre, y - 0.05f);
+                    }
                 }
             }
         if (door)
@@ -271,15 +316,20 @@ public static class HullLoft
     /// <summary>Closes an end: a strip from the centreline to each row of the section, so a section with a ledge closes without filling it.</summary>
     private static void Cap(Builder p, Section s, float z)
     {
-        for (var k = 0; k + 1 < s.P.Length; k++)
+        var from = s.P[0];
+        for (var k = 1; k < s.P.Length; k++)
         {
-            var (a, b) = (s.P[k], s.P[k + 1]);
-            if (b.Y - a.Y < 0.005f)
-                continue; // (a flat row has no height to close)
-            p.Facet([new(-a.X, a.Y, z), new(a.X, a.Y, z), new(b.X, b.Y, z), new(-b.X, b.Y, z)], Vector3.UnitZ, Steel, 0.05f);
-            var w = MathF.Min(a.X, b.X) - 0.05f;
-            if (w > 0.05f)
-                p.Hide(new Vector3(-w, a.Y, z - 0.03f), new Vector3(w, b.Y, z + 0.03f));
+            var b = s.P[k];
+            if (b.Y - from.Y < 0.02f && k + 1 < s.P.Length)
+                continue; // (a row too flat to stand on its own: the next strip takes it in)
+            if (b.Y - from.Y >= 0.012f)
+            {
+                p.Facet([new(-from.X, from.Y, z), new(from.X, from.Y, z), new(b.X, b.Y, z), new(-b.X, b.Y, z)], Vector3.UnitZ, Steel, 0.05f);
+                var w = MathF.Min(from.X, b.X) - 0.05f;
+                if (w > 0.05f)
+                    p.Hide(new Vector3(-w, from.Y, z - 0.03f), new Vector3(w, b.Y, z + 0.03f));
+            }
+            from = b;
         }
     }
 
@@ -296,14 +346,14 @@ public static class HullLoft
             p.Sock($"footL{k}", new Vector3(-0.75f, 0, z), "-y");
             p.Sock($"footR{k}", new Vector3(0.75f, 0, z), "-y");
         }
-        var wi = a.Waist;
-        var (w, y) = ((a.P[wi].X + b.P[wi].X) / 2, (a.P[wi].Y + b.P[wi].Y) / 2);
+        var y = (a.WaistY + b.WaistY) / 2;
+        var w = (MathF.Max(a.XAt(y), 0) + MathF.Max(b.XAt(y), 0)) / 2;
         p.Pad("-x0", new Vector3(-w, y, length / 2), "-x");
         if (!door)
             p.Pad("+x0", new Vector3(w, y, length / 2), "+x");
-        var top = MathF.Min(a.Top, b.Top);
+        var top = (a.Top + b.Top) / 2; // (the roof at the middle: a lofted roof slopes from one section to the next)
         p.Pad("top", new Vector3(0, top + 0.03f, length / 2), "+y");
-        p.Pad("lever", new Vector3(0, top - 0.03f, length / 2), "-y");
+        p.Pad("lever", new Vector3(0, MathF.Min(top, p.Centre) - 0.03f, length / 2), "-y");
         // Mass by the skin's area, as the fixed bays (a metre of tall bay, 6.2 m of skin, is 120 kg).
         float Around(Section s) => 2 * Enumerable.Range(0, s.P.Length - 1).Sum(k => Vector2.Distance(s.P[k], s.P[k + 1]));
         var skin = (Around(a) + Around(b)) / 2 * length + (front ? a.Top * a.P[0].X * 2 : 0) + (back ? b.Top * b.P[0].X * 2 : 0);

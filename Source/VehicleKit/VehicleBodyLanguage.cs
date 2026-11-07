@@ -19,13 +19,13 @@ public sealed record BodyLanguage(string Name, string Words, HullLoft.Section Ta
     // 2.1 m at its top, so a door bay can be any of them; a low one keeps 2 m at the centre.
     public static readonly BodyLanguage Slab = new("slab", "welded slabs: upright walls, one hard chamfer, a flat roof", S(1.04f, 0, 1.07f, 1.86f, 0.8f, 2.22f, 0, 2.22f), 2.16f, 2.32f, 0.62f, 0.8f, 0.7f, 0.9f, 0.96f, 0.94f);
     public static readonly BodyLanguage Ledge = new("ledge", "a box welded over a box: the upper walls stand proud of the lower on a ledge", S(1.02f, 0, 1.03f, 1.08f, 1.12f, 1.16f, 1.12f, 1.9f, 0.84f, 2.2f, 0, 2.2f), 2.14f, 2.3f, 0.7f, 0.85f, 0.75f, 0.9f, 0.95f, 0.93f);
-    public static readonly BodyLanguage Pod = new("pod", "clean rounded panels: tumblehome and a crowned roof", S(1.0f, 0, 1.1f, 0.45f, 1.1f, 1.3f, 0.98f, 1.8f, 0.72f, 2.15f, 0.36f, 2.3f, 0, 2.33f), 2.26f, 2.4f, 0.55f, 0.72f, 0.65f, 0.82f, 0.9f, 0.9f);
+    public static readonly BodyLanguage Pod = new("pod", "clean rounded panels: tumblehome and a crowned roof", S(1.0f, 0, 1.1f, 0.45f, 1.1f, 1.3f, 0.98f, 1.8f, 0.72f, 2.15f, 0.36f, 2.3f, 0, 2.33f), 2.26f, 2.4f, 0.64f, 0.76f, 0.65f, 0.82f, 0.9f, 0.9f);
     public static readonly BodyLanguage Van = new("van", "a panel van: near-upright sides rounding into a gently crowned roof", S(1.02f, 0, 1.08f, 0.6f, 1.08f, 1.75f, 0.96f, 2.08f, 0.6f, 2.24f, 0, 2.28f), 2.22f, 2.36f, 0.6f, 0.78f, 0.78f, 0.92f, 0.94f, 0.95f);
     public static readonly BodyLanguage Bus = new("bus", "a bus: tall upright sides, a domed roof with rounded corners", S(1.04f, 0, 1.07f, 0.95f, 1.06f, 1.85f, 0.98f, 2.12f, 0.78f, 2.3f, 0.4f, 2.38f, 0, 2.4f), 2.34f, 2.48f, 0.72f, 0.9f, 0.72f, 0.88f, 0.96f, 0.95f);
-    public static readonly BodyLanguage Coach = new("coach", "a coach: a lower body, a long tumblehome and a raked front", S(1.02f, 0, 1.08f, 0.7f, 1.06f, 1.5f, 0.92f, 1.98f, 0.62f, 2.18f, 0, 2.24f), 2.2f, 2.32f, 0.5f, 0.68f, 0.72f, 0.88f, 0.9f, 0.93f);
+    public static readonly BodyLanguage Coach = new("coach", "a coach: a lower body, a long tumblehome and a raked front", S(1.02f, 0, 1.08f, 0.7f, 1.06f, 1.5f, 0.92f, 1.98f, 0.62f, 2.18f, 0, 2.24f), 2.2f, 2.32f, 0.6f, 0.72f, 0.72f, 0.88f, 0.9f, 0.93f);
     public static readonly BodyLanguage Boat = new("boat", "boat-like: a flare to a strake, a curved tumblehome, a boat-tail stern", S(1.02f, 0, 1.13f, 0.7f, 1.09f, 1.45f, 0.92f, 1.95f, 0.55f, 2.22f, 0, 2.26f), 2.2f, 2.36f, 0.65f, 0.82f, 0.6f, 0.78f, 0.92f, 0.8f);
     public static readonly BodyLanguage Cabin = new("cabin", "a site cabin: plain walls, eaves and a pitched roof", S(1.04f, 0, 1.06f, 1.92f, 1.12f, 1.98f, 0, 2.42f), 2.36f, 2.5f, 0.75f, 0.9f, 0.75f, 0.9f, 0.97f, 0.97f, 0.88f);
-    public static readonly BodyLanguage Armour = new("armour", "faceted armour: a flared lower hull, a steep glacis-like upper, a narrow roof", S(1.0f, 0, 1.13f, 0.75f, 0.88f, 2.0f, 0.56f, 2.2f, 0, 2.2f), 2.16f, 2.28f, 0.55f, 0.7f, 0.65f, 0.8f, 0.9f, 0.88f);
+    public static readonly BodyLanguage Armour = new("armour", "faceted armour: a flared lower hull, a steep glacis-like upper, a narrow roof", S(1.0f, 0, 1.13f, 0.75f, 0.88f, 2.0f, 0.56f, 2.2f, 0, 2.2f), 2.16f, 2.28f, 0.62f, 0.75f, 0.65f, 0.8f, 0.9f, 0.88f);
 
     public static readonly BodyLanguage[] All = [Slab, Ledge, Pod, Van, Bus, Coach, Boat, Cabin, Armour];
 
@@ -95,6 +95,7 @@ public sealed class BodyLook
             (kx, ky) = (kx * BrowNarrow, ky * BrowRake);
         else if (end > 0)
             (kx, ky) = (kx * TailNarrow, ky * TailRake);
+        kx = MathF.Max(kx, 0.76f / t.P[0].X); // (a seat or a crate stands half a metre out by a brow or a tail: the fixed bays' narrowest end is 0.74 m)
         var s = t.Scaled(kx, ky);
         if (end == 0 && token != "N")
             s = new HullLoft.Section(s.P.Select((p, i) => i == 0 || p.Y < 1.6f ? p with { X = MathF.Max(p.X, i == 0 ? 1.0f : 1.02f) } : p).ToArray()); // (furniture's metre)
@@ -263,5 +264,31 @@ public static class BodyReportCli
         }
         Console.WriteLine($"failures: {failures}");
         return failures;
+    }
+}
+
+public static class LoftProbe // TEMP
+{
+    public static int Run(string[] args)
+    {
+        VehicleKitVersion.Force = 5;
+        var g = VehicleRegistry.All.First(x => x.Name == "Bandit War Bus");
+        var v = VehicleRegistry.Make(g, 1);
+        var room = v.Rooms[0];
+        var (tris, owner) = VehiclePlan.PartTriangles(v.Built);
+        var off = room.FloorRest;
+        Console.WriteLine($"room z {room.R.Z0}..{room.R.Z1} floortop {room.FloorTop} off {off}");
+        foreach (var b in room.Bays)
+            Console.WriteLine($"bay {b.Index} centre {v.CentreOf(b)} {b.Def.Name} boxes {b.Def.Boxes.Length}");
+        for (var z = room.R.Z0 + 0.35f; z < room.R.Z1 - 0.3f; z += 0.25f)
+        {
+            var from = new Vector3(0, room.FloorTop + 1.1f, z) + off;
+            var hits = new List<string>();
+            for (var k = 0; k + 2 < tris.Length; k += 3)
+                if (VehiclePlan.Hits(tris[k..(k + 3)], from, -Vector3.UnitX, 3.5f))
+                    hits.Add(owner[k / 3] + ":" + v.Built.DefOf(owner[k / 3]).Name[..Math.Min(14, v.Built.DefOf(owner[k / 3]).Name.Length)]);
+            Console.WriteLine($"z {z:0.00}: {string.Join(", ", hits.Distinct())}");
+        }
+        return 0;
     }
 }

@@ -172,6 +172,7 @@ public static unsafe partial class Program
             return VehicleKit.VehicleIdentity.Cli(identityOf, args); // how much each seed reads as its faction, its weak points, and which read as another (VehicleIdentity.cs)
         if (args.SkipWhile(a => !a.Equals("--diversity", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityOf)
             return VehicleKit.VehicleQualityCli.Diversity(diversityOf, args); // the vehicle kit's quality tools (VehicleQuality.cs): how alike a shape's seeds are, what never varies
+        if (args.Any(a => a == "--loft-probe")) return VehicleKit.LoftProbe.Run(args); // TEMP
         if (args.SkipWhile(a => !a.Equals("--body-report", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } bodyStyle)
             return VehicleKit.BodyReportCli.Run(bodyStyle, args); // what a style's rooms are made of, and how their cross-sections differ (docs/vehiclekit/BODY-STYLES.md)
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
