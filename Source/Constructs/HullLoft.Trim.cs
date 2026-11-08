@@ -152,59 +152,73 @@ public static partial class HullLoft
         return new RowAt(k, t - k);
     }
 
-    /// <summary>The section between two of its places as a path (its points and, at each, the offset direction: the row's normal at the ends, the mitre between).</summary>
-    private static (List<Vector2> P, List<Vector2> M) PathOf(Section s, RowAt from, RowAt to)
-    {
-        var (p, m) = (new List<Vector2>(), new List<Vector2>());
-        p.Add(PointAt(s, from));
-        m.Add(RowNormal(s.P[from.K], s.P[from.K + 1]));
-        for (var k = from.K + 1; k <= to.K && k < s.P.Length - 1; k++)
-        {
-            if (k == to.K && to.F < 1e-4f)
-                break;
-            p.Add(s.P[k]);
-            m.Add(Mitre(RowNormal(s.P[k - 1], s.P[k]), RowNormal(s.P[k], s.P[k + 1])));
-        }
-        p.Add(PointAt(s, to));
-        m.Add(RowNormal(s.P[to.K], s.P[to.K + 1]));
-        return (p, m);
-    }
-
     /// <summary>The loft's section at a fraction u of the bay's length (point by point: the same row at every station).</summary>
     private static Section Between(Section a, Section b, float u) => u <= 0 ? a : u >= 1 ? b : new Section(a.P.Zip(b.P, (x, y) => Vector2.Lerp(x, y, u)).ToArray());
 
     /// <summary>
-    /// A band on the bay's side from row place <paramref name="t0"/> to <paramref name="t1"/> (along the rows: <see cref="RowAt.T"/>), from z0 to z1 along the bay, its middle
-    /// <paramref name="d"/> out from the section and <paramref name="t"/> thick, each row a facet mitred to the next (so their ends meet on an edge).
-    /// Coordinates are the bay's; <paramref name="shift"/> moves the result into the part's frame. Returns its area.
+    /// A flat piece on the bay's side between row places <paramref name="t0"/> and <paramref name="t1"/> (along the rows: <see cref="RowAt.T"/>), from z0 to z1 along the
+    /// bay: at each end of the bay a straight chord between the two places, stood off along its normal so its inner face clears the skin's outer face (every point
+    /// of the section between, offset by its mitre) by the gap and <paramref name="extra"/>, <paramref name="t"/> thick. Null when the wall bends away from the chord
+    /// by more than <paramref name="bend"/> (a ledge or a flare under it: the piece would stand off in the air). Coordinates are the bay's; <paramref name="shift"/>
+    /// moves the result into the part's frame. Returns its area.
     /// </summary>
-    private static float Band(Builder p, TrimShape s, float t0, float t1, float z0, float z1, float d, float t, string colour, bool paint, Vector3 shift)
+    private static float? Piece(Builder p, TrimShape s, float t0, float t1, float z0, float z1, float extra, float t, string colour, bool paint, Vector3 shift, float bend = 0.035f)
     {
         if (t1 - t0 < 1e-3f || z1 - z0 < 0.01f)
             return 0;
         var (r0, r1) = (FromT(t0), FromT(t1));
         if (r1.F < 1e-4f && r1.K > r0.K)
             r1 = new RowAt(r1.K - 1, 1);
-        var (sa, sb) = (Between(s.A, s.B, z0 / s.Length), Between(s.A, s.B, z1 / s.Length));
-        var (pa, ma) = PathOf(sa, r0, r1);
-        var (pb, mb) = PathOf(sb, r0, r1);
-        var area = 0f;
-        for (var i = 0; i + 1 < pa.Count && i + 1 < pb.Count; i++)
+        var ends = new (Vector2 P0, Vector2 P1, Vector2 N)[2];
+        for (var e = 0; e < 2; e++)
         {
-            var (a0, a1, b0, b1) = (pa[i] + ma[i] * d, pa[i + 1] + ma[i + 1] * d, pb[i] + mb[i] * d, pb[i + 1] + mb[i + 1] * d);
-            if (Vector2.Distance(a0, a1) < 0.004f || Vector2.Distance(b0, b1) < 0.004f)
-                continue;
-            var n = RowNormal(pa[i], pa[i + 1]);
-            Vector3[] q = [new Vector3(a0, z0) + shift, new Vector3(a1, z0) + shift, new Vector3(b1, z1) + shift, new Vector3(b0, z1) + shift];
-            Vector3[] off = [new Vector3(ma[i], 0), new Vector3(ma[i + 1], 0), new Vector3(mb[i + 1], 0), new Vector3(mb[i], 0)];
-            var (lo, hi) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
-            for (var c = 0; c < 4; c++)
-                foreach (var sg in (float[])[-1, 1])
-                    (lo, hi) = (Vector3.Min(lo, q[c] + off[c] * (sg * t / 2)), Vector3.Max(hi, q[c] + off[c] * (sg * t / 2)));
-            if (hi.X - lo.X < 0.0105f || hi.Y - lo.Y < 0.0105f || hi.Z - lo.Z < 0.0105f)
-                continue; // (a sliver of a row: a box is a centimetre or more each way)
-            p.Facet(q, new Vector3(n, 0), colour, t, paint, off);
-            area += Vector2.Distance(a0, a1) * (z1 - z0);
+            var sec = Between(s.A, s.B, (e == 0 ? z0 : z1) / s.Length);
+            var (p0, p1) = (PointAt(sec, r0), PointAt(sec, r1));
+            if (Vector2.Distance(p0, p1) < 0.01f)
+                return 0;
+            var n = RowNormal(p0, p1);
+            var m = Mitres(sec);
+            var (most, least) = (float.MinValue, float.MaxValue);
+            void Take(Vector2 q, Vector2 mitre)
+            {
+                most = MathF.Max(most, Vector2.Dot(q + mitre * (T / 2) - p0, n));
+                least = MathF.Min(least, Vector2.Dot(q - p0, n));
+            }
+            Take(p0, RowNormal(sec.P[r0.K], sec.P[r0.K + 1]));
+            Take(p1, RowNormal(sec.P[r1.K], sec.P[r1.K + 1]));
+            for (var k = r0.K + 1; k <= r1.K && k < sec.P.Length - 1; k++)
+                if (!(k == r1.K && r1.F < 1e-4f))
+                    Take(sec.P[k], m[k]);
+            if (most - T / 2 - least > bend)
+                return null;
+            var off = most + TrimGap + extra + t / 2;
+            ends[e] = (p0 + n * off, p1 + n * off, n);
+        }
+        Vector3[] q = [new Vector3(ends[0].P0, z0) + shift, new Vector3(ends[0].P1, z0) + shift, new Vector3(ends[1].P1, z1) + shift, new Vector3(ends[1].P0, z1) + shift];
+        Vector3[] o = [new Vector3(ends[0].N, 0), new Vector3(ends[0].N, 0), new Vector3(ends[1].N, 0), new Vector3(ends[1].N, 0)];
+        var (lo, hi) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        for (var c = 0; c < 4; c++)
+            foreach (var sg in (float[])[-1, 1])
+                (lo, hi) = (Vector3.Min(lo, q[c] + o[c] * (sg * t / 2)), Vector3.Max(hi, q[c] + o[c] * (sg * t / 2)));
+        if (hi.X - lo.X < 0.0105f || hi.Y - lo.Y < 0.0105f || hi.Z - lo.Z < 0.0105f)
+            return 0; // (a sliver: a box is a centimetre or more each way)
+        p.Facet(q, new Vector3(ends[0].N, 0), colour, t, paint, o);
+        return Vector2.Distance(ends[0].P0, ends[0].P1) * (z1 - z0);
+    }
+
+    /// <summary>
+    /// A band: <see cref="Piece"/>s up the wall from row place <paramref name="t0"/> to <paramref name="t1"/>, each at most <paramref name="step"/> of the front section's
+    /// height, 6 mm apart (a panel seam) and every other one 3 mm shorter along the bay (so no two share an end's plane). A piece over a ledge is left out.
+    /// </summary>
+    private static float Band(Builder p, TrimShape s, float y0, float y1, Func<float, float> place, float z0, float z1, float extra, float t, string colour, bool paint, Vector3 shift, float step = 0.25f)
+    {
+        var n = Math.Max(1, (int)MathF.Ceiling((y1 - y0) / step - 1e-3f));
+        var area = 0f;
+        for (var i = 0; i < n; i++)
+        {
+            var (a, b) = (y0 + (y1 - y0) * i / n + (i > 0 ? 0.003f : 0), y0 + (y1 - y0) * (i + 1) / n - (i + 1 < n ? 0.003f : 0));
+            var inset = i % 2 == 1 ? 0.003f : 0;
+            area += Piece(p, s, place(a), place(b), z0 + inset, z1 - inset, extra, t, colour, paint, shift) ?? 0;
         }
         return area;
     }
@@ -242,18 +256,18 @@ public static partial class HullLoft
                 top = k;
                 break;
             }
-        float Y(float t) => PointAt(a, FromT(MathF.Min(t, a.P.Length - 1.0001f))).Y; // (a place's height on the front section)
-        var wallTop = MathF.Min(Y(top), MathF.Min(a.Top, b.Top)) - 0.04f;
+        float Y(Section sec, float t) => PointAt(sec, FromT(MathF.Min(t, sec.P.Length - 1.0001f))).Y; // (a place's height on a section)
+        var wallTop = MathF.Min(MathF.Min(Y(a, top), Y(b, top)), MathF.Min(a.Top, b.Top)) - 0.04f; // (on both sections: a height under it is on the wall on both)
         var low = MathF.Max(0.05f, s.Low);
         var waist = pad.Y;
         float Tc(float y) => MathF.Min(Tp(y), top - 0.01f); // (a height's place, never past the wall)
         var skin = T / 2 + TrimGap; // (a trim's inner face's least distance out: the skin's outer face and the gap)
         var area = 0f;
         var roll = new Roll(s.Variant * 131 + Cm(len) + s.Kind);
-        void B(float y0, float y1, float z0, float z1, float inner, float thick, string colour, bool paint)
+        void B(float y0, float y1, float z0, float z1, float inner, float thick, string colour, bool paint, float step = 0.25f)
         {
             if (y1 - y0 >= 0.01f && y0 >= low - 1e-4f && y1 <= wallTop + 1e-4f)
-                area += Band(p, s, Tc(y0), Tc(y1), z0, z1, inner + thick / 2, thick, colour, paint, shift);
+                area += Band(p, s, y0, y1, Tc, z0, z1, inner - skin, thick, colour, paint, shift, step);
         }
         const float ends = 0.015f; // (a trim stops this short of its bay's ends: the next bay's trim is its own part)
         switch (s.Kind)
@@ -303,9 +317,10 @@ public static partial class HullLoft
                 var y = ys;
                 var slats = 0;
                 for (; y + 0.045f <= ye; y += 0.11f, slats++)
-                    B(y, y + 0.045f, ends, len - ends, 0.14f, 0.02f, Steel, true);
+                    B(y, y + 0.045f, ends + 0.0025f * (slats % 4), len - ends - 0.0025f * (slats % 4), 0.14f, 0.02f, Steel, true); // (every other one 3 mm shorter: where the wall bends, neighbours' ends may meet)
                 foreach (var z in new[] { 0.12f, len / 2, len - 0.12f })
-                    B(ys - 0.015f, MathF.Min(wallTop, y - 0.11f + 0.06f), z - 0.025f, z + 0.025f, skin, 0.145f - skin, Dark, false);
+                    for (var j = 0; j < slats; j++) // (a post in lengths from the gap under one slat to the gap under the next, so no piece's end meets a slat's)
+                        B(ys - 0.015f + 0.11f * j + (j > 0 ? 0.003f : 0), MathF.Min(wallTop, ys - 0.015f + 0.11f * (j + 1) - (j + 1 < slats ? 0.003f : -0.06f)), z - 0.025f + 0.0025f * (j % 4), z + 0.025f - 0.0025f * (j % 4), skin, 0.145f - skin, Dark, false, 1f);
                 break;
             }
             case 'b': // Militia: stowage bins on the lower wall, lidded and strapped
@@ -346,15 +361,15 @@ public static partial class HullLoft
                     break;
                 B(y0, y1, 0.1f, len - 0.1f, 0.039f, 0.022f, Steel, true);
                 foreach (var z in new[] { 0.2f, len - 0.2f })
-                    B(y0 + 0.06f, y1 - 0.06f, z - 0.03f, z + 0.03f, skin + 0.002f, 0.024f, Dark, false);
+                    B(y0 + 0.06f, y1 - 0.06f, z - 0.03f, z + 0.03f, skin + 0.002f, 0.036f, Dark, false, 1f); // (one piece each, through the board: a bolt head proud of its face, no face on its planes)
                 break;
             }
             case 'r': // Highland: clinker laps over the lower hull, each over the one below, and a wooden strake along the waist
             {
                 var y = low + 0.03f;
-                for (var i = 0; y + 0.12f <= MathF.Min(waist - 0.04f, wallTop) && i < 5; i++, y += 0.18f)
+                for (var i = 0; y + 0.12f <= MathF.Min(waist - 0.04f, wallTop) && i < 5; i++, y += 0.176f)
                 {
-                    var y1 = MathF.Min(y + 0.22f, MathF.Min(waist - 0.04f, wallTop));
+                    var y1 = MathF.Min(y + 0.17f, MathF.Min(waist - 0.04f, wallTop)); // (each plank a step further out than the one below, a seam between)
                     B(y, y1, ends + 0.003f * i, len - ends - 0.003f * i, skin + 0.008f * i, 0.012f, i % 2 == 0 ? "#6e4b2a" : "#5c3d22", false); // (varnished planks, each over the one below)
                 }
                 B(waist - 0.035f, waist + 0.035f, ends, len - ends, skin, 0.045f, Wood, false);
@@ -362,10 +377,10 @@ public static partial class HullLoft
                     B(wallTop - 0.08f, wallTop - 0.05f, ends, len - ends, skin, 0.03f, Wood, false);
                 break;
             }
-            case 'l': // British: the lower panel in a second colour, a chrome rubbing strip over it and one under the windows
+            case 'l': // British: a waistband in a second colour (a bus's cream band), a chrome rubbing strip over it and one under the windows
             {
                 var bandTop = MathF.Min(waist - 0.02f, wallTop);
-                B(low + 0.02f, bandTop, ends, len - ends, skin, 0.011f, Steel, true);
+                B(MathF.Max(low + 0.02f, bandTop - 0.3f), bandTop, ends, len - ends, skin, 0.011f, Steel, true);
                 B(bandTop - 0.012f, bandTop + 0.02f, ends + 0.004f, len - ends - 0.004f, skin + 0.004f, 0.02f, Chrome, false);
                 if (wallTop > 1.6f)
                     B(1.5f, 1.525f, ends, len - ends, skin, 0.016f, Chrome, false);
@@ -376,7 +391,7 @@ public static partial class HullLoft
             return null!; // (nothing fits this bay's side: no part)
         // What it stands by. Its socket is the bay's waist socket, on the section's line in the middle of the skin: a lug from there out through the skin is the
         // face it stands on, and its solid box is out past the skin of the rows about the waist (the bay's own slabs stand just inside the skin, along each row).
-        Cube(p, new Vector3(0, -0.015f, -0.02f), new Vector3(0.035f, 0.015f, 0.02f), Dark, false);
+        Cube(p, new Vector3(0, -0.015f, -0.012f), new Vector3(0.035f, 0.015f, 0.012f), Dark, false); // (narrower than a post at the middle, however that is inset)
         if (StandSpot(a, b, pad) is not { } spot)
             return null!; // (every stretch of wall stands out past its waist socket: nowhere to stand it by)
         p.Boxes.Add(new JsonObject { ["min"] = V(0, spot.Y - 0.01f, -0.01f), ["max"] = V(0.02f, spot.Y + 0.01f, 0.01f), ["hidden"] = true });
