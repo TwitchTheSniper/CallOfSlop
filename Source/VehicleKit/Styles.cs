@@ -211,7 +211,7 @@ public static class Styles
         // (--sweep-vehicle's most different passing seeds)
         Seeds = new()
         {
-            ["Technical"] = [1, 13, 16, 17, 21], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 6], ["Flatbed Fort"] = [1, 9, 6],
+            ["Technical"] = [1, 13, 16, 17, 21], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 2], ["Flatbed Fort"] = [1, 9, 6],
             ["Gun Wagon"] = [1, 6, 2], ["Scrap Tanker"] = [1, 6, 2], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
         },
         LootTable = "scam",
