@@ -87,7 +87,7 @@ public static class VehicleIdentity
         'a' => "Slit Cab",
         'o' or 'm' => "Cab Over Shell",
         'e' or 'w' => "Tin Roof Cab",
-        _ => name,
+        _ => HullLoft.TrimOf(name) is { } t ? "trim " + Vehicle.TrimName(t.Kind) : HullLoft.DecoOf(name) is { } dc ? "deco " + Vehicle.DecoName(dc.Kind) : name, // (phase 4: a trim or a fitting by its kind)
     };
 
     /// <summary>
@@ -144,7 +144,7 @@ public static class VehicleIdentity
                 new("fuel in the open", PartPick.ByRole("fuel"), Open: 2),
                 new("spikes or trophies", PartPick.Of(BanditDress)),
             ],
-            Parts = Merge(W(1, BanditDress), W(1, "Fuel Drum", "Ram Plow", "Mesh Guard Cage", "Slit Cab"), W(0.5, "Bull Bar", "Roll Cage", "Chop Top Cab", "Wood Planks", "Mesh Grate", "Spiked Wheel")),
+            Parts = Merge(W(1, BanditDress), W(1, "Fuel Drum", "Ram Plow", "Mesh Guard Cage", "Slit Cab", "trim plates", "trim cage"), W(0.5, "Bull Bar", "Roll Cage", "Chop Top Cab", "Wood Planks", "Mesh Grate", "Spiked Wheel")),
             Modules = new()
             {
                 ["cab"] = new() { ["caged"] = 1, ["armoured"] = 1, ["enclosed"] = 0.5, ["cab-over"] = 0.3, ["crew"] = 0.8, ["merged"] = 0.3 },
@@ -167,7 +167,7 @@ public static class VehicleIdentity
                 new("mast or dish", PartPick.Of(ItMasts)),
                 new("office gear", PartPick.Of(ItGear)),
             ],
-            Parts = Merge(W(1, ItMasts), W(1, ItGear), W(0.5, "Slat Grille", "Cab Over Shell", "Tin Roof Cab")),
+            Parts = Merge(W(1, ItMasts), W(1, ItGear), W(1, "trim fairing", "deco radome"), W(0.5, "Slat Grille", "Cab Over Shell", "Tin Roof Cab")),
             Modules = new()
             {
                 ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3, ["crew"] = 0.8, ["merged"] = 1 },
@@ -184,7 +184,7 @@ public static class VehicleIdentity
                 new("phone mast or loudhailer", PartPick.Of(ScamMasts)),
                 new("call centre gear", PartPick.Of(ScamGear)),
             ],
-            Parts = Merge(W(1, ScamMasts), W(1, ScamGear), W(0.5, "Server Rack", "Computer", "Slat Grille")),
+            Parts = Merge(W(1, ScamMasts), W(1, ScamGear), W(1, "trim signboards", "deco roof sign"), W(0.5, "Server Rack", "Computer", "Slat Grille")),
             Modules = new()
             {
                 ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3, ["crew"] = 0.8, ["merged"] = 1 },
@@ -201,7 +201,7 @@ public static class VehicleIdentity
                 new("Pipe Box", PartPick.Of("Pipe Box")),
                 new("clan dressing", PartPick.Of(HighlandDress)),
             ],
-            Parts = Merge(W(1, HighlandDress), W(1.5, "Pipe Box"), W(0.5, "Bull Bar", "Ram Plow", "Wood Planks")),
+            Parts = Merge(W(1, HighlandDress), W(1.5, "Pipe Box"), W(1, "trim clinker", "deco mascot", "deco chrome grille"), W(0.5, "Bull Bar", "Ram Plow", "Wood Planks")),
             Modules = new()
             {
                 ["nose"] = new() { ["long hood"] = 1, ["ram"] = 1, ["short hood"] = 0.5 },
@@ -218,7 +218,7 @@ public static class VehicleIdentity
                 new("flags, beacons or brollies", PartPick.Of(BritishFlags)),
                 new("tea, cones or a queue", PartPick.Of(BritishTea)),
             ],
-            Parts = Merge(W(1, BritishFlags), W(1, BritishTea), W(0.5, "Slat Grille", "Tin Roof Cab", "Windscreen Frame")),
+            Parts = Merge(W(1, BritishFlags), W(1, BritishTea), W(1, "trim livery", "deco destination board"), W(0.5, "Slat Grille", "Tin Roof Cab", "Windscreen Frame")),
             Modules = new()
             {
                 ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 0.8, ["caged"] = 0.2, ["crew"] = 0.8, ["merged"] = 0.8 },
@@ -229,8 +229,25 @@ public static class VehicleIdentity
         },
     };
 
+    /// <summary>
+    /// Militia (body styles phase 4: it read as Bandit, its dressing was the Bandit's spikes and hubcaps): jerry cans where bandits hang trophies, slat armour and
+    /// stowage bins down the sides, a basket on the cab, armoured and crew cabs.
+    /// </summary>
+    private static readonly StyleSignature MilitiaSignature = new()
+    {
+        Marks = [new("jerry cans", PartPick.Of(HullLoft.JerryCan))],
+        Parts = Merge(W(1, HullLoft.JerryCan, "trim slats", "trim bins", "deco roof basket"), W(0.5, "Slit Cab", "Bull Bar")),
+        Modules = new()
+        {
+            ["cab"] = new() { ["armoured"] = 1, ["crew"] = 0.8, ["merged"] = 0.6, ["enclosed"] = 0.4, ["caged"] = 0.2 },
+            ["nose"] = new() { ["plated hood"] = 1, ["long hood"] = 0.8, ["short hood"] = 0.8, ["ram"] = 0.4 },
+            ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.8, ["loaded"] = 0.6 },
+        },
+        WeakPoints = [Tyres, Fuel],
+    };
+
     /// <summary>A style's signature: its own, else <see cref="Signatures"/>' entry, else <see cref="Derived"/>.</summary>
-    public static StyleSignature SignatureOf(FactionStyle st) => st.Signature ?? (Signatures.TryGetValue(st.Name, out var s) ? s : Derived(st));
+    public static StyleSignature SignatureOf(FactionStyle st) => st.Signature ?? (Signatures.TryGetValue(st.Name, out var s) ? s : st.Name == "Militia" ? MilitiaSignature : Derived(st));
 
     private static readonly Dictionary<string, StyleSignature> _derived = new(StringComparer.Ordinal);
 

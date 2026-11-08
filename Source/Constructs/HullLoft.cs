@@ -228,6 +228,8 @@ public static partial class HullLoft
     {
         if (MakeFront(name) is { } front)
             return front.Ok ? front.Def : null; // (phase 3: a lofted cab, hood or window pane: HullLoft.Cabs.cs)
+        if (MakeTrim(name) is { } trim)
+            return trim.Ok ? trim.Def : null; // (phase 4: a bay's trim or a fitting: HullLoft.Trim.cs)
         if (ShapeOf(name) is not { } sh)
             return null;
         var (door, a, b) = (sh.Door, sh.A, sh.B);

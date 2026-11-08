@@ -134,7 +134,7 @@ public class BlueprintScript
 
     /// <summary>Fits <paramref name="part"/> by name: onto <paramref name="socket"/> of <paramref name="on"/>, by its own socket <paramref name="by"/> (null: the snap build's pick), turned by <paramref name="spin"/> (null: smart rotation's).
     /// <paramref name="clear"/>: also refused where a face of it would be coplanar with a part already there (<see cref="VehicleChecks.ZFightsWith"/>), for dressing that can go elsewhere.</summary>
-    public VPart Onto(VPart on, string socket, string part, string? by = null, int? spin = null, bool clear = false)
+    public VPart Onto(VPart on, string socket, string part, string? by = null, int? spin = null, bool clear = false, Func<ConstructPartDef, ConstructGhost, string?>? veto = null)
     {
         var def = Def(part);
         var target = C.DefOf(on.Index);
@@ -157,6 +157,8 @@ public class BlueprintScript
             throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": {(bad == ConstructBuild.InTheWay ? $"the {Blocker(def, g.Pos, g.Rot, g.Seg)} is in the way" : bad)}");
         if (clear && VehicleChecks.ZFightsWith(C, def, g) is { } fight)
             throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": z-fighting: {fight}");
+        if (veto?.Invoke(def, g) is { } no)
+            throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": {no}");
         return Commit(on.Index, on.Step, ts, def, ds, sp, g);
     }
 

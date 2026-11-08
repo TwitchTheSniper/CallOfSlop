@@ -464,6 +464,8 @@ public static class ShapeGrammar
             p.Cab = Ch(D(VehicleLayer.Body, "cab"), "cab") ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
         foreach (var t in p.Cab.Provides)
             tags.Add(t);
+        if (v.Look != null)
+            v.Look.MergedFront = p.Cab.Name == "merged"; // (phase 4: a merged cab's room keeps its brow's front up, so the two read as one mass)
         if (v.CabLook == null)
             p.CabPart = FactionStyle.Noted("heavyCab", D(VehicleLayer.Body, "cab part").Pick(p.Cab.PartsIn(st)));
         p.Nose = Ch(D(VehicleLayer.Body, "nose"), "nose") ?? throw new VehicleKitException($"style {st.Name} lists no hood the grammar knows");

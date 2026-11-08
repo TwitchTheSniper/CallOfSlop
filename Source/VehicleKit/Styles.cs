@@ -367,8 +367,8 @@ public static class Styles
             ["bed"] = ["Plate Steel", "Tread Plate"],
             ["sheet"] = ["Plate Steel"],
             ["wall"] = ["Plate Steel"],
-            ["spike"] = ["Iron Spike"],
-            ["trophy"] = ["Hubcap Plate"],
+            ["spike"] = ["none"], // (body styles phase 4: nothing hung down the sides, where bandits hang spikes)
+            ["trophy"] = [HullLoft.JerryCan], // (jerry cans where bandits hang skulls and hubcaps: HullLoft.Trim.cs)
         },
         LightGear = Bandit.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)
         HeavyGear = Bandit.HeavyGear,
