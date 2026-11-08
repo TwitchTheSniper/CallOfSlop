@@ -80,7 +80,13 @@ internal sealed partial class ConstructCollider
     /// <summary>Colliders built (every body, every thread, roughly: a harness's count).</summary>
     internal static int Builds;
 
+    public static double DiagA, DiagB, DiagC, DiagRough, DiagBoxes, DiagHulls, DiagReuse, DiagMoved, DiagBnd, DiagStore, DiagAdd, DiagWorstPart; public static double DiagBigReuse; public static int DiagWorstAt, DiagWorstHulls, DiagLen; public static int DiagLeaves; // DIAG
     public void Build(Construct c)
+    {
+        var dg0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        try { BuildIn(c, dg0); } finally { DiagC += System.Diagnostics.Stopwatch.GetElapsedTime(dg0).TotalMilliseconds; DiagLeaves = LeafCount; }
+    }
+    private void BuildIn(Construct c, long dg0)
     {
         Builds++;
         _dead = 0;
@@ -115,6 +121,7 @@ internal sealed partial class ConstructCollider
             Array.Resize(ref Hulls, hulls);
         if (Groups.Length < c.JointCount + 1)
             Groups = new Group[c.JointCount + 1];
+        DiagB += System.Diagnostics.Stopwatch.GetElapsedTime(dg0).TotalMilliseconds;
         LeafCount = 0;
         var hullAt = 0;
         GroupCount = 0;
@@ -136,6 +143,7 @@ internal sealed partial class ConstructCollider
                 rq = j.FixRot * rq;
                 s = j.ParentSeg;
             }
+            var dgp = System.Diagnostics.Stopwatch.GetTimestamp();
             var wheel = _wheelOf[i] >= 0;
             var first = LeafCount;
             var boxes = c.SolidCount(i);
@@ -149,14 +157,33 @@ internal sealed partial class ConstructCollider
                 Add(centre, half, rq, rt, turned, i, seg, wheel, -1);
                 any = true;
             }
+            var dgh = System.Diagnostics.Stopwatch.GetTimestamp();
+            DiagBoxes += System.Diagnostics.Stopwatch.GetElapsedTime(dgp, dgh).TotalMilliseconds;
             for (var h = 0; h < hs.Length; h++)
             {
+                var dgu = System.Diagnostics.Stopwatch.GetTimestamp();
+                ReuseHull(hullAt, hs[h]);
+                var dgr2 = System.Diagnostics.Stopwatch.GetElapsedTime(dgu).TotalMilliseconds;
+                DiagReuse += dgr2;
+                if (dgr2 > 1) DiagBigReuse = dgr2;
+                var dgm = System.Diagnostics.Stopwatch.GetTimestamp();
                 var hull = hs[h].MovedInto(Hulls[hullAt], rq * Rot24.Quat(p.Rot), rt + Vector3.Transform(p.Pos, rq), c.ScaleOf(i));
+                DiagMoved += System.Diagnostics.Stopwatch.GetElapsedTime(dgm).TotalMilliseconds;
+                var dgb = System.Diagnostics.Stopwatch.GetTimestamp();
                 hull.Bounds(out var mn, out var mx);
+                var dgb2 = System.Diagnostics.Stopwatch.GetTimestamp();
                 Hulls[hullAt] = hull;
+                var dgb3 = System.Diagnostics.Stopwatch.GetTimestamp();
                 Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, Quaternion.Identity, Vector3.Zero, false, i, seg, wheel, hullAt++);
+                var dgb4 = System.Diagnostics.Stopwatch.GetTimestamp();
+                DiagBnd += System.Diagnostics.Stopwatch.GetElapsedTime(dgb, dgb2).TotalMilliseconds;
+                DiagStore += System.Diagnostics.Stopwatch.GetElapsedTime(dgb2, dgb3).TotalMilliseconds;
+                DiagAdd += System.Diagnostics.Stopwatch.GetElapsedTime(dgb3, dgb4).TotalMilliseconds;
                 any = true;
             }
+            var dgx = System.Diagnostics.Stopwatch.GetElapsedTime(dgh).TotalMilliseconds;
+            DiagHulls += dgx;
+            if (dgx > DiagWorstPart) { DiagWorstPart = dgx; DiagWorstAt = i; DiagWorstHulls = hullAt; DiagLen = Hulls.Length; }
             if (!any && c.MergeOf[i] == 0)
             {
                 // (no solid box at all: its bounds stand for it)
@@ -173,7 +200,10 @@ internal sealed partial class ConstructCollider
                 AddCylinder(c, _wheelOf[i], i, seg);
             }
         }
+        var dgr = System.Diagnostics.Stopwatch.GetTimestamp();
         AddRough(c);
+        DiagRough += System.Diagnostics.Stopwatch.GetElapsedTime(dgr).TotalMilliseconds;
+        DiagA += System.Diagnostics.Stopwatch.GetElapsedTime(dg0).TotalMilliseconds;
         // Group by joint, in segment order, and build each group's tree.
         var nodesNeeded = Math.Max(1, LeafCount * 2);
         if (Nodes.Length < nodesNeeded)
@@ -205,6 +235,38 @@ internal sealed partial class ConstructCollider
             at = end;
         }
     }
+
+    /// <summary>
+    /// The hull kept in slot <paramref name="at"/> from the last build is reused when it has <paramref name="shape"/>'s faces; when a part came out
+    /// before it, every later part's hulls sit a few slots on, so the matching one is looked for a little ahead and swapped in. Without this a part
+    /// taken off a rack of 240 designed bombs (five hull shapes each) made every later hull new: 1,200 hulls, 15 to 20 ms of one tick, 10 to 16 MB.
+    /// </summary>
+    private void ReuseHull(int at, ConvexHull shape)
+    {
+        if (Hulls[at] is { } have && ReferenceEquals(have.FaceIdx, shape.FaceIdx))
+            return;
+        DiagMiss++;
+        // (the last shift first: the parts after one taken out all moved by the same few slots)
+        var k = at + _hullShift;
+        if (_hullShift > 0 && k < Hulls.Length && Hulls[k] is { } next && ReferenceEquals(next.FaceIdx, shape.FaceIdx))
+        {
+            (Hulls[at], Hulls[k]) = (next, Hulls[at]);
+            return;
+        }
+        var end = Math.Min(Hulls.Length, at + HullReuseAhead);
+        for (k = at + 1; k < end; k++)
+            if (Hulls[k] is { } cand && ReferenceEquals(cand.FaceIdx, shape.FaceIdx))
+            {
+                (Hulls[at], Hulls[k]) = (cand, Hulls[at]);
+                _hullShift = k - at;
+                return;
+            }
+    }
+
+    private int _hullShift;
+    public static int DiagMiss; // DIAG
+
+    private const int HullReuseAhead = 96; // slots looked through: a part's hulls, a few times over
 
     /// <summary>
     /// Leaves from which the trees are built from Morton order instead (docs/perf/LIMITS.md, "Rebuilds"): each group's

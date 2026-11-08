@@ -434,6 +434,7 @@ public sealed partial class ConstructWorld
         OrdnanceFlight.DropStages(this);
     }
 
+    public static double DiagTargets; // DIAG
     private const int MaxBlastsPerTick = 12; // (each sends its own event and walks the broadphase once)
 
     /// <summary>A shell goes off in the air: in the blast's turn, and it digs nothing.</summary>
@@ -471,7 +472,9 @@ public sealed partial class ConstructWorld
             return; // (a dispenser's pop; a massive blast goes on in StepMegas)
         BlastShells(s.Pos, s.Blast, s.Damage); // (ordnance in the air near it: it may go off too, in its turn)
         var by = Get(s.Gun);
+        var dg = System.Diagnostics.Stopwatch.GetTimestamp();
         Targets?.ShellBlast(s.Pos, s.Blast, s.Damage, s.Crater, s.Kind == ShellKind.Incendiary, by, s.GunPart);
+        DiagTargets += System.Diagnostics.Stopwatch.GetElapsedTime(dg).TotalMilliseconds; // DIAG
         var near = Near(s.Pos, s.Blast + 1f, _blastNear);
         var n = 0;
         for (var i = 0; i < near.Count && n < ShellMaxBodies; i++)
@@ -503,6 +506,7 @@ public sealed partial class ConstructWorld
                 }
                 b.Part = c.PartCount; // (from the end)
             }
+            WarheadsBegin(c);
             while (budget > 0 && --b.Part >= 0)
             {
                 budget--;
@@ -519,6 +523,7 @@ public sealed partial class ConstructWorld
                 if (!IsLive(c))
                     break;
             }
+            WarheadsGone(); // (the bombs it set off on this body, out together: what is still to walk is below them, so keeps its place)
             if (!IsLive(c))
             {
                 b.Body++;

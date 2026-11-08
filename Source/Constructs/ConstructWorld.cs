@@ -284,6 +284,76 @@ public sealed partial class ConstructWorld
             Caps.Hit("cook-offs waiting", CookOffs.Length);
     }
 
+    /// <summary>
+    /// A rack broke while ordnance with a warhead on it had already taken damage (a cook-off chain's blasts on it): everything with a warhead it holds
+    /// goes off with it (sympathetic detonation, a few ticks apart) rather than fall as a heap of loose bombs: a rack's stations sit closer than its
+    /// bombs' fins, so a heap of them overlaps, and a hundred overlapping bodies cost the physics up to 100 ms a tick (--bench-cookoff). A rack shot
+    /// off with nothing on it hurt drops what it holds as before. One structure rebuild. False: nothing went with it.
+    /// </summary>
+    private bool RackGoes(Construct c, int rack)
+    {
+        var n = c.PartCount;
+        if (_rackDoomed.Length < n)
+            _rackDoomed = new bool[Math.Max(n, 256)]; // (once per size)
+        Array.Clear(_rackDoomed, 0, n);
+        var any = false;
+        for (var e = c.FirstLink(rack); e >= 0 && !any; e = c.NextLink(e))
+        {
+            ref var op = ref c.Parts[c.OtherEnd(e)];
+            any = !op.Broken && op.D.Warhead && op.D.Explosive != null && op.Health < op.D.Health;
+        }
+        if (!any)
+            return false;
+        for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
+        {
+            var o = c.OtherEnd(e);
+            ref var op = ref c.Parts[o];
+            if (_rackDoomed[o] || op.Broken || !op.D.Warhead || op.D.Explosive is not { } bomb)
+                continue;
+            Arm(c, o, bomb);
+            _rackDoomed[o] = true;
+        }
+        _rackDoomed[rack] = true;
+        Events.Add($"construct {c.Id}: {c.Parts[rack].D.Name} blown apart with what it held");
+        Disable(c);
+        RemoveParts(c, new ReadOnlySpan<bool>(_rackDoomed, 0, n));
+        return true;
+    }
+
+    private bool[] _rackDoomed = [];
+
+    /// <summary>While a blast walks a body (<see cref="WalkBlast"/>): the warheads its damage set off, taken out together by <see cref="WarheadsGone"/>.</summary>
+    private Construct? _warheadsOf;
+    private readonly HashSet<int> _warheadIds = new(256);
+    private bool[] _warheadsGone = [];
+
+    /// <summary>A blast's walk starts on a body: the warheads it sets off there are noted, not taken out one by one.</summary>
+    private void WarheadsBegin(Construct c)
+    {
+        _warheadsOf = c;
+        _warheadIds.Clear();
+    }
+
+    /// <summary>...and leaves it: those it set off go, in one structure rebuild (a rack of 240 bombs: about 1 ms, where one by one took 5 to 16).</summary>
+    private void WarheadsGone()
+    {
+        var c = _warheadsOf;
+        _warheadsOf = null;
+        if (c == null || _warheadIds.Count == 0 || !IsLive(c))
+            return;
+        var n = c.PartCount;
+        if (_warheadsGone.Length < n)
+            _warheadsGone = new bool[Math.Max(n, 256)]; // (once per size)
+        var any = false;
+        for (var i = 0; i < n; i++)
+            any |= _warheadsGone[i] = c.Parts[i].Broken && c.Parts[i].D.Warhead && _warheadIds.Contains(Ident(c, i));
+        _warheadIds.Clear();
+        if (!any)
+            return;
+        Disable(c);
+        RemoveParts(c, new ReadOnlySpan<bool>(_warheadsGone, 0, n));
+    }
+
     /// <summary>Ordnance set off by damage (the bench and the perf window).</summary>
     public int CookOffsSet;
 
@@ -882,11 +952,27 @@ public sealed partial class ConstructWorld
             return false;
         }
         p.Health = 0;
+        if (d.Logic == CLogic.BombRack && d.OnBreak != PartBreak.Disable && RackGoes(c, part))
+            return true; // (a rack blown off with damaged ordnance on it: they go with it)
         Disable(c); // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
         if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume || d.AmmoStore)
             CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
         if (d.Explosive is { } bomb)
+        {
             Arm(c, part, bomb);
+            if (d.Warhead && d.OnBreak != PartBreak.Disable)
+            {
+                Events.Add($"construct {c.Id}: {d.Name} went off");
+                if (_warheadsOf == c)
+                {
+                    p.Broken = true; // (a blast's walk takes them out together when it leaves the body: one rebuild, not one a bomb; ConstructShells.WalkBlast)
+                    _warheadIds.Add(Ident(c, part)); // (by what it is, not its index: another part breaking off meanwhile renumbers them)
+                    return true;
+                }
+                RemovePart(c, part); // (it goes in its own blast: no wreck of it falls, so a rack's chain leaves no pile of bombs to collide)
+                return true;
+            }
+        }
         if (p.Store != 0)
             if (!c.DefOf(part).IsBeacon && !c.DefOf(part).IsTerminal) // (a beacon holds nothing; a terminal's tray stays with the wreck: its store stays with the wreck, which says so on the look line and the HUD)
                 Spill(c, part); // (a destroyed container spills what it holds)
@@ -1761,6 +1847,7 @@ public sealed partial class ConstructWorld
     /// <summary>Server: trees grown back since the clients were last told (GameResources.cs).</summary>
     public readonly List<uint> GrownTrees = new(16);
 
+    public static double DiagWeapons, DiagPhysics; // DIAG
     public void Step(IWorldQuery query, float dt)
     {
         _partTally = -1; // (counted again when next asked)
@@ -1785,6 +1872,7 @@ public sealed partial class ConstructWorld
             }
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
+        var diag0 = System.Diagnostics.Stopwatch.GetTimestamp();
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
@@ -1794,7 +1882,10 @@ public sealed partial class ConstructWorld
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
+        var diag1 = System.Diagnostics.Stopwatch.GetTimestamp();
         ConstructPhysics.Step(this, query, dt);
+        DiagWeapons += System.Diagnostics.Stopwatch.GetElapsedTime(diag0, diag1).TotalMilliseconds;
+        DiagPhysics += System.Diagnostics.Stopwatch.GetElapsedTime(diag1).TotalMilliseconds;
         OverloadDamage();
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
