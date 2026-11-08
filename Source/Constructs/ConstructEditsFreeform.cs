@@ -49,7 +49,7 @@ public sealed partial class ConstructEdits
         h.Body2 = bodyB;
         h.Part2 = (ushort)pb;
         h.Start = now;
-        h.Duration = Survival ? Freeform.WeldSeconds : 0;
+        h.Duration = Survival ? FitSeconds(player, Freeform.WeldSeconds) : 0;
         return FinishNow(world, player, eye);
     }
 

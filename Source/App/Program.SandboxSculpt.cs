@@ -133,6 +133,8 @@ public static partial class Program
         ConnectorRender.ShapeOn = false;
         var have = SculptSpot(eye, dir, table.Reach, aimed, in hit, out var at);
         var lmb = Down(GameAction.Fire) && !_swallowClick;
+        var creative = g.SandboxInfiniteParts;
+        var repeat = g.SculptRepeat(table, me.Id, creative);
         var rmb = Down(GameAction.Aim);
         var up = have ? GravityFrames.UpAt(at) : GravityFrames.UpAt(eye);
         var slopeLen = 0f;
@@ -158,7 +160,7 @@ public static partial class Program
                 {
                     var spot = AtShapeHeight(at, _flatHave ? _flatLevel : ShapeHeight(at));
                     ShapePreview(spot, spot, table.ShapeRadius, up, true);
-                    if (_flatHave && _sculpt.Step(false, down, true, at, table.ShapeRadius * 0.6f, table.RepeatSeconds, now, up, out _))
+                    if (_flatHave && _sculpt.Step(false, down, true, at, table.ShapeRadius * 0.6f, repeat, now, up, out _))
                         g.SandboxSculpt(GroundShape.Grade(kind), spot, spot);
                 }
                 else if (down)
@@ -169,7 +171,7 @@ public static partial class Program
                 if (have)
                 {
                     ShapePreview(at, at, table.CleanRadius, up, true);
-                    if (_sculpt.Step(false, lmb, true, at, table.CleanRadius * 0.6f, table.RepeatSeconds, now, up, out _))
+                    if (_sculpt.Step(false, lmb, true, at, table.CleanRadius * 0.6f, repeat, now, up, out _))
                         g.SandboxSculpt(GroundShape.Smooth(kind), at);
                 }
                 else if (lmb)
@@ -210,7 +212,7 @@ public static partial class Program
                 break;
             }
             default:
-                if (_sculpt.Step(lmb, rmb, have, at, table.ScoopRadius, table.RepeatSeconds, now, up, out var fill))
+                if (_sculpt.Step(lmb, rmb, have, at, g.SculptRadius(table, me.Id, creative), repeat, now, up, out var fill))
                     g.SandboxSculpt(fill ? DigKind.FillDirt + (byte)kind : DigKind.Scoop, at);
                 else if ((lmb || rmb) && !have)
                     why = "Aim at bare ground in reach";

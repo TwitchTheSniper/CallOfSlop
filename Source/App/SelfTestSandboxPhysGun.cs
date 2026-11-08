@@ -160,7 +160,7 @@ public static partial class SelfTest
         b.Rebuild();
         hands.InfiniteParts = false;
         var mass = b.Mass;
-        b.Mass = 900;
+        b.Mass = ConstructGrab.SurvivalMaxMass + 400; // (over where a survivor starts; was 900 under the 500 kg cap)
         var heavy = hands.GrabRefusal(b, 0);
         b.Mass = mass;
         var light = hands.GrabRefusal(b, 0);

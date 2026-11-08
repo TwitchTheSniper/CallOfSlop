@@ -307,6 +307,7 @@ public sealed partial class Game
         DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
         ShellCatch(p, rec); // (in a robot shell: the body's place and things, GameRobotShell.cs)
         DepotCatch(p, rec); // (the Orbital Depot's run: GameDepot.cs)
+        UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 
@@ -578,6 +579,9 @@ public sealed partial class Game
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
                 break;
+            case WorldSaveWriter.ToolsTag:
+                WorldReadUpgrades(r, ws); // (tool upgrades: GameSandboxUpgrades.cs)
+                break;
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
                 break;
@@ -847,6 +851,7 @@ public sealed partial class Game
         TutorialArrive(p, rec); // (where they were in the induction: GameTutorial.cs)
         DeathArrive(p, rec); // (their checkpoint, and whether they are dead for good: GameSandboxDeath.cs)
         DepotArrive(p, rec); // (where they were on the Orbital Depot's run: GameDepot.cs)
+        UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)

@@ -82,6 +82,7 @@ public enum CActKind : byte
     Material, // u16 body, u8 PaintMode, u16 part, u8 length and the material's name (ASCII): the material painter (protocol 194; GameSandboxMaterial.cs)
     OpeningSkip, // nothing: skip the rest of the survival opening (protocol 199; GameSandboxOpening.cs)
     ShellLeave, // nothing: leave the robot shell worn and wake in the chair (protocol 213; GameRobotShell.cs)
+    GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 215; ConstructEditsUpgrades.cs)
 }
 
 /// <summary>
@@ -831,6 +832,7 @@ public sealed partial class Game
             case CActKind.Grab:
             case CActKind.GrabSteer:
             case CActKind.GrabRelease:
+            case CActKind.GrabThrow:
             case CActKind.GrabFreeze:
             case CActKind.FreezePiece:
             case CActKind.UnfreezeAll:
@@ -961,6 +963,8 @@ public sealed partial class Game
                     return filled; // (a magazine in hand at a store: filled from it, or swapped for a fitted one, ConstructAmmo.cs)
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
+                if (Constructs.Get(body) is { Loose: true, PartCount: 1 } module && ToolUpgrades.Current.ModuleOf(module.Parts[0].Def) != null)
+                    return hands.FitUpgrade(Constructs, p.Id, eye, module); // (a tool upgrade: fitted, ConstructEditsUpgrades.cs)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
                 var used = hands.Use(Constructs, p.Id, eye, body, part);

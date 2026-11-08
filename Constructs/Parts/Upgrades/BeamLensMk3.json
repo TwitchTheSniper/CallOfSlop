@@ -1,0 +1,91 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Beam Lens Mk 3",
+  "description": "A tool upgrade: how far the physics gun's beam reaches, in metres. F on it, lying loose, fits it to your tools.",
+  "group": "Production",
+  "section": "Tool upgrades",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 1.5,
+  "health": 40,
+  "material": "steel",
+  "color": "#30343a",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0,
+        -0.07
+      ],
+      "max": [
+        0.1,
+        0.03,
+        0.07
+      ]
+    },
+    {
+      "min": [
+        -0.08,
+        0.03,
+        -0.055
+      ],
+      "max": [
+        0.08,
+        0.11,
+        0.055
+      ],
+      "color": "#8fc5d9"
+    },
+    {
+      "min": [
+        -0.06,
+        0.11,
+        -0.04
+      ],
+      "max": [
+        -0.044,
+        0.13,
+        0.04
+      ],
+      "color": "#e8e8e0"
+    },
+    {
+      "min": [
+        -0.03,
+        0.11,
+        -0.04
+      ],
+      "max": [
+        -0.014,
+        0.13,
+        0.04
+      ],
+      "color": "#e8e8e0"
+    },
+    {
+      "min": [
+        0.0,
+        0.11,
+        -0.04
+      ],
+      "max": [
+        0.016,
+        0.13,
+        0.04
+      ],
+      "color": "#e8e8e0"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

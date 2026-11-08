@@ -132,6 +132,7 @@ public sealed partial class ConstructEdits
         }
         _magsPut.Clear();
         SelectResetAll();
+        Array.Clear(Levels); // (tool upgrades: a saved world's records bring theirs back)
     }
 
     /// <summary>One player's hands and backpack empty again (a new match, a mode switch): no tool, part, grab, seat or edit.</summary>
@@ -142,6 +143,7 @@ public sealed partial class ConstructEdits
         MagsForget(player);
         ResetPack(player);
         SelectResetPlayer(player);
+        ResetLevels(player); // (tool upgrades, ConstructEditsUpgrades.cs: a saved world's record brings theirs back)
     }
 
     public ref SandboxHand Hand(byte player) => ref Hands[player];
@@ -251,7 +253,7 @@ public sealed partial class ConstructEdits
         h.Socket = (byte)socket;
         h.Variant = (byte)v;
         h.Start = now;
-        h.Duration = EditSeconds(def, ConstructBuild.AttachSeconds(def));
+        h.Duration = EditSeconds(player, def, ConstructBuild.AttachSeconds(def));
         return FinishNow(world, player, eye);
     }
 
@@ -296,7 +298,7 @@ public sealed partial class ConstructEdits
         h.PlaceAnchor = anchor;
         h.Yaw = yaw;
         h.Start = now;
-        h.Duration = EditSeconds(def, ConstructBuild.AttachSeconds(def));
+        h.Duration = EditSeconds(player, def, ConstructBuild.AttachSeconds(def));
         return FinishNow(world, player, eye);
     }
 
@@ -374,7 +376,7 @@ public sealed partial class ConstructEdits
         h.Body = body;
         h.Part = (ushort)part;
         h.Start = now;
-        h.Duration = EditSeconds(def, ConstructBuild.RemoveSeconds(def));
+        h.Duration = EditSeconds(player, def, ConstructBuild.RemoveSeconds(def));
         return FinishNow(world, player, eye);
     }
 
