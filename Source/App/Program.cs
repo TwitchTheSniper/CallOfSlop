@@ -135,6 +135,10 @@ public static unsafe partial class Program
             VehicleKit.VehicleDiversity.SectionsOn = false; // the diversity distance without its front term and identity without its section, as before 2026-11-07 (to measure them)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
             VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
+        if (args.SkipWhile(a => !a.Equals("--roofline", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } roofline)
+            VehicleKit.BodyLook.ForceLine = VehicleKit.Roofline.All.FirstOrDefault(l => l.Name.Equals(roofline, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--roofline {roofline}: one of {string.Join(", ", VehicleKit.Roofline.All.Select(l => l.Name))}"); // body styles phase 2: every body with one line
+        if (args.SkipWhile(a => !a.Equals("--scale", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } scale)
+            VehicleKit.BodyLook.ForceScale = VehicleKit.BodyScale.All.FirstOrDefault(l => l.Name.Equals(scale, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--scale {scale}: one of {string.Join(", ", VehicleKit.BodyScale.All.Select(l => l.Name))}"); // body styles phase 2: every body at one scale class
         if (args.SkipWhile(a => !a.Equals("--layers", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } layerText)
         {
             if (!VehicleKit.VehicleLayers.TryParse(layerText, out var layers, out var why))

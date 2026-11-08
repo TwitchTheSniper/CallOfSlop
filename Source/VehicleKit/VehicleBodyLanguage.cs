@@ -111,13 +111,13 @@ public sealed record Roofline(string Name, string Words, float Crown = 0, float 
 {
     public static readonly Roofline Plain = new("plain", "the plan's steps between tall, low and narrow bays");
     public static readonly Roofline Stepped = new("stepped", "the plan's steps, cut deeper", Steps: 1.6f);
-    public static readonly Roofline Crowned = new("crowned", "a hog's back: highest in the middle, easing down to both ends", Crown: 0.11f, Steps: 0.35f);
-    public static readonly Roofline Sagged = new("sagged", "a sway back: lowest in the middle, rising to both ends", Crown: -0.08f, Steps: 0.5f);
-    public static readonly Roofline Raked = new("raked", "low at the front, rising toward the tail", Rise: 0.07f, Steps: 0.6f);
-    public static readonly Roofline Sloped = new("sloped", "tall at the front, sloping down toward the tail", Rise: -0.08f, Steps: 0.6f);
-    public static readonly Roofline Kicked = new("kick-up", "level, then kicked up over the tail", Kick: 0.13f, Steps: 0.7f);
-    public static readonly Roofline Tapered = new("tapered", "narrowing toward both ends in plan, a little crown", Crown: 0.04f, Taper: 0.16f, Steps: 0.5f);
-    public static readonly Roofline Sheer = new("sheer", "a boat's sheer: high at the bow, dipping amidships, a little rise at the stern", Crown: -0.05f, Rise: -0.05f, Taper: 0.08f, Steps: 0.4f);
+    public static readonly Roofline Crowned = new("crowned", "a hog's back: highest in the middle, easing down to both ends", Crown: 0.16f, Steps: 0.35f);
+    public static readonly Roofline Sagged = new("sagged", "a sway back: lowest in the middle, rising to both ends", Crown: -0.12f, Steps: 0.5f);
+    public static readonly Roofline Raked = new("raked", "low at the front, rising toward the tail", Rise: 0.11f, Steps: 0.6f);
+    public static readonly Roofline Sloped = new("sloped", "tall at the front, sloping down toward the tail", Rise: -0.11f, Steps: 0.6f);
+    public static readonly Roofline Kicked = new("kick-up", "level, then kicked up over the tail", Kick: 0.2f, Steps: 0.7f);
+    public static readonly Roofline Tapered = new("tapered", "narrowing toward both ends in plan, a little crown", Crown: 0.06f, Taper: 0.2f, Steps: 0.5f);
+    public static readonly Roofline Sheer = new("sheer", "a boat's sheer: high at the bow, dipping amidships, a little rise at the stern", Crown: -0.08f, Rise: -0.08f, Taper: 0.1f, Steps: 0.4f);
 
     public static readonly Roofline[] All = [Plain, Stepped, Crowned, Sagged, Raked, Sloped, Kicked, Tapered, Sheer];
 
@@ -146,10 +146,10 @@ public sealed record BodyScale(string Name, string Words, bool WalkIn, float Hal
     public static readonly BodyScale Compact = new("compact", "a car's or a buggy's: engine covers, cargo boxes, cabins nobody walks in", false, 0.3f, 1.0f, 0.5f, 1.9f, 0.5f, 1.0f, 0.875f, 0, 0.1f);
 
     /// <summary>A truck's room: as phase 1's, the upper body a little proud of the wheels.</summary>
-    public static readonly BodyScale Standard = new("standard", "a truck's walk-in room", true, 1.0f, 1.24f, 2.02f, 2.62f, 0.75f, 1.25f, 1.125f, 0, 0.14f);
+    public static readonly BodyScale Standard = new("standard", "a truck's walk-in room", true, 1.0f, 1.28f, 2.02f, 2.75f, 0.75f, 1.25f, 1.125f, 0, 0.2f);
 
     /// <summary>A heavy truck's or a bus's: taller, and wider over the wheels.</summary>
-    public static readonly BodyScale Heavy = new("heavy", "a heavy truck's or a bus's: taller, wider over the wheels", true, 1.0f, 1.42f, 2.1f, 3.0f, 0.75f, 1.5f, 1.125f, 0.08f, 0.3f) { Ride = (0.7, 1.5, 0.25) };
+    public static readonly BodyScale Heavy = new("heavy", "a heavy truck's or a bus's: taller, wider over the wheels", true, 1.0f, 1.45f, 2.2f, 3.05f, 0.75f, 1.5f, 1.125f, 0.1f, 0.38f) { Ride = (0.7, 1.5, 0.25) };
 
     /// <summary>A land train's or a mobile base's: the biggest the kit has a name for (no style draws it yet: the chassis it needs is a later phase's).</summary>
     public static readonly BodyScale Giant = new("giant", "a land train's or a mobile base's", true, 1.0f, 1.9f, 2.4f, 3.8f, 1.0f, 2.0f, 1.125f, 0.2f, 0.7f) { Ride = (0.3, 1, 0) };
@@ -208,22 +208,22 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     {
         // (each station after the first: a new language half the time; tall and short, hard ledges over the wheels)
         ["Bandit"] = new([(BodyLanguage.Slab, 2), (BodyLanguage.Ledge, 1.5), (BodyLanguage.Armour, 0.5)], Mix: 0.5)
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.95f, TallMax = 1.16f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25 },
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.92f, TallMax = 1.25f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25 },
         // (low and wide, flat-faceted: little height, a glacis brow)
         ["Militia"] = new([(BodyLanguage.Armour, 1)])
-            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.02f, FlareShare = 0.8f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.5 },
+            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.1f, FlareShare = 0.9f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.5 },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
         ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12)
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.95f, TallMax = 1.08f, FlareShare = 0.7f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35 },
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.16f, FlareShare = 0.8f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35 },
         // (a portacabin on a chassis: boxy, square ends, tall)
         ["Scam"] = new([(BodyLanguage.Cabin, 2), (BodyLanguage.Van, 1)])
-            { Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.98f, TallMax = 1.12f, FlareShare = 0.4f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)] },
+            { Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.95f, TallMax = 1.2f, FlareShare = 0.5f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)] },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
         ["Highland"] = new([(BodyLanguage.Boat, 3), (BodyLanguage.Slab, 0.5)])
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.94f, TallMax = 1.08f, FlareShare = 0.9f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)] },
+            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.14f, FlareShare = 1f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)] },
         // (tall, upright buses: the heavy class first, the door kerbside)
         ["British"] = new([(BodyLanguage.Bus, 2.5), (BodyLanguage.Coach, 1.5)], 8, 12)
-            { Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.18f, FlareShare = 0.6f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0 },
+            { Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.28f, FlareShare = 0.7f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0 },
     };
 
     /// <summary>A style not named: military armour, faceted, one language.</summary>
@@ -297,7 +297,7 @@ public sealed class BodyLook
         Height = Math.Clamp(Height * (float)p.Fork("tall").Between(_rule.TallMin, _rule.TallMax), Scale.HeightMin, Scale.HeightMax);
         Flare = (float)p.Fork("flare").Between(Scale.FlareMin, Scale.FlareMax) * _rule.FlareShare;
         Line = l.Lines is { Length: > 0 } lines ? BodyStyleRule.Weighted(p.Fork("line"), lines) : Roofline.Plain;
-        LineAmount = _rule.LineAmount * (float)p.Fork("line amount").Between(0.5, 1.0);
+        LineAmount = _rule.LineAmount * (float)p.Fork("line amount").Between(0.6, 1.0);
         BrowLength = BodyStyleRule.Weighted(p.Fork("brow"), _rule.Brows);
         TailLength = BodyStyleRule.Weighted(p.Fork("tail"), _rule.Tails);
         DoorSide = p.Fork("door").Chance(_rule.DoorLeft) ? -1 : 1;
@@ -739,6 +739,15 @@ public static class BodyReportCli
             var ms = new List<double>();
             var parts = new List<int>();
             var facets = new List<int>();
+            var traits = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal); // (phase 2: scale, roofline, door, bay lengths)
+            var heights = new List<float>();
+            var widths = new List<float>();
+            void Tally(string what, string value)
+            {
+                if (!traits.TryGetValue(what, out var t))
+                    traits[what] = t = new Dictionary<string, int>(StringComparer.Ordinal);
+                t[value] = t.GetValueOrDefault(value) + 1;
+            }
             foreach (var g in VehicleRegistry.For(st, false).Where(g => ShapeGrammar.RecipeOf(g) != null))
                 for (var seed = from; seed < from + seeds; seed++)
                 {
@@ -765,6 +774,19 @@ public static class BodyReportCli
                         }
                         var lang = v.Look?.Language.Name ?? "fixed bays";
                         langs[lang] = langs.GetValueOrDefault(lang) + 1;
+                        if (v.Look is { } look && v.Rooms.Count > 0)
+                        {
+                            Tally("scale", look.Scale.Name);
+                            Tally("line", look.Line.Name);
+                            Tally("door", look.RearDoor ? "rear" : look.DoorSide > 0 ? "right" : "left");
+                            Tally("bays", string.Join(" ", look.Lengths(v.Rooms[0].Plan.ToArray()).Select(x => x.ToString("0.##", CultureInfo.InvariantCulture))));
+                            var shapes = v.Rooms[0].Bays.Select(b => HullLoft.ShapeOf(b.Def.Name)).Where(x => x != null).Select(x => x!.Value).ToList();
+                            if (shapes.Count > 0)
+                            {
+                                heights.Add(shapes.Max(x => MathF.Max(x.A.Top, x.B.Top)));
+                                widths.Add(shapes.Max(x => x.A.P.Concat(x.B.P).Max(p => p.X)));
+                            }
+                        }
                         if (v.Rooms.Count > 0)
                         {
                             var fr = Front(v);
@@ -784,6 +806,12 @@ public static class BodyReportCli
                     pairs.Add(Dist(mine[i], mine[j]));
             Console.WriteLine($"{st.Name}: {ms.Count} vehicles, {mine.Count} with rooms; bay parts {keys.Count} distinct, sections {sections.Count} distinct; languages {string.Join(", ", langs.Select(x => $"{x.Key} {x.Value}"))}");
             Console.WriteLine($"  facets a side {(facets.Count > 0 ? $"{facets.Min()} to {facets.Max()}, mean {facets.Average():0.0}" : "-")}");
+            if (heights.Count > 0)
+                Console.WriteLine($"  room height {heights.Min():0.00} to {heights.Max():0.00} m (mean {heights.Average():0.00}), half width at its widest {widths.Min():0.00} to {widths.Max():0.00} m (mean {widths.Average():0.00})");
+            foreach (var (what, t) in traits.Where(x => x.Key != "bays"))
+                Console.WriteLine($"  {what}: {string.Join(", ", t.OrderByDescending(x => x.Value).Select(x => $"{x.Key} {x.Value}"))}");
+            if (traits.TryGetValue("bays", out var bl))
+                Console.WriteLine($"  bay lengths: {bl.Count} different runs over {bl.Values.Sum()} rooms; commonest {bl.OrderByDescending(x => x.Value).First().Key} ({bl.Values.Max()})");
             Console.WriteLine($"  front profile: mean pair {(pairs.Count > 0 ? pairs.Average() : 0):0.000}; generation mean {(ms.Count > 0 ? ms.Average() : 0):0} ms, worst {(ms.Count > 0 ? ms.Max() : 0):0} ms; parts mean {(parts.Count > 0 ? parts.Average() : 0):0}");
             if (mine.Count > 0)
                 Console.WriteLine("  mean front: " + string.Join(" ", Enumerable.Range(0, Bins).Select(b => mine.Average(x => x[b]).ToString("0.00", CultureInfo.InvariantCulture))));
