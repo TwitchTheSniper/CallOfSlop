@@ -66,6 +66,7 @@ public static partial class SelfTest
     public static int Run(string? only = null)
     {
         var path = AppFolders.LogPath("selftest.log");
+        Game.TutorialAutoStart = false; // (the induction holds the gun and tools while it runs: survival sections aren't about it, GameTutorial.cs)
         // First pass: collect the section names without running anything, and resolve the filter against them.
         CollectNames();
         string[] picked = [];

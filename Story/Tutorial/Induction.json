@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-tutorial/1",
- "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings).",
+ "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun and no tools but bare hands while it runs: \"gives\" names the tools a step hands over (kept for every later step), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings).",
  "speaker": "Warden Pettigrew",
  "steps": [
   {
@@ -56,7 +56,7 @@
   {
    "id": "toolwheel",
    "title": "The tool wheel",
-   "text": "Hold {ToolWheel} for the tool wheel. Flick the mouse to a tool and let go to take it out; let go in the middle to cancel.",
+   "text": "Hold {ToolWheel} for the tool wheel. Flick the mouse to a tool and let go to take it out; let go in the middle to cancel. Tools are issued as this induction needs them; your gun comes back at the end.",
    "warden": "Prison issue. Sign for it and don't lick it.",
    "cue": "toolwheel"
   },
@@ -73,7 +73,8 @@
    "text": "Take out the attach tool from the tool wheel ({ToolWheel}), or press {Weapon3}.",
    "warden": "The attach tool. Our most trusted inmate. Unlike you.",
    "cue": "tool",
-   "tool": "attach"
+   "tool": "attach",
+   "gives": ["attach"]
   },
   {
    "id": "place",
@@ -94,21 +95,24 @@
    "title": "Power",
    "text": "Machines need power. Take out the linking tool ({Streak2}), press {Fire} on a genset's power port, then {Fire} on a machine's to run a power cable. {Aim} takes the last node off.",
    "warden": "The generator runs on fuel, not goodwill. We tried goodwill. It was a cold winter.",
-   "cue": "power"
+   "cue": "power",
+   "gives": ["linker"]
   },
   {
    "id": "drill",
    "title": "Dig",
    "text": "Take out the ground drill from the tool wheel and hold {Fire} on the ground to dig dirt, stone and sand. {Aim} puts it back.",
    "warden": "Every convict digs. It builds character, and the character is cheap.",
-   "cue": "drill"
+   "cue": "drill",
+   "gives": ["grounddrill"]
   },
   {
    "id": "assembler",
    "title": "The Assembler",
    "text": "The Assembler makes parts from materials. Pick a recipe with the configure tool ({Fire} on the Assembler), or press {Interact} on it to tip in what you carry.",
    "warden": "Your labour quota is posted on the wall. The wall is also your quota.",
-   "cue": "assembler"
+   "cue": "assembler",
+   "gives": ["configure"]
   },
   {
    "id": "done",
