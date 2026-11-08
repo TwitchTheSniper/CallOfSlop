@@ -227,7 +227,7 @@ public sealed class RoleAsk
         if (Role.Combat && c == Needs.ClassMax)
             f *= 1 + 0.5 * Math.Max(0, Tier - 1);
         var rare = VehicleRoles.RareGun(w);
-        return f * (rare ? (Tier >= 3 ? 1.5 : Tier <= 1 ? 0.4 : 1) : 1);
+        return f * (rare ? (Tier >= 3 ? 1.5 : Tier <= 1 ? 0.4 : 1) : 1) * VehicleArmoury.TierWeight(w, Tier);
     }
 
     /// <summary>One of <paramref name="list"/>, weighted by <see cref="WeaponWeight"/>: one roll, as <see cref="Dice.Pick"/> takes.</summary>
@@ -455,6 +455,10 @@ public static class VehicleRoles
     /// <summary>A gun's class from its receiver's bore and action: rifle and pistol bores light, full-auto medium; shells light; fuel, harpoons and anything bigger heavy.</summary>
     public static GunClass ClassOf(WeaponOption w)
     {
+        if (w.Class is { } stated)
+            return stated; // (an armoury recipe says what it is: VehicleArmoury.cs)
+        if (w.Merge > 1)
+            return GunClass.Heavy; // (a merged receiver fires N squared rounds' damage a shot: a cannon)
         var (receiver, children) = WeaponOption.Parse(w.Build);
         var bore = Parts.Find(receiver)?.Bores is { Length: > 0 } b ? b[0] : "";
         var auto = children.TryGetValue("action", out var action) && action.Contains("Auto", StringComparison.OrdinalIgnoreCase);

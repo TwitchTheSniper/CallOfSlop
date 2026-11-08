@@ -1,0 +1,293 @@
+{
+  "format": "call-of-slop-vehicle-armoury/1",
+  "about": "The vehicle kit's armoury (docs/vehiclekit/VEHICLEKIT.md, 'The armoury'; Source/VehicleKit/VehicleArmoury.cs). Each recipe is a turret gun in the weapon builder's own text (receiver{socket:part,...}; a splitter's barrels as barrel_N, a muzzle device as {muzzle:...} on its barrel), fitted through the game's build rules, so a player could build every one. merge: 1 a single receiver, 2 or 3 an NxN square of that receiver merged into one N times the size (ReceiverMerge.json: damage N^2 a shot, fire rate / N). box: what feeds it (null: a flame gun, which drinks the vehicle's fuel). class: light, medium or heavy (the roles weigh guns by it). tier: the least threat tier it is common at (below it, a tenth as likely). tags: what it is for (light, medium, heavy, boss, aa, anti-armour, close, suppress, flame, oddity). mount: pintle (open), shield (a gun shield on the arm), twin (two receivers side by side, one gunner). inspired: the Zombies mystery box builds (Parts/Builds) it is taken from. factions: style name -> [weight 1 to 6 (copies in the style's list; each own gun is 1), the faction's name for it]. --check-armoury fits and checks every recipe.",
+  "recipes": [
+    {
+      "id": "scrap-autocannon", "about": "Four rifle receivers bolted into a square: one receiver twice the size on a heavy bore, four rifles' punch a shot at half the rate.",
+      "inspired": ["Backbone", "Heavy Hitter", "Hammerfall Cannon"],
+      "build": "Workhorse Receiver{barrel:Heavy Bore Barrel,feed:Extended Mag,action:Full-Auto Sear}", "merge": 2,
+      "class": "heavy", "tier": 2, "tags": ["heavy", "anti-armour"], "mount": "shield",
+      "factions": {"Bandit": [3, "Scrap Cannon"], "Militia": [1, "Field Autocannon"], "Highland": [1, "Muckle Gun"]}
+    },
+    {
+      "id": "mismatch-cannon", "about": "A merged rifle block on a stub barrel with a brake: short, loud and ugly, the Bandits' cheapest cannon.",
+      "inspired": ["Kitchen Sink", "Gutbuster"],
+      "build": "Workhorse Receiver{barrel:Stub Barrel{muzzle:Muzzle Brake},feed:Drum Mag,action:Full-Auto Sear}", "merge": 2,
+      "class": "heavy", "tier": 1, "tags": ["heavy", "close"], "mount": "pintle",
+      "factions": {"Bandit": [2, "Drainpipe"]}
+    },
+    {
+      "id": "service-cannon", "about": "Four battle rifles merged, semi-automatic on a long barrel: a slow, hard-hitting gun for anything with plates.",
+      "inspired": ["Firing Squad", "Reaper Marksman"],
+      "build": "Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Muzzle Brake},feed:Extended Mag,action:Semi-Auto Trigger}", "merge": 2,
+      "class": "heavy", "tier": 2, "tags": ["heavy", "anti-armour"], "mount": "shield",
+      "factions": {"Militia": [3, "Service Cannon"], "British": [2, "Proper Gun"], "IT": [1, "Hard Stop"]}
+    },
+    {
+      "id": "heavy-lmg-block", "about": "Four LMG actions merged into a heavy machine gun on a heatsink barrel: the standard heavy MG.",
+      "inspired": ["Suppressing Fire", "Bastille Squad LMG"],
+      "build": "Bastille LMG Receiver{barrel:Heatsink Barrel,feed:Drum Mag,action:Full-Auto Sear}", "merge": 2,
+      "class": "heavy", "tier": 2, "tags": ["heavy", "suppress"], "mount": "shield",
+      "factions": {"Militia": [2, "Heavy Service MG"], "British": [3, "Stiff Upper Lip"], "Highland": [1, "Ceilidh Gun"], "Bandit": [1, "Big Rattler"]}
+    },
+    {
+      "id": "grapeshot", "about": "Four pump receivers merged into a deck gun that fires a bucket of shot: close defence for a big vehicle.",
+      "inspired": ["Dragon's Choir", "Clown Car"],
+      "build": "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}", "merge": 2,
+      "class": "heavy", "tier": 2, "tags": ["heavy", "close"], "mount": "shield",
+      "factions": {"Highland": [3, "Mons Meg"], "Bandit": [1, "Bucket of Nails"], "Scam": [1, "Mass Mailer"]}
+    },
+    {
+      "id": "carbine-block", "about": "Four carbines merged on a standard barrel: a quick, light cannon a small crew can afford.",
+      "inspired": ["Heavy Pockets", "Road Rage"],
+      "build": "Courier Carbine Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Extended Mag,action:Carbine Sear}", "merge": 2,
+      "class": "medium", "tier": 1, "tags": ["medium"], "mount": "pintle",
+      "factions": {"Scam": [2, "Bulk Dialler"], "IT": [1, "Batch Job"], "Bandit": [1, "Fat Carbine"]}
+    },
+    {
+      "id": "marksman-cannon", "about": "Four marksman actions merged behind a fluted barrel: a precise long-range anti-armour gun.",
+      "inspired": ["Lighthouse Keeper", "Longbow Marksman"],
+      "build": "Longbow DMR Receiver{barrel:Fluted Match Barrel,feed:Box Mag,action:Marksman Trigger}", "merge": 2,
+      "class": "heavy", "tier": 3, "tags": ["heavy", "anti-armour"], "mount": "shield",
+      "factions": {"IT": [3, "Root Cause"], "British": [1, "Long Range Forecast"]}
+    },
+    {
+      "id": "chaingun-block", "about": "Four chain gun receivers merged: a boss gun, twice the size of a heavy MG and as slow as a cannon.",
+      "inspired": ["Titan's Tantrum", "Twin Thumpers"],
+      "build": "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}", "merge": 2,
+      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "anti-armour"], "mount": "shield",
+      "factions": {"Bandit": [1, "Warlord's Hammer"], "Militia": [1, "Brigade Gun"], "Highland": [1, "Auld Thunder"]}
+    },
+    {
+      "id": "nine-rifle-cannon", "about": "Nine rifle receivers in a 3x3: a gun three times the size, nine rifles a shot at a third the rate. Only the biggest trucks carry one.",
+      "inspired": ["Gantry Sixteen", "Exo Twelve"],
+      "build": "Workhorse Receiver{barrel:Stub Barrel,feed:Box Mag,action:Full-Auto Sear}", "merge": 3,
+      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "anti-armour"], "mount": "pintle",
+      "factions": {"Bandit": [1, "The Whole Scrapyard"], "Militia": [1, "Corps Gun"]}
+    },
+    {
+      "id": "big-flamer", "about": "Four flame receivers merged on one nozzle: a jet of fire twice as long, drinking the vehicle's own fuel.",
+      "inspired": ["Firebreather", "Five-Alarm Chili"],
+      "build": "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", "merge": 2, "box": null,
+      "class": "heavy", "tier": 3, "tags": ["heavy", "flame", "close"], "mount": "shield",
+      "factions": {"Bandit": [1, "Hellmouth"], "British": [1, "Proper Brew"]}
+    },
+    {
+      "id": "crossroads", "about": "A chain gun through a cross splitter: four heavy barrels up, down, left and right.",
+      "inspired": ["Crossroads"],
+      "build": "Thumper Chain Gun Receiver{barrel:Cross Splitter{barrel_1:Standard Barrel,barrel_2:Standard Barrel,barrel_3:Standard Barrel,barrel_4:Standard Barrel},feed:Belt Box,action:Chain Drive Motor}",
+      "class": "heavy", "tier": 3, "tags": ["heavy", "aa", "suppress"], "mount": "pintle",
+      "factions": {"Bandit": [1, "Crossroads"], "Scam": [1, "Conference Call"], "Militia": [1, "Quad Heavy"]}
+    },
+    {
+      "id": "totem-flak", "about": "An LMG through a totem splitter: four stub barrels stacked up, a wall of rounds for anything that flies.",
+      "inspired": ["Totem Pole"],
+      "build": "Bastille LMG Receiver{barrel:Totem Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel},feed:Drum Mag,action:Full-Auto Sear}",
+      "class": "medium", "tier": 2, "tags": ["medium", "aa", "suppress"], "mount": "pintle",
+      "factions": {"British": [2, "Flak in a Teapot"], "Militia": [2, "Quad AA"], "Highland": [1, "Totem"], "IT": [1, "Firewall"]}
+    },
+    {
+      "id": "tower-rifle", "about": "A rifle through a tower splitter: three barrels stacked straight up.",
+      "inspired": ["Tower of Power"],
+      "build": "Workhorse Receiver{barrel:Tower Splitter{barrel_1:Standard Barrel,barrel_2:Standard Barrel,barrel_3:Standard Barrel},feed:Drum Mag,action:Full-Auto Sear}",
+      "class": "medium", "tier": 1, "tags": ["medium", "aa"], "mount": "pintle",
+      "factions": {"Bandit": [1, "Stack of Scrap"], "Scam": [1, "Escalation"]}
+    },
+    {
+      "id": "line-dance", "about": "An SMG through four barrels in a row: a spray for the close fight.",
+      "inspired": ["Line Dance", "Staircase"],
+      "build": "Stampede Receiver{barrel:Quad Line Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel},feed:Drum Mag,action:Buzzsaw Sear}",
+      "class": "light", "tier": 1, "tags": ["light", "close"], "mount": "pintle",
+      "factions": {"Scam": [2, "Line Dance"], "Highland": [1, "Strip the Willow"], "Bandit": [1, "Fence Spray"]}
+    },
+    {
+      "id": "hydra", "about": "One rifle through a six-headed splitter: a fan of stub barrels that looks like a party and acts like a wall.",
+      "inspired": ["Hydra Platter", "Bouquet"],
+      "build": "Workhorse Receiver{barrel:Hydra Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Drum Mag,action:Full-Auto Sear}",
+      "class": "medium", "tier": 2, "tags": ["medium", "close", "oddity"], "mount": "shield",
+      "factions": {"Scam": [2, "Hydra Platter"], "Bandit": [1, "Six of Scrap"]}
+    },
+    {
+      "id": "fire-escape", "about": "An autocannon through a ladder splitter: six heavy stub barrels in two rows.",
+      "inspired": ["Fire Escape"],
+      "build": "Hammerfall Autocannon Receiver{barrel:Ladder Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Heavy Box,action:Autocannon Drive}",
+      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "aa"], "mount": "shield",
+      "factions": {"Scam": [1, "Fire Escape"], "IT": [1, "Cascade Failure"], "Militia": [1, "Battery Six"]}
+    },
+    {
+      "id": "pyramid", "about": "A semi shotgun through a pyramid splitter: one barrel over two.",
+      "inspired": ["Pyramid Scheme"],
+      "build": "Street Sweeper Receiver{barrel:Pyramid Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel,barrel_3:Scattermouth Barrel},feed:Shell Drum,action:Riot Trigger}",
+      "class": "medium", "tier": 2, "tags": ["medium", "close", "oddity"], "mount": "shield",
+      "factions": {"Scam": [3, "Pyramid Scheme"], "Highland": [1, "Three Peaks"]}
+    },
+    {
+      "id": "bunk-bed", "about": "A battle rifle with its barrels over and under.",
+      "inspired": ["Bunk Bed"],
+      "build": "Reaper Battle Rifle Receiver{barrel:Over-Under Splitter{barrel_1:Standard Barrel,barrel_2:Standard Barrel},feed:Extended Mag,action:Marksman Trigger}",
+      "class": "light", "tier": 1, "tags": ["light"], "mount": "pintle",
+      "factions": {"British": [1, "Bunk Bed"], "Militia": [1, "Over-Under"], "Highland": [1, "Double Dram"]}
+    },
+    {
+      "id": "twin-pump", "about": "A pump shotgun through a Y splitter: twice the pellets.",
+      "inspired": ["Twin Splitter Shotgun", "Coach Gun"],
+      "build": "Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Box,action:Pump Slide}",
+      "class": "light", "tier": 1, "tags": ["light", "close"], "mount": "pintle",
+      "factions": {"Highland": [2, "Coach Gun"], "Bandit": [1, "Forked Pump"], "British": [1, "Two Sugars"]}
+    },
+    {
+      "id": "auto-shotgun", "about": "A full-auto shotgun on a drum behind a gun shield: rooms, and decks, empty quickly.",
+      "inspired": ["Auto Shotgun", "Tumble Dryer"],
+      "build": "Gravedigger Auto Receiver{barrel:Scattermouth Barrel{muzzle:Tumbler Ring},feed:Shell Drum,action:Heavy Auto Sear}",
+      "class": "medium", "tier": 2, "tags": ["medium", "close"], "mount": "shield",
+      "factions": {"Highland": [2, "Claymore Auto"], "Bandit": [1, "Gutter Sweeper"], "Militia": [1, "Riot Gun"], "IT": [1, "Purge"]}
+    },
+    {
+      "id": "dragon-sweeper", "about": "A semi shotgun through a dragon mouth: every shell leaves in a burst of fire.",
+      "inspired": ["Hot Takes", "Street Sweeper"],
+      "build": "Street Sweeper Receiver{barrel:Scattermouth Barrel{muzzle:Dragon Mouth},feed:Shell Drum,action:Riot Trigger}",
+      "class": "medium", "tier": 3, "tags": ["medium", "close", "flame"], "mount": "pintle",
+      "factions": {"Scam": [1, "Hot Take"], "Bandit": [1, "Dragon Sweeper"], "Highland": [1, "Burns Night"]}
+    },
+    {
+      "id": "twin-chaingun", "about": "Two belt-fed chain guns side by side on one cradle, one gunner: the convoy's fire support.",
+      "inspired": ["Twin Thumpers"],
+      "build": "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}", "mount": "twin",
+      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "suppress"],
+      "factions": {"Militia": [2, "Twin Brigade MG"], "Bandit": [1, "Twin Thumpers"], "British": [1, "Pair of Kippers"]}
+    },
+    {
+      "id": "twin-lmg", "about": "Two LMG actions side by side: a twin mount any crew can rig.",
+      "inspired": ["Conga Line", "Double-Tap Twins"],
+      "build": "Bastille LMG Receiver{barrel:Heatsink Barrel,feed:Drum Mag,action:Full-Auto Sear}", "mount": "twin",
+      "class": "medium", "tier": 2, "tags": ["medium", "suppress", "aa"],
+      "factions": {"British": [2, "Twin Brolly"], "Militia": [2, "Twin Service MG"], "Highland": [1, "Twa Dugs"], "IT": [1, "Redundant Pair"]}
+    },
+    {
+      "id": "twin-pumps", "about": "Two pumps with long chokes on one cradle: tight patterns, two at a time.",
+      "inspired": ["Choke Hold"],
+      "build": "Farmhand Pump Receiver{barrel:Scattermouth Barrel{muzzle:Long Choke},feed:Shell Box,action:Pump Slide}", "mount": "twin",
+      "class": "light", "tier": 1, "tags": ["light", "close"],
+      "factions": {"Highland": [2, "Twin Claymores"], "Bandit": [1, "Both Barrels"]}
+    },
+    {
+      "id": "forked-tongue", "about": "Two battle rifles side by side, each through a fork crown.",
+      "inspired": ["Forked Tongue"],
+      "build": "Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Fork Crown},feed:Extended Mag,action:Hair Trigger}", "mount": "twin",
+      "class": "medium", "tier": 3, "tags": ["medium", "oddity"],
+      "factions": {"Scam": [2, "Forked Tongue"], "IT": [1, "Split Horizon"]}
+    },
+    {
+      "id": "twin-carbines", "about": "Two carbines side by side on one cradle: the cheapest twin.",
+      "inspired": ["Double-Tap Twins", "Heavy Pockets"],
+      "build": "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag,action:Carbine Sear}", "mount": "twin",
+      "class": "light", "tier": 1, "tags": ["light"],
+      "factions": {"Scam": [1, "Double Dial"], "IT": [1, "Pair Programmer"], "Bandit": [1, "Two Rusties"]}
+    },
+    {
+      "id": "hammerfall", "about": "The autocannon receiver on a stub barrel: even the stub comes out the size of a drainpipe.",
+      "inspired": ["Hammerfall Cannon"],
+      "build": "Hammerfall Autocannon Receiver{barrel:Stub Barrel,feed:Heavy Box,action:Autocannon Drive}",
+      "class": "heavy", "tier": 3, "tags": ["heavy", "anti-armour"], "mount": "shield",
+      "factions": {"Militia": [2, "Hammerfall"], "Bandit": [1, "Hammerfall"], "IT": [1, "Patch Tuesday"]}
+    },
+    {
+      "id": "ground-breaker", "about": "A bunker buster through a cannon sleeve: a round the size of a fist.",
+      "inspired": ["Ground Breaker", "Dragon's Hoard"],
+      "build": "Bunker Buster Receiver{barrel:Cannon Sleeve,feed:Heavy Box,action:Autocannon Drive}",
+      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "anti-armour"], "mount": "shield",
+      "factions": {"Militia": [1, "Bunker Buster"], "British": [1, "Firm Handshake"], "Highland": [1, "Caber Cannon"]}
+    },
+    {
+      "id": "belt-chaingun", "about": "Heavy rounds off a belt with a short spin-up.",
+      "inspired": ["Belt-Fed Chaingun"],
+      "build": "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}",
+      "class": "heavy", "tier": 2, "tags": ["heavy", "suppress"], "mount": "pintle",
+      "factions": {"Militia": [2, "Chain Gun"], "Bandit": [1, "Belt Grinder"], "Highland": [1, "Pipe Band"]}
+    },
+    {
+      "id": "elephant-gun", "about": "A .50 bolt action on a big iron barrel: slow, loud, and it goes through.",
+      "inspired": ["Elephant Gun", "Clap Back"],
+      "build": "Longreach Bolt Receiver{barrel:Big Iron Barrel,feed:Heavy Box,action:Turn Bolt}",
+      "class": "heavy", "tier": 2, "tags": ["heavy", "anti-armour"], "mount": "pintle",
+      "factions": {"Highland": [1, "Stalker"], "British": [2, "Elephant Gun"], "IT": [1, "Hard Delete"]}
+    },
+    {
+      "id": "gutter-ball", "about": "A heavy revolver on a cannon sleeve: rolls through the pins.",
+      "inspired": ["Gutter Ball", "Kingpin Hand Cannon"],
+      "build": "Kingpin Revolver Receiver{barrel:Cannon Sleeve,feed:Heavy Box,action:Revolver Hammer}",
+      "class": "medium", "tier": 2, "tags": ["medium", "oddity"], "mount": "pintle",
+      "factions": {"Scam": [1, "Gutter Ball"], "Bandit": [1, "Bowling Night"]}
+    },
+    {
+      "id": "seven-shooter", "about": "A revolver frame behind a barrel of barrels.",
+      "inspired": ["Seven Shooter"],
+      "build": "Kingpin Revolver Receiver{barrel:Barrel of Barrels,feed:Heavy Box,action:Revolver Hammer}",
+      "class": "medium", "tier": 3, "tags": ["medium", "oddity"], "mount": "shield",
+      "factions": {"Scam": [1, "Seven Figure Offer"], "Bandit": [1, "Seven Shooter"]}
+    },
+    {
+      "id": "gutbuster", "about": "An LMG on a bloat barrel: big, slow, swollen rounds.",
+      "inspired": ["Gutbuster"],
+      "build": "Bastille LMG Receiver{barrel:Bloat Barrel{muzzle:Muzzle Brake},feed:Drum Mag,action:Full-Auto Sear}",
+      "class": "medium", "tier": 1, "tags": ["medium"], "mount": "pintle",
+      "factions": {"Bandit": [1, "Gutbuster"], "Highland": [1, "Haggis Gun"], "British": [1, "Full English"]}
+    },
+    {
+      "id": "squad-lmg", "about": "An LMG on a long compensated barrel: holds a road on its own.",
+      "inspired": ["Bastille Squad LMG", "Steady Eddie"],
+      "build": "Bastille LMG Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Drum Mag,action:Full-Auto Sear}",
+      "class": "medium", "tier": 1, "tags": ["medium", "suppress"], "mount": "pintle",
+      "factions": {"Militia": [2, "Squad MG"], "British": [1, "Queue Keeper"], "Highland": [1, "Piper"]}
+    },
+    {
+      "id": "coil-lance", "about": "A coil receiver on a coil barrel off an energy cell: the high-tech rifle.",
+      "inspired": ["Rail Battery", "The Oracle"],
+      "build": "Railspike Coil Receiver{barrel:Coil Barrel,feed:Capacitor Pack,action:Turn Bolt}",
+      "class": "heavy", "tier": 3, "tags": ["heavy", "anti-armour"], "mount": "shield",
+      "factions": {"IT": [3, "Rail Spike"]}
+    },
+    {
+      "id": "spark-carbine", "about": "An energy carbine on a coil barrel: what the tech crews mount on everything.",
+      "inspired": ["Power Grid", "Zap Happy"],
+      "build": "Sparkplug Energy Receiver{barrel:Coil Barrel,feed:Capacitor Pack,action:Carbine Sear}",
+      "class": "medium", "tier": 3, "tags": ["medium"], "mount": "pintle",
+      "factions": {"IT": [3, "Power Cycle"], "Scam": [1, "Live Wire"]}
+    },
+    {
+      "id": "spark-block", "about": "Four energy carbines merged: a big blue cannon off one cell.",
+      "inspired": ["Power Grid", "Bouquet"],
+      "build": "Sparkplug Energy Receiver{barrel:Coil Barrel,feed:Capacitor Pack,action:Carbine Sear}", "merge": 2,
+      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "anti-armour"], "mount": "shield",
+      "factions": {"IT": [2, "Blue Screen"]}
+    },
+    {
+      "id": "marksman", "about": "A DMR on a marksman barrel with a velocity booster: the precise one.",
+      "inspired": ["Lighthouse Keeper", "Sewing Kit"],
+      "build": "Longbow DMR Receiver{barrel:Marksman Barrel{muzzle:Velocity Booster},feed:Extended Mag,action:Marksman Trigger}",
+      "class": "medium", "tier": 1, "tags": ["medium", "anti-armour"], "mount": "pintle",
+      "factions": {"IT": [2, "Code Review"], "British": [1, "Queen's Shilling"], "Militia": [1, "Designated Gun"]}
+    },
+    {
+      "id": "grenade-lobber", "about": "A bucket launcher on a tube: one long, careful lob at a time.",
+      "inspired": ["Bucket Lobber", "Grenade Organ", "Trench Party"],
+      "build": "Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,action:Lob Trigger}",
+      "class": "heavy", "tier": 2, "tags": ["heavy", "anti-armour", "oddity"], "mount": "shield",
+      "factions": {"Bandit": [1, "Bucket Lobber"], "Scam": [1, "Spam Lobber"], "Militia": [1, "Grenade Launcher"]}
+    },
+    {
+      "id": "prize-draw", "about": "Two parade cannons side by side on one cradle, lobbing from toasters: a lot of noise for a lot of money.",
+      "inspired": ["Toaster Duck", "Party Cannon", "Grand Marshal"],
+      "build": "Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,action:Lob Trigger}", "mount": "twin",
+      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "oddity"],
+      "factions": {"Scam": [2, "Prize Draw"]}
+    },
+    {
+      "id": "harpoon-twin", "about": "Two harpoon guns on one cradle: two ropes, one very surprised truck.",
+      "inspired": ["Harpoon Gun"],
+      "build": "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}", "mount": "twin",
+      "class": "heavy", "tier": 3, "tags": ["heavy", "oddity"],
+      "factions": {"Highland": [1, "Twin Cabers"], "Bandit": [1, "Double Hook"]}
+    }
+  ]
+}

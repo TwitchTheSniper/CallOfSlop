@@ -309,7 +309,7 @@ public sealed class ConstructClip
             {
                 (stepOn, stepSocket, stepOwn) = (on, ts, ds);
                 var td = c.DefOf(on);
-                sb.Append(", \"on\": ").Append(on).Append(", \"socket\": ").Append(Quote(td.Sockets[ts].Name)).Append(", \"by\": ").Append(Quote(d.Sockets[ds].Name)).Append(", \"spin\": ").Append(spin);
+                sb.Append(", \"on\": ").Append(on).Append(", \"socket\": ").Append(Quote(ConstructMerge.SocketName(c, on, ts))).Append(", \"by\": ").Append(Quote(d.Sockets[ds].Name)).Append(", \"spin\": ").Append(spin);
                 var at = c.FrameOf(p.Seg) == 0 ? p.Pos - c.Parts[0].Pos : p.Pos; // (step 0 builds at the origin; a freeform piece's numbers are in its own frame)
                 sb.Append(FormattableString.Invariant($", \"at\": [{at.X:0.##}, {at.Y:0.##}, {at.Z:0.##}]"));
             }
@@ -394,9 +394,9 @@ public sealed class ConstructClip
             var (st, sd) = (e & 1) != 0 ? ((int)l.SA, (int)l.SB) : (l.SB, l.SA);
             taken.Add((o, st));
             var td = c.DefOf(o);
-            if (o == on && st == socket && sd == own || st >= td.Sockets.Length || sd >= d.Sockets.Length)
-                continue; // (the step's own; a merged receiver's centre socket has no name: StepOn refuses those)
-            sb.Append(more ? ", [" : ", \"also\": [[").Append(o).Append(", ").Append(Quote(td.Sockets[st].Name)).Append(", ").Append(Quote(d.Sockets[sd].Name)).Append(']');
+            if (o == on && st == socket && sd == own || st >= c.SocketCount(o) || sd >= d.Sockets.Length)
+                continue; // (the step's own; a link to a merged receiver's centre socket is named "merged ...": ConstructMerge.SocketName)
+            sb.Append(more ? ", [" : ", \"also\": [[").Append(o).Append(", ").Append(Quote(ConstructMerge.SocketName(c, o, st))).Append(", ").Append(Quote(d.Sockets[sd].Name)).Append(']');
             more = true;
         }
         if (more)
@@ -425,9 +425,9 @@ public sealed class ConstructClip
             return false;
         var td = c.DefOf(on);
         var d = c.DefOf(k);
-        if (socket >= td.Sockets.Length || own >= d.Sockets.Length)
+        if (socket >= c.SocketCount(on) || own >= d.Sockets.Length)
         {
-            why = "a merged receiver's gun parts can't go in a blueprint yet";
+            why = "a merged receiver's gun parts can't go in a blueprint here";
             return false;
         }
         if (d.HasJoint && own == d.LeafIndex)

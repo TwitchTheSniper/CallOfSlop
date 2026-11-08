@@ -554,6 +554,7 @@ public static class VehicleChecks
     private static void Aim(Construct c, ConstructWorld w, IWorldQuery q, int gun, int seat, string name, VehicleReport r)
     {
         var worst = 0f;
+        var worstAim = 0f;
         foreach (var (yaw, pitch) in new[] { (MathF.PI / 2, 0f), (-MathF.PI / 2, 0f), (3f, 0f), (0f, 0.25f) })
         {
             for (var t = 0; t < 240; t++)
@@ -563,12 +564,18 @@ public static class VehicleChecks
                 c.Parts[seat].AimPitch = pitch;
                 w.Step(q, World.TickDt);
             }
-            ConstructWeapons.MuzzleWorld(c, gun, out _, out var fwd);
-            worst = MathF.Max(worst, MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(fwd), World.Forward(yaw, pitch)), -1, 1)) * 180 / MathF.PI);
+            ConstructWeapons.MuzzleWorld(c, gun, out var muzzle, out var fwd);
+            fwd = Vector3.Normalize(fwd);
+            worst = MathF.Max(worst, MathF.Acos(Math.Clamp(Vector3.Dot(fwd, World.Forward(yaw, pitch)), -1, 1)) * 180 / MathF.PI);
+            // What the game points it at: the point its gunner looks at, within its reach (the guns converge on it, ConstructWeapons.GunnerPoint), so a short gun
+            // set off its gunner's eye stands off the look's line by design; it is judged by how far it is off that point.
+            var at = ConstructWeapons.GunnerPoint(w, c, seat, q, c.Guns[gun].MaxRange) - muzzle;
+            if (at.LengthSquared() > 1e-4f)
+                worstAim = MathF.Max(worstAim, MathF.Acos(Math.Clamp(Vector3.Dot(fwd, Vector3.Normalize(at)), -1, 1)) * 180 / MathF.PI);
         }
-        r.Notes.Add($"the {name} follows the gunner's look within {worst:0.0} degrees (sides, behind, up)");
-        if (worst > (c.Guns[gun].MaxRange < 30 ? 20 : 12)) // (a short gun converges close by, so it stands further off its gunner's line)
-            r.Failures.Add($"the {name} is {worst:0} degrees off where its gunner looks: its turntable or hinge doesn't point it");
+        r.Notes.Add($"the {name} follows the gunner's look within {worst:0.0} degrees (sides, behind, up), {worstAim:0.0} off the point it is laid on");
+        if (worstAim > 12 || worst > (c.Guns[gun].MaxRange < 30 ? 30 : 12)) // (a short gun converges close by, so it stands further off its gunner's line: the point it's laid on is the measure)
+            r.Failures.Add($"the {name} is {MathF.Max(worstAim, worst):0} degrees off where its gunner looks: its turntable or hinge doesn't point it");
     }
 
     /// <summary>Every seat with a Turret Module fires its guns: a sitter on Fire for a second after the first load.</summary>

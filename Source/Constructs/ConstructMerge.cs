@@ -445,6 +445,33 @@ public static class ConstructMerge
         }
     }
 
+    /// <summary>How a blueprint names a merged receiver's centre socket: this, then the receiver's own socket's name ("merged front").</summary>
+    public const string CentrePrefix = "merged ";
+
+    /// <summary>Socket <paramref name="s"/> of part <paramref name="part"/> by name: its own, or a merged receiver's centre socket as <see cref="CentrePrefix"/> and the socket it mirrors.</summary>
+    public static string SocketName(Construct c, int part, int s)
+    {
+        var own = c.DefOf(part).Sockets;
+        return s < own.Length ? own[s].Name : CentrePrefix + own[s - own.Length].Name;
+    }
+
+    /// <summary>
+    /// A socket of part <paramref name="part"/> by its name in a blueprint, -1 when it has none: a centre socket ("merged front") only on a merge's lead, the merges found
+    /// again first (a blueprint builds without rebuilding between steps).
+    /// </summary>
+    public static int SocketIndex(Construct c, int part, string name)
+    {
+        var own = c.DefOf(part).Sockets;
+        if (!name.StartsWith(CentrePrefix, StringComparison.Ordinal))
+            return Array.FindIndex(own, s => s.Name == name);
+        if (!c.MergeLead(part))
+            Refresh(c);
+        if (!c.MergeLead(part))
+            return -1;
+        var k = Array.FindIndex(own, s => s.Name.AsSpan().SequenceEqual(name.AsSpan(CentrePrefix.Length)));
+        return k < 0 ? -1 : own.Length + k;
+    }
+
     /// <summary>Centre socket <paramref name="s"/> of merge <paramref name="m"/> (rest frame): the receiver's socket, N times out from the merged origin.</summary>
     public static void CentreSocket(Construct c, in CMerge m, int s, out Vector3 at, out byte dir)
     {
