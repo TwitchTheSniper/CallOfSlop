@@ -1069,6 +1069,15 @@ public sealed partial class Construct
         RebuildFull();
     }
 
+    /// <summary>A part on freeform weld <paramref name="j"/>'s own segment to hold it (its first; 0 when the segment is empty, which a rebuild's split takes off).</summary>
+    private ushort WeldChild(int j)
+    {
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].Seg == j + 1)
+                return (ushort)i;
+        return 0;
+    }
+
     private void RebuildFull()
     {
         FullRuns++;
@@ -1082,7 +1091,12 @@ public sealed partial class Construct
         FreeformCount = MovingJoints = 0;
         for (var j = 0; j < JointCount; j++)
             if (Joints[j].Freeform)
+            {
                 FreeformCount++;
+                ref var fj = ref Joints[j];
+                if (fj.Child >= PartCount || Parts[fj.Child].Seg != j + 1)
+                    fj.Child = WeldChild(j); // (a body joined before 2026-11-08 kept the other body's index: a client refused its Full)
+            }
             else
                 MovingJoints++;
         BuildSpecials();
