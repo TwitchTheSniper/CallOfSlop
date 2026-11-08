@@ -48,7 +48,7 @@ world, in co-op, with the colony in sight below. Moving it to a real moon later 
 
 ## Network and save
 
-- **`Msg.Depot`** (protocol 211), server to one client, reliable: u8 state (0 none, 1 report, 2 + step, 255 done), u8
+- **`Msg.Depot`** (protocol 212), server to one client, reliable: u8 state (0 none, 1 report, 2 + step, 255 done), u8
   whether there is a target, vec the target. The panel and the marker read it.
 - **The world save**: the Opening section gains the Remote Works' and the depot's construct ids (an older reader stops
   before them), and a `Depot` section (tag `DEPO`) holds each person's state and lander id, onto their record. A world from

@@ -2077,7 +2077,7 @@ reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the sav
 - **Destroyed.** A hit that would kill someone in a shell (`DamagePlayer` asks `ShellTakesDeath` first) destroys the shell: no
   death, no kill line, no respawn, whatever the world's death rules; they wake in the chair with their body's health and things.
   Whatever the shell held or carried in its pack is set down where it was, as a death drops a pack.
-- **Seen as a robot.** Every peer knows who wears a shell (`Player.InShell`, `Msg.Shell`, protocol 210) and draws them in
+- **Seen as a robot.** Every peer knows who wears a shell (`Player.InShell`, `Msg.Shell`, protocol 211) and draws them in
   steel with a lit visor and their colour as the accent (`BodyColors.Robot`, `BodyModel.RobotVariant`). The HUD says so.
 - **Saves.** A world saved while someone wears a shell records their body (in the chair) and its things (`ShellCatch`). A shell
   being worn is not a construct, so a game closed with someone in a shell loses that shell (leaving the game first stands it).
