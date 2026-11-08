@@ -2321,6 +2321,7 @@ eight slots of different sizes, still no inventory screen. Every player in survi
 - **Creative** means endless parts (`SandboxInfiniteParts`), the same answer on every peer. No pack is drawn, no slot strip shows, and nothing goes in: Stow and Draw say "no backpack in creative". With full hands, `Give` skips the pack and drops the part as a loose pickup; taking from a slot or picking up a loose part is refused and it stays put.
 - **An old creative save** that holds parts in a pack keeps them: the player wears that pack (`ConstructEdits.WearsPack`) and draws from it until it is empty, and then it is gone. Nothing new goes in.
 - The **Backpack part** in the Tab inventory stays a storage part to bolt on a construct. It isn't worn.
+- **Story mode starts without one** (Karl, 2026-11-08): the warden's induction hands it over at its backpack step (docs/sandbox/TUTORIAL.md). Until then the player's pack has no slots (`HasPack` false, `ConstructEdits.IssuePack`), so it behaves as creative's does, and Stow says it hasn't been given yet.
 
 In survival:
 
@@ -3139,6 +3140,9 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
 - **Damage**: each member keeps its own health and hitbox; a round damages the cell it hits; the look line shows the
   members' health together ("Rifle Receiver (2x2 merged, 620/720): ..."). A cell shot to pieces breaks the merge as
   taking it off does (its centre parts move or drop: nobody placed them).
+- **In blueprints** a step on a merged receiver's centre socket names it `"merged "` and the receiver's own socket (`"merged front"`: `ConstructMerge.SocketName`); building
+  one finds the merges again before a gun part's step (`ConstructMerge.SocketIndex`), as a rebuild would, so its place and scale are the merged ones. Save as blueprint writes them,
+  and the vehicle kit's merged turret guns use them (docs/vehiclekit/VEHICLEKIT.md, "The armoury").
 - The merged receiver's reach beyond its members is solid to building (nothing can be fitted into it) but not to rounds
   or the world: rounds hit the members and the gun parts.
 

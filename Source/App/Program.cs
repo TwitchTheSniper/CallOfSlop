@@ -164,6 +164,12 @@ public static unsafe partial class Program
             var varyBase = int.TryParse(args.SkipWhile(a => !a.Equals("--base", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var b) ? b : 1;
             VehicleKit.VehicleLayers.Vary = (layer, varyBase); // --vary wear [--base S]: the seeds a tool loops over become that layer's, on seed S
         }
+        if (args.Any(a => a.Equals("--no-armoury", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleArmoury.On = false; // the styles' own guns only, to measure what the vehicle armoury changes (VehicleArmoury.cs)
+        if (args.Any(a => a.Equals("--check-armoury", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleArmouryCli.CheckArmoury(args); // every armoury recipe fitted on a test turret, round-tripped through a blueprint, with its numbers
+        if (args.Any(a => a.Equals("--armoury-report", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleArmouryCli.Report(args); // distinct guns per style and shape over seeds, and the full check with --check
         if (args.Any(a => a.Equals("--no-identity-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleIdentity.GateOn = false; // kit 2 without its identity re-plan, to measure what the check changes
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
@@ -565,7 +571,7 @@ public static unsafe partial class Program
                     : "[test] network simulator not available in this RakNet build");
 
             var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
-            var world = kind == LobbyAction.SinglePlayer && _rangeLaunch == null && _settings.Mode == GameMode.Sandbox ? Ui.TakeSinglePlayerWorld(map, _settings.SandboxSurvival) : null; // (UiWorlds.cs)
+            var world = kind == LobbyAction.SinglePlayer && _rangeLaunch == null && _settings.Mode == GameMode.Sandbox ? Ui.TakeSinglePlayerWorld(map, _settings.SandboxSurvival, Game.DeathByte(_settings.SandboxDeath, _settings.SandboxKeepPack)) : null; // (UiWorlds.cs)
             if (world != null && Maps.All.FirstOrDefault(m => m.Name == world.Meta.MapName) is { } worldMap)
                 map = worldMap; // (a saved world's own map)
             if (_settings.WorldKey == 0)

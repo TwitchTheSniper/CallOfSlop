@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bunk",
+  "description": "A bed. Lie in it and, in survival, it is where you wake after you die (with \"Last checkpoint\" on). Fit it in a base, or in a ship to take your checkpoint with you.",
+  "role": "seat",
+  "tool": "wrench",
+  "attachSeconds": 2,
+  "mass": 40,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#4a4f57",
+  "boxes": [
+    { "min": [-0.44, 0, -0.99], "max": [-0.36, 0.15, -0.91] },
+    { "min": [0.36, 0, -0.99], "max": [0.44, 0.15, -0.91] },
+    { "min": [-0.44, 0, 0.91], "max": [-0.36, 0.15, 0.99] },
+    { "min": [0.36, 0, 0.91], "max": [0.44, 0.15, 0.99] },
+    { "min": [-0.45, 0.15, -1.0], "max": [0.45, 0.3, 1.0] },
+    { "use": true, "min": [-0.42, 0.3, -0.97], "max": [0.42, 0.45, 0.97], "color": "#6b6f5a" },
+    { "use": true, "min": [-0.3, 0.45, -0.94], "max": [0.3, 0.53, -0.68], "color": "#c9c3b0" }
+  ],
+  "sockets": [
+    { "name": "bottom", "at": [0, 0, 0], "dir": "-y" },
+    { "name": "+x", "at": [0.45, 0.22, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.45, 0.22, 0], "dir": "-x" },
+    { "name": "+z", "at": [0, 0.22, 1.0], "dir": "+z" },
+    { "name": "-z", "at": [0, 0.22, -1.0], "dir": "-z" }
+  ],
+  "seat": {
+    "at": [0, -0.4, 0],
+    "bunk": true
+  }
+}

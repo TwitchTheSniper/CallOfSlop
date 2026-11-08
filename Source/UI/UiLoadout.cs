@@ -255,7 +255,14 @@ public sealed partial class Ui
             if (game != null)
             {
                 var dead = game.Local is not { Alive: true };
-                if (dead)
+                if (dead && game.SandboxFallenLocal)
+                {
+                    ImGui.BeginDisabled();
+                    ImGui.Button("DEAD FOR GOOD###respawn"u8, btn); // (permadeath: GameSandboxDeath.cs)
+                    ImGui.EndDisabled();
+                    ImGui.SameLine();
+                }
+                else if (dead)
                 {
                     var wait = game.RespawnWait(now);
                     if (ImGui.Button(wait > 0 ? $"RESPAWN ({wait:0.0})###respawn" : "RESPAWN###respawn", btn))
@@ -281,7 +288,8 @@ public sealed partial class Ui
                 ReadyButton(game, backBtn); // warmup only (UiModes.cs)
                 if (ImGui.Button(_nav.Depth > 1 ? "< BACK###back"u8 : "CLOSE###back"u8, backBtn))
                     GoBack();
-                hint = game.Module.LoadoutHint is { } modeHint ? modeHint // (Gun Game: the loadout isn't used)
+                hint = dead && game.SandboxRespawnLine is { } wake ? wake // (survival: where they will wake, or permadeath; GameSandboxDeath.cs)
+                    : game.Module.LoadoutHint is { } modeHint ? modeHint // (Gun Game: the loadout isn't used)
                     : game.IsWarmup ? $"Warmup: \"{name}\" applies right away. Ready up when you're set."
                     : dead
                     ? $"Respawn with \"{name}\". Loadouts only change between lives."

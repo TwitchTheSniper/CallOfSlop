@@ -68,6 +68,21 @@ public sealed class Dice(uint seed)
 /// </summary>
 public sealed record WeaponOption(string Name, string Build, string? Box = "Ammo Box")
 {
+    /// <summary>The receivers merged into one (docs/sandbox/CONSTRUCTS.md, "Merged receivers"): 1 a single receiver, 2 a 2x2 square whose gun parts are twice the size, 3 a 3x3.</summary>
+    public int Merge { get; init; } = 1;
+
+    /// <summary>How it is mounted (<see cref="VehicleArmoury.Mounts"/>): "pintle" (open, the default), "shield" (a gun shield in front of the gunner), "twin" (two guns on one cradle).</summary>
+    public string Mount { get; init; } = "pintle";
+
+    /// <summary>The armoury's recipe it came from ("" for a style's own gun), its class when the recipe states one, its least tier and its job tags (aa, anti-armour, close...).</summary>
+    public string Recipe { get; init; } = "";
+
+    public GunClass? Class { get; init; }
+
+    public int Tier { get; init; } = 1;
+
+    public string[] Tags { get; init; } = [];
+
     /// <summary>The build's receiver and its parts by socket; a value may carry its own braces.</summary>
     public static (string Part, Dictionary<string, string> Children) Parse(string text)
     {
@@ -120,8 +135,21 @@ public sealed class FactionStyle
 
     public Gear[] HeavyGear { get; init; } = [];
 
-    /// <summary>The guns a seed may mount.</summary>
-    public required WeaponOption[] Weapons { get; init; }
+    /// <summary>
+    /// The guns a seed may mount: the style's own list (<see cref="OwnWeapons"/>) and the vehicle armoury's recipes for this faction, each as many times as its weight
+    /// (Constructs/VehicleArmoury.json, <see cref="VehicleArmoury"/>; <c>--no-armoury</c>: the own list only, as before the armoury).
+    /// </summary>
+    public required WeaponOption[] Weapons
+    {
+        get => VehicleArmoury.On ? _armed ??= VehicleArmoury.Arm(this, _weapons) : _weapons;
+        init => _weapons = value;
+    }
+
+    private readonly WeaponOption[] _weapons = [];
+    private WeaponOption[]? _armed; // (made once; the same on every thread, so a race only makes it twice)
+
+    /// <summary>The style's own guns, without the armoury's.</summary>
+    public WeaponOption[] OwnWeapons => _weapons;
 
     /// <summary>The loot table its containers roll from (Constructs/Loot.json).</summary>
     public string LootTable { get; init; } = "";

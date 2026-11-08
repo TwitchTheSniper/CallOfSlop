@@ -93,6 +93,7 @@ public enum Sfx
     BuildLinkPipe, // a pipe, shaft or chute finished
     BuildGrab, // the physics gun takes hold
     BuildDrop, // the physics gun lets go
+    ColonyAlarm, // the penal colony's lockdown siren (SynthAlarm.cs, played by Game.ColonyAlarmSounds): one wail, up and down
     COUNT,
 }
 
@@ -1007,6 +1008,8 @@ public static partial class Synth
             return zombie; // SynthZombie.cs
         if (BuildFoley(sfx, variant) is { } build)
             return build; // SynthBuild.cs
+        if (AlarmFoley(sfx) is { } alarm)
+            return alarm; // SynthAlarm.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)
