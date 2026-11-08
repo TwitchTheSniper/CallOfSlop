@@ -209,7 +209,12 @@ picks exactly as main did):
 | British | 5 (4) | 17 (16) | 49 | 49 |
 | Militia | 1 (1) | 11 (11) | 50 | 50 |
 
-Per shape over its 10 seeds, a style's vehicles carried 3 to 4 distinct guns before (Militia 1) and 5 to 12 after; vehicles carrying two different guns rose from 79 to 128 of 300.
+Per shape over its 10 seeds, a style's vehicles carried 3 to 5 distinct guns before (Militia 1) and 5 to 12 after; vehicles carrying two different guns rose from 75 to 114, 102 of
+422 guns are merged receivers and 129 are heavy (none read as heavy before: `VehicleRoles.ClassOf` looked for the receiver's bore in a feed part's list, which is empty on a receiver,
+so every gun read as medium; it reads `Receiver.Bore` now, so Whalers and Firebreathers are heavy, as this section always said).
+The full check (`--armoury-report --seeds 6 --check`, the five shapes x six styles x seeds 1 to 6): 177 of 180 pass with the armoury, the 3 others failing to generate (Bandit
+Scrap Tanker 3's tank barrel and Highland War Bus 5's box shape, as without it, and Highland Scrap Tanker 3's piper slot); the same build without it passes 178 of 180 (main: 177).
+Before the aim measure below was fixed, 11 more failed it: slow-round Kingpin guns laid 14 degrees up for their drop, and a roof Firebreather converging on its point.
 Generation took 389 ms a vehicle against 415 before (no gun takes noticeably longer to fit), and 6 of 300 failed against 5 (the Scrap Tanker's tank barrel seeds, as before, and one
 Highland Scrap Tanker's piper slot after the dice moved). The armoury adds nothing to a tick: the guns are ordinary construct guns.
 
