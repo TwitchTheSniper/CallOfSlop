@@ -1522,6 +1522,8 @@ public sealed partial class Game : IDisposable
         var healthBefore = victim.Health;
         victim.Health -= amount;
         var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
+        if (victim.Team == SbPeopleTeam)
+            LockdownAssault(attacker, victim, now); // (the penal colony's staff: the lockdown, GameColonyLockdown.cs)
         if (victim.Health > 0)
         {
             if (victim.Team == SbPeopleTeam)
@@ -2211,6 +2213,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Tutorial:
                 OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
+                break;
+            case (byte)Msg.ColonyAlarm when !IsServer:
+                ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)
                 break;
             case (byte)Msg.Jobs:
                 OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)

@@ -117,6 +117,7 @@ public static class WorldSaveWriter
                 foreach (var p in s.Players)
                     if (p.Opened)
                         w.U64(p.Key).U64(p.SteamId);
+                w.U16(op.Barracks); // (the lockdown's barracks, GameColonyLockdown.cs: last, so an older reader stops before it)
             });
         if (Array.Exists(s.Players, p => p.TutorialState != TutorialState.None))
             w.Section(TutorialTag, () =>

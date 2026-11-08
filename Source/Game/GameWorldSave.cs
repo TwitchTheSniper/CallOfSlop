@@ -586,6 +586,8 @@ public sealed partial class Game
                         if (key != 0 && rec.Key == key || steam != 0 && rec.SteamId == steam)
                             rec.Opened = true;
                 }
+                if (r.Has(2))
+                    op.Barracks = r.U16(); // (a world from before the barracks has none: GameColonyLockdown.cs builds one)
                 if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
                     _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
                 break;
