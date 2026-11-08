@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.75 m, coil/trailing arm, wing 0.5, language pod 2.40 m, brow 0.73, tail 0.75, 10 facets, wear age 0.65 (0 rusty, 4 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab enclosed, nose long hood, rear bare, under tub, layout hutch 4 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.75 m, coil/trailing arm, wing 0.5, language pod standard 2.36 m, flare 0.06, tapered 0.9, brow 0.73 1 m, tail 0.75 1 m, door left, 10 facets, wear age 0.65 (0 rusty, 4 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab enclosed, nose long hood, rear bare, under tub, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Gun Wagon 1",
   "group": "IT Department",

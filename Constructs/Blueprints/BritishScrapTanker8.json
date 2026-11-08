@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 3 axles, tag 1.25 m, front under the hood, inset 2.5 m, leaf/leaf/leaf, wing 0.75, language coach 2.31 m, brow 0.62, tail 0.75, 8 facets, wear age 0.81 (2 rusty, 3 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bay+tank+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides rails, layout gun bay 2 m+tank 2 m+bed 1.5 m
+  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 3 axles, tag 1.25 m, front under the hood, inset 2.5 m, leaf/leaf/leaf, wing 0.75, language coach heavy 2.80 m, flare 0.26, tapered 1.0, brow 0.62 1.25 m, tail 0.75 1 m, door right, 8 facets, wear age 0.81 (2 rusty, 3 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bay+tank+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides rails, layout gun bay 2 m+tank 2 m+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Scrap Tanker 8",
   "group": "Ministry of Slop",

@@ -458,7 +458,8 @@ public static class ShapeGrammar
 
         // The rear, then fuel: one tank feeds the engine (an engine has one fuel inlet).
         var rearWeights = r.Rears.ToDictionary(x => x.Rear, x => x.Weight);
-        p.Rear = Ch(D(VehicleLayer.Body, "rear"), "rear", m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name]) ?? Module("rear", "bare");
+        var backDoor = v.Look?.WantsRearDoor == true && tags.Contains("room last") && tags.Contains("long room") ? 2.5 : 1.0; // (phase 2: a body whose door would be in its back leans to a tail it can open onto)
+        p.Rear = Ch(D(VehicleLayer.Body, "rear"), "rear", m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name] * (m.Name is "bare" or "hitch" ? backDoor : 1)) ?? Module("rear", "bare");
         foreach (var t in p.Rear.Provides)
             tags.Add(t);
         if (!tags.Contains("fuel"))
@@ -473,6 +474,14 @@ public static class ShapeGrammar
             else
                 p.Rear = Module("rear", "porch"); // (nothing else to stand a drum on)
             tags.Add("fuel");
+        }
+
+        // Phase 2: a room that is last, with only a hitch or a bare tail behind it, may have its door in its back (the look's roll; BodyStyleRule.DoorRear).
+        if (v.Look is { } look)
+        {
+            look.RearDoor = look.WantsRearDoor && tags.Contains("room last") && p.Rear.Name is "bare" or "hitch" && tags.Contains("long room"); // (a 3.5 m room's end walls are its loot's and its magazine's)
+            if (look.RearDoor)
+                v.Modules.Add("door rear");
         }
 
         // The frame under it.
@@ -495,7 +504,7 @@ public static class ShapeGrammar
         {
             // Kit 3: the chassis layer, fitted under the body: corners, axles, where they stand, the track.
             var c = VehicleChassis.Roll(D(VehicleLayer.Chassis, "roll"), st, only, p.End, p.Segs.Count, tags.Contains("cabover"), p.Segs[0].Kind == "hutch" ? 1.75f : null, p.Rear.Name == "gun deck",
-                role?.Chassis(LayerTables.ChassisOf(st)));
+                role?.Chassis(LayerTables.ChassisOf(st)), v.Look?.Ride);
             p.Chassis = c;
             p.Gear = c.Gear;
             GearTags(p);
@@ -632,7 +641,8 @@ public static class ShapeGrammar
         {
             room.SideBay = d.Pick(middle);
             var door = Array.IndexOf(room.Bays, "Door");
-            room.SideSide = Math.Abs(room.SideBay - door) > 1 && d.Chance(0.4) ? 1 : -1; // (the door side only away from the door and its ladder)
+            var doorSide = v.Look?.DoorSide ?? 1;
+            room.SideSide = v.Look?.RearDoor == true ? (d.Chance(0.5) ? 1 : -1) : Math.Abs(room.SideBay - door) > 1 && d.Chance(0.4) ? doorSide : -doorSide; // (the door side only away from the door and its ladder)
             inRoom--;
         }
         foreach (var k in d.Shuffled(roofCandidates))
@@ -780,7 +790,7 @@ public static class ShapeGrammar
             {
                 case "room":
                     v.Under(under, s.Z0, s.Z1);
-                    var spots = SeatSpots(s);
+                    var spots = SeatSpots(s, v.Look?.DoorSide ?? 1, v.Look?.RearDoor == true);
                     room = v.Hull(p.Recipe.RoomTag, s.Z0, v.FloorY, s.Bays, spots);
                     roomSeg = s;
                     // (not its walls in Trim's crooked patches: a patch on a hull bay goes on the bay's middle, which is inside the room, where a player stands)
@@ -991,16 +1001,18 @@ public static class ShapeGrammar
         return v.Panels.TryGetValue("rack", out var laid) && laid.Count > 0;
     }
 
-    /// <summary>A room's seats at x -0.5 (clear of the door, which is on +x): the front, the back, and a third a metre ahead of the back one.</summary>
-    private static (float X, float Z)[] SeatSpots(Seg s)
+    /// <summary>A room's seats half a metre to the side away from the door (+x on the right, phase 2's left doors -x): the front, the back, and a third a metre ahead of the back one.</summary>
+    private static (float X, float Z)[] SeatSpots(Seg s, float doorSide, bool rear = false)
     {
+        var x = -0.5f * doorSide;
+        var back = rear ? 0.75f : 0; // (a door in the back: the back seats a little forward, out of its way in)
         var list = new List<(float, float)>();
         if (s.SeatCount >= 1)
-            list.Add((-0.5f, s.Z0 + 0.375f));
+            list.Add((x, s.Z0 + 0.375f));
         if (s.SeatCount >= 2)
-            list.Add((-0.5f, s.Z1 - 0.875f));
+            list.Add((x, s.Z1 - 0.875f - back));
         if (s.SeatCount >= 3)
-            list.Add((-0.5f, s.Z1 - 1.875f)); // (a metre ahead of the back one: clear of the magazine's reels at the front and of the room's middle, where a player stands)
+            list.Add((x, s.Z1 - 1.875f - back)); // (a metre ahead of the back one: clear of the magazine's reels at the front and of the room's middle, where a player stands)
         return list.ToArray();
     }
 
@@ -1023,7 +1035,8 @@ public static class ShapeGrammar
     private static void Magazine(Vehicle v, Room room, float z0, VPart[] guns)
     {
         var y = room.FloorTop + 0.2f;
-        v.Feeds(new Vector3(0.5f, y, z0 + 0.625f), new Vector3(0f, y, z0 + 0.625f), "FMJ", v.Dice.Fork("rounds").Pick((string[])["Armour Piercing", "Explosive Tip", "Dragon's Breath"]), room.Bays[0], "lever", guns[0], guns[1..]);
+        var side = v.Look?.DoorSide ?? 1; // (the crates on the door's side, the seats on the other)
+        v.Feeds(new Vector3(0.5f * side, y, z0 + 0.625f), new Vector3(0f, y, z0 + 0.625f), "FMJ", v.Dice.Fork("rounds").Pick((string[])["Armour Piercing", "Explosive Tip", "Dragon's Breath"]), room.Bays[0], "lever", guns[0], guns[1..]);
     }
 
     /// <summary>A plated porch behind the body with the fuel drum on it (HeavyShape.Porch).</summary>

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 3 axles, tag 1.25 m, front set back, inset 1.75 m, wishbone/hydraulic/hydraulic, wing 0.5, language bus 2.35 m, brow 0.77, tail 0.75, 9 facets, wear age 0.75 (2 rusty, 6 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab enclosed, nose long hood, rear porch, under stilts, layout hutch 4 m
+  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 3 axles, tag 1.25 m, front set back, inset 1.75 m, wishbone/hydraulic/hydraulic, wing 0.5, language bus heavy 2.38 m, flare 0.14, kick-up 0.9, brow 0.77 1 m, tail 0.75 1 m, door right, 9 facets, wear age 0.75 (2 rusty, 6 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab enclosed, nose long hood, rear porch, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Gun Wagon 4",
   "group": "Ministry of Slop",

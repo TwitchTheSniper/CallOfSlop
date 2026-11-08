@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/hydraulic, wing 0.5, language cabin 2.47 m, brow 0.77, tail 0.84, wear age 0.85 (4 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body hutch, cab cab-over, nose flat, rear bare, under stilts, layout hutch 4 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/hydraulic, wing 0.5, language cabin standard 2.37 m, flare 0.07, plain 0.9, brow 0.77 1 m, tail 0.84 1 m, door left, wear age 0.85 (4 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body hutch, cab cab-over, nose flat, rear bare, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Gun Wagon 1",
   "group": "The Call Centre",

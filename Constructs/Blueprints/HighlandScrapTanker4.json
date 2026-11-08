@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 2.25 m, leaf/coil, wing 0.75, language slab 2.24 m, brow 0.71, tail 0.85, wear age 0.69 (1 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab armoured, nose ram, rear bare, under tub, layout gun bay 2 m+tank 3 m, plan 2
+  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 2.25 m, leaf/coil, wing 0.75, language slab standard 2.08 m, flare 0.18, raked 1.0, brow 0.71 1.25 m, tail 0.85 1.25 m, door right, wear age 0.69 (1 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab armoured, nose ram, rear bare, under tub, layout gun bay 2 m+tank 3 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 4",
   "group": "Clan MacSlop",

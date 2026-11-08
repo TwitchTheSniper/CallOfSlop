@@ -18,7 +18,24 @@ public static class HullLoft
     private const float T = 0.04f; // a facet's thickness, as the fixed bays'
     private const float DoorPlane = 1.0f, DoorTop = 2.0f;
     private const string Steel = "#7a7f86", Rust = "#4a3a2e", Roof = "#5c5f62";
+    private const string SteelLow = "#686d74", SteelHigh = "#8c9198"; // (phase 2: a painted wall's rows by height, so a paint's tone shows the shape: ConstructPaint.ToneOf)
     public const int MaxPoints = 16; // (a smooth section: 8 to 12 facets a side, docs/vehiclekit/BODY-STYLES.md)
+
+    /// <summary>
+    /// A section's reach (phase 2, the scale classes of docs/vehiclekit/BODY-STYLES.md): 2 m of half width and 4 m of height, for any class from a buggy's cover to a
+    /// giant's room (the key's 9 bits go to 5.11 m; phase 1 read 1.3 m and 3 m, which every walk-in room still keeps).
+    /// </summary>
+    public const int MaxCm = 200, MaxHeightCm = 400;
+
+    /// <summary>
+    /// Where a bay's feet stand from its middle, on the Bolt Deck's quarter grid: 0.75 m for every walk-in floor edge from 0.76 m to 1.25 m (phase 1's, which a room's
+    /// seats half a metre out are laid around), further out on a wider floor, further in on a narrower one (a non-room body).
+    /// </summary>
+    public static float FootX(float floorHalf) =>
+        floorHalf < 0.76f ? MathF.Max(0.25f, 0.25f * MathF.Floor((floorHalf - 0.01f) / 0.25f)) : floorHalf < 1.26f ? 0.75f : MathF.Min(1.75f, 0.75f + 0.25f * MathF.Floor((floorHalf - 1.01f) / 0.25f));
+
+    /// <summary>A bay's feet, from the narrower of its two floor edges.</summary>
+    public static float FootX(Shape s) => FootX(MathF.Min(s.A.P[0].X, s.B.P[0].X));
     private const string Digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"; // (a compact section: three of these a point)
 
     /// <summary>A half profile: points from the floor edge (y 0) up and over to the centreline (x 0), metres.</summary>
@@ -84,7 +101,7 @@ public static class HullLoft
                 var xy = pts[i].Split(',');
                 if (xy.Length != 2 || !int.TryParse(xy[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var x) || !int.TryParse(xy[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
                     return null;
-                if (x is < 0 or > 130 || y is < 0 or > 300)
+                if (x is < 0 or > MaxCm || y is < 0 or > MaxHeightCm)
                     return null;
                 list[i] = new Vector2(x / 100f, y / 100f);
             }
@@ -107,7 +124,7 @@ public static class HullLoft
                     v = v << 6 | d;
                 }
                 var (x, y) = (v >> 9, v & 511);
-                if (x > 130 || y > 300)
+                if (x > MaxCm || y > MaxHeightCm)
                     return null;
                 list[i] = new Vector2(x / 100f, y / 100f);
             }
@@ -116,7 +133,7 @@ public static class HullLoft
 
         private static Section? Valid(Vector2[] list)
         {
-            if (list[0].Y != 0 || list[^1].X != 0 || list[0].X < 0.6f)
+            if (list[0].Y != 0 || list[^1].X != 0 || list[0].X < 0.3f)
                 return null; // (from the floor to the centreline)
             for (var i = 1; i < list.Length; i++)
                 if (list[i].Y < list[i - 1].Y - 0.001f)
@@ -161,11 +178,11 @@ public static class HullLoft
     private static int Cm(float m) => (int)MathF.Round(m * 100);
     private static float Snap(float m) => Cm(m) / 100f;
 
-    public static string Key(float length, bool door, bool front, bool back, Section a, Section b)
-        => $"{Prefix}{Cm(length)}{(door ? "d" : "")}{(front ? "f" : "")}{(back ? "r" : "")} {a.Key()} {(b.SameAs(a) ? "=" : b.Key())})"; // ("=": the back section is the front's)
+    public static string Key(float length, bool door, bool front, bool back, Section a, Section b, bool backDoor = false)
+        => $"{Prefix}{Cm(length)}{(door ? "d" : "")}{(front ? "f" : "")}{(back ? "r" : "")}{(backDoor ? "b" : "")} {a.Key()} {(b.SameAs(a) ? "=" : b.Key())})"; // ("=": the back section is the front's; "b": a doorway in its closed back, phase 2)
 
     /// <summary>What a key says: the bay's length, its door and closed ends, and its two sections.</summary>
-    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B);
+    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B, bool BackDoor = false);
 
     /// <summary>A key read back (null: not a lofted bay's, or one no machine would write). The vehicle kit reads a bay's real roof and flanks from it.</summary>
     public static Shape? ShapeOf(string name)
@@ -180,14 +197,14 @@ public static class HullLoft
         if (digits == 0 || !int.TryParse(head[..digits], NumberStyles.Integer, CultureInfo.InvariantCulture, out var cm) || cm is < 50 or > 200)
             return null;
         var flags = head[digits..];
-        if (flags.Any(c => c is not ('d' or 'f' or 'r')))
+        if (flags.Any(c => c is not ('d' or 'f' or 'r' or 'b')) || flags.Contains('b') && (!flags.Contains('r') || flags.Contains('d')))
             return null;
         if (Section.Parse(words[1]) is not { } a)
             return null;
         var b = words[2] == "=" ? a : Section.Parse(words[2]);
         if (b == null || a.P.Length != b.P.Length)
             return null;
-        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b);
+        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b, flags.Contains('b'));
     }
 
     private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
@@ -214,10 +231,12 @@ public static class HullLoft
         var (door, a, b) = (sh.Door, sh.A, sh.B);
         if (door && (a.Top < DoorTop + 0.1f || b.Top < DoorTop + 0.1f))
             return null; // (a doorway is 2 m tall)
+        if (sh.BackDoor && (b.Top < DoorTop + 0.1f || b.P[0].X < RearJamb + 0.12f || b.XAt(DoorTop) < RearJamb + 0.12f))
+            return null; // (a doorway in the back: 2 m tall, its jambs 0.625 m out and a frame beside them)
         ConstructPartDef def;
         try
         {
-            def = ConstructParts.Parse(Json(name, sh.Length, door, sh.Front, sh.Back, a, b), name);
+            def = ConstructParts.Parse(Json(name, sh.Length, door, sh.Front, sh.Back, a, b, sh.BackDoor), name);
         }
         catch (ConstructPartException e)
         {
@@ -316,8 +335,15 @@ public static class HullLoft
     }
 
     /// <summary>The row colours as the fixed bays have them: the lowest row rust, rows steeper than 45 degrees steel (painted), the flatter ones roof.</summary>
-    private static (string Colour, bool Paint) Row(Vector2 p0, Vector2 p1, int k) =>
-        k == 0 ? (Rust, false) : MathF.Abs(p1.Y - p0.Y) >= MathF.Abs(p1.X - p0.X) ? (Steel, true) : (Roof, false);
+    private static (string Colour, bool Paint) Row(Vector2 p0, Vector2 p1, int k)
+    {
+        if (k == 0)
+            return (Rust, false);
+        if (MathF.Abs(p1.Y - p0.Y) < MathF.Abs(p1.X - p0.X))
+            return (Roof, false);
+        var y = (p0.Y + p1.Y) / 2; // (phase 2: the lower wall darker, the upper lighter, so rows read through any paint and any wear)
+        return (y < 0.95f ? SteelLow : y > 1.75f ? SteelHigh : Steel, true);
+    }
 
     /// <summary>A row's outward normal on the +x side (x, y): from point k to k + 1 of a section.</summary>
     private static Vector2 RowNormal(Vector2 p0, Vector2 p1) => Vector2.Normalize(new Vector2(p1.Y - p0.Y, -(p1.X - p0.X)) + new Vector2(1e-9f, 0));
@@ -446,13 +472,55 @@ public static class HullLoft
             foreach (var (fz0, fz1) in new[] { (z0, z0 + 0.125f), (z1 - 0.125f, z1) })
             {
                 p.Facet([new(DoorPlane, 0, fz0), new(DoorPlane, DoorTop, fz0), new(DoorPlane, DoorTop, fz1), new(DoorPlane, 0, fz1)], Vector3.UnitX, Rust, off: [Vector3.UnitX, Off(FrameTop(a), 1), Off(FrameTop(b), 1), Vector3.UnitX]);
-                p.Hide(new Vector3(DoorPlane - 0.03f, 0, fz0), new Vector3(DoorPlane + 0.03f, DoorTop, fz1));
+                p.Hide(new Vector3(DoorPlane - 0.03f, 0, MathF.Max(fz0, z0 + 0.01f)), new Vector3(DoorPlane + 0.03f, DoorTop, MathF.Min(fz1, z1 - 0.01f))); // (a centimetre short of the bay's ends: a neighbour's wall slab stands in line with it)
             }
             p.Hide(new Vector3(DoorPlane - 0.03f, DoorTop, z0), new Vector3(DoorPlane + 0.03f, DoorTop + 0.1f, z1));
+            // Where the section stands out past the doorway's plane (a flare, an overhang over the wheels, a strake), the bays either side are wider than the frame:
+            // close the door bay's ends between the frame (and the cant over it) and the section, a row at a time (phase 2).
+            foreach (var (s, z) in new[] { (a, z0), (b, z1) })
+                DoorEnds(p, s, z);
             // Where the section comes in past the doorway's plane under its top (a tumblehome), the frame stands proud of the bays either side: close its ends.
             foreach (var (s, z) in new[] { (a, z0), (b, z1) })
                 if (Crossing(s) is { } yc && yc < DoorTop - 0.01f && s.P.FirstOrDefault(q => q.Y > DoorTop + 0.05f) is var pj && pj != default)
                     p.Facet([new(DoorPlane, yc, z), new(DoorPlane, DoorTop, z), new(pj.X, pj.Y, z)], Vector3.UnitZ, Steel, 0.05f);
+        }
+    }
+
+    /// <summary>The +x outline of a door bay's side at height <paramref name="y"/>: the frame's plane up to its top, then the cant to the first point above it.</summary>
+    private static float DoorOutline(Section s, float y)
+    {
+        if (y <= DoorTop + 1e-4f)
+            return DoorPlane;
+        var j = Array.FindIndex(s.P, q => q.Y > DoorTop + 0.05f);
+        if (j < 0)
+            return DoorPlane;
+        if (y >= s.P[j].Y)
+            return s.XAt(y);
+        var t = (y - DoorTop) / (s.P[j].Y - DoorTop);
+        return DoorPlane + (s.P[j].X - DoorPlane) * t;
+    }
+
+    /// <summary>Strips at a door bay's end from its outline (<see cref="DoorOutline"/>) out to the section where the section stands outside it, below the cant's top.</summary>
+    private static void DoorEnds(Builder p, Section s, float z)
+    {
+        var j = Array.FindIndex(s.P, q => q.Y > DoorTop + 0.05f);
+        if (j < 0)
+            return;
+        var cuts = new List<float>();
+        for (var k = 0; k <= j; k++)
+            cuts.Add(s.P[k].Y);
+        cuts.Add(DoorTop);
+        cuts = cuts.Where(y => y <= s.P[j].Y + 1e-4f).Distinct().OrderBy(y => y).ToList();
+        for (var i = 0; i + 1 < cuts.Count; i++)
+        {
+            var (y0, y1) = (cuts[i] < 0.001f ? 0.003f : cuts[i], cuts[i + 1]);
+            if (y1 - y0 < 0.01f)
+                continue;
+            var (o0, o1) = (s.XAt(y0), s.XAt(y1 - 1e-4f));
+            var (i0, i1) = (DoorOutline(s, y0) + 0.023f, DoorOutline(s, y1) + 0.023f); // (from 3 mm outside the frame's and the cant's own outer face: a strip from its middle shared that face's plane)
+            if (o0 < i0 + 0.01f && o1 < i1 + 0.01f)
+                continue; // (the section is the outline here, or inside it: the tumblehome's own close, below)
+            p.Facet([new(i0, y0, z), new(MathF.Max(o0, i0 + 0.001f), y0, z), new(MathF.Max(o1, i1 + 0.001f), y1, z), new(i1, y1, z)], Vector3.UnitZ, Steel, 0.05f);
         }
     }
 
@@ -486,7 +554,46 @@ public static class HullLoft
     }
 
     /// <summary>Closes an end: a strip from the centreline to each row of the section, so a section with a ledge closes without filling it.</summary>
-    private static void Cap(Builder p, Section s, float z)
+    /// <summary>A back doorway's half width: its jambs, the door's 1.25 m opening.</summary>
+    public const float RearJamb = 0.625f;
+
+    /// <summary>A strip of a back cap with the doorway cut out under its top: one either side of the opening below the lintel, the whole width above it.</summary>
+    private static void CapDoorway(Builder p, Vector2 from, Vector2 b, float z)
+    {
+        void Strip(Vector2 lo, Vector2 hi, bool open)
+        {
+            if (hi.Y - lo.Y < 0.012f)
+                return;
+            var y0 = lo.Y < 0.001f ? 0.003f : lo.Y;
+            if (!open)
+            {
+                p.Facet([new(-lo.X, y0, z), new(lo.X, y0, z), new(hi.X, hi.Y, z), new(-hi.X, hi.Y, z)], Vector3.UnitZ, Steel, 0.05f);
+                var w = MathF.Min(lo.X, hi.X) - 0.05f;
+                if (w > 0.05f)
+                    p.Hide(new Vector3(-w, lo.Y, z - 0.03f), new Vector3(w, hi.Y, z + 0.03f));
+                return;
+            }
+            foreach (var sx in (float[])[-1, 1]) // (the jambs: the cap either side of the opening, its own frame)
+            {
+                p.Facet([new(sx * RearJamb, y0, z), new(sx * lo.X, y0, z), new(sx * hi.X, hi.Y, z), new(sx * RearJamb, hi.Y, z)], Vector3.UnitZ, Rust, 0.05f);
+                var (x0, x1) = (RearJamb + 0.01f, MathF.Min(lo.X, hi.X) - 0.05f);
+                if (x1 - x0 > 0.0099f)
+                    p.Hide(new Vector3(sx > 0 ? x0 : -x1, lo.Y, z - 0.03f), new Vector3(sx > 0 ? x1 : -x0, hi.Y, z + 0.03f));
+            }
+        }
+        if (b.Y <= DoorTop + 1e-4f)
+            Strip(from, b, true);
+        else if (from.Y >= DoorTop - 1e-4f)
+            Strip(from, b, false);
+        else
+        {
+            var mid = Vector2.Lerp(from, b, (DoorTop - from.Y) / (b.Y - from.Y));
+            Strip(from, mid, true);
+            Strip(mid, b, false);
+        }
+    }
+
+    private static void Cap(Builder p, Section s, float z, bool doorway = false)
     {
         var from = s.P[0];
         for (var k = 1; k < s.P.Length; k++)
@@ -494,7 +601,9 @@ public static class HullLoft
             var b = s.P[k];
             if (b.Y - from.Y < 0.02f && k + 1 < s.P.Length)
                 continue; // (a row too flat to stand on its own: the next strip takes it in)
-            if (b.Y - from.Y >= 0.012f)
+            if (doorway && b.Y - from.Y >= 0.012f)
+                CapDoorway(p, from, b, z);
+            else if (b.Y - from.Y >= 0.012f)
             {
                 var y0 = from.Y < 0.001f ? 0.003f : from.Y; // (3 mm off the floor: its underside would share the floor's plane with the walls' undersides)
                 p.Facet([new(-from.X, y0, z), new(from.X, y0, z), new(b.X, b.Y, z), new(-b.X, b.Y, z)], Vector3.UnitZ, Steel, 0.05f);
@@ -506,18 +615,22 @@ public static class HullLoft
         }
     }
 
-    private static string Json(string name, float length, bool door, bool front, bool back, Section a, Section b)
+    private static string Json(string name, float length, bool door, bool front, bool back, Section a, Section b, bool backDoor = false)
     {
         var p = new Builder();
         Sides(p, a, b, 0, length, door);
         if (front)
             Cap(p, a, 0);
         if (back)
-            Cap(p, b, length);
-        foreach (var (k, z) in new[] { (0, 0.125f), (1, length - 0.125f) })
+            Cap(p, b, length, backDoor);
+        // The feet 12 cm in from each end (phase 2; 12.5 before): a part's place is kept to the centimetre, and a deck's sockets are on the quarter metre, so a foot an
+        // eighth in put a bay's front on a half centimetre that rounded one way after one length and the other way after another (a 0.75 m bay after a metre one met
+        // its neighbour). A bay stands by its front foot ("footL0"), or turned round by its back one ("footR1"), so both ends are 12 cm in.
+        foreach (var (k, z) in new[] { (0, 0.12f), (1, length - 0.12f) })
         {
-            p.Sock($"footL{k}", new Vector3(-0.75f, 0, z), "-y");
-            p.Sock($"footR{k}", new Vector3(0.75f, 0, z), "-y");
+            var foot = FootX(MathF.Min(a.P[0].X, b.P[0].X)); // (0.75 m on every truck's room: phase 1's)
+            p.Sock($"footL{k}", new Vector3(-foot, 0, z), "-y");
+            p.Sock($"footR{k}", new Vector3(foot, 0, z), "-y");
         }
         var y = (a.WaistY + b.WaistY) / 2;
         var w = (MathF.Max(a.XAt(y), 0) + MathF.Max(b.XAt(y), 0)) / 2;
@@ -531,7 +644,7 @@ public static class HullLoft
         float Around(Section s) => 2 * Enumerable.Range(0, s.P.Length - 1).Sum(k => Vector2.Distance(s.P[k], s.P[k + 1]));
         var skin = (Around(a) + Around(b)) / 2 * length + (front ? a.Top * a.P[0].X * 2 : 0) + (back ? b.Top * b.P[0].X * 2 : 0);
         var mass = MathF.Round(Math.Clamp(skin * 19.5f, 20, 600), 1);
-        var what = door ? "a doorway in its side" : front ? "its front closed" : back ? "its back closed" : "open at both ends";
+        var what = door ? "a doorway in its side" : backDoor ? "a doorway in its closed back" : front ? "its front closed" : back ? "its back closed" : "open at both ends";
         var part = new JsonObject
         {
             ["format"] = "call-of-slop-construct-part/1",

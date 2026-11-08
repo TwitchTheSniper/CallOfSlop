@@ -71,8 +71,19 @@ public sealed partial class Vehicle
             return;
         var d = Dice.Fork("wear paint");
         var panels = Panels.Where(kv => kv.Key is not "furniture" and not "patches").SelectMany(kv => kv.Value).Where(p => p.Def.Slots.Length == 0).Distinct().ToList();
+        var bays = Look != null ? Rooms.SelectMany(r => r.Bays).Select(b => b.Index).ToHashSet() : [];
+        if (bays.Count > 0) // (phase 2: a room's bays rust by runs, as they were painted, each unlike its neighbour, so the sections read through the wear)
+            PaintRooms(Dice.Fork("wear runs"), "rust", (rd, colour) =>
+            {
+                if (!rd.Chance(w.Rust * Age))
+                    return colour;
+                _rusty++;
+                return Style.Colour(rd, "rust");
+            });
         foreach (var p in panels)
         {
+            if (bays.Contains(p.Index))
+                continue;
             var colour = ConstructPaint.ToHex(C.Parts[p.Index].Paint);
             if (colour.Length == 0)
                 continue;

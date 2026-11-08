@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 2.25 m, strut/strut, wing 0.5, language pod 2.29 m, brow 0.64, tail 0.82, 11 facets, wear age 0.62 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under tub, layout gun bay 2 m+tank 3 m
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 2.25 m, strut/strut, wing 0.5, language pod standard 2.45 m, flare 0.08, sloped 1.0, brow 0.64 1 m, tail 0.82 1.25 m, door left, 11 facets, wear age 0.62 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under tub, layout gun bay 2 m+tank 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Scrap Tanker 2",
   "group": "IT Department",

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language bus 2.44 m, brow 0.78, tail 0.73, 12 facets, wear age 0.71 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab cab-over, nose flat, rear bare, under tub, layout gun bay 2 m+tank 3 m
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language bus heavy 2.97 m, flare 0.20, kick-up 0.7, brow 0.78 1.5 m, tail 0.73 1.25 m, door right, 12 facets, wear age 0.71 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab cab-over, nose flat, rear bare, under tub, layout gun bay 2 m+tank 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Scrap Tanker 2",
   "group": "Ministry of Slop",

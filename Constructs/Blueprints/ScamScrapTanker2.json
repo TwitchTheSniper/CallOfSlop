@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.25 m, leaf/hydraulic, wing 0.5, language van 2.27 m, brow 0.62, tail 0.81, wear age 0.53 (0 rusty, 0 dirty, 3 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under stilts, layout gun bay 2 m+tank 3 m, plan 2
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.25 m, leaf/hydraulic, wing 0.5, language van standard 2.36 m, flare 0.00, plain 1.0, brow 0.62 1 m, tail 0.81 1 m, door left, wear age 0.53 (0 rusty, 0 dirty, 3 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under stilts, layout gun bay 2 m+tank 3 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Scrap Tanker 2",
   "group": "The Call Centre",

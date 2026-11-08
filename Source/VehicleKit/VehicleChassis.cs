@@ -74,6 +74,9 @@ public static class VehicleChassis
     /// </summary>
     public static bool Level(string front, string rear) => MathF.Abs(Hang(front) - Hang(rear)) <= MaxHangDiff;
 
+    /// <summary>A recipe's ride height band: 0 low (a floor under 0.5 m, between wheels on arms), 2 high (its rear on struts that hang the wheel 0.6 m and more), else 1.</summary>
+    public static int RideOf(Gear g) => g.Floor < 0.5f ? 0 : Hang(g.RearSpring) > 0.6f ? 2 : 1;
+
     private static float Radius(string wheel) => ConstructParts.Find(wheel) is { } d && d.WheelRadius > 0 ? d.WheelRadius : 0.45f;
 
     private static T Weighted<T>(Dice d, IReadOnlyList<(T Item, double W)> items)
@@ -91,7 +94,7 @@ public static class VehicleChassis
     /// <paramref name="cabOver"/>: a cab-over shell stands over the front axle, so it stays where kit 2 put it. <paramref name="fixedInset"/>: a hutch's gun stands
     /// where the Gun Wagon's frame puts it.
     /// </summary>
-    public static ChassisPlan Roll(Dice c, FactionStyle st, string[] only, float end, int segments, bool cabOver, float? fixedInset, bool gunDeck, ChassisRange? range = null)
+    public static ChassisPlan Roll(Dice c, FactionStyle st, string[] only, float end, int segments, bool cabOver, float? fixedInset, bool gunDeck, ChassisRange? range = null, (double Low, double Mid, double High)? ride = null)
     {
         var r = VehicleContext.Chassis(range ?? LayerTables.ChassisOf(st), st); // (kit 4: a role's chassis, the style's table leaned by what the role needs: VehicleRoles.cs)
         var gears = st.HeavyGear.Where(g => only.Contains(g.Name)).ToArray();
@@ -113,7 +116,8 @@ public static class VehicleChassis
         var spacing = extra.Length > 0 ? ld.Pick(r.Spacings) : 0;
         var rears = extra.Length > 0 ? wides : gears;
 
-        var gear = c.Fork("recipe").Pick(rears);
+        // Phase 2's ride height bands (BodyStyleRule.Ride, the scale class's): a recipe weighs by its band, low (a floor between arms), mid or high (on stilts).
+        var gear = ride is { } band ? Weighted(c.Fork("recipe"), rears.Select(g => (g, RideOf(g) switch { 0 => band.Low, 2 => band.High, _ => band.Mid })).Where(x => x.Item2 > 0).DefaultIfEmpty((rears[0], 1)).ToList()) : c.Fork("recipe").Pick(rears);
         FactionStyle.Noted("gear", gear.Name);
         var mixed = new List<string>();
 

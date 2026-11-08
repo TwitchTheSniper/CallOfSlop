@@ -33,7 +33,7 @@ public sealed partial class Vehicle
     /// A deck lying flat with its underside at <paramref name="y"/>: patched from plates of the style's <paramref name="slot"/> in seeded sizes, none where <paramref name="holes"/> say, working out from the
     /// frame so each plate has something to fit on. Edges are odd eighths (±0.125, ±0.375...), the plates' grid. A plate no socket takes leaves a gap: that's a rusted-out corner.
     /// </summary>
-    public Vehicle Deck(string tag, float y, Rect r, string slot, Rect[]? holes = null, int smallest = 1, Rect[]? whole = null)
+    public Vehicle Deck(string tag, float y, Rect r, string slot, Rect[]? holes = null, int smallest = 1, Rect[]? whole = null, bool aligned = false)
     {
         var d = Dice.Fork("deck " + tag);
         var nx = (int)MathF.Round((r.X1 - r.X0) / Cell);
@@ -76,7 +76,7 @@ public sealed partial class Vehicle
                 }
             }
             foreach (var (i, j) in cells)
-                if (!used[i, j] && Plate(y, r, used, nx, nz, i, j, Style.Part(d, slot), d, list, smallest))
+                if (!used[i, j] && Plate(y, r, used, nx, nz, i, j, Style.Part(d, slot), d, list, aligned ? 2 : smallest, aligned))
                     progress = true;
         }
         if (wanted.Count > 0)
@@ -85,12 +85,12 @@ public sealed partial class Vehicle
     }
 
     /// <summary>One plate of a deck covering cell (i, j), the first size that fits; false when none does.</summary>
-    private bool Plate(float y, Rect r, bool[,] used, int nx, int nz, int i, int j, string material, Dice d, List<VPart> list, int smallest)
+    private bool Plate(float y, Rect r, bool[,] used, int nx, int nz, int i, int j, string material, Dice d, List<VPart> list, int smallest, bool aligned = false)
     {
         foreach (var (w, h, size) in d.Shuffled(Sizes.Where(s => s.W > 1)).OrderBy(s => s.W * s.D < 8 ? 1 : 0).Append(Sizes[^1]))
         {
             var name = Tile(material, size);
-            if (w < smallest || ConstructParts.Find(name) == null || !Room(used, nx, nz, i, j, w, h, out var i0, out var j0))
+            if (w < smallest || aligned && h < 2 || ConstructParts.Find(name) == null || !Room(used, nx, nz, i, j, w, h, out var i0, out var j0, aligned))
                 continue;
             var (x0, z0) = (r.X0 + i0 * Cell, r.Z0 + j0 * Cell);
             try
@@ -112,11 +112,11 @@ public sealed partial class Vehicle
     /// <summary>The whole 1 m plates decks laid, by tag and rectangle.</summary>
     public Dictionary<(string Tag, Rect R), VPart> Wholes { get; } = new();
 
-    private static bool Room(bool[,] used, int nx, int nz, int i, int j, int w, int h, out int i0, out int j0)
+    private static bool Room(bool[,] used, int nx, int nz, int i, int j, int w, int h, out int i0, out int j0, bool aligned = false)
     {
         foreach (var (ax, az) in new[] { (i, j), (i - w + 1, j), (i, j - h + 1), (i - w + 1, j - h + 1) })
         {
-            if (ax < 0 || az < 0 || ax + w > nx || az + h > nz)
+            if (ax < 0 || az < 0 || ax + w > nx || az + h > nz || aligned && (ax % 2 != 0 || az % 2 != 0)) // (aligned: plates on a half-metre lattice, so each one's centre is on the centimetre grid)
                 continue;
             var free = true;
             for (var a = ax; a < ax + w && free; a++)
@@ -482,6 +482,7 @@ public sealed partial class Vehicle
         foreach (var (tag, list) in Panels)
             if (tag is not "furniture")
                 PaintAll(list.Where(p => p.Def.Slots.Length == 0), tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
+        PaintRooms(Dice.Fork("paint runs"), "rust"); // (phase 2: a room's bays by runs, one colour each, so its sections read: VehicleBodyLanguage.cs)
         var war = Style.Colour(d, "war");
         foreach (var p in d.Shuffled((Panels.GetValueOrDefault("hood") ?? []).Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
             Paint(p, war);

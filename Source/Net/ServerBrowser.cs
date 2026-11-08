@@ -347,7 +347,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 201: the warden's induction (GameTutorial.cs, docs/sandbox/TUTORIAL.md): Msg.Tutorial at the end of Msg.
     // 202: story factions' technologies (GameStoryTech.cs, docs/story/STORY.md "Technologies"): Msg.Factions carries each story faction's learnt technologies (a u8 after each standing) and its technology lines after the names; AsmBlock.Untaught (3) in an Assembler's blocked byte.
     // 203: faction jobs (GameStoryJobs.cs, docs/story/STORY.md "Jobs"): Msg.Jobs at the end of Msg (the jobs window to one client; a take or a drop from it).
-    public const byte ProtocolVersion = 203;
+    // 204: body styles phase 2 (docs/vehiclekit/BODY-STYLES.md): a lofted bay's key may reach 2 m of half width and 4 m of height, and the part a key names changed (its feet 12 cm in from its ends, its wall rows toned by height, a door bay's ends closed out to a wider section), so both ends must make the same part from it.
+    public const byte ProtocolVersion = 204;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
