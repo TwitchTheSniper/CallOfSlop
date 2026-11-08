@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.5, language boat standard 2.45 m, flare 0.16, sheer 0.6, brow 0.73 1 m, tail 0.71 1.25 m, door left, cab boat cab, nose grille, wear age 0.61 (3 rusty, 11 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab enclosed, nose ram, rear porch hitch, under tub, layout hutch 4 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.5, language boat standard 2.45 m, flare 0.16, sheer 0.6, brow 0.73 1 m, tail 0.71 1.25 m, door left, cab boat cab, nose grille, fitting mascot, wear age 0.61 (3 rusty, 11 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab enclosed, nose ram, rear porch hitch, under tub, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Gun Wagon 1",
   "group": "Clan MacSlop",
@@ -112,9 +112,9 @@
     {"part": "Wide Arch Fender", "on": 101, "socket": "-x0", "by": "mount", "paint": "#1b1714"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 103, "pos": [1.318, 0.523, -0.375], "rot": [0.0003, -0.0003, -0.7008, 0.7134]}, "paint": "#2b5a3a"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 102, "pos": [0.132, 0.519, -1.215], "rot": [-0.7153, -0.022, -0.0095, 0.6984]}, "paint": "#2b5a3a"},
-    {"part": "Pipe Box", "on": 101, "socket": "top", "by": "base"},
-    {"part": "Saltire Flag", "on": 47, "socket": "front00", "by": "base"},
-    {"part": "Thistle", "on": 34, "socket": "top", "by": "base"}
+    {"part": "Hull Loft (decoO UqV-)", "on": 101, "socket": "top", "by": "base"},
+    {"part": "Pipe Box", "on": 34, "socket": "top", "by": "base"},
+    {"part": "Saltire Flag", "on": 47, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [79, 84], [84, 81], [91, 88]],
   "hoses": [[89, 90]],

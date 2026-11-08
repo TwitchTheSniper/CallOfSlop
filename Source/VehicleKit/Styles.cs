@@ -160,7 +160,7 @@ public static class Styles
         Seeds = new()
         {
             ["Technical"] = [2, 5, 6, 8, 11], ["Box Truck"] = [1, 5, 3], ["War Bus"] = [1, 5, 10], ["Flatbed Fort"] = [1, 2, 7],
-            ["Gun Wagon"] = [1, 9, 7], ["Scrap Tanker"] = [1, 2, 10], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
+            ["Gun Wagon"] = [1, 9, 7], ["Scrap Tanker"] = [1, 2, 5], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
         },
         LootTable = "it",
         Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
@@ -367,8 +367,8 @@ public static class Styles
             ["bed"] = ["Plate Steel", "Tread Plate"],
             ["sheet"] = ["Plate Steel"],
             ["wall"] = ["Plate Steel"],
-            ["spike"] = ["Iron Spike"],
-            ["trophy"] = ["Hubcap Plate"],
+            ["spike"] = ["none"], // (body styles phase 4: nothing hung down the sides, where bandits hang spikes)
+            ["trophy"] = [HullLoft.JerryCan], // (jerry cans where bandits hang skulls and hubcaps: HullLoft.Trim.cs)
         },
         LightGear = Bandit.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)
         HeavyGear = Bandit.HeavyGear,

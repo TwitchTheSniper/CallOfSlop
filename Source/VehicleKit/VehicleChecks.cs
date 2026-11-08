@@ -127,7 +127,7 @@ public static class VehicleChecks
         for (var t = 0; t < owner.Length; t++)
         {
             var o = owner[t];
-            if (o < 0 || o >= c.PartCount || c.DefOf(o).HasGlass || !c.DefOf(o).Name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
+            if (o < 0 || o >= c.PartCount || c.DefOf(o).HasGlass || !c.DefOf(o).Name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsDressing(c.DefOf(o).Name))
                 continue; // (the cab, the hood and the rooms: what the kit lofted; a mast or a trophy in the way is dressing, judged by the eye)
             keep.Add(tris[3 * t]);
             keep.Add(tris[3 * t + 1]);

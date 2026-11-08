@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 1.75 m, leaf/leaf, wing 0.5, language cabin standard 2.38 m, flare 0.02, plain 0.7, brow 0.89 1 m, tail 0.84 1 m, door right, cab cabin cab, nose grille, wear age 0.61 (1 rusty, 8 dirty, 0 sooty, 1 patched, 0 rusted out), body room+bed, cab enclosed, nose short hood, rear hitch, under stilts, flank loaded, sides walls, roof none, layout room(Brow T,Door,Tail T)+bed 2 m
+  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 1.75 m, leaf/leaf, wing 0.5, language cabin standard 2.38 m, flare 0.02, plain 0.7, brow 0.89 1 m, tail 0.84 1 m, door right, cab cabin cab, nose grille, trim signboards on 5 bay sides, wear age 0.61 (3 rusty, 8 dirty, 0 sooty, 1 patched, 0 rusted out), body room+bed, cab enclosed, nose short hood, rear hitch, under stilts, flank loaded, sides walls, roof none, layout room(Brow T,Door,Tail T)+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Box Truck 9",
   "group": "The Call Centre",
@@ -136,6 +136,11 @@
     {"part": "Prize Wheel", "on": 36, "socket": "top", "by": "base"},
     {"part": "Prize Wheel", "on": 81, "socket": "front33", "by": "base"},
     {"part": "Office Phone", "on": 93, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (trimg3 XaW5 ~CO0CWyCodDYj03J ~Cm0CuyDIzE3203k)", "on": 72, "socket": "+x0", "by": "base", "paint": "#9aa0a6"},
+    {"part": "Hull Loft (trimg3 XaW5 ~Cm0CuyDIzE3203k ~CO0CWyCodDYj03J)", "on": 72, "socket": "-x0", "by": "base", "paint": "#21c45a"},
+    {"part": "Hull Loft (trimg3 YMW5 ~Cm0CuyDIzE3203k =)", "on": 73, "socket": "-x0", "by": "base", "paint": "#21c45a"},
+    {"part": "Hull Loft (trimg9 XaW5 ~Cm0CuyDIzE3203k ~CG0COyCgUDQZ037)", "on": 77, "socket": "+x0", "by": "base", "paint": "#7d8a92"},
+    {"part": "Hull Loft (trimg6 XaW5 ~CG0COyCgUDQZ037 ~Cm0CuyDIzE3203k)", "on": 77, "socket": "-x0", "by": "base", "paint": "#21c45a"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 121, "pos": [0.128, 0.432, -0.983], "rot": [-0.7158, -0.008, 0.0025, 0.6983]}, "paint": "#7d8a92"}
   ],
   "wires": [[33, 34], [34, 28], [78, 104], [104, 101], [110, 107]],

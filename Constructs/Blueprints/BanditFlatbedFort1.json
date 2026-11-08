@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, leaf/coil, wing 0.5, language ledge heavy 2.40 m, flare 0.21, kick-up 1.2, brow 0.75 1.5 m, tail 0.76 1 m, door left, cab ledge caged cab, nose flat, wear age 1.27 (34 rusty, 31 dirty, 1 sooty, 3 patched, 6 rusted out), body room+gun bed, cab caged, nose ram, rear hitch, under tub, flank panniers, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, leaf/coil, wing 0.5, language ledge heavy 2.40 m, flare 0.21, kick-up 1.2, brow 0.75 1.5 m, tail 0.76 1 m, door left, cab ledge caged cab, nose flat, trim cage on 3 bay sides, wear age 1.27 (37 rusty, 31 dirty, 1 sooty, 3 patched, 6 rusted out), body room+gun bed, cab caged, nose ram, rear hitch, under tub, flank panniers, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Flatbed Fort 1",
   "group": "Bandit",
@@ -147,6 +147,9 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 138, "pos": [0.144, 0.45, -1.101], "rot": [-0.6924, -0.0526, -0.0012, 0.7196]}, "paint": "#7a4326"},
     {"part": "Hubcap Plate", "on": 137, "socket": "top", "by": "base"},
     {"part": "Skull Trophy", "on": 36, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (trimc7 YMW5 ~Cm0CmyFX-Gg7GhTDC0040 =)", "on": 68, "socket": "-x0", "by": "base", "paint": "#7a4326"},
+    {"part": "Hull Loft (trimc8 XaW5 ~Cm0CmyFX-Gg7GhTDC0040 ~BW0BeyD9lE9tEB3B3X03X)", "on": 72, "socket": "+x0", "by": "base", "paint": "#5e3320"},
+    {"part": "Hull Loft (trimc9 XaW5 ~BW0BeyD9lE9tEB3B3X03X ~Cm0CmyFX-Gg7GhTDC0040)", "on": 72, "socket": "-x0", "by": "base", "paint": "#8c5230"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 135, "pos": [-1.081, 0.746, 6.872], "rot": [0.028, -0.0082, 0.7003, 0.7133]}, "paint": "#5e3320"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 136, "pos": [1.558, 0.998, 5.619], "rot": [-0.019, 0.0238, -0.6821, 0.7307]}, "paint": "#5e3320"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 134, "pos": [-1.067, 0.698, 5.625], "rot": [-0.0252, -0.0009, 0.7034, 0.7103]}, "paint": "#6b3a22"}

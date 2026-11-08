@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, tandem 1.5 m, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.37 m, flare 0.07, plain 1.1, brow 0.64 1 m, tail 0.76 1 m, door right, cab slab armoured cab, nose grille, wear age 0.68 (13 rusty, 11 dirty, 0 sooty, 0 patched, 2 rusted out), body room+tank, cab armoured, nose plated hood, rear hitch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, tandem 1.5 m, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.37 m, flare 0.07, plain 1.1, brow 0.64 1 m, tail 0.76 1 m, door right, cab slab armoured cab, nose grille, trim plates+cage on 2 bay sides, wear age 0.68 (14 rusty, 11 dirty, 0 sooty, 0 patched, 2 rusted out), body room+tank, cab armoured, nose plated hood, rear hitch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Scrap Tanker 10",
   "group": "Bandit",
@@ -129,7 +129,9 @@
     {"part": "Tread Plate 0.5 m", "weld": {"on": 114, "pos": [-0.545, 0.64, 0.254], "rot": [-0.0466, 0.0058, 0.7141, 0.6985]}, "paint": "#7a4326"},
     {"part": "Skull Trophy", "on": 110, "socket": "front02", "by": "base"},
     {"part": "Horned Skull", "on": 112, "socket": "front01", "by": "base"},
-    {"part": "Horned Skull", "on": 41, "socket": "top", "by": "base"}
+    {"part": "Horned Skull", "on": 41, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (trimp9 XaW5 ~Cu0D0yEB6Apj03j ~C80CGyD1_9wO02O)", "on": 78, "socket": "-x0", "by": "base", "paint": "#7a4326"},
+    {"part": "Hull Loft (trimc0 YMW5 ~Cu0D0yEB6Apj03j =)", "on": 79, "socket": "-x0", "by": "base", "paint": "#94603a"}
   ],
   "wires": [[39, 40], [40, 33], [90, 101], [101, 97], [107, 104]],
   "hoses": [[105, 106]],

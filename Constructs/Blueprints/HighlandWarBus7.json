@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front under the hood, inset 1.5 m, swing arm/swing arm, wing 0.75, language boat heavy 2.20 m, flare 0.31, plain 0.6, brow 0.76 1.25 m, tail 0.75 1.25 m, door left, cab boat cab, nose rounded, wear age 0.78 (6 rusty, 14 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab enclosed, nose long hood, rear porch hitch, under stilts, flank panniers, roof none, layout gap 0.5 m+room(Brow N,Bay N-T,Door,Bay T-L,Tail L), plan 2
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front under the hood, inset 1.5 m, swing arm/swing arm, wing 0.75, language boat heavy 2.20 m, flare 0.31, plain 0.6, brow 0.76 1.25 m, tail 0.75 1.25 m, door left, cab boat cab, nose rounded, fitting mascot, trim clinker on 9 bay sides, wear age 0.78 (7 rusty, 14 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab enclosed, nose long hood, rear porch hitch, under stilts, flank panniers, roof none, layout gap 0.5 m+room(Brow N,Bay N-T,Door,Bay T-L,Tail L), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland War Bus 7",
   "group": "Clan MacSlop",
@@ -124,10 +124,19 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 113, "pos": [0.124, 0.424, -1.354], "rot": [-0.692, 0.0023, -0.0277, 0.7213]}, "paint": "#8c2a2a"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 115, "pos": [-0.849, 0.28, -0.37], "rot": [-0.0213, 0.0123, 0.7063, 0.7075]}, "paint": "#2b5a3a"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 114, "pos": [1.348, 0.51, -0.377], "rot": [-0.0055, -0.0265, -0.6893, 0.724]}, "paint": "#5b4a2f"},
-    {"part": "Pipe Box", "on": 112, "socket": "top", "by": "base"},
-    {"part": "Thistle", "on": 36, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoO UjVs)", "on": 112, "socket": "top", "by": "base"},
+    {"part": "Pipe Box", "on": 36, "socket": "top", "by": "base"},
     {"part": "Wee Keg", "on": 109, "socket": "front30", "by": "base"},
-    {"part": "Saltire Flag", "on": 108, "socket": "front00", "by": "base"}
+    {"part": "Saltire Flag", "on": 108, "socket": "front00", "by": "base"},
+    {"part": "Hull Loft (trimr3 XzW5 ~9W0AWmAOyBHVBHa9o66IP02S ~AO0BOyBf0DHVD24BIn7ZA03E)", "on": 83, "socket": "+x0", "by": "base", "paint": "#2b5a3a"},
+    {"part": "Hull Loft (trimr6 XzW5 ~AO0BOyBf0DHVD24BIn7ZA03E ~9W0AWmAOyBHVBHa9o66IP02S)", "on": 83, "socket": "-x0", "by": "base", "paint": "#2b5a3a"},
+    {"part": "Hull Loft (trimr2 XBW5 ~AO0BOyBf0DHVD24BIn7ZA03E ~D00EGyEv4I9VHoDFY-AxO03S)", "on": 84, "socket": "+x0", "by": "base", "paint": "#5b4a2f"},
+    {"part": "Hull Loft (trimr5 XBW5 ~D00EGyEv4I9VHoDFY-AxO03S ~AO0BOyBf0DHVD24BIn7ZA03E)", "on": 84, "socket": "-x0", "by": "base", "paint": "#2b5a3a"},
+    {"part": "Hull Loft (trimr7 YMWO ~D00EGyEv4I9VHoDFY-AxO03S =)", "on": 85, "socket": "-x0", "by": "base", "paint": "#2b5a3a"},
+    {"part": "Hull Loft (trimr7 XBWO ~D00EGyEv4I9VHoDFY-AxO03S ~D00DmWEW_I1VHo2FYkAx603A)", "on": 89, "socket": "+x0", "by": "base", "paint": "#2b5a3a"},
+    {"part": "Hull Loft (trimr2 XBWO ~D00DmWEW_I1VHo2FYkAx603A ~D00EGyEv4I9VHoDFY-AxO03S)", "on": 89, "socket": "-x0", "by": "base", "paint": "#2b5a3a"},
+    {"part": "Hull Loft (trimr0 XzWO ~D00DmWEW_I1VHo2FYkAx603A ~AG0BOnBGyDHVDHbBY87oQ02T)", "on": 90, "socket": "+x0", "by": "base", "paint": "#7b1e22"},
+    {"part": "Hull Loft (trimr4 XzWO ~AG0BOnBGyDHVDHbBY87oQ02T ~D00DmWEW_I1VHo2FYkAx603A)", "on": 90, "socket": "-x0", "by": "base", "paint": "#7b1e22"}
   ],
   "wires": [[33, 34], [34, 28], [91, 98], [98, 95], [104, 101]],
   "hoses": [[102, 103]],

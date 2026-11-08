@@ -237,6 +237,18 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     public float HoodCrownMin { get; init; } = 0.17f;
     public float HoodCrownMax { get; init; } = 0.24f;
 
+    /// <summary>
+    /// Phase 4 (docs/vehiclekit/BODY-STYLES.md, section 10): the faction's exterior on its rooms. Each entry is a trim set (<see cref="HullLoft.TrimKinds"/>'s letters)
+    /// and its weight; a vehicle rolls one set, so a faction has two or three exterior sub-styles. With <see cref="TrimMix"/> each bay side takes any of the set's kinds
+    /// (a Bandit's cobbled sides); otherwise the kinds take turns down the room. <see cref="TrimShare"/>: the chance a free bay side is dressed at all.
+    /// </summary>
+    public (string Kinds, double W)[] Trims { get; init; } = [];
+    public bool TrimMix { get; init; }
+    public double TrimShare { get; init; } = 1;
+
+    /// <summary>The fittings a style's vehicles carry (<see cref="HullLoft.DecoKinds"/>), each with the chance a vehicle has it where its cab or hood can take it.</summary>
+    public (char Kind, double Chance)[] Decos { get; init; } = [];
+
     /// <summary>The weight of a cab kind (0: the style never builds it).</summary>
     public double CabWeight(string kind)
     {
@@ -254,6 +266,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.92f, TallMax = 1.25f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25,
                 // (phase 3: open cabs in roll cages first, slabs of armour, upright screens, flat and grilled noses)
                 Cabs = [("caged", 2.5), ("enclosed", 1), ("armoured", 1), ("crew", 0.7), ("cab-over", 0.4)], Noses = [('f', 1.5), ('w', 1), ('g', 2)],
+                // (phase 4: welded plates and cage bars, cobbled bay by bay; a bare side now and then)
+                Trims = [("p", 2), ("pc", 2), ("c", 1)], TrimMix = true, TrimShare = 0.7,
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
             },
         // (low and wide, flat-faceted: little height, a glacis brow)
@@ -262,6 +276,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.1f, FlareShare = 0.9f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.35,
                 // (armoured slit cabs and crew cabs, the driver inside an armoured capsule now and then; wedge noses like a glacis)
                 Cabs = [("armoured", 2.5), ("crew", 1.2), ("merged", 1), ("caged", 0.4)], Noses = [('w', 2.5), ('f', 1)],
+                // (phase 4: slat armour and stowage bins down the sides, a basket on the cab)
+                Trims = [("s", 2), ("b", 1.5), ("sb", 1.5)], TrimShare = 0.9, Decos = [('B', 0.7)],
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
             },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
@@ -270,6 +286,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.16f, FlareShare = 0.8f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35,
                 // (capsules in the body's panels, raked screens, rounded and wedge noses)
                 Cabs = [("enclosed", 1.5), ("cab-over", 1.2), ("crew", 0.9), ("merged", 0.8)], Noses = [('r', 2), ('w', 1.5)],
+                // (phase 4: a smooth skirt fairing, a stripe and vents; a radome on the cab)
+                Trims = [("f", 1)], Decos = [('R', 0.75)],
                 CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
             },
         // (a portacabin on a chassis: boxy, square ends, tall)
@@ -278,6 +296,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.95f, TallMax = 1.2f, FlareShare = 0.5f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)],
                 // (boxy enclosed and crew cabs, upright screens, flat noses)
                 Cabs = [("enclosed", 2), ("crew", 1.2), ("cab-over", 0.8)], Noses = [('f', 2), ('g', 1)],
+                // (phase 4: signboards down the sides, one over the cab)
+                Trims = [("g", 1)], TrimShare = 0.8, Decos = [('S', 0.9)],
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
             },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
@@ -286,6 +306,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.14f, FlareShare = 1f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)],
                 // (long hoods with grilles, enclosed and caged cabs)
                 Cabs = [("enclosed", 2), ("crew", 1), ("caged", 0.5)], Noses = [('g', 2.5), ('r', 1)],
+                // (phase 4: clinker laps and a wooden strake, a chrome grille and a bonnet mascot)
+                Trims = [("r", 1)], Decos = [('O', 0.8), ('G', 0.75)],
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
             },
         // (tall, upright buses: the heavy class first, the door kerbside)
@@ -294,6 +316,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.28f, FlareShare = 0.7f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0,
                 // (the bus front: the cab inside the body; capsules; rounded and grilled noses on the rest)
                 Cabs = [("merged", 2), ("cab-over", 1.2), ("enclosed", 0.8), ("crew", 0.5)], Noses = [('r', 2), ('g', 1)],
+                // (phase 4: the two-tone livery band and its chrome strips, a lit destination board over a bus front)
+                Trims = [("l", 1)], Decos = [('D', 0.9)],
                 CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,
             },
     };
@@ -340,6 +364,13 @@ public sealed class BodyLook
 
     /// <summary>The room's door is in its tail's back (a doorway in its cap), set by the plan when the room is last and nothing stands behind it.</summary>
     public bool RearDoor;
+
+    /// <summary>
+    /// Phase 4: a merged cab stands in front of this room, its back the brow's front section, so the brow comes down little at its front (0.86 of the room's height
+    /// at least; its width as rolled, or the plan reads as a box from above): the cab and the room read as one mass, not a cab a step below a tall room. Set by the
+    /// plan with its cab.
+    /// </summary>
+    public bool MergedFront;
 
     /// <summary>
     /// Where the overhang starts, above the room's floor: over the wheels' tops with room for their travel (measured over every chassis recipe on 2026-11-07:
@@ -402,7 +433,7 @@ public sealed class BodyLook
         (Language, Scale, Line, _rule, _mix, _lengths) = (o.Language, o.Scale, line, o._rule, o._mix, o._lengths);
         (Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow, Flare, LineAmount, BrowLength, TailLength, Facets, DoorSide, FlareFrom) =
             (o.Height, o.Width, o.BrowRake, o.TailRake, o.BrowNarrow, o.TailNarrow, o.Flare, o.LineAmount, o.BrowLength, o.TailLength, o.Facets, o.DoorSide, o.FlareFrom);
-        (WantsRearDoor, RearDoor) = (o.WantsRearDoor, o.RearDoor);
+        (WantsRearDoor, RearDoor, MergedFront) = (o.WantsRearDoor, o.RearDoor, o.MergedFront);
     }
 
     private BodyLook WithLine(Roofline line) => new(this, line);
@@ -473,7 +504,7 @@ public sealed class BodyLook
         if (end == 0 && walkIn)
             ky = MathF.Max(ky, 2.02f / t.Top); // (headroom at the centre: a player is 1.8 m)
         if (end < 0)
-            (kx, ky) = (kx * BrowNarrow, ky * BrowRake);
+            (kx, ky) = (kx * BrowNarrow, ky * (MergedFront ? MathF.Max(BrowRake, 0.86f) : BrowRake));
         else if (end > 0)
             (kx, ky) = (kx * TailNarrow, ky * TailRake);
         if (walkIn)
@@ -812,6 +843,8 @@ public static class BodyReportCli
         }
         var fronts = new List<(string Style, float[] F)>();
         var cabs = new List<(string Style, float[] F, float[] S)>(); // (phase 3: the cab and hood, front and side)
+        var exteriors = new List<(string Style, float[] Room, float[] Relief, float[] Body, float[] Side)>(); // (phase 4: the rooms with what is on them, their relief, the whole body)
+        var trims = new Dictionary<string, (int Vehicles, int Trims, int Fittings)>(StringComparer.Ordinal);
         var failures = 0;
         var fights = 0;
         foreach (var st in styles)
@@ -866,6 +899,18 @@ public static class BodyReportCli
                             var (ct, co) = VehiclePlan.PartTriangles(v.Built);
                             var (cfr, csd) = FrontProfile.OfCab(v, ct, co);
                             cabs.Add((st.Name, cfr, csd));
+                            var (er, erl, es) = FrontProfile.Exterior(v, ct, co);
+                            exteriors.Add((st.Name, er, erl, FrontProfile.OfVehicle(v, ct, co).Body, es));
+                            var tr = trims.GetValueOrDefault(st.Name);
+                            trims[st.Name] = (tr.Vehicles + 1, tr.Trims + (v.Panels.GetValueOrDefault("trim")?.Count ?? 0), tr.Fittings + (v.Panels.GetValueOrDefault("fittings")?.Count ?? 0));
+                            foreach (var tp in (v.Panels.GetValueOrDefault("trim") ?? []).Concat(v.Panels.GetValueOrDefault("fittings") ?? []))
+                                if (keys.Add(tp.Def.Name) && OwnFights(tp.Def, out var tf) is var town and > 0)
+                                {
+                                    fights += town;
+                                    Console.WriteLine($"  {g.Name} {seed}: {town} coplanar pair(s) inside {tp.Def.Name}: {tf}");
+                                }
+                            foreach (var m in v.Modules.Where(m => m.StartsWith("trim ", StringComparison.Ordinal) || m.StartsWith("fitting ", StringComparison.Ordinal)))
+                                Tally(m.StartsWith("trim ", StringComparison.Ordinal) ? "trim" : "fitting", m.StartsWith("trim ", StringComparison.Ordinal) ? m[5..m.IndexOf(" on ", StringComparison.Ordinal)] : m[8..]);
                             Tally("cab", v.CabShape is { } cs ? CabLook.KindName(cs.Kind) + (v.HoodShape is { } hs ? " + " + CabLook.NoseName(hs.Nose) + " hood" : "") : (v.Panels.GetValueOrDefault("cabshell")?.FirstOrDefault()?.Def.Name ?? "none"));
                         }
                         var lang = v.Look?.Language.Name ?? "fixed bays";
@@ -954,7 +999,54 @@ public static class BodyReportCli
             }
             Console.WriteLine($"cab separation: within a style {(within.Count > 0 ? within.Average() : 0):0.000}, between styles {(between.Count > 0 ? between.Average() : 0):0.000}, ratio {(within.Count > 0 && within.Average() > 0 ? between.Average() / within.Average() : 0):0.00}");
         }
-        Console.WriteLine($"failures: {failures}; coplanar pairs inside lofted bays, cabs, hoods and panes: {fights}");
+        if (styles.Length > 1 && exteriors.Count > 0)
+        {
+            // Phase 4: how far apart the styles' exteriors read, whatever their paint: the rooms with what is on them (front profile and relief, the mean of the
+            // two) and the whole body (front profile and side outline), each a matrix with the style's own on the diagonal, then between over within.
+            var names = styles.Select(s => s.Name).ToArray();
+            void Matrix(string title, Func<int, int, float> dist)
+            {
+                Console.WriteLine(title + " between styles (mean pair; the diagonal is within the style):");
+                var sb = new StringBuilder("            ");
+                foreach (var b in names)
+                    sb.Append($"{b,10}");
+                Console.WriteLine(sb.ToString());
+                var (within, between) = (new List<float>(), new List<float>());
+                var nearest = new List<string>();
+                foreach (var a in names)
+                {
+                    sb.Clear().Append($"{a,-12}");
+                    var row = new Dictionary<string, float>();
+                    foreach (var b in names)
+                    {
+                        var ds = new List<float>();
+                        for (var i = 0; i < exteriors.Count; i++)
+                            for (var j = 0; j < exteriors.Count; j++)
+                                if (i != j && exteriors[i].Style == a && exteriors[j].Style == b && dist(i, j) is var dd && !float.IsNaN(dd))
+                                    ds.Add(dd);
+                        (a == b ? within : between).AddRange(ds);
+                        row[b] = ds.Count > 0 ? ds.Average() : 0;
+                        sb.Append($"{row[b],10:0.000}");
+                    }
+                    Console.WriteLine(sb.ToString());
+                    var own = row[a];
+                    var other = row.Where(x => x.Key != a).OrderBy(x => x.Value).First();
+                    nearest.Add($"{a} {other.Key} {(own > 0 ? other.Value / own : 0):0.00}");
+                }
+                Console.WriteLine($"  within a style {(within.Count > 0 ? within.Average() : 0):0.000}, between styles {(between.Count > 0 ? between.Average() : 0):0.000}, ratio {(within.Count > 0 && within.Average() > 0 ? between.Average() / within.Average() : 0):0.00}; nearest other style (its distance over the style's own): {string.Join(", ", nearest)}");
+            }
+            static float Rooms((string, float[] Room, float[] Relief, float[], float[]) x, (string, float[] Room, float[] Relief, float[], float[]) y) =>
+                x.Room.Sum() == 0 || y.Room.Sum() == 0 ? float.NaN : (FrontProfile.Dist(x.Room, y.Room) + FrontProfile.Dist(x.Relief, y.Relief)) / 2;
+            var withRooms = exteriors.Select((x, i) => (x, i)).Where(t => t.x.Room.Sum() > 0).Select(t => t.i).ToHashSet();
+            Matrix("room exteriors (front with trim, and relief)", (i, j) => withRooms.Contains(i) && withRooms.Contains(j) ? Rooms(exteriors[i], exteriors[j]) : float.NaN);
+            Matrix("whole body (front and side outline)", (i, j) => (FrontProfile.Dist(exteriors[i].Body, exteriors[j].Body) + FrontProfile.Dist(exteriors[i].Side, exteriors[j].Side)) / 2);
+            foreach (var st in names)
+                if (exteriors.Where(x => x.Style == st && x.Room.Sum() > 0).ToList() is { Count: > 0 } mine)
+                    Console.WriteLine($"  {st} relief by band (floor up): " + string.Join(" ", Enumerable.Range(0, Bins).Select(b => mine.Average(x => x.Relief[b]).ToString("0.00", CultureInfo.InvariantCulture))));
+            foreach (var (st, t) in trims)
+                Console.WriteLine($"  {st}: {(double)t.Trims / Math.Max(1, t.Vehicles):0.0} trims and {(double)t.Fittings / Math.Max(1, t.Vehicles):0.0} fittings a vehicle");
+        }
+        Console.WriteLine($"failures: {failures}; coplanar pairs inside lofted bays, cabs, hoods, panes, trims and fittings: {fights}");
         return failures + fights;
     }
 }
@@ -1225,6 +1317,116 @@ public static class FrontProfile
                     }
                 }
         return (Of(tris, ranges), side);
+    }
+
+    /// <summary>
+    /// Body styles phase 4: what a vehicle's exterior reads as, whatever its paint. <c>Room</c>: the rooms' cross-section from the front with everything on their
+    /// outside (trim, panniers, sponsons, ladders), as <see cref="Of(Vector3[], IEnumerable{ValueTuple{int, int}})"/>; <c>Relief</c>: in <see cref="Bins"/> bands of the
+    /// room's height, the share of its length where something stands proud of the skin by a centimetre or more (a belt, slats, a board, plates); <c>Side</c>: the
+    /// whole body's side outline (its top's height in <see cref="Bins"/> slices along its length, over its own height). Zeros where there is no room.
+    /// </summary>
+    public static (float[] Room, float[] Relief, float[] Side) Exterior(Vehicle v, Vector3[] tris, int[] owner)
+    {
+        var c = v.Built;
+        var bays = new HashSet<int>(v.Rooms.SelectMany(r => r.Bays).Select(b => b.Index));
+        var inside = new HashSet<int>(v.Rooms.SelectMany(r => r.Furniture.Concat(r.Containers).Concat(r.Seats).Concat(r.Door is { } d ? [d] : []).Concat(r.Hinge is { } h ? [h] : [])).Select(p => p.Index));
+        foreach (var p in v.Panels.GetValueOrDefault("furniture") ?? [])
+            inside.Add(p.Index);
+        var side = new float[Bins];
+        float lo = float.MaxValue, hi = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
+        for (var t = 0; t < owner.Length; t++)
+            if (owner[t] >= 0 && owner[t] < c.PartCount && c.DefOf(owner[t]).Role is not (PartRole.Wheel or PartRole.Suspension))
+                for (var e = 0; e < 3; e++)
+                {
+                    var q = tris[3 * t + e];
+                    (lo, hi, z0, z1) = (MathF.Min(lo, q.Y), MathF.Max(hi, q.Y), MathF.Min(z0, q.Z), MathF.Max(z1, q.Z));
+                }
+        for (var t = 0; t < owner.Length; t++)
+            if (owner[t] >= 0 && owner[t] < c.PartCount && c.DefOf(owner[t]).Role is not (PartRole.Wheel or PartRole.Suspension))
+                for (var e = 0; e < 3; e++)
+                {
+                    var (p, q) = (tris[3 * t + e], tris[3 * t + (e + 1) % 3]);
+                    var n = Math.Max(1, (int)MathF.Ceiling(Vector3.Distance(p, q) / 0.05f));
+                    for (var k = 0; k <= n; k++)
+                    {
+                        var at = Vector3.Lerp(p, q, k / (float)n);
+                        var b = Math.Clamp((int)((at.Z - z0) / MathF.Max(0.05f, z1 - z0) * Bins), 0, Bins - 1);
+                        side[b] = MathF.Max(side[b], (at.Y - lo) / MathF.Max(0.05f, hi - lo));
+                    }
+                }
+        if (bays.Count == 0)
+            return (new float[Bins], new float[Bins], side);
+        // The rooms' extent, and the skin's half width in cells of 10 cm along the room by a twelfth of its height (a room's middle in x: its bays').
+        float rlo = float.MaxValue, rhi = float.MinValue, rz0 = float.MaxValue, rz1 = float.MinValue, xl = float.MaxValue, xh = float.MinValue;
+        for (var t = 0; t < owner.Length; t++)
+            if (bays.Contains(owner[t]))
+                for (var e = 0; e < 3; e++)
+                {
+                    var q = tris[3 * t + e];
+                    (rlo, rhi, rz0, rz1, xl, xh) = (MathF.Min(rlo, q.Y), MathF.Max(rhi, q.Y), MathF.Min(rz0, q.Z), MathF.Max(rz1, q.Z), MathF.Min(xl, q.X), MathF.Max(xh, q.X));
+                }
+        var mid = (xl + xh) / 2;
+        var slices = Math.Max(1, (int)MathF.Ceiling((rz1 - rz0) / 0.1f));
+        var skin = new float[slices, Bins];
+        var proud = new bool[slices, Bins];
+        bool Cell(Vector3 at, out int zi, out int yi)
+        {
+            (zi, yi) = ((int)((at.Z - rz0) / 0.1f), (int)((at.Y - rlo) / MathF.Max(0.05f, rhi - rlo) * Bins));
+            return zi >= 0 && zi < slices && yi >= 0 && yi < Bins;
+        }
+        void Samples(int t, Action<Vector3> take)
+        {
+            var (a, b, d) = (tris[3 * t], tris[3 * t + 1], tris[3 * t + 2]);
+            var n = Math.Clamp((int)MathF.Ceiling(MathF.Max(Vector3.Distance(a, b), MathF.Max(Vector3.Distance(b, d), Vector3.Distance(d, a))) / 0.05f), 1, 60);
+            for (var i = 0; i <= n; i++)
+                for (var j = 0; i + j <= n; j++)
+                    take(a + (b - a) * (i / (float)n) + (d - a) * (j / (float)n));
+        }
+        for (var t = 0; t < owner.Length; t++)
+            if (bays.Contains(owner[t]))
+                Samples(t, at =>
+                {
+                    if (Cell(at, out var zi, out var yi))
+                        skin[zi, yi] = MathF.Max(skin[zi, yi], MathF.Abs(at.X - mid));
+                });
+        var room = new List<(int, int)>();
+        var (start, prev) = (0, owner.Length > 0 ? owner[0] : -1);
+        for (var t = 0; t <= owner.Length; t++)
+            if (t == owner.Length || owner[t] != prev)
+            {
+                if (prev >= 0 && prev < c.PartCount && !inside.Contains(prev) && c.DefOf(prev).Role is not (PartRole.Wheel or PartRole.Suspension))
+                {
+                    var near = bays.Contains(prev);
+                    if (!near)
+                        for (var k = start; k < t && !near; k++)
+                            for (var e = 0; e < 3 && !near; e++)
+                            {
+                                var q = tris[3 * k + e];
+                                near = Cell(q, out var zi, out var yi) && MathF.Abs(q.X - mid) > skin[zi, yi] - 0.1f && skin[zi, yi] > 0;
+                            }
+                    if (near)
+                        room.Add((start, t));
+                }
+                if (t < owner.Length)
+                    (start, prev) = (t, owner[t]);
+            }
+        foreach (var (f, t) in room)
+            for (var k = f; k < t; k++)
+                if (!bays.Contains(owner[k]))
+                    Samples(k, at =>
+                    {
+                        if (Cell(at, out var zi, out var yi) && skin[zi, yi] > 0 && MathF.Abs(at.X - mid) > skin[zi, yi] + 0.01f)
+                            proud[zi, yi] = true;
+                    });
+        var relief = new float[Bins];
+        for (var yi = 0; yi < Bins; yi++)
+        {
+            var n = 0;
+            for (var zi = 0; zi < slices; zi++)
+                n += proud[zi, yi] ? 1 : 0;
+            relief[yi] = n / (float)slices;
+        }
+        return (Of(tris, room), relief, side);
     }
 
     /// <summary>A built vehicle's rooms (every bay of every room) and its whole body (every part but its wheels), from the front. Empty rooms: zeros.</summary>

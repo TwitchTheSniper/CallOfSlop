@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 2 m, coil/leaf, wing 0.5, language van standard 2.31 m, flare 0.11, plain 0.9, brow 0.73 1.25 m, tail 0.87 0.75 m, door right, 12 facets, cab van cab, 8 facets, nose wedge, wear age 0.34 (1 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab enclosed, nose short hood, rear porch, under skirted, flank loaded, roof none, layout gap 0.5 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 2 m, coil/leaf, wing 0.5, language van standard 2.31 m, flare 0.11, plain 0.9, brow 0.73 1.25 m, tail 0.87 0.75 m, door right, 12 facets, cab van cab, 8 facets, nose wedge, fitting radome, trim fairing on 5 bay sides, wear age 0.34 (1 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab enclosed, nose short hood, rear porch, under skirted, flank loaded, roof none, layout gap 0.5 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Box Truck 3",
   "group": "IT Department",
@@ -108,10 +108,15 @@
     {"part": "Arch Fender", "on": 97, "socket": "-x0", "by": "mount", "paint": "#c0392b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 100, "pos": [-0.725, 0.247, -0.374], "rot": [-0.0066, 0.0034, 0.7059, 0.7083]}, "paint": "#d8d0b8"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 98, "pos": [0.124, 0.502, -1.009], "rot": [-0.7063, 0.0029, 0.007, 0.7079]}, "paint": "#d8d0b8"},
+    {"part": "Hull Loft (decoR WVWJ)", "on": 35, "socket": "top", "by": "base"},
     {"part": "Desk Fan", "on": 97, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 35, "socket": "top", "by": "base"},
     {"part": "Satellite Dish", "on": 95, "socket": "front", "by": "base"},
-    {"part": "CRT Monitor", "on": 91, "socket": "front00", "by": "base"}
+    {"part": "CRT Monitor", "on": 91, "socket": "front00", "by": "base"},
+    {"part": "Hull Loft (trimf0 XaW5 ~BW0BmJC0cC8vC8yCPCCvVCvaCvnCg4BgM9IX6Yc3gf02f ~CW0CuQD8qD8yDnDEHQEfdEg1EYREIrDBDAhS7hY4Zd03d)", "on": 69, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf1 XaW5 ~CW0CuQD8qD8yDnDEHQEfdEg1EYREIrDBDAhS7hY4Zd03d ~BW0BmJC0cC8vC8yCPCCvVCvaCvnCg4BgM9IX6Yc3gf02f)", "on": 69, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf7 YMW5 ~CW0CuQD8qD8yDnDEfdEg1EYREIrDBDAhS7hY4Zd03d =)", "on": 70, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf5 XaW5 ~CW0CuQD8qD8yDnDEHQEfdEg1EYREIrDBDAhS7hY4Zd03d ~Bm0C8NCGjCOyCX4D9QDHaDHnDA8CwUBwp9Z06h63pA03A)", "on": 73, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf6 XaW5 ~Bm0C8NCGjCOyCX4D9QDHaDHnDA8CwUBwp9Z06h63pA03A ~CW0CuQD8qD8yDnDEHQEfdEg1EYREIrDBDAhS7hY4Zd03d)", "on": 73, "socket": "-x0", "by": "base", "paint": "#1f4e8c"}
   ],
   "wires": [[32, 33], [33, 27], [74, 81], [81, 78], [87, 84]],
   "hoses": [[85, 86]],

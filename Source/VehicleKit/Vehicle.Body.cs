@@ -212,9 +212,12 @@ public sealed partial class Vehicle
                 break;
             if (FreeSocket(p, dir, d) is not { } socket)
                 continue;
+            var part = Style.Part(d, slot);
+            if (part == "none")
+                continue; // (a style that hangs nothing there: Militia's sides)
             try
             {
-                Onto(p, socket, Style.Part(d, slot), "base", 0, clear: true);
+                Onto(p, socket, part, "base", 0, clear: true);
                 left--;
             }
             catch (VehicleKitException)
@@ -296,6 +299,8 @@ public sealed partial class Vehicle
         var hood = Stand(kind, SocketPoint(on, "+y"), Orient.Forward, on, "engine");
         PanelList("hood").Add(hood);
         var nose = noseOf != null ? FactionStyle.Noted("nose", d.Pick(noseOf)) : Style.Part(d, "nose");
+        if (CabLook != null && nose is "none" or "Bar Grille" or "Slat Grille" && ChromeGrille(hood))
+            nose = "none"; // (phase 4: a Highland's chrome grille in its place)
         if (nose != "none")
             PanelList("hoodsides").Add(Onto(hood, "front", nose, "back", 0));
         var fender = Style.Part(d, "fender");
@@ -466,6 +471,7 @@ public sealed partial class Vehicle
             var face = MathF.Abs(c.X) > 0.6f ? new Vector3(MathF.Sign(c.X), 0, 0) : c.Z > 0 ? Vector3.UnitZ : -Vector3.UnitZ;
             Crooked("patches", Style.Part(d, "patch"), w, c + face * 0.06f + new Vector3(0, (float)d.Between(-0.08, 0.08), 0), face, d);
         }
+        FactionDecos(); // (phase 4: the faction's fittings on the cab and the hood, before the piper and the trophies take their sockets: Vehicle.Trim.cs)
         if (Style.Parts.ContainsKey("piper"))
             Piper(); // (before the trophies take the hood's sockets)
         d = Dice.Fork("show");
@@ -477,14 +483,16 @@ public sealed partial class Vehicle
         Dress("trophy", Panels.GetValueOrDefault("headboard") ?? [], -Vector3.UnitZ, d.Int(1, 2), d);
         if (Style.Parts.ContainsKey("mast"))
             Kit();
+        FactionTrim(); // (phase 4: the faction's trim on the bay sides nothing else took)
         d = Dice.Fork("paint");
         var frame = Style.Colour(d, "frame"); // (one colour: stacked beams' bands line up, and paint in one look doesn't fight)
         foreach (var p in Parts.Where(p => p.Name.StartsWith(Beam, StringComparison.Ordinal)))
             Paint(p, frame);
         foreach (var (tag, list) in Panels)
-            if (tag is not ("furniture" or "glass"))
+            if (tag is not ("furniture" or "glass" or "trim" or "fittings"))
                 PaintAll(list.Where(p => p.Def.Slots.Length == 0), tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
         PaintRooms(Dice.Fork("paint runs"), "rust"); // (phase 2: a room's bays by runs, one colour each, so its sections read: VehicleBodyLanguage.cs)
+        PaintTrim();
         var war = Style.Colour(d, "war");
         foreach (var p in d.Shuffled((Panels.GetValueOrDefault("hood") ?? []).Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
             Paint(p, war);

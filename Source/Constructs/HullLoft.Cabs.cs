@@ -314,6 +314,18 @@ public static partial class HullLoft
                 if (b0 > 0.15f && b1 > 0.15f)
                     list.Add(("glass1", new PaneShape([R3(b0, y0, C.Zb), R3(-b0, y0, C.Zb), R3(-b1, y1, C.Zb), R3(b1, y1, C.Zb)])));
             }
+            if (C.Kind is 'o' or 'm')
+            {
+                // Phase 4: a capsule's side windows ahead of its doorways, glazed (the opening's chord between the belt and the window band's top, behind the pillar).
+                float Zs(float y) => FrontAtY(y) + 0.045f;
+                var zb = C.D0 - 0.02f;
+                if (zb - MathF.Max(Zs(y0), Zs(y1)) > 0.25f)
+                    foreach (var (socket, s) in new[] { ("glass2", 1f), ("glass3", -1f) })
+                    {
+                        float X(float y, float z) => SectionAt(z).XAt(y);
+                        list.Add((socket, new PaneShape([R3(s * X(y0, Zs(y0)), y0, Zs(y0)), R3(s * X(y0, zb), y0, zb), R3(s * X(y1, zb), y1, zb), R3(s * X(y1, Zs(y1)), y1, Zs(y1))])));
+                    }
+            }
             return list;
         }
 
@@ -504,7 +516,7 @@ public static partial class HullLoft
                 var top = at(corner);
                 if (g.Tp[^1].Y > g.Tp[corner].Y + 0.03f)
                     foreach (var s in (float[])[-1, 1])
-                        Bar(p, top with { X = s * top.X }, at(n - 1), w0 + 0.008f);
+                        Bar(p, top with { X = s * top.X }, at(n - 1), w0 + 0.008f + (s > 0 ? 0.004f : 0)); // (the two halves meet at the ridge: a size apart, so their faces there differ)
                 else
                     Bar(p, top with { X = -top.X }, top, w0 + 0.008f);
                 bars += 2 * top.X;
@@ -665,8 +677,16 @@ public static partial class HullLoft
         p.Boxes.Add(new JsonObject { ["min"] = V(mn.X, mn.Y, mn.Z), ["max"] = V(mx.X, mx.Y, mx.Z), ["color"] = GlassTint, ["shape"] = "hull", ["points"] = pts, ["glass"] = true, ["detail"] = true });
         // The seal along its bottom edge: the solid box it stands by and collides with (a shaped box is drawn only), on the socket.
         var (e0, e1) = (s.Q[0], s.Q[1]);
-        var sx = MathF.Abs(e1.X - e0.X) / 2 - 0.01f; // (a centimetre short of the glass's sides)
-        p.Boxes.Add(new JsonObject { ["min"] = V(s.Socket.X - sx, s.Socket.Y, s.Socket.Z - 0.009f), ["max"] = V(s.Socket.X + sx, s.Socket.Y + 0.017f, s.Socket.Z + 0.009f), ["color"] = Frame, ["paintable"] = false });
+        if (MathF.Abs(e1.X - e0.X) >= MathF.Abs(e1.Z - e0.Z))
+        {
+            var sx = MathF.Abs(e1.X - e0.X) / 2 - 0.015f; // (short of the glass's sides: a pane leaning in at its top has a side face there)
+            p.Boxes.Add(new JsonObject { ["min"] = V(s.Socket.X - sx, s.Socket.Y, s.Socket.Z - 0.009f), ["max"] = V(s.Socket.X + sx, s.Socket.Y + 0.017f, s.Socket.Z + 0.009f), ["color"] = Frame, ["paintable"] = false });
+        }
+        else
+        {
+            var sz = MathF.Abs(e1.Z - e0.Z) / 2 - 0.015f; // (a side window's seal runs along the cab)
+            p.Boxes.Add(new JsonObject { ["min"] = V(s.Socket.X - 0.009f, s.Socket.Y, s.Socket.Z - sz), ["max"] = V(s.Socket.X + 0.009f, s.Socket.Y + 0.017f, s.Socket.Z + sz), ["color"] = Frame, ["paintable"] = false });
+        }
         p.Sock("frame", s.Socket, "-y");
         var area = Area(s.Q);
         var part = new JsonObject

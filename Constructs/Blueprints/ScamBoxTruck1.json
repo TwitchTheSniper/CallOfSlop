@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, leaf/leaf, wing 0.75, language cabin heavy 2.70 m, flare 0.08, plain 0.6, brow 0.75 1 m, tail 0.80 1 m, door left, cab cabin cab, nose flat, wear age 0.96 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, leaf/leaf, wing 0.75, language cabin heavy 2.70 m, flare 0.08, plain 0.6, brow 0.75 1 m, tail 0.80 1 m, door left, cab cabin cab, nose flat, fitting roof sign, trim signboards on 3 bay sides, wear age 0.96 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Box Truck 1",
   "group": "The Call Centre",
@@ -135,10 +135,13 @@
     {"part": "Wide Arch Fender", "on": 124, "socket": "-x0", "by": "mount", "paint": "#21c45a"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 125, "pos": [0.127, 0.405, -1.166], "rot": [-0.712, -0.0049, 0.018, 0.7019]}, "paint": "#9aa0a6"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 127, "pos": [-0.801, 0.283, -0.371], "rot": [-0.0106, 0.0107, 0.7048, 0.7093]}, "paint": "#7d8a92"},
+    {"part": "Hull Loft (decoS XHWAWcW0)", "on": 35, "socket": "top", "by": "base", "paint": "#ffd400"},
     {"part": "Gift Card Sign", "on": 124, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 35, "socket": "top", "by": "base"},
     {"part": "Office Phone", "on": 92, "socket": "front", "by": "base"},
-    {"part": "Loudhailer", "on": 85, "socket": "front01", "by": "base"}
+    {"part": "Loudhailer", "on": 85, "socket": "front01", "by": "base"},
+    {"part": "Hull Loft (trimg7 XaW5 ~D80DGyERMFBT04E ~CW0CeyDQYE2d03C)", "on": 70, "socket": "-x0", "by": "base", "paint": "#ff3d8b"},
+    {"part": "Hull Loft (trimg1 YMW5 ~D80DGyERMFBT04E =)", "on": 71, "socket": "-x0", "by": "base", "paint": "#ff3d8b"},
+    {"part": "Hull Loft (trimg9 XaW5 ~Ce0CmyDYgEIm03N ~D80DGyERMFBT04E)", "on": 74, "socket": "-x0", "by": "base", "paint": "#ff3d8b"}
   ],
   "wires": [[32, 33], [33, 27], [77, 104], [104, 101], [107, 113], [113, 109], [119, 116]],
   "hoses": [[117, 118]],

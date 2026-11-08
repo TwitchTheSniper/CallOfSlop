@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.75, language coach heavy 2.82 m, flare 0.20, raked 1.0, brow 0.67 1.25 m, tail 0.82 1 m, door left, 9 facets, cab coach crew cab, 6 facets, nose grille, wear age 0.58 (5 rusty, 10 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab crew, nose long hood, rear gun deck, under tub, flank panniers, roof none, layout gap 1 m+room(Brow T,Bay T-N,Bay N-T,Door,Bay T-L,Tail L)
+  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.75, language coach heavy 2.82 m, flare 0.20, raked 1.0, brow 0.67 1.25 m, tail 0.82 1 m, door left, 9 facets, cab coach crew cab, 6 facets, nose grille, trim livery on 11 bay sides, wear age 0.58 (5 rusty, 10 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab crew, nose long hood, rear gun deck, under tub, flank panniers, roof none, layout gap 1 m+room(Brow T,Bay T-N,Bay N-T,Door,Bay T-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British War Bus 3",
   "group": "Ministry of Slop",
@@ -180,8 +180,19 @@
     {"part": "Teapot", "on": 166, "socket": "top", "by": "base"},
     {"part": "Garden Gnome", "on": 45, "socket": "top", "by": "base"},
     {"part": "Garden Gnome", "on": 125, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (triml5 XzW5 ~BG0BePBmnBmyC9AD9ZD1kCnxBYI8gX5Af02f ~Cm0D8cDGyE1DFvkFvqFoQFB0DpaAhy6i7047)", "on": 110, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml2 XzW5 ~Cm0D8cDGyE1DFvkFvqFoQFB0DpaAhy6i7047 ~BG0BePBmnBmyC9AD9ZD1kCnxBYI8gX5Af02f)", "on": 110, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml5 XaW5 ~Cm0D8cDGyE1DFvkFvqFoQFB0DpaAhy6i7047 ~BG0BWcBeyC9DD1kD1pCwPCQ_BBZ8Rw4y6046)", "on": 111, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml2 XaW5 ~BG0BWcBeyC9DD1kD1pCwPCQ_BBZ8Rw4y6046 ~Cm0D8cDGyE1DFvkFvqFoQFB0DpaAhy6i7047)", "on": 111, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml7 XBW5 ~BG0BWcBeyC9DD1kD1pCwPCQ_BBZ8Rw4y6046 ~Cm0D8hDGyEnMFvkFw1FoiFBMDp-AiO6ib04b)", "on": 112, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml1 XBW5 ~Cm0D8hDGyEnMFvkFw1FoiFBMDp-AiO6ib04b ~BG0BWcBeyC9DD1kD1pCwPCQ_BBZ8Rw4y6046)", "on": 112, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml5 YMW5 ~Cm0D8hDGyEnMFvkFw1FoiFBMDp-AiO6ib04b =)", "on": 113, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml4 XaW5 ~Cm0D8hDGyEnMFvkFw1FoiFBMDp-AiO6ib04b ~Cm0D8fDGyEPIFvkFvwFoZFBCDpoAiA6iN04N)", "on": 117, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml1 XaW5 ~Cm0D8fDGyEPIFvkFvwFoZFBCDpoAiA6iN04N ~Cm0D8hDGyEnMFvkFw1FoiFBMDp-AiO6ib04b)", "on": 117, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml0 XaW5 ~Cm0D8fDGyEPIFvkFvwFoZFBCDpoAiA6iN04N ~Be0C0YC8yCP5DneDnkDgADAiBpD8xX5Ji03i)", "on": 118, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml9 XaW5 ~Be0C0YC8yCP5DneDnkDgADAiBpD8xX5Ji03i ~Cm0D8fDGyEPIFvkFvwFoZFBCDpoAiA6iN04N)", "on": 118, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Square Beam 0.5 m", "on": 110, "socket": "top", "by": "-z", "paint": "#2b2a28"},
-    {"part": "Rain Gauge", "on": 175, "socket": "+z", "by": "base"}
+    {"part": "Rain Gauge", "on": 186, "socket": "+z", "by": "base"}
   ],
   "wires": [[37, 38], [38, 32], [119, 145], [145, 142], [148, 155], [155, 150], [161, 158]],
   "hoses": [[159, 160]],

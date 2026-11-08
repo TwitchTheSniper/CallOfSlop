@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, swing arm/hydraulic, wing 0.75, language ledge heavy 2.52 m, flare 0.29, stepped 0.8, brow 0.83 1.25 m, tail 0.87 1.25 m, door left, cab slab caged cab, nose flat, sections ledge+slab, wear age 0.67 (17 rusty, 11 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under tub, flank bare, sides rails, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, swing arm/hydraulic, wing 0.75, language ledge heavy 2.52 m, flare 0.29, stepped 0.8, brow 0.83 1.25 m, tail 0.87 1.25 m, door left, cab slab caged cab, nose flat, sections ledge+slab, trim cage on 3 bay sides, wear age 0.67 (18 rusty, 11 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under tub, flank bare, sides rails, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Box Truck 1",
   "group": "Bandit",
@@ -133,6 +133,9 @@
     {"part": "Ram Plow", "on": 124, "socket": "front", "by": "back", "paint": "#d8cdb0"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 125, "pos": [0.113, 0.337, -1.244], "rot": [-0.6985, 0.0374, -0.0183, 0.7144]}, "paint": "#7a4326"},
     {"part": "Skull Trophy", "on": 124, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (trimc1 XaW5 ~C80CGyEPdFXlFYrCBI03I ~Cu0CuyGfyHo5HpQEJy03y)", "on": 92, "socket": "+x0", "by": "base", "paint": "#2f2c2a"},
+    {"part": "Hull Loft (trimc1 YMW5 ~Cu0CuyGfyHo5HpQEJy03y ~D80DGyEHYFA8HBJDpy03y)", "on": 93, "socket": "-x0", "by": "base", "paint": "#2f2c2a"},
+    {"part": "Hull Loft (trimc7 XaW5 ~Bu0C0yEItBJR03R ~D80DGyHBJDpy03y)", "on": 96, "socket": "-x0", "by": "base", "paint": "#8c5230"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 123, "pos": [-1.062, 0.691, 2.119], "rot": [-0.0301, -0.0216, 0.7163, 0.6968]}, "paint": "#6b3a22"}
   ],
   "wires": [[32, 33], [33, 27], [97, 104], [104, 101], [108, 115], [115, 110], [121, 118]],

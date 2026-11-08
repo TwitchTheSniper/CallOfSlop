@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front under the hood, inset 2.25 m, coil/swing arm, wing 0.5, language slab standard 2.19 m, flare 0.00, stepped 0.9, brow 0.62 1 m, tail 0.87 1.25 m, door left, cab ledge caged cab, nose grille, sections slab+ledge, wear age 1.27 (46 rusty, 32 dirty, 3 sooty, 3 patched, 4 rusted out), body room, cab caged, nose short hood, rear porch, under stilts, flank panniers, roof rack, layout room(Brow L,Bay L-T,Bay T,Door,Tail T)
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front under the hood, inset 2.25 m, coil/swing arm, wing 0.5, language slab standard 2.19 m, flare 0.00, stepped 0.9, brow 0.62 1 m, tail 0.87 1.25 m, door left, cab ledge caged cab, nose grille, sections slab+ledge, trim plates on 5 bay sides, wear age 1.27 (48 rusty, 32 dirty, 3 sooty, 3 patched, 4 rusted out), body room, cab caged, nose short hood, rear porch, under stilts, flank panniers, roof rack, layout room(Brow L,Bay L-T,Bay T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit War Bus 10",
   "group": "Bandit",
@@ -160,6 +160,11 @@
     {"part": "Tread Plate 0.5 m", "weld": {"on": 148, "pos": [0.125, 0.475, -0.993], "rot": [-0.6927, -0.0003, -0.0466, 0.7197]}, "paint": "#6b3a22"},
     {"part": "Horned Skull", "on": 147, "socket": "top", "by": "base"},
     {"part": "Skull Trophy", "on": 37, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (trimp5 XaW5 ~Cm0CvZE1hE2kAZA03A ~Bu0C19D9FDA19oM02M)", "on": 84, "socket": "-x0", "by": "base", "paint": "#7a4326"},
+    {"part": "Hull Loft (trimp2 XBW5 ~Cm0CvZE1hE2kAZA03A ~D00D8kDHSDQuA3R03R)", "on": 85, "socket": "+x0", "by": "base", "paint": "#8c5230"},
+    {"part": "Hull Loft (trimp3 XaWO ~D00DQuA3R03R =)", "on": 86, "socket": "-x0", "by": "base", "paint": "#5e3320"},
+    {"part": "Hull Loft (trimp9 YMWO ~D00D8kDHSDQuA3R03R ~Cm0CviE1qE2zAZR03R)", "on": 87, "socket": "-x0", "by": "base", "paint": "#5f6a55"},
+    {"part": "Hull Loft (trimp1 XzW5 ~Cm0CviE1qE2zAZR03R ~Bm0BvUCvaCwb9g_02_)", "on": 91, "socket": "+x0", "by": "base", "paint": "#5f6a55"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 134, "pos": [1.544, 2.98, 4.007], "rot": [-0.0003, 0.044, -0.6829, 0.7292]}, "paint": "#5e3320"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 133, "pos": [-1.085, 2.652, 4.013], "rot": [0.0142, 0.0239, 0.6976, 0.716]}, "paint": "#8c5230"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 108, "pos": [1.597, 1.422, 3.753], "rot": [-0.0065, 0.0368, -0.7346, 0.6774]}, "paint": "#8c5230"}

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 3 axles, tandem 1.5 m, front under the hood, inset 2 m, coil/leaf, wing 0.5, language slab heavy 2.20 m, flare 0.16, plain 0.8, brow 0.73 1 m, tail 0.86 1.25 m, door right, cab slab cab, nose grille, wear age 0.69 (5 rusty, 15 dirty, 0 sooty, 0 patched, 1 rusted out), body room+gun bed, cab enclosed, nose ram, rear porch, under skirted, flank panniers, sides open, roof none, layout room(Brow T,Door,Tail T)+gun bed 2 m
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 3 axles, tandem 1.5 m, front under the hood, inset 2 m, coil/leaf, wing 0.5, language slab heavy 2.20 m, flare 0.16, plain 0.8, brow 0.73 1 m, tail 0.86 1.25 m, door right, cab slab cab, nose grille, fitting mascot, trim clinker on 5 bay sides, wear age 0.69 (5 rusty, 15 dirty, 0 sooty, 0 patched, 1 rusted out), body room+gun bed, cab enclosed, nose ram, rear porch, under skirted, flank panniers, sides open, roof none, layout room(Brow T,Door,Tail T)+gun bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Gun Wagon 2",
   "group": "Clan MacSlop",
@@ -133,9 +133,14 @@
     {"part": "Tread Plate 0.5 m", "weld": {"on": 124, "pos": [-0.799, 0.323, -0.368], "rot": [-0.0064, 0.0212, 0.6887, 0.7247]}, "paint": "#8c2a2a"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 122, "pos": [0.115, 0.479, -1.199], "rot": [-0.6928, 0.0318, -0.0009, 0.7204]}, "paint": "#5b4a2f"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 123, "pos": [1.298, 0.578, -0.37], "rot": [0.0136, -0.0009, -0.7077, 0.7064]}, "paint": "#7b1e22"},
-    {"part": "Pipe Box", "on": 121, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 43, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 95, "socket": "front33", "by": "base"}
+    {"part": "Hull Loft (decoO UsV-)", "on": 121, "socket": "top", "by": "base"},
+    {"part": "Pipe Box", "on": 43, "socket": "top", "by": "base"},
+    {"part": "Wee Keg", "on": 95, "socket": "front33", "by": "base"},
+    {"part": "Hull Loft (trimr8 XaW5 ~CO0CWyDw7AgX02X ~D00D8yFQuC3S03S)", "on": 78, "socket": "+x0", "by": "base", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (trimr5 XaW5 ~D00D8yFQuC3S03S ~CO0CWyDw7AgX02X)", "on": 78, "socket": "-x0", "by": "base", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (trimr4 YMW5 ~D00D8yFQuC3S03S =)", "on": 79, "socket": "-x0", "by": "base", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (trimr9 XaW5 ~D00D8yFQuC3S03S ~C80CGyDYUAQy02y)", "on": 83, "socket": "+x0", "by": "base", "paint": "#8c2a2a"},
+    {"part": "Hull Loft (trimr1 XaW5 ~C80CGyDYUAQy02y ~D00D8yFQuC3S03S)", "on": 83, "socket": "-x0", "by": "base", "paint": "#8c2a2a"}
   ],
   "wires": [[40, 41], [41, 34], [88, 104], [104, 101], [110, 107]],
   "hoses": [[108, 109]],

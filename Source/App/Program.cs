@@ -135,6 +135,8 @@ public static unsafe partial class Program
             VehicleKit.VehicleDiversity.SectionsOn = false; // the diversity distance without its front term and identity without its section, as before 2026-11-07 (to measure them)
         if (args.Any(a => a.Equals("--fixed-cabs", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.Vehicle.FixedCabs = true; // body styles phase 3: kit-5 bodies with phase 2's fixed cab shells and hoods (to measure against)
+        if (args.Any(a => a.Equals("--no-trim", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.Vehicle.NoTrim = true; // body styles phase 4: kit-5 bodies without the factions' trim and fittings (to measure against)
         if (args.SkipWhile(a => !a.Equals("--cab", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } cabKind)
             VehicleKit.CabLook.Force = cabKind; // body styles phase 3: every lofted cab of one kind where the plan allows it (enclosed, crew, caged, armoured, cab-over, merged)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)

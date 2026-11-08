@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 2.25 m, strut/strut, wing 0.75, language cabin standard 2.48 m, flare 0.04, plain 1.0, brow 0.87 1 m, tail 0.78 1 m, door right, cab cabin cab, nose grille, wear age 0.4 (3 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under stilts, flank loaded, sides walls, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T), plan 2
+  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 2.25 m, strut/strut, wing 0.75, language cabin standard 2.48 m, flare 0.04, plain 1.0, brow 0.87 1 m, tail 0.78 1 m, door right, cab cabin cab, nose grille, fitting roof sign, trim signboards on 5 bay sides, wear age 0.4 (3 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under stilts, flank loaded, sides walls, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Flatbed Fort 6",
   "group": "The Call Centre",
@@ -169,13 +169,18 @@
     {"part": "Arch Fender", "on": 158, "socket": "-x0", "by": "mount", "paint": "#14706f"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 152, "pos": [-1.079, 0.622, 2.003], "rot": [0.0123, 0.0079, 0.7071, 0.707]}, "paint": "#8a9096"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 156, "pos": [1.555, 0.846, 2.75], "rot": [-0.0021, 0.0193, -0.7023, 0.7116]}, "paint": "#9aa0a6"},
+    {"part": "Hull Loft (decoS XHWAWjW0)", "on": 39, "socket": "top", "by": "base", "paint": "#ff3d8b"},
     {"part": "Loudhailer", "on": 154, "socket": "front10", "by": "base"},
     {"part": "Phone Mast", "on": 152, "socket": "front12", "by": "base"},
     {"part": "Loudhailer", "on": 153, "socket": "front00", "by": "base"},
     {"part": "Loudhailer", "on": 155, "socket": "front00", "by": "base"},
     {"part": "Prize Wheel", "on": 158, "socket": "top", "by": "base"},
-    {"part": "Loudhailer", "on": 39, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 74, "socket": "front00", "by": "base"}
+    {"part": "Prize Wheel", "on": 74, "socket": "front00", "by": "base"},
+    {"part": "Hull Loft (trimg5 XaW5 ~Ce0CmyDAhDwm03N ~D00D8yDp4EZB03u)", "on": 118, "socket": "+x0", "by": "base", "paint": "#ffd400"},
+    {"part": "Hull Loft (trimg5 XaW5 ~D00D8yDp4EZB03u ~Ce0CmyDAhDwm03N)", "on": 118, "socket": "-x0", "by": "base", "paint": "#ffd400"},
+    {"part": "Hull Loft (trimg0 YMW5 ~D00D8yDp4EZB03u =)", "on": 119, "socket": "-x0", "by": "base", "paint": "#ffd400"},
+    {"part": "Hull Loft (trimg3 XaW5 ~D00D8yDp4EZB03u ~CW0CeyD2PDoU031)", "on": 123, "socket": "+x0", "by": "base", "paint": "#ffd400"},
+    {"part": "Hull Loft (trimg7 XaW5 ~CW0CeyD2PDoU031 ~D00D8yDp4EZB03u)", "on": 123, "socket": "-x0", "by": "base", "paint": "#ffd400"}
   ],
   "wires": [[36, 37], [37, 31], [124, 130], [130, 128], [134, 141], [141, 136], [147, 144]],
   "hoses": [[145, 146]],

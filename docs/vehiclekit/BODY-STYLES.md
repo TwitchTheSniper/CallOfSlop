@@ -6,7 +6,11 @@ going to implement, I want this feature to be good on the toolkit before I move 
 "still too boxy overall, and rounding corners won't fix that", "few slopes and bends; the kit needs vehicle-appropriate contour and body pieces; make more parts if
 needed", "interiors too alike", "cabs too alike: no roll cages, just a flat wall".
 
-**Status (2026-11-07): phases 1, 2 and 3 are built.** Phase 3 (section 9): cabs and hoods are lofted in the body's language, with six cab kinds weighed per
+**Status (2026-11-08): phases 1 to 4 are built.** Phase 4 (section 10): each faction's exterior on its rooms and cabs (the user's note of 2026-11-07: "the
+enclosed section of the vehicles is still looking very similar between factions... I want factions to have more distinct visual looks"): trim cut for each bay's
+side (welded plates and cage bars, slat armour and stowage bins, a fairing and vents, signboards, clinker planks and a strake, a livery waistband and chrome),
+fittings on cabs and hoods (a roof sign, a destination board, a radome, a mascot and a chrome grille, a roof basket, jerry cans), capsule side glass, Militia's own
+dressing, and an exterior measure in `--body-report`. Phase 3 (section 9): cabs and hoods are lofted in the body's language, with six cab kinds weighed per
 faction, window panes as glass parts, and each faction's cab proportions as data (the user's note of 2026-11-07: "factions should look more distinct"). Phase 1 (section 6): kit 5 is the current kit, every committed faction vehicle was made again by it, the tools
 see sections, and the user's decisions are in section 5. Phase 2 (section 7): the fixed limits are data (scale classes), proportions, rooflines along the length, doors
 on either side or in the back, ride height bands, turret spots sized from the parts, paint by runs and rows; the committed vehicles were made again. Section 8 is how
@@ -646,7 +650,140 @@ too (the cage cab shows how bars read), IT smooth fairings and dish domes on cap
 bonnet ornaments, British two-tone bus livery and a destination board over a merged front, Militia stowage bins and slat armour; capsules need glass sides to
 read as vehicles from three quarters.
 
+## 10. Phase 4, as built (2026-11-08): faction exterior identity
+
+The brief: rooms that read as their faction even in one colour (surface treatment, trim, belts and strakes, fenders and skirts, the unused contour parts,
+proportions), phase 3's suggestions (Bandit welded plates and cage bars; IT fairings and dish domes; Scam signboards; Highland chrome grilles and bonnet
+ornaments; British two-tone livery and destination boards; Militia stowage bins and slat armour, and Militia no longer reading as Bandit), glass in capsules'
+sides, a merged cab's room without the step, sub-styles within a faction, measured by cross-faction separation without losing variety within a faction.
+
+Code: `Source/Constructs/HullLoft.Trim.cs` (the parts), `Source/VehicleKit/Vehicle.Trim.cs` (placing them), the style rows' `Trims`, `TrimMix`, `TrimShare` and
+`Decos` (`BodyStyleRule`, VehicleBodyLanguage.cs), `FrontProfile.Exterior` and the new `--body-report` matrices, `VehicleIdentity` (trim and fittings as traits,
+Militia's own signature), Militia's slots (Styles.cs). Protocol 206.
+
+### The parts
+
+- **A trim** (`Hull Loft (trim<kind><variant> <length, lowest> <section> <section>)`): cut for one side of one lofted bay from the bay's own two sections (the -x side
+  takes them back to front), so it follows the bay's taper, flare and roofline. It stands on the bay's waist socket (`+x0`, `-x0`), so a pannier, a sponson or a
+  mast that took a waist first keeps it, and it is placed last, after the guns and the dressing. Its pieces are flat panels up the wall, each a chord between two
+  places on the section stood off so its inner face clears the skin's outer face by 11 mm (a part's place rounds to the centimetre: 6 mm and more whatever the
+  rounding), split every 25 cm with a 6 mm seam; a piece over a ledge or a flare (the wall bending away from its chord by more than 3.5 cm) is left out. Its
+  lowest is the wheels' room on that side (a tyre's top and 12 cm of travel), its highest where either section turns into its roof. Kinds:
+
+  | Kind | Faction | What it is |
+  | --- | --- | --- |
+  | `p` plates | Bandit | two or three welded plates on the lower, middle and upper wall, each off another wreck (bare metal or old paint) |
+  | `c` cage | Bandit | bars over the upper wall on two rails, stood off on brackets (the cage cab's bars on the room) |
+  | `s` slats | Militia | slat armour: a slat every 11 cm from the wheels to 1.45 m, 14 cm off the skin on three posts |
+  | `b` bins | Militia | one or two stowage bins on the lower wall, lidded and strapped |
+  | `f` fairing | IT | a smooth skirt fairing over the lower wall, a link-blue stripe over the waist, louvred vents at the back now and then |
+  | `g` signboards | Scam | a signboard on the upper wall in the war paint (WINNER yellow, hot pink, dollar green), a dark kick strip low down |
+  | `r` clinker | Highland | varnished planks up the lower hull, each a step further out than the one below, and a wooden strake along the waist (and under the eaves on tall rooms) |
+  | `l` livery | British | a waistband in the second colour (cream, racing green or navy over bus red), a chrome rubbing strip over it and one under the windows |
+
+- **A fitting** (`Hull Loft (deco<kind> <numbers>)`): `S` a roof sign on two posts (Scam's cab), `D` a lit destination board over a merged or capsule front
+  (British), `R` a radome on a ring (IT's cab), `O` a chrome bonnet mascot near the nose (Highland), `G` a chrome grille of frame and slats on a lofted hood's
+  nose where the plan's nose is a grille or none (Highland), `B` a roof basket (Militia's cab), `J` a jerry can (Militia's trophy slot: a fixed key,
+  `HullLoft.JerryCan`). Sized from the cab and hood they go on (`CabShape`, `HoodShape`).
+
+Both are run-time parts named by their keys, as a lofted bay is: blueprints, saves and the wire carry the name; they are welder parts (salvaged as themselves);
+what they draw is detail, and the solid box they stand by is a small one at the socket's plane, at a height where the bay's own hidden slabs (a row's step at
+its corners' mean, a centimetre inside the skin) stay clear of it with half a centimetre to spare (`StandSpot`), with a second at the socket's height out past
+the slabs when that height isn't clear (a socket must lie within its part's solid bounds). Each goes on with `clear: true` (no face on another part's plane)
+and a check that it draws into nothing on the vehicle but the rooms' own bays and what stands inside them (`DrawnClash`: every box's bounds against every
+other part's), and moves on when refused. `--no-trim` makes kit-5 bodies without them (to measure against).
+
+### Per faction (data, `BodyStyleRule`)
+
+| Style | Trim sets (weight) | Mix | Share of free sides | Fittings (chance) |
+| --- | --- | --- | --- | --- |
+| Bandit | plates 2, plates and cage 2, cage 1 | each side its own of the set | 0.7 | - (the cage cab is its own) |
+| Militia | slats 2, bins 1.5, slats and bins 1.5 (in turns down the room) | no | 0.9 | roof basket 0.7; jerry cans as its trophies, nothing on its sides |
+| IT | fairing | no | 1 | radome 0.75 |
+| Scam | signboards | no | 0.8 | roof sign 0.9 |
+| Highland | clinker | no | 1 | mascot 0.8, chrome grille 0.75 |
+| British | livery | no | 1 | destination board 0.9 (merged and capsule fronts) |
+
+The sets are the sub-styles within a faction (Bandit and Militia three each); the trims' own rolls (a plate's place and size, bins one or two, vents, a sign's
+height) vary the rest. Militia's dressing was the Bandit's (iron spikes, a hubcap plate), so it read as Bandit: it now hangs jerry cans where bandits hang
+trophies and nothing down its sides, with a signature of its own (`VehicleIdentity`: jerry cans as its mark; slats, bins, the basket, slit cabs as traits).
+Every style's traits count its trim and fittings (`LoftedAs`: "trim plates", "deco radome").
+
+**Capsule glass.** A capsule's and a merged cab's side windows ahead of their doorways (open since phase 3) are glazed: a pane each side on the opening's chord
+between the belt and the window band's top, behind the pillar (`glass2`, `glass3`; a pane's seal runs along its bottom edge whichever way that goes). **Merged
+fronts.** A merged cab's room keeps its brow's front at 0.86 of the room's height or more (`BodyLook.MergedFront`), so the cab no longer sits a step below a tall
+room; its width stays as rolled (a full-width brow made plans read as boxes from above).
+
+### Measured (2-core box; before is main at 030d3d97 with the new measure only)
+
+`--body-report all --seeds 6` (every recipe shape of six styles), `--diversity-style STYLE --seeds 6` (the mean over the five recipe shapes), `--identity STYLE
+--seeds 4`, and the full check `--sweep-vehicle "STYLE SHAPE" --seeds 6` over six styles and five shapes.
+
+The new measure (`FrontProfile.Exterior`): **room exteriors** compares two vehicles' rooms with everything on their outside, as the mean of the front profile
+(trim, panniers and sponsons in it) and the **relief**: in twelve bands of the room's height, the share of its length where something stands a centimetre or
+more proud of the skin, sampled over every drawn triangle (so it sees belts, slats, boards and planks whatever their colour). **Whole body** compares the body's
+front profile and its side outline (the top's height in twelve slices along it).
+
+| | before | after |
+| --- | --- | --- |
+| room exteriors: mean pair within a style | 0.043 | 0.106 |
+| ... between two styles | 0.053 | 0.205 |
+| ... between over within | 1.22 | 1.93 |
+| ... nearest other style over the style's own (Bandit, IT, Highland, Scam, British, Militia) | 0.89, 0.87, 0.83, 1.24, 1.24, 1.13 (three styles nearer another than themselves) | 1.39, 1.61, 1.43, 1.87, 1.87, 1.19 |
+| whole body (front and side outline), between over within | 1.03 | 1.04 |
+| cabs and hoods (phase 3's measure), between over within | 1.52 | 1.55 |
+| room sections from the front, within / between | 0.025 to 0.050 / 0.039 to 0.093 | the same |
+| trims and fittings a vehicle (Bandit, IT, Highland, Scam, British, Militia) | - | 2.8 and 0, 4.2 and 0.6, 4.1 and 1.1, 3.6 and 0.9, 4.3 and 0.5, 3.5 and 0.2 |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 | 177 of 180 (the same three: Bandit Scrap Tanker 3's barrel, British War Bus 6's Firebreather 25 degrees off, Highland War Bus 5 a box at 61 %) |
+| coplanar pairs inside lofted parts (bays, cabs, hoods, panes, trims, fittings) | 0 | 0 (152, then 372 on the way: see below) |
+| parts a vehicle, mean (`--body-report`) | 122 to 130 | 128 to 136 |
+| generation, mean a style (`--body-report`); worst | 285 to 1330 ms; 26.8 s (a Bandit seed of many plans) | 286 to 738 ms; 5.8 s |
+| full check sweeps, parts a vehicle and generation, mean of the 30 | - | 133 parts, 1382 ms |
+
+| Style | diversity, mean pair within a shape | front part | identity | best other style's score, mean (worst) |
+| --- | --- | --- | --- | --- |
+| Bandit | 0.209 to 0.211 | 0.202 to 0.200 | 0.95 to 0.95 | 0.54 (0.75) to 0.35 (0.63) |
+| IT | 0.201 to 0.202 | 0.230 to 0.236 | 0.92 to 0.92 | 0.51 (0.63) to 0.51 (0.63) |
+| Highland | 0.205 to 0.203 | 0.204 to 0.204 | 0.95 to 0.96 | 0.58 (0.76) to 0.59 (0.76) |
+| Scam | 0.216 to 0.214 | 0.248 to 0.247 | 0.93 to 0.94 | 0.51 (0.63) to 0.51 (0.63) |
+| British | 0.203 to 0.210 | 0.270 to 0.282 | 0.94 to 0.94 | 0.52 (0.63) to 0.52 (0.63) |
+| Militia | 0.173 to 0.169 | 0.181 to 0.151 | 0.90 to 0.87 | 0.78 (0.83) to 0.59 (0.65) |
+
+What the numbers say: a room now tells its faction by what is on it, not only by its section: between-style distance of the room exteriors almost four times
+what it was, every style nearer itself than any other (three were nearer British before), and within a style the rooms differ more too (0.043 to 0.106: trim
+sets, plates and bins where the dice put them). Militia no longer reads as Bandit (best other 0.78 to 0.59, and Bandit's own best other, which was Militia,
+0.54 to 0.35); its own identity fell a little (0.90 to 0.87) because its signature is now its own and asks for jerry cans and its trim rather than taking
+whatever it carried. Diversity within a style holds (-0.004 to +0.007, inside six seeds' noise; Militia's front part fell, every Militia body now being as wide
+with its slats). The whole body from the front and the side barely moves (1.03 to 1.04): the trim is centimetres on a silhouette of metres, and the outline is
+the plan's; that is the next phase's (proportions and new spaces by faction). Identity of IT, Scam and British didn't rise: their trait scores were already at
+their cap.
+
+**Found on the way.**
+- A part's place is kept to the centimetre (the 2026-11-07 lesson again): a trim cut to stand 6 mm off the skin from its socket's exact place sat as close as
+  0 mm and as far as 11 when the socket's place rounded, and its solid box met the bay's slabs it was cut to miss. The gap is now 11 mm and the box keeps 6 mm
+  off the slabs. A first try that followed the section facet by facet with mitres overlapped itself at the joints of thick pieces (bins, posts) and over
+  ledges; flat pieces with 6 mm seams, every other one 3 mm shorter, replaced it.
+- A trim on a bay's -x side reads the bay's sections back to front, and a row's hidden slabs are counted in steps along the bay's front section, so where the two
+  sections' rows differ in length the trim's own count of the steps was another: `StandSpot` takes both counts.
+- Two coplanar faces in phase-3 parts that no sweep had met (plans moved with the new traits): a windscreen pane whose top leans in shared a face plane with its
+  seal's end (seals are now 1.5 cm short of the glass's sides), and a cage cab with a pitched roof had its two ridge bars meet face to face (their sizes differ
+  now). Both change the parts their keys name, so protocol 206.
+- Glazing a capsule's sides fills the outline the silhouette rule measures: with every cab forced to `merged`, two of eight plans that passed before read as a
+  box (and plan again in a normal run, to another cab).
+
+**Committed seeds**: the same seeds as phase 3 but IT Scrap Tanker 10, which now fails as Bandit Scrap Tanker 3 does (no socket takes the barrel: its plan
+moved), replaced by seed 5 (the sweep's most different with 1 and 2). 66 files written again, 1 removed, 1 new; `--gen-vehicles` reports all 123 identical.
+
+**Not done**: the seven unused contour parts (Armour Slope, Slant Sheet, Roof Slant, Skirt Sheet, Tube Bend) are still unused (trim made at run time does
+their job on rooms; wiring them to beds, hoods and skirts needs their sockets turned for each place); fenders and arches per faction; cab sub-styles beyond
+the trim sets; the whole-body outline per faction; Highland War Bus 5 (still a box at 61 %, with or without trim: it is the plan, not the dressing); fittings
+on cabs of kit-1 shapes (the Technical, the Double Decker); a network round trip of a trim between two peers (it is a run-time part by its key exactly as a
+lofted bay is, which phase 1 proved over the network; not sent here).
+
 ## Pictures
+
+Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
+Truck, seeds 1 to 6.
 
 Phase 3: `/home/claude/vk-body3-sheets/` (agent box, not committed): `before_` (main before this phase) and `after_` `--vehicle-sheet` of Bandit War Bus, IT Box
 Truck and British War Bus, seeds 1 to 6.
@@ -672,4 +809,5 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --sweep-vehicle "IT War Bus" --seeds 6 --kit 5
 --vehicle-shots "Bandit War Bus 2" --kit 5 --language cabin   (xvfb)
 --vehicle-shots "IT War Bus 2" --roofline crowned --scale heavy   (xvfb; phase 2: one line, one class)
+--body-report all --seeds 6 --no-trim    # phase 4: without the faction trim and fittings (the room exteriors matrix, relief by band)
 ```
