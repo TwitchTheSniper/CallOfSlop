@@ -112,7 +112,7 @@ public sealed partial class ConstructEdits
         h.PlaceTurn = w.Dir;
         h.Yaw = degrees;
         h.Start = now;
-        h.Duration = Survival ? ConstructBuild.AttachSeconds(mover.DefOf(part)) : 0;
+        h.Duration = Survival ? FitSeconds(player, ConstructBuild.AttachSeconds(mover.DefOf(part))) : 0;
         return FinishNow(world, player, eye);
     }
 

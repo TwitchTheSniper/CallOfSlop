@@ -137,10 +137,12 @@ public sealed class WorldPlayer
     public ushort BunkBody; // their checkpoint: the bunk they last lay in (its construct, stable in a save; 0: none), segment and place in its rest frame
     public byte BunkSeg;
     public Vector3 BunkPos;
+    public byte[] Upgrades = []; // their tool upgrade levels, a byte a ToolStat (ConstructEditsUpgrades.cs; saved in the Tools section)
 
     public WorldPlayer Copy()
     {
         var c = (WorldPlayer)MemberwiseClone();
+        c.Upgrades = (byte[])Upgrades.Clone();
         c.Pack = new CStore();
         WorldStores.Copy(Pack, c.Pack);
         return c;

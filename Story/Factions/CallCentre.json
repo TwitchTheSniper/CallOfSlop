@@ -37,7 +37,10 @@
       "parts": [ "Wireless Sender", "Wireless Receiver" ] },
     { "name": "Signal Tricks", "tier": "Premium Member",
       "about": "the things they don't want you to know: homing on a signal, steering by radio, and making the other side see things",
-      "parts": [ "Radio Homer", "Beacon Homer", "Command Link", "Flare Dispenser", "Smoke Shell" ] }
+      "parts": [ "Radio Homer", "Beacon Homer", "Command Link", "Flare Dispenser", "Smoke Shell" ] },
+    { "name": "Productivity Drive", "tier": "Valued Customer",
+      "about": "one weird trick to triple your output: motors for your drill and servos for your attach tool",
+      "parts": [ "Drill Motor Mk 4", "Fitter Servo Mk 4" ] }
   ],
   "rivals": { "Ministry of Slop": 50, "IT Department": 25 },
   "voice": "INBOX",

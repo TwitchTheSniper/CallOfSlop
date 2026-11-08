@@ -39,7 +39,10 @@
       "parts": [ "Heavy Armour 0.5 m", "Heavy Armour 1 m", "Heavy Armour 1x2 m", "Heavy Armour 2 m", "Heavy Armour Port 1 m" ] },
     { "name": "The Wrecking Ball", "tier": "Clansman",
       "about": "the clan's answer to most questions, swung on a chain",
-      "parts": [ "Wrecking Ball" ] }
+      "parts": [ "Wrecking Ball" ] },
+    { "name": "The Caber Arm", "tier": "Friend of the Clan",
+      "about": "how the clan tosses a caber, built into a physics gun: hold something and it goes where you look",
+      "parts": [ "Kinetic Coil" ] }
   ],
   "rivals": { "Ministry of Slop": 50 },
   "voice": "CLAN MACSLOP",

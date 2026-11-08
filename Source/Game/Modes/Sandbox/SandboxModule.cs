@@ -92,7 +92,7 @@ public sealed class SandboxModule : GameModeModule
 
     // ---- Each player's hands, ~10 Hz -------------------------------------------------------------------------------
 
-    public override byte StateVersion => 3; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88)
+    public override byte StateVersion => 4; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88); 4: tool upgrade levels (protocol 215)
 
     public override void WriteState(Game game, PacketWriter w)
     {
@@ -130,6 +130,10 @@ public sealed class SandboxModule : GameModeModule
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
                 w.CmVec(h.GrabLocal).U8(h.GrabSeg); // (protocol 137: a free joint held on its own, GrabLocal in its frame)
+            var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 215: a byte a stat, ConstructEditsUpgrades.cs)
+            w.U8((byte)ToolStat.COUNT);
+            for (var s = 0; s < (int)ToolStat.COUNT; s++)
+                w.U8(levels[s]);
         }
     }
 
@@ -149,6 +153,20 @@ public sealed class SandboxModule : GameModeModule
             var grab = r.U16();
             var grabAt = grab == 0 ? Vector3.Zero : r.CmVec();
             var grabSeg = grab == 0 ? (byte)0 : r.U8();
+            int stats = r.U8();
+            if (!game.IsServer)
+            {
+                var levels = game.SandboxHands.LevelsOf(id);
+                for (var s = 0; s < stats; s++)
+                {
+                    var v = r.U8();
+                    if (s < ToolUpgrades.Slots)
+                        levels[s] = v;
+                }
+            }
+            else
+                for (var s = 0; s < stats; s++)
+                    r.U8();
             if (game.IsServer)
                 continue;
             ref var h = ref game.SandboxHands.Hand(id);

@@ -19,9 +19,11 @@ public static class ConstructGrab
 
     /// <summary>
     /// How hard the beam pulls (newtons) and the heaviest thing it takes (kg): creative, survival. pr02: the spring of
-    /// before pr01 again, stronger (was 200 kN and 8 kN): a 15 t truck now gets 100 m/s2 in creative, 500 kg 40 m/s2 in survival.
+    /// before pr01 again, stronger (was 200 kN and 8 kN): a 15 t truck now gets 100 m/s2 in creative. Survival's are where a
+    /// player starts (Karl, 2026-11-08: 1,500 kg, was 500 kg at 20 kN), 30 m/s2 at the limit; tool upgrades raise both per
+    /// player (<see cref="ToolUpgrades"/>, <see cref="ConstructEdits.LiftOf"/>, <see cref="ConstructEdits.PullOf"/>).
     /// </summary>
-    public const float Strength = 1_500_000f, MaxMass = 20_000_000f, SurvivalStrength = 20_000f, SurvivalMaxMass = 500f;
+    public const float Strength = 1_500_000f, MaxMass = 20_000_000f, SurvivalStrength = SurvivalMaxMass * ToolUpgrades.PullPerKg, SurvivalMaxMass = 1500f;
 
     /// <summary>The most the beam accelerates anything (m/s2, on top of holding it up against gravity; was 40): light parts don't snap about.</summary>
     public const float MaxAccel = 120f;
@@ -36,7 +38,10 @@ public static class ConstructGrab
     public const float NearStep = 0.2f, NearTurn = 12f;
 
     /// <summary>The acceleration the beam can give a construct of this mass.</summary>
-    public static float AccelFor(float mass, bool creative) => creative ? Math.Clamp(Strength / MathF.Max(mass, 1f), CreativeMinAccel, MaxAccel) : MathF.Min(MaxAccel, SurvivalStrength / MathF.Max(mass, 1f));
+    public static float AccelFor(float mass, bool creative) => AccelFor(mass, creative, SurvivalStrength);
+
+    /// <summary>The same with a survival beam of this pull (N: a player's own, with their upgrades).</summary>
+    public static float AccelFor(float mass, bool creative, float pull) => creative ? Math.Clamp(Strength / MathF.Max(mass, 1f), CreativeMinAccel, MaxAccel) : MathF.Min(MaxAccel, pull / MathF.Max(mass, 1f));
 
     /// <summary>Creative: however heavy (a capital hull block, 20,000 t at most): building a ship is not a wait for it to move.</summary>
     public const float CreativeMinAccel = 8f;
@@ -136,7 +141,7 @@ public static class ConstructGrab
     /// Why the beam can't move this joint on its own, or null (peers work it out alike; holds by others and the contested rule
     /// are the caller's). Only what has no motor moves: an Actuator is run by its Set signal and a shaft rail's screw doesn't back-drive.
     /// </summary>
-    public static string? LeafRefusal(Construct c, int part, bool leaf, bool creative)
+    public static string? LeafRefusal(Construct c, int part, bool leaf, bool creative, float lift = SurvivalMaxMass)
     {
         var r = leaf && c.Parts[part].D.IsRail ? c.RailRun(part) : -1;
         var drive = r >= 0 && r < c.RailCount ? c.DefOf(c.Rails[r].Drive).RailDrive : RailDriveKind.Free;
@@ -155,7 +160,7 @@ public static class ConstructGrab
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].SitterPlus1 != 0 && c.Under(i, j + 1))
                 return "someone is on it";
-        var cap = creative ? MaxMass : SurvivalMaxMass;
+        var cap = creative ? MaxMass : lift;
         if (c.SegMass[j + 1] > cap)
             return $"too heavy for the physics gun ({c.SegMass[j + 1]:0} kg; {cap:0} kg at most{(creative ? "" : " in survival")})";
         return null;
@@ -491,7 +496,8 @@ public sealed partial class ConstructEdits
     /// <summary>Decision 19 (survival only; creative is unrestricted): why this player may not edit or grab this construct now, or null.</summary>
     public string? Contested(Construct c, byte player) => InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
 
-    public float GrabRange => InfiniteParts ? ConstructGrab.Range : ConstructGrab.SurvivalRange;
+    /// <summary>How far this player's beam holds something (their reach: <see cref="ReachOf"/>).</summary>
+    public float GrabRange(byte player) => ReachOf(player, InfiniteParts);
 
     /// <summary>
     /// Why the physics gun can't take hold of this construct (or null): not with anyone unfriendly aboard, not something anchored
@@ -506,7 +512,7 @@ public sealed partial class ConstructEdits
             return aboard;
         if (c.Anchored && !c.Frozen)
             return "it is anchored to the ground";
-        var cap = InfiniteParts ? ConstructGrab.MaxMass : ConstructGrab.SurvivalMaxMass;
+        var cap = LiftOf(player, InfiniteParts);
         if (c.Mass > cap)
             return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(InfiniteParts ? "" : " in survival")})";
         return Contested(c, player);
@@ -552,8 +558,8 @@ public sealed partial class ConstructEdits
             return why;
         var at = c.ToWorld(local);
         var dist = Vector3.Distance(eye, at);
-        if (dist > GrabRange + 1f)
-            return "too far for the beam";
+        if (dist > CatchOf(player, InfiniteParts) + 1f)
+            return "too far for the beam"; // (with the tractor beam: twice the reach, and the clamp below reels it in)
         if (h.GrabBody != 0 && h.GrabBody != body)
             Release(world, player);
         Unfreeze(world, c);
@@ -564,12 +570,12 @@ public sealed partial class ConstructEdits
         c.GrabLocal = local;
         c.GrabTarget = at;
         c.GrabRot = c.Rot;
-        c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts);
+        c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts, PullOf(player, InfiniteParts));
         c.Wake();
         h.GrabBody = body;
         h.GrabSeg = 0;
         h.GrabLocal = local;
-        h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange);
+        h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
         h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, yaw)) * c.Rot);
         h.Edit = EditKind.None;
         Done.Add($"player {player}: grabbed construct {body} with the physics gun");
@@ -592,7 +598,7 @@ public sealed partial class ConstructEdits
             return "that is gone";
         if (!float.IsFinite(local.X + local.Y + local.Z) || Vector3.Distance(local, c.Com) > c.Radius + 2f)
             return "the beam missed it";
-        if ((ConstructGrab.LeafRefusal(c, part, leaf, InfiniteParts) ?? Contested(c, player)) is { } why)
+        if ((ConstructGrab.LeafRefusal(c, part, leaf, InfiniteParts, LiftOf(player, false)) ?? Contested(c, player)) is { } why)
             return why;
         var j = ConstructGrab.LeafJoint(c, part, leaf);
         if (j < 0)
@@ -615,7 +621,7 @@ public sealed partial class ConstructEdits
             SetPiece(world, c, j + 1, false, player); // (taking a frozen piece unfreezes it, that piece alone)
         c.WorldFrame(j + 1, out var q, out var t);
         var dist = Vector3.Distance(eye, t + Vector3.Transform(local, q));
-        if (dist > GrabRange + 1f)
+        if (dist > CatchOf(player, InfiniteParts) + 1f)
             return "too far for the beam";
         if (h.GrabBody != 0)
             Release(world, player);
@@ -623,7 +629,7 @@ public sealed partial class ConstructEdits
         h.GrabSeg = (byte)(j + 1);
         h.GrabHinge = jt.Hinge;
         h.GrabLocal = local;
-        h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange);
+        h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
         h.Edit = EditKind.None;
         Done.Add($"player {player}: took joint {j} of construct {body} with the physics gun");
         return null;
@@ -667,7 +673,7 @@ public sealed partial class ConstructEdits
                 Local = h.GrabLocal,
                 Target = eye + look * h.GrabDist,
                 Mass = c.SegMass[moved],
-                Accel = ConstructGrab.AccelFor(c.SegMass[moved], InfiniteParts),
+                Accel = ConstructGrab.AccelFor(c.SegMass[moved], InfiniteParts, PullOf(player, InfiniteParts)),
             };
         c.JointHeld = 3;
         c.Wake();
@@ -679,7 +685,7 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.GrabBody == 0 || !float.IsFinite(dist + rel.X + rel.Y + rel.Z + rel.W) || rel.LengthSquared() < 0.5f)
             return;
-        h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange);
+        h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
         h.GrabRel = Quaternion.Normalize(rel);
     }
 
@@ -732,7 +738,7 @@ public sealed partial class ConstructEdits
         c.GrabRot = ConstructGrab.LookQ(h, yaw) * h.GrabRel;
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;
-        c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts);
+        c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts, PullOf(player, InfiniteParts));
         if (c.PartCount == 1 && c.Parts[0].D.Explosive != null && ConstructOrdnance.TrySnap(world, c))
         {
             LetGo(c);
@@ -787,7 +793,7 @@ public sealed partial class ConstructEdits
             return "take out the physics gun to freeze things";
         if (world.Get(body) is not { } c || seg < 0 || seg > c.JointCount)
             return "that is gone";
-        if (Vector3.Distance(eye, c.WorldCom) > GrabRange + c.Radius + 1f)
+        if (Vector3.Distance(eye, c.WorldCom) > GrabRange(player) + c.Radius + 1f)
             return "too far for the beam";
         if (Contested(c, player) is { } why)
             return why;
