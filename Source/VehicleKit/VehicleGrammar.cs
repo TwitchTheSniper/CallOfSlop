@@ -592,7 +592,7 @@ public static class ShapeGrammar
             v.Modules.Add("space cage " + cage);
             return;
         }
-        var kind = BodyLook.ForceUpper ?? p.Recipe.Upper ?? BodyStyleRule.Weighted(d.Fork("upper"), rule.Uppers);
+        var kind = BodyLook.ForceUpper ?? p.Recipe.Upper ?? BodyStyleRule.Weighted(d.Fork("upper storey kind"), rule.Uppers);
         if (kind is "saloon" or "deck" && room.Len >= 4.5f && !BodyLook.NoUppers)
         {
             p.UpperKind = kind;

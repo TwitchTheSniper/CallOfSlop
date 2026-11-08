@@ -533,7 +533,7 @@ public static partial class HullLoft
         if (door)
         {
             // The flat frame round the doorway (hull_parts.py's door bay), the door's plane at x = 1.
-            foreach (var (fz0, fz1) in new[] { (z0, z0 + 0.125f), (z1 - 0.125f, z1) })
+            foreach (var (fz0, fz1) in new[] { (z0 + 0.003f, z0 + 0.125f), (z1 - 0.125f, z1 - 0.003f) }) // (3 mm in from the ends: a roof row cut level under an upper storey runs down to the frame's top there, phase 5)
             {
                 p.Facet([new(DoorPlane, 0, fz0), new(DoorPlane, DoorTop, fz0), new(DoorPlane, DoorTop, fz1), new(DoorPlane, 0, fz1)], Vector3.UnitX, Rust, off: [Vector3.UnitX, Off(FrameTop(a), 1), Off(FrameTop(b), 1), Vector3.UnitX]);
                 p.Hide(new Vector3(DoorPlane - 0.03f, 0, MathF.Max(fz0, z0 + 0.01f)), new Vector3(DoorPlane + 0.03f, DoorTop, MathF.Min(fz1, z1 - 0.01f))); // (a centimetre short of the bay's ends: a neighbour's wall slab stands in line with it)
@@ -707,12 +707,6 @@ public static partial class HullLoft
         foreach (var (k, z) in new[] { (0, 0.12f), (1, length - 0.12f) })
         {
             var foot = FootX(MathF.Min(a.P[0].X, b.P[0].X)); // (0.75 m on every truck's room: phase 1's)
-            if (sh.Cage != '\0')
-            {
-                p.Pad($"footL{k}", new Vector3(-foot, 0, z), "-y", 0.02f); // (a frame of bars has no slab at the floor: a pad to stand by)
-                p.Pad($"footR{k}", new Vector3(foot, 0, z), "-y", 0.02f);
-                continue;
-            }
             p.Sock($"footL{k}", new Vector3(-foot, 0, z), "-y");
             p.Sock($"footR{k}", new Vector3(foot, 0, z), "-y");
         }

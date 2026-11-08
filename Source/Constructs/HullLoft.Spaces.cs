@@ -30,7 +30,7 @@ public static partial class HullLoft
     public const string PodKinds = "wbklag";
 
     private const string BarSteel = "#55524c", Timber = "#6b4a2b", SlatGreen = "#56604a", Tread = "#5d6268", Window = "#29343c";
-    private const float RailHalf = 0.02f, PostHalf = 0.025f, End = 0.01f; // (End: how far inside a bay's end its rails stop, within the bow there)
+    private const float RailHalf = 0.02f, PostHalf = 0.025f, End = 0.013f; // (End: how far inside a bay's end its rails stop, within the bow there)
 
     // ---- Caged bays ---------------------------------------------------------------------------------------------
 
@@ -188,12 +188,18 @@ public static partial class HullLoft
         if (door)
         {
             // The flat frame round the doorway, as a skinned door bay's (Sides).
-            foreach (var (fz0, fz1) in new[] { (0.003f, 0.125f), (len - 0.125f, len - 0.003f) }) // (3 mm in from the ends: the bows there have their faces on the ends' planes)
+            foreach (var (fz0, fz1) in new[] { (0.008f, 0.125f), (len - 0.125f, len - 0.008f) }) // (8 mm in from the ends: the bows there have their faces on the ends' planes and 3 mm in)
             {
                 p.Facet([new(DoorPlane, 0, fz0), new(DoorPlane, DoorTop, fz0), new(DoorPlane, DoorTop, fz1), new(DoorPlane, 0, fz1)], Vector3.UnitX, Rust);
                 p.Hide(new Vector3(DoorPlane - 0.03f, 0, MathF.Max(fz0, 0.01f)), new Vector3(DoorPlane + 0.03f, DoorTop, MathF.Min(fz1, len - 0.01f)));
             }
             p.Hide(new Vector3(DoorPlane - 0.03f, DoorTop, 0), new Vector3(DoorPlane + 0.03f, DoorTop + 0.1f, len));
+        }
+        // Under the floor rails, down to the floor's plane: the bay's lowest solid face, which its feet stand by (a frame of bars has no wall slab from the floor).
+        foreach (var s in (float[])[-1, 1])
+        {
+            var x = MathF.Min(a.P[0].X, b.P[0].X);
+            p.Hide(new Vector3(s > 0 ? x - 0.03f : -x, 0, 0.012f), new Vector3(s > 0 ? x : -x + 0.03f, 0.02f, len - 0.012f));
         }
         // The roof's lever pad hangs under the highest bow's middle.
         p.Centre = MathF.Min(p.Centre, MathF.Min(a.Top, b.Top) - 0.05f);

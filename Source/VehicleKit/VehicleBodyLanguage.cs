@@ -288,8 +288,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("caged", 2.5), ("enclosed", 1), ("armoured", 1), ("crew", 0.7), ("cab-over", 0.4)], Noses = [('f', 1.5), ('w', 1), ('g', 2)],
                 // (phase 4: welded plates and cage bars, cobbled bay by bay; a bare side now and then)
                 Trims = [("p", 2), ("pc", 2), ("c", 1)], TrimMix = true, TrimShare = 0.7,
-                // (phase 5: welded cages for rooms, a crow's-nest deck now and then, welded boxes hung on the flanks)
-                Cage = 0.35, CageKind = 'w', Uppers = [("none", 3), ("deck", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0)],
+                // (phase 5: a welded cage for a room half the time: the faction's own space (welded boxes on the flanks are data, left at 0: they washed out its trim))
+                Cage = 0.5, CageKind = 'w', Uppers = [("none", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0)],
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
             },
         // (low and wide, flat-faceted: little height, a glacis brow)
@@ -301,7 +301,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: slat armour and stowage bins down the sides, a basket on the cab)
                 Trims = [("s", 2), ("b", 1.5), ("sb", 1.5)], TrimShare = 0.9, Decos = [('B', 0.7)],
                 // (phase 5: slatted frame rooms, an armoured fighting deck over the middle, armoured stowage pods)
-                Cage = 0.1, CageKind = 's', Uppers = [("none", 2), ("deck", 1.3)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
+                Cage = 0.1, CageKind = 's', Uppers = [("none", 2.5), ("deck", 1)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
             },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
@@ -313,7 +313,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: a smooth skirt fairing, a stripe and vents; a radome on the cab)
                 Trims = [("f", 1)], Decos = [('R', 0.75)],
                 // (phase 5: a short pod storey set in on the roof, smooth blisters on the flanks)
-                Uppers = [("none", 2), ("saloon", 1.2)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.5)], PodMax = 2,
+                Uppers = [("none", 2), ("saloon", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.5)], PodMax = 2,
                 CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
             },
         // (a portacabin on a chassis: boxy, square ends, tall)
@@ -324,8 +324,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("enclosed", 2), ("crew", 1.2), ("cab-over", 0.8)], Noses = [('f', 2), ('g', 1)],
                 // (phase 4: signboards down the sides, one over the cab)
                 Trims = [("g", 1)], TrimShare = 0.8, Decos = [('S', 0.9)],
-                // (phase 5: a portacabin stacked on the portacabin, kiosks hung on the flanks)
-                Uppers = [("none", 1), ("saloon", 2)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
+                // (phase 5: a portacabin stacked on the portacabin; kiosks are data, left at 0: they washed out its signboards)
+                Uppers = [("none", 1.5), ("saloon", 1.5)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
             },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
@@ -336,8 +336,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("enclosed", 2), ("crew", 1), ("caged", 0.5)], Noses = [('g', 2.5), ('r', 1)],
                 // (phase 4: clinker laps and a wooden strake, a chrome grille and a bonnet mascot)
                 Trims = [("r", 1)], Decos = [('O', 0.8), ('G', 0.75)],
-                // (phase 5: a stock wagon of timber stakes, an open after deck behind a bulwark, clinker lockers)
-                Cage = 0.1, CageKind = 't', Uppers = [("none", 2), ("deck", 1)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0)], PodMax = 2,
+                // (phase 5: an open deck behind a bulwark in the boat's lines; a stock wagon of timber stakes now and then; clinker lockers are data, left at 0)
+                Cage = 0.06, CageKind = 't', Uppers = [("none", 2), ("deck", 1)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0)], PodMax = 2,
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
             },
         // (tall, upright buses: the heavy class first, the door kerbside)
