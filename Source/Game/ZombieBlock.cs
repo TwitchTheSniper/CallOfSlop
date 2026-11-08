@@ -43,8 +43,8 @@ public sealed partial class Game
     private int _zBlockCount;
 
     /// <summary>Standing players' feet and heights (for zombies walking; rebuilt each horde tick).</summary>
-    private readonly Vector3[] _zBlockPlayerPos = new Vector3[32];
-    private readonly float[] _zBlockPlayerHeight = new float[32];
+    private readonly Vector3[] _zBlockPlayerPos = new Vector3[MaxPlayers];
+    private readonly float[] _zBlockPlayerHeight = new float[MaxPlayers];
     private int _zBlockPlayers;
 
     /// <summary>Players pushed out of zombies and pushes refused by a wall (self-test, logs).</summary>

@@ -76,12 +76,44 @@ public struct SnapHeader
     public float TimeLeft;
     public byte Winner;
     public byte Part, Parts; // this packet is part Part (0-based) of Parts for the tick
-    public uint Present; // bit per player id: who is in the game (anyone else is gone)
+    public PlayerMask Present; // bit per player id: who is in the game (anyone else is gone)
+}
+
+/// <summary>A bit per player id (0 to 255): who is in the game. On the wire as a word count and that many 64-bit words (protocol 210).</summary>
+public struct PlayerMask : IEquatable<PlayerMask>
+{
+    public ulong W0, W1, W2, W3;
+
+    public readonly bool Has(int id) => id is >= 0 and < 256 && ((id >> 6) switch { 0 => W0, 1 => W1, 2 => W2, _ => W3 } & (1UL << (id & 63))) != 0;
+
+    public void Set(int id)
+    {
+        var bit = 1UL << (id & 63);
+        switch (id >> 6)
+        {
+            case 0: W0 |= bit; break;
+            case 1: W1 |= bit; break;
+            case 2: W2 |= bit; break;
+            case 3: W3 |= bit; break;
+        }
+    }
+
+    /// <summary>Words the wire needs (the highest one with a bit, at least one).</summary>
+    public readonly int Words => W3 != 0 ? 4 : W2 != 0 ? 3 : W1 != 0 ? 2 : 1;
+
+    public readonly ulong Word(int k) => k switch { 0 => W0, 1 => W1, 2 => W2, _ => W3 };
+
+    public readonly bool Equals(PlayerMask o) => W0 == o.W0 && W1 == o.W1 && W2 == o.W2 && W3 == o.W3;
+
+    public override readonly bool Equals(object? obj) => obj is PlayerMask o && Equals(o);
+
+    public override readonly int GetHashCode() => HashCode.Combine(W0, W1, W2, W3);
 }
 
 /// <summary>
 /// Snapshot wire format (protocol 11; 15 adds shield charges and regen to the flags), built to fit 32 players in one ~1200-byte datagram:
-///   header (20 bytes): tick, input ack, phase, time left, winner, part (low nibble) / parts (high nibble), presence mask;
+///   header (25 bytes and up): tick, input ack, phase, time left, winner, part (low nibble) / parts (high nibble), presence mask
+///   (a word count, then that many 64-bit words: a bit per player id; protocol 210, ids past 32 for Sandbox spawned bots);
 ///   own block: flags, then for part 0 the recipient's exact position, velocity (+ mantle target, + the exact ride state) and slow fields;
 ///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/256 m), velocity (3 x 16-bit at
 ///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
@@ -98,7 +130,7 @@ public struct SnapHeader
 /// </summary>
 public static class Snapshot
 {
-    public const int HeaderBytes = 1 + 4 + 4 + 1 + 4 + 1 + 1 + 4;
+    public const int HeaderBytes = 1 + 4 + 4 + 1 + 4 + 1 + 1 + 1 + 8; // (the shortest: one mask word)
     public const int FastBytes = 28; // 24 + the blood marks (protocol 33)
     public const int MantleBytes = 10;
     public const int SeatBytes = 4; // (protocol 80)
@@ -109,7 +141,7 @@ public static class Snapshot
     public const byte CanopyKind = 249; // (protocol 176: + the Canopy, 250..252, alone: PilotGear.cs)
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
-    public const int MaxParts = 8;
+    public const int MaxParts = 15; // (the part nibble: 0 to 15; about 200 players with their slow entries fit in 15)
 
     /// <summary>Position resolution: 1/256 m in 24 bits (+-32 km).</summary>
     public const float PosScale = 256f;
@@ -234,9 +266,20 @@ public static class Snapshot
         Perks = new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()), FrenzyLevel = r.U8(), FrenzyClass = r.U8(),
     };
 
-    public static void WriteHeader(PacketWriter w, in SnapHeader h) =>
+    public static void WriteHeader(PacketWriter w, in SnapHeader h)
+    {
         w.Begin(Msg.State).U32(h.Tick).U32(h.AckSeq).U8((byte)h.Phase).F32(h.TimeLeft).U8(h.Winner)
-            .U8((byte)((h.Part & 15) | ((h.Parts & 15) << 4))).U32(h.Present);
+            .U8((byte)((h.Part & 15) | ((h.Parts & 15) << 4)));
+        WriteMask(w, h.Present);
+    }
+
+    private static void WriteMask(PacketWriter w, in PlayerMask m)
+    {
+        var n = m.Words;
+        w.U8((byte)n);
+        for (var k = 0; k < n; k++)
+            w.U64(m.Word(k));
+    }
 
     /// <summary>Reads the header (after the message id).</summary>
     public static SnapHeader ReadHeader(ref PacketReader r)
@@ -245,7 +288,18 @@ public static class Snapshot
         var parts = r.U8();
         h.Part = (byte)(parts & 15);
         h.Parts = (byte)Math.Max(1, parts >> 4);
-        h.Present = r.U32();
+        var words = Math.Min((int)r.U8(), 4);
+        for (var k = 0; k < words && r.Has(8); k++)
+        {
+            var v = r.U64();
+            switch (k)
+            {
+                case 0: h.Present.W0 = v; break;
+                case 1: h.Present.W1 = v; break;
+                case 2: h.Present.W2 = v; break;
+                default: h.Present.W3 = v; break;
+            }
+        }
         return h;
     }
 
@@ -369,7 +423,7 @@ public static class Snapshot
         while (count == 0 || fi < fast.Count || si < slow.Count || !ownDone)
         {
             if (count >= MaxParts)
-                break; // can't happen with 32 players; drop the rest rather than loop
+                break; // (hundreds of Sandbox bots: drop the rest rather than loop; the relevance thinning keeps far ones out first)
             if (parts.Count <= count)
                 parts.Add(new PacketWriter());
             var w = parts[count];

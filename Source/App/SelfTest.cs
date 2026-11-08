@@ -2479,19 +2479,19 @@ public static partial class SelfTest
     private static void CheckPackets()
     {
         // A full 32-player snapshot as the server builds it (everyone's fast entry, an eighth of the slow ones).
-        var fast = Enumerable.Range(0, Game.MaxPlayers).Select(i => new SnapPlayer { Id = (byte)i, Position = Vector3.One * i, Alive = true }).ToList();
+        var fast = Enumerable.Range(0, Game.MaxPeople).Select(i => new SnapPlayer { Id = (byte)i, Position = Vector3.One * i, Alive = true }).ToList();
         var slow = fast.Where(f => f.Id % Game.SlowRefreshEvery == 0).Select(f => new SnapSlow { Id = f.Id, PrimaryKit = 0xABCDEF, SecondaryKit = 0x123456 }).ToList();
         var parts = new List<PacketWriter>();
-        var n = Snapshot.Build(new SnapHeader { Present = uint.MaxValue }, new SnapOwn(), fast, 0, slow, parts);
+        var n = Snapshot.Build(new SnapHeader { Present = new PlayerMask { W0 = uint.MaxValue } }, new SnapOwn(), fast, 0, slow, parts);
         var into = new Snapshot.Packet();
         var r = new PacketReader(parts[0].Span[1..]);
         Snapshot.Read(ref r, into);
         if (into.Slow.Any(x => x.PrimaryKit != 0xABCDEF || x.SecondaryKit != 0x123456))
             Fail("U24 round trip broke in the slow fields");
-        Line($"full {Game.MaxPlayers}-player snapshot: {parts[0].Length} bytes in {n} packet(s) (limit {PacketWriter.Mtu}), {Snapshot.FastBytes} per player + {Snapshot.SlowBytes} per slow entry");
+        Line($"full {Game.MaxPeople}-player snapshot: {parts[0].Length} bytes in {n} packet(s) (limit {PacketWriter.Mtu}), {Snapshot.FastBytes} per player + {Snapshot.SlowBytes} per slow entry");
         if (n != 1 || parts[0].Length > PacketWriter.Mtu)
             Fail("a 32-player snapshot doesn't fit one packet");
-        if (into.Fast.Count != Game.MaxPlayers)
+        if (into.Fast.Count != Game.MaxPeople)
             Fail($"snapshot decoded {into.Fast.Count} players");
     }
 

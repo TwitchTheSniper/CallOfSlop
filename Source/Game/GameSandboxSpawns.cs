@@ -68,11 +68,14 @@ public sealed partial class Game
     /// <summary>A group this size or smaller comes as individuals at the spot (exactly that many); bigger goes into the crowd and mass tiers.</summary>
     public const int SpawnIndividualsMax = 64;
 
-    /// <summary>The most bots the host's cap may be (player ids are 32: the people need room).</summary>
-    public const int SpawnBotCapMax = Map.HardMaxPlayers - 4;
+    /// <summary>
+    /// The most spawned bots at once: every player id above the lobby's seats (<see cref="FreeNpcId"/>; story people
+    /// share them). The people's seats are separate, so a full world of bots never stops anyone joining.
+    /// </summary>
+    public const int SpawnBotCapMax = MaxPlayers - MaxPeople;
 
-    /// <summary>Host setting: the most spawned bots at once (direct and from spawners).</summary>
-    public int SandboxBotCap = 16;
+    /// <summary>Host setting: the most spawned bots at once (direct and from spawners). No lower limit by default (Karl, 2026-11-08: fights of hundreds).</summary>
+    public int SandboxBotCap = SpawnBotCapMax;
 
     /// <summary>Host setting: the most spawned zombies at once (individuals and the crowd).</summary>
     public int SandboxZombieCap = SpawnZombieMax;
@@ -85,7 +88,7 @@ public sealed partial class Game
     /// Zombies are individuals, the only tier with owners, so a joined player's are at most <see cref="SpawnIndividualsMax"/>
     /// and never a crowd; all together they stay under the individual tier's cap (<see cref="CrowdIndividualCap"/>).
     /// </summary>
-    public const int SpawnClientBots = 8, SpawnClientZombies = SpawnIndividualsMax;
+    public const int SpawnClientBots = SpawnBotCapMax, SpawnClientZombies = SpawnIndividualsMax;
 
     /// <summary>A spawn on the far side of this (m) from the player asking is refused.</summary>
     public const float SpawnReach = 150f;
@@ -94,10 +97,10 @@ public sealed partial class Game
     public const double SpawnBotGone = 3.0;
 
     /// <summary>Per tick: bots, individual zombies, and crowd zombies added (a big group spreads over ticks: no hitch).</summary>
-    public const int SpawnBotsPerTick = 1, SpawnZombiesPerTick = 8, SpawnCrowdPerTick = 10000;
+    public const int SpawnBotsPerTick = 4, SpawnZombiesPerTick = 8, SpawnCrowdPerTick = 10000;
 
     /// <summary>The spawners' setting ranges (their part files hold the same).</summary>
-    public const float SpawnerRateMax = 600, SpawnerAliveMax = 64, SpawnerGroupMax = 16;
+    public const float SpawnerRateMax = 600, SpawnerAliveMax = SpawnBotCapMax, SpawnerGroupMax = 64;
 
     /// <summary>Is this world creative (infinite parts): the direct spawns are on. Survival worlds' enemies come from the world.</summary>
     public bool SandboxCreativeSpawns => SandboxOn && SandboxInfiniteParts;
@@ -121,7 +124,10 @@ public sealed partial class Game
     private uint _sbSpawnRng = 0x5BA27F01u;
     private ZombiesMap? _sbZMap;
     private Map? _sbZMapFor;
-    private bool _sbCrowdReady;
+    private bool _sbCrowdReady, _sbRosterDirty;
+
+    /// <summary>Server: mode states in a row a spawned body's hand has been idle (SandboxModule.WriteState sends it three times, then stops).</summary>
+    internal readonly byte[] SbHandQuiet = new byte[256];
     private int _sbZombieSpawns, _sbBotSpawns;
 
     /// <summary>Spawned bots and zombies made in all this match (self-test, logs).</summary>
@@ -278,15 +284,6 @@ public sealed partial class Game
                 if (_sbJobs[i].Kind == SbSpawnKind.Zombies)
                     n += _sbJobs[i].Left;
         return n;
-    }
-
-    private int FreeBotIds()
-    {
-        var n = 0;
-        for (var id = 1; id < MaxPlayers; id++)
-            if (!Players.ContainsKey((byte)id))
-                n++;
-        return Math.Max(0, n - 1); // (one id kept free for a person joining)
     }
 
     /// <summary>
@@ -511,8 +508,11 @@ public sealed partial class Game
                 removed = true;
             }
         }
-        if (removed)
+        if (removed || _sbRosterDirty)
+        {
+            _sbRosterDirty = false;
             BroadcastRoster();
+        }
         // The zombies: the Zombies AI and horde on the stand-in map, then constructs keep them out (and get swiped at).
         if ((Horde.Count > 0 || Crowd.Total > 0) && SandboxZMap is { } zm)
         {
@@ -597,13 +597,7 @@ public sealed partial class Game
     /// <summary>Server: one spawned bot (its side, difficulty and gun), at a spot near the job's, or null when there's no id free.</summary>
     private Player? SandboxSpawnBot(in SbJob j)
     {
-        byte id = 0;
-        for (var k = 1; k < MaxPlayers; k++)
-            if (!Players.ContainsKey((byte)k))
-            {
-                id = (byte)k;
-                break;
-            }
+        var id = FreeNpcId();
         if (id == 0)
             return null;
         var kind = NextPersonality();
@@ -631,7 +625,7 @@ public sealed partial class Game
             bot.History[i] = new HistoryEntry { Position = feet, Yaw = bot.Yaw };
         SandboxBotGun(bot, j.Load, j.LoadValue);
         _sbBotSpawns++;
-        BroadcastRoster();
+        _sbRosterDirty = true; // (one roster for a tick's spawns, not one each: hundreds of names)
         return bot;
     }
 

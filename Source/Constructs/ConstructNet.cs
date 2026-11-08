@@ -21,7 +21,7 @@ public enum CBodyKind : byte
     Aids, // protocol 128: server -> one client: its build aids' states and mirror plane (BuildAidView.Write)
     Extrude, // protocol 119: extrusions that changed length: (id, part, length in cm) each (ConstructNet.WriteExtrude)
     Patch, // protocol 121: a big body's structure as a byte patch on its last Full (ConstructPatch.cs)
-    Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
+    Analog, // protocol 133: Analog Levers that moved: (id, part, value, y) each (AnalogLever.cs; y, a Joystick's, since 211)
     Connectors, // protocol 134: ropes and springs: u8 0 and the whole list (a joiner, a big change), or u8 1 and a patch (ConstructNet.WriteConnectors, WriteConnectorPatch)
     Fluid, // protocol 138: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
     Reading, // protocol 153: displays and keypads that changed: (id, part, f32) each (LogicDisplays.cs)
@@ -701,7 +701,7 @@ public static class ConstructNet
         return i;
     }
 
-    /// <summary>A batch of Analog Lever moves (CBodyKind.Analog): u8 count, then u16 body, u16 part, u16 value each. Returns where it got to.</summary>
+    /// <summary>A batch of Analog Lever moves (CBodyKind.Analog): u8 count, then u16 body, u16 part, u16 value, u16 y (a Joystick's; 0 on a lever) each. Returns where it got to.</summary>
     public static int WriteAnalog(PacketWriter w, ConstructWorld world, List<(ushort Body, ushort Part)> changes, int from)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Analog);
@@ -714,7 +714,8 @@ public static class ConstructNet
             var (id, part) = changes[i];
             if (world.Get(id) is not { } c || part >= c.PartCount || c.DefOf(part).Logic != CLogic.AnalogLever)
                 continue;
-            w.U16(id).U16(part).U16(AnalogLever.ToWire(AnalogLever.Value(c.Parts[part], c.DefOf(part))));
+            var d = c.DefOf(part);
+            w.U16(id).U16(part).U16(AnalogLever.ToWire(AnalogLever.Value(c.Parts[part], d))).U16(AnalogLever.ToWire(AnalogLever.ValueY(c.Parts[part], d)));
             n++;
         }
         w.PatchU8(countAt, (byte)n);
@@ -830,8 +831,9 @@ public static class ConstructNet
                     var id = r.U16();
                     var part = r.U16();
                     var value = r.U16();
+                    var y = r.U16();
                     if (world.Get(id) is { } c && part < c.PartCount)
-                        AnalogLever.SetValue(ref c.Parts[part], c.DefOf(part), AnalogLever.FromWire(value));
+                        AnalogLever.SetValue(ref c.Parts[part], c.DefOf(part), AnalogLever.FromWire(value), AnalogLever.FromWire(y));
                 }
                 break;
             }

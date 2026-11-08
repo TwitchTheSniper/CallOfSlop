@@ -284,9 +284,10 @@ public static partial class ConstructParts
             case "lever":
             case "knob":
             case "flip":
+            case "stick":
                 if (pivot == null)
                     throw new ConstructPartException($"{file}: {where}: a \"{kind}\" rig needs its \"pivot\"");
-                return box with { Rig = kind == "lever" ? BoxRig.Lever : kind == "knob" ? BoxRig.Knob : BoxRig.Flip };
+                return box with { Rig = kind == "lever" ? BoxRig.Lever : kind == "knob" ? BoxRig.Knob : kind == "stick" ? BoxRig.Stick : BoxRig.Flip };
             case "slide":
             case "press":
                 return box with { Rig = kind == "slide" ? BoxRig.Slide : BoxRig.Press, RigTravel = Opt(b, "travel") is { } tv ? Num(tv, file, where + ".travel") : throw new ConstructPartException($"{file}: {where}: a \"{kind}\" rig needs its \"travel\"") };

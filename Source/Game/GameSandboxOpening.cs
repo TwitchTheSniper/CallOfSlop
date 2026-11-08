@@ -351,14 +351,8 @@ public sealed partial class Game
 
     private byte OpeningRescuer(Player p, string name, float turn)
     {
-        byte id = 0;
-        for (var k = 1; k < MaxPlayers; k++)
-            if (!Players.ContainsKey((byte)k))
-            {
-                id = (byte)k;
-                break;
-            }
-        if (id == 0 || FreeBotIds() <= 0)
+        var id = FreeNpcId();
+        if (id == 0)
             return 0;
         var a = p.Yaw + turn;
         var at = p.Position + new Vector3(MathF.Sin(a), 0, -MathF.Cos(a)) * 1.5f;

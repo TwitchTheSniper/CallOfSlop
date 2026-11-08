@@ -86,6 +86,8 @@ public sealed partial class Ui
             var cap = Math.Max(1, Math.Min(game.SandboxBotCap, game.IsServer ? Game.SpawnBotCapMax : Game.SpawnClientBots));
             ImGui.SetNextItemWidth(320 * _scale);
             ImGui.SliderInt("How many##sbbots"u8, ref game.SpawnBots, 1, cap);
+            ImGui.SetNextItemWidth(320 * _scale);
+            ImGui.InputInt("##sbbotn"u8, ref game.SpawnBots, 1, 10);
             game.SpawnBots = Math.Clamp(game.SpawnBots, 1, game.IsServer ? Game.SpawnBotCapMax : cap);
         }
         else
@@ -152,7 +154,7 @@ public sealed partial class Ui
             ImGui.SliderInt("Most zombies##sbzcap"u8, ref game.SandboxZombieCap, 100, Game.SpawnZombieMax, "%d"u8, ImGuiSliderFlags.Logarithmic);
         }
         else
-            ImGuiSafe.TextColored(Dim, $"Your limit: {Game.SpawnClientBots} bots and {Game.SpawnClientZombies} zombies at once.");
+            ImGuiSafe.TextColored(Dim, $"Your limit: bots up to the host's cap ({Game.SpawnClientBots} at most), {Game.SpawnClientZombies} zombies at once.");
         ImGuiSafe.TextColored(Dim, $"Spawned now: {game.SpawnedBotsNow} bots, {game.SpawnedZombiesNow:N0} zombies");
     }
 

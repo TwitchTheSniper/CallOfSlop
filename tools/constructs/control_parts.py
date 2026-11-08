@@ -50,6 +50,43 @@ def lever(name, cls, s, mass, health, armour, tool):
     return "", p
 
 
+STICK_CONFIG = [
+    {"key": "value", "label": "X", "group": "General", "min": 0, "max": 1, "step": 0.01, "default": 0.5, "tooltip": "Where the stick stands side to side, 0 (left) to 1 (right)."},
+    {"key": "valueY", "label": "Y", "group": "General", "min": 0, "max": 1, "step": 0.01, "default": 0.5, "tooltip": "Where the stick stands fore and aft, 0 (back) to 1 (forward)."},
+    {"key": "snap", "label": "Snap step", "group": "General", "min": 0, "max": 0.5, "step": 0.01, "default": 0, "tooltip": "The steps the stick clicks through on each axis. 0: smooth."},
+    {"key": "low", "label": "Output at 0", "group": "Output", "min": -100, "max": 100, "step": 0.01, "default": -1, "tooltip": "What each axis puts out with the stick at 0."},
+    {"key": "high", "label": "Output at 1", "group": "Output", "min": -100, "max": 100, "step": 0.01, "default": 1, "tooltip": "What each axis puts out with the stick at 1."},
+    {"key": "spring", "type": "toggle", "label": "Spring return", "group": "Spring", "default": True, "tooltip": "Goes back to its rest values when let go."},
+    {"key": "rest", "label": "Rest X", "group": "Spring", "min": 0, "max": 1, "step": 0.01, "default": 0.5, "tooltip": "Where the spring takes it side to side."},
+    {"key": "restY", "label": "Rest Y", "group": "Spring", "min": 0, "max": 1, "step": 0.01, "default": 0.5, "tooltip": "Where the spring takes it fore and aft."},
+]
+
+
+def joystick(name, cls, s, mass, health, armour, tool):
+    """An Analog Lever's housing with a square gate on top and a stick that tilts both ways in it (a "stick" rig):
+    "axes": 2 puts out X on its first output and Y on its second (AnalogLever.cs). s as for a lever."""
+    h = 0.1 * s
+    p = Part(name, cls, "Controls", "A stick you push any way: X and Y out, -1 to 1, back to the middle when let go.", role="logic", tool=tool, color=HOUSING, group="Logic" if cls is SMALL else None)
+    p.add(box((-h, -h, -h), (h, h, h)))
+    p.add(box((-h, h + 0.001, -h), (h, h + 0.25 * s, h), hidden=True))  # (the crosshair's way to the stick)
+    p.add(box((-0.06 * s, h - 0.006 * s, -0.06 * s), (0.06 * s, h + 0.008 * s, 0.06 * s), SLOT, detail=True))  # the gate
+    for x in (-1, 1):
+        for z in (-1, 1):
+            xl, xh = sorted((x * 0.062 * s, x * 0.09 * s))
+            zl, zh = sorted((z * 0.062 * s, z * 0.09 * s))
+            p.add(box((xl, h - 0.002 * s, zl), (xh, h + 0.018 * s, zh), STOP, detail=True))  # a corner of the gate's rim
+    pivot = [0, h, 0]
+    p.add(box((-0.03 * s, h - 0.003 * s, -0.03 * s), (0.03 * s, h + 0.028 * s, 0.03 * s), SLOT, detail=True, rig="stick", pivot=pivot))  # the boot
+    p.add(box((-0.013 * s, h + 0.026 * s, -0.013 * s), (0.013 * s, h + 0.16 * s, 0.013 * s), SHAFT, detail=True, rig="stick", pivot=pivot))
+    p.add(box((-0.026 * s, h + 0.15 * s, -0.026 * s), (0.026 * s, h + 0.25 * s, 0.026 * s), HOUSING, detail=True, rig="stick", pivot=pivot))  # the grip
+    p.add(box((-0.016 * s, h + 0.246 * s, -0.016 * s), (0.016 * s, h + 0.262 * s, 0.016 * s), RED, detail=True, rig="stick", pivot=pivot))  # its cap
+    for name_, at in (("+x", (h, 0, 0)), ("-x", (-h, 0, 0)), ("+z", (0, 0, h)), ("-z", (0, 0, -h)), ("-y", (0, -h, 0))):
+        p.sock(name_, at, name_)
+    p.stats(mass, health, armour, 1.0 if cls is SMALL else None)
+    p.set(logic={"kind": "analoglever", "axes": 2}, config=STICK_CONFIG)
+    return "", p
+
+
 def module(name, kind, desc, accent, config=None):
     """A control module (ConstructModules.cs): a flat box with a row of terminals along its top, each a control it breaks out."""
     p = Part(name, SMALL, "Controls", desc, role="logic", tool="wrench", color=HOUSING, group="Logic")
@@ -311,6 +348,9 @@ def main():
         lever("Analog Lever", SMALL, 1, 3, 40, 1, "wrench"),
         lever("Medium Analog Lever", MEDIUM, 5, 60, 180, 4, "welder"),
         lever("Large Analog Lever", LARGE, 20, 600, 600, 8, "welder"),
+        joystick("Joystick", SMALL, 1, 3, 40, 1, "wrench"),
+        joystick("Medium Joystick", MEDIUM, 5, 60, 180, 4, "welder"),
+        joystick("Large Joystick", LARGE, 20, 600, 600, 8, "welder"),
         *controls(),
         *displays(),
         *blocks(),

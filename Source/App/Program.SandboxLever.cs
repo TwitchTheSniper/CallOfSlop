@@ -12,6 +12,8 @@ namespace CallOfSlop;
 /// This PC shows its own value at once. The server hears at most 10 Hz and a last word on letting go, and until that
 /// has been answered the value is held here as shown, so it never snaps back. The lever is kept as a part index, which
 /// another player's edit can shift, so it is stamped when taken and checked every frame.
+/// A Joystick's stick goes both ways: the mouse along the screen's picture of the part's +x moves its X, and across that its Y
+/// (each the way the stick's tip would go). The wheel leaves a Joystick alone.
 /// </summary>
 public static partial class Program
 {
@@ -25,14 +27,16 @@ public static partial class Program
     private static bool _lvHeld, _lvSeated, _lvMoved;
     private static GameAction _lvKey;
     private static float _lvRaw, _lvValue, _lvSent, _lvTravel; // (raw: unsnapped, so a slow drag still crosses a snap step)
-    private static Vector2 _lvPending, _lvScreen; // (mouse moved since the last frame; the way along the screen that raises it)
+    private static float _lvRawY, _lvValueY, _lvSentY; // (a Joystick's Y, the same)
+    private static bool _lvStick;
+    private static Vector2 _lvPending, _lvScreen, _lvScreenY; // (mouse moved since the last frame; the way along the screen that raises it, and a Joystick's Y)
     private static double _lvSentAt, _lvSettleUntil, _lvScroll;
-    private static bool _lvWheelOk;
+    private static bool _lvWheelOk, _lvAimed; // (the crosshair's lever takes the wheel; it is on a lever or Joystick in reach)
     private static int _lvLookKey = int.MinValue;
     private static string _lvLook = "";
 
     /// <summary>The value as the look line shows it.</summary>
-    private static string LeverValueText(in CPart p, ConstructPartDef d) => AnalogLever.Text(AnalogLever.Value(p, d));
+    private static string LeverValueText(in CPart p, ConstructPartDef d) => AnalogLever.Text(p, d, AnalogLever.Value(p, d), AnalogLever.ValueY(p, d));
 
     /// <summary>A hand on a lever: the frame's mouse moves it and the view stands still.</summary>
     private static bool LeverMouse(double2 delta)
@@ -58,7 +62,7 @@ public static partial class Program
     private static void LeverReset()
     {
         _lvHeld = false;
-        _lvWheelOk = false;
+        _lvWheelOk = _lvAimed = false;
         _lvPart = -1;
         _lvSettleUntil = 0;
         _lvPending = default;
@@ -77,8 +81,9 @@ public static partial class Program
 
     private static void LeverSend(Game g, float value, bool final, double now)
     {
-        g.SandboxSend(CActKind.AnalogLever, body: _lvBody, part: (ushort)_lvPart, socket: AnalogLever.ToWire(value), flags: (byte)(final ? 1 : 0));
+        g.SandboxSend(CActKind.AnalogLever, body: _lvBody, part: (ushort)_lvPart, socket: AnalogLever.ToWire(value), flags: (byte)(final ? 1 : 0), body2: AnalogLever.ToWire(_lvValueY));
         _lvSent = value;
+        _lvSentY = _lvValueY;
         _lvSentAt = now;
     }
 
@@ -86,7 +91,7 @@ public static partial class Program
     {
         ConstructRender.LeverHotBody = c;
         ConstructRender.LeverHotPart = _lvPart;
-        AnalogLever.SetValue(ref c.Parts[_lvPart], c.DefOf(_lvPart), value);
+        AnalogLever.SetValue(ref c.Parts[_lvPart], c.DefOf(_lvPart), value, _lvValueY);
     }
 
     /// <summary>The hand lets go (the key up, the menu opened, dead): the last word goes to the server.</summary>
@@ -113,7 +118,7 @@ public static partial class Program
     /// <summary>Every frame: a value just let go stays as this hand left it until the server has answered.</summary>
     private static void LeverSettle(Game g, double now)
     {
-        _lvWheelOk = false; // (until this frame's aim has been looked at: LeverFrame)
+        _lvWheelOk = _lvAimed = false; // (until this frame's aim has been looked at: LeverFrame)
         if (_lvHeld || _lvSettleUntil == 0)
             return;
         if (now < _lvSettleUntil && LeverNow(g) is { } c)
@@ -140,6 +145,8 @@ public static partial class Program
         _lvSettleUntil = 0;
         ref var p = ref c.Parts[part];
         _lvRaw = _lvValue = _lvSent = AnalogLever.Value(p, p.D);
+        _lvRawY = _lvValueY = _lvSentY = AnalogLever.ValueY(p, p.D);
+        _lvStick = p.D.Stick;
         _lvSentAt = 0;
         // The way the handle's tip goes on the screen, taken once so the drag doesn't turn over halfway. Seen end on
         // (it would go straight at the eye): mouse up raises it.
@@ -151,6 +158,28 @@ public static partial class Program
         var up = Vector3.Cross(right, g.LookDir(g.LookYaw, g.LookPitch));
         var screen = new Vector2(Vector3.Dot(along, right), -Vector3.Dot(along, up));
         _lvScreen = screen.Length() > 0.3f ? Vector2.Normalize(screen) : new Vector2(0, -1);
+        if (_lvStick)
+        {
+            // A Joystick: its X along the screen's picture of the part's +x, its Y square to that, on the side its +z is
+            // drawn (seen end on, mouse up raises Y, and right X).
+            var side = Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitX), q);
+            var sx = new Vector2(Vector3.Dot(side, right), -Vector3.Dot(side, up));
+            var sy = screen;
+            if (sx.Length() > 0.3f)
+            {
+                sx = Vector2.Normalize(sx);
+                var across = new Vector2(-sx.Y, sx.X);
+                var flip = sy.Length() > 0.3f ? Vector2.Dot(across, sy) < 0 : across.Y > 0; // (the side +z is drawn on; end on, up the screen)
+                _lvScreenY = flip ? -across : across;
+            }
+            else
+            {
+                _lvScreenY = _lvScreen; // (+x end on: X goes square to Y, to the right)
+                var across = new Vector2(-_lvScreenY.Y, _lvScreenY.X);
+                sx = across.X < 0 ? -across : across;
+            }
+            _lvScreen = sx;
+        }
         ConstructRender.LeverHotBody = c;
         ConstructRender.LeverHotPart = part;
     }
@@ -176,8 +205,15 @@ public static partial class Program
         var delta = Vector2.Dot(_lvPending, _lvScreen);
         _lvTravel += MathF.Abs(delta);
         _lvRaw = Math.Clamp(_lvRaw + delta * (BaseSensitivity * _settings.Sensitivity) / LeverLook, 0, 1);
+        if (_lvStick)
+        {
+            var deltaY = Vector2.Dot(_lvPending, _lvScreenY);
+            _lvTravel += MathF.Abs(deltaY);
+            _lvRawY = Math.Clamp(_lvRawY + deltaY * (BaseSensitivity * _settings.Sensitivity) / LeverLook, 0, 1);
+        }
         _lvPending = default;
-        var notches = (float)_lvScroll;
+        var notches = _lvStick ? 0 : (float)_lvScroll; // (the wheel leaves a Joystick alone)
+        _lvScroll = 0;
         if (notches != 0)
         {
             _lvScroll = 0;
@@ -188,21 +224,25 @@ public static partial class Program
         if (_lvMoved)
         {
             _lvValue = AnalogLever.Snapped(p, d, _lvRaw);
+            if (_lvStick)
+                _lvValueY = AnalogLever.Snapped(p, d, _lvRawY);
             LeverShow(c, _lvValue);
-            if (_lvValue != _lvSent && now - _lvSentAt >= LeverSendEvery || now - _lvSentAt >= LeverKeepAlive)
+            if ((_lvValue != _lvSent || _lvValueY != _lvSentY) && now - _lvSentAt >= LeverSendEvery || now - _lvSentAt >= LeverKeepAlive)
                 LeverSend(g, _lvValue, final: false, now);
         }
-        g.SandboxLookText = LeverLine(c, _lvPart, _lvValue, "dragging");
+        g.SandboxLookText = LeverLine(c, _lvPart, _lvValue, _lvValueY, "dragging");
     }
 
     /// <summary>The look line, made again only when it changes.</summary>
-    private static string LeverLine(Construct c, int part, float value, string action)
+    private static string LeverLine(Construct c, int part, float value, float y, string action)
     {
-        var key = HashCode.Combine(c.Parts[part].Def, (int)MathF.Round(value * 100), action, SandboxKeys.Use);
+        ref var p = ref c.Parts[part];
+        var d = c.DefOf(part);
+        var key = HashCode.Combine(p.Def, (int)MathF.Round(value * 100), (int)MathF.Round(y * 100), action, SandboxKeys.Use);
         if (key != _lvLookKey)
         {
             _lvLookKey = key;
-            _lvLook = SandboxKeys.Line(c.DefOf(part).Name, AnalogLever.Text(value), null, action);
+            _lvLook = SandboxKeys.Line(d.Name, AnalogLever.Text(p, d, value, y), null, action);
         }
         return _lvLook;
     }
@@ -224,8 +264,9 @@ public static partial class Program
             _lvScroll = 0;
             return false;
         }
-        _lvWheelOk = h.Seated || h.Held == ConstructParts.None && h.Tool is ConstructTool.None or ConstructTool.Hands or ConstructTool.Welder;
-        if (_lvScroll != 0)
+        _lvAimed = true;
+        _lvWheelOk = !hit.Body.DefOf(hit.Part).Stick && (h.Seated || h.Held == ConstructParts.None && h.Tool is ConstructTool.None or ConstructTool.Hands or ConstructTool.Welder);
+        if (_lvScroll != 0 && _lvWheelOk)
         {
             LeverNudge(g, hit.Body, hit.Part, now);
             _lvScroll = 0;
@@ -249,6 +290,8 @@ public static partial class Program
         _lvBody = c.Id;
         _lvPart = part;
         _lvStamp = LinkStamp(c, part, 255, 0);
+        _lvStick = false;
+        _lvValueY = 0;
         _lvValue = AnalogLever.Snapped(p, d, AnalogLever.Value(p, d) + (float)_lvScroll * (step > 0 ? step : AnalogLever.WheelStep));
         LeverShow(c, _lvValue);
         LeverSend(g, _lvValue, final: true, now);
@@ -274,14 +317,14 @@ public static partial class Program
         took |= !_lvHeld && ControlFrame(g, me, in h, aimed, hit, false);
         if (_lvHeld)
             return true;
-        if (_lvWheelOk)
+        if (_lvAimed)
         {
             ConstructRender.AimBody = hit.Body;
             ConstructRender.AimPart = hit.Part;
             ConstructRender.AimRefused = false;
             ConstructRender.AimHands = true;
             ref var p = ref hit.Body.Parts[hit.Part];
-            g.SandboxLookText = LeverLine(hit.Body, hit.Part, AnalogLever.Value(p, p.D), SandboxKeys.Do(SandboxKeys.Use, "drag"));
+            g.SandboxLookText = LeverLine(hit.Body, hit.Part, AnalogLever.Value(p, p.D), AnalogLever.ValueY(p, p.D), SandboxKeys.Do(SandboxKeys.Use, "drag"));
         }
         return took;
     }

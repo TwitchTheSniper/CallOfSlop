@@ -420,6 +420,8 @@ public static partial class ConstructRender
                 return Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(leverAxis, p.Out >= 0.5f ? AnalogLever.FlipAngle : -AnalogLever.FlipAngle) * Matrix4x4.CreateTranslation(pivot);
             case BoxRig.Press:
                 return p.Out >= 0.5f ? Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * -box.RigTravel) : Matrix4x4.Identity;
+            case BoxRig.Stick:
+                return Matrix4x4.CreateTranslation(-pivot) * AnalogLever.StickTurn(p.Rot, p.LeverShown, p.LeverShownY) * Matrix4x4.CreateTranslation(pivot);
             default:
                 return Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(leverAxis, leverAngle) * Matrix4x4.CreateTranslation(pivot);
         }
@@ -515,8 +517,14 @@ public static partial class ConstructRender
         {
             // Its handle: the value as it came, eased between the server's few updates (the hand on it sees it at once).
             var value = AnalogLever.Value(p, d);
-            p.LeverShown = p.LeverShown < 0 || LeverHotBody == c && LeverHotPart == i ? value : float.Lerp(p.LeverShown, value, _leverEase);
+            var hot = p.LeverShown < 0 || LeverHotBody == c && LeverHotPart == i;
+            p.LeverShown = hot ? value : float.Lerp(p.LeverShown, value, _leverEase);
             leverAngle = AnalogLever.Angle(p.LeverShown);
+            if (d.Stick)
+            {
+                var y = AnalogLever.ValueY(p, d);
+                p.LeverShownY = hot || p.LeverShownY < 0 ? y : float.Lerp(p.LeverShownY, y, _leverEase);
+            }
         }
         // An overloaded actuator (the strength model): tinted red, deeper the more it is past its rating (full at twice), pulsing a little.
         var strain = 0f;
@@ -1359,6 +1367,11 @@ public static partial class ConstructRender
             {
                 var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
                 m = m * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitX), AnalogLever.Angle(p.LeverShown)) * Matrix4x4.CreateTranslation(pivot);
+            }
+            else if (box.Rig == BoxRig.Stick)
+            {
+                var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+                m = m * Matrix4x4.CreateTranslation(-pivot) * AnalogLever.StickTurn(p.Rot, p.LeverShown, p.LeverShownY) * Matrix4x4.CreateTranslation(pivot);
             }
             gfx.Draw(m * frame, colour, opacity, mode: 2, shape: box.Shape);
         }

@@ -189,7 +189,7 @@ public static partial class SelfTest
         var match = game.MatchNumber;
         var map = World.Map;
         var skill0 = game.BotSkill;
-        var max = Math.Min(Game.MaxPlayers, game.MapMaxPlayers) - game.HumanCount;
+        var max = Math.Min(Game.MaxPeople, game.MapMaxPlayers) - game.HumanCount;
         var want = Math.Min(5, max);
 
         // The bots keep fighting between the checks, so a bot can be killed the moment it spawns: "spawned into the match"
@@ -247,7 +247,7 @@ public static partial class SelfTest
         var clock = System.Diagnostics.Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);
-        using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2, mapId: map.Id)
+        using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2, mapId: map.Id)
         {
             MapVoteEnabled = true,
             LobbyEnabled = true,

@@ -35,6 +35,13 @@ public sealed partial class Game
     /// <summary>How far a bot with this base hearing (20-50 m by aggression; 60 m just after being hit) hears a gun of this <see cref="WeaponDef.Loudness"/>.</summary>
     public static float HearingRange(float hearing, bool alert, float loudness) => MathF.Max(hearing, alert ? 60f : 0f) * loudness;
 
+    /// <summary>A scan with more enemies in view than this looks at the nearest this many, nearest first (hundreds of Sandbox bots).</summary>
+    private const int BotScanLooksCrowded = 12;
+
+    // BotPerceive's scratch: the enemies in view this scan, their score and distance (the game thread only).
+    private Player[] _scanWho = new Player[64];
+    private float[] _scanKey = new float[64], _scanDist = new float[64];
+
     /// <summary>Picks and keeps track of a target; hears gunfire; notices being hit. Scans a few times a second.</summary>
     private Player? BotPerceive(Player p, BotBrain b, double now, out bool visible)
     {
@@ -84,6 +91,7 @@ public sealed partial class Game
             var bestScore = float.MaxValue;
             var heardDist = now - b.HeardTime < 1 ? Vector3.Distance(p.Position, b.HeardAt) : float.MaxValue;
             var hearing = 20f + 30f * b.Profile.Aggression;
+            var n = 0;
             foreach (var o in Players.Values)
             {
                 if (o == p || !o.Alive || !IsEnemy(p, o))
@@ -101,20 +109,44 @@ public sealed partial class Game
                 var inView = alert || Vector3.Dot(flat, fwd) > -0.2f || dist < Perks.BotSenseRange(o.Perks); // ~200 deg vision, plus "hearing" up close (Dead Silence: closer)
                 if (!inView)
                     continue;
+                if (n == _scanWho.Length)
+                {
+                    Array.Resize(ref _scanWho, n * 2); // (once, when a fight first outgrows it)
+                    Array.Resize(ref _scanKey, n * 2);
+                    Array.Resize(ref _scanDist, n * 2);
+                }
+                _scanWho[n] = o;
+                _scanDist[n] = dist;
+                _scanKey[n++] = dist + (o.Id == b.Target ? -5f : 0f); // stick with the current target a little
+            }
+            // A big fight (hundreds of Sandbox bots): the nearest first, and the first one in clear sight is the pick, so a
+            // scan looks along a few lines, not one to every enemy in view. A small one looks at each, as it always has.
+            var crowded = n > BotScanLooksCrowded;
+            if (crowded)
+                Array.Sort(_scanKey, _scanWho, 0, n);
+            var looks = 0;
+            for (var i = 0; i < n; i++)
+            {
+                var o = _scanWho[i];
+                if (crowded && looks++ == BotScanLooksCrowded)
+                    break;
                 var sight = BotSees(p.Eye, o); // chest, or the head when only foliage hides the chest (BotFoliage.cs)
                 if (sight != BotSightLine.Clear)
                 {
                     if (sight == BotSightLine.Covered)
-                        BotNoticeHidden(b, o, dist, now); // hidden in cover, but running gives it away (roughly)
+                        BotNoticeHidden(b, o, crowded ? (o.Position - p.Position).Length() : _scanDist[i], now); // hidden in cover, but running gives it away (roughly)
                     continue;
                 }
-                var score = dist + (o.Id == b.Target ? -5f : 0f); // stick with the current target a little
+                var score = _scanKey[i];
                 if (score < bestScore)
                 {
                     bestScore = score;
                     best = o;
                 }
+                if (crowded)
+                    break; // (sorted: nothing later scores better)
             }
+            Array.Clear(_scanWho, 0, n); // (no stale references to players who have gone)
 
             if (best != null && best.Id != b.Target)
             {
