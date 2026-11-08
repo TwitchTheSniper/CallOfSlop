@@ -1558,6 +1558,19 @@ def blueprints(defs):
     ho = bp.hang("Door Hinge", office[1], "hinge", "base")
     bp.hang("Wood Flush Door 1.5x2.25 m", ho, "leaf", "hang")
     out.append(bp)
+
+    # Colony Barracks: the guards' quarters beside the penal colony, where the lockdown squad turns out from
+    # (Game/GameColonyLockdown.cs). Two pads, a 4 by 8 m concrete block with windows down both long sides, a flat roof and
+    # an open doorway (no door: the squad comes out of it without stopping).
+    bp = Blueprint("Colony Barracks", "The Ministry of Slop's guard barracks beside the penal colony.", defs)
+    bp.first("Concrete Foundation 4x4 m")
+    bp.put("Concrete Foundation 4x4 m", cell(0, 0, 16), R0)
+    room_corners(bp, "Concrete", 0, 2, 0, 16, 32, door=1)
+    bp.put("Concrete Window Wall 4 m", cell(0, 2, 23), RY90)
+    bp.put("Concrete Window Wall 4 m", cell(15, 2, 8), RY270)
+    bp.put("Concrete Floor 4x4 m", cell(0, 2 + WALL_H, 0), R0)
+    bp.put("Concrete Floor 4x4 m", cell(0, 2 + WALL_H, 16), R0)
+    out.append(bp)
     return out
 
 

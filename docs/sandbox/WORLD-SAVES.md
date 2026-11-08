@@ -73,6 +73,9 @@ nobody's. A person who was alive comes back where they stood, unless something n
 Player factions (docs/sandbox/CONSTRUCTS.md "Factions") are kept in their own `FCTN` section: the names by id, then each
 record's key, Steam id, faction and whether they lead it; members wait under their offline bytes like their constructs do. A `FCT2` section after it holds each faction's colour, tag and whether it is open, the stances between factions, and each
 record's rank (an older reader skips it).
+Survival's death rules (docs/sandbox/DEATH.md) are a byte at the end of the meta, so the world list shows them and an older
+file reads 0, a plain respawn. A `FATE` section holds each record's checkpoint (the bunk's construct id, segment and place in
+its rest frame), whether they are dead for good, and whether their next spawn is a respawn.
 
 ## How a save stays off the tick
 

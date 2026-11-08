@@ -29,9 +29,18 @@ public sealed partial class Ui
         if (e.Problem.Length > 0)
             return $"{e.Meta.Name}: {e.Problem}";
         var m = e.Meta;
-        var mode = m.Survival ? "Survival" : "Creative";
+        var mode = WorldModeText(m);
         var when = m.SavedUtc > 0 ? new DateTime(m.SavedUtc, DateTimeKind.Utc).ToLocalTime().ToString("d MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture) : "not played";
         return $"{m.Name} - {m.MapName} - {mode} - {when}{(e.FromBackup ? " (from its backup)" : "")}";
+    }
+
+    /// <summary>Creative, or Survival with its death rules ("Survival, permadeath").</summary>
+    private static string WorldModeText(WorldMeta m)
+    {
+        if (!m.Survival)
+            return "Creative";
+        var (rule, keep) = Game.FromDeathByte(m.Death);
+        return $"Survival, {Game.DeathLabel(rule).ToLowerInvariant()}{(keep ? ", keep backpack" : "")}";
     }
 
     /// <summary>The list and New world. Returns the world picked or made this frame, or null.</summary>
@@ -128,7 +137,7 @@ public sealed partial class Ui
         if (game.WorldSession is { } ws)
         {
             var m = ws.Meta;
-            ImGuiSafe.TextColored(Green, $"World: {m.Name} ({m.MapName}, {(m.Survival ? "Survival" : "Creative")})");
+            ImGuiSafe.TextColored(Green, $"World: {m.Name} ({m.MapName}, {WorldModeText(m)})");
             ImGui.TextColored(Dim, "The map and mode stay with the world."u8);
             AutosavePicker(s);
             game.WorldAutosaveMinutes = s.WorldAutosaveMinutes;
@@ -143,7 +152,7 @@ public sealed partial class Ui
         if (saved != null && (pick = Game.WorldOpen(saved, out var why)) == null)
             _worldNote = why;
         if (newName.Length > 0)
-            pick = Game.WorldNew(newName, World.Map, game.SandboxSurvivalOption);
+            pick = Game.WorldNew(newName, World.Map, game.SandboxSurvivalOption, game.SandboxDeathByte);
         if (pick != null && !game.LobbySetWorld(pick, out var refused))
             _worldNote = refused;
         ImGui.Spacing();
@@ -155,7 +164,7 @@ public sealed partial class Ui
         if (_spWorld is { } ws)
         {
             var m = ws.Meta;
-            ImGuiSafe.TextColored(Green, $"World: {m.Name} ({m.MapName}, {(m.Survival ? "Survival" : "Creative")})");
+            ImGuiSafe.TextColored(Green, $"World: {m.Name} ({m.MapName}, {WorldModeText(m)})");
             AutosavePicker(s);
             if (ImGui.Button("Pick another world"u8))
                 _spWorld = null;
@@ -179,9 +188,9 @@ public sealed partial class Ui
     }
 
     /// <summary>The world the Single player page picked (a new one goes on <paramref name="map"/>), once. Null: none.</summary>
-    public WorldSession? TakeSinglePlayerWorld(Map map, bool survival)
+    public WorldSession? TakeSinglePlayerWorld(Map map, bool survival, byte death)
     {
-        var world = _spWorld ?? (_spNewWorld.Length > 0 ? Game.WorldNew(_spNewWorld, map, survival) : null);
+        var world = _spWorld ?? (_spNewWorld.Length > 0 ? Game.WorldNew(_spNewWorld, map, survival, death) : null);
         _spWorld = null;
         _spNewWorld = "";
         _worlds = null;

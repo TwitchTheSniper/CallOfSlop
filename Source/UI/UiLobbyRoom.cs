@@ -477,6 +477,43 @@ public sealed partial class Ui
         ImGui.PushTextWrapPos(RoomWrap);
         ImGuiSafe.TextColored(Dim, _room.SandboxHint);
         ImGui.PopTextWrapPos();
+        if (!survival)
+            return;
+        // Survival's death rules (GameSandboxDeath.cs): a saved world's are its own.
+        var rule = game.SandboxDeathRule;
+        var keep = game.SandboxKeepPack;
+        ImGui.BeginDisabled(game.WorldShownName.Length > 0);
+        if (DeathPicker(ref rule, ref keep) && host)
+        {
+            game.LobbySetSandboxDeath(rule, keep);
+            s.SandboxDeath = rule;
+            s.SandboxKeepPack = keep;
+            s.Save();
+        }
+        ImGui.EndDisabled();
+    }
+
+    /// <summary>Survival's death rules: a combo and the backpack checkbox, with the rule's hint. True when either changed.</summary>
+    private bool DeathPicker(ref SurvivalDeath rule, ref bool keepPack)
+    {
+        var changed = false;
+        ImGui.SetNextItemWidth(240 * _scale);
+        if (ImGui.BeginCombo("Death##survival"u8, Game.DeathLabel(rule)))
+        {
+            for (var k = SurvivalDeath.Respawn; k <= SurvivalDeath.Permadeath; k++)
+                if (ImGui.Selectable(Game.DeathLabel(k), k == rule) && k != rule)
+                {
+                    rule = k;
+                    changed = true;
+                }
+            ImGui.EndCombo();
+        }
+        if (ImGui.Checkbox("Keep the backpack on death##survival"u8, ref keepPack))
+            changed = true;
+        ImGui.PushTextWrapPos(RoomWrap);
+        ImGuiSafe.TextColored(Dim, Game.DeathHint(rule) + (rule == SurvivalDeath.Permadeath ? " The backpack always drops." : keepPack ? " You keep what you carry." : " What you carry drops where you fall."));
+        ImGui.PopTextWrapPos();
+        return changed;
     }
 
     private static void ChooseSandboxRules(Game game, Settings s, bool survival)

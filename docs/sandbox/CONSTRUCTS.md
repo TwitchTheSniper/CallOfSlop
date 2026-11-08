@@ -2321,6 +2321,7 @@ eight slots of different sizes, still no inventory screen. Every player in survi
 - **Creative** means endless parts (`SandboxInfiniteParts`), the same answer on every peer. No pack is drawn, no slot strip shows, and nothing goes in: Stow and Draw say "no backpack in creative". With full hands, `Give` skips the pack and drops the part as a loose pickup; taking from a slot or picking up a loose part is refused and it stays put.
 - **An old creative save** that holds parts in a pack keeps them: the player wears that pack (`ConstructEdits.WearsPack`) and draws from it until it is empty, and then it is gone. Nothing new goes in.
 - The **Backpack part** in the Tab inventory stays a storage part to bolt on a construct. It isn't worn.
+- **Story mode starts without one** (Karl, 2026-11-08): the warden's induction hands it over at its backpack step (docs/sandbox/TUTORIAL.md). Until then the player's pack has no slots (`HasPack` false, `ConstructEdits.IssuePack`), so it behaves as creative's does, and Stow says it hasn't been given yet.
 
 In survival:
 
