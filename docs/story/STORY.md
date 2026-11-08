@@ -697,8 +697,58 @@ a part is logged when the game first reads the table (`[story] ... no part calle
 `--story-sim` with a scenario that wrecks two Highland vans prints "Ministry of Slop taught Karl Explosives Licence", and
 Karl keeps `Learnt` after wrecking the Ministry's own vans takes him to Enemy of the State.
 
+Standing is also earned by **jobs** (below); each faction's first jobs say which technology its next tier brings, and
+when it teaches one it says so in its own voice too.
+
 Next (the living factions plan): F2 voices for the other factions (Call Centre scams that remember who fell for them,
 Ministry memos, MacSlop challenges on the radio), F3 visits on foot through the drama manager, F4 turf on planetoids.
+
+## Jobs
+
+Work for a faction (code: the engine's side `Source/Story/StoryFactionJobs.cs`, the game's `Source/Game/GameStoryJobs.cs`, the
+window `Source/UI/UiFactions.cs`; data `"jobs"` in `Story/Factions/*.json`). No money: a job pays standing, and standing is
+what a faction teaches its technologies for. The Faction window (F2) lists every faction's jobs under "Jobs for the world's
+factions": what each asks, what it pays, and why one can't be taken yet.
+
+- **Who holds one**: a party (the player's faction, or the player alone) holds one job of each faction at a time, taken and
+  dropped in the window by any member. A job may want a tier (`"tier"`: offered from that tier up); one with none is offered
+  from -50 up, so a party can work its way back. Done or dropped, the same party can't take it again for `"again"` (30 minutes
+  if not given). The Ministry's first jobs are inmate work; its Trusty and Contractor jobs come with standing.
+- **Supply** (`"supply"`): fill a **Requisition Crate** (a Storage Volume with a courier at the end of it; build one at an
+  Assembler) that the party owns with what the job asks for, any way it gets there: by chute off a production line, by hand,
+  or, for pieces, laid in its box (its middle or a point near either end in the box: a caber longer than the box counts with
+  an end sticking out). Each need is one of:
+  - `{"part": "Gear Set", "count": 10}`: parts (items) in the box;
+  - `{"material": "stone", "tonnes": 2}` (or `"kg"`): bulk in the box;
+  - `{"piece": "i-beam", "material": "steel", "length": 6, "across": 0.25, "count": 8}`: loose cut pieces off an Extruder,
+    a Wheel Former or the like: `"piece"` is an Extruder section id (solid, plate, wall, hollow, i-beam, c-channel, l-angle,
+    t-bar, cross), round, pipe, wheel or any; `"material"` any when left out; `"length"` and `"across"` at least, in metres
+    (a wheel's length is its width, its across its diameter).
+  Once a crate holds the lot it is sealed for the courier ("the courier is on the way: leave it be"), who comes 20 s later,
+  looks again, and takes exactly what was asked (the rest stays). A crate short again by then waits. A `"paperwork": true` job
+  (the Ministry's) has its first full crate sent back over the forms (`"refused"`), looked at again 90 s later, and taken.
+- **Build** (`"build"`): own one construct holding the parts listed (`{"part": "Server Rack", "count": 1}`); the faction
+  inspects it within two seconds and it stays yours.
+- **Pay**: `"standing"` (1 to 100) and `"wants"`, as a deed's: the faction remembers it (`JobsDone`), rivals cool, a new tier
+  is rated, and technologies are taught. A Job event goes on the record (the radio has lines for it), and the IT desk can fax
+  a notice named after a job.
+- **Voice**: the faction's `"voice"` is the tag its lines go out under to the party's players (`[MINISTRY MEMO] ...`):
+  `"taken"` when a job is taken (after its `"ticket"`, if it has one), `"courier"` (the faction's) when a crate is collected,
+  `"done"` when it is signed off. A long line goes as several chat lines.
+- **State**: a party holds a job as `OnJob` towards its Thing (`"job:FACTION:NAME"`), with `JobAgain` (the story minute it
+  may be taken again) and `JobRefused` (the paperwork); all saved with the story. How far along a job is is worked out again
+  every two seconds and isn't saved: a sealed crate is sealed again after a load.
+- **Network (protocol 203)**: `Msg.Jobs` carries a take or a drop from a client, and to each player their window when it
+  changes (checked once a second against a key of their party, the standings, the jobs held and their progress, and the minute).
+
+What ships (21 jobs): the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
+for Registered users a Hardware Refresh and a Satellite Uplink), the Call Centre's dodgy errands (six Computers "for
+refurbishment", Prize Draw Logistics, a glass "Fibre Optic Upgrade"; for Valued Customers a Cubicle Farm and a Gift Card
+Run in gold), Clan MacSlop's Highland games (a wood caber, stones for the stone put, whisky for the ceilidh, a pipe band to
+build; for Friends of the Clan "Something Enormous", a 6 m wheel for the cheese roll) and the Ministry's triplicate (Breaking
+Rocks, Number Plates and Tea for the Warden for inmates; Fit Out the Cell Block in steel I-beams and a Public Information
+Point for Trusties; Concrete for the New Wing for Contractors). Sabotage jobs (wreck a rival's things) and a courier who
+walks in as a body are for later.
 
 ## The Scammers
 

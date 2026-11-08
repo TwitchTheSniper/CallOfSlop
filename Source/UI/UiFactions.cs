@@ -95,6 +95,46 @@ public sealed partial class Ui
         }
     }
 
+    /// <summary>
+    /// Faction jobs (docs/story/STORY.md "Jobs"): what each story faction offers work for, which you may take now, and the one
+    /// your party holds and how far along it is. No money: a job pays standing. One job of each faction at a time.
+    /// </summary>
+    private void DrawFactionJobs(Game game)
+    {
+        var view = game.JobsView;
+        if (view.Length == 0 || !ImGui.CollapsingHeader("Jobs for the world's factions##fajobs"u8, ImGuiTreeNodeFlags.DefaultOpen))
+            return;
+        ImGuiSafe.TextColored(Dim, "No money: a job pays standing, and standing is what the factions teach their technologies for. One job of each faction at a time. Supply jobs go in a Requisition Crate you own (fill its box: chute, hand, or lay a cut piece in it); the courier collects. Build jobs are inspected where they stand.");
+        for (var f = 0; f < view.Length; f++)
+        {
+            var jf = view[f];
+            ImGuiSafe.TextColored(Orange, $"{jf.Name}: {jf.Tier} ({jf.Standing:+0;-0;0})");
+            for (var j = 0; j < jf.Jobs.Length; j++)
+            {
+                var row = jf.Jobs[j];
+                if (row.Held)
+                    ImGuiSafe.TextColored(new float4(0.45f, 0.9f, 0.45f, 1f), $"  [yours] {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
+                else
+                    ImGuiSafe.TextColored(row.Open ? new float4(1f, 1f, 1f, 1f) : Dim, $"  {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
+                if (row.About.Length > 0)
+                    ImGuiSafe.TextWrapped($"    {row.About}");
+                ImGuiSafe.TextWrapped($"    {row.What}. Pays {row.Pay}.");
+                if (row.Note.Length > 0)
+                    ImGuiSafe.TextColored(row.Held ? Orange : Dim, $"    {row.Note}");
+                if (row.Held)
+                {
+                    if (ImGui.Button($"Drop this job##fajd{f}_{j}"))
+                        game.JobAsk(f, -1);
+                }
+                else if (row.Open)
+                {
+                    if (ImGui.Button($"Take this job##fajt{f}_{j}"))
+                        game.JobAsk(f, j);
+                }
+            }
+        }
+    }
+
     private void DrawFactionBody(Game game, Player me)
     {
         var t = game.FactionTable;
@@ -143,6 +183,7 @@ public sealed partial class Ui
                 ImGuiSafe.SetInput(_faName, "");
             }
             DrawFactionList(game, t, me);
+            DrawFactionJobs(game);
             DrawStoryTech(t, 0);
             return;
         }
@@ -262,7 +303,6 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, "invited");
                 else if (ImGui.SmallButton("Invite"u8))
                     game.SandboxFaction(FactionOp.Invite, p.Id);
-                ImGui.PopID();
             }
             if (!any)
                 ImGuiSafe.TextColored(Dim, "Nobody else is here to invite.");
@@ -281,6 +321,7 @@ public sealed partial class Ui
                 int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
                 ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
             }
+            DrawFactionJobs(game);
             DrawStoryTech(t, mine);
         }
 
@@ -315,7 +356,6 @@ public sealed partial class Ui
                 ImGui.PushID(k);
                 if (ImGui.SmallButton($"Give to {game.FactionMemberName(k)}"))
                     game.SandboxFaction(FactionOp.GiveBody, c.Id, k);
-                ImGui.PopID();
             }
             ImGui.PopID();
         }

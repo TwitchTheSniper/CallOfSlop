@@ -103,6 +103,7 @@ public enum Msg : byte
     Fragment, // either way, Steam transport only: a piece of a reliable message over Steam's 512 KB limit (u8 lane, u8 first piece, u32 whole length, the bytes); put back together by SteamTransport before the game sees it (a 16,000-part construct's Full; protocol 190)
     Opening, // server -> one client: Sandbox survival opening, that player's beat (u8 OpeningStage, f32 time into it, f32 its length, vec the camera's focus, text caption, text the line just said) (reliable ordered; GameSandboxOpening.cs, protocol 199)
     Tutorial, // either way, Sandbox: the warden's induction (a TutorialOp first): server -> one client, State (u8 step, u8 TutorialState) when it changes and on arrival; client -> server, Cue (u8 TutorialCue), Skip, Replay, Resume (reliable ordered; GameTutorial.cs, protocol 201)
+    Jobs, // either way, Sandbox: faction jobs (a JobOp first): server -> one client, State (the jobs window: every story faction's jobs, which are open, the one held and how far along) when it changes; client -> server, Take (u8 faction, u8 job), Drop (u8 faction) (reliable ordered; GameStoryJobs.cs, protocol 203)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

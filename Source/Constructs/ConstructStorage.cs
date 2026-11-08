@@ -1067,6 +1067,24 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Server: bulk out of a bin; returns how much came out.</summary>
+    /// <summary>Server: parts of one kind taken out of a box of parts (a faction's courier at a Requisition Crate: GameStoryJobs.cs).</summary>
+    public void TakeKind(CStore st, ushort def, int n)
+    {
+        if (n <= 0 || st.KindIndex(def) < 0)
+            return;
+        st.AddKind(def, -Math.Min(n, st.KindCount![st.KindIndex(def)]));
+        LoadChanged = true;
+        Changed(st);
+    }
+
+    /// <summary>Server: bulk taken out of a store's bin, gone (a faction's courier at a Requisition Crate).</summary>
+    public void TakeBulk(CStore st, int units)
+    {
+        if (units <= 0 || st.Amount <= 0)
+            return;
+        SetBulk(st, st.Material, Math.Max(0, st.Amount - units));
+    }
+
     /// <summary>Server: a store's bulk set outright (the configure tool in creative: ConstructStoreVolume.SetContents).</summary>
     public void SetBulk(CStore st, byte material, int units)
     {
