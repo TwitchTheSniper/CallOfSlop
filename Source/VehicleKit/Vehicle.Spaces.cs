@@ -112,7 +112,7 @@ public sealed partial class Vehicle
     private void FactionPods()
     {
         var rule = BodyStyleRule.Of(Style);
-        if (NoTrim || BodyLook.NoSpaces || Look == null || Rooms.Count == 0 || rule.Pods.Length == 0)
+        if (NoTrim || BodyLook.NoSpaces || BodyLook.NoPods || Look == null || Rooms.Count == 0 || rule.Pods.Length == 0)
             return;
         var d = Dice.Fork("side pods");
         var inside = Rooms.SelectMany(r => r.Bays.Concat(r.Furniture).Concat(r.Containers).Concat(r.Seats)).Concat(Panels.GetValueOrDefault("furniture") ?? []).Select(b => b.Index).ToHashSet();
@@ -135,9 +135,17 @@ public sealed partial class Vehicle
                     C.SocketAt(bay.Index, at, out _, out var face);
                     var outward = ConstructParts.DirVector(face).X > 0 ? 1f : -1f;
                     var (a, b) = side > 0 ? (sh.A, sh.B) : (sh.B, sh.A);
+                    // Each faction's pods at the heights its trim reads at (a kiosk high where Scam's signboards are, a locker low where Highland's laps are).
                     var low = MathF.Max(0.12f, TrimLow(bay, outward, room.FloorTop));
                     var waist = (a.WaistY + b.WaistY) / 2;
-                    var high = MathF.Min(1.55f, waist + (float)bd.Between(0.3, 0.55));
+                    if (kind == 'k')
+                        low = MathF.Max(low, waist - (float)bd.Between(0.1, 0.2));
+                    var high = kind switch
+                    {
+                        'k' => MathF.Min(1.75f, low + (float)bd.Between(0.6, 0.75)),
+                        'b' or 'l' => MathF.Min(1.5f, waist + (float)bd.Between(0.15, 0.3)),
+                        _ => MathF.Min(1.6f, waist + (float)bd.Between(0.35, 0.55)),
+                    };
                     if (high - low < 0.45f)
                         continue; // (all wheel arch)
                     var depth = kind switch { 'w' => bd.Between(0.34, 0.44), 'b' => bd.Between(0.3, 0.4), 'k' => bd.Between(0.34, 0.42), 'l' => bd.Between(0.3, 0.38), 'a' => bd.Between(0.3, 0.36), _ => 0.28 };

@@ -30,7 +30,7 @@ public static partial class HullLoft
     public const string PodKinds = "wbklag";
 
     private const string BarSteel = "#55524c", Timber = "#6b4a2b", SlatGreen = "#56604a", Tread = "#5d6268", Window = "#29343c";
-    private const float RailHalf = 0.02f, PostHalf = 0.025f;
+    private const float RailHalf = 0.02f, PostHalf = 0.025f, End = 0.01f; // (End: how far inside a bay's end its rails stop, within the bow there)
 
     // ---- Caged bays ---------------------------------------------------------------------------------------------
 
@@ -96,7 +96,7 @@ public static partial class HullLoft
                 if (door && s > 0 && pa.Y < DoorTop + 0.05f)
                     continue; // (the doorway's side: its frame, below)
                 var m = Vector3.Normalize(new Vector3(s * (ma[k].X + mb[k].X) / 2, (ma[k].Y + mb[k].Y) / 2, 0));
-                Bar(p, At(pa, s, 0), At(pb, s, len), m, 2 * RailHalf, 2 * RailHalf, colour);
+                Bar(p, At(pa, s, End), At(pb, s, len - End), m, 2 * RailHalf, 2 * RailHalf - 0.004f, colour); // (its ends just inside the bows at the bay's ends: no end face on a bow's plane; a little thinner than wide, off a bow's faces)
             }
             if (door && s > 0)
                 Bar(p, new Vector3(DoorPlane, DoorTop + 0.03f, 0.125f), new Vector3(DoorPlane, DoorTop + 0.03f, len - 0.125f), Vector3.UnitX, 2 * RailHalf, 2 * RailHalf, colour); // (the lintel)
@@ -117,9 +117,9 @@ public static partial class HullLoft
                         continue;
                     var nn = new Vector3(s * nr.X, nr.Y, 0);
                     if (pat == 's' && gap < 0.2f)
-                        Bar(p, At(qa, s, 0) + nn * 0.004f, At(qb, s, len) + nn * 0.004f, nn, 0.09f, 0.02f, SlatGreen); // (a slat: a flat board, its faces off the rails')
+                        Bar(p, At(qa, s, End) + nn * 0.004f, At(qb, s, len - End) + nn * 0.004f, nn, 0.09f, 0.02f, SlatGreen, hide: i % 2 == 1); // (a slat: a flat board, its faces off the rails'; every other one solid)
                     else
-                        Bar(p, At(qa, s, 0), At(qb, s, len), nn, 0.035f, 0.035f, colour, hide: wall);
+                        Bar(p, At(qa, s, End), At(qb, s, len - End), nn, 0.035f, 0.035f, colour, hide: wall);
                 }
             }
             // Bows across: inside each end (a neighbour's bow stands against this one's, faces to faces: a bay doesn't know if it stands turned round) and the middle.
@@ -137,8 +137,11 @@ public static partial class HullLoft
                     if (door && s > 0 && q0.Y < DoorTop + 0.05f)
                         q0 = new Vector2(DoorPlane, DoorTop);
                     var nr = RowNormal(q0, q1);
+                    if (q1.X < 0.001f)
+                        q1 = Vector2.Lerp(q1, q0, 0.015f / MathF.Max(0.015f, q0.X)); // (the two sides' roof rows stop short of the middle, under its rail: their ends don't share a plane)
                     var upright = MathF.Abs(q1.Y - q0.Y) >= MathF.Abs(q1.X - q0.X);
-                    Bar(p, At(q0, s, z), At(q1, s, z), new Vector3(s * nr.X, nr.Y, 0), 2 * PostHalf, 2 * PostHalf, colour, hide: upright, zLo: 0.009f, zHi: len - 0.009f); // (a roof bow drawn only: the rails hold)
+                    var wide = k % 2 == 0 ? 2 * PostHalf : 2 * PostHalf - 0.006f; // (a bow's rows take turns in width: two rows meeting at a corner don't share their ends' planes)
+                    Bar(p, At(q0, s, z), At(q1, s, z), new Vector3(s * nr.X, nr.Y, 0), wide, 2 * PostHalf, colour, hide: upright, zLo: 0.009f, zHi: len - 0.009f); // (a roof bow drawn only: the rails hold)
                 }
             }
             // The faction's infill.
@@ -160,8 +163,11 @@ public static partial class HullLoft
                     {
                         var (u0, u1) = ((float)h / halves, (float)(h + 1) / halves);
                         var up = (h + k) % 2 == 0;
-                        var (lo, hi) = (Vector2.Lerp(a0, b0, up ? u0 : u1), Vector2.Lerp(a1, b1, up ? u1 : u0));
-                        Bar(p, At(lo, s, len * (up ? u0 : u1)) - nn * 0.012f, At(hi, s, len * (up ? u1 : u0)) - nn * 0.012f, nn, 0.03f, 0.018f, colour, hide: false);
+                        // (each stops 2 cm short of the middle bow, inside it, so two halves' diagonals never meet face to face)
+                        var (za, zb) = (len * (up ? u0 : u1), len * (up ? u1 : u0));
+                        (za, zb) = (MathF.Abs(za - len / 2) < 0.01f ? za + MathF.Sign(zb - za) * 0.02f : za, MathF.Abs(zb - len / 2) < 0.01f ? zb - MathF.Sign(zb - za) * 0.02f : zb);
+                        var (lo, hi) = (Vector2.Lerp(a0, b0, za / len), Vector2.Lerp(a1, b1, zb / len));
+                        Bar(p, At(lo, s, za) - nn * 0.0237f, At(hi, s, zb) - nn * 0.0237f, nn, 0.029f, 0.0151f, colour, hide: false); // (inside the rails' inner faces, its own planes)
                     }
                 }
                 else if (pat == 't' && wall && a1.Y - a0.Y > 0.3f)
@@ -174,7 +180,7 @@ public static partial class HullLoft
                         if (MathF.Abs(u * len - len / 2) < 0.06f || u * len < 0.06f || len - u * len < 0.06f)
                             continue; // (a bow there)
                         var (q0, q1) = (Vector2.Lerp(a0, b0, u), Vector2.Lerp(a1, b1, u));
-                        Bar(p, At(q0, s, u * len) + nn * 0.03f, At(q1, s, u * len) + nn * 0.03f, nn, 0.06f, 0.024f, Timber);
+                        Bar(p, At(q0, s, u * len) + nn * 0.03f, At(q1, s, u * len) + nn * 0.03f, nn, 0.06f, 0.024f, Timber, hide: false); // (drawn: the rails hold)
                     }
                 }
             }
@@ -182,7 +188,7 @@ public static partial class HullLoft
         if (door)
         {
             // The flat frame round the doorway, as a skinned door bay's (Sides).
-            foreach (var (fz0, fz1) in new[] { (0f, 0.125f), (len - 0.125f, len) })
+            foreach (var (fz0, fz1) in new[] { (0.003f, 0.125f), (len - 0.125f, len - 0.003f) }) // (3 mm in from the ends: the bows there have their faces on the ends' planes)
             {
                 p.Facet([new(DoorPlane, 0, fz0), new(DoorPlane, DoorTop, fz0), new(DoorPlane, DoorTop, fz1), new(DoorPlane, 0, fz1)], Vector3.UnitX, Rust);
                 p.Hide(new Vector3(DoorPlane - 0.03f, 0, MathF.Max(fz0, 0.01f)), new Vector3(DoorPlane + 0.03f, DoorTop, MathF.Min(fz1, len - 0.01f)));
@@ -265,11 +271,24 @@ public static partial class HullLoft
             Piece([new(-a0.X, y, z0), new(a0.X, y, z0), new(b0.X, y, z1), new(-b0.X, y, z1)], [oAm, oAp, oBp, oBm], -w, w, z0, z1);
             return;
         }
-        var (hx0, hx1, hz0, hz1) = (MathF.Max(h.X0, -MathF.Min(a0.X, b0.X)), MathF.Min(h.X1, MathF.Min(a0.X, b0.X)), MathF.Max(z0, h.Z0), MathF.Min(z1, h.Z1)); // (a hatch to the wall's top where the roof is narrower)
-        Piece([new(-a0.X, y, z0), new(hx0, y, z0), new(hx0, y, z1), new(-b0.X, y, z1)], [oAm, up, up, oBm], -w, hx0, z0, z1);
-        Piece([new(hx1, y, z0), new(a0.X, y, z0), new(b0.X, y, z1), new(hx1, y, z1)], [up, oAp, oBp, up], hx1, w, z0, z1);
-        Piece([new(hx0, y, z0), new(hx1, y, z0), new(hx1, y, hz0), new(hx0, y, hz0)], [up, up, up, up], hx0, hx1, z0, hz0);
-        Piece([new(hx0, y, hz1), new(hx1, y, hz1), new(hx1, y, z1), new(hx0, y, z1)], [up, up, up, up], hx0, hx1, hz1, z1);
+        var edge = MathF.Min(a0.X, b0.X);
+        var (hx0, hx1, hz0, hz1) = (MathF.Max(h.X0, -edge), MathF.Min(h.X1, edge), MathF.Max(z0, h.Z0), MathF.Min(z1, h.Z1));
+        // A hatch within 6 cm of the wall's top runs to it (no sliver of roof between): the strips before and behind it then take the wall's own corner, mitred.
+        var (toLeft, toRight) = (hx0 < -edge + 0.06f, hx1 > edge - 0.06f);
+        if (!toLeft)
+            Piece([new(-a0.X, y, z0), new(hx0, y, z0), new(hx0, y, z1), new(-b0.X, y, z1)], [oAm, up, up, oBm], -w, hx0, z0, z1);
+        if (!toRight)
+            Piece([new(hx1, y, z0), new(a0.X, y, z0), new(b0.X, y, z1), new(hx1, y, z1)], [up, oAp, oBp, up], hx1, w, z0, z1);
+        foreach (var (s0, s1) in new[] { (z0, hz0), (hz1, z1) })
+        {
+            float At0(float zz) => a0.X + (b0.X - a0.X) * (zz - z0) / MathF.Max(1e-4f, z1 - z0); // (the wall's top along the bay)
+            var (l0, l1) = toLeft ? (-At0(s0), -At0(s1)) : (hx0, hx0);
+            var (r0, r1) = toRight ? (At0(s0), At0(s1)) : (hx1, hx1);
+            Vector3 Mid(Vector3 a, Vector3 b, float zz) => Vector3.Lerp(a, b, (zz - z0) / MathF.Max(1e-4f, z1 - z0));
+            Piece([new(l0, y, s0), new(r0, y, s0), new(r1, y, s1), new(l1, y, s1)],
+                [toLeft ? Mid(oAm, oBm, s0) : up, toRight ? Mid(oAp, oBp, s0) : up, toRight ? Mid(oAp, oBp, s1) : up, toLeft ? Mid(oAm, oBm, s1) : up],
+                toLeft ? -w : hx0, toRight ? w : hx1, s0, s1);
+        }
     }
 
     /// <summary>How far above an upper floor's roof line its sockets stand: the panel's top and a centimetre (an upper bay's foot row stays off the panel's plane).</summary>

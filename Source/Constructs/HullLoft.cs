@@ -707,6 +707,12 @@ public static partial class HullLoft
         foreach (var (k, z) in new[] { (0, 0.12f), (1, length - 0.12f) })
         {
             var foot = FootX(MathF.Min(a.P[0].X, b.P[0].X)); // (0.75 m on every truck's room: phase 1's)
+            if (sh.Cage != '\0')
+            {
+                p.Pad($"footL{k}", new Vector3(-foot, 0, z), "-y", 0.02f); // (a frame of bars has no slab at the floor: a pad to stand by)
+                p.Pad($"footR{k}", new Vector3(foot, 0, z), "-y", 0.02f);
+                continue;
+            }
             p.Sock($"footL{k}", new Vector3(-foot, 0, z), "-y");
             p.Sock($"footR{k}", new Vector3(foot, 0, z), "-y");
         }

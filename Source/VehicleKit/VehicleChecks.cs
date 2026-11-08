@@ -624,8 +624,18 @@ public static class VehicleChecks
         var start = World(mid + new Vector3(0, 0.15f, 0));
         var settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
         var stood = settle.Position.Y - World(mid).Y;
+        for (var t = up.R.Z0 + 0.6f; MathF.Abs(stood) > 0.2f && t <= up.R.Z1 - 0.6f; t += 0.25f)
+        {
+            // (that end of the floor has a step a player stands on, a bulwark's or a gun's: along it to where one stands on the floor, away from the hatch)
+            if (MathF.Abs(t - up.DoorMid.Z) < 0.9f)
+                continue;
+            mid = new Vector3(0, up.FloorTop, t);
+            start = World(mid + new Vector3(0, 0.15f, 0));
+            settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
+            stood = settle.Position.Y - World(mid).Y;
+        }
         if (MathF.Abs(stood) > 0.2f)
-            r.Failures.Add($"the {up.Tag}: a player stands {stood:0.00} m off its floor");
+            r.Failures.Add($"the {up.Tag}: a player stands {stood:0.00} m off its floor (at {Show(c.ToLocal(settle.Position) - up.FloorRest)}, floor {up.FloorTop:0.00}, from {Show(mid)}{(Hit(c, c.ToLocal(settle.Position) + new Vector3(0, -0.05f, 0), 0.4f) ? ": on " + _blocker : "")})");
         var head = up.Ceiling - up.FloorTop;
         if (!up.Open && head < CallOfSlop.World.PlayerHeight + 0.1f)
             r.Failures.Add($"the {up.Tag}: {head:0.00} m of headroom: a player is {CallOfSlop.World.PlayerHeight:0.00} m");

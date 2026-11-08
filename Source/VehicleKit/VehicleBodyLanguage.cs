@@ -289,7 +289,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: welded plates and cage bars, cobbled bay by bay; a bare side now and then)
                 Trims = [("p", 2), ("pc", 2), ("c", 1)], TrimMix = true, TrimShare = 0.7,
                 // (phase 5: welded cages for rooms, a crow's-nest deck now and then, welded boxes hung on the flanks)
-                Cage = 0.4, CageKind = 'w', Uppers = [("none", 3), ("deck", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0.35)],
+                Cage = 0.35, CageKind = 'w', Uppers = [("none", 3), ("deck", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0)],
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
             },
         // (low and wide, flat-faceted: little height, a glacis brow)
@@ -301,7 +301,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: slat armour and stowage bins down the sides, a basket on the cab)
                 Trims = [("s", 2), ("b", 1.5), ("sb", 1.5)], TrimShare = 0.9, Decos = [('B', 0.7)],
                 // (phase 5: slatted frame rooms, an armoured fighting deck over the middle, armoured stowage pods)
-                Cage = 0.3, CageKind = 's', Uppers = [("none", 2), ("deck", 1.3)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.3)], PodMax = 2,
+                Cage = 0.1, CageKind = 's', Uppers = [("none", 2), ("deck", 1.3)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
             },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
@@ -313,7 +313,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: a smooth skirt fairing, a stripe and vents; a radome on the cab)
                 Trims = [("f", 1)], Decos = [('R', 0.75)],
                 // (phase 5: a short pod storey set in on the roof, smooth blisters on the flanks)
-                Uppers = [("none", 2), ("saloon", 1.2)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.45)],
+                Uppers = [("none", 2), ("saloon", 1.2)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.5)], PodMax = 2,
                 CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
             },
         // (a portacabin on a chassis: boxy, square ends, tall)
@@ -325,7 +325,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: signboards down the sides, one over the cab)
                 Trims = [("g", 1)], TrimShare = 0.8, Decos = [('S', 0.9)],
                 // (phase 5: a portacabin stacked on the portacabin, kiosks hung on the flanks)
-                Uppers = [("none", 1.5), ("saloon", 1.3)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0.35)], PodMax = 2,
+                Uppers = [("none", 1), ("saloon", 2)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
             },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
@@ -337,7 +337,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: clinker laps and a wooden strake, a chrome grille and a bonnet mascot)
                 Trims = [("r", 1)], Decos = [('O', 0.8), ('G', 0.75)],
                 // (phase 5: a stock wagon of timber stakes, an open after deck behind a bulwark, clinker lockers)
-                Cage = 0.3, CageKind = 't', Uppers = [("none", 2), ("deck", 1)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0.35)],
+                Cage = 0.1, CageKind = 't', Uppers = [("none", 2), ("deck", 1)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0)], PodMax = 2,
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
             },
         // (tall, upright buses: the heavy class first, the door kerbside)
@@ -349,7 +349,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 4: the two-tone livery band and its chrome strips, a lit destination board over a bus front)
                 Trims = [("l", 1)], Decos = [('D', 0.9)],
                 // (phase 5: the double deck: an upper saloon flush with the walls, over most of the room)
-                Uppers = [("saloon", 2.5), ("none", 1)], UpperShareMin = 0.7f, UpperShareMax = 1f, UpperTallMin = 2.06f, UpperTallMax = 2.16f, UpperNarrow = 1f,
+                Uppers = [("saloon", 5), ("none", 0.5)], UpperShareMin = 0.9f, UpperShareMax = 1f, UpperTallMin = 2.06f, UpperTallMax = 2.16f, UpperNarrow = 1f,
                 CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,
             },
     };
@@ -464,7 +464,7 @@ public sealed class BodyLook
         return Tidy(new HullLoft.Section(c.P.Select((p, i) => i > 0 && i < c.P.Length - 1 && p.Y >= 1.0f ? p with { X = MathF.Max(p.X, UnderHalf) } : p).ToArray()));
     }
 
-    public const float UnderHalf = 0.96f;
+    public const float UnderHalf = 0.92f;
 
     /// <summary>An upper storey's section at a station over a lower wall whose top is <paramref name="cutX"/> out: the language's own at the storey's height and width (or its bulwark).</summary>
     public HullLoft.Section UpperSection(BodyLanguage l, float cutX, float narrow)
@@ -536,7 +536,7 @@ public sealed class BodyLook
     public static Roofline? ForceLine;
 
     /// <summary>Phase 5: <c>--no-spaces</c> (no upper storeys, cages or pods), <c>--upper KIND</c>, <c>--cage</c>.</summary>
-    public static bool NoSpaces, ForceCage;
+    public static bool NoSpaces, ForceCage, NoPods, NoCages, NoUppers; // (and --no-pods, --no-cages, --no-uppers: one kind of space left out, to measure each)
     public static string? ForceUpper;
     public static BodyScale? ForceScale;
 
@@ -1067,7 +1067,7 @@ public static class BodyReportCli
                             else
                                 sections.Add(b.Def.Name);
                         }
-                        foreach (var cp in new[] { "cabshell", "hood", "glass" }.SelectMany(t => v.Panels.GetValueOrDefault(t) ?? []))
+                        foreach (var cp in new[] { "cabshell", "hood", "glass", "stairs" }.SelectMany(t => v.Panels.GetValueOrDefault(t) ?? []).Concat(v.Rooms.SelectMany(r => r.Upper?.Bays ?? [])))
                             if (keys.Add(cp.Def.Name) && OwnFights(cp.Def, out var cf) is var cown and > 0)
                             {
                                 fights += cown;
@@ -1089,6 +1089,10 @@ public static class BodyReportCli
                                 }
                             foreach (var m in v.Modules.Where(m => m.StartsWith("trim ", StringComparison.Ordinal) || m.StartsWith("fitting ", StringComparison.Ordinal)))
                                 Tally(m.StartsWith("trim ", StringComparison.Ordinal) ? "trim" : "fitting", m.StartsWith("trim ", StringComparison.Ordinal) ? m[5..m.IndexOf(" on ", StringComparison.Ordinal)] : m[8..]);
+                            if (v.Rooms.Count > 0) // (phase 5: the new spaces, a tally a vehicle with a room)
+                                Tally("space", v.Rooms.Any(r => r.Caged) ? "cage" : v.Rooms.FirstOrDefault(r => r.Upper != null)?.Upper is { } ur ? (ur.Open ? "open deck" : "upper storey") : "none");
+                            if (v.Modules.FirstOrDefault(m => m.StartsWith("pods ", StringComparison.Ordinal)) is { } pm)
+                                Tally("pods", pm[5..]);
                             Tally("cab", v.CabShape is { } cs ? CabLook.KindName(cs.Kind) + (v.HoodShape is { } hs ? " + " + CabLook.NoseName(hs.Nose) + " hood" : "") : (v.Panels.GetValueOrDefault("cabshell")?.FirstOrDefault()?.Def.Name ?? "none"));
                         }
                         var lang = v.Look?.Language.Name ?? "fixed bays";
@@ -1506,7 +1510,7 @@ public static class FrontProfile
     public static (float[] Room, float[] Relief, float[] Side) Exterior(Vehicle v, Vector3[] tris, int[] owner)
     {
         var c = v.Built;
-        var bays = new HashSet<int>(v.Rooms.SelectMany(r => r.Bays).Select(b => b.Index));
+        var bays = new HashSet<int>(v.Rooms.SelectMany(r => r.Bays.Concat(r.Upper?.Bays ?? [])).Select(b => b.Index)); // (phase 5: an upper storey is the room's too)
         var inside = new HashSet<int>(v.Rooms.SelectMany(r => r.Furniture.Concat(r.Containers).Concat(r.Seats).Concat(r.Door is { } d ? [d] : []).Concat(r.Hinge is { } h ? [h] : [])).Select(p => p.Index));
         foreach (var p in v.Panels.GetValueOrDefault("furniture") ?? [])
             inside.Add(p.Index);
@@ -1611,7 +1615,7 @@ public static class FrontProfile
     public static (float[] Room, float[] Body) OfVehicle(Vehicle v, Vector3[] tris, int[] owner)
     {
         var c = v.Built;
-        var bays = new HashSet<int>(v.Rooms.SelectMany(r => r.Bays).Select(b => b.Index));
+        var bays = new HashSet<int>(v.Rooms.SelectMany(r => r.Bays.Concat(r.Upper?.Bays ?? [])).Select(b => b.Index)); // (phase 5: an upper storey is the room's too)
         var rooms = new List<(int, int)>();
         var body = new List<(int, int)>();
         var (start, prev) = (0, owner.Length > 0 ? owner[0] : -1);

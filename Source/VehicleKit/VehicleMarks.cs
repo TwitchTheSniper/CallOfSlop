@@ -139,11 +139,11 @@ public sealed partial class Vehicle
                 continue;
             for (var s = 0; s < p.Def.Sockets.Length; s++)
             {
-                if (C.SocketUsed(p.Index, s))
-                    continue;
+                if (C.SocketUsed(p.Index, s) || p.Def.Sockets[s].Name.StartsWith("up", StringComparison.Ordinal) && HullLoft.ShapeOf(p.Def.Name) is { Floor: true })
+                    continue; // (not an upper floor's: a post there stands where players walk, phase 5)
                 C.SocketAt(p.Index, s, out var at, out var face);
-                if (ConstructParts.DirVector(face).Y > 0.9f)
-                    hosts.Add((p, p.Def.Sockets[s].Name, FromRest(at).Z));
+                if (ConstructParts.DirVector(face).Y > 0.9f && !Rooms.Any(r => r.Kept(FromRest(at).X, FromRest(at).Z, 0.3f, 0.3f)))
+                    hosts.Add((p, p.Def.Sockets[s].Name, FromRest(at).Z)); // (never on floor kept clear: the way onto a stair)
             }
         }
         var paint = FramePaint();

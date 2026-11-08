@@ -139,6 +139,9 @@ public static unsafe partial class Program
             VehicleKit.Vehicle.NoTrim = true; // body styles phase 4: kit-5 bodies without the factions' trim and fittings (to measure against)
         if (args.Any(a => a.Equals("--no-spaces", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.BodyLook.NoSpaces = true; // body styles phase 5: kit-5 bodies without the new spaces (upper storeys, cages, side pods), to measure against
+        VehicleKit.BodyLook.NoPods = args.Any(a => a.Equals("--no-pods", StringComparison.OrdinalIgnoreCase)); // body styles phase 5: one kind of space left out, to measure each
+        VehicleKit.BodyLook.NoCages = args.Any(a => a.Equals("--no-cages", StringComparison.OrdinalIgnoreCase));
+        VehicleKit.BodyLook.NoUppers = args.Any(a => a.Equals("--no-uppers", StringComparison.OrdinalIgnoreCase));
         if (args.SkipWhile(a => !a.Equals("--upper", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } upperKind)
             VehicleKit.BodyLook.ForceUpper = upperKind; // body styles phase 5: every long room with that upper storey (saloon, deck, none) where the plan allows
         if (args.Any(a => a.Equals("--cage", StringComparison.OrdinalIgnoreCase)))

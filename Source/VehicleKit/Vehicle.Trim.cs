@@ -125,9 +125,9 @@ public sealed partial class Vehicle
             return;
         var d = Dice.Fork("faction trim");
         var kinds = BodyStyleRule.Weighted(d.Fork("set"), rule.Trims);
-        var bays = Rooms.SelectMany(r => r.Bays.Concat(r.Furniture).Concat(r.Containers).Concat(r.Seats)).Concat(Panels.GetValueOrDefault("furniture") ?? []).Select(b => b.Index).ToHashSet(); // (the skin is between: a shelf's bounds reach the wall)
+        var bays = Rooms.SelectMany(r => r.Bays.Concat(r.Upper?.Bays ?? []).Concat(r.Furniture).Concat(r.Containers).Concat(r.Seats)).Concat(Panels.GetValueOrDefault("furniture") ?? []).Select(b => b.Index).ToHashSet(); // (the skin is between: a shelf's bounds reach the wall)
         var placed = 0;
-        foreach (var room in Rooms)
+        foreach (var room in Rooms) // (not an upper storey's: measured, a storey's trim made a faction's rooms differ more among themselves than from the others', phase 5)
             for (var k = 0; k < room.Bays.Count; k++)
             {
                 var bay = room.Bays[k];

@@ -80,6 +80,9 @@ public sealed record ShapeRecipe(string Shape, string RoomTag, string Noun, Body
 {
     /// <summary>Phase 5: an upper storey every seed of the shape has where its room allows ("saloon": the Double Decker); null: the style's roll.</summary>
     public string? Upper { get; init; }
+
+    /// <summary>Phase 5: the share of the room's middle the recipe's own upper storey spans (null: the style's): a deck over all of it reads as a box from the side.</summary>
+    public (float Min, float Max)? UpperShare { get; init; }
 }
 
 /// <summary>
@@ -119,6 +122,11 @@ public static class ShapeGrammar
         ["Gun Wagon"] = new("Gun Wagon", "crew", "gun wagon",
             [new(3, Hutch), new(1, GunBay, GunBed(2f, 3f)), new(1, Room(0, 0), GunBed(2f, 3f))],
             [("bare", 2), ("porch", 2), ("porch hitch", 1), ("hitch", 1)], 1, 2),
+        // (phase 5: the British double decker, made by the grammar since its upper deck can be lofted: an open-topped deck over a long room, as kit 1's was, behind a
+        // bulwark in the bus's own lines; a stern gun deck more often than not, since the deck takes the roof a turret would stand on)
+        ["Double Decker"] = new("Double Decker", "bus", "double-decker bus",
+            [new(1, Room(3, 4))],
+            [("gun deck", 3), ("porch", 1.5), ("porch hitch", 0.5)], 2, 3, BusGears) { Upper = "deck", UpperShare = (0.45f, 0.75f) },
         ["Scrap Tanker"] = new("Scrap Tanker", "crew", "scrap tanker",
             [new(3, GunBay, Tank(2f, 3f)), new(1, GunBay, Tank(2f, 2f), Bed(1.5f, 2f)), new(1, Room(0, 0), Tank(2f, 3f))],
             [("bare", 3), ("hitch", 1)], 1, 2, TankGears),
@@ -576,7 +584,7 @@ public static class ShapeGrammar
         var room = p.Segs.FirstOrDefault(s => s.Kind == "room");
         if (room == null)
             return;
-        var cage = BodyLook.ForceCage ? (rule.Cage > 0 ? rule.CageKind : 'w') : rule.Cage > 0 && p.Recipe.Upper == null && d.Fork("cage").Chance(rule.Cage) ? rule.CageKind : '\0';
+        var cage = BodyLook.ForceCage ? (rule.Cage > 0 ? rule.CageKind : 'w') : rule.Cage > 0 && p.Recipe.Upper == null && d.Fork("cage").Chance(rule.Cage) && !BodyLook.NoCages ? rule.CageKind : '\0';
         if (cage != '\0' && BodyLook.ForceUpper is null or "none")
         {
             lk.Cage = cage;
@@ -585,7 +593,7 @@ public static class ShapeGrammar
             return;
         }
         var kind = BodyLook.ForceUpper ?? p.Recipe.Upper ?? BodyStyleRule.Weighted(d.Fork("upper"), rule.Uppers);
-        if (kind is "saloon" or "deck" && room.Len >= 4.5f)
+        if (kind is "saloon" or "deck" && room.Len >= 4.5f && !BodyLook.NoUppers)
         {
             p.UpperKind = kind;
             p.UpperDice = d.Fork("upper run");
@@ -606,13 +614,17 @@ public static class ShapeGrammar
             return;
         var lengths = lk.Lengths(room.Bays);
         var middle = n - 2;
-        var want = Math.Clamp((int)MathF.Round((float)d.Between(rule.UpperShareMin, rule.UpperShareMax) * middle), 2, middle);
+        var (shareMin, shareMax) = p.Recipe.UpperShare ?? (rule.UpperShareMin, rule.UpperShareMax);
+        var want = Math.Clamp((int)MathF.Round((float)d.Between(shareMin, shareMax) * middle), 2, middle);
         var plain = lk.Names(room.Bays);
         var roofs = Enumerable.Range(1, n - 1).Where(k => BaySpots.Roof(room.Bays, plain, k)).ToList();
         // The style's share, else the nearest share that leaves a roof for a turret beside it, else the nearest that is long enough at all.
         var order = Enumerable.Range(2, middle - 1).OrderBy(w => Math.Abs(w - want)).ThenByDescending(w => w).ToList();
         List<int> Starts(int w) => Enumerable.Range(1, middle - w + 1).Where(k => Enumerable.Range(k, w).Sum(i => lengths[i]) >= 3.0f).ToList(); // (the hatch over the stair and room to step off it)
-        var pick = order.Select(w => (W: w, S: Starts(w).Where(k => roofs.Any(r => r < k - 1 || r > k + w)).ToList())).FirstOrDefault(x => x.S.Count > 0);
+        var reach = BaySpots.Turret.Kit.Reach + BaySpots.Turret.Kit.Table + 0.1f;
+        float Mid(int k) => lengths.Take(k).Sum() + lengths[k] / 2;
+        bool Leaves(int k, int w) => roofs.Any(r => Mid(r) < lengths.Take(k).Sum() - reach || Mid(r) > lengths.Take(k + w).Sum() + reach); // (a roof whose turret's arm swings clear of the storey)
+        var pick = order.Select(w => (W: w, S: Starts(w).Where(k => Leaves(k, w)).ToList())).FirstOrDefault(x => x.S.Count > 0);
         if (pick.S == null)
             pick = order.Select(w => (W: w, S: Starts(w))).FirstOrDefault(x => x.S.Count > 0);
         if (pick.S == null)
@@ -783,8 +795,13 @@ public static class ShapeGrammar
         if (p.UpperKind != null && v.Look is { } upLook)
             PlanUpper(v, p, room, upLook); // (phase 5: which bays it stands over; their roofs are cut level for its floor)
         var loft = v.Look?.Names(room.Bays); // (kit 5: the bays as they will be built, so the spots come from their real roofs and flanks: BaySpots)
-        var under = v.Look?.Upper is { } upper ? (upper.From - 1, upper.To + 1) : (-9, -9);
-        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => BaySpots.Roof(room.Bays, loft, k) && (k < under.Item1 || k > under.Item2)).ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall; never under or beside an upper storey)
+        // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall; never under an upper storey, nor where its arm swings
+        // over one: by distance along the room, the table's half and the arm's reach from the bay's middle)
+        var bayAt = v.Look?.Lengths(room.Bays) is { } lens ? Enumerable.Range(0, lens.Length).Select(k => lens.Take(k).Sum() + lens[k] / 2).ToArray() : null;
+        var clearOf = v.Look?.Upper is { } upper && bayAt != null && v.Look.Lengths(room.Bays) is { } ul
+            ? (ul.Take(upper.From).Sum() - BaySpots.Turret.Kit.Reach - BaySpots.Turret.Kit.Table - 0.1f, ul.Take(upper.To + 1).Sum() + BaySpots.Turret.Kit.Reach + BaySpots.Turret.Kit.Table + 0.1f)
+            : (float.MaxValue, float.MinValue);
+        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => BaySpots.Roof(room.Bays, loft, k) && (bayAt == null || bayAt[k] < clearOf.Item1 || bayAt[k] > clearOf.Item2)).ToList();
         var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => BaySpots.Side(room.Bays, loft, k)).ToList();
         var side = inRoom >= 2 || inRoom == 1 && d.Chance(0.3) ? middle.Count > 0 : false;
         if (side)
