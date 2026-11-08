@@ -25,6 +25,15 @@ public static partial class SelfTest
         return code;
     }
 
+    /// <summary>A turn that takes +Y to <paramref name="up"/> (the least turn).</summary>
+    private static Quaternion LookUp(Vector3 up)
+    {
+        var axis = Vector3.Cross(Vector3.UnitY, up);
+        var s = axis.Length();
+        var c = Vector3.Dot(Vector3.UnitY, up);
+        return s < 1e-5f ? (c > 0 ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI)) : Quaternion.CreateFromAxisAngle(axis / s, MathF.Atan2(s, c));
+    }
+
     private static int BenchMegaOnce(string[] args)
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
@@ -70,12 +79,14 @@ public static partial class SelfTest
         centre.Y = Ground(centre.X, centre.Z);
         if (!cp.Alive)
             server.SelfTestRespawn(cp, now);
-        cp.Teleport(new Vector3(centre.X + 350f, Ground(centre.X + 350f, centre.Z) + 0.1f, centre.Z));
+        Vector3 Stand(float dx) => map.Planetoid is { } ps ? ps.GroundUnder(centre + new Vector3(dx, 0, 0)) + Vector3.Normalize(ps.GroundUnder(centre + new Vector3(dx, 0, 0)) - ps.Center) * 0.1f
+            : new Vector3(centre.X + dx, Ground(centre.X + dx, centre.Z) + 0.1f, centre.Z);
+        cp.Teleport(Stand(350f));
         if (server.Local is { } hp)
         {
             if (!hp.Alive)
                 server.SelfTestRespawn(hp, now);
-            hp.Teleport(new Vector3(centre.X - 120f, Ground(centre.X - 120f, centre.Z) + 0.1f, centre.Z));
+            hp.Teleport(Stand(-120f));
         }
         // The busy scene: hulls on a spiral out to 600 m, or nearly to the map's edge.
         var block = ConstructParts.Need("Frame Block");
@@ -87,7 +98,17 @@ public static partial class SelfTest
             var r = 20f + (reach - 20f) * MathF.Sqrt((i + 0.5f) / Math.Max(1, bodies));
             var x = centre.X + MathF.Cos(a) * r;
             var z = centre.Z + MathF.Sin(a) * r;
-            if (w.Create(new Vector3(x, Ground(x, z) + 0.3f, z), Quaternion.Identity) is not { } c)
+            var spot = new Vector3(x, Ground(x, z) + 0.3f, z);
+            var turn = Quaternion.Identity;
+            if (map.Planetoid is { } planet)
+            {
+                // (on a planetoid: on its ground, stood up along its up there, so the scene rests before the blast)
+                spot = planet.GroundUnder(new Vector3(x, centre.Y, z));
+                var up = Vector3.Normalize(spot - planet.Center);
+                spot += up * 0.3f;
+                turn = Quaternion.Normalize(LookUp(up));
+            }
+            if (w.Create(spot, turn) is not { } c)
                 break;
             var size = block.BoundsMax - block.BoundsMin;
             for (var p = 0; p < parts; p++)
@@ -95,7 +116,9 @@ public static partial class SelfTest
             c.Rebuild();
             built++;
         }
-        var bomb = ConstructBuild.PlaceNew(w, def, centre + new Vector3(0, 0.5f, 0), 0);
+        if (map.Planetoid is { } pc)
+            centre = pc.GroundUnder(centre); // (the planet's ground under its spawn)
+        var bomb = ConstructBuild.PlaceNew(w, def, centre + (map.Planetoid is { } pb ? Vector3.Normalize(centre - pb.Center) : Vector3.UnitY) * 0.5f, 0);
         if (bomb == null)
         {
             Console.WriteLine("[mega bench] couldn't set the bomb down");

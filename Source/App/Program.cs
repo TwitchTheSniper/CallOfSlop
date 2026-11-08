@@ -238,6 +238,7 @@ public static unsafe partial class Program
         // The smoke test works on a throwaway copy and never touches the real save folder.
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
         var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
+        var megaWindow = args.Any(a => a.Equals("--mega-host", StringComparison.OrdinalIgnoreCase) || a.Equals("--mega-client", StringComparison.OrdinalIgnoreCase)); // (Program.MegaWindow.cs)
         Ui.BackendDraw = args.Any(a => a.Equals("--imgui-backend-draw", StringComparison.OrdinalIgnoreCase)); // the package's ImGui GL renderer (ImGuiRenderer.cs)
         Ui.BackendNewFrame = args.Any(a => a.Equals("--imgui-backend-frame", StringComparison.OrdinalIgnoreCase)); // the GLFW backend's own NewFrame every frame (UiPlatformFrame.cs)
         var allocFrames = args.Any(a => a.Equals("--alloc-frames", StringComparison.OrdinalIgnoreCase)); // (Program.AllocFrames.cs)
@@ -249,7 +250,7 @@ public static unsafe partial class Program
         _vehicleSheet = args.Any(a => a.Equals("--vehicle-sheet", StringComparison.OrdinalIgnoreCase)); // (Program.VehicleSheet.cs)
         _shotTool |= _stressShots | _ragdollShots | _vehicleShots | _vehicleSheet;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
-        if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
         else
             SavePaths.Init(args);
@@ -278,7 +279,7 @@ public static unsafe partial class Program
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _freeTravel = args.Any(a => a.Equals("--free-travel", StringComparison.OrdinalIgnoreCase)); // (dev, free travel step 2: GameTravel.cs)
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        _frameCapOff = _smoke || _shotTool || perfShot || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
+        _frameCapOff = _smoke || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
@@ -337,6 +338,8 @@ public static unsafe partial class Program
                 StartAllocFrames(args); // --alloc-frames: bytes allocated per frame by perf area, frame-counted, then quit (Program.AllocFrames.cs)
             else if (perfShot)
                 StartPerfShot(args); // --perf-shot: the perf window and overlay over a short match, screenshotted, then quit (Program.Perf.cs)
+            else if (megaWindow)
+                StartMegaWindow(args); // --mega-host / --mega-client: a massive blast's cost in the real window, frame by frame, then quit (Program.MegaWindow.cs)
             if (_glBench)
                 RunGlBench(args); // --gl-bench: the OpenGL 4.6 experiments timed on heavy maps, then quit (Program.GlBench.cs)
             else if (_stressShots)
@@ -882,6 +885,8 @@ public static unsafe partial class Program
                 _window.SwapBuffers();
             LimitFrame(); // Max FPS: waits out the rest of the frame, input is read right after (Program.FrameCap.cs)
             Perf.EndFrame(); // the frame time always; the areas and counters while the perf window is up (Source/Perf)
+            if (_mega != 0)
+                MegaWindowFrame(Glfw.Time); // --mega-host / --mega-client (Program.MegaWindow.cs)
             if (_perfShot)
                 PerfShotFrame(); // --perf-shot: slow frames logged with the area that spiked (Program.Perf.cs)
             if (_allocFrames)

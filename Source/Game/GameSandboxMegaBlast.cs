@@ -13,6 +13,13 @@ public sealed partial class Game
     /// <summary>Columns of ground a band of a big crater digs at most (a 120 m crater: about 52 bands, under a second).</summary>
     public const int MegaDigColumnsPerTick = 3500;
 
+    /// <summary>
+    /// ...and on a planetoid, whose columns cost several times a flat map's (each one's ground is read off the planet's surface the first time it is
+    /// dug, along its own radial line): measured with <c>--bench-mega --map Planetoid</c>, a 3,500-column band took 5.8 to 10 ms of a tick on the
+    /// 2-core box against 0.5 to 0.9 on flat ground, so a 120 m crater there goes in about 200 bands of 1,000 (about 3.3 s), 1.5 to 3 ms each, on every PC.
+    /// </summary>
+    public const int MegaDigPlanetColumnsPerTick = 1000;
+
     /// <summary>Big craters waiting for their bands at once (more are dug as one op: rare, and still bounded by the crater cap).</summary>
     public const int MaxMegaDigs = 8;
 
@@ -44,9 +51,10 @@ public sealed partial class Game
         if (!IsServer || !TerrainDigLive || !(crater > 0))
             return;
         var r = Math.Clamp(crater, CraterMin, ConstructWorld.MegaCraterMax);
-        var size = World.Map.Terrain is { } t ? t.Edits.Size : TerrainEdits.TargetSize;
+        var size = World.Map.Terrain is { } t ? t.Edits.Size : World.Map.Planetoid is { } pl ? (float)pl.Edits.Size : TerrainEdits.TargetSize;
         var across = 2f * r / size;
-        var slices = Math.Clamp((int)MathF.Ceiling(across * across * 0.785f / MegaDigColumnsPerTick), 1, 255);
+        var budget = World.Map.Terrain == null && World.Map.Planetoid != null ? MegaDigPlanetColumnsPerTick : MegaDigColumnsPerTick;
+        var slices = Math.Clamp((int)MathF.Ceiling(across * across * 0.785f / budget), 1, 255);
         if (_megaDigCount >= MaxMegaDigs)
         {
             Dig(new DigOp(DigKind.Crater, at, MathF.Min(r, BigCraterMax))); // (a ninth waiting crater: a prop bomb's at most, at once)
