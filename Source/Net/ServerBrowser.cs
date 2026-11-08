@@ -353,8 +353,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 207: survival death options (GameSandboxDeath.cs, docs/sandbox/DEATH.md): a death byte after the survival byte in the Welcome, its bits in the lobby state's second Zombies byte, Msg.Fate at the end of Msg (where a player wakes, permadeath).
     // 208: the penal colony's lockdown (GameColonyLockdown.cs, docs/story/OPENING.md "Lockdown"): Msg.ColonyAlarm at the end of Msg.
     // 209: co-op story opening and induction (docs/story/OPENING.md, docs/sandbox/TUTORIAL.md "Together"): TutorialOp.Group (server to one client: their group's progress on the step) at the end of TutorialOp.
-    // 210: per-player tool upgrades (docs/sandbox/TOOL-UPGRADES.md): each player's levels after their hands in the Sandbox mode state (state version 4), CActKind.GrabThrow at the end of CActKind.
-    public const byte ProtocolVersion = 210;
+    // 210: corpses that pile up and that players walk over (GameCorpses.cs, docs/sandbox/CORPSES.md): Msg.Corpse at the end of Msg.
+    // 211: per-player tool upgrades (docs/sandbox/TOOL-UPGRADES.md): each player's levels after their hands in the Sandbox mode state (state version 4), CActKind.GrabThrow at the end of CActKind.
+    public const byte ProtocolVersion = 211;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

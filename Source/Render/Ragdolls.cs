@@ -108,6 +108,16 @@ public sealed class RagdollBody
     /// <summary>The death reaction's active phase (<see cref="RagdollActive"/>), if it has one.</summary>
     public RagdollActive.State Act;
 
+    /// <summary>
+    /// Corpses that stay and pile up (GameCorpses.cs): the host's number for this body (0: none yet, a client's own body
+    /// the host hasn't named), whether a client's pose is the host's settled one (then players stand on it), whether the
+    /// host still owes the clients its settled pose, its life (seconds, for a switch of the "Bodies and gore" setting) and,
+    /// for a zombie, its id (the host's settled pose finds the client's body by it).
+    /// </summary>
+    public ushort Serial, ZId;
+    public bool Confirmed, SendSettled;
+    public float Life;
+
     /// <summary>Is everything about this body still (nothing to recompute per frame)?</summary>
     public bool Still => Sim.Asleep && (Hat == null || !HatOff || HatResting && HatLand >= 1f);
 }
@@ -128,7 +138,10 @@ public sealed class RagdollBody
 /// </summary>
 public static class Ragdolls
 {
-    public const int Capacity = 24, MaxAwake = 16, MaxZombieBodies = 10;
+    public const int Capacity = 48, MaxAwake = 16, MaxZombieBodies = 10;
+
+    /// <summary>With <see cref="Stay"/> on, the most bodies kept: past it the oldest fades out (room for new ones while it does).</summary>
+    public const int StayKeep = Capacity - 8;
     public const float PlayerLife = 14f, ZombieLife = 7f, FadeTime = 1.2f;
 
     /// <summary>Most boxes all bodies draw together (the instance buffer's share).</summary>
@@ -138,6 +151,29 @@ public static class Ragdolls
     public const double KillWindow = 3.0;
 
     public static bool Enabled = Environment.GetEnvironmentVariable("CALLOFSLOP_RAGDOLLS") != "0";
+
+    /// <summary>
+    /// Settings > Video "Bodies and gore": Stay keeps bodies (and gibs, <see cref="Gibs.Stay"/>) until <see cref="StayKeep"/>
+    /// are lying about, Fade lets them go after <see cref="PlayerLife"/>. On a client the host's choice wins for the bodies
+    /// it has settled (its <see cref="Msg.Corpse"/> "gone" fades them). Set through <see cref="SetStay"/>.
+    /// </summary>
+    public static bool Stay { get; private set; }
+
+    /// <summary>The pool's clock (the last frame's time).</summary>
+    public static double Now => _now;
+
+    /// <summary>Is this PC the host of the bodies (the server, or offline): it settles them for everyone (GameCorpses.cs)? Set every frame.</summary>
+    public static bool Authority = true;
+
+    /// <summary>The game and map the bodies lie in (players only stand on them there: another planetoid's game on the host doesn't).</summary>
+    public static Game? OwnerGame;
+
+    /// <inheritdoc cref="OwnerGame"/>
+    public static Map? OwnerMap;
+
+    private static ushort _serial;
+    private static readonly ushort[] Gone = new ushort[64];
+    private static int _goneCount;
 
     /// <summary>Self-test: the world bodies collide with instead of the current map's.</summary>
     public static PhysicsWorld? WorldOverride;
@@ -176,6 +212,7 @@ public static class Ragdolls
     {
         foreach (var b in Bodies)
             b.Live = false;
+        _goneCount = 0;
         Array.Clear(Owns);
         Array.Fill(KillTimes, double.NegativeInfinity);
         _acc = 0;
@@ -251,6 +288,9 @@ public static class Ragdolls
         _now = now;
         if (!Enabled)
             return;
+        Authority = game.IsServer;
+        OwnerGame = game;
+        OwnerMap = World.Map;
         foreach (var p in game.Players.Values)
         {
             if (p.Alive)
@@ -276,9 +316,14 @@ public static class Ragdolls
     public static void Advance(double now, float dt)
     {
         _now = now;
+        var live = 0;
         foreach (var b in Bodies)
             if (b.Live && now >= b.Until)
-                b.Live = false;
+                Retire(b);
+            else if (b.Live && !b.Gibbed)
+                live++;
+        if (Stay && live > StayKeep)
+            FadeOldest();
         _acc += Math.Clamp(dt, 0f, 0.1f);
         var steps = (int)(_acc / Ragdoll.Step);
         if (steps > 4)
@@ -311,10 +356,13 @@ public static class Ragdolls
                     oldest = b;
             RagdollActive.Stop(oldest!.Sim, ref oldest.Act);
             oldest.Sim.Sleep();
-            oldest.CacheCount = -1;
+            Settled(oldest);
             awake--;
         }
         var world = Physics;
+        foreach (var b in Bodies)
+            if (b.Live && !b.Gibbed)
+                b.Sim.UpdateBounds();
         foreach (var b in Bodies)
         {
             if (!b.Live)
@@ -323,17 +371,245 @@ public static class Ragdolls
                 RagdollActive.Drive(b.Sim, ref b.Act); // the death reaction's muscles (RagdollActive.cs)
             if (!b.Sim.Asleep)
             {
+                b.Confirmed = false; // (woken here, by a blast or a body landing on it: its pose is this PC's own until the host settles it again)
+                GatherOthers(b);
                 b.Sim.Advance(world);
+                Ragdoll.OtherCount = 0;
                 if (b.Sim.Broken)
                 {
-                    b.Live = false;
+                    Retire(b);
                     continue;
                 }
+                b.Sim.UpdateBounds();
                 if (b.Sim.Asleep)
-                    b.CacheCount = -1; // just fell asleep: cache its final pose
+                    Settled(b); // just fell asleep: cache its final pose
             }
             StepHat(b, world);
         }
+    }
+
+    /// <summary>The other bodies whose boxes reach <paramref name="b"/>'s (with a margin for this step's move): what it collides with.</summary>
+    private static void GatherOthers(RagdollBody b)
+    {
+        var n = 0;
+        var lo = b.Sim.BoundsMin - new Vector3(0.3f);
+        var hi = b.Sim.BoundsMax + new Vector3(0.3f);
+        foreach (var o in Bodies)
+        {
+            if (ReferenceEquals(o, b) || !o.Live || o.Gibbed || o.Sim.Broken)
+                continue;
+            if (o.Sim.BoundsMin.X > hi.X || o.Sim.BoundsMax.X < lo.X || o.Sim.BoundsMin.Y > hi.Y || o.Sim.BoundsMax.Y < lo.Y || o.Sim.BoundsMin.Z > hi.Z || o.Sim.BoundsMax.Z < lo.Z)
+                continue;
+            Ragdoll.Others[n++] = o.Sim;
+            if (n == Ragdoll.Others.Length)
+                break;
+        }
+        Ragdoll.OtherCount = n;
+    }
+
+    /// <summary>A body that just fell asleep: its cache rebuilt, and on the host its pose rounded as the wire carries it and owed to the clients.</summary>
+    private static void Settled(RagdollBody b)
+    {
+        b.CacheCount = -1;
+        b.Sim.UpdateBounds();
+        if (!Authority || b.Gibbed || b.Serial == 0)
+            return;
+        Quantize(b.Sim.Pos);
+        b.Sim.Sleep(); // (the rounded pose is where it rests: Prev and Last too)
+        b.Sim.UpdateBounds();
+        b.SendSettled = true;
+    }
+
+    /// <summary>A body leaves the pool (its time is up, it broke or its slot is taken): the host tells the clients.</summary>
+    private static void Retire(RagdollBody b)
+    {
+        if (b.Live && Authority && b.Serial != 0 && !b.Gibbed && _goneCount < Gone.Length)
+            Gone[_goneCount++] = b.Serial;
+        b.Live = false;
+        b.SendSettled = false;
+        b.Confirmed = false;
+    }
+
+    /// <summary>The oldest body still kept by <see cref="Stay"/> starts fading (a client fades only its own, unsettled ones: the host fades the rest).</summary>
+    private static void FadeOldest()
+    {
+        RagdollBody? oldest = null;
+        foreach (var b in Bodies)
+            if (b.Live && !b.Gibbed && double.IsPositiveInfinity(b.Until) && (Authority || !b.Confirmed) && (oldest == null || b.Order < oldest.Order))
+                oldest = b;
+        if (oldest != null)
+            oldest.Until = _now + FadeTime;
+    }
+
+    /// <summary>Switches Settings > Video "Bodies and gore" (every frame; only a change does anything): live bodies keep or lose their end.</summary>
+    public static void SetStay(bool stay, double now)
+    {
+        if (stay == Stay)
+            return;
+        Stay = stay;
+        foreach (var b in Bodies)
+        {
+            if (!b.Live || !Authority && b.Confirmed)
+                continue; // (the host decides when a settled body goes)
+            if (stay)
+                b.Until = double.PositiveInfinity;
+            else if (double.IsPositiveInfinity(b.Until))
+                b.Until = Math.Max(b.Born + b.Life, now + FadeTime);
+        }
+    }
+
+    // ---- Corpses everyone stands on (GameCorpses.cs) --------------------------------------------------------------
+
+    /// <summary>Rounds a pose to what <see cref="Msg.Corpse"/> carries (the first particle exact, the rest in millimetres from it), so host and clients hold the same floats.</summary>
+    public static void Quantize(Span<Vector3> pos)
+    {
+        var o = pos[0];
+        for (var i = 1; i < pos.Length; i++)
+            pos[i] = o + Round(pos[i] - o) / 1000f;
+        static Vector3 Round(Vector3 d) => new(Clamp16(d.X * 1000f), Clamp16(d.Y * 1000f), Clamp16(d.Z * 1000f));
+    }
+
+    /// <summary>A millimetre count as the wire's i16 holds it.</summary>
+    public static short Clamp16(float mm) => (short)Math.Clamp(MathF.Round(mm), short.MinValue, short.MaxValue);
+
+    /// <summary>Host: a body's settled pose the clients are still owed (cleared as it's taken), or null.</summary>
+    public static RagdollBody? TakeSettled(ref int cursor)
+    {
+        for (; cursor < Bodies.Length; cursor++)
+        {
+            var b = Bodies[cursor];
+            if (b.Live && b.SendSettled)
+            {
+                b.SendSettled = false;
+                cursor++;
+                return b;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Host: the numbers of bodies that went since the last call (copied into <paramref name="into"/>; returns how many).</summary>
+    public static int TakeGone(Span<ushort> into)
+    {
+        var n = Math.Min(_goneCount, into.Length);
+        Gone.AsSpan(0, n).CopyTo(into);
+        _goneCount = 0;
+        return n;
+    }
+
+    /// <summary>Host: every settled body (a joiner is sent them all).</summary>
+    public static RagdollBody? NextSettled(ref int cursor)
+    {
+        for (; cursor < Bodies.Length; cursor++)
+        {
+            var b = Bodies[cursor];
+            if (b.Live && !b.Gibbed && b.Serial != 0 && b.Sim.Asleep && !b.SendSettled)
+            {
+                cursor++;
+                return b;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Client: the host's settled pose for its body <paramref name="serial"/>: the body with that number, else this PC's
+    /// own newest unnamed body of the same player (or zombie), else a new one (a joiner, or a death this PC didn't see).
+    /// The pose replaces this PC's own, the body sleeps, and players stand on it.
+    /// </summary>
+    public static void HostSettled(Game game, ushort serial, byte owner, ushort zid, RagdollLook look, ReadOnlySpan<Vector3> pose, double now)
+    {
+        if (!Enabled || serial == 0)
+            return;
+        _now = now;
+        RagdollBody? body = null, own = null;
+        foreach (var b in Bodies)
+        {
+            if (!b.Live || b.Gibbed || b.Look != look)
+                continue;
+            if (b.Serial == serial)
+            {
+                body = b;
+                break;
+            }
+            if (b.Serial == 0 && b.Owner == owner && (owner != 255 || b.ZId == zid) && (own == null || b.Order > own.Order))
+                own = b;
+        }
+        body ??= own;
+        if (body == null)
+        {
+            body = Alloc(look == RagdollLook.Zombie);
+            if (body.Live)
+                Retire(body);
+            NewHostBody(game, body, owner, zid, look, now);
+        }
+        body.Serial = serial;
+        RagdollActive.Stop(body.Sim, ref body.Act);
+        pose.CopyTo(body.Sim.Pos);
+        body.Sim.Sleep();
+        body.Sim.UpdateBounds();
+        body.CacheCount = -1;
+        body.Confirmed = true;
+        body.Until = double.PositiveInfinity; // (the host says when it goes)
+    }
+
+    /// <summary>Client: a body the host had settled is gone there: it fades here too.</summary>
+    public static void HostGone(ushort serial, double now)
+    {
+        foreach (var b in Bodies)
+            if (b.Live && b.Serial == serial)
+            {
+                b.Confirmed = false;
+                b.Until = Math.Min(b.Until, now + FadeTime);
+            }
+    }
+
+    /// <summary>A body made from the host's word alone: its owner's look if they are here (a soldier), else the plain one.</summary>
+    private static void NewHostBody(Game game, RagdollBody body, byte owner, ushort zid, RagdollLook look, double now)
+    {
+        body.Live = true;
+        body.Born = now;
+        body.Life = look == RagdollLook.Zombie ? ZombieLife : PlayerLife;
+        body.Order = ++_order;
+        body.Look = look;
+        body.Owner = owner;
+        body.ZId = zid;
+        body.ZLimbs = 0;
+        body.Gibbed = body.HasBlast = false;
+        body.HatOff = body.HatResting = false;
+        body.Act = default;
+        Array.Clear(body.Blood);
+        body.BloodSeed = 0;
+        if (look == RagdollLook.Zombie)
+        {
+            body.Hat = null;
+            (body.ZShirt, body.ZSkin, body.ZPants) = (ZombieShirt, ZombieSkin, ZombiePants);
+            return;
+        }
+        var p = game.Players.GetValueOrDefault(owner);
+        body.Hat = p != null ? HatRender.HatFor(p) : null;
+        if (p != null)
+            BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look);
+        else
+            BuildSoldierLook(body, "Body", owner, new Vector3(0.45f, 0.45f, 0.42f));
+    }
+
+    /// <summary>
+    /// Is <paramref name="b"/> a body players stand on? Asleep, whole, and settled by the host (on the host: not fading;
+    /// on a client: the host's pose), so client prediction and the server agree on the ground.
+    /// </summary>
+    public static bool Walkable(RagdollBody b) =>
+        b.Live && !b.Gibbed && b.Sim.Asleep && (Authority ? b.Serial != 0 && _now < b.Until - FadeTime : b.Confirmed);
+
+    /// <summary>Any body players stand on, in <paramref name="game"/>'s world now?</summary>
+    public static bool AnyWalkable(Game game)
+    {
+        if (!Enabled || !ReferenceEquals(game, OwnerGame) || !ReferenceEquals(World.Map, OwnerMap))
+            return false;
+        foreach (var b in Bodies)
+            if (Walkable(b))
+                return true;
+        return false;
     }
 
     // ---- Spawning ---------------------------------------------------------------------------------------------
@@ -451,6 +727,7 @@ public static class Ragdolls
         (body.ZShirt, body.ZSkin, body.ZPants) = z.Type == 0 ? (ZombieShirt, ZombieSkin, ZombiePants) : (z.Kind.Shirt, z.Kind.Skin, z.Kind.Pants); // (its type's colours)
         SetBlood(body, 0x10000u + z.Id, 0);
         Spawn(body, d, now, ZombieLife);
+        body.ZId = z.Id;
     }
 
     /// <summary>A dead body's blood: every mark shows (health 0), by the owner's recorded hits; Off: none.</summary>
@@ -578,12 +855,16 @@ public static class Ragdolls
             }
         }
         if (zombie && zombies >= MaxZombieBodies && oldestZombie != null)
+        {
+            Retire(oldestZombie);
             return oldestZombie;
+        }
         if (oldest != null)
             return oldest;
         foreach (var b in Bodies)
             if (oldest == null || b.Order < oldest.Order)
                 oldest = b;
+        Retire(oldest!);
         return oldest!;
     }
 
@@ -607,8 +888,12 @@ public static class Ragdolls
     {
         body.Live = true;
         body.Born = now;
-        body.Until = now + life;
+        body.Life = life;
+        body.Until = Stay ? double.PositiveInfinity : now + life;
         body.Order = ++_order;
+        body.Serial = Authority ? ++_serial == 0 ? ++_serial : _serial : (ushort)0; // (0 is "none")
+        body.Confirmed = body.SendSettled = false;
+        body.ZId = 0;
         body.CacheCount = -1;
         body.HasBlast = false;
         body.Gibbed = false;
