@@ -140,7 +140,6 @@ public static partial class ConstructPhysics
     public static float GravityAccel => World.Gravity * World.GravityScale;
 
     /// <summary>One tick for every awake free body of <paramref name="world"/>, and the joints of every awake body.</summary>
-    public static double DiagCollider; // DIAG
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
         var bodies = SimList(world);
@@ -163,11 +162,9 @@ public static partial class ConstructPhysics
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
-            var dgc = System.Diagnostics.Stopwatch.GetTimestamp();
             if (c.Dirty)
                 c.Rebuild();
             _ = c.Collider; // (made here, not when something first touches it mid-step)
-            DiagCollider += System.Diagnostics.Stopwatch.GetElapsedTime(dgc).TotalMilliseconds; // DIAG
             c.SimIndex = i;
             if (c.NudgeBy == 255) // (a nudged body's are set with its pose: ConstructNudge.cs)
             {

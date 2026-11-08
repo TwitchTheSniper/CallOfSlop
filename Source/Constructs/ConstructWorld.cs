@@ -1853,7 +1853,6 @@ public sealed partial class ConstructWorld
     /// <summary>Server: trees grown back since the clients were last told (GameResources.cs).</summary>
     public readonly List<uint> GrownTrees = new(16);
 
-    public static double DiagWeapons, DiagPhysics; // DIAG
     public void Step(IWorldQuery query, float dt)
     {
         _partTally = -1; // (counted again when next asked)
@@ -1878,7 +1877,6 @@ public sealed partial class ConstructWorld
             }
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
-        var diag0 = System.Diagnostics.Stopwatch.GetTimestamp();
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
@@ -1888,10 +1886,7 @@ public sealed partial class ConstructWorld
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
-        var diag1 = System.Diagnostics.Stopwatch.GetTimestamp();
         ConstructPhysics.Step(this, query, dt);
-        DiagWeapons += System.Diagnostics.Stopwatch.GetElapsedTime(diag0, diag1).TotalMilliseconds;
-        DiagPhysics += System.Diagnostics.Stopwatch.GetElapsedTime(diag1).TotalMilliseconds;
         OverloadDamage();
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
