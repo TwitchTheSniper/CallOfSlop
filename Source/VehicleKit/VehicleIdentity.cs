@@ -467,7 +467,7 @@ public static class VehicleIdentity
     /// <summary>The mean over the vehicle's room bays of how near each bay's front profile (a lofted bay's: each of its two sections) is to the nearest of the style's languages (as the style draws them); NaN without a room.</summary>
     private static double SectionScore(Body b, FactionStyle st)
     {
-        if (b.V.Rooms.Count == 0)
+        if (b.V.Rooms.Count == 0 && b.V.CabShape == null)
             return double.NaN;
         Geometry(b);
         var rule = BodyStyleRule.Of(st);
@@ -487,6 +487,19 @@ public static class VehicleIdentity
             else
                 sum += Score(FrontProfile.Of(b.Tris, [(b.Start[i], b.End[i])]));
             n++;
+        }
+        // Phase 3: a lofted cab's and hood's sections against the style's languages drawn at a cab's and a hood's size, counted as two bays each (a cab alone
+        // should tell the faction).
+        if (b.V.CabShape is { Kind: not 'm' } cab) // (a merged cab's section is its room's brow's, which the bays above already count)
+        {
+            double Near(float[] prof, float[][] refs) => Math.Clamp(1 - (refs.Min(l => FrontProfile.Dist(prof, l)) - SectionFloor) / SectionScale, 0, 1);
+            sum += 2 * Near(FrontProfile.Of(cab.T), CabLook.Refs(rule, false));
+            n += 2;
+            if (b.V.HoodShape is { } hood)
+            {
+                sum += 2 * Near(FrontProfile.Of(hood.S), CabLook.Refs(rule, true));
+                n += 2;
+            }
         }
         return n == 0 ? double.NaN : sum / n;
     }

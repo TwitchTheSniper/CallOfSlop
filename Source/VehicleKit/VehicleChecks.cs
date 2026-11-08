@@ -111,7 +111,7 @@ public static class VehicleChecks
 
     /// <summary>
     /// A lofted cab's view out (body styles phase 3): from the driver's eye, rays ahead in a fan (30 degrees either way, level and a little up) through what is
-    /// drawn, glass left out; the one straight ahead must leave the vehicle, and at most a third may meet it within 4 m (its own pillars, a slit's edges).
+    /// drawn by the lofted parts (cab, hood, rooms), glass left out; the one straight ahead must leave the vehicle, and at most a third may meet it within 4 m (its own pillars, a slit's edges).
     /// </summary>
     private static void View(Construct c, VehicleReport r)
     {
@@ -127,8 +127,8 @@ public static class VehicleChecks
         for (var t = 0; t < owner.Length; t++)
         {
             var o = owner[t];
-            if (o < 0 || o >= c.PartCount || o == c.DriveSeat || c.DefOf(o).HasGlass)
-                continue;
+            if (o < 0 || o >= c.PartCount || c.DefOf(o).HasGlass || !c.DefOf(o).Name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
+                continue; // (the cab, the hood and the rooms: what the kit lofted; a mast or a trophy in the way is dressing, judged by the eye)
             keep.Add(tris[3 * t]);
             keep.Add(tris[3 * t + 1]);
             keep.Add(tris[3 * t + 2]);

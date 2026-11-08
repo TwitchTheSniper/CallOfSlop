@@ -11,7 +11,7 @@ public sealed class CabLook
 {
     public BodyLanguage Language { get; }
     public int Facets { get; }
-    public float Width, Height, Belt, Rake, CapsuleRake, HoodHalf, HoodCrown;
+    public float Width, Height, Belt, Rake, CapsuleRake, HoodHalf, HoodCrown, Reach;
     public char Nose;
 
     /// <summary>The engine's top over a hood's section foot: the hood's sides come down 0.45 m past it (the fixed hoods' 0.56 m less the fenders' room).</summary>
@@ -31,9 +31,10 @@ public sealed class CabLook
         if (BodyLook.Force is { } forced)
             Language = forced;
         Facets = look.Facets > 0 ? Math.Min(MaxFacets, Math.Max(6, look.Facets - 3)) : 0; // (a cab is smaller than a room: a few facets fewer reads as smooth)
-        Width = (float)d.Fork("width").Between(0.88, 0.93);
+        Width = (float)d.Fork("width").Between(rule.CabHalfMin, rule.CabHalfMax);
+        Reach = rule.HoodReach;
         Height = (float)d.Fork("height").Between(rule.CabTallMin, rule.CabTallMax);
-        Belt = (float)d.Fork("belt").Between(0.96, 1.06);
+        Belt = (float)d.Fork("belt").Between(rule.BeltMin, rule.BeltMax);
         Rake = (float)d.Fork("rake").Between(rule.RakeMin, rule.RakeMax);
         CapsuleRake = (float)d.Fork("capsule rake").Between(rule.CapsuleRakeMin, rule.CapsuleRakeMax);
         HoodHalf = (float)d.Fork("hood width").Between(rule.HoodHalfMin, rule.HoodHalfMax);
@@ -57,6 +58,36 @@ public sealed class CabLook
         _ => 'e',
     };
 
+    /// <summary>
+    /// The front profiles a style's cabs (or hoods) may show: each of its languages drawn with its facets at a cab's (a hood's) middle size, clamped as a cab's sides
+    /// are, for identity's section part (cached).
+    /// </summary>
+    public static float[][] Refs(BodyStyleRule rule, bool hood)
+    {
+        lock (RefCache)
+        {
+            if (RefCache.TryGetValue((rule, hood), out var have))
+                return have;
+            var facets = rule.FacetsMax > 0 ? Math.Min(MaxFacets, Math.Max(6, (rule.FacetsMin + rule.FacetsMax) / 2 - 3)) : 0;
+            var list = new List<float[]>();
+            foreach (var (l, _) in rule.Languages)
+            {
+                var t = l.Drawn(facets);
+                foreach (var h in hood ? new[] { HoodY0 + rule.HoodCrownMin, HoodY0 + rule.HoodCrownMax } : [rule.CabTallMin, rule.CabTallMax])
+                {
+                    var w = hood ? (rule.HoodHalfMin + rule.HoodHalfMax) / 2 : (rule.CabHalfMin + rule.CabHalfMax) / 2;
+                    var s = t.Scaled(w / t.P[0].X, h / t.Top);
+                    list.Add(FrontProfile.Of(hood ? Clamped(s, 0.4f, 0.64f, HoodY0 + 0.1f, 0.05f) : Clamped(s, 0.82f, 0.95f, 1.45f)));
+                    if (!hood) // (a capsule: as CabFor draws one)
+                        list.Add(FrontProfile.Of(Clamped(t.Scaled(0.95f / t.P[0].X, MathF.Max(1.72f, h) / t.Top), 0.85f, 0.97f, 1.05f)));
+                }
+            }
+            return RefCache[(rule, hood)] = list.ToArray();
+        }
+    }
+
+    private static readonly Dictionary<(BodyStyleRule, bool), float[][]> RefCache = new();
+
     /// <summary>The language's tall section at a cab's or a hood's size: half width <paramref name="w"/> at its foot, <paramref name="h"/> tall.</summary>
     public HullLoft.Section Scaled(float w, float h)
     {
@@ -75,13 +106,13 @@ public sealed class CabLook
     }
 
     /// <summary>Points closer than 1.5 cm dropped and the half widths below <paramref name="below"/> held between <paramref name="lo"/> and <paramref name="hi"/> (the seats' and the wheels' room).</summary>
-    public static HullLoft.Section Clamped(HullLoft.Section s, float lo, float hi, float below)
+    public static HullLoft.Section Clamped(HullLoft.Section s, float lo, float hi, float below, float gap = 0.015f)
     {
         var pts = new List<Vector2>();
         foreach (var p in s.P)
         {
             var q = p.Y < below && pts.Count < s.P.Length - 1 ? p with { X = MathF.Round(Math.Clamp(p.X, lo, hi) * 100) / 100 } : p;
-            if (pts.Count == 0 || Vector2.Distance(q, pts[^1]) >= 0.015f)
+            if (pts.Count == 0 || Vector2.Distance(q, pts[^1]) >= gap)
                 pts.Add(q);
             else if (q.X == 0)
                 pts[^1] = q;
@@ -99,6 +130,9 @@ public sealed partial class Vehicle
 
     /// <summary>The lofted cab as built (null: a fixed shell, or none yet).</summary>
     public HullLoft.CabShape? CabShape { get; private set; }
+
+    /// <summary>The lofted hood as built (null: a fixed hood, plates, a capsule's flat front).</summary>
+    public HullLoft.HoodShape? HoodShape { get; private set; }
 
     /// <summary><c>--fixed-cabs</c>: kit 5 bodies with the fixed cab shells and hoods (phase 2's), to measure against.</summary>
     public static bool FixedCabs;
@@ -185,7 +219,7 @@ public sealed partial class Vehicle
         var l = CabLook!;
         if (kind == 'o')
         {
-            var cap = CabLook.Clamped(l.Scaled(0.95f, MathF.Max(1.8f, l.Height + 0.1f)), 0.85f, 0.97f, 1.05f);
+            var cap = CabLook.Clamped(l.Scaled(0.95f, MathF.Max(1.72f, l.Height)), 0.85f, 0.97f, 1.05f);
             var ytc = Math.Clamp(CabLook.RoofStart(cap) - 0.02f, 1.5f, cap.Top - 0.12f);
             return new HullLoft.CabShape('o', -2.15f, -1.0f, 0.3f, 1.02f, ytc, l.CapsuleRake, -0.42f, 0.2f, 0, 0, 0.84f, cap, cap);
         }
@@ -203,17 +237,19 @@ public sealed partial class Vehicle
     {
         var l = CabLook!;
         var longHood = part is "Long Hood" or "Bull Hood";
-        var zf = longHood ? (float)d.Fork("hood length").Between(-1.0, -0.88) : (float)d.Fork("hood length").Between(-0.8, -0.72);
+        var zf = MathF.Max(-1.05f, (longHood ? (float)d.Fork("hood length").Between(-1.0, -0.88) : (float)d.Fork("hood length").Between(-0.8, -0.72)) - l.Reach);
         var half = part == "Slab Nose" ? 0.62f : l.HoodHalf;
         var s = l.Scaled(half, CabLook.HoodY0 + l.HoodCrown);
         // The engine under it: its core and its details (a V8's rocker covers 12 cm over its top, 0.343 m out) clear of the skin by its thickness and a little.
         for (var grow = 0; grow < 12 && !(s.XAt(CabLook.HoodY0 + 0.13f) >= 0.4f && s.XAt(0.05f) >= 0.4f && s.YAt(0.38f) >= CabLook.HoodY0 + 0.155f); grow++)
             s = s.Scaled(s.XAt(CabLook.HoodY0 + 0.13f) < 0.4f || s.XAt(0.05f) < 0.4f ? 1.03f : 1f, s.YAt(0.38f) < CabLook.HoodY0 + 0.155f ? 1.03f : 1f);
-        s = CabLook.Clamped(s, 0.4f, 0.64f, CabLook.HoodY0 + 0.1f);
+        s = CabLook.Clamped(s, 0.4f, 0.64f, CabLook.HoodY0 + 0.1f, 0.05f); // (a squashed section's short rows, an eave's say, mitre into hairpins: rows under 5 cm go)
         var (kx, ky) = l.Nose switch { 'w' => (0.92f, 0.55f), 'r' => (0.82f, 0.78f), 'g' => (0.98f, 0.98f), _ => (0.96f, 0.96f) };
-        var key = new HullLoft.HoodShape(l.Nose, MathF.Round(zf * 100) / 100, -0.62f, 0.6f, CabLook.HoodY0, kx, ky, -0.25f, s).Key();
+        var shape = new HullLoft.HoodShape(l.Nose, MathF.Round(zf * 100) / 100, -0.62f, 0.6f, CabLook.HoodY0, kx, ky, -0.25f, s);
+        var key = shape.Key();
         if (ConstructParts.Find(key) == null)
             throw new VehicleKitException($"the lofted hood won't make: {key}");
+        HoodShape = HullLoft.HoodOf(key);
         return key;
     }
 }

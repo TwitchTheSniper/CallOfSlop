@@ -25,6 +25,8 @@ public static partial class HullLoft
     /// <summary>A cab's sill (the doorway's floor) and how wide its pillars and its back wall's jambs are.</summary>
     private const float CabSill = 0.15f, Pillar = 0.08f, Jamb = 0.3f, CabT = 0.04f;
 
+    private const float SealDrop = 0.004f;
+
     private const string Frame = "#3a3e42", Bars = "#5a5f64", GlassTint = "#9fc6d6";
 
     // ---- Keys ---------------------------------------------------------------------------------------------------
@@ -91,7 +93,7 @@ public static partial class HullLoft
     /// <summary>A window pane: four corners in the frame of the part it goes in (its socket "frame" at the middle of the first edge, facing down onto that part's socket).</summary>
     public sealed record PaneShape(Vector3[] Q)
     {
-        public Vector3 Socket => (Q[0] + Q[1]) / 2;
+        public Vector3 Socket => (Q[0] + Q[1]) / 2 - new Vector3(0, SealDrop, 0); // (under the seal: its face is 4 mm below the glass's edge, so the two never share a plane)
 
         public string Key()
         {
@@ -364,7 +366,8 @@ public static partial class HullLoft
                 {
                     var (za0, za1) = float.IsNaN(z) ? (g.Front(k), g.Front(k + 1)) : (z, z);
                     var z1 = cut;
-                    var door = !float.IsNaN(z) && g.Doorway(z, z1) && band is 1 or 2;
+                    var door = !float.IsNaN(z) && g.Doorway(z, z1) && band is 1 or 2
+                        || c.Kind is 'o' or 'm' && band == 2 && z1 <= c.D0 + 1e-4f; // (a capsule's side windows ahead of its doorway: open, so the driver sees out sideways past the long screen)
                     z = cut;
                     if (door)
                         continue;
@@ -376,7 +379,8 @@ public static partial class HullLoft
                         p.Panel(roof, Vector3.UnitY, Roof, false, [Off(ma0, -1), Off(ma0, 1), Off(mb0, 1), Off(mb0, -1)]);
                         area += Area(roof);
                         var y = MathF.Min(a0.Y, b0.Y);
-                        p.Hide(new Vector3(-MathF.Max(a0.X, b0.X), y - 0.05f, MathF.Max(za0, za1) + 0.01f), new Vector3(MathF.Max(a0.X, b0.X), y - 0.01f, z1));
+                        if (MathF.Min(z1, c.Zb - 0.04f) > MathF.Max(za0, za1) + 0.03f)
+                            p.Hide(new Vector3(-MathF.Max(a0.X, b0.X), y - 0.05f, MathF.Max(za0, za1) + 0.01f), new Vector3(MathF.Max(a0.X, b0.X), y - 0.01f, MathF.Min(z1, c.Zb - 0.04f)));
                         continue;
                     }
                     if (last && a1.X == 0 && b1.X == 0)
@@ -391,18 +395,21 @@ public static partial class HullLoft
                     // Hidden slabs just inside the skin, from 0.3 m up (the seats' sill and the cab's floor plates are below), never in a doorway.
                     var (ylo, yhi) = (MathF.Max(0.3f, MathF.Min(a0.Y, b0.Y)), MathF.Min(a1.Y, b1.Y));
                     var zlo = MathF.Max(za0, za1) + 0.01f;
-                    if (yhi - ylo < 0.02f || z1 - zlo < 0.02f)
-                        continue;
+                    var zhi = MathF.Min(z1, c.Zb - 0.04f); // (clear of what stands behind the cab: a merged cab's room's brow has its own slabs at its front)
+                    if (yhi - ylo < 0.02f || zhi - zlo < 0.02f || c.Zm > c.Zf + 0.01f && z1 <= c.Zm + 1e-3f)
+                        continue; // (a capsule's sides ahead of its mid station have none: the front wheels turn under them, as the Cab Over Shell's)
                     if (MathF.Abs(a1.Y - a0.Y) >= MathF.Abs(a1.X - a0.X))
                     {
                         var x = MathF.Min(MathF.Min(a0.X, a1.X), MathF.Min(b0.X, b1.X));
-                        p.Hide(new Vector3(s * (x - 0.05f), ylo, zlo), new Vector3(s * (x - 0.01f), yhi, z1));
+                        if (x < 0.83f && (ylo = MathF.Max(ylo, 1.25f)) > yhi - 0.02f)
+                            continue; // (a wall coming in over the seats: its slab only above their backs, 1.2 m up)
+                        p.Hide(new Vector3(s * (x - 0.05f), ylo, zlo), new Vector3(s * (x - 0.01f), yhi, zhi));
                     }
                     else if (band == 3)
                     {
                         var y = MathF.Min(MathF.Min(a0.Y, a1.Y), MathF.Min(b0.Y, b1.Y));
                         var (xlo, xhi) = (MathF.Min(MathF.Min(a0.X, a1.X), MathF.Min(b0.X, b1.X)), MathF.Max(MathF.Max(a0.X, a1.X), MathF.Max(b0.X, b1.X)));
-                        p.Hide(new Vector3(s * xlo, y - 0.05f, zlo), new Vector3(s * xhi, y - 0.01f, z1));
+                        p.Hide(new Vector3(s * xlo, y - 0.05f, zlo), new Vector3(s * xhi, y - 0.01f, zhi));
                     }
                 }
             }
@@ -502,7 +509,8 @@ public static partial class HullLoft
             }
             Vector3 Pt(int k, float z) => new(g.At(k, z).X, g.At(k, z).Y, z);
             Hoop(k => new Vector3(g.At(k, g.Front(k)).X, g.Tp[k].Y, g.Front(k)), 0.05f);
-            Hoop(k => Pt(k, c.D1 + 0.03f), 0.046f);
+            if (c.Zb - c.D1 > 0.13f)
+                Hoop(k => Pt(k, c.D1 + 0.03f), 0.046f); // (a short cab's back hoop is its door's: two hoops 5 cm apart would share their end faces' planes)
             if (c.Crew)
                 Hoop(k => Pt(k, c.D3 + 0.03f), 0.046f);
             Hoop(k => Pt(k, c.Zb - 0.03f), 0.05f);
@@ -605,7 +613,7 @@ public static partial class HullLoft
             }
         }
         p.Pad("engine", new Vector3(0, h.Y0, 0), "-y"); // (its pad on the engine's top, as the fixed hoods')
-        p.Pad("front", new Vector3(0, MathF.Max(0.1f, h.Y0 - 0.3f), h.Zf - 0.025f), "-z");
+        p.Pad("front", new Vector3(0, MathF.Max(0.1f, h.Y0 - 0.3f), h.Zf - 0.035f), "-z"); // (just out past the cap's hidden slab, so a ram or a grille isn't in its way)
         var fy = MathF.Max(0.08f, h.Y0 - 0.27f);
         var fx = h.S.XAt(fy) + T / 2;
         p.Pad("-x0", new Vector3(-fx, fy, h.FenderZ), "-x");
@@ -655,8 +663,8 @@ public static partial class HullLoft
         p.Boxes.Add(new JsonObject { ["min"] = V(mn.X, mn.Y, mn.Z), ["max"] = V(mx.X, mx.Y, mx.Z), ["color"] = GlassTint, ["shape"] = "hull", ["points"] = pts, ["glass"] = true, ["detail"] = true });
         // The seal along its bottom edge: the solid box it stands by and collides with (a shaped box is drawn only), on the socket.
         var (e0, e1) = (s.Q[0], s.Q[1]);
-        var sx = MathF.Abs(e1.X - e0.X) / 2;
-        p.Boxes.Add(new JsonObject { ["min"] = V(s.Socket.X - sx, s.Socket.Y, s.Socket.Z - 0.008f), ["max"] = V(s.Socket.X + sx, s.Socket.Y + 0.016f, s.Socket.Z + 0.008f), ["color"] = Frame, ["paintable"] = false });
+        var sx = MathF.Abs(e1.X - e0.X) / 2 - 0.01f; // (a centimetre short of the glass's sides)
+        p.Boxes.Add(new JsonObject { ["min"] = V(s.Socket.X - sx, s.Socket.Y, s.Socket.Z - 0.009f), ["max"] = V(s.Socket.X + sx, s.Socket.Y + 0.017f, s.Socket.Z + 0.009f), ["color"] = Frame, ["paintable"] = false });
         p.Sock("frame", s.Socket, "-y");
         var area = Area(s.Q);
         var part = new JsonObject
