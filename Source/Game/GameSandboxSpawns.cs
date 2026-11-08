@@ -178,6 +178,8 @@ public sealed partial class Game
     {
         if (a.Team == SbPeopleTeam)
             return StoryFightsWith(a, b);
+        if (a.Team == SbHostileTeam && LockdownSquadOf(a))
+            return LockdownWanted(b); // (the colony's riot squad fights only whoever it is after: GameColonyLockdown.cs)
         if (b.Team == SbPeopleTeam)
             return a.Team != SbFriendlyTeam;
         var fa = a.Team == SbFriendlyTeam;
@@ -983,6 +985,8 @@ public sealed partial class Game
             StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
             return false;
         }
+        if (LockdownSquadBot(p, b, now))
+            return false; // (the penal colony's riot squad: GameColonyLockdown.cs)
         if (p.Team == SbFriendlyTeam && Horde.Count > 0)
         {
             for (var i = 0; i < Horde.Count; i++)

@@ -30,6 +30,7 @@ the file. The text is filled once per step and again only if a key it names is r
 | `drill` | the ground drill dug or filled |
 | `assembler` | an Assembler's settings set, or F (Use, Bin) on one |
 | `configure` | any part's settings set |
+| `stow`, `draw` | a part put in the backpack (Stow), or taken out of it (Draw) |
 
 **Tools are issued as the steps need them** (Karl, 2026-11-08). While the induction runs the player has no gun and no tool but
 bare hands: a step's `"gives": ["attach"]` (tool names as for `tool`) hands those over at that step and for every later one
@@ -37,6 +38,16 @@ bare hands: a step's `"gives": ["attach"]` (tool names as for `tool`) hands thos
 same on the client (`SandboxToolGated` in `SandboxSend`: a line instead of a request) and the server (`CActKind.Tool`, and
 each running tick, so a respawn's gun goes back to the warden): a tool not issued is refused, the gun or putting a tool away
 gives bare hands. Finishing or skipping gives everything back.
+
+**Story mode starts without the backpack** (Karl, 2026-11-08). Through the opening and the induction a survival player has no
+backpack until the step whose `"gives"` lists `"backpack"` (the `backpack` step, after `hold`: stow the part, draw it back);
+`TutorialStep.PackIssued` carries it to every later step, and finishing or skipping hands it over too. `TutorialPack` decides
+on the server each tick (`ConstructEdits.IssuePack`): a pack held back has no slots, and that is how every peer hears it (the
+pack message carries its slot count, so the protocol is unchanged; a newcomer is sent every pack without one). With no slots
+nothing goes in (a part given goes to the hands or drops), none is worn or drawn, and Stow says it hasn't been given yet. Only an
+empty pack is ever held back, so a replay or an old save loses nothing, and a death keeps or drops what is in it by the
+world's death rules as before. Each person is judged alone, so in co-op everyone gets theirs at their own step. Creative has
+no backpack anyway; the self-test's `TutorialAutoStart = false` leaves packs alone.
 
 The movement cues read the person's input (`Player.LastInput`); the host's own player has it set where its input is sampled
 (`Game.ServerTick`), as a client's is in `ApplyCmd`. Before 2026-11-08 it wasn't, so walk and run never completed for a host.

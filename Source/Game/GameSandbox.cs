@@ -372,6 +372,7 @@ public sealed partial class Game
         SandboxDebris(now);
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
+        LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
@@ -636,7 +637,7 @@ public sealed partial class Game
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
             }
         foreach (var p in Players.Values)
-            if (SandboxHands.Pack(p.Id).Items > 0)
+            if (SandboxHands.Pack(p.Id).Items > 0 || !SandboxHands.HasPack(p.Id)) // (no backpack yet, story mode: a newcomer's default has one)
             {
                 ConstructNet.WritePack(w, p.Id, SandboxHands.Pack(p.Id));
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);

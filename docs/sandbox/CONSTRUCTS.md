@@ -2321,6 +2321,7 @@ eight slots of different sizes, still no inventory screen. Every player in survi
 - **Creative** means endless parts (`SandboxInfiniteParts`), the same answer on every peer. No pack is drawn, no slot strip shows, and nothing goes in: Stow and Draw say "no backpack in creative". With full hands, `Give` skips the pack and drops the part as a loose pickup; taking from a slot or picking up a loose part is refused and it stays put.
 - **An old creative save** that holds parts in a pack keeps them: the player wears that pack (`ConstructEdits.WearsPack`) and draws from it until it is empty, and then it is gone. Nothing new goes in.
 - The **Backpack part** in the Tab inventory stays a storage part to bolt on a construct. It isn't worn.
+- **Story mode starts without one** (Karl, 2026-11-08): the warden's induction hands it over at its backpack step (docs/sandbox/TUTORIAL.md). Until then the player's pack has no slots (`HasPack` false, `ConstructEdits.IssuePack`), so it behaves as creative's does, and Stow says it hasn't been given yet.
 
 In survival:
 
@@ -2377,16 +2378,16 @@ real host with two clients: a client's stow reaches the server, its own copy, th
 
 The user's "a modular shelf so the player can stack and store loose parts". Parts: `Constructs/Parts/Shelves`, written by `tools/constructs/shelf_parts.py` (with the Smart Terminal and the **Smart Depot** blueprint). Recipes in `tools/constructs/assembling.py`, tier 1, planks and a little steel.
 
-- **The family.** A **Shelf Bay** is one board on four posts, open at the front and top, on its class's lattice, with sockets on every face but the front, so bays stack up, run along and stand back to back, and bolt to any frame of their class.
+- **The family.** A **Shelf Bay** is a steel cabinet (two sides, a back) with wooden boards at the bottom, the top and between its tiers, open at the front, on its class's lattice, with sockets on every face but the front, so bays stack up, run along and stand back to back, and bolt to any frame of their class.
 
 | Part | Class | Size (wide x high x deep) | Shelf slots |
 | --- | --- | --- | --- |
 | Shelf Bay 0.5 | small | 0.5 x 0.5 x 0.5 m | 1 |
 | Shelf Bay 1 | small | 1 x 0.5 x 0.5 m | 2 |
-| Tall Shelf Bay 1 | small | 1 x 1 x 0.5 m | 2 |
+| Tall Shelf Bay 1 | small | 1 x 1 x 0.5 m | 4 (2 tiers) |
 | Medium Shelf Bay 1 | medium | 1 x 1 x 1 m | 1 |
 | Medium Shelf Bay 2 | medium | 2 x 1 x 1 m | 2 |
-| Medium Shelf Bay 4 | medium | 4 x 2 x 1 m | 4 |
+| Medium Shelf Bay 4 | medium | 4 x 2 x 1 m | 8 (2 tiers) |
 
 - **How a part is held: in a slot, frozen to the shelf.** A part on a shelf is not a body. It is a count in the store, drawn where it stands (`"rack": true` on a slot; `ConstructStorage.PileShape`, `StackOf`, `ItemOrigin`). So a shelf on a truck that rolls over keeps its stack, a full wall of shelves costs the physics nothing, and every store rule works as it does (chutes, beacons, the look line, spilling, saves, the wire). The price: a stack doesn't topple, and a shot hits the pile, not one piece in it.
 - **A visible stack.** A shelf slot takes as many of one kind as fit, from the part's box: rows across the floor, the back row first, then layers up, in the turn that packs most (at most 48 a slot). A Lamp, 20 cm a side, stands 8 to a Shelf Bay 1 slot. The ghost shows where the next one goes. One kind a slot: "that shelf holds Lamps", "that shelf is full (8)".
