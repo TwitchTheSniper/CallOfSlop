@@ -164,6 +164,7 @@ public sealed class StoryRules
             }
         rules.People = PeopleRules.Load(rules, folder);
         rules.Lines = LineRules.Load(rules, folder);
+        rules.Moods = MoodRules.Load(rules, folder);
         rules.Plays = PlayRules.Load(rules, folder);
         rules.Places = PlaceRules.Load(rules, folder);
         rules.Factions = FactionRules.Load(rules, folder);
@@ -179,6 +180,9 @@ public sealed class StoryRules
 
     /// <summary>What people say (Story/Lines): the response rules. Empty when there are none.</summary>
     public LineRules Lines = new();
+
+    /// <summary>The people's moods in a fight (Story/Moods): buffs and debuffs. Empty when there are none.</summary>
+    public MoodRules Moods = new();
 
     /// <summary>The plays (Story/Plays): scenes cast from the world. Empty when there are none.</summary>
     public PlayRules Plays = new();

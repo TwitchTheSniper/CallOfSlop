@@ -139,6 +139,7 @@ the game kills, never decided by the story (no X4-style out-of-sight simulation 
 | Mine, Refine | a milestone: a player's machines have gathered or refined their first 1 t, 10 t or 100 t of one material (value: the tonnes) | `GameStoryWork.cs`, from `ConstructWorld.Yield` |
 | Make | a milestone: the first part a player's assemblers make on each machine tier (value: the tier) | `GameStoryWork.cs`, `CNoteKind.Made` note |
 | Attack, Fight, Flee, Defend | someone hurts a person's body; the person (or a friend who hears them) fights back, runs, or stands up for them ("Fights") | `GameStoryFights.cs` |
+| Rage, Vow, Panic | a mood takes hold of a person whose friend was killed in front of them ("Moods") | `GameStoryMoods.cs` |
 | Story | built in: a pattern completed (its value is the pattern) | the engine |
 
 Who did it: a player's shots and blasts set `ConstructWorld.DamageBy` around the damage (`SandboxShotDamage`,
@@ -326,6 +327,45 @@ it). Witnesses learn them like anything else (News.json: an attack seen makes pe
 for someone they like), and three patterns tell them: *Stood their ground*, *Came to their aid* and *Turned the tables*
 (a fighter kills the one who attacked). A kill by a person's body is an ordinary Kill. Enemy bots are attackers too:
 each gets a person entity, as their kills do.
+
+## Moods
+
+Buffs and debuffs for the people in a fight (`Source/Story/StoryMoods.cs` the rules, `Source/Game/GameStoryMoods.cs` the
+game's side; data `Story/Moods/*.json`, checked by `--check-story`). At a **moment** a person's body may take on a mood:
+
+| Moment | When | ?them | ?target |
+| --- | --- | --- | --- |
+| `Killed` | someone was killed within 30 m of them | the killer (none for a fall) | the dead |
+| `Kill` | they killed someone | none | the dead |
+| `Hurt` | they were hurt (each look) | who did it | none |
+| `Wounded` | hurt below 35% of their health, once a fight | who did it | none |
+| `Defend` | they came to help someone ("Fights") | the attacker | the one helped |
+
+Of a moment's moods whose `"if"` (a query over `?me ?them ?target ?here`, as the lines' are) holds, the one with the
+most clauses wins; `"chance"` makes it take hold only so often. A mood whose query names `?them` or `?target` needs
+them, and one with an `"act"` needs ?them alive. **One mood at a time**: a new one takes over only from one of the same
+or a lower `"rank"` (0-9). While it lasts (`"seconds"`):
+
+- `"taken"` and `"dealt"` multiply the damage they take and deal (`DamagePlayer`, at least 1 a hit);
+- `"aim"` multiplies their aim error (the bots' `AimError`, above 1 is worse), `"react"` their reaction time and trigger
+  delay (below 1 is quicker on the trigger), `"turn"` how fast they turn (`BotBrain.MoodAim/MoodReact/MoodTurn`);
+- `"act": "fight"` makes them fight ?them whatever the fight score says, and holds them to it: they don't lose their
+  nerve when hurt, aren't turned by someone else's shot, and chase however far; `"flee"` makes them run from ?them.
+
+It ends on its time, or (with an act) when ?them is dead or gone, and `"then"` names the mood after it (rage, then grief).
+Taking hold it records its `"verb"` (actor ?me, target ?them, owner ?target), the person says the mood's name as a line
+occasion (`Lines/People.json`: `{them}` the cause, `{target}` the one it is about), and the players within 30 m read
+"Rhea Lund flies into a murderous rage." (its `"label"`) as a system chat line. Everything is the host's own bots and
+damage, so it is the same for every player in a co-op game; no wire change. The window's People tab shows a body's mood.
+
+Shipped (`Moods/People.json`): **Rage** (someone they like, Likes 20+, killed: taken x0.6, dealt x1.15, aim x2.5,
+quicker and wilder, fights the killer for 60 s; verb Rage), **Vengeance** (the same and Vengeful 70+, Brave 30+: cold,
+aim x0.6, dealt x1.25, 90 s; verb Vow), **Panic** (the same and Brave under 30: runs, aim x2.2, slow, 30 s; verb Panic),
+**Shaken** (a killing of someone they hardly like, Brave under 50: aim x1.6, slow, 25 s), **Grief** (after those three:
+aim x1.5, slow, 2 minutes), **Desperate** (Wounded and Brave 60+: taken x0.7, won't back down, 30 s), **Protective**
+(Defend someone they like 40+: taken x0.8, dealt x1.1) and **Bloodlust** (Kill a player, Vengeful 60+: sharper, 30 s).
+Moods aren't saved (bodies aren't). Cost: a moment's queries when it happens; four times a second a look at each body's
+clock; nothing allocates.
 
 ## Lines (phase 5)
 

@@ -1075,6 +1075,15 @@ public sealed partial class Ui
                     s.Gore = (GoreMode)gore;
             }
             ImGui.TextColored(Dim, "Animals you shoot and anyone killed right next to a blast burst into meaty gibs. Reduced throws fewer and leaves no blood; Off: animals just poof, blast kills fall as ragdolls."u8);
+            ImGui.Text("Bodies and gore"u8);
+            var lasting = (int)s.GoreLasting;
+            for (var i = 0; i <= (int)GoreLasting.Stay; i++)
+            {
+                ImGui.SameLine();
+                if (ImGui.RadioButton($"{(GoreLasting)i}##gorelast", ref lasting, i))
+                    s.GoreLasting = (GoreLasting)lasting;
+            }
+            ImGui.TextColored(Dim, "Fade: dead bodies and gibs fade away after about 15 seconds. Stay: they lie where they fell, and only the oldest go once a lot have piled up. Bodies fall on each other and you can walk over them. Playing online, the host's choice holds for the bodies."u8);
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);

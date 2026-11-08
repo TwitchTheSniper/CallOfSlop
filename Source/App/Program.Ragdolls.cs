@@ -10,7 +10,10 @@ public static unsafe partial class Program
     {
         (Ragdolls.ZombieShirt, Ragdolls.ZombieSkin, Ragdolls.ZombiePants) = (ZShirt, ZSkin, ZPants);
         Gibs.Mode = _settings.Gore; // Settings > Video "Gore" (Source/Props/Gibs.cs)
+        Gibs.Stay = _settings.GoreLasting == GoreLasting.Stay; // Settings > Video "Bodies and gore"
+        Ragdolls.SetStay(Gibs.Stay, now);
         Ragdolls.Frame(_game, now, (float)FrameDt);
+        _game.CorpseFrame(now); // the host's settled bodies to the clients (GameCorpses.cs)
     }
 
     /// <summary>After the world: the bodies box by box when the instanced prop renderer couldn't draw them.</summary>
