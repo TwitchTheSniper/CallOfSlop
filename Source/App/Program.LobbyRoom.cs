@@ -29,6 +29,7 @@ public static unsafe partial class Program
             game.SetSandboxLimits(_settings.SandboxMaxBodies, _settings.SandboxMaxPerPlayer); // (the host's Sandbox safety caps: board item cl01)
             game.SetBlastCap(_settings.SandboxMaxBlast); // (the biggest blast: ConstructMegaBlast.cs)
             game.SetSandboxSurvival(_settings.SandboxSurvival); // (Creative or Survival: GameSandboxSurvival.cs)
+            game.SetSandboxDeath(_settings.SandboxDeath, _settings.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
         }
         _wasLobbyRoom = false;
         _roomLoadoutsOpen = false;
