@@ -569,7 +569,7 @@ public sealed partial class Ui
                 return;
             }
             SbFilter();
-            var paneW = 240 * _scale;
+            var paneW = 260 * _scale; // (the longest category with its count, and the tree's scroll bar)
             // Left: the search box, the tree, the options.
             if (ImGui.BeginChild("##sbleft"u8, new float2(paneW, 0), ImGuiChildFlags.Borders))
             {

@@ -1,0 +1,29 @@
+{
+  // The IT Department as a faction (docs/story/STORY.md "Factions", Story/Factions/IT.json): what it remembers and how it
+  // rates the players. Karl plugs in one of its faxes and emails it; Rook wrecks and strips one of its vans, twice, and is
+  // blacklisted. The game records these from real play (Game/GameStoryFactions.cs); this plays them.
+  "name": "IT Department",
+  "about": "Karl keeps an IT fax and is polite; Rook wrecks and strips the IT Department's vans until it blacklists him; then Karl commits an atrocity and every faction hunts him",
+  "entities": [
+    { "name": "Karl", "kind": "Player" },
+    { "name": "Rook", "kind": "Player" },
+    { "name": "Planetoid", "kind": "Place" },
+    { "name": "IT Department", "kind": "Faction" },
+    { "name": "Fax Machine", "kind": "Thing" },
+    { "name": "IT Box Truck 1", "kind": "Construct", "owner": "Karl" },
+    { "name": "IT War Bus 5", "kind": "Construct", "owner": "Karl" },
+    { "name": "Rook's buggy", "kind": "Construct", "owner": "Rook" }
+  ],
+  "events": [
+    { "at": "0s", "verb": "Join", "actor": "Karl", "place": "Planetoid" },
+    { "at": "1m", "verb": "Join", "actor": "Rook", "place": "Planetoid" },
+    { "at": "20m", "verb": "Keep", "actor": "Karl", "target": "IT Department", "item": "Fax Machine", "place": "Planetoid" },
+    { "at": "25m", "verb": "Wreck", "actor": "Rook", "target": "IT Box Truck 1", "place": "Planetoid" },
+    { "at": "27m", "verb": "Strip", "actor": "Rook", "target": "IT Box Truck 1", "place": "Planetoid" },
+    { "at": "40m", "verb": "Wreck", "actor": "Rook", "target": "IT War Bus 5", "place": "Planetoid" },
+    { "at": "41m", "verb": "Strip", "actor": "Rook", "target": "IT War Bus 5", "place": "Planetoid" },
+    { "at": "50m", "verb": "Wreck", "actor": "Karl", "target": "Rook's buggy", "place": "Planetoid" },
+    { "at": "1h", "verb": "Strip", "actor": "Rook", "target": "IT War Bus 5", "place": "Planetoid" },
+    { "at": "2h", "verb": "Atrocity", "actor": "Karl", "place": "Planetoid" }
+  ]
+}

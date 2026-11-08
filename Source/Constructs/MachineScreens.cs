@@ -112,6 +112,7 @@ public static class MachineScreens
             {
                 case AsmState.NoRecipe: Say(card, PanelState.Idle, "No recipe"); card.Add(2, "Configure it"); line = 3; break;
                 case AsmState.TierLow: card.State = PanelState.Refused; card.Add(0, "Needs tier ").Add(0, r!.MinTier); break;
+                case AsmState.Untaught: card.State = PanelState.Refused; card.Add(0, "Not taught"); card.Add(2, "A faction teaches it (F2)"); line = 3; break;
                 case AsmState.Short:
                     Say(card, PanelState.Wants, "Needs input");
                     if (ConstructAssembling.MissingOf(st, r!, out var m, out var missing))

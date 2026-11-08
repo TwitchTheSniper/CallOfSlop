@@ -28,7 +28,7 @@ public static unsafe partial class Program
             SetWeatherMapOpen(false);
             return true;
         }
-        if (key == GlfwKey.Unknown || Keybinds.Key(key) != _settings.Bind(GameAction.WeatherMap) || Ui.ChatOpen || Ui.WantsTextInput || _session == null)
+        if (key == GlfwKey.Unknown || !_settings.HasBind(GameAction.WeatherMap, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput || _session == null)
             return false;
         SetWeatherMapOpen(!Ui.WeatherMapOpen);
         return true;

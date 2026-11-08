@@ -6,7 +6,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Faction window (F2 in Sandbox by default; docs/sandbox/CONSTRUCTS.md, "Factions"): found a faction or accept an
-/// invite, see who is in it, invite the players here (the leader), leave, and give a construct you own or the part in
+/// invite (or join an open one, or ask), pick its colour and tag, set ranks, stand allied or at war with other factions,
+/// see how the story's factions see you, leave, and give a construct you own or the part in
 /// your hands to a member. Everything a member owns is shared with the others. The server decides every action
 /// (GameSandboxFactions.cs); a refusal shows on the HUD. Closed, it costs one bool check.
 /// </summary>
@@ -38,9 +39,106 @@ public sealed partial class Ui
         ImGui.End();
     }
 
+    private ImInputString? _faTag;
+    private float3 _faColour;
+    private bool _faOpen;
+    private int _faLooksFor = -1; // the faction (and table version) the looks fields were filled from
+    private int _faLooksVersion = -1;
+
+    private static float4 FactionColour(FactionTable t, int id)
+    {
+        var c = t.Colour[id];
+        return new float4((c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f, 1f);
+    }
+
+    /// <summary>A standing (-100 to 100) in a word.</summary>
+    private static string StandingWord(int v) => v switch
+    {
+        <= -60 => "hunts you",
+        <= -20 => "hostile",
+        < 0 => "wary",
+        0 => "doesn't know you",
+        < 20 => "neutral",
+        < 60 => "friendly",
+        _ => "trusts you",
+    };
+
+    /// <summary>
+    /// What the world's factions teach (docs/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
+    /// has taught them, at a tier of its standing. With a faction of yours, which ones it has learnt.
+    /// </summary>
+    private void DrawStoryTech(FactionTable t, byte mine)
+    {
+        var any = false;
+        for (var f = 0; f < t.StoryTech.Length && !any; f++)
+            any = t.StoryTech[f].Length > 0;
+        if (!any || !ImGui.CollapsingHeader("What the world's factions teach##fatech"u8))
+            return;
+        ImGuiSafe.TextColored(Dim, mine == 0
+            ? "In survival an Assembler won't build these until the faction teaches you, which it does when its standing with you first reaches the tier shown. Earn it with deeds; rising with one faction cools its rivals."
+            : "In survival an Assembler won't build these until the faction teaches your faction, which it does when its standing with you first reaches the tier shown. Learnt for good. Rising with one faction cools its rivals.");
+        for (var f = 0; f < t.StoryTech.Length && f < t.StoryNames.Length; f++)
+        {
+            var techs = t.StoryTech[f];
+            if (techs.Length == 0)
+                continue;
+            ImGuiSafe.TextColored(Orange, t.StoryNames[f]);
+            var learnt = mine != 0 ? t.StoryLearnt[mine * FactionTable.MaxStory + f] : 0;
+            for (var k = 0; k < techs.Length; k++)
+            {
+                var have = (learnt & (1 << k)) != 0;
+                if (have)
+                    ImGuiSafe.TextColored(new float4(0.45f, 0.9f, 0.45f, 1f), $"  [learnt] {techs[k]}");
+                else
+                    ImGuiSafe.TextWrapped($"  {techs[k]}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Faction jobs (docs/story/STORY.md "Jobs"): what each story faction offers work for, which you may take now, and the one
+    /// your party holds and how far along it is. No money: a job pays standing. One job of each faction at a time.
+    /// </summary>
+    private void DrawFactionJobs(Game game)
+    {
+        var view = game.JobsView;
+        if (view.Length == 0 || !ImGui.CollapsingHeader("Jobs for the world's factions##fajobs"u8, ImGuiTreeNodeFlags.DefaultOpen))
+            return;
+        ImGuiSafe.TextColored(Dim, "No money: a job pays standing, and standing is what the factions teach their technologies for. One job of each faction at a time. Supply jobs go in a Requisition Crate you own (fill its box: chute, hand, or lay a cut piece in it); the courier collects. Build jobs are inspected where they stand.");
+        for (var f = 0; f < view.Length; f++)
+        {
+            var jf = view[f];
+            ImGuiSafe.TextColored(Orange, $"{jf.Name}: {jf.Tier} ({jf.Standing:+0;-0;0})");
+            for (var j = 0; j < jf.Jobs.Length; j++)
+            {
+                var row = jf.Jobs[j];
+                if (row.Held)
+                    ImGuiSafe.TextColored(new float4(0.45f, 0.9f, 0.45f, 1f), $"  [yours] {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
+                else
+                    ImGuiSafe.TextColored(row.Open ? new float4(1f, 1f, 1f, 1f) : Dim, $"  {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
+                if (row.About.Length > 0)
+                    ImGuiSafe.TextWrapped($"    {row.About}");
+                ImGuiSafe.TextWrapped($"    {row.What}. Pays {row.Pay}.");
+                if (row.Note.Length > 0)
+                    ImGuiSafe.TextColored(row.Held ? Orange : Dim, $"    {row.Note}");
+                if (row.Held)
+                {
+                    if (ImGui.Button($"Drop this job##fajd{f}_{j}"))
+                        game.JobAsk(f, -1);
+                }
+                else if (row.Open)
+                {
+                    if (ImGui.Button($"Take this job##fajt{f}_{j}"))
+                        game.JobAsk(f, j);
+                }
+            }
+        }
+    }
+
     private void DrawFactionBody(Game game, Player me)
     {
         var t = game.FactionTable;
+        var ranks = FactionRanks.Player;
         var mine = t.Of[me.Id];
         _faMates.Clear();
         if (mine != 0)
@@ -65,7 +163,7 @@ public sealed partial class Ui
         // ---- Your faction, or founding one
         if (mine == 0)
         {
-            ImGuiSafe.TextWrapped("You are not in a faction. Found one and invite people: everything each member owns (vehicles, bases, beacons and their stores) is shared with the others, and you can give things to each other.");
+            ImGuiSafe.TextWrapped("You are not in a faction. Found one and invite people: everything each member owns (vehicles, bases, beacons and their stores) is shared with the others, and you can give things to each other. The other factions out there, the IT Department and the rest, remember what your faction does.");
             _faName ??= new ImInputString(FactionTable.NameMax + 1);
             ImGui.SetNextItemWidth(260 * _scale);
             var go = false;
@@ -84,23 +182,87 @@ public sealed partial class Ui
                 game.SandboxFaction(FactionOp.Found, text: ImGuiSafe.Text(_faName));
                 ImGuiSafe.SetInput(_faName, "");
             }
-            DrawFactionList(game, t);
+            DrawFactionList(game, t, me);
+            DrawFactionJobs(game);
+            DrawStoryTech(t, 0);
             return;
         }
+        var myRank = t.RankOf(me.Id);
         var leads = t.Leader[mine] == me.Id;
-        ImGuiSafe.TextColored(Orange, $"{t.Names[mine]}{(leads ? " (you lead it)" : "")}");
-        ImGuiSafe.TextColored(Dim, "What each member owns is shared: drive, build on, configure and use it as your own.");
-        ImGuiSafe.TextWrapped($"You ({me.Name}){(leads ? " - leader" : "")}");
+        ImGuiSafe.TextColored(FactionColour(t, mine), $"[{t.Tag[mine]}] {t.Names[mine]}");
+        ImGui.SameLine();
+        ImGuiSafe.TextColored(Dim, $"you are {ranks.RankName(myRank)}{(t.Open[mine] ? ", open to anyone" : ", invite only")}");
+        if (t.Notorious[mine])
+            ImGuiSafe.TextColored(new float4(1f, 0.3f, 0.25f, 1f), "NOTORIOUS: every faction hunts you.");
+        ImGuiSafe.TextColored(Dim, "What each member owns is shared: drive, build on, configure and use it as your own. Taking a mate's things apart needs a rank.");
+
+        // ---- Looks
+        if (t.May(me.Id, FactionMay.Looks) && ImGui.CollapsingHeader("Colour, tag and joining##falooks"u8))
+        {
+            _faTag ??= new ImInputString(FactionTable.TagMax + 1);
+            if (_faLooksFor != mine || _faLooksVersion < 0)
+            {
+                var c = FactionColour(t, mine);
+                (_faColour, _faOpen, _faLooksFor, _faLooksVersion) = (new float3(c.X, c.Y, c.Z), t.Open[mine], mine, t.Version);
+                ImGuiSafe.SetInput(_faTag, t.Tag[mine]);
+            }
+            ImGui.ColorEdit3("Colour##facol"u8, ref _faColour, ImGuiColorEditFlags.NoInputs);
+            ImGui.SetNextItemWidth(90 * _scale);
+            try
+            {
+                ImGui.InputTextWithHint("Tag##fatag"u8, "TAG"u8, _faTag);
+            }
+            catch (Exception ex)
+            {
+                ImGuiSafe.FieldFailed("faction tag", ex);
+            }
+            ImGui.Checkbox("Anyone may join (no invite needed)##faopen"u8, ref _faOpen);
+            if (ImGui.Button("Apply##falooksgo"u8))
+            {
+                static uint B(float v) => (uint)Math.Clamp((int)MathF.Round(v * 255f), 0, 255);
+                game.SandboxFaction(FactionOp.Looks, (int)(B(_faColour.X) << 16 | B(_faColour.Y) << 8 | B(_faColour.Z)), _faOpen ? 1 : 0, ImGuiSafe.Text(_faTag));
+                _faLooksVersion = -1;
+            }
+        }
+        else
+            _faLooksVersion = -1;
+
+        // ---- Members
+        ImGui.Separator();
+        ImGuiSafe.TextColored(Orange, "Members");
+        ImGuiSafe.TextWrapped($"You ({me.Name}) - {ranks.RankName(myRank)}");
         foreach (var k in _faMates)
         {
             var here = game.Players.TryGetValue(k, out var p) && k < Game.MaxPlayers;
+            var theirs = t.RankOf(k);
             ImGui.PushID(k);
-            ImGuiSafe.TextWrapped($"{game.FactionMemberName(k)}{(t.Leader[mine] == k ? " - leader" : "")}{(here ? "" : " (away)")}");
-            if (leads)
+            ImGuiSafe.TextWrapped($"{game.FactionMemberName(k)} - {ranks.RankName(theirs)}{(here ? "" : " (away)")}");
+            if (theirs < myRank && t.May(me.Id, FactionMay.Promote))
+            {
+                if (theirs + 1 < myRank && theirs + 1 < ranks.Top)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Promote"u8))
+                        game.SandboxFaction(FactionOp.SetRank, k, theirs + 1);
+                }
+                if (theirs > 0)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Demote"u8))
+                        game.SandboxFaction(FactionOp.SetRank, k, theirs - 1);
+                }
+            }
+            if (theirs < myRank && t.May(me.Id, FactionMay.Remove))
             {
                 ImGui.SameLine();
                 if (ImGui.SmallButton("Remove"u8))
                     game.SandboxFaction(FactionOp.Remove, k);
+            }
+            if (leads)
+            {
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Make leader"u8))
+                    game.SandboxFaction(FactionOp.MakeLeader, k);
             }
             if (here && p!.Alive && me.Alive && game.SandboxHands.Hand(me.Id).Held != ConstructParts.None && Vector3.Distance(me.Position, p.Position) <= Game.FactionHandReach)
             {
@@ -113,8 +275,8 @@ public sealed partial class Ui
         if (ImGui.Button("Leave faction##faleave"u8))
             game.SandboxFaction(FactionOp.Leave);
 
-        // ---- Invite
-        if (leads)
+        // ---- Invite, and those asking
+        if (t.May(me.Id, FactionMay.Invite))
         {
             ImGui.Separator();
             ImGuiSafe.TextColored(Orange, "Invite");
@@ -127,14 +289,40 @@ public sealed partial class Ui
                 ImGui.PushID(p.Id + 1000);
                 ImGuiSafe.TextWrapped($"{p.Name}{(t.Of[p.Id] != 0 ? $" ({t.Names[t.Of[p.Id]]})" : "")}");
                 ImGui.SameLine();
-                if (t.Invited[p.Id] == mine)
+                if (t.Asked[p.Id] == mine)
+                {
+                    ImGuiSafe.TextColored(Orange, "asks to join");
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Let in"u8))
+                        game.SandboxFaction(FactionOp.Answer, p.Id, 1);
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Turn away"u8))
+                        game.SandboxFaction(FactionOp.Answer, p.Id, 0);
+                }
+                else if (t.Invited[p.Id] == mine)
                     ImGuiSafe.TextColored(Dim, "invited");
                 else if (ImGui.SmallButton("Invite"u8))
                     game.SandboxFaction(FactionOp.Invite, p.Id);
-                ImGui.PopID();
             }
             if (!any)
                 ImGuiSafe.TextColored(Dim, "Nobody else is here to invite.");
+        }
+
+        // ---- Other player factions
+        DrawFactionRelations(game, t, me, mine);
+
+        // ---- How the story's factions see you
+        if (t.StoryNames.Length > 0)
+        {
+            ImGui.Separator();
+            ImGuiSafe.TextColored(Orange, "How the world's factions see you");
+            for (var f = 0; f < t.StoryNames.Length; f++)
+            {
+                int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
+                ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
+            }
+            DrawFactionJobs(game);
+            DrawStoryTech(t, mine);
         }
 
         // ---- Give
@@ -143,6 +331,11 @@ public sealed partial class Ui
         if (_faMates.Count == 0)
         {
             ImGuiSafe.TextColored(Dim, "There is nobody else in your faction to give to yet.");
+            return;
+        }
+        if (!t.May(me.Id, FactionMay.Give))
+        {
+            ImGuiSafe.TextColored(Dim, $"Your rank ({ranks.RankName(myRank)}) can't give constructs away.");
             return;
         }
         _faMine.Clear();
@@ -163,7 +356,6 @@ public sealed partial class Ui
                 ImGui.PushID(k);
                 if (ImGui.SmallButton($"Give to {game.FactionMemberName(k)}"))
                     game.SandboxFaction(FactionOp.GiveBody, c.Id, k);
-                ImGui.PopID();
             }
             ImGui.PopID();
         }
@@ -171,8 +363,60 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, $"...and {_faMine.Count - FactionGiveRows} more further away.");
     }
 
-    /// <summary>The factions there are (when you're in none).</summary>
-    private static void DrawFactionList(Game game, FactionTable t)
+    /// <summary>The other player factions: how yours stands with each, and (with the rank for it) alliance, neutral or war.</summary>
+    private static void DrawFactionRelations(Game game, FactionTable t, Player me, byte mine)
+    {
+        var speaks = t.May(me.Id, FactionMay.Relations);
+        var any = false;
+        for (var id = 1; id < FactionTable.Max; id++)
+        {
+            if (id == mine || t.Names[id].Length == 0)
+                continue;
+            if (!any)
+            {
+                ImGui.Separator();
+                ImGuiSafe.TextColored(Orange, "Other factions");
+                any = true;
+            }
+            var rel = t.Relation(mine, (byte)id);
+            int ours = t.Stance[mine * FactionTable.Max + id], theirs = t.Stance[id * FactionTable.Max + mine];
+            var what = rel switch
+            {
+                FactionTable.Relations.Allied => "allies",
+                FactionTable.Relations.War => ours < 0 ? "at war (you declared it)" : "at war (they declared it)",
+                _ => theirs > 0 ? "neutral, they offer an alliance" : ours > 0 ? "neutral, you offered an alliance" : "neutral",
+            };
+            ImGui.PushID(id + 3000);
+            ImGuiSafe.TextColored(FactionColour(t, id), $"[{t.Tag[id]}] {t.Names[id]}");
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, $"{t.Count((byte)id)} member{(t.Count((byte)id) == 1 ? "" : "s")}, {what}{(t.Notorious[id] ? ", NOTORIOUS" : "")}");
+            if (speaks)
+            {
+                if (ours <= 0)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton(theirs > 0 ? "Accept alliance"u8 : "Offer alliance"u8))
+                        game.SandboxFaction(FactionOp.Stance, id, 1);
+                }
+                if (ours != 0)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton(ours < 0 ? "Make peace"u8 : "Withdraw offer"u8))
+                        game.SandboxFaction(FactionOp.Stance, id, 0);
+                }
+                if (ours >= 0)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Declare war"u8))
+                        game.SandboxFaction(FactionOp.Stance, id, -1);
+                }
+            }
+            ImGui.PopID();
+        }
+    }
+
+    /// <summary>The factions there are (when you're in none): join an open one, or ask to join.</summary>
+    private static void DrawFactionList(Game game, FactionTable t, Player me)
     {
         var any = false;
         for (var id = 1; id < FactionTable.Max; id++)
@@ -182,10 +426,24 @@ public sealed partial class Ui
             if (!any)
             {
                 ImGui.Separator();
-                ImGuiSafe.TextColored(Orange, "Factions here (their leader can invite you)");
+                ImGuiSafe.TextColored(Orange, "Factions here");
                 any = true;
             }
-            ImGuiSafe.TextWrapped($"{t.Names[id]}: {t.Count((byte)id)} member{(t.Count((byte)id) == 1 ? "" : "s")}, led by {(t.Leader[id] == 255 ? "nobody" : game.FactionMemberName(t.Leader[id]))}");
+            ImGui.PushID(id + 4000);
+            ImGuiSafe.TextColored(FactionColour(t, id), $"[{t.Tag[id]}] {t.Names[id]}");
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, $"{t.Count((byte)id)} member{(t.Count((byte)id) == 1 ? "" : "s")}, led by {(t.Leader[id] == 255 ? "nobody" : game.FactionMemberName(t.Leader[id]))}{(t.Notorious[id] ? ", NOTORIOUS" : "")}");
+            ImGui.SameLine();
+            if (t.Open[id])
+            {
+                if (ImGui.SmallButton("Join"u8))
+                    game.SandboxFaction(FactionOp.Join, id);
+            }
+            else if (t.Asked[me.Id] == id)
+                ImGuiSafe.TextColored(Dim, "asked");
+            else if (ImGui.SmallButton("Ask to join"u8))
+                game.SandboxFaction(FactionOp.Join, id);
+            ImGui.PopID();
         }
     }
 }

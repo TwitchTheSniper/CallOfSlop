@@ -1,0 +1,27 @@
+{
+  // Factions (docs/story/STORY.md "Factions", Story/Factions): who is in one, what is theirs, and what a faction remembers
+  // of each player and group. A faction's standing with someone is its Likes (above 0) or its Grudge (below), from Relations.json.
+  "relations": [
+    { "name": "MemberOf", "exclusive": true, "about": "a person in a faction, or a player in a player faction (their group)" },
+    { "name": "Claims", "about": "a faction and a construct that is its own (by its name: the IT style's vehicles are the IT Department's)" },
+    { "name": "Faxed", "about": "a faction and a group: the pages it has faxed them (\"per my last fax\")" },
+    { "name": "KilledOurs", "about": "a faction and a player or group: members of its they have killed" },
+    { "name": "WreckedOurs", "about": "a faction and a player or group: constructs of its they have wrecked" },
+    { "name": "LootedOurs", "about": "a faction and a player or group: times they have stripped its wrecks" },
+    { "name": "KeptOurs", "about": "a faction and a player or group: its hardware they have plugged in and kept (a fax)" },
+    { "name": "Emails", "about": "a faction and a player or group: emails they have sent it" },
+    { "name": "Courtesy", "about": "a faction and a player or group: polite emails (please, thank you, form IT-7)" },
+    { "name": "Threats", "about": "a faction and a player or group: threats they have sent it" },
+    { "name": "OnJob", "about": "a player or group and a faction's job (a Thing): they hold it (Story/Factions \"jobs\"; one of each faction's at a time)" },
+    { "name": "JobAgain", "about": "a player or group and a faction's job: the story minute (plus one) before which they may not take it again" },
+    { "name": "JobRefused", "about": "a player or group and a faction's job: the courier sent their crate back once over the paperwork" },
+    { "name": "JobsDone", "about": "a faction and a player or group: jobs they have done for it" },
+    { "name": "Learnt", "about": "a player or group and a technology (a Thing): a faction taught it them, for good (Story/Factions \"teaches\"; an Assembler builds its parts for them)" }
+  ],
+  "qualities": [
+    { "name": "Notorious", "about": "a player or group: atrocities they have done (an Antimatter Warhead set off with other people in its reach); every faction hunts them, standing -100" },
+    { "name": "Hardware", "about": "faction want: its kit, from 0 (stripped bare) to 100 (all of it back)" },
+    { "name": "Respect", "about": "faction want: how well it feels it is treated, from 0 to 100" },
+    { "name": "Uptime", "about": "faction want: its network's reach, from 0 (dark) to 100" }
+  ]
+}

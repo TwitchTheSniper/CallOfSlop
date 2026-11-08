@@ -473,7 +473,7 @@ public sealed partial class ConstructEdits
             {
                 if (world.Get(h.Body) is not { } c || h.Part >= c.PartCount || !ConstructBuild.ToolFits(h.Tool, c.DefOf(h.Part)) || c.Driver != 255)
                     return "failed: that part is gone";
-                if (SalvageRefusal(c, player) is { } theirs)
+                if ((SalvageRefusal(c, player) ?? (Salvageable(c, player) ? null : Factions.RankRefusal(c.Owner, player))) is { } theirs)
                     return $"failed: {theirs}";
                 if (Contested(c, player) is { } defended)
                     return $"failed: {defended}";
@@ -483,8 +483,8 @@ public sealed partial class ConstructEdits
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
                 var salvage = Salvageable(c, player);
-                if (salvage && !Factions.Shares(c.Owner, player) && c.Owner != 255)
-                    world.Note(CNoteKind.Strip, c.Id, player); // (someone else's wreck: the story, ConstructWorldNotes.cs)
+                if (salvage || c.Damaged)
+                    world.Note(CNoteKind.Strip, c.Id, player); // (a wreck: the story keeps someone else's, and any a faction claims: ConstructWorldNotes.cs, Game/GameStory.cs)
                 var wrecked = c.Parts[h.Part].Broken;
                 var wreckedPart = c.Parts[h.Part];
                 var magPack = c.Parts[h.Part].Rounds;

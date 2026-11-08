@@ -1485,6 +1485,7 @@
     {"output": "Cargo Volume", "materials": {"steel": 1, "copper": 2}, "parts": {"Circuit Board": 1}, "seconds": 2.2, "minTier": 3},
     {"output": "Gun Workbench", "materials": {"steel": 8, "rubber": 2}, "seconds": 3.1},
     {"output": "Parts Shelf", "materials": {"steel": 9, "rubber": 2}, "seconds": 3.3},
+    {"output": "Requisition Crate", "materials": {"steel": 3, "rubber": 1}, "seconds": 2.4},
     {"output": "Storage Volume", "materials": {"steel": 3, "rubber": 1}, "seconds": 2.4},
     {"output": "Wheel Rack", "materials": {"steel": 6, "rubber": 1}, "seconds": 2.9},
     {"output": "Square Beam 0.25 m", "materials": {"steel": 1}, "seconds": 2.1},

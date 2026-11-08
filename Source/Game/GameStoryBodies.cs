@@ -130,7 +130,7 @@ public sealed partial class Game
 
         // Players of the people's side that no body names (a load, a reset): put away.
         foreach (var p in Players.Values)
-            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0)
+            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0 && !OpeningRescuerId(p.Id)) // (the opening's recovery team is its own)
             {
                 StoryBodyRemove(p);
                 removed = true;
@@ -220,7 +220,7 @@ public sealed partial class Game
             return _storyMiddleOk;
         _storyMiddleOf = World.Map;
         var sb = World.Map.Sandbox;
-        var at = sb is { RackParts.Count: > 0 } ? sb.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero;
+        var at = OpeningStoryMiddle() ?? (sb is { RackParts.Count: > 0 } ? sb.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero); // (a survival world's colony: GameSandboxOpening.cs)
         _storyMiddleOk = SandboxSpawnSpot(at + new Vector3(0, 0.5f, 0), out _storyMiddle) == null;
         if (!_storyMiddleOk)
             Console.WriteLine($"[story] {World.Map.Name}: nowhere for the people's bodies to stand near {at}; they stay in the story only");

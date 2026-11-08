@@ -12,8 +12,8 @@ public static partial class SelfTest
     private static void CheckKeybinds()
     {
         var d = Keybinds.Defaults;
-        if (d.Length != (int)GameAction.COUNT)
-            Fail($"keybinds: {d.Length} defaults for {(int)GameAction.COUNT} actions");
+        if (d.Length != Keybinds.Total)
+            Fail($"keybinds: {d.Length} defaults for {(int)GameAction.COUNT} actions x {Keybinds.Slots} bindings");
         var dupes = Duplicates(d);
         if (dupes.Length > 0)
             Fail($"keybinds: default binds share a key: {dupes}");
@@ -39,7 +39,7 @@ public static partial class SelfTest
                 var lines = new List<string> { "name=Old", "fov=90" };
                 if (version is { } ver)
                     lines.Add($"binds_version={ver}");
-                for (var i = 0; i < binds.Length; i++)
+                for (var i = 0; i < (int)GameAction.COUNT; i++) // (the primaries: what a file from before binds version 24 holds)
                     if (!skip.Contains((GameAction)i))
                         lines.Add($"bind_{(GameAction)i}={binds[i]}");
                 File.WriteAllLines(tmp, lines);
@@ -90,7 +90,7 @@ public static partial class SelfTest
 
             // 7. Every single-key starting point: migration never leaves two actions on one key that weren't already.
             var conflicts = 0;
-            for (var a = 0; a < old.Length; a++)
+            for (var a = 0; a < (int)GameAction.COUNT; a++)
                 foreach (var code in new[] { e, f, h })
                 {
                     var start = (int[])old.Clone();
@@ -118,8 +118,8 @@ public static partial class SelfTest
         string.Join("; ", Enumerable.Range(0, binds.Length)
             .Where(i => binds[i] != Keybinds.Unbound)
             .GroupBy(i => binds[i])
-            .Where(g => g.Any(a => g.Any(b => a != b && Keybinds.Overlap((GameAction)a, (GameAction)b))))
-            .Select(g => $"{Code(g.Key)}: {string.Join(", ", g.Select(i => (GameAction)i))}"));
+            .Where(g => g.Any(a => g.Any(b => Keybinds.ActionAt(a) != Keybinds.ActionAt(b) && Keybinds.Overlap(Keybinds.ActionAt(a), Keybinds.ActionAt(b)))))
+            .Select(g => $"{Code(g.Key)}: {string.Join(", ", g.Select(i => Keybinds.ActionAt(i)))}"));
 
     private static string Describe(int[] binds) =>
         $"Interact {Code(binds[(int)GameAction.Interact])}, Use equipment {Code(binds[(int)GameAction.Equipment])}, Melee {Code(binds[(int)GameAction.Melee])}"

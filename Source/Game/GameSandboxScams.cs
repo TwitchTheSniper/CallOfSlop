@@ -97,7 +97,7 @@ public sealed partial class Game
         if (ItDesk.Script is not { Malware: not null } it || _itMailCount >= MaxMail)
             return;
         var due = now + it.ReplyAfter((uint)ScamMessages * 2246822519u);
-        _itMail[_itMailCount++] = new ItMail { From = at, Page = it.MalwarePage, Due = due, Until = due + 600 };
+        _itMail[_itMailCount++] = new ItMail { From = at, Page = it.MalwarePage, Due = due, Until = due + 600, To = 255 };
     }
 
     /// <summary>Server: a player typed at a hooked computer. The scammers read it, and answer soon. False: the hook is stale (it's IT's again).</summary>
@@ -120,6 +120,14 @@ public sealed partial class Game
         return true;
     }
 
+    /// <summary>The story hears that the computer's owner fell for it: a Hooked event against the faction behind the desk (a valued customer now).</summary>
+    private void StoryHooked(Construct c, ScamDesk desk)
+    {
+        if (Story is not { } s || s.Rules.VerbId("Hooked") is not (var v and >= 0) || s.Factions.Find(desk.From) is not (var f and >= 0) || StoryByte(c.Owner) is not (var who and >= 0))
+            return;
+        s.Record(v, who, s.Factions.EntityOf(f), place: StoryPlace());
+    }
+
     /// <summary>An answer arrives, if the computer is still hooked by the same scam. One that takes: the battery pays, and the scammers are gone.</summary>
     private void ScamAnswer(in ScamMail mail, ScamDesk desk, double now)
     {
@@ -132,6 +140,7 @@ public sealed partial class Game
         if (reply.Take <= 0)
             return;
         ScamsFallenFor++;
+        StoryHooked(c, desk);
         var left = c.Charge * (1 - reply.Take); // (UseCharge settles later, so the share is worked out here)
         if (c.ChargeCapacity > 0)
             c.UseCharge(c.Charge * reply.Take);

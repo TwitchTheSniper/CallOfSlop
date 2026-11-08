@@ -138,6 +138,7 @@ public sealed partial class ConstructWorld
         m.Damage = damage;
         m.Front = 0;
         m.Speed = MegaBlasts.FrontSpeed(radius);
+        Targets?.MegaStarted(at, radius, look, by);
         m.Gun = gun;
         m.GunPart = gunPart;
         m.Ticks = 0;

@@ -20,9 +20,6 @@ public sealed partial class Ui : IDisposable
     private GlfwWindow? _window;
     private ImGuiStyle _baseStyle; // unscaled style, so rescaling never compounds
 
-    /// <summary>The player's UI scale setting (multiplies the automatic, resolution-based scale).</summary>
-    public float UserScale = 1f;
-
     /// <summary>Total scale currently applied (also used for HUD bars drawn outside ImGui).</summary>
     public float Scale => _scale;
 
@@ -133,14 +130,14 @@ public sealed partial class Ui : IDisposable
         _headlessContext = default;
     }
 
-    /// <summary>Automatic scale from the window height (1080p = 1.2x, 1440p = 1.6x) times the player's setting.</summary>
+    /// <summary>Automatic scale from the window height (1080p = 1.2x, 1440p = 1.6x) times the player's text size (UiTextSize.cs).</summary>
     private float TargetScale()
     {
         // The window's height in screen units: ImGui lays out in those. On Windows and Linux that's the framebuffer
         // height; a Mac Retina framebuffer is twice the window, and ImGui's DisplayFramebufferScale already makes it sharp.
         var h = _window == null ? 900 : OperatingSystem.IsMacOS() ? _window.Size.Y : _window.FramebufferSize.Y;
         var auto = Math.Clamp(h / 900f, 0.8f, 3f);
-        return Math.Clamp(auto * UserScale, 0.6f, 5f);
+        return Math.Clamp(auto * TextFactor, 0.7f, 5f); // (0.7: ImGui's 13 px font at 9 px, the smallest that reads)
     }
 
     private unsafe void ApplyScale(float scale)
@@ -148,7 +145,12 @@ public sealed partial class Ui : IDisposable
         var style = ImGui.GetStyle();
         *style.Ptr = _baseStyle;
         style.ScaleAllSizes(scale);
-        style.FontScaleMain = scale;
+        style.FontScaleMain = scale; // (ImGui 1.92 bakes glyphs at the size drawn: sharp text at any scale)
+        if (_scale > 0)
+        {
+            RescaleWindows(scale / _scale); // (windows the player sized keep their proportion: UiTextSize.cs)
+            _compactIn = 3; // the old size's glyphs go once nothing has drawn them for a few frames
+        }
         _scale = scale;
     }
 
@@ -161,6 +163,8 @@ public sealed partial class Ui : IDisposable
         var target = TargetScale();
         if (MathF.Abs(target - _scale) > 0.01f)
             ApplyScale(target); // between frames, so ImGui never sees a half-changed style
+        CompactFontsIfDue();
+        KeepWindowsOnScreen(); // (UiTextSize.cs)
         if (_platform != null)
         {
             PlatformNewFrame(); // (UiPlatformFrame.cs: the backend's NewFrame without its per-frame monitor scan)
@@ -229,6 +233,8 @@ public sealed partial class Ui : IDisposable
         // Sandbox has no arena layer: nothing top left (the invite and the keys are in Esc), the plain lines bottom right, no
         // health number, score, level or perks (UiSandboxHud.cs).
         var arena = game.Module.ArenaExtras;
+        if (!arena)
+            DrawTutorial(game, pos, size, settings); // the warden's induction, top left (UiTutorial.cs)
 
         // ---- Top-left: session info -------------------------------------------------
         if (arena)

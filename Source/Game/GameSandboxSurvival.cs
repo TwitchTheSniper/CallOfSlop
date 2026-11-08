@@ -68,10 +68,10 @@ public sealed partial class Game
     /// <summary>Server, as a player spawns: the first time this match, where the kit is.</summary>
     private void SandboxTellKit(Player p)
     {
-        if (!_sbKitBuilt || p.Bot != null || _sbKitTold[p.Id])
-            return;
+        if (!_sbKitBuilt || p.Bot != null || _sbKitTold[p.Id] || OpeningHas(p.Id))
+            return; // (in the opening: told when they wake, GameSandboxOpening.cs)
         _sbKitTold[p.Id] = true;
-        SandboxHands.Notices.Add((p.Id, "Survival: your start kit stands near the parts rack"));
+        SandboxHands.Notices.Add((p.Id, _opColony != 0 ? "Survival: the colony's tools stand round its fence" : "Survival: your start kit stands near the parts rack"));
     }
 
     /// <summary>
@@ -87,6 +87,8 @@ public sealed partial class Game
         if (kit == null)
             return;
         var from = s.RackParts.Count > 0 ? s.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero;
+        if (SandboxSurvivalOption)
+            from = OpeningBuild(from); // (the penal colony first, the kit round it: GameSandboxOpening.cs)
         foreach (var name in kit)
         {
             var c = SandboxKitPiece(name, from);
@@ -100,7 +102,8 @@ public sealed partial class Game
         }
     }
 
-    private Construct? SandboxKitPiece(string name, Vector3 from)
+    /// <summary>A kit piece (a blueprint or a part) on the first clear spot <paramref name="rMin"/> to <paramref name="rMax"/> m round <paramref name="from"/> whose ground varies under <paramref name="level"/> m, or null.</summary>
+    private Construct? SandboxKitPiece(string name, Vector3 from, float rMin = 0, float rMax = 120f, float level = 0.5f)
     {
         var ground = ConstructWorld.Ground(World.Query, from.X, from.Z);
         Construct? c;
@@ -115,12 +118,12 @@ public sealed partial class Game
         var mid = new Vector2(c.LocalMin.X + c.LocalMax.X, c.LocalMin.Z + c.LocalMax.Z) * 0.5f;
         var reach = new Vector2(c.LocalMax.X - c.LocalMin.X, c.LocalMax.Z - c.LocalMin.Z).Length() * 0.5f;
         // Rings round the rack: the first spot in the arena, level, and clear of what is already there.
-        for (var r = reach + 5f; r < 120f; r += 3f)
+        for (var r = MathF.Max(rMin, reach + 5f); r < rMax; r += 3f)
             for (var k = 0; k < 16; k++)
             {
                 var a = k * MathF.Tau / 16;
                 var at = from + new Vector3(MathF.Cos(a), 0, MathF.Sin(a)) * r;
-                if (!SandboxKitSpotClear(c, at, reach))
+                if (!SandboxKitSpotClear(c, at, reach, level))
                     continue;
                 var g = ConstructWorld.Ground(World.Query, at.X, at.Z);
                 c.Pos += new Vector3(at.X - mid.X - ground.X, g.Y - ground.Y, at.Z - mid.Y - ground.Z);
@@ -137,7 +140,7 @@ public sealed partial class Game
         return null;
     }
 
-    private bool SandboxKitSpotClear(Construct self, Vector3 at, float reach)
+    private bool SandboxKitSpotClear(Construct self, Vector3 at, float reach, float level = 0.5f)
     {
         var map = World.Map;
         if (MathF.Abs(at.X) + reach + 2f > map.HalfX || MathF.Abs(at.Z) + reach + 2f > map.HalfZ)
@@ -159,6 +162,6 @@ public sealed partial class Game
             low = MathF.Min(low, y);
             high = MathF.Max(high, y);
         }
-        return high - low < 0.5f;
+        return high - low < level;
     }
 }

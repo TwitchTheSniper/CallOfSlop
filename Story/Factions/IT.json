@@ -1,0 +1,115 @@
+{
+  // A faction (docs/story/STORY.md "Factions"): who they are, where they live, what is theirs, what they want, how they rate
+  // the players, and the deeds they remember. A deed is an event of "verb" whose "theirs" role (the target unless named) is
+  // the faction's: the faction itself, one of its members, or a construct it claims. The doer must be a player; the deed
+  // adds 1 to the "remember" relation the faction holds towards them and their group, moves its standing with both by
+  // "standing" (from -100 to 100), and its "wants" by theirs. Standing is the faction's Likes (above 0) or Grudge (below).
+  // Its words are in Story/Office/IT.json, whose pages, replies and notices can ask about all of this ("when").
+  // "teaches": technologies (parts an Assembler won't build until the faction has taught them), taught for good the first
+  // time its standing with a player or group comes to the tier. "rivals": a rise in its standing takes that share (percent)
+  // of the rise off the rival's. A deed with "whose" is against another faction's things (someone else's vans).
+  "format": "call-of-slop-faction/1",
+  "name": "IT Department",
+  "about": "the people who kept the servers running when everything else stopped; they still think they run the network",
+  "home": "The Server Farm",
+  "claims": [ "IT " ],
+  "members": [
+    { "name": "Deborah Lyle", "about": "Head of IT Service Delivery, has never been seen outside a meeting",
+      "qualities": { "Sociable": 40, "Honest": 60, "Brave": 35, "Vengeful": 70, "Gossipy": 30, "Greedy": 45 } },
+    { "name": "Gary Pruitt", "about": "senior technician; he has a van",
+      "qualities": { "Sociable": 55, "Honest": 50, "Brave": 70, "Vengeful": 55, "Gossipy": 60, "Greedy": 30 } },
+    { "name": "Phil Ransome", "about": "network admin who sleeps in the server room and talks to the switches",
+      "qualities": { "Sociable": 15, "Honest": 75, "Brave": 40, "Vengeful": 40, "Gossipy": 10, "Greedy": 20 } },
+    { "name": "Moira Kemp", "about": "procurement; procurement is a fax machine, and the fax machine is Moira",
+      "qualities": { "Sociable": 50, "Honest": 40, "Brave": 30, "Vengeful": 60, "Gossipy": 75, "Greedy": 80 } },
+    { "name": "Kev Bassett", "about": "service desk intern, has read the script and believes it",
+      "qualities": { "Sociable": 80, "Honest": 85, "Brave": 25, "Vengeful": 10, "Gossipy": 70, "Greedy": 15 } }
+  ],
+  "wants": [
+    { "name": "Hardware", "about": "its kit back: falls as its trucks are stripped", "start": 70, "perHour": 0.5 },
+    { "name": "Respect", "about": "being thanked now and then; it fades if nobody writes", "start": 50, "perHour": -1 },
+    { "name": "Uptime", "about": "its network's reach: every fax plugged in is a node", "start": 30, "perHour": -0.5 }
+  ],
+  "tiers": [
+    { "name": "Blacklisted", "below": -50 },
+    { "name": "Flagged", "below": -15 },
+    { "name": "Unregistered", "below": 15 },
+    { "name": "Registered", "below": 50 },
+    { "name": "Admin" }
+  ],
+  "deeds": [
+    { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40, "wants": { "Respect": -20 } },
+    { "name": "Wrecked our hardware", "verb": "Wreck", "remember": "WreckedOurs", "standing": -20, "wants": { "Hardware": -10 } },
+    { "name": "Stripped our hardware", "verb": "Strip", "remember": "LootedOurs", "standing": -8, "wants": { "Hardware": -5 } },
+    { "name": "Plugged in our fax", "verb": "Keep", "remember": "KeptOurs", "standing": 5, "wants": { "Uptime": 15 },
+      "about": "IT notices a fax of its on someone's circuit: a new node on the network, and a user to register" },
+    { "name": "Polite email", "verb": "Email", "words": [ "please", "thank", "thanks", "cheers", "sorry", "apolog", "it-7" ],
+      "remember": "Courtesy", "standing": 3, "wants": { "Respect": 4 }, "every": "10m",
+      "about": "manners count, once in ten minutes (the service desk can tell)" },
+    { "name": "Threatening email", "verb": "Email", "words": [ "attack", "kill", "shoot", "destroy", "burn", " war", " die " ],
+      "remember": "Threats", "standing": -10, "wants": { "Respect": -8 }, "every": "5m" },
+    { "name": "Rude email", "verb": "Email", "words": [ "useless", "idiot", "stupid", "rubbish", "hate", "worst" ],
+      "standing": -4, "wants": { "Respect": -5 }, "every": "5m" }
+  ],
+  "teaches": [
+    { "name": "Remote Control", "tier": "Registered",
+      "about": "a registered user may operate equipment remotely, subject to the acceptable use policy",
+      "parts": [ "Remote Transmitter", "Medium Remote Transmitter", "Remote Console", "Drone Receiver" ] },
+    { "name": "Video Network", "tier": "Admin",
+      "about": "admin rights: screens that show the web, video and cameras, on the network IT says it runs",
+      "parts": [ "Browser Screen", "Medium Browser Screen", "Large Browser Screen", "Video Screen", "Medium Video Screen", "Large Video Screen",
+        "Camera Screen", "Medium Camera Screen", "Large Camera Screen" ] }
+  ],
+  "rivals": { "The Call Centre": 25 },
+  "voice": "IT HELPDESK",
+  "courier": "A man in a lanyard collects the crate, scans it twice and says the system is slow today.",
+  "jobs": [
+    { "name": "Printer on Fire",
+      "ticket": "#4471, priority Low",
+      "about": "The printer is on fire again. IT would like replacements, and Registered users are issued Remote Control.",
+      "supply": [{"part": "Fax Machine", "count": 2}, {"part": "Circuit Board", "count": 4}],
+      "standing": 6,
+      "wants": {"Hardware": 5},
+      "again": "1h",
+      "taken": "A ticket has been raised. Please send two Fax Machines and four Circuit Boards in a Requisition Crate. Have you tried turning it off and on again?",
+      "done": "Ticket #4471 closed as resolved. The printer is still on fire. Thank you for contacting the IT Department." },
+    { "name": "Cable Ducting",
+      "ticket": "#5012, priority Medium",
+      "about": "The network needs ducting: copper pipe off an Extruder, cut to length.",
+      "supply": [{"piece": "pipe", "material": "copper", "length": 6, "count": 4}],
+      "standing": 7,
+      "wants": {"Uptime": 5},
+      "again": "1h",
+      "taken": "Network expansion approved. Extrude four copper pipes, six metres or longer, and lay them in a Requisition Crate. Do not plug anything into them.",
+      "done": "Ticket #5012 closed as resolved. The cables have been ducted. Which cables is a matter for a separate ticket." },
+    { "name": "Server Cupboard",
+      "ticket": "#5190, priority High",
+      "about": "Build IT a server cupboard where you stand: they will inspect it and leave it with you, mostly.",
+      "build": [{"part": "Server Rack"}, {"part": "Network Switch"}, {"part": "Computer"}, {"part": "Fax Machine"}, {"part": "Battery"}],
+      "standing": 9,
+      "wants": {"Uptime": 10},
+      "again": "2h",
+      "taken": "On-site server cupboard required: one construct with a Server Rack, a Network Switch, a Computer, a Fax Machine and a Battery. An engineer will inspect it remotely.",
+      "done": "Ticket #5190 closed as resolved. Your cupboard passed inspection. It is now IT's cupboard, which you may keep." },
+    { "name": "Hardware Refresh",
+      "ticket": "#6001, priority Critical",
+      "tier": "Registered",
+      "about": "The annual refresh, for Registered users. Admins get the Video Network.",
+      "supply": [{"part": "Computer", "count": 4}, {"part": "Server Rack", "count": 2}, {"material": "copper", "kg": 500}],
+      "standing": 10,
+      "wants": {"Hardware": 10},
+      "again": "3h",
+      "taken": "Hardware refresh window open. Four Computers, two Server Racks and 500 kg of copper, one Requisition Crate. Admins are given the Video Network.",
+      "done": "Ticket #6001 closed as resolved. Your old hardware has been refreshed into a skip." },
+    { "name": "Satellite Uplink",
+      "ticket": "#6660, priority Urgent",
+      "tier": "Registered",
+      "about": "IT wants an uplink: dishes, masts and racks on one construct, powered or not.",
+      "build": [{"part": "Satellite Dish", "count": 2}, {"part": "Wi-Fi Mast", "count": 2}, {"part": "Router Antenna", "count": 2}, {"part": "Server Rack", "count": 2}, {"part": "Battery", "count": 2}],
+      "standing": 12,
+      "wants": {"Uptime": 15},
+      "again": "3h",
+      "taken": "Satellite uplink required: two Satellite Dishes, two Wi-Fi Masts, two Router Antennas, two Server Racks and two Batteries on one construct.",
+      "done": "Ticket #6660 closed as resolved. The uplink is up. Down is scheduled for Tuesday." }
+  ]
+}

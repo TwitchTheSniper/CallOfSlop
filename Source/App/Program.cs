@@ -305,6 +305,7 @@ public static unsafe partial class Program
             {
                 _settings.MediaBlockAds = MediaDirector.BlockAds;
                 _settings.MediaBlockWebAds = MediaDirector.BlockWebAds;
+                _settings.MediaOthersWeb = MediaDirector.OthersWeb;
                 _settings.Save();
             };
             MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
@@ -480,7 +481,7 @@ public static unsafe partial class Program
         Gfx.Init();
         InitPerf(); // the perf window's GPU timer and music counter (Program.Perf.cs)
         Ui.Init(_window);
-        Ui.UserScale = _settings.UiScale;
+        Ui.TextSize = _settings.TextSize;
         Ui.Progress = _progress;
         ApplyDisplay(); // windowed / borderless / fullscreen from settings.txt
 
@@ -498,6 +499,7 @@ public static unsafe partial class Program
             if (_settings.Display == DisplayMode.Windowed)
                 _windowedPos = pos;
         };
+        _window.OnContentScale += (_, _) => Ui.NoteMonitor(_window, Glfw.PrimaryMonitor); // the monitor's scaling changed: Text size Auto follows (UiTextSize.cs)
 
         _window.OnKey += OnKey;
         _window.OnChar += OnWebChar;
@@ -672,7 +674,7 @@ public static unsafe partial class Program
 
             if (_settings.DisplayDirty)
                 ApplyDisplay();
-            Ui.UserScale = _settings.UiScale;
+            Ui.TextSize = _settings.TextSize;
 
             if (_settings.VSync != _vsync)
             {
@@ -761,7 +763,9 @@ public static unsafe partial class Program
                 var benchCovers = Ui.WorkbenchOpen;
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiHud);
-                if (!benchCovers)
+                if (!benchCovers && g.OpeningActive)
+                    DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
+                else if (!benchCovers)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                     TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
@@ -1070,7 +1074,7 @@ public static unsafe partial class Program
                 // Shift held with another key: a Shift chord (Sandbox actions only take one; Keybinds.Assign drops it for the rest).
                 var shift = key is not (GlfwKey.LeftShift or GlfwKey.RightShift)
                             && (window.GetKey(GlfwKey.LeftShift) == GlfwKeyAction.Press || window.GetKey(GlfwKey.RightShift) == GlfwKeyAction.Press);
-                Keybinds.Assign(_settings.Binds, rebind, shift ? Keybinds.Shift(key) : Keybinds.Key(key));
+                Keybinds.Assign(_settings.Binds, rebind, Ui.RebindSlot, shift ? Keybinds.Shift(key) : Keybinds.Key(key));
             }
             Ui.Rebinding = null;
             return;
@@ -1142,7 +1146,7 @@ public static unsafe partial class Program
         }
         if (key == GlfwKey.Escape && Ui.SandboxPartsOpen && Ui.ClearSandboxPartsSearch())
             return; // Esc with text in the inventory's search box clears it (back to the category), the next Esc closes
-        if (key == GlfwKey.Tab && Ui.SandboxPartsOpen && Ui.WantsTextInput && _settings.Bind(GameAction.SandboxInventory) == Keybinds.Key(GlfwKey.Tab))
+        if (key == GlfwKey.Tab && Ui.SandboxPartsOpen && Ui.WantsTextInput && _settings.HasBind(GameAction.SandboxInventory, Keybinds.Key(GlfwKey.Tab)))
         {
             Ui.CloseSandboxParts(); // (the search box has the keyboard, so the game's keys are off: the inventory key still closes it)
             _sbMenuKeyEaten = true; // (this press closed it: the poll must not read it as a new press and open it again)
@@ -1273,7 +1277,7 @@ public static unsafe partial class Program
         {
             if (Glfw.Time - Ui.RebindStarted > 0.25)
             {
-                Keybinds.Assign(_settings.Binds, rebind, Keybinds.Mouse(button));
+                Keybinds.Assign(_settings.Binds, rebind, Ui.RebindSlot, Keybinds.Mouse(button));
                 Ui.Rebinding = null;
             }
             return;
@@ -1297,6 +1301,21 @@ public static unsafe partial class Program
 
     // ---- Keybind polling: one down/previous state per action ------------------------
     private static readonly bool[] _down = new bool[(int)GameAction.COUNT];
+    private static readonly bool[] _slotDown = new bool[Keybinds.Total]; // (each binding's: Keybinds.Resolve works on these, then any binding down puts its action down)
+    private static readonly bool[] _slotPrev = new bool[Keybinds.Total];
+
+    /// <summary>Did one of <paramref name="a"/>'s bindings that <paramref name="other"/> doesn't also have go down this frame?</summary>
+    private static bool PressedNotOn(GameAction a, GameAction other)
+    {
+        var binds = _settings.Binds;
+        for (var s = 0; s < Keybinds.Slots; s++)
+        {
+            var i = Keybinds.At(a, s);
+            if (_slotDown[i] && !_slotPrev[i] && !Keybinds.Has(binds, other, binds[i]))
+                return true;
+        }
+        return false;
+    }
     private static readonly bool[] _prev = new bool[(int)GameAction.COUNT];
 
     private static bool Down(GameAction a) => _down[(int)a];
@@ -1309,10 +1328,13 @@ public static unsafe partial class Program
     private static void PollActions()
     {
         Array.Copy(_down, _prev, _down.Length);
+        Array.Copy(_slotDown, _slotPrev, _slotDown.Length);
         var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen || _webTyping; // typing in the chat suspends the game controls
-        for (var i = 0; i < _down.Length; i++)
-            _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
-        Keybinds.Resolve(_settings.Binds, _session != null && _game is { SandboxOn: true }, _down, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
+        var binds = _settings.Binds;
+        for (var i = 0; i < _slotDown.Length; i++)
+            _slotDown[i] = !blocked && binds[i] != Keybinds.Unbound && Keybinds.IsDown(_window, binds[i]);
+        Keybinds.Resolve(binds, _session != null && _game is { SandboxOn: true }, _slotDown, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
+        Keybinds.Collapse(_slotDown, _down); // (an action is down while any of its bindings is: pressed with the first, released with the last)
     }
 
     private static void UpdateLocalPlayer(double now)
@@ -1502,11 +1524,15 @@ public static unsafe partial class Program
         if (_game.Local is { Alive: false })
             _crouchToggle = _proneToggle = false; // respawn standing
 
+        if (OpeningInput(now))
+            return; // the survival opening: lying there, only the skip key (Program.Opening.cs)
         ThirdPersonAim(); // Sandbox third person: shots and tools aim from the crosshair (Program.ThirdPerson.cs)
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
         _game.RideDrawnPose(); // (the host's aim meets the construct it rides as it is drawn: GameSandboxRide.cs)
         var sandbox = SandboxInputGuarded(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
+        if (_game.SandboxOn)
+            _game.TutorialClientFrame(Ui.SandboxPartsOpen, ToolWheelOpen); // (the induction's two cues only this PC sees: GameTutorial.cs)
         _game.RideTickPose();
         var buttons = Buttons.None;
         if (_mouseCaptured)
@@ -1695,6 +1721,7 @@ public static unsafe partial class Program
             }
         }
         Glfw.SwapInterval(_settings.VSync ? 1 : 0); // some drivers reset this on a mode change
+        Ui.NoteMonitor(_window, monitor); // Text size Auto follows this monitor's scaling (UiTextSize.cs)
         _skipNextMouseDelta = true;
         Console.WriteLine($"Display: {_settings.Display} {_window.FramebufferSize.X}x{_window.FramebufferSize.Y}");
     }
@@ -1815,8 +1842,11 @@ public static unsafe partial class Program
             pilotView = PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
             _game.Audio.SetListener(eye, fwd);
         }
+        var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: lying at the crash site, waking in the colony; Program.Opening.cs)
+        if (openingView)
+            _game.Audio.SetListener(eye, fwd);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
-        RenderOrigin(local, tp || pilotView, eye, shake, out var origin, out var eyeFromOrigin);
+        RenderOrigin(local, tp || pilotView || openingView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);
         var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
@@ -1989,7 +2019,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat)
+        if (local is { Alive: true } && !tp && !_game.OpeningActive && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2230,6 +2260,12 @@ public static unsafe partial class Program
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
         DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
+        if (_game.OpeningActive)
+        {
+            Gfx.SetBlend(false);
+            Gfx.SetDepthTest(true);
+            return; // (the survival opening has the screen: no crosshair or bars, Program.Opening.cs)
+        }
 
         if (local is { Alive: true })
         {

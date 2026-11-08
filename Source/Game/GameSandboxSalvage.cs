@@ -90,6 +90,7 @@ public sealed partial class Game
         if (!IsServer)
             return;
         SandboxSpawnsOrphan(p); // (what they spawned is nobody's now: GameSandboxSpawns.cs)
+        OpeningLeave(p); // (mid-opening: kept as if woken in the colony, GameSandboxOpening.cs)
         var kept = WorldLeaves(p); // (a saved world: what they have and what they built wait for them, GameWorldSave.cs)
         if (!kept)
             FactionPlayerGone(p, 255); // (out of their faction: GameSandboxFactions.cs)

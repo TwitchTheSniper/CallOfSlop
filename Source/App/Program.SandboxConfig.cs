@@ -119,7 +119,7 @@ public static partial class Program
         var d = c.DefOf(part);
         var e = d.Config[Math.Min(Ui.SandboxConfigCapture, d.Config.Length - 1)];
         for (var k = 0; k < e.Options.Length; k++)
-            if (ReaderAction(e.Options[k]) is { } a && _settings.Bind(a) == code)
+            if (ReaderAction(e.Options[k]) is { } a && _settings.HasBind(a, code))
             {
                 Ui.SandboxConfigCaptured(_game, k, Glfw.Time);
                 return true;

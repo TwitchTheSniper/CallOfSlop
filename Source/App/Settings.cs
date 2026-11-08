@@ -90,7 +90,7 @@ public sealed class Settings
     public DisplayMode Display = DisplayMode.Windowed;
     public int Width = 1600; // windowed size, or fullscreen resolution
     public int Height = 900;
-    public float UiScale = 1f; // multiplier on the automatic scale (which follows window height)
+    public int TextSize; // Settings > Video > Text size: 0 = Auto (follows the monitor's scaling), else a percent, Ui.TextSizeMin to Ui.TextSizeMax
     public HudWidth HudWidth = HudWidth.Wide16x9; // in-match HUD kept inside a centred area this wide
     public FoliageQuality FoliageQuality = FoliageQuality.Medium; // grass, bushes and tree canopies (Off draws none)
     public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
@@ -125,9 +125,14 @@ public sealed class Settings
     [NonSerialized] public bool DisplayDirty;
 
     // Controls
+    /// <summary>Every action's bindings, slot by slot (<see cref="Keybinds.At"/>): <c>Binds[(int)a]</c> is the primary.</summary>
     public readonly int[] Binds = (int[])Keybinds.Defaults.Clone();
 
-    public int Bind(GameAction a) => Binds[(int)a];
+    /// <summary>The binding the HUD names for <paramref name="a"/>: its first (the primary, unless that is cleared). To ask whether a key works an action, use <see cref="HasBind"/>.</summary>
+    public int Bind(GameAction a) => Keybinds.First(Binds, a);
+
+    /// <summary>Is <paramref name="code"/> one of <paramref name="a"/>'s bindings?</summary>
+    public bool HasBind(GameAction a, int code) => Keybinds.Has(Binds, a, code);
 
     // Single player
     public int Bots = 3; // 0 = "No bots (test mode)": you alone, the match never ends on its own
@@ -529,7 +534,8 @@ public sealed class Settings
                     case "display" when Enum.TryParse<DisplayMode>(v, out var dm): s.Display = dm; break;
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
-                    case "ui_scale" when float.TryParse(v, inv, out var f): s.UiScale = Math.Clamp(f, 0.6f, 2.5f); break;
+                    case "text_size": s.TextSize = Ui.ParseTextSize(v); break;
+                    case "ui_scale" when float.TryParse(v, inv, out var f) && MathF.Abs(f - 1f) > 0.01f: s.TextSize = Ui.SnapTextSize((int)MathF.Round(f * 100)); break; // (the old UI scale slider, before text_size: a size the player chose stays)
                     case "hud_width" when Enum.TryParse<HudWidth>(v, out var hw) && Enum.IsDefined(hw): s.HudWidth = hw; break;
                     case "name_tags" when Enum.TryParse<NameTagMode>(v, out var nt) && Enum.IsDefined(nt): s.NameTags = nt; break;
                     case "name_tag_health": s.NameTagHealth = v == "1"; break;
@@ -552,8 +558,12 @@ public sealed class Settings
                     case "gore" when Enum.TryParse<GoreMode>(v, true, out var gm) && Enum.IsDefined(gm): s.Gore = gm; break;
                     case "frenzy_gunsound" when Enum.TryParse<FrenzyGunSoundMode>(v, true, out var fg) && Enum.IsDefined(fg): s.FrenzyGunSound = fg; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
-                                    && action < GameAction.COUNT && int.TryParse(v, out var code):
-                        s.Binds[(int)action] = code;
+                                    && action is >= 0 and < GameAction.COUNT && int.TryParse(v, out var code):
+                        s.Binds[(int)action] = code; // the primary (every build reads this line)
+                        break;
+                    case var k when (k.StartsWith("bind2_") || k.StartsWith("bind3_")) && Enum.TryParse<GameAction>(k[6..], out var action2)
+                                    && action2 is >= 0 and < GameAction.COUNT && int.TryParse(v, out var code2):
+                        s.Binds[Keybinds.At(action2, k[4] - '1')] = code2; // a second or third binding (binds version 24; older builds skip these lines)
                         break;
                     case "binds_version" when int.TryParse(v, out var bv): bindsVersion = bv; break;
                 }
@@ -672,7 +682,7 @@ public sealed class Settings
                     $"display={Display}",
                     $"width={Width}",
                     $"height={Height}",
-                    $"ui_scale={UiScale.ToString(inv)}",
+                    $"text_size={Ui.TextSizeKey(TextSize)}",
                     $"hud_width={HudWidth}",
                     $"foliage={FoliageQuality}",
                     $"sky={SkyQuality}",
@@ -696,6 +706,7 @@ public sealed class Settings
                     $"wb_show_all_grips={(WorkbenchShowAllGrips ? 1 : 0)}",
                     $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
+                    .. Enumerable.Range(1, Keybinds.Slots - 1).SelectMany(slot => Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind{slot + 1}_{(GameAction)i}={Binds[Keybinds.At((GameAction)i, slot)]}")),
                     .. VoicePlayerLines(),
                 ],
                 SaveVersion

@@ -1,0 +1,233 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Requisition Crate",
+  "description": "A crate stamped with every faction's address. Take a faction's Supply job (F2), then fill the box with what it asks for: by chute, by hand, or lay a cut piece in it. When it holds the lot, the faction's courier collects.",
+  "group": "Storage",
+  "section": "Cargo",
+  "role": "storage",
+  "tool": "wrench",
+  "attachSeconds": 2.0,
+  "mass": 14,
+  "health": 400,
+  "armour": 5,
+  "material": "steel",
+  "color": "#7a5c34",
+  "boxes": [
+    {
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    {
+      "use": true,
+      "size": [
+        0.14,
+        0.02,
+        0.14
+      ],
+      "at": [
+        -0.12,
+        0.205,
+        0
+      ],
+      "color": "#c23b2a",
+      "detail": true
+    },
+    {
+      "use": true,
+      "size": [
+        0.14,
+        0.02,
+        0.14
+      ],
+      "at": [
+        0.12,
+        0.205,
+        0
+      ],
+      "color": "#e0d6b0",
+      "detail": true
+    },
+    {
+      "size": [
+        0.28,
+        0.02,
+        0.1
+      ],
+      "at": [
+        0,
+        -0.205,
+        0
+      ],
+      "color": "#3a2a18",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.2,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        -0.12,
+        0.2,
+        0
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        0.12,
+        0.2,
+        0
+      ],
+      "face": "+y"
+    }
+  ],
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "volume": true,
+      "chuteLoad": 160
+    }
+  },
+  "requisition": true,
+  "config": [
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size across the part (its x)."
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size up from the part (its y)."
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size along the part (its z)."
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the part (x)."
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 1.2,
+      "tooltip": "Where the box's centre is from the part (y; above it by default)."
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the part (z)."
+    },
+    {
+      "key": "material",
+      "label": "Material",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "The bulk it holds. Creative worlds only."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full the box is. It stops at what the box's open faces leave."
+    }
+  ]
+}

@@ -16,7 +16,7 @@ public static unsafe partial class Program
             SetStoryOpen(false);
             return true;
         }
-        if (key == GlfwKey.Unknown || Keybinds.Key(key) != _settings.Bind(GameAction.StoryWindow) || Ui.ChatOpen || Ui.WantsTextInput || _session == null)
+        if (key == GlfwKey.Unknown || !_settings.HasBind(GameAction.StoryWindow, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput || _session == null)
             return false;
         SetStoryOpen(!Ui.StoryOpen);
         return true;

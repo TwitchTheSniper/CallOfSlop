@@ -313,6 +313,12 @@ public sealed partial class ConstructWorld
     /// <summary>Server: where a player's hands are (the game sets it; null for a bare world): a held hose's receiver follows them.</summary>
     public Func<byte, Vector3?>? Hands;
 
+    /// <summary>
+    /// Server: may an Assembler of this owner build this part? (the game sets it: a story faction's technology is built only for
+    /// those it has taught, GameStoryTech.cs; null, or creative, builds everything.)
+    /// </summary>
+    public Func<byte, ConstructPartDef, bool>? Taught;
+
     /// <summary>A big body's last Full, on the server and every client alike: what the next patch starts from (ConstructPatch.cs).</summary>
     public readonly Dictionary<ushort, byte[]> PatchBase = new();
     public int PatchesRead, PatchMisses; // client (the self-test)
