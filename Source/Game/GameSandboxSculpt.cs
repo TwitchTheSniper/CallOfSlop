@@ -23,7 +23,7 @@ public sealed partial class Game
     /// <summary>Client (or the host itself): dig or fill at a point. The server checks everything again.</summary>
     public void SandboxSculpt(DigKind kind, Vector3 at) => SandboxSculpt(kind, at, at);
 
-    /// <summary>The same with a far end: a grade (Flatten: the same point; Fill slope: the ramp's other end). Protocol 210.</summary>
+    /// <summary>The same with a far end: a grade (Flatten: the same point; Fill slope: the ramp's other end). Protocol 215.</summary>
     public void SandboxSculpt(DigKind kind, Vector3 at, Vector3 to)
     {
         var w = SbW;
