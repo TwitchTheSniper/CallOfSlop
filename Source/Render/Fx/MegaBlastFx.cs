@@ -117,18 +117,26 @@ public static class MegaBlastFx
             var front = MathF.Min(o.Radius, o.Speed * t);
             if (dist < o.Radius * 2.5f && MathF.Abs(dist - o.Speed * t) < o.Speed * 0.25f)
                 shake = MathF.Max(shake, Math.Clamp(1.3f - dist / (o.Radius * 2f), 0.15f, 1f)); // (the shock passing)
-            Emit(ref o, t, dt, front);
+            Emit(ref o, t, dt, front, Crowd(dist, o.Radius));
         }
     }
 
-    private static void Emit(ref One o, float t, float dt, float front)
+    /// <summary>
+    /// The share of the particles born for a viewer at <paramref name="dist"/> from a blast of <paramref name="radius"/>. Its particles are tens to
+    /// hundreds of metres across, so from inside the cloud each one covers the screen and they cost by how many lie over a pixel, not by how many
+    /// there are: a 2 km antimatter blast 300 m away made a frame 12 times slower under llvmpipe (--mega-host). Inside a third of the radius a fifth
+    /// are born, rising to all of them past the radius; the look from inside is a wall of fire and smoke either way.
+    /// </summary>
+    public static float Crowd(float dist, float radius) => Math.Clamp((dist - radius * 0.33f) / (radius * 0.67f), 0.2f, 1f);
+
+    private static void Emit(ref One o, float t, float dt, float front, float crowd)
     {
         var (flashC, fireC, ringC) = Colours(o.Look);
         var r = o.Radius;
         var up = GravityFrames.UpAt(o.At);
         var side = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
         var fwd = Vector3.Cross(side, up);
-        var rate = dt * 60f; // (asks are per sixtieth of a second, so a frame rate doesn't change the look)
+        var rate = dt * 60f * crowd; // (asks are per sixtieth of a second, so a frame rate doesn't change the look; fewer seen from inside: Crowd)
         // The flash: its first frames.
         if (t < 0.12f)
         {

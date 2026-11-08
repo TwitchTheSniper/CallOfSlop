@@ -32,6 +32,14 @@ public sealed partial class Game
     }
 
     private readonly MegaDig[] _megaDigs = new MegaDig[MaxMegaDigs];
+
+    /// <summary>
+    /// Dug columns still to make room for ahead of the craters waiting (<see cref="IDigGround.Reserve"/>): a map's first 120 m crater makes about
+    /// 195,000 of them, and made by the bands that first dig them (doubling the store as it went) its worst band took 56 ms and 5.5 MB on a planetoid.
+    /// </summary>
+    private int _megaReserve;
+
+    private const int MegaReservePerTick = 15000; // span lists made a tick (about 0.8 MB): a 120 m crater's in its wait behind the front
     private int _megaDigCount;
 
     /// <summary>Big craters still being dug.</summary>
@@ -61,6 +69,7 @@ public sealed partial class Game
             return;
         }
         var wait = (int)MathF.Ceiling(r * 1.2f / MegaBlasts.FrontSpeed(MathF.Max(r, ConstructWorld.MegaRadius)) * World.TickRate);
+        _megaReserve += (int)MathF.Min(across * across * 0.785f, 1_000_000f); // (its columns made over the wait, not in its first bands: MegaDigTick)
         _megaDigs[_megaDigCount++] = new MegaDig { At = at, Radius = r, Slices = (byte)slices, Wait = wait };
     }
 
@@ -69,6 +78,8 @@ public sealed partial class Game
     {
         if (_megaDigCount == 0)
             return;
+        if (_megaReserve > 0)
+            _megaReserve = DigGround is { } ground ? ground.Reserve(_megaReserve, MegaReservePerTick) : 0;
         ref var d = ref _megaDigs[0];
         if (d.Wait > 0)
         {

@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--mega-host|--mega-client [KEY] [--map NAME] [--port P] [--clients N] [--hulls N] [--dist M] [--seconds S]</c>: what a massive blast costs in the
+/// <c>--mega-host|--mega-client [KEY] [--map NAME] [--port P] [--clients N] [--hulls N] [--dist M] [--seconds S] [--warm]</c>: what a massive blast costs in the
 /// real window (docs/perf/LIMITS.md, "Massive blasts"): a measurement, not a test; it fails nothing. Start one host and N client processes
 /// (each under xvfb in the container, on a throwaway copy of the saves): the host waits for the clients, lays N hulls round a spot
 /// <c>--dist</c> metres ahead of its player on the ground (Planetoid by default), and sets the design off there (by default the biggest antimatter
@@ -22,6 +22,8 @@ public static unsafe partial class Program
     private static readonly PerfArea[] MegaAreas = Enumerable.Range(0, (int)PerfArea.COUNT).Select(a => (PerfArea)a).ToArray();
     private const int MegaCols = 5; // before the areas: time from the blast, frame, draws, the worst server tick, ticks
     private static int _megaOps0, _megaShown0;
+    private static bool _megaWarm; // --warm: a first blast, not measured (the JIT, the first crater's columns), then the measured one
+    private static double _megaWarmAt = -1;
 
     private static void StartMegaWindow(string[] args)
     {
@@ -35,6 +37,7 @@ public static unsafe partial class Program
             _megaHulls = Math.Clamp(nh, 0, 1000);
         if (float.TryParse(Arg("--dist"), System.Globalization.CultureInfo.InvariantCulture, out var d))
             _megaDist = Math.Clamp(d, 20f, 3000f);
+        _megaWarm = args.Any(a => a.Equals("--warm", StringComparison.OrdinalIgnoreCase));
         if (double.TryParse(Arg("--seconds"), System.Globalization.CultureInfo.InvariantCulture, out var s))
             _megaSecs = Math.Clamp(s, 5, 120);
         _settings.Mode = GameMode.Sandbox;
@@ -94,6 +97,8 @@ public static unsafe partial class Program
             _megaOps0 = g.DigOpsRead;
             _megaShown0 = MegaBlastFx.Shown;
             g.LookPitch = 0.12f;
+            if (_mega == 1)
+                MegaBuild(g);
         }
         if (Perf.Filled > 2 && _megaReadyAt > 0)
         {
@@ -110,7 +115,12 @@ public static unsafe partial class Program
         if (_mega == 1 && _megaBlastAt < 0)
         {
             var have = g.Players.Count - 1;
-            if (have >= _megaClients && now - _megaReadyAt > 15)
+            if (have >= _megaClients && now - _megaReadyAt > 10 && _megaWarm && _megaWarmAt < 0)
+            {
+                _megaWarmAt = now;
+                MegaSetOff(g, now, warm: true); // (behind the host, unmeasured: its effects are over before the measured one)
+            }
+            else if (have >= _megaClients && now - _megaReadyAt > 15 && (!_megaWarm || _megaWarmAt > 0 && now - _megaWarmAt > 20))
                 MegaSetOff(g, now); // (15 s in: the clients are streamed the world and in play)
             else if (now - _megaReadyAt > 120)
                 MegaQuit($"only {have} of {_megaClients} clients came");
@@ -118,7 +128,7 @@ public static unsafe partial class Program
         }
         if (_mega == 2 && _megaBlastAt < 0)
         {
-            if (MegaBlastFx.Shown > _megaShown0)
+            if (MegaBlastFx.Shown > _megaShown0 + (_megaWarm ? 1 : 0))
             {
                 _megaBlastAt = now;
                 MegaMarkBefore(now);
@@ -146,46 +156,67 @@ public static unsafe partial class Program
             _megaFrames.RemoveRange(0, keep);
     }
 
-    private static void MegaSetOff(Game g, double now)
+    private const string MegaWarmKey = "Ordnance:B25:Impact Fuse+Fission Warhead+Bomb Tail Fins"; // (166 m: the same code, short of the hulls)
+    private static Vector3 _megaSpot;
+    private static int _megaBuilt;
+
+    private static Vector3 MegaGround(Vector3 p) => World.Map.Planetoid is { } pl ? pl.GroundUnder(p) : new Vector3(p.X, World.Map.GroundHeight(p.X, p.Z), p.Z);
+
+    /// <summary>When the host is in play: the spot ahead and the hulls round it, so they have settled before the blast.</summary>
+    private static void MegaBuild(Game g)
     {
-        if (Ordnance.Parse(_megaKey) is not { OrdStats: { } st } def || World.Map.Planetoid is not { } planet && World.Map.Terrain == null)
-        {
-            MegaQuit($"\"{_megaKey}\" isn't a design, or the map has no ground");
-            return;
-        }
         var me = g.Local!;
-        var ahead = g.LookDir(g.LookYaw, 0);
-        Vector3 Ground(Vector3 p) => World.Map.Planetoid is { } pl ? pl.GroundUnder(p) : new Vector3(p.X, World.Map.GroundHeight(p.X, p.Z), p.Z);
-        var at = Ground(me.Position + ahead * _megaDist);
+        var at = _megaSpot = MegaGround(me.Position + g.LookDir(g.LookYaw, 0) * _megaDist);
         var up = GravityFrames.Curved ? GravityFrames.UpAt(at) : Vector3.UnitY;
         var w = g.Constructs;
         var block = ConstructParts.Need("Frame Block");
         var size = block.BoundsMax - block.BoundsMin;
         var side = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
         var fwd = Vector3.Cross(side, up);
-        var rot = Quaternion.CreateFromRotationMatrix(new Matrix4x4(side.X, side.Y, side.Z, 0, up.X, up.Y, up.Z, 0, -fwd.X, -fwd.Y, -fwd.Z, 0, 0, 0, 0, 1));
-        var built = 0;
         for (var i = 0; i < _megaHulls; i++)
         {
             var a = i * 2.39996f;
             var r = 20f + 400f * MathF.Sqrt((i + 0.5f) / _megaHulls);
-            var p = Ground(at + (side * MathF.Cos(a) + fwd * MathF.Sin(a)) * r);
-            if (w.Create(p + GravityFrames.UpAt(p) * 0.3f, rot) is not { } c)
+            var p = MegaGround(at + (side * MathF.Cos(a) + fwd * MathF.Sin(a)) * r);
+            var pu = GravityFrames.Curved ? GravityFrames.UpAt(p) : Vector3.UnitY;
+            var ps = Vector3.Normalize(Vector3.Cross(pu, MathF.Abs(pu.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
+            var pf = Vector3.Cross(ps, pu);
+            var rot = Quaternion.CreateFromRotationMatrix(new Matrix4x4(ps.X, ps.Y, ps.Z, 0, pu.X, pu.Y, pu.Z, 0, -pf.X, -pf.Y, -pf.Z, 0, 0, 0, 0, 1));
+            if (w.Create(p + pu * 0.3f, rot) is not { } c)
                 break;
             for (var k = 0; k < 60; k++)
                 w.AddPart(c, block, new Vector3(k % 12 * size.X, k / 144 * size.Y, k / 12 % 12 * size.Z), 0);
             c.Rebuild();
-            built++;
+            _megaBuilt++;
         }
+    }
+
+    private static void MegaSetOff(Game g, double now, bool warm = false)
+    {
+        var key = warm ? MegaWarmKey : _megaKey;
+        if (Ordnance.Parse(key) is not { OrdStats: { } st } def || World.Map.Planetoid == null && World.Map.Terrain == null)
+        {
+            MegaQuit($"\"{key}\" isn't a design, or the map has no ground");
+            return;
+        }
+        var me = g.Local!;
+        var at = warm ? MegaGround(me.Position - (_megaSpot - me.Position)) : _megaSpot; // (the warming one as far behind the host)
+        var up = GravityFrames.Curved ? GravityFrames.UpAt(at) : Vector3.UnitY;
+        var w = g.Constructs;
         var ch = st.Flight.Charges[0];
         var pos = at + up * 0.3f;
         if (w.AddShell(new CShell { Kind = ShellKind.Bomb, Pos = pos, Prev = pos, Tested = pos, Landed = true, Delay = 1, Blast = ch.Blast, Damage = ch.Damage, Crater = ch.Crater, Design = def, By = 255, Flags = ShellFlags.Designed }) != 0)
             w.ShellBlastsWaiting++;
+        var awake = 0;
+        foreach (var c in w.Bodies)
+            awake += c.Asleep ? 0 : 1;
+        Console.WriteLine($"[mega-window] {(warm ? "warming blast" : "set off")}: {key}, {st.Blast:0} m asked ({w.CapRadius(st.Blast):0} m), crater {ch.Crater:0} m, {Vector3.Distance(me.Position, at):0} m {(warm ? "behind" : "ahead of")} the host; {_megaBuilt} hulls of 60 parts built round the spot ahead, {w.Bodies.Count} bodies ({awake} awake); {g.Players.Count} players");
+        if (warm)
+            return;
         _megaBlastAt = now;
         MegaMarkBefore(now);
         w.MegaStepWorstMs = 0;
         g.MegaDigWorstMs = 0;
-        Console.WriteLine($"[mega-window] set off {st.Blast:0} m asked ({w.CapRadius(st.Blast):0} m), crater {ch.Crater:0} m, {_megaDist:0} m ahead of the host; {built} hulls of 60 parts round it; {g.Players.Count} players");
     }
 
     private static void MegaQuit(string? why)

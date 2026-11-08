@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--bench-mega [KEY] [--bodies N] [--parts P] [--map NAME] [--cap M] [--no-crater] [--shell] [--once]</c>: what a massive blast costs (docs/perf/LIMITS.md, "Massive blasts").
+/// <c>--bench-mega [KEY] [--bodies N] [--parts P] [--map NAME] [--cap M] [--no-crater] [--shell] [--immune] [--once]</c>: what a massive blast costs (docs/perf/LIMITS.md, "Massive blasts").
 /// A command-line benchmark, not a self-test section: it fails nothing. A host and one client over the real loopback transport on a Sandbox map
 /// with terrain; N hulls of P Frame Blocks (300 of 60 by default) laid out round the middle, the two players at a few hundred metres; then the
 /// design (by default the biggest the engine allows: an antimatter bomb past the 2 km cap) is set off in the middle (shot to pieces where it lies; --shell: landed as from a rack). Every server tick of the
@@ -149,6 +149,9 @@ public static partial class SelfTest
             asleep += c.Asleep ? 1 : 0;
         Console.WriteLine($"[mega bench] steady server tick: median {steady[steady.Count / 2]:0.00} ms, worst {steady[^1]:0.00} ms; {asleep} of {w.Bodies.Count} bodies asleep");
 
+        if (args.Any(a => a.Equals("--immune", StringComparison.OrdinalIgnoreCase)))
+            foreach (var pl in server.Players.Values)
+                pl.ImmuneUntil = now + 600; // (the players live through it: thrown by the shock, as a host's immune camera is)
         // The blast: shot to pieces, its fuse, its front, its walk, its crater.
         var sent0 = server.Net.BytesSent;
         w.MegaStepWorstMs = 0;
