@@ -26,7 +26,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(small);
-        using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+        using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: 2, mapId: small.Id);
         server.MapVoteEnabled = false;
         server.WarmupEnabled = true;
@@ -132,7 +132,7 @@ public static partial class SelfTest
         a.ReadLobbyState(ref r);
         if (!a.DestructionEnabled || !a.VoiceAllowed || a.DeadChatPrivate || a.BotGearMode != BotGearMode.MatchPlayers)
             Fail("turning the lobby's host rules back on didn't reach a client");
-        if (w.Length > 40 + 3 * Game.MaxPlayers + 40)
+        if (w.Length > 40 + 3 * Game.MaxPeople + 40)
             Fail($"the lobby state is {w.Length} bytes (not compact)");
     }
 
@@ -307,7 +307,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);
-        using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+        using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: 3, mapId: map.Id);
         server.MapVoteEnabled = false;
         server.LobbyEnabled = true;

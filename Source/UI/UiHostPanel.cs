@@ -28,7 +28,7 @@ public sealed partial class Ui
     private PauseAction DrawPauseHost(Game game)
     {
         Title("Host: bots and the lobby");
-        var max = Math.Max(0, Math.Min(Game.MaxPlayers, game.MapMaxPlayers) - game.HumanCount);
+        var max = Math.Max(0, Math.Min(Game.MaxPeople, game.MapMaxPlayers) - game.HumanCount);
         _hostBots = Math.Clamp(_hostBots, 0, max);
         ImGui.SetNextItemWidth(260 * _scale);
         ImGui.SliderInt("Bots"u8, ref _hostBots, 0, max);

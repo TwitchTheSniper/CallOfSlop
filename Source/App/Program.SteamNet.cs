@@ -54,7 +54,7 @@ public static unsafe partial class Program
             Console.WriteLine($"[steam] hosting over RakNet only: {ex.Message}");
             return new NetPeer(rakNet);
         }
-        SteamPlatform.Lobby.Host((SteamLobbyKind)Math.Min(_settings.SteamLobby, (byte)2), Game.MaxPlayers);
+        SteamPlatform.Lobby.Host((SteamLobbyKind)Math.Min(_settings.SteamLobby, (byte)2), Game.MaxPeople);
         Console.WriteLine($"[steam] hosting over RakNet and Steam sockets ({SteamPlatform.LocalSteamId})");
         return new NetPeer(new DualTransport(rakNet, steam));
     }

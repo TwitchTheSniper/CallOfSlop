@@ -98,7 +98,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(yard);
-        using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id)
+        using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id)
         {
             MapVoteEnabled = false,
             LobbyEnabled = true,

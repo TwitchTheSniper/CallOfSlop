@@ -389,7 +389,7 @@ public static partial class SelfTest
     private static void PhysicsCosts()
     {
         var results = new List<string>();
-        foreach (var map in new[] { FindMap("Farmland", m => m.MaxPlayers == Game.MaxPlayers), Maps.All.FirstOrDefault(m => m.HasTerrain), Maps.Find(PhysicsTestMap) })
+        foreach (var map in new[] { FindMap("Farmland", m => m.MaxPlayers == Game.MaxPeople), Maps.All.FirstOrDefault(m => m.HasTerrain), Maps.Find(PhysicsTestMap) })
         {
             if (map == null)
                 continue;

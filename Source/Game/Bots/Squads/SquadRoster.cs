@@ -13,7 +13,7 @@ public sealed partial class Game
     public const int SquadMax = 4;
 
     private readonly List<BotSquad> _squads = new();
-    private readonly List<Player> _squadScratch = new(Map.HardMaxPlayers);
+    private readonly List<Player> _squadScratch = new(MaxPlayers);
     private ulong _squadRosterKey;
     private double _nextSquadRoster;
     private int _squadPlanCursor;

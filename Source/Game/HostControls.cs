@@ -21,7 +21,7 @@ public sealed partial class Game
     {
         if (!IsServer)
             return false;
-        count = Math.Clamp(count, 0, Math.Max(0, Math.Min(MaxPlayers, MapMaxPlayers) - HumanCount));
+        count = Math.Clamp(count, 0, Math.Max(0, Math.Min(MaxPeople, MapMaxPlayers) - HumanCount));
         var replace = skill != _botSkill;
         _botSkill = skill;
         WantedBots = count;

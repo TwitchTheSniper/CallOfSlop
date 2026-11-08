@@ -493,12 +493,12 @@ public sealed class Settings
                     case "weapon_tweaks": s.AllowWeaponTweaks = v == "1"; break;
                     case "dev_tools": s.AllowDevTools = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
-                    case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPlayers - 1); break;
+                    case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPeople - 1); break;
                     case "difficulty" when Enum.TryParse<BotDifficulty>(v, out var d): s.Difficulty = d; break;
                     case "bot_gear": s.BotGear = CallOfSlop.BotGear.Parse(v); break;
                     case "port" when ushort.TryParse(v, out var p) && p > 0: s.Port = p; break;
                     case "upnp": s.UseUpnp = v == "1"; break;
-                    case "host_bots" when int.TryParse(v, out var i): s.HostBots = Math.Clamp(i, 0, Game.MaxPlayers - 2); break;
+                    case "host_bots" when int.TryParse(v, out var i): s.HostBots = Math.Clamp(i, 0, Game.MaxPeople - 2); break;
                     case "join_address": s.JoinAddress = CleanAddress(v); break;
                     case "map" when Maps.Find(v) != null: s.MapName = v; break;
                     case "map_random": s.MapRandom = v == "1"; break;
