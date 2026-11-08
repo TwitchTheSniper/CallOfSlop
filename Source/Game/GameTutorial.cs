@@ -27,6 +27,12 @@ public sealed partial class Game
     /// <summary>A new person's induction starts this long after they arrive, unless the opening claimed them.</summary>
     public const double TutorialAutoDelay = 3;
 
+    /// <summary>
+    /// Whether a new person in a survival world starts it by itself. The self-test turns it off: the induction holds the gun and
+    /// the tools, and the sections that use them in survival aren't about it.
+    /// </summary>
+    public static bool TutorialAutoStart = true;
+
     /// <summary>A step stays up at least this long before it can complete (one already done shows as noted, not a flicker).</summary>
     public const double TutorialMinStep = 1.2;
 
@@ -40,6 +46,7 @@ public sealed partial class Game
     private readonly float[] _tutLastYaw = new float[MaxPlayers];
     private readonly Vector3[] _tutLastPos = new Vector3[MaxPlayers];
     private readonly uint[] _tutSaw = new uint[MaxPlayers]; // cues seen this step (bit per TutorialCue)
+    private readonly bool[] _tutWasRunning = new bool[MaxPlayers]; // (the gun and tools are held: their return is said once)
     private readonly Player?[] _tutWho = new Player?[MaxPlayers]; // whose state the slot holds (a new Player object in the slot: a new person)
     private PacketWriter? _tutW;
 
@@ -128,6 +135,7 @@ public sealed partial class Game
         _tutWho[id] = p;
         _tutState[id] = TutorialState.None;
         _tutStep[id] = 0;
+        _tutWasRunning[id] = false;
         _tutArrivedAt[id] = SandboxNow;
         _tutSaw[id] = 0;
         _tutAmount[id] = 0;
@@ -144,9 +152,43 @@ public sealed partial class Game
         {
             _tutLastYaw[id] = p.Yaw;
             _tutLastPos[id] = p.Position;
+            TutorialIssue(p, step, state);
         }
         TutorialSend(id);
     }
+
+    /// <summary>
+    /// Server: the induction holds the gun and the tools (Karl, 2026-11-08) and hands each over at the step that needs it
+    /// (a step's "gives"). Whatever is out that isn't issued yet goes back to bare hands (a part in them stays); the end or a
+    /// skip gives everything back.
+    /// </summary>
+    private void TutorialIssue(Player p, int step, TutorialState state)
+    {
+        var id = p.Id;
+        ref var hand = ref SandboxHands.Hand(id);
+        if (state == TutorialState.Running && step < Tutorial.Steps.Length)
+        {
+            if (Tutorial.Gate(state, step, hand.Tool) != hand.Tool)
+                SandboxHands.SetTool(id, ConstructTool.Hands, Constructs, p.Eye, p.Yaw);
+            var gives = Tutorial.Steps[step].Gives;
+            for (var t = 0; gives != 0 && t < 32; t++)
+                if ((gives & (1u << t)) != 0)
+                    SandboxHands.Notices.Add((id, $"{WardenName} issues you the {Tutorial.ToolName((ConstructTool)t)}"));
+        }
+        else if (state is TutorialState.Finished or TutorialState.Skipped && _tutWasRunning[id])
+            SandboxHands.Notices.Add((id, $"{WardenName} gives you back your gun and tools"));
+        _tutWasRunning[id] = state == TutorialState.Running;
+    }
+
+    private static string WardenName => Tutorial.Speaker.Length > 0 ? Tutorial.Speaker : "The warden";
+
+    /// <summary>Server: the tool a person's request gets while their induction runs (<see cref="Tutorial.Gate"/>), or null with why.</summary>
+    private ConstructTool? TutorialToolFor(byte id, ConstructTool asked) =>
+        id < MaxPlayers && _tutWho[id] != null ? Tutorial.Gate(_tutState[id], _tutStep[id], asked) : asked;
+
+    /// <summary>This PC's player: the same gate from the place the server last sent.</summary>
+    public ConstructTool? TutorialToolLocal(ConstructTool asked) =>
+        SandboxOn ? Tutorial.Gate(TutorialStateNow, TutorialStepNow, asked) : asked;
 
     /// <summary>Server, each Sandbox tick: who starts, and whether each running step's cue happened.</summary>
     private void TutorialTick(double now)
@@ -168,7 +210,7 @@ public sealed partial class Game
             var state = _tutState[id];
             if (state == TutorialState.None)
             {
-                if (!_tutDeferred[id] && !OpeningHas(id) && !SandboxInfiniteParts && p.Alive && now - _tutArrivedAt[id] >= TutorialAutoDelay && Phase == MatchPhase.Playing)
+                if (TutorialAutoStart && !_tutDeferred[id] && !OpeningHas(id) && !SandboxInfiniteParts && p.Alive && now - _tutArrivedAt[id] >= TutorialAutoDelay && Phase == MatchPhase.Playing)
                     TutorialGo(id, 0, TutorialState.Running); // (a new person in a survival world)
                 continue;
             }
@@ -179,6 +221,9 @@ public sealed partial class Game
                 TutorialGo(id, steps.Length, TutorialState.Finished);
                 continue;
             }
+            ref var hand = ref SandboxHands.Hand(id);
+            if (Tutorial.Gate(state, _tutStep[id], hand.Tool) != hand.Tool)
+                SandboxHands.SetTool(id, ConstructTool.Hands, Constructs, p.Eye, p.Yaw); // (a respawn or a saved world's tool: the gun stays with the warden)
             if (TutorialStepDone(p, steps[_tutStep[id]], now) && now - _tutStepAt[id] >= TutorialMinStep)
             {
                 var next = _tutStep[id] + 1;

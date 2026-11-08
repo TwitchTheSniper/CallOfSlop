@@ -237,7 +237,11 @@ public sealed partial class Ui
                     ModePicker(s);
                     var worldMap = s.Mode == GameMode.Sandbox && DrawSinglePlayerWorld(s); // (a saved world brings its map and mode: UiWorlds.cs)
                     if (s.Mode == GameMode.Sandbox && !worldMap)
+                    {
                         ImGui.Checkbox("Survival (no parts menu: gather and build)"u8, ref s.SandboxSurvival);
+                        if (s.SandboxSurvival)
+                            DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
+                    }
                     TeamRulesPicker(s); // (UiTeams.cs)
                     if (!worldMap)
                         MapPicker(s);

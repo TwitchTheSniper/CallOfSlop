@@ -43,6 +43,8 @@ public sealed class TutorialStep
     public float Seconds, Amount;
     public ConstructTool Tool;
     public GameAction[] Keys = []; // the actions its text names, in order of first use
+    public uint Gives; // the tools the warden hands over at this step ("gives"), a bit per ConstructTool
+    public uint Issued; // every tool the player has by this step: this one's and all before it, and bare hands
 }
 
 /// <summary>
@@ -121,6 +123,19 @@ public static class Tutorial
                 var tool = Str("tool", true);
                 s.Tool = ToolNamed(tool) ?? throw new FormatException($"steps[{n}] ({s.Id}): no such tool \"{tool}\"");
             }
+            if (e.TryGetProperty("gives", out var gives))
+            {
+                if (gives.ValueKind != JsonValueKind.Array)
+                    throw new FormatException($"steps[{n}] ({s.Id}): \"gives\" is a list of tool names");
+                foreach (var g in gives.EnumerateArray())
+                {
+                    var name = g.ValueKind == JsonValueKind.String ? g.GetString() ?? "" : "";
+                    s.Gives |= Bit(ToolNamed(name) ?? throw new FormatException($"steps[{n}] ({s.Id}): \"gives\": no such tool \"{name}\""));
+                }
+            }
+            s.Issued = s.Gives | Bit(ConstructTool.Hands) | (steps.Count > 0 ? steps[^1].Issued : 0);
+            if (s.Cue == TutorialCue.Tool && (s.Issued & Bit(s.Tool)) == 0)
+                throw new FormatException($"steps[{n}] ({s.Id}): asks for the {ToolName(s.Tool)}, which no step up to it gives");
             s.Keys = KeysIn(s.Text, $"steps[{n}] ({s.Id})");
             steps.Add(s);
             if (steps.Count > MaxSteps)
@@ -138,6 +153,40 @@ public static class Tutorial
                 throw new FormatException($"{where}: player text is ASCII only");
         return s;
     }
+
+    public static uint Bit(ConstructTool t) => 1u << (int)t;
+
+    /// <summary>
+    /// The tool a player in the induction gets when they ask for <paramref name="asked"/> (Karl, 2026-11-08: no gun and no
+    /// tools until a step hands them over): it, bare hands for a gun or for putting a tool away, or null while it isn't
+    /// issued yet. Outside a running induction every tool is theirs. Client and server ask the same.
+    /// </summary>
+    public static ConstructTool? Gate(TutorialState state, int step, ConstructTool asked)
+    {
+        if (state != TutorialState.Running || step >= Steps.Length)
+            return asked;
+        if (asked == ConstructTool.None)
+            return ConstructTool.Hands;
+        return (Steps[step].Issued & Bit(asked)) != 0 ? asked : null;
+    }
+
+    /// <summary>What a refused tool says.</summary>
+    public static string NotIssued(ConstructTool t) => $"{(Speaker.Length > 0 ? Speaker : "The warden")} hasn't issued you the {ToolName(t)} yet";
+
+    /// <summary>A tool as the warden calls it in running text.</summary>
+    public static string ToolName(ConstructTool t) => t switch
+    {
+        ConstructTool.Welder or ConstructTool.Wrench => "attach tool",
+        ConstructTool.Linker => "linking tool",
+        ConstructTool.GroundDrill => "ground drill",
+        ConstructTool.PhysicsGun => "physics gun",
+        ConstructTool.NoCollide => "no-collide tool",
+        ConstructTool.Texture => "texture paint tool",
+        ConstructTool.Material => "material painter",
+        ConstructTool.Tracks => "track tool",
+        ConstructTool.Hands => "hands",
+        _ => t.Label() + " tool",
+    };
 
     private static ConstructTool? ToolNamed(string name) => name.ToLowerInvariant() switch
     {

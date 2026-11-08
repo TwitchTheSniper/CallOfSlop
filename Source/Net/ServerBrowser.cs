@@ -350,8 +350,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 204: body styles phase 2 (docs/vehiclekit/BODY-STYLES.md): a lofted bay's key may reach 2 m of half width and 4 m of height, and the part a key names changed (its feet 12 cm in from its ends, its wall rows toned by height, a door bay's ends closed out to a wider section), so both ends must make the same part from it.
     // 205: body styles phase 3 (docs/vehiclekit/BODY-STYLES.md, section 9): lofted cabs, hoods and window panes named by their keys ("Hull Loft (cab...", "(hood...", "(pane..."; HullLoft.Cabs.cs) go on the wire as a lofted bay does; a 204 peer makes stand-ins of them.
     // 206: body styles phase 4 (docs/vehiclekit/BODY-STYLES.md, section 10): a faction's trim and fittings named by their keys ("Hull Loft (trim...", "(deco..."; HullLoft.Trim.cs) go on the wire as a lofted bay does, and the parts some phase-3 keys name changed (a capsule's side panes, a pane's shorter seal, a cage's ridge bar), so both ends must make the same part; a 205 peer makes stand-ins of the new ones.
-    // 207: the penal colony's lockdown (GameColonyLockdown.cs, docs/story/OPENING.md "Lockdown"): Msg.ColonyAlarm at the end of Msg.
-    public const byte ProtocolVersion = 207;
+    // 207: survival death options (GameSandboxDeath.cs, docs/sandbox/DEATH.md): a death byte after the survival byte in the Welcome, its bits in the lobby state's second Zombies byte, Msg.Fate at the end of Msg (where a player wakes, permadeath).
+    // 208: the penal colony's lockdown (GameColonyLockdown.cs, docs/story/OPENING.md "Lockdown"): Msg.ColonyAlarm at the end of Msg.
+    public const byte ProtocolVersion = 208;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -66,7 +66,7 @@ Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes
 
 ## Network and save
 
-- **`Msg.ColonyAlarm`** (protocol 207), server to all: u8 on, vec where it sounds; reliable when it changes, and again every
+- **`Msg.ColonyAlarm`** (protocol 208), server to all: u8 on, vec where it sounds; reliable when it changes, and again every
   3 s while on (unreliable) for anyone who joins.
 - **`Msg.Opening`** (protocol 199), server to one client, reliable: the beat (`OpeningStage`), the time into it, its length,
   the camera's focus, the caption and the line just said. Lines also go as ordinary chat lines from the speaker (over their head),

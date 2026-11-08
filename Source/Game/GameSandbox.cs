@@ -187,6 +187,7 @@ public sealed partial class Game
         SandboxShareRules(); // (a new map's rules; the option itself comes with the lobby state)
         ResetSandboxSpawns();
         OpeningReset();
+        SandboxDeathResetAll(); // (checkpoints and fates: a world's records bring theirs, GameSandboxDeath.cs)
         SpawnPlacing = false;
         _sbPoseTick = 0;
     }
@@ -215,7 +216,10 @@ public sealed partial class Game
         h = SandboxHand.Empty;
         h.Tool = p.Bot == null ? tool : ConstructTool.None;
         if (IsServer)
+        {
             WorldOnSpawn(p); // (back where they were, in a saved world)
+            SandboxRespawnAt(p); // (after a death: at their checkpoint, GameSandboxDeath.cs)
+        }
     }
 
     /// <summary>Server: how fast the player is moving in the world: their own speed plus, on a construct, that part of it (what a part they drop leaves with).</summary>
@@ -287,7 +291,7 @@ public sealed partial class Game
             ref var h = ref SandboxHands.Hand(p.Id);
             SandboxRiderHands(p, ref h); // (the frame they stand in, for the tools: GameSandboxRide.cs)
             if (_sbAlive[p.Id] && !p.Alive)
-                SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (a death drops the backpack's contents as pickups)
+                SandboxDied(p); // (the backpack, permadeath, where they will wake: GameSandboxDeath.cs)
             _sbAlive[p.Id] = p.Alive;
             if (!p.Alive)
             {
@@ -313,6 +317,8 @@ public sealed partial class Game
                 continue;
             }
             h.SeatPart = (ushort)seat; // (parts are renumbered when others come off)
+            if (c.Parts[seat].D.Bunk)
+                SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
             var keysWere = c.Parts[seat].Keys;
             c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)
@@ -801,7 +807,12 @@ public sealed partial class Game
             case CActKind.Sculpt:
                 return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:
-                return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()), Constructs, eye, p.Yaw);
+            {
+                var asked = ConstructToolWire.From(r.U8());
+                return TutorialToolFor(p.Id, asked) is { } tool // (the warden's induction holds tools until their step: GameTutorial.cs)
+                    ? hands.SetTool(p.Id, tool, Constructs, eye, p.Yaw)
+                    : Tutorial.NotIssued(asked);
+            }
             case CActKind.NudgeBegin:
             case CActKind.NudgeSteer:
             case CActKind.NudgeEnd:
@@ -1158,6 +1169,8 @@ public sealed partial class Game
     /// <summary>Client (or the host itself): ask the server for an action. The host's own action is handled at once.</summary>
     public void SandboxSend(CActKind kind, ushort body = 0, ushort part = 0, ushort socket = 0, byte variant = 0, Vector3 at = default, float yaw = 0, ushort body2 = 0, Vector3? normal = null, byte flags = 0)
     {
+        if (kind == CActKind.Tool && SandboxToolGated(ref part))
+            return;
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)kind);
         switch (kind)
@@ -1233,6 +1246,31 @@ public sealed partial class Game
             return;
         }
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>
+    /// This PC's tool request through the induction's gate (GameTutorial.cs): a tool not issued yet, or the gun, is refused
+    /// with a line; putting a tool away takes out bare hands. True when nothing is to be sent.
+    /// </summary>
+    private bool SandboxToolGated(ref ushort part)
+    {
+        var asked = (ConstructTool)part;
+        if (TutorialToolLocal(asked) is not { } tool)
+        {
+            SandboxSay(Tutorial.NotIssued(asked));
+            return true;
+        }
+        if (tool == asked)
+            return false;
+        ref var h = ref SandboxHands.Hand(LocalId);
+        if (h.Tool == tool)
+        {
+            if (h.Held == ConstructParts.None)
+                SandboxSay($"{(Tutorial.Speaker.Length > 0 ? Tutorial.Speaker : "The warden")} holds your gun until the induction is over");
+            return true;
+        }
+        part = (ushort)tool;
+        return false;
     }
 
     /// <summary>Client: a tool change shows at once, the part it puts away with it (ConstructEdits.SetTool decides the same).</summary>

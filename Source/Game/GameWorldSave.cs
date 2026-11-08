@@ -68,13 +68,13 @@ public sealed partial class Game
     }
 
     /// <summary>A new world on a map; its file is made as play starts.</summary>
-    public static WorldSession WorldNew(string name, Map map, bool survival)
+    public static WorldSession WorldNew(string name, Map map, bool survival, byte death = 0)
     {
         var clean = WorldStore.CleanName(name);
         return new WorldSession
         {
             Folder = WorldStore.FolderFor(clean),
-            Meta = new WorldMeta { Name = clean, MapName = map.Name, Survival = survival, CreatedUtc = DateTime.UtcNow.Ticks },
+            Meta = new WorldMeta { Name = clean, MapName = map.Name, Survival = survival, Death = death, CreatedUtc = DateTime.UtcNow.Ticks },
         };
     }
 
@@ -88,6 +88,7 @@ public sealed partial class Game
         if (world == null)
             return;
         SandboxSurvivalOption = world.Meta.Survival;
+        (SandboxDeathRule, SandboxKeepPack) = FromDeathByte(world.Meta.Death); // (the world's own death rules: GameSandboxDeath.cs)
         SandboxShareRules();
         world.Applied = !world.HasSave;
         world.SaveAtStart = !world.HasSave;
@@ -303,6 +304,7 @@ public sealed partial class Game
         rec.Materials = mats.ToArray();
         WorldStores.Copy(SandboxHands.Pack(p.Id), rec.Pack);
         TutorialCatch(p, rec); // (the induction: GameTutorial.cs)
+        DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 
@@ -568,6 +570,9 @@ public sealed partial class Game
             case WorldSaveWriter.TutorialTag:
                 WorldReadTutorial(r, ws); // (GameTutorial.cs)
                 break;
+            case WorldSaveWriter.Fate:
+                WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
+                break;
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
                 break;
@@ -832,6 +837,7 @@ public sealed partial class Game
         }
         FactionPlayerBack(p, rec.Offline); // (their faction again: GameSandboxFactions.cs)
         TutorialArrive(p, rec); // (where they were in the induction: GameTutorial.cs)
+        DeathArrive(p, rec); // (their checkpoint, and whether they are dead for good: GameSandboxDeath.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)

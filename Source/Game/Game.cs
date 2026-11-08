@@ -1207,6 +1207,7 @@ public sealed partial class Game : IDisposable
             {
                 AllocProfile.Mark("local player");
                 var cmd = OpeningFilter(p, NoclipFilter(p, FreezeFilter(SampleLocalInput(0))));
+                p.LastInput = cmd; // (what the host's own player pressed this tick, as a client's is: the induction's cues read it, GameTutorial.cs)
                 p.Yaw = cmd.Yaw;
                 p.Pitch = cmd.Pitch;
                 p.Weapon = cmd.Weapon;
@@ -1903,7 +1904,8 @@ public sealed partial class Game : IDisposable
                     .U32(PartSet.Hash).U16((ushort)Parts.All.Length) // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
                     .U8((byte)GravityPercent) // protocol 48: the host's gravity setting (GameGravity.cs), so prediction falls the same way
                     .U16(ServerInfo.ProtocolVersion) // protocol 74: a different build is refused at the door (GameHostBye.cs)
-                    .U8((byte)(SandboxSurvivalOption ? 1 : 0)); // protocol 127: Sandbox survival, before anything a client predicts (GameSandboxSurvival.cs)
+                    .U8((byte)(SandboxSurvivalOption ? 1 : 0)) // protocol 127: Sandbox survival, before anything a client predicts (GameSandboxSurvival.cs)
+                    .U8(SandboxDeathByte); // protocol 207: survival's death rules (GameSandboxDeath.cs)
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
@@ -2133,6 +2135,7 @@ public sealed partial class Game : IDisposable
                     break;
                 }
                 HearSandboxSurvival(r.Has(1) && r.U8() != 0); // (GameSandboxSurvival.cs)
+                HearSandboxDeath(r.Has(1) ? r.U8() : 0); // (GameSandboxDeath.cs)
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.
@@ -2225,6 +2228,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Opening when !IsServer:
                 ReadOpening(ref r); // the survival opening's beat (GameSandboxOpening.cs)
+                break;
+            case (byte)Msg.Fate when !IsServer:
+                ReadFate(ref r); // where we wake after a death, and permadeath (GameSandboxDeath.cs)
                 break;
             case (byte)Msg.Space:
                 ReadSpace(ref r); // the space bubble: system, clock, ships (GameSpace.cs)

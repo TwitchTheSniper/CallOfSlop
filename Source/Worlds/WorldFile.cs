@@ -16,12 +16,14 @@ public sealed class WorldMeta
     public long CreatedUtc, SavedUtc; // ticks
     public double PlayedSeconds;
     public int Bodies, Parts, Players;
+    public byte Death; // survival's death rules (Game.DeathByte: respawn, last checkpoint or permadeath, and keep the backpack); after Players, so an older file reads 0, a plain respawn
 
     public void Write(SaveWriter w)
     {
         w.Str(Name).Str(MapName).Str(Build);
         w.U8((byte)(Survival ? 1 : 0)).U32(MapHash).I64(CreatedUtc).I64(SavedUtc).F64(PlayedSeconds);
         w.I32(Bodies).I32(Parts).I32(Players);
+        w.U8(Death);
     }
 
     public static WorldMeta Read(SaveReader r) => new()
@@ -37,6 +39,7 @@ public sealed class WorldMeta
         Bodies = r.I32(),
         Parts = r.I32(),
         Players = r.I32(),
+        Death = r.Has(1) ? r.U8() : (byte)0,
     };
 }
 
@@ -81,7 +84,10 @@ public static class WorldFile
         if (length < 0 || length > 65536 || !r.Has(length))
             throw new WorldFileException("its header is cut short");
         var at = r.Pos;
+        var end = r.End;
+        r.End = at + length; // (the meta reads no further than its own length: a field added at its end reads as absent in an older file)
         var meta = WorldMeta.Read(r);
+        r.End = end;
         r.Pos = at + length;
         return (format, meta, 8 + r.Pos);
     }
