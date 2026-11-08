@@ -5665,11 +5665,13 @@ world"): Msg.CAct `Spawn` (u8 what, u8 difficulty, u8 gun kind, u8 its value, u8
 and `ClearSpawns`. The server checks the permission (joined players may spawn unless the host turns that off in the Spawn
 tab), the spot (`SandboxSpawnSpot`: ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and
 the caps (a request over a cap is cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a
-bot a tick, 8 individual zombies a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+4 bots a tick, 8 individual zombies a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks). A tick's new bots share
+one roster message.
 
-**Joined players** have the same tab within limits of their own, so a client can't take the host's tick: at most
-`SpawnClientBots` (8) bots and `SpawnClientZombies` (64) zombies out at once, spawners on their constructs included, all
-under the host's bot cap (16 by default, shared with everyone) and the individual tier's cap (300 zombies at once, shared).
+**Joined players** have the same tab. Bots have no limit of their own any more (Karl, 2026-11-08: fights of hundreds):
+`SpawnClientBots` is the whole bot cap, shared with everyone, which the host can lower in the Spawn tab ("Most bots";
+192 by default, the most there are ids for). Zombies stay limited: `SpawnClientZombies` (64) out at once, spawners on
+their constructs included, under the individual tier's cap (300 zombies at once, shared).
 Their zombies are always individuals: the crowd and mass tiers have no owners, so they couldn't be counted or cleared per
 player. A client's clear (**Clear mine**) takes only what is theirs, even when the host has turned their spawning off; the
 host's Clear all takes everything. What a player spawned is nobody's once they leave, so the next person given that id
@@ -5679,8 +5681,20 @@ neither inherits it nor has it count against them.
 mode state like any team. The Sandbox's `AreEnemies`: enemy bots against everyone else and never each other; friendly bots
 never against people or each other; people still free-for-all among themselves. A friendly bot follows whoever spawned it
 (a spawner's holds near the spawner), and with zombies within 22 m fights them as a Zombies co-op bot does; an enemy bot
-hunts. Spawned bots never respawn: 3 s after dying they leave. Bots need player ids: at most 28 spawned bots (the host's
-cap, 16 by default; one id is always kept free for a person joining).
+hunts. Spawned bots never respawn: 3 s after dying they leave.
+
+**Ids and scale.** Every body needs a player id (a byte). Ids 0 to 31 are the lobby's seats, for people (and the arena
+modes' bots); ids 32 to 223 (`Game.FreeNpcId`) are for bodies the world spawns: Spawn tab and spawner bots, the story's
+people, the opening's rescuers, the colony's riot officers. So there are at most 192 such bodies at once
+(`SpawnBotCapMax`), and a world full of them never stops a person joining. Owner bytes from 224 up are players away from
+a saved world (`WorldSession.OfflineBase`; 31 records fit, a later one's things are nobody's while they're away). The
+snapshot's presence mask has a bit per id (`PlayerMask`, protocol 212) and a snapshot splits into up to 15 parts. Far
+bodies already go every other snapshot; the Sandbox hands state sends a spawned body only while its hand holds
+something. `--bot-bench [sizes] [--seconds S] [--net]` measures a fight (README, "Testing without playing"): on the
+cloud box 183 bots fighting cost about 6 ms a server tick (budget 8), 100 about 3 ms; a client gets about 115 KB/s of
+snapshots with 190 bodies. What keeps it there: a crowded scan looks at the nearest 12 enemies in view, nearest first
+(`BotScanLooksCrowded`), and a shot only rewinds bodies near its line (`ServerResolveShot`'s cull). Ragdolls stay
+capped by their pool (`Ragdolls.Capacity`), so a battlefield keeps the newest bodies.
 
 **Zombies**: the Sandbox gives the Zombies AI a stand-in Zombies map (`SandboxZMap`: one area over the whole map, one
 spawner out of the ground, no doors, windows or buyables, a crowd so the mass horde is on), ticked from the Sandbox tick

@@ -355,7 +355,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 209: co-op story opening and induction (docs/story/OPENING.md, docs/sandbox/TUTORIAL.md "Together"): TutorialOp.Group (server to one client: their group's progress on the step) at the end of TutorialOp.
     // 210: corpses that pile up and that players walk over (GameCorpses.cs, docs/sandbox/CORPSES.md): Msg.Corpse at the end of Msg.
     // 211: the Joystick (AnalogLever.cs, an Analog Lever with "axes": 2): a u16 Y after CActKind.AnalogLever's flags, and after each value of CBodyKind.Analog.
-    public const byte ProtocolVersion = 211;
+    // 212: hundreds of Sandbox bots (GameSandboxSpawns.cs): player ids up to 223 (spawned bodies above the 32 lobby seats), the snapshot's presence mask a word count and 64-bit words (PlayerMask), up to 15 snapshot parts, and the Sandbox hands state sends people always and a spawned body only while its hand holds something.
+    public const byte ProtocolVersion = 212;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

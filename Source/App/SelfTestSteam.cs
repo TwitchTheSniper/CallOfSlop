@@ -220,7 +220,7 @@ public static partial class SelfTest
             var clock = Stopwatch.StartNew();
             var now = 0.0;
             World.SetMap(map);
-            using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1, mapId: map.Id);
+            using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1, mapId: map.Id);
             server.MapVoteEnabled = false;
             server.WarmupEnabled = true;
             using var client = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Guest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);

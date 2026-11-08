@@ -25,15 +25,15 @@ public sealed partial class Game
     /// <summary>Self-test: false sends everyone in every snapshot (to compare).</summary>
     public static bool SnapshotRelevance = true;
 
-    private readonly List<SnapPlayer> _snapFast = new(Map.HardMaxPlayers);
-    private readonly List<SnapPlayer> _snapMine = new(Map.HardMaxPlayers);
-    private readonly List<SnapSlow> _snapSlow = new(Map.HardMaxPlayers);
+    private readonly List<SnapPlayer> _snapFast = new(MaxPlayers);
+    private readonly List<SnapPlayer> _snapMine = new(MaxPlayers);
+    private readonly List<SnapSlow> _snapSlow = new(MaxPlayers);
     private readonly List<PacketWriter> _snapParts = new();
     private readonly SnapSlow[] _lastSlow = new SnapSlow[256];
     private readonly uint[] _slowChangedTick = new uint[256];
     private readonly bool[] _lastAlive = new bool[256];
     private readonly uint[] _aliveChangedTick = new uint[256];
-    private uint _lastPresent;
+    private PlayerMask _lastPresent;
     private uint _snapCounter;
 
     /// <summary>Snapshot statistics (server): packets and payload bytes built, and the most parts one snapshot needed. A client counts the packets and bytes it receives in the first two (the perf window).</summary>
@@ -79,7 +79,7 @@ public sealed partial class Game
         _snapCounter++;
         _snapFast.Clear();
         _snapSlow.Clear();
-        uint present = 0;
+        var present = default(PlayerMask);
         foreach (var p in Players.Values)
         {
             var fast = FastOf(p);
@@ -90,9 +90,9 @@ public sealed partial class Game
                 _lastAlive[p.Id] = p.Alive;
                 _aliveChangedTick[p.Id] = ServerTick; // a death or a respawn (teleport) goes to everyone at once
             }
-            present |= 1u << (p.Id & 31);
+            present.Set(p.Id);
             var slow = SlowOf(p);
-            var isNew = (_lastPresent & (1u << (p.Id & 31))) == 0;
+            var isNew = !_lastPresent.Has(p.Id);
             if (isNew || !slow.Equals(_lastSlow[p.Id]))
             {
                 _lastSlow[p.Id] = slow;
@@ -102,6 +102,17 @@ public sealed partial class Game
                 _snapSlow.Add(slow);
         }
         _lastPresent = present;
+    }
+
+    /// <summary>Self-test (--bot-bench): the snapshot <paramref name="p"/> would get now, its bytes and parts.</summary>
+    internal (int Bytes, int Parts) SelfTestSnapshotFor(Player p)
+    {
+        PrepareSnapshot();
+        var n = BuildSnapshotFor(p);
+        var bytes = 0;
+        for (var i = 0; i < n; i++)
+            bytes += _snapParts[i].Length;
+        return (bytes, n);
     }
 
     /// <summary>Builds one recipient's packets into <see cref="_snapParts"/>; returns how many.</summary>
@@ -172,7 +183,7 @@ public sealed partial class Game
             // Whoever isn't in the presence mask has left.
             List<byte>? gone = null;
             foreach (var id in Players.Keys)
-                if (id >= 32 || (h.Present & (1u << id)) == 0)
+                if (!h.Present.Has(id))
                     (gone ??= new List<byte>()).Add(id);
             if (gone != null)
                 foreach (var id in gone)

@@ -149,7 +149,7 @@ public sealed class WorldPlayer
 public sealed class WorldSession
 {
     /// <summary>Owner bytes from here up mean someone who is away (player ids stay under <see cref="Game.MaxPlayers"/>; 255: nobody).</summary>
-    public const int OfflineBase = 64;
+    public const int OfflineBase = Game.MaxPlayers; // (31 away records fit: 224 to 254; later ones read as nobody's while away)
 
     public string Folder = "";
     public WorldMeta Meta = new();
