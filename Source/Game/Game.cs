@@ -1517,6 +1517,8 @@ public sealed partial class Game : IDisposable
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.FlakMult));
         if (kind == DamageKind.Bullet && victim.Perks.Has(PerkId.Entrenched) && IsDugIn(victim))
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.EntrenchedMult));
+        if (_bodyCount > 0 && attacker != victim && (attacker.Team == SbPeopleTeam || victim.Team == SbPeopleTeam))
+            amount = StoryMoodDamage(attacker, victim, amount); // (a story person's rage, panic...: GameStoryMoods.cs)
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;

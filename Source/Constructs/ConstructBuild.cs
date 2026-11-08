@@ -698,7 +698,7 @@ public static class ConstructBuild
         {
             if (on < 0 || on >= k)
                 return $"step {k}: \"also\" must name earlier steps";
-            var theirs = Array.FindIndex(c.DefOf(partOf[on]).Sockets, s => s.Name == socket);
+            var theirs = ConstructMerge.SocketIndex(c, partOf[on], socket);
             var mine = Array.FindIndex(c.DefOf(partOf[k]).Sockets, s => s.Name == own);
             if (theirs < 0 || mine < 0 || !world.AddLink(c, partOf[on], theirs, partOf[k], mine))
                 return $"step {k}: no link to step {on} from \"{own}\" to \"{socket}\"";
@@ -795,7 +795,9 @@ public static class ConstructBuild
                 yield return k;
                 continue;
             }
-            var ts = Array.FindIndex(td.Sockets, s => s.Name == sock);
+            if (def.Role == PartRole.GunPart)
+                ConstructMerge.Refresh(c); // (a gun part's place scales with a merged receiver or a scaled part under it: found as the rebuild would)
+            var ts = ConstructMerge.SocketIndex(c, target, sock);
             var ds = Array.FindIndex(def.Sockets, s => s.Name == own);
             if (ts < 0 || ds < 0)
             {

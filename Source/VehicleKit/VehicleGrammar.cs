@@ -588,7 +588,7 @@ public static class ShapeGrammar
         WeaponOption Pick(int k, bool aft)
         {
             var list = aft && noWhaler.Length > 0 ? noWhaler : st.Weapons;
-            var w = role != null ? role.Pick(d.Fork("weapon " + k), list) : d.Fork("weapon " + k).Pick(list);
+            var w = role != null ? role.Pick(d.Fork("weapon " + k), list) : VehicleArmoury.Pick(d.Fork("weapon " + k), list);
             FactionStyle.Noted("weapon", w.Name);
             return w;
         }
@@ -1053,7 +1053,7 @@ public static class ShapeGrammar
         // A flame gun on a sponson doesn't follow its gunner's look round (it swings 20 degrees and more off), and a long gun on a roof low and far forward would
         // want a pedestal over the cab, which a roof has no socket for: the next of the style's guns, in a seeded order.
         var at = v.CentreOf(mount);
-        var order = v.Role is { } role ? role.Order(d.Fork("weapon " + v.Turrets.Count), v.Style.Weapons) : d.Fork("weapon " + v.Turrets.Count).Shuffled(v.Style.Weapons);
+        var order = v.Role is { } role ? role.Order(d.Fork("weapon " + v.Turrets.Count), v.Style.Weapons) : VehicleArmoury.Order(d.Fork("weapon " + v.Turrets.Count), v.Style.Weapons);
         var w = order.FirstOrDefault(x => !(side && x.Box == null) && !((side || at.Y < 1.5f) && at.Z - v.GunReach(x) < 0.25f)) ?? order[0]; // (a sponson hangs low on the waist)
         FactionStyle.Noted("weapon", w.Name);
         return w;

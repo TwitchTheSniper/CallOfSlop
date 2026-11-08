@@ -637,7 +637,7 @@ public sealed partial class Game
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
             }
         foreach (var p in Players.Values)
-            if (SandboxHands.Pack(p.Id).Items > 0)
+            if (SandboxHands.Pack(p.Id).Items > 0 || !SandboxHands.HasPack(p.Id)) // (no backpack yet, story mode: a newcomer's default has one)
             {
                 ConstructNet.WritePack(w, p.Id, SandboxHands.Pack(p.Id));
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);

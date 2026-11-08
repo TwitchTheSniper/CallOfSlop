@@ -1,7 +1,8 @@
 {
   // The survival opening (docs/story/OPENING.md; Game/GameSandboxOpening.cs): what a new survival world's players go
   // through on arriving. Times are seconds. Text is ASCII. The lines are said by the bodies standing over the player
-  // ("by": the rescuer's number from 0, or "warden") at "at" seconds into their beat, and only that player hears them.
+  // ("by": the rescuer's number from 0, or "warden") at "at" seconds into their beat, to everyone in that crash's group
+  // (co-op: friends who arrive together crash together). "group": true says a line only when more than one came down together.
   "format": "call-of-slop-opening/1",
   "colony": "Penal Colony", // the blueprint everyone wakes in (its cell block), with the cast below living there
   "cast": "Penal Colony", // Story/Casts
@@ -14,6 +15,7 @@
     "out": { "time": 3.0, "caption": "..." },
     "cometo": { "time": 8.0, "lines": [
       { "at": 1.2, "by": 0, "text": "There's one over here!" },
+      { "at": 2.3, "by": 2, "text": "And another! They've come down in a job lot.", "group": true },
       { "at": 3.4, "by": 1, "text": "Still breathing. Shame, that's more paperwork." },
       { "at": 5.6, "by": 2, "text": "Ministry wants them alive. Get the stretcher." }
     ] },

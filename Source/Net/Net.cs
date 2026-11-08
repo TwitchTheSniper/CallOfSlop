@@ -106,7 +106,7 @@ public enum Msg : byte
     Jobs, // either way, Sandbox: faction jobs (a JobOp first): server -> one client, State (the jobs window: every story faction's jobs, which are open, the one held and how far along) when it changes; client -> server, Take (u8 faction, u8 job), Drop (u8 faction) (reliable ordered; GameStoryJobs.cs, protocol 203)
     Fate, // server -> one client: Sandbox survival, where that player wakes after a death and whether they are dead for good (u8: 0x80 | 0x40 dead for good | RespawnSpot) when it changes (reliable ordered; GameSandboxDeath.cs, protocol 207)
     ColonyAlarm, // server -> all, Sandbox: the penal colony's lockdown alarm (u8 on, vec where it sounds) when it changes (reliable ordered), and again every 3 s while on (unreliable) for anyone who joined (GameColonyLockdown.cs, protocol 208)
-    Corpse, // server -> all and each joiner: a body the host's ragdolls settled (u8 1, u16 its number, u8 owner, u16 zombie id, u8 look, vec, 14 x 3 i16 mm), or bodies that went (u8 2, u8 n, u16 each) (reliable ordered; GameCorpses.cs, protocol 209)
+    Corpse, // server -> all and each joiner: a body the host's ragdolls settled (u8 1, u16 its number, u8 owner, u16 zombie id, u8 look, vec, 14 x 3 i16 mm), or bodies that went (u8 2, u8 n, u16 each) (reliable ordered; GameCorpses.cs, protocol 210)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

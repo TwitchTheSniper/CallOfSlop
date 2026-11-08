@@ -23,6 +23,8 @@ public enum TutorialCue : byte
     Drill, // the ground drill dug or filled
     Assembler, // an Assembler's recipe set, or something tipped into one
     Configure, // any part's settings set
+    Stow, // a part stowed in the backpack
+    Draw, // a part drawn from the backpack
     COUNT,
 }
 
@@ -45,6 +47,8 @@ public sealed class TutorialStep
     public GameAction[] Keys = []; // the actions its text names, in order of first use
     public uint Gives; // the tools the warden hands over at this step ("gives"), a bit per ConstructTool
     public uint Issued; // every tool the player has by this step: this one's and all before it, and bare hands
+    public bool GivesPack; // the warden hands over the backpack at this step ("gives": ["backpack"])
+    public bool PackIssued; // the player has their backpack by this step (this one or one before it gave it)
 }
 
 /// <summary>
@@ -130,10 +134,18 @@ public static class Tutorial
                 foreach (var g in gives.EnumerateArray())
                 {
                     var name = g.ValueKind == JsonValueKind.String ? g.GetString() ?? "" : "";
+                    if (name.Equals("backpack", StringComparison.OrdinalIgnoreCase))
+                    {
+                        s.GivesPack = true; // (story mode starts without one: GameTutorial.cs TutorialPack)
+                        continue;
+                    }
                     s.Gives |= Bit(ToolNamed(name) ?? throw new FormatException($"steps[{n}] ({s.Id}): \"gives\": no such tool \"{name}\""));
                 }
             }
             s.Issued = s.Gives | Bit(ConstructTool.Hands) | (steps.Count > 0 ? steps[^1].Issued : 0);
+            s.PackIssued = s.GivesPack || steps.Count > 0 && steps[^1].PackIssued;
+            if (s.Cue is TutorialCue.Stow or TutorialCue.Draw && !s.PackIssued)
+                throw new FormatException($"steps[{n}] ({s.Id}): asks for the backpack, which no step up to it gives");
             if (s.Cue == TutorialCue.Tool && (s.Issued & Bit(s.Tool)) == 0)
                 throw new FormatException($"steps[{n}] ({s.Id}): asks for the {ToolName(s.Tool)}, which no step up to it gives");
             s.Keys = KeysIn(s.Text, $"steps[{n}] ({s.Id})");

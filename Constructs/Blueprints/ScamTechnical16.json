@@ -69,26 +69,30 @@
     {"part": "Square Beam 1 m", "on": 61, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Seat", "on": 62, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 62, "socket": "+y0", "by": "base"},
-    {"part": "Courier Carbine Receiver", "on": 64, "socket": "leaf", "by": "bottom"},
-    {"part": "Gun Barrel", "on": 65, "socket": "front", "by": "back"},
-    {"part": "Box Magazine", "on": 65, "socket": "top", "by": "bottom"},
-    {"part": "Ammo Box", "on": 67, "socket": "left", "by": "right"},
+    {"part": "Farmhand Pump Receiver", "on": 64, "socket": "leaf", "by": "bottom"},
+    {"part": "Farmhand Pump Receiver", "on": 65, "socket": "right", "by": "left"},
+    {"part": "Farmhand Pump Receiver", "on": 65, "socket": "top", "by": "bottom"},
+    {"part": "Farmhand Pump Receiver", "on": 66, "socket": "top", "by": "bottom"},
+    {"part": "Scattermouth Barrel", "on": 65, "socket": "merged front", "by": "back"},
+    {"part": "Shell Feed", "on": 65, "socket": "merged top", "by": "bottom"},
+    {"part": "Pump Slide", "on": 65, "socket": "merged back", "by": "front"},
+    {"part": "Ammo Box", "on": 70, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 63, "socket": "+x", "by": "-x"},
     {"part": "Cargo Volume", "on": 37, "socket": "+y1", "by": "-z", "config": {"startOn": true, "sizeX": 0.6, "sizeY": 1, "sizeZ": 1.2, "atX": 0.3, "atY": 0.4, "atZ": 0.7}},
     {"part": "Plate Steel 0.5 m", "on": 40, "socket": "+x0", "by": "back00", "spin": 1, "paint": "#f2f2ee"},
     {"part": "Slab Nose", "on": 22, "socket": "+y", "by": "engine", "paint": "#f2f2ee"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 57, "pos": [-0.689, 0.274, 3.124], "rot": [0.009, -0.0037, 0.712, 0.7022]}, "paint": "#b0b4b8"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 58, "pos": [1.187, 0.541, 3.124], "rot": [-0.0033, 0.0041, -0.7015, 0.7126]}, "paint": "#7d8a92"},
-    {"part": "Office Phone", "on": 72, "socket": "top", "by": "base"},
+    {"part": "Office Phone", "on": 76, "socket": "top", "by": "base"},
     {"part": "Office Phone", "on": 45, "socket": "front00", "by": "base"}
   ],
-  "wires": [[27, 28], [28, 22], [63, 69], [69, 65]],
+  "wires": [[27, 28], [28, 22], [63, 73], [73, 65]],
   "links": [
     {"type": "shaft", "from": 23, "to": 6, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 59, "to": 22, "nodes": [[0, 0.32, 3.56], [0, 0.55, 3.56], [-0.17, 0.55, 3.56], [-0.17, 0.55, 2.125], [-0.17, 0.05, 2.125], [-0.17, 0.05, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
   "cargo": [
-    {"part": "Ammo Box", "at": [0.55, 0.38, 2.85], "turn": 0},
+    {"part": "Ammo Crate", "at": [0.55, 0.48, 2.85], "turn": 0},
     {"part": "Ammo Crate", "at": [0.55, 0.48, 3.45], "turn": 0}
   ]
 }

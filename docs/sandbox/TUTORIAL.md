@@ -30,6 +30,7 @@ the file. The text is filled once per step and again only if a key it names is r
 | `drill` | the ground drill dug or filled |
 | `assembler` | an Assembler's settings set, or F (Use, Bin) on one |
 | `configure` | any part's settings set |
+| `stow`, `draw` | a part put in the backpack (Stow), or taken out of it (Draw) |
 
 **Tools are issued as the steps need them** (Karl, 2026-11-08). While the induction runs the player has no gun and no tool but
 bare hands: a step's `"gives": ["attach"]` (tool names as for `tool`) hands those over at that step and for every later one
@@ -38,12 +39,35 @@ same on the client (`SandboxToolGated` in `SandboxSend`: a line instead of a req
 each running tick, so a respawn's gun goes back to the warden): a tool not issued is refused, the gun or putting a tool away
 gives bare hands. Finishing or skipping gives everything back.
 
+**Story mode starts without the backpack** (Karl, 2026-11-08). Through the opening and the induction a survival player has no
+backpack until the step whose `"gives"` lists `"backpack"` (the `backpack` step, after `hold`: stow the part, draw it back);
+`TutorialStep.PackIssued` carries it to every later step, and finishing or skipping hands it over too. `TutorialPack` decides
+on the server each tick (`ConstructEdits.IssuePack`): a pack held back has no slots, and that is how every peer hears it (the
+pack message carries its slot count, so the protocol is unchanged; a newcomer is sent every pack without one). With no slots
+nothing goes in (a part given goes to the hands or drops), none is worn or drawn, and Stow says it hasn't been given yet. Only an
+empty pack is ever held back, so a replay or an old save loses nothing, and a death keeps or drops what is in it by the
+world's death rules as before. Each person is judged alone, so in co-op everyone gets theirs at their own step. Creative has
+no backpack anyway; the self-test's `TutorialAutoStart = false` leaves packs alone.
+
 The movement cues read the person's input (`Player.LastInput`); the host's own player has it set where its input is sampled
 (`Game.ServerTick`), as a client's is in `ApplyCmd`. Before 2026-11-08 it wasn't, so walk and run never completed for a host.
 
 A step stays up at least 1.2 s, so one already done shows "Noted." rather than flickering past. Action cues come from
 `SandboxAct`: after an action succeeds, `TutorialSawAct` reads its kind (and body and part where it needs them) from a copy
 of the packet; nothing is allocated.
+
+## Together (co-op, 2026-11-08)
+
+People on the same step go through the induction as a **group**: friends who woke in the colony together, everyone in a saved
+world loaded on the same step, or someone who starts, resumes or replays it while others are on that step. Each person's cue is
+still judged on them alone, but the step moves on for the whole group at once: when everyone in it who is alive has done it, or
+`TutorialGroupWait` (45 s) after the first one did, so a friend away from the keyboard can't hold the rest up (they are told the
+warden moved on without them). Tools are issued to everyone in the group at the step that gives them. Skip is per person: they
+leave the group and the rest carry on. Someone with no group (a late joiner on step 1 with nobody else there) has one of their own.
+
+The panel shows "with N others", then "Done. Waiting for Ann, Bob." once they have done the step, or "2 of 3 done: the warden is
+waiting for you." Server state per person: `_tutGroup`, `_tutDone`; each group is judged once a tick from its lowest id
+(`TutorialGroupTick`), nothing allocated; the names are built only when the group changes.
 
 ## Who starts it, and the opening's seam
 
@@ -56,10 +80,10 @@ of the packet; nothing is allocated.
 - The Esc menu (Sandbox): **Skip the induction** while it runs; **Resume** a skipped one where it stopped, or **Start it again**;
   **Replay the induction** once finished.
 
-## Network (protocol 201)
+## Network (protocol 201, the group 209)
 
 `Msg.Tutorial`, a `TutorialOp` first, reliable ordered. Server to one client: `State` (u8 step, u8 state) whenever it changes
-and when they arrive (late joiners included). Client to server: `Cue` (u8 cue), `Skip`, `Replay`, `Resume`. The host's own
+and when they arrive (late joiners included). `Group` (u8 they have done the step, u8 others in their group, u8 of them done, text who the group waits for) when their group changes. Client to server: `Cue` (u8 cue), `Skip`, `Replay`, `Resume`. The host's own
 player goes straight to the server's methods and view, with no packet.
 
 ## Saves
