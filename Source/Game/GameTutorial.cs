@@ -174,9 +174,13 @@ public sealed partial class Game
             for (var t = 0; gives != 0 && t < 32; t++)
                 if ((gives & (1u << t)) != 0)
                     SandboxHands.Notices.Add((id, $"{WardenName} issues you the {Tutorial.ToolName((ConstructTool)t)}"));
+            if (Tutorial.Steps[step].GivesPack && !SandboxHands.HasPack(id) && !SandboxInfiniteParts)
+                SandboxHands.Notices.Add((id, $"{WardenName} issues you a backpack"));
         }
-        else if (state is TutorialState.Finished or TutorialState.Skipped && _tutWasRunning[id])
-            SandboxHands.Notices.Add((id, $"{WardenName} gives you back your gun and tools"));
+        else if (state is TutorialState.Finished or TutorialState.Skipped && (_tutWasRunning[id] || !SandboxHands.HasPack(id) && !SandboxInfiniteParts))
+            SandboxHands.Notices.Add((id, !SandboxHands.HasPack(id) && !SandboxInfiniteParts
+                ? $"{WardenName} gives you back your gun and tools, and issues you a backpack"
+                : $"{WardenName} gives you back your gun and tools"));
         _tutWasRunning[id] = state == TutorialState.Running;
     }
 
@@ -207,6 +211,7 @@ public sealed partial class Game
                 TutorialFresh(p); // (a person not met before: no saved world, or the world not applied yet)
                 TutorialSend(id);
             }
+            TutorialPack(p);
             var state = _tutState[id];
             if (state == TutorialState.None)
             {
@@ -232,6 +237,22 @@ public sealed partial class Game
                     Console.WriteLine($"[tutorial] {p.Name} finished the induction");
             }
         }
+    }
+
+    /// <summary>
+    /// Server, each tick: story mode starts without the backpack (Karl, 2026-11-08). It is held back through the opening and
+    /// the induction until the step that gives it ("gives": ["backpack"]), and is theirs from then on, and after a finish or
+    /// a skip. Creative has none to give. A pack that holds something is never taken (a replay, an old save).
+    /// </summary>
+    private void TutorialPack(Player p)
+    {
+        var id = p.Id;
+        var state = _tutState[id];
+        var held = !SandboxInfiniteParts && (state == TutorialState.Running
+            ? _tutStep[id] < Tutorial.Steps.Length && !Tutorial.Steps[_tutStep[id]].PackIssued
+            : state == TutorialState.None && (TutorialAutoStart || _tutDeferred[id] || OpeningHas(id)));
+        if (SandboxHands.IssuePack(id, !held))
+            Console.WriteLine($"[tutorial] {p.Name}: backpack {(held ? "held back" : "issued")}");
     }
 
     /// <summary>Server: whether the step's cue has happened for this person (the movement cues add up as they go).</summary>
@@ -300,6 +321,12 @@ public sealed partial class Game
                 break;
             case CActKind.Sculpt:
                 saw = Bit(TutorialCue.Drill);
+                break;
+            case CActKind.Stow:
+                saw = Bit(TutorialCue.Stow);
+                break;
+            case CActKind.Draw:
+                saw = Bit(TutorialCue.Draw);
                 break;
             case CActKind.Route when r.Has(3):
             {
