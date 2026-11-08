@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-tutorial/1",
- "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun and no tools but bare hands while it runs: \"gives\" names the tools a step hands over (kept for every later step), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings).",
+ "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun, no tools but bare hands and no backpack while it runs: \"gives\" names the tools a step hands over (kept for every later step; \"backpack\" hands over the backpack), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings), stow (a part put in the backpack), draw (a part taken out of it).",
  "speaker": "Warden Pettigrew",
  "steps": [
   {
@@ -66,6 +66,14 @@
    "text": "Pick up a loose part: look at it and press {Interact}, or take one from your inventory or a shelf. It goes into your hands.",
    "warden": "Lift with the knees. The Ministry does not cover backs.",
    "cue": "hold"
+  },
+  {
+   "id": "backpack",
+   "title": "Your backpack",
+   "text": "You've been issued a backpack. With a part in your hands, press {Stow} to put it in; its slots show at the bottom of the screen. Then press {DrawPack} to take it back out. A part too big or too heavy for a slot stays in your hands.",
+   "warden": "Your backpack, returned from the evidence locker. The contents were evidence. They still are.",
+   "cue": "draw",
+   "gives": ["backpack"]
   },
   {
    "id": "attach",
