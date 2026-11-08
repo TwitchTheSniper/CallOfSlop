@@ -46,7 +46,7 @@ public sealed partial class Ui
             if (_upNext[s].Length > 0)
             {
                 ImGui.SameLine(420 * _scale);
-                ImGui.TextColored(Dim, _upNext[s]);
+                ImGuiSafe.TextColored(Dim, _upNext[s]);
             }
         }
     }
