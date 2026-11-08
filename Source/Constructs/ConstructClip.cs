@@ -146,9 +146,15 @@ public sealed class ConstructClip
                     int o = c.OtherEnd(e);
                     if (!inSet[o] || seen[o] || !Hangs(c, at, o))
                         continue;
+                    if (OnCentre(c, at, e) && !MembersSeen(c, at, seen))
+                        continue; // (a part on a merged receiver's centre socket waits for the whole square: its step names a socket only the merge has)
                     seen[o] = true;
                     into[n++] = o;
                 }
+                if (head == n)
+                    for (var k = 0; k < n && head == n; k++)
+                        if (c.MergeLead(into[k]) && MembersSeen(c, into[k], seen) && CentreWaiting(c, into[k], inSet, seen))
+                            head = k; // (the square is whole now: walk the lead's centre parts from it again)
                 for (var j = 0; j < c.JointCount; j++)
                 {
                     ref var jt = ref c.Joints[j];
@@ -174,6 +180,33 @@ public sealed class ConstructClip
                     break;
                 }
         return order;
+    }
+
+    /// <summary>Is link entry <paramref name="e"/> of part <paramref name="at"/> on one of its centre sockets (a merged receiver's lead: ConstructMerge.cs)?</summary>
+    private static bool OnCentre(Construct c, int at, int e)
+    {
+        if (!c.MergeLead(at))
+            return false;
+        ref var l = ref c.Links[e >> 1];
+        return ((e & 1) != 0 ? l.SB : l.SA) >= c.DefOf(at).Sockets.Length;
+    }
+
+    /// <summary>Does a part of the set still wait on a centre socket of <paramref name="lead"/>?</summary>
+    private static bool CentreWaiting(Construct c, int lead, bool[] inSet, bool[] seen)
+    {
+        for (var e = c.FirstLink(lead); e >= 0; e = c.NextLink(e))
+            if (OnCentre(c, lead, e) && c.OtherEnd(e) is var o && inSet[o] && !seen[o] && Hangs(c, lead, o))
+                return true;
+        return false;
+    }
+
+    /// <summary>Has the walk reached every cell of the merge <paramref name="lead"/> leads?</summary>
+    private static bool MembersSeen(Construct c, int lead, bool[] seen)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.MergeOf[i] == c.MergeOf[lead] && !seen[i])
+                return false;
+        return true;
     }
 
     /// <summary>May a build go from part <paramref name="from"/> to linked part <paramref name="to"/>: the same segment, or down into what hangs on from's joint.</summary>

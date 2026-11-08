@@ -219,6 +219,13 @@ public static class VehicleArmouryCli
                 var backGun = Enumerable.Range(0, back.GunCount).Select(g => back.Guns[g]).FirstOrDefault(g => g.MergeN == cg.MergeN && g.Def != null);
                 if (back.GunCount != guns || backGun.Def == null || backGun.Def.Damage != def.Damage || backGun.Interval != cg.Interval)
                     throw new VehicleKitException($"its blueprint builds back another gun ({back.GunCount} guns against {guns})");
+                // And as a player's Save as blueprint writes it (ConstructClip): a merged gun's centre parts go in by their "merged" socket names.
+                var clipText = ConstructClip.Of(c, "armoury").ToBlueprint("armoury", "", out var clipWhy) ?? throw new VehicleKitException($"Save as blueprint refuses it: {clipWhy}");
+                var saved = ConstructBuild.Build(new ConstructWorld(), ConstructBuild.ParseBlueprint(clipText, "saved.json"), Vector3.Zero, Quaternion.Identity, out var savedWhy)
+                    ?? throw new VehicleKitException($"its saved blueprint won't build back: {savedWhy}");
+                saved.Rebuild();
+                if (saved.GunCount != guns || !Enumerable.Range(0, saved.GunCount).Any(g => saved.Guns[g].MergeN == cg.MergeN && saved.Guns[g].Def?.Damage == def.Damage && saved.Guns[g].Interval == cg.Interval))
+                    throw new VehicleKitException($"its saved blueprint builds back another gun ({saved.GunCount} guns against {guns})");
                 var cls = VehicleRoles.ClassOf(w);
                 var mass = 0f;
                 for (var i = 0; i < c.PartCount; i++)
