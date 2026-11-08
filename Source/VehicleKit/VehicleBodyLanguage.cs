@@ -211,7 +211,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
             { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.92f, TallMax = 1.25f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25 },
         // (low and wide, flat-faceted: little height, a glacis brow)
         ["Militia"] = new([(BodyLanguage.Armour, 1)])
-            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.1f, FlareShare = 0.9f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.5 },
+            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.1f, FlareShare = 0.9f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.35 },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
         ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12)
             { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.16f, FlareShare = 0.8f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35 },

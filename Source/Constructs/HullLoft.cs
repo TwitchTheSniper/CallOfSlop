@@ -517,8 +517,8 @@ public static class HullLoft
             if (y1 - y0 < 0.01f)
                 continue;
             var (o0, o1) = (s.XAt(y0), s.XAt(y1 - 1e-4f));
-            var (i0, i1) = (DoorOutline(s, y0), DoorOutline(s, y1));
-            if (o0 < i0 + 0.012f && o1 < i1 + 0.012f)
+            var (i0, i1) = (DoorOutline(s, y0) + 0.023f, DoorOutline(s, y1) + 0.023f); // (from 3 mm outside the frame's and the cant's own outer face: a strip from its middle shared that face's plane)
+            if (o0 < i0 + 0.01f && o1 < i1 + 0.01f)
                 continue; // (the section is the outline here, or inside it: the tumblehome's own close, below)
             p.Facet([new(i0, y0, z), new(MathF.Max(o0, i0 + 0.001f), y0, z), new(MathF.Max(o1, i1 + 0.001f), y1, z), new(i1, y1, z)], Vector3.UnitZ, Steel, 0.05f);
         }

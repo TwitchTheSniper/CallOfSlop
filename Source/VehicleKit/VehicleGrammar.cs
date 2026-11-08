@@ -458,7 +458,7 @@ public static class ShapeGrammar
 
         // The rear, then fuel: one tank feeds the engine (an engine has one fuel inlet).
         var rearWeights = r.Rears.ToDictionary(x => x.Rear, x => x.Weight);
-        var backDoor = v.Look?.WantsRearDoor == true && tags.Contains("room last") && tags.Contains("long room") ? 4.0 : 1.0; // (phase 2: a body whose door would be in its back leans to a tail it can open onto)
+        var backDoor = v.Look?.WantsRearDoor == true && tags.Contains("room last") && tags.Contains("long room") ? 2.5 : 1.0; // (phase 2: a body whose door would be in its back leans to a tail it can open onto)
         p.Rear = Ch(D(VehicleLayer.Body, "rear"), "rear", m => rearWeights.ContainsKey(m.Name), m => rearWeights[m.Name] * (m.Name is "bare" or "hitch" ? backDoor : 1)) ?? Module("rear", "bare");
         foreach (var t in p.Rear.Provides)
             tags.Add(t);
