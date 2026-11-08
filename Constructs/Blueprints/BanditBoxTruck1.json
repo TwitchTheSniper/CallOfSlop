@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, swing arm/hydraulic, wing 0.75, language ledge heavy 2.52 m, flare 0.29, stepped 0.8, brow 0.83 1.25 m, tail 0.87 1.25 m, door left, sections ledge+slab, wear age 0.67 (16 rusty, 11 dirty, 1 sooty, 1 patched, 1 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under tub, flank bare, sides rails, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, swing arm/hydraulic, wing 0.75, language ledge heavy 2.52 m, flare 0.29, stepped 0.8, brow 0.83 1.25 m, tail 0.87 1.25 m, door left, sections ledge+slab, wear age 0.67 (17 rusty, 11 dirty, 1 sooty, 1 patched, 1 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under tub, flank bare, sides rails, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Box Truck 1",
   "group": "Bandit",
@@ -102,7 +102,7 @@
     {"part": "Hull Loft (150d ~D80DGyEHYFA8HBJDpy03y ~Cu0CuyGfyHo5HpQEJy03y)", "on": 77, "socket": "front10", "by": "footR1", "spin": 3, "paint": "#8c5230"},
     {"part": "Long Door Hinge", "weld": {"on": 94, "pos": [-0.775, 1.675, 4.76], "rot": [0.7071, 0, 0.7071, -0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 95, "socket": "leaf", "by": "hang", "paint": "#5e3320"},
-    {"part": "Hull Loft (100r ~D80DGyHBJDpy03y ~Bu0C0yEItBJR03R)", "on": 77, "socket": "front16", "by": "footL0", "paint": "#94603a"},
+    {"part": "Hull Loft (100r ~D80DGyHBJDpy03y ~Bu0C0yEItBJR03R)", "on": 77, "socket": "front16", "by": "footL0", "paint": "#a39a84"},
     {"part": "Seat", "on": 72, "socket": "front21", "by": "bottom"},
     {"part": "Turntable", "on": 94, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 99, "socket": "top", "by": "-y1", "paint": "#3a3330"},

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, language cabin standard 2.44 m, flare 0.07, stepped 0.8, brow 0.80 1 m, tail 0.83 1 m, door right, wear age 0.91 (5 rusty, 16 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank loaded, roof none, layout room(Brow T,Door,Bay T,Bay T-N,Bay N-T,Tail T)
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, language cabin standard 2.44 m, flare 0.07, stepped 0.8, brow 0.80 1 m, tail 0.83 1 m, door right, wear age 0.91 (6 rusty, 16 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank loaded, roof none, layout room(Brow T,Door,Bay T,Bay T-N,Bay N-T,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam War Bus 2",
   "group": "The Call Centre",
@@ -110,9 +110,9 @@
     {"part": "Long Door Hinge", "weld": {"on": 101, "pos": [1.275, 1.675, 3.99], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 102, "socket": "leaf", "by": "hang", "paint": "#7d8a92"},
     {"part": "Scrap Ladder", "on": 80, "socket": "+x0", "by": "back", "paint": "#8a9096"},
-    {"part": "Hull Loft (100 ~DG0DOyER2FB803q =)", "on": 66, "socket": "front22", "by": "footL0", "paint": "#b0b4b8"},
-    {"part": "Hull Loft (100 ~DG0DOyER2FB803q ~AW0AeyBIlBwr03T)", "on": 67, "socket": "front22", "by": "footL0", "paint": "#b0b4b8"},
-    {"part": "Hull Loft (100 ~AW0AeyBIlBwr03T ~DG0DOyER2FB803q)", "on": 68, "socket": "front22", "by": "footL0", "paint": "#8a9096"},
+    {"part": "Hull Loft (100 ~DG0DOyER2FB803q =)", "on": 66, "socket": "front22", "by": "footL0", "paint": "#7d8a92"},
+    {"part": "Hull Loft (100 ~DG0DOyER2FB803q ~AW0AeyBIlBwr03T)", "on": 67, "socket": "front22", "by": "footL0", "paint": "#7d8a92"},
+    {"part": "Hull Loft (100 ~AW0AeyBIlBwr03T ~DG0DOyER2FB803q)", "on": 68, "socket": "front22", "by": "footL0", "paint": "#7d8a92"},
     {"part": "Hull Loft (100r ~DG0DOyER2FB803q ~Cm0CuyDYYEId03C)", "on": 73, "socket": "front01", "by": "footL0", "paint": "#b0b4b8"},
     {"part": "Seat", "on": 64, "socket": "front12", "by": "bottom"},
     {"part": "Square Beam 0.75 m", "on": 11, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#2a2c30"},

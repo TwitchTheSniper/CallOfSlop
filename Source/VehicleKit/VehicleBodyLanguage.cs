@@ -670,17 +670,28 @@ public sealed partial class Vehicle
             {
                 var colour = "";
                 var own = rule.Contrast != null && i++ % 2 == 1 && d.Chance(0.7) ? rule.Contrast : role; // (a contrasting style: every other run in its contrast role, mostly)
-                for (var tries = 0; tries < 4 && (colour.Length == 0 || colour == prev); tries++)
+                for (var tries = 0; tries < 6 && (colour.Length == 0 || Near(colour, prev)); tries++)
                 {
                     colour = Style.Colour(d, tries >= 2 && rule.Contrast != null ? rule.Contrast : own);
-                    if (pick != null)
-                        colour = pick(d, colour);
+                    if (pick != null && (tries < 3 || rule.Contrast == null))
+                        colour = pick(d, colour); // (the wear's rust; after a few tries a contrasting style keeps its contrast instead)
                 }
                 foreach (var b in run)
                     Paint(b, colour);
                 prev = colour;
             }
         }
+    }
+
+    /// <summary>Two "#rrggbb" colours that read as one from a distance: no channel 40 apart (two of a style's rust browns).</summary>
+    private static bool Near(string a, string b)
+    {
+        if (a.Length != 7 || b.Length != 7)
+            return a == b;
+        for (var k = 1; k < 7; k += 2)
+            if (Math.Abs(Convert.ToInt32(a.Substring(k, 2), 16) - Convert.ToInt32(b.Substring(k, 2), 16)) >= 40)
+                return false;
+        return true;
     }
 
     /// <summary>Kit 5: the room's body language and this seed's roll of it (<see cref="BodyLook"/>); null: the fixed hull bays of kits 1 to 4.</summary>

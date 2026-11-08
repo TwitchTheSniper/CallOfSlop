@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 2 axles, front set back, inset 1.25 m, leaf/leaf, wing 0.5, language bus heavy 3.00 m, flare 0.21, plain 0.8, brow 0.76 1 m, tail 0.76 1.25 m, door right, 12 facets, wear age 0.95 (5 rusty, 13 dirty, 3 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank panniers, roof none, layout room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 2 axles, front set back, inset 1.25 m, leaf/leaf, wing 0.5, language bus heavy 3.00 m, flare 0.21, plain 0.8, brow 0.76 1 m, tail 0.76 1.25 m, door right, 12 facets, wear age 0.95 (6 rusty, 13 dirty, 3 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank panniers, roof none, layout room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Box Truck 8",
   "group": "Ministry of Slop",
@@ -84,7 +84,7 @@
     {"part": "Hull Loft (150d ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i =)", "on": 53, "socket": "front02", "by": "footL0", "paint": "#c8102e"},
     {"part": "Long Door Hinge", "weld": {"on": 76, "pos": [1.275, 1.675, 3.24], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 77, "socket": "leaf", "by": "hang", "paint": "#b5121b"},
-    {"part": "Hull Loft (100r ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i ~CO0CWPCeoCeyD1BE9aEPkEP-EINE2mDB8AxO7xW4pa03a)", "on": 60, "socket": "front01", "by": "footL0", "paint": "#be0f2a"},
+    {"part": "Hull Loft (100r ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i ~CO0CWPCeoCeyD1BE9aEPkEP-EINE2mDB8AxO7xW4pa03a)", "on": 60, "socket": "front01", "by": "footL0", "paint": "#1f4a32"},
     {"part": "Square Beam 0.75 m", "on": 7, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Square Beam 0.75 m", "on": 80, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Tread Plate 0.5 m", "on": 51, "socket": "+x2", "by": "-x0", "paint": "#c8102e"},

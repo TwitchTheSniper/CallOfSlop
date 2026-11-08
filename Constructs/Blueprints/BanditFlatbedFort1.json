@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, leaf/coil, wing 0.5, language ledge heavy 2.40 m, flare 0.21, kick-up 1.2, brow 0.75 1.5 m, tail 0.76 1 m, door left, wear age 1.27 (33 rusty, 31 dirty, 1 sooty, 3 patched, 6 rusted out), body room+gun bed, cab caged, nose ram, rear hitch, under tub, flank panniers, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, leaf/coil, wing 0.5, language ledge heavy 2.40 m, flare 0.21, kick-up 1.2, brow 0.75 1.5 m, tail 0.76 1 m, door left, wear age 1.27 (35 rusty, 31 dirty, 1 sooty, 3 patched, 6 rusted out), body room+gun bed, cab caged, nose ram, rear hitch, under tub, flank panniers, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Flatbed Fort 1",
   "group": "Bandit",
@@ -75,11 +75,11 @@
     {"part": "Bolt Deck 0.25 m", "on": 48, "socket": "+z0", "by": "-x0", "paint": "#8c5230"},
     {"part": "Bolt Deck 0.25 m", "on": 55, "socket": "-z0", "by": "-x0", "paint": "#7a4326"},
     {"part": "Hull Loft (100f ~C00C8yDfOEfUEgRBQp02p ~Cm0CmyFX-Gg7GhTDC0040)", "on": 54, "socket": "front03", "by": "footL0", "paint": "#6b3a22"},
-    {"part": "Hull Loft (150d ~Cm0CmyFX-Gg7GhTDC0040 =)", "on": 50, "socket": "front11", "by": "footR1", "spin": 3, "paint": "#8c5230"},
+    {"part": "Hull Loft (150d ~Cm0CmyFX-Gg7GhTDC0040 =)", "on": 50, "socket": "front11", "by": "footR1", "spin": 3, "paint": "#94603a"},
     {"part": "Long Door Hinge", "weld": {"on": 70, "pos": [-0.775, 1.675, 2.76], "rot": [0.7071, 0, 0.7071, -0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 71, "socket": "leaf", "by": "hang", "paint": "#94603a"},
     {"part": "Scrap Ladder", "on": 51, "socket": "+x2", "by": "back", "paint": "#94603a"},
-    {"part": "Hull Loft (100r ~Cm0CmyFX-Gg7GhTDC0040 ~BW0BeyD9lE9tEB3B3X03X)", "on": 52, "socket": "front23", "by": "footL0", "paint": "#94603a"},
+    {"part": "Hull Loft (100r ~Cm0CmyFX-Gg7GhTDC0040 ~BW0BeyD9lE9tEB3B3X03X)", "on": 52, "socket": "front23", "by": "footL0", "paint": "#8a8d8f"},
     {"part": "Seat", "on": 46, "socket": "front16", "by": "bottom"},
     {"part": "Chassis Tub 1 m", "on": 2, "socket": "+y6", "by": "footL0", "paint": "#2f2c2a"},
     {"part": "Square Beam 0.75 m", "on": 10, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#46392f"},

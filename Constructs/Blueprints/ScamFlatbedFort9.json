@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 3 axles, pusher 1.25 m, front under the hood, inset 1.75 m, hydraulic/hydraulic/hydraulic, wing 0.5, language van standard 2.75 m, flare 0.05, crowned 1.0, brow 0.75 1.25 m, tail 0.81 0.75 m, door left, wear age 0.84 (5 rusty, 14 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab cab-over, nose flat, rear porch, under stilts, flank panniers, sides walls, roof none, layout gun bed 2.5 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 3 axles, pusher 1.25 m, front under the hood, inset 1.75 m, hydraulic/hydraulic/hydraulic, wing 0.5, language van standard 2.75 m, flare 0.05, crowned 1.0, brow 0.75 1.25 m, tail 0.81 0.75 m, door left, wear age 0.84 (6 rusty, 14 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab cab-over, nose flat, rear porch, under stilts, flank panniers, sides walls, roof none, layout gun bed 2.5 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Flatbed Fort 9",
   "group": "The Call Centre",
@@ -119,10 +119,10 @@
     {"part": "Bolt Deck 0.25 m", "on": 91, "socket": "+x6", "by": "-x0", "paint": "#8a9096"},
     {"part": "Bolt Deck 0.25 m", "on": 111, "socket": "+z0", "by": "-x0", "paint": "#8a9096"},
     {"part": "Hull Loft (100f ~Be0COsCOyCnaCoUBQy7JA03E ~Ce0D8yDnHE1aE3iCaP84l04q)", "on": 97, "socket": "front03", "by": "footL0", "paint": "#8a9096"},
-    {"part": "Hull Loft (150d ~Ce0D8yDnHE1aE3iCaP84l04q =)", "on": 93, "socket": "front02", "by": "footR1", "spin": 3, "paint": "#b0b4b8"},
+    {"part": "Hull Loft (150d ~Ce0D8yDnHE1aE3iCaP84l04q =)", "on": 93, "socket": "front02", "by": "footR1", "spin": 3, "paint": "#9aa0a6"},
     {"part": "Long Door Hinge", "weld": {"on": 114, "pos": [-0.775, 1.675, 5.26], "rot": [0.7071, 0, 0.7071, -0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 115, "socket": "leaf", "by": "hang", "paint": "#7d8a92"},
-    {"part": "Hull Loft (100r ~Ce0D8yDnHE1aE3iCaP84l04q ~Bu0CWxCvaCw8CwiBZC7RS03W)", "on": 95, "socket": "front10", "by": "footL0", "paint": "#b0b4b8"},
+    {"part": "Hull Loft (100r ~Ce0D8yDnHE1aE3iCaP84l04q ~Bu0CWxCvaCw8CwiBZC7RS03W)", "on": 95, "socket": "front10", "by": "footL0", "paint": "#9aa0a6"},
     {"part": "Seat", "on": 89, "socket": "front02", "by": "bottom"},
     {"part": "Turntable", "on": 114, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 119, "socket": "top", "by": "-y1", "paint": "#2a2c30"},

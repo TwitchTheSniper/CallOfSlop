@@ -96,7 +96,7 @@
     {"part": "Steel Flush Door 1.25x2 m", "on": 87, "socket": "leaf", "by": "hang", "paint": "#8c2a2a"},
     {"part": "Scrap Ladder", "on": 73, "socket": "+x0", "by": "back", "paint": "#1f4a2e"},
     {"part": "Hull Loft (100 ~D80DGyFIyBxW03W ~D80DGyFIuBxS03S)", "on": 64, "socket": "front12", "by": "footL0", "paint": "#7b1e22"},
-    {"part": "Hull Loft (100r ~D80DGyFIuBxS03S ~C00C8yDQQAIt02t)", "on": 64, "socket": "front16", "by": "footL0", "paint": "#8c2a2a"},
+    {"part": "Hull Loft (100r ~D80DGyFIuBxS03S ~C00C8yDQQAIt02t)", "on": 64, "socket": "front16", "by": "footL0", "paint": "#2b5a3a"},
     {"part": "Hull Skirt 1 m", "on": 63, "socket": "back00", "by": "top0", "spin": 2, "paint": "#7b1e22"},
     {"part": "Hull Skirt 1 m", "on": 63, "socket": "back04", "by": "top0", "spin": 2, "paint": "#33302b"},
     {"part": "Hull Skirt 1 m", "on": 64, "socket": "back00", "by": "top0", "spin": 2, "paint": "#2b5a3a"},

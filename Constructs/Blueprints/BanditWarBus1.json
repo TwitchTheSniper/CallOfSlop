@@ -108,7 +108,7 @@
     {"part": "Bolt Deck 0.25 m", "on": 69, "socket": "-z1", "by": "-x0", "paint": "#2f2c2a"},
     {"part": "Hull Loft (125f ~Au0B0yBg78oY02Y ~BW0BeyCIu9RS03S)", "on": 77, "socket": "front03", "by": "footL0", "paint": "#6b3a22"},
     {"part": "Hull Loft (100 ~BW0BeyCIu9RS03S ~D00D8yEYuBBS03S)", "on": 78, "socket": "front02", "by": "footL0", "paint": "#6b3a22"},
-    {"part": "Hull Loft (100 ~D00D8yEYuBBS03S ~D00D8yEZRBC6046)", "on": 72, "socket": "front12", "by": "footL0", "paint": "#8c5230"},
+    {"part": "Hull Loft (100 ~D00D8yEYuBBS03S ~D00D8yEZRBC6046)", "on": 72, "socket": "front12", "by": "footL0", "paint": "#6f7477"},
     {"part": "Hull Loft (150d ~D00D8yEZRBC6046 =)", "on": 73, "socket": "front20", "by": "footL0", "paint": "#6b3a22"},
     {"part": "Long Door Hinge", "weld": {"on": 104, "pos": [1.275, 1.675, 6.24], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 105, "socket": "leaf", "by": "hang", "paint": "#7a4326"},

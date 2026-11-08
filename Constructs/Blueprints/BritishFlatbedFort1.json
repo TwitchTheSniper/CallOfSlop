@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 2.25 m, hydraulic/leaf, wing 0.5, language bus heavy 2.89 m, flare 0.08, plain 0.8, brow 0.86 1 m, tail 0.73 1.25 m, door right, 12 facets, wear age 0.74 (10 rusty, 9 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear bare, under tub, flank panniers, sides walls, roof none, layout gun bed 2.5 m+room(Brow L,Bay L-T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 2.25 m, hydraulic/leaf, wing 0.5, language bus heavy 2.89 m, flare 0.08, plain 0.8, brow 0.86 1 m, tail 0.73 1.25 m, door right, 12 facets, wear age 0.74 (11 rusty, 9 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear bare, under tub, flank panniers, sides walls, roof none, layout gun bed 2.5 m+room(Brow L,Bay L-T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Flatbed Fort 1",
   "group": "Ministry of Slop",
@@ -124,11 +124,11 @@
     {"part": "Bolt Deck 0.25 m", "on": 89, "socket": "+z0", "by": "-x0", "paint": "#c8102e"},
     {"part": "Hull Loft (100f ~CW0CeOCelCmyCv7DHVDPkDPsDQEDAcCIyA3C6xJ3pN03N ~D80DGSDOtDOyDvJEHXEXlEYAEQcEJ2DJSAxl7hs4Rx03x)", "on": 97, "socket": "front03", "by": "footL0", "paint": "#b5121b"},
     {"part": "Hull Loft (75 ~D80DGSDOtDOyDvJEHXEXlEYAEQcEJ2DJSAxl7hs4Rx03x ~D80DGWDOyDP0EHVEXkEX_EYVEQ_EJVDJzAyI7iR4SX04X)", "on": 91, "socket": "front23", "by": "footL0", "paint": "#b5121b"},
-    {"part": "Hull Loft (150d ~D80DGWDOyDP0EHVEXkEX_EYVEQ_EJVDJzAyI7iR4SX04X =)", "on": 91, "socket": "front20", "by": "footL0", "paint": "#be0f2a"},
+    {"part": "Hull Loft (150d ~D80DGWDOyDP0EHVEXkEX_EYVEQ_EJVDJzAyI7iR4SX04X =)", "on": 91, "socket": "front20", "by": "footL0", "paint": "#e8dfc8"},
     {"part": "Long Door Hinge", "weld": {"on": 119, "pos": [1.275, 1.675, 6.49], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 120, "socket": "leaf", "by": "hang", "paint": "#c8102e"},
     {"part": "Scrap Ladder", "on": 108, "socket": "+x0", "by": "back", "paint": "#1b1c1e"},
-    {"part": "Hull Loft (125r ~D80DGWDOyDP0EHVEXkEX_EYVEQ_EJVDJzAyI7iR4SX04X ~CO0CWNCelCeyCf6D9TDPkDPrDICDAZCAw9x96xG3pK03K)", "on": 93, "socket": "front01", "by": "footL0", "paint": "#be0f2a"},
+    {"part": "Hull Loft (125r ~D80DGWDOyDP0EHVEXkEX_EYVEQ_EJVDJzAyI7iR4SX04X ~CO0CWNCelCeyCf6D9TDPkDPrDICDAZCAw9x96xG3pK03K)", "on": 93, "socket": "front01", "by": "footL0", "paint": "#e8dfc8"},
     {"part": "Seat", "on": 90, "socket": "front12", "by": "bottom"},
     {"part": "Turntable", "on": 119, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 125, "socket": "top", "by": "-y1", "paint": "#2b2a28"},

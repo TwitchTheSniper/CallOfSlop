@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.5, language cabin heavy 2.48 m, flare 0.13, plain 0.7, brow 0.81 1 m, tail 0.81 0.75 m, door right, wear age 0.8 (10 rusty, 13 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under tub, flank loaded, sides rails, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.5, language cabin heavy 2.48 m, flare 0.13, plain 0.7, brow 0.81 1 m, tail 0.81 0.75 m, door right, wear age 0.8 (12 rusty, 13 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under tub, flank loaded, sides rails, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Flatbed Fort 1",
   "group": "The Call Centre",

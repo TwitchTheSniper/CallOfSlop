@@ -89,7 +89,7 @@
     {"part": "Long Door Hinge", "weld": {"on": 80, "pos": [-0.775, 1.675, 3.01], "rot": [0.7071, 0, 0.7071, -0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 81, "socket": "leaf", "by": "hang", "paint": "#7d8a92"},
     {"part": "Scrap Ladder", "on": 64, "socket": "+x2", "by": "back", "paint": "#8a9096"},
-    {"part": "Hull Loft (100r ~D80DGyEJQF3X04J ~Ce0CmyDQcEAh03H)", "on": 62, "socket": "front23", "by": "footL0", "paint": "#8a9096"},
+    {"part": "Hull Loft (100r ~D80DGyEJQF3X04J ~Ce0CmyDQcEAh03H)", "on": 62, "socket": "front23", "by": "footL0", "paint": "#7d8a92"},
     {"part": "Hull Skirt 1 m", "on": 59, "socket": "back03", "by": "top0", "spin": 2, "paint": "#b0b4b8"},
     {"part": "Hull Skirt 1 m", "on": 60, "socket": "back31", "by": "top0", "spin": 2, "paint": "#8a9096"},
     {"part": "Hull Skirt 1 m", "on": 62, "socket": "back33", "by": "top2", "spin": 2, "paint": "#8a9096"},

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.75 m, leaf/leaf, wing 0.5, language ledge heavy 2.31 m, flare 0.30, kick-up 1.1, brow 0.79 1 m, tail 0.90 1 m, door right, wear age 0.83 (28 rusty, 16 dirty, 0 sooty, 2 patched, 2 rusted out), body gun bed+room, cab cab-over, nose flat, rear bare, under skirted, flank loaded, sides rails, roof none, layout gun bed 2.5 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.75 m, leaf/leaf, wing 0.5, language ledge heavy 2.31 m, flare 0.30, kick-up 1.1, brow 0.79 1 m, tail 0.90 1 m, door right, wear age 0.83 (29 rusty, 16 dirty, 0 sooty, 2 patched, 2 rusted out), body gun bed+room, cab cab-over, nose flat, rear bare, under skirted, flank loaded, sides rails, roof none, layout gun bed 2.5 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Flatbed Fort 7",
   "group": "Bandit",
@@ -129,7 +129,7 @@
     {"part": "Long Door Hinge", "weld": {"on": 120, "pos": [1.275, 1.675, 6.49], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 121, "socket": "leaf", "by": "hang", "paint": "#94603a"},
     {"part": "Scrap Ladder", "on": 111, "socket": "+x0", "by": "back", "paint": "#46392f"},
-    {"part": "Hull Loft (100r ~D00D0yGvvI22I3KERs03s ~Bu0BuyEHzFI6FJRC3-03-)", "on": 103, "socket": "front11", "by": "footL0", "paint": "#7a4326"},
+    {"part": "Hull Loft (100r ~D00D0yGvvI22I3KERs03s ~Bu0BuyEHzFI6FJRC3-03-)", "on": 103, "socket": "front11", "by": "footL0", "paint": "#5e3320"},
     {"part": "Hull Skirt 1 m", "on": 101, "socket": "back03", "by": "top0", "spin": 2, "paint": "#5e3320"},
     {"part": "Hull Skirt 1 m", "on": 106, "socket": "back00", "by": "top2", "spin": 1, "paint": "#8c5230"},
     {"part": "Square Beam 1 m", "on": 56, "socket": "+x1", "by": "-z", "paint": "#46392f"},

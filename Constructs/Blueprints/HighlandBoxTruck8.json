@@ -73,7 +73,7 @@
     {"part": "Hull Loft (150d ~Cu0E8yF9BGHVFwQDRG8pi03n =)", "on": 46, "socket": "front23", "by": "footL0", "paint": "#2b5a3a"},
     {"part": "Long Door Hinge", "weld": {"on": 65, "pos": [1.275, 1.675, 4.99], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 66, "socket": "leaf", "by": "hang", "paint": "#2b5a3a"},
-    {"part": "Hull Loft (100r ~Cu0E8yF9BGHVFwQDRG8pi03n ~AG0BOsBOyCHVC9mAQN5wh02l)", "on": 49, "socket": "front01", "by": "footL0", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (100r ~Cu0E8yF9BGHVFwQDRG8pi03n ~AG0BOsBOyCHVC9mAQN5wh02l)", "on": 49, "socket": "front01", "by": "footL0", "paint": "#8c2a2a"},
     {"part": "Seat", "on": 46, "socket": "front16", "by": "bottom"},
     {"part": "Turntable", "on": 65, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 70, "socket": "top", "by": "-y1", "paint": "#2a2622"},
