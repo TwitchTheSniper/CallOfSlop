@@ -88,6 +88,7 @@ public static class VehicleChecks
             return r;
         }
         Static(c, w, bp, r, o);
+        View(c, r);
         ZFighting(c, r);
         Silhouette(c, r, o);
         var cargoBodies = w.Bodies.Count;
@@ -107,6 +108,52 @@ public static class VehicleChecks
     }
 
     private const float TinyFight = 6e-4f; // m2
+
+    /// <summary>
+    /// A lofted cab's view out (body styles phase 3): from the driver's eye, rays ahead in a fan (30 degrees either way, level and a little up) through what is
+    /// drawn by the lofted parts (cab, hood, rooms), glass left out; the one straight ahead must leave the vehicle, and at most a third may meet it within 4 m (its own pillars, a slit's edges).
+    /// </summary>
+    private static void View(Construct c, VehicleReport r)
+    {
+        if (c.DriveSeat < 0)
+            return;
+        var lofted = false;
+        for (var i = 0; i < c.PartCount && !lofted; i++)
+            lofted = HullLoft.CabOf(c.DefOf(i).Name) != null;
+        if (!lofted)
+            return;
+        var (tris, owner) = VehiclePlan.PartTriangles(c);
+        var keep = new List<Vector3>(tris.Length);
+        for (var t = 0; t < owner.Length; t++)
+        {
+            var o = owner[t];
+            if (o < 0 || o >= c.PartCount || c.DefOf(o).HasGlass || !c.DefOf(o).Name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
+                continue; // (the cab, the hood and the rooms: what the kit lofted; a mast or a trophy in the way is dressing, judged by the eye)
+            keep.Add(tris[3 * t]);
+            keep.Add(tris[3 * t + 1]);
+            keep.Add(tris[3 * t + 2]);
+        }
+        var solid = keep.ToArray();
+        var back = Quaternion.Inverse(c.Rot);
+        var eye = Vector3.Transform(ConstructEdits.SeatFeet(c, c.DriveSeat) + Vector3.UnitY * CallOfSlop.World.EyeHeight - c.Pos, back);
+        var ahead = Rot24.Apply(c.Parts[c.DriveSeat].Rot, -Vector3.UnitZ);
+        var (blocked, rays, straight) = (0, 0, false);
+        foreach (var pitch in (float[])[0, 4])
+            for (var yaw = -30; yaw <= 30; yaw += 10)
+            {
+                var q = Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw * MathF.PI / 180) * Quaternion.CreateFromAxisAngle(Vector3.Normalize(Vector3.Cross(ahead, Vector3.UnitY)), pitch * MathF.PI / 180);
+                var way = Vector3.Normalize(Vector3.Transform(ahead, q));
+                var hit = VehiclePlan.Hits(solid, eye, way, 4f);
+                rays++;
+                blocked += hit ? 1 : 0;
+                straight |= hit && yaw == 0 && pitch == 0;
+            }
+        r.Notes.Add($"the driver's view: {rays - blocked} of {rays} rays out of the cab clear");
+        if (straight)
+            r.Failures.Add("the driver can't see straight ahead out of the cab");
+        else if (blocked * 3 > rays)
+            r.Failures.Add($"the driver's view: {blocked} of {rays} rays ahead meet the vehicle within 4 m");
+    }
 
     /// <summary>VEHICLEKIT.md, "Silhouette": a body that fills its bounding box from the side or from above is a box, however its corners are cut. Wheels and what's on a joint don't count.</summary>
     private static void Silhouette(Construct c, VehicleReport r, VehicleCheckOptions o)

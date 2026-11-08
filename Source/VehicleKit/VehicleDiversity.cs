@@ -44,6 +44,10 @@ public static class VehicleDiversity
         /// <summary>The rooms' cross-section from the front (zeros without a room) and the whole body's, wheels left out (<see cref="FrontProfile"/>).</summary>
         public float[] RoomFront { get; init; } = new float[FrontProfile.Bins];
         public float[] BodyFront { get; init; } = new float[FrontProfile.Bins];
+
+        /// <summary>Phase 3: the cab and hood seen from the front and their outline from the side (the height along their length: a screen's rake, a hood's length), <see cref="FrontProfile.OfCab"/>.</summary>
+        public float[] CabFront { get; init; } = new float[FrontProfile.Bins];
+        public float[] CabSide { get; init; } = new float[FrontProfile.Bins];
     }
 
     /// <summary>The parts of a distance, and their weighted sum.</summary>
@@ -110,9 +114,10 @@ public static class VehicleDiversity
         var size = c.LocalMax - c.LocalMin;
         var (tris, owner) = VehiclePlan.PartTriangles(v.Built);
         var (roomFront, bodyFront) = FrontProfile.OfVehicle(v, tris, owner);
+        var (cabFront, cabSide) = FrontProfile.OfCab(v, tris, owner);
         var f = new Features(g.Name, seed, side, top, height, sideFill, topFill, kinds,
             v.Rooms.Count, v.Turrets.Count, seats, axles.Count, c.WheelCount, c.WheelCount > 0 ? zB - zF : 0, c.WheelCount > 0 ? xR - xL : 0,
-            wheelParts.ToArray(), springs.ToArray(), size, c.PartCount, c.Mass, new Dictionary<string, string>(StringComparer.Ordinal)) { RoomFront = roomFront, BodyFront = bodyFront };
+            wheelParts.ToArray(), springs.ToArray(), size, c.PartCount, c.Mass, new Dictionary<string, string>(StringComparer.Ordinal)) { RoomFront = roomFront, BodyFront = bodyFront, CabFront = cabFront, CabSide = cabSide };
         Traits(f, v, trace);
         return f;
     }
@@ -162,7 +167,8 @@ public static class VehicleDiversity
         var size = (Rel(a.Size.X, b.Size.X) + Rel(a.Size.Y, b.Size.Y) + Rel(a.Size.Z, b.Size.Z)) / 3;
         var body = FrontProfile.Dist(a.BodyFront, b.BodyFront);
         var room = a.Rooms > 0 && b.Rooms > 0 ? FrontProfile.Dist(a.RoomFront, b.RoomFront) : body;
-        var front = MathF.Min(1, FrontScale * (body + room) / 2);
+        var cab = (FrontProfile.Dist(a.CabFront, b.CabFront) + FrontProfile.Dist(a.CabSide, b.CabSide)) / 2; // (phase 3: the cab and hood, which were one fixed part each)
+        var front = MathF.Min(1, FrontScale * (body + room + cab) / 3);
         return new Parts(silhouette, kinds, layout, size, front);
     }
 
