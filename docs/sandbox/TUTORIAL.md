@@ -31,6 +31,16 @@ the file. The text is filled once per step and again only if a key it names is r
 | `assembler` | an Assembler's settings set, or F (Use, Bin) on one |
 | `configure` | any part's settings set |
 
+**Tools are issued as the steps need them** (Karl, 2026-11-08). While the induction runs the player has no gun and no tool but
+bare hands: a step's `"gives": ["attach"]` (tool names as for `tool`) hands those over at that step and for every later one
+(`TutorialStep.Issued`), and a `tool` step whose tool no step up to it gives refuses the file. `Tutorial.Gate` decides, the
+same on the client (`SandboxToolGated` in `SandboxSend`: a line instead of a request) and the server (`CActKind.Tool`, and
+each running tick, so a respawn's gun goes back to the warden): a tool not issued is refused, the gun or putting a tool away
+gives bare hands. Finishing or skipping gives everything back.
+
+The movement cues read the person's input (`Player.LastInput`); the host's own player has it set where its input is sampled
+(`Game.ServerTick`), as a client's is in `ApplyCmd`. Before 2026-11-08 it wasn't, so walk and run never completed for a host.
+
 A step stays up at least 1.2 s, so one already done shows "Noted." rather than flickering past. Action cues come from
 `SandboxAct`: after an action succeeds, `TutorialSawAct` reads its kind (and body and part where it needs them) from a copy
 of the packet; nothing is allocated.
