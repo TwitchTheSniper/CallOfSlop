@@ -21,10 +21,15 @@ public sealed partial class Game
     private readonly double[] _sculptAt = new double[256];
 
     /// <summary>Client (or the host itself): dig or fill at a point. The server checks everything again.</summary>
-    public void SandboxSculpt(DigKind kind, Vector3 at)
+    public void SandboxSculpt(DigKind kind, Vector3 at) => SandboxSculpt(kind, at, at);
+
+    /// <summary>The same with a far end: a grade (Flatten: the same point; Fill slope: the ramp's other end). Protocol 215.</summary>
+    public void SandboxSculpt(DigKind kind, Vector3 at, Vector3 to)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.Sculpt).U8((byte)kind).Vec(at);
+        if (GroundShape.IsGrade(kind))
+            w.Vec(to);
         SandboxSendBuilt(w);
     }
 
@@ -46,18 +51,27 @@ public sealed partial class Game
             return null;
         var kind = (DigKind)r.U8();
         var at = r.Vec();
+        var to = at;
+        if (GroundShape.IsGrade(kind))
+        {
+            if (!r.Has(DigOp.ToBytes))
+                return null;
+            to = r.Vec();
+        }
         ref var h = ref SandboxHands.Hand(p.Id);
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.GroundDrill)
             return "take out the ground drill (the tool wheel) to dig";
-        if (kind != DigKind.Scoop && kind is not (DigKind.FillDirt or DigKind.FillStone or DigKind.FillSand) || !float.IsFinite(at.X + at.Y + at.Z))
+        if (kind != DigKind.Scoop && !GroundShape.Adds(kind) || !float.IsFinite(at.X + at.Y + at.Z + to.X + to.Y + to.Z))
             return null;
         if (SculptRefusal() is { } off)
             return off;
         var table = DiggingTable.Current;
-        if (Vector3.Distance(eye, at) > table.Reach + 0.75f)
+        if (SegmentDistance(at, to, eye) > table.Reach + 0.75f)
             return "too far away";
+        if (Vector3.Distance(at, to) > GroundShape.MaxLength)
+            return $"too long: a slope is at most {GroundShape.MaxLength:0} m";
         // The rate: a bucket, so a bunch of packets a client spaced out still get through, and one that asks faster gets nothing.
         var tokens = MathF.Min(_sculptTokens[p.Id] + (float)((now - _sculptAt[p.Id]) / SculptRepeat(table, p.Id, SandboxHands.InfiniteParts)), SculptBurst);
         _sculptAt[p.Id] = now;
@@ -71,6 +85,8 @@ public sealed partial class Game
         if (e.Ops.Count >= table.LogCap)
             return $"the ground has taken all the changes it can this match ({e.Ops.Count:N0}): nothing more can be dug or filled";
         var inv = SandboxInv.Of(p.Id);
+        if (GroundShape.IsShape(kind))
+            return SculptShape(table, e, inv, new DigOp(kind, at, GroundShape.IsGrade(kind) ? table.ShapeRadius : table.CleanRadius, To: to).Quantised);
         var op = new DigOp(kind, at, SculptRadius(table, p.Id, SandboxHands.InfiniteParts)).Quantised;
         Span<float> volume = stackalloc float[(int)GroundKind.COUNT];
         var total = e.Measure(in op, table.Ground, table.StoneDepth, volume);
@@ -113,6 +129,47 @@ public sealed partial class Game
             return "the ground there can't take any more";
         if (!inv.Infinite)
             inv.PayBulk(id, cost);
+        return null;
+    }
+
+    /// <summary>
+    /// Flatten, Fill slope and Clean holes (<see cref="GroundShape"/>): what is cut away is carried off as digging would, what is filled
+    /// in is paid in the picked material (what the same op cuts counts towards it, so levelling a bump into a dip pays for itself).
+    /// Nothing to change is no refusal on a sweep (Flatten and Clean holes go over ground already done).
+    /// </summary>
+    private string? SculptShape(DiggingTable table, IDigGround e, CallOfSlop.SandboxInventory inv, in DigOp op)
+    {
+        Span<float> cut = stackalloc float[(int)GroundKind.COUNT];
+        var cutTotal = e.MeasureShape(in op, table.Ground, table.StoneDepth, cut, out var fill);
+        var kind = GroundShape.GroundOf(op.Kind);
+        var name = DiggingTable.KindNames[(int)kind];
+        var ramp = op.At != op.To;
+        if (cutTotal <= 0 && fill <= 0)
+            return ramp ? "the ground there is that shape already" : null;
+        if (fill > 0 && (MathF.Max(e.AboveBuilt(op.At), ramp ? e.AboveBuilt(op.To) : float.MinValue) > table.MaxAboveSurface))
+            return $"too high: ground goes at most {table.MaxAboveSurface:0} m over the surface";
+        var id = MaterialOf(kind);
+        var cost = fill * table.Units[(int)kind];
+        if (!inv.Infinite)
+        {
+            for (var k = 0; k < cut.Length; k++)
+                if (cut[k] > 0 && k != (int)kind && inv.Materials[MaterialOf((GroundKind)k)] >= CallOfSlop.SandboxInventory.MaxCount)
+                    return $"you can't carry any more {DiggingTable.KindNames[k]} ({CallOfSlop.SandboxInventory.MaxCount})";
+            var have = inv.BulkOf(id) + cut[(int)kind] * table.Units[(int)kind];
+            if (have < cost)
+                return $"not enough {name}: that takes {MathF.Ceiling(cost):0}, you carry {inv.Materials[id]}";
+        }
+        if (fill > 0 && FillBuries(e, in op) is { } why)
+            return why;
+        if (Dig(op) == 0)
+            return ramp ? "the ground there can't take that slope" : null;
+        if (inv.Infinite)
+            return null;
+        for (var k = 0; k < cut.Length; k++)
+            if (cut[k] > 0)
+                inv.AddBulk(MaterialOf((GroundKind)k), cut[k] * table.Units[k]);
+        if (cost > 0)
+            inv.PayBulk(id, MathF.Min(cost, inv.BulkOf(id)));
         return null;
     }
 

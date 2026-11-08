@@ -15,6 +15,9 @@ public sealed class DiggingTable
     /// <summary>The material each <see cref="GroundKind"/> is carried as (RecyclingTable names).</summary>
     public static readonly string[] KindNames = ["dirt", "stone", "sand"];
 
+    /// <summary>The drill's shaping modes (GroundShape): Flatten's pad and Fill slope's half width; Clean holes' disc (metres).</summary>
+    public float ShapeRadius = 1.5f, CleanRadius = 2f;
+
     public float Reach = 5f, ScoopRadius = 0.8f, RepeatSeconds = 0.3f, StoneDepth = 3f, MaxAboveSurface = 16f, LogShare = 0.75f;
 
     /// <summary>Units of carried material per cubic metre, by <see cref="GroundKind"/>.</summary>
@@ -75,6 +78,8 @@ public sealed class DiggingTable
                     case "format" or "about": break;
                     case "reach": t.Reach = Num(p.Value, p.Name, 1, 16); break;
                     case "scoopRadius": t.ScoopRadius = Num(p.Value, p.Name, 0.3f, 3); break;
+                    case "shapeRadius": t.ShapeRadius = Num(p.Value, p.Name, 0.5f, GroundShape.MaxRadius); break;
+                    case "cleanRadius": t.CleanRadius = Num(p.Value, p.Name, 0.5f, GroundShape.MaxRadius); break;
                     case "repeatSeconds": t.RepeatSeconds = Num(p.Value, p.Name, 0.05f, 5); break;
                     case "stoneDepth": t.StoneDepth = Num(p.Value, p.Name, 0, 100); break;
                     case "maxAboveSurface": t.MaxAboveSurface = Num(p.Value, p.Name, 0, 200); break;

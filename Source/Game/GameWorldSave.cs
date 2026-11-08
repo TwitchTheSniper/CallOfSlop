@@ -703,8 +703,9 @@ public sealed partial class Game
             var kind = (DigKind)r.U8();
             var at = r.At();
             var radius = r.F32();
-            if (kind <= DigKind.FillSand)
-                g.Apply(new DigOp(kind, at, radius));
+            var to = GroundShape.IsGrade(kind) ? r.At() : default; // (a grade's far end follows its radius)
+            if (kind <= GroundShape.LastKind)
+                g.Apply(new DigOp(kind, at, radius, To: to));
         }
     }
 

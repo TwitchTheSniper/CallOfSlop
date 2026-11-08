@@ -359,7 +359,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 213: robot shells (GameRobotShell.cs, docs/sandbox/CONSTRUCTS.md "Robot shells"): Msg.Shell at the end of Msg, CActKind.ShellLeave at the end of CActKind.
     // 214: the Orbital Depot (GameDepot.cs, docs/story/DEPOT.md): Msg.Depot at the end of Msg.
     // 215: per-player tool upgrades (docs/sandbox/TOOL-UPGRADES.md): each player's levels after their hands in the Sandbox mode state (state version 4), CActKind.GrabThrow at the end of CActKind.
-    public const byte ProtocolVersion = 215;
+    // 216: the ground drill's shaping modes (TerrainEditsShape.cs, GroundShape.cs): DigKind.GradeDirt..SmoothSand at the end of DigKind; a grade's far end follows its op on the wire (Msg.TerrainDig) and its point in CActKind.Sculpt.
+    public const byte ProtocolVersion = 216;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
