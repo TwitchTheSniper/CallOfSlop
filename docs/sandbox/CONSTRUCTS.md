@@ -2077,7 +2077,7 @@ reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the sav
 - **Destroyed.** A hit that would kill someone in a shell (`DamagePlayer` asks `ShellTakesDeath` first) destroys the shell: no
   death, no kill line, no respawn, whatever the world's death rules; they wake in the chair with their body's health and things.
   Whatever the shell held or carried in its pack is set down where it was, as a death drops a pack.
-- **Seen as a robot.** Every peer knows who wears a shell (`Player.InShell`, `Msg.Shell`, protocol 209) and draws them in
+- **Seen as a robot.** Every peer knows who wears a shell (`Player.InShell`, `Msg.Shell`, protocol 210) and draws them in
   steel with a lit visor and their colour as the accent (`BodyColors.Robot`, `BodyModel.RobotVariant`). The HUD says so.
 - **Saves.** A world saved while someone wears a shell records their body (in the chair) and its things (`ShellCatch`). A shell
   being worn is not a construct, so a game closed with someone in a shell loses that shell (leaving the game first stands it).
@@ -2407,16 +2407,16 @@ real host with two clients: a client's stow reaches the server, its own copy, th
 
 The user's "a modular shelf so the player can stack and store loose parts". Parts: `Constructs/Parts/Shelves`, written by `tools/constructs/shelf_parts.py` (with the Smart Terminal and the **Smart Depot** blueprint). Recipes in `tools/constructs/assembling.py`, tier 1, planks and a little steel.
 
-- **The family.** A **Shelf Bay** is one board on four posts, open at the front and top, on its class's lattice, with sockets on every face but the front, so bays stack up, run along and stand back to back, and bolt to any frame of their class.
+- **The family.** A **Shelf Bay** is a steel cabinet (two sides, a back) with wooden boards at the bottom, the top and between its tiers, open at the front, on its class's lattice, with sockets on every face but the front, so bays stack up, run along and stand back to back, and bolt to any frame of their class.
 
 | Part | Class | Size (wide x high x deep) | Shelf slots |
 | --- | --- | --- | --- |
 | Shelf Bay 0.5 | small | 0.5 x 0.5 x 0.5 m | 1 |
 | Shelf Bay 1 | small | 1 x 0.5 x 0.5 m | 2 |
-| Tall Shelf Bay 1 | small | 1 x 1 x 0.5 m | 2 |
+| Tall Shelf Bay 1 | small | 1 x 1 x 0.5 m | 4 (2 tiers) |
 | Medium Shelf Bay 1 | medium | 1 x 1 x 1 m | 1 |
 | Medium Shelf Bay 2 | medium | 2 x 1 x 1 m | 2 |
-| Medium Shelf Bay 4 | medium | 4 x 2 x 1 m | 4 |
+| Medium Shelf Bay 4 | medium | 4 x 2 x 1 m | 8 (2 tiers) |
 
 - **How a part is held: in a slot, frozen to the shelf.** A part on a shelf is not a body. It is a count in the store, drawn where it stands (`"rack": true` on a slot; `ConstructStorage.PileShape`, `StackOf`, `ItemOrigin`). So a shelf on a truck that rolls over keeps its stack, a full wall of shelves costs the physics nothing, and every store rule works as it does (chutes, beacons, the look line, spilling, saves, the wire). The price: a stack doesn't topple, and a shot hits the pile, not one piece in it.
 - **A visible stack.** A shelf slot takes as many of one kind as fit, from the part's box: rows across the floor, the back row first, then layers up, in the turn that packs most (at most 48 a slot). A Lamp, 20 cm a side, stands 8 to a Shelf Bay 1 slot. The ghost shows where the next one goes. One kind a slot: "that shelf holds Lamps", "that shelf is full (8)".
@@ -3169,6 +3169,9 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
 - **Damage**: each member keeps its own health and hitbox; a round damages the cell it hits; the look line shows the
   members' health together ("Rifle Receiver (2x2 merged, 620/720): ..."). A cell shot to pieces breaks the merge as
   taking it off does (its centre parts move or drop: nobody placed them).
+- **In blueprints** a step on a merged receiver's centre socket names it `"merged "` and the receiver's own socket (`"merged front"`: `ConstructMerge.SocketName`); building
+  one finds the merges again before a gun part's step (`ConstructMerge.SocketIndex`), as a rebuild would, so its place and scale are the merged ones. Save as blueprint writes them,
+  and the vehicle kit's merged turret guns use them (docs/vehiclekit/VEHICLEKIT.md, "The armoury").
 - The merged receiver's reach beyond its members is solid to building (nothing can be fitted into it) but not to rounds
   or the world: rounds hit the members and the gun parts.
 

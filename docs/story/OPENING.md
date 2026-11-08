@@ -20,11 +20,18 @@ Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the w
 - **Every player, once per world**: the host, each friend and every late joiner, on first arriving alive. In a saved world
   "once" is the person's record (`WorldPlayer.Opened`); in an unsaved match, once per player id. Worlds from before this have
   no colony and no opening.
-- **Skip**: the jump key, at any beat. Skipping puts them in the cell block at once and starts the induction.
+- **Together (co-op, 2026-11-08)**: friends who arrive while a crash is still coming down or out cold (the Crash and Out
+  beats) crashed with it: they lie beside the first of the group, go through every beat on its clock, share one recovery team
+  (three bodies however many were found) and hear its lines, with a `"group": true` line ("And another!") said only when more
+  than one came down. Everyone wakes in the cell block together, each to their own side, and starts the induction as a group
+  (docs/sandbox/TUTORIAL.md, "Together"). Anyone arriving later has a crash of their own, then joins whoever is on their step.
+  Multiplayer on the main screen has **HOST STORY CO-OP**: the host's lobby opens on Sandbox survival (their Sandbox map, else
+  the Planetoid), where they pick or make the saved world; friends join from the server browser or the invite code.
+- **Skip**: the jump key, at any beat (for that person only; the rest of the group carries on). Skipping puts them in the cell block at once and starts the induction.
 
 ## The beats
 
-Times are in `Opening.json`. Each player has their own, and only they hear their scene's lines.
+Times are in `Opening.json`. Each crash group (one player, or friends who arrived together) has its own clock, and only the group hears its scene's lines.
 
 | Beat | What happens |
 | --- | --- |

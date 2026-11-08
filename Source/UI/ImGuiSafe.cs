@@ -115,9 +115,15 @@ public static class ImGuiSafe
     /// This reads the box's own bytes. The string is kept per box and reused while the text is unchanged, so calling
     /// it every frame allocates nothing.
     /// </para>
+    /// <para>
+    /// The length is read again first: a box with <c>EnterReturnsTrue</c> only updates its own length when Enter is
+    /// pressed, so a button beside it read the text as it was before typing (founding a faction with a typed name said
+    /// "a faction needs a name").
+    /// </para>
     /// </summary>
     public static string Text(ImInputString input)
     {
+        input.EvaluateLength();
         var bytes = input.ValueSpan;
         var cached = InputTexts.GetValue(input, static _ => new InputText());
         if (cached.Length == bytes.Length && bytes.SequenceEqual(cached.Bytes.AsSpan(0, cached.Length)))

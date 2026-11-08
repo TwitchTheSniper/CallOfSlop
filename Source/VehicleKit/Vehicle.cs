@@ -357,7 +357,7 @@ public sealed partial class Vehicle : BlueprintScript
 
     public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null, bool aft = false)
     {
-        Weapon = weapon ?? Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count).Pick(Style.Weapons);
+        Weapon = weapon ?? (Role is { } r ? r.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Style.Weapons) : VehicleArmoury.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Style.Weapons));
         aft &= Weapon.Name != "Whaler"; // (its magazine hangs where an aft gun's seat goes)
         if (CentreOf(mount).Y < 1.5f && CentreOf(mount).Z - GunReach(Weapon) < CabBack) // (a long gun on a bed would poke through the cab: a pedestal lifts it over the cab's roof, as on a real technical)
         {
@@ -376,8 +376,43 @@ public sealed partial class Vehicle : BlueprintScript
         var module = seat == null ? Onto(GunnerSeat, "+x", "Turret Module", "-x", 0) : Onto(GunnerSeat, "back", "Turret Module", "-z", 0); // (a seat in a room keeps its module out of the aisle)
         Wire(GunnerSeat, module);
         Wire(module, Gun);
+        if (TwinGun is { } twin)
+            Wire(module, twin); // (one gunner lays both: the cradle's second gun fires with the first)
+        if (Weapon.Mount == "shield")
+            GunShield(arm);
         Turrets.Add((Gun, GunnerSeat, Weapon));
         return this;
+    }
+
+    /// <summary>Guns on a fed turret that carry their own magazines (twin mounts): <see cref="Feeds"/> lays no belt to them.</summary>
+    public HashSet<int> SelfFed { get; } = new();
+
+    /// <summary>A twin mount's second gun, when the last <see cref="FitGun"/> made one (null otherwise).</summary>
+    public VPart? TwinGun { get; private set; }
+
+    /// <summary>
+    /// A gun shield (an armoury recipe's "shield" mount): a half-metre plate standing on the arm between the gun and the gunner, below the gun's line, so it turns with the
+    /// turntable and covers the gunner's chest from ahead. Where the arm has no room for it the gun goes on without (the mount is a look, not a need).
+    /// </summary>
+    private void GunShield(VPart arm)
+    {
+        const string plate = "Plate Steel 0.5 m";
+        var along = Rot24.Apply(TurnOf(arm), Vector3.UnitZ);
+        foreach (var socket in (string[])["+y1", "+y2"])
+            for (var spin = 0; spin < 4; spin++)
+            {
+                if (TurnOf(arm, socket, plate, "-z0", spin) is not { } turn || MathF.Abs(Vector3.Dot(Rot24.Apply(turn, Vector3.UnitY), along)) < 0.9f)
+                    continue; // (refused there, or stood across the arm rather than facing along it)
+                try
+                {
+                    Paint(Onto(arm, socket, plate, "-z0", spin, clear: true), Style.Colour(Dice.Fork("shield"), "body"));
+                    return;
+                }
+                catch (VehicleKitException)
+                {
+                    // (a face it would share with the arm or the gun: the next turn or socket)
+                }
+            }
     }
 
     private const float CabBack = 0.25f; // (the back of a cab shell, and the front wall of a room behind it)
@@ -386,13 +421,15 @@ public sealed partial class Vehicle : BlueprintScript
     public float GunReach(WeaponOption w)
     {
         var (receiver, children) = WeaponOption.Parse(w.Build);
-        var reach = 0.6f + Size(GunDef(receiver));
+        var n = Math.Max(1, w.Merge); // (a merged receiver and its gun parts are N times the size: ConstructMerge.cs)
+        var reach = 0.6f + n * Size(GunDef(receiver));
         foreach (var (socket, value) in children)
             if (socket.Equals("barrel", StringComparison.OrdinalIgnoreCase))
             {
                 var (barrel, on) = WeaponOption.Parse(value);
-                reach += Size(GunDef(barrel));
-                reach += on.Values.Sum(c => Size(GunDef(WeaponOption.Parse(c).Part)));
+                reach += n * Size(GunDef(barrel));
+                reach += n * on.Where(c => c.Key.Equals("muzzle", StringComparison.OrdinalIgnoreCase)).Sum(c => Size(GunDef(WeaponOption.Parse(c.Value).Part)));
+                reach += n * on.Where(c => c.Key.StartsWith("barrel_", StringComparison.OrdinalIgnoreCase)).Select(c => Size(GunDef(WeaponOption.Parse(c.Value).Part))).DefaultIfEmpty().Max(); // (a splitter's barrels side by side: the longest)
             }
         return reach;
         static float Size(ConstructPartDef d) => d.BoundsMax.Z - d.BoundsMin.Z;
@@ -405,11 +442,33 @@ public sealed partial class Vehicle : BlueprintScript
     /// </summary>
     public VPart FitGun(VPart on, WeaponOption w, int spin = 0)
     {
-        var (receiver, children) = WeaponOption.Parse(w.Build);
-        children.Remove("ammo"); // (a mounted gun's rounds are chosen by what feeds it: a part there does nothing)
-        if (FedTurrets)
-            children.Remove("feed"); // (an ammo feed goes straight into the gun: Feeds lays it, and the gun's checked there)
+        var (receiver, children) = WeaponOption.Parse(w.Build); // (GunParts leaves out "ammo": a mounted gun's rounds are chosen by what feeds it; and on a fed turret the feed, which Feeds lays)
         var rec = Onto(on, on.Def.HasJoint ? on.Def.LeafSocket : "top", GunDef(receiver).Name, "bottom", spin);
+        TwinGun = null;
+        if (w.Merge > 1)
+            MergeBlock(rec, w);
+        else if (w.Mount == "twin")
+            TwinGun = OntoTurned(rec, "right", GunDef(receiver).Name, "left", w); // (the cradle's second receiver, side by side: a 1x2 doesn't merge)
+        var fed = FedTurrets;
+        if (TwinGun != null)
+        {
+            FedTurrets = false; // (a twin keeps a magazine and box on each gun: the cradle has no free face for a belt's socket, so the magazine's belt skips it: SelfFed)
+            if (fed)
+                SelfFed.Add(rec.Index);
+        }
+        GunParts(rec, children, w);
+        if (TwinGun != null)
+            GunParts(TwinGun, WeaponOption.Parse(w.Build).Children, w);
+        FedTurrets = fed;
+        return rec;
+    }
+
+    /// <summary>A gun's parts on its receiver (a merged one's centre sockets), the box on its feed, and the build rules' word on it.</summary>
+    private void GunParts(VPart rec, Dictionary<string, string> children, WeaponOption w)
+    {
+        children.Remove("ammo");
+        if (FedTurrets)
+            children.Remove("feed");
         VPart? feed = null;
         foreach (var (socket, value) in children)
         {
@@ -428,14 +487,84 @@ public sealed partial class Vehicle : BlueprintScript
                 feed = p;
             if (sub.TryGetValue("muzzle", out var muzzle))
                 Onto(p, "front", GunDef(muzzle).Name, "back", 0);
+            foreach (var (bs, bv) in sub)
+                if (bs.StartsWith("barrel_", StringComparison.OrdinalIgnoreCase) && int.TryParse(bs.AsSpan(7), out var nth))
+                {
+                    // A splitter's barrels: the Nth on its "front-N" output (a generated splitter has one a builder output), a muzzle device on each.
+                    var (sbarrel, ssub) = WeaponOption.Parse(bv);
+                    var outs = p.Def.Sockets.Where(x => x.Name.StartsWith("front-", StringComparison.Ordinal)).Select(x => x.Name).ToArray(); // ("front-N" on a generated splitter; a hand-made one's, "front-l" and "front-r", in order)
+                    var outName = Array.IndexOf(outs, $"front-{nth}") >= 0 ? $"front-{nth}" : nth >= 1 && nth <= outs.Length ? outs[nth - 1] : throw new VehicleKitException($"gun \"{w.Name}\": the {p.Name} has no output {nth}");
+                    var b = Onto(p, outName, GunDef(sbarrel).Name, "back", 0);
+                    if (ssub.TryGetValue("muzzle", out var sm))
+                        Onto(b, "front", GunDef(sm).Name, "back", 0);
+                }
         }
         if (w.Box != null && !FedTurrets)
-            OnAFace(feed ?? rec, ["left", "top", "right", "back", "bottom"], w.Box, w);
+        {
+            // The box on its magazine, else on the receiver or (merged) any of its cells: a box on any of them feeds the gun (ConstructWeapons.cs).
+            var hosts = new List<VPart> { feed ?? rec };
+            if (feed != null)
+                hosts.Add(rec);
+            hosts.AddRange(Cells(rec).Where(x => x.Index != rec.Index));
+            var whyNot = "";
+            VPart? box = null;
+            foreach (var h in hosts)
+                try
+                {
+                    box = OnAFace(h, ["left", "top", "right", "back", "bottom"], w.Box, w);
+                    break;
+                }
+                catch (VehicleKitException ex)
+                {
+                    whyNot = whyNot.Length == 0 ? ex.Message : whyNot; // (the magazine's reasons: where it was wanted first)
+                }
+            if (box == null)
+                throw new VehicleKitException(whyNot);
+        }
         C.Rebuild();
         for (var g = 0; g < C.GunCount && !FedTurrets; g++)
             if (C.Guns[g].Part == rec.Index && C.Guns[g].Problem.Length > 0)
                 throw new VehicleKitException($"gun \"{w.Name}\": {C.Guns[g].Problem}");
-        return rec;
+    }
+
+    /// <summary>
+    /// A merged receiver (docs/sandbox/CONSTRUCTS.md, "Merged receivers"): the rest of an NxN square of the lead's type beside it, to its right and above it, turned as it is,
+    /// so the game merges them into one receiver N times the size whose centre sockets take the gun's parts (drawn N times bigger). Throws when they don't merge.
+    /// </summary>
+    private void MergeBlock(VPart lead, WeaponOption w)
+    {
+        var n = w.Merge;
+        var cells = new VPart[n, n];
+        cells[0, 0] = lead;
+        for (var y = 0; y < n; y++)
+            for (var x = 0; x < n; x++)
+                if (x + y > 0)
+                    cells[x, y] = y == 0 ? OntoTurned(cells[x - 1, 0], "right", lead.Name, "left", w) : OntoTurned(cells[x, y - 1], "top", lead.Name, "bottom", w);
+        C.Rebuild();
+        if (!C.MergeLead(lead.Index) || C.Merges[C.MergeOf[lead.Index] - 1].N != n)
+            throw new VehicleKitException($"gun \"{w.Name}\": its {n * n} {lead.Name}s didn't merge into a {n}x{n}");
+    }
+
+    /// <summary>A merged receiver's cells, its lead first (just the receiver when it isn't merged).</summary>
+    public List<VPart> Cells(VPart rec)
+    {
+        var list = new List<VPart> { rec };
+        if (C.MergeOf[rec.Index] == 0)
+            return list;
+        foreach (var p in Parts)
+            if (p.Index != rec.Index && p.Index < C.PartCount && C.MergeOf[p.Index] == C.MergeOf[rec.Index])
+                list.Add(p);
+        return list;
+    }
+
+    /// <summary>A gun part on <paramref name="on"/>'s socket turned exactly as <paramref name="on"/> is (receivers merge and pair only turned alike).</summary>
+    private VPart OntoTurned(VPart on, string socket, string part, string by, WeaponOption w)
+    {
+        var want = TurnOf(on);
+        for (var spin = 0; spin < 4; spin++)
+            if (TurnOf(on, socket, part, by, spin) == want)
+                return Onto(on, socket, part, by, spin);
+        throw new VehicleKitException($"gun \"{w.Name}\": no turn of a {part} on the {on.Name}'s \"{socket}\" matches it");
     }
 
     /// <summary>A part on the first of a gun part's faces it fits: which face holds what doesn't matter to the gun, and a hinge or a seat may be in the way of some.</summary>
@@ -443,6 +572,7 @@ public sealed partial class Vehicle : BlueprintScript
     {
         var why = "";
         var names = (string[])["left", "right", "top", "bottom", "back", "front"];
+        var centre = C.MergeLead(on.Index) && Def(part).Role == PartRole.GunPart; // (a merged receiver takes gun parts on its centre sockets only)
         foreach (var face in faces)
         {
             if (!Array.Exists(on.Def.Sockets, s => s.Name == face))
@@ -450,11 +580,11 @@ public sealed partial class Vehicle : BlueprintScript
             var by = names[Array.IndexOf(names, face) ^ 1];
             try
             {
-                return Onto(on, face, part, by, 0);
+                return centre ? OntoCentre(on, face, part, by) : Onto(on, face, part, by, 0);
             }
             catch (VehicleKitException ex)
             {
-                why = ex.Message;
+                why = why.Length == 0 ? ex.Message : why + "; " + ex.Message; // (every face's reason: the last alone hid a refusal by the rules behind an "in the way")
             }
         }
         throw new VehicleKitException($"gun \"{w.Name}\": {why}");

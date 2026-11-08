@@ -352,9 +352,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 206: body styles phase 4 (docs/vehiclekit/BODY-STYLES.md, section 10): a faction's trim and fittings named by their keys ("Hull Loft (trim...", "(deco..."; HullLoft.Trim.cs) go on the wire as a lofted bay does, and the parts some phase-3 keys name changed (a capsule's side panes, a pane's shorter seal, a cage's ridge bar), so both ends must make the same part; a 205 peer makes stand-ins of the new ones.
     // 207: survival death options (GameSandboxDeath.cs, docs/sandbox/DEATH.md): a death byte after the survival byte in the Welcome, its bits in the lobby state's second Zombies byte, Msg.Fate at the end of Msg (where a player wakes, permadeath).
     // 208: the penal colony's lockdown (GameColonyLockdown.cs, docs/story/OPENING.md "Lockdown"): Msg.ColonyAlarm at the end of Msg.
-    // 209: robot shells (GameRobotShell.cs, docs/sandbox/CONSTRUCTS.md "Robot shells"): Msg.Shell at the end of Msg, CActKind.ShellLeave at the end of CActKind.
-    // 210: the Orbital Depot (GameDepot.cs, docs/story/DEPOT.md): Msg.Depot at the end of Msg.
-    public const byte ProtocolVersion = 210;
+    // 209: co-op story opening and induction (docs/story/OPENING.md, docs/sandbox/TUTORIAL.md "Together"): TutorialOp.Group (server to one client: their group's progress on the step) at the end of TutorialOp.
+    // 210: robot shells (GameRobotShell.cs, docs/sandbox/CONSTRUCTS.md "Robot shells"): Msg.Shell at the end of Msg, CActKind.ShellLeave at the end of CActKind.
+    // 211: the Orbital Depot (GameDepot.cs, docs/story/DEPOT.md): Msg.Depot at the end of Msg.
+    public const byte ProtocolVersion = 211;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -81,7 +81,7 @@ public enum CActKind : byte
     Fuse, // u16 body, u8 FuseMode, u16 part, u16 count, then count u16 parts: the fuse tool (protocol 193; GameSandboxFuse.cs)
     Material, // u16 body, u8 PaintMode, u16 part, u8 length and the material's name (ASCII): the material painter (protocol 194; GameSandboxMaterial.cs)
     OpeningSkip, // nothing: skip the rest of the survival opening (protocol 199; GameSandboxOpening.cs)
-    ShellLeave, // nothing: leave the robot shell worn and wake in the chair (protocol 209; GameRobotShell.cs)
+    ShellLeave, // nothing: leave the robot shell worn and wake in the chair (protocol 210; GameRobotShell.cs)
 }
 
 /// <summary>

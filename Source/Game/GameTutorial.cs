@@ -11,6 +11,7 @@ public enum TutorialOp : byte
     Skip,
     Replay, // from the first step again
     Resume, // a skipped induction carries on where it stopped
+    Group, // server -> client (co-op): u8 this person has done the step, u8 others in their group, u8 of them done, text who the group waits for
 }
 
 /// <summary>
@@ -36,6 +37,12 @@ public sealed partial class Game
     /// <summary>A step stays up at least this long before it can complete (one already done shows as noted, not a flicker).</summary>
     public const double TutorialMinStep = 1.2;
 
+    /// <summary>
+    /// Co-op: a group's step moves on when everyone in it alive has done it, or this long after the first one did (the warden
+    /// doesn't wait for ever: a friend away from the keyboard can't hold the rest up).
+    /// </summary>
+    public const double TutorialGroupWait = 45;
+
     // ---- Server: each person's place, by player id
     private readonly byte[] _tutStep = new byte[MaxPlayers];
     private readonly TutorialState[] _tutState = new TutorialState[MaxPlayers];
@@ -48,12 +55,26 @@ public sealed partial class Game
     private readonly uint[] _tutSaw = new uint[MaxPlayers]; // cues seen this step (bit per TutorialCue)
     private readonly bool[] _tutWasRunning = new bool[MaxPlayers]; // (the gun and tools are held: their return is said once)
     private readonly Player?[] _tutWho = new Player?[MaxPlayers]; // whose state the slot holds (a new Player object in the slot: a new person)
+    // Co-op (docs/sandbox/TUTORIAL.md "Together"): people on the same step go through it as a group, which moves on together.
+    private readonly int[] _tutGroup = new int[MaxPlayers]; // the group (0: none yet: joins one at its step on the next tick)
+    private readonly bool[] _tutDone = new bool[MaxPlayers]; // has done this step, and waits for the group
+    private readonly double[] _tutDoneAt = new double[MaxPlayers];
+    private readonly bool[] _tutGroupDirty = new bool[MaxPlayers]; // what they were last told of their group is out of date
+    private readonly byte[] _tutGroupSent = new byte[MaxPlayers]; // the others in their group, as last told
+    private readonly int[] _tutPassOf = new int[MaxPlayers];
+    private int _tutNextGroup, _tutPass;
     private PacketWriter? _tutW;
 
     // ---- Client (and the host's own): this PC's player's place
     public byte TutorialStepNow { get; private set; }
     public TutorialState TutorialStateNow { get; private set; }
     public double TutorialChangedAt { get; private set; } = -1;
+
+    /// <summary>Co-op, this PC's player: how many others go through the induction with them, whether they have done this step, how many of the others have, and who they wait for.</summary>
+    public int TutorialGroupOthers { get; private set; }
+    public bool TutorialGroupDone { get; private set; }
+    public int TutorialGroupOthersDone { get; private set; }
+    public string TutorialGroupWaiting { get; private set; } = "";
     private bool _tutCueSent;
 
     /// <summary>The step this PC's player is on, while it runs, or null.</summary>
@@ -139,12 +160,20 @@ public sealed partial class Game
         _tutArrivedAt[id] = SandboxNow;
         _tutSaw[id] = 0;
         _tutAmount[id] = 0;
+        _tutGroup[id] = 0;
+        _tutDone[id] = false;
+        _tutGroupSent[id] = 0;
     }
 
-    private void TutorialGo(byte id, int step, TutorialState state)
+    /// <summary>Server: a person to a step and state. <paramref name="keepGroup"/>: their group moves on with them; otherwise they find a group at that step afresh.</summary>
+    private void TutorialGo(byte id, int step, TutorialState state, bool keepGroup = false)
     {
         _tutStep[id] = (byte)step;
         _tutState[id] = state;
+        if (!keepGroup || state != TutorialState.Running)
+            _tutGroup[id] = 0;
+        _tutDone[id] = false;
+        _tutGroupDirty[id] = true;
         _tutStepAt[id] = SandboxNow;
         _tutSaw[id] = 0;
         _tutAmount[id] = 0;
@@ -219,24 +248,146 @@ public sealed partial class Game
                     TutorialGo(id, 0, TutorialState.Running); // (a new person in a survival world)
                 continue;
             }
-            if (state != TutorialState.Running || !p.Alive)
+            if (state != TutorialState.Running)
                 continue;
             if (_tutStep[id] >= steps.Length)
             {
                 TutorialGo(id, steps.Length, TutorialState.Finished);
                 continue;
             }
+            if (_tutGroup[id] == 0)
+                TutorialJoin(id);
+            if (!p.Alive || _tutDone[id])
+                continue;
             ref var hand = ref SandboxHands.Hand(id);
             if (Tutorial.Gate(state, _tutStep[id], hand.Tool) != hand.Tool)
                 SandboxHands.SetTool(id, ConstructTool.Hands, Constructs, p.Eye, p.Yaw); // (a respawn or a saved world's tool: the gun stays with the warden)
             if (TutorialStepDone(p, steps[_tutStep[id]], now) && now - _tutStepAt[id] >= TutorialMinStep)
             {
-                var next = _tutStep[id] + 1;
-                TutorialGo(id, next, next >= steps.Length ? TutorialState.Finished : TutorialState.Running);
-                if (next >= steps.Length)
-                    Console.WriteLine($"[tutorial] {p.Name} finished the induction");
+                _tutDone[id] = true; // (the group moves on below, together)
+                _tutDoneAt[id] = now;
+                _tutGroupDirty[id] = true;
             }
         }
+        // Each group once, from its lowest id: on when everyone alive has done the step (or the warden has waited long enough).
+        _tutPass++;
+        for (var id = 0; id < MaxPlayers; id++)
+            if (_tutState[id] == TutorialState.Running && _tutGroup[id] != 0 && _tutPassOf[id] != _tutPass && TutorialInGroup(id, out _))
+                TutorialGroupTick(id, now, steps.Length);
+    }
+
+    /// <summary>Server: is this slot a person here now (the same Player the state was kept for)?</summary>
+    private bool TutorialInGroup(int id, out Player p) =>
+        Players.TryGetValue((byte)id, out p!) && p.Bot == null && _tutWho[id] == p;
+
+    private bool TutorialMember(int id, int group, byte step) =>
+        TutorialInGroup(id, out _) && _tutState[id] == TutorialState.Running && _tutGroup[id] == group && _tutStep[id] == step;
+
+    /// <summary>Server: a running person with no group joins the group on their step (co-op), or starts one of their own.</summary>
+    private void TutorialJoin(byte id)
+    {
+        for (var j = 0; j < MaxPlayers; j++)
+            if (j != id && _tutGroup[j] != 0 && TutorialMember(j, _tutGroup[j], _tutStep[id]))
+            {
+                _tutGroup[id] = _tutGroup[j];
+                Log($"[tutorial] {(Players.TryGetValue(id, out var p) ? p.Name : id.ToString())} joins the induction at step {_tutStep[id] + 1} with {(Players.TryGetValue((byte)j, out var q) ? q.Name : j.ToString())}");
+                return;
+            }
+        _tutGroup[id] = ++_tutNextGroup;
+    }
+
+    /// <summary>Server: one group's step, from its first member (<paramref name="first"/>): moves everyone on together, and tells them who is still to do it.</summary>
+    private void TutorialGroupTick(int first, double now, int stepCount)
+    {
+        var group = _tutGroup[first];
+        var step = _tutStep[first];
+        int members = 0, done = 0, waiting = 0;
+        var firstDone = double.MaxValue;
+        var dirty = false;
+        for (var j = first; j < MaxPlayers; j++)
+        {
+            if (!TutorialMember(j, group, step))
+                continue;
+            _tutPassOf[j] = _tutPass;
+            members++;
+            dirty |= _tutGroupDirty[j];
+            if (_tutDone[j])
+            {
+                done++;
+                firstDone = Math.Min(firstDone, _tutDoneAt[j]);
+            }
+            else if (Players[(byte)j].Alive)
+                waiting++;
+        }
+        if (done > 0 && (waiting == 0 || now - firstDone >= TutorialGroupWait))
+        {
+            var next = step + 1;
+            for (var j = first; j < MaxPlayers; j++)
+            {
+                if (!TutorialMember(j, group, step))
+                    continue;
+                var p = Players[(byte)j];
+                if (!_tutDone[j] && members > 1)
+                    SandboxHands.Notices.Add(((byte)j, $"{WardenName} moves on without waiting for you"));
+                TutorialGo((byte)j, next, next >= stepCount ? TutorialState.Finished : TutorialState.Running, keepGroup: true);
+                if (next >= stepCount)
+                    Console.WriteLine($"[tutorial] {p.Name} finished the induction");
+            }
+            return;
+        }
+        if (!dirty && !TutorialGroupResized(first, group, step, members))
+            return;
+        for (var j = first; j < MaxPlayers; j++)
+            if (TutorialMember(j, group, step))
+            {
+                _tutGroupDirty[j] = false;
+                _tutGroupSent[j] = (byte)Math.Min(members - 1, 255);
+                if (members > 1 || _tutGroupSent[j] != 0)
+                    TutorialSendGroup((byte)j, group, step, members - 1, done - (_tutDone[j] ? 1 : 0));
+            }
+    }
+
+    private bool TutorialGroupResized(int first, int group, byte step, int members)
+    {
+        for (var j = first; j < MaxPlayers; j++)
+            if (TutorialMember(j, group, step) && _tutGroupSent[j] != Math.Min(members - 1, 255))
+                return true;
+        return false;
+    }
+
+    /// <summary>Server: what a person's group is doing (<see cref="TutorialOp.Group"/>), when it changes. A short list of who they wait for (allocates: only on a change).</summary>
+    private void TutorialSendGroup(byte id, int group, byte step, int others, int othersDone)
+    {
+        var names = "";
+        var listed = 0;
+        for (var j = 0; j < MaxPlayers; j++)
+        {
+            if (j == id || !TutorialMember(j, group, step) || _tutDone[j] || !Players[(byte)j].Alive)
+                continue;
+            if (listed++ < 3)
+                names = names.Length == 0 ? Players[(byte)j].Name : $"{names}, {Players[(byte)j].Name}";
+        }
+        if (listed > 3)
+            names += $" and {listed - 3} more";
+        var meDone = _tutDone[id];
+        if (id == LocalId)
+        {
+            TutorialGroupHeard(meDone, others, othersDone, names);
+            return;
+        }
+        if (Net.IsOffline || !Players.TryGetValue(id, out var p) || GuidOf(p) is not { } g)
+            return;
+        var w = _tutW ??= new PacketWriter(320);
+        w.Begin(Msg.Tutorial).U8((byte)TutorialOp.Group).U8(meDone ? (byte)1 : (byte)0).U8((byte)Math.Min(others, 255)).U8((byte)Math.Min(othersDone, 255)).Str(names);
+        Net.SendTo(g, w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    private void TutorialGroupHeard(bool meDone, int others, int othersDone, string waiting)
+    {
+        TutorialGroupDone = meDone;
+        TutorialGroupOthers = others;
+        TutorialGroupOthersDone = Math.Min(othersDone, others);
+        TutorialGroupWaiting = waiting;
     }
 
     /// <summary>
@@ -402,7 +553,7 @@ public sealed partial class Game
         }
         if (Net.IsOffline || !Players.TryGetValue(id, out var p) || p.Bot != null || GuidOf(p) is not { } g)
             return;
-        var w = _tutW ??= new PacketWriter(16);
+        var w = _tutW ??= new PacketWriter(320);
         w.Begin(Msg.Tutorial).U8((byte)TutorialOp.State).U8(_tutStep[id]).U8((byte)_tutState[id]);
         Net.SendTo(g, w.Span, PacketReliability.ReliableOrdered);
     }
@@ -415,6 +566,11 @@ public sealed partial class Game
         TutorialStateNow = state > TutorialState.Skipped ? TutorialState.None : state;
         TutorialChangedAt = Brutal.GlfwApi.Glfw.Time;
         _tutCueSent = false;
+        TutorialGroupDone = false; // (a new step: the group's word on it follows)
+        TutorialGroupOthersDone = 0;
+        TutorialGroupWaiting = "";
+        if (state != TutorialState.Running)
+            TutorialGroupOthers = 0;
     }
 
     /// <summary>A <see cref="Msg.Tutorial"/> (after its id): the server hears a client's op, a client its place.</summary>
@@ -433,19 +589,26 @@ public sealed partial class Game
             var step = r.U8();
             TutorialHeard(step, (TutorialState)r.U8());
         }
+        else if (op == TutorialOp.Group && r.Has(3))
+        {
+            var done = r.U8() != 0;
+            var others = r.U8();
+            var othersDone = r.U8();
+            TutorialGroupHeard(done, others, othersDone, r.Text(120));
+        }
     }
 
     /// <summary>This PC's player asks: skip, replay or resume the induction.</summary>
     public void TutorialAsk(TutorialOp op, byte arg = 0)
     {
-        if (op == TutorialOp.State)
+        if (op is TutorialOp.State or TutorialOp.Group)
             return;
         if (IsServer)
         {
             TutorialHear(LocalId, op, arg);
             return;
         }
-        var w = _tutW ??= new PacketWriter(16);
+        var w = _tutW ??= new PacketWriter(320);
         w.Begin(Msg.Tutorial).U8((byte)op).U8(arg);
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
     }

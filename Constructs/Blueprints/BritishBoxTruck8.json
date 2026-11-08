@@ -110,18 +110,22 @@
     {"part": "Square Beam 1 m", "on": 101, "socket": "top", "by": "-y1", "spin": 3, "paint": "#1b1c1e"},
     {"part": "Seat", "on": 102, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 102, "socket": "+y0", "by": "base", "spin": 2},
-    {"part": "Courier Carbine Receiver", "on": 104, "socket": "leaf", "by": "bottom", "spin": 2},
-    {"part": "Gun Barrel", "on": 105, "socket": "front", "by": "back"},
-    {"part": "Box Magazine", "on": 105, "socket": "top", "by": "bottom"},
-    {"part": "Ammo Box", "on": 107, "socket": "left", "by": "right"},
+    {"part": "Bastille LMG Receiver", "on": 104, "socket": "leaf", "by": "bottom", "spin": 2},
+    {"part": "Bastille LMG Receiver", "on": 105, "socket": "right", "by": "left"},
+    {"part": "Bastille LMG Receiver", "on": 105, "socket": "top", "by": "bottom", "spin": 2},
+    {"part": "Bastille LMG Receiver", "on": 106, "socket": "top", "by": "bottom", "spin": 2},
+    {"part": "Heatsink Barrel", "on": 105, "socket": "merged front", "by": "back"},
+    {"part": "Drum Mag", "on": 105, "socket": "merged left", "by": "right"},
+    {"part": "Full-Auto Sear", "on": 105, "socket": "merged back", "by": "front"},
+    {"part": "Ammo Box", "on": 110, "socket": "top", "by": "bottom"},
     {"part": "Turret Module", "on": 103, "socket": "+x", "by": "-x"},
     {"part": "Chest", "on": 56, "socket": "front00", "by": "bottom", "spin": 3},
     {"part": "Tall Shelf Bay 1", "on": 52, "socket": "front10", "by": "-y.1.1", "spin": 1},
     {"part": "Pillar Box", "on": 51, "socket": "front00", "by": "foot00", "spin": 2},
     {"part": "Hull Loft (hoodg UZV2WyWjXYXYVd ~6W06eB6eM6mX6ei6Ot4u_2X2012)", "on": 27, "socket": "+y", "by": "engine", "paint": "#c8102e"},
-    {"part": "Slat Grille", "on": 113, "socket": "front", "by": "back", "paint": "#c8102e"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 114, "pos": [0.13, 0.457, -1.901], "rot": [-0.7152, -0.0174, -0.0052, 0.6987]}, "paint": "#7d8186"},
-    {"part": "Teapot", "on": 113, "socket": "top", "by": "base"},
+    {"part": "Slat Grille", "on": 117, "socket": "front", "by": "back", "paint": "#c8102e"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 118, "pos": [0.13, 0.457, -1.901], "rot": [-0.7152, -0.0174, -0.0052, 0.6987]}, "paint": "#7d8186"},
+    {"part": "Teapot", "on": 117, "socket": "top", "by": "base"},
     {"part": "Teapot", "on": 35, "socket": "top", "by": "base"},
     {"part": "Traffic Cone", "on": 92, "socket": "front", "by": "base"},
     {"part": "Traffic Cone", "on": 84, "socket": "front13", "by": "base"},
@@ -130,13 +134,13 @@
     {"part": "Hull Loft (triml3 YMW5 ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i =)", "on": 76, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml9 XaW5 ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i ~CO0CWPCeoCeyD1BE9aEPkEP-EINE2mDB8AxO7xW4pa03a)", "on": 79, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml6 XaW5 ~CO0CWPCeoCeyD1BE9aEPkEP-EINE2mDB8AxO7xW4pa03a ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i)", "on": 79, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
-    {"part": "Square Beam 0.5 m", "on": 76, "socket": "top", "by": "-z", "paint": "#1b1c1e"},
-    {"part": "Rain Gauge", "on": 125, "socket": "+z", "by": "base"}
+    {"part": "Square Beam 0.5 m", "on": 75, "socket": "top", "by": "-z", "paint": "#1b1c1e"},
+    {"part": "Rain Gauge", "on": 129, "socket": "+z", "by": "base"}
   ],
-  "wires": [[32, 33], [33, 27], [103, 109], [109, 105]],
+  "wires": [[32, 33], [33, 27], [103, 113], [113, 105]],
   "links": [
     {"type": "shaft", "from": 28, "to": 5, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 100, "to": 27, "nodes": [[1.5, 0.82, 4.3], [1.5, 0.55, 4.3], [0.67, 0.55, 4.3], [0.67, 0.55, 1.375], [0.67, 0.05, 1.375], [0.67, 0.05, -0.245], [0.67, 0.25, -0.245], [-0.17, 0.25, -0.245], [-0.17, 0.62, -0.245], [-0.17, 0.62, -0.75]], "laid": true}
   ],
-  "loot": [{"step": 110, "table": "british"}, {"step": 111, "table": "british"}, {"step": 112, "table": "british"}]
+  "loot": [{"step": 114, "table": "british"}, {"step": 115, "table": "british"}, {"step": 116, "table": "british"}]
 }
