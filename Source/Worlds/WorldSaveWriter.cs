@@ -160,7 +160,11 @@ public static class WorldSaveWriter
         {
             w.U8((byte)(s.GroundOnPlanet ? 1 : 0)).I32(s.OpCount);
             foreach (ref var op in s.Ops.AsSpan(0, s.OpCount))
+            {
                 w.U8((byte)op.Kind).Vec(op.At).F32(op.Radius);
+                if (GroundShape.IsGrade(op.Kind))
+                    w.Vec(op.To); // (a grade's far end: GameWorldSave.WorldReadGround)
+            }
         });
         if (s.Resources is { } field)
             w.Section(Resources, () =>

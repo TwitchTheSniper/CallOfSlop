@@ -18,6 +18,12 @@ public interface IDigGround
     /// <summary>What an op would take out or put in, by kind of ground, without changing anything. Returns the total (cubic metres).</summary>
     float Measure(in DigOp op, ReadOnlySpan<GroundKind> surfaceGives, float stoneDepth, Span<float> byKind);
 
+    /// <summary>
+    /// What a shaping op (<see cref="GroundShape"/>) would change, without changing anything: the cubic metres it cuts away, by kind of
+    /// ground, into <paramref name="cutByKind"/> (returned as the total), and the cubic metres it fills in.
+    /// </summary>
+    float MeasureShape(in DigOp op, ReadOnlySpan<GroundKind> surfaceGives, float stoneDepth, Span<float> cutByKind, out float fill);
+
     /// <summary>Would a fill put new ground inside the world box <paramref name="min"/>..<paramref name="max"/>?</summary>
     bool FillTouches(in DigOp op, Vector3 min, Vector3 max);
 

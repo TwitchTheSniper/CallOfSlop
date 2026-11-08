@@ -22,7 +22,7 @@ namespace CallOfSlop;
 /// </para>
 /// Runtime state only: never baked, never in the map's fingerprint, cleared when a match restores the map.
 /// </summary>
-public sealed class PlanetEdits : IDigGround
+public sealed partial class PlanetEdits : IDigGround
 {
     /// <summary>Planetoid cells per side of a drawing chunk.</summary>
     public const int ChunkCells = TerrainEdits.ChunkCells;
@@ -252,6 +252,8 @@ public sealed class PlanetEdits : IDigGround
     {
         if (Log.Count >= TerrainEdits.MaxOps || !(op.Radius > 0) || !float.IsFinite(op.At.X + op.At.Y + op.At.Z))
             return 0;
+        if (GroundShape.IsShape(op.Kind))
+            return ApplyShape(in op);
         var changed = 0;
         var fill = op.Kind >= DigKind.FillDirt;
         Span<float> s = stackalloc float[(MaxSpans + 1) * 2];
@@ -370,6 +372,8 @@ public sealed class PlanetEdits : IDigGround
         byKind.Clear();
         if (!(op.Radius > 0) || !float.IsFinite(op.At.X + op.At.Y + op.At.Z))
             return 0;
+        if (GroundShape.IsShape(op.Kind))
+            return MeasureShape(in op, surfaceGives, stoneDepth, byKind, out _);
         Span<float> s = stackalloc float[(MaxSpans + 1) * 2];
         var total = 0f;
         for (var f = 0; f < 6; f++)
@@ -398,29 +402,37 @@ public sealed class PlanetEdits : IDigGround
                 }
                 if (!Ball(in op, f, ci, cj, out lo, out hi))
                     continue;
-                var area = ColumnArea(f, ci, cj);
-                var col = Col(f, ci, cj);
-                var spans = ColumnNow(f, ci, cj, s);
-                var orig = col >= 0 ? _orig[col] : spans[1];
-                var surface = (int)SurfaceKind(f, ci, cj, surfaceGives);
-                var stoneBelow = orig - stoneDepth;
-                var fillFrom = col >= 0 && _fillKind[col] != 0 ? _fillLo[col] : float.PositiveInfinity;
-                var fillKind = col >= 0 && _fillKind[col] != 0 ? _fillKind[col] - 1 : 0;
-                for (var k = 0; k < spans.Length; k += 2)
-                {
-                    var a = MathF.Max(spans[k], lo);
-                    var b = MathF.Min(spans[k + 1], hi);
-                    if (b <= a)
-                        continue;
-                    total += (b - a) * area;
-                    var inFill = MathF.Max(b - MathF.Max(a, fillFrom), 0);
-                    byKind[fillKind] += inFill * area;
-                    b -= inFill;
-                    var inStone = MathF.Max(MathF.Min(b, stoneBelow) - a, 0);
-                    byKind[(int)GroundKind.Stone] += inStone * area;
-                    byKind[surface] += MathF.Max(b - a - inStone, 0) * area;
-                }
+                total += CutVolume(f, ci, cj, lo, hi, surfaceGives, stoneDepth, byKind, s);
             }
+        }
+        return total;
+    }
+
+    /// <summary>The cubic metres [lo, hi] of column (face, ci, cj) would give if cut out, added to <paramref name="byKind"/> by what they are made of. Returns them.</summary>
+    private float CutVolume(int f, int ci, int cj, float lo, float hi, ReadOnlySpan<GroundKind> surfaceGives, float stoneDepth, Span<float> byKind, Span<float> s)
+    {
+        var total = 0f;
+        var area = ColumnArea(f, ci, cj);
+        var col = Col(f, ci, cj);
+        var spans = ColumnNow(f, ci, cj, s);
+        var orig = col >= 0 ? _orig[col] : spans[1];
+        var surface = (int)SurfaceKind(f, ci, cj, surfaceGives);
+        var stoneBelow = orig - stoneDepth;
+        var fillFrom = col >= 0 && _fillKind[col] != 0 ? _fillLo[col] : float.PositiveInfinity;
+        var fillKind = col >= 0 && _fillKind[col] != 0 ? _fillKind[col] - 1 : 0;
+        for (var k = 0; k < spans.Length; k += 2)
+        {
+            var a = MathF.Max(spans[k], lo);
+            var b = MathF.Min(spans[k + 1], hi);
+            if (b <= a)
+                continue;
+            total += (b - a) * area;
+            var inFill = MathF.Max(b - MathF.Max(a, fillFrom), 0);
+            byKind[fillKind] += inFill * area;
+            b -= inFill;
+            var inStone = MathF.Max(MathF.Min(b, stoneBelow) - a, 0);
+            byKind[(int)GroundKind.Stone] += inStone * area;
+            byKind[surface] += MathF.Max(b - a - inStone, 0) * area;
         }
         return total;
     }
@@ -460,6 +472,8 @@ public sealed class PlanetEdits : IDigGround
     /// <summary>Would a fill put new ground inside the world box min..max (along the columns whose middles cross it)?</summary>
     public bool FillTouches(in DigOp op, Vector3 min, Vector3 max)
     {
+        if (GroundShape.IsShape(op.Kind))
+            return ShapeFillTouches(in op, min, max);
         Span<float> s = stackalloc float[(MaxSpans + 1) * 2];
         for (var f = 0; f < 6; f++)
         {
@@ -635,7 +649,7 @@ public sealed class PlanetEdits : IDigGround
         o[..m].CopyTo(s);
         _count[c] = m / 2;
         _fillLo[c] = _fillKind[c] == 0 ? airFrom : MathF.Min(_fillLo[c], airFrom);
-        _fillKind[c] = (byte)(kind - DigKind.FillDirt + 1);
+        _fillKind[c] = (byte)(GroundShape.GroundOf(kind) + 1);
         MaxRise = MathF.Max(MaxRise, s[m - 1] - _orig[c]);
         return true;
     }

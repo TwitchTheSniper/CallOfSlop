@@ -6,8 +6,11 @@ namespace CallOfSlop;
 /// <para><paramref name="Slice"/> of <paramref name="Slices"/> (protocol 195): a big crater is dug a band of its footprint's rows at a time over several
 /// ticks (Game.MegaDigTick), each band an op of its own in the log, so no tick and no peer digs a whole one at once (docs/sandbox/TERRAIN-DIGGING.md,
 /// "Big craters"). Slices 0 or 1: the whole op.</para></summary>
-public readonly record struct DigOp(DigKind Kind, Vector3 At, float Radius, byte Slice = 0, byte Slices = 0)
+public readonly record struct DigOp(DigKind Kind, Vector3 At, float Radius, byte Slice = 0, byte Slices = 0, Vector3 To = default)
 {
+    /// <summary>The extra bytes of a grade (<see cref="DigKind.GradeDirt"/>..: its far end, <see cref="To"/>), on the wire and in a save.</summary>
+    public const int ToBytes = 12;
+
     /// <summary>Bytes of an op on the wire: kind, centre, radius in centimetres (a sliced op adds its slice and slices: <see cref="SliceBytes"/>).</summary>
     public const int WireBytes = 1 + 12 + 2;
 
@@ -55,6 +58,32 @@ public enum DigKind : byte
 
     /// <summary>The same, made of sand.</summary>
     FillSand,
+
+    /// <summary>
+    /// The ground drill's Flatten and Fill slope (protocol 210; TerrainEditsShape.cs, docs/sandbox/TERRAIN-DIGGING.md "Shaping"): the
+    /// ground along the segment <see cref="DigOp.At"/>..<see cref="DigOp.To"/>, as wide as twice the radius, is made a ramp between the
+    /// two ends' heights (a flat pad when they are the same point): ground over it is cut away (<see cref="GroundShape.Headroom"/>), the
+    /// gap under it filled with dirt (<see cref="GroundShape.Depth"/> at most). Carries <see cref="DigOp.ToBytes"/> more.
+    /// </summary>
+    GradeDirt,
+
+    /// <summary>The same, filled with stone.</summary>
+    GradeStone,
+
+    /// <summary>The same, filled with sand.</summary>
+    GradeSand,
+
+    /// <summary>
+    /// The ground drill's Clean holes: pits and ragged dig marks in the disc are filled with dirt up to the ground around them (a closing
+    /// of the surface by <see cref="GroundShape.Kernel"/>, so slopes and bumps stay as they are). Fills only.
+    /// </summary>
+    SmoothDirt,
+
+    /// <summary>The same, with stone.</summary>
+    SmoothStone,
+
+    /// <summary>The same, with sand.</summary>
+    SmoothSand,
 }
 
 /// <summary>What ground is made of, as digging sees it (<see cref="DigKind.FillDirt"/> + this is the fill of it).</summary>
@@ -365,6 +394,8 @@ public sealed partial class TerrainEdits : IDigGround
     {
         if (Log.Count >= MaxOps || !(op.Radius > 0) || !float.IsFinite(op.At.X + op.At.Y + op.At.Z))
             return 0;
+        if (GroundShape.IsShape(op.Kind))
+            return ApplyShape(in op);
         var r = op.Radius;
         var vs = op.Kind == DigKind.Crater ? CraterDepth : 1f;
         var r2 = r * r;
@@ -493,6 +524,8 @@ public sealed partial class TerrainEdits : IDigGround
         byKind.Clear();
         if (!(op.Radius > 0) || !float.IsFinite(op.At.X + op.At.Y + op.At.Z))
             return 0;
+        if (GroundShape.IsShape(op.Kind))
+            return MeasureShape(in op, surfaceGives, stoneDepth, byKind, out _);
         var vs = op.Kind == DigKind.Crater ? CraterDepth : 1f;
         var r2 = op.Radius * op.Radius;
         var cell = Size * Size;
@@ -529,27 +562,36 @@ public sealed partial class TerrainEdits : IDigGround
             hi = c.Y + h;
             if (hi - lo < MinSpan)
                 continue;
-            var col = Col(ci, cj);
-            var spans = ColumnNow(ci, cj, s);
-            var orig = col >= 0 ? _orig[col] : _t.BaseGroundTop(_t.OriginX + (ci + 0.5f) * Size, _t.OriginZ + (cj + 0.5f) * Size);
-            var surface = (int)SurfaceKindAt(ci, cj, col, surfaceGives);
-            var stoneBelow = orig - stoneDepth;
-            var fillFrom = col >= 0 && _fillKind[col] != 0 ? _fillLo[col] : float.PositiveInfinity;
-            var fillKind = col >= 0 && _fillKind[col] != 0 ? _fillKind[col] - 1 : 0;
-            for (var k = 0; k < spans.Length; k += 2)
-            {
-                var a = MathF.Max(spans[k], lo);
-                var b = MathF.Min(spans[k + 1], hi);
-                if (b <= a)
-                    continue;
-                total += (b - a) * cell;
-                var inFill = MathF.Max(b - MathF.Max(a, fillFrom), 0); // (the part that was laid down, the rest is the map's own ground)
-                byKind[fillKind] += inFill * cell;
-                b -= inFill;
-                var inStone = MathF.Max(MathF.Min(b, stoneBelow) - a, 0);
-                byKind[(int)GroundKind.Stone] += inStone * cell;
-                byKind[surface] += MathF.Max(b - a - inStone, 0) * cell;
-            }
+            total += CutVolume(ci, cj, lo, hi, surfaceGives, stoneDepth, byKind, s);
+        }
+        return total;
+    }
+
+    /// <summary>The cubic metres [lo, hi] of column (ci, cj) would give if cut out, added to <paramref name="byKind"/> by what they are made of (<see cref="Measure"/>'s rule). Returns them.</summary>
+    private float CutVolume(int ci, int cj, float lo, float hi, ReadOnlySpan<GroundKind> surfaceGives, float stoneDepth, Span<float> byKind, Span<float> s)
+    {
+        var cell = Size * Size;
+        var total = 0f;
+        var col = Col(ci, cj);
+        var spans = ColumnNow(ci, cj, s);
+        var orig = col >= 0 ? _orig[col] : _t.BaseGroundTop(_t.OriginX + (ci + 0.5f) * Size, _t.OriginZ + (cj + 0.5f) * Size);
+        var surface = (int)SurfaceKindAt(ci, cj, col, surfaceGives);
+        var stoneBelow = orig - stoneDepth;
+        var fillFrom = col >= 0 && _fillKind[col] != 0 ? _fillLo[col] : float.PositiveInfinity;
+        var fillKind = col >= 0 && _fillKind[col] != 0 ? _fillKind[col] - 1 : 0;
+        for (var k = 0; k < spans.Length; k += 2)
+        {
+            var a = MathF.Max(spans[k], lo);
+            var b = MathF.Min(spans[k + 1], hi);
+            if (b <= a)
+                continue;
+            total += (b - a) * cell;
+            var inFill = MathF.Max(b - MathF.Max(a, fillFrom), 0); // (the part that was laid down, the rest is the map's own ground)
+            byKind[fillKind] += inFill * cell;
+            b -= inFill;
+            var inStone = MathF.Max(MathF.Min(b, stoneBelow) - a, 0);
+            byKind[(int)GroundKind.Stone] += inStone * cell;
+            byKind[surface] += MathF.Max(b - a - inStone, 0) * cell;
         }
         return total;
     }
@@ -571,6 +613,8 @@ public sealed partial class TerrainEdits : IDigGround
     /// </summary>
     public bool FillTouches(in DigOp op, Vector3 min, Vector3 max)
     {
+        if (GroundShape.IsShape(op.Kind))
+            return ShapeFillTouches(in op, min, max);
         ColumnOf(min.X, min.Z, out var bi0, out var bj0);
         ColumnOf(max.X, max.Z, out var bi1, out var bj1);
         Footprint(op.At, op.Radius, out var ci0, out var ci1, out var cj0, out var cj1);
@@ -768,7 +812,7 @@ public sealed partial class TerrainEdits : IDigGround
         o[..m].CopyTo(s);
         _count[c] = m / 2;
         _fillLo[c] = _fillKind[c] == 0 ? airFrom : MathF.Min(_fillLo[c], airFrom);
-        _fillKind[c] = (byte)(kind - DigKind.FillDirt + 1);
+        _fillKind[c] = (byte)(GroundShape.GroundOf(kind) + 1);
         Highest = MathF.Max(Highest, s[m - 1]);
         return true;
     }
