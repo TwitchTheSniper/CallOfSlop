@@ -278,6 +278,15 @@ public sealed partial class Ui
                         break;
                     }
                     HostOpensWith(s);
+                    if (BigButton("HOST STORY CO-OP"))
+                    {
+                        StoryCoopSettings(s); // (Sandbox, Survival, a Sandbox map: friends crash, wake and go through the induction together)
+                        s.Save();
+                        action = LobbyAction.Host;
+                        break;
+                    }
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetItemTooltip("The story with friends: you crash-land together, wake in the penal colony together and go through the warden's induction as a group. Opens your lobby on Survival; pick or make a saved world there. Friends join from the server browser or your invite code."u8);
                     SteamLobbyPicker(s); // who finds the Steam lobby (with Steam running)
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
@@ -362,6 +371,19 @@ public sealed partial class Ui
     }
 
     /// <summary>Under HOST A GAME: what the lobby opens with (the last choices; all of them change in the lobby).</summary>
+    /// <summary>Multiplayer's story co-op: the host's lobby opens on Sandbox survival (the story's opening and induction), on a Sandbox map.</summary>
+    private static void StoryCoopSettings(Settings s)
+    {
+        s.Mode = GameMode.Sandbox;
+        s.SandboxSurvival = true;
+        if (s.MapRandom || Maps.Find(s.MapName) is not { Sandbox: not null })
+        {
+            if ((Maps.Find("Planetoid") is { Sandbox: not null } p ? p : Maps.All.FirstOrDefault(m => m.Sandbox != null)) is { } map) // (the story's planetoid, as the space plan has it)
+                s.MapName = map.Name;
+            s.MapRandom = false;
+        }
+    }
+
     private void HostOpensWith(Settings s)
     {
         s.HostBots = Math.Clamp(s.HostBots, 0, Math.Max(0, s.LobbyMaxPlayers(Maps.Packs, Maps.All) - 2)); // room for at least one friend, as before

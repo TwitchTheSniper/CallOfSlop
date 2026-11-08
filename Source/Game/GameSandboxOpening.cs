@@ -39,7 +39,8 @@ public sealed partial class Game
         public double From; // game time the beat began
         public float Time; // how long it lasts
         public int Line; // the next line of the beat to say
-        public byte R0, R1, R2; // the recovery team's bodies (player ids; 0: none)
+        public byte R0, R1, R2; // the recovery team's bodies (player ids; 0: none; shared by a group)
+        public int Group; // who crashed together (co-op): the same number goes through the beats on one clock
         public Vector3 Focus; // where the camera looks (sent with the beat)
     }
 
@@ -51,6 +52,17 @@ public sealed partial class Game
     private Vector3 _opWake, _opMiddle, _opGate, _opCrash; // world: the cell block's floor, the yard's middle, outside the gate, the crash site
     private float _opWakeYaw;
     private double _opNextLook;
+    private int _opNextGroup;
+
+    /// <summary>How many are in this group's opening now (co-op: friends who crashed together).</summary>
+    private int OpeningGroupSize(int group)
+    {
+        var n = 0;
+        for (var id = 0; id < MaxPlayers; id++)
+            if (_op[id].Stage != OpeningStage.None && _op[id].Group == group)
+                n++;
+        return n;
+    }
     private OpeningSave? _opLoaded; // read from a world's save, applied once its constructs are in
 
     /// <summary>The local player's beat (both sides: the host sets it, a client hears it).</summary>
@@ -202,6 +214,25 @@ public sealed partial class Game
     private void OpeningStart(Player p, double now)
     {
         TutorialDefer(p.Id);
+        // Co-op: friends arriving while a group is still coming down or out cold crashed with it, on its clock, lying
+        // beside the first of them; anyone later has a crash of their own (found on their own, then woken in the colony).
+        for (var id = 0; id < MaxPlayers; id++)
+        {
+            ref var g = ref _op[id];
+            if (id == p.Id || g.Stage is not (OpeningStage.Crash or OpeningStage.Out) || !Players.TryGetValue((byte)id, out var lead))
+                continue;
+            var n = OpeningGroupSize(g.Group);
+            var a = lead.Yaw + MathF.PI * 0.5f * (n % 2 == 0 ? 1 : -1);
+            var beside = SbScatter(lead.Position + new Vector3(MathF.Sin(a), 0, -MathF.Cos(a)) * (1.6f + (n - 1) / 2 * 1.4f) + new Vector3(0, 0.5f, 0), 0.4f);
+            p.Teleport(beside);
+            var dc = _opCrash - beside;
+            p.Yaw = MathF.Atan2(dc.X, -dc.Z);
+            ref var run = ref _op[p.Id];
+            run = g; // (the same beat, begun at the same time, with the same team once it comes)
+            Log($"[opening] {p.Name}: crash-landed with {lead.Name}'s group ({n + 1} now)");
+            OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpeningScript.Current.Beat(run.Stage).Caption, "");
+            return;
+        }
         // At the crash site, lying near the wreck, facing it.
         var off = new Vector3(MathF.Sin(p.Id * 2.39996f), 0, MathF.Cos(p.Id * 2.39996f));
         var feet = SbScatter(_opCrash + off * 6f + new Vector3(0, 0.5f, 0), 2.5f);
@@ -209,6 +240,7 @@ public sealed partial class Game
         var d = _opCrash - feet;
         p.Yaw = MathF.Atan2(d.X, -d.Z);
         Log($"[opening] {p.Name}: crash-landed at {feet.X:0},{feet.Z:0}");
+        _op[p.Id].Group = ++_opNextGroup;
         OpeningBeat(p, OpeningStage.Crash, now);
     }
 
@@ -228,7 +260,7 @@ public sealed partial class Game
                 OpeningBeat(p, OpeningStage.Under, now);
                 break;
             case OpeningStage.Under:
-                OpeningRescueGone(ref run);
+                OpeningRescueGone(p.Id);
                 OpeningToColony(p);
                 OpeningBeat(p, OpeningStage.Wake, now);
                 break;
@@ -262,6 +294,8 @@ public sealed partial class Game
         while (run.Line < beat.Lines.Length && now - run.From >= beat.Lines[run.Line].At)
         {
             var line = beat.Lines[run.Line++];
+            if (line.Group && OpeningGroupSize(run.Group) < 2)
+                continue; // (a line for friends found together)
             var speaker = line.By switch
             {
                 OpeningScript.ByWarden => OpeningWarden(),
@@ -298,6 +332,12 @@ public sealed partial class Game
     /// <summary>Server: the recovery team round a player lying at the crash site, facing them.</summary>
     private void OpeningRescue(Player p, ref OpeningRun run)
     {
+        for (var id = 0; id < MaxPlayers; id++)
+            if (id != p.Id && _op[id].Stage != OpeningStage.None && _op[id].Group == run.Group && _op[id].R0 != 0)
+            {
+                (run.R0, run.R1, run.R2) = (_op[id].R0, _op[id].R1, _op[id].R2); // (co-op: one team stands over the group)
+                return;
+            }
         var names = OpeningScript.Current.Rescuers;
         run.R0 = OpeningRescuer(p, names.Length > 0 ? names[0] : "Recovery Officer", 0f);
         run.R1 = OpeningRescuer(p, names.Length > 1 ? names[1] : "Recovery Officer", -0.75f);
@@ -368,11 +408,13 @@ public sealed partial class Game
     /// <summary>Is this player id a recovery team member (the people's bodies leave them be)?</summary>
     private bool OpeningRescuerId(byte id) => _opRescuer[id];
 
-    private void OpeningRescueGone(ref OpeningRun run)
+    /// <summary>Server: this player's recovery team is done with them; the bodies go once nobody else in the group still has them.</summary>
+    private void OpeningRescueGone(byte self)
     {
+        ref var run = ref _op[self];
         var any = false;
         foreach (var id in (ReadOnlySpan<byte>)[run.R0, run.R1, run.R2])
-            if (id != 0 && _opRescuer[id])
+            if (id != 0 && _opRescuer[id] && !OpeningRescuerShared(self, id))
             {
                 _opRescuer[id] = false;
                 if (Players.TryGetValue(id, out var bot) && bot.Bot != null)
@@ -385,6 +427,14 @@ public sealed partial class Game
         run.R0 = run.R1 = run.R2 = 0;
         if (any)
             BroadcastRoster();
+    }
+
+    private bool OpeningRescuerShared(byte self, byte bot)
+    {
+        for (var id = 0; id < MaxPlayers; id++)
+            if (id != self && _op[id].Stage != OpeningStage.None && (_op[id].R0 == bot || _op[id].R1 == bot || _op[id].R2 == bot))
+                return true;
+        return false;
     }
 
     /// <summary>Server: into the cell block, lying down (each a little to their own side, so friends don't stack).</summary>
@@ -402,7 +452,7 @@ public sealed partial class Game
         ref var run = ref _op[p.Id];
         if (run.Stage == OpeningStage.None)
             return;
-        OpeningRescueGone(ref run);
+        OpeningRescueGone(p.Id);
         if (skipped && p.Alive && run.Stage != OpeningStage.Wake)
             OpeningToColony(p);
         run.Stage = OpeningStage.None;
@@ -425,7 +475,7 @@ public sealed partial class Game
         ref var run = ref _op[p.Id];
         if (run.Stage == OpeningStage.None)
             return;
-        OpeningRescueGone(ref run);
+        OpeningRescueGone(p.Id);
         if (p.Alive && run.Stage != OpeningStage.Wake)
             OpeningToColony(p);
         run.Stage = OpeningStage.None;
@@ -546,7 +596,7 @@ public sealed class OpeningScript
     public const string Format = "call-of-slop-opening/1";
     public const int ByWarden = -1;
 
-    public readonly record struct Line(float At, int By, string Text);
+    public readonly record struct Line(float At, int By, string Text, bool Group = false);
 
     public sealed class BeatDef
     {
@@ -606,7 +656,8 @@ public sealed class OpeningScript
                     def.Lines = [.. ls.EnumerateArray().Select(l => new Line(
                         Math.Clamp(l.GetProperty("at").GetSingle(), 0, def.Time),
                         l.GetProperty("by").ValueKind == JsonValueKind.String ? l.GetProperty("by").GetString() == "warden" ? ByWarden : throw new FormatException($"beats.{key}: \"by\" is a rescuer's number or \"warden\"") : Math.Clamp(l.GetProperty("by").GetInt32(), 0, 2),
-                        Ascii(l.GetProperty("text").GetString() ?? "", $"beats.{key}"))).OrderBy(l => l.At)];
+                        Ascii(l.GetProperty("text").GetString() ?? "", $"beats.{key}"),
+                        l.TryGetProperty("group", out var gl) && gl.GetBoolean())).OrderBy(l => l.At)];
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)

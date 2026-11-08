@@ -45,6 +45,19 @@ A step stays up at least 1.2 s, so one already done shows "Noted." rather than f
 `SandboxAct`: after an action succeeds, `TutorialSawAct` reads its kind (and body and part where it needs them) from a copy
 of the packet; nothing is allocated.
 
+## Together (co-op, 2026-11-08)
+
+People on the same step go through the induction as a **group**: friends who woke in the colony together, everyone in a saved
+world loaded on the same step, or someone who starts, resumes or replays it while others are on that step. Each person's cue is
+still judged on them alone, but the step moves on for the whole group at once: when everyone in it who is alive has done it, or
+`TutorialGroupWait` (45 s) after the first one did, so a friend away from the keyboard can't hold the rest up (they are told the
+warden moved on without them). Tools are issued to everyone in the group at the step that gives them. Skip is per person: they
+leave the group and the rest carry on. Someone with no group (a late joiner on step 1 with nobody else there) has one of their own.
+
+The panel shows "with N others", then "Done. Waiting for Ann, Bob." once they have done the step, or "2 of 3 done: the warden is
+waiting for you." Server state per person: `_tutGroup`, `_tutDone`; each group is judged once a tick from its lowest id
+(`TutorialGroupTick`), nothing allocated; the names are built only when the group changes.
+
 ## Who starts it, and the opening's seam
 
 - The server keeps each person's step and state (`TutorialState`: None, Running, Finished, Skipped) by player id.
@@ -56,10 +69,10 @@ of the packet; nothing is allocated.
 - The Esc menu (Sandbox): **Skip the induction** while it runs; **Resume** a skipped one where it stopped, or **Start it again**;
   **Replay the induction** once finished.
 
-## Network (protocol 201)
+## Network (protocol 201, the group 208)
 
 `Msg.Tutorial`, a `TutorialOp` first, reliable ordered. Server to one client: `State` (u8 step, u8 state) whenever it changes
-and when they arrive (late joiners included). Client to server: `Cue` (u8 cue), `Skip`, `Replay`, `Resume`. The host's own
+and when they arrive (late joiners included). `Group` (u8 they have done the step, u8 others in their group, u8 of them done, text who the group waits for) when their group changes. Client to server: `Cue` (u8 cue), `Skip`, `Replay`, `Resume`. The host's own
 player goes straight to the server's methods and view, with no packet.
 
 ## Saves
