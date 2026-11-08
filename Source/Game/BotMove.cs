@@ -179,7 +179,7 @@ public sealed partial class Game
         // Advance past nodes we've reached.
         while (b.PathIdx < b.PathLen)
         {
-            var node = nav.Nodes[b.Path[b.PathIdx]];
+            var node = nav.At(b.Path[b.PathIdx]); // (the ground as it is now, dug or filled: BotNavDug.cs)
             var dy = Rise(node - pos);
             if (Flat(node - pos) < 0.8f && dy < 1.0f && dy > -2.5f)
                 BotAdvance(b, nav);
@@ -202,17 +202,17 @@ public sealed partial class Game
             if (now >= b.NextShortcut && b.PathIdx + 1 < b.PathLen && !EdgeIs(nav, b.CurEdge, NavGraph.FlagMantle | NavGraph.FlagDrop | NavGraph.FlagSlope))
             {
                 b.NextShortcut = now + 0.25;
-                var next = nav.Nodes[b.Path[b.PathIdx + 1]];
+                var next = nav.At(b.Path[b.PathIdx + 1]);
                 var e = EdgeBetween(nav, b.Path[b.PathIdx], b.Path[b.PathIdx + 1]);
                 AllocProfile.Mark("bot: shortcut");
                 if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop | NavGraph.FlagSlope) && CanShortcut(pos, next)) // (steep slopes: only the walked edges)
                     BotAdvance(b, nav);
                 AllocProfile.Mark("bot: steer");
             }
-            aimAt = nav.Nodes[b.Path[b.PathIdx]];
+            aimAt = nav.At(b.Path[b.PathIdx]);
             var dh = Flat(aimAt - pos);
             if (b.PathIdx + 1 < b.PathLen && dh < 1.6f && !EdgeIs(nav, b.CurEdge, NavGraph.FlagMantle))
-                aimAt = Vector3.Lerp(aimAt, nav.Nodes[b.Path[b.PathIdx + 1]], 0.5f * (1f - dh / 1.6f)); // round the corner
+                aimAt = Vector3.Lerp(aimAt, nav.At(b.Path[b.PathIdx + 1]), 0.5f * (1f - dh / 1.6f)); // round the corner
             if (b.CurEdge >= 0 && (nav.EdgeFlags[b.CurEdge] & NavGraph.FlagMantle) != 0)
             {
                 var ledge = nav.EdgeLedge[b.CurEdge];
@@ -298,8 +298,8 @@ public sealed partial class Game
         // Already past the first node (it's behind us on the way)? Start with the second.
         if (b.PathLen >= 2)
         {
-            var n0 = nav.Nodes[b.Path[0]];
-            var n1 = nav.Nodes[b.Path[1]];
+            var n0 = nav.At(b.Path[0]);
+            var n1 = nav.At(b.Path[1]);
             if (Flat(n1 - p.Position) < Flat(n1 - n0) && CanShortcut(p.Position, n1))
                 BotAdvance(b, nav);
         }
