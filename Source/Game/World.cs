@@ -729,6 +729,7 @@ public sealed class Player
         Sim.Noclip = Sim.NoclipExit = false;
         Sim.Gear = Sim.Canopy = Sim.GearDelay = 0;
         SbSpawned = false;
+        InShell = false; // (the server ends any shell run at a new match: ShellResetAll)
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;
         SbPart = 0;
