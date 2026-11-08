@@ -26,4 +26,11 @@ public interface IDigGround
 
     /// <summary>Every change undone and the log emptied.</summary>
     void Clear();
+
+    /// <summary>
+    /// Room made ahead for <paramref name="columns"/> more dug columns past those already made room for, at most <paramref name="most"/> of their span
+    /// lists a call (a big crater's, over the ticks before its first band: Game.MegaDigTick), so the band that first digs them makes nothing. Returns
+    /// how many are still to make: pass that back next time.
+    /// </summary>
+    int Reserve(int columns, int most);
 }

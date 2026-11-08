@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--bench-mega [KEY] [--bodies N] [--parts P] [--map NAME] [--cap M] [--no-crater] [--shell] [--once]</c>: what a massive blast costs (docs/perf/LIMITS.md, "Massive blasts").
+/// <c>--bench-mega [KEY] [--bodies N] [--parts P] [--map NAME] [--cap M] [--no-crater] [--shell] [--immune] [--once]</c>: what a massive blast costs (docs/perf/LIMITS.md, "Massive blasts").
 /// A command-line benchmark, not a self-test section: it fails nothing. A host and one client over the real loopback transport on a Sandbox map
 /// with terrain; N hulls of P Frame Blocks (300 of 60 by default) laid out round the middle, the two players at a few hundred metres; then the
 /// design (by default the biggest the engine allows: an antimatter bomb past the 2 km cap) is set off in the middle (shot to pieces where it lies; --shell: landed as from a rack). Every server tick of the
@@ -23,6 +23,15 @@ public static partial class SelfTest
             code = BenchMegaOnce(args);
         }
         return code;
+    }
+
+    /// <summary>A turn that takes +Y to <paramref name="up"/> (the least turn).</summary>
+    private static Quaternion LookUp(Vector3 up)
+    {
+        var axis = Vector3.Cross(Vector3.UnitY, up);
+        var s = axis.Length();
+        var c = Vector3.Dot(Vector3.UnitY, up);
+        return s < 1e-5f ? (c > 0 ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI)) : Quaternion.CreateFromAxisAngle(axis / s, MathF.Atan2(s, c));
     }
 
     private static int BenchMegaOnce(string[] args)
@@ -70,12 +79,14 @@ public static partial class SelfTest
         centre.Y = Ground(centre.X, centre.Z);
         if (!cp.Alive)
             server.SelfTestRespawn(cp, now);
-        cp.Teleport(new Vector3(centre.X + 350f, Ground(centre.X + 350f, centre.Z) + 0.1f, centre.Z));
+        Vector3 Stand(float dx) => map.Planetoid is { } ps ? ps.GroundUnder(centre + new Vector3(dx, 0, 0)) + Vector3.Normalize(ps.GroundUnder(centre + new Vector3(dx, 0, 0)) - ps.Center) * 0.1f
+            : new Vector3(centre.X + dx, Ground(centre.X + dx, centre.Z) + 0.1f, centre.Z);
+        cp.Teleport(Stand(350f));
         if (server.Local is { } hp)
         {
             if (!hp.Alive)
                 server.SelfTestRespawn(hp, now);
-            hp.Teleport(new Vector3(centre.X - 120f, Ground(centre.X - 120f, centre.Z) + 0.1f, centre.Z));
+            hp.Teleport(Stand(-120f));
         }
         // The busy scene: hulls on a spiral out to 600 m, or nearly to the map's edge.
         var block = ConstructParts.Need("Frame Block");
@@ -87,7 +98,17 @@ public static partial class SelfTest
             var r = 20f + (reach - 20f) * MathF.Sqrt((i + 0.5f) / Math.Max(1, bodies));
             var x = centre.X + MathF.Cos(a) * r;
             var z = centre.Z + MathF.Sin(a) * r;
-            if (w.Create(new Vector3(x, Ground(x, z) + 0.3f, z), Quaternion.Identity) is not { } c)
+            var spot = new Vector3(x, Ground(x, z) + 0.3f, z);
+            var turn = Quaternion.Identity;
+            if (map.Planetoid is { } planet)
+            {
+                // (on a planetoid: on its ground, stood up along its up there, so the scene rests before the blast)
+                spot = planet.GroundUnder(new Vector3(x, centre.Y, z));
+                var up = Vector3.Normalize(spot - planet.Center);
+                spot += up * 0.3f;
+                turn = Quaternion.Normalize(LookUp(up));
+            }
+            if (w.Create(spot, turn) is not { } c)
                 break;
             var size = block.BoundsMax - block.BoundsMin;
             for (var p = 0; p < parts; p++)
@@ -95,7 +116,9 @@ public static partial class SelfTest
             c.Rebuild();
             built++;
         }
-        var bomb = ConstructBuild.PlaceNew(w, def, centre + new Vector3(0, 0.5f, 0), 0);
+        if (map.Planetoid is { } pc)
+            centre = pc.GroundUnder(centre); // (the planet's ground under its spawn)
+        var bomb = ConstructBuild.PlaceNew(w, def, centre + (map.Planetoid is { } pb ? Vector3.Normalize(centre - pb.Center) : Vector3.UnitY) * 0.5f, 0);
         if (bomb == null)
         {
             Console.WriteLine("[mega bench] couldn't set the bomb down");
@@ -126,6 +149,9 @@ public static partial class SelfTest
             asleep += c.Asleep ? 1 : 0;
         Console.WriteLine($"[mega bench] steady server tick: median {steady[steady.Count / 2]:0.00} ms, worst {steady[^1]:0.00} ms; {asleep} of {w.Bodies.Count} bodies asleep");
 
+        if (args.Any(a => a.Equals("--immune", StringComparison.OrdinalIgnoreCase)))
+            foreach (var pl in server.Players.Values)
+                pl.ImmuneUntil = now + 600; // (the players live through it: thrown by the shock, as a host's immune camera is)
         // The blast: shot to pieces, its fuse, its front, its walk, its crater.
         var sent0 = server.Net.BytesSent;
         w.MegaStepWorstMs = 0;

@@ -151,6 +151,7 @@ internal sealed partial class ConstructCollider
             }
             for (var h = 0; h < hs.Length; h++)
             {
+                ReuseHull(hullAt, hs[h]);
                 var hull = hs[h].MovedInto(Hulls[hullAt], rq * Rot24.Quat(p.Rot), rt + Vector3.Transform(p.Pos, rq), c.ScaleOf(i));
                 hull.Bounds(out var mn, out var mx);
                 Hulls[hullAt] = hull;
@@ -205,6 +206,36 @@ internal sealed partial class ConstructCollider
             at = end;
         }
     }
+
+    /// <summary>
+    /// The hull kept in slot <paramref name="at"/> from the last build is reused when it has <paramref name="shape"/>'s faces; when a part came out
+    /// before it, every later part's hulls sit a few slots on, so the matching one is looked for a little ahead and swapped in. Without this a part
+    /// taken off a rack of 240 designed bombs (four hull shapes each) made nearly every later hull new: about a thousand hulls allocated a change.
+    /// </summary>
+    private void ReuseHull(int at, ConvexHull shape)
+    {
+        if (Hulls[at] is { } have && ReferenceEquals(have.FaceIdx, shape.FaceIdx))
+            return;
+        // (the last shift first: the parts after one taken out all moved by the same few slots)
+        var k = at + _hullShift;
+        if (_hullShift > 0 && k < Hulls.Length && Hulls[k] is { } next && ReferenceEquals(next.FaceIdx, shape.FaceIdx))
+        {
+            (Hulls[at], Hulls[k]) = (next, Hulls[at]);
+            return;
+        }
+        var end = Math.Min(Hulls.Length, at + HullReuseAhead);
+        for (k = at + 1; k < end; k++)
+            if (Hulls[k] is { } cand && ReferenceEquals(cand.FaceIdx, shape.FaceIdx))
+            {
+                (Hulls[at], Hulls[k]) = (cand, Hulls[at]);
+                _hullShift = k - at;
+                return;
+            }
+    }
+
+    private int _hullShift;
+
+    private const int HullReuseAhead = 96; // slots looked through: a part's hulls, a few times over
 
     /// <summary>
     /// Leaves from which the trees are built from Morton order instead (docs/perf/LIMITS.md, "Rebuilds"): each group's

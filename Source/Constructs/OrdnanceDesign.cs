@@ -487,6 +487,7 @@ public static class Ordnance
         }
         st.BoxPiece = pieceOf.ToArray();
         st.BoxFold = fold.Exists(f => f > 0) ? fold.ToArray() : [];
+        var warhead = d.Kind != OrdKind.Spent && HasWarhead(st);
         var def = new ConstructPartDef
         {
             Name = key,
@@ -497,8 +498,10 @@ public static class Ordnance
             Tool = ConstructTool.Welder,
             AttachSeconds = 2,
             Mass = MathF.Max(0.5f, st.Mass),
-            Health = Math.Clamp(st.Mass * 0.8f, 20, ConstructParts.MaxPartHealth),
-            Armour = 1,
+            Health = warhead ? Math.Clamp(40f + st.Mass * 0.4f, 60f, ConstructParts.MaxPartHealth) : Math.Clamp(st.Mass * 0.8f, 20, ConstructParts.MaxPartHealth),
+            Armour = warhead ? st.Look != MegaBlasts.Plain ? MassiveCasing : CasingArmour : 1, // (a warhead's casing: a few rifle rounds don't set it off, a cannon or a blast does; ConstructWorld.Arm)
+            Warhead = warhead,
+            Burns = HasPropellant(d),
             Material = "steel",
             PhysicsOnly = true,
             PhysicsWhy = "built at a bench",
@@ -519,6 +522,29 @@ public static class Ordnance
         };
         SurfaceRules.Apply(def);
         return def;
+    }
+
+    private const float CasingArmour = 2f, MassiveCasing = 12f; // (a warhead's casing: the Aerial Bomb's 2; a massive one's heavier, so small arms barely scratch it)
+
+    /// <summary>
+    /// Does a design go off when it is broken (shot, blasted, burnt)? A charge with filling or a sub-payload does; a Kinetic Penetrator alone, like a
+    /// spent stage, only breaks (docs/sandbox/CONSTRUCTS.md, "Cook-offs of ordnance").
+    /// </summary>
+    public static bool HasWarhead(OrdStats st)
+    {
+        foreach (var c in st.Flight.Charges)
+            if (c.Sub != OrdSub.None || c.Damage > 0 && !c.Kinetic)
+                return true;
+        return false;
+    }
+
+    /// <summary>A motor that burns (not cold gas) or a fuel tank: fire lights it, and it burns down to its cook-off.</summary>
+    private static bool HasPropellant(OrdnanceDesign d)
+    {
+        foreach (var p in d.Pieces)
+            if (p.Section.Ord is { } o && (o.Slot == "fuel" || o.Slot == "motor" && !p.Section.Name.StartsWith("Cold Gas", StringComparison.Ordinal)))
+                return true;
+        return false;
     }
 
     /// <summary>A design in words (its look line).</summary>

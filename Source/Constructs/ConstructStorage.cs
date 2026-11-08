@@ -1209,6 +1209,8 @@ public sealed partial class ConstructWorld
         if (st.Health[slot] > 0)
             return false;
         Events.Add($"construct {c.Id}: a stored {d.Name} was destroyed");
+        if (d.Warhead && d.Explosive is { } bomb)
+            SetOff(d, bomb, ConstructRender.PartCentre(c, part), c, (int)(ConstructWeapons.CookOffDelay * World.TickRate)); // (stored ordnance with a warhead goes off in its container)
         if (--st.Count[slot] == 0)
         {
             st.Def[slot] = ConstructParts.None;

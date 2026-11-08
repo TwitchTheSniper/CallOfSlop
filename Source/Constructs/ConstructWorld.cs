@@ -231,19 +231,131 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>
-    /// An explosive part (a bomb: "explosive" in its file) broke: it goes off where it is after its fuse, with the blast
-    /// of an explosive prop (<see cref="IConstructTargets.ExplodePart"/>), so it can set off the next one.
+    /// An explosive part (a bomb: "explosive" in its file, a designed bomb or missile) broke: if it has a warhead it goes off where it is, its fuse
+    /// or not (docs/sandbox/CONSTRUCTS.md, "Cook-offs of ordnance"), so it can set off the next one. No warhead (a penetrator alone, a spent stage): it only breaks.
     /// </summary>
     private void Arm(Construct c, int part, PropBreakable bomb)
     {
-        if (CookOffCount < CookOffs.Length)
-            CookOffs[CookOffCount++] = new CCookOff
-            {
-                At = ConstructRender.PartCentre(c, part), Radius = bomb.ExplodeRadius, Damage = bomb.ExplodeDamage,
-                Ticks = Math.Max(1, (int)MathF.Round(bomb.ExplodeFuse * World.TickRate)), Body = c.Id, Bomb = bomb, Look = c.Parts[part].D.OrdStats?.Look ?? MegaBlasts.Plain,
-            };
-        Events.Add($"construct {c.Id}: the {c.Parts[part].D.Name} is armed");
+        var d = c.Parts[part].D;
+        if (!d.Warhead)
+            return;
+        var at = ConstructRender.PartCentre(c, part);
+        var ticks = d.OrdStats != null ? (int)(ConstructWeapons.CookOffDelay * World.TickRate) : Math.Max(1, (int)MathF.Round(bomb.ExplodeFuse * World.TickRate));
+        SetOff(d, bomb, at, c, ticks + (part & 3)); // (a few ticks apart: a rack's chain goes off in a ripple, not all in one tick)
+        Events.Add($"construct {c.Id}: the {d.Name} is armed");
     }
+
+    /// <summary>
+    /// Server: ordnance <paramref name="d"/> goes off at <paramref name="at"/> in <paramref name="ticks"/>: a landed shell of its own charges, so a
+    /// cook-off is the weapon's own blast (its yield, its sub-payloads, a massive one's shock front, its look), walked and queued with every other
+    /// blast (<see cref="StepShells"/>: a few a tick within the parts budget, so a full rack's chain spreads over ticks). It rides <paramref name="on"/>
+    /// until then. With the shell pool full it waits in <see cref="CookOffs"/> as before.
+    /// </summary>
+    internal void SetOff(ConstructPartDef d, PropBreakable bomb, Vector3 at, Construct? on, int ticks)
+    {
+        var s = new CShell
+        {
+            Kind = ShellKind.Bomb, By = on?.Owner ?? 255, Gun = on?.Id ?? 0, GunPart = ushort.MaxValue, Pos = at, Prev = at, Tested = at,
+            Landed = true, Delay = Math.Max(1, ticks), Size = d.BoundsMax - d.BoundsMin,
+            Blast = bomb.ExplodeRadius, Damage = bomb.ExplodeDamage, Crater = bomb.ExplodeCrater,
+        };
+        if (d.OrdStats is { Flight.Charges.Count: > 0 } st)
+        {
+            var ch = st.Flight.Charges[0];
+            s.Design = d;
+            s.Flags = ShellFlags.Designed;
+            (s.Blast, s.Damage, s.Crater) = (ch.Blast, ch.Damage, ch.Crater);
+            s.Mass = d.Mass;
+        }
+        if (on != null && IsLive(on))
+        {
+            s.Stuck = on.Id;
+            s.StuckAt = on.ToLocal(at);
+        }
+        if (AddShell(s) != 0)
+        {
+            ShellBlastsWaiting++;
+            CookOffsSet++;
+            return;
+        }
+        if (CookOffCount < CookOffs.Length)
+            CookOffs[CookOffCount++] = new CCookOff { At = at, Radius = bomb.ExplodeRadius, Damage = bomb.ExplodeDamage, Ticks = Math.Max(1, ticks), Body = on?.Id ?? 0, Bomb = bomb, Look = d.OrdStats?.Look ?? MegaBlasts.Plain };
+        else
+            Caps.Hit("cook-offs waiting", CookOffs.Length);
+    }
+
+    /// <summary>
+    /// A rack broke while ordnance with a warhead on it had already taken damage (a cook-off chain's blasts on it): everything with a warhead it holds
+    /// goes off with it (sympathetic detonation, a few ticks apart) rather than fall as a heap of loose bombs: a rack's stations sit closer than its
+    /// bombs' fins, so a heap of them overlaps, and a hundred overlapping bodies cost the physics up to 100 ms a tick (--bench-cookoff). A rack shot
+    /// off with nothing on it hurt drops what it holds as before. One structure rebuild. False: nothing went with it.
+    /// </summary>
+    private bool RackGoes(Construct c, int rack)
+    {
+        var n = c.PartCount;
+        if (_rackDoomed.Length < n)
+            _rackDoomed = new bool[Math.Max(n, 256)]; // (once per size)
+        Array.Clear(_rackDoomed, 0, n);
+        var any = false;
+        for (var e = c.FirstLink(rack); e >= 0 && !any; e = c.NextLink(e))
+        {
+            ref var op = ref c.Parts[c.OtherEnd(e)];
+            any = !op.Broken && op.D.Warhead && op.D.Explosive != null && op.Health < op.D.Health;
+        }
+        if (!any)
+            return false;
+        for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
+        {
+            var o = c.OtherEnd(e);
+            ref var op = ref c.Parts[o];
+            if (_rackDoomed[o] || op.Broken || !op.D.Warhead || op.D.Explosive is not { } bomb)
+                continue;
+            Arm(c, o, bomb);
+            _rackDoomed[o] = true;
+        }
+        _rackDoomed[rack] = true;
+        Events.Add($"construct {c.Id}: {c.Parts[rack].D.Name} blown apart with what it held");
+        Disable(c);
+        RemoveParts(c, new ReadOnlySpan<bool>(_rackDoomed, 0, n));
+        return true;
+    }
+
+    private bool[] _rackDoomed = [];
+
+    /// <summary>While a blast walks a body (<see cref="WalkBlast"/>): the warheads its damage set off, taken out together by <see cref="WarheadsGone"/>.</summary>
+    private Construct? _warheadsOf;
+    private readonly HashSet<int> _warheadIds = new(256);
+    private bool[] _warheadsGone = [];
+
+    /// <summary>A blast's walk starts on a body: the warheads it sets off there are noted, not taken out one by one.</summary>
+    private void WarheadsBegin(Construct c)
+    {
+        _warheadsOf = c;
+        _warheadIds.Clear();
+    }
+
+    /// <summary>...and leaves it: those it set off go, in one structure rebuild (a rack of 240 bombs: about 1 ms, where one by one took 5 to 16).</summary>
+    private void WarheadsGone()
+    {
+        var c = _warheadsOf;
+        _warheadsOf = null;
+        if (c == null || _warheadIds.Count == 0 || !IsLive(c))
+            return;
+        var n = c.PartCount;
+        if (_warheadsGone.Length < n)
+            _warheadsGone = new bool[Math.Max(n, 256)]; // (once per size)
+        var any = false;
+        for (var i = 0; i < n; i++)
+            any |= _warheadsGone[i] = c.Parts[i].Broken && c.Parts[i].D.Warhead && _warheadIds.Contains(Ident(c, i));
+        _warheadIds.Clear();
+        if (!any)
+            return;
+        Disable(c);
+        RemoveParts(c, new ReadOnlySpan<bool>(_warheadsGone, 0, n));
+    }
+
+    /// <summary>Ordnance set off by damage (the bench and the perf window).</summary>
+    public int CookOffsSet;
 
     /// <summary>A line per notable event (a part broke, a piece fell off): the game shows some, the self-test reads them.</summary>
     public readonly List<string> Events = new(32);
@@ -846,11 +958,27 @@ public sealed partial class ConstructWorld
             return false;
         }
         p.Health = 0;
+        if (d.Logic == CLogic.BombRack && d.OnBreak != PartBreak.Disable && RackGoes(c, part))
+            return true; // (a rack blown off with damaged ordnance on it: they go with it)
         Disable(c); // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
         if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume || d.AmmoStore)
             CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
         if (d.Explosive is { } bomb)
+        {
             Arm(c, part, bomb);
+            if (d.Warhead && d.OnBreak != PartBreak.Disable)
+            {
+                Events.Add($"construct {c.Id}: {d.Name} went off");
+                if (_warheadsOf == c)
+                {
+                    p.Broken = true; // (a blast's walk takes them out together when it leaves the body: one rebuild, not one a bomb; ConstructShells.WalkBlast)
+                    _warheadIds.Add(Ident(c, part)); // (by what it is, not its index: another part breaking off meanwhile renumbers them)
+                    return true;
+                }
+                RemovePart(c, part); // (it goes in its own blast: no wreck of it falls, so a rack's chain leaves no pile of bombs to collide)
+                return true;
+            }
+        }
         if (p.Store != 0)
             if (!c.DefOf(part).IsBeacon && !c.DefOf(part).IsTerminal) // (a beacon holds nothing; a terminal's tray stays with the wreck: its store stays with the wreck, which says so on the look line and the HUD)
                 Spill(c, part); // (a destroyed container spills what it holds)
@@ -913,6 +1041,7 @@ public sealed partial class ConstructWorld
     public int Blast(Vector3 centre, float radius, float maxDamage)
     {
         var hits = 0;
+        BlastShells(centre, radius, maxDamage); // (ordnance in the air near it: ConstructCookOffs.cs)
         // Bodies can split while we go: walk by index, re-finding parts by distance each time. The pieces that split off
         // join the walk (Create adds them while a blast is going off), as they did when the walk was over every body.
         var near = Near(centre, radius + 1f, _blastNear);
