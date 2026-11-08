@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, strut/strut, wing 0.75, language boat standard 2.16 m, flare 0.12, sheer 0.8, brow 0.80 1.5 m, tail 0.61 1 m, door right, cab boat cab, nose rounded, wear age 1.06 (1 rusty, 8 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+tank+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+tank 2 m+bed 2 m, plan 2
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, strut/strut, wing 0.75, language boat standard 2.16 m, flare 0.12, sheer 0.8, brow 0.80 1.5 m, tail 0.61 1 m, door right, cab boat cab, nose rounded, fitting mascot, wear age 1.06 (1 rusty, 8 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+tank+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+tank 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 7",
   "group": "Clan MacSlop",
@@ -96,7 +96,8 @@
     {"part": "Bull Bar", "on": 87, "socket": "front", "by": "back", "paint": "#2a2622"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 82, "pos": [-1.062, 0.677, 6.752], "rot": [0.0016, 0.0061, 0.7042, 0.7099]}, "paint": "#23395d"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 83, "pos": [-1.048, 0.694, 7.247], "rot": [0.0206, -0.008, 0.7039, 0.71]}, "paint": "#1f4a2e"},
-    {"part": "Pipe Box", "on": 87, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoO UZVq)", "on": 87, "socket": "top", "by": "base"},
+    {"part": "Pipe Box", "on": 68, "socket": "front", "by": "base"},
     {"part": "Wee Caber", "on": 81, "socket": "front11", "by": "base"},
     {"part": "Wee Caber", "on": 83, "socket": "front00", "by": "base"},
     {"part": "Wee Caber", "on": 84, "socket": "front11", "by": "base"},

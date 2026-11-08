@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front set back, inset 1.5 m, wishbone/trailing arm, wing 0.5, language pod heavy 2.45 m, flare 0.18, tapered 0.7, brow 0.75 1.25 m, tail 0.80 1.25 m, door right, 8 facets, cab pod cab, 6 facets, nose rounded, wear age 0.69 (2 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab enclosed, nose long hood, rear porch, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow L,Bay L-T,Door,Bay T-L,Tail L), plan 2
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front set back, inset 1.5 m, wishbone/trailing arm, wing 0.5, language pod heavy 2.45 m, flare 0.18, tapered 0.7, brow 0.75 1.25 m, tail 0.80 1.25 m, door right, 8 facets, cab pod cab, 6 facets, nose rounded, fitting radome, trim fairing on 9 bay sides, wear age 0.69 (2 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab enclosed, nose long hood, rear porch, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow L,Bay L-T,Door,Bay T-L,Tail L), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT War Bus 10",
   "group": "IT Department",
@@ -137,9 +137,19 @@
     {"part": "Plate Steel 0.25 m", "on": 126, "socket": "-z1", "by": "-x", "paint": "#d8d0b8"},
     {"part": "Fuel Drum", "on": 124, "socket": "front33", "by": "-y"},
     {"part": "Hull Loft (hoodr UWV2WyWjXIXEVd ~6W078D78c6Or4e_2P4014)", "on": 31, "socket": "+y", "by": "engine", "paint": "#0f7bd8"},
+    {"part": "Hull Loft (decoR WTWL)", "on": 39, "socket": "top", "by": "base"},
     {"part": "CRT Monitor", "on": 131, "socket": "top", "by": "base"},
     {"part": "CRT Monitor", "on": 129, "socket": "front", "by": "base"},
-    {"part": "Router Antenna", "on": 39, "socket": "top", "by": "base"}
+    {"part": "Hull Loft (trimf4 XzW5 ~Am0BeRBusBuyCHICXjC1uBI78oS4Yh02h ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h)", "on": 92, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf2 XzW5 ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h ~Am0BeRBusBuyCHICXjC1uBI78oS4Yh02h)", "on": 92, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf3 XBW5 ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h ~CW0D8eDOyE9GEvaFnvFAYDh8Ape6p-03-)", "on": 93, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf9 XBW5 ~CW0D8eDOyE9GEvaFnvFAYDh8Ape6p-03- ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h)", "on": 93, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf4 YMW5 ~CW0D8eDOyE9GFnvFAYDh8Ape6p-03- =)", "on": 94, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf2 XBW5 ~CW0D8eDOyE9GEvaFnvFAYDh8Ape6p-03- ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h)", "on": 98, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf2 XBW5 ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h ~CW0D8eDOyE9GEvaFnvFAYDh8Ape6p-03-)", "on": 98, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf1 XzW5 ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h ~Am0BWTBmwCHOCXrCPuBAH9QS7ge4Yu02u)", "on": 99, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf4 XzW5 ~Am0BWTBmwCHOCXrCPuBAH9QS7ge4Yu02u ~CW0D8bDOyDnAFfmFfuFIMDAvARM6Rh03h)", "on": 99, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Router Antenna", "on": 126, "socket": "front00", "by": "base"}
   ],
   "wires": [[36, 37], [37, 31], [106, 112], [112, 110], [118, 115]],
   "hoses": [[116, 117]],

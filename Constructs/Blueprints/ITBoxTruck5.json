@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, tag 1.25 m, front under the hood, inset 2.25 m, leaf/leaf/leaf, wing 0.5, language pod heavy 2.59 m, flare 0.30, tapered 0.6, brow 0.65 1.5 m, tail 0.74 1.25 m, door left, 12 facets, cab pod cab, 8 facets, nose rounded, wear age 0.71 (1 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab enclosed, nose short hood, rear porch, under skirted, flank panniers, sides walls, roof none, layout room(Brow T,Door,Bay T-L,Tail L)+bed 2 m
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, tag 1.25 m, front under the hood, inset 2.25 m, leaf/leaf/leaf, wing 0.5, language pod heavy 2.59 m, flare 0.30, tapered 0.6, brow 0.65 1.5 m, tail 0.74 1.25 m, door left, 12 facets, cab pod cab, 8 facets, nose rounded, fitting radome, trim fairing on 7 bay sides, wear age 0.71 (1 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab enclosed, nose short hood, rear porch, under skirted, flank panniers, sides walls, roof none, layout room(Brow T,Door,Bay T-L,Tail L)+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Box Truck 5",
   "group": "IT Department",
@@ -155,13 +155,20 @@
     {"part": "Slat Grille", "on": 146, "socket": "front", "by": "back", "paint": "#0f7bd8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 142, "pos": [-1.06, 0.682, 7.75], "rot": [0.0001, -0.0004, 0.7061, 0.7081]}, "paint": "#d8d0b8"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 145, "pos": [1.548, 0.924, 7.75], "rot": [0.0013, -0.0092, -0.7107, 0.7034]}, "paint": "#d8d0b8"},
+    {"part": "Hull Loft (decoR WUWK)", "on": 39, "socket": "top", "by": "base"},
     {"part": "Satellite Dish", "on": 142, "socket": "front10", "by": "base"},
     {"part": "Wi-Fi Mast", "on": 140, "socket": "front13", "by": "base"},
     {"part": "Router Antenna", "on": 144, "socket": "front01", "by": "base"},
     {"part": "Cable Reel", "on": 146, "socket": "top", "by": "base"},
-    {"part": "Network Switch", "on": 39, "socket": "top", "by": "base"},
     {"part": "Network Switch", "on": 106, "socket": "front30", "by": "base"},
-    {"part": "Cable Reel", "on": 134, "socket": "front30", "by": "base"}
+    {"part": "Cable Reel", "on": 134, "socket": "front30", "by": "base"},
+    {"part": "Hull Loft (trimf8 XzW5 ~BG0BuICGZCOrCOyCX7D9PDfhDHuD9yBwCA2P6YY4Ae02e ~CW0DGSDeuDeyF9LHPoHXuHQEGwhG36EhWCZr9q26qC04C)", "on": 90, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf3 XzW5 ~CW0DGSDeuDeyF9LHPoHXuHQEGwhG36EhWCZr9q26qC04C ~BG0BuICGZCOrCOyCX7D9PDfhDHuD9yBwCA2P6YY4Ae02e)", "on": 90, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf9 YMW5 ~CW0DGSDeuDeyF9LHPoHXuHQEGwhG36EhWCZr9q26qC04C =)", "on": 91, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf3 XBW5 ~CW0DGSDeuDeyF9LHPoHXuHQEGwhG36EhWCZr9q26qC04C ~CW0DGQDeqDeyEfFGnfHHuHI4GwUFQtE3FC3Y9Rl6Ru03u)", "on": 95, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf0 XBW5 ~CW0DGQDeqDeyEfFGnfHHuHI4GwUFQtE3FC3Y9Rl6Ru03u ~CW0DGSDeuDeyF9LHPoHXuHQEGwhG36EhWCZr9q26qC04C)", "on": 95, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf3 XaW5 ~CW0DGQDeqDeyEfFGnfHHuHI4GwUFQtE3FC3Y9Rl6Ru03u ~BG0BuJCGcCOvCOyCnCDXVDnpDfuDA5BwM8ga6Yj4Aq02q)", "on": 96, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf0 XaW5 ~BG0BuJCGcCOvCOyCnCDXVDnpDfuDA5BwM8ga6Yj4Aq02q ~CW0DGQDeqDeyEfFGnfHHuHI4GwUFQtE3FC3Y9Rl6Ru03u)", "on": 96, "socket": "-x0", "by": "base", "paint": "#1f4e8c"}
   ],
   "wires": [[36, 37], [37, 31], [103, 124], [124, 122], [130, 127]],
   "hoses": [[128, 129]],

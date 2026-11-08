@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 3 axles, tandem 1.5 m, front forward, inset 1.5 m, coil/leaf, wing 0.5, language slab heavy 2.22 m, flare 0.23, stepped 1.2, brow 0.73 1.25 m, tail 0.84 1.25 m, door left, cab slab caged cab, nose flat, wear age 0.95 (18 rusty, 15 dirty, 0 sooty, 0 patched, 2 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under skirted, flank bare, sides walls, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 3 axles, tandem 1.5 m, front forward, inset 1.5 m, coil/leaf, wing 0.5, language slab heavy 2.22 m, flare 0.23, stepped 1.2, brow 0.73 1.25 m, tail 0.84 1.25 m, door left, cab slab caged cab, nose flat, trim plates on 5 bay sides, wear age 0.95 (19 rusty, 15 dirty, 0 sooty, 0 patched, 2 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under skirted, flank bare, sides walls, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Flatbed Fort 9",
   "group": "Bandit",
@@ -149,7 +149,12 @@
     {"part": "Long Iron Spike", "on": 130, "socket": "front00", "by": "base"},
     {"part": "Iron Spike", "on": 133, "socket": "front00", "by": "base"},
     {"part": "Skull Trophy", "on": 135, "socket": "top", "by": "base"},
-    {"part": "Hubcap Plate", "on": 43, "socket": "top", "by": "base"}
+    {"part": "Hubcap Plate", "on": 43, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (trimp1 XaW5 ~CO0CWyEY8BIY02Y ~D00D8yGIwCxU03U)", "on": 97, "socket": "+x0", "by": "base", "paint": "#7a4326"},
+    {"part": "Hull Loft (trimp0 XaW5 ~D00D8yGIwCxU03U ~CO0CWyEY8BIY02Y)", "on": 97, "socket": "-x0", "by": "base", "paint": "#7a4326"},
+    {"part": "Hull Loft (trimp7 YMW5 ~D00D8yGIwCxU03U =)", "on": 98, "socket": "-x0", "by": "base", "paint": "#6b3a22"},
+    {"part": "Hull Loft (trimp1 XaW5 ~D00D8yGIwCxU03U ~C00C8yEASB2w02w)", "on": 101, "socket": "+x0", "by": "base", "paint": "#5e3320"},
+    {"part": "Hull Loft (trimp2 XaW5 ~C00C8yEASB2w02w ~D00D8yGIwCxU03U)", "on": 101, "socket": "-x0", "by": "base", "paint": "#5f6a55"}
   ],
   "wires": [[40, 41], [41, 34], [104, 111], [111, 108], [115, 122], [122, 117], [128, 125]],
   "hoses": [[126, 127]],

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.25 m, leaf/hydraulic, wing 0.5, language van standard 2.36 m, flare 0.00, plain 1.0, brow 0.62 1 m, tail 0.81 1 m, door left, cab van cab, nose grille, wear age 0.53 (0 rusty, 0 dirty, 2 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under stilts, layout gun bay 2 m+tank 3 m, plan 2
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.25 m, leaf/hydraulic, wing 0.5, language van standard 2.36 m, flare 0.00, plain 1.0, brow 0.62 1 m, tail 0.81 1 m, door left, cab van cab, nose grille, fitting roof sign, wear age 0.53 (0 rusty, 0 dirty, 2 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under stilts, layout gun bay 2 m+tank 3 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Scrap Tanker 2",
   "group": "The Call Centre",
@@ -69,8 +69,10 @@
     {"part": "Hull Loft (hoodg UtV2WyWjXYXYVd ~7O07uI7uq70-4P3014)", "on": 28, "socket": "+y", "by": "engine", "paint": "#2a2c30"},
     {"part": "Slat Grille", "on": 61, "socket": "front", "by": "back", "paint": "#2a2c30"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 62, "pos": [0.122, 0.458, -1.712], "rot": [-0.7056, 0.0081, -0.0153, 0.7084]}, "paint": "#8a9096"},
+    {"part": "Hull Loft (decoS XHWAWaW0)", "on": 36, "socket": "top", "by": "base", "paint": "#ffd400"},
     {"part": "Call Headset", "on": 61, "socket": "top", "by": "base"},
-    {"part": "Loudhailer", "on": 36, "socket": "top", "by": "base"}
+    {"part": "Square Beam 0.5 m", "on": 9, "socket": "+y3", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Phone Mast", "on": 66, "socket": "+z", "by": "base"}
   ],
   "wires": [[33, 34], [34, 28], [53, 60], [60, 55]],
   "links": [

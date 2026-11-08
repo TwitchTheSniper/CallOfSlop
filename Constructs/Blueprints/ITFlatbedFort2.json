@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, leaf/hydraulic, wing 0.5, language van standard 2.45 m, flare 0.07, raked 0.8, brow 0.72 1.5 m, tail 0.86 1 m, door left, 11 facets, door rear, cab van cab, 8 facets, nose rounded, wear age 0.38 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab enclosed, nose short hood, rear bare, under stilts, flank panniers, sides walls, roof none, layout gun bed 2.5 m+room(Brow T,Door,Bay T,Tail T)
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, leaf/hydraulic, wing 0.5, language van standard 2.45 m, flare 0.07, raked 0.8, brow 0.72 1.5 m, tail 0.86 1 m, door left, 11 facets, door rear, cab van cab, 8 facets, nose rounded, trim fairing on 8 bay sides, wear age 0.38 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab enclosed, nose short hood, rear bare, under stilts, flank panniers, sides walls, roof none, layout gun bed 2.5 m+room(Brow T,Door,Bay T,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Flatbed Fort 2",
   "group": "IT Department",
@@ -157,7 +157,15 @@
     {"part": "CRT Monitor", "on": 141, "socket": "top", "by": "base"},
     {"part": "Cable Reel", "on": 57, "socket": "front", "by": "base"},
     {"part": "CRT Monitor", "on": 51, "socket": "front", "by": "base"},
-    {"part": "Satellite Dish", "on": 37, "socket": "top", "by": "base"}
+    {"part": "Satellite Dish", "on": 37, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (trimf2 XzW5 ~Bu0C8KCOeCWxCnFD1ZCntCAAA2O8YS6wV3oY02Y ~Cm0D8UDOzEHSEPaEPwEQPEItDZLBBh7xq4Rw03w)", "on": 118, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf0 XzW5 ~Cm0D8UDOzEHSEPaEPwEQPEItDZLBBh7xq4Rw03w ~Bu0C8KCOeCWxCnFD1ZCntCAAA2O8YS6wV3oY02Y)", "on": 118, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf6 YMW5 ~Cm0D8UDOzEHSEPaEPwEQPEItDZLBBh7xq4Rw03w =)", "on": 119, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf2 YMW5 ~Cm0D8UDOzEHSEPaEPwEQPEItDZLBBh7xq4Rw03w =)", "on": 119, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf2 XBW5 ~Cm0D8UDOzEHSEPaEPwEQPEItDZLBBh7xq4Rw03w ~Cm0D8VDO_EPUEPaEP-EQTEIzDZRBBo7xx4S1041)", "on": 120, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf3 XBW5 ~Cm0D8VDO_EPUEPaEP-EQTEIzDZRBBo7xx4S1041 ~Cm0D8UDOzEHSEPaEPwEQPEItDZLBBh7xq4Rw03w)", "on": 120, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf2 XaW5 ~Cm0D8VDGlDO_DvEEPUEPaEP-EQTEIzDZRBBo7xx4S1041 ~C80COSCeuCeyD9KDHaDHmDICDAeCZ4BREAJN7BW3pb03b)", "on": 121, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
+    {"part": "Hull Loft (trimf9 XaW5 ~C80COSCeuCeyD9KDHaDHmDICDAeCZ4BREAJN7BW3pb03b ~Cm0D8VDGlDO_DvEEPUEPaEP-EQTEIzDZRBBo7xx4S1041)", "on": 121, "socket": "-x0", "by": "base", "paint": "#1f4e8c"}
   ],
   "wires": [[34, 35], [35, 29], [128, 134], [134, 130]],
   "links": [

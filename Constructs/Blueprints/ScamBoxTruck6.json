@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language cabin standard 2.75 m, flare 0.07, plain 0.7, brow 0.80 1.25 m, tail 0.76 1 m, door left, cab cabin cab, nose grille, wear age 0.77 (6 rusty, 13 dirty, 0 sooty, 0 patched, 1 rusted out), body room+gun bed, cab enclosed, nose short hood, rear porch hitch, under skirted, flank bare, sides walls, roof none, layout room(Brow T,Door,Tail T)+gun bed 2.5 m
+  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language cabin standard 2.75 m, flare 0.07, plain 0.7, brow 0.80 1.25 m, tail 0.76 1 m, door left, cab cabin cab, nose grille, fitting roof sign, trim signboards on 5 bay sides, wear age 0.77 (8 rusty, 13 dirty, 0 sooty, 0 patched, 1 rusted out), body room+gun bed, cab enclosed, nose short hood, rear porch hitch, under skirted, flank bare, sides walls, roof none, layout room(Brow T,Door,Tail T)+gun bed 2.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Box Truck 6",
   "group": "The Call Centre",
@@ -174,12 +174,17 @@
     {"part": "Hull Loft (hoodg UnV2WyWjXYXYVd ~7m07us014)", "on": 32, "socket": "+y", "by": "engine", "paint": "#21c45a"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 162, "pos": [-1.059, 0.712, 7.245], "rot": [0.0038, -0.0142, 0.7058, 0.7083]}, "paint": "#8a9096"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 160, "pos": [-1.05, 0.589, 5.749], "rot": [0.0227, -0.0012, 0.7024, 0.7114]}, "paint": "#8a9096"},
+    {"part": "Hull Loft (decoS XHWAWeW0)", "on": 40, "socket": "top", "by": "base", "paint": "#ff3d8b"},
     {"part": "Loudhailer", "on": 162, "socket": "front12", "by": "base"},
     {"part": "Loudhailer", "on": 161, "socket": "front10", "by": "base"},
     {"part": "Loudhailer", "on": 165, "socket": "front00", "by": "base"},
     {"part": "Gift Card Sign", "on": 166, "socket": "top", "by": "base"},
-    {"part": "Call Headset", "on": 40, "socket": "top", "by": "base"},
-    {"part": "Loudhailer", "on": 120, "socket": "front", "by": "base"}
+    {"part": "Loudhailer", "on": 120, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (trimg9 XaW5 ~Ce0CmyDQlEAq03T ~D80DGyEJQF3X04J)", "on": 78, "socket": "+x0", "by": "base", "paint": "#21c45a"},
+    {"part": "Hull Loft (trimg1 XaW5 ~D80DGyEJQF3X04J ~Ce0CmyDQlEAq03T)", "on": 78, "socket": "-x0", "by": "base", "paint": "#8a9096"},
+    {"part": "Hull Loft (trimg0 YMW5 ~D80DGyEJQF3X04J =)", "on": 79, "socket": "-x0", "by": "base", "paint": "#21c45a"},
+    {"part": "Hull Loft (trimg9 XaW5 ~D80DGyEJQF3X04J ~Ce0CmyDQcEAh03H)", "on": 83, "socket": "+x0", "by": "base", "paint": "#7d8a92"},
+    {"part": "Hull Loft (trimg8 XaW5 ~Ce0CmyDQcEAh03H ~D80DGyEJQF3X04J)", "on": 83, "socket": "-x0", "by": "base", "paint": "#21c45a"}
   ],
   "wires": [[37, 38], [38, 32], [90, 131], [131, 129], [134, 141], [141, 136], [147, 144]],
   "hoses": [[145, 146]],

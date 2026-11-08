@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, language boat standard 2.66 m, flare 0.07, tapered 0.6, brow 0.78 1 m, tail 0.67 1 m, door left, cab boat cab, nose grille, wear age 0.69 (4 rusty, 11 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab enclosed, nose long hood, rear bare, under stilts, layout hutch 4 m
+  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, language boat standard 2.66 m, flare 0.07, tapered 0.6, brow 0.78 1 m, tail 0.67 1 m, door left, cab boat cab, nose grille, fitting chrome grille, fitting mascot, wear age 0.69 (4 rusty, 11 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab enclosed, nose long hood, rear bare, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Gun Wagon 6",
   "group": "Clan MacSlop",
@@ -108,12 +108,13 @@
     {"part": "Ammo Socket", "on": 91, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 95, "socket": "top", "by": "-y"},
     {"part": "Hull Loft (hoodg UNV2WyWjXYXYVd ~6006mL6Wh5Ww3H2013)", "on": 27, "socket": "+y", "by": "engine", "paint": "#33302b"},
+    {"part": "Hull Loft (decoG WbVvWf)", "on": 102, "socket": "front", "by": "base"},
     {"part": "Arch Fender", "on": 102, "socket": "+x0", "by": "mount", "paint": "#c8102e"},
     {"part": "Arch Fender", "on": 102, "socket": "-x0", "by": "mount", "paint": "#c8102e"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 104, "pos": [-0.725, 0.282, -0.378], "rot": [-0.0227, -0.009, 0.6895, 0.7239]}, "paint": "#23395d"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 103, "pos": [1.209, 0.603, -0.376], "rot": [-0.0033, -0.0117, -0.7012, 0.7128]}, "paint": "#23395d"},
-    {"part": "Pipe Box", "on": 102, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 35, "socket": "top", "by": "base"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 105, "pos": [-0.725, 0.282, -0.378], "rot": [-0.0227, -0.009, 0.6895, 0.7239]}, "paint": "#23395d"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 104, "pos": [1.209, 0.603, -0.376], "rot": [-0.0033, -0.0117, -0.7012, 0.7128]}, "paint": "#23395d"},
+    {"part": "Hull Loft (decoO UeV-)", "on": 102, "socket": "top", "by": "base"},
+    {"part": "Pipe Box", "on": 35, "socket": "top", "by": "base"},
     {"part": "Coo Heid", "on": 58, "socket": "front10", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [89, 94], [94, 91], [101, 98]],

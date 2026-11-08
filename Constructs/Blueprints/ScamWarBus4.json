@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 2.25 m, swing arm/trailing arm, wing 0.5, language cabin standard 2.69 m, flare 0.09, plain 0.7, brow 0.88 1 m, tail 0.76 1 m, door right, cab cabin cab, nose flat, wear age 0.69 (2 rusty, 8 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose short hood, rear gun deck, under stilts, flank panniers, roof none, layout room(Brow T,Door,Bay T,Bay T-N,Tail N)
+  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 2.25 m, swing arm/trailing arm, wing 0.5, language cabin standard 2.69 m, flare 0.09, plain 0.7, brow 0.88 1 m, tail 0.76 1 m, door right, cab cabin cab, nose flat, fitting roof sign, trim signboards on 6 bay sides, wear age 0.69 (3 rusty, 8 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose short hood, rear gun deck, under stilts, flank panniers, roof none, layout room(Brow T,Door,Bay T,Bay T-N,Tail N)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam War Bus 4",
   "group": "The Call Centre",
@@ -153,10 +153,18 @@
     {"part": "Wide Arch Fender", "on": 143, "socket": "-x0", "by": "mount", "paint": "#ffd400"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 145, "pos": [-0.91, 0.21, -0.379], "rot": [-0.0087, -0.0119, 0.7115, 0.7025]}, "paint": "#8a9096"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 144, "pos": [1.418, 0.449, -0.372], "rot": [0.0079, 0.015, -0.719, 0.6948]}, "paint": "#b0b4b8"},
+    {"part": "Hull Loft (decoS XJWAWiW0)", "on": 37, "socket": "top", "by": "base", "paint": "#ff3d8b"},
     {"part": "Gift Card Sign", "on": 143, "socket": "top", "by": "base"},
     {"part": "Gift Card Sign", "on": 106, "socket": "front01", "by": "base"},
     {"part": "Office Phone", "on": 115, "socket": "front", "by": "base"},
-    {"part": "Phone Mast", "on": 37, "socket": "top", "by": "base"}
+    {"part": "Hull Loft (trimg5 YMW5 ~DG0DOyEhMFRS04D =)", "on": 90, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg9 XaW5 ~DG0DOyEhMFRS04D =)", "on": 94, "socket": "+x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg2 XaW5 ~DG0DOyEhMFRS04D =)", "on": 94, "socket": "-x0", "by": "base", "paint": "#8a9096"},
+    {"part": "Hull Loft (trimg8 XaW5 ~DG0DOyEhMFRS04D ~Ae0AeyBJ9BxF03z)", "on": 95, "socket": "+x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg1 XaW5 ~Ae0AeyBJ9BxF03z ~DG0DOyEhMFRS04D)", "on": 95, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg9 XaW5 ~A00A8yAgOBAS02_ ~Ae0AeyBJ9BxF03z)", "on": 96, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Square Beam 0.5 m", "on": 85, "socket": "front00", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Phone Mast", "on": 158, "socket": "+z", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [97, 122], [122, 120], [125, 132], [132, 127], [138, 135]],
   "hoses": [[136, 137]],

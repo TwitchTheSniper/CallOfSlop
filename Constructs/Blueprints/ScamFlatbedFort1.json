@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.5, language cabin heavy 2.48 m, flare 0.13, plain 0.7, brow 0.81 1 m, tail 0.81 0.75 m, door right, cab cabin cab, nose flat, wear age 0.8 (12 rusty, 13 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under tub, flank loaded, sides rails, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.5, language cabin heavy 2.48 m, flare 0.13, plain 0.7, brow 0.81 1 m, tail 0.81 0.75 m, door right, cab cabin cab, nose flat, fitting roof sign, trim signboards on 5 bay sides, wear age 0.8 (12 rusty, 13 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under tub, flank loaded, sides rails, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Flatbed Fort 1",
   "group": "The Call Centre",
@@ -154,11 +154,16 @@
     {"part": "Arch Fender", "on": 144, "socket": "-x0", "by": "mount", "paint": "#2a2c30"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 146, "pos": [-0.713, 0.31, -0.369], "rot": [-0.0036, 0.0177, 0.7044, 0.7096]}, "paint": "#8a9096"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 145, "pos": [1.224, 0.56, -0.371], "rot": [0.0126, 0.0066, -0.7016, 0.7125]}, "paint": "#9aa0a6"},
+    {"part": "Hull Loft (decoS XGWAWiW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
     {"part": "Loudhailer", "on": 144, "socket": "top", "by": "base"},
     {"part": "Gift Card Sign", "on": 49, "socket": "front", "by": "base"},
     {"part": "Prize Wheel", "on": 72, "socket": "front", "by": "base"},
     {"part": "Prize Wheel", "on": 47, "socket": "front11", "by": "base"},
-    {"part": "Phone Mast", "on": 34, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (trimg8 XaW5 ~Ce0CmyDwVEga039 ~DG0DOyFB4FxB03u)", "on": 107, "socket": "+x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg3 XaW5 ~DG0DOyFB4FxB03u ~Ce0CmyDwVEga039)", "on": 107, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg8 YMW5 ~DG0DOyFB4FxB03u =)", "on": 108, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg3 XaW5 ~DG0DOyFB4FxB03u ~Cu0D0yEAVEoa039)", "on": 111, "socket": "+x0", "by": "base", "paint": "#f2f2ee"},
+    {"part": "Hull Loft (trimg6 XaW5 ~Cu0D0yEAVEoa039 ~DG0DOyFB4FxB03u)", "on": 111, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 143, "pos": [1.58, 0.864, 2.128], "rot": [0.0093, -0.0019, -0.7162, 0.6978]}, "paint": "#b0b4b8"}
   ],
   "wires": [[31, 32], [32, 26], [112, 118], [118, 116], [122, 129], [129, 124], [135, 132]],

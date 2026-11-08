@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 1 m, leaf/leaf, wing 0.5, language boat heavy 2.21 m, flare 0.21, sheer 0.6, brow 0.79 1 m, tail 0.62 0.75 m, door left, cab boat cab, nose grille, wear age 0.89 (11 rusty, 19 dirty, 0 sooty, 2 patched, 1 rusted out), body room+gun bed, cab enclosed, nose ram, rear hitch, under tub, flank bare, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
+  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 1 m, leaf/leaf, wing 0.5, language boat heavy 2.21 m, flare 0.21, sheer 0.6, brow 0.79 1 m, tail 0.62 0.75 m, door left, cab boat cab, nose grille, fitting mascot, trim clinker on 5 bay sides, wear age 0.89 (12 rusty, 19 dirty, 0 sooty, 2 patched, 1 rusted out), body room+gun bed, cab enclosed, nose ram, rear hitch, under tub, flank bare, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Flatbed Fort 9",
   "group": "Clan MacSlop",
@@ -147,9 +147,14 @@
     {"part": "Hull Loft (hoodg USV2WyWjXYXYVd ~6O070M6mj5my3P4016)", "on": 27, "socket": "+y", "by": "engine", "paint": "#e8e4d8"},
     {"part": "Ram Plow", "on": 139, "socket": "front", "by": "back", "paint": "#2a2622"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 140, "pos": [0.122, 0.346, -1.344], "rot": [-0.7118, 0.0104, 0.0131, 0.7022]}, "paint": "#2b5a3a"},
-    {"part": "Pipe Box", "on": 139, "socket": "top", "by": "base"},
-    {"part": "Thistle", "on": 34, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoO UeV-)", "on": 139, "socket": "top", "by": "base"},
+    {"part": "Pipe Box", "on": 34, "socket": "top", "by": "base"},
     {"part": "Saltire Flag", "on": 101, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (trimr5 XaW5 ~Be0CuvCuyE9VDvrC2U7Iq02t ~D00EGyEf3GnVGYBEAx9ZL03P)", "on": 64, "socket": "+x0", "by": "base", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (trimr2 XaW5 ~D00EGyEf3GnVGYBEAx9ZL03P ~Be0CuvCuyE9VDvrC2U7Iq02t)", "on": 64, "socket": "-x0", "by": "base", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (trimr9 YMW5 ~D00EGyEf3GnVGYBEAx9ZL03P =)", "on": 65, "socket": "-x0", "by": "base", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (trimr8 XaW5 ~D00EGyEf3GnVGYBEAx9ZL03P ~AG0AmNBOkBGyCXUAn_72G02J)", "on": 69, "socket": "+x0", "by": "base", "paint": "#7b1e22"},
+    {"part": "Hull Loft (trimr1 XaW5 ~AG0AmNBOkBGyCXUAn_72G02J ~D00EGyEf3GnVGYBEAx9ZL03P)", "on": 69, "socket": "-x0", "by": "base", "paint": "#1f4a2e"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 138, "pos": [1.581, 0.932, 5.625], "rot": [0.0005, -0.0277, -0.7091, 0.7046]}, "paint": "#7b1e22"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 136, "pos": [-1.067, 0.67, 5.628], "rot": [0.0032, 0.0102, 0.6928, 0.7211]}, "paint": "#1f4a2e"}
   ],

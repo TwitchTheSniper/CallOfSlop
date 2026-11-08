@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 2 axles, front set back, inset 1.25 m, leaf/leaf, wing 0.5, language bus heavy 3.00 m, flare 0.21, plain 0.8, brow 0.76 1 m, tail 0.76 1.25 m, door right, 12 facets, cab bus cab, 8 facets, nose grille, wear age 0.95 (6 rusty, 12 dirty, 3 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank panniers, roof none, layout room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 2 axles, front set back, inset 1.25 m, leaf/leaf, wing 0.5, language bus heavy 3.00 m, flare 0.21, plain 0.8, brow 0.76 1 m, tail 0.76 1.25 m, door right, 12 facets, cab bus cab, 8 facets, nose grille, trim livery on 5 bay sides, wear age 0.95 (6 rusty, 12 dirty, 3 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank panniers, roof none, layout room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Box Truck 8",
   "group": "Ministry of Slop",
@@ -125,8 +125,13 @@
     {"part": "Teapot", "on": 35, "socket": "top", "by": "base"},
     {"part": "Traffic Cone", "on": 92, "socket": "front", "by": "base"},
     {"part": "Traffic Cone", "on": 84, "socket": "front13", "by": "base"},
+    {"part": "Hull Loft (triml4 XaW5 ~CO0COPCWoCWyD1BE1aEHkEHzEIME2mDB7AxO7xV4pa03a ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i)", "on": 75, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml3 XaW5 ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i ~CO0COPCWoCWyD1BE1aEHkEHzEIME2mDB7AxO7xV4pa03a)", "on": 75, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml3 YMW5 ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i =)", "on": 76, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml9 XaW5 ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i ~CO0CWPCeoCeyD1BE9aEPkEP-EINE2mDB8AxO7xW4pa03a)", "on": 79, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (triml6 XaW5 ~CO0CWPCeoCeyD1BE9aEPkEP-EINE2mDB8AxO7xW4pa03a ~DG0DGXDOyDX2FvZG9kGA4GAbGB6FxdF47CaT9Kc64i04i)", "on": 79, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Square Beam 0.5 m", "on": 76, "socket": "top", "by": "-z", "paint": "#1b1c1e"},
-    {"part": "Rain Gauge", "on": 120, "socket": "+z", "by": "base"}
+    {"part": "Rain Gauge", "on": 125, "socket": "+z", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [103, 109], [109, 105]],
   "links": [
