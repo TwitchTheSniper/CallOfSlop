@@ -607,17 +607,20 @@ public static class ShapeGrammar
         var lengths = lk.Lengths(room.Bays);
         var middle = n - 2;
         var want = Math.Clamp((int)MathF.Round((float)d.Between(rule.UpperShareMin, rule.UpperShareMax) * middle), 2, middle);
-        for (; want <= middle; want++)
-        {
-            var starts = Enumerable.Range(1, middle - want + 1).Where(k => Enumerable.Range(k, want).Sum(i => lengths[i]) >= 2.25f).ToList();
-            if (starts.Count == 0)
-                continue;
-            var from = d.Pick(starts);
-            var cut = MathF.Round(Math.Clamp(lk.Height * (float)d.Between(0.86, 0.94), 2.18f, 2.36f) * 100) / 100;
-            var high = p.UpperKind == "deck" ? (float)d.Between(rule.BulwarkMin, rule.BulwarkMax) : (float)d.Between(rule.UpperTallMin, rule.UpperTallMax);
-            lk.Upper = new BodyLook.UpperPlan(p.UpperKind!, from, from + want - 1, cut, MathF.Round(high * 100) / 100);
+        var plain = lk.Names(room.Bays);
+        var roofs = Enumerable.Range(1, n - 1).Where(k => BaySpots.Roof(room.Bays, plain, k)).ToList();
+        // The style's share, else the nearest share that leaves a roof for a turret beside it, else the nearest that is long enough at all.
+        var order = Enumerable.Range(2, middle - 1).OrderBy(w => Math.Abs(w - want)).ThenByDescending(w => w).ToList();
+        List<int> Starts(int w) => Enumerable.Range(1, middle - w + 1).Where(k => Enumerable.Range(k, w).Sum(i => lengths[i]) >= 3.0f).ToList(); // (the hatch over the stair and room to step off it)
+        var pick = order.Select(w => (W: w, S: Starts(w).Where(k => roofs.Any(r => r < k - 1 || r > k + w)).ToList())).FirstOrDefault(x => x.S.Count > 0);
+        if (pick.S == null)
+            pick = order.Select(w => (W: w, S: Starts(w))).FirstOrDefault(x => x.S.Count > 0);
+        if (pick.S == null)
             return;
-        }
+        var from = d.Pick(pick.S);
+        var cut = MathF.Round(Math.Clamp(lk.Height * (float)d.Between(0.86, 0.94), 2.18f, 2.36f) * 100) / 100;
+        var high = p.UpperKind == "deck" ? (float)d.Between(rule.BulwarkMin, rule.BulwarkMax) : (float)d.Between(rule.UpperTallMin, rule.UpperTallMax);
+        lk.Upper = new BodyLook.UpperPlan(p.UpperKind!, from, from + pick.W - 1, cut, MathF.Round(high * 100) / 100);
     }
 
     /// <summary>
@@ -634,7 +637,7 @@ public static class ShapeGrammar
         var (run0, run1) = (starts[up.From], starts[up.To + 1]);
         var len = starts[^1];
         var rise = up.Cut + 0.02f; // (to the upper floor's panel top)
-        var steps = (int)MathF.Ceiling(rise / 0.34f);
+        var steps = (int)MathF.Ceiling(rise / 0.4f); // (a ship ladder's rise: a player steps up 0.55)
         var stair = new HullLoft.StairShape(MathF.Round(rise * 100) / 100, steps, 0.55f);
         var door = Array.IndexOf(room.Bays, "Door");
         var (door0, door1) = door >= 0 && !lk.RearDoor ? (starts[door], starts[door + 1]) : (-9f, -9f);
@@ -644,29 +647,32 @@ public static class ShapeGrammar
         if (flat < 0.9f)
             return false; // (the level roof too narrow for a hatch a player fits through beside the middle: the hatch runs to the wall's top where it is narrower)
         var back = len - (lk.RearDoor ? 1.5f : 0.3f);
-        Console.WriteLine($"DIAG stair: run {up.From}-{up.To} z {run0:0.00}-{run1:0.00} len {len:0.00} flat {flat:0.00} seats {string.Join(",", seats.Select(x => x.ToString("0.00")))} door {door0:0.00}-{door1:0.00} run {stair.Run} side {lk.DoorSide}");
         foreach (var way in new[] { 1f, -1f })
             foreach (var side in new[] { -lk.DoorSide, lk.DoorSide })
             {
-                var x = side * 0.5f; // (on the floor's quarter grid; the hatch from 4 cm off the middle to 8 cm in from the wall's top)
+                var x = side * (BodyLook.UnderHalf * BodyStyleRule.Of(v.Style).UpperNarrow >= 0.92f ? 0.5f : 0.25f); // (on the floor's quarter grid, by the wall; nearer the middle under a storey set in)
                 for (var foot = 0.5f; foot <= len - 0.25f; foot += 0.25f)
                 {
                     // The stair's foot (where its first tread starts) and its top, along the room; the hatch over it, from just before the first tread to the top.
                     var top = foot + way * stair.Run;
                     var (lo, hi) = (MathF.Min(foot, top), MathF.Max(foot, top));
-                    var (h0, h1) = way > 0 ? (foot - 0.05f, top) : (top, foot + 0.05f);
-                    var stepOff = way > 0 ? (top, top + 0.4f) : (top - 0.4f, top);
+                    // (the hatch from a body's width before the first tread, where the head starts to rise over the ceiling, to a body's width past the last tread a
+                    // chest still meets the floor's edge from; then room to step off and stand clear of the storey's end)
+                    var chest = MathF.Max(stair.Run, MathF.Floor((stair.Rise - 0.6f) / (stair.Rise / stair.Steps)) * HullLoft.StairShape.Going + 0.45f);
+                    var far = foot + way * chest;
+                    var (h0, h1) = way > 0 ? (foot - 0.45f, far) : (far, foot + 0.45f);
+                    var stepOff = way > 0 ? (far, far + 0.6f) : (far - 0.6f, far);
                     if (h0 < run0 + 0.05f || h1 > run1 - 0.05f || stepOff.Item1 < run0 + 0.02f || stepOff.Item2 > run1 - 0.02f)
                         continue; // (the hatch inside the storey's floor, with room to step off at the top)
                     var approach = way > 0 ? (foot - 0.9f, foot) : (foot, foot + 0.9f); // (where a player stands to go up)
-                    if (MathF.Min(lo, approach.Item1) < 0.35f || MathF.Max(hi, approach.Item2) > back)
-                        continue; // (clear of the brow's rake and the tail's, and a back door)
+                    if (MathF.Min(lo, approach.Item1) < MathF.Max(1.0f, starts[1]) || MathF.Max(hi, approach.Item2) > MathF.Min(back, starts[^2]))
+                        continue; // (clear of the brow's and the tail's rake, the magazine and a back door)
                     if (side == -lk.DoorSide && seats.Any(sz => sz > MathF.Min(lo, approach.Item1) - 0.35f && sz < MathF.Max(hi, approach.Item2) + 0.35f))
                         continue; // (the gunners' seats on that wall)
                     if (side == lk.DoorSide && (door0 < hi + 0.25f && door1 > lo - 0.25f || MathF.Min(lo, approach.Item1) < 1.1f))
                         continue; // (the doorway, and the magazine's crates at the front)
                     (up.StairX, up.StairZ, up.StairWay, up.Stair) = (x, foot, way, stair);
-                    up.Hatch = side > 0 ? (0.04f, 0.92f, h0, h1) : (-0.92f, -0.04f, h0, h1);
+                    up.Hatch = side > 0 ? (x - 0.46f, x + 0.42f, h0, h1) : (x - 0.42f, x + 0.46f, h0, h1); // (a player's width and a little: from 4 cm off the middle by the wall)
                     v.Modules.Add($"upper {up.Kind} over bays {up.From} to {up.To}, cut {up.Cut:0.00} m, {(up.Open ? "bulwark" : "storey")} {up.Height:0.00} m, stair {(side > 0 ? "right" : "left")} at {foot:0.00} m {(way > 0 ? "back" : "forward")}");
                     return true;
                 }

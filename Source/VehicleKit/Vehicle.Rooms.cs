@@ -32,8 +32,12 @@ public sealed class Room
     public Vector3 StairFoot; // where a player stands to walk up the stair, at floor height (vehicle coordinates), and the way up it
     public Vector3 StairWay;
 
-    /// <summary>Where the check stands a player to walk the room (vehicle coordinates, floor height): its middle, or away from a stair (null: the middle).</summary>
-    public Vector3? WalkStart;
+    /// <summary>Phase 5: floor kept clear of furniture (the way onto a stair), as rectangles in vehicle coordinates.</summary>
+    public List<Vehicle.Rect> Keep = new();
+
+    /// <summary>Whether a footprint centred at (x, z), <paramref name="dx"/> by <paramref name="dz"/>, stands on floor kept clear.</summary>
+    public bool Kept(float x, float z, float dx, float dz) => Keep.Any(k => x + dx / 2 > k.X0 && x - dx / 2 < k.X1 && z + dz / 2 > k.Z0 && z - dz / 2 < k.Z1);
+
 
     public Vector3 Middle => new((R.X0 + R.X1) * 0.5f, FloorTop, (R.Z0 + R.Z1) * 0.5f);
 }
@@ -127,7 +131,7 @@ public sealed partial class Vehicle
                 for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
                 {
                     var z = from + way * at;
-                    if (InDoorway(room, x, z, deep, run) || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
+                    if (InDoorway(room, x, z, deep, run) || room.Kept(x, z, deep, run) || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
                         taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try
@@ -179,6 +183,8 @@ public sealed partial class Vehicle
         foreach (var x in (float[])[-0.25f, 0.25f])
             try
             {
+                if (room.Kept(x, wall - away * (deep / 2 + In), MathF.Max(size.X, size.Z), MathF.Max(size.X, size.Z)))
+                    continue;
                 var placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, wall - away * (deep / 2 + In)), o, 0.1f, onTop: true);
                 PanelList("furniture").Add(placed);
                 room.Furniture.Add(placed);

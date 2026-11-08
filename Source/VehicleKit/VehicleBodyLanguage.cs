@@ -612,7 +612,7 @@ public sealed class BodyLook
     /// The section a plan's token stands for in language <paramref name="l"/> at this look's proportions, at a station whose roofline factors are <paramref name="h"/>
     /// (height) and <paramref name="w"/> (the width above the furniture and the overhang).
     /// </summary>
-    public HullLoft.Section Section(BodyLanguage l, string token, int end = 0, float h = 1, float w = 1, float minTop = 0)
+    public HullLoft.Section Section(BodyLanguage l, string token, int end = 0, float h = 1, float w = 1, float minTop = 0, float maxTop = 0)
     {
         var t = l.Drawn(Facets);
         var ky = Height * h / t.Top;
@@ -634,6 +634,8 @@ public sealed class BodyLook
             (kx, ky) = (kx * TailNarrow, ky * TailRake);
         if (walkIn)
             kx = MathF.Max(kx, 0.76f / t.P[0].X); // (a seat or a crate stands half a metre out by a brow or a tail: the fixed bays' narrowest end is 0.74 m)
+        if (maxTop > 0)
+            ky = MathF.Min(ky, maxTop / t.Top); // (phase 5: beside an upper storey, no higher than its floor, so the storey's ends stand clear)
         ky = MathF.Max(ky, minTop / t.Top); // (a door bay's doorway; a long brow's or tail's room where the check's rays start: Names)
         var s = t.Scaled(kx, ky);
         // The taper (the upper body only: the furniture's metre stays) and the overhang over the wheels, coming in over the language's blend.
@@ -820,6 +822,20 @@ public sealed class BodyLook
             var sh = HullLoft.ShapeOf(names[k])!.Value;
             if (Cage != '\0')
                 names[k] = HullLoft.Key(sh.Length, sh.Door, sh.Front, sh.Back, sh.A, sh.B, sh.BackDoor, "c" + Cage);
+            else if (Upper is { } nu && (k == nu.From - 1 || k == nu.To + 1))
+            {
+                // (beside an upper storey: the station it shares with the storey's floor is that floor's section, so it doesn't stand up into the storey's end; its
+                // other station is capped at the floor's height already: NamesUncut)
+                var turned = bays[k] == "Door" && DoorSide < 0 && !RearDoor;
+                var sharedIsB = (k == nu.From - 1) != turned; // (the key's back section is the room's back one, unless the bay stands turned round)
+                var (na, nb) = sharedIsB ? (sh.A, UnderUpper(sh.B, nu.Cut)) : (UnderUpper(sh.A, nu.Cut), sh.B);
+                if (na.Top > nu.Cut + 0.001f)
+                    na = Cut(na, nu.Cut);
+                if (nb.Top > nu.Cut + 0.001f)
+                    nb = Cut(nb, nu.Cut);
+                (na, nb) = Match(na, nb);
+                names[k] = HullLoft.Key(sh.Length, sh.Door, sh.Front, sh.Back, na, nb, sh.BackDoor);
+            }
             else if (Upper is { } u && k >= u.From && k <= u.To)
             {
                 // (phase 5: under an upper storey the roof is cut level and is its floor; the hatch where it crosses this bay, in the bay's own frame: a left door bay is turned round)
@@ -830,8 +846,8 @@ public sealed class BodyLook
                     var (hz0, hz1) = (MathF.Max(0, h.Z0 - z), MathF.Min(lengths[k], h.Z1 - z));
                     var turned = bays[k] == "Door" && DoorSide < 0 && !RearDoor;
                     hatch = turned ? (-h.X1, -h.X0, lengths[k] - hz1, lengths[k] - hz0) : (h.X0, h.X1, hz0, hz1);
-                    if (hatch.Value.Item4 - hatch.Value.Item3 < 0.3f)
-                        hatch = null; // (a sliver: the stair's top is in the next bay)
+                    if (hatch.Value.Item4 - hatch.Value.Item3 < 0.04f)
+                        hatch = null; // (a sliver under a centimetre's rounding)
                 }
                 names[k] = HullLoft.Key(sh.Length, sh.Door, sh.Front, sh.Back, ca, cb, sh.BackDoor, HullLoft.HatchWord(hatch));
             }
@@ -847,6 +863,7 @@ public sealed class BodyLook
         var st = Stations(bays, lengths);
         var names = new string[bays.Length];
         var up = Upper;
+        float X(int station) => up != null && (station == up.From - 1 || station == up.To + 2) ? up.Cut : 0; // (phase 5: the stations beside a storey no higher than its floor)
         float M(int station, float least = 0) => up != null && station >= up.From && station <= up.To + 1 ? MathF.Max(least, up.Cut + 0.08f) : least; // (phase 5: tall enough to be cut level under an upper storey)
         for (var k = 0; k < bays.Length; k++)
         {
@@ -854,13 +871,13 @@ public sealed class BodyLook
             if (b == "Door" && RearDoor)
             {
                 // (the door is in the back: this bay is a plain tall one, level, 1.5 m, as the plan laid it out)
-                var (ra, rb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop)), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, M(k + 1, DoorTop)));
+                var (ra, rb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop), X(k)), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, M(k + 1, DoorTop), X(k + 1)));
                 names[k] = HullLoft.Key(lengths[k], false, false, false, ra, rb);
                 continue;
             }
             if (b == "Door")
             {
-                var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop)), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, M(k + 1, DoorTop)));
+                var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop), X(k)), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, M(k + 1, DoorTop), X(k + 1)));
                 // (a door on the left: the right-hand door bay turned round, so its front section is the room's back one: Vehicle.Hull stands it by its back right foot)
                 names[k] = DoorSide > 0 ? HullLoft.Key(1.5f, true, false, false, ta, tb) : HullLoft.Key(1.5f, true, false, false, tb, ta);
                 continue;
@@ -873,10 +890,10 @@ public sealed class BodyLook
             static float Least(float far, float at, float len) => (EndRays - far * (at / len)) / (1 - at / len);
             var (fa, fb) = parts[0] switch
             {
-                "Brow" => Section(At(1), front, 0, st[1].H, st[1].W, M(1)) is var bb ? (Section(At(1), front, -1, st[0].H, st[0].W, Least(bb.Top, 0.35f, lengths[k])), bb) : default,
-                "Tail" when RearDoor => Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop)) is var td ? (td, RearFrame(Section(At(k), "T", 1, st[k + 1].H, st[k + 1].W, DoorTop + 0.02f))) : default, // (a doorway in its back: tall and wide enough at its end)
-                "Tail" => Section(At(k), back, 0, st[k].H, st[k].W, M(k)) is var tf ? (tf, Section(At(k), back, 1, st[k + 1].H, st[k + 1].W, Least(tf.Top, 0.3f, lengths[k]))) : default,
-                _ => (Section(At(k), front, 0, st[k].H, st[k].W, M(k)), Section(At(k + 1), back, 0, st[k + 1].H, st[k + 1].W, M(k + 1))),
+                "Brow" => Section(At(1), front, 0, st[1].H, st[1].W, M(1), X(1)) is var bb ? (Section(At(1), front, -1, st[0].H, st[0].W, Least(bb.Top, 0.35f, lengths[k])), bb) : default,
+                "Tail" when RearDoor => Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop), X(k)) is var td ? (td, RearFrame(Section(At(k), "T", 1, st[k + 1].H, st[k + 1].W, DoorTop + 0.02f))) : default, // (a doorway in its back: tall and wide enough at its end)
+                "Tail" => Section(At(k), back, 0, st[k].H, st[k].W, M(k), X(k)) is var tf ? (tf, Section(At(k), back, 1, st[k + 1].H, st[k + 1].W, Least(tf.Top, 0.3f, lengths[k]))) : default,
+                _ => (Section(At(k), front, 0, st[k].H, st[k].W, M(k), X(k)), Section(At(k + 1), back, 0, st[k + 1].H, st[k + 1].W, M(k + 1), X(k + 1))),
             };
             var (ma, mb) = Match(fa, fb);
             names[k] = HullLoft.Key(lengths[k], false, parts[0] == "Brow", parts[0] == "Tail", ma, mb, parts[0] == "Tail" && RearDoor);

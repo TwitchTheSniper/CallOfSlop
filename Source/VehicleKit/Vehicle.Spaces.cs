@@ -41,21 +41,26 @@ public sealed partial class Vehicle
             var sh = HullLoft.ShapeOf(name)!.Value;
             var f = HullLoft.FootX(sh);
             var turned = plan[k] == "Door" && lk.DoorSide < 0 && !lk.RearDoor;
-            (string By, float X, float Z)[] feet = turned
-                ? [("footR1", -f, z + 0.125f), ("footL1", f, z + 0.125f), ("footR0", -f, z + lengths[k] - 0.125f), ("footL0", f, z + lengths[k] - 0.125f)]
-                : [("footL0", -f, z + 0.125f), ("footR0", f, z + 0.125f), ("footL1", -f, z + lengths[k] - 0.125f), ("footR1", f, z + lengths[k] - 0.125f)];
+            // Its feet on the lower bay's floor sockets where they are in that bay's own frame (the two stand in one frame, turned round together over a left
+            // door): asked for where the socket really is, so a place that rounded to the centimetre one way below rounds the same way above.
+            var lower = room.Bays[k];
+            var len = sh.Length;
             VPart? bay = null;
-            var why = "";
-            foreach (var (by, fx, fz) in feet)
+            var why = "no floor socket under its feet";
+            foreach (var (by, fx, fz) in new[] { ("footL0", -f, 0.12f), ("footR0", f, 0.12f), ("footL1", -f, len - 0.12f), ("footR1", f, len - 0.12f) })
             {
+                var si = Array.FindIndex(lower.Def.Sockets, q => q.Name.StartsWith("up", StringComparison.Ordinal) && MathF.Abs(q.At.X - fx) < 0.004f && MathF.Abs(q.At.Z - fz) < 0.004f);
+                if (si < 0 || C.SocketUsed(lower.Index, si))
+                    continue; // (the hatch there: the next foot)
+                C.SocketAt(lower.Index, si, out var at, out _);
                 try
                 {
-                    bay = Stand(name, new Vector3(fx, y, fz), turned ? TurnedRound : Orient.Forward, room.Bays[k], by, 0.06f);
+                    bay = Stand(name, FromRest(at), turned ? TurnedRound : Orient.Forward, lower, by, 0.02f);
                     break;
                 }
                 catch (VehicleKitException e)
                 {
-                    why = e.Message; // (the hatch there: the next foot)
+                    why = e.Message;
                 }
             }
             if (bay == null)
@@ -85,14 +90,8 @@ public sealed partial class Vehicle
         room.Stair = stair;
         room.StairFoot = new Vector3(up.StairX, room.FloorTop, room.R.Z0 + up.StairZ - up.StairWay * 0.45f);
         room.StairWay = new Vector3(0, 0, up.StairWay);
-        // Where the room's check stands a player: its middle, unless the stair (and the way onto it) is there, then as far along as the room allows from them.
-        var (s0, s1) = (MathF.Min(room.StairFoot.Z, upper.DoorMid.Z), MathF.Max(room.StairFoot.Z, upper.DoorMid.Z));
-        var best = room.Middle.Z;
-        for (var t = room.R.Z0 + 0.8f; t <= room.R.Z1 - 0.8f; t += 0.25f)
-            if (Gap(t) > Gap(best))
-                best = t;
-        room.WalkStart = room.Middle with { Z = best };
-        float Gap(float t) => t < s0 ? s0 - t : t > s1 ? t - s1 : 0;
+        var footZ = room.R.Z0 + up.StairZ;
+        room.Keep.Add(new Rect(up.StairX - 0.45f, up.StairX + 0.45f, MathF.Min(footZ, footZ - up.StairWay * 0.95f), MathF.Max(footZ, footZ - up.StairWay * 0.95f))); // (the way onto it)
         Modules.Add($"space upper {up.Kind}");
     }
 

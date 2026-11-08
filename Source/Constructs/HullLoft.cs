@@ -216,7 +216,7 @@ public static partial class HullLoft
             for (var i = 0; i < 4; i++)
                 if (!int.TryParse(w[i], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out n[i]))
                     return false;
-            return n[0] >= -MaxCm && n[1] <= MaxCm && n[1] - n[0] >= 30 && n[2] >= 0 && n[3] <= Cm(length) && n[3] - n[2] >= 30;
+            return n[0] >= -MaxCm && n[1] <= MaxCm && n[1] - n[0] >= 30 && n[2] >= 0 && n[3] <= Cm(length) && n[3] - n[2] >= 4; // (a hatch may cross into a bay by a few centimetres: the stair's head room starts there)
         }
         return false;
     }
@@ -716,7 +716,7 @@ public static partial class HullLoft
         if (!door)
             p.Pad("+x0", new Vector3(w, y, length / 2), "+x");
         var top = (a.Top + b.Top) / 2; // (the roof at the middle: a lofted roof slopes from one section to the next)
-        if (!sh.Open)
+        if (!sh.Open && !sh.Floor) // (an upper floor's roof is walked on and may be cut by a hatch: nothing hangs under it, nothing stands on its middle)
         {
             p.Pad("top", new Vector3(0, top + 0.03f, length / 2), "+y");
             p.Pad("lever", new Vector3(0, MathF.Min(top, p.Centre) - 0.03f, length / 2), "-y");
