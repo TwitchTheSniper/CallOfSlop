@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front under the hood, inset 1 m, swing arm/leaf, wing 0.75, language pod heavy 2.45 m, flare 0.18, tapered 0.7, brow 0.75 1.25 m, tail 0.80 1.25 m, door right, 8 facets, cab pod crew cab, 6 facets, nose rounded, fitting radome, pods podb on 2 bay sides, trim fairing on 7 bay sides, wear age 0.69 (5 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab crew, nose short hood, rear porch, under skirted, flank bare, roof none, layout gap 1 m+room(Brow L,Bay L-T,Door,Bay T-L,Tail L)
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front under the hood, inset 1 m, swing arm/leaf, wing 0.75, language pod heavy 2.45 m, flare 0.18, tapered 0.7, brow 0.75 1.25 m, tail 0.80 1.25 m, door right, 8 facets, upper dropped: no roof left for a gun, cab pod crew cab, 6 facets, nose rounded, fitting radome, pods podb on 2 bay sides, trim fairing on 7 bay sides, wear age 0.69 (5 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab crew, nose short hood, rear porch, under skirted, flank bare, roof none, layout gap 1 m+room(Brow L,Bay L-T,Door,Bay T-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT War Bus 10",
   "group": "IT Department",

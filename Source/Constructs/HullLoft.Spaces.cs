@@ -166,6 +166,9 @@ public static partial class HullLoft
                         // (each stops 2 cm short of the middle bow, inside it, so two halves' diagonals never meet face to face)
                         var (za, zb) = (len * (up ? u0 : u1), len * (up ? u1 : u0));
                         (za, zb) = (MathF.Abs(za - len / 2) < 0.01f ? za + MathF.Sign(zb - za) * 0.02f : za, MathF.Abs(zb - len / 2) < 0.01f ? zb - MathF.Sign(zb - za) * 0.02f : zb);
+                        // (and 2 cm in from the bay's ends, inside the end bows: a slanted bar's corners would poke past the end into the next bay's diagonal)
+                        float In(float z) => z < 0.01f ? 0.02f : z > len - 0.01f ? len - 0.02f : z;
+                        (za, zb) = (In(za), In(zb));
                         var (lo, hi) = (Vector2.Lerp(a0, b0, za / len), Vector2.Lerp(a1, b1, zb / len));
                         Bar(p, At(lo, s, za) - nn * 0.0237f, At(hi, s, zb) - nn * 0.0237f, nn, 0.029f, 0.0151f, colour, hide: false); // (inside the rails' inner faces, its own planes)
                     }
