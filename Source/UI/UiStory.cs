@@ -77,7 +77,7 @@ public sealed partial class Ui
         if (!StoryOpen)
             return;
         ImGui.SetNextWindowSize(new float2(1020 * _scale, 780 * _scale), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowBgAlpha(0.96f);
+        ImGui.SetNextWindowBgAlpha(1f);
         if (ImGui.Begin("Story###story"u8, ref StoryOpen))
         {
             if (game?.Story is not { } s)
