@@ -12,6 +12,9 @@ namespace CallOfSlop;
 /// Creative has no backpack (the user, 2026-11-05: endless parts, so nothing needs carrying): nothing goes in, none is worn or
 /// shown, and every path that would use one goes on to its next choice. A pack that already holds something (an old creative
 /// save) stays on that player until it is drawn empty, so nothing in it is lost (<see cref="WearsPack"/>).
+/// Story mode starts without one (Karl, 2026-11-08): the warden's induction hands it over at its backpack step
+/// (GameTutorial.cs <c>TutorialPack</c>). A player without one yet has a pack of no slots, which is how every peer hears it
+/// (the pack message carries its slot count), so nothing goes in, none is worn or shown, and an empty pack is all that is taken.
 /// </summary>
 public sealed partial class ConstructEdits
 {
@@ -45,7 +48,27 @@ public sealed partial class ConstructEdits
     public CStore Pack(byte player) => Packs[player];
 
     /// <summary>Does this player have a backpack now: always outside creative; in creative only while one holds something (an old save). The same answer on every peer.</summary>
-    public bool WearsPack(byte player) => Backpack != null && (!InfiniteParts || Packs[player].Items > 0);
+    public bool WearsPack(byte player) => Backpack != null && Packs[player].SlotCount > 0 && (!InfiniteParts || Packs[player].Items > 0);
+
+    /// <summary>Has this player been given their backpack (story mode: the induction hands it over)? The same answer on every peer.</summary>
+    public bool HasPack(byte player) => Packs[player].SlotCount > 0;
+
+    /// <summary>
+    /// Server: give this player their backpack, or hold it back (an empty one only: a pack holding something stays on them,
+    /// so nothing is lost). True when it changed (every peer is told).
+    /// </summary>
+    public bool IssuePack(byte player, bool on)
+    {
+        var pack = Packs[player];
+        var n = Backpack?.Slots.Length ?? 0;
+        if (on ? pack.SlotCount == n : pack.SlotCount == 0 || pack.Items > 0)
+            return false;
+        pack.Reset(on ? n : 0);
+        pack.Version++;
+        PackDirty.Add(player);
+        _packCursor[player] = 0;
+        return true;
+    }
 
     /// <summary>Would a part go into this player's backpack now? Never in creative.</summary>
     public bool PackTakes(byte player, ConstructPartDef d) => !InfiniteParts && PackSlotFor(Packs[player], d, out _, out _) >= 0;
@@ -108,6 +131,8 @@ public sealed partial class ConstructEdits
             return "get out of the seat first";
         if (InfiniteParts)
             return "no backpack in creative";
+        if (!HasPack(player))
+            return "you haven't been given a backpack yet";
         if (ConstructParts.Get(h.Held) is not { } def)
             return "nothing in your hands to stow";
         if (def.PhysicsOnly)
@@ -144,7 +169,7 @@ public sealed partial class ConstructEdits
         if (h.Held != ConstructParts.None)
             return "your hands are full (stow or put down what you hold first)";
         if (!WearsPack(player))
-            return "no backpack in creative";
+            return InfiniteParts ? "no backpack in creative" : "you haven't been given a backpack yet";
         var pack = Packs[player];
         var n = pack.SlotCount;
         for (var step = 1; step <= n; step++)

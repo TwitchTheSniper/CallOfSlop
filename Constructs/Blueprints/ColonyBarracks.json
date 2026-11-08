@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Barracks",
+  "description": "The Ministry of Slop's guard barracks beside the penal colony.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 4,
+      "socket": "t0_0",
+      "by": "b15_15"
+    }
+  ]
+}

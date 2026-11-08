@@ -45,13 +45,35 @@ arrive), and `TutorialBegin(id)` when they wake or skip. This file declares them
 them. `Game.OpeningActive` (the local player is in it), `Game.OpeningWarden()` (his body, or null) and `Game.OpeningHas(id)`
 (server) are there for the tutorial to read.
 
+## Lockdown
+
+Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes into lockdown (Karl, 2026-11-08;
+`Source/Game/GameColonyLockdown.cs`):
+
+- The attacker's induction ends (a skip, so the tutorial gives back what it held), the warden shouts at them, and a
+  `[MINISTRY MEMO]` line tells everyone.
+- The siren (`Sfx.ColonyAlarm`, `Source/Audio/SynthAlarm.cs`) wails over the colony on every peer until it stands down.
+- The **Colony Barracks** (a blueprint from `tools/constructs/building_parts.py`, placed 16 to 60 m from the colony when
+  the colony is built, or when a world from before it is loaded) turns out six riot officers, one every half second,
+  just outside it on the colony's side. They are hostile bots (Hard, SMGs and rifles) that fight only the wanted and walk
+  to the nearest one until they see them.
+- Everyone who hurts the staff while it runs is wanted. Wanted ends at death or leaving; the world's death rules decide
+  what follows.
+- It stands down when nobody is wanted, the squad is all dead, or after 10 minutes: the siren stops and the officers walk
+  back to the barracks and are gone (after a minute at most). Hurting the staff again starts it over and makes up the squad.
+- Standing: the Ministry's deed "Assaulted our staff" (-15, at most once a minute) on the story's Attack, and "Killed our
+  staff" (-40) as before (`Story/Factions/Ministry.json`).
+
 ## Network and save
 
+- **`Msg.ColonyAlarm`** (protocol 208), server to all: u8 on, vec where it sounds; reliable when it changes, and again every
+  3 s while on (unreliable) for anyone who joins.
 - **`Msg.Opening`** (protocol 199), server to one client, reliable: the beat (`OpeningStage`), the time into it, its length,
   the camera's focus, the caption and the line just said. Lines also go as ordinary chat lines from the speaker (over their head),
   to that player only. **`CActKind.OpeningSkip`** asks to skip.
 - **The world save** has an `Opening` section (tag `OPEN`, its own section, so an older reader skips it): the map, the colony's
-  construct id, the crash site, and the key and Steam id of everyone who has been through it. The colony itself is an ordinary
+  construct id, the crash site, the key and Steam id of everyone who has been through it, and last the barracks' construct
+  id (an older reader stops before it; a world without it gets a barracks when it loads). The colony itself is an ordinary
   anchored construct, saved with the rest. On another planetoid (free travel) the section's map doesn't match, so there is no
   colony there and no opening for someone joining there.
 

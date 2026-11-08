@@ -571,7 +571,7 @@ public static unsafe partial class Program
                     : "[test] network simulator not available in this RakNet build");
 
             var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
-            var world = kind == LobbyAction.SinglePlayer && _rangeLaunch == null && _settings.Mode == GameMode.Sandbox ? Ui.TakeSinglePlayerWorld(map, _settings.SandboxSurvival) : null; // (UiWorlds.cs)
+            var world = kind == LobbyAction.SinglePlayer && _rangeLaunch == null && _settings.Mode == GameMode.Sandbox ? Ui.TakeSinglePlayerWorld(map, _settings.SandboxSurvival, Game.DeathByte(_settings.SandboxDeath, _settings.SandboxKeepPack)) : null; // (UiWorlds.cs)
             if (world != null && Maps.All.FirstOrDefault(m => m.Name == world.Meta.MapName) is { } worldMap)
                 map = worldMap; // (a saved world's own map)
             if (_settings.WorldKey == 0)
