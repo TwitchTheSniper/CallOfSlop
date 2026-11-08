@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 1.5 m, leaf/hydraulic, wing 0.5, language ledge 2.26 m, brow 0.78, tail 0.87, wear age 0.75 (2 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose ram, rear bare, under stilts, layout gun bay 2 m+tank 2 m
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 1.5 m, leaf/hydraulic, wing 0.5, language ledge standard 2.36 m, flare 0.12, plain 0.9, brow 0.78 1.25 m, tail 0.87 0.75 m, door left, wear age 0.75 (2 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose ram, rear bare, under stilts, layout gun bay 2 m+tank 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Scrap Tanker 5",
   "group": "Bandit",

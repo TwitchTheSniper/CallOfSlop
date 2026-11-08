@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.5, language bus 2.34 m, brow 0.89, tail 0.74, 8 facets, wear age 0.71 (1 rusty, 6 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab cab-over, nose flat, rear porch hitch, under tub, layout hutch 4 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.5, language bus heavy 2.82 m, flare 0.09, crowned 0.7, brow 0.89 1.25 m, tail 0.74 1 m, door right, 8 facets, wear age 0.71 (1 rusty, 6 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab cab-over, nose flat, rear porch hitch, under tub, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Gun Wagon 1",
   "group": "Ministry of Slop",

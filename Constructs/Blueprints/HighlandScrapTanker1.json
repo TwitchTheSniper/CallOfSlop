@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.75 m, leaf/leaf, wing 0.5, language boat 2.36 m, brow 0.81, tail 0.78, wear age 0.68 (1 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab cab-over, nose flat, rear hitch, under stilts, layout gun bay 2 m+tank 3 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.75 m, leaf/leaf, wing 0.5, language boat standard 2.19 m, flare 0.05, sheer 0.8, brow 0.81 1.25 m, tail 0.78 0.75 m, door left, wear age 0.68 (1 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab cab-over, nose flat, rear hitch, under stilts, layout gun bay 2 m+tank 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 1",
   "group": "Clan MacSlop",

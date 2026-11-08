@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front under the hood, inset 1 m, hydraulic/hydraulic, wing 0.5, language pod 2.28 m, brow 0.69, tail 0.70, 11 facets, wear age 0.75 (1 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body room+tank, cab cab-over, nose flat, rear bare, under stilts, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 2 axles, front under the hood, inset 1 m, hydraulic/hydraulic, wing 0.5, language pod heavy 2.42 m, flare 0.10, tapered 0.6, brow 0.69 1.5 m, tail 0.70 0.75 m, door right, 11 facets, wear age 0.75 (1 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body room+tank, cab cab-over, nose flat, rear bare, under stilts, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Scrap Tanker 10",
   "group": "IT Department",
@@ -73,12 +73,12 @@
     {"part": "Bolt Deck 0.25 m", "on": 49, "socket": "+x3", "by": "-x0", "paint": "#cfc6aa"},
     {"part": "Bolt Deck 0.25 m", "on": 50, "socket": "-z0", "by": "-x0", "paint": "#a7abae"},
     {"part": "Bolt Deck 0.25 m", "on": 50, "socket": "-z1", "by": "-x0", "paint": "#a7abae"},
-    {"part": "Hull Loft (100f ~BG0BuICGaCGsCH9C1RBXjAH-8YC62M32T02T ~CW0D8QDeqDnFDffDQ4CoUBYs9RB6hQ3Ra03a)", "on": 51, "socket": "front02", "by": "footL0", "paint": "#d8d0b8"},
-    {"part": "Hull Loft (150d ~CW0D8QDeqDnFDffDQ4CoUBYs9RB6hQ3Ra03a =)", "on": 52, "socket": "front10", "by": "footL0", "paint": "#d8d0b8"},
-    {"part": "Long Door Hinge", "weld": {"on": 69, "pos": [1.275, 1.675, 4.02], "rot": [0.7071, 0, -0.7071, 0]}},
+    {"part": "Hull Loft (100f ~BG0BuJCGcCGwCPDCXXC9qBvuAw69AL6gW52a3Id02d ~CW0D8SDevDeyEHMEvpEvuEgGDgiCZ7ARU7hk4Zv03v)", "on": 51, "socket": "front02", "by": "footL0", "paint": "#d8d0b8"},
+    {"part": "Hull Loft (150d ~CW0D8SDevDeyEHMEvpEvuEgGDgiCZ7ARU7hk4Zv03v =)", "on": 52, "socket": "front10", "by": "footL0", "paint": "#cfc6aa"},
+    {"part": "Long Door Hinge", "weld": {"on": 69, "pos": [1.275, 1.675, 3.99], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 70, "socket": "leaf", "by": "hang", "paint": "#8e9296"},
-    {"part": "Scrap Ladder", "on": 61, "socket": "+x0", "by": "back", "paint": "#3b3f44"},
-    {"part": "Hull Loft (100r ~CW0D8QDeqDnFDffDQ4CoUBYs9RB6hQ3Ra03a ~B00BeIC0bC8tC1ABnTBHlAA08QF5wP32W02W)", "on": 52, "socket": "front16", "by": "footL0", "paint": "#a7abae"},
+    {"part": "Scrap Ladder", "on": 60, "socket": "+x0", "by": "back", "paint": "#8e9296"},
+    {"part": "Hull Loft (100r ~CW0D8SDevDeyEHMEvpEvuEgGDgiCZ7ARU7hk4Zv03v ~B00BeJC0dC8xC9FCHZBvsAo89wG92O7QU5oZ3Ig02g)", "on": 52, "socket": "front16", "by": "footL0", "paint": "#cfc6aa"},
     {"part": "Seat", "on": 51, "socket": "front11", "by": "bottom"},
     {"part": "Square Beam 0.75 m", "on": 3, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#3b3f44"},
     {"part": "Square Beam 0.75 m", "on": 75, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#3b3f44"},

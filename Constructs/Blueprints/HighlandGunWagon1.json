@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.5, language boat 2.33 m, brow 0.73, tail 0.71, wear age 0.61 (2 rusty, 9 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab cab-over, nose flat, rear porch hitch, under tub, layout hutch 4 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.5, language boat standard 2.45 m, flare 0.16, sheer 0.6, brow 0.73 1 m, tail 0.71 1.25 m, door left, wear age 0.61 (2 rusty, 9 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab cab-over, nose flat, rear porch hitch, under tub, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Gun Wagon 1",
   "group": "Clan MacSlop",
