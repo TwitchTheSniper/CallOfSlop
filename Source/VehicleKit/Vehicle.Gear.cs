@@ -70,12 +70,14 @@ public sealed partial class Vehicle
         Link("feed", a, sw, "Ammo out", "Ammo in 1", laid: true);
         Link("feed", b, sw, "Ammo out", "Ammo in 2", laid: true);
         (VPart On, string Socket)[] spots = [(a, "top"), (b, "top"), (b, "back"), (a, "back")];
-        Belt(spots, sw, gun, reelAt);
+        var belted = ((VPart[])[gun, .. more]).Where(g => !SelfFed.Contains(g.Index)).ToArray(); // (a twin mount keeps its own magazines: Vehicle.FitGun)
+        if (belted.Length > 0)
+            Belt(spots, sw, belted[0], reelAt);
         var lever = Onto(leverOn, leverSocket, "Lever", "-y");
         Wire(lever, sw);
-        foreach (var g in more)
+        foreach (var g in belted.Skip(1))
             Belt(spots, b, g);
-        foreach (var g in (VPart[])[gun, .. more])
+        foreach (var g in belted)
             for (var k = 0; k < C.GunCount; k++)
                 if (C.Guns[k].Part == g.Index && C.Guns[k].Problem.Length > 0)
                     throw new VehicleKitException($"a fed gun: {C.Guns[k].Problem}");
@@ -101,8 +103,20 @@ public sealed partial class Vehicle
         if (reel == null)
             throw new VehicleKitException($"a gun's ammo reel: {why}");
         Link("feed", source, reel, "Ammo out", "Ammo in", laid: true);
-        var inlet = OnAFace(gun, ["left", "right", "top", "back"], "Ammo Socket", Weapon ?? throw new VehicleKitException("no gun to feed"));
-        Hose(reel, inlet);
+        var w = Weapon ?? throw new VehicleKitException("no gun to feed");
+        VPart? inlet = null;
+        var why2 = "";
+        foreach (var cell in Cells(gun)) // (a merged receiver: a socket on any of its cells feeds it, ConstructWeapons.cs)
+            try
+            {
+                inlet = OnAFace(cell, ["left", "right", "top", "back"], "Ammo Socket", w);
+                break;
+            }
+            catch (VehicleKitException ex)
+            {
+                why2 = why2.Length == 0 ? ex.Message : why2;
+            }
+        Hose(reel, inlet ?? throw new VehicleKitException(why2));
     }
 
     private VPart Crate(Vector3 at, string type)

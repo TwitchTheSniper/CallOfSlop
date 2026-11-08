@@ -133,10 +133,12 @@
     {"part": "Square Beam 1 m", "on": 124, "socket": "top", "by": "-y1", "spin": 3, "paint": "#3a3330"},
     {"part": "Seat", "on": 125, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 125, "socket": "+y0", "by": "base", "spin": 2},
-    {"part": "Firebreather Receiver", "on": 127, "socket": "leaf", "by": "bottom", "spin": 2},
-    {"part": "Flame Nozzle", "on": 128, "socket": "front", "by": "back"},
-    {"part": "Fuel Canister", "on": 128, "socket": "left", "by": "right"},
-    {"part": "Flame Valve", "on": 128, "socket": "back", "by": "front"},
+    {"part": "Bastille LMG Receiver", "on": 127, "socket": "leaf", "by": "bottom", "spin": 2},
+    {"part": "Bloat Barrel", "on": 128, "socket": "front", "by": "back"},
+    {"part": "Gun Muzzle Brake", "on": 129, "socket": "front", "by": "back"},
+    {"part": "Drum Mag", "on": 128, "socket": "left", "by": "right"},
+    {"part": "Full-Auto Sear", "on": 128, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 131, "socket": "top", "by": "bottom"},
     {"part": "Turret Module", "on": 126, "socket": "+x", "by": "-x"},
     {"part": "Scrap Workbench", "on": 62, "socket": "front11", "by": "foot10", "spin": 1},
     {"part": "Scrap Workbench", "on": 59, "socket": "front24", "by": "foot00", "spin": 2},
@@ -149,10 +151,10 @@
     {"part": "Hull Loft (trimc6 XaW5 ~CW0CmyGntHw0HxHERo03o ~Cm0CuyF2HGAyHJcDyI04I)", "on": 95, "socket": "-x0", "by": "base", "paint": "#3a3330"},
     {"part": "Hull Loft (trimp3 XBW5 ~BW0BeyE9YF9fFAiC37037 ~CW0CmyGntHw0HxHERo03o)", "on": 96, "socket": "-x0", "by": "base", "paint": "#8c5230"}
   ],
-  "wires": [[36, 37], [37, 31], [126, 132], [132, 128]],
+  "wires": [[36, 37], [37, 31], [126, 134], [134, 128]],
   "links": [
     {"type": "shaft", "from": 32, "to": 9, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 123, "to": 31, "nodes": [[1.5, 0.82, 8.05], [1.5, 0.55, 8.05], [0.67, 0.55, 8.05], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 133, "table": "bandit"}, {"step": 134, "table": "bandit"}]
+  "loot": [{"step": 135, "table": "bandit"}, {"step": 136, "table": "bandit"}]
 }

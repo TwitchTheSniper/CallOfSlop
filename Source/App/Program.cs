@@ -170,6 +170,12 @@ public static unsafe partial class Program
             var varyBase = int.TryParse(args.SkipWhile(a => !a.Equals("--base", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), out var b) ? b : 1;
             VehicleKit.VehicleLayers.Vary = (layer, varyBase); // --vary wear [--base S]: the seeds a tool loops over become that layer's, on seed S
         }
+        if (args.Any(a => a.Equals("--no-armoury", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleArmoury.On = false; // the styles' own guns only, to measure what the vehicle armoury changes (VehicleArmoury.cs)
+        if (args.Any(a => a.Equals("--check-armoury", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleArmouryCli.CheckArmoury(args); // every armoury recipe fitted on a test turret, round-tripped through a blueprint, with its numbers
+        if (args.Any(a => a.Equals("--armoury-report", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleArmouryCli.Report(args); // distinct guns per style and shape over seeds, and the full check with --check
         if (args.Any(a => a.Equals("--no-identity-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleIdentity.GateOn = false; // kit 2 without its identity re-plan, to measure what the check changes
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
