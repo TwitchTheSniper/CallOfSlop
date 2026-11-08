@@ -1070,7 +1070,7 @@ public sealed partial class NavGraph
                     var i = _cellNodes[k];
                     if (NodeOff.Length != 0 && NodeOff[i])
                         continue; // a parked spare, or its floor fell (BotNavPatch.cs)
-                    var q = Nodes[i];
+                    var q = At(i); // (on dug or filled ground as it is now: BotNavDug.cs)
                     var dy = q.Y - p.Y;
                     if (dy > World.MantleReach || dy < -MaxDrop)
                         continue;
@@ -1091,9 +1091,9 @@ public sealed partial class NavGraph
             }
             if (best < 0)
                 continue;
-            if (!needSight || Clear(p, Nodes[best]))
+            if (!needSight || Clear(p, At(best)))
                 return best;
-            if (second >= 0 && Clear(p, Nodes[second]))
+            if (second >= 0 && Clear(p, At(second)))
                 return second;
             if (ring == 3)
                 return best;
