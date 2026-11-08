@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Writes the modular shelves and the Smart Terminal: Constructs/Parts/Shelves, and the Smart Depot blueprint.
 
-docs/sandbox/CONSTRUCTS.md, "Modular shelves" and "The Smart Terminal". A Shelf Bay is one board on four posts, open at
-the front and the top, on its class's lattice, so bays snap on each other up, along and back to back. Its room is "rack"
-slots: a slot takes as many of one part as really fit, in rows and layers, and holds them in place on anything that moves.
+docs/sandbox/CONSTRUCTS.md, "Modular shelves" and "The Smart Terminal". A Shelf Bay is a cabinet (two sides, a back, a top
+board) with one or two tiers of boards, open at the front, on its class's lattice, so bays snap on each other up, along
+and back to back. Its room is "rack" slots: a slot takes as many of one part as really fit, in rows and layers, and
+holds them in place on anything that moves.
 
 Items are parts a hand can carry (40 kg at most, ConstructParts.HandCarryLimit), so shelves stop at the medium class: a
 Large bay (8 m) would stand a person's parts on a floor no one can reach, and physics-only pieces don't go on shelves.
@@ -25,33 +26,50 @@ CASE, DARK, SCREEN, LAMP = "#3f4c5a", "#2a3036", "#14323a", "#39465a"
 GAP = 0.015  # slots stand this clear of the boxes round them
 
 
-def bay(name, cls, nx, ny, nz, slots, desc):
-    """One bay: nx x ny x nz cells of its class, a board at the bottom and slots split evenly across it."""
+def bay(name, cls, nx, ny, nz, slots, desc, tiers=1):
+    """One bay: nx x ny x nz cells of its class, a cabinet of two sides, a back and a top, with tiers boards inside.
+
+    Each tier has slots split evenly across it; the bottom tier's slots come first, so a save from before the tiers keeps
+    its stacks where they were."""
     p = Part(name, cls, "Shelves", desc, role="storage", tool="welder", color=POST, group="Storage")
     x0, x1, y0, y1, z0, z1 = cls.lo(), cls.hi(nx), cls.lo(), cls.hi(ny), cls.lo(), cls.hi(nz)
-    board = 0.04 * (1 if cls is SMALL else 2)
-    post = 0.04 * (1 if cls is SMALL else 2)
-    p.add(box((x0, y0, z0), (x1, y0 + board, z1), BOARD))
-    for x in (x0, x1 - post):
-        for z in (z0, z1 - post):
-            p.add(box((x, y0 + board, z), (x + post, y1, z + post)))
-    # A brace across the back, and a lip along the front that a stack sits behind.
-    p.add(box((x0 + post, (y0 + y1) / 2, z0), (x1 - post, (y0 + y1) / 2 + post, z0 + post * 0.5), BRACE, detail=True))
-    p.add(box((x0 + post, y0 + board, z1 - 0.02), (x1 - post, y0 + board + 0.03, z1 - 0.005), LIP, detail=True))
+    small = cls is SMALL
+    board = 0.03 if small else 0.05
+    side = 0.03 if small else 0.05  # the side panels
+    back = 0.015 if small else 0.025  # the back panel
+    inset = 0.01 if small else 0.02  # boards stand this far behind the sides' front edge, so the sides frame them
+    # The carcass: two sides the full height and depth, a back between them, open only at the front.
+    p.add(box((x0, y0, z0), (x0 + side, y1, z1)))
+    p.add(box((x1 - side, y0, z0), (x1, y1, z1)))
+    p.add(box((x0 + side, y0, z0), (x1 - side, y1, z0 + back), BRACE))
+    bx0, bx1, bz0, bz1 = x0 + side, x1 - side, z0 + back, z1 - inset
+    # Boards: one at the bottom, one under the top, and one between each pair of tiers.
+    levels = [y0 + (y1 - y0) * k / tiers for k in range(tiers + 1)]
+    floors = []  # (top of the board under a tier, bottom of the board over it)
+    for k, y in enumerate(levels):
+        lo = y if k == 0 else (y - board if k == tiers else y - board / 2)
+        hi = lo + board
+        p.add(box((bx0, lo, bz0), (bx1, hi, bz1), BOARD))
+        if k < tiers:
+            # A lip along the board's front that a stack sits behind.
+            p.add(box((bx0, hi, bz1 - 0.02), (bx1, hi + 0.03, bz1 - 0.005), LIP, detail=True))
+        floors.append((lo, hi))
     block_sockets(p, nx, ny, nz, skip=("+z",), limit={"-y": (4, 2), "+y": (4, 2), "-x": (2, 2), "+x": (2, 2), "-z": (4, 2)})
-    lo, hi = x0 + post + GAP, x1 - post - GAP
+    lo, hi = bx0 + GAP, bx1 - GAP
     each = (hi - lo) / slots
     room = []
-    for k in range(slots):
-        room.append({
-            "min": vec(lo + k * each + (GAP if k else 0), y0 + board + GAP, z0 + post * 0.5 + GAP),
-            "max": vec(lo + (k + 1) * each - (GAP if k < slots - 1 else 0), y1 - GAP, z1 - 0.03),
-            "rack": True,
-            "label": "shelf",
-        })
+    for t in range(tiers):
+        floor, roof = floors[t][1], floors[t + 1][0]
+        for k in range(slots):
+            room.append({
+                "min": vec(lo + k * each + (GAP if k else 0), floor + GAP, bz0 + GAP),
+                "max": vec(lo + (k + 1) * each - (GAP if k < slots - 1 else 0), roof - GAP, bz1 - 0.025),
+                "rack": True,
+                "label": "shelf",
+            })
     wide, deep, high = nx * cls.cell, nz * cls.cell, ny * cls.cell
-    mass = (wide * deep * (8 if cls is SMALL else 16)) + high * (6 if cls is SMALL else 14)
-    p.stats(mass, 80 + 60 * wide * deep * (1 if cls is SMALL else 0.5), 3)
+    mass = (wide * deep * (8 if small else 16)) * (tiers + 1) / 2 + high * (deep + wide) * (6 if small else 14)
+    p.stats(mass, 80 + 60 * wide * deep * (1 if small else 0.5), 3)
     p.set(storage={"slots": room})
     return p
 
@@ -87,20 +105,25 @@ def terminal():
 
 def everything():
     small = [
-        ("Shelf Bay 0.5", 2, 2, 2, 1),
-        ("Shelf Bay 1", 4, 2, 2, 2),
-        ("Tall Shelf Bay 1", 4, 4, 2, 2),
+        ("Shelf Bay 0.5", 2, 2, 2, 1, 1),
+        ("Shelf Bay 1", 4, 2, 2, 2, 1),
+        ("Tall Shelf Bay 1", 4, 4, 2, 2, 2),
     ]
     medium = [
-        ("Medium Shelf Bay 1", 1, 1, 1, 1),
-        ("Medium Shelf Bay 2", 2, 1, 1, 2),
-        ("Medium Shelf Bay 4", 4, 2, 1, 4),
+        ("Medium Shelf Bay 1", 1, 1, 1, 1, 1),
+        ("Medium Shelf Bay 2", 2, 1, 1, 2, 1),
+        ("Medium Shelf Bay 4", 4, 2, 1, 4, 2),
     ]
+
+    def say(slots, tiers):
+        n = slots * tiers
+        return f"{n} shelf slot{'s' if n > 1 else ''}" + (f" on {tiers} tiers" if tiers > 1 else "")
+
     parts = []
-    for name, nx, ny, nz, slots in small:
-        parts.append(("Small", bay(name, SMALL, nx, ny, nz, slots, f"Snaps to more bays. {slots} shelf slot{'s' if slots > 1 else ''}: parts stack as they fit.")))
-    for name, nx, ny, nz, slots in medium:
-        parts.append(("Medium", bay(name, MEDIUM, nx, ny, nz, slots, f"Rack for a store room. {slots} shelf slot{'s' if slots > 1 else ''}: parts stack as they fit.")))
+    for name, nx, ny, nz, slots, tiers in small:
+        parts.append(("Small", bay(name, SMALL, nx, ny, nz, slots, f"Snaps to more bays. {say(slots, tiers)}: parts stack as they fit.", tiers)))
+    for name, nx, ny, nz, slots, tiers in medium:
+        parts.append(("Medium", bay(name, MEDIUM, nx, ny, nz, slots, f"Rack for a store room. {say(slots, tiers)}: parts stack as they fit.", tiers)))
     parts.append(("", terminal()))
     return parts
 
