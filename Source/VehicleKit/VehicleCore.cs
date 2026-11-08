@@ -84,6 +84,9 @@ public class BlueprintScript
     protected virtual string ContextLine() => "";
 
     public int Count => _steps.Count;
+
+    /// <summary>The live construct the steps are built on (read it; change it only through the steps).</summary>
+    public Construct Live => C;
     public IReadOnlyList<VPart> Parts => _parts;
     private readonly List<VPart> _parts = new();
 
@@ -162,6 +165,36 @@ public class BlueprintScript
         return Commit(on.Index, on.Step, ts, def, ds, sp, g);
     }
 
+    /// <summary>
+    /// A gun part on a merged receiver's centre socket <paramref name="socket"/> (the receiver's own socket of that name, N times out: ConstructMerge.cs), by its own
+    /// <paramref name="by"/>. The blueprint names it "merged <paramref name="socket"/>".
+    /// </summary>
+    public VPart OntoCentre(VPart lead, string socket, string part, string by, int spin = 0)
+    {
+        var def = Def(part);
+        var own = C.DefOf(lead.Index).Sockets;
+        var k = Array.FindIndex(own, s => s.Name == socket);
+        var ds = Array.FindIndex(def.Sockets, s => s.Name == by);
+        if (!C.MergeLead(lead.Index) || k < 0 || ds < 0)
+            throw new VehicleKitException($"a {def.Name} on the merged {lead.Name}'s \"{socket}\": {(C.MergeLead(lead.Index) ? "no such socket" : "it isn't a merged receiver's lead")}");
+        var ts = own.Length + k;
+        if (ConstructBuild.Place(C, lead.Index, ts, def, ds, spin, out var g) is { } bad)
+            throw new VehicleKitException($"a {def.Name} on the merged {lead.Name}'s \"{socket}\": {(bad == ConstructBuild.InTheWay ? $"the {Blocker(def, g.Pos, g.Rot, g.Seg)} is in the way" : bad)}");
+        return Commit(lead.Index, lead.Step, ts, def, ds, spin, g);
+    }
+
+    /// <summary>The turn <paramref name="part"/> would take on <paramref name="on"/>'s <paramref name="socket"/> by its <paramref name="by"/> at <paramref name="spin"/>, or null when the rules refuse it there: to choose a spin before fitting.</summary>
+    public byte? TurnOf(VPart on, string socket, string part, string by, int spin)
+    {
+        var def = Def(part);
+        var ts = Array.FindIndex(C.DefOf(on.Index).Sockets, s => s.Name == socket);
+        var ds = Array.FindIndex(def.Sockets, s => s.Name == by);
+        return ts < 0 || ds < 0 || ConstructBuild.Place(C, on.Index, ts, def, ds, spin, out var g) != null ? null : g.Rot;
+    }
+
+    /// <summary>The turn a part already on has.</summary>
+    public byte TurnOf(VPart p) => C.Parts[p.Index].Rot;
+
     private VPart Commit(int onIndex, int onStep, int ts, ConstructPartDef def, int ds, int spin, in ConstructGhost g)
     {
         var i = ConstructBuild.Attach(World, C, def, g);
@@ -170,7 +203,7 @@ public class BlueprintScript
         VehicleGenJob.Yield();
         C.Rebuild();
         VehicleGenJob.Yield(); // (a spawn in the game hands back to the tick here: VehicleSpawn.cs)
-        _steps.Add(new Step { Part = def.Name, On = onStep, Socket = C.DefOf(onIndex).Sockets[ts].Name, By = def.Sockets[ds].Name, Spin = spin });
+        _steps.Add(new Step { Part = def.Name, On = onStep, Socket = ConstructMerge.SocketName(C, onIndex, ts), By = def.Sockets[ds].Name, Spin = spin });
         return Added(i, def);
     }
 

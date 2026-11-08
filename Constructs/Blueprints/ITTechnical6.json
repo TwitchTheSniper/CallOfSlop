@@ -84,29 +84,34 @@
     {"part": "Square Beam 1 m", "on": 76, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 77, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 77, "socket": "+y0", "by": "base"},
-    {"part": "Rifle Receiver", "on": 79, "socket": "leaf", "by": "bottom"},
-    {"part": "Gun Barrel", "on": 80, "socket": "front", "by": "back"},
-    {"part": "Extended Mag", "on": 80, "socket": "top", "by": "bottom"},
+    {"part": "Bastille LMG Receiver", "on": 79, "socket": "leaf", "by": "bottom"},
+    {"part": "Bastille LMG Receiver", "on": 80, "socket": "right", "by": "left"},
+    {"part": "Heatsink Barrel", "on": 80, "socket": "front", "by": "back"},
+    {"part": "Drum Mag", "on": 80, "socket": "left", "by": "right"},
     {"part": "Full-Auto Sear", "on": 80, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 82, "socket": "left", "by": "right"},
+    {"part": "Ammo Box", "on": 83, "socket": "left", "by": "right"},
+    {"part": "Heatsink Barrel", "on": 81, "socket": "front", "by": "back"},
+    {"part": "Drum Mag", "on": 81, "socket": "right", "by": "left"},
+    {"part": "Full-Auto Sear", "on": 81, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 87, "socket": "top", "by": "bottom"},
     {"part": "Turret Module", "on": 78, "socket": "+x", "by": "-x"},
     {"part": "Cargo Volume", "on": 40, "socket": "+y1", "by": "-z", "config": {"startOn": true, "sizeX": 1, "sizeY": 1, "sizeZ": 1.2, "atX": -0.4, "atY": 0.7, "atZ": 0.7}},
     {"part": "Long Hood", "on": 23, "socket": "+y", "by": "engine", "paint": "#0f7bd8"},
-    {"part": "Slat Grille", "on": 87, "socket": "front", "by": "back", "paint": "#0f7bd8"},
+    {"part": "Slat Grille", "on": 92, "socket": "front", "by": "back", "paint": "#0f7bd8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 73, "pos": [1.335, 0.896, 3.636], "rot": [0.004, 0.0054, -0.7081, 0.7061]}, "paint": "#d8d0b8"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 71, "pos": [-0.819, 0.745, 3.382], "rot": [0.0016, -0.01, 0.7064, 0.7077]}, "paint": "#d8d0b8"},
-    {"part": "Employee of the Month", "on": 87, "socket": "top", "by": "base"},
+    {"part": "Employee of the Month", "on": 92, "socket": "top", "by": "base"},
     {"part": "Cable Reel", "on": 31, "socket": "top", "by": "base"},
     {"part": "Cable Reel", "on": 43, "socket": "centre +y", "by": "base"},
     {"part": "Cable Reel", "on": 51, "socket": "front00", "by": "base"},
     {"part": "Network Switch", "on": 45, "socket": "front10", "by": "base"}
   ],
-  "wires": [[28, 29], [29, 23], [78, 85], [85, 80]],
+  "wires": [[28, 29], [29, 23], [78, 90], [90, 80], [90, 81]],
   "links": [
     {"type": "shaft", "from": 24, "to": 7, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 74, "to": 23, "nodes": [[0.75, 0.82, 4.31], [0.75, 0.55, 4.31], [0.67, 0.55, 4.31], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
   "cargo": [
-    {"part": "Ammo Crate", "at": [-0.15, 0.975, 3.15], "turn": 0}
+    {"part": "Ammo Box", "at": [-0.15, 0.875, 3.15], "turn": 0}
   ]
 }

@@ -81,7 +81,7 @@ public enum CActKind : byte
     Fuse, // u16 body, u8 FuseMode, u16 part, u16 count, then count u16 parts: the fuse tool (protocol 193; GameSandboxFuse.cs)
     Material, // u16 body, u8 PaintMode, u16 part, u8 length and the material's name (ASCII): the material painter (protocol 194; GameSandboxMaterial.cs)
     OpeningSkip, // nothing: skip the rest of the survival opening (protocol 199; GameSandboxOpening.cs)
-    GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 208; ConstructEditsUpgrades.cs)
+    GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 210; ConstructEditsUpgrades.cs)
 }
 
 /// <summary>
@@ -373,6 +373,7 @@ public sealed partial class Game
         SandboxDebris(now);
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
+        LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
@@ -637,7 +638,7 @@ public sealed partial class Game
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
             }
         foreach (var p in Players.Values)
-            if (SandboxHands.Pack(p.Id).Items > 0)
+            if (SandboxHands.Pack(p.Id).Items > 0 || !SandboxHands.HasPack(p.Id)) // (no backpack yet, story mode: a newcomer's default has one)
             {
                 ConstructNet.WritePack(w, p.Id, SandboxHands.Pack(p.Id));
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);

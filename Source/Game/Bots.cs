@@ -163,12 +163,15 @@ public sealed partial class BotBrain
         NeedPath = true;
     }
 
-    // Tuning per difficulty
-    public double Reaction => Skill switch { BotDifficulty.Easy => 0.65, BotDifficulty.Normal => 0.38, BotDifficulty.Insane => 0.13, _ => 0.2 };
-    public float AimError => Skill switch { BotDifficulty.Easy => 0.14f, BotDifficulty.Normal => 0.075f, BotDifficulty.Insane => 0.02f, _ => 0.03f }; // radians
-    public float TurnSpeed => Skill switch { BotDifficulty.Easy => 3.5f, BotDifficulty.Normal => 6f, BotDifficulty.Insane => 13f, _ => 10f }; // rad/s
+    /// <summary>A story person's mood (GameStoryMoods.cs): multipliers on aim error, reaction time and turn speed (1: as their skill says).</summary>
+    public float MoodAim = 1, MoodReact = 1, MoodTurn = 1;
+
+    // Tuning per difficulty (times the mood's)
+    public double Reaction => MoodReact * Skill switch { BotDifficulty.Easy => 0.65, BotDifficulty.Normal => 0.38, BotDifficulty.Insane => 0.13, _ => 0.2 };
+    public float AimError => MoodAim * Skill switch { BotDifficulty.Easy => 0.14f, BotDifficulty.Normal => 0.075f, BotDifficulty.Insane => 0.02f, _ => 0.03f }; // radians
+    public float TurnSpeed => MoodTurn * Skill switch { BotDifficulty.Easy => 3.5f, BotDifficulty.Normal => 6f, BotDifficulty.Insane => 13f, _ => 10f }; // rad/s
     public float Settle => Skill switch { BotDifficulty.Easy => 1.2f, BotDifficulty.Normal => 2.4f, BotDifficulty.Insane => 6f, _ => 4.5f }; // aim error decay /s
-    public double TriggerDelay => Skill switch { BotDifficulty.Easy => 0.25, BotDifficulty.Normal => 0.12, BotDifficulty.Insane => 0.035, _ => 0.05 }; // extra delay on semi-autos
+    public double TriggerDelay => MoodReact * Skill switch { BotDifficulty.Easy => 0.25, BotDifficulty.Normal => 0.12, BotDifficulty.Insane => 0.035, _ => 0.05 }; // extra delay on semi-autos
 }
 
 /// <summary>

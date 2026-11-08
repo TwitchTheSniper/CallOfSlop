@@ -1517,12 +1517,16 @@ public sealed partial class Game : IDisposable
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.FlakMult));
         if (kind == DamageKind.Bullet && victim.Perks.Has(PerkId.Entrenched) && IsDugIn(victim))
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.EntrenchedMult));
+        if (_bodyCount > 0 && attacker != victim && (attacker.Team == SbPeopleTeam || victim.Team == SbPeopleTeam))
+            amount = StoryMoodDamage(attacker, victim, amount); // (a story person's rage, panic...: GameStoryMoods.cs)
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
         var healthBefore = victim.Health;
         victim.Health -= amount;
         var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
+        if (victim.Team == SbPeopleTeam)
+            LockdownAssault(attacker, victim, now); // (the penal colony's staff: the lockdown, GameColonyLockdown.cs)
         if (victim.Health > 0)
         {
             if (victim.Team == SbPeopleTeam)
@@ -2214,6 +2218,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Tutorial:
                 OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
+                break;
+            case (byte)Msg.ColonyAlarm when !IsServer:
+                ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)
                 break;
             case (byte)Msg.Jobs:
                 OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)

@@ -24,6 +24,8 @@
   ],
   "deeds": [
     { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },
+    { "name": "Assaulted our staff", "verb": "Attack", "remember": "Grudge", "standing": -15, "every": "1m",
+      "about": "laying a hand on the warden or a guard: the colony goes into lockdown and the riot squad is sent for you" },
     { "name": "Wrecked our vans", "verb": "Wreck", "remember": "WreckedOurs", "standing": -20 },
     { "name": "Stripped our vans", "verb": "Strip", "remember": "LootedOurs", "standing": -8 },
     { "name": "Good morning, officer", "verb": "Greet", "standing": 2,

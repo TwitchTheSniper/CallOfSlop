@@ -1126,6 +1126,7 @@ public static unsafe partial class Program
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
+        g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)

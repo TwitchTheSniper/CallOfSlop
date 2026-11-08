@@ -99,19 +99,29 @@ public sealed partial class Game
             {
                 if (_vAttack >= 0 && !StoryRepeat(_vAttack, foe, b.Entity))
                     s.Record(_vAttack, foe, b.Entity, place: place);
+                var held = StoryMoodHolds(s, b); // (a mood holds them to its fight or flight: GameStoryMoods.cs)
                 if (b.Fight != StoryCalm && b.Foe == by.Id)
                 {
-                    b.FightUntil = now + (b.Fight == StoryFighting ? StoryFightCalm : StoryFleeCalm);
-                    if (b.Fight == StoryFighting && StoryFightScore(w, b.Entity, foe, p, -1) < StoryFightAt)
+                    b.FightUntil = Math.Max(b.FightUntil, now + (b.Fight == StoryFighting ? StoryFightCalm : StoryFleeCalm));
+                    if (b.Fight == StoryFighting && !held && StoryFightScore(w, b.Entity, foe, p, -1) < StoryFightAt)
                         StoryFightStart(s, ref b, p, by, foe, StoryFleeing, -1, clock, now); // (too hurt to go on: they run)
                 }
-                else if (b.Fight != StoryFleeing) // (someone running keeps running; a fighter shot by someone else turns on them)
+                else if (b.Fight != StoryFleeing && !held) // (someone running keeps running; a fighter shot by someone else turns on them)
                 {
                     var fight = StoryFightScore(w, b.Entity, foe, p, -1) >= StoryFightAt;
                     StoryFightStart(s, ref b, p, by, foe, fight ? StoryFighting : StoryFleeing, -1, clock, now);
                     StoryFightCall(s, i, by, foe, clock, now);
                 }
+                // The moods of being hurt, and of being badly hurt the first time in a fight (GameStoryMoods.cs).
+                StoryMoodAt(s, i, MoodRules.Hurt, by, foe, -1, now);
+                if (!b.Wounded && p.Health < World.MaxHealth * StoryFightHurt)
+                {
+                    b.Wounded = true;
+                    StoryMoodAt(s, i, MoodRules.Wounded, by, foe, -1, now);
+                }
             }
+            if (b.MoodOn > 0)
+                StoryMoodsTick(s, ref b, p, now); // (run out, or over with whoever it was aimed at; a held fight stays on)
 
             // Over: the foe gone, dead, far off, or quiet for a while.
             if (b.Fight == StoryCalm)
@@ -122,6 +132,8 @@ public sealed partial class Game
                 continue;
             }
             var d2 = Flat2(f.Position - p.Position);
+            if (StoryMoodHolds(s, b))
+                continue; // (a rage chases them however far, for as long as it lasts)
             if (b.Fight == StoryFighting && d2 > StoryFightFar * StoryFightFar)
                 StoryFightEnd(ref b, p, "their foe got away");
             else if (now >= b.FightUntil && (b.Fight == StoryFighting || d2 > StoryFleeSafe * StoryFleeSafe))
@@ -153,6 +165,8 @@ public sealed partial class Game
             StoryDefends++;
         else
             StoryFightsBegun++;
+        if (helping >= 0 && StoryBodyIndexOf(b.Entity) is var me and >= 0)
+            StoryMoodAt(s, me, MoodRules.Defend, by, foe, helping, now); // (GameStoryMoods.cs)
         Console.WriteLine($"[story] {p.Name} {(how == StoryFleeing ? "runs from" : helping >= 0 ? $"helps {s.World.NameOf(helping)} against" : "fights back against")} {by.Name}");
         if (concept < 0)
             return;
@@ -168,6 +182,7 @@ public sealed partial class Game
         b.Fight = StoryCalm;
         b.Foe = 0;
         b.FoeEntity = -1;
+        b.Wounded = false;
     }
 
     /// <summary>
