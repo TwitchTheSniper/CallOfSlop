@@ -1207,6 +1207,7 @@ public sealed partial class Game : IDisposable
             {
                 AllocProfile.Mark("local player");
                 var cmd = OpeningFilter(p, NoclipFilter(p, FreezeFilter(SampleLocalInput(0))));
+                p.LastInput = cmd; // (what the host's own player pressed this tick, as a client's is: the induction's cues read it, GameTutorial.cs)
                 p.Yaw = cmd.Yaw;
                 p.Pitch = cmd.Pitch;
                 p.Weapon = cmd.Weapon;
