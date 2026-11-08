@@ -128,7 +128,7 @@ public static unsafe partial class Program
         }
         if (_mega == 2 && _megaBlastAt < 0)
         {
-            if (MegaBlastFx.Shown > _megaShown0 + (_megaWarm ? 1 : 0))
+            if (MegaBlastFx.Shown > _megaShown0 && MegaBlastFx.LastRadius >= ConstructWorld.MegaMaxRadius * 0.5f)
             {
                 _megaBlastAt = now;
                 MegaMarkBefore(now);

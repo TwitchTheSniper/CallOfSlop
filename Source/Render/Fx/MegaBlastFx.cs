@@ -30,6 +30,9 @@ public static class MegaBlastFx
     /// <summary>Massive blasts shown (a hand check reads it).</summary>
     public static int Shown;
 
+    /// <summary>The last one's radius (m: the window measure tells its blasts apart, Program.MegaWindow.cs).</summary>
+    public static float LastRadius;
+
     /// <summary>Is one being drawn?</summary>
     public static bool Any
     {
@@ -56,6 +59,7 @@ public static class MegaBlastFx
                 k = i; // (full: the oldest makes room)
         Pool[k] = new One { Live = true, Look = look, At = at, Radius = radius, Speed = MegaBlasts.FrontSpeed(radius), Born = now };
         Shown++;
+        LastRadius = radius;
     }
 
     /// <summary>Everything gone (a map change).</summary>
