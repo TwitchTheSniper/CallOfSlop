@@ -57,6 +57,9 @@ public sealed class FactionDef
     public FactionTier[] Tiers = [];
     public FactionDeed[] Deeds = [];
     public FactionTech[] Teaches = [];
+    public FactionJob[] Jobs = []; // what it offers work for (StoryFactionJobs.cs)
+    public string Voice = ""; // the tag its lines go out under ("MINISTRY MEMO": "[MINISTRY MEMO] ...")
+    public string Courier = ""; // its line when its courier collects a crate
     public string[] Staff = []; // people from a cast (by name) who are its members whenever they are in the story
     public (string Name, int Faction, int Percent)[] Rivals = []; // a rise in its standing takes this share of the rise off the rival's
 
@@ -72,11 +75,11 @@ public sealed class FactionDef
     public string TierName(int standing) => TierOf(standing) is var t and >= 0 ? Tiers[t].Name : "";
 
     /// <summary>What a notice names: a deed, a tier, a technology it taught, or "Notorious" (an atrocity: every faction hunts them).</summary>
-    public string NoticeName(int deed, int tier, int tech = -1) => deed >= 0 ? Deeds[deed].Name : tier >= 0 ? Tiers[tier].Name : tech >= 0 ? Teaches[tech].Name : "Notorious";
+    public string NoticeName(int deed, int tier, int tech = -1, int job = -1) => deed >= 0 ? Deeds[deed].Name : tier >= 0 ? Tiers[tier].Name : tech >= 0 ? Teaches[tech].Name : job >= 0 ? Jobs[job].Name : "Notorious";
 }
 
 /// <summary>The factions from Story/Factions/*.json. A bad file is refused whole with its reason (<see cref="StoryRules.Errors"/>).</summary>
-public sealed class FactionRules
+public sealed partial class FactionRules
 {
     public const int MaxFactions = 32, MaxDeeds = 64, MaxMembers = 64, MaxWants = 8, MaxTiers = 8, MaxStanding = 100;
     public const int MaxTeaches = 8, MaxTechParts = 32, MaxRivals = 8; // (8: a faction's learnt technologies are a byte on the wire)
@@ -90,7 +93,7 @@ public sealed class FactionRules
 
     public FactionDef? Find(string name) => Array.Find(Factions, f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals"];
+    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals", "jobs", "voice", "courier"];
     private static readonly string[] TechKeys = ["name", "about", "tier", "parts"];
     private static readonly string[] MemberKeys = ["name", "about", "qualities"];
     private static readonly string[] WantKeys = ["name", "about", "start", "perHour"];
@@ -107,6 +110,7 @@ public sealed class FactionRules
             Teach = rules.VerbId("Teach"), Learnt = rules.Relation("Learnt")?.Id ?? -1,
             Notorious = rules.Quality("Notorious")?.Id ?? -1,
         };
+        fr.JobIds(rules);
         var all = new List<FactionDef>();
         foreach (var f in StoryRules.Files(Path.Combine(folder, "Factions")))
         {
@@ -116,7 +120,7 @@ public sealed class FactionRules
                 if (fr.MemberOf < 0 || fr.Claims < 0 || fr.Likes < 0 || fr.Grudge < 0)
                     throw new StoryException($"{name}: factions need the relations MemberOf, Claims, Likes and Grudge (Story/Relations)");
                 using var doc = StoryRules.Parse(StoryRules.ReadFile(f), name);
-                var def = Read(rules, doc.RootElement, name, all.Count);
+                var def = Read(fr, rules, doc.RootElement, name, all.Count);
                 if (all.Any(o => o.Name.Equals(def.Name, StringComparison.OrdinalIgnoreCase)))
                     throw new StoryException($"{name}: a faction called {def.Name} already exists");
                 all.Add(def);
@@ -161,7 +165,7 @@ public sealed class FactionRules
         return fr;
     }
 
-    private static FactionDef Read(StoryRules rules, JsonElement root, string file, int id)
+    private static FactionDef Read(FactionRules fr, StoryRules rules, JsonElement root, string file, int id)
     {
         StoryRules.Keys(root, FileKeys, file);
         if (StoryRules.Str(root, "format", file, true) != Format)
@@ -319,6 +323,10 @@ public sealed class FactionRules
             throw new StoryException($"{where}: {MaxTeaches} technologies at most");
         def.Teaches = techs.ToArray();
 
+        def.Jobs = ReadJobs(fr, rules, root, def, where);
+        def.Voice = Voice(root, where);
+        def.Courier = Line(root, "courier", where);
+
         if (root.TryGetProperty("rivals", out var rv))
         {
             if (rv.ValueKind != JsonValueKind.Object)
@@ -351,7 +359,7 @@ file static class StringExt
 }
 
 /// <summary>Something a faction would say about: a deed (its index), a tier its standing with a party came to (<see cref="Deed"/> -1), a technology it taught them (both -1), or, all -1, the party became Notorious.</summary>
-public readonly record struct FactionNotice(int Faction, int Deed, int Tier, int Actor, int Party, int Tech = -1);
+public readonly record struct FactionNotice(int Faction, int Deed, int Tier, int Actor, int Party, int Tech = -1, int Job = -1);
 
 /// <summary>
 /// The factions in the story world (docs/story/STORY.md "Factions"): each is a Faction entity with a home place, members
@@ -362,7 +370,7 @@ public readonly record struct FactionNotice(int Faction, int Deed, int Tier, int
 /// and the fax's pages read it like any feeling. A group is a player faction (a Faction entity the game keeps players
 /// <c>MemberOf</c>); a player in none is their own group. All of it is world state, so it is saved with the story.
 /// </summary>
-public sealed class StoryFactions
+public sealed partial class StoryFactions
 {
     private readonly StoryEngine _e;
     private bool _ready;
@@ -402,6 +410,9 @@ public sealed class StoryFactions
         Taught.Clear();
         _techIds = [];
         _staffIn = [];
+        _jobIds = [];
+        Finished.Clear();
+        _finishing = (-1, -1, -1);
         _driftAt = 0;
         Deeds = 0;
     }
@@ -475,6 +486,7 @@ public sealed class StoryFactions
                 W.Set(mid, r.MemberOf, id, 1);
             }
         }
+        EnsureJobs();
         BindStaff();
     }
 
@@ -700,6 +712,8 @@ public sealed class StoryFactions
     {
         if (ev.Verb == R.Atrocity && R.Atrocity >= 0 && W.Valid(ev.Actor))
             Atrocity(ev.Actor);
+        if (ev.Verb == R.Job && R.Job >= 0)
+            PayJob(ev);
         if (_ids.Length == 0 || (uint)ev.Verb >= (uint)_verbs.Length || !_verbs[ev.Verb] || !W.Valid(ev.Actor) || W[ev.Actor].Kind != StoryKind.Player)
             return;
         var fs = R.Factions;

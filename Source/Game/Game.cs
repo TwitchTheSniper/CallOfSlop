@@ -2201,6 +2201,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Tutorial:
                 OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
                 break;
+            case (byte)Msg.Jobs:
+                OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)
+                break;
             case (byte)Msg.Factions:
                 ReadFactions(ref r); // Sandbox player factions (GameSandboxFactions.cs)
                 break;

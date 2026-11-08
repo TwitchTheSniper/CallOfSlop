@@ -346,7 +346,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 200: player factions' colours, tags, ranks, asks to join and stances (GameSandboxFactions.cs): Msg.Factions carries them and the story factions' standing; new FactionOps at the end of the enum.
     // 201: the warden's induction (GameTutorial.cs, docs/sandbox/TUTORIAL.md): Msg.Tutorial at the end of Msg.
     // 202: story factions' technologies (GameStoryTech.cs, docs/story/STORY.md "Technologies"): Msg.Factions carries each story faction's learnt technologies (a u8 after each standing) and its technology lines after the names; AsmBlock.Untaught (3) in an Assembler's blocked byte.
-    public const byte ProtocolVersion = 202;
+    // 203: faction jobs (GameStoryJobs.cs, docs/story/STORY.md "Jobs"): Msg.Jobs at the end of Msg (the jobs window to one client; a take or a drop from it).
+    public const byte ProtocolVersion = 203;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

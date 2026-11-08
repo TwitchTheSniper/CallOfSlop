@@ -155,7 +155,7 @@ public sealed partial class Game
             var def = s.Factions.Def(n.Faction);
             if (!def.Name.Equals(desk.From, StringComparison.OrdinalIgnoreCase) || _itMailCount >= MaxMail)
                 continue;
-            var on = def.NoticeName(n.Deed, n.Tier, n.Tech);
+            var on = def.NoticeName(n.Deed, n.Tier, n.Tech, n.Job);
             var page = desk.NoticeFor(on, s.World, s.Factions.EntityOf(n.Faction), n.Party);
             if (page < 0 || PlayerOfStory(n.Actor) is not { } to)
                 continue;

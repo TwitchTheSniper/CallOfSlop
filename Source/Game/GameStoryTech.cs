@@ -70,6 +70,8 @@ public sealed partial class Game
             foreach (var p in Players.Values)
                 if (p.Bot == null && _storyWho[p.Id] is var who and >= 0 && (who == party || s.Factions.Party(who) == party))
                     SandboxHands.Notices.Add((p.Id, text));
+            if (def.Voice.Length > 0) // (and in the faction's own voice: GameStoryJobs.cs)
+                JobSay(s, party, def, $"You have been taught {tech.Name}: {(tech.About.Length > 0 ? tech.About : parts)}. Your Assemblers build it now.");
         }
         taught.Clear();
     }

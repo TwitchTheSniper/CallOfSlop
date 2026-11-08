@@ -21,6 +21,8 @@
       "about": "a faction's standing with a group comes to a new tier (item: the tier, value: the standing)" },
     { "name": "Teach", "sentence": "{actor} taught {target} {item}",
       "about": "a faction's standing with a player or group came to a technology's tier, and it taught them it (item: the technology, value: the standing); they hold Learnt towards it" },
+    { "name": "Job", "players": true, "sentence": "{actor} did a job for {target}: {item}",
+      "about": "a faction signed off a job a player's group held (target: the faction, item: the job, value: the standing it paid): a crate its courier collected, or something built that it inspected" },
     { "name": "Hooked", "players": true, "sentence": "{actor} fell for {target}'s offer",
       "about": "a player answered a scam on a Computer and paid (target: the faction behind it, The Call Centre)" }
   ]
