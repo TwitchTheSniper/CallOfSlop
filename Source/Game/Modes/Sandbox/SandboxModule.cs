@@ -59,7 +59,7 @@ public sealed class SandboxModule : GameModeModule
     }
 
     /// <summary>A kill or a death, for the story (GameStory.cs). Nothing is scored.</summary>
-    public override void OnKill(Game game, Player attacker, Player victim, byte killId, double now) => game.StoryKill(attacker, victim);
+    public override void OnKill(Game game, Player attacker, Player victim, byte killId, double now) => game.StoryKill(attacker, victim, now);
 
     /// <summary>The constructs, the edits, the drivers (GameSandbox.cs). Nothing ends the match.</summary>
     public override void ServerTickPlaying(Game game, double now) => game.ServerTickSandbox(now);

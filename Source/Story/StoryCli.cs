@@ -445,6 +445,8 @@ public static class StoryCli
         for (var c = 0; c < lr.Concepts.Count; c++)
             if (lr.OfConcept[c].Length == 0 && c >= LineRules.Builtin.Length)
                 Console.WriteLine($"  lines: the reply {lr.Concepts[c]} has no rules of its own (nobody answers)");
+        foreach (var m in rules.Moods.Moods)
+            Console.WriteLine($"  mood {m.Name} ({m.File}): \"{m.Label}\", {m.Text}, rank {m.Rank}, {m.Seconds:0} s: {MoodRules.Effects(m)}{(m.Then >= 0 ? $"; then {rules.Moods.Moods[m.Then].Name}" : "")}");
         foreach (var st in rules.Places.States)
             Console.WriteLine($"  place state {st.Name} ({st.File}): {st.Text}, at least {StoryRules.Span(st.Hold)}: \"{st.Sentence}\"{(st.Ends.Length > 0 ? $", then \"{st.Ends}\"" : "")}");
         if (rules.Places.States.Length > 0 && rules.Places.TurnVerb < 0)

@@ -40,6 +40,15 @@
     { "name": "Defend", "npcs": true, "sentence": "{actor} stood up for {owner} against {target}",
       "about": "a person who hears someone they like call for help fights their attacker (owner: the one helped)",
       "effects": [ "actor Grudge target +10", "owner Likes actor +15", "owner Owes actor +10" ] },
+    { "name": "Rage", "npcs": true, "sentence": "{actor} flew into a rage at {target} over {owner}",
+      "about": "a mood (Story/Moods): someone they like killed in front of them, and they go for the killer (owner: the dead)",
+      "effects": [ "actor Grudge target +30" ] },
+    { "name": "Vow", "npcs": true, "sentence": "{actor} swore to make {target} pay for {owner}",
+      "about": "a mood (Story/Moods): the vengeful kind of rage, cold and steady (owner: the dead)",
+      "effects": [ "actor Grudge target +40" ] },
+    { "name": "Panic", "npcs": true, "sentence": "{actor} panicked when {target} killed {owner}",
+      "about": "a mood (Story/Moods): someone they like killed in front of them, and they bolt (owner: the dead)",
+      "effects": [ "actor Fears target +30" ] },
     { "name": "Broadcast", "npcs": true, "sentence": "{actor} put it on the radio: {news}",
       "about": "news on the radio, heard by everyone in a place (its value is the event; item and owner: who did it, and to whom)" }
   ]

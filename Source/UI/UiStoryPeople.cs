@@ -166,6 +166,13 @@ public sealed partial class Ui
                 : $"Body: player {body.Id}, lying dead");
             if (body.Alive && game.StorySightOf(a.Entity) is { } react)
                 ImGuiSafe.TextColored(StoryBodied, $"Sight: {react}."); // (GameStorySight.cs)
+            if (body.Alive && game.StoryMoodOf(a.Entity, Brutal.GlfwApi.Glfw.Time) is { } md)
+            {
+                var (mood, left) = md;
+                ImGuiSafe.TextColored(StoryNudged, $"Mood: {mood.Name}, {mood.Label}; {left:0} s left: {MoodRules.Effects(mood)}."); // (GameStoryMoods.cs)
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetItemTooltip(mood.About.Length > 0 ? mood.About : "A mood from Story/Moods.");
+            }
         }
         else if (!a.Dead)
             ImGuiSafe.TextColored(Dim, game.StoryBodiesOn ? "No body: not in this world now." : "No body: bodies are off.");

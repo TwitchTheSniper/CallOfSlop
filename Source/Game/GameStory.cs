@@ -245,7 +245,7 @@ public sealed partial class Game
     // ---- The moments --------------------------------------------------------------------------------------------------
 
     /// <summary>A kill (or, the attacker the victim, a death nobody is to blame for). From <see cref="SandboxModule.OnKill"/>.</summary>
-    internal void StoryKill(Player attacker, Player victim)
+    internal void StoryKill(Player attacker, Player victim, double now)
     {
         if (Story is not { } s)
             return;
@@ -257,6 +257,7 @@ public sealed partial class Game
             s.Record(_vDie, v, place: StoryPlace());
         else
             s.Record(_vKill, a, v, place: StoryPlace());
+        StoryMoodsOnKill(s, attacker, victim, a, v, now); // (rage, panic, grief: GameStoryMoods.cs)
     }
 
     /// <summary>A player left (from <see cref="SandboxModule.OnPlayerLeave"/>): their Leave, and the slot forgotten.</summary>
