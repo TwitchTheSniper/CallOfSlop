@@ -60,7 +60,7 @@ public enum DigKind : byte
     FillSand,
 
     /// <summary>
-    /// The ground drill's Flatten and Fill slope (protocol 210; TerrainEditsShape.cs, docs/sandbox/TERRAIN-DIGGING.md "Shaping"): the
+    /// The ground drill's Flatten and Fill slope (protocol 215; TerrainEditsShape.cs, docs/sandbox/TERRAIN-DIGGING.md "Shaping"): the
     /// ground along the segment <see cref="DigOp.At"/>..<see cref="DigOp.To"/>, as wide as twice the radius, is made a ramp between the
     /// two ends' heights (a flat pad when they are the same point): ground over it is cut away (<see cref="GroundShape.Headroom"/>), the
     /// gap under it filled with dirt (<see cref="GroundShape.Depth"/> at most). Carries <see cref="DigOp.ToBytes"/> more.

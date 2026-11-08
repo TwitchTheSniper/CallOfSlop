@@ -1571,6 +1571,51 @@ def blueprints(defs):
     bp.put("Concrete Floor 4x4 m", cell(0, 2 + WALL_H, 0), R0)
     bp.put("Concrete Floor 4x4 m", cell(0, 2 + WALL_H, 16), R0)
     out.append(bp)
+
+    # Remote Works: the Ministry's remote labour hall beside the penal colony (docs/story/DEPOT.md, Game/GameDepot.cs). A 4 by
+    # 12 m concrete hall with windows down both long sides, an open doorway at the front (z 0, the door corner's side), four
+    # Shell Control Chairs in a row down the middle facing the door, and a 12 by 8 m apron in front where the depot's
+    # landers come down. The chairs and the apron are found by their places (DepotSpots in GameDepot.cs).
+    bp = Blueprint("Remote Works", "The Ministry of Slop's remote labour hall: four shell control chairs and a landing apron.", defs)
+    bp.first("Concrete Foundation 4x4 m")
+    bp.put("Concrete Foundation 4x4 m", cell(0, 0, 16), R0)
+    bp.put("Concrete Foundation 4x4 m", cell(0, 0, 32), R0)
+    for j in (1, 2):
+        for i in (0, -1, 1):  # (the apron, x -4 to 8 by z -8 to 0: each pad next to one already down)
+            bp.put("Concrete Foundation 4x4 m", cell(16 * i, 0, -16 * j), R0)
+    room_corners(bp, "Concrete", 0, 2, 0, 16, 48, door=1)
+    for z in (23, 39):
+        bp.put("Concrete Window Wall 4 m", cell(0, 2, z), RY90)
+    for z in (8, 24):
+        bp.put("Concrete Window Wall 4 m", cell(15, 2, z), RY270)
+    for z in (0, 16, 32):
+        bp.put("Concrete Floor 4x4 m", cell(0, 2 + WALL_H, z), R0)
+    for z in (2.0, 4.0, 6.0, 8.0):
+        bp.put("Shell Control Chair", [1.75, 0.375, z], R0)
+    out.append(bp)
+
+    # Orbital Depot: the Ministry's station high over the Remote Works, where a new inmate first wakes in a robot shell. A 16 by
+    # 12 m deck: the shell bay (a corrugated hut, its door to the deck) at the back left, the stores tower at the back right
+    # (a watchtower's frame and platform, climbed by a ship ladder: the Driving Module waits on top) and the open hangar deck
+    # in front, with no rail at its edge. The game hangs it in the sky and puts the shells, the module and the landers on it.
+    bp = Blueprint("Orbital Depot", "The Ministry of Slop's orbital depot: a shell bay, a stores tower and a hangar deck.", defs)
+    bp.first("Concrete Foundation 4x4 m")
+    for i in range(4):
+        for j in range(3):
+            if i or j:
+                bp.put("Concrete Foundation 4x4 m", cell(16 * i, 0, 16 * j), R0)
+    bay = room_corners(bp, "Corrugated", 0, 2, 32, 16, 16, door=1)
+    bp.put("Corrugated Roof Slope 4x4 m", cell(0, 2 + WALL_H, 32), R0)
+    ox, oz = 48, 32
+    legs = ((8, 8), (15, 8), (8, 15), (15, 15))
+    for (x, z) in legs:
+        bp.put("Wood Post 2.75 m", cell(ox + x, 2, oz + z), R0)
+    bp.put("Tower Brace", cell(ox + 9, 2, oz + 15), R0)
+    bp.put("Tower Brace", cell(ox + 8, 2, oz + 14), RY90)
+    bp.put("Tower Brace", cell(ox + 15, 2, oz + 9), RY270)
+    bp.put("Tower Platform 2x2 m", cell(ox + 8, 2 + WALL_H, oz + 8), R0)
+    bp.put("Ship Ladder 3 m", cell(ox + 10, 2, oz), R0)
+    out.append(bp)
     return out
 
 

@@ -1,0 +1,163 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Orbital Depot",
+  "description": "The Ministry of Slop's orbital depot: a shell bay, a stores tower and a hangar deck.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 2,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 3,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 4,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 5,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 6,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 7,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 8,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Corrugated Door Corner",
+      "on": 2,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 2,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 2,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 12,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 11,
+      "socket": "t8_8",
+      "by": "b00"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 11,
+      "socket": "t15_8",
+      "by": "b00"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 11,
+      "socket": "t8_15",
+      "by": "b00"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 11,
+      "socket": "t15_15",
+      "by": "b00"
+    },
+    {
+      "part": "Tower Brace",
+      "on": 19,
+      "socket": "r0_0",
+      "by": "l0"
+    },
+    {
+      "part": "Tower Brace",
+      "on": 17,
+      "socket": "k0_0",
+      "by": "r0"
+    },
+    {
+      "part": "Tower Brace",
+      "on": 18,
+      "socket": "k0_0",
+      "by": "l0"
+    },
+    {
+      "part": "Tower Platform 2x2 m",
+      "on": 17,
+      "socket": "t00",
+      "by": "b0_0"
+    },
+    {
+      "part": "Ship Ladder 3 m",
+      "on": 24,
+      "socket": "front4",
+      "by": "k2_11"
+    }
+  ]
+}

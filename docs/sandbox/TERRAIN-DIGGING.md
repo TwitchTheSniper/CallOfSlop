@@ -113,7 +113,7 @@ and "Terrain sculpting network" (`Source/App/SelfTestSculpt.cs`) cover all of th
 
 ## Shaping
 
-The drill's other three modes (protocol 210; `GroundShape.cs`, `TerrainEditsShape.cs`, `PlanetEditsShape.cs`, the input in
+The drill's other three modes (protocol 215; `GroundShape.cs`, `TerrainEditsShape.cs`, `PlanetEditsShape.cs`, the input in
 `Program.SandboxSculpt.cs`). Each is one op in the log, so it syncs, replays to joiners and saves like a scoop. The table's
 `shapeRadius` (1.5 m) and `cleanRadius` (2 m) size them; a yellow outline shows what the next one touches.
 

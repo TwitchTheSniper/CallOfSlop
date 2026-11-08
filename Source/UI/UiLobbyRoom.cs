@@ -606,7 +606,7 @@ public sealed partial class Ui
         var bots = game.WantedBots;
         var maxBots = Math.Max(0, game.MapMaxPlayers - _room.Humans);
         ImGui.SetNextItemWidth(200 * _scale);
-        var botsChanged = ImGui.SliderInt("Bots##room"u8, ref bots, 0, Math.Max(maxBots, Math.Min(game.WantedBots, Game.MaxPlayers - 1)));
+        var botsChanged = ImGui.SliderInt("Bots##room"u8, ref bots, 0, Math.Max(maxBots, Math.Min(game.WantedBots, Game.MaxPeople - 1)));
         ImGuiSafe.TextColored(Dim, _room.BotsLine);
         ImGui.TextColored(Dim, "People who join take a bot's place."u8);
         var skill = game.BotSkill;

@@ -89,7 +89,7 @@ public sealed partial class Game
         if (op.Sliced)
             w.U8(op.Slice).U8(op.Slices); // (protocol 195: a band of a big crater)
         if (GroundShape.IsGrade(op.Kind))
-            w.Vec(op.To); // (protocol 210: a grade's far end)
+            w.Vec(op.To); // (protocol 215: a grade's far end)
     }
 
     public static bool ReadDigOp(ref PacketReader r, out DigOp op)

@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Depot Lander",
+  "description": "An Orbiter from the Ministry's Orbital Depot with no Driving Module: fit one on the pilot's seat and link seat, module and jets to fly it.",
+  "steps": [
+    {
+      "part": "Fuel Tank"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 1,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 2,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 9,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 10,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 11,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 12,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Seat",
+      "on": 9,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Small Jet",
+      "on": 5,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 6,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 7,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 8,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 13,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Small Jet",
+      "on": 14,
+      "socket": "+x",
+      "by": "-x"
+    }
+  ]
+}

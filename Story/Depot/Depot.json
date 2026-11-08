@@ -1,0 +1,73 @@
+{
+  "format": "call-of-slop-depot/1",
+  "about": "The Orbital Depot (docs/story/DEPOT.md, Game/GameDepot.cs): a new inmate's first remote labour, in a robot shell on the Ministry's station high over the Remote Works. Each step's cue is judged on the host. Text is ASCII; {Action} is the player's own key.",
+  "speaker": "Depot Control",
+  "height": 1500,
+  "memo": "Inmate {name}: you are assigned to remote labour. Report to the Remote Works beside the colony and sit in a control chair.",
+  "report": {
+    "title": "Report to the Remote Works",
+    "text": "The Ministry has a job for you. Go to the Remote Works, the long concrete hall beside the colony, and sit in one of its control chairs ({Interact}). Stay seated while the link wakes you."
+  },
+  "steps": [
+    {
+      "id": "online", "cue": "wait", "seconds": 7,
+      "title": "Unit online",
+      "text": "You are in a robot shell on the Ministry's Orbital Depot, 1.5 km over the colony. Your own body is safe in the chair down there. If this shell is wrecked, you only wake in the chair.",
+      "say": "Unit online. Welcome to the Orbital Depot, inmate. That body is Ministry property, so try to bring it back in one piece."
+    },
+    {
+      "id": "bay", "cue": "walk", "amount": 6,
+      "title": "Out of the shell bay",
+      "text": "Walk out of the shell bay onto the deck ({MoveForward}). The shell moves just as you do.",
+      "say": "Out you come. Mind the edges: there are no rails up here. The Ministry finds them encourage dawdling."
+    },
+    {
+      "id": "edge", "cue": "reach", "spot": "edge", "amount": 3,
+      "title": "Look down",
+      "text": "Go to the front edge of the deck and look down. The colony and the Remote Works are below you. Stepping off loses only the shell, and the chair gives you a new one.",
+      "say": "That speck down there is you. Your next job is to fly a lander back down to it."
+    },
+    {
+      "id": "module", "cue": "hold", "part": "Driving Module",
+      "title": "Fetch the Driving Module",
+      "text": "The lander on the hangar deck has no Driving Module. One waits on top of the stores tower at the back of the deck. Climb the ladder and pick it up ({Interact} with your hands out).",
+      "say": "Stores tower, top shelf. Climb carefully: a shell that falls 1.5 km is a shell we invoice you for."
+    },
+    {
+      "id": "fit", "cue": "fit",
+      "title": "Fit it to the lander",
+      "text": "Take the module to your lander and fit it beside the pilot's seat with the attach tool ({Weapon3}), on the seat's side socket.",
+      "say": "Beside the pilot's seat. The lander can't fly without one, and neither can you."
+    },
+    {
+      "id": "link", "cue": "link",
+      "title": "Link the controls",
+      "text": "With the linking tool ({Streak2}), link the pilot's seat to the Driving Module, then the module to one of the jets.",
+      "say": "Seat to module, module to a jet. Just as the warden showed you, only further from the ground."
+    },
+    {
+      "id": "board", "cue": "board",
+      "title": "Take the pilot's seat",
+      "text": "Sit in the pilot's seat ({Interact}): the one linked to the module.",
+      "say": "Strap in. Ministry insurance covers the lander, not the shell."
+    },
+    {
+      "id": "clear", "cue": "clear", "amount": 40,
+      "title": "Drop clear of the depot",
+      "text": "{Sprint} lifts the lander off the deck and {CrouchHold} brings it down; {MoveForward} and {MoveBack} push it along, {MoveLeft} and {MoveRight} turn it. Fly off the deck and drop below the depot.",
+      "say": "Clear of the deck. Good. Now head down to the Remote Works."
+    },
+    {
+      "id": "land", "cue": "land", "amount": 16,
+      "title": "Land at the Remote Works",
+      "text": "Fly down and set the lander on the concrete apron in front of the Remote Works, where your body is. The marker shows the way. Come down slowly: hold {CrouchHold} to sink faster.",
+      "say": "Gently now. The apron, inmate, not the roof."
+    },
+    {
+      "id": "done", "cue": "wait", "seconds": 6,
+      "title": "Delivered",
+      "text": "The lander is yours now: your first spacecraft, parked outside the Remote Works. The link closes and you wake in your own body.",
+      "say": "Delivery logged. The lander is yours to keep. The Ministry thanks you for your unpaid labour. Closing the link."
+    }
+  ]
+}

@@ -181,6 +181,8 @@ public enum CfgKey : byte
     RackColumns, // Ordnance Rack: a grid's columns across, a drum's segments round it
     RackLength, // Ordnance Rack: the longest ordnance a station takes, m
     RackDiameter, // Ordnance Rack: the widest ordnance a station takes, m
+    ValueY, // Joystick: where the stick stands fore and aft, 0..1 (its X is Value; AnalogLever.cs)
+    RestY, // Joystick: where the spring takes its Y (its X's is Rest)
     COUNT,
 }
 
@@ -370,7 +372,7 @@ public static class ConstructConfig
     /// <summary>A new part's values: every setting at its default; and what a part starts in (a switch that starts on).</summary>
     public static void Init(ref CPart p, ConstructPartDef d)
     {
-        p.LeverShown = -1;
+        p.LeverShown = p.LeverShownY = -1;
         p.Text = p.Text2 = null;
         p.Media = null;
         p.Mem = 0;
@@ -821,11 +823,12 @@ public static class ConstructConfig
                 CfgKey.Mix => d.Logic == CLogic.ZombieSpawner,
                 CfgKey.Units => d.Logic is CLogic.Speed or CLogic.Instrument,
                 CfgKey.Snap or CfgKey.Spring => d.Logic == CLogic.AnalogLever,
+                CfgKey.ValueY or CfgKey.RestY => d.Logic == CLogic.AnalogLever && d.Stick,
                 CfgKey.Value => d.Logic is CLogic.AnalogLever or CLogic.Counter or CLogic.Memory or CLogic.Numpad or CLogic.RandomPulse,
                 CfgKey.Code or CfgKey.Invert => d.Logic == CLogic.CodeLock,
                 CfgKey.Decimals => d.Logic is CLogic.Numpad or CLogic.Display or CLogic.Instrument,
                 CfgKey.Unit => d.Logic is CLogic.Display or CLogic.Instrument,
-                CfgKey.Channel => d.Logic is CLogic.RadioTx or CLogic.RadioRx || d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen,
+                CfgKey.Channel => d.Logic is CLogic.RadioTx or CLogic.RadioRx || d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen || d.ShellBody || d.ShellRange > 0,
                 CfgKey.Ink => d.Logic is CLogic.Display or CLogic.Instrument or CLogic.Numpad or CLogic.CodeLock || d.Panels.Length > 0,
                 CfgKey.Ramp => d.Logic == CLogic.Display,
                 CfgKey.Limit or CfgKey.Wrap => d.Logic == CLogic.Counter,

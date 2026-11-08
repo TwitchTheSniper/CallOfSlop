@@ -103,6 +103,7 @@ public sealed partial class Game
         _opOn = false;
         _opColony = 0;
         LockdownReset(); // (and its barracks: GameColonyLockdown.cs)
+        DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
         OpeningLocal = OpeningStage.None;
         OpeningCaption = OpeningSubtitle = "";
         _storyMiddleOf = null; // (the people's middle is the colony's when there is one)
@@ -132,6 +133,7 @@ public sealed partial class Game
         _opColony = colony.Id;
         OpeningSpots(colony);
         LockdownBuildBarracks(); // (the guards' barracks beside it: GameColonyLockdown.cs)
+        DepotBuild(); // (the Remote Works beside it and the Orbital Depot over that: GameDepot.cs)
         var wreck = SandboxKitPiece(script.Wreck, _opMiddle, script.CrashFrom, script.CrashTo) ?? SandboxKitPiece(script.Wreck, _opMiddle, 25, script.CrashTo);
         if (wreck != null)
         {
@@ -349,14 +351,8 @@ public sealed partial class Game
 
     private byte OpeningRescuer(Player p, string name, float turn)
     {
-        byte id = 0;
-        for (var k = 1; k < MaxPlayers; k++)
-            if (!Players.ContainsKey((byte)k))
-            {
-                id = (byte)k;
-                break;
-            }
-        if (id == 0 || FreeBotIds() <= 0)
+        var id = FreeNpcId();
+        if (id == 0)
             return 0;
         var a = p.Yaw + turn;
         var at = p.Position + new Vector3(MathF.Sin(a), 0, -MathF.Cos(a)) * 1.5f;
@@ -562,7 +558,7 @@ public sealed partial class Game
     /// <summary>Server, taking a save: the colony and crash site (with the map they are on), or null with no opening.</summary>
     private OpeningSave? OpeningCapture() => _opOn ? new OpeningSave
     {
-        Map = World.Map.Name, Colony = _opColony, Crash = _opCrash, Barracks = _opBarracks,
+        Map = World.Map.Name, Colony = _opColony, Crash = _opCrash, Barracks = _opBarracks, Works = _dpWorks, Depot = _dpDepot,
     } : null;
 
     /// <summary>Server, loading a world: its opening, when it was saved on this map (another planetoid's has none here).</summary>
@@ -581,6 +577,7 @@ public sealed partial class Game
             _opMiddle = _opGate = _opWake = o.Crash;
         }
         LockdownLoadBarracks(o.Barracks); // (GameColonyLockdown.cs)
+        DepotLoad(o.Works, o.Depot); // (GameDepot.cs)
         _storyMiddleOf = null;
     }
 }
@@ -592,6 +589,7 @@ public sealed class OpeningSave
     public ushort Colony;
     public Vector3 Crash;
     public ushort Barracks; // the Colony Barracks construct (0: none; after the players in the section, so an older reader stops before it)
+    public ushort Works, Depot; // the Remote Works and the Orbital Depot (GameDepot.cs; after the barracks, so an older reader stops before them)
 }
 
 /// <summary>Story/Opening/Opening.json (docs/story/OPENING.md): the opening's names, times and lines. A bad file is refused with a reason and there is no opening.</summary>

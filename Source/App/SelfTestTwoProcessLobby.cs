@@ -37,7 +37,7 @@ public static partial class SelfTest
         World.SetMap(tdmMap);
         var clock = Stopwatch.StartNew();
         var now = 0.0;
-        var server = new Game(NetPeer.Host(TwoProcessPort, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+        var server = new Game(NetPeer.Host(TwoProcessPort, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: 1, mapId: tdmMap.Id)
         {
             MapVoteEnabled = true,
