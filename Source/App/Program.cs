@@ -133,6 +133,10 @@ public static unsafe partial class Program
             VehicleKit.VehicleKitVersion.Force = vehicleKit; // --kit N: every vehicle seed by that kit (1: the shapes as whole generators, 2: the shape grammar), to measure one against the other
         if (args.Any(a => a.Equals("--no-sections", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDiversity.SectionsOn = false; // the diversity distance without its front term and identity without its section, as before 2026-11-07 (to measure them)
+        if (args.Any(a => a.Equals("--fixed-cabs", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.Vehicle.FixedCabs = true; // body styles phase 3: kit-5 bodies with phase 2's fixed cab shells and hoods (to measure against)
+        if (args.SkipWhile(a => !a.Equals("--cab", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } cabKind)
+            VehicleKit.CabLook.Force = cabKind; // body styles phase 3: every lofted cab of one kind where the plan allows it (enclosed, crew, caged, armoured, cab-over, merged)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
             VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
         if (args.SkipWhile(a => !a.Equals("--roofline", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } roofline)

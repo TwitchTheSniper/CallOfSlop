@@ -78,6 +78,19 @@ public static class VehicleIdentity
     private const double OldPalette = 0.20, OldSilhouette = 0.15;
 
     /// <summary>
+    /// A lofted cab counts as the fixed cab shell of its kind for a style's characteristic parts (phase 3: a cage is a Roll Cage, an armoured cab a Slit Cab,
+    /// a capsule or a merged cab a Cab Over Shell, a conventional or crew cab a Tin Roof Cab), so a style keeps its traits when its cabs are lofted.
+    /// </summary>
+    public static string LoftedAs(string name) => HullLoft.CabOf(name)?.Kind switch
+    {
+        'g' => "Roll Cage",
+        'a' => "Slit Cab",
+        'o' or 'm' => "Cab Over Shell",
+        'e' or 'w' => "Tin Roof Cab",
+        _ => name,
+    };
+
+    /// <summary>
     /// A room bay's front profile within <see cref="SectionFloor"/> (mean difference per band) of its style's nearest language reads 1 (what the facets' thickness and
     /// the centimetre grid leave), and <see cref="SectionScale"/> further reads 0. Measured on IT War Bus seeds (2026-11-07): its own pods and vans 0.0096, a slab on it
     /// 0.012, kit 3's fixed bays 0.025, a cabin 0.041.
@@ -134,7 +147,7 @@ public static class VehicleIdentity
             Parts = Merge(W(1, BanditDress), W(1, "Fuel Drum", "Ram Plow", "Mesh Guard Cage", "Slit Cab"), W(0.5, "Bull Bar", "Roll Cage", "Chop Top Cab", "Wood Planks", "Mesh Grate", "Spiked Wheel")),
             Modules = new()
             {
-                ["cab"] = new() { ["caged"] = 1, ["armoured"] = 1, ["enclosed"] = 0.5, ["cab-over"] = 0.3 },
+                ["cab"] = new() { ["caged"] = 1, ["armoured"] = 1, ["enclosed"] = 0.5, ["cab-over"] = 0.3, ["crew"] = 0.8, ["merged"] = 0.3 },
                 ["nose"] = new() { ["ram"] = 1, ["plated hood"] = 1, ["long hood"] = 0.6, ["short hood"] = 0.6 },
                 ["flank"] = new() { ["panniers"] = 1, ["loaded"] = 1, ["bare"] = 0.5 },
             },
@@ -157,7 +170,7 @@ public static class VehicleIdentity
             Parts = Merge(W(1, ItMasts), W(1, ItGear), W(0.5, "Slat Grille", "Cab Over Shell", "Tin Roof Cab")),
             Modules = new()
             {
-                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3 },
+                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3, ["crew"] = 0.8, ["merged"] = 1 },
                 ["nose"] = new() { ["short hood"] = 1, ["flat"] = 1, ["long hood"] = 0.6, ["ram"] = 0.2 },
                 ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.5, ["loaded"] = 0.3 },
             },
@@ -174,7 +187,7 @@ public static class VehicleIdentity
             Parts = Merge(W(1, ScamMasts), W(1, ScamGear), W(0.5, "Server Rack", "Computer", "Slat Grille")),
             Modules = new()
             {
-                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3 },
+                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3, ["crew"] = 0.8, ["merged"] = 1 },
                 ["nose"] = new() { ["short hood"] = 1, ["long hood"] = 0.8, ["flat"] = 1, ["ram"] = 0.2 },
                 ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.6, ["loaded"] = 0.4 },
             },
@@ -192,7 +205,7 @@ public static class VehicleIdentity
             Modules = new()
             {
                 ["nose"] = new() { ["long hood"] = 1, ["ram"] = 1, ["short hood"] = 0.5 },
-                ["cab"] = new() { ["caged"] = 1, ["enclosed"] = 0.8, ["armoured"] = 0.5 },
+                ["cab"] = new() { ["caged"] = 1, ["enclosed"] = 0.8, ["armoured"] = 0.5, ["crew"] = 0.8, ["merged"] = 0.5 },
                 ["flank"] = new() { ["panniers"] = 1, ["loaded"] = 0.8, ["bare"] = 0.6 },
             },
             WeakPoints = [new("pipe box", PartPick.Of("Pipe Box"), MinSides: 2, MinBearings: 2), Tyres, Fuel],
@@ -208,7 +221,7 @@ public static class VehicleIdentity
             Parts = Merge(W(1, BritishFlags), W(1, BritishTea), W(0.5, "Slat Grille", "Tin Roof Cab", "Windscreen Frame")),
             Modules = new()
             {
-                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 0.8, ["caged"] = 0.2 },
+                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 0.8, ["caged"] = 0.2, ["crew"] = 0.8, ["merged"] = 0.8 },
                 ["nose"] = new() { ["long hood"] = 1, ["short hood"] = 0.8, ["flat"] = 0.8, ["ram"] = 0.2 },
                 ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.6, ["loaded"] = 0.3 },
             },
@@ -360,7 +373,7 @@ public static class VehicleIdentity
         var sum = 0.0;
         for (var i = 0; i < c.PartCount; i++)
         {
-            var n = c.DefOf(i).Name;
+            var n = LoftedAs(c.DefOf(i).Name);
             if (!sig.Parts.TryGetValue(n, out var w))
                 continue;
             var k = counts.GetValueOrDefault(n);

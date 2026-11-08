@@ -127,6 +127,8 @@ public static class ShapeGrammar
         new("cab", "enclosed", "an enclosed cab") { Slot = "heavyCab", Parts = ["Tin Roof Cab", "Chop Top Cab", "Windscreen Frame"] },
         new("cab", "armoured", "an armoured slit cab") { Slot = "heavyCab", Parts = ["Slit Cab"] },
         new("cab", "cab-over", "a cab-over") { Slot = "heavyCab", Parts = ["Cab Over Shell"], Provides = ["cabover"] },
+        new("cab", "crew", "a crew cab") { Needs = ["lofted", "gap first"] }, // (phase 3: lofted cabs only; a second row of seats over a metre of bare rails)
+        new("cab", "merged", "a cab merged into the room") { Needs = ["lofted", "room first"], Provides = ["cabover"] }, // (a capsule whose back is the room's front: a bus front)
         new("nose", "long hood", "a long hood") { Slot = "hood", Parts = ["Long Hood", "Bull Hood"], Excludes = ["cabover"] },
         new("nose", "short hood", "a short hood") { Slot = "hood", Parts = ["Snub Hood", "Slab Nose"], Excludes = ["cabover"] },
         new("nose", "plated hood", "a plated hood and ram bars") { Slot = "hood", Parts = ["plates"], Excludes = ["cabover"] },
@@ -288,6 +290,8 @@ public static class ShapeGrammar
         {
             v.Look = BodyLook.Roll(v); // (kit 5: the body layer's "language" fork, so nothing else of a seed moves)
             v.Modules.Add("language " + v.Look.Label);
+            if (!Vehicle.FixedCabs)
+                v.CabLook = new CabLook(v, v.Look); // (phase 3: the cab and hood in the body's language, on forks of their own)
         }
         return v;
     }
@@ -442,10 +446,26 @@ public static class ShapeGrammar
         }
 
         // Cab and nose: the style's own parts.
-        p.Cab = Ch(D(VehicleLayer.Body, "cab"), "cab") ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
+        if (v.CabLook != null)
+        {
+            // Phase 3: a lofted cab, its kind weighed by the style's body rule (BodyStyleRule.Cabs), whatever cab parts the style lists.
+            tags.Add("lofted");
+            if (p.Segs[0].Kind == "gap" && p.Segs[0].Len >= 1f)
+                tags.Add("gap first");
+            if (p.Segs[0].Kind == "room")
+                tags.Add("room first");
+            var rule = BodyStyleRule.Of(st);
+            var fits = Catalogue.Where(m => m.Family == "cab" && m.Needs.All(tags.Contains) && !m.Excludes.Any(tags.Contains))
+                .Select(m => (M: m, W: (CabLook.Force is { } only ? (m.Name == only ? 1 : 0) : rule.CabWeight(m.Name)) * (role?.Module("cab", m.Name) ?? 1) * VehicleContext.Module("cab", m.Name))).Where(x => x.W > 0).ToList();
+            p.Cab = fits.Count > 0 ? Weighted(D(VehicleLayer.Body, "cab"), fits) : Module("cab", "enclosed");
+            p.CabPart = "";
+        }
+        else
+            p.Cab = Ch(D(VehicleLayer.Body, "cab"), "cab") ?? throw new VehicleKitException($"style {st.Name} lists no heavy cab the grammar knows");
         foreach (var t in p.Cab.Provides)
             tags.Add(t);
-        p.CabPart = FactionStyle.Noted("heavyCab", D(VehicleLayer.Body, "cab part").Pick(p.Cab.PartsIn(st)));
+        if (v.CabLook == null)
+            p.CabPart = FactionStyle.Noted("heavyCab", D(VehicleLayer.Body, "cab part").Pick(p.Cab.PartsIn(st)));
         p.Nose = Ch(D(VehicleLayer.Body, "nose"), "nose") ?? throw new VehicleKitException($"style {st.Name} lists no hood the grammar knows");
         var nd = D(VehicleLayer.Body, "nose part");
         if (p.Nose.Name == "ram")
@@ -770,7 +790,11 @@ public static class ShapeGrammar
         var (frontZ, nose) = p.Chassis is { } ch ? (ch.FrontZ, ch.Nose) : (-1.675f, 0.625f);
         v.NoFenders = frontZ != -1.675f; // (the hood's fenders stand where kit 2's front wheels are)
         v.Ladder(frontZ, p.Rails, nose, p.Tail, g.Differential, frontWing: g.FrontWing, tandem: g.Tandem).SteeredAxle(g.FrontWheel, g.FrontSpring).DrivenAxle(g.RearWheel, g.RearSpring)
-            .Powertrain(-1.425f).OpenCab(shell: p.CabPart);
+            .Powertrain(-1.425f);
+        if (v.CabLook != null)
+            v.LoftCab(p.Cab.Name); // (phase 3: lofted in the body's language; a merged cab's shell goes on after its room)
+        else
+            v.OpenCab(shell: p.CabPart);
         if (g.Tag != null)
             v.TagAxle(v.RearAxleZ + (p.Chassis?.ExtraAt ?? 1.25f), g.Tag, g.TagWheel ?? g.RearWheel);
         if (MathF.Abs(v.RearAxleZ - p.RearAxle) > 0.01f)
@@ -793,6 +817,8 @@ public static class ShapeGrammar
                     var spots = SeatSpots(s, v.Look?.DoorSide ?? 1, v.Look?.RearDoor == true);
                     room = v.Hull(p.Recipe.RoomTag, s.Z0, v.FloorY, s.Bays, spots);
                     roomSeg = s;
+                    if (p.Cab.Name == "merged" && p.Segs.IndexOf(s) == 0)
+                        v.MergeCab(room);
                     // (not its walls in Trim's crooked patches: a patch on a hull bay goes on the bay's middle, which is inside the room, where a player stands)
                     break;
                 case "bed":

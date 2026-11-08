@@ -284,13 +284,15 @@ public sealed partial class Vehicle
     /// </summary>
     public Vehicle Hood(string? part = null, string[]? noseOf = null)
     {
-        if (Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Cab Over Shell") == true)
+        if (Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Cab Over Shell") == true || CabShape?.Kind is 'o' or 'm')
             return this; // (the cab is its own nose)
         var d = Dice.Fork("hood");
         var kind = part ?? Style.Part(d, "hood");
         if (kind == "plates")
             return PlatedHood();
         var on = HoodOn ?? Engine!;
+        if (CabLook != null)
+            kind = LoftedHood(kind, d); // (phase 3: the hood lofted in the body's language, its length from the part the plan chose)
         var hood = Stand(kind, SocketPoint(on, "+y"), Orient.Forward, on, "engine");
         PanelList("hood").Add(hood);
         var nose = noseOf != null ? FactionStyle.Noted("nose", d.Pick(noseOf)) : Style.Part(d, "nose");
@@ -480,7 +482,7 @@ public sealed partial class Vehicle
         foreach (var p in Parts.Where(p => p.Name.StartsWith(Beam, StringComparison.Ordinal)))
             Paint(p, frame);
         foreach (var (tag, list) in Panels)
-            if (tag is not "furniture")
+            if (tag is not ("furniture" or "glass"))
                 PaintAll(list.Where(p => p.Def.Slots.Length == 0), tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
         PaintRooms(Dice.Fork("paint runs"), "rust"); // (phase 2: a room's bays by runs, one colour each, so its sections read: VehicleBodyLanguage.cs)
         var war = Style.Colour(d, "war");

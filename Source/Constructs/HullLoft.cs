@@ -11,7 +11,7 @@ namespace CallOfSlop;
 /// sections it is given. Like an Ordnance Rack's shapes, its name is its key: <c>Hull Loft (100fr 104,0/108,185/82,222/0,222 ...)</c> (length in cm; <c>d</c> a door in
 /// the +x side, <c>f</c> its front closed, <c>r</c> its back closed), so a blueprint or a save names it and any machine makes the same part from the name.
 /// </summary>
-public static class HullLoft
+public static partial class HullLoft
 {
     public const string Prefix = "Hull Loft (";
     internal const byte WireKind = 245; // (after Extrusion.WireMark: the key as text)
@@ -226,6 +226,8 @@ public static class HullLoft
 
     private static ConstructPartDef? Make(string name)
     {
+        if (MakeFront(name) is { } front)
+            return front.Ok ? front.Def : null; // (phase 3: a lofted cab, hood or window pane: HullLoft.Cabs.cs)
         if (ShapeOf(name) is not { } sh)
             return null;
         var (door, a, b) = (sh.Door, sh.A, sh.B);
@@ -243,6 +245,12 @@ public static class HullLoft
             Console.WriteLine($"[vehicles] {name}: refused, {e.Message}");
             return null;
         }
+        return Adopt(def, name);
+    }
+
+    /// <summary>A part made from its key, adopted into the run-time table (null: it is full).</summary>
+    private static ConstructPartDef? Adopt(ConstructPartDef def, string name)
+    {
         def.IsNamedRuntime = true;
         def.ExHash = Fnv(name);
         return Extrusion.Adopt(def) ? def : null;

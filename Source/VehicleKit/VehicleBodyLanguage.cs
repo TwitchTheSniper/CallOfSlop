@@ -204,26 +204,88 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     public int RunMax { get; init; } = 3;
     public string? Contrast { get; init; }
 
+    /// <summary>
+    /// Phase 3 (docs/vehiclekit/BODY-STYLES.md, section 9): the cab kinds a lofted body's style builds, by the grammar's cab modules ("enclosed", "crew", "caged",
+    /// "armoured", "cab-over", "merged"), and how often; a kind whose plan doesn't allow it (a crew cab needs a metre of bare rails behind the cab, a merged cab a
+    /// room right behind it) drops out of the roll. Data, so an archetype's cab is a row.
+    /// </summary>
+    public (string Kind, double W)[] Cabs { get; init; } = [("enclosed", 2), ("crew", 1), ("cab-over", 0.5)];
+
+    /// <summary>The noses a lofted hood takes (<c>f</c> flat, <c>w</c> wedge, <c>r</c> rounded, <c>g</c> a grille box), and how often.</summary>
+    public (char Nose, double W)[] Noses { get; init; } = [('f', 1), ('w', 1), ('r', 1), ('g', 1)];
+
+    /// <summary>A cab's height over its floor (the seated eye is 1.3 m up), the windscreen's rake on a cab behind a hood and on a capsule (how far its top is set back).</summary>
+    public float CabTallMin { get; init; } = 1.62f;
+    public float CabTallMax { get; init; } = 1.82f;
+    public float RakeMin { get; init; } = 0.1f;
+    public float RakeMax { get; init; } = 0.22f;
+    public float CapsuleRakeMin { get; init; } = 0.45f;
+    public float CapsuleRakeMax { get; init; } = 0.7f;
+
+    /// <summary>A hood's half width and its crown over the engine's top (the engines' rocker covers stand 12 cm up: it clears them by 4 cm or more).</summary>
+    public float HoodHalfMin { get; init; } = 0.5f;
+    public float HoodHalfMax { get; init; } = 0.6f;
+    public float HoodCrownMin { get; init; } = 0.17f;
+    public float HoodCrownMax { get; init; } = 0.24f;
+
+    /// <summary>The weight of a cab kind (0: the style never builds it).</summary>
+    public double CabWeight(string kind)
+    {
+        foreach (var (k, w) in Cabs)
+            if (k == kind)
+                return w;
+        return 0;
+    }
+
     public static readonly Dictionary<string, BodyStyleRule> ByStyle = new(StringComparer.Ordinal)
     {
         // (each station after the first: a new language half the time; tall and short, hard ledges over the wheels)
         ["Bandit"] = new([(BodyLanguage.Slab, 2), (BodyLanguage.Ledge, 1.5), (BodyLanguage.Armour, 0.5)], Mix: 0.5)
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.92f, TallMax = 1.25f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25 },
+            {
+                Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.92f, TallMax = 1.25f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25,
+                // (phase 3: open cabs in roll cages first, slabs of armour, upright screens, flat and grilled noses)
+                Cabs = [("caged", 2.5), ("enclosed", 1), ("armoured", 1), ("crew", 0.7), ("cab-over", 0.4)], Noses = [('f', 1.5), ('w', 1), ('g', 2)],
+                CabTallMin = 1.58f, CabTallMax = 1.84f, RakeMin = 0.04f, RakeMax = 0.16f, HoodCrownMin = 0.16f, HoodCrownMax = 0.22f, HoodHalfMax = 0.62f,
+            },
         // (low and wide, flat-faceted: little height, a glacis brow)
         ["Militia"] = new([(BodyLanguage.Armour, 1)])
-            { Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.1f, FlareShare = 0.9f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.35 },
+            {
+                Scales = [(BodyScale.Standard, 1), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.1f, FlareShare = 0.9f, Brows = [(1.25f, 1), (1.5f, 1.5), (1f, 0.5)], Ride = (1.5, 1, 0.5), DoorRear = 0.35,
+                // (armoured slit cabs and crew cabs, the driver inside an armoured capsule now and then; wedge noses like a glacis)
+                Cabs = [("armoured", 2.5), ("crew", 1.2), ("merged", 1), ("caged", 0.4)], Noses = [('w', 2.5), ('f', 1)],
+                CabTallMin = 1.55f, CabTallMax = 1.7f, RakeMin = 0.14f, RakeMax = 0.22f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f,
+            },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
         ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12)
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.16f, FlareShare = 0.8f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35 },
+            {
+                Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.16f, FlareShare = 0.8f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35,
+                // (capsules in the body's panels, raked screens, rounded and wedge noses)
+                Cabs = [("cab-over", 1.5), ("merged", 1.2), ("enclosed", 1), ("crew", 0.8)], Noses = [('r', 2), ('w', 1.5)],
+                CabTallMin = 1.66f, CabTallMax = 1.86f, RakeMin = 0.16f, RakeMax = 0.22f, CapsuleRakeMin = 0.55f, CapsuleRakeMax = 0.75f,
+            },
         // (a portacabin on a chassis: boxy, square ends, tall)
         ["Scam"] = new([(BodyLanguage.Cabin, 2), (BodyLanguage.Van, 1)])
-            { Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.95f, TallMax = 1.2f, FlareShare = 0.5f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)] },
+            {
+                Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.95f, TallMax = 1.2f, FlareShare = 0.5f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)],
+                // (boxy enclosed and crew cabs, upright screens, flat noses)
+                Cabs = [("enclosed", 2), ("crew", 1.2), ("cab-over", 0.8)], Noses = [('f', 2), ('g', 1)],
+                CabTallMin = 1.7f, CabTallMax = 1.9f, RakeMin = 0.06f, RakeMax = 0.14f, CapsuleRakeMin = 0.35f, CapsuleRakeMax = 0.5f,
+            },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
         ["Highland"] = new([(BodyLanguage.Boat, 3), (BodyLanguage.Slab, 0.5)])
-            { Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.14f, FlareShare = 1f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)] },
+            {
+                Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.14f, FlareShare = 1f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)],
+                // (long hoods with grilles, enclosed and caged cabs)
+                Cabs = [("enclosed", 1.5), ("caged", 1.2), ("crew", 0.8), ("armoured", 0.4)], Noses = [('g', 1.5), ('r', 1), ('f', 1)],
+            },
         // (tall, upright buses: the heavy class first, the door kerbside)
         ["British"] = new([(BodyLanguage.Bus, 2.5), (BodyLanguage.Coach, 1.5)], 8, 12)
-            { Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.28f, FlareShare = 0.7f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0 },
+            {
+                Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.28f, FlareShare = 0.7f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0,
+                // (the bus front: the cab inside the body; capsules; rounded and grilled noses on the rest)
+                Cabs = [("merged", 2), ("cab-over", 1.2), ("enclosed", 0.8), ("crew", 0.5)], Noses = [('r', 2), ('g', 1)],
+                CabTallMin = 1.7f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.2f, CapsuleRakeMin = 0.25f, CapsuleRakeMax = 0.45f,
+            },
     };
 
     /// <summary>A style not named: military armour, faceted, one language.</summary>
