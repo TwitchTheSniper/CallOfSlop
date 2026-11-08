@@ -58,7 +58,7 @@ public struct CPart
     public System.Text.StringBuilder? MediaLoad; // a world file's list as its chunks come in (ConstructMedia.LoadChunk)
     public float[]? Trace; // a Graph Screen's last 30 s on this peer, oldest at TraceAt (LogicDisplays.cs)
     public byte TraceAt;
-    public float LeverShown; // an Analog Lever: where its handle is drawn on this PC, easing towards its value (negative: not drawn yet)
+    public float LeverShown, LeverShownY; // an Analog Lever: where its handle is drawn on this PC, easing towards its value (negative: not drawn yet); a Joystick's Y
 
     // Paint (the paint tool; ConstructPaint.cs): the colour the part's paintable boxes are drawn in, 0 when it has its own (else 0x01000000 | 0xRRGGBB). It moves with the part.
     public uint Paint;

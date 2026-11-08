@@ -1,0 +1,323 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Joystick",
+  "description": "A stick you push any way: X and Y out, -1 to 1, back to the middle when let go.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "analoglever",
+    "axes": 2
+  },
+  "config": [
+    {
+      "key": "value",
+      "label": "X",
+      "group": "General",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "tooltip": "Where the stick stands side to side, 0 (left) to 1 (right)."
+    },
+    {
+      "key": "valueY",
+      "label": "Y",
+      "group": "General",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "tooltip": "Where the stick stands fore and aft, 0 (back) to 1 (forward)."
+    },
+    {
+      "key": "snap",
+      "label": "Snap step",
+      "group": "General",
+      "min": 0,
+      "max": 0.5,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "The steps the stick clicks through on each axis. 0: smooth."
+    },
+    {
+      "key": "low",
+      "label": "Output at 0",
+      "group": "Output",
+      "min": -100,
+      "max": 100,
+      "step": 0.01,
+      "default": -1,
+      "tooltip": "What each axis puts out with the stick at 0."
+    },
+    {
+      "key": "high",
+      "label": "Output at 1",
+      "group": "Output",
+      "min": -100,
+      "max": 100,
+      "step": 0.01,
+      "default": 1,
+      "tooltip": "What each axis puts out with the stick at 1."
+    },
+    {
+      "key": "spring",
+      "type": "toggle",
+      "label": "Spring return",
+      "group": "Spring",
+      "default": true,
+      "tooltip": "Goes back to its rest values when let go."
+    },
+    {
+      "key": "rest",
+      "label": "Rest X",
+      "group": "Spring",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "tooltip": "Where the spring takes it side to side."
+    },
+    {
+      "key": "restY",
+      "label": "Rest Y",
+      "group": "Spring",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "tooltip": "Where the spring takes it fore and aft."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        -0.1,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.1,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.1,
+        0.101,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.35,
+        0.1
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.06,
+        0.094,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        0.108,
+        0.06
+      ],
+      "color": "#16181b",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.09,
+        0.098,
+        -0.09
+      ],
+      "max": [
+        -0.062,
+        0.118,
+        -0.062
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.09,
+        0.098,
+        0.062
+      ],
+      "max": [
+        -0.062,
+        0.118,
+        0.09
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        0.062,
+        0.098,
+        -0.09
+      ],
+      "max": [
+        0.09,
+        0.118,
+        -0.062
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        0.062,
+        0.098,
+        0.062
+      ],
+      "max": [
+        0.09,
+        0.118,
+        0.09
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.097,
+        -0.03
+      ],
+      "max": [
+        0.03,
+        0.128,
+        0.03
+      ],
+      "color": "#16181b",
+      "detail": true,
+      "rig": "stick",
+      "pivot": [
+        0,
+        0.1,
+        0
+      ]
+    },
+    {
+      "min": [
+        -0.013,
+        0.126,
+        -0.013
+      ],
+      "max": [
+        0.013,
+        0.26,
+        0.013
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "rig": "stick",
+      "pivot": [
+        0,
+        0.1,
+        0
+      ]
+    },
+    {
+      "min": [
+        -0.026,
+        0.25,
+        -0.026
+      ],
+      "max": [
+        0.026,
+        0.35,
+        0.026
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "rig": "stick",
+      "pivot": [
+        0,
+        0.1,
+        0
+      ]
+    },
+    {
+      "min": [
+        -0.016,
+        0.346,
+        -0.016
+      ],
+      "max": [
+        0.016,
+        0.362,
+        0.016
+      ],
+      "color": "#d0352c",
+      "detail": true,
+      "rig": "stick",
+      "pivot": [
+        0,
+        0.1,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.1,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

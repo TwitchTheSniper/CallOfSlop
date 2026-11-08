@@ -6165,6 +6165,15 @@ Seats and Logic > Controls). Wire it into any data input: an engine's throttle p
   collision, so a hidden box stands where it swings for the crosshair.
 - The lever held is a part index another player's edit can shift, so it is stamped when taken and checked each frame:
   a hand on a lever that changed just comes off.
+- **The Joystick** (Joystick, Medium and Large, from the same script) is an Analog Lever with `"axes": 2` in its logic
+  block (`ConstructPartDef.Stick`): a stick in a square gate that goes any way. `value` is its X (the tip towards the
+  part's +x) and `valueY` its Y (towards +z, as a lever's), each with a rest (`rest`, `restY`); `snap`, `low`, `high`
+  and `spring` serve both. It puts X out on its first output (`x`, the part itself) and Y on its second (`y`,
+  `CPart.Out1`), so link Y from the `y` port in the linking tool's picker. Out of the box it springs back to the middle
+  and puts out -1 to 1. The hand drags it the same way: the mouse along the screen's picture of the part's +x moves X,
+  square to that moves Y; the wheel leaves it alone. Both axes ride `CActKind.AnalogLever` and `CBodyKind.Analog`
+  (a u16 Y each since protocol 211, 0 on a lever) and are settings, so saves, blueprints and joiners keep them. Its
+  boxes are a `"stick"` rig: tilted about the part's z by X and its x by Y, 35 degrees either way (`AnalogLever.StickTurn`).
 
 ### The Nudge tool
 
