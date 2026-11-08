@@ -57,6 +57,18 @@ public struct BodyColors
         };
     }
 
+    /// <summary>A robot shell (Game/GameRobotShell.cs): brushed steel, dark joints, a lit visor, the player's colour as a stripe.</summary>
+    public static BodyColors Robot(Vector3 color)
+    {
+        var steel = new Vector3(0.55f, 0.58f, 0.62f);
+        var joint = new Vector3(0.2f, 0.22f, 0.25f);
+        return new BodyColors
+        {
+            Shirt = steel, ShirtDark = steel * 0.72f, Sleeve = steel * 0.9f, Vest = joint * 1.5f, Pouch = joint, Accent = color * 1.1f,
+            Skin = steel * 1.08f, SkinShade = steel * 0.9f, Hair = joint, Gear = steel * 0.95f, GearDark = joint, Eyes = new Vector3(0.22f, 0.82f, 0.95f),
+        };
+    }
+
     /// <summary>A zombie: a torn shirt, green skin.</summary>
     public static BodyColors Zombie(Vector3 shirt, Vector3 skin) => new()
     {
@@ -319,7 +331,13 @@ public static class BodyModel
     /// picked on the APPEARANCE screen on top (<see cref="Player.Look"/>, Source/Cosmetics/Appearance.cs; bots and players
     /// who never picked anything: all Auto, so unchanged).
     /// </summary>
-    public static BodyVariant VariantFor(Player p) => VariantFor(p.Name, p.Id, p.Look);
+    public static BodyVariant VariantFor(Player p) => p.InShell ? RobotVariant : VariantFor(p.Name, p.Id, p.Look);
+
+    /// <summary>A robot shell's head: a helmet for the dome, no beard (Game/GameRobotShell.cs).</summary>
+    public static readonly BodyVariant RobotVariant = new(0, 0, Headwear.Helmet, false, 0);
+
+    /// <summary>The colours a player is drawn in: their own, or a robot's while they wear a shell.</summary>
+    public static BodyColors ColorsFor(Player p, in BodyVariant v) => p.InShell ? BodyColors.Robot(p.Color) : BodyColors.For(p.Color, v);
 
     /// <summary>The name's look with a picked <paramref name="look"/> on top (Auto axes keep the name's).</summary>
     public static BodyVariant VariantFor(string name, byte id, in PlayerLook look) => look.Apply(VariantFor(name, id));
@@ -371,7 +389,7 @@ public static class BodyModel
     public static void DrawImmediate(Renderer g, Player p, int stance, in Matrix4x4 up, bool hat, bool? detail = null)
     {
         var v = VariantFor(p);
-        var c = BodyColors.For(p.Color, v);
+        var c = ColorsFor(p, v);
         Build(ScratchTorso, ScratchHead, stance, v, c, hat);
         ScratchTorso.ShowDetail = ScratchHead.ShowDetail = detail ?? WantsDetail(p.RenderPosition);
         var s = Stances[stance];

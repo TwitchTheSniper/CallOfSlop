@@ -356,7 +356,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 210: corpses that pile up and that players walk over (GameCorpses.cs, docs/sandbox/CORPSES.md): Msg.Corpse at the end of Msg.
     // 211: the Joystick (AnalogLever.cs, an Analog Lever with "axes": 2): a u16 Y after CActKind.AnalogLever's flags, and after each value of CBodyKind.Analog.
     // 212: hundreds of Sandbox bots (GameSandboxSpawns.cs): player ids up to 223 (spawned bodies above the 32 lobby seats), the snapshot's presence mask a word count and 64-bit words (PlayerMask), up to 15 snapshot parts, and the Sandbox hands state sends people always and a spawned body only while its hand holds something.
-    public const byte ProtocolVersion = 212;
+    // 213: robot shells (GameRobotShell.cs, docs/sandbox/CONSTRUCTS.md "Robot shells"): Msg.Shell at the end of Msg, CActKind.ShellLeave at the end of CActKind.
+    // 214: the Orbital Depot (GameDepot.cs, docs/story/DEPOT.md): Msg.Depot at the end of Msg.
+    public const byte ProtocolVersion = 214;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

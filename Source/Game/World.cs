@@ -627,6 +627,8 @@ public sealed class Player
     public int Health = World.MaxHealth;
     public uint Blood; // blood marks: hit parts, generation, last hit direction (BloodMarks, BodyBlood.cs); server-owned, replicated
     public bool Alive = true;
+    [MatchState]
+    public bool InShell; // wearing a robot shell: drawn as a robot (GameRobotShell.cs; every peer hears it)
     public ushort Kills;
     public ushort Deaths;
     public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
@@ -727,6 +729,7 @@ public sealed class Player
         Sim.Noclip = Sim.NoclipExit = false;
         Sim.Gear = Sim.Canopy = Sim.GearDelay = 0;
         SbSpawned = false;
+        InShell = false; // (the server ends any shell run at a new match: ShellResetAll)
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;
         SbPart = 0;
