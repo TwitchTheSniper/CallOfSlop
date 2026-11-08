@@ -3139,6 +3139,9 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
 - **Damage**: each member keeps its own health and hitbox; a round damages the cell it hits; the look line shows the
   members' health together ("Rifle Receiver (2x2 merged, 620/720): ..."). A cell shot to pieces breaks the merge as
   taking it off does (its centre parts move or drop: nobody placed them).
+- **In blueprints** a step on a merged receiver's centre socket names it `"merged "` and the receiver's own socket (`"merged front"`: `ConstructMerge.SocketName`); building
+  one finds the merges again before a gun part's step (`ConstructMerge.SocketIndex`), as a rebuild would, so its place and scale are the merged ones. Save as blueprint writes them,
+  and the vehicle kit's merged turret guns use them (docs/vehiclekit/VEHICLEKIT.md, "The armoury").
 - The merged receiver's reach beyond its members is solid to building (nothing can be fitted into it) but not to rounds
   or the world: rounds hit the members and the gun parts.
 

@@ -29,6 +29,7 @@ like any other. **Fix the generator, not its files.** No AI is in here yet: each
 | `CallOfSlop --brief "Bandit Box Truck" [--seed S]`, `--brief "Bandit raider" [--tier T] [--seed S]`, `--brief MODEL_KEY` or `--brief FILE` | The behaviour brief of a vehicle made as the spawn makes it (or of any blueprint file): driving, guns and their arcs, weak points, crew, loot, and that its save bytes read back the same. See "Behaviour data". |
 | `CallOfSlop --cargo "Bandit gun platform" [--tier T \| --tiers 1,4] [--seeds N] [--list] [--write DIR] [--no-cargo]`, or `--cargo all [--style S] [--role R]` | Kit 4's cargo: what each role vehicle carries for itself (by kind, in slots and loose, the loose mass), its role, drive pulse and identity, what was left behind and why, and the totals; `--no-cargo` makes the same seeds without the pass (also on any other tool). See "Cargo and spares". |
 | `CallOfSlop --drive-check FILE [--gravity G]` | The spawn's drive check on any blueprint: level, and a throttle pulse moves it. `--no-drive-gate` on any of the tools turns the check off in generation, to measure it. See "Dynamic spawn", "The drive check". |
+| `CallOfSlop --check-armoury [--recipe ID]`, `--armoury-report [--seeds N] [--style S] [--shape NAME] [--check]`, `--no-armoury` on any tool | The armoury's recipes fitted and checked one by one, and the guns each style's vehicles carry over seeds. See "The armoury". |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
@@ -40,14 +41,14 @@ Bandit Technical 7: OK; 90 parts from 90 steps, 2 freeform welds, 6 links, 3 car
   centre of mass 0.95 m up, 0.02 m off the middle, 53% of the way back along the wheelbase
   coplanar faces between parts: 0 among 315 boxes
   guns: 1, seats Driver, Gunner
-  the Mounted MG follows the gunner's look within 2.2 degrees (sides, behind, up)
+  the Mounted MG follows the gunner's look within 2.2 degrees (sides, behind, up), 0.4 off the point it is laid on
 ```
 
 and every `FAIL` line says what went wrong and, where it can, what to do. What it checks (`VehicleChecks`, defaults in `VehicleCheckOptions`; a generator's `Checks` may change them):
 it builds from the file with no refusal; a working powertrain, a seat that drives through a Driving Module and fuel piped to the engine; driven and steered wheels; the centre of mass inside the
 wheels and its stability (half the track over its height); no coplanar faces between parts, in their paint (wheels and what's on joints don't count: they don't stay at rest); part count and mass; it
 stands level and stays in one piece; full throttle for 6 s through the seat (distance, heading drift, that forward is forward); a full-right turn at speed (that right is right, and it doesn't roll);
-every gun has a load (a flame gun drinks the construct's fuel), joints and a gunner, fires on Fire in that seat and follows the gunner's look round the sides, behind and up; every cargo piece rides in a frozen volume and is still there after the drive; six spawns' loot rolls differ, and something rolled.
+every gun has a load (a flame gun drinks the construct's fuel), joints and a gunner, fires on Fire in that seat and follows the gunner's look round the sides, behind and up (judged against the way the game lays it, `ConstructWeapons.AimWay`: at the point the gunner looks at, out to the gun's reach, raised for a slow round's drop, within 12 degrees; a short gun mounted off its gunner's eye, or a slow round's lead, stands off the look's own line by design, so that line is only held to 30 degrees. Before 2026-11-08 the look's line was the measure, at 12 and 20 degrees, which failed a roof Firebreather on British War Bus 6 at 25 degrees while it was laid on its point to 0.0, and every slow-round Kingpin gun at 14); every cargo piece rides in a frozen volume and is still there after the drive; six spawns' loot rolls differ, and something rolled.
 
 **Rooms** (`Vehicle.Rooms`, given to the check by the generator): headroom against a 1.8 m player; the real walker stands on the floor, walks towards the far wall, and goes out by the door; the seats and stores are near the aisle; the report gives the door sill's height and whether a ladder is under it. A player walking out into a door leaf swings it (`BlockPlayer`), so a shut door doesn't count as stopping anyone. Coplanar faces under 6 cm2 count as slivers, not failures: sockets land on a 1 cm grid, so a quarter plate's edge can sit in a wall's end.
 
@@ -143,6 +144,74 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 ### Guns by their parts
 
 `WeaponOption(name, build, box)`: `build` is the weapon builder's own text, as in `Parts/Builds`: `"Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,ammo:Barbed Head,action:Harpoon Trigger}"`, with `{muzzle:...}` allowed on a barrel. `Vehicle.FitGun` fits each as a construct part (builder names work whatever part wraps them: "Workhorse Receiver" is the Rifle Receiver) on the receiver's faces, the barrel on its front and the others on the first face free, then the game's own `BuildRules` judge the gun; a refusal throws their words ("Belt Pouch is made for heavy rounds; the Workhorse Receiver fires rifle rounds"). `box`: the Ammo Box on the feed; null for a flame gun, which drinks the construct's fuel.
+
+### The armoury
+
+The styles' own `Weapons` lists hold a handful of guns each (Militia one). **The armoury** (`Constructs/VehicleArmoury.json`, `Source/VehicleKit/VehicleArmoury.cs`) adds turret gun recipes
+as data, each with a weight and its own name per faction: `FactionStyle.Weapons` is the style's own list followed by every recipe its faction names, as many times as its weight
+(`OwnWeapons` is the list without them; `--no-armoury` on any tool turns the armoury off, to measure against). Every pick the kit makes draws from that list: the grammar's bed,
+bay, roof and flank guns, a role's weighted pick (by class, rarity and now the recipe's tier) and a generator's own `Turret` calls. A vehicle with no role is armed for tier 2
+(`VehicleArmoury.PlainTier`): a recipe whose least tier is above that is a tenth as likely, so bosses' guns turn up on plain spawns rarely.
+
+**A recipe** is a gun in the weapon builder's text, fitted by `Vehicle.FitGun` through the game's rules like any style gun, so every one is a gun a player could build:
+
+| Key | Meaning |
+| --- | --- |
+| `id`, `about`, `inspired` | Its name in the file, a line on what it is, and the Zombies mystery box builds (`Parts/Builds`) it comes from. |
+| `build` | `Receiver{barrel:...,feed:...,action:...}`; a splitter's barrels as `barrel_N` inside it (`{barrel:Cross Splitter{barrel_1:Stub Barrel,...}}`: the Nth goes on the splitter's `front-N`, or a hand-made splitter's outputs in order), a muzzle device as `{muzzle:...}` on a barrel. |
+| `merge` | 1, or 2 or 3: an NxN square of that receiver, merged by the game into one receiver N times the size (docs/sandbox/CONSTRUCTS.md, "Merged receivers"), its gun parts on the merged receiver's centre sockets and drawn N times bigger. Damage N^2 a shot, fire rate / N. |
+| `box` | What feeds it (default `Ammo Box`); `null` for a flame gun, which drinks the vehicle's fuel. |
+| `class`, `tier`, `tags` | light, medium or heavy (`VehicleRoles.ClassOf` takes it, and a merged gun with none is heavy); the least tier it is common at; what it is for: light, medium, heavy, boss, aa, anti-armour, close, suppress, flame, oddity. |
+| `mount` | `pintle` (open, as before), `shield` (a half-metre plate standing on the turret's arm between the gun and the gunner, below the gun's line, turning with the turntable; where the arm has no room, as on bed turrets whose seat rides the arm behind a long receiver, the gun goes on open) or `twin` (a second receiver of the same type side by side on its right, turned alike, both wired to the one Turret Module: a 1x2 doesn't merge). Sponsons stay the grammar's own mount (`SideGun`). |
+| `factions` | Style name to `[weight 1 to 6, "the faction's name for it"]`; names are ASCII. |
+
+**How a merged gun is fitted** (`Vehicle.MergeBlock`): the lead receiver on the hinge's leaf, the rest of the square to its right and above it, each turned exactly as the lead
+(`OntoTurned` previews the turn with `ConstructBuild.Place` before fitting), then a rebuild; it throws if the game didn't merge them. Its barrel, feed and action go on the merged
+receiver's centre sockets (`OntoCentre`, which a blueprint names `"merged front"`, `"merged left"`... : `ConstructMerge.SocketName` and `SocketIndex`; a blueprint finds the merges again
+before a gun part's step, and a player's saved blueprint now keeps a merged gun's parts too). The box goes on the magazine, else on the receiver or any of its cells; on a room's fed
+turret the belt's Ammo Socket goes on any cell (a socket on a member feeds the merged gun). `GunReach` counts the merged size. A twin on a fed turret keeps a magazine and a box on each
+gun (`SelfFed`: the cradle has no free face for the belt's socket), and `Feeds` lays no belt to it.
+
+**Adding a recipe.** Add an object to `recipes`, then run `--check-armoury [--recipe ID]`: it fits every recipe on a test turret (a Militia stand) through the game's rules, checks a
+merge came out NxN and a twin fires both guns, writes the blueprint and builds it back (the same gun, the same damage and rate), and prints a line a recipe: N, mount ("(shld)" when the
+shield found no room on a turret whose seat rides the arm), class, tier, damage a shot, rpm, dps, shots, range, magazine, mass on the gun's segment, reach and the factions. A
+refusal prints the rules' reason for every face it tried. Then `--armoury-report [--seeds N] [--style S] [--shape NAME] [--check]` over the grammar's shapes: vehicles made, guns,
+distinct names and builds, vehicles mixing guns, merged and heavy guns, generation time, the full check with `--check`, and per style the distinct guns over every shape.
+Keep a recipe's dps in its tier's band (tier 1 under about 450, tier 2 and 3 under about 650, 1100 and up only for boss guns at tier 4) and its weight low when it is heavy.
+
+**The mystery box picks** (the Zombies box's prebuilt guns in `Parts/Builds` that make good turrets; each recipe's `inspired` names its own):
+
+- Merged blocks, from the many-receiver rigs: Backbone, Heavy Hitter, Hammerfall Cannon (a 2x2 rifle autocannon), Firing Squad and Reaper Marksman (a 2x2 battle rifle cannon), Suppressing
+  Fire and Bastille Squad LMG (a 2x2 heavy MG), Dragon's Choir and Clown Car (a 2x2 pump "grapeshot"), Heavy Pockets and Road Rage (a 2x2 carbine), Lighthouse Keeper (a 2x2 DMR),
+  Titan's Tantrum (a 2x2 chain gun, a boss gun), Gantry Sixteen and Exo Twelve (a 3x3 rifle cannon, nine rifles a shot), Five-Alarm Chili (a 2x2 flamer), Power Grid (a 2x2 energy carbine).
+- Multi-barrel: Crossroads (a chain gun through a cross splitter), Totem Pole (four stacked stub barrels: flak), Tower of Power, Line Dance, Hydra Platter, Fire Escape (an autocannon
+  through a ladder splitter), Pyramid Scheme, Bunk Bed, Twin Splitter Shotgun.
+- Twin cradles: Twin Thumpers, Conga Line, Choke Hold, Forked Tongue, Double-Tap Twins, Toaster Duck (twin parade cannons), the Harpoon Gun twice.
+- Oddities and heavy singles: Gutter Ball, Seven Shooter, Gutbuster, Elephant Gun, Ground Breaker, Hot Takes, Auto Shotgun and Tumble Dryer, Belt-Fed Chaingun, Bucket Lobber and
+  Grenade Organ, Rail Battery, Sewing Kit.
+- Left out: the melee builds, pistols, and rigs whose frame is the point (Kitchen Sink's nine receivers of different types can't merge; Minigun and Pepperbox: a rotary receiver takes
+  one barrel on a construct, so their barrels can't be fitted; the Peacock splitter's launcher tubes meet each other at construct size, so Party Cannon became the twin Prize Draw).
+
+**By faction** (what each leans to): Bandit, cobbled and mismatched: merged rifle blocks on stub barrels, chain guns, oddities, a 3x3 "Whole Scrapyard"; Militia, standard issue: service
+cannons, heavy MGs, quad AA, twins, Hammerfall, the bunker buster; IT, high tech: coil and energy guns, merged marksman cannons, cascades of barrels; Scam (the Call Centre), showy:
+splitters (Pyramid Scheme, Hydra Platter, Line Dance), Forked Tongue, the Prize Draw; Highland: shotguns and grapeshot, coach guns, twin claymores, harpoons; British: heavy LMG blocks,
+flak in a teapot, elephant guns, a big flamer ("Proper Brew").
+
+**Measured** (2026-11-08, `--armoury-report --seeds 10`, generation only, the five grammar shapes x six styles, 300 vehicles; before is the same build with `--no-armoury`, which
+picks exactly as main did):
+
+| Style | distinct guns before (names) | after | made before | after |
+| --- | --- | --- | --- | --- |
+| Bandit | 5 (3) | 19 (18) | 49 | 49 |
+| IT | 4 (3) | 15 (14) | 49 | 49 |
+| Highland | 4 (4) | 20 (20) | 48 | 47 |
+| Scam (Call Centre) | 4 (3) | 16 (15) | 50 | 50 |
+| British | 5 (4) | 17 (16) | 49 | 49 |
+| Militia | 1 (1) | 11 (11) | 50 | 50 |
+
+Per shape over its 10 seeds, a style's vehicles carried 3 to 4 distinct guns before (Militia 1) and 5 to 12 after; vehicles carrying two different guns rose from 79 to 128 of 300.
+Generation took 389 ms a vehicle against 415 before (no gun takes noticeably longer to fit), and 6 of 300 failed against 5 (the Scrap Tanker's tank barrel seeds, as before, and one
+Highland Scrap Tanker's piper slot after the dice moved). The armoury adds nothing to a tick: the guns are ordinary construct guns.
 
 ### Things that caught the vehicles so far
 

@@ -569,12 +569,16 @@ public static class VehicleChecks
             worst = MathF.Max(worst, MathF.Acos(Math.Clamp(Vector3.Dot(fwd, World.Forward(yaw, pitch)), -1, 1)) * 180 / MathF.PI);
             // What the game points it at: the point its gunner looks at, within its reach (the guns converge on it, ConstructWeapons.GunnerPoint), so a short gun
             // set off its gunner's eye stands off the look's line by design; it is judged by how far it is off that point.
-            var at = ConstructWeapons.GunnerPoint(w, c, seat, q, c.Guns[gun].MaxRange) - muzzle;
+            var point = ConstructWeapons.GunnerPoint(w, c, seat, q, c.Guns[gun].MaxRange);
+            var at = point - muzzle;
+            ref var cg = ref c.Guns[gun];
+            if ((cg.Effects & GunEffect.Shell) == 0 ? cg.RoundV > 0 && ConstructShells.Lead(muzzle, point, cg.RoundV, false, out var lead) : c.DefOf(cg.Part).GunThrust <= 0 && ConstructShells.Lead(muzzle, point, cg.Speed, false, out lead))
+                at = lead; // (as the game lays it, ConstructWeapons.AimWay: a slow round is aimed up for its drop)
             if (at.LengthSquared() > 1e-4f)
                 worstAim = MathF.Max(worstAim, MathF.Acos(Math.Clamp(Vector3.Dot(fwd, Vector3.Normalize(at)), -1, 1)) * 180 / MathF.PI);
         }
         r.Notes.Add($"the {name} follows the gunner's look within {worst:0.0} degrees (sides, behind, up), {worstAim:0.0} off the point it is laid on");
-        if (worstAim > 12 || worst > (c.Guns[gun].MaxRange < 30 ? 30 : 12)) // (a short gun converges close by, so it stands further off its gunner's line: the point it's laid on is the measure)
+        if (worstAim > 12 || worst > 30) // (the point it's laid on is the measure: a short gun converges close by and a slow round is aimed up for its drop, so either stands off its gunner's line by design)
             r.Failures.Add($"the {name} is {MathF.Max(worstAim, worst):0} degrees off where its gunner looks: its turntable or hinge doesn't point it");
     }
 

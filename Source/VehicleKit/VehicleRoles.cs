@@ -460,7 +460,7 @@ public static class VehicleRoles
         if (w.Merge > 1)
             return GunClass.Heavy; // (a merged receiver fires N squared rounds' damage a shot: a cannon)
         var (receiver, children) = WeaponOption.Parse(w.Build);
-        var bore = Parts.Find(receiver)?.Bores is { Length: > 0 } b ? b[0] : "";
+        var bore = Parts.Find(receiver)?.Receiver?.Bore ?? ""; // (the receiver's own bore: a feed part's Bores list is empty on a receiver, which read every gun as medium)
         var auto = children.TryGetValue("action", out var action) && action.Contains("Auto", StringComparison.OrdinalIgnoreCase);
         return bore switch
         {
