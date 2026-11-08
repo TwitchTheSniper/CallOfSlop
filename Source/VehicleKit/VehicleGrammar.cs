@@ -76,7 +76,11 @@ public sealed record BodyPattern(double Weight, params BodySegment[] Segments);
 /// A shape as a recipe over module families (kit 2): its body patterns, its rears, the gear recipes it allows, how many guns it carries, and the names its parts go by.
 /// "Box Truck" is a walk-in hull first (sometimes with an open bed behind it, or a gun bed in front), so a Box Truck stays a box truck, in any of many outlines.
 /// </summary>
-public sealed record ShapeRecipe(string Shape, string RoomTag, string Noun, BodyPattern[] Bodies, (string Rear, double Weight)[] Rears, int MinGuns, int MaxGuns, string[]? Gears = null);
+public sealed record ShapeRecipe(string Shape, string RoomTag, string Noun, BodyPattern[] Bodies, (string Rear, double Weight)[] Rears, int MinGuns, int MaxGuns, string[]? Gears = null)
+{
+    /// <summary>Phase 5: an upper storey every seed of the shape has where its room allows ("saloon": the Double Decker); null: the style's roll.</summary>
+    public string? Upper { get; init; }
+}
 
 /// <summary>
 /// The shape grammar (kit 2; docs/vehiclekit/VEHICLEKIT.md, "Shape grammar"): a heavy vehicle assembled from tagged modules (nose, cab, body segments, rear, underside,
@@ -336,6 +340,10 @@ public static class ShapeGrammar
         public BodyRange? Body;
         public Dice? BayDice;
 
+        /// <summary>Phase 5: the upper storey the plan asks for over its room ("saloon", "deck"; null none), and its dice.</summary>
+        public string? UpperKind;
+        public Dice? UpperDice;
+
         /// <summary>Where the axles stand behind the front one: a sill or a gun can't go there (the rails break for a differential).</summary>
         public readonly List<float> Stations = new();
     }
@@ -548,11 +556,122 @@ public static class ShapeGrammar
         p.UnderKind = p.Gear.Floor < 0.5f ? Module("under", "stilts") : Ch(D(VehicleLayer.Chassis, "under"), "under") ?? Module("under", "stilts");
         p.Flank = Ch(D(VehicleLayer.Kit, "flank"), "flank");
         p.Roof = Ch(D(VehicleLayer.Body, "roof"), "roof");
+        if (v.Look is { } spacesLook && !BodyLook.NoSpaces)
+            Spaces(v, p, spacesLook, D(VehicleLayer.Body, "spaces")); // (phase 5: a caged room, or an upper storey over a long one; forks of their own)
 
         if (layered)
             p.BayDice = D(VehicleLayer.Body, "bays");
         Guns(v, p, D(VehicleLayer.Kit, "guns"));
         return p;
+    }
+
+    /// <summary>
+    /// Phase 5 (docs/vehiclekit/BODY-STYLES.md, section 11): a caged room in the style's pattern (its chance, <see cref="BodyStyleRule.Cage"/>), else an upper storey over a
+    /// long room (<see cref="BodyStyleRule.Uppers"/>, or the recipe's own); either takes the roof, so no rack. The room's bays are planned later: the storey's run is
+    /// chosen with them (<see cref="PlanUpper"/>).
+    /// </summary>
+    private static void Spaces(Vehicle v, PlanData p, BodyLook lk, Dice d)
+    {
+        var rule = BodyStyleRule.Of(v.Style);
+        var room = p.Segs.FirstOrDefault(s => s.Kind == "room");
+        if (room == null)
+            return;
+        var cage = BodyLook.ForceCage ? (rule.Cage > 0 ? rule.CageKind : 'w') : rule.Cage > 0 && p.Recipe.Upper == null && d.Fork("cage").Chance(rule.Cage) ? rule.CageKind : '\0';
+        if (cage != '\0' && BodyLook.ForceUpper is null or "none")
+        {
+            lk.Cage = cage;
+            p.Roof = Module("roof", "none");
+            v.Modules.Add("space cage " + cage);
+            return;
+        }
+        var kind = BodyLook.ForceUpper ?? p.Recipe.Upper ?? BodyStyleRule.Weighted(d.Fork("upper"), rule.Uppers);
+        if (kind is "saloon" or "deck" && room.Len >= 4.5f)
+        {
+            p.UpperKind = kind;
+            p.UpperDice = d.Fork("upper run");
+            p.Roof = Module("roof", "none");
+        }
+    }
+
+    /// <summary>
+    /// Which middle bays an upper storey stands over (never the brow or the tail, which rake down): a run of the style's share of them, two at least, long enough for
+    /// its stair; the lower roof's cut (a door bay's 2.16 m at least, near the look's own height) and the storey's height or its bulwark's.
+    /// </summary>
+    private static void PlanUpper(Vehicle v, PlanData p, Seg room, BodyLook lk)
+    {
+        var rule = BodyStyleRule.Of(v.Style);
+        var d = p.UpperDice!;
+        var n = room.Bays.Length;
+        if (n < 4)
+            return;
+        var lengths = lk.Lengths(room.Bays);
+        var middle = n - 2;
+        var want = Math.Clamp((int)MathF.Round((float)d.Between(rule.UpperShareMin, rule.UpperShareMax) * middle), 2, middle);
+        for (; want <= middle; want++)
+        {
+            var starts = Enumerable.Range(1, middle - want + 1).Where(k => Enumerable.Range(k, want).Sum(i => lengths[i]) >= 2.25f).ToList();
+            if (starts.Count == 0)
+                continue;
+            var from = d.Pick(starts);
+            var cut = MathF.Round(Math.Clamp(lk.Height * (float)d.Between(0.86, 0.94), 2.18f, 2.36f) * 100) / 100;
+            var high = p.UpperKind == "deck" ? (float)d.Between(rule.BulwarkMin, rule.BulwarkMax) : (float)d.Between(rule.UpperTallMin, rule.UpperTallMax);
+            lk.Upper = new BodyLook.UpperPlan(p.UpperKind!, from, from + want - 1, cut, MathF.Round(high * 100) / 100);
+            return;
+        }
+    }
+
+    /// <summary>
+    /// The stair up to an upper storey: against a side wall inside the storey's run, its treads climbing to the back, clear of the seats, the doorway, the magazine at
+    /// the front and a back door; the hatch over it, wide enough for a player. False when no stretch of wall takes it.
+    /// </summary>
+    private static bool PlaceStair(Vehicle v, Seg room, BodyLook lk)
+    {
+        var up = lk.Upper!;
+        var lengths = lk.Lengths(room.Bays);
+        var starts = new float[lengths.Length + 1];
+        for (var k = 0; k < lengths.Length; k++)
+            starts[k + 1] = starts[k] + lengths[k];
+        var (run0, run1) = (starts[up.From], starts[up.To + 1]);
+        var len = starts[^1];
+        var rise = up.Cut + 0.02f; // (to the upper floor's panel top)
+        var steps = (int)MathF.Ceiling(rise / 0.34f);
+        var stair = new HullLoft.StairShape(MathF.Round(rise * 100) / 100, steps, 0.55f);
+        var door = Array.IndexOf(room.Bays, "Door");
+        var (door0, door1) = door >= 0 && !lk.RearDoor ? (starts[door], starts[door + 1]) : (-9f, -9f);
+        var seats = SeatSpots(room, lk.DoorSide, lk.RearDoor).Select(t => t.Z - room.Z0).ToArray();
+        var names = lk.Names(room.Bays);
+        var flat = Enumerable.Range(up.From, up.To - up.From + 1).Select(k => HullLoft.ShapeOf(names[k])!.Value).Min(sh => MathF.Min(sh.A.P[^2].X, sh.B.P[^2].X));
+        if (flat < 0.9f)
+            return false; // (the level roof too narrow for a hatch a player fits through beside the middle: the hatch runs to the wall's top where it is narrower)
+        var back = len - (lk.RearDoor ? 1.5f : 0.3f);
+        Console.WriteLine($"DIAG stair: run {up.From}-{up.To} z {run0:0.00}-{run1:0.00} len {len:0.00} flat {flat:0.00} seats {string.Join(",", seats.Select(x => x.ToString("0.00")))} door {door0:0.00}-{door1:0.00} run {stair.Run} side {lk.DoorSide}");
+        foreach (var way in new[] { 1f, -1f })
+            foreach (var side in new[] { -lk.DoorSide, lk.DoorSide })
+            {
+                var x = side * 0.5f; // (on the floor's quarter grid; the hatch from 4 cm off the middle to 8 cm in from the wall's top)
+                for (var foot = 0.5f; foot <= len - 0.25f; foot += 0.25f)
+                {
+                    // The stair's foot (where its first tread starts) and its top, along the room; the hatch over it, from just before the first tread to the top.
+                    var top = foot + way * stair.Run;
+                    var (lo, hi) = (MathF.Min(foot, top), MathF.Max(foot, top));
+                    var (h0, h1) = way > 0 ? (foot - 0.05f, top) : (top, foot + 0.05f);
+                    var stepOff = way > 0 ? (top, top + 0.4f) : (top - 0.4f, top);
+                    if (h0 < run0 + 0.05f || h1 > run1 - 0.05f || stepOff.Item1 < run0 + 0.02f || stepOff.Item2 > run1 - 0.02f)
+                        continue; // (the hatch inside the storey's floor, with room to step off at the top)
+                    var approach = way > 0 ? (foot - 0.9f, foot) : (foot, foot + 0.9f); // (where a player stands to go up)
+                    if (MathF.Min(lo, approach.Item1) < 0.35f || MathF.Max(hi, approach.Item2) > back)
+                        continue; // (clear of the brow's rake and the tail's, and a back door)
+                    if (side == -lk.DoorSide && seats.Any(sz => sz > MathF.Min(lo, approach.Item1) - 0.35f && sz < MathF.Max(hi, approach.Item2) + 0.35f))
+                        continue; // (the gunners' seats on that wall)
+                    if (side == lk.DoorSide && (door0 < hi + 0.25f && door1 > lo - 0.25f || MathF.Min(lo, approach.Item1) < 1.1f))
+                        continue; // (the doorway, and the magazine's crates at the front)
+                    (up.StairX, up.StairZ, up.StairWay, up.Stair) = (x, foot, way, stair);
+                    up.Hatch = side > 0 ? (0.04f, 0.92f, h0, h1) : (-0.92f, -0.04f, h0, h1);
+                    v.Modules.Add($"upper {up.Kind} over bays {up.From} to {up.To}, cut {up.Cut:0.00} m, {(up.Open ? "bulwark" : "storey")} {up.Height:0.00} m, stair {(side > 0 ? "right" : "left")} at {foot:0.00} m {(way > 0 ? "back" : "forward")}");
+                    return true;
+                }
+            }
+        return false;
     }
 
     /// <summary>The tags a gear recipe gives the rest of the plan.</summary>
@@ -655,8 +774,11 @@ public static class ShapeGrammar
         // The room: the guns it works from inside (roof turrets, a sponson), up to the four belts a magazine feeds.
         var inRoom = Math.Clamp(want - count, count == 0 ? 1 : 0, room.Len >= 5.5f ? 3 : room.Len >= 4.5f ? 2 : 1); // (each is a seat on a wall that loot would take)
         room.Bays = p.Body is { } body ? Bays(p.BayDice!, (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack", body) : Bays(d.Fork("bays"), (int)MathF.Round(room.Len - 3.5f), p.Roof?.Name == "rack");
+        if (p.UpperKind != null && v.Look is { } upLook)
+            PlanUpper(v, p, room, upLook); // (phase 5: which bays it stands over; their roofs are cut level for its floor)
         var loft = v.Look?.Names(room.Bays); // (kit 5: the bays as they will be built, so the spots come from their real roofs and flanks: BaySpots)
-        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => BaySpots.Roof(room.Bays, loft, k)).ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall)
+        var under = v.Look?.Upper is { } upper ? (upper.From - 1, upper.To + 1) : (-9, -9);
+        var roofCandidates = Enumerable.Range(1, room.Bays.Length - 1).Where(k => BaySpots.Roof(room.Bays, loft, k) && (k < under.Item1 || k > under.Item2)).ToList(); // (a turret's arm lies along a flat tall roof: on a sloped or low one it runs into the next bay's wall; never under or beside an upper storey)
         var middle = Enumerable.Range(1, room.Bays.Length - 2).Where(k => BaySpots.Side(room.Bays, loft, k)).ToList();
         var side = inRoom >= 2 || inRoom == 1 && d.Chance(0.3) ? middle.Count > 0 : false;
         if (side)
@@ -677,8 +799,25 @@ public static class ShapeGrammar
         room.RoofBays.Sort();
         room.RoofGuns = room.RoofBays.Count;
         room.SeatCount = room.RoofGuns + (room.SideBay >= 0 ? 1 : 0);
+        if (count + room.SeatCount == 0 && v.Look is { Upper: not null } crowded)
+        {
+            crowded.Upper = null; // (the storey took every roof a gun could stand on: a room without it)
+            v.Modules.Add("upper dropped: no roof left for a gun");
+            room.RoofBays.Clear();
+            foreach (var k in d.Shuffled(Enumerable.Range(1, room.Bays.Length - 1).Where(k => BaySpots.Roof(room.Bays, v.Look.Names(room.Bays), k)).ToList()))
+                if (room.RoofBays.Count < Math.Max(1, inRoom) && room.RoofBays.All(o => Math.Abs(o - k) >= 2))
+                    room.RoofBays.Add(k);
+            room.RoofBays.Sort();
+            room.RoofGuns = room.RoofBays.Count;
+            room.SeatCount = room.RoofGuns + (room.SideBay >= 0 ? 1 : 0);
+        }
         if (count + room.SeatCount == 0)
             throw new VehicleKitException("nowhere for a gun");
+        if (v.Look is { Upper: not null } withUpper && !PlaceStair(v, room, withUpper))
+        {
+            withUpper.Upper = null; // (no stretch of wall for its stair: a room without it)
+            v.Modules.Add("upper dropped: no wall for its stair");
+        }
     }
 
     /// <summary>
@@ -819,6 +958,8 @@ public static class ShapeGrammar
                     var spots = SeatSpots(s, v.Look?.DoorSide ?? 1, v.Look?.RearDoor == true);
                     room = v.Hull(p.Recipe.RoomTag, s.Z0, v.FloorY, s.Bays, spots);
                     roomSeg = s;
+                    if (v.Look?.Upper is { Stair: not null })
+                        v.UpperStorey(room); // (phase 5: the stair up through the hatch and the storey on the cut roofs: Vehicle.Spaces.cs)
                     if (p.Cab.Name == "merged" && p.Segs.IndexOf(s) == 0)
                         v.MergeCab(room);
                     // (not its walls in Trim's crooked patches: a patch on a hull bay goes on the bay's middle, which is inside the room, where a player stands)

@@ -483,6 +483,105 @@ public static class VehicleChecks
         r.Notes.Add($"the {room.Tag}: {holes.Count} rays out of {room.Tag} leave it");
     }
 
+    /// <summary>
+    /// Phase 5: a room whose walls are bars (or an open deck's bulwark) holds a player in: a standing player's body (from just over a step's height to the head) moved
+    /// out from <paramref name="start"/> to either side and either end meets something solid before it is past the room's walls. A body, not the walker: the checks'
+    /// pinned build is stepped up onto from beside any of its tops, a wall's stacked slabs too, which a rider on a vehicle never is.
+    /// </summary>
+    private static void Contained(Construct c, Room room, Vector3 start, VehicleReport r)
+    {
+        foreach (var way in new[] { Vector3.UnitX, -Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitZ })
+        {
+            var d = Clear(c, start + room.FloorRest, way, MathF.Max(4f, room.R.Z1 - room.R.Z0 + 1.5f));
+            var end = start + way * d;
+            if (MathF.Abs(end.X) > room.R.X1 + 0.6f || end.Z < room.R.Z0 - 0.6f || end.Z > room.R.Z1 + 0.6f)
+            {
+                r.Failures.Add($"the {room.Tag}: a player moving {Show(way)} from {Show(start)} gets out, to {Show(end)}");
+                return;
+            }
+        }
+        r.Notes.Add($"the {room.Tag}: {(room.Caged ? "caged" : room.Open ? "open" : "enclosed")}, a player is held in each way");
+    }
+
+    /// <summary>How far a standing player (spheres of 0.38 m from 0.7 m over the feet to the head) goes from <paramref name="feet"/> (rest frame) along <paramref name="way"/> before touching a solid box, up to <paramref name="reach"/>.</summary>
+    private static float Clear(Construct c, Vector3 feet, Vector3 way, float reach)
+    {
+        const float r = 0.38f;
+        for (var d = 0f; d <= reach; d += 0.05f)
+            foreach (var h in (float[])[0.7f, 1.0f, 1.3f, 1.6f])
+            {
+                var at = feet + way * d + new Vector3(0, h, 0);
+                for (var i = 0; i < c.PartCount; i++)
+                {
+                    c.PartBounds(i, out var mn, out var mx);
+                    if (at.X < mn.X - r - 0.5f || at.X > mx.X + r + 0.5f || at.Y < mn.Y - r - 0.5f || at.Y > mx.Y + r + 0.5f || at.Z < mn.Z - r - 0.5f || at.Z > mx.Z + r + 0.5f)
+                        continue;
+                    c.RestPose(c.Parts[i].Seg, out var q, out var t);
+                    for (var k = 0; k < c.DefOf(i).SolidBoxes; k++)
+                    {
+                        c.BoxOf(i, k, out var bc, out var bh);
+                        bc = t + Vector3.Transform(bc, q);
+                        if (q != Quaternion.Identity)
+                        {
+                            var m = Matrix4x4.CreateFromQuaternion(q);
+                            bh = new Vector3(MathF.Abs(m.M11) * bh.X + MathF.Abs(m.M21) * bh.Y + MathF.Abs(m.M31) * bh.Z, MathF.Abs(m.M12) * bh.X + MathF.Abs(m.M22) * bh.Y + MathF.Abs(m.M32) * bh.Z,
+                                MathF.Abs(m.M13) * bh.X + MathF.Abs(m.M23) * bh.Y + MathF.Abs(m.M33) * bh.Z);
+                        }
+                        var gap = Vector3.Max(Vector3.Abs(at - bc) - bh, Vector3.Zero);
+                        if (gap.LengthSquared() < r * r)
+                            return d;
+                    }
+                }
+            }
+        return reach;
+    }
+
+    private static string Show(Vector3 v) => FormattableString.Invariant($"({v.X:0.00}, {v.Y:0.00}, {v.Z:0.00})");
+
+    /// <summary>
+    /// Phase 5: the storey over a room. A player stands on its floor (away from the hatch), has the headroom under an enclosed one, walks it, is held in by its walls or
+    /// bulwark, finds no hole in an enclosed one (the rays, as a room's), and walks up the stair from the room below onto it.
+    /// </summary>
+    private static void Upper(ConstructWorld w, Construct c, Room below, VehicleReport r)
+    {
+        var up = below.Upper!;
+        Vector3 World(Vector3 v) => c.ToWorld(v + up.FloorRest);
+        var z = up.R.Z0 + 0.5f;
+        for (var t = up.R.Z0 + 0.5f; t <= up.R.Z1 - 0.5f; t += 0.25f)
+            if (MathF.Abs(t - up.DoorMid.Z) > MathF.Abs(z - up.DoorMid.Z))
+                z = t; // (as far from the hatch as the floor goes)
+        var mid = new Vector3(0, up.FloorTop, z);
+        var start = World(mid + new Vector3(0, 0.15f, 0));
+        var settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
+        var stood = settle.Position.Y - World(mid).Y;
+        if (MathF.Abs(stood) > 0.2f)
+            r.Failures.Add($"the {up.Tag}: a player stands {stood:0.00} m off its floor");
+        var head = up.Ceiling - up.FloorTop;
+        if (!up.Open && head < CallOfSlop.World.PlayerHeight + 0.1f)
+            r.Failures.Add($"the {up.Tag}: {head:0.00} m of headroom: a player is {CallOfSlop.World.PlayerHeight:0.00} m");
+        var walked = 0f;
+        foreach (var way in new[] { Vector3.UnitZ, -Vector3.UnitZ, Vector3.UnitX, -Vector3.UnitX })
+        {
+            var far = SelfTest.BuildingWalk(w, start, _ => way, 120, CallOfSlop.World.PlayerHeight, out _);
+            walked = MathF.Max(walked, Vector3.Distance(far.Position with { Y = 0 }, start with { Y = 0 }));
+        }
+        if (walked < 0.4f)
+            r.Failures.Add($"the {up.Tag}: a player can't walk on it: {walked:0.00} m whichever way");
+        Contained(c, up, mid, r);
+        if (!up.Open)
+            Gaps(c, up, r);
+        // The way up: from the room's floor in front of the stair, up its treads and through the hatch, onto the storey's floor, stopping a little past the hatch
+        // (on a pinned build every top is stepped up onto from beside it, a wall's slabs too, which a walker going on would climb).
+        var foot = c.ToWorld(below.StairFoot + new Vector3(0, 0.15f, 0) + below.FloorRest);
+        var upWay = Vector3.Normalize(Vector3.Transform(below.StairWay, c.Rot));
+        var stop = Vector3.Dot(below.StairWay, up.DoorMid) + 0.45f;
+        var climb = SelfTest.BuildingWalk(w, foot, p => Vector3.Dot(below.StairWay, c.ToLocal(p) - up.FloorRest) < stop ? upWay : Vector3.Zero, 150, CallOfSlop.World.PlayerHeight, out var highest, 2.5f);
+        var floor = World(new Vector3(0, up.FloorTop, 0)).Y;
+        if (climb.Position.Y < floor - 0.25f)
+            r.Failures.Add($"the {up.Tag}: a player can't walk up the stair to it (got {highest - foot.Y + 0.15f:0.00} m up of {floor - foot.Y + 0.15f:0.00}, from {Show(below.StairFoot)} to {Show(c.ToLocal(climb.Position) - up.FloorRest)})");
+        r.Notes.Add($"the {up.Tag}: {(up.Open ? "an open deck" : $"{head:0.00} m headroom")}, walked {walked:0.0} m, the stair walked up to it");
+    }
+
     private static void Interior(ConstructBuild.Blueprint bp, Room room, VehicleReport r)
     {
         const float y0 = SelfTest.BuildingY;
@@ -497,11 +596,12 @@ public static class VehicleChecks
         var head = room.Ceiling - room.FloorTop;
         if (head < CallOfSlop.World.PlayerHeight + 0.1f)
             r.Failures.Add($"the {room.Tag}: {head:0.00} m of headroom: a player is {CallOfSlop.World.PlayerHeight:0.00} m");
-        var start = World(room.Middle + new Vector3(0, 0.15f, 0));
+        var middle = room.WalkStart ?? room.Middle; // (phase 5: off a stair)
+        var start = World(middle + new Vector3(0, 0.15f, 0));
         var inward = -room.DoorFace;
         // Stand at the middle, then walk towards the far wall.
         var settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
-        var stood = settle.Position.Y - World(room.Middle).Y;
+        var stood = settle.Position.Y - World(middle).Y;
         var walked = 0f;
         foreach (var way in new[] { inward, Vector3.UnitZ, -Vector3.UnitZ }) // (furniture may stand across one way; a room has to let a player down it somewhere)
         {
@@ -512,7 +612,12 @@ public static class VehicleChecks
             r.Failures.Add($"the {room.Tag}: a player can't walk in it: {walked:0.00} m from its middle, whichever way");
         if (MathF.Abs(stood) > 0.2f)
             r.Failures.Add($"the {room.Tag}: a player stands {stood:0.00} m off its floor (at {settle.Position - c.Pos}, floor {room.FloorTop + offset.Y:0.00})");
-        Gaps(c, room, r);
+        if (room.Caged)
+            Contained(c, room, middle, r); // (phase 5: bars seen and shot through by design: a player is held in, not rays)
+        else
+            Gaps(c, room, r);
+        if (room.Upper != null)
+            Upper(w, c, room, r);
         var toDoor = Vector3.Normalize((room.DoorMid - room.Middle) with { Y = 0 });
         var doorAt = World(room.DoorMid);
         bool Out()

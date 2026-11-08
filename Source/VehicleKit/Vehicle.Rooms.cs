@@ -22,6 +22,19 @@ public sealed class Room
     public Vector3 FloorRest; // vehicle coordinates to the construct's rest frame
     public bool Ladder;
 
+    /// <summary>Phase 5: the room is a frame of bars (seen and shot through: the check holds a player in it rather than shooting rays for holes).</summary>
+    public bool Caged;
+
+    /// <summary>Phase 5: the storey over this room (its floor the cut roofs, reached by <see cref="Stair"/>), and for an upper storey, whether it is an open deck.</summary>
+    public Room? Upper;
+    public VPart? Stair;
+    public bool Open;
+    public Vector3 StairFoot; // where a player stands to walk up the stair, at floor height (vehicle coordinates), and the way up it
+    public Vector3 StairWay;
+
+    /// <summary>Where the check stands a player to walk the room (vehicle coordinates, floor height): its middle, or away from a stair (null: the middle).</summary>
+    public Vector3? WalkStart;
+
     public Vector3 Middle => new((R.X0 + R.X1) * 0.5f, FloorTop, (R.Z0 + R.Z1) * 0.5f);
 }
 

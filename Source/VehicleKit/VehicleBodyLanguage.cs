@@ -249,6 +249,26 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     /// <summary>The fittings a style's vehicles carry (<see cref="HullLoft.DecoKinds"/>), each with the chance a vehicle has it where its cab or hood can take it.</summary>
     public (char Kind, double Chance)[] Decos { get; init; } = [];
 
+    /// <summary>
+    /// Phase 5 (docs/vehiclekit/BODY-STYLES.md, section 11): the new spaces. <see cref="Uppers"/>: an upper storey over a run of a long room's middle bays, by kind
+    /// ("none", "saloon" an enclosed storey reached by a stair through a hatch, "deck" an open deck with a bulwark round it), how much of the middle it spans
+    /// (<see cref="UpperShareMin"/>), its height, and how much narrower than the wall under it it stands (<see cref="UpperNarrow"/>: a bus's flush, a pod's set in).
+    /// <see cref="Cage"/>: the chance a room is a frame of bars instead (<see cref="CageKind"/>, a <see cref="HullLoft.CageKinds"/> letter). <see cref="Pods"/>: side
+    /// pods (a <see cref="HullLoft.PodKinds"/> letter) and the chance each free middle bay side takes one, up to <see cref="PodMax"/> a vehicle.
+    /// </summary>
+    public (string Kind, double W)[] Uppers { get; init; } = [("none", 1)];
+    public float UpperShareMin { get; init; } = 0.5f;
+    public float UpperShareMax { get; init; } = 1f;
+    public float UpperTallMin { get; init; } = 2.06f;
+    public float UpperTallMax { get; init; } = 2.2f;
+    public float UpperNarrow { get; init; } = 1f;
+    public float BulwarkMin { get; init; } = 1.0f;
+    public float BulwarkMax { get; init; } = 1.15f;
+    public double Cage { get; init; }
+    public char CageKind { get; init; } = 'w';
+    public (char Kind, double Chance)[] Pods { get; init; } = [];
+    public int PodMax { get; init; } = 3;
+
     /// <summary>The weight of a cab kind (0: the style never builds it).</summary>
     public double CabWeight(string kind)
     {
@@ -268,6 +288,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("caged", 2.5), ("enclosed", 1), ("armoured", 1), ("crew", 0.7), ("cab-over", 0.4)], Noses = [('f', 1.5), ('w', 1), ('g', 2)],
                 // (phase 4: welded plates and cage bars, cobbled bay by bay; a bare side now and then)
                 Trims = [("p", 2), ("pc", 2), ("c", 1)], TrimMix = true, TrimShare = 0.7,
+                // (phase 5: welded cages for rooms, a crow's-nest deck now and then, welded boxes hung on the flanks)
+                Cage = 0.4, CageKind = 'w', Uppers = [("none", 3), ("deck", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0.35)],
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
             },
         // (low and wide, flat-faceted: little height, a glacis brow)
@@ -278,6 +300,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("armoured", 2.5), ("crew", 1.2), ("merged", 1), ("caged", 0.4)], Noses = [('w', 2.5), ('f', 1)],
                 // (phase 4: slat armour and stowage bins down the sides, a basket on the cab)
                 Trims = [("s", 2), ("b", 1.5), ("sb", 1.5)], TrimShare = 0.9, Decos = [('B', 0.7)],
+                // (phase 5: slatted frame rooms, an armoured fighting deck over the middle, armoured stowage pods)
+                Cage = 0.3, CageKind = 's', Uppers = [("none", 2), ("deck", 1.3)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.3)], PodMax = 2,
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
             },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
@@ -288,6 +312,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("enclosed", 1.5), ("cab-over", 1.2), ("crew", 0.9), ("merged", 0.8)], Noses = [('r', 2), ('w', 1.5)],
                 // (phase 4: a smooth skirt fairing, a stripe and vents; a radome on the cab)
                 Trims = [("f", 1)], Decos = [('R', 0.75)],
+                // (phase 5: a short pod storey set in on the roof, smooth blisters on the flanks)
+                Uppers = [("none", 2), ("saloon", 1.2)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.45)],
                 CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
             },
         // (a portacabin on a chassis: boxy, square ends, tall)
@@ -298,6 +324,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("enclosed", 2), ("crew", 1.2), ("cab-over", 0.8)], Noses = [('f', 2), ('g', 1)],
                 // (phase 4: signboards down the sides, one over the cab)
                 Trims = [("g", 1)], TrimShare = 0.8, Decos = [('S', 0.9)],
+                // (phase 5: a portacabin stacked on the portacabin, kiosks hung on the flanks)
+                Uppers = [("none", 1.5), ("saloon", 1.3)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0.35)], PodMax = 2,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
             },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
@@ -308,6 +336,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("enclosed", 2), ("crew", 1), ("caged", 0.5)], Noses = [('g', 2.5), ('r', 1)],
                 // (phase 4: clinker laps and a wooden strake, a chrome grille and a bonnet mascot)
                 Trims = [("r", 1)], Decos = [('O', 0.8), ('G', 0.75)],
+                // (phase 5: a stock wagon of timber stakes, an open after deck behind a bulwark, clinker lockers)
+                Cage = 0.3, CageKind = 't', Uppers = [("none", 2), ("deck", 1)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0.35)],
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
             },
         // (tall, upright buses: the heavy class first, the door kerbside)
@@ -318,6 +348,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Cabs = [("merged", 2), ("cab-over", 1.2), ("enclosed", 0.8), ("crew", 0.5)], Noses = [('r', 2), ('g', 1)],
                 // (phase 4: the two-tone livery band and its chrome strips, a lit destination board over a bus front)
                 Trims = [("l", 1)], Decos = [('D', 0.9)],
+                // (phase 5: the double deck: an upper saloon flush with the walls, over most of the room)
+                Uppers = [("saloon", 2.5), ("none", 1)], UpperShareMin = 0.7f, UpperShareMax = 1f, UpperTallMin = 2.06f, UpperTallMax = 2.16f, UpperNarrow = 1f,
                 CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,
             },
     };
@@ -373,6 +405,95 @@ public sealed class BodyLook
     public bool MergedFront;
 
     /// <summary>
+    /// Phase 5 (docs/vehiclekit/BODY-STYLES.md, section 11): an upper storey over bays <see cref="UpperPlan.From"/> to <see cref="UpperPlan.To"/> of the room, set by the
+    /// plan (null: none). Those bays' roofs are cut level at <see cref="UpperPlan.Cut"/> and are its floor, with a hatch over the stair (<see cref="UpperPlan.Hatch"/>).
+    /// </summary>
+    public UpperPlan? Upper;
+
+    /// <summary>Phase 5: the room is a frame of bars in this pattern (a <see cref="HullLoft.CageKinds"/> letter; 0: a skinned room), set by the plan.</summary>
+    public char Cage;
+
+    /// <summary>An upper storey as planned: its kind ("saloon", "deck"), the room's bays it stands over, the lower roof's cut, its own height or its bulwark's, and the stair.</summary>
+    public sealed class UpperPlan(string kind, int from, int to, float cut, float height)
+    {
+        public string Kind { get; } = kind;
+        public int From { get; } = from;
+        public int To { get; } = to;
+        public float Cut { get; } = cut;
+        public float Height { get; } = height;
+        public bool Open => Kind == "deck";
+
+        /// <summary>The hatch in the floor (x across, z from the room's front; metres), set with the stair; null until then.</summary>
+        public (float X0, float X1, float Z0, float Z1)? Hatch;
+
+        /// <summary>The stair: its middle across the room, where its first tread starts (from the room's front), which way it climbs (+1 to the back), its key.</summary>
+        public float StairX, StairZ, StairWay = 1;
+        public HullLoft.StairShape? Stair;
+    }
+
+    /// <summary>A section cut level at height <paramref name="h"/> (an upper floor's roof, a bulwark's top): to the centimetre, with a level last row to the centreline.</summary>
+    public static HullLoft.Section Cut(HullLoft.Section s, float h)
+    {
+        var pts = new List<Vector2>();
+        for (var k = 0; k < s.P.Length; k++)
+        {
+            if (s.P[k].Y < h - 0.015f)
+            {
+                pts.Add(s.P[k]);
+                continue;
+            }
+            var prev = pts[^1];
+            var t = Math.Clamp((h - prev.Y) / MathF.Max(1e-4f, s.P[k].Y - prev.Y), 0, 1);
+            var x = MathF.Round((prev.X + (s.P[k].X - prev.X) * t) * 100) / 100;
+            if (x < 0.05f)
+                break;
+            pts.Add(new Vector2(x, MathF.Round(h * 100) / 100));
+            break;
+        }
+        pts.Add(new Vector2(0, MathF.Round(h * 100) / 100));
+        return Tidy(new HullLoft.Section(pts.ToArray()));
+    }
+
+    /// <summary>
+    /// A section under an upper storey: cut level at <paramref name="cut"/>, its walls kept out to <see cref="UnderHalf"/> above a metre (a tumblehome, a gable or a dome
+    /// would leave a floor too narrow for the hatch and the storey's feet: the lower storey's walls stand straight, the storey above takes the language's shape).
+    /// </summary>
+    public static HullLoft.Section UnderUpper(HullLoft.Section s, float cut)
+    {
+        var c = Cut(s, cut);
+        return Tidy(new HullLoft.Section(c.P.Select((p, i) => i > 0 && i < c.P.Length - 1 && p.Y >= 1.0f ? p with { X = MathF.Max(p.X, UnderHalf) } : p).ToArray()));
+    }
+
+    public const float UnderHalf = 0.96f;
+
+    /// <summary>An upper storey's section at a station over a lower wall whose top is <paramref name="cutX"/> out: the language's own at the storey's height and width (or its bulwark).</summary>
+    public HullLoft.Section UpperSection(BodyLanguage l, float cutX, float narrow)
+    {
+        var t = l.Drawn(Facets);
+        var s = Tidy(t.Scaled(cutX * narrow / t.P[0].X, (Upper!.Open ? 2.1f : Upper.Height) / t.Top));
+        return Upper.Open ? Cut(s, Upper.Height) : s; // (a bulwark: the lower part of a storey's walls, upright as the language's are, cut at its height)
+    }
+
+    /// <summary>The upper storey's bays' keys, one over each of the run's bays (<see cref="UpperPlan.From"/> to <see cref="UpperPlan.To"/>), its ends closed.</summary>
+    public string[] UpperNames(string[] bays, float narrow)
+    {
+        if (Upper is not { } up)
+            return [];
+        var lengths = Lengths(bays);
+        var lower = Names(bays);
+        var names = new List<string>();
+        for (var k = up.From; k <= up.To; k++)
+        {
+            var turned = bays[k] == "Door" && DoorSide < 0 && !RearDoor;
+            var sh = Built(lower[k], turned)!.Value;
+            var (ua, ub) = Match(UpperSection(At(k), sh.A.P[^2].X, narrow), UpperSection(At(k + 1), sh.B.P[^2].X, narrow));
+            // (over a left door bay, which stands turned round, the storey's bay is turned with it: its key back to front, so the two frames' sockets meet)
+            names.Add(turned ? HullLoft.Key(lengths[k], false, k == up.To, k == up.From, ub, ua, false, up.Open ? "o" : "") : HullLoft.Key(lengths[k], false, k == up.From, k == up.To, ua, ub, false, up.Open ? "o" : ""));
+        }
+        return names.ToArray();
+    }
+
+    /// <summary>
     /// Where the overhang starts, above the room's floor: over the wheels' tops with room for their travel (measured over every chassis recipe on 2026-11-07:
     /// tyres stand at most 0.36 m over the floor, inside 1.1 m of half width). The hull sets it again from the real wheels (<see cref="Vehicle.Hull"/>).
     /// </summary>
@@ -413,6 +534,10 @@ public sealed class BodyLook
 
     /// <summary><c>--roofline NAME</c> and <c>--scale NAME</c>: every kit-5 body with that line or at that scale (to compare them on one plan).</summary>
     public static Roofline? ForceLine;
+
+    /// <summary>Phase 5: <c>--no-spaces</c> (no upper storeys, cages or pods), <c>--upper KIND</c>, <c>--cage</c>.</summary>
+    public static bool NoSpaces, ForceCage;
+    public static string? ForceUpper;
     public static BodyScale? ForceScale;
 
     /// <summary>A body's look from the style's languages, on the body layer's "language" fork.</summary>
@@ -433,7 +558,7 @@ public sealed class BodyLook
         (Language, Scale, Line, _rule, _mix, _lengths) = (o.Language, o.Scale, line, o._rule, o._mix, o._lengths);
         (Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow, Flare, LineAmount, BrowLength, TailLength, Facets, DoorSide, FlareFrom) =
             (o.Height, o.Width, o.BrowRake, o.TailRake, o.BrowNarrow, o.TailNarrow, o.Flare, o.LineAmount, o.BrowLength, o.TailLength, o.Facets, o.DoorSide, o.FlareFrom);
-        (WantsRearDoor, RearDoor, MergedFront) = (o.WantsRearDoor, o.RearDoor, o.MergedFront);
+        (WantsRearDoor, RearDoor, MergedFront, Upper, Cage) = (o.WantsRearDoor, o.RearDoor, o.MergedFront, o.Upper, o.Cage);
     }
 
     private BodyLook WithLine(Roofline line) => new(this, line);
@@ -685,22 +810,57 @@ public sealed class BodyLook
     /// <summary>A plan's bay names ("Brow T", "Door", "Bay T-L", "Tail L") as lofted parts' keys, front to back; bay k lofts from station k to station k + 1.</summary>
     public string[] Names(string[] bays)
     {
+        var names = NamesUncut(bays);
+        if (Upper is not { } up && Cage == '\0')
+            return names;
+        var lengths = Lengths(bays);
+        var z = 0f;
+        for (var k = 0; k < names.Length; k++)
+        {
+            var sh = HullLoft.ShapeOf(names[k])!.Value;
+            if (Cage != '\0')
+                names[k] = HullLoft.Key(sh.Length, sh.Door, sh.Front, sh.Back, sh.A, sh.B, sh.BackDoor, "c" + Cage);
+            else if (Upper is { } u && k >= u.From && k <= u.To)
+            {
+                // (phase 5: under an upper storey the roof is cut level and is its floor; the hatch where it crosses this bay, in the bay's own frame: a left door bay is turned round)
+                var (ca, cb) = Match(UnderUpper(sh.A, u.Cut), UnderUpper(sh.B, u.Cut));
+                (float, float, float, float)? hatch = null;
+                if (u.Hatch is { } h && h.Z1 > z + 0.02f && h.Z0 < z + lengths[k] - 0.02f)
+                {
+                    var (hz0, hz1) = (MathF.Max(0, h.Z0 - z), MathF.Min(lengths[k], h.Z1 - z));
+                    var turned = bays[k] == "Door" && DoorSide < 0 && !RearDoor;
+                    hatch = turned ? (-h.X1, -h.X0, lengths[k] - hz1, lengths[k] - hz0) : (h.X0, h.X1, hz0, hz1);
+                    if (hatch.Value.Item4 - hatch.Value.Item3 < 0.3f)
+                        hatch = null; // (a sliver: the stair's top is in the next bay)
+                }
+                names[k] = HullLoft.Key(sh.Length, sh.Door, sh.Front, sh.Back, ca, cb, sh.BackDoor, HullLoft.HatchWord(hatch));
+            }
+            z += lengths[k];
+        }
+        return names;
+    }
+
+    /// <summary>The bays' keys before phase 5's cuts and cages.</summary>
+    private string[] NamesUncut(string[] bays)
+    {
         var lengths = Lengths(bays);
         var st = Stations(bays, lengths);
         var names = new string[bays.Length];
+        var up = Upper;
+        float M(int station, float least = 0) => up != null && station >= up.From && station <= up.To + 1 ? MathF.Max(least, up.Cut + 0.08f) : least; // (phase 5: tall enough to be cut level under an upper storey)
         for (var k = 0; k < bays.Length; k++)
         {
             var b = bays[k];
             if (b == "Door" && RearDoor)
             {
                 // (the door is in the back: this bay is a plain tall one, level, 1.5 m, as the plan laid it out)
-                var (ra, rb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, DoorTop), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, DoorTop));
+                var (ra, rb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop)), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, M(k + 1, DoorTop)));
                 names[k] = HullLoft.Key(lengths[k], false, false, false, ra, rb);
                 continue;
             }
             if (b == "Door")
             {
-                var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, DoorTop), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, DoorTop));
+                var (ta, tb) = Match(Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop)), Section(At(k + 1), "T", 0, st[k + 1].H, st[k + 1].W, M(k + 1, DoorTop)));
                 // (a door on the left: the right-hand door bay turned round, so its front section is the room's back one: Vehicle.Hull stands it by its back right foot)
                 names[k] = DoorSide > 0 ? HullLoft.Key(1.5f, true, false, false, ta, tb) : HullLoft.Key(1.5f, true, false, false, tb, ta);
                 continue;
@@ -713,10 +873,10 @@ public sealed class BodyLook
             static float Least(float far, float at, float len) => (EndRays - far * (at / len)) / (1 - at / len);
             var (fa, fb) = parts[0] switch
             {
-                "Brow" => Section(At(1), front, 0, st[1].H, st[1].W) is var bb ? (Section(At(1), front, -1, st[0].H, st[0].W, Least(bb.Top, 0.35f, lengths[k])), bb) : default,
-                "Tail" when RearDoor => Section(At(k), "T", 0, st[k].H, st[k].W, DoorTop) is var td ? (td, RearFrame(Section(At(k), "T", 1, st[k + 1].H, st[k + 1].W, DoorTop + 0.02f))) : default, // (a doorway in its back: tall and wide enough at its end)
-                "Tail" => Section(At(k), back, 0, st[k].H, st[k].W) is var tf ? (tf, Section(At(k), back, 1, st[k + 1].H, st[k + 1].W, Least(tf.Top, 0.3f, lengths[k]))) : default,
-                _ => (Section(At(k), front, 0, st[k].H, st[k].W), Section(At(k + 1), back, 0, st[k + 1].H, st[k + 1].W)),
+                "Brow" => Section(At(1), front, 0, st[1].H, st[1].W, M(1)) is var bb ? (Section(At(1), front, -1, st[0].H, st[0].W, Least(bb.Top, 0.35f, lengths[k])), bb) : default,
+                "Tail" when RearDoor => Section(At(k), "T", 0, st[k].H, st[k].W, M(k, DoorTop)) is var td ? (td, RearFrame(Section(At(k), "T", 1, st[k + 1].H, st[k + 1].W, DoorTop + 0.02f))) : default, // (a doorway in its back: tall and wide enough at its end)
+                "Tail" => Section(At(k), back, 0, st[k].H, st[k].W, M(k)) is var tf ? (tf, Section(At(k), back, 1, st[k + 1].H, st[k + 1].W, Least(tf.Top, 0.3f, lengths[k]))) : default,
+                _ => (Section(At(k), front, 0, st[k].H, st[k].W, M(k)), Section(At(k + 1), back, 0, st[k + 1].H, st[k + 1].W, M(k + 1))),
             };
             var (ma, mb) = Match(fa, fb);
             names[k] = HullLoft.Key(lengths[k], false, parts[0] == "Brow", parts[0] == "Tail", ma, mb, parts[0] == "Tail" && RearDoor);
@@ -783,6 +943,7 @@ public sealed partial class Vehicle
                     Paint(b, colour);
                 prev = colour;
             }
+            PaintUpper(room); // (phase 5: an upper storey as the bays it stands on)
         }
     }
 

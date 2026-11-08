@@ -483,6 +483,7 @@ public sealed partial class Vehicle
         Dress("trophy", Panels.GetValueOrDefault("headboard") ?? [], -Vector3.UnitZ, d.Int(1, 2), d);
         if (Style.Parts.ContainsKey("mast"))
             Kit();
+        FactionPods(); // (phase 5: side pods on free middle bay sides, before the trim: Vehicle.Spaces.cs)
         FactionTrim(); // (phase 4: the faction's trim on the bay sides nothing else took)
         d = Dice.Fork("paint");
         var frame = Style.Colour(d, "frame"); // (one colour: stacked beams' bands line up, and paint in one look doesn't fight)
@@ -493,6 +494,7 @@ public sealed partial class Vehicle
                 PaintAll(list.Where(p => p.Def.Slots.Length == 0), tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
         PaintRooms(Dice.Fork("paint runs"), "rust"); // (phase 2: a room's bays by runs, one colour each, so its sections read: VehicleBodyLanguage.cs)
         PaintTrim();
+        PaintPods(Dice.Fork("pod paint"));
         var war = Style.Colour(d, "war");
         foreach (var p in d.Shuffled((Panels.GetValueOrDefault("hood") ?? []).Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
             Paint(p, war);

@@ -131,8 +131,8 @@ public sealed partial class Vehicle
             for (var k = 0; k < room.Bays.Count; k++)
             {
                 var bay = room.Bays[k];
-                if (HullLoft.ShapeOf(bay.Def.Name) is not { } sh)
-                    continue;
+                if (HullLoft.ShapeOf(bay.Def.Name) is not { } sh || sh.Cage != '\0')
+                    continue; // (a caged bay's bars are its exterior)
                 foreach (var (socket, side) in new[] { ("+x0", 1f), ("-x0", -1f) })
                 {
                     var at = Array.FindIndex(bay.Def.Sockets, s => s.Name == socket);
