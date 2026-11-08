@@ -305,6 +305,7 @@ public sealed partial class Game
         WorldStores.Copy(SandboxHands.Pack(p.Id), rec.Pack);
         TutorialCatch(p, rec); // (the induction: GameTutorial.cs)
         DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
+        ShellCatch(p, rec); // (in a robot shell: the body's place and things, GameRobotShell.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 

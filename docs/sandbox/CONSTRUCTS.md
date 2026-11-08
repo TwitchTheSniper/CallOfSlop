@@ -2055,6 +2055,35 @@ The user: "a wireless seat connection. I want the player to be able to control d
 - **A far drone.** The world is whole on every client. What falls off with distance is how often a body's pose goes out, so a pilot's poses are centred on the drone (`SandboxInterestAt`), and what is round it stays current. A piloted body goes in every pose packet already, as a driven one does.
 - **Scout Drone**: a Drone Frame, four Drone Rotors for lift, two Drone Pushers at the back for W and A/D, a Drone Battery, a receiver, a Driving Module and a camera, 34 kg. Sprint lifts it into the hover hold. Light rotors matter: the hover hold is weak off a planet against a big fan on a small body, and a 750 kg version on Light Lift Fans tumbled under its own pushers.
 
+## Robot shells
+
+Karl's idea (2026-11-08): a body you can risk. Code: `Source/Constructs/ConstructShell.cs` (the part keys, which shell a chair
+reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the save); parts made by `tools/constructs/shell_parts.py`
+(`Constructs/Parts/Shells`), recipes in `tools/constructs/assembling.py`. The story's first use of them is the Orbital Depot
+(docs/story/DEPOT.md).
+
+- **Robot Shell**: a standing robot, its own construct of one part (`"shell": {"body": true}`), with a channel. A shell fitted
+  onto something else can't be woken (stand it on its own).
+- **Shell Control Chair**: a seat with `"shell": {"range": 3000}` and a channel. Sit in it for 2 s (`ShellLinkSeconds`) and you
+  wake in the nearest Robot Shell on its channel within range that is yours, nobody's or your faction's.
+- **The swap.** The player is moved onto the shell and the shell's construct is taken away while they wear it, so a shell is
+  played exactly as a player is: movement, prediction, every tool, seats, driving and flying. The body's place in the chair,
+  its health, its hands (tool, held part, seat) and its backpack are kept on the server (`ShellRun`); the shell starts with
+  full health, empty hands and an empty backpack of the same size. The chair stays taken (its sitter is still them).
+- **Leaving.** The Esc menu's "Leave the robot shell" (`CActKind.ShellLeave`), the link dropping (the chair gone or wrecked, or
+  the shell more than the chair's range from it, checked every `ShellCheckEvery` ticks), or leaving the game: a Robot Shell
+  stands again where they were (frozen, its channel and owner kept) and they are back in the chair, seated. They stand up and
+  sit again to link again.
+- **Destroyed.** A hit that would kill someone in a shell (`DamagePlayer` asks `ShellTakesDeath` first) destroys the shell: no
+  death, no kill line, no respawn, whatever the world's death rules; they wake in the chair with their body's health and things.
+  Whatever the shell held or carried in its pack is set down where it was, as a death drops a pack.
+- **Seen as a robot.** Every peer knows who wears a shell (`Player.InShell`, `Msg.Shell`, protocol 209) and draws them in
+  steel with a lit visor and their colour as the accent (`BodyColors.Robot`, `BodyModel.RobotVariant`). The HUD says so.
+- **Saves.** A world saved while someone wears a shell records their body (in the chair) and its things (`ShellCatch`). A shell
+  being worn is not a construct, so a game closed with someone in a shell loses that shell (leaving the game first stands it).
+
+Not yet: a body drawn in the chair while you are away; a shell's damage kept between visits.
+
 ## Touch panels
 
 With Hands out and empty, the crosshair on a panel is a finger (`PanelTouch.cs`, `Program.SandboxPointer.cs`). A panel declares its buttons in its part file, and any panel can have them:

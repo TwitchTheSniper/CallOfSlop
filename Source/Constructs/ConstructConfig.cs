@@ -825,7 +825,7 @@ public static class ConstructConfig
                 CfgKey.Code or CfgKey.Invert => d.Logic == CLogic.CodeLock,
                 CfgKey.Decimals => d.Logic is CLogic.Numpad or CLogic.Display or CLogic.Instrument,
                 CfgKey.Unit => d.Logic is CLogic.Display or CLogic.Instrument,
-                CfgKey.Channel => d.Logic is CLogic.RadioTx or CLogic.RadioRx || d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen,
+                CfgKey.Channel => d.Logic is CLogic.RadioTx or CLogic.RadioRx || d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen || d.ShellBody || d.ShellRange > 0,
                 CfgKey.Ink => d.Logic is CLogic.Display or CLogic.Instrument or CLogic.Numpad or CLogic.CodeLock || d.Panels.Length > 0,
                 CfgKey.Ramp => d.Logic == CLogic.Display,
                 CfgKey.Limit or CfgKey.Wrap => d.Logic == CLogic.Counter,
