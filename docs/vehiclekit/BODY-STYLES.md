@@ -6,7 +6,8 @@ going to implement, I want this feature to be good on the toolkit before I move 
 "still too boxy overall, and rounding corners won't fix that", "few slopes and bends; the kit needs vehicle-appropriate contour and body pieces; make more parts if
 needed", "interiors too alike", "cabs too alike: no roll cages, just a flat wall".
 
-**Status (2026-11-07): phases 1 and 2 are built.** Phase 1 (section 6): kit 5 is the current kit, every committed faction vehicle was made again by it, the tools
+**Status (2026-11-07): phases 1, 2 and 3 are built.** Phase 3 (section 9): cabs and hoods are lofted in the body's language, with six cab kinds weighed per
+faction, window panes as glass parts, and each faction's cab proportions as data (the user's note of 2026-11-07: "factions should look more distinct"). Phase 1 (section 6): kit 5 is the current kit, every committed faction vehicle was made again by it, the tools
 see sections, and the user's decisions are in section 5. Phase 2 (section 7): the fixed limits are data (scale classes), proportions, rooflines along the length, doors
 on either side or in the back, ride height bands, turret spots sized from the parts, paint by runs and rows; the committed vehicles were made again. Section 8 is how
 a later archetype is added as data. Sections 1 to 4 are the investigation as it was written, before the build.
@@ -538,7 +539,118 @@ What is still code, and which phase owns it: a body that is not a room (an engin
 and hood lofts); a front door or a cab inside the body needs phase 4; a chassis for the giant class and for a car's low, wide stance needs the chassis layer's
 recipes (data in Styles.cs's gear lists, Karl's).
 
+## 9. Phase 3, as built (2026-11-07): cabs and hoods
+
+The brief: replace the one fixed cab part and the fixed hood parts with cabs and hoods lofted in the body's language; new cab kinds (crew, cab-over capsule, open
+cab in a roll cage, armoured, merged into the body); glass; cabs and hoods in the identity and diversity measures; the committed vehicles made again. The user's
+note during the work: "the enclosed sections still look very similar between factions ... I want factions to have more distinct visual looks": so each
+faction's cab is its own as far as the data can make it.
+
+Code: `Source/Constructs/HullLoft.Cabs.cs` (the parts), `Source/VehicleKit/Vehicle.Cabs.cs` (`CabLook`, `LoftCab`, `MergeCab`, the hood), the rule's new rows in
+`VehicleBodyLanguage.cs` (`BodyStyleRule.Cabs`, `Noses` and the proportions below), `VehicleGrammar.cs` (the cab roll and the two new modules), `VehicleChecks.View`,
+`FrontProfile.OfCab`, `VehicleIdentity.SectionScore` and `LoftedAs`. Protocol 205.
+
+### The parts
+
+- **A cab** (`Hull Loft (cab<kind> <11 numbers> <section> <back section>)`): the language's tall section (with the style's facets, at most 8 a side) at a cab's size,
+  drawn along its length. Levels are put into the section where its rows are cut (the doorway's sill 0.15 m, the belt, an armoured cab's slit, the window
+  band's top), at the same places along the back section, so a row is one row at every station. Below the belt the front is the dash at the front's plane;
+  above it the windscreen rakes back toward the roof (its pillars 8 cm wide, the header solid); the sides are cut at the doorways (one a side, two on a crew
+  cab) and at a capsule's mid station; a conventional, crew or armoured cab has a back wall with a window between jambs. Kinds: `e` conventional, `w` crew,
+  `g` cage (no skin above the belt: hoops at the screen, the doorway and the back, shoulder rails inside the hoops, a brace across the back hoop, a bar across
+  each doorway at the belt; bar families differ in size so no two share a face's plane), `a` armoured (plated, a 12 cm slit at the seated eye, 1.24 to
+  1.36 m), `o` capsule (a flat raked front 2.15 m ahead of the seats, over the engine, no hood; its sides ahead of the doorway open), `m` merged (a capsule
+  whose back section is its room's brow's front section, placed after the room where the brow stands: one mass, a bus front). The cab stands on the rails by
+  the fixed shells' feet; hidden slabs stand inside the skin from 0.3 m up, never in a doorway, over the seats only above their backs, ahead of a capsule's
+  mid station not at all (the front wheels turn there, as under the Cab Over Shell), and over the gearbox only above 0.8 m (it stands through the firewall).
+- **A hood** (`Hull Loft (hood<nose> <7 numbers> <section>)`): the language's section at a hood's width and crown, lofted from the cowl to the station where the
+  engine's details end (0.62 m ahead of the engine) and on to the nose section (`f` flat, `w` wedge, `r` rounded, `g` a grille box with slats proud of the cap).
+  It keeps the fixed hoods' sockets (`engine` with its pad, `front` just past the cap's slab, `+x0`/`-x0` over the front wheel, `top`), so noses, rams and
+  fenders go on as before. Its section clears the engine's core and details (a V8's rocker covers 12 cm over its top, 0.343 m out) by the skin and 4 cm;
+  rows under 5 cm are dropped (a squashed eave mitred into a hairpin, coplanar ends). Its length comes from the plan's hood part: a Long or Bull Hood long
+  (0.88 to 1.0 m ahead of the engine), a Snub Hood or Slab Nose short (0.72 to 0.8 m; a Slab Nose wide), plus the style's `HoodReach`.
+- **A pane** (`Hull Loft (pane <12 numbers>)`): a see-through quad cut for one cab (its corners in the cab's frame), material glass, a seal along its bottom edge
+  (the solid box it stands and collides by; a shaped box is drawn only), on the cab's `glass0` (windscreen) or `glass1` (back window) socket, turned as the
+  cab is (`Vehicle.AsIs`). A shot breaks the pane, which shatters as glass does; the cab stays.
+
+All three are run-time parts named by their keys, like a lofted bay: blueprints, saves and the wire carry only the name, and salvage takes them off as their
+exact parts (a cab and a hood are welder parts, a pane a wrench part). `--fixed-cabs` makes kit-5 bodies with phase 2's fixed shells and hoods.
+
+### Kinds and proportions per faction (data, `BodyStyleRule`)
+
+| Style | Cab kinds (weight) | Noses | Cab height, half width | Belt | Screen rake (capsule) | Hood half width, crown |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bandit | caged 2.5, enclosed 1, armoured 1, crew 0.7, cab-over 0.4 | grille 2, flat 1.5, wedge 1 | 1.56-1.7, 0.86-0.9 | 1.04-1.12 (high) | 0.02-0.1, upright | 0.56-0.62, 0.16-0.2 |
+| Militia | armoured 2.5, crew 1.2, merged 1, caged 0.4 | wedge 2.5, flat 1 | 1.55-1.65, 0.9-0.94 | 1.08-1.12 | 0.18-0.24 (0.65-0.8) | 0.58-0.62, 0.16-0.19 |
+| IT | enclosed 1.5, cab-over 1.2, crew 0.9, merged 0.8 | rounded 2, wedge 1.5 | 1.66-1.8 | 0.92-0.97 (a glasshouse) | 0.2-0.24 (0.6-0.78) | 0.5-0.55 |
+| Scam | enclosed 2, crew 1.2, cab-over 0.8 | flat 2, grille 1 | 1.8-1.95, 0.92-0.95 (a tall box) | 1.0-1.04 | 0.03-0.08 (0.3-0.42) | crown 0.2-0.24 |
+| Highland | enclosed 2, crew 1, caged 0.5 | grille 2.5, rounded 1 | 1.62-1.74, 0.86-0.9 | default | 0.08-0.16 | 0.48-0.54, 0.22-0.26, reach +0.1 m (a long bonnet) |
+| British | merged 2, cab-over 1.2, enclosed 0.8, crew 0.5 | rounded 2, grille 1 | 1.72-1.86 | 0.94-1.0 | 0.1-0.18 (0.2-0.38, an upright bus front) | default |
+
+A kind the plan can't take drops out of the roll: a crew cab needs a metre of bare rails behind the cab (the second row on a sill of its own at z 0.575, the
+back wall at 0.95), a merged cab a room first. A Bandit cab may come off another language than its room's (the style mixes). `--cab KIND` forces a kind where
+the plan allows it.
+
+### The driver's view
+
+`VehicleChecks.View` (in every check of a vehicle with a lofted cab): from the seated eye, 14 rays ahead (30 degrees either way, level and 4 degrees up)
+through what the kit lofted (cab, hood, rooms), glass left out; straight ahead must be clear and at most a third may meet the vehicle within 4 m. A capsule's
+long screen first failed it (6 of 14 met the solid side ahead of the doorway): its side windows ahead of the doorway are open now. Typical: 12 or 13 of 14 clear.
+
+### Measured (2-core box, another agent's builds alongside: times are noisy)
+
+Before is this branch with `--fixed-cabs` (phase 2's cabs and hoods on the same plans); after is this branch. `--body-report all --seeds 6`, `--diversity-style
+STYLE --seeds 6` (mean over the five recipe shapes) and `--identity STYLE --seeds 4`.
+
+| | before | after |
+| --- | --- | --- |
+| cabs and hoods, front and side outline: mean pair within a style | 0.067 | 0.055 |
+| ... between two styles | 0.069 (the same as within: a cab didn't tell the faction) | 0.083 |
+| ... between over within | 1.03 | 1.52 (1.64 in a first run with IT's capsules weighed higher) |
+| full check, 6 styles x 5 recipe shapes x 6 seeds | - | 177 of 180 (Bandit Scrap Tanker 3's barrel and British War Bus 6's Firebreather, as phase 2; Highland War Bus 5 new: fills 61 % of its side box, a capsule in front of a tall room) |
+| the 75 committed kit-5 seeds, full check | 75 of 75 | 75 of 75 |
+| coplanar pairs inside lofted parts (bays, cabs, hoods, panes) | 0 | 0 (292 in the first run: the cage's hoops, a pane's seal, squashed hood eaves; then the cab's foot row against the decks, fixed) |
+| parts a vehicle, mean (`--body-report`) | 121 to 129 | 122 to 130 (a lofted cab is one part as a shell was, plus 1 or 2 panes) |
+| generation, mean a style (`--body-report`) | 275 to 519 ms | 263 to 524 ms |
+
+| Style | diversity, mean pair within a shape | front part | identity | best other style's score | section part of identity |
+| --- | --- | --- | --- | --- | --- |
+| Bandit | 0.211 to 0.209 | 0.202 to 0.202 | 0.96 to 0.95 | 0.55 to 0.54 | 0.98 to 0.97 |
+| IT | 0.211 to 0.201 | 0.241 to 0.230 | 0.95 to 0.92 | 0.53 to 0.51 | 0.91 to 0.88 |
+| Highland | 0.219 to 0.205 | 0.247 to 0.204 | 0.95 to 0.95 | 0.59 to 0.58 | 0.88 to 0.96 |
+| Scam | 0.217 to 0.216 | 0.244 to 0.248 | 0.95 to 0.93 | 0.52 to 0.51 | 0.99 to 0.99 |
+| British | 0.209 to 0.203 | 0.256 to 0.270 | 0.96 to 0.94 | 0.53 to 0.52 | 0.88 to 0.91 |
+| Militia | 0.183 to 0.173 | 0.220 to 0.181 | 0.89 to 0.90 | 0.78 to 0.78 | 0.77 to 0.88 |
+
+What the numbers say: the cab now tells the faction (between-style cab distance up a fifth, within-style down a fifth, so the ratio from 1.03 to 1.52), the
+point of the user's note. That came at the cost the brief hoped to avoid: diversity within a style fell a little (-0.002 to -0.014), because the fixed shells a
+style drew from (a Tin Roof Cab, a Chop Top, a Roll Bar...) differed more from each other than one faction's lofted cabs do, and each faction's proportions are
+now narrow ranges of its own. Identity holds within 0.03; the margin over the best other style holds or rises. The section part rises for Highland, British and
+Militia (their cabs and hoods speak their languages) and falls for IT (its capsules' clamped lower sides read less like a pod). Militia's best other style
+stays at 0.78 (it read as Bandit before this phase too). To raise variety within a faction without losing it between factions: two or three cab sub-styles a
+faction (Bandit: a cage, a chopped enclosed cab, a slab-armoured cab, each with its own proportions), side windows and quarter glass, capsule side glass.
+
+**Committed seeds** (Styles.cs, the most different passing seeds of a 10-seed sweep, seed 1 always among them; same order of shapes as section 6): Bandit
+Box Truck 1 4 2, War Bus 1 6 10, Flatbed Fort 1 7 9, Gun Wagon 1 8 2, Scrap Tanker 1 10 5; IT 1 5 3, 1 5 10, 1 2 7, 1 9 7, 1 2 10; Scam 1 6 9, 1 4 6, 1 9 6,
+1 6 5, 1 6 2; Highland 1 3 7, 1 7 6, 1 8 9, 1 6 2, 1 2 7; British 1 9 8, 1 3 5, 1 5 7, 1 4 5, 1 8 2. 75 files written: 62 rewritten, 13 new, 13 removed
+(BanditGunWagon4, BritishFlatbedFort2, BritishGunWagon9, BritishWarBus8, BritishWarBus10, HighlandBoxTruck8, HighlandScrapTanker4, ITBoxTruck10,
+ITFlatbedFort6, ITGunWagon5, ITWarBus2, ScamGunWagon2, ScamWarBus2); `--gen-vehicles` reports all 123 identical. The kit-1 shapes (Technical, Tanker Rig,
+Fuel Trailer, Double Decker) keep their generators and fixed cabs: they have no body look to loft from (moving them needs a look rolled for them and their own
+cab station: a later phase's).
+
+**Not done / for the next phase.** Side glass (a capsule's and a merged cab's side windows are open, a crew cab's rear quarters solid); a merged cab's room
+keeps its brow's rake, so the cab sits a step below a tall room (a merged room could roll a full-height brow); doors that open (the doorways are open frames);
+a crew cab on any plan (it needs the bare-rails gap); interiors (dash, steering wheel). For the coming faction dressing and surface phase, what showed here:
+the factions now differ in their cabs' silhouettes, but rooms still read alike in a single colour: Bandit bodies want welded plates and cage bars on the rooms
+too (the cage cab shows how bars read), IT smooth fairings and dish domes on capsules, Scam signboards over the tall boxy cab, Highland chrome grille and long
+bonnet ornaments, British two-tone bus livery and a destination board over a merged front, Militia stowage bins and slat armour; capsules need glass sides to
+read as vehicles from three quarters.
+
 ## Pictures
+
+Phase 3: `/home/claude/vk-body3-sheets/` (agent box, not committed): `before_` (main before this phase) and `after_` `--vehicle-sheet` of Bandit War Bus, IT Box
+Truck and British War Bus, seeds 1 to 6.
+
 
 Phase 2: `/home/claude/vk-body2-sheets/` (agent box, not committed): `before_` and `after_` `--vehicle-sheet` of Bandit War Bus, IT Box Truck and British War Bus,
 seeds 1 to 6. Phase 1's in `/home/claude/vk-bodies-sheets/` (agent box; PNG):
