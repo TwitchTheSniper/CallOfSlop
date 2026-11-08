@@ -78,6 +78,7 @@ public sealed partial class Game
         StoryBodiesForget();
         StoryChatForget(); // (talking to people: GameStoryChat.cs)
         Array.Fill(_storyGroup, (-1, -1)); // (the groups: GameStoryFactions.cs)
+        StoryJobsForget(); // (faction jobs: GameStoryJobs.cs)
     }
 
     /// <summary>Server, the end of a Sandbox tick: the story clock, who came and who sat down, and the constructs' notes.</summary>
@@ -111,6 +112,7 @@ public sealed partial class Game
         notes.Clear();
         StoryWorkTick();
         StoryGroupsTick(); // (the players' groups: GameStoryFactions.cs)
+        StoryJobsTick(s, now); // (faction jobs: crates, builds, couriers, the window: GameStoryJobs.cs)
         StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
         if (StoryPlaying is { } run)
         {

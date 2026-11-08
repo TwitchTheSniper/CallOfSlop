@@ -11,10 +11,15 @@
     { "name": "KeptOurs", "about": "a faction and a player or group: its hardware they have plugged in and kept (a fax)" },
     { "name": "Emails", "about": "a faction and a player or group: emails they have sent it" },
     { "name": "Courtesy", "about": "a faction and a player or group: polite emails (please, thank you, form IT-7)" },
-    { "name": "Threats", "about": "a faction and a player or group: threats they have sent it" }
+    { "name": "Threats", "about": "a faction and a player or group: threats they have sent it" },
+    { "name": "OnJob", "about": "a player or group and a faction's job (a Thing): they hold it (Story/Factions \"jobs\"; one of each faction's at a time)" },
+    { "name": "JobAgain", "about": "a player or group and a faction's job: the story minute (plus one) before which they may not take it again" },
+    { "name": "JobRefused", "about": "a player or group and a faction's job: the courier sent their crate back once over the paperwork" },
+    { "name": "JobsDone", "about": "a faction and a player or group: jobs they have done for it" },
+    { "name": "Learnt", "about": "a player or group and a technology (a Thing): a faction taught it them, for good (Story/Factions \"teaches\"; an Assembler builds its parts for them)" }
   ],
   "qualities": [
-    { "name": "Notorious", "about": "a player or group: atrocities they have done (an antimatter bomb on a town, later); every faction hunts them, standing -100" },
+    { "name": "Notorious", "about": "a player or group: atrocities they have done (an Antimatter Warhead set off with other people in its reach); every faction hunts them, standing -100" },
     { "name": "Hardware", "about": "faction want: its kit, from 0 (stripped bare) to 100 (all of it back)" },
     { "name": "Respect", "about": "faction want: how well it feels it is treated, from 0 to 100" },
     { "name": "Uptime", "about": "faction want: its network's reach, from 0 (dark) to 100" }

@@ -617,6 +617,7 @@ public sealed class ConstructPartDef
     public Vector3 ExtDieAt; // ...the die's centre on its output face (part frame; the piece grows along +z from here)
     public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
     public int ExtDieSocket = -1; // ...its socket of kind "die"
+    public bool IsRequisition; // a Requisition Crate ("requisition": true): a story faction's courier collects a Supply job from its box (Game/GameStoryJobs.cs)
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
@@ -1212,7 +1213,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "requisition", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1481,6 +1482,7 @@ public static partial class ConstructParts
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
         d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
+        d.IsRequisition = Opt(root, "requisition") is { ValueKind: JsonValueKind.True };
 
         // Role data
         string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster", "burner", "fluidTank", "rotor"];

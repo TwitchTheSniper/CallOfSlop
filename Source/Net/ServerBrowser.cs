@@ -343,7 +343,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 197: massive ordnance (ConstructMegaBlast.cs, docs/sandbox/CONSTRUCTS.md "Massive blasts"): CFireKind.ShellLand ends with the blast's look (u8: 0 plain, 1 fission, 2 fusion, 3 antimatter); a DigOp whose kind byte has 0x80 set is one band of a sliced crater and carries its slice and slices (two u8).
     // 198: lofted bays' keys in their compact form ("~" and three characters a point, "=" for a back section that is the front's; HullLoft.Section.Key): a 196 peer reads them as stand-ins.
     // 199: the survival opening (GameSandboxOpening.cs, docs/story/OPENING.md): Msg.Opening (server -> one client, the beat) at the end of Msg, CActKind.OpeningSkip at the end of its enum.
-    public const byte ProtocolVersion = 199;
+    // 200: player factions' colours, tags, ranks, asks to join and stances (GameSandboxFactions.cs): Msg.Factions carries them and the story factions' standing; new FactionOps at the end of the enum.
+    // 201: the warden's induction (GameTutorial.cs, docs/sandbox/TUTORIAL.md): Msg.Tutorial at the end of Msg.
+    // 202: story factions' technologies (GameStoryTech.cs, docs/story/STORY.md "Technologies"): Msg.Factions carries each story faction's learnt technologies (a u8 after each standing) and its technology lines after the names; AsmBlock.Untaught (3) in an Assembler's blocked byte.
+    // 203: faction jobs (GameStoryJobs.cs, docs/story/STORY.md "Jobs"): Msg.Jobs at the end of Msg (the jobs window to one client; a take or a drop from it).
+    public const byte ProtocolVersion = 203;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

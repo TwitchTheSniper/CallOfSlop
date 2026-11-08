@@ -8,8 +8,22 @@
     { "name": "Keep", "players": true, "sentence": "{actor} plugged in {target}'s {item}",
       "about": "a faction's hardware on a player's circuit: its first page prints (target: the faction, item: the part)" },
     { "name": "Atrocity", "sentence": "{actor} committed an atrocity at {place}",
-      "about": "something no faction forgives (later: an antimatter bomb dropped on a town or colony); the doer and their group are Notorious, hunted by every faction", "effects": [ "actor Notorious +1" ] },
+      "about": "something no faction forgives (an Antimatter Warhead set off with other people in its reach); the doer and their group are Notorious, hunted by every faction", "effects": [ "actor Notorious +1" ] },
+    { "name": "Unite", "players": true, "sentence": "{actor} founded {target}",
+      "about": "a player founds a player faction (target: its group, a Faction entity)" },
+    { "name": "Ally", "sentence": "{actor} and {target} are allies",
+      "about": "two player factions both want an alliance (actor, target: their groups)" },
+    { "name": "Feud", "sentence": "{actor} went to war with {target}",
+      "about": "a player faction declares war on another (actor, target: their groups)", "effects": [ "target Grudge actor +20" ] },
+    { "name": "Truce", "sentence": "{actor} and {target} are neither friends nor enemies any more",
+      "about": "two player factions' alliance or war ends (actor, target: their groups)" },
     { "name": "Rate", "sentence": "{actor} now rates {target}: {item}",
-      "about": "a faction's standing with a group comes to a new tier (item: the tier, value: the standing)" }
+      "about": "a faction's standing with a group comes to a new tier (item: the tier, value: the standing)" },
+    { "name": "Teach", "sentence": "{actor} taught {target} {item}",
+      "about": "a faction's standing with a player or group came to a technology's tier, and it taught them it (item: the technology, value: the standing); they hold Learnt towards it" },
+    { "name": "Job", "players": true, "sentence": "{actor} did a job for {target}: {item}",
+      "about": "a faction signed off a job a player's group held (target: the faction, item: the job, value: the standing it paid): a crate its courier collected, or something built that it inspected" },
+    { "name": "Hooked", "players": true, "sentence": "{actor} fell for {target}'s offer",
+      "about": "a player answered a scam on a Computer and paid (target: the faction behind it, The Call Centre)" }
   ]
 }

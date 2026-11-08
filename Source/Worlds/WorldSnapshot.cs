@@ -80,6 +80,10 @@ public sealed class WorldSnapshot
     public string SpaceSystem = "";
     public OpeningSave? Opening; // the survival opening's colony and crash site (GameSandboxOpening.cs), or null
     public string[] FactionNames = []; // player factions by id ("": free; the players' records say who is in which)
+    public uint[] FactionColours = []; // by id, with FactionTags, FactionOpen and FactionStances: the FCT2 section (GameSandboxFactions.cs)
+    public string[] FactionTags = [];
+    public bool[] FactionOpen = [];
+    public sbyte[] FactionStances = []; // [a * FactionTable.Max + b]
     public ShipSnap[] Ships = [];
     public int ShipCount;
     public ShipSnap[] AwayShips = []; // ships in other star systems (phase 6 jumps), with their system's name
@@ -122,7 +126,10 @@ public sealed class WorldPlayer
     public byte Offline = 255; // the owner byte their constructs carry while they're away (255: more people than bytes)
     public byte Faction; // their faction's index in WorldSnapshot.FactionNames + 1 (0: none; GameSandboxFactions.cs)
     public bool FactionLeader;
+    public byte FactionRank; // their rank in it (FactionRanks.Player; saved in the FCT2 section)
     public bool Opened; // has been through the survival opening here (GameSandboxOpening.cs; saved in the Opening section)
+    public TutorialState TutorialState; // the warden's induction (GameTutorial.cs): not started, running, finished or skipped, and at which step
+    public byte TutorialStep;
 
     public WorldPlayer Copy()
     {

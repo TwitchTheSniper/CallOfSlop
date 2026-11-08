@@ -1,0 +1,84 @@
+{
+  // The Call Centre (docs/story/STORY.md "Factions", "Technologies"): the scammers behind the adverts on the IT Computer
+  // (Story/Office/Scammers.json) and the Scam style's vans. Falling for an offer makes you a valued customer.
+  // The jokes are on the call-centre trope, never on anyone's nationality.
+  "format": "call-of-slop-faction/1",
+  "name": "The Call Centre",
+  "about": "a room full of headsets that never stopped ringing; they will call you back, whether you like it or not",
+  "home": "The Call Floor",
+  "claims": [ "Scam " ],
+  "members": [
+    { "name": "Brenda", "about": "0.4 km away, always; nobody has met her and everybody has had her messages",
+      "qualities": { "Sociable": 90, "Honest": 5, "Brave": 30, "Vengeful": 40, "Gossipy": 70, "Greedy": 85 } },
+    { "name": "Torque Guru Dave", "about": "one weird trick, endlessly, to anyone with an engine",
+      "qualities": { "Sociable": 70, "Honest": 10, "Brave": 45, "Vengeful": 35, "Gossipy": 60, "Greedy": 80 } },
+    { "name": "Team Leader Craig", "about": "runs the floor by the targets board; the targets board is always red",
+      "qualities": { "Sociable": 55, "Honest": 15, "Brave": 50, "Vengeful": 65, "Gossipy": 40, "Greedy": 90 } }
+  ],
+  "tiers": [
+    { "name": "Do Not Call", "below": -50 },
+    { "name": "Blocked Number", "below": -15 },
+    { "name": "Cold Lead", "below": 15 },
+    { "name": "Valued Customer", "below": 45 },
+    { "name": "Premium Member" }
+  ],
+  "deeds": [
+    { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },
+    { "name": "Wrecked our vans", "verb": "Wreck", "remember": "WreckedOurs", "standing": -20 },
+    { "name": "Stripped our vans", "verb": "Strip", "remember": "LootedOurs", "standing": -8 },
+    { "name": "Fell for our offer", "verb": "Hooked", "standing": 12,
+      "about": "a player answers an advert on a Computer and pays: a customer, and a customer is always right (about paying)" },
+    { "name": "Wrecked a Ministry van", "verb": "Wreck", "whose": "Ministry of Slop", "standing": 6,
+      "about": "the Ministry keeps shutting their lines down; anyone who slows it down is a friend of the business" }
+  ],
+  "teaches": [
+    { "name": "Wireless", "tier": "Valued Customer",
+      "about": "a free upgrade, terms apply: send signals with no wire",
+      "parts": [ "Wireless Sender", "Wireless Receiver" ] },
+    { "name": "Signal Tricks", "tier": "Premium Member",
+      "about": "the things they don't want you to know: homing on a signal, steering by radio, and making the other side see things",
+      "parts": [ "Radio Homer", "Beacon Homer", "Command Link", "Flare Dispenser", "Smoke Shell" ] }
+  ],
+  "rivals": { "Ministry of Slop": 50, "IT Department": 25 },
+  "voice": "INBOX",
+  "courier": "A van with no plates collects the crate. Nobody gets out. A voice says \"Thank you for your custom\".",
+  "jobs": [
+    { "name": "Refurbishment Programme",
+      "about": "Six Computers \"for refurbishment\". Valued Customers get our Wireless kit, absolutely free*.",
+      "supply": [{"part": "Computer", "count": 6}],
+      "standing": 6,
+      "again": "1h",
+      "taken": "CONGRATULATIONS!! You have been SELECTED for our Refurbishment Programme. Send 6 Computers in a Requisition Crate. They will be refurbished. Valued Customers get Wireless kit FREE*.",
+      "done": "Your Computers have been refurbished and resold. *Terms apply. Thank you for being a Valued Customer." },
+    { "name": "Prize Draw Logistics",
+      "about": "The prize wheel needs buttons and batteries. Everyone is a winner, legally.",
+      "supply": [{"part": "Button", "count": 10}, {"part": "Battery", "count": 4}],
+      "standing": 6,
+      "again": "1h",
+      "taken": "You could be our NEXT WINNER! To enter, send 10 Buttons and 4 Batteries in a Requisition Crate. No purchase necessary. Purchase strongly advised.",
+      "done": "Congratulations, you have won! Your prize is the knowledge of having helped. It will arrive in 6-8 weeks." },
+    { "name": "Fibre Optic Upgrade",
+      "about": "Glass rods off an Extruder. It is definitely fibre. It is definitely optic.",
+      "supply": [{"piece": "round", "material": "glass", "length": 4, "count": 3}],
+      "standing": 8,
+      "again": "1h",
+      "taken": "URGENT: your line needs a FIBRE OPTIC UPGRADE. Extrude three glass Rounds, four metres or longer, and lay them in a Requisition Crate. Do not tell IT.",
+      "done": "Your fibre has been installed in someone else's house. Your speeds may vary." },
+    { "name": "Cubicle Farm",
+      "tier": "Valued Customer",
+      "about": "A call centre of your own, built and left standing. Premium Members get Signal Tricks.",
+      "build": [{"part": "Cubicle Desk", "count": 4}, {"part": "Office Phone", "count": 4}, {"part": "Call Headset", "count": 4}, {"part": "Water Cooler"}, {"part": "Gift Card Sign"}],
+      "standing": 10,
+      "again": "2h",
+      "taken": "Exciting opportunity! Build a franchise: four Cubicle Desks, four Office Phones, four Call Headsets, a Water Cooler and a Gift Card Sign on one construct. Premium Members get our Signal Tricks.",
+      "done": "Your franchise is now open. It has already called your mother." },
+    { "name": "Gift Card Run",
+      "tier": "Valued Customer",
+      "about": "Gold, in a crate. For gift cards. Do not ask what kind.",
+      "supply": [{"material": "gold", "kg": 200}],
+      "standing": 10,
+      "again": "2h",
+      "taken": "To claim your refund, send 200 kg of gold in a Requisition Crate. This is a normal way to claim a refund.",
+      "done": "Your refund has been processed. Your refund is the gold. We have kept it for safety." }
+  ]
+}

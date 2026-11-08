@@ -32,7 +32,7 @@ public sealed partial class Ui
             if (!Hud.Project(cam.ViewProj, t.Anchor, area.X, area.Y, out var s, out _, area.Y * 0.04f))
                 continue; // behind you or off screen
             var px = NameTagLayout.FontPx(r, _scale, t.Distance, scoped);
-            var w = Hud.TextWidth(game.NameOf(t.Id), px);
+            var w = Hud.TextWidth(game.NameOf(t.Id), px) + FactionTagWidth(game, t.Id, px);
             var h = px + (healthBars && t.Friendly ? px * 0.35f : 0f);
             var (x, y) = NameTagLayout.Clamp(s.X - w / 2, s.Y - h, w, h, area.X, area.Y, pad);
             var rect = new TagRect(x, y, w, h);
@@ -54,7 +54,13 @@ public sealed partial class Ui
             var rect = _tagRects[k];
             var a = _tagAlpha[k];
             var px = _tagPx[k];
-            Hud.ShadowText(dl, new float2(org.X + rect.X0, org.Y + rect.Y0), px, game.NameOf(t.Id), tags.ColourOf(game, p, t.Friendly), a);
+            var tx = org.X + rect.X0;
+            if (FactionTagOf(game, t.Id, out var label, out var colour))
+            {
+                Hud.ShadowText(dl, new float2(tx, org.Y + rect.Y0), px, label, colour, a); // the faction's tag in its colour (Source/UI/UiFactions.cs)
+                tx += Hud.TextWidth(label, px);
+            }
+            Hud.ShadowText(dl, new float2(tx, org.Y + rect.Y0), px, game.NameOf(t.Id), tags.ColourOf(game, p, t.Friendly), a);
             if (game.Voice.Talking(t.Id, talkNow))
                 DrawSpeakerIcon(dl, new float2(org.X + rect.X1 + px * 0.25f, org.Y + rect.Y0 + px * 0.5f), px, Hud.Colour(new System.Numerics.Vector3(0.4f, 1f, 0.5f), a)); // voice chat (UiChat.cs)
             if (healthBars && t.Friendly)
@@ -68,4 +74,17 @@ public sealed partial class Ui
             }
         }
     }
+
+    /// <summary>A Sandbox player's faction tag ("[TAG] ", made when it changes) and its colour, when they are in a faction.</summary>
+    private static bool FactionTagOf(Game game, byte id, out string label, out System.Numerics.Vector3 colour)
+    {
+        var t = game.FactionTable;
+        var f = game.SandboxOn ? t.Of[id] : (byte)0;
+        label = f != 0 ? t.TagLabel[f] : "";
+        var c = f != 0 ? t.Colour[f] : 0u;
+        colour = new System.Numerics.Vector3((c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f);
+        return label.Length > 0;
+    }
+
+    private static float FactionTagWidth(Game game, byte id, float px) => FactionTagOf(game, id, out var label, out _) ? Hud.TextWidth(label, px) : 0f;
 }

@@ -607,10 +607,13 @@ Code: `Source/Constructs/OfficeParts.cs` (the parts and their panels), `Source/G
 A faction (living factions, F1; code `Source/Story/StoryFactions.cs`, the game's side `Source/Game/GameStoryFactions.cs`, the
 Story window's *Factions* tab `Source/UI/UiStoryFactions.cs`; data `Story/Factions/*.json`, relations in
 `Story/Relations/Factions.json`, verbs in `Story/Verbs/Factions.json`) is a Faction entity in the story world. The IT
-Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlop and the Ministry of Slop follow as data.
+Department is the first (`Story/Factions/IT.json`); the Call Centre (`CallCentre.json`), Clan MacSlop (`MacSlop.json`) and the
+Ministry of Slop (`Ministry.json`) are data in the same shape.
 
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
+  `"staff"` names people of a cast who are its members too, whenever they are in the story (the penal colony's warden and
+  guards, `Story/Casts/PenalColony.json`, are the Ministry's): greeting, chatting and trading with them count as deeds.
 - **What is theirs**: the faction itself, its members, and the constructs it `Claims`: a construct the story meets with a
   name that starts with one of `"claims"` (`"IT "`: every IT style vehicle and blueprint, spawned from the parts menu or by
   the vehicle kit; the game reads the name when the construct is set down, `Game.StoryConstruct`). A scenario's construct
@@ -622,7 +625,8 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
   group (`WreckedOurs`, `LootedOurs`, `KeptOurs`, `Courtesy`, `Threats`, `KilledOurs`), moves the faction's standing with
   both by `"standing"`, and its wants by `"wants"`. An Email deed asks for `"words"` (any one, any case) in the email;
   `"every"` counts a deed once in that long per group. The IT Department counts wrecking its vehicles (-20), stripping
-  them (-8), plugging in its fax (+5), polite emails (+3, once in ten minutes), threats (-10) and rudeness (-4).
+  them (-8), plugging in its fax (+5), polite emails (+3, once in ten minutes), threats (-10) and rudeness (-4). A deed
+  with `"whose"` is against another faction's things instead: Clan MacSlop likes you wrecking the Ministry's vans (+10).
 - **Standing** runs from -100 to 100 and is held as the faction's `Likes` (above 0) or `Grudge` (below) towards a party,
   so queries, patterns, the drama manager and the fax read it like any feeling (`?us Grudge ?them >= 16`). `"tiers"`
   name its bands from the worst up (IT: Blacklisted below -50, Flagged below -15, Unregistered, Registered from 15, Admin
@@ -630,12 +634,19 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
 - **Groups**: standing is kept for a player's group: the player faction they are in (`Source/Constructs/Factions.cs`,
   a Faction entity `"group:NAME"` the game keeps them `MemberOf`, once a second), or themselves when in none. A deed
   counts towards both the doer and their group; a group's is the one the fax reads.
-- **Notorious** (the world-wide state on top of each faction's own): an Atrocity event (nothing records one yet; later,
-  an antimatter bomb dropped on a town or colony) makes the doer and their group `Notorious`, a quality every faction
+- **Rivals** (`"rivals"`: `{"Clan MacSlop": 50}`): a rise in a faction's standing takes that share (percent, a point at
+  least) of the rise off each rival's standing with the same party. The Ministry and Clan MacSlop are rivals both ways, so
+  are the Ministry and the Call Centre; the IT Department and the Call Centre a little (25%).
+- **Notorious** (the world-wide state on top of each faction's own): an Atrocity event (the game records one when an
+  Antimatter Warhead goes off with anyone but its owner in its reach, `GameStoryTech.cs`; one set off in an empty valley
+  is only a very big bang) makes the doer and their group `Notorious`, a quality every faction
   reads: their standing with all of them is -100 whatever it was, so every faction hunts them. Each faction gets a
   notice on `"Notorious"`, and pages can ask `?them Notorious`.
 - **Verbs**: Email (a player at a Computer to a faction; its effect counts `Emails`), Fax (a faction's page printed for a
-  group: `Faxed`, which "per my last fax" reads), Keep (a player plugs in a faction's fax: its first page), Rate.
+  group: `Faxed`, which "per my last fax" reads), Keep (a player plugs in a faction's fax: its first page), Rate; and between
+  player factions (GameStoryFactions.cs): Unite (a player founds one: actor the player, target its group), Ally, Feud (the
+  target's group takes a Grudge) and Truce (actor and target the two groups), which the radio has lines for. The Faction
+  window (F2) shows each player faction how every story faction stands with it, and whether it is Notorious.
 - **Strip**: a wreck's part taken off is noted whoever owns it, and the story keeps a Strip of one's own or nobody's
   construct only when a faction claims it (stripping the IT van you spawned yourself still counts against you with IT).
 - Everything is world state (entities, relations, qualities), so it is saved with the story; a faction new to the data
@@ -644,8 +655,100 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre, Clan MacSlo
   prints the IT Department's standing at the end; in the game, the Story window's Factions tab shows each faction's
   wants, members, claims, and its standing and memory of every player and group.
 
+## Technologies
+
+No money: standing is what a faction gives you things for, and what it gives is technology (code: the engine's side in
+`StoryFactions.cs`, the game's `Source/Game/GameStoryTech.cs`). A faction's `"teaches"` lists a few technologies, each a
+`"name"`, the `"tier"` it is taught at and the construct `"parts"` it holds (eight technologies at most). In survival an
+Assembler won't build a part a faction teaches until its owner has been taught it (the look line and the machine's screen
+say "not taught" and who teaches it, `AsmBlock.Untaught`); a part no faction teaches is built for anyone, and creative
+builds everything. The first loop:
+
+1. Earn standing with deeds (above; rivals cool as you go).
+2. The first time a faction's standing with a party comes to a technology's tier (the Rate event's moment), it teaches
+   them every technology of that tier and below: they hold `Learnt` towards the technology (a Thing, `"tech:FACTION:NAME"`),
+   for good, whatever the standing does after; a Notorious party is taught nothing.
+3. A Teach event goes on the record (the radio has lines for it), the players taught get a HUD line ("Ministry of Slop
+   taught you Explosives Licence: your Assemblers build ..."), and a desk can fax a notice named after the technology (the
+   IT Department's are in `Story/Office/IT.json`).
+
+A party is a player's group (their player faction) or the player alone; an Assembler builds a part for its owner when the
+owner or their group has learnt it. Joining a group (or loading a save from before technologies) teaches what the
+standing already earns. The Faction window (F2) lists what each faction teaches, and with a faction of yours which it has
+learnt. What ships:
+
+| Faction | Tier | Technology | Parts |
+| --- | --- | --- | --- |
+| IT Department | Registered | Remote Control | Remote Transmitter, Medium Remote Transmitter, Remote Console, Drone Receiver |
+| IT Department | Admin | Video Network | browser, video and camera screens, all sizes |
+| The Call Centre | Valued Customer | Wireless | Wireless Sender, Wireless Receiver |
+| The Call Centre | Premium Member | Signal Tricks | Radio Homer, Beacon Homer, Command Link, Flare Dispenser, Smoke Shell |
+| Clan MacSlop | Friend of the Clan | Pipes and Drums, Clan Plate | Medium and Large Speaker; Heavy Armour and its port |
+| Clan MacSlop | Clansman | The Wrecking Ball | Wrecking Ball |
+| Ministry of Slop | Trusty | Explosives Licence | Warhead Blast, Warhead Bunker, Aerial Bomb, Mine Dispenser |
+| Ministry of Slop | Contractor | Atomic Licence | Small Nuke, Fission Warhead, Fusion Warhead |
+| Ministry of Slop | Crown Servant | The Antimatter Bomb | Antimatter Warhead |
+
+How standing is earned for now: IT as above; the Call Centre likes anyone who falls for one of its adverts (a Hooked
+event, +12) or wrecks a Ministry van (+6); Clan MacSlop likes wrecking (+10) and stripping (+3) Ministry vans; the
+Ministry likes a good morning to its staff (+2), a chat (+1, once in ten minutes), a trade (+3) and wrecking the clan's
+or the Call Centre's vans (+8). Killing, wrecking and stripping a faction's own costs as with IT. A part name that isn't
+a part is logged when the game first reads the table (`[story] ... no part called`). Trying it:
+`--story-sim` with a scenario that wrecks two Highland vans prints "Ministry of Slop taught Karl Explosives Licence", and
+Karl keeps `Learnt` after wrecking the Ministry's own vans takes him to Enemy of the State.
+
+Standing is also earned by **jobs** (below); each faction's first jobs say which technology its next tier brings, and
+when it teaches one it says so in its own voice too.
+
 Next (the living factions plan): F2 voices for the other factions (Call Centre scams that remember who fell for them,
 Ministry memos, MacSlop challenges on the radio), F3 visits on foot through the drama manager, F4 turf on planetoids.
+
+## Jobs
+
+Work for a faction (code: the engine's side `Source/Story/StoryFactionJobs.cs`, the game's `Source/Game/GameStoryJobs.cs`, the
+window `Source/UI/UiFactions.cs`; data `"jobs"` in `Story/Factions/*.json`). No money: a job pays standing, and standing is
+what a faction teaches its technologies for. The Faction window (F2) lists every faction's jobs under "Jobs for the world's
+factions": what each asks, what it pays, and why one can't be taken yet.
+
+- **Who holds one**: a party (the player's faction, or the player alone) holds one job of each faction at a time, taken and
+  dropped in the window by any member. A job may want a tier (`"tier"`: offered from that tier up); one with none is offered
+  from -50 up, so a party can work its way back. Done or dropped, the same party can't take it again for `"again"` (30 minutes
+  if not given). The Ministry's first jobs are inmate work; its Trusty and Contractor jobs come with standing.
+- **Supply** (`"supply"`): fill a **Requisition Crate** (a Storage Volume with a courier at the end of it; build one at an
+  Assembler) that the party owns with what the job asks for, any way it gets there: by chute off a production line, by hand,
+  or, for pieces, laid in its box (its middle or a point near either end in the box: a caber longer than the box counts with
+  an end sticking out). Each need is one of:
+  - `{"part": "Gear Set", "count": 10}`: parts (items) in the box;
+  - `{"material": "stone", "tonnes": 2}` (or `"kg"`): bulk in the box;
+  - `{"piece": "i-beam", "material": "steel", "length": 6, "across": 0.25, "count": 8}`: loose cut pieces off an Extruder,
+    a Wheel Former or the like: `"piece"` is an Extruder section id (solid, plate, wall, hollow, i-beam, c-channel, l-angle,
+    t-bar, cross), round, pipe, wheel or any; `"material"` any when left out; `"length"` and `"across"` at least, in metres
+    (a wheel's length is its width, its across its diameter).
+  Once a crate holds the lot it is sealed for the courier ("the courier is on the way: leave it be"), who comes 20 s later,
+  looks again, and takes exactly what was asked (the rest stays). A crate short again by then waits. A `"paperwork": true` job
+  (the Ministry's) has its first full crate sent back over the forms (`"refused"`), looked at again 90 s later, and taken.
+- **Build** (`"build"`): own one construct holding the parts listed (`{"part": "Server Rack", "count": 1}`); the faction
+  inspects it within two seconds and it stays yours.
+- **Pay**: `"standing"` (1 to 100) and `"wants"`, as a deed's: the faction remembers it (`JobsDone`), rivals cool, a new tier
+  is rated, and technologies are taught. A Job event goes on the record (the radio has lines for it), and the IT desk can fax
+  a notice named after a job.
+- **Voice**: the faction's `"voice"` is the tag its lines go out under to the party's players (`[MINISTRY MEMO] ...`):
+  `"taken"` when a job is taken (after its `"ticket"`, if it has one), `"courier"` (the faction's) when a crate is collected,
+  `"done"` when it is signed off. A long line goes as several chat lines.
+- **State**: a party holds a job as `OnJob` towards its Thing (`"job:FACTION:NAME"`), with `JobAgain` (the story minute it
+  may be taken again) and `JobRefused` (the paperwork); all saved with the story. How far along a job is is worked out again
+  every two seconds and isn't saved: a sealed crate is sealed again after a load.
+- **Network (protocol 203)**: `Msg.Jobs` carries a take or a drop from a client, and to each player their window when it
+  changes (checked once a second against a key of their party, the standings, the jobs held and their progress, and the minute).
+
+What ships (21 jobs): the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
+for Registered users a Hardware Refresh and a Satellite Uplink), the Call Centre's dodgy errands (six Computers "for
+refurbishment", Prize Draw Logistics, a glass "Fibre Optic Upgrade"; for Valued Customers a Cubicle Farm and a Gift Card
+Run in gold), Clan MacSlop's Highland games (a wood caber, stones for the stone put, whisky for the ceilidh, a pipe band to
+build; for Friends of the Clan "Something Enormous", a 6 m wheel for the cheese roll) and the Ministry's triplicate (Breaking
+Rocks, Number Plates and Tea for the Warden for inmates; Fit Out the Cell Block in steel I-beams and a Public Information
+Point for Trusties; Concrete for the New Wing for Contractors). Sabotage jobs (wreck a rival's things) and a courier who
+walks in as a body are for later.
 
 ## The Scammers
 

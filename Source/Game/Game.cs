@@ -2209,6 +2209,12 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Relay when r.Has(2):
                 OnRelayPacket(sender, ref r); // free travel: a traveller's packets for a planetoid the host runs (GameTravelVisit.cs)
                 break;
+            case (byte)Msg.Tutorial:
+                OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
+                break;
+            case (byte)Msg.Jobs:
+                OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)
+                break;
             case (byte)Msg.Factions:
                 ReadFactions(ref r); // Sandbox player factions (GameSandboxFactions.cs)
                 break;
