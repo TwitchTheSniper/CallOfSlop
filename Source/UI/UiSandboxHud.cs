@@ -49,6 +49,12 @@ public sealed partial class Ui
         string K(GameAction a) => Keybinds.Name(s.Bind(a));
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MenuButtonWidth * _scale);
         DrawPauseTutorial(game); // skip, resume or replay the induction (UiTutorial.cs)
+        if (game.ShellLocal)
+        {
+            ImGui.Spacing();
+            if (ImGui.Button("Leave the robot shell##shell"u8))
+                game.ShellAskLeave(); // (wake in the chair: GameRobotShell.cs)
+        }
         if (game.IsServer && !game.Net.IsOffline && joinInfo.Length > 0)
         {
             ImGui.Spacing();

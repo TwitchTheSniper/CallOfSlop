@@ -232,6 +232,9 @@ HAND = [
     rec("Timer Fuse", 4, 2, m={"steel": 2, "copper": 1}),
     rec("Airburst Fuse", 6, 3, m={"steel": 2, "copper": 1}, p={"Circuit Board": 1}),
     rec("Remote Fuse", 6, 3, m={"steel": 2, "copper": 2}, p={"Circuit Board": 1}),
+    # Robot shells (shell_parts.py; docs/sandbox/CONSTRUCTS.md "Robot shells"): a body to risk, and the chair that wakes you in it.
+    rec("Robot Shell", 30, 2, m={"steel": 30, "copper": 8, "rubber": 4}, p={"Circuit Board": 2}),
+    rec("Shell Control Chair", 12, 2, m={"steel": 14, "copper": 6, "rubber": 3}, p={"Circuit Board": 1}),
     rec("Cluster Dispenser", 10, 3, m={"steel": 10, "concrete": 3}),
     rec("Fire Bomblets", 10, 3, m={"steel": 8, "concrete": 2, "rubber": 2}),
     rec("Mine Dispenser", 12, 4, m={"steel": 10, "concrete": 3}, p={"Circuit Board": 1}),

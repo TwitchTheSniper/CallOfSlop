@@ -81,7 +81,8 @@ public enum CActKind : byte
     Fuse, // u16 body, u8 FuseMode, u16 part, u16 count, then count u16 parts: the fuse tool (protocol 193; GameSandboxFuse.cs)
     Material, // u16 body, u8 PaintMode, u16 part, u8 length and the material's name (ASCII): the material painter (protocol 194; GameSandboxMaterial.cs)
     OpeningSkip, // nothing: skip the rest of the survival opening (protocol 199; GameSandboxOpening.cs)
-    GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 213; ConstructEditsUpgrades.cs)
+    ShellLeave, // nothing: leave the robot shell worn and wake in the chair (protocol 213; GameRobotShell.cs)
+    GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 215; ConstructEditsUpgrades.cs)
 }
 
 /// <summary>
@@ -154,6 +155,7 @@ public sealed partial class Game
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
         OpeningReset(); // (no beats, no colony yet: GameSandboxOpening.cs)
+        ShellResetAll(); // (nobody wears a robot shell: GameRobotShell.cs)
         if (!IsServer)
             return;
         if (SandboxOn)
@@ -188,6 +190,7 @@ public sealed partial class Game
         SandboxShareRules(); // (a new map's rules; the option itself comes with the lobby state)
         ResetSandboxSpawns();
         OpeningReset();
+        ShellResetAll();
         SandboxDeathResetAll(); // (checkpoints and fates: a world's records bring theirs, GameSandboxDeath.cs)
         SpawnPlacing = false;
         _sbPoseTick = 0;
@@ -308,6 +311,7 @@ public sealed partial class Game
             {
                 if (h.RemoteBody != 0)
                     SandboxRemoteRelease(ref h, p.Id);
+                ShellNotSeated(p.Id); // (a shell chair links again next time: GameRobotShell.cs)
                 continue;
             }
             var c = Constructs.Get(h.SeatBody);
@@ -342,6 +346,8 @@ public sealed partial class Game
             else if (c.Driver == p.Id)
                 SandboxHands.StopDriving(c); // (the link from their seat to the drivetrain went)
             SandboxRemote(p, ref h, c!, seat, b); // (a seat that sends: GameSandboxRemote.cs)
+            if (c!.Parts[seat].D.ShellRange > 0)
+                SandboxShellChair(p, ref h, c, seat, now); // (a shell chair: GameRobotShell.cs)
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
@@ -373,6 +379,8 @@ public sealed partial class Game
         SandboxDebris(now);
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
+        ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
@@ -617,6 +625,7 @@ public sealed partial class Game
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
+        ShellSendAll(to); // (who wears a robot shell: GameRobotShell.cs)
         if (Constructs.UseGrid)
         {
             SandboxStreamStart(to);
@@ -787,6 +796,8 @@ public sealed partial class Game
                 return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
             case CActKind.OpeningSkip:
                 return OpeningSkipAct(p); // the survival opening (GameSandboxOpening.cs)
+            case CActKind.ShellLeave:
+                return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
             case CActKind.Talk:
             {
                 var person = r.U8();
@@ -2137,6 +2148,7 @@ public sealed partial class Game
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
+        ShellHud(me, lines, orange, dim); // (wearing a robot shell: GameRobotShell.cs)
         if (h.Seated && SandboxRemoteHud(me, in h, lines, white, dim, red))
             return;
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)

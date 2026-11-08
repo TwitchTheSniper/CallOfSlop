@@ -91,6 +91,7 @@
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
     { "section": "Remote", "to": ["Seats and Logic", "Remote and cameras"] },
+    { "section": "Shells", "to": ["Seats and Logic", "Remote and cameras"] },
     { "section": "Dies", "to": ["Production", "Dies"] },
     { "section": "Housings", "to": ["Structure", "Braces and junctions"] },
     { "name": ["Beacon", "Recycler", "Smart Terminal"], "to": ["Storage and Logistics", "Beacons and recycling"] },

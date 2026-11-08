@@ -92,7 +92,7 @@ public sealed class SandboxModule : GameModeModule
 
     // ---- Each player's hands, ~10 Hz -------------------------------------------------------------------------------
 
-    public override byte StateVersion => 4; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88); 4: tool upgrade levels (protocol 213)
+    public override byte StateVersion => 4; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88); 4: tool upgrade levels (protocol 215)
 
     public override void WriteState(Game game, PacketWriter w)
     {
@@ -130,7 +130,7 @@ public sealed class SandboxModule : GameModeModule
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
                 w.CmVec(h.GrabLocal).U8(h.GrabSeg); // (protocol 137: a free joint held on its own, GrabLocal in its frame)
-            var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 213: a byte a stat, ConstructEditsUpgrades.cs)
+            var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 215: a byte a stat, ConstructEditsUpgrades.cs)
             w.U8((byte)ToolStat.COUNT);
             for (var s = 0; s < (int)ToolStat.COUNT; s++)
                 w.U8(levels[s]);

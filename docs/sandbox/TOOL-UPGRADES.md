@@ -50,7 +50,7 @@ line adds "R: throw" while it holds something.
   `LiftOf`, `PullOf`, `ReachOf`, `CatchOf`, `FitSeconds`, `FitUpgrade` (F on a module) and `Throw`. The physics gun
   (`ConstructGrab.cs`), the ground drill (`GameSandboxSculpt.cs`, `Program.SandboxSculpt.cs`) and the timed edits ask
   these, on the server and the client alike.
-- **Network** (protocol 213): every player's levels follow their hands in the Sandbox mode state (state version 4, about
+- **Network** (protocol 215): every player's levels follow their hands in the Sandbox mode state (state version 4, about
   10 times a second), so a client aims, reaches and refuses as the server will. The throw is `CActKind.GrabThrow`.
 - **Saves**: a `TOOL` section in the world file (`WorldSaveWriter.ToolsTag`), each person's key, Steam id and levels;
   an older build skips it and everyone starts at the base. `Game/GameSandboxUpgrades.cs` catches the levels into the

@@ -1548,6 +1548,8 @@ public sealed partial class Game : IDisposable
             StartLastStand(victim, now);
             return false;
         }
+        if (ShellTakesDeath(victim))
+            return false; // (a robot shell: only the shell is lost, GameRobotShell.cs)
         victim.Health = 0;
         victim.Alive = false;
         victim.Deaths++;
@@ -2273,6 +2275,12 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Tutorial:
                 OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
+                break;
+            case (byte)Msg.Shell when !IsServer && r.Has(2):
+                ReadShell(ref r); // who wears a robot shell (GameRobotShell.cs)
+                break;
+            case (byte)Msg.Depot when !IsServer && r.Has(14):
+                ReadDepot(ref r); // the Orbital Depot's steps (GameDepot.cs)
                 break;
             case (byte)Msg.ColonyAlarm when !IsServer:
                 ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)

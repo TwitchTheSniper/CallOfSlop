@@ -234,7 +234,10 @@ public sealed partial class Ui : IDisposable
         // health number, score, level or perks (UiSandboxHud.cs).
         var arena = game.Module.ArenaExtras;
         if (!arena)
+        {
             DrawTutorial(game, pos, size, settings); // the warden's induction, top left (UiTutorial.cs)
+            DrawDepot(game, pos, size, settings); // the Orbital Depot's steps, there once the induction is over (UiDepot.cs)
+        }
 
         // ---- Top-left: session info -------------------------------------------------
         if (arena)
