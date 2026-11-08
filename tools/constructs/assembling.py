@@ -19,6 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import zfight  # noqa: E402
+import upgrade_parts  # noqa: E402
 
 FORMAT = "call-of-slop-assembling/1"
 ABOUT = ("Assembling (docs/sandbox/CONSTRUCTS.md, 'Assembling'): what an Assembler builds. Written by tools/constructs/assembling.py: fix it, not this file. "
@@ -268,6 +269,9 @@ HAND = [
     rec("Panel", 3, m={"steel": 4}),
     rec("Wood Panel", 2, m={"laminate": 4}),
 ]
+
+# The tool upgrades' modules (upgrade_parts.py holds their recipes, beside their stats).
+HAND += [rec(name, seconds, tier, m=m, p=p) for name, seconds, tier, m, p in upgrade_parts.RECIPES]
 
 
 def rack_recipe(name, layout, a, b, length, diameter):

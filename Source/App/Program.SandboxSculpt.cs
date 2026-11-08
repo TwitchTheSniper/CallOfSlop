@@ -103,7 +103,8 @@ public static partial class Program
         var have = SculptSpot(eye, dir, table.Reach, aimed, in hit, out var at);
         var dig = Down(GameAction.Fire) && !_swallowClick;
         var fillDown = Down(GameAction.Aim);
-        if (_sculpt.Step(dig, fillDown, have, at, table.ScoopRadius, table.RepeatSeconds, now, GravityFrames.UpAt(at), out var fill))
+        var creative = g.SandboxInfiniteParts;
+        if (_sculpt.Step(dig, fillDown, have, at, g.SculptRadius(table, me.Id, creative), g.SculptRepeat(table, me.Id, creative), now, GravityFrames.UpAt(at), out var fill))
             g.SandboxSculpt(fill ? DigKind.FillDirt + (byte)kind : DigKind.Scoop, at);
         else if ((dig || fillDown) && !have)
             g.SandboxLookText = "Aim at bare ground in reach";

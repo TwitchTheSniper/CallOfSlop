@@ -77,7 +77,7 @@ public sealed partial class ConstructEdits
     private readonly NudgeHold?[] _nudges = new NudgeHold?[256];
 
     /// <summary>How far the Nudge tool works from the eye: the physics gun's beam.</summary>
-    public float NudgeRange => GrabRange;
+    public float NudgeRange => InfiniteParts ? ConstructGrab.Range : ConstructGrab.SurvivalRange;
 
     /// <summary>
     /// Why this player can't nudge this construct (or null). The physics gun's refusals (someone holds it or is in it, survival's

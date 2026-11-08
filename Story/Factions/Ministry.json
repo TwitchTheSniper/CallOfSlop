@@ -45,7 +45,10 @@
       "parts": [ "Small Nuke", "Fission Warhead", "Fusion Warhead" ] },
     { "name": "The Antimatter Bomb", "tier": "Crown Servant",
       "about": "the Ministry's last word. Setting it off with people in its reach is an atrocity: every faction will hunt you",
-      "parts": [ "Antimatter Warhead" ] }
+      "parts": [ "Antimatter Warhead" ] },
+    { "name": "Heavy Lifting Permit", "tier": "Contractor",
+      "about": "a permit to lift what the Ministry lifts: physics gun coils for twelve and twenty-five tonnes",
+      "parts": [ "Lift Coil Mk 4", "Lift Coil Mk 5" ] }
   ],
   "rivals": { "Clan MacSlop": 50, "The Call Centre": 50 },
   "voice": "MINISTRY MEMO",

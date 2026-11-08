@@ -305,6 +305,7 @@ public sealed partial class Game
         WorldStores.Copy(SandboxHands.Pack(p.Id), rec.Pack);
         TutorialCatch(p, rec); // (the induction: GameTutorial.cs)
         DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
+        UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 
@@ -573,6 +574,9 @@ public sealed partial class Game
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
                 break;
+            case WorldSaveWriter.ToolsTag:
+                WorldReadUpgrades(r, ws); // (tool upgrades: GameSandboxUpgrades.cs)
+                break;
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
                 break;
@@ -836,6 +840,7 @@ public sealed partial class Game
         FactionPlayerBack(p, rec.Offline); // (their faction again: GameSandboxFactions.cs)
         TutorialArrive(p, rec); // (where they were in the induction: GameTutorial.cs)
         DeathArrive(p, rec); // (their checkpoint, and whether they are dead for good: GameSandboxDeath.cs)
+        UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)

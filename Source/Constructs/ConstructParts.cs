@@ -1009,6 +1009,19 @@ public static partial class ConstructParts
             badTable++;
             Console.WriteLine($"REFUSED Categories.json: {PartCategories.Current.Problem}");
         }
+        if (ToolUpgrades.Current.Problem.Length > 0)
+        {
+            badTable++;
+            Console.WriteLine($"REFUSED ToolUpgrades.json: {ToolUpgrades.Current.Problem}");
+        }
+        else
+            foreach (var st in ToolUpgrades.Current.Stats)
+                for (var k = 0; k < st.Levels.Length; k++)
+                    if (Find(st.Levels[k].Part) == null)
+                    {
+                        badTable++;
+                        Console.WriteLine($"REFUSED ToolUpgrades.json: {st.Name} level {k + 1} names \"{st.Levels[k].Part}\", which isn't a part");
+                    }
         var catalogue = SandboxCatalogue.Make().Parts;
         foreach (var g in catalogue.Groups)
         {

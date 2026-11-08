@@ -34,6 +34,12 @@ public sealed partial class Game
         : !DestructionEnabled ? "the ground can't be changed: Destruction is off in the lobby"
         : null;
 
+    /// <summary>A player's scoop (m): the table's, times their drill bit (tool upgrades, ConstructEditsUpgrades.cs). Both sides.</summary>
+    public float SculptRadius(DiggingTable table, byte player, bool creative) => table.ScoopRadius * SandboxHands.StatOf(player, ToolStat.DrillBit, creative);
+
+    /// <summary>A player's seconds between scoops: the table's, over their drill motor. Both sides.</summary>
+    public float SculptRepeat(DiggingTable table, byte player, bool creative) => table.RepeatSeconds / MathF.Max(0.1f, SandboxHands.StatOf(player, ToolStat.DrillMotor, creative));
+
     private string? SandboxSculptAct(Player p, ref PacketReader r, Vector3 eye, double now)
     {
         if (!r.Has(1 + 12))
@@ -53,7 +59,7 @@ public sealed partial class Game
         if (Vector3.Distance(eye, at) > table.Reach + 0.75f)
             return "too far away";
         // The rate: a bucket, so a bunch of packets a client spaced out still get through, and one that asks faster gets nothing.
-        var tokens = MathF.Min(_sculptTokens[p.Id] + (float)((now - _sculptAt[p.Id]) / table.RepeatSeconds), SculptBurst);
+        var tokens = MathF.Min(_sculptTokens[p.Id] + (float)((now - _sculptAt[p.Id]) / SculptRepeat(table, p.Id, SandboxHands.InfiniteParts)), SculptBurst);
         _sculptAt[p.Id] = now;
         if (tokens < 1)
         {
@@ -65,7 +71,7 @@ public sealed partial class Game
         if (e.Ops.Count >= table.LogCap)
             return $"the ground has taken all the changes it can this match ({e.Ops.Count:N0}): nothing more can be dug or filled";
         var inv = SandboxInv.Of(p.Id);
-        var op = new DigOp(kind, at, table.ScoopRadius).Quantised;
+        var op = new DigOp(kind, at, SculptRadius(table, p.Id, SandboxHands.InfiniteParts)).Quantised;
         Span<float> volume = stackalloc float[(int)GroundKind.COUNT];
         var total = e.Measure(in op, table.Ground, table.StoneDepth, volume);
         return kind == DigKind.Scoop ? SculptDig(p, table, inv, in op, total, volume) : SculptFill(table, e, inv, in op, total, volume);

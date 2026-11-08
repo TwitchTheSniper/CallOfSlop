@@ -173,5 +173,5 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>The edit's time: the part's, except an item in creative, which is instant (a physics-only piece keeps its time).</summary>
-    private double EditSeconds(ConstructPartDef def, float seconds) => Creative && !def.PhysicsOnly ? 0 : seconds;
+    private double EditSeconds(byte player, ConstructPartDef def, float seconds) => Creative && !def.PhysicsOnly ? 0 : FitSeconds(player, seconds); // (a player's fitting speed: ConstructEditsUpgrades.cs)
 }
