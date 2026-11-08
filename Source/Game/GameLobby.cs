@@ -3,7 +3,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Lobby size (server-authoritative). Up to <see cref="MaxPlayers"/> (32) players, people and bots, but never more
+/// Lobby size (server-authoritative). Up to <see cref="MaxPeople"/> (32) players, people and bots, but never more
 /// than the map's own limit (<see cref="Map.MaxPlayers"/>, MapPlayers.cs):
 ///   - bots are added up to the limit; the number asked for is remembered (<see cref="WantedBots"/>), so a bigger map
 ///     after the vote gets them back and a smaller one sends the extras home;
@@ -24,7 +24,7 @@ public sealed partial class Game
     public int MapMaxPlayers => PlayerLimit(World.Map); // (Zombies: co-op for up to 4)
 
     /// <summary>The player limit (people + bots) the lobby would enforce on <paramref name="map"/> in the current mode.</summary>
-    public int PlayerLimit(Map map) => Math.Min(Module.MaxPlayers(map), MaxPlayers);
+    public int PlayerLimit(Map map) => Math.Min(Module.MaxPlayers(map), MaxPeople);
 
     /// <summary>People in the game (not bots).</summary>
     public int HumanCount => Players.Values.Count(p => p.Bot == null);
@@ -32,7 +32,20 @@ public sealed partial class Game
     public int BotCount => Players.Values.Count(p => p.Bot != null);
 
     /// <summary>The map is full (a newcomer would need a bot's place).</summary>
-    public bool IsFull => Players.Count >= MapMaxPlayers;
+    public bool IsFull => SeatCount >= MapMaxPlayers;
+
+    /// <summary>The lobby's seats in use: people and lobby bots (ids under <see cref="MaxPeople"/>; bodies the world spawns don't count).</summary>
+    public int SeatCount
+    {
+        get
+        {
+            var n = 0;
+            foreach (var id in Players.Keys)
+                if (id < MaxPeople)
+                    n++;
+            return n;
+        }
+    }
 
     /// <summary>
     /// Server: after a map change, removes bots the new map has no room for, or brings back bots the host asked for
@@ -43,10 +56,10 @@ public sealed partial class Game
         if (!IsServer)
             return;
         var removed = 0;
-        while (Players.Count > MapMaxPlayers)
+        while (SeatCount > MapMaxPlayers)
         {
             // The dead first, then the newest.
-            var bot = Players.Values.Where(p => p.Bot != null).OrderBy(p => p.Alive).ThenByDescending(p => p.Id).FirstOrDefault();
+            var bot = Players.Values.Where(p => p.Bot != null && p.Id < MaxPeople).OrderBy(p => p.Alive).ThenByDescending(p => p.Id).FirstOrDefault();
             if (bot == null)
                 break;
             Players.Remove(bot.Id);
@@ -82,10 +95,10 @@ public sealed partial class Game
     /// <summary>Server: a connection arrived but the map is full of people. Tell them why, then close it.</summary>
     private void RefuseFull(RakNetGUID who)
     {
-        _w.Begin(Msg.Full).U8((byte)Players.Count).U8((byte)MapMaxPlayers).Str(World.Map.Name);
+        _w.Begin(Msg.Full).U8((byte)SeatCount).U8((byte)MapMaxPlayers).Str(World.Map.Name);
         Net.SendTo(who, _w.Span, PacketReliability.ReliableOrdered);
         Net.Kick(who);
-        Log($"Refused a player: {World.Map.Name} is full ({Players.Count}/{MapMaxPlayers})");
+        Log($"Refused a player: {World.Map.Name} is full ({SeatCount}/{MapMaxPlayers})");
     }
 
     private void OnFullPacket(ref PacketReader r)

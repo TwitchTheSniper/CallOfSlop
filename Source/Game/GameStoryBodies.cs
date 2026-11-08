@@ -273,15 +273,7 @@ public sealed partial class Game
     /// <summary>A body for a person here (at the spot their step is at) or arriving (at the road's end), or null when there's no room.</summary>
     private Player? StoryBodySpawn(StoryEngine s, StoryAgent a, int place, bool arriving)
     {
-        if (FreeBotIds() <= 0)
-            return null; // (one id is always kept for a person joining)
-        byte id = 0;
-        for (var k = 1; k < MaxPlayers; k++)
-            if (!Players.ContainsKey((byte)k))
-            {
-                id = (byte)k;
-                break;
-            }
+        var id = FreeNpcId(); // (above the lobby's seats: a person joining always has one)
         if (id == 0)
             return null;
         var w = s.World;

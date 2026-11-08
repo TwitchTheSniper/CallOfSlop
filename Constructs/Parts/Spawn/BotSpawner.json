@@ -169,7 +169,7 @@
       "label": "Group size",
       "group": "Spawning",
       "min": 1,
-      "max": 16,
+      "max": 64,
       "step": 1,
       "default": 1,
       "tooltip": "How many come out each time."
@@ -179,7 +179,7 @@
       "label": "Max alive",
       "group": "Limits",
       "min": 1,
-      "max": 64,
+      "max": 192,
       "step": 1,
       "default": 4,
       "tooltip": "The most it has out at once."

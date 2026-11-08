@@ -105,7 +105,7 @@ public sealed partial class ConstructWorld
     public readonly List<(ushort Body, ushort Part)> HealthDirty = new(256);
 
     /// <summary>Where the living players are this tick (the server fills it; proximity sensors read it).</summary>
-    public readonly Vector3[] PlayerSpots = new Vector3[64];
+    public readonly Vector3[] PlayerSpots = new Vector3[Game.MaxPlayers];
     public int PlayerSpotCount;
 
     /// <summary>

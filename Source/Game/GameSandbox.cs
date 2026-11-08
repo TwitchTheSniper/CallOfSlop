@@ -54,7 +54,7 @@ public enum CActKind : byte
     BuildAid, // u8 BuildAidOp, then its fields: the build stations' aids (protocol 128; GameSandboxAids.cs)
     HandTake, // u16 body: hands out, the loose part into the hands; PickUp with the contested rule (protocol 131; ConstructEditsHands.cs)
     HandDrop, // vec look point: hands out, what they hold goes down there as a loose part (protocol 131)
-    AnalogLever, // u16 body, u16 part, u16 value (0..65535 is 0..1), u8 1 on letting go: a hand on an Analog Lever, up to ~10 Hz (protocol 133; AnalogLever.cs)
+    AnalogLever, // u16 body, u16 part, u16 value (0..65535 is 0..1), u8 1 on letting go, u16 a Joystick's Y: a hand on an Analog Lever, up to ~10 Hz (protocol 133, Y 211; AnalogLever.cs)
     Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
     Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 136; ConstructEditsTracks.cs)
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
@@ -81,7 +81,7 @@ public enum CActKind : byte
     Fuse, // u16 body, u8 FuseMode, u16 part, u16 count, then count u16 parts: the fuse tool (protocol 193; GameSandboxFuse.cs)
     Material, // u16 body, u8 PaintMode, u16 part, u8 length and the material's name (ASCII): the material painter (protocol 194; GameSandboxMaterial.cs)
     OpeningSkip, // nothing: skip the rest of the survival opening (protocol 199; GameSandboxOpening.cs)
-    GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 211; ConstructEditsUpgrades.cs)
+    GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 213; ConstructEditsUpgrades.cs)
 }
 
 /// <summary>
@@ -1016,7 +1016,9 @@ public sealed partial class Game
                 var body = r.U16();
                 var part = r.U16();
                 var value = r.U16();
-                return hands.AnalogSet(Constructs, p.Id, eye, body, part, AnalogLever.FromWire(value), r.U8() != 0);
+                var final = r.U8() != 0;
+                var y = r.U16();
+                return hands.AnalogSet(Constructs, p.Id, eye, body, part, AnalogLever.FromWire(value), AnalogLever.FromWire(y), final);
             }
             case CActKind.Stand:
                 if (SpaceSeated(p))
@@ -1234,7 +1236,7 @@ public sealed partial class Game
                 w.U8((byte)body).U8(flags);
                 break;
             case CActKind.AnalogLever:
-                w.U16(body).U16(part).U16(socket).U8(flags); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go)
+                w.U16(body).U16(part).U16(socket).U8(flags).U16(body2); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go; body2: a Joystick's Y)
                 break;
         }
         if (kind == CActKind.Tool && !IsServer)

@@ -269,7 +269,7 @@ public sealed partial class Ui
                     break;
 
                 case Page.Multiplayer:
-                    Title($"Multiplayer - up to {Game.MaxPlayers} players over LAN or the internet (each map has its own limit)");
+                    Title($"Multiplayer - up to {Game.MaxPeople} players over LAN or the internet (each map has its own limit)");
                     ImGui.TextColored(Dim, "Hosting or joining opens the lobby: pick teams and loadouts, chat, ready up; the host starts the match."u8);
                     if (BigButton("HOST A GAME"))
                     {

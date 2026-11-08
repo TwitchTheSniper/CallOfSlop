@@ -92,24 +92,45 @@ public sealed class SandboxModule : GameModeModule
 
     // ---- Each player's hands, ~10 Hz -------------------------------------------------------------------------------
 
-    public override byte StateVersion => 4; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88); 4: tool upgrade levels (protocol 211)
+    public override byte StateVersion => 4; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88); 4: tool upgrade levels (protocol 213)
 
     public override void WriteState(Game game, PacketWriter w)
     {
         var hands = game.SandboxHands;
-        w.U8((byte)Math.Min(game.Players.Count, 64));
+        // People always (every seat); a spawned body only while its hand holds something, and three times after it goes
+        // idle (the state is unreliable): hundreds of bots with empty hands would be kilobytes ten times a second.
+        var countAt = w.Length;
+        w.U8(0);
         var n = 0;
-        foreach (var p in game.Players.Values)
+        for (var pass = 0; pass < 2; pass++)
+            foreach (var p in game.Players.Values)
+            {
+                if ((p.Id < Game.MaxPeople) != (pass == 0) || n == 255)
+                    continue;
+                ref var h = ref hands.Hand(p.Id);
+                if (pass == 1)
+                {
+                    var idle = h.Tool == default && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0;
+                    ref var quiet = ref game.SbHandQuiet[p.Id];
+                    quiet = idle ? (byte)Math.Min(quiet + 1, 255) : (byte)0;
+                    if (quiet > 3)
+                        continue;
+                }
+                n++;
+                WriteHand(game, w, p, ref h);
+            }
+        w.PatchU8(countAt, (byte)n);
+    }
+
+    private static void WriteHand(Game game, PacketWriter w, Player p, ref SandboxHand h)
+    {
         {
-            if (n++ == 64)
-                break;
-            ref var h = ref hands.Hand(p.Id);
             w.U8(p.Id).U8((byte)h.Tool).U16(h.Held).U16(h.SeatBody).U16(h.SeatPart).U8((byte)h.Edit)
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
                 w.CmVec(h.GrabLocal).U8(h.GrabSeg); // (protocol 137: a free joint held on its own, GrabLocal in its frame)
-            var levels = hands.LevelsOf(p.Id); // (tool upgrades, protocol 211: a byte a stat, ConstructEditsUpgrades.cs)
+            var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 213: a byte a stat, ConstructEditsUpgrades.cs)
             w.U8((byte)ToolStat.COUNT);
             for (var s = 0; s < (int)ToolStat.COUNT; s++)
                 w.U8(levels[s]);

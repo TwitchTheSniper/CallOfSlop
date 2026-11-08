@@ -43,7 +43,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);
-        using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2, mapId: map.Id)
+        using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2, mapId: map.Id)
         {
             MapVoteEnabled = true,
             LobbyEnabled = true,
@@ -118,7 +118,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);
-        using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1, mapId: map.Id)
+        using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1, mapId: map.Id)
         {
             MapVoteEnabled = true,
             LobbyEnabled = true,
