@@ -464,7 +464,7 @@ public static class VehicleChecks
                     if (!VehiclePlan.Hits(tris, from, new Vector3(side, 0, 0), reach))
                         holes.Add(from + new Vector3(side, 0, 0));
                 }
-            if (!VehiclePlan.Hits(tris, new Vector3(0, room.FloorTop + 1, z) + offset, Vector3.UnitY, reach))
+            if (!VehiclePlan.Hits(tris, new Vector3(0, room.FloorTop + 1, z) + offset, Vector3.UnitY, room.Upper != null ? reach + 3 : reach)) // (phase 5: up through a hatch, to the storey's roof)
                 holes.Add(new Vector3(0, room.Ceiling, z) + offset);
             _ = run;
             _ = last;
@@ -684,6 +684,8 @@ public static class VehicleChecks
             var z = room.Middle.Z + (step % 2 == 0 ? 1 : -1) * 0.125f * ((step + 1) / 2);
             if (z < room.R.Z0 + 0.5f || z > room.R.Z1 - 0.5f)
                 continue;
+            if (room.Upper is { } su && z > MathF.Min(room.StairFoot.Z, su.DoorMid.Z) - 0.6f && z < MathF.Max(room.StairFoot.Z, su.DoorMid.Z) + 0.6f)
+                continue; // (not beside the stair: a body there is pushed out of its blocks)
             middle = room.Middle with { Z = z };
             start = World(middle + new Vector3(0, 0.15f, 0));
             settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
@@ -698,7 +700,7 @@ public static class VehicleChecks
         if (walked < 0.4f)
             r.Failures.Add($"the {room.Tag}: a player can't walk in it: {walked:0.00} m from its middle, whichever way");
         if (MathF.Abs(stood) > 0.2f)
-            r.Failures.Add($"the {room.Tag}: a player stands {stood:0.00} m off its floor (at {settle.Position - c.Pos}, floor {room.FloorTop + offset.Y:0.00})");
+            r.Failures.Add($"the {room.Tag}: a player stands {stood:0.00} m off its floor (at {settle.Position - c.Pos}, floor {room.FloorTop + offset.Y:0.00}{(room.Stair != null && Hit(c, c.ToLocal(settle.Position) + new Vector3(0, -0.05f, 0), 0.4f) ? ": on " + _blocker : "")})");
         if (room.Caged)
             Contained(c, room, middle, r); // (phase 5: bars seen and shot through by design: a player is held in, not rays)
         else

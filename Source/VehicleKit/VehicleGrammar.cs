@@ -25,7 +25,7 @@ public static class VehicleKitVersion
     /// <summary>
     /// Seeds made by kit 1 for good, by generator: none since 2026-11-07, when every committed faction vehicle was made again by kit 5 (the user: continuity isn't
     /// required). A kit that changes a committed seed lists the seeds committed before it here with their kit's number, or the shapes are committed again.
-    /// Only shapes with a recipe need listing: a shape without one is kit 1 whatever the seed (the Technical, the Fuel Trailer, the Tanker Rig, the Double Decker).
+    /// Only shapes with a recipe need listing: a shape without one is kit 1 whatever the seed (the Technical, the Fuel Trailer, the Tanker Rig; the Double Decker has had a recipe since body styles phase 5).
     /// </summary>
     public static readonly Dictionary<string, int[]> Frozen = new(StringComparer.Ordinal);
 
@@ -107,7 +107,7 @@ public static class ShapeGrammar
     private static readonly BodySegment Hutch = new("hutch", 4f, 4f), GunBay = new("gun bay", 2f, 2f), Gap = new("gap", 0.5f, 1f);
     private static BodySegment Tank(float min, float max) => new("tank", min, max);
 
-    /// <summary>The recipes, by shape name: kit 1's shapes as module families. A shape not here (the Technical, the trailers, the Double Decker) is made by its generator.</summary>
+    /// <summary>The recipes, by shape name: kit 1's shapes as module families. A shape not here (the Technical, the trailers) is made by its generator.</summary>
     public static readonly Dictionary<string, ShapeRecipe> Recipes = new(StringComparer.Ordinal)
     {
         ["Box Truck"] = new("Box Truck", "box", "box truck",
