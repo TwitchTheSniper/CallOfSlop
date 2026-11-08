@@ -91,9 +91,9 @@
     {"part": "Square Beam 1 m", "on": 82, "socket": "top", "by": "-y1", "spin": 3, "paint": "#3b3f44"},
     {"part": "Seat", "on": 83, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 83, "socket": "+y0", "by": "base", "spin": 2},
-    {"part": "Courier Carbine Receiver", "on": 85, "socket": "leaf", "by": "bottom", "spin": 2},
-    {"part": "Stub Barrel", "on": 86, "socket": "front", "by": "back"},
-    {"part": "Flash Hider", "on": 87, "socket": "front", "by": "back"},
+    {"part": "Farmhand Pump Receiver", "on": 85, "socket": "leaf", "by": "bottom", "spin": 2},
+    {"part": "Scattermouth Barrel", "on": 86, "socket": "front", "by": "back"},
+    {"part": "Pump Slide", "on": 86, "socket": "back", "by": "front"},
     {"part": "Turret Module", "on": 84, "socket": "+x", "by": "-x"},
     {"part": "Ammo Hutch", "on": 50, "socket": "front03", "by": "foot00"},
     {"part": "Ammo Crate", "on": 51, "socket": "front03", "by": "bottom", "config": {"ammoType": 0}},
@@ -115,7 +115,7 @@
     {"part": "Cable Reel", "on": 52, "socket": "front00", "by": "base"},
     {"part": "Cable Reel", "on": 59, "socket": "front13", "by": "base"},
     {"part": "Cable Reel", "on": 71, "socket": "front00", "by": "base"},
-    {"part": "Satellite Dish", "on": 64, "socket": "front00", "by": "base"}
+    {"part": "Satellite Dish", "on": 62, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [84, 89], [89, 86], [96, 93]],
   "hoses": [[94, 95]],

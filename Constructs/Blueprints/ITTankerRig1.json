@@ -69,10 +69,14 @@
     {"part": "Seat", "on": 61, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 61, "socket": "+y0", "by": "base"},
     {"part": "Courier Carbine Receiver", "on": 63, "socket": "leaf", "by": "bottom"},
-    {"part": "Stub Barrel", "on": 64, "socket": "front", "by": "back"},
-    {"part": "Flash Hider", "on": 65, "socket": "front", "by": "back"},
-    {"part": "Box Magazine", "on": 64, "socket": "top", "by": "bottom"},
-    {"part": "Ammo Box", "on": 67, "socket": "left", "by": "right"},
+    {"part": "Courier Carbine Receiver", "on": 64, "socket": "right", "by": "left"},
+    {"part": "Courier Carbine Receiver", "on": 64, "socket": "top", "by": "bottom"},
+    {"part": "Courier Carbine Receiver", "on": 65, "socket": "top", "by": "bottom"},
+    {"part": "Gun Barrel", "on": 64, "socket": "merged front", "by": "back"},
+    {"part": "Flash Hider", "on": 68, "socket": "front", "by": "back"},
+    {"part": "Extended Mag", "on": 64, "socket": "merged top", "by": "bottom"},
+    {"part": "Carbine Sear", "on": 64, "socket": "merged back", "by": "front"},
+    {"part": "Ammo Box", "on": 70, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 62, "socket": "+x", "by": "-x"},
     {"part": "Tow Hitch", "on": 7, "socket": "+z", "by": "-z0"},
     {"part": "Desk Fan", "on": 32, "socket": "centre +y", "by": "base"},
@@ -80,7 +84,7 @@
     {"part": "Cable Reel", "on": 55, "socket": "front00", "by": "base"},
     {"part": "Router Antenna", "on": 32, "socket": "top", "by": "base"}
   ],
-  "wires": [[29, 30], [30, 24], [62, 69], [69, 64]],
+  "wires": [[29, 30], [30, 24], [62, 73], [73, 64]],
   "links": [
     {"type": "shaft", "from": 25, "to": 6, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 58, "to": 24, "nodes": [[0.75, 0.82, 2.8], [0.75, 0.55, 2.8], [0.67, 0.55, 2.8], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
