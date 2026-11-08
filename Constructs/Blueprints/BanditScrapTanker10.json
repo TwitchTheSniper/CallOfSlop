@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, tandem 1.5 m, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.37 m, flare 0.07, plain 1.1, brow 0.64 1 m, tail 0.76 1 m, door right, wear age 0.68 (13 rusty, 11 dirty, 0 sooty, 0 patched, 2 rusted out), body room+tank, cab armoured, nose plated hood, rear hitch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, tandem 1.5 m, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.37 m, flare 0.07, plain 1.1, brow 0.64 1 m, tail 0.76 1 m, door right, cab slab armoured cab, nose grille, wear age 0.68 (13 rusty, 11 dirty, 0 sooty, 0 patched, 2 rusted out), body room+tank, cab armoured, nose plated hood, rear hitch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Scrap Tanker 10",
   "group": "Bandit",
@@ -46,7 +46,7 @@
     {"part": "Square Beam 0.5 m", "on": 36, "socket": "+z", "by": "-z", "paint": "#46392f"},
     {"part": "Seat", "on": 37, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 39, "socket": "-x", "by": "+x"},
-    {"part": "Slit Cab", "on": 0, "socket": "+y7", "by": "footL", "paint": "#7a4326"},
+    {"part": "Hull Loft (caba V4V4WWXkYDW3VYWMW0W0Xa ~Am0BAA8Ib02b =)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#7a4326"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y4", "by": "back02", "spin": 2, "paint": "#5e3320"},
     {"part": "Sheet Steel 0.5 m", "on": 0, "socket": "+y4", "by": "back00", "spin": 2, "paint": "#94603a"},
     {"part": "Sheet Steel 0.25 m", "on": 43, "socket": "+z0", "by": "-x", "paint": "#94603a"},

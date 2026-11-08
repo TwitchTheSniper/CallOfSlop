@@ -372,6 +372,8 @@ public static partial class HullLoft
                     if (door)
                         continue;
                     var (a0, a1, b0, b1) = (g.At(k, za0), g.At(k + 1, za1), g.At(k, z1), g.At(k + 1, z1));
+                    if (k == 0)
+                        (a0.Y, b0.Y) = (MathF.Max(a0.Y, 0.008f), MathF.Max(b0.Y, 0.008f)); // (its foot 8 mm up: the cab and the decks around it stand on the rails' top, and their undersides would share the plane)
                     var (ma0, ma1, mb0, mb1) = (g.MitresAt(za0)[k], g.MitresAt(za1)[k + 1], g.MitresAt(z1)[k], g.MitresAt(z1)[k + 1]);
                     if (last && flatRoof)
                     {

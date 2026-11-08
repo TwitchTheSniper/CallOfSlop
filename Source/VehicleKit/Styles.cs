@@ -92,9 +92,9 @@ public static class Styles
             new("Firebreather", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
             new("Whaler", "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}"),
         ],
-        Seeds = new() // (kit 5's, 2026-11-07, again after body styles phase 2: the most different passing seeds of a 10-seed sweep; the Technical, Tanker Rig and Fuel Trailer keep their generators')
+        Seeds = new() // (kit 5's, 2026-11-07, again after body styles phases 2 and 3: the most different passing seeds of a 10-seed sweep; the Technical, Tanker Rig and Fuel Trailer keep their generators')
         {
-            ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 4, 8], ["Scrap Tanker"] = [1, 10, 5],
+            ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 8, 2], ["Scrap Tanker"] = [1, 10, 5],
         },
         LootTable = "bandit",
         Limits = new() { ["crookedPlates"] = 4, ["tiltDegrees"] = 5, ["thirdSeat"] = 0.5, ["slits"] = 0.25 },
@@ -159,8 +159,8 @@ public static class Styles
         // (the shapes' own seeds fail in this style's dice; these are --sweep-vehicle's most different passing seeds)
         Seeds = new()
         {
-            ["Technical"] = [2, 5, 6, 8, 11], ["Box Truck"] = [1, 5, 10], ["War Bus"] = [1, 5, 2], ["Flatbed Fort"] = [1, 6, 2],
-            ["Gun Wagon"] = [1, 9, 5], ["Scrap Tanker"] = [1, 2, 10], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
+            ["Technical"] = [2, 5, 6, 8, 11], ["Box Truck"] = [1, 5, 3], ["War Bus"] = [1, 5, 10], ["Flatbed Fort"] = [1, 2, 7],
+            ["Gun Wagon"] = [1, 9, 7], ["Scrap Tanker"] = [1, 2, 10], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
         },
         LootTable = "it",
         Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
@@ -211,8 +211,8 @@ public static class Styles
         // (--sweep-vehicle's most different passing seeds)
         Seeds = new()
         {
-            ["Technical"] = [1, 13, 16, 17, 21], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 2], ["Flatbed Fort"] = [1, 9, 6],
-            ["Gun Wagon"] = [1, 6, 2], ["Scrap Tanker"] = [1, 6, 2], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
+            ["Technical"] = [1, 13, 16, 17, 21], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 6], ["Flatbed Fort"] = [1, 9, 6],
+            ["Gun Wagon"] = [1, 6, 5], ["Scrap Tanker"] = [1, 6, 2], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
         },
         LootTable = "scam",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 1, ["slits"] = 0 },
@@ -272,8 +272,8 @@ public static class Styles
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
         {
-            ["Technical"] = [1, 14, 10, 11, 5], ["Box Truck"] = [1, 7, 8], ["War Bus"] = [1, 7, 6], ["Flatbed Fort"] = [1, 8, 9],
-            ["Gun Wagon"] = [1, 6, 2], ["Scrap Tanker"] = [1, 7, 4], ["Tanker Rig"] = [1, 13], ["Fuel Trailer"] = [1, 2],
+            ["Technical"] = [1, 14, 10, 11, 5], ["Box Truck"] = [1, 3, 7], ["War Bus"] = [1, 7, 6], ["Flatbed Fort"] = [1, 8, 9],
+            ["Gun Wagon"] = [1, 6, 2], ["Scrap Tanker"] = [1, 2, 7], ["Tanker Rig"] = [1, 13], ["Fuel Trailer"] = [1, 2],
         },
         LootTable = "highland",
         Limits = new() { ["crookedPlates"] = 3, ["tiltDegrees"] = 3, ["thirdSeat"] = 0.7, ["slits"] = 0.2 },
@@ -340,8 +340,8 @@ public static class Styles
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
         {
-            ["Technical"] = [2, 14, 4, 5, 18], ["Box Truck"] = [1, 9, 8], ["War Bus"] = [1, 10, 8], ["Flatbed Fort"] = [1, 5, 2],
-            ["Gun Wagon"] = [1, 4, 9], ["Scrap Tanker"] = [1, 8, 2], ["Tanker Rig"] = [1, 19], ["Fuel Trailer"] = [1, 3], ["Double Decker"] = [1, 5, 13],
+            ["Technical"] = [2, 14, 4, 5, 18], ["Box Truck"] = [1, 9, 8], ["War Bus"] = [1, 3, 5], ["Flatbed Fort"] = [1, 5, 7],
+            ["Gun Wagon"] = [1, 4, 5], ["Scrap Tanker"] = [1, 8, 2], ["Tanker Rig"] = [1, 19], ["Fuel Trailer"] = [1, 3], ["Double Decker"] = [1, 5, 13],
         },
         LootTable = "british",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 0.8, ["slits"] = 0.1 },
