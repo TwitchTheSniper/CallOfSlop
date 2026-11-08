@@ -6,8 +6,10 @@ going to implement, I want this feature to be good on the toolkit before I move 
 "still too boxy overall, and rounding corners won't fix that", "few slopes and bends; the kit needs vehicle-appropriate contour and body pieces; make more parts if
 needed", "interiors too alike", "cabs too alike: no roll cages, just a flat wall".
 
-**Status (2026-11-07): phase 1 is built** (section 6): kit 5 is the current kit, every committed faction vehicle was made again by it, the tools see sections, and
-the user's decisions are in section 5. Sections 1 to 4 are the investigation as it was written, before the build.
+**Status (2026-11-07): phases 1 and 2 are built.** Phase 1 (section 6): kit 5 is the current kit, every committed faction vehicle was made again by it, the tools
+see sections, and the user's decisions are in section 5. Phase 2 (section 7): the fixed limits are data (scale classes), proportions, rooflines along the length, doors
+on either side or in the back, ride height bands, turret spots sized from the parts, paint by runs and rows; the committed vehicles were made again. Section 8 is how
+a later archetype is added as data. Sections 1 to 4 are the investigation as it was written, before the build.
 
 This file is the investigation: what the kit makes today (with numbers), every way found to break the sameness with what each costs, a working prototype of the first
 one (lofted hull bays in a body language per style, `--kit 5`), a recommended plan, and the questions the user should answer before the big build. Pictures for the
@@ -362,9 +364,184 @@ long (1.5 m the door bay; the key allows 0.5 to 2 m), the door is fixed at x = 1
 buggy's cage needs its own module (a cab or hood loft, phase 4), a scale class needs those limits per class, and a profile along the length (a hog, a wedge) needs
 bay lengths and heights from the language rather than the plan's T, L and N.
 
+## 7. Phase 2, as built (2026-11-07): wider proportions and lines
+
+The brief: lift phase 1's fixed limits into data, give each style and seed wider proportions, draw rooflines along the length, paint Bandit bodies by rows and
+sections, measure it, and make the committed vehicles again. Code: `Source/VehicleKit/VehicleBodyLanguage.cs` (all of the data below, `BodyLook`, `BaySpots`,
+`PaintRuns`), `Source/Constructs/HullLoft.cs` (the part), `Vehicle.Hulls.cs` (the hull, doors), `VehicleGrammar.cs` (the plan's hooks), `VehicleChassis.cs` (ride bands).
+
+### Scale classes (`BodyScale`)
+
+The limits that were constants are a row per class: whether it is walked in, the half width it may reach, its height range, its bay lengths, its floor's half width,
+its overhang range and the ride height bands it leans to.
+
+| Class | Walk-in | Half width | Height | Bays | Overhang | Ride (low, mid, high) | Used by |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| compact | no | 0.3 to 1.0 m | 0.5 to 1.9 m | 0.5 to 1 m | 0 to 0.1 m | any | nothing yet: engine covers, cargo boxes, a car's cabin (section 8) |
+| standard | yes | 1.0 to 1.28 m | 2.02 to 2.75 m | 0.75 to 1.25 m | 0 to 0.2 m | any | every style, most of Scam's and IT's |
+| heavy | yes | 1.0 to 1.45 m | 2.2 to 3.05 m | 0.75 to 1.5 m | 0.1 to 0.38 m | 0.7, 1.5, 0.25 | British first, Bandit, Militia, Highland |
+| giant | yes | 1.0 to 1.9 m | 2.4 to 3.8 m | 1 to 2 m | 0.2 to 0.7 m | 0.3, 1, 0 | nothing yet: its chassis is a later phase's |
+
+A walk-in class keeps what the room check needs whatever else changes: x at least 1.0 m below 1.6 m (the furniture's metre, `Vehicle.BayHalf`) and 2.02 m at the
+centre; a door bay at least 2.14 m. A non-room language (`BodyLanguage.WalkIn = false`) or class drops both. `HullLoft.Section` now reads up to 2 m of half width
+and 4 m of height (`MaxCm`, `MaxHeightCm`; phase 1 refused past 1.3 and 3 m) and a floor edge from 0.3 m. A bay's feet come from its floor's width
+(`HullLoft.FootX`: 0.75 m for every walk-in floor edge from 0.76 to 1.25 m, as before; further in or out for other bodies), so the part stays self-describing.
+
+### Proportions per style (`BodyStyleRule`)
+
+Each style's row now also holds: its classes and their weights, its height against the language (`TallMin`/`TallMax`), its share of the class's overhang
+(`FlareShare`), how hard it draws its rooflines (`LineAmount`), the brow and tail lengths it rolls (a 1.25 or 1.5 m brow is a wedge nose on the room), the chance
+its door is on the left (`DoorLeft`) or in the back (`DoorRear`), its ride bands (`Ride`) and its paint runs (`RunMin`, `RunMax`, `Contrast`).
+
+| Style | Classes | Height x | Overhang share | Ride (low, mid, high) | Door left / rear | Paint runs |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bandit | standard 2, heavy 1.5 | 0.92 to 1.25 | 1 | 0.8, 1, 1.4 | 0.5 / 0.25 | 1 to 2 bays, every other run in "body" (primer, bare metal, old paint) |
+| Militia | standard 1, heavy 1 | 0.9 to 1.1 | 0.9 | 1.5, 1, 0.5 | 0.5 / 0.35 | 2 to 3 |
+| IT | standard 2, heavy 1 | 0.92 to 1.16 | 0.8 | 1.6, 1, 0.3 | 0.3 / 0.35 | 2 to 3 |
+| Scam | standard 2.5, heavy 0.7 | 0.95 to 1.2 | 0.5 | 1, 1, 1 | 0.5 / 0.2 | 2 to 3 |
+| Highland | standard 2, heavy 1 | 0.9 to 1.14 | 1 | 1, 1, 1 | 0.5 / 0.2 | 2 to 3 |
+| British | heavy 2, standard 1 | 1.0 to 1.28 | 0.7 | 1, 1.5, 0.3 | 0.2 / 0 | 2 to 3 |
+
+**The overhang** is the section moved out above `BodyLook.FlareFrom` (0.6 m over the floor by default, raised by the hull to clear the real wheels plus 0.12 m of
+travel: `Vehicle.WheelBand`, noted as "overhang from" in the kit line when it does), eased in over the language's `FlareBlend` (0.05 m a welded ledge on slab,
+ledge, cabin and armour; 0.35 to 0.6 m a soft flare on pod, bus, coach and boat). The floor stays as it was, so the wheels, the deck and the furniture don't move.
+
+**Ride height bands**: a gear recipe is low (a floor under 0.5 m between arms), mid, or high (its rear on struts that hang the wheel 0.6 m and more:
+`VehicleChassis.RideOf`); the chassis layer's recipe roll weighs each by the style's band times the class's. Length stays the plan's (the recipe's ranges): a room's
+bays share its length differently (`BodyLook.Lengths`: the brow and tail as rolled, the metre bays giving a quarter here and there, a long room sometimes a
+quarter-metre rhythm), and a 3.5 m room keeps metre ends (its end walls are its loot's and magazine's).
+
+### Rooflines along the length (`Roofline`)
+
+A line is the height and the width above the furniture as factors of the language's section at each station, front (u 0) to back (u 1), lofted bay to bay:
+`h = 1 + a (crown sin(pi u) + rise (2u - 1) + kick max(0, (u - 0.6) / 0.4))`, `w = 1 - a taper (2u - 1)^2`, and how hard the plan's tall, low and narrow steps
+stay (`Steps`). The door bay's two stations take the higher of the two, so it is level (a turret's roof, the door's frame).
+
+| Line | Crown | Rise | Kick | Taper | Steps | Drawn by (weight) |
+| --- | --- | --- | --- | --- | --- | --- |
+| plain | | | | | 1 | every language |
+| stepped | | | | | 1.6 | slab 2, ledge 1.5, cabin 1 |
+| crowned (hog's back) | 0.16 | | | | 0.35 | pod 2, van 1, bus 1, coach 1 |
+| sagged (sway back) | -0.12 | | | | 0.5 | boat 1, slab 0.5 |
+| raked (rising to the tail) | | 0.11 | | | 0.6 | coach 1.5, slab 1, van 1, armour 1 |
+| sloped (down to the tail) | | -0.11 | | | 0.6 | armour 1.5, ledge 1, pod 1, cabin 0.5 |
+| kick-up | | | 0.2 | | 0.7 | slab 1, ledge 1, bus 0.5, armour 0.5 |
+| tapered (in plan to both ends) | 0.06 | | | 0.2 | 0.5 | pod 2, coach 1, boat 1, van 0.5, bus 0.5 |
+| sheer (a boat's) | -0.08 | -0.08 | | 0.1 | 0.4 | boat 2 |
+
+`a` is the style's `LineAmount` times a roll of 0.6 to 1. A long brow or tail never comes lower than keeps 1.68 m of room where the room check's rays start (0.35 m
+in from the front, 0.3 m from the back): a 1.5 m wedge on an armour body put its roof under them (Militia War Bus 2).
+
+### Doors
+
+The door bay stands on either side: a left door is the right-hand door bay turned round (its key's sections swapped, stood by its back right foot), with the hinge
+and leaf turned with it, the seats on the other side and the magazine's crates on the door's. A room that is the vehicle's last, 4.5 m or longer, with a bare tail
+or a hitch behind it, may have its door in its back instead (the look's roll; the plan then leans 2.5 times to a bare tail or a hitch): the door bay becomes a
+plain level 1.5 m bay and the tail is drawn full height with a doorway in its cap (`HullLoft` key flag `b`: jambs at 0.625 m, a 2 m opening, the cap's strips either
+side and the lintel above), the hinge and leaf turned a quarter round, the back seats 0.75 m forward. Rear doors are rare (1 in 30 IT vehicles over six seeds):
+most rooms that are last carry the fuel drum on a porch, which would stand in the doorway; a front door, where a cab merges with the room, waits for phase 4's cabs.
+
+### Turret spots sized from the parts (`BaySpots.Turret`)
+
+The turntable's half width and the arm's reach (the kit's Turntable and Square Beam 1 m, a quarter over each end) come from the part files. A roof turret needs a
+level bay at least as long as the table and no bay within its reach (by distance along the room, not by index: bays are 0.75 to 1.5 m now) higher than its roof.
+A side gun and a pannier now need nothing of the bay's side out past the waist over their own height (a sponson's back and a pannier's stand in the skin, so a
+flared wall above or below meets them face to face: IT Box Truck 3, IT War Bus 1), as well as the clear space above that phase 1 checked.
+
+### Paint by rows and runs
+
+Rows: a lofted bay's painted wall rows are toned by height (below 0.95 m darker, above 1.75 m lighter: `HullLoft.Row`), so any paint keeps the section's rows;
+the lowest row stays rust and the flat rows roof grey, as before. Runs: a room's bays are painted in runs (`Vehicle.PaintRuns`: a run ends where the roofline
+steps, where a mixing style's language changes, or after its rolled length), one colour each, no run within 40 of a channel of its neighbour's; the wear rusts a
+run, not a panel, and gives way to the contrast when it would match. Bandit runs are one or two bays and every other one, mostly, in the "body" role (primer,
+bare metal, old paint), so a Bandit room reads as cobbled sections from a distance instead of one brown. The other styles' wear is light (rust 0.03 to 0.12) and
+their runs keep their panel colours apart; British buses read as red and cream blocks.
+
+### Found on the way
+
+- **A bay's place rounded both ways.** A part's place is kept to the centimetre (`ConstructWorld.Quantise`) and a deck's sockets are on the quarter metre, so a foot
+  12.5 cm in put a bay's origin on a half centimetre, which rounds to even: after metre bays always the same way, after a 0.75 m bay the other, so neighbours met
+  in each other ("the previous bay is in the way"). The feet are now 12 cm from each end (a protocol change: both ends must make the same part), and a room's floor
+  is laid on a half-metre lattice where the feet stand (`Deck(..., aligned: true)`; a quarter-metre plate's own centre is half a centimetre off the grid too).
+- A door bay's frame (at 1.0 m) left a slot at its ends wherever the section stood out past it (a flare, a strake, a boat's 1.13 m waist even in phase 1): its ends
+  are now closed from the frame's outer face out to the section (`HullLoft.DoorEnds`).
+- The door frame's hidden slabs stopped a centimetre short of the bay's ends, so a neighbour's wall slab in line with them is never "in the way".
+- Scam War Bus 6, made by the phase-2 kit, passed `--gen-vehicle`'s check but was refused at load ("Office Phone ... something is in the way": the loader builds a
+  blueprint at the origin, the check 2 m up); it was swapped for seed 2. Not chased: a trophy that touches a part to within float error may fit at one place and
+  not another, which a dynamic spawn could also meet.
+
+### Measured (2-core box; times noisy: the "before" runs shared the box with builds)
+
+Before is the merge base (b30b0ff8, phase 1); after is this branch. Diversity and identity: `--diversity-style STYLE --seeds 6`, the mean over the five recipe
+shapes. Full check: `--sweep-vehicle --seeds 6` before, `--seeds 10` after (seeds 1 to 6 counted for the same 180).
+
+| | before | after |
+| --- | --- | --- |
+| full check, 6 styles x 5 shapes x 6 seeds | 178 of 180 | 178 of 180 (the same two: Bandit Scrap Tanker 3's barrel, British War Bus 6's Firebreather 24 degrees off) |
+| full check, 10 seeds | - | 295 of 300 (also Bandit War Bus 7 and British War Bus 7, a Firebreather off its gunner's look; British Scrap Tanker 10, the barrel) |
+| the 75 committed kit-5 seeds, full check | 75 of 75 | 75 of 75 |
+| parts a vehicle, mean over the sweeps | 129 | 126 |
+| generation, sweep's mean of shape means | 5570 ms (loaded) | 1198 ms |
+| generation alone (`--body-report`), mean a style; worst | 544 to 3049 ms; 45.8 s (Bandit) | 307 to 761 ms; 7.3 s (Bandit) |
+| room sections from the front, mean pair within a style | 0.009 (Militia) to 0.027 (Scam) | 0.026 (British) to 0.048 (Highland) |
+| ... between two styles | 0.020 to 0.078 | 0.039 (IT against British) to 0.093 (Scam against Militia) |
+| coplanar pairs inside lofted bays | 0 | 0 |
+
+| Style | diversity, mean pair within a shape | silhouette part | front part | identity |
+| --- | --- | --- | --- | --- |
+| Bandit | 0.206 to 0.214 | 0.116 to 0.117 | 0.188 to 0.222 | 0.962 to 0.960 |
+| IT | 0.199 to 0.213 | 0.127 to 0.125 | 0.219 to 0.254 | 0.968 to 0.962 |
+| Highland | 0.221 to 0.223 | 0.122 to 0.128 | 0.241 to 0.269 | 0.954 to 0.944 |
+| Scam | 0.220 to 0.221 | 0.127 to 0.128 | 0.271 to 0.269 | 0.968 to 0.966 |
+| British | 0.204 to 0.212 | 0.134 to 0.137 | 0.237 to 0.274 | 0.976 to 0.970 |
+| Militia | 0.193 to 0.185 | 0.114 to 0.109 | 0.232 to 0.231 | 0.906 to 0.898 |
+
+What the numbers say: within a style, rooms now differ from each other from the front two to three times as much as in phase 1 (the section term), and the front
+part of the distance rises for every style but Scam and Militia. The whole distance rises little (+0.001 to +0.014; Militia -0.008, inside six seeds' noise): the
+silhouette part compares each outline in its own box and is mostly the plan's (which segments, where the cab and the axles are), and phase 2 left the plan's
+lengths alone; parts (0.15) and layout (0.20) don't see a body's proportions at all. Identity holds (at most -0.01; the section part compares each bay with its
+style's languages as the style now draws them, overhang and taper included: `BodyLook.References`). The next rise has to come from what the distance weighs: the
+plan's proportions (room length against the cab, overhangs fore and aft), phase 4's cabs and noses in the body's language, and phase 5's contour pieces.
+
+Spread over the six seeds of every shape (`--body-report all --seeds 6`, rooms only): room heights 2.14 to 3.14 m (Bandit 2.14 to 2.79, British 2.47 to 3.14),
+widest half widths 1.07 to 1.45 m (phase 1: 1.0 to 1.13), heavy class 11 of 18 Bandit, British and Militia rooms, every line of each language seen, doors left 6
+to 12 and right 10 to 12 a style.
+
+**Committed seeds** (Styles.cs, again: the most different passing seeds of a 10-seed sweep, seed 1 always among them; same order of shapes as section 6):
+Bandit Box Truck 1 4 2, War Bus 1 6 10, Flatbed Fort 1 7 9, Gun Wagon 1 4 8, Scrap Tanker 1 10 5; IT 1 5 10, 1 5 2, 1 6 2, 1 9 5, 1 2 10; Scam 1 6 9, 1 4 2, 1 9 6,
+1 6 2, 1 6 2; Highland 1 7 8, 1 7 6, 1 8 9, 1 6 2, 1 7 4; British 1 9 8, 1 10 8, 1 5 2, 1 4 9, 1 8 2. 75 files written (62 kept their seed, 13 new, 13 removed);
+`--gen-vehicles` reports all 123 identical.
+
+**Commands** (any vehicle tool): `--roofline NAME` (every kit-5 body with that line), `--scale NAME` (every kit-5 body at that class), with phase 1's `--language`;
+`--body-report` now also prints each style's room heights and widths and its classes, lines, doors and bay-length runs.
+
+**Not done**: a front door (phase 4's merged cabs), non-room lofted bodies (the compact class has no module yet), the giant class's chassis, room length from the
+style (the recipes' ranges are the plan's), rear doors on a porch (its drum stands in the doorway).
+
+## 8. Adding an archetype as data
+
+A new body (a muscle car's fastback, a European cab-over box, a sci-fi gun buggy's tub, a monster truck's shell) is rows, not code, as long as it is a lofted
+body on a chassis:
+
+1. **A language** (`BodyLanguage`, VehicleBodyLanguage.cs): a name, a line of words, its tall section as a half profile (floor edge first, up and over to the
+   centreline, metres; at most 16 points), its height range, its brow and tail rake and narrowing, how low and narrow its "L" and "N" sections go; then its
+   `Lines` (which rooflines, how often), its `FlareBlend` (a welded ledge or a soft flare), and `WalkIn = false` if nobody walks in it.
+2. **A scale class** (`BodyScale`) if none fits: its half width, height, bay length and overhang ranges, its floor's half width, whether it is walked in, and
+   the ride bands it leans to. A car's body is `compact`; a land train's `giant`.
+3. **A roofline** (`Roofline`) if none of the nine draws it: a fastback is a strong negative `Rise` with a short tail, a wedge a positive one with a long brow.
+4. **The style's row** (`BodyStyleRule.ByStyle`): its languages and weights, its facets (smooth or faceted), whether it mixes, its classes, height factor,
+   overhang share, line amount, brow and tail lengths, door sides, ride bands and paint runs.
+5. Measure: `--body-report STYLE` (sections, classes, lines, doors), `--diversity-style STYLE` (the front and section terms see the new profile), `--sweep-vehicle`
+   for the full check, `--vehicle-shots` with `--language`, `--roofline` and `--scale` to look at one.
+
+What is still code, and which phase owns it: a body that is not a room (an engine cover, a cargo box, a car's cabin) needs a module that places it (phase 4's cab
+and hood lofts); a front door or a cab inside the body needs phase 4; a chassis for the giant class and for a car's low, wide stance needs the chassis layer's
+recipes (data in Styles.cs's gear lists, Karl's).
+
 ## Pictures
 
-In `/home/claude/vk-bodies-sheets/` (agent box; PNG):
+Phase 2: `/home/claude/vk-body2-sheets/` (agent box, not committed): `before_` and `after_` `--vehicle-sheet` of Bandit War Bus, IT Box Truck and British War Bus,
+seeds 1 to 6. Phase 1's in `/home/claude/vk-bodies-sheets/` (agent box; PNG):
 
 - `sections_languages.png`: the cross-sections from the front, today's T/L/N and the nine languages, with a player's box for scale.
 - `languages_BanditWarBus2.png`: one plan (Bandit War Bus 2) with its room in each language and in today's bays, rear three-quarter and side.
@@ -373,10 +550,14 @@ In `/home/claude/vk-bodies-sheets/` (agent box; PNG):
 
 ## Measuring it again
 
+Phase 2's numbers come from `--diversity-style STYLE --seeds 6`, `--body-report all --seeds 6` and `--sweep-vehicle "STYLE SHAPE" --seeds 10` over the six styles
+and five recipe shapes, run once on the merge base and once on the branch.
+
 ```
 --body-report all --seeds 4 --kit 3      # the fixed bays
 --body-report all --seeds 4              # kit 5, current (and coplanar pairs inside lofted bays)
 --diversity-style IT --seeds 6 --no-sections   # the old distance and identity, to compare
 --sweep-vehicle "IT War Bus" --seeds 6 --kit 5
 --vehicle-shots "Bandit War Bus 2" --kit 5 --language cabin   (xvfb)
+--vehicle-shots "IT War Bus 2" --roofline crowned --scale heavy   (xvfb; phase 2: one line, one class)
 ```
