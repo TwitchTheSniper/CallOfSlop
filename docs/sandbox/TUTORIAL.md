@@ -69,7 +69,7 @@ waiting for you." Server state per person: `_tutGroup`, `_tutDone`; each group i
 - The Esc menu (Sandbox): **Skip the induction** while it runs; **Resume** a skipped one where it stopped, or **Start it again**;
   **Replay the induction** once finished.
 
-## Network (protocol 201, the group 208)
+## Network (protocol 201, the group 209)
 
 `Msg.Tutorial`, a `TutorialOp` first, reliable ordered. Server to one client: `State` (u8 step, u8 state) whenever it changes
 and when they arrive (late joiners included). `Group` (u8 they have done the step, u8 others in their group, u8 of them done, text who the group waits for) when their group changes. Client to server: `Cue` (u8 cue), `Skip`, `Replay`, `Resume`. The host's own
