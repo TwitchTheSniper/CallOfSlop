@@ -45,8 +45,8 @@ public sealed class SandboxModule : GameModeModule
 
     public override void OnSpawn(Game game, Player p) => game.SandboxOnSpawn(p);
 
-    /// <summary>Spawned bots never come back (GameSandboxSpawns.cs): dead, they go.</summary>
-    public override bool CanRespawn(Game game, Player p, double now) => !p.SbSpawned;
+    /// <summary>Spawned bots never come back (GameSandboxSpawns.cs): dead, they go. Nor does anyone dead for good (permadeath, GameSandboxDeath.cs).</summary>
+    public override bool CanRespawn(Game game, Player p, double now) => !p.SbSpawned && !game.SandboxFallen(p.Id);
 
     /// <summary>Spawned bots: friendly ones follow (or fight zombies near them), enemy ones hunt (GameSandboxSpawns.cs).</summary>
     public override bool BotTick(Game game, Player bot, BotBrain brain, double now) => game.SandboxBotTick(bot, brain, now);

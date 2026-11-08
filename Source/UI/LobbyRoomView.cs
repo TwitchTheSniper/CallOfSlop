@@ -100,7 +100,7 @@ public sealed class LobbyRoomView
         h = Mix(h, game.GravityPercent | (game.MatchMinutes << 8) | ((int)game.BotSkill << 16) | ((int)game.BotGearMode << 20) | ((int)game.ScoreLimitMode << 24));
         h = Mix(h, game.WantedBots | (game.AutoStartSeconds << 8) | ((game.DestructionEnabled ? 1 : 0) << 24) | ((game.VoiceAllowed ? 1 : 0) << 25)
                    | ((game.DeadChatPrivate ? 1 : 0) << 26) | ((game.ReturnToLobby ? 1 : 0) << 27) | ((game.FrenzyBuffsEnabled ? 1 : 0) << 28));
-        h = Mix(h, game.ZStartRound | ((game.ZTestKit ? 1 : 0) << 8) | ((game.SandboxSurvivalOption ? 1 : 0) << 9));
+        h = Mix(h, game.ZStartRound | ((game.ZTestKit ? 1 : 0) << 8) | ((game.SandboxSurvivalOption ? 1 : 0) << 9) | game.SandboxDeathByte << 10);
         h = Mix(h, game.Players.Count);
         foreach (var p in game.Players.Values)
         {
@@ -190,7 +190,7 @@ public sealed class LobbyRoomView
         if (game.IsTeamMode && game.TeamBalance != TeamBalance.Auto)
             SettingsLine += game.HumansVsBots ? $", Humans vs Bots (people on {GameModes.TeamNames[game.HumansTeam]})" : ", team balancing off";
         if (game.Mode == GameMode.Sandbox)
-            SettingsLine += game.SandboxInfiniteParts ? ", creative" : ", survival";
+            SettingsLine += game.SandboxInfiniteParts ? ", creative" : $", survival ({Game.DeathLabel(game.SandboxDeathRule).ToLowerInvariant()}{(game.SandboxKeepPack ? ", keep backpack" : "")})";
         SandboxHint = game.Mode != GameMode.Sandbox ? ""
             : game.SandboxInfiniteParts ? "Creative: endless parts, the parts menu and noclip."
             : (map.Resources?.DepositCount ?? 0) > 0 ? "Survival: no parts menu or noclip. Salvage, gather, refine and build what you need from a start kit."

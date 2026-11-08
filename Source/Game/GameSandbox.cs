@@ -187,6 +187,7 @@ public sealed partial class Game
         SandboxShareRules(); // (a new map's rules; the option itself comes with the lobby state)
         ResetSandboxSpawns();
         OpeningReset();
+        SandboxDeathResetAll(); // (checkpoints and fates: a world's records bring theirs, GameSandboxDeath.cs)
         SpawnPlacing = false;
         _sbPoseTick = 0;
     }
@@ -215,7 +216,10 @@ public sealed partial class Game
         h = SandboxHand.Empty;
         h.Tool = p.Bot == null ? tool : ConstructTool.None;
         if (IsServer)
+        {
             WorldOnSpawn(p); // (back where they were, in a saved world)
+            SandboxRespawnAt(p); // (after a death: at their checkpoint, GameSandboxDeath.cs)
+        }
     }
 
     /// <summary>Server: how fast the player is moving in the world: their own speed plus, on a construct, that part of it (what a part they drop leaves with).</summary>
@@ -287,7 +291,7 @@ public sealed partial class Game
             ref var h = ref SandboxHands.Hand(p.Id);
             SandboxRiderHands(p, ref h); // (the frame they stand in, for the tools: GameSandboxRide.cs)
             if (_sbAlive[p.Id] && !p.Alive)
-                SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (a death drops the backpack's contents as pickups)
+                SandboxDied(p); // (the backpack, permadeath, where they will wake: GameSandboxDeath.cs)
             _sbAlive[p.Id] = p.Alive;
             if (!p.Alive)
             {
@@ -313,6 +317,8 @@ public sealed partial class Game
                 continue;
             }
             h.SeatPart = (ushort)seat; // (parts are renumbered when others come off)
+            if (c.Parts[seat].D.Bunk)
+                SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
             var keysWere = c.Parts[seat].Keys;
             c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)

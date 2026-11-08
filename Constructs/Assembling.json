@@ -36,6 +36,7 @@
     {"output": "Battery", "materials": {"copper": 4, "circuits": 2}, "seconds": 8, "minTier": 3},
     {"output": "Battery Pack", "materials": {"copper": 20, "steel": 12}, "parts": {"Control Unit": 1}, "seconds": 40, "minTier": 4},
     {"output": "Seat", "materials": {"cloth": 3, "steel": 3}, "seconds": 5},
+    {"output": "Bunk", "materials": {"cloth": 4, "steel": 3}, "seconds": 6},
     {"output": "Driving Module", "materials": {"steel": 3, "rubber": 1}, "seconds": 3},
     {"output": "Turret Module", "materials": {"steel": 3, "rubber": 1}, "seconds": 3},
     {"output": "Lamp", "materials": {"copper": 1}, "parts": {"Lens": 1}, "seconds": 2, "minTier": 2},
