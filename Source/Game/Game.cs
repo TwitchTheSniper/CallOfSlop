@@ -1914,6 +1914,7 @@ public sealed partial class Game : IDisposable
                 SendResourceState(sender); // felled trees so far (GameResources.cs)
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
+                SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
                 {
@@ -2228,6 +2229,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Opening when !IsServer:
                 ReadOpening(ref r); // the survival opening's beat (GameSandboxOpening.cs)
+                break;
+            case (byte)Msg.Corpse when !IsServer:
+                ReadCorpse(ref r); // a body the host settled, or one that went (GameCorpses.cs)
                 break;
             case (byte)Msg.Fate when !IsServer:
                 ReadFate(ref r); // where we wake after a death, and permadeath (GameSandboxDeath.cs)

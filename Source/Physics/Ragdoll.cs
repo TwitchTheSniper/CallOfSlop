@@ -283,12 +283,43 @@ public sealed class Ragdoll
     /// <summary>Particles touching something this step (bit per particle).</summary>
     public int Touching;
 
+    /// <summary>
+    /// Other bodies this one collides with this step (corpses fall on each other and pile up; set by the pool before
+    /// <see cref="Advance"/>, <see cref="Ragdolls"/>): particle against particle, spheres. A sleeping one stays put and takes
+    /// the whole push off the moving body (a hard landing, <see cref="WakeSpeed"/>, wakes it); an awake one shares it.
+    /// </summary>
+    public static readonly Ragdoll[] Others = new Ragdoll[8];
+
+    /// <inheritdoc cref="Others"/>
+    public static int OtherCount;
+
+    /// <summary>A particle hitting a sleeping body faster than this (m/s) wakes it: a body landing on a pile shifts it.</summary>
+    public const float WakeSpeed = 2.5f;
+
+    /// <summary>The body's box (world, particles' centres padded by the biggest radius), as of the last <see cref="UpdateBounds"/>.</summary>
+    public Vector3 BoundsMin, BoundsMax;
+
+    /// <summary>Recomputes <see cref="BoundsMin"/> and <see cref="BoundsMax"/>.</summary>
+    public void UpdateBounds()
+    {
+        var lo = Pos[0];
+        var hi = Pos[0];
+        for (var i = 1; i < RagdollRig.Count; i++)
+        {
+            lo = Vector3.Min(lo, Pos[i]);
+            hi = Vector3.Max(hi, Pos[i]);
+        }
+        BoundsMin = lo - new Vector3(0.2f);
+        BoundsMax = hi + new Vector3(0.2f);
+    }
+
     private readonly List<ContactShape> _shapes = new(64);
 
     // The gathered shapes that reach the body this sub-step (indices into _shapes); -1 = use them all.
     private readonly int[] _near = new int[48];
     private int _nearCount;
     private float _terrainLow = float.NegativeInfinity;
+    private float _subStep = Step;
 
     /// <summary>
     /// A link ready to solve: the particles, its limits (and squares), its length in the standing pose (where a range
@@ -391,6 +422,7 @@ public sealed class Ragdoll
             for (var i = 0; i < RagdollRig.Count; i++)
                 Prev[i] = Pos[i] - (Pos[i] - Prev[i]) / sub;
         var h = Step / sub;
+        _subStep = h;
         var terrain = world.Terrain;
         Touching = 0;
         var g = new Vector3(0, -World.Gravity * h * h * World.GravityScale, 0);
@@ -744,6 +776,7 @@ public sealed class Ragdoll
     /// <summary>Pushes every particle out of the terrain and the gathered shapes; on the last pass, friction on what touched.</summary>
     private void Collide(ITerrainCollision? terrain, bool friction)
     {
+        var subH = _subStep;
         var radius = RagdollRig.Radius;
         var shapes = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_shapes);
         var near = _nearCount < 0 ? null : _near;
@@ -777,6 +810,8 @@ public sealed class Ragdoll
                     hit = true;
                 }
             }
+            if (OtherCount > 0 && CollideOthers(i, ref p, r, subH, ref normal))
+                hit = true; // (its push joins the normal, so a body resting on another one gets friction and can sleep)
             if (!hit)
                 continue;
             Pos[i] = p;
@@ -793,6 +828,54 @@ public sealed class Ragdoll
             var keep = vn < 0 ? vt * (1f - Friction) : vt * (1f - Friction) + nn * vn; // no bounce into the surface
             Prev[i] = p - keep;
         }
+    }
+
+    /// <summary>
+    /// Particle <paramref name="i"/> (at <paramref name="p"/>, radius <paramref name="r"/>) out of the other bodies' particles
+    /// (<see cref="Others"/>). Returns true if it touched one; the push goes into <paramref name="p"/>, its share of an
+    /// awake body's into that body.
+    /// </summary>
+    private bool CollideOthers(int i, ref Vector3 p, float r, float h, ref Vector3 normal)
+    {
+        var radius = RagdollRig.Radius;
+        var hit = false;
+        for (var k = 0; k < OtherCount; k++)
+        {
+            var o = Others[k];
+            if (p.X + r < o.BoundsMin.X || p.X - r > o.BoundsMax.X || p.Y + r < o.BoundsMin.Y || p.Y - r > o.BoundsMax.Y || p.Z + r < o.BoundsMin.Z || p.Z - r > o.BoundsMax.Z)
+                continue;
+            var op = o.Pos;
+            for (var j = 0; j < RagdollRig.Count; j++)
+            {
+                var d = p - op[j];
+                var sum = r + radius[j];
+                var d2 = d.LengthSquared();
+                if (d2 >= sum * sum)
+                    continue;
+                var dist = MathF.Sqrt(d2);
+                var n = dist > 1e-5f ? d / dist : Vector3.UnitY;
+                var depth = sum - dist;
+                if (o.Asleep)
+                {
+                    // A hard landing on a sleeping body wakes it (the pile shifts under it); else it is the floor.
+                    if ((p - Prev[i]).LengthSquared() > WakeSpeed * WakeSpeed * h * h && !o.Broken)
+                        o.Wake();
+                    p += n * depth;
+                }
+                else
+                {
+                    var wa = RagdollRig.InvMass[i];
+                    var wb = RagdollRig.InvMass[j];
+                    var share = wa / (wa + wb);
+                    p += n * (depth * share);
+                    op[j] -= n * (depth * (1f - share));
+                    o.Touching |= 1 << j;
+                }
+                normal += n;
+                hit = true;
+            }
+        }
+        return hit;
     }
 
     /// <summary>Moves the sphere (centre <paramref name="p"/>, radius <paramref name="r"/>) out of one shape. True if it touched; <paramref name="n"/> is the push direction.</summary>
