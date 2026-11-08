@@ -109,6 +109,14 @@ public sealed partial class ConstructWorld
             met = true;
             what = 2;
         }
+        var shell = -1;
+        if (server && ShellCount > 0 && RayShell(r.Tested, d, best, out var sd, out var sk) && sd < best)
+        {
+            best = sd;
+            shell = sk;
+            met = true;
+            what = 3; // (a bomb or missile in the air: ConstructCookOffs.cs)
+        }
         if (!met)
         {
             r.Tested = r.Pos;
@@ -119,7 +127,9 @@ public sealed partial class ConstructWorld
             RoundsLanded++;
             var dealt = r.Damage * MathF.Min(1f, r.Vel.Length() / MathF.Max(1f, r.Muzzle));
             var at = r.Tested + d * best;
-            if (what == 2)
+            if (what == 3)
+                HurtShell(shell, dealt);
+            else if (what == 2)
                 Targets!.RoundHit(tid, dealt, r.By, r.Weapon, at, d);
             else if (what == 1 && ch.Part >= 0 && ch.Part < ch.Body.PartCount && ch.RoutePlus1 == 0 && ch.SlotPlus1 == 0)
             {

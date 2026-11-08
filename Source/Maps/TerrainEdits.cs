@@ -609,6 +609,7 @@ public sealed partial class TerrainEdits : IDigGround
         }
         _touchedCells.Clear();
         _cols = 0;
+        _reserved = 0; // (the span lists made stay: Reserve walks past them)
         Log.Clear();
         Highest = _t.MaxHeight;
         Version++;
@@ -628,6 +629,36 @@ public sealed partial class TerrainEdits : IDigGround
     }
 
     /// <summary>Turns terrain cell (i, j) into columns read off the heightfield (and its holes and caves) at their middles. Returns its first column.</summary>
+    /// <inheritdoc cref="IDigGround.Reserve"/>
+    public int Reserve(int columns, int most)
+    {
+        var from = Math.Max(_reserved, _cols);
+        var want = from + Math.Max(0, columns);
+        if (_spans.Length < want)
+        {
+            var size = Math.Max(64, want);
+            Array.Resize(ref _spans, size); // (once, to the crater's size: not doubling as it digs)
+            Array.Resize(ref _count, size);
+            Array.Resize(ref _orig, size);
+            Array.Resize(ref _fillKind, size);
+            Array.Resize(ref _fillLo, size);
+        }
+        var made = 0;
+        _reserved = from;
+        while (_reserved < want && made < most)
+        {
+            if (_spans[_reserved] == null)
+            {
+                _spans[_reserved] = new float[8]; // (what Touch would make)
+                made++;
+            }
+            _reserved++;
+        }
+        return want - _reserved;
+    }
+
+    private int _reserved; // (Reserve's cursor: every span list below it is made)
+
     private int Touch(int i, int j)
     {
         var k = j * _cellsX + i;
