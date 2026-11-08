@@ -130,6 +130,8 @@ public sealed class WorldPlayer
     public bool Opened; // has been through the survival opening here (GameSandboxOpening.cs; saved in the Opening section)
     public TutorialState TutorialState; // the warden's induction (GameTutorial.cs): not started, running, finished or skipped, and at which step
     public byte TutorialStep;
+    public byte DepotState; // the Orbital Depot's run (GameDepot.cs; saved in the Depot section): none, reported, a step, done
+    public ushort DepotLander; // ...and their lander's construct (stable in a save; 0: none)
     public bool Fallen; // dead for good in a permadeath world (GameSandboxDeath.cs; saved in the Fate section)
     public bool Died; // dead when last seen: their next spawn is a respawn, at their checkpoint
     public ushort BunkBody; // their checkpoint: the bunk they last lay in (its construct, stable in a save; 0: none), segment and place in its rest frame

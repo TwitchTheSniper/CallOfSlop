@@ -45,6 +45,8 @@ arrive), and `TutorialBegin(id)` when they wake or skip. This file declares them
 them. `Game.OpeningActive` (the local player is in it), `Game.OpeningWarden()` (his body, or null) and `Game.OpeningHas(id)`
 (server) are there for the tutorial to read.
 
+After the tutorial the Ministry sends a player to remote labour: the Orbital Depot (docs/story/DEPOT.md).
+
 ## Lockdown
 
 Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes into lockdown (Karl, 2026-11-08;

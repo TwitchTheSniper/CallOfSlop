@@ -1,0 +1,155 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Remote Works",
+  "description": "The Ministry of Slop's remote labour hall: four shell control chairs and a landing apron.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 3,
+      "socket": "l0",
+      "by": "r0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 3,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 3,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 4,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 5,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 2,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 2,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 1,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 1,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 9,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 13,
+      "socket": "t0",
+      "by": "b0_7"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 11,
+      "socket": "t0_0",
+      "by": "b15_15"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 0,
+      "socket": "t7_8",
+      "by": "bottom"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 1,
+      "socket": "t7_0",
+      "by": "bottom"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 1,
+      "socket": "t7_8",
+      "by": "bottom"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 2,
+      "socket": "t7_0",
+      "by": "bottom"
+    }
+  ]
+}
