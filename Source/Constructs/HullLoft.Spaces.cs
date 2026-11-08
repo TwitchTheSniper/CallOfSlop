@@ -59,7 +59,7 @@ public static partial class HullLoft
             var (mn, mx) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
             foreach (var c in (Vector3[])[c0 - side - th, c0 + side - th, c0 - side + th, c0 + side + th, c1 - side - th, c1 + side - th, c1 - side + th, c1 + side + th])
                 (mn, mx) = (Vector3.Min(mn, c), Vector3.Max(mx, c));
-            var inset = new Vector3(0.004f);
+            var inset = new Vector3(0.004f, 0.004f, 0.008f); // (along the bay, more: a bay's place rounds to the centimetre, so neighbours' ends may come 5 mm nearer: the 2026-11-07 lesson)
             var (lo, hi) = (mn + inset, mx - inset);
             (lo.Z, hi.Z) = (MathF.Max(lo.Z, zLo), MathF.Min(hi.Z, zHi));
             p.Hide(lo, hi);
@@ -138,7 +138,7 @@ public static partial class HullLoft
                         q0 = new Vector2(DoorPlane, DoorTop);
                     var nr = RowNormal(q0, q1);
                     var upright = MathF.Abs(q1.Y - q0.Y) >= MathF.Abs(q1.X - q0.X);
-                    Bar(p, At(q0, s, z), At(q1, s, z), new Vector3(s * nr.X, nr.Y, 0), 2 * PostHalf, 2 * PostHalf, colour, hide: upright, zLo: 0.006f, zHi: len - 0.006f); // (a roof bow drawn only: the rails hold)
+                    Bar(p, At(q0, s, z), At(q1, s, z), new Vector3(s * nr.X, nr.Y, 0), 2 * PostHalf, 2 * PostHalf, colour, hide: upright, zLo: 0.009f, zHi: len - 0.009f); // (a roof bow drawn only: the rails hold)
                 }
             }
             // The faction's infill.
@@ -282,8 +282,14 @@ public static partial class HullLoft
         var foot = FootX(sh);
         var h = sh.Hatch;
         var i = 0;
+        var zs = new SortedSet<float>();
+        for (var z = 0.12f; z <= sh.Length - 0.12f + 1e-3f; z += 0.25f)
+        {
+            zs.Add(MathF.Round(z * 100) / 100);
+            zs.Add(MathF.Round((sh.Length - z) * 100) / 100); // (and from the back: a bay stood turned round, a left door's, takes its storey turned with it, by its back feet)
+        }
         for (var x = -foot; x <= foot + 1e-3f; x += 0.25f)
-            for (var z = 0.12f; z <= sh.Length - 0.12f + 1e-3f; z += 0.25f)
+            foreach (var z in zs)
             {
                 if (h is { } hh && x > hh.X0 - 0.15f && x < hh.X1 + 0.15f && z > hh.Z0 - 0.15f && z < hh.Z1 + 0.15f)
                     continue;

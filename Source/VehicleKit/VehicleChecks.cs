@@ -492,6 +492,10 @@ public static class VehicleChecks
     {
         foreach (var way in new[] { Vector3.UnitX, -Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitZ })
         {
+            if (Vector3.Dot(way, room.DoorFace) > 0.5f && !room.Caged)
+                continue; // (an upper storey's way down is its hatch)
+            if (Vector3.Dot(way, room.DoorFace) > 0.5f && room.Caged && MathF.Abs(start.Z - room.DoorMid.Z) < 1f)
+                continue; // (out through its doorway: the door's own check)
             var d = Clear(c, start + room.FloorRest, way, MathF.Max(4f, room.R.Z1 - room.R.Z0 + 1.5f));
             var end = start + way * d;
             if (MathF.Abs(end.X) > room.R.X1 + 0.6f || end.Z < room.R.Z0 - 0.6f || end.Z > room.R.Z1 + 0.6f)
@@ -503,18 +507,49 @@ public static class VehicleChecks
         r.Notes.Add($"the {room.Tag}: {(room.Caged ? "caged" : room.Open ? "open" : "enclosed")}, a player is held in each way");
     }
 
+    /// <summary>Where the check stands a player in a room: its middle, else (a stair or a seat there) the nearest spot on its middle line where a standing body touches nothing.</summary>
+    private static Vector3 FreeSpot(Construct c, Room room)
+    {
+        if (room.Stair == null)
+            return room.Middle;
+        var best = room.WalkStart ?? room.Middle;
+        var bestD = float.MaxValue;
+        for (var z = room.R.Z0 + 0.6f; z <= room.R.Z1 - 0.6f; z += 0.125f)
+        {
+            var at = room.Middle with { Z = z };
+            if (Touching(c, at + room.FloorRest) || MathF.Abs(z - room.Middle.Z) >= bestD)
+                continue;
+            (best, bestD) = (at, MathF.Abs(z - room.Middle.Z));
+        }
+        return best;
+    }
+
+    private static bool Touching(Construct c, Vector3 feet)
+    {
+        foreach (var h in (float[])[0.5f, 0.9f, 1.3f])
+            if (Hit(c, feet + new Vector3(0, h, 0), 0.42f))
+                return true;
+        return false;
+    }
+
     /// <summary>How far a standing player (spheres of 0.38 m from 0.7 m over the feet to the head) goes from <paramref name="feet"/> (rest frame) along <paramref name="way"/> before touching a solid box, up to <paramref name="reach"/>.</summary>
     private static float Clear(Construct c, Vector3 feet, Vector3 way, float reach)
     {
         const float r = 0.38f;
         for (var d = 0f; d <= reach; d += 0.05f)
             foreach (var h in (float[])[0.7f, 1.0f, 1.3f, 1.6f])
-            {
-                var at = feet + way * d + new Vector3(0, h, 0);
+                if (Hit(c, feet + way * d + new Vector3(0, h, 0), r))
+                    return d;
+        return reach;
+    }
+
+    /// <summary>Does a sphere at <paramref name="at"/> (rest frame) touch any solid box of the build?</summary>
+    private static bool Hit(Construct c, Vector3 at, float r)
+    {
                 for (var i = 0; i < c.PartCount; i++)
                 {
                     c.PartBounds(i, out var mn, out var mx);
-                    if (at.X < mn.X - r - 0.5f || at.X > mx.X + r + 0.5f || at.Y < mn.Y - r - 0.5f || at.Y > mx.Y + r + 0.5f || at.Z < mn.Z - r - 0.5f || at.Z > mx.Z + r + 0.5f)
+                    if (c.Parts[i].Seg == 0 && at.X < mn.X - r - 0.5f || at.X > mx.X + r + 0.5f || at.Y < mn.Y - r - 0.5f || at.Y > mx.Y + r + 0.5f || at.Z < mn.Z - r - 0.5f || at.Z > mx.Z + r + 0.5f)
                         continue;
                     c.RestPose(c.Parts[i].Seg, out var q, out var t);
                     for (var k = 0; k < c.DefOf(i).SolidBoxes; k++)
@@ -529,11 +564,10 @@ public static class VehicleChecks
                         }
                         var gap = Vector3.Max(Vector3.Abs(at - bc) - bh, Vector3.Zero);
                         if (gap.LengthSquared() < r * r)
-                            return d;
+                            return true;
                     }
                 }
-            }
-        return reach;
+        return false;
     }
 
     private static string Show(Vector3 v) => FormattableString.Invariant($"({v.X:0.00}, {v.Y:0.00}, {v.Z:0.00})");
@@ -596,7 +630,7 @@ public static class VehicleChecks
         var head = room.Ceiling - room.FloorTop;
         if (head < CallOfSlop.World.PlayerHeight + 0.1f)
             r.Failures.Add($"the {room.Tag}: {head:0.00} m of headroom: a player is {CallOfSlop.World.PlayerHeight:0.00} m");
-        var middle = room.WalkStart ?? room.Middle; // (phase 5: off a stair)
+        var middle = FreeSpot(c, room); // (phase 5: off a stair and the seats beside it)
         var start = World(middle + new Vector3(0, 0.15f, 0));
         var inward = -room.DoorFace;
         // Stand at the middle, then walk towards the far wall.
