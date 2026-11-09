@@ -3127,8 +3127,9 @@ called from `ConstructWorld.CookOff`; numbers in `Constructs/FuelBlasts.json`; m
 - **Fused units.** Every member keeps its own health, so a tank fused into a hull goes up when it breaks like any other.
 - **Cost** (`--bench-fuelblast`, second of two runs, a host and a client over loopback on the shared 2-core box): a drum, a tanker or a
   bunker, worst server tick under 1 ms CPU; a row of 24 drums 2 m apart, one shot: all 24 go over 516 ticks, worst 0.5 ms; the Capital
-  bunker's front, worst 1.9 ms; a fused 616-part sheet with 16 tanks: 5 go, one tick of 7 to 10 ms CPU where the sheet splits into
-  pieces (the split's own cost, as any blast that breaks the sheet).
+  bunker's front, worst 1.9 ms; a fused 616-part sheet with 16 tanks 1.5 m apart: 5 go at once (the blast lights what burns in reach), the blasts' ticks
+  under 3.3 ms; the one tick of 7 to 10 ms is the sheet's rebuild after the first tank breaks (a part that stops working on a big fused
+  body, as before this change), not the blasts.
 
 ### The yard
 
