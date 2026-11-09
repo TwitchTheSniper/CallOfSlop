@@ -885,7 +885,7 @@ new rates can be faction signatures.
 
 Code: `Source/Constructs/HullLoft.Balcony.cs` (the part), `Source/VehicleKit/Vehicle.Balcony.cs` (placing it; `Lean`), `Vehicle.Hulls.cs` (the door's ladder moves to
 the balcony), `Vehicle.Spaces.cs`, `Vehicle.Trim.cs` and `Vehicle.Body.cs` (pods, trim and spikes by `Lean`), the style rows' `Balcony*` and `Asym*`
-(`BodyStyleRule`, VehicleBodyLanguage.cs), `VehicleChecks.Balcony`. Protocol 218.
+(`BodyStyleRule`, VehicleBodyLanguage.cs), `VehicleChecks.Balcony`. Protocol 219.
 
 ### The part
 
