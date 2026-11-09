@@ -293,7 +293,8 @@ public static partial class HullLoft
         ConstructPartDef def;
         try
         {
-            def = ConstructParts.Parse(Json(name, sh), name);
+            def = ConstructParts.Parse(Json(name, sh, out var lamps), name);
+            def.Lamps = lamps;
         }
         catch (ConstructPartException e)
         {
@@ -339,6 +340,7 @@ public static partial class HullLoft
     private sealed class Builder
     {
         public readonly JsonArray Boxes = new(), Sockets = new();
+        public readonly List<(Vector3 At, Vector3 Colour)> Lamps = new(); // (phase 7b: the lamps that light the room: ConstructPartDef.Lamps)
         public float Centre = float.MaxValue; // the lowest of the roof's slabs over the centreline: a lever hangs under it
 
         /// <param name="off">Each corner's own offset for the thickness (a mitre, <see cref="Mitre"/>), so facets meeting at an angle share the joint's plane; null: along <paramref name="n"/>.</param>
@@ -732,10 +734,11 @@ public static partial class HullLoft
         }
     }
 
-    private static string Json(string name, Shape sh)
+    private static string Json(string name, Shape sh, out (Vector3 At, Vector3 Colour)[] lamps)
     {
         var (length, door, front, back, a, b, backDoor) = (sh.Length, sh.Door, sh.Front, sh.Back, sh.A, sh.B, sh.BackDoor);
         var p = new Builder();
+        lamps = [];
         if (sh.Cage != '\0')
             CageSides(p, sh); // (phase 5: a frame of bars, HullLoft.Spaces.cs)
         else
@@ -806,6 +809,7 @@ public static partial class HullLoft
             ["boxes"] = p.Boxes,
             ["sockets"] = p.Sockets,
         };
+        lamps = [.. p.Lamps];
         return part.ToJsonString();
     }
 }

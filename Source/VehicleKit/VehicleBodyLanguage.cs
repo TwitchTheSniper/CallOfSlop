@@ -1118,6 +1118,7 @@ public static class BodyReportCli
             var ms = new List<double>();
             var slowest = "";
             var parts = new List<int>();
+            var (lamps, panes, roomed) = (0, 0, 0); // (phase 7b: lamps that light and window panes, over the vehicles with rooms)
             var facets = new List<int>();
             var traits = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal); // (phase 2: scale, roofline, door, bay lengths)
             var heights = new List<float>();
@@ -1138,6 +1139,15 @@ public static class BodyReportCli
                             slowest = $"{g.Name} {seed}";
                         ms.Add(t);
                         parts.Add(v.Built.PartCount);
+                        if (v.Rooms.Count > 0)
+                        {
+                            roomed++;
+                            for (var i = 0; i < v.Built.PartCount; i++)
+                            {
+                                lamps += v.Built.DefOf(i).Lamps.Length;
+                                panes += v.Built.DefOf(i).Name.StartsWith(HullLoft.Prefix + "pane", StringComparison.Ordinal) ? 1 : 0;
+                            }
+                        }
                         foreach (var b in v.Rooms.SelectMany(r => r.Bays))
                         {
                             if (keys.Add(b.Def.Name) && OwnFights(b.Def, out var first) is var own and > 0)
@@ -1227,6 +1237,7 @@ public static class BodyReportCli
             if (traits.TryGetValue("bays", out var bl))
                 Console.WriteLine($"  bay lengths: {bl.Count} different runs over {bl.Values.Sum()} rooms; commonest {bl.OrderByDescending(x => x.Value).First().Key} ({bl.Values.Max()})");
             Console.WriteLine($"  front profile: mean pair {(pairs.Count > 0 ? pairs.Average() : 0):0.000}; generation mean {(ms.Count > 0 ? ms.Average() : 0):0} ms, worst {(ms.Count > 0 ? ms.Max() : 0):0} ms ({slowest}); parts mean {(parts.Count > 0 ? parts.Average() : 0):0}");
+            Console.WriteLine($"  interior: {(roomed > 0 ? (float)lamps / roomed : 0):0.0} lamps and {(roomed > 0 ? (float)panes / roomed : 0):0.0} panes (cab and room) a vehicle with rooms ({roomed})");
             if (mine.Count > 0)
                 Console.WriteLine("  mean front: " + string.Join(" ", Enumerable.Range(0, Bins).Select(b => mine.Average(x => x[b]).ToString("0.00", CultureInfo.InvariantCulture))));
         }

@@ -402,6 +402,9 @@ public static partial class HullLoft
     private static void Lamp(Builder p, char kind, Vector3 at)
     {
         var (x, y, z) = (at.X, at.Y, at.Z);
+        // Phase 7b: the light it gives (ConstructLamps), a little under its glowing part, in its colour.
+        var (drop, glow) = kind switch { 'r' => (0.2f, "#ffd27a"), 'm' => (0.08f, "#ffe9b0"), 'c' => (0.03f, "#f4f8ff"), 's' => (0.04f, "#ff4fd8"), 't' => (0.19f, "#ffb347"), _ => (0.06f, "#fff1c8") };
+        p.Lamps.Add((new Vector3(x, y - drop - 0.05f, z), HexColour(glow)));
         switch (kind)
         {
             case 'r': // a bare bulb on a flex
@@ -430,6 +433,9 @@ public static partial class HullLoft
                 break;
         }
     }
+
+    private static Vector3 HexColour(string hex) =>
+        new(Convert.ToInt32(hex.Substring(1, 2), 16) / 255f, Convert.ToInt32(hex.Substring(3, 2), 16) / 255f, Convert.ToInt32(hex.Substring(5, 2), 16) / 255f);
 
     // ---- An inset lining ----------------------------------------------------------------------------------------------
 
