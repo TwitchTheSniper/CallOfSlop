@@ -596,7 +596,7 @@ Authored beats that wait for the world to be ready, the CK3 recipe: a beat isn't
 so ("Morrow alive, a friend of yours, the colony not in lockdown"), casts whoever fits, and changes qualities that
 the rest of the story reads (`Source/Story/StoryStorylets.cs` the engine, `StoryletChecks.cs` the warnings,
 `Source/Game/GameStoryStorylets.cs` the game's side, `Source/UI/UiStoryStorylets.cs` the tab; data
-`Story/Storylets/*.json`, format `call-of-slop-storylets/1`). The storylet builder (an artifact) writes the same files;
+`Story/Storylets/*.json`, format `call-of-slop-storylets/1`). The storylet builder (https://claude.ai/artifact/9CmjXTzyB9wZoLZsjTe1yX) writes the same files;
 the game is the source of truth, and `--check-story` decides what is valid.
 
 ```json
