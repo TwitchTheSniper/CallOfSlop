@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 2.25 m, leaf/hydraulic, wing 0.5, language bus heavy 2.59 m, flare 0.15, crowned 1.0, brow 0.75 1.25 m, tail 0.82 1 m, door right, 9 facets, cab bus capsule, 6 facets, nose grille, fitting destination board, trim livery on 11 bay sides, wear age 0.64 (6 rusty, 5 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab cab-over, nose flat, rear porch, under stilts, flank panniers, sides walls, roof none, layout room(Brow T,Door,Bay T,Bay T-N,Bay N-L,Tail L)+bed 2 m, plan 2
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 2.25 m, leaf/hydraulic, wing 0.5, language bus heavy 2.59 m, flare 0.15, crowned 1.0, brow 0.75 1.25 m, tail 0.82 1 m, door right, 9 facets, upper dropped: no roof left for a gun, cab bus capsule, 6 facets, nose grille, fitting destination board, trim livery on 11 bay sides, wear age 0.64 (6 rusty, 5 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab cab-over, nose flat, rear porch, under stilts, flank panniers, sides walls, roof none, layout room(Brow T,Door,Bay T-L,Bay L-T,Bay T-L,Tail L)+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British War Bus 5",
   "group": "Ministry of Slop",
@@ -110,10 +110,10 @@
     {"part": "Long Door Hinge", "weld": {"on": 101, "pos": [1.275, 1.675, 4.24], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 102, "socket": "leaf", "by": "hang", "paint": "#c8102e"},
     {"part": "Scrap Ladder", "on": 81, "socket": "-z0", "by": "back", "paint": "#e8dfc8"},
-    {"part": "Hull Loft (100 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h =)", "on": 68, "socket": "front13", "by": "footL0", "paint": "#1f4a32"},
-    {"part": "Hull Loft (75 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h ~C80CGgCGyCvKDPkDP-DQeDJICJw9CJ5CU04U)", "on": 68, "socket": "front17", "by": "footL0", "paint": "#1f4a32"},
-    {"part": "Hull Loft (100 ~C80CGgCGyCvKDPkDP-DQeDJICJw9CJ5CU04U ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049)", "on": 73, "socket": "front12", "by": "footL0", "paint": "#c8102e"},
-    {"part": "Hull Loft (100r ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049 ~CG0COUCWyDHPDfkDftDYLCYo9J37J75JB03B)", "on": 70, "socket": "front22", "by": "footL0", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (100 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h ~D00D8gD8yE9KF9kF9-FAdF3HE3vAiI6KT04T)", "on": 68, "socket": "front13", "by": "footL0", "paint": "#1f4a32"},
+    {"part": "Hull Loft (75 ~D00D8gD8yE9KF9kF9-FAdF3HE3vAiI6KT04T ~D00D8hD8yEHMF9kFA1FAiF3NE40AiQ6Kb04b)", "on": 68, "socket": "front17", "by": "footL0", "paint": "#c8102e"},
+    {"part": "Hull Loft (100 ~D00D8hD8yEHMF9kFA1FAiF3NE40AiQ6Kb04b ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049)", "on": 73, "socket": "front12", "by": "footL0", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (100r ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049 ~CG0COUCWyDHPDfkDftDYLCYo9J37J75JB03B)", "on": 70, "socket": "front22", "by": "footL0", "paint": "#c8102e"},
     {"part": "Seat", "on": 67, "socket": "front21", "by": "bottom"},
     {"part": "Square Beam 0.75 m", "on": 12, "socket": "+y4", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
     {"part": "Square Beam 0.75 m", "on": 110, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
@@ -141,12 +141,12 @@
     {"part": "Ammo Reel", "on": 130, "socket": "top", "by": "-y"},
     {"part": "Ammo Socket", "on": 125, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 100, "socket": "lever", "by": "-y"},
-    {"part": "Crate Stack", "on": 70, "socket": "centre +y", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 70, "socket": "front02", "by": "foot00", "spin": 1},
-    {"part": "Phone Box", "on": 69, "socket": "front12", "by": "foot00", "spin": 1},
+    {"part": "Crate Stack", "on": 65, "socket": "front36", "by": "foot10", "spin": 2},
+    {"part": "Tea Urn", "on": 70, "socket": "front32", "by": "foot10", "spin": 1},
     {"part": "Phone Box", "on": 68, "socket": "front20", "by": "foot10", "spin": 1},
-    {"part": "Crate Stack", "on": 67, "socket": "centre +y", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 65, "socket": "front36", "by": "foot00", "spin": 2},
+    {"part": "Phone Box", "on": 67, "socket": "front24", "by": "foot10", "spin": 1},
+    {"part": "Tea Urn", "on": 66, "socket": "front13", "by": "foot10", "spin": 2},
+    {"part": "Tea Urn", "on": 65, "socket": "front32", "by": "foot10", "spin": 2},
     {"part": "Square Beam 0.75 m", "on": 13, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
     {"part": "Square Beam 0.75 m", "on": 142, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
     {"part": "Plate Steel 1 m", "on": 143, "socket": "+x2", "by": "back01", "paint": "#b5121b"},
@@ -176,12 +176,12 @@
     {"part": "Hull Loft (triml0 XzW5 ~CO0CWSCevCeyDPLDvkDvoDgECog9Yx5R2032 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h)", "on": 100, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
     {"part": "Hull Loft (triml3 XzW5 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h ~CO0CWSCevCeyDPLDvkDvoDgECog9Yx5R2032)", "on": 100, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
     {"part": "Hull Loft (triml2 YMW5 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h =)", "on": 101, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
-    {"part": "Hull Loft (triml0 XaW5 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h =)", "on": 105, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
-    {"part": "Hull Loft (triml8 XaW5 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h =)", "on": 105, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
-    {"part": "Hull Loft (triml4 XBW5 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h ~C80CGgCGyCvKDPkDP-DQeDJICJw9CJ5CU04U)", "on": 106, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
-    {"part": "Hull Loft (triml6 XBW5 ~C80CGgCGyCvKDPkDP-DQeDJICJw9CJ5CU04U ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h)", "on": 106, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
-    {"part": "Hull Loft (triml1 XaW5 ~C80CGgCGyCvKDPkDP-DQeDJICJw9CJ5CU04U ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049)", "on": 107, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
-    {"part": "Hull Loft (triml7 XaW5 ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049 ~C80CGgCGyCvKDPkDP-DQeDJICJw9CJ5CU04U)", "on": 107, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
+    {"part": "Hull Loft (triml0 XaW5 ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h ~D00D8gD8yE9KF9kF9-FAdF3HE3vAiI6KT04T)", "on": 105, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
+    {"part": "Hull Loft (triml8 XaW5 ~D00D8gD8yE9KF9kF9-FAdF3HE3vAiI6KT04T ~D00D8iD8yEPOF9kFA4FAlF3RE45AiW6Kh04h)", "on": 105, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
+    {"part": "Hull Loft (triml4 XBW5 ~D00D8gD8yE9KF9kF9-FAdF3HE3vAiI6KT04T ~D00D8hD8yEHMF9kFA1FAiF3NE40AiQ6Kb04b)", "on": 106, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
+    {"part": "Hull Loft (triml6 XBW5 ~D00D8hD8yEHMF9kFA1FAiF3NE40AiQ6Kb04b ~D00D8gD8yE9KF9kF9-FAdF3HE3vAiI6KT04T)", "on": 106, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
+    {"part": "Hull Loft (triml1 XaW5 ~D00D8hD8yEHMF9kFA1FAiF3NE40AiQ6Kb04b ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049)", "on": 107, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
+    {"part": "Hull Loft (triml7 XaW5 ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049 ~D00D8hD8yEHMF9kFA1FAiF3NE40AiQ6Kb04b)", "on": 107, "socket": "-x0", "by": "base", "paint": "#1d2b4f"},
     {"part": "Hull Loft (triml2 XaW5 ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049 ~CG0COUCWyDHPDfkDftDYLCYo9J37J75JB03B)", "on": 108, "socket": "+x0", "by": "base", "paint": "#1d2b4f"},
     {"part": "Hull Loft (triml0 XaW5 ~CG0COUCWyDHPDfkDftDYLCYo9J37J75JB03B ~D00D8dDGyDvEF9kF9rFASF33E3eAi06K9049)", "on": 108, "socket": "-x0", "by": "base", "paint": "#1d2b4f"}
   ],
@@ -194,5 +194,5 @@
     {"type": "feed", "from": 132, "to": 133, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
     {"type": "pipe", "from": 150, "to": 33, "nodes": [[1.25, 0.82, 10.06], [1.25, 0.55, 10.06], [0.67, 0.55, 10.06], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 136, "table": "british"}, {"step": 138, "table": "british"}, {"step": 139, "table": "british"}, {"step": 140, "table": "british"}]
+  "loot": [{"step": 136, "table": "british"}, {"step": 138, "table": "british"}, {"step": 139, "table": "british"}]
 }

@@ -5,7 +5,8 @@ namespace CallOfSlop.VehicleKit.Generators;
 /// <summary>
 /// A double-decker bus: a long walk-in hull below (side door, loot, the seats that work the guns) and an open top deck on its roof, railed,
 /// with the roof guns standing up through it. The top deck stops where the tail slopes down; a ladder hangs from its back edge, and the
-/// rear platform, where the drum stands, is a step up to it. Only a style that names it in <see cref="FactionStyle.Extra"/> ships it (the British style).
+/// rear platform, where the drum stands, is a step up to it. Only a style that names it in <see cref="FactionStyle.Extra"/> ships it (the British style). Since body styles
+/// phase 5 the grammar makes it (ShapeGrammar.Recipes: a long room with an open deck lofted over its middle, reached by a stair); this generator is kit 1's, for --kit 1.
 /// </summary>
 public sealed class DoubleDecker(FactionStyle style) : HeavyShape(style)
 {

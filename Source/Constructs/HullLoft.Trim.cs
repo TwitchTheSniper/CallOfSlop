@@ -79,7 +79,7 @@ public static partial class HullLoft
     }
 
     /// <summary>A trim's or a fitting's key (dressing: not part of what the kit lofted for a body's shape, so the driver's view check leaves it out).</summary>
-    public static bool IsDressing(string name) => name.StartsWith(Prefix + TrimWord, StringComparison.Ordinal) || name.StartsWith(Prefix + DecoWord, StringComparison.Ordinal);
+    public static bool IsDressing(string name) => name.StartsWith(Prefix + TrimWord, StringComparison.Ordinal) || name.StartsWith(Prefix + DecoWord, StringComparison.Ordinal) || name.StartsWith(Prefix + PodWord, StringComparison.Ordinal);
 
     public static DecoShape? DecoOf(string name)
     {

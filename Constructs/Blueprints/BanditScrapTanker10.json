@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, tandem 1.5 m, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.37 m, flare 0.07, plain 1.1, brow 0.64 1 m, tail 0.76 1 m, door right, cab slab armoured cab, nose grille, trim plates+cage on 2 bay sides, wear age 0.68 (14 rusty, 11 dirty, 0 sooty, 0 patched, 2 rusted out), body room+tank, cab armoured, nose plated hood, rear hitch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, tandem 1.5 m, front forward, inset 1.25 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.37 m, flare 0.07, plain 1.1, brow 0.64 1 m, tail 0.76 1 m, door right, space cage w, cab slab armoured cab, nose grille, wear age 0.68 (13 rusty, 11 dirty, 0 sooty, 0 patched, 2 rusted out), body room+tank, cab armoured, nose plated hood, rear hitch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Scrap Tanker 10",
   "group": "Bandit",
@@ -83,12 +83,12 @@
     {"part": "Bolt Deck 0.25 m", "on": 57, "socket": "+x1", "by": "-x0", "paint": "#94603a"},
     {"part": "Bolt Deck 0.25 m", "on": 57, "socket": "+x2", "by": "-x0", "paint": "#94603a"},
     {"part": "Bolt Deck 0.25 m", "on": 57, "socket": "+x3", "by": "-x0", "paint": "#6b3a22"},
-    {"part": "Hull Loft (100f ~C80CGyD1_9wO02O ~Cu0D0yEB6Apj03j)", "on": 58, "socket": "front02", "by": "footL0", "paint": "#5e3320"},
-    {"part": "Hull Loft (150d ~Cu0D0yEB6Apj03j =)", "on": 63, "socket": "front01", "by": "footL0", "paint": "#5e3320"},
+    {"part": "Hull Loft (100f ~C80CGyD1_9wO02O ~Cu0D0yEB6Apj03j cw)", "on": 58, "socket": "front02", "by": "footL0", "paint": "#5e3320"},
+    {"part": "Hull Loft (150d ~Cu0D0yEB6Apj03j = cw)", "on": 63, "socket": "front01", "by": "footL0", "paint": "#5e3320"},
     {"part": "Long Door Hinge", "weld": {"on": 79, "pos": [1.275, 1.675, 4.24], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 80, "socket": "leaf", "by": "hang", "paint": "#7a4326"},
     {"part": "Scrap Ladder", "on": 70, "socket": "+x0", "by": "back", "paint": "#7a4326"},
-    {"part": "Hull Loft (100r ~Cu0D0yEB6Apj03j ~C00C8yCwN9oq02q)", "on": 61, "socket": "front23", "by": "footL0", "paint": "#5f6a55"},
+    {"part": "Hull Loft (100r ~Cu0D0yEB6Apj03j ~C00C8yCwN9oq02q cw)", "on": 61, "socket": "front23", "by": "footL0", "paint": "#5f6a55"},
     {"part": "Hull Skirt 1 m", "on": 58, "socket": "back03", "by": "top0", "spin": 2, "paint": "#7a4326"},
     {"part": "Hull Skirt 1 m", "on": 60, "socket": "back33", "by": "top2", "spin": 2, "paint": "#7a4326"},
     {"part": "Hull Skirt 1 m", "on": 60, "socket": "back31", "by": "top0", "spin": 2, "paint": "#94603a"},
@@ -127,9 +127,7 @@
     {"part": "Tread Plate 0.5 m", "weld": {"on": 112, "pos": [-0.545, 0.64, 0.254], "rot": [-0.0466, 0.0058, 0.7141, 0.6985]}, "paint": "#7a4326"},
     {"part": "Skull Trophy", "on": 108, "socket": "front02", "by": "base"},
     {"part": "Horned Skull", "on": 110, "socket": "front01", "by": "base"},
-    {"part": "Horned Skull", "on": 41, "socket": "top", "by": "base"},
-    {"part": "Hull Loft (trimp9 XaW5 ~Cu0D0yEB6Apj03j ~C80CGyD1_9wO02O)", "on": 78, "socket": "-x0", "by": "base", "paint": "#7a4326"},
-    {"part": "Hull Loft (trimc0 YMW5 ~Cu0D0yEB6Apj03j =)", "on": 79, "socket": "-x0", "by": "base", "paint": "#94603a"}
+    {"part": "Horned Skull", "on": 41, "socket": "top", "by": "base"}
   ],
   "wires": [[39, 40], [40, 33], [90, 99], [99, 97], [105, 102]],
   "hoses": [[103, 104]],

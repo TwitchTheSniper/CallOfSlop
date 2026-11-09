@@ -19,7 +19,7 @@ like any other. **Fix the generator, not its files.** No AI is in here yet: each
 | `CallOfSlop --identity "IT War Bus" [--seeds N] [--shipped] [--raw]`, or `--identity IT` for every shape of a style | How much each seed reads as its faction (0 to 1) with the breakdown, its weak points, the style it reads as best after its own, then the mean, the weak-point pass rate and every vehicle that reads more as another style. Default 6 seeds; `--shipped`: the committed seeds. See "Identity and weak points". |
 | `... --no-identity-gate` on any of these | Kit 2 without its identity re-plan, to measure what the check changes. |
 | `... --kit 1`, `--kit 2` or `--kit 3` on any of these | Every seed by that kit (see "Shape grammar" and "Layered variety"), to compare them: without it a seed is made by its own kit. `--gen-vehicles --kit 2` reports the committed files as differing, as it should. |
-| `... --kit 5 [--language NAME] [--roofline NAME] [--scale NAME]`, `--body-report STYLE\|all [--seeds N]`, `--no-sections` | Kit 5, the current kit since 2026-11-07: rooms lofted from run-time hull bays (`HullLoft`) in the style's body language, with phase 2's scale classes, proportions, rooflines, doors either side or in the back and paint runs (docs/vehiclekit/BODY-STYLES.md, sections 7 and 8). `--language` puts every room in one language, `--roofline` and `--scale` every room on one line or at one class; `--body-report` measures rooms' cross-sections within and between styles (and counts coplanar faces inside lofted bays); `--no-sections` measures diversity and identity without their front-profile terms, as they were before. `--kit 3` and `--kit 4` still make the fixed-bay kits. Phase 3 (section 9): cabs and hoods lofted in the same language; `--cab KIND` puts every cab of that kind where the plan allows (enclosed, crew, caged, armoured, cab-over, merged), `--fixed-cabs` makes kit-5 bodies with phase 2's fixed cab shells and hoods (to measure against), and `--body-report` also measures cabs and hoods between styles. Phase 4 (section 10): each faction's trim on its rooms' bay sides and fittings on its cabs and hoods; `--no-trim` makes kit-5 bodies without them, and `--body-report` also measures room exteriors (front profile with what is on them, and relief by height) and whole bodies (front and side outline) between styles. |
+| `... --kit 5 [--language NAME] [--roofline NAME] [--scale NAME]`, `--body-report STYLE\|all [--seeds N]`, `--no-sections` | Kit 5, the current kit since 2026-11-07: rooms lofted from run-time hull bays (`HullLoft`) in the style's body language, with phase 2's scale classes, proportions, rooflines, doors either side or in the back and paint runs (docs/vehiclekit/BODY-STYLES.md, sections 7 and 8). `--language` puts every room in one language, `--roofline` and `--scale` every room on one line or at one class; `--body-report` measures rooms' cross-sections within and between styles (and counts coplanar faces inside lofted bays); `--no-sections` measures diversity and identity without their front-profile terms, as they were before. `--kit 3` and `--kit 4` still make the fixed-bay kits. Phase 3 (section 9): cabs and hoods lofted in the same language; `--cab KIND` puts every cab of that kind where the plan allows (enclosed, crew, caged, armoured, cab-over, merged), `--fixed-cabs` makes kit-5 bodies with phase 2's fixed cab shells and hoods (to measure against), and `--body-report` also measures cabs and hoods between styles. Phase 4 (section 10): each faction's trim on its rooms' bay sides and fittings on its cabs and hoods; `--no-trim` makes kit-5 bodies without them, and `--body-report` also measures room exteriors (front profile with what is on them, and relief by height) and whole bodies (front and side outline) between styles. Phase 5 (section 11): new spaces: caged rooms (bars you see and shoot through), upper storeys over a long room's middle (an enclosed saloon or an open deck behind a bulwark) reached by a stair through a hatch, and side pods; `--cage` cages every room, `--upper saloon\|deck\|none` puts that storey where the plan allows, `--no-spaces` (or `--no-cages`, `--no-uppers`, `--no-pods`) leaves them out to measure against; the check holds a player in a caged room or on an open deck, walks a body up the stair, and checks the storey as a room. |
 | `... --layers chassis=5,wear=9` on any of these | Kit 3's layer seeds on every vehicle made: the seed's own vehicle with those layers rolled from other seeds ("Layered variety"). `--gen-vehicle` then writes `BanditBoxTruck7chassis5wear9.json`, never a committed seed's file. |
 | `... --vary wear [--base S]` on any of these | The seeds a tool loops over become one layer's seeds on base seed S (default 1): `--diversity "Bandit Box Truck" --vary chassis --base 5 --seeds 8` is seed 5's body and kit on eight chassis. |
 | `CallOfSlop --role "Bandit raider" --tier 2 [--seeds N] [--check] [--sliced]`, `--kit-report --roles` | Kit 4: vehicles for a role and tier, measured against it, and the matrix of every style, role and tier. See "Roles and tiers". |
@@ -248,7 +248,7 @@ and hardly at all in outline (Bandit Box Truck, November 2026: silhouette 0.057 
 heavy shapes from **modules** instead, so the outline varies with the seed while every part still comes from the style.
 
 **Which kit.** `VehicleKitVersion.For(generator, seed)`: `Force` (`--kit N`), else kit 1 for a shape with no recipe (the Technical, the Fuel Trailer, the Tanker Rig,
-the Double Decker, and any new generator) or a seed in `VehicleKitVersion.Frozen`, else the current kit: **kit 5 since 2026-11-07** (the user's decision), kit 3's
+and any new generator; the Double Decker is the grammar's since body styles phase 5) or a seed in `VehicleKitVersion.Frozen`, else the current kit: **kit 5 since 2026-11-07** (the user's decision), kit 3's
 grammar and layers (or kit 4's role) with its rooms lofted in the style's body language ("Body styles" in BODY-STYLES.md). Every committed seed of a shape with a
 recipe was made again by kit 5 that day (continuity wasn't required: a saved world holds built constructs, not seeds), with new seeds picked from each shape's
 sweep, so `Frozen` is empty and `--gen-vehicles` reports every file identical. Kits 1 to 3 still make what they made (`--kit 2` byte for byte). A kit file says
@@ -342,7 +342,7 @@ layer by its name: name it for what it decides. A layer left unset takes the see
 (nothing on the wire: only the server generates). A vehicle with overrides is named for them, "Bandit Box Truck 7 [wear 99]", so it never reads as a committed seed, and
 `Vehicle.Layers`, `VehicleGenJob.Layers` and the kit line carry every layer's seed: `// kit 3; seeds chassis 42 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front
 under the hood, inset 1 m, coil/hydraulic, wing 0.5, wear age 0.64 (11 rusty, 15 dirty, 0 sooty, 1 patched, 1 rusted out), body room, ...`. Only the grammar's shapes
-have layers: the Technical, the trailers, the Tanker Rig and the Double Decker refuse them (kit 1), and so does a request for them.
+have layers: the Technical, the trailers and the Tanker Rig refuse them (kit 1; the Double Decker has a recipe since body styles phase 5), and so does a request for them.
 
 **What "independent" means.** Each layer's dice are its own, but what it builds sits on the others: a new chassis moves the rear axle, so the guns' spots clear of it can move
 (kit decides which gun, the axles where it may stand), and a different kit puts panniers on, so the wear's rust lands on a different set of panels. Measured on Bandit Box
@@ -472,7 +472,7 @@ their armour (only its own: an Armour Plate deck or wall, tried first, stands th
 
 **Re-plan.** Each plan that builds is measured and scored for its faction; a plan that misses the role, or has a mark missing or an identity under the style's threshold,
 plans again, up to three built plans (`VehicleRoleMake.Plans`; plans the game refuses as it builds don't count, up to six tries), and the best is kept: fewest role misses,
-then fewest marks missing, then identity. A kit-1 shape (the Technical, the Tanker Rig, the Double Decker) has no grammar to lean: it is built by its generator with the
+then fewest marks missing, then identity. A kit-1 shape (the Technical, the Tanker Rig) has no grammar to lean: it is built by its generator with the
 role's part weights, the marks and the role pass, measured, and if it misses it is tried again from seeds derived from the asked one (`VehicleSpawnKit.Reroll`); the
 seed that made it is in its name. A vehicle that still misses its role is kept and says so ("role missed (...)"): the spawn wants a vehicle, and the miss is reported.
 
@@ -565,7 +565,7 @@ plans didn't build has "plan N" in its kit line, and `--family` flags a mark on 
 **Variants** change one layer on purpose, on the family's body and chassis: **up-armoured** (the kit layer on a seed of its own, and the most appliqué: lean +0.3, four side
 plates and more), **gun truck** (the kit layer on a seed of its own, one more gun where the shape has a spot, every open bed a gun bed, one more allowed by its needs) and **tanker conversion**
 (up to three Fuel Drums on its open deck, clear of the guns, under open sky, never coplanar with what is there; a loot tier up for the cargo). A kit-1 shape (the Technical,
-the Tanker Rig, the Double Decker) has no layers: its variants change only what the pass adds, and its marks are its seed's with the mark's tier.
+the Tanker Rig) has no layers: its variants change only what the pass adds, and its marks are its seed's with the mark's tier.
 
 **Named uniques.** A model is a named unique by a roll on its seed (`VehicleFamilies.RollNamed`: 8 % for a command or boss model, 2 % for the rest; `Named` in the key forces
 it): its own name, a tier up, the best loot (loot tier 4), one more chest and one more mark (the style's masts, else its trophies, on the marks pass's spots).
@@ -663,7 +663,7 @@ one roll the plain pick did, so the rest of the seed rolls as it does in a neutr
 | wood (0.5 and up) | | plate slots that list Wood Planks lean to them (up to six times) |
 | ore (0.5 and up) | | plate slots lean to their metal (plate steel, tread, armour: up to four times) |
 
-A kit-1 shape (the Technical, the trailers, the Tanker Rig, the Double Decker) has no chassis layer: its recipe pick leans the same way (`VehicleContext.Pick`), then its tyres and
+A kit-1 shape (the Technical, the trailers, the Tanker Rig) has no chassis layer: its recipe pick leans the same way (`VehicleContext.Pick`), then its tyres and
 springs as above. A swap never makes a chassis whose corners hang differently (`VehicleChassis.Level`). How strongly a style leans is its row in `VehicleContext.ByStyle`
 (additive: `Styles.cs` is untouched): the Bandits 1.2 (they build from whatever is lying about), IT and the Call Centre 0.7, the British 0.6 and only their panels take the
 ground's colours (the bus stays red unless a listed colour is near the ground's), Highland's panels only (the Saltire stays). A style not named takes `VehicleContext.Default`.
@@ -893,7 +893,7 @@ Every spot is tested before anything goes on, since nothing placed is taken off 
 overhang, so the antenna or flag weak point is hittable), stays out of every turret's sweep (lower than the ring's top, or further from it than the longest gun reaches
 or the gunner's arm, 1.2 m), and a post wants room for itself and the mark. There is no bracket on a turret ring: the ring's fixed side sockets sit inside the sweep of the
 gunner's arm and seat. A mark with nowhere to go is left missing and the gate below re-plans as before. The pass runs on every kit-2 plan, before the stability and fill
-checks, and on the seeds of the kit-1-only shapes (Technical, Fuel Trailer, Tanker Rig, Double Decker) that ship nowhere (`VehicleRegistry.Make`: not in the generator's
+checks, and on the seeds of the kit-1-only shapes (Technical, Fuel Trailer, Tanker Rig) that ship nowhere (`VehicleRegistry.Make`: not in the generator's
 `Seeds`, or with `--kit 2`), so a dynamic Technical carries its mast too while every committed file stays as it is. `--identity ... --raw` lists what it placed
 (`marks placed: flags, beacons or brollies: a Belisha Beacon on the Cab Over Shell`).
 

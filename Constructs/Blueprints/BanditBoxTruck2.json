@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, leaf/swing arm, wing 0.5, language armour standard 2.32 m, flare 0.06, sloped 1.0, brow 0.66 1.25 m, tail 0.79 1.25 m, door right, cab armour caged cab, nose wedge, sections armour+ledge, trim plates on 4 bay sides, wear age 0.97 (23 rusty, 14 dirty, 0 sooty, 0 patched, 1 rusted out), body room, cab caged, nose long hood, rear porch hitch, under stilts, flank bare, roof none, layout room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, leaf/swing arm, wing 0.5, language armour standard 2.32 m, flare 0.06, sloped 1.0, brow 0.66 1.25 m, tail 0.79 1.25 m, door right, space cage w, cab armour caged cab, nose wedge, sections armour+ledge, wear age 0.97 (21 rusty, 14 dirty, 0 sooty, 0 patched, 1 rusted out), body room, cab caged, nose long hood, rear porch hitch, under stilts, flank bare, roof none, layout room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Box Truck 2",
   "group": "Bandit",
@@ -69,11 +69,11 @@
     {"part": "Bolt Deck 0.25 m", "on": 60, "socket": "+z0", "by": "-x0", "paint": "#7a4326"},
     {"part": "Bolt Deck 0.25 m", "on": 44, "socket": "+z1", "by": "-x0", "paint": "#2f2c2a"},
     {"part": "Bolt Deck 0.25 m", "on": 44, "socket": "+z0", "by": "-x0", "paint": "#3a3330"},
-    {"part": "Hull Loft (100f ~BO0BOyBnKCnQCoJ9og02g ~Cm0CmyDfuEo1EpIBJq03q)", "on": 45, "socket": "front10", "by": "footL0", "paint": "#5e3320"},
-    {"part": "Hull Loft (150d ~Cm0CmyDfuEo1EpIBJq03q =)", "on": 45, "socket": "front14", "by": "footL0", "paint": "#8a8d8f"},
+    {"part": "Hull Loft (100f ~BO0BOyBnKCnQCoJ9og02g ~Cm0CmyDfuEo1EpIBJq03q cw)", "on": 45, "socket": "front10", "by": "footL0", "paint": "#5e3320"},
+    {"part": "Hull Loft (150d ~Cm0CmyDfuEo1EpIBJq03q = cw)", "on": 45, "socket": "front14", "by": "footL0", "paint": "#8a8d8f"},
     {"part": "Long Door Hinge", "weld": {"on": 65, "pos": [1.275, 1.425, 3.99], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 66, "socket": "leaf", "by": "hang", "paint": "#94603a"},
-    {"part": "Hull Loft (100r ~Cm0CmyDfuEo1EpIBJq03q ~B80BGyBfGCfMCgD9Ya02a)", "on": 49, "socket": "front03", "by": "footL0", "paint": "#8a8d8f"},
+    {"part": "Hull Loft (100r ~Cm0CmyDfuEo1EpIBJq03q ~B80BGyBfGCfMCgD9Ya02a cw)", "on": 49, "socket": "front03", "by": "footL0", "paint": "#8a8d8f"},
     {"part": "Seat", "on": 45, "socket": "front21", "by": "bottom"},
     {"part": "Turntable", "on": 65, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 70, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
@@ -106,11 +106,7 @@
     {"part": "Bull Bar", "on": 97, "socket": "front", "by": "back", "paint": "#3a3330"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 98, "pos": [0.121, 0.452, -1.278], "rot": [-0.7298, 0.0112, -0.0027, 0.6835]}, "paint": "#6b3a22"},
     {"part": "Hubcap Plate", "on": 97, "socket": "top", "by": "base"},
-    {"part": "Horned Skull", "on": 34, "socket": "top", "by": "base"},
-    {"part": "Hull Loft (trimp2 XaW5 ~BO0BOyBnKCnQCoJ9og02g ~Cm0CmyDfuEo1EpIBJq03q)", "on": 64, "socket": "+x0", "by": "base", "paint": "#94603a"},
-    {"part": "Hull Loft (trimp1 XaW5 ~Cm0CmyDfuEo1EpIBJq03q ~BO0BOyBnKCnQCoJ9og02g)", "on": 64, "socket": "-x0", "by": "base", "paint": "#6b3a22"},
-    {"part": "Hull Loft (trimp4 YMWB ~Cm0CmyDfuEo1EpIBJq03q =)", "on": 65, "socket": "-x0", "by": "base", "paint": "#94603a"},
-    {"part": "Hull Loft (trimp4 XaW5 ~Cm0CmyDfuEo1EpIBJq03q ~B80BGyBfGCfMCgD9Ya02a)", "on": 68, "socket": "+x0", "by": "base", "paint": "#6b3a22"}
+    {"part": "Horned Skull", "on": 34, "socket": "top", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [69, 76], [76, 73], [82, 79]],
   "hoses": [[80, 81]],

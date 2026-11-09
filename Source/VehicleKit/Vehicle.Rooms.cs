@@ -22,6 +22,23 @@ public sealed class Room
     public Vector3 FloorRest; // vehicle coordinates to the construct's rest frame
     public bool Ladder;
 
+    /// <summary>Phase 5: the room is a frame of bars (seen and shot through: the check holds a player in it rather than shooting rays for holes).</summary>
+    public bool Caged;
+
+    /// <summary>Phase 5: the storey over this room (its floor the cut roofs, reached by <see cref="Stair"/>), and for an upper storey, whether it is an open deck.</summary>
+    public Room? Upper;
+    public VPart? Stair;
+    public bool Open;
+    public Vector3 StairFoot; // where a player stands to walk up the stair, at floor height (vehicle coordinates), and the way up it
+    public Vector3 StairWay;
+
+    /// <summary>Phase 5: floor kept clear of furniture (the way onto a stair), as rectangles in vehicle coordinates.</summary>
+    public List<Vehicle.Rect> Keep = new();
+
+    /// <summary>Whether a footprint centred at (x, z), <paramref name="dx"/> by <paramref name="dz"/>, stands on floor kept clear.</summary>
+    public bool Kept(float x, float z, float dx, float dz) => Keep.Any(k => x + dx / 2 > k.X0 && x - dx / 2 < k.X1 && z + dz / 2 > k.Z0 && z - dz / 2 < k.Z1);
+
+
     public Vector3 Middle => new((R.X0 + R.X1) * 0.5f, FloorTop, (R.Z0 + R.Z1) * 0.5f);
 }
 
@@ -114,7 +131,7 @@ public sealed partial class Vehicle
                 for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
                 {
                     var z = from + way * at;
-                    if (InDoorway(room, x, z, deep, run) || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
+                    if (InDoorway(room, x, z, deep, run) || room.Kept(x, z, deep + 0.4f, run + 0.4f) /* (Put may move it up to 0.2 m to a socket) */ || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
                         taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try
@@ -166,6 +183,8 @@ public sealed partial class Vehicle
         foreach (var x in (float[])[-0.25f, 0.25f])
             try
             {
+                if (room.Kept(x, wall - away * (deep / 2 + In), MathF.Max(size.X, size.Z), MathF.Max(size.X, size.Z)))
+                    continue;
                 var placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, wall - away * (deep / 2 + In)), o, 0.1f, onTop: true);
                 PanelList("furniture").Add(placed);
                 room.Furniture.Add(placed);

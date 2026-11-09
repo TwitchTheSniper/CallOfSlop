@@ -139,6 +139,15 @@ public static unsafe partial class Program
             VehicleKit.Vehicle.FixedCabs = true; // body styles phase 3: kit-5 bodies with phase 2's fixed cab shells and hoods (to measure against)
         if (args.Any(a => a.Equals("--no-trim", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.Vehicle.NoTrim = true; // body styles phase 4: kit-5 bodies without the factions' trim and fittings (to measure against)
+        if (args.Any(a => a.Equals("--no-spaces", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.BodyLook.NoSpaces = true; // body styles phase 5: kit-5 bodies without the new spaces (upper storeys, cages, side pods), to measure against
+        VehicleKit.BodyLook.NoPods = args.Any(a => a.Equals("--no-pods", StringComparison.OrdinalIgnoreCase)); // body styles phase 5: one kind of space left out, to measure each
+        VehicleKit.BodyLook.NoCages = args.Any(a => a.Equals("--no-cages", StringComparison.OrdinalIgnoreCase));
+        VehicleKit.BodyLook.NoUppers = args.Any(a => a.Equals("--no-uppers", StringComparison.OrdinalIgnoreCase));
+        if (args.SkipWhile(a => !a.Equals("--upper", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } upperKind)
+            VehicleKit.BodyLook.ForceUpper = upperKind; // body styles phase 5: every long room with that upper storey (saloon, deck, none) where the plan allows
+        if (args.Any(a => a.Equals("--cage", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.BodyLook.ForceCage = true; // body styles phase 5: every room caged, in its style's pattern (Bandit's welded bars where the style has none)
         if (args.SkipWhile(a => !a.Equals("--cab", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } cabKind)
             VehicleKit.CabLook.Force = cabKind; // body styles phase 3: every lofted cab of one kind where the plan allows it (enclosed, crew, caged, armoured, cab-over, merged)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
