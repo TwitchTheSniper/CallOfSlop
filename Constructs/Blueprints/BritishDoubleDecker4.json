@@ -160,8 +160,9 @@
     {"part": "Crate Stack", "on": 73, "socket": "centre +y", "by": "foot00", "spin": 1},
     {"part": "Phone Box", "on": 72, "socket": "front24", "by": "foot10", "spin": 1},
     {"part": "Tea Urn", "on": 67, "socket": "front32", "by": "foot00", "spin": 2},
-    {"part": "Crew Bench", "on": 69, "socket": "centre +y", "by": "foot01"},
     {"part": "Tea Urn", "on": 72, "socket": "front11", "by": "foot10", "spin": 1},
+    {"part": "Crate Stack", "on": 69, "socket": "centre +y", "by": "foot00", "spin": 1},
+    {"part": "Tea Urn", "on": 74, "socket": "front13", "by": "foot00", "spin": 2},
     {"part": "Hull Loft (decoD WoWMUUVy)", "on": 39, "socket": "top", "by": "base"},
     {"part": "Queue Post", "on": 124, "socket": "front01", "by": "base"},
     {"part": "Traffic Cone", "on": 138, "socket": "front", "by": "base"},
@@ -179,12 +180,12 @@
     {"part": "Hull Loft (triml7 XzW5 ~Cu0D0KDGfDOyDfIE1kE1xDgaChCBZQ03Q ~Bm0BuIC0bC8yCHACXlCIKBIu8ZJ6RQ03Q)", "on": 114, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml6 XzW5 ~Bm0BuIC0bC8yCHACXlCIKBIu8ZJ6RQ03Q ~Cu0D0KDGfDOyDfIE1kE1xDgaChCBZQ03Q)", "on": 114, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Square Beam 0.5 m", "on": 71, "socket": "front00", "by": "-z", "paint": "#1b1c1e"},
-    {"part": "Rain Gauge", "on": 173, "socket": "+z", "by": "base"}
+    {"part": "Rain Gauge", "on": 174, "socket": "+z", "by": "base"}
   ],
   "wires": [[37, 38], [38, 32], [144, 151], [151, 146]],
   "links": [
     {"type": "shaft", "from": 33, "to": 10, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 141, "to": 32, "nodes": [[1.5, 0.82, 9.05], [1.5, 0.55, 9.05], [0.67, 0.55, 9.05], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 152, "table": "british"}, {"step": 153, "table": "british"}, {"step": 155, "table": "british"}]
+  "loot": [{"step": 152, "table": "british"}, {"step": 153, "table": "british"}, {"step": 156, "table": "british"}]
 }

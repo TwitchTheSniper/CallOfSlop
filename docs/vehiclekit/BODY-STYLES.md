@@ -780,6 +780,103 @@ the trim sets; the whole-body outline per faction; Highland War Bus 5 (still a b
 on cabs of kit-1 shapes (the Technical, the Double Decker); a network round trip of a trim between two peers (it is a run-time part by its key exactly as a
 lofted bay is, which phase 1 proved over the network; not sent here).
 
+## 11. Phase 5, as built (2026-11-09): new spaces
+
+The brief: new kinds of room per faction (raised and double-deck rooms with a stair, side pods, caged or open-frame rooms), the Double Decker made by the
+grammar, walkable upper floors with a path up to them, the room walk and hole-ray checks passing on every new space, the driver's view kept, no coplanar faces,
+separation not worse than phase 4 (and the whole body's raised), diversity within a style not lower, and the full check at 177 of 180 or better.
+
+Code: `Source/Constructs/HullLoft.Spaces.cs` (the parts), `HullLoft.cs` (a bay key's fourth word), `Source/VehicleKit/Vehicle.Spaces.cs` (the storey and its stair,
+pods), `VehicleGrammar.cs` (`Spaces`, `PlanUpper`, `PlaceStair`), the style rows' `Cage`, `CageKind`, `Uppers`, `Upper*`, `Bulwark*`, `Pods`, `PodMax`
+(`BodyStyleRule`, VehicleBodyLanguage.cs), `VehicleChecks` (`Upper`, `Climb`, `Contained`), a recipe's own storey (`ShapeRecipe.Upper`, `UpperShare`: the Double Decker). Protocol 217.
+
+### The parts
+
+- **A caged bay** (a lofted bay's key with a fourth word `c` and a pattern): the bay's two sections drawn as a frame of bars, seen and shot through. Rails along
+  the bay at every point of the section (the floor rail 3 cm up, off the floor's plane), more between them at the pattern's spacing, bows across inside each end
+  and in the middle, and the faction's infill: `w` welded diagonals (Bandit), `s` green slats below 1.6 m and a mesh above (Militia), `t` timber stakes
+  (Highland). Its hidden boxes are the bars' own, so a player is held in by the rails and a round passes between them. A door bay keeps a flat frame round its
+  doorway. Caged rooms take no roof rack.
+- **An upper floor** (`u` and the hatch's rectangle): a bay's roof cut level, its slab walked on, with sockets on the quarter grid for the storey's feet and its
+  furniture, cut round the hatch a stair comes up through. **An open top** (`o`): a bay with no roof row, the bulwark round an open deck.
+- **A stair** (`Hull Loft (stair <rise> <steps> <width>)`): treads up from the room's floor to the hatch, a ship ladder's rise (a player steps up 0.55 m).
+- **A side pod** (`Hull Loft (pod...)`): a compartment on a middle bay's waist socket, cut for the bay's own sections as a trim is, in the faction's profile:
+  `w` a welded box with a sloped lid (Bandit, at chance 0: it washed out the trim), `b` a smooth blister (IT), `k` a kiosk with a window and a sign band (Scam, 0),
+  `l` a clinker locker (Highland, 0), `a` an armoured stowage pod (Militia), `g` a luggage locker (British).
+
+### The plan
+
+A room is caged at the style's chance, else a long room may take an upper storey over a run of its middle bays (never the brow or the tail, which rake down):
+an enclosed **saloon** lofted in the body's language at the storey's height and width (a set-in pod storey on IT, flush with the walls on a bus), or an open
+**deck** behind a bulwark. The run's roofs are cut level (a door bay's 2.16 m at least) and are its floor. The stair stands against a side wall inside the run,
+on the floor's quarter grid, clear of the gunners' seats, the doorway, the magazine at the front and a back door, with a hatch a player fits through and room to
+step off at the top; a plan with no wall for it drops the storey. The way onto the stair is kept clear of furniture (`Room.Keep`). Rates by style:
+
+| Style | cage | upper storey | pods |
+| --- | --- | --- | --- |
+| Bandit | welded, 0.5 | none | (welded, 0) |
+| IT | - | saloon 1 in 3, set in to 0.84 of the wall | blisters, 0.5 a free bay side, 2 at most |
+| Highland | timber, 0.06 | deck 1 in 3 | (lockers, 0) |
+| Scam | - | saloon 1 in 2 | (kiosks, 0) |
+| British | - | saloon 10 in 11, flush with the walls, over 90 to 100 % of the middle (a double deck) | (luggage lockers, not used) |
+| Militia | slatted, 0.1 | deck 1 in 3.5 | armoured stowage, 0.5, 2 at most |
+
+**The Double Decker** is the grammar's now (`ShapeRecipe.Upper` "deck" over 45 to 75 % of the room's middle, an open top deck behind its bulwark, reached by the stair; a deck over all of it read as a box from the side): kit 1's generator makes it only with `--kit 1`.
+
+### The checks
+
+- A caged room and an open deck **hold a player in**: a standing body moved out from the middle to either side and either end meets a bar or the bulwark before
+  it is past the walls (`Contained`; not the walker, which steps onto any top from beside it). Bars are seen and shot through by design, so a caged room has no
+  hole-ray check; an enclosed saloon has the rays as any room.
+- The **storey**: a player stands on its floor away from the hatch, has the headroom under an enclosed one, walks it, and **walks up the stair** from the room's
+  floor onto it (`Climb`: a body along the stair's line, feet on the highest top a step or less up, held by anything it meets; the failure names what held it).
+- The room below: a player standing in its middle may stand on the stair, so the check looks along the middle, then along the aisle a body's width off the
+  middle away from the stair, for a spot on the floor.
+- The driver's view (14 rays out of the cab) and the coplanar check (between parts, and `--body-report`'s inside every lofted part) cover the new parts.
+
+### Measured (2-core box; before is main at 05a79a55)
+
+`--body-report all --seeds 6`, `--diversity-style STYLE --seeds 6` (the mean of every shape's mean pair), and the full check `--sweep-vehicle "STYLE SHAPE"
+--seeds 6` over six styles and five shapes.
+
+| | before | after |
+| --- | --- | --- |
+| room exteriors (front with trim, and relief), between over within | 1.94 (0.205 over 0.106) | 1.48 (0.195 over 0.132) |
+| ... the same with `--no-spaces` | - | 1.95 |
+| ... nearest other style over the style's own (Bandit, IT, Highland, Scam, British, Militia) | 1.38, 1.60, 1.45, 1.80, 1.85, 1.19 | 1.34, 1.36, 1.05, 1.34, 1.31, 1.06 |
+| whole body (front and side outline), between over within | 1.04 | 1.03 |
+| cabs and hoods, between over within | 1.56 | 1.58 |
+| room sections from the front, mean pair within a style (Bandit .. Militia) | 0.041, 0.044, 0.050, 0.038, 0.025, 0.031 | 0.040, 0.071, 0.052, 0.056, 0.037, 0.035 |
+| diversity within a style, mean pair (Bandit .. Militia) | 0.207, 0.200, 0.206, 0.206, 0.204, 0.172 | 0.209, 0.198, 0.210, 0.209, 0.212, 0.175 |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 | 177 of 180 (the same three: Bandit Scrap Tanker 3's barrel, Highland War Bus 5 a box at 61 %, Highland Scrap Tanker 3's Pipe Box) |
+| British Double Decker, seeds 1 to 10 | kit 1 | 7 of 10 (2: nowhere for a gun; 5 and 6 read as a box at 70 and 64 %) |
+| coplanar pairs inside lofted parts | 0 | 0 |
+| parts a vehicle, mean; generation, mean a style | 132 to 142; 305 to 1487 ms | 131 to 141; 352 to 791 ms |
+
+What the numbers say: the new spaces give each style rooms that differ more among themselves (the room sections' within-style spread rises most on IT, Scam and
+British, which take storeys), and that is what lowers the room exteriors' separation: with `--no-spaces` it is 1.95 as before, cages alone cost about 0.2 of it,
+storeys about 0.2 and pods about 0.1 (`--no-cages`, `--no-uppers`, `--no-pods` on the way). A space is a roll, so within a style a caged or two-storey room
+stands beside skinned ones; Highland and Militia now come nearest each other (decks and cages on both). The whole body's outline didn't rise (1.04 to 1.03):
+storeys are rolled within every style that takes them, so they widen the spread inside a style as much as between styles. Raising either needs the rates
+to become signatures (most of a style's long rooms caged, or two-storey), a design choice left to the user. Diversity within a style holds or rises
+(IT -0.002, inside six seeds' noise).
+
+**Found on the way** (this agent's part, finishing the phase):
+- A Bandit welded cage had two diagonals of neighbouring wall rows meet at the corner nearly in one plane (a ledge's wall, 0.05 mm apart): each now stops
+  1.8 cm short of its row's ends, inside the rail there.
+- Scam War Bus 2's stair was blocked by a Water Cooler: furniture was kept off the stair's way by its planned spot, and `Put` moved it up to 0.2 m onto a
+  socket inside the way. The keep test now takes that reach.
+- Highland War Bus 4 failed "a player stands 0.96 m off its floor": the stair stands by the middle, and both ends of the middle had gunners' seats; the stand
+  search now also tries the aisle beside the stair.
+
+**Committed seeds**: the Double Decker's are 1, 4, 9 (the sweep's most different passing seeds; 5 and 13 removed). 16 other files written again (vehicles whose
+plans took a space or whose trim moved with the plan's new dice); `--gen-vehicles` reports all 123 identical.
+
+**Not done**: rates as faction signatures (above); kiosk, locker and welded-box pods are made but at chance 0; a storey over a short room; a caged cab and a caged
+room meeting without a skinned bay between them is not checked for bars meeting face to face beyond the coplanar check; a network round trip of the new parts
+between two peers (they are run-time parts by their keys exactly as lofted bays are, which phase 1 proved over the network; not sent here); the British Double
+Decker's three failing seeds.
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -810,4 +907,6 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --vehicle-shots "Bandit War Bus 2" --kit 5 --language cabin   (xvfb)
 --vehicle-shots "IT War Bus 2" --roofline crowned --scale heavy   (xvfb; phase 2: one line, one class)
 --body-report all --seeds 6 --no-trim    # phase 4: without the faction trim and fittings (the room exteriors matrix, relief by band)
+--body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
+--sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
 ```
