@@ -1114,7 +1114,7 @@ measured on a GPU (the container has none); the shader compiled and the smoke te
 
 | | before | after |
 | --- | --- | --- |
-| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 (phase 7a) | SWEEP |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 (phase 7a) | 177 of 180 (the same three: Bandit Scrap Tanker 3, Highland War Bus 5, Highland Scrap Tanker 3); room walks, hole rays and balconies pass with glass in; parts, mean a shape: 68 (Bandit Scrap Tanker) to 190 (Highland War Bus) |
 | coplanar pairs inside lofted parts | 0 | 0 (14, then 1 on the way: under-sill pieces and jambs, then the lining's, on twisting bays) |
 | room exteriors, cabs and hoods, whole body (between over within) | 1.48, 1.59, 1.02 | 1.46, 1.57, 1.02 (the cabs as phase 7a; windows bring the room exteriors a little closer: within 0.127, between 0.185 from 0.190) |
 | parts a vehicle, mean a style (Bandit .. Militia) | 130, 136, 140, 141, 138, 133 | 130, 136, 142, 141, 139, 134 (panes: 0.7 to 3.8 a vehicle with rooms, cab panes included) |
@@ -1125,6 +1125,9 @@ measured on a GPU (the container has none); the shader compiled and the smoke te
 - The pane's seal met the waist's pad and the wall's hidden slabs on a leaning row (Scam Flatbed Fort 1, Militia Box Truck 6): the sill keeps over the waist and
   the slabs stop at the window.
 - Room panes in the cab's `glass` list moved the cab measure from 1.59 to 1.19 and sent Bandit seeds to more plans; they have a list of their own.
+
+**Committed seeds**: unchanged; 34 files written again (137 glazed bays and their panes); `--gen-vehicles` reports all 123 identical; `--check-construct-parts`
+clean.
 
 **Not done** (7c): upper storeys', side pods', caged rooms' and balconies' insides; lining on closed end walls; a dash in capsule and merged cabs; a steering
 wheel; props on shelves; wired stations (a radio, a powered workbench, lamps on a switch: a Lamp logic part already lights when on); the `all` run's Bandit Box
