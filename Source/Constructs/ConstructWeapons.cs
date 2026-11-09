@@ -1010,8 +1010,10 @@ public static class ConstructWeapons
             ref var g = ref c.Guns[k];
             if (g.Seat != seat || g.AimJoints == 0 || g.Part >= c.PartCount || c.Parts[g.Part].Broken)
                 continue;
-            Quaternion q;
-            Vector3 t;
+            // The height is chosen on the simulated pose, as the server chooses it, and placed on the drawn one.
+            c.WorldFrame(g.Seg, out var q, out var t);
+            SightFrame(c, k, q, t, out var muzzle, out var fwd, out var up);
+            var h = SightHeight(c, k, muzzle, fwd, up);
             if (drawn)
             {
                 var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
@@ -1020,22 +1022,64 @@ public static class ConstructWeapons
                 var st = Vector3.Zero;
                 if (g.Seg > 0 && g.Seg <= c.JointCount)
                     ConstructRender.SegPoseBlended(c, g.Seg, blendTicks ? alpha : 1f, out sq, out st);
-                q = rot * sq;
-                t = pos + Vector3.Transform(st, rot);
+                SightFrame(c, k, rot * sq, pos + Vector3.Transform(st, rot), out muzzle, out _, out up);
             }
-            else
-                c.WorldFrame(g.Seg, out q, out t);
-            var fwd = Vector3.Transform(g.Forward, q);
-            var fl = fwd.Length();
-            fwd = fl > 1e-4f ? fwd / fl : Vector3.Transform(-Vector3.UnitZ, q);
-            var up = Vector3.Transform(Vector3.UnitY, q);
-            up -= fwd * Vector3.Dot(up, fwd); // (above the bore, square to it; a gun pointing straight up uses its body's back)
-            var ul = up.Length();
-            up = ul > 1e-3f ? up / ul : Vector3.Transform(Vector3.UnitZ, q);
-            eye = t + Vector3.Transform(MuzzleRest(c, k, 0), q) + fwd * SightAhead + up * SightAbove;
+            eye = muzzle + up * h;
             return true;
         }
         return false;
+    }
+
+    /// <summary>Gun <paramref name="k"/>'s muzzle moved <see cref="SightAhead"/> along its bore, the bore, and up square to it, for its segment's frame.</summary>
+    private static void SightFrame(Construct c, int k, Quaternion q, Vector3 t, out Vector3 muzzle, out Vector3 fwd, out Vector3 up)
+    {
+        fwd = Vector3.Transform(c.Guns[k].Forward, q);
+        var fl = fwd.Length();
+        fwd = fl > 1e-4f ? fwd / fl : Vector3.Transform(-Vector3.UnitZ, q);
+        up = Vector3.Transform(Vector3.UnitY, q);
+        up -= fwd * Vector3.Dot(up, fwd); // (above the bore, square to it; a gun pointing straight up uses its body's back)
+        var ul = up.Length();
+        up = ul > 1e-3f ? up / ul : Vector3.Transform(Vector3.UnitZ, q);
+        muzzle = t + Vector3.Transform(MuzzleRest(c, k, 0), q) + fwd * SightAhead;
+    }
+
+    private static readonly float[] SightHeights = [SightAbove, 0.7f, 1.2f]; // (m above the bore: the first whose look along the gun is clear of its own body)
+    private const float SightClear = 12f; // (m along the gun that must be clear of the construct's own parts)
+
+    /// <summary>How far above the bore the remote sight sits: the lowest height whose line along the gun meets none of the construct's own parts (a beam, a cab roof it fires over, a shield's lip), else the lowest.</summary>
+    private static float SightHeight(Construct c, int k, Vector3 muzzle, Vector3 fwd, Vector3 up)
+    {
+        for (var h = 0; h < SightHeights.Length; h++)
+            if (OwnRayClear(c, c.Guns[k].Part, muzzle + up * SightHeights[h], fwd, SightClear))
+                return SightHeights[h];
+        return SightAbove;
+    }
+
+    [ThreadStatic] private static int[]? _sightParts; // (made once per thread: the server's tick and the view may both ask)
+
+    /// <summary>Does a ray miss every solid box of the construct (bar the gun's own receiver)?</summary>
+    private static bool OwnRayClear(Construct c, int gun, Vector3 o, Vector3 dir, float len)
+    {
+        var into = _sightParts ??= new int[Construct.MaxParts];
+        var n = c.PartsOnRay(c.ToLocal(o), Vector3.Transform(dir, Quaternion.Conjugate(c.Rot)), len, into); // (as ConstructWorld.Raycast: only the parts near the ray)
+        for (var pi = 0; pi < n; pi++)
+        {
+            var i = into[pi];
+            if (i == gun || c.Parts[i].Broken)
+                continue;
+            c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+            var iq = Quaternion.Conjugate(q);
+            var lo = Vector3.Transform(o - t, iq);
+            var ld = Vector3.Transform(dir, iq);
+            var boxes = c.SolidCount(i);
+            for (var bi = 0; bi < boxes; bi++)
+            {
+                c.SolidBox(i, bi, out var centre, out var half);
+                if (Geometry.RayAabb(centre - half, centre + half, lo, ld, len) is not null)
+                    return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>What the gunner in <paramref name="seat"/> looks at: the map or another construct along their look, else as far as the gun reaches.</summary>
