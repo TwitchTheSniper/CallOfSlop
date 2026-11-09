@@ -877,6 +877,98 @@ room meeting without a skinned bay between them is not checked for bars meeting 
 between two peers (they are run-time parts by their keys exactly as lofted bays are, which phase 1 proved over the network; not sent here); the British Double
 Decker's three failing seeds.
 
+## 12. Phase 6, as built (2026-11-09): balconies and lopsided vehicles
+
+The brief (the user's words): "I'd like to see balconies, and more asymmetry on the vehicle sometimes." Balconies reached from inside, styled per faction, passing
+the room checks; asymmetry by style as data, the vehicle level and driving; the room exteriors' separation (1.94 before phase 5, 1.48 after it) raised where the
+new rates can be faction signatures.
+
+Code: `Source/Constructs/HullLoft.Balcony.cs` (the part), `Source/VehicleKit/Vehicle.Balcony.cs` (placing it; `Lean`), `Vehicle.Hulls.cs` (the door's ladder moves to
+the balcony), `Vehicle.Spaces.cs`, `Vehicle.Trim.cs` and `Vehicle.Body.cs` (pods, trim and spikes by `Lean`), the style rows' `Balcony*` and `Asym*`
+(`BodyStyleRule`, VehicleBodyLanguage.cs), `VehicleChecks.Balcony`. Protocol 218.
+
+### The part
+
+**A balcony** (`Hull Loft (balc<kind> <length, depth, rail, inset, rise> <open end>)`): a deck at the room's floor (its top 4 mm under it) outside the door, posts
+round its outer edge and one end at most 0.7 m apart, a top and a middle rail (their hidden boxes hold a player in), an edge beam and two knee brackets under it,
+and the faction's infill. The other end is open: the door's ladder hangs there (on the balcony's `ladder` socket) instead of under the doorway. It stands on the
+room floor's free edge socket outward nearest the doorway (`base`), so it is an ordinary socketed part (no freeform weld): the key carries how far its deck's
+inner edge stands past that socket (a centimetre past whatever stands out of the wall there: jambs, the hinge, the floor's edge) and how far its deck's top is
+over it. Kinds: `w` welded grating with zigzag diagonals (Bandit), `s` green slats outside the posts (Militia), `f` an ivory fairing panel under a chrome rail
+(IT), `g` chrome posts with gold knobs and a lit sign band (Scam), `t` timber posts, rails and balusters on planks (Highland), `r` thin dark wrought balusters
+(British). Every family of pieces differs in size from those it meets (posts 5 cm, rails 4.5 and 4, infill 3 and less), so no two share a face's plane.
+
+A side door's balcony keeps to its own bay, a middle one (its length at most the bay's): past it a cab's side, a brow's rake or a neighbour's pods and sponsons
+come later and would stand over its deck. It is refused (and the ladder goes under the door as before) when more than 0.3 m stands out of the wall at the deck's
+height (a flare, a wheel), when it would draw into anything, and when a flared wall over it would meet a standing player's head and a deck up to 1.2 m deep
+wouldn't clear it. A door in the tail's back takes one across the back (1.3 to 1.7 m); no style rolls a rear door often enough to show it in six seeds.
+
+### Lopsided vehicles
+
+`BodyStyleRule.Asym` is the chance a vehicle is lopsided (`Lean`, its own fork of the seed: toward its side balcony when it has one). A lopsided vehicle hangs
+its pods on that side only (one more than `PodMax`, at `AsymPod` a free bay side at least: Bandit's welded boxes, Scam's kiosks and Highland's lockers, at 0
+otherwise, show only here), thins the far side's trim by `AsymTrim` (Bandit only: thinning another faction's trim washed out its sides' signature), and with
+`AsymAmount` 0.5 or more puts its spikes on the one side. Pods weigh 20 to 120 kg on a 2.5 to 3.5 t vehicle: every lopsided seed stood level and passed the drive
+check, so no balancing was needed. An offset cab and uneven roof clutter were left out (the cab's place feeds the drive line and the view check).
+
+| Style | balcony (kind, chance a door) | lopsided (chance, amount) | pods when lopsided | other rates changed (phase 5's) |
+| --- | --- | --- | --- | --- |
+| Bandit | welded, 0.35 | 0.7, 0.9 (trim thinned 0.9) | welded boxes 0.6 | cage 0.5 to 0.6 |
+| Militia | (slatted, 0) | 0.35, 0.6 | stowage 0.6 | cage 0.1 to 0.05, deck 1 to 0.4 |
+| IT | (faired, 0) | 0.1, 0.4 | - | - |
+| Scam | showy, 1 (0.95 to 1.1 m deep) | 0.4, 0.7 | kiosks 0.7 | - |
+| Highland | timber, 1 (0.95 to 1.15 m deep) | 0.3, 0.5 | lockers 0.5 | cage 0.06 to 0, deck 1 to 0.4 |
+| British | wrought, 1 (rail 1.0 to 1.1 m) | 0.05, 0.3 | - | - |
+
+### The check
+
+`VehicleChecks.Balcony`, with the room's: a player stands on the deck's middle (a few ticks: once the walker rides a deck it walks forward), walks out from
+inside the doorway onto it (with the door open), and moving outward or toward the closed end from its middle meets the rail. The door's own check, the room's
+hole rays, the driver's view and the coplanar checks are unchanged and cover it.
+
+### Measured (2-core box shared with other agents' builds: times are noisy; before is main at 8af91803)
+
+`--body-report all --seeds 6`, `--diversity-style STYLE --seeds 6` (mean of the five recipe shapes' mean pair), the full check `--sweep-vehicle "STYLE SHAPE"
+--seeds 6` over six styles and five shapes.
+
+| | before | after |
+| --- | --- | --- |
+| room exteriors, between over within | 1.48 (0.195 over 0.132) | 1.48 (0.190 over 0.128); 1.37 with the first rates (balconies and lopsidedness rolled per vehicle in every style) |
+| ... nearest other style over the style's own (Bandit, IT, Highland, Scam, British, Militia) | 1.34, 1.36, 1.05, 1.34, 1.31, 1.06 | 1.51, 1.33, 1.42, 1.26, 1.25, 0.99 |
+| whole body (front and side outline), between over within | 1.03 | 1.02 |
+| cabs and hoods, between over within | 1.58 | 1.59 |
+| diversity within a style, mean pair (Bandit .. Militia) | 0.221, 0.204, 0.222, 0.228, 0.218, 0.192 | 0.221, 0.204, 0.213, 0.223, 0.218, 0.191 |
+| identity, mean | 0.94, 0.93, 0.95, 0.95, 0.94, 0.89 | the same |
+| balconies (vehicles with rooms: Bandit, Highland, Scam, British) | - | 2 of 18, 10 of 19, 12 of 22, 7 of 21 |
+| lopsided (vehicles with rooms, Bandit .. Militia) | - | 14 of 18, 3 of 18, 6 of 19, 10 of 22, 2 of 21, 6 of 18 |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 | 177 of 180 (the same three: Bandit Scrap Tanker 3's barrel, Highland War Bus 5 a box, Highland Scrap Tanker 3's Pipe Box) |
+| coplanar pairs inside lofted parts | 0 | 0 |
+| generation, mean a style (`--body-report`); worst | 398 to 1076 ms; 11.5 s | 417 to 2094 ms; 48.5 s (a Bandit seed of many plans: more caged rooms re-plan more) |
+
+What the numbers say: as rolled extras in every style (the first rates), balconies and lopsidedness widened each style's own spread more than they parted the
+styles (1.48 to 1.37). As signatures (a balcony at every door it fits on Scam, Highland and British, none on IT and Militia; Bandit lopsided most of the time and
+caged more often; Highland's decks and stock wagons and Militia's cages and decks rarer, since those two read as each other) the room exteriors' separation is
+back to 1.48, with Highland now well apart (1.05 to 1.42) and Bandit further (1.34 to 1.51); Militia is the weakest (0.99, nearest Highland: without its rarer
+cages and decks it has slats and bins only, which phase 4 measured close to Highland's laps). The phase-4 level (1.94) wasn't reached: spaces are still rolled per
+room. Diversity within a style holds but for Highland (-0.009: its decks and cages made rarer) and Scam (-0.005). The whole body's outline doesn't move:
+balconies stand inside the side outline's silhouette. Balconies fit on half of the doors at most: flared walls, wheels under the doorway and front or tail door
+bays refuse them.
+
+**Found on the way.**
+- A freeform-welded balcony isn't on segment 0, so `Put` (which takes only segment-0 parts) never found its ladder socket and hung the ladder on the nearest
+  socket of anything, under the chassis: the drive check moved 0.00 m. The balcony now stands on the floor's edge socket.
+- The walker steps a player who rides a deck forward each tick (`ConstructRide.Step` with Forward held), so a 40-tick stand walked off an open end; and a
+  0.92 m player met a middle post on a 0.8 m deck and was pushed under it. The stand test takes 14 ticks, decks are 0.92 m deep at least, and a failure names
+  what stands in the player's way.
+
+**Committed seeds**: unchanged; 41 files written again (balconies, lopsided pods and the retuned rates moved their plans); `--gen-vehicles` reports all 123
+identical; `--check-construct-parts` clean.
+
+**Not done**: balconies off an upper storey (a saloon's end or side would need a door bay in the storey, and an open deck's bulwark a gap); balconies at a front
+or tail door bay; an offset cab and uneven roof clutter; Militia's separation (0.99: its own new space, a slatted firing step, is data at 0 because it read as
+Highland's veranda); Bandit's worst generation (48 s with cages at 0.6); a network round trip of a balcony between two peers (a run-time part by its key exactly
+as a pod is; not sent here).
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -909,4 +1001,5 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-trim    # phase 4: without the faction trim and fittings (the room exteriors matrix, relief by band)
 --body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
 --sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
+--body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
 ```
