@@ -1,0 +1,121 @@
+{
+  // The penal colony after the warden's induction (docs/story/STORY.md "Storylets"). DRAFT beats from the storyline
+  // talk (2026-11-09), there to try the format; Karl settles the content. One storylet at a time per player: an urgent
+  // one first, then the A plot (Rank, the road) and the B plot (the colony's people) in turn.
+  "format": "call-of-slop-storylets/1",
+  "about": "the Ministry of Slop's penal colony: rank up, or get out",
+  "qualities": [
+    { "name": "Rank", "kind": "progress", "max": 5, "about": "how far up the colony's ladder a player is (inmate, trusty...)" },
+    { "name": "Suspicion", "kind": "menace", "max": 10, "decay": "-1 per 30m", "about": "how closely the Ministry watches a player" }
+  ],
+  "spots": [
+    { "name": "Kettle", "near": "Officer Crumb", "reach": 5 }
+  ],
+  "storylets": [
+    {
+      "id": "work-detail", "title": "Work detail", "bucket": "A",
+      "about": "a guard sets the first work detail and inspects it",
+      "needs": "?me Inducted",
+      "cast": "?n MemberOf 'Ministry of Slop', ?n is Person, not ?n Grudge ?me >= 40",
+      "beats": [
+        { "by": "?n", "to": "?me", "say": [ "Inmate {me.first}. Work detail. The Ministry wants rocks broken, and you have hands." ] },
+        { "by": "?n", "to": "?me", "after": "4s", "say": [ "Fill a Requisition Crate. I'll be inspecting. With a clipboard." ] }
+      ],
+      "job": "Ministry of Slop: Breaking Rocks",
+      "ends": [
+        { "id": "done", "when": { "verb": "Job", "actor": "?me", "item": "Breaking Rocks" }, "within": "45m",
+          "then": [ "?me Rank +1", "?n Likes ?me +10" ], "say": [ "Signed off. In triplicate. Well done, {me.first}." ], "next": "bellweathers-test" },
+        { "id": "botched", "after": "45m",
+          "then": [ "?me Suspicion +1" ], "say": [ "No rocks, {me.first}? That's going on your file." ] }
+      ]
+    },
+    {
+      "id": "tea-with-crumb", "title": "Tea with Crumb", "bucket": "B",
+      "about": "the gossipy guard by the kettle lets slip a way out",
+      "needs": "?me Inducted, ?me Visited 'Kettle' >= 2",
+      "cast": "?c MemberOf 'Ministry of Slop', ?c is Person, ?c Gossipy >= 60",
+      "prefer": "?c Gossipy",
+      "beats": [
+        { "by": "?c", "to": "?me", "say": [ "You again. Kettle's on. Don't tell the Sergeant." ] },
+        { "by": "?c", "to": "?me", "after": "5s", "say": [ "Between us, the old mine past the fence? Nobody's checked it since the cave-in." ] }
+      ],
+      "ends": [
+        { "id": "told", "after": "3s", "learn": "Old Mine", "from": "?c", "then": [ "?c Likes ?me +5" ],
+          "say": [ "You didn't hear that from me. You didn't hear anything." ], "next": "wardens-offer" }
+      ]
+    },
+    {
+      "id": "bellweathers-test", "title": "Bellweather's test", "bucket": "A",
+      "about": "the sergeant leaves a crate unwatched to see what the player does",
+      "needs": "?me Rank >= 1",
+      "cast": "?s MemberOf 'Ministry of Slop', ?s is Person, ?s Brave >= 60",
+      "prefer": "?s Brave",
+      "beats": [
+        { "by": "?s", "to": "?me", "say": [ "Watch this crate for me, {me.first}. I'll be back. Probably." ] }
+      ],
+      "ends": [
+        { "id": "taken", "when": { "verb": "Pilfer", "actor": "?me" }, "within": "10m",
+          "then": [ "?me Suspicion +2" ], "say": [ "Light fingers, {me.first}. I'll remember that." ] },
+        { "id": "left", "after": "10m",
+          "then": [ "?me Rank +1", "?s Likes ?me +15" ], "say": [ "All there. Hm. Maybe you're not the worst of them." ], "next": "wardens-offer" }
+      ]
+    },
+    {
+      "id": "shakedown", "title": "Shakedown", "bucket": "urgent", "again": "1h",
+      "about": "the guards search a player they suspect",
+      "needs": "?me Suspicion >= 3",
+      "cast": "?g MemberOf 'Ministry of Slop', ?g is Person",
+      "prefer": "?g Likes ?me",
+      "beats": [
+        { "by": "?g", "to": "?me", "say": [ "Hands where I can see them, {me.first}. Routine search." ] }
+      ],
+      "ends": [
+        { "id": "covered", "after": "8s", "if": "?me Contraband, ?g Likes ?me >= 40",
+          "then": [ "?me Contraband =0", "?me Suspicion -1" ], "say": [ "...Nothing here. Put that away before someone else sees it." ] },
+        { "id": "caught", "after": "8s", "if": "?me Contraband", "hook": "lockdown",
+          "then": [ "?me Contraband =0", "?me Suspicion +2" ], "say": [ "What's this, then? GUARDS!" ] },
+        { "id": "clean", "after": "8s",
+          "then": [ "?me Suspicion -2" ], "say": [ "Clean. This time." ] }
+      ]
+    },
+    {
+      "id": "wardens-offer", "title": "The Warden's offer", "bucket": "A",
+      "about": "the warden offers a place in the Ministry; the player who knows a way out may turn it down",
+      "needs": [ "?me Rank >= 2, not ?me Course ?r", "?me Suspicion >= 3, ?me Lead 'Old Mine', not ?me Course ?r" ],
+      "cast": "?w is Person, ?w == 'Warden Pettigrew'",
+      "beats": [
+        { "by": "?w", "to": "?me", "say": [ "{me.first}. Sit. The Ministry has a vacancy, and you have, against all odds, a record." ] },
+        { "by": "?w", "to": "?me", "after": "5s", "say": [ "Trustee. Better rations, a badge. Well?" ] }
+      ],
+      "ends": [
+        { "id": "trustee", "choice": "I'll serve the Ministry.", "then": [ "?me Course 'Trustee'", "?me Rank +1" ],
+          "say": [ "Splendid. Forms are on the desk. All of them." ], "next": "first-posting" },
+        { "id": "escapee", "choice": "I'd rather not.", "if": "?me Lead 'Old Mine'", "then": [ "?me Course 'Escapee'", "?me Suspicion +1" ],
+          "say": [ "Pity. We'll be watching you, {me.first}." ], "next": "old-mine" },
+        { "id": "later", "after": "10m", "say": [ "Think it over. The offer stands. Probably." ] }
+      ]
+    },
+    {
+      "id": "first-posting", "title": "First posting", "bucket": "A", "final": true,
+      "about": "the new trustee is posted to the Orbital Depot (the robot shell beat)",
+      "needs": "?me Course 'Trustee'",
+      "hook": "depot",
+      "ends": [
+        { "id": "posted", "after": "5s", "say": [ "[MINISTRY MEMO] Trustee posting: Orbital Depot. Report to the control chair." ] }
+      ]
+    },
+    {
+      "id": "old-mine", "title": "The old mine", "bucket": "A", "final": true,
+      "about": "the would-be escapee slips off to the old mine",
+      "needs": "?me Course 'Escapee', ?me Lead 'Old Mine'",
+      "cast": "?c MemberOf 'Ministry of Slop', ?c is Person, ?c Likes ?me >= 20",
+      "prefer": "?c Likes ?me",
+      "beats": [
+        { "by": "?c", "to": "?me", "say": [ "If you're going, go at the shift change. I'll be at the kettle. Facing the other way." ] }
+      ],
+      "ends": [
+        { "id": "tipped", "after": "3s", "then": [ "?c Likes ?me +5" ] }
+      ]
+    }
+  ]
+}

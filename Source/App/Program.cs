@@ -111,6 +111,8 @@ public static unsafe partial class Program
             return WeatherCli.Run(args); // headless: run the weather simulation for some days and print its storms (Source/Weather)
         if (args.Any(a => a.Equals("--story-sim", StringComparison.OrdinalIgnoreCase)))
             return Story.StoryCli.Sim(args); // headless: play a story scenario and print the chronicle and the sifter (docs/story/STORY.md)
+        if (args.Any(a => a.Equals("--storylet-sim", StringComparison.OrdinalIgnoreCase)))
+            return Story.StoryCli.StoryletSim(args); // headless: a player in a cast's world, the storylets on the story's clock (docs/story/STORY.md "Storylets")
         if (args.Any(a => a.Equals("--check-story", StringComparison.OrdinalIgnoreCase)))
             return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))

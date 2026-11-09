@@ -35,6 +35,9 @@ public sealed class StoryEngine
     /// <summary>The factions (living factions, F1): entities with standing towards each group, and a memory of deeds.</summary>
     public readonly StoryFactions Factions;
 
+    /// <summary>The storylets (docs/story/STORY.md "Storylets"): authored beats per player, cast from the world.</summary>
+    public readonly StoryStorylets Storylets;
+
     /// <summary>Seconds of play in this world.</summary>
     public double Time;
 
@@ -54,6 +57,7 @@ public sealed class StoryEngine
         Plays = new StoryPlays(this);
         Places = new StoryPlaces(this);
         Factions = new StoryFactions(this);
+        Storylets = new StoryStorylets(this);
     }
 
     public void Clear()
@@ -67,6 +71,7 @@ public sealed class StoryEngine
         Plays.Clear();
         Places.Clear();
         Factions.Clear();
+        Storylets.Clear();
         Time = 0;
         _sweepAt = 0;
         LastSiftMs = WorstSiftMs = TotalSiftMs = 0;
@@ -93,6 +98,7 @@ public sealed class StoryEngine
                 Sifter.Sweep(Time);
                 Drama.Update(Time);
                 Factions.Update(Time);
+                Storylets.Update(Time);
             }
             Agents.Tick(Time);
             Talk.Update(Time);
@@ -152,6 +158,7 @@ public sealed class StoryEngine
             Places.OnEvent(copy);
             Plays.OnEvent(copy);
             Factions.OnEvent(copy); // (a deed against a faction: what it remembers, its standing)
+            Storylets.OnEvent(copy); // (an end a storylet waits for)
         }
         finally
         {

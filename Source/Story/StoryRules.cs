@@ -152,6 +152,7 @@ public sealed class StoryRules
                     rules.Errors.Add(ex.Message);
                     Console.WriteLine($"[story] skipped: {ex.Message}");
                 }
+        var storyletQualities = StoryletRules.ReadQualities(rules, folder); // (before anything that compiles a query reads them)
         foreach (var f in Files(Path.Combine(folder, "Patterns")))
             try
             {
@@ -168,6 +169,7 @@ public sealed class StoryRules
         rules.Plays = PlayRules.Load(rules, folder);
         rules.Places = PlaceRules.Load(rules, folder);
         rules.Factions = FactionRules.Load(rules, folder);
+        rules.Storylets = StoryletRules.Load(rules, folder, storyletQualities);
         return rules;
     }
 
@@ -192,6 +194,9 @@ public sealed class StoryRules
 
     /// <summary>The factions (Story/Factions): who they are, what is theirs and what they remember. Empty when there are none.</summary>
     public FactionRules Factions = new();
+
+    /// <summary>The storylets (Story/Storylets): authored beats that wait for the world to be ready. Empty when there are none.</summary>
+    public StoryletRules Storylets = new();
 
     private StoryRules WithStoryVerb()
     {
@@ -324,6 +329,15 @@ public sealed class StoryRules
             _qual[q.Name] = q;
         Relations = rels.ToArray();
         Qualities = quals.ToArray();
+    }
+
+    /// <summary>A quality declared outside Relations.json (a storylet file's): its id.</summary>
+    internal ushort AddQuality(string name, string about)
+    {
+        var q = new QualityDef { Name = name, About = about, Id = (ushort)Qualities.Length };
+        Qualities = [.. Qualities, q];
+        _qual[name] = q;
+        return q.Id;
     }
 
     // ---- Verbs.json -----------------------------------------------------------------------------------------------

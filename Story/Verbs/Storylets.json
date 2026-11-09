@@ -1,0 +1,15 @@
+{
+  // The storylets' events (docs/story/STORY.md "Storylets").
+  "verbs": [
+    { "name": "Storylet", "sentence": "{actor}: {item}",
+      "about": "a storylet ended for a player (item: the storylet, target: who ended it with them, value: the end + 1, 0 none)" },
+    { "name": "Learn", "players": true, "sentence": "{actor} learnt of {item} from {target}",
+      "about": "a player learnt a fact or a lead (item), from someone (target) or by themselves" },
+    { "name": "Choose", "players": true, "sentence": "{actor} answered {target}",
+      "about": "a player chose an answer a storylet offered (item: the storylet, value: the end + 1)" },
+    { "name": "Induct", "players": true, "sentence": "{actor} finished the induction at {place}", "effects": [ "actor Inducted =1" ],
+      "about": "a player came to the end of the warden's induction (or skipped it)" },
+    { "name": "Pilfer", "players": true, "sentence": "{actor} helped themselves from {target}", "effects": [ "actor Contraband =1" ],
+      "about": "a player took something from a crate a storylet set out (target: the crate's owner, or the storylet)" }
+  ]
+}

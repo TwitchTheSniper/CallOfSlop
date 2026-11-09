@@ -34,6 +34,7 @@ public sealed class PlayDef
     public bool Once; // once per cast (this session)
     public int OnceRoles; // the roles "once" counts (a bit each): all of them, or those it names
     public float Weight = 1, Chance = 1;
+    public bool External; // a storylet's beats (StoryStorylets): never drawn by the director, started by its storylet
 }
 
 /// <summary>The plays from Story/Plays/*.json. A bad file is refused whole with a reason (in <see cref="StoryRules.Errors"/>).</summary>
@@ -109,55 +110,7 @@ public sealed class PlayRules
                 p.OnceRoles = (1 << vars.Count) - 1;
             p.Weight = Number(e, "weight", where, 1, 0.01f, 100);
             p.Chance = Number(e, "chance", where, 1, 0.01f, 1);
-            var beats = new List<PlayBeat>();
-            foreach (var b in StoryRules.List(e, "beats", where, true))
-            {
-                var at = $"{where}: beat {beats.Count + 1}";
-                if (b.ValueKind != JsonValueKind.Object)
-                    throw new StoryException($"{at}: a beat is like {{\"by\": \"?a\", \"to\": \"?b\", \"say\": [\"...\"]}}");
-                StoryRules.Keys(b, BeatKeys, at);
-                var beat = new PlayBeat { By = Role(StoryRules.Str(b, "by", at, true), vars, at, "by") };
-                var to = StoryRules.Str(b, "to", at);
-                if (to.Length > 0)
-                    beat.To = Role(to, vars, at, "to");
-                if (beat.To == beat.By)
-                    throw new StoryException($"{at}: \"to\" is the one saying it");
-                beat.Lines = StoryRules.List(b, "say", at).Select(x => x.ValueKind == JsonValueKind.String ? x.GetString() ?? "" : throw new StoryException($"{at}: each of \"say\" is a line")).ToArray();
-                if (beat.Lines.Length > LineRules.MaxLines)
-                    throw new StoryException($"{at}: \"say\" has {LineRules.MaxLines} lines at most");
-                foreach (var line in beat.Lines)
-                    Check(line, p.Roles, at);
-                var verb = StoryRules.Str(b, "do", at);
-                if (verb.Length > 0)
-                {
-                    var v = rules.VerbId(verb);
-                    if (v < 0)
-                        throw new StoryException($"{at}: no verb {verb}");
-                    beat.Action = v < people.ActionOfVerb.Length ? people.ActionOfVerb[v] : -1;
-                    if (beat.Action < 0)
-                        throw new StoryException($"{at}: {verb} isn't something people do (Story/People actions; nothing physical is ever a play's)");
-                    var act = people.Actions[beat.Action];
-                    if (act.Road || act.News)
-                        throw new StoryException($"{at}: {verb} can't be a play's (trips and news are the people's own steps)");
-                }
-                int Var(string s) => s.StartsWith('?') ? vars.IndexOf(s[1..]) : -1;
-                beat.Then = StoryRules.List(b, "then", at).Select(x => x.ValueKind == JsonValueKind.String
-                    ? rules.ParseEffect(x.GetString() ?? "", at, Var)
-                    : throw new StoryException($"{at}: each \"then\" is text, like \"?a Knows ?b +1\"")).ToArray();
-                if (beat.Lines.Length == 0 && beat.Action < 0 && beat.Then.Length == 0)
-                    throw new StoryException($"{at}: a beat says something (\"say\"), does something (\"do\") or changes something (\"then\")");
-                var cond = StoryRules.Str(b, "if", at);
-                if (cond.Length > 0)
-                    beat.If = Compile(cond, rules, [.. vars], at, "if");
-                if (b.TryGetProperty("after", out _))
-                    beat.After = StoryRules.Duration(StoryRules.Str(b, "after", at)) is { } a and <= 600 ? a : throw new StoryException($"{at}: \"after\" is a time up to 10m, like \"5s\"");
-                beat.Chance = Number(b, "chance", at, 1, 0.01f, 1);
-                beat.Must = StoryRules.Bool(b, "must", at);
-                beat.Text = $"{p.Roles[beat.By]}{(beat.To >= 0 ? $" to {p.Roles[beat.To]}" : "")}: {(beat.Action >= 0 ? $"[{verb}] " : "")}{(beat.Lines.Length > 0 ? $"\"{beat.Lines[0]}\"{(beat.Lines.Length > 1 ? $" (+{beat.Lines.Length - 1})" : "")}" : "")}{(cond.Length > 0 ? $" if {cond}" : "")}";
-                beats.Add(beat);
-                if (beats.Count > MaxBeats)
-                    throw new StoryException($"{where}: {MaxBeats} beats at most");
-            }
+            var beats = ReadBeats(rules, e, where, vars, p.Roles, true);
             if (beats.Count == 0)
                 throw new StoryException($"{where}: \"beats\" is empty");
             p.Beats = beats.ToArray();
@@ -166,6 +119,62 @@ public sealed class PlayRules
                 throw new StoryException($"{file}: too many plays ({MaxPlays} at most in all)");
         }
         return list;
+    }
+
+    /// <summary>A play's (or a storylet's) "beats", over the roles <paramref name="vars"/> (<paramref name="roles"/> as they are named).</summary>
+    internal static List<PlayBeat> ReadBeats(StoryRules rules, JsonElement e, string where, List<string> vars, string[] roles, bool required)
+    {
+        var people = rules.People;
+        var beats = new List<PlayBeat>();
+        foreach (var b in StoryRules.List(e, "beats", where, required))
+        {
+            var at = $"{where}: beat {beats.Count + 1}";
+            if (b.ValueKind != JsonValueKind.Object)
+                throw new StoryException($"{at}: a beat is like {{\"by\": \"?a\", \"to\": \"?b\", \"say\": [\"...\"]}}");
+            StoryRules.Keys(b, BeatKeys, at);
+            var beat = new PlayBeat { By = Role(StoryRules.Str(b, "by", at, true), vars, at, "by") };
+            var to = StoryRules.Str(b, "to", at);
+            if (to.Length > 0)
+                beat.To = Role(to, vars, at, "to");
+            if (beat.To == beat.By)
+                throw new StoryException($"{at}: \"to\" is the one saying it");
+            beat.Lines = StoryRules.List(b, "say", at).Select(x => x.ValueKind == JsonValueKind.String ? x.GetString() ?? "" : throw new StoryException($"{at}: each of \"say\" is a line")).ToArray();
+            if (beat.Lines.Length > LineRules.MaxLines)
+                throw new StoryException($"{at}: \"say\" has {LineRules.MaxLines} lines at most");
+            foreach (var line in beat.Lines)
+                Check(line, roles, at);
+            var verb = StoryRules.Str(b, "do", at);
+            if (verb.Length > 0)
+            {
+                var v = rules.VerbId(verb);
+                if (v < 0)
+                    throw new StoryException($"{at}: no verb {verb}");
+                beat.Action = v < people.ActionOfVerb.Length ? people.ActionOfVerb[v] : -1;
+                if (beat.Action < 0)
+                    throw new StoryException($"{at}: {verb} isn't something people do (Story/People actions; nothing physical is ever a play's)");
+                var act = people.Actions[beat.Action];
+                if (act.Road || act.News)
+                    throw new StoryException($"{at}: {verb} can't be a play's (trips and news are the people's own steps)");
+            }
+            int Var(string s) => s.StartsWith('?') ? vars.IndexOf(s[1..]) : -1;
+            beat.Then = StoryRules.List(b, "then", at).Select(x => x.ValueKind == JsonValueKind.String
+                ? rules.ParseEffect(x.GetString() ?? "", at, Var)
+                : throw new StoryException($"{at}: each \"then\" is text, like \"?a Knows ?b +1\"")).ToArray();
+            if (beat.Lines.Length == 0 && beat.Action < 0 && beat.Then.Length == 0)
+                throw new StoryException($"{at}: a beat says something (\"say\"), does something (\"do\") or changes something (\"then\")");
+            var cond = StoryRules.Str(b, "if", at);
+            if (cond.Length > 0)
+                beat.If = Compile(cond, rules, [.. vars], at, "if");
+            if (b.TryGetProperty("after", out _))
+                beat.After = StoryRules.Duration(StoryRules.Str(b, "after", at)) is { } a and <= 600 ? a : throw new StoryException($"{at}: \"after\" is a time up to 10m, like \"5s\"");
+            beat.Chance = Number(b, "chance", at, 1, 0.01f, 1);
+            beat.Must = StoryRules.Bool(b, "must", at);
+            beat.Text = $"{roles[beat.By]}{(beat.To >= 0 ? $" to {roles[beat.To]}" : "")}: {(beat.Action >= 0 ? $"[{verb}] " : "")}{(beat.Lines.Length > 0 ? $"\"{beat.Lines[0]}\"{(beat.Lines.Length > 1 ? $" (+{beat.Lines.Length - 1})" : "")}" : "")}{(cond.Length > 0 ? $" if {cond}" : "")}";
+            beats.Add(beat);
+            if (beats.Count > MaxBeats)
+                throw new StoryException($"{where}: {MaxBeats} beats at most");
+        }
+        return beats;
     }
 
     private static StoryQuery Compile(string text, StoryRules rules, List<string> vars, string where, string key)
@@ -260,6 +269,22 @@ public sealed class StoryPlays
     public readonly PlayDone[] History = new PlayDone[HistorySize];
     public int HistoryNext, HistoryCount;
     public long Started, Finished, BrokenOff, Looks;
+
+    /// <summary>A play ended: its id, its cast, and why it was broken off (null: played out). Storylets watch their own beats here.</summary>
+    public Action<int, Ints8, string?>? Ended;
+
+    /// <summary>
+    /// Starts a storylet's beats (<see cref="PlayDef.External"/>) with the cast its storylet chose: the lead (role 0) is a
+    /// living person, and the play happens where they are. False: no room (<see cref="MaxRunning"/>) or the lead can't.
+    /// </summary>
+    public bool BeginExternal(int play, in Ints8 cast, double now)
+    {
+        if ((uint)play >= (uint)R.Plays.Length || RunningCount >= MaxRunning || Ag.Of(cast[0]) is not { Dead: false } || Ag.Where(cast[0]) < 0)
+            return false;
+        var was = Started;
+        Begin(R.Plays[play], cast, now);
+        return Started > was;
+    }
 
     /// <summary>A play began or ended, as words (the CLI's --lines).</summary>
     public Action<string>? Note;
@@ -377,7 +402,7 @@ public sealed class StoryPlays
         for (var k = 0; k < plays.Length; k++)
         {
             var p = plays[(start + k) % plays.Length];
-            if (only >= 0 ? p.Id != only : now - _lastAt[p.Id] < p.Every)
+            if (p.External || (only >= 0 ? p.Id != only : now - _lastAt[p.Id] < p.Every))
                 continue;
             if (!CastFor(p, now, out var cast, only >= 0))
                 continue;
@@ -462,7 +487,7 @@ public sealed class StoryPlays
     }
 
     /// <summary>A person who could be in a play: alive, in a place, in no other, and idle or at a step with nobody else in it.</summary>
-    private bool Free(int entity)
+    public bool Free(int entity)
     {
         if (Ag.Of(entity) is not { Dead: false } a || Ag.Where(entity) < 0 || Holds(entity))
             return false;
@@ -572,6 +597,7 @@ public sealed class StoryPlays
         if (Ag.Of(r.Cast[0]) is { } lead)
             Ag.Trace?.Invoke(lead, $"the play {p.Name} {(broken == null ? "is over" : $"was broken off: {broken}")}");
         Note?.Invoke($"the play {p.Name} {(broken == null ? "is over" : $"was broken off: {broken}")} ({r.Said} lines)");
+        Ended?.Invoke(r.Play, r.Cast, broken);
     }
 
     /// <summary>An event was recorded: something big where it happened (news of interest 50 and up, a killing) keeps plays away from there a while.</summary>
