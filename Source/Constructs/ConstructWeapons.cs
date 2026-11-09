@@ -987,9 +987,55 @@ public static class ConstructWeapons
     /// <summary>The gunner's eye in seat <paramref name="seat"/> (the seat's feet point, up its up by the eye height).</summary>
     public static Vector3 SeatEye(Construct c, int seat)
     {
+        if (c.Parts[seat].D.RemoteReceiver && RemoteSight(c, seat, 1f, false, out var sight))
+            return sight; // (a remote gunner looks along the gun, not from inside the turret: the pilot's view is the same point)
         c.WorldFrame(c.Parts[seat].Seg, out var q, out _);
         var up = Vector3.Transform(Vector3.UnitY, q * Rot24.Quat(c.Parts[seat].Rot));
         return ConstructEdits.SeatFeet(c, seat) + up * World.EyeHeight;
+    }
+
+    public const float SightAhead = 0.3f, SightAbove = 0.3f; // (m: the remote sight past the muzzle and above the bore)
+
+    /// <summary>
+    /// A remote gunner's sight: just past and above the muzzle of the first working gun that Drone Receiver <paramref name="seat"/> aims, so the
+    /// view (Program.PilotCamera) and the aim (<see cref="GunnerPoint"/>) both start clear of the turret's own housing and the crosshair is where
+    /// the guns converge. <paramref name="drawn"/>: at the construct as drawn this frame (<see cref="ConstructRemote.CameraPose"/>'s blend), else as simulated.
+    /// False when the seat aims no gun.
+    /// </summary>
+    public static bool RemoteSight(Construct c, int seat, float alpha, bool drawn, out Vector3 eye, bool blendTicks = false)
+    {
+        eye = default;
+        for (var k = 0; k < c.GunCount; k++)
+        {
+            ref var g = ref c.Guns[k];
+            if (g.Seat != seat || g.AimJoints == 0 || g.Part >= c.PartCount || c.Parts[g.Part].Broken)
+                continue;
+            Quaternion q;
+            Vector3 t;
+            if (drawn)
+            {
+                var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+                var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+                var sq = Quaternion.Identity;
+                var st = Vector3.Zero;
+                if (g.Seg > 0 && g.Seg <= c.JointCount)
+                    ConstructRender.SegPoseBlended(c, g.Seg, blendTicks ? alpha : 1f, out sq, out st);
+                q = rot * sq;
+                t = pos + Vector3.Transform(st, rot);
+            }
+            else
+                c.WorldFrame(g.Seg, out q, out t);
+            var fwd = Vector3.Transform(g.Forward, q);
+            var fl = fwd.Length();
+            fwd = fl > 1e-4f ? fwd / fl : Vector3.Transform(-Vector3.UnitZ, q);
+            var up = Vector3.Transform(Vector3.UnitY, q);
+            up -= fwd * Vector3.Dot(up, fwd); // (above the bore, square to it; a gun pointing straight up uses its body's back)
+            var ul = up.Length();
+            up = ul > 1e-3f ? up / ul : Vector3.Transform(Vector3.UnitZ, q);
+            eye = t + Vector3.Transform(MuzzleRest(c, k, 0), q) + fwd * SightAhead + up * SightAbove;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>What the gunner in <paramref name="seat"/> looks at: the map or another construct along their look, else as far as the gun reaches.</summary>
