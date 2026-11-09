@@ -251,6 +251,8 @@ public static unsafe partial class Program
             me.Teleport(new Vector3(at.X, World.Map.GroundHeight(at.X, at.Z) + 0.05f, at.Z) - ZrDir * 120f); // (a spawn is refused past SpawnReach; the next frame puts the host back)
         var ask = g.SandboxSpawnRequest(me, SbSpawnKind.Zombies, BotDifficulty.Normal, SbLoadKind.Any, 0, 0, _zrSize, at);
         me.Teleport(home);
+        var gd = g.Active.Def;
+        Console.WriteLine($"[zrange] gun {gd.Name}: arc speed {PowderCharge.HandSpeed(gd):0} m/s, range {gd.RangeM} m (min mult {gd.MinDamageMult}), reach {gd.Reach}, built {gd.BuildText != null}");
         Console.WriteLine($"[zrange] host phase {_zrPhase}: {_zrSize} zombies at {d} m ({at.X:0},{at.Z:0}): {ask ?? "ok"}");
     }
 
