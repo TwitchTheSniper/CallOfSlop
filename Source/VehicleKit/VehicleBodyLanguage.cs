@@ -1108,6 +1108,7 @@ public static class BodyReportCli
             var langs = new Dictionary<string, int>(StringComparer.Ordinal);
             var mine = new List<float[]>();
             var ms = new List<double>();
+            var slowest = "";
             var parts = new List<int>();
             var facets = new List<int>();
             var traits = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal); // (phase 2: scale, roofline, door, bay lengths)
@@ -1125,6 +1126,8 @@ public static class BodyReportCli
                     try
                     {
                         var (_, v, _, t) = VehicleDiversity.Generate(g, seed);
+                        if (ms.Count == 0 || t > ms.Max())
+                            slowest = $"{g.Name} {seed}";
                         ms.Add(t);
                         parts.Add(v.Built.PartCount);
                         foreach (var b in v.Rooms.SelectMany(r => r.Bays))
@@ -1215,7 +1218,7 @@ public static class BodyReportCli
                 Console.WriteLine($"  {what}: {string.Join(", ", t.OrderByDescending(x => x.Value).Select(x => $"{x.Key} {x.Value}"))}");
             if (traits.TryGetValue("bays", out var bl))
                 Console.WriteLine($"  bay lengths: {bl.Count} different runs over {bl.Values.Sum()} rooms; commonest {bl.OrderByDescending(x => x.Value).First().Key} ({bl.Values.Max()})");
-            Console.WriteLine($"  front profile: mean pair {(pairs.Count > 0 ? pairs.Average() : 0):0.000}; generation mean {(ms.Count > 0 ? ms.Average() : 0):0} ms, worst {(ms.Count > 0 ? ms.Max() : 0):0} ms; parts mean {(parts.Count > 0 ? parts.Average() : 0):0}");
+            Console.WriteLine($"  front profile: mean pair {(pairs.Count > 0 ? pairs.Average() : 0):0.000}; generation mean {(ms.Count > 0 ? ms.Average() : 0):0} ms, worst {(ms.Count > 0 ? ms.Max() : 0):0} ms ({slowest}); parts mean {(parts.Count > 0 ? parts.Average() : 0):0}");
             if (mine.Count > 0)
                 Console.WriteLine("  mean front: " + string.Join(" ", Enumerable.Range(0, Bins).Select(b => mine.Average(x => x[b]).ToString("0.00", CultureInfo.InvariantCulture))));
         }

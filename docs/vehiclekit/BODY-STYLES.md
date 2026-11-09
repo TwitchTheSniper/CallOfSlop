@@ -969,6 +969,78 @@ or tail door bay; an offset cab and uneven roof clutter; Militia's separation (0
 Highland's veranda); Bandit's worst generation (48 s with cages at 0.6); a network round trip of a balcony between two peers (a run-time part by its key exactly
 as a pod is; not sent here).
 
+## 13. Phase 7a, as built (2026-11-09): interiors that follow the body
+
+The brief (the user's decisions): the inside look per faction, walls and ceiling either following the hull's own shape or an inset lining, chosen per faction as
+data, nothing through the hull and no coplanar faces with it; furnishing by role (ammo racks for gunships, bunks for carriers, racks for haulers), faction flavour
+props, loot stowed where a player would, working stations; always a walkable aisle; density by faction as data; lamps per faction and windows where the body has
+glass. This phase is ground-floor rooms and cabs; upper storeys, pods, caged rooms and balconies are 7b's.
+
+Code: `Source/Constructs/HullLoft.Lining.cs` (the lining and lamps, drawn by the bay), `HullLoft.cs` (a bay key's last word), `HullLoft.Cabs.cs` (`Dash`, a cab
+key's last word), `Vehicle.Rooms.cs` (`Interior`, `Furnish`), `Vehicle.Cabs.cs` (`PlaceCab`), the style rows' `Lining`, `LiningInset`, `Clutter`, `Props`, `Fill`,
+`Gear` (`BodyStyleRule`, VehicleBodyLanguage.cs), `BodyLook.Lining`, `LiningInset` and `Names`. Protocol unchanged (219): a lining is a word on a run-time part's
+key, which the wire carries as text.
+
+### The lining
+
+A ground-floor bay's key takes a last word `i`, the kind and the mode (`Hull Loft (100 ~... ~... irf)`); the bay draws it, so a room has no more parts than
+before. Every piece stands in from the skin's inner face by 4 mm or more and is drawn only: a player stands against the bay's hidden slabs (1 to 5 cm inside the
+skin), which a following lining (2.4 to 4 cm inside) never reaches past. Pieces end short of each other at a corner (by the offset's overlap there), are at most
+0.5 m along a row (planks 0.15 m) with 6 mm seams, every other one 3 mm shorter along the bay, and stop 1.5 cm short of an open bay end (2.6 cm at a closed one, past
+the cap). Modes:
+
+- `f` **follows** the hull's rows: sloped walls, tumblehomes, curved and pitched roofs, ledges (a row under 8 cm is left bare).
+- `i` an **inset** lining: upright walls where the hull is narrowest up to 2.05 m and a flat ceiling as high as the walls stay upright and the roof clears it. A bay
+  where that would stand more than 12 cm off the hull, or put the ceiling under 2.05 m, follows instead. The lever socket hangs under an inset ceiling.
+
+A door bay's doorway side is bare below the cant; an upper floor's ceiling isn't lined (its hatch); closed ends (brow and tail caps) aren't lined yet.
+
+| Style | kind | mode (chance inset) | lamp | dash |
+| --- | --- | --- | --- | --- |
+| Bandit | `r` bare hull: ribs across the section (one a bay, two over 0.9 m) and weld beads along the wall rows, broken round the ribs | follows | a bare bulb on a flex | rusty, amber gauges |
+| Militia | `m` olive panels, a dark rack rail at 1.1 m | 0.8 | a caged bulkhead lamp | olive, green |
+| IT | `c` pale panels, a blue-grey kick strip | 0.9 | a flush light panel | pale, blue |
+| Scam | `s` purple below a gold rail at 1.05 m, dark above, pink neon along an inset wall's top | 0.75 | a pink neon tube | purple, pink |
+| Highland | `t` varnished planks, two tones | 0.1 | a lantern on a hook | timber, amber |
+| British | `u` padded moquette under a wood dado at 1.0 m, cream panelling above, cream ceiling | 0.2 | a chrome-rimmed dome lamp | wood, cream |
+
+Lamps are glowing boxes (drawn bright and unlit, as a lit lamp's lens is), one a bay of 0.7 m and more, 0.32 m off the centreline (the lever hangs on it), only
+where the roof is 2 m up or more. They light nothing around them: construct lamps don't cast light (dynamic lights are capped at four a frame,
+docs/render/LIGHTING.md). **Windows**: rooms have no glass to keep clear (a room's windows are 7b's); cabs keep theirs, the dash stands under the belt.
+
+**Cabs**: an enclosed, crew, armoured or caged cab's key takes `i` and the kind (when the key has room for it): a dash shelf under the belt across the front, 6 mm in
+from its inner face, 5 cm clear of the sides, over the gearbox (0.82 m up and more), with a glowing gauge strip. A capsule's and a merged cab's front is over the
+engine, far from the seats: no dash yet.
+
+### Furnishing
+
+`Furnish` on a kit-5 room (`Interior`) puts, down the side walls by its old rules (never in the doorway, the middle, a stair's way; the aisle kept): **role gear**
+first, `Gear` pieces of it (Ammo Containers where a room's seats work guns or for a raider, gun platform, boss or command; bunks for a carrier or a room 5 m and longer
+with no gunners; a Parts Shelf, a Wheel Rack or a shelf otherwise); then the layout, its repeats in a long room scaled by `Fill`; then the faction's props,
+`Clutter` a metre of room. Containers (Ammo Containers, shelves, racks) roll loot and take the cargo pass's stowage as any furniture does. A named piece is put no
+further than 0.1 m from where it was asked, 0.17 m from what stands on that wall already (where it stands, not where it was asked) and 0.9 m from the room's ends
+(an end chest): two backs on one wall line meet in a plane wherever they overlap (Scam War Bus 4 and Gun Wagon 5 on the way). What doesn't fit is left out, so the
+walls set the density as much as the rule.
+
+| Style | gear | fill | clutter a metre | props |
+| --- | --- | --- | --- | --- |
+| Bandit | 2 | 1 | 0.9 | Fuel Drum, Ammo Crate, Crate Stack, Small Fuel Tank, Ammo Box |
+| Militia | 2 | 0.6 | 0.25 | Ammo Crate, Small Fuel Tank, Cable Reel |
+| IT | 1 | 0.35 | 0.12 | Office Plant, Network Switch, Desk Fan |
+| Scam | 1 | 0.8 | 0.6 | Office Phone, Call Headset, Gift Card Sign, Loudhailer, CRT Monitor |
+| Highland | 1 | 0.9 | 0.45 | Wee Keg, Thistle |
+| British | 1 | 0.8 | 0.35 | Teapot, Garden Gnome, Union Flag, Traffic Cone |
+
+`--no-interiors` makes rooms as before (no lining, dash, gear or props; the same dice), to measure against.
+
+MEASURED_7A
+
+**Left for 7b.** Upper storeys' and side pods' insides, caged rooms and balconies (no lining: bars and open tops); closed ends (brow and tail caps) and the back
+door's cap; windows cut in rooms (they have no glass); a capsule's and a merged cab's dash; a steering wheel; working stations wired (a radio, a powered
+workbench, a lamp on a switch: today's stations are the gunners' seats and the magazine's feeds, as before); props on shelves and workbenches rather than the floor
+(Bandit's clutter is held back by wall length); lamps that light their surroundings; a network round trip of a lined bay between two peers (a run-time part by its
+key as phase 1 proved; not sent here); nothing was tried in the game window.
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1002,4 +1074,5 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
 --sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
 --body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
+--body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props
 ```
