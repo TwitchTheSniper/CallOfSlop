@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-fuel-blasts/1",
+  "about": "How a tank with fuel in it goes up when it is destroyed (docs/sandbox/CONSTRUCTS.md, 'Fuel blasts'). A tank's energy-litres are the litres it held at that moment times its fluid's 'energy' (a fluid not listed doesn't burn); a designed weapon with no warhead counts its motors' and tanks' fuel at 'propellantPerKg' a kg. Below 'minLitres' there is no blast. Radius: 'radiusBase' + 'radiusPerCubeRoot' x cube root of the energy-litres, at most 'maxRadius' (100 m or more is a shock front); damage at the middle: 'damageBase' + 'damagePerRoot' x square root, at most 'maxDamage'; crater: 'craterPerRadius' of the radius, at most 'maxCrater' m. It goes off 'delayTicks' after it breaks, plus up to 'staggerTicks' more by its place in the body, so a chain ripples.",
+  "minLitres": 0.5,
+  "radiusBase": 0.5,
+  "radiusPerCubeRoot": 1.0,
+  "maxRadius": 160,
+  "damageBase": 60,
+  "damagePerRoot": 30,
+  "maxDamage": 3000,
+  "craterPerRadius": 0.2,
+  "maxCrater": 25,
+  "delayTicks": 18,
+  "staggerTicks": 6,
+  "propellantPerKg": 1.5,
+  "energy": { "fuel": 1.0, "hydrogen": 1.5, "oxidiser": 0.6, "oil": 0.35 }
+}

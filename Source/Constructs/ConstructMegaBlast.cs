@@ -248,7 +248,7 @@ public sealed partial class ConstructWorld
             }
             // It breaks and comes off: marked, with what its breaking sets off.
             p.Health = 0;
-            if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume || d.AmmoStore)
+            if (MayCookOff(d))
                 CookOff(c, i, ConstructRender.PartCentre(c, i));
             if (d.Explosive is { } bomb)
                 Arm(c, i, bomb);

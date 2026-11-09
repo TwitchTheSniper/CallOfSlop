@@ -216,6 +216,8 @@ public static unsafe partial class Program
             return SelfTest.BenchMaterial(args); // the material painter: parts of other materials, round trips, a client's requests over RakNet (Source/App/BenchMaterial.cs)
         if (args.Any(a => a.Equals("--bench-cookoff", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchCookOff(args); // an ordnance rack's cook-off chain and bombs set off in the air (Source/App/BenchCookOff.cs)
+        if (args.Any(a => a.Equals("--bench-fuelblast", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchFuelBlast(args); // tanks with fuel in them going up: drums, a tanker, a chain, a fused hull (Source/App/BenchFuelBlast.cs)
         if (args.Any(a => a.Equals("--bench-mega", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchMega(args); // what a massive blast costs: tick time, allocation, bytes sent, over a busy scene (Source/App/BenchMegaBlast.cs)
         if (args.Any(a => a.Equals("--bench-fuse-net", StringComparison.OrdinalIgnoreCase)))

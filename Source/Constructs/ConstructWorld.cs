@@ -185,6 +185,10 @@ public sealed partial class ConstructWorld
     /// <summary>A flammable part, or an open volume with something in it that burns (ConstructSeal.cs).</summary>
     public bool CanBurn(Construct c, int part) => c.Parts[part].D.Flammable || c.SealCount > 0 && ConstructSeal.Exposed(this, c, part) || c.CellCount > 0 && c.Parts[part].D.IsEnvelope && ConstructFluid.Held(c.Parts[part], c.Parts[part].D) == Fluid.Hydrogen;
 
+    /// <summary>A part whose breaking may set something off (<see cref="CookOff"/>): an ammo box or store, or a tank that may hold fuel.</summary>
+    internal static bool MayCookOff(ConstructPartDef d) =>
+        d.Role is PartRole.AmmoBox or PartRole.FuelTank or PartRole.FluidTank || d.IsTankVolume || d.AmmoStore || d.Burns && !d.Warhead && d.OrdStats != null;
+
     private void CookOff(Construct c, int part, Vector3 at)
     {
         ref var p = ref c.Parts[part];
@@ -203,13 +207,6 @@ public sealed partial class ConstructWorld
             radius = MathF.Min(12f, 3.5f + 0.25f * MathF.Sqrt(am.Amount));
             damage = MathF.Min(1500f, 260f + 20f * MathF.Sqrt(am.Amount));
         }
-        else if (d.Role == PartRole.FuelTank && p.Burn > 0 && c.Fuel > 0.5f)
-        {
-            // A burning tank that gives way goes up with the fuel in it.
-            var share = Math.Clamp(c.Fuel / MathF.Max(1, c.FuelCapacity()), 0, 1);
-            radius = 3f + 1.5f * share;
-            damage = 120f + 260f * share;
-        }
         else if (d.IsEnvelope)
         {
             if (p.Burn == 0 || ConstructFluid.Held(p, d) != Fluid.Hydrogen)
@@ -217,14 +214,14 @@ public sealed partial class ConstructWorld
             ConstructCargo.Settings(p, d, out var box, out _);
             ConstructLift.Blast(p, d, box.X * box.Y * box.Z, out radius, out damage);
         }
-        else if (d.IsTankVolume && p.Burn > 0 && ConstructFluid.Held(p, d) == Fluid.Fuel)
-        {
-            var share = Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Fill, 0) / 100f, 0, 1);
-            radius = 3f + 1.5f * share;
-            damage = 120f + 260f * share;
-        }
         else
+        {
+            // A tank with fuel in it (a fuel tank, drum or tanker barrel, a Fluid Tank, a Tank Volume, a designed weapon's motor), burning or
+            // not, goes up with what it held: Constructs/FuelBlasts.json (ConstructFuelBlasts.cs).
+            if (FuelBlast(c, part, at))
+                Events.Add($"construct {c.Id}: the {d.Name} goes up");
             return;
+        }
         if (CookOffCount < CookOffs.Length)
             CookOffs[CookOffCount++] = new CCookOff { At = at, Radius = radius, Damage = damage, Ticks = (int)(ConstructWeapons.CookOffDelay * World.TickRate), Body = c.Id };
         Events.Add($"construct {c.Id}: the {d.Name} cooks off");
@@ -961,8 +958,8 @@ public sealed partial class ConstructWorld
         if (d.Logic == CLogic.BombRack && d.OnBreak != PartBreak.Disable && RackGoes(c, part))
             return true; // (a rack blown off with damaged ordnance on it: they go with it)
         Disable(c); // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
-        if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume || d.AmmoStore)
-            CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
+        if (MayCookOff(d))
+            CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a tank with fuel in it: a beat later)
         if (d.Explosive is { } bomb)
         {
             Arm(c, part, bomb);
