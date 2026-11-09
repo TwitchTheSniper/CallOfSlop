@@ -369,10 +369,11 @@ public sealed partial class Vehicle : BlueprintScript
         var mid = CentreOf(mount);
         var table = Put("Turntable", new Vector3(mid.X, FromRest(top).Y + 0.1f, mid.Z), Orient.Upright, 0.65f, mount, "base");
         var arm = Stand($"{Beam} 1 m", SocketPoint(table, "top"), aft ? new Orient(Vector3.UnitZ, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY) : Orient.Along(Vector3.UnitZ), table, "-y1");
-        GunnerSeat = seat ?? Onto(arm, "+y3", "Seat", "bottom", 0);
+        // Every piece is turned as the arm is (an aft arm faces back): the seat faces where the gun points at rest, never across it (a tester's report).
+        GunnerSeat = seat ?? Onto(arm, "+y3", "Seat", "bottom", SpinLike(arm, "+y3", "Seat", "bottom", arm, Vector3.UnitX, Vector3.UnitY));
         Seats.Add(GunnerSeat);
-        var hinge = Onto(arm, "+y0", "Motor Hinge", "base", aft ? 2 : 0);
-        Gun = FitGun(hinge, Weapon, aft ? 2 : 0);
+        var hinge = Onto(arm, "+y0", "Motor Hinge", "base", SpinLike(arm, "+y0", "Motor Hinge", "base", arm, Vector3.UnitY, -Vector3.UnitX, aft ? 2 : 0));
+        Gun = FitGun(hinge, Weapon, SpinLike(hinge, hinge.Def.HasJoint ? hinge.Def.LeafSocket : "top", GunDef(WeaponOption.Parse(Weapon.Build).Part).Name, "bottom", arm, Vector3.UnitX, Vector3.UnitY, aft ? 2 : 0));
         var module = seat == null ? Onto(GunnerSeat, "+x", "Turret Module", "-x", 0) : Onto(GunnerSeat, "back", "Turret Module", "-z", 0); // (a seat in a room keeps its module out of the aisle)
         Wire(GunnerSeat, module);
         Wire(module, Gun);
@@ -382,6 +383,21 @@ public sealed partial class Vehicle : BlueprintScript
             GunShield(arm);
         Turrets.Add((Gun, GunnerSeat, Weapon));
         return this;
+    }
+
+    /// <summary>
+    /// The spin that fits <paramref name="part"/> on <paramref name="on"/>'s <paramref name="socket"/> turned as <paramref name="like"/> is, from the turn it takes on an
+    /// unturned one (its X and Y going to <paramref name="x"/> and <paramref name="y"/>); <paramref name="fallback"/> when no spin gives that.
+    /// </summary>
+    private int SpinLike(VPart on, string socket, string part, string by, VPart like, Vector3 x, Vector3 y, int fallback = 0)
+    {
+        var turn = TurnOf(like);
+        var wantX = Rot24.Apply(turn, x);
+        var wantY = Rot24.Apply(turn, y);
+        for (var spin = 0; spin < 4; spin++)
+            if (TurnOf(on, socket, part, by, spin) is { } r && Vector3.DistanceSquared(Rot24.Apply(r, Vector3.UnitX), wantX) < 0.01f && Vector3.DistanceSquared(Rot24.Apply(r, Vector3.UnitY), wantY) < 0.01f)
+                return spin;
+        return fallback;
     }
 
     /// <summary>Guns on a fed turret that carry their own magazines (twin mounts): <see cref="Feeds"/> lays no belt to them.</summary>

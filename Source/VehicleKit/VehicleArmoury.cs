@@ -267,7 +267,7 @@ public static class VehicleArmouryCli
         }
         Console.WriteLine($"armoury report: {(VehicleArmoury.On ? "with" : "WITHOUT")} the armoury, seeds {seeds.FirstOrDefault()} to {seeds.LastOrDefault()}{(check ? ", with the full check" : "")}");
         Console.WriteLine($"  {"style",-9} {"shape",-13} {"made",4} {"guns",5} {"names",5} {"builds",6} {"mixed",5} {"merged",6} {"heavy",5} {"ms",6} {(check ? "check" : ""),5}  guns seen");
-        int made = 0, failed = 0, passed = 0, checkedN = 0;
+        int made = 0, failed = 0, passed = 0, checkedN = 0, seats = 0, sideways = 0;
         var times = new List<double>();
         var byStyle = new Dictionary<string, (HashSet<string> Names, HashSet<string> Builds)>();
         var failures = new List<string>();
@@ -298,6 +298,15 @@ public static class VehicleArmouryCli
                             heavy += VehicleRoles.ClassOf(w) == GunClass.Heavy ? 1 : 0;
                         }
                         mixed += here.Count > 1 ? 1 : 0;
+                        foreach (var off in VehicleChecks.SeatsOffGuns(text))
+                        {
+                            seats++;
+                            if (off > VehicleChecks.SeatGunLimit)
+                            {
+                                sideways++;
+                                failures.Add($"{g.Name} {seed}: a turret seat {off:0} degrees off its gun");
+                            }
+                        }
                         if (check)
                         {
                             checkedN++;
@@ -329,7 +338,7 @@ public static class VehicleArmouryCli
             Console.WriteLine($"  style {style}: {all.Names.Count} gun names, {all.Builds.Count} distinct guns over every shape");
         foreach (var f in failures)
             Console.WriteLine($"  FAIL {f}");
-        Console.WriteLine($"armoury report: {made} made, {failed} failed to generate, {times.DefaultIfEmpty().Average():0} ms a generation (worst {times.DefaultIfEmpty().Max():0}){(check ? $", full check passed {passed}/{checkedN}" : "")}");
+        Console.WriteLine($"armoury report: {made} made, {failed} failed to generate, {times.DefaultIfEmpty().Average():0} ms a generation (worst {times.DefaultIfEmpty().Max():0}){(check ? $", full check passed {passed}/{checkedN}" : "")}; turret seats more than {VehicleChecks.SeatGunLimit:0} degrees off their gun: {sideways}/{seats}");
         return 0;
     }
 
