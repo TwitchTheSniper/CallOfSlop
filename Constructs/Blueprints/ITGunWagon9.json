@@ -66,7 +66,7 @@
     {"part": "Turn Bolt", "on": 55, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 57, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 53, "socket": "+x", "by": "-x"},
-    {"part": "Turntable", "on": 49, "socket": "+x1", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 49, "socket": "+x1", "by": "base"},
     {"part": "Square Beam 1 m", "on": 61, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 62, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 62, "socket": "+y0", "by": "base"},
@@ -87,7 +87,7 @@
     {"part": "Tow Hitch", "on": 10, "socket": "+z", "by": "-z0"},
     {"part": "Network Switch", "on": 74, "socket": "front30", "by": "base"},
     {"part": "Cable Reel", "on": 75, "socket": "front30", "by": "base"},
-    {"part": "Wi-Fi Mast", "on": 74, "socket": "front00", "by": "base"}
+    {"part": "Wi-Fi Mast", "on": 75, "socket": "front33", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [53, 60], [60, 55], [63, 71], [71, 65]],
   "links": [

@@ -80,10 +80,10 @@
     {"part": "Bolt Deck 0.25 m", "on": 53, "socket": "+x0", "by": "-x0", "paint": "#c8102e"},
     {"part": "Bolt Deck 0.25 m", "on": 53, "socket": "+x1", "by": "-x0", "paint": "#c8102e"},
     {"part": "Bolt Deck 0.25 m", "on": 53, "socket": "+x2", "by": "-x0", "paint": "#c8102e"},
-    {"part": "Turntable", "on": 41, "socket": "+x1", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 41, "socket": "+x1", "by": "base"},
     {"part": "Square Beam 1 m", "on": 75, "socket": "top", "by": "-y1", "paint": "#2b2a28"},
     {"part": "Seat", "on": 76, "socket": "+y3", "by": "bottom"},
-    {"part": "Motor Hinge", "on": 76, "socket": "+y0", "by": "base"},
+    {"part": "Motor Hinge 1x1 Long", "on": 76, "socket": "+y0", "by": "base"},
     {"part": "Farmhand Pump Receiver", "on": 78, "socket": "leaf", "by": "bottom"},
     {"part": "Twin Splitter", "on": 79, "socket": "front", "by": "back"},
     {"part": "Scattermouth Barrel", "on": 80, "socket": "front-l", "by": "back"},
@@ -110,7 +110,7 @@
     {"part": "Queue Post", "on": 50, "socket": "front10", "by": "base"},
     {"part": "Traffic Cone", "on": 69, "socket": "front00", "by": "base"},
     {"part": "Traffic Cone", "on": 71, "socket": "front00", "by": "base"},
-    {"part": "Belisha Beacon", "on": 44, "socket": "front10", "by": "base"}
+    {"part": "Belisha Beacon", "on": 62, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [77, 84], [84, 79], [91, 88]],
   "hoses": [[89, 90]],

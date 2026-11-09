@@ -85,7 +85,7 @@
     {"part": "Plate Steel 0.25 m", "on": 59, "socket": "+x3", "by": "-x", "paint": "#9aa0a6"},
     {"part": "Plate Steel 0.25 m", "on": 59, "socket": "-z1", "by": "-x", "paint": "#8a9096"},
     {"part": "Square Beam 0.5 m", "on": 50, "socket": "+x1", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Turntable", "on": 79, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 79, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 80, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Seat", "on": 81, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 81, "socket": "+y0", "by": "base"},

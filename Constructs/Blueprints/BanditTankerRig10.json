@@ -68,7 +68,7 @@
     {"part": "Bolt Deck 0.25 m", "on": 49, "socket": "+x0", "by": "-x0", "paint": "#94603a"},
     {"part": "Fuel Drum", "on": 43, "socket": "front23", "by": "-y"},
     {"part": "Square Beam 0.5 m", "on": 40, "socket": "+x1", "by": "-z", "paint": "#2f2c2a"},
-    {"part": "Turntable", "on": 63, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 63, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 64, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Seat", "on": 65, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 65, "socket": "+y0", "by": "base"},

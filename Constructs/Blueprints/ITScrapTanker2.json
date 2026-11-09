@@ -57,7 +57,7 @@
     {"part": "Square Beam 0.75 m", "on": 48, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#3b3f44"},
     {"part": "Tanker Barrel 3 m", "on": 47, "socket": "+x0", "by": "footL0"},
     {"part": "Square Beam 0.75 m", "on": 45, "socket": "+x1", "by": "-z", "paint": "#3b3f44"},
-    {"part": "Turntable", "on": 51, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 51, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 52, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 53, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 53, "socket": "+y0", "by": "base"},

@@ -391,11 +391,14 @@ public sealed partial class Vehicle : BlueprintScript
     /// <summary>
     /// A turret's turntable by its gun (<see cref="Weapon"/>): a light gun turns fast on a small table (180 degrees a second, 3000 N m), a medium one on a
     /// 2x2 (90, 12000), a heavy or merged one on the slow, heavy Turntable (45). Highland and British light guns take a steadier 1x1 Medium half the time.
-    /// Where the chosen one has no room the Turntable goes on.
+    /// A light gun on a pedestal beam takes the 2x2 (a 1x1 there would share the beam's faces). Where the chosen one has no room the Turntable goes on.
     /// </summary>
     private VPart TurretTable(VPart mount, Vector3 top)
     {
         var cls = VehicleRoles.ClassOf(Weapon!);
+        C.PartBounds(mount.Index, out var lo, out var hi);
+        if (cls == GunClass.Light && MathF.Min(hi.X - lo.X, hi.Z - lo.Z) < 0.3f)
+            cls = GunClass.Medium; // (a 1x1 table on a pedestal beam as wide as it would share its four sides: a 2x2 overhangs it)
         var name = cls switch
         {
             GunClass.Light => Style.Name is "Highland" or "British" && Dice.Fork("turntable " + Turrets.Count).Chance(0.5) ? "Turntable 1x1 Medium" : "Turntable 1x1 Long",

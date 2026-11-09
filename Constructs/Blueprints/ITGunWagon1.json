@@ -86,10 +86,10 @@
     {"part": "Bolt Deck 0.25 m", "on": 61, "socket": "-z0", "by": "-x0", "paint": "#d8d0b8"},
     {"part": "Plate Steel 1 m", "on": 57, "socket": "+z0", "by": "-x0", "paint": "#8e9296"},
     {"part": "Fuel Drum", "on": 79, "socket": "front30", "by": "-y"},
-    {"part": "Turntable", "on": 44, "socket": "+x1", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 44, "socket": "+x1", "by": "base"},
     {"part": "Square Beam 1 m", "on": 81, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 82, "socket": "+y3", "by": "bottom"},
-    {"part": "Motor Hinge", "on": 82, "socket": "+y0", "by": "base"},
+    {"part": "Motor Hinge 1x1 Long", "on": 82, "socket": "+y0", "by": "base"},
     {"part": "Courier Carbine Receiver", "on": 84, "socket": "leaf", "by": "bottom"},
     {"part": "Stub Barrel", "on": 85, "socket": "front", "by": "back"},
     {"part": "Flash Hider", "on": 86, "socket": "front", "by": "back"},
@@ -106,8 +106,8 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 97, "pos": [0.126, 0.479, -1.929], "rot": [-0.7067, -0.0011, 0.0091, 0.7074]}, "paint": "#a7abae"},
     {"part": "CRT Monitor", "on": 96, "socket": "top", "by": "base"},
     {"part": "CRT Monitor", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Cable Reel", "on": 47, "socket": "front11", "by": "base"},
-    {"part": "Satellite Dish", "on": 64, "socket": "front00", "by": "base"}
+    {"part": "CRT Monitor", "on": 57, "socket": "front02", "by": "base"},
+    {"part": "Router Antenna", "on": 56, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [83, 88], [88, 85], [95, 92]],
   "hoses": [[93, 94]],

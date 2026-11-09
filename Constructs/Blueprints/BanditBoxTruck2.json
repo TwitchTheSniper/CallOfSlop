@@ -75,7 +75,7 @@
     {"part": "Steel Flush Door 1.25x2 m", "on": 66, "socket": "leaf", "by": "hang", "paint": "#94603a"},
     {"part": "Hull Loft (100r ~Cm0CmyDfuEo1EpIBJq03q ~B80BGyBfGCfMCgD9Ya02a cw)", "on": 49, "socket": "front03", "by": "footL0", "paint": "#8a8d8f"},
     {"part": "Seat", "on": 45, "socket": "front21", "by": "bottom"},
-    {"part": "Turntable", "on": 65, "socket": "top", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 65, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 70, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Motor Hinge", "on": 71, "socket": "+y0", "by": "base"},
     {"part": "Rifle Receiver", "on": 72, "socket": "leaf", "by": "bottom"},
