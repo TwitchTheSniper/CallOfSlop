@@ -125,7 +125,11 @@ public sealed partial class Vehicle
         {
             if (slot == "chest" && room.Containers.Count > 0)
                 continue;
-            var part = slot.StartsWith('=') ? slot[1..] : Style.Part(d, slot); // ("=Name": a part by its name, phase 7a's gear and props)
+            var named = slot.StartsWith('=');
+            var part = named ? slot[1..] : Style.Part(d, slot); // ("=Name": a part by its name, phase 7a's gear and props)
+            // (phase 7a's gear and props: put no further than 0.1 m from where asked, kept 0.17 m from what stands on the wall already and 0.9 m from the room's
+            // ends, where an end chest stands: two backs on one wall line meet in a plane wherever they overlap)
+            var (reach, gap, endKeep) = named ? (0.1f, 0.17f, 0.9f) : (0.2f, 0.05f, 0f);
             var def = Def(part);
             var size = def.BoundsMax - def.BoundsMin;
             var alongWall = size.X >= size.Z;
@@ -136,16 +140,16 @@ public sealed partial class Vehicle
                 var inward = new Vector3(-side, 0, 0);
                 var o = alongWall ? new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, inward, Vector3.UnitY, Vector3.UnitY);
                 var x = (side < 0 ? room.R.X0 : room.R.X1) + inward.X * (deep / 2 + 0.03f); // (the floor's sockets may move it in by an eighth)
-                for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
+                for (var at = MathF.Max(0.1f, endKeep) + run / 2; placed == null && at + run / 2 < length - MathF.Max(0.1f, endKeep); at += 0.25f)
                 {
                     var z = from + way * at;
                     if (InDoorway(room, x, z, deep, run) || room.Kept(x, z, deep + 0.4f, run + 0.4f) /* (Put may move it up to 0.2 m to a socket) */ || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
-                        taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
+                        taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + gap && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try
                     {
-                        placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, z), o, 0.2f, onTop: true);
-                        taken.Add((side, z, run, deep));
+                        placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, z), o, reach, onTop: true);
+                        taken.Add((side, inside != null ? CentreOf(placed).Z : z, run, deep)); // (phase 7a: where it stands, not where it was asked for)
                     }
                     catch (VehicleKitException)
                     {
