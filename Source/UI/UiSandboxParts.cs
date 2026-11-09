@@ -619,7 +619,7 @@ public sealed partial class Ui
                 }
                 ImGui.Spacing();
                 // The list takes what the options leave (folded: their header, the slider and the hint).
-                var below = ImGui.GetFrameHeightWithSpacing() * (_sbOptionsOpen ? 9.4f : 3.2f);
+                var below = ImGui.GetFrameHeightWithSpacing() * (_sbOptionsOpen ? 10.5f : 3.2f);
                 var treeH = ImGui.GetContentRegionAvail().Y - below;
                 if (ImGui.BeginChild("##sbtree"u8, new float2(0, MathF.Max(60 * _scale, treeH)), ImGuiChildFlags.None))
                     SbDrawTree();
@@ -654,6 +654,11 @@ public sealed partial class Ui
                         ImGui.Checkbox("Anchor new constructs to the ground"u8, ref game.SandboxPlaceAnchor);
                     else
                         ImGui.TextColored(Dim, "New constructs: free (a foundation anchors)"u8);
+                    // The tiles' pictures made again (SandboxTiles.Regenerate): the button only notes it, Pump acts before the next scene.
+                    if (ImGui.Button("Regenerate icons"u8))
+                        SandboxTiles.Regenerate();
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip(SandboxTiles.Broken ? "Pictures failed on this PC (see callofslop.log, [icons]). Try again."u8 : "Draws every part picture again over the next frames."u8);
                 }
                 ImGui.SetNextItemWidth(-1);
                 ImGui.SliderFloat("##sbtilesize"u8, ref SandboxTileSize, SandboxTileMin, SandboxTileMax, "Tile size %.0f"u8);

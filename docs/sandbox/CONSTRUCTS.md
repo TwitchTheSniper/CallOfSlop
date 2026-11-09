@@ -551,7 +551,11 @@ same on the GL 4.1 and 4.6 paths. The window asks for the atlas when it opens; t
 the scene, draws up to 12 tiles a frame within a 3 ms budget (the first frame's GL set-up aside), so opening the window
 never stalls a frame for long (on Mesa's software GL the 52 tiles took about 20 frames). The atlas is kept for the session
 and made again only when the loaded parts, blueprints or tools change; until a tile is ready (or if the framebuffer can't
-be made) its card shows a plain colour swatch instead.
+be made) its card shows a plain colour swatch instead. A failure is not final: a slot whose data throws gets a swatch
+alone; a set-up or batch failure (a stale GL error is cleared first; an incomplete framebuffer; the first picture of a run
+read back empty) is tried again three times, 2 s apart, before the swatches stay. Options > Regenerate icons starts over
+(the atlas is GPU memory only, no icon file on disk). Each reason is one throttled `[icons]` line in callofslop.log, and a
+window that has made no picture for 10 s says where it stands.
 
 It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in its `"sandbox"` section, as Survival in the
 lobby does: the key then says why ("the parts menu is off on this map", "... in survival") and the server refuses both requests. The
