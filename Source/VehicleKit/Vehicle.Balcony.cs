@@ -34,6 +34,15 @@ public sealed partial class Vehicle
     {
         var s = s0;
         var rear = Look!.RearDoor;
+        if (!rear)
+        {
+            // A side door's balcony keeps to its own bay, a middle one: past it a cab's side, a brow's rake, a neighbour's pods, panniers and sponsons come later
+            // and would stand over its deck where a player's head is (measured: a long one under a merged cab pushed the player off).
+            var k = room.Plan.IndexOf("Door");
+            if (k < 1 || k > room.Bays.Count - 2 || HullLoft.ShapeOf(room.Bays[k].Def.Name) is not { } dsh)
+                return false;
+            s = s with { Length = MathF.Min(s.Length, MathF.Floor((dsh.Length - 0.06f) * 100) / 100) };
+        }
         var side = Look.DoorSide;
         var orient = rear ? new Orient(Vector3.UnitX, Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, new Vector3(side, 0, 0), Vector3.UnitY, Vector3.UnitY);
         var turn = FirstTurn(orient);

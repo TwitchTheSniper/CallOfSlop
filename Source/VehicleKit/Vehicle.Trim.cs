@@ -141,7 +141,7 @@ public sealed partial class Vehicle
                     var bd = d.Fork($"bay {room.Tag} {k} {socket}");
                     C.SocketAt(bay.Index, at, out _, out var face);
                     var outward = ConstructParts.DirVector(face).X > 0 ? 1f : -1f; // (a turned bay's "+x0" faces the vehicle's -x)
-                    if (!bd.Chance(rule.TrimShare * (Lean != 0 && outward != Lean ? 1 - rule.AsymAmount : 1))) // (phase 6: a lopsided vehicle's far side thinned)
+                    if (!bd.Chance(rule.TrimShare * (Lean != 0 && outward != Lean ? 1 - rule.AsymTrim : 1))) // (phase 6: a lopsided vehicle's far side thinned)
                         continue;
                     var kind = rule.TrimMix ? kinds[bd.Int(0, kinds.Length - 1)] : kinds[k % kinds.Length];
                     var low = TrimLow(bay, outward, room.FloorTop);
