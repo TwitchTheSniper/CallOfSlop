@@ -23,8 +23,14 @@ public static unsafe partial class Program
     /// </summary>
     private static void AddFrameLights(double now, Vector3 eye, Vector3 fwd)
     {
-        if (World.Map.LightBake == null || !LightGrid.DynamicEnabled)
+        if (!LightGrid.DynamicEnabled)
             return;
+        if (World.Map.LightBake == null)
+        {
+            if (_game.SandboxOn)
+                ConstructLamps.AddLights(_game.Constructs, eye, _game.TickAlpha, _game.IsServer); // (phase 7b: lamps on constructs light an unlit map too; nothing else does)
+            return;
+        }
         if (now < _game.MuzzleFlashUntil)
             LightGrid.AddDynamic(eye + fwd * 0.9f, new Vector3(1.6f, 1.15f, 0.6f), 7f);
         if (_game.SandboxOn)
@@ -39,6 +45,8 @@ public static unsafe partial class Program
             LightGrid.AddDynamic(b.Pos + new Vector3(0, 0.5f, 0), tint * (3f * (1f - age / 0.5f)), MathF.Max(b.Radius * 2.5f, 6f));
         }
         MegaBlastFx.AddLights(now); // a massive blast's fireball (Source/Render/Fx/MegaBlastFx.cs)
+        if (_game.SandboxOn)
+            ConstructLamps.AddLights(_game.Constructs, eye, _game.TickAlpha, _game.IsServer); // (phase 7b: the lights left over go to lamps on constructs, nearest first)
     }
 
     /// <summary>The clock --light-shots draws at, so two runs (or the 4.6 and 4.1 paths) give the same pictures.</summary>

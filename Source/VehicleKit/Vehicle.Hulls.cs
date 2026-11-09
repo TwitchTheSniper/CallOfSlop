@@ -58,6 +58,7 @@ public sealed partial class Vehicle
                 : Stand(names[k], new Vector3(-foot, room.FloorTop, z + 0.125f), Orient.Forward, null, "footL0", 0.06f);
             walls.Add(bay);
             room.Bays.Add(bay);
+            Glaze(bay, names[k]);
             ceiling = MathF.Max(ceiling, room.FloorTop + Def(names[k]).BoundsMax.Y); // (the tallest bay: a brow or a tail comes down)
             if (bays[k] == "Door" && !rear)
                 HullDoorIn(room, bay, z, tag, doorSide, balcony == null);
@@ -76,6 +77,15 @@ public sealed partial class Vehicle
             room.Seats.Add(Put("Seat", new Vector3(x, room.FloorTop + 0.475f, sz), Orient.Forward, 0.2f, null, "bottom", onTop: true));
         Rooms.Add(room);
         return room;
+    }
+
+    /// <summary>Phase 7b: a lined bay's windows glazed, a pane on each window's sill (HullLoft.RoomPanesOf), cut in the bay's frame as a cab's panes are.</summary>
+    private void Glaze(VPart bay, string name)
+    {
+        if (HullLoft.ShapeOf(name) is not { Window: > '\0' } sh)
+            return;
+        foreach (var (socket, pane) in HullLoft.RoomPanesOf(sh))
+            PanelList("roomglass").Add(AsIs(bay, socket, pane.Key(), "frame")); // (not "glass": that is the cab's, which the cab measure reads)
     }
 
     /// <summary>

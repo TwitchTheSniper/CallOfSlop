@@ -536,6 +536,8 @@ public sealed class ConstructPartDef
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
+    /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
+    public (Vector3 At, Vector3 Colour)[] Lamps = [];
     public int[] UseBoxes = []; // the boxes the aim glow covers ("use" in the file, an Analog Lever's handle); none: the part's use region, or all of it
     public float IdleRpm, PeakRpm, MaxRpm; // engine: idle, where the curve peaks, the limiter
     public EngineCurve Curve; // engine: the torque curve's shape
