@@ -108,10 +108,14 @@ public sealed partial class Vehicle
         var layout = Style.Part(d, "layout");
         var (length, width) = (room.R.Z1 - room.R.Z0, room.R.X1 - room.R.X0);
         var slots = d.Shuffled(Style.Choices("layout " + layout)).ToList();
+        var inside = Look != null && !BodyLook.NoInteriors ? BodyStyleRule.Of(Style) : null; // (phase 7a: the faction's density, role gear and props, kit 5's rooms)
+        var repeat = inside == null ? 4 : (int)MathF.Round(4 * inside.Fill);
         if (length >= 3) // (a bigger room fills up: the list again, then once more for a bus)
-            slots.AddRange(d.Shuffled(slots.Take(4)));
+            slots.AddRange(d.Shuffled(slots.Take(repeat)));
         if (length >= 5)
-            slots.AddRange(d.Shuffled(slots.Take(4)));
+            slots.AddRange(d.Shuffled(slots.Take(repeat)));
+        if (inside != null)
+            slots = Interior(room, inside, d.Fork("interior"), length, slots);
         const float Aisle = 0.9f; // (a player is 0.8 m across)
         var from = room.DoorMid.Z > room.Middle.Z ? room.R.Z0 : room.R.Z1; // (from the end away from the door)
         var way = room.DoorMid.Z > room.Middle.Z ? 1f : -1f;
@@ -121,7 +125,7 @@ public sealed partial class Vehicle
         {
             if (slot == "chest" && room.Containers.Count > 0)
                 continue;
-            var part = Style.Part(d, slot);
+            var part = slot.StartsWith('=') ? slot[1..] : Style.Part(d, slot); // ("=Name": a part by its name, phase 7a's gear and props)
             var def = Def(part);
             var size = def.BoundsMax - def.BoundsMin;
             var alongWall = size.X >= size.Z;
@@ -163,6 +167,31 @@ public sealed partial class Vehicle
             }
         }
         return this;
+    }
+
+    /// <summary>
+    /// Phase 7a (docs/vehiclekit/BODY-STYLES.md, section 13): a kit-5 room's furnishing by its faction and its role. Role gear first (it has the walls' first pick):
+    /// ammo racks (Ammo Containers) where gunners sit or for a fighting role, bunks in a carrier or a long room with no guns, racks for spares (a Parts Shelf, a Wheel
+    /// Rack) in a hauler; then the layout; then the faction's props, <see cref="BodyStyleRule.Clutter"/> a metre. Everything goes down the side walls by
+    /// <see cref="Furnish"/>'s rules (never in the doorway, the middle or a stair's way, the aisle kept), so what doesn't fit is left out.
+    /// </summary>
+    private List<string> Interior(Room room, BodyStyleRule rule, Dice d, float length, List<string> layout)
+    {
+        var gunners = Turrets.Any(t => room.Seats.Contains(t.Seat));
+        var role = Role?.Role.Name ?? "";
+        var gear = new List<string>();
+        var n = Math.Max(0, rule.Gear);
+        if (gunners || role is "gun platform" or "boss" or "raider" or "command")
+            gear.AddRange(Enumerable.Repeat("=Ammo Container", n));
+        else if (role == "carrier" || length >= 5)
+            gear.AddRange(Enumerable.Repeat("bunk", n));
+        else
+            gear.AddRange(Enumerable.Range(0, n).Select(_ => d.Pick((string[])["=Parts Shelf", "=Wheel Rack", "shelf"])));
+        var props = new List<string>();
+        if (rule.Props.Length > 0)
+            for (var i = (int)MathF.Round(rule.Clutter * length); i > 0; i--)
+                props.Add("=" + d.Pick(rule.Props));
+        return [.. gear, .. layout, .. props];
     }
 
     /// <summary>

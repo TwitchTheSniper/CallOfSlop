@@ -145,6 +145,7 @@ public static unsafe partial class Program
             VehicleKit.BodyLook.NoSpaces = true; // body styles phase 5: kit-5 bodies without the new spaces (upper storeys, cages, side pods), to measure against
         VehicleKit.BodyLook.NoPods = args.Any(a => a.Equals("--no-pods", StringComparison.OrdinalIgnoreCase)); // body styles phase 5: one kind of space left out, to measure each
         VehicleKit.BodyLook.NoBalconies = args.Any(a => a.Equals("--no-balconies", StringComparison.OrdinalIgnoreCase)); // body styles phase 6: without balconies, or without lopsided vehicles
+        VehicleKit.BodyLook.NoInteriors = args.Any(a => a.Equals("--no-interiors", StringComparison.OrdinalIgnoreCase)); // body styles phase 7a: rooms without lining, lamps, props or role gear
         VehicleKit.BodyLook.NoAsym = args.Any(a => a.Equals("--no-asym", StringComparison.OrdinalIgnoreCase));
         VehicleKit.BodyLook.NoCages = args.Any(a => a.Equals("--no-cages", StringComparison.OrdinalIgnoreCase));
         VehicleKit.BodyLook.NoUppers = args.Any(a => a.Equals("--no-uppers", StringComparison.OrdinalIgnoreCase));
