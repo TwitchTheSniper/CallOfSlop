@@ -156,7 +156,7 @@ public static partial class HullLoft
                 var (f0, f1) = (MathF.Max(sa.F0, sb.F0), MathF.Min(sa.F1, sb.F1));
                 if (f1 - f0 < 0.02f)
                     continue;
-                RowLining(p, a, b, k, side, f0, f1, z0, z1, kind, look, roofRow);
+                RowLining(p, a, b, k, side, f0, f1, z0, z1, kind, look, roofRow, sh.Length);
             }
         if (flatRoof && !sh.Floor)
             FlatCeiling(p, a, b, z0, z1, kind, look);
@@ -166,7 +166,7 @@ public static partial class HullLoft
     }
 
     /// <summary>One row's lining from f0 to f1: pieces at most 0.5 m along the row (0.15 m planks), 6 mm seams, every other one 3 mm shorter along the bay.</summary>
-    private static void RowLining(Builder p, Section a, Section b, int k, float side, float f0, float f1, float z0, float z1, char kind, LineLook look, bool roofRow)
+    private static void RowLining(Builder p, Section a, Section b, int k, float side, float f0, float f1, float z0, float z1, char kind, LineLook look, bool roofRow, float bayLen)
     {
         var rowLen = MathF.Max(Vector2.Distance(a.P[k], a.P[k + 1]), Vector2.Distance(b.P[k], b.P[k + 1]));
         if (kind == 'r')
@@ -175,7 +175,14 @@ public static partial class HullLoft
             if (!roofRow && rowLen * (f1 - f0) > 0.2f && k % 2 == 0)
             {
                 var (m, h) = ((f0 + f1) / 2, 0.007f / rowLen);
-                RowPiece(p, a, b, k, side, m - h, m + h, z0 + 0.004f, z1 - 0.004f, 0, 0.008f, "#8e8a82");
+                var cuts = RibsAt(z0, z1, bayLen).Select(z => (z - 0.04f, z + 0.04f)).ToList(); // (beads stop short of the ribs: a twisting row's bead and rib would meet nearly in a plane)
+                var from = z0 + 0.004f;
+                foreach (var (c0, c1) in cuts.Append((z1 - 0.004f, z1)))
+                {
+                    if (c0 - from > 0.05f)
+                        RowPiece(p, a, b, k, side, m - h, m + h, from, c0, 0.003f, 0.012f, "#8e8a82");
+                    from = c1;
+                }
             }
             return;
         }
@@ -238,13 +245,14 @@ public static partial class HullLoft
         }
     }
 
+    /// <summary>Where a bay's ribs stand along it: one at the middle, two (at a quarter and three quarters) on a bay over 0.9 m.</summary>
+    private static float[] RibsAt(float z0, float z1, float length) => length > 0.9f ? [z0 + (z1 - z0) * 0.25f, z0 + (z1 - z0) * 0.75f] : [(z0 + z1) / 2];
+
     /// <summary>Bandit ribs: a frame following the whole section across the bay (one a bay, two on a bay over 0.9 m), 6 cm deep, standing in from the skin.</summary>
     private static void Ribs(Builder p, Shape sh, Section a, Section b, float z0, float z1, bool flatRoof)
     {
-        var at = sh.Length > 0.9f ? new[] { 0.25f, 0.75f } : [0.5f];
-        foreach (var u in at)
+        foreach (var zc in RibsAt(z0, z1, sh.Length))
         {
-            var zc = z0 + (z1 - z0) * u;
             var (sa, sb) = Along(sh, zc - 0.025f, zc + 0.025f);
             var last = sa.P.Length - 2;
             foreach (var side in (float[])[-1, 1])
@@ -400,7 +408,7 @@ public static partial class HullLoft
             if (kind == 's') // (neon along the wall's top)
                 Cube(p, new Vector3(MathF.Min(s * (xi - 0.004f), s * (xi - 0.03f)), under - 0.06f, z0 + 0.01f), new Vector3(MathF.Max(s * (xi - 0.004f), s * (xi - 0.03f)), under - 0.03f, z1 - 0.01f), "#ff4fd8", false, true);
             if (kind == 'c') // (a kick strip)
-                Cube(p, new Vector3(MathF.Min(s * (xi - 0.003f), s * (xi - 0.013f)), 0.035f, z0 + 0.006f), new Vector3(MathF.Max(s * (xi - 0.003f), s * (xi - 0.013f)), 0.135f, z1 - 0.006f), "#5f6f7d", false);
+                Cube(p, new Vector3(MathF.Min(s * (xi - 0.003f), s * (xi - 0.017f)), 0.035f, z0 + 0.006f), new Vector3(MathF.Max(s * (xi - 0.003f), s * (xi - 0.017f)), 0.135f, z1 - 0.006f), "#5f6f7d", false);
         }
         // The ceiling (unless the roof is an upper floor, cut by its hatch), its edges 4 mm in from the walls' outer faces.
         if (!sh.Floor)
