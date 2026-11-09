@@ -291,6 +291,10 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     /// </summary>
     public char Lining { get; init; }
     public double LiningInset { get; init; }
+
+    /// <summary>Phase 7b: the rooms' windows, a <see cref="HullLoft.WindowKinds"/> letter (0: none), and the chance a vehicle's rooms have them (section 14).</summary>
+    public char Window { get; init; }
+    public double WindowChance { get; init; }
     public float Clutter { get; init; }
     public string[] Props { get; init; } = [];
     public float Fill { get; init; } = 1f;
@@ -322,7 +326,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: a welded cage for a room half the time: the faction's own space (welded boxes on the flanks are data, left at 0: they washed out its trim))
                 Cage = 0.6, CageKind = 'w', Uppers = [("none", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0)],
                 // (phase 7a: bare hull, ribs and weld beads, bare bulbs; cluttered with drums, crates and spare ammo)
-                Lining = 'r', LiningInset = 0, Clutter = 0.9f, Props = ["Fuel Drum", "Ammo Crate", "Crate Stack", "Small Fuel Tank", "Ammo Box"], Fill = 1f, Gear = 2,
+                Lining = 'r', Window = 's', WindowChance = 0.5, LiningInset = 0, Clutter = 0.9f, Props = ["Fuel Drum", "Ammo Crate", "Crate Stack", "Small Fuel Tank", "Ammo Box"], Fill = 1f, Gear = 2,
                 // (phase 6: a welded grating balcony now and then; lopsided most of all: welded boxes and the plates down one flank; caged rooms its signature, 0.6)
                 Balcony = 0.35, BalconyKind = 'w', Asym = 0.7, AsymAmount = 0.9f, AsymPod = 0.6, AsymTrim = 0.9f,
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
@@ -338,7 +342,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: slatted frame rooms, an armoured fighting deck over the middle, armoured stowage pods)
                 Cage = 0.05, CageKind = 's', Uppers = [("none", 2.5), ("deck", 0.4)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
                 // (phase 7a: orderly olive panels with a rack rail, inset; caged bulkhead lamps; racks, few loose things)
-                Lining = 'm', LiningInset = 0.8, Clutter = 0.25f, Props = ["Ammo Crate", "Small Fuel Tank", "Cable Reel"], Fill = 0.6f, Gear = 2,
+                Lining = 'm', Window = 's', WindowChance = 0.6, LiningInset = 0.8, Clutter = 0.25f, Props = ["Ammo Crate", "Small Fuel Tank", "Cable Reel"], Fill = 0.6f, Gear = 2,
                 // (phase 6: slatted balconies are data, left at 0 (rooms read as Highland's with them); stowage loaded on one side; slatted rooms and decks retuned as signatures)
                 Balcony = 0, BalconyKind = 's', Asym = 0.35, AsymAmount = 0.6f, AsymPod = 0.6,
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
@@ -354,7 +358,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: a short pod storey set in on the roof, smooth blisters on the flanks)
                 Uppers = [("none", 2), ("saloon", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.5)], PodMax = 2,
                 // (phase 7a: clean pale panels, inset, light panels; minimal: a plant now and then)
-                Lining = 'c', LiningInset = 0.9, Clutter = 0.12f, Props = ["Office Plant", "Network Switch", "Desk Fan"], Fill = 0.35f, Gear = 1,
+                Lining = 'c', Window = 'b', WindowChance = 0.9, LiningInset = 0.9, Clutter = 0.12f, Props = ["Office Plant", "Network Switch", "Desk Fan"], Fill = 0.35f, Gear = 1,
                 // (phase 6: faired balconies are data, left at 0; nearly always even)
                 Balcony = 0, BalconyKind = 'f', BalconyLenMin = 1.3f, Asym = 0.1, AsymAmount = 0.4f,
                 CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
@@ -370,7 +374,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: a portacabin stacked on the portacabin; kiosks are data, left at 0: they washed out its signboards)
                 Uppers = [("none", 1.5), ("saloon", 1.5)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
                 // (phase 7a: showy panels, a gold rail and pink neon, inset; phones, headsets and signs about)
-                Lining = 's', LiningInset = 0.75, Clutter = 0.6f, Props = ["Office Phone", "Call Headset", "Gift Card Sign", "Loudhailer", "CRT Monitor"], Fill = 0.8f, Gear = 1,
+                Lining = 's', Window = 'b', WindowChance = 0.85, LiningInset = 0.75, Clutter = 0.6f, Props = ["Office Phone", "Call Headset", "Gift Card Sign", "Loudhailer", "CRT Monitor"], Fill = 0.8f, Gear = 1,
                 // (phase 6: a showy balcony with a sign band at every door it fits, deep; kiosks down one side when lopsided)
                 Balcony = 1, BalconyKind = 'g', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.1f, Asym = 0.4, AsymAmount = 0.7f, AsymPod = 0.7,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
@@ -386,7 +390,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: an open deck behind a bulwark in the boat's lines; a stock wagon of timber stakes now and then; clinker lockers are data, left at 0)
                 Cage = 0, CageKind = 't', Uppers = [("none", 2), ("deck", 0.4)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0)], PodMax = 2,
                 // (phase 7a: timber planking following the boat's lines, lanterns; kegs and a thistle)
-                Lining = 't', LiningInset = 0.1, Clutter = 0.45f, Props = ["Wee Keg", "Thistle", "Wee Keg"], Fill = 0.9f, Gear = 1,
+                Lining = 't', Window = 'p', WindowChance = 0.75, LiningInset = 0.1, Clutter = 0.45f, Props = ["Wee Keg", "Thistle", "Wee Keg"], Fill = 0.9f, Gear = 1,
                 // (phase 6: a timber veranda at every door it fits, deep, its signature in place of the deck and the stock wagon; lockers on one side now and then)
                 Balcony = 1, BalconyKind = 't', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.15f, Asym = 0.3, AsymAmount = 0.5f, AsymPod = 0.5,
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
@@ -402,7 +406,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: the double deck: an upper saloon flush with the walls, over most of the room)
                 Uppers = [("saloon", 5), ("none", 0.5)], UpperShareMin = 0.9f, UpperShareMax = 1f, UpperTallMin = 2.06f, UpperTallMax = 2.16f, UpperNarrow = 1f,
                 // (phase 7a: moquette under a dado, cream panelling over it, following the bus's curves; dome lamps; a teapot, a gnome, a flag)
-                Lining = 'u', LiningInset = 0.2, Clutter = 0.35f, Props = ["Teapot", "Garden Gnome", "Union Flag", "Traffic Cone"], Fill = 0.8f, Gear = 1,
+                Lining = 'u', Window = 't', WindowChance = 0.95, LiningInset = 0.2, Clutter = 0.35f, Props = ["Teapot", "Garden Gnome", "Union Flag", "Traffic Cone"], Fill = 0.8f, Gear = 1,
                 // (phase 6: a wrought-rail platform at every door it fits; even)
                 Balcony = 1, BalconyKind = 'r', BalconyRailMin = 1.0f, BalconyRailMax = 1.1f, Asym = 0.05, AsymAmount = 0.3f,
                 CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,
@@ -584,6 +588,7 @@ public sealed class BodyLook
         _lengths = p.Fork("lengths");
         Lining = NoInteriors ? '\0' : _rule.Lining; // (phase 7a: the rooms' lining, on a fork of its own)
         LiningInset = d.Fork("lining").Chance(_rule.LiningInset);
+        Window = Lining != '\0' && d.Fork("window").Chance(_rule.WindowChance) ? _rule.Window : '\0'; // (phase 7b: the rooms' windows)
     }
 
     /// <summary><c>--language NAME</c>: every kit-5 body in that language, whatever its style (to compare languages on one vehicle).</summary>
@@ -618,7 +623,7 @@ public sealed class BodyLook
         (Height, Width, BrowRake, TailRake, BrowNarrow, TailNarrow, Flare, LineAmount, BrowLength, TailLength, Facets, DoorSide, FlareFrom) =
             (o.Height, o.Width, o.BrowRake, o.TailRake, o.BrowNarrow, o.TailNarrow, o.Flare, o.LineAmount, o.BrowLength, o.TailLength, o.Facets, o.DoorSide, o.FlareFrom);
         (WantsRearDoor, RearDoor, MergedFront, Upper, Cage) = (o.WantsRearDoor, o.RearDoor, o.MergedFront, o.Upper, o.Cage);
-        (Lining, LiningInset) = (o.Lining, o.LiningInset);
+        (Lining, LiningInset, Window) = (o.Lining, o.LiningInset, o.Window);
     }
 
     private BodyLook WithLine(Roofline line) => new(this, line);
@@ -875,7 +880,7 @@ public sealed class BodyLook
         var names = NamesCut(bays);
         if (Lining != '\0')
             for (var k = 0; k < names.Length; k++)
-                names[k] = HullLoft.WithLining(names[k], Lining, LiningInset); // (phase 7a: a ground-floor room's lining; a cage's or a key too long for it stays bare)
+                names[k] = HullLoft.WithLining(names[k], Lining, LiningInset, Window); // (phase 7a: a ground-floor room's lining; a cage's or a key too long for it stays bare)
         return names;
     }
 
@@ -885,6 +890,9 @@ public sealed class BodyLook
     /// </summary>
     public char Lining;
     public bool LiningInset;
+
+    /// <summary>Phase 7b: the rooms' windows (a <see cref="HullLoft.WindowKinds"/> letter; 0: none).</summary>
+    public char Window;
 
     private string[] NamesCut(string[] bays)
     {

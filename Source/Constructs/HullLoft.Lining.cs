@@ -17,21 +17,95 @@ public static partial class HullLoft
 {
     public const string LiningKinds = "rmcstu";
 
+    /// <summary>
+    /// Phase 7b: a lined bay's windows, a fourth letter on its lining word: <c>s</c> a slit (Bandit, Militia), <c>p</c> a port (Highland), <c>b</c> a wide band (IT,
+    /// Scam), <c>t</c> a tall bus window (British). Cut in each side wall but the doorway's (<see cref="WindowOf"/>), glazed by a pane part on the bay's
+    /// <c>win-x</c>/<c>win+x</c> socket (<see cref="RoomPanesOf"/>), so glass counts as closed and a shot breaks the pane, not the bay.
+    /// </summary>
+    public const string WindowKinds = "spbt";
+
+    /// <summary>A window kind's width along the bay, its sill and its head (metres over the floor).</summary>
+    private static (float Width, float Sill, float Head) WindowSize(char kind) => kind switch
+    {
+        's' => (0.6f, 1.45f, 1.62f),
+        'p' => (0.45f, 1.3f, 1.72f),
+        'b' => (0.9f, 1.22f, 1.72f),
+        _ => (0.6f, 1.2f, 1.82f),
+    };
+
+    /// <summary>
+    /// A side's window (null: none): the wall rows it is cut in (<c>K0</c> holds its sill, <c>K1</c> its head, the same rows on both sections, each 3 cm or more
+    /// from the row's ends, every row between upright: half again as tall as it leans), its sill and head, and where it starts and ends along the bay. Never on a
+    /// door bay's doorway side, nor on a bay too short for it and 15 cm of wall either side.
+    /// </summary>
+    public static (int K0, int K1, float Sill, float Head, float W0, float W1)? WindowOf(Shape sh, float side)
+    {
+        if (sh.Window == '\0' || sh.Door && side > 0 || sh.Cage != '\0' || sh.Open)
+            return null;
+        var (w, sill, head) = WindowSize(sh.Window);
+        if (sh.Length < w + 0.3f)
+            return null;
+        sill = MathF.Max(sill, MathF.Round(((sh.A.WaistY + sh.B.WaistY) / 2 + 0.05f) * 100) / 100); // (over the waist's pad, where a pannier or a sponson stands: the pane's seal would meet it)
+        if (head - sill < 0.15f)
+            return null;
+        int RowOf(Section s, float y)
+        {
+            for (var k = 0; k + 1 < s.P.Length; k++)
+                if (y >= s.P[k].Y + 0.03f && y <= s.P[k + 1].Y - 0.03f)
+                    return k;
+            return -1;
+        }
+        var (k0, k1) = (RowOf(sh.A, sill), RowOf(sh.A, head));
+        if (k0 < 0 || k1 < 0 || RowOf(sh.B, sill) != k0 || RowOf(sh.B, head) != k1)
+            return null;
+        foreach (var s in new[] { sh.A, sh.B })
+            for (var k = k0; k <= k1; k++)
+                if (s.P[k + 1].Y - s.P[k].Y < 1.5f * MathF.Abs(s.P[k + 1].X - s.P[k].X))
+                    return null;
+        var w0 = MathF.Round((sh.Length - w) / 2 * 100) / 100;
+        return (k0, k1, sill, head, w0, w0 + w);
+    }
+
+    /// <summary>A point on row <paramref name="k"/> (its middle surface) at height <paramref name="y"/> and <paramref name="z"/> along a bay from z 0 to <paramref name="len"/>, on the +x side.</summary>
+    private static Vector3 WinAt(Section a, Section b, int k, float y, float z, float len)
+    {
+        Vector2 On(Section s) => Vector2.Lerp(s.P[k], s.P[k + 1], (y - s.P[k].Y) / (s.P[k + 1].Y - s.P[k].Y));
+        var v = Vector2.Lerp(On(a), On(b), z / len);
+        return new Vector3(v.X, v.Y, z);
+    }
+
+    /// <summary>The panes a lined bay's windows take, each with the bay's socket it goes on (its seal on the sill's middle).</summary>
+    public static List<(string Socket, PaneShape Pane)> RoomPanesOf(Shape sh)
+    {
+        var list = new List<(string, PaneShape)>();
+        foreach (var side in (float[])[-1, 1])
+            if (WindowOf(sh, side) is { } win)
+            {
+                Vector3 P(float y, float z) { var v = WinAt(sh.A, sh.B, y < (win.Sill + win.Head) / 2 ? win.K0 : win.K1, y, z, sh.Length); return new Vector3(Snap(side * v.X), Snap(v.Y), Snap(z)); } // (a pane's key is in centimetres: the bay's socket is the made pane's)
+                var (z0, z1) = (win.W0 - 0.01f, win.W1 + 0.01f); // (into the jambs and the head a centimetre: no hairline round the glass)
+                list.Add((side < 0 ? "win-x" : "win+x", new PaneShape([P(win.Sill, z0), P(win.Sill, z1), P(win.Head + 0.01f, z1), P(win.Head + 0.01f, z0)])));
+            }
+        return list;
+    }
+
     private const float LineGap = 0.004f; // (a lining's outer face this far in from the skin's inner face)
     private const float LineEnds = 0.015f; // (a lining stops this short of its bay's open ends: the next bay's lining is its own; 0.026 at a closed end, past the cap's thickness)
 
     /// <summary>A lining word for a key, or "" for none.</summary>
-    public static string LiningWord(char kind, bool inset) => LiningKinds.Contains(kind) ? $"i{kind}{(inset ? 'i' : 'f')}" : "";
+    public static string LiningWord(char kind, bool inset, char window = '\0') =>
+        LiningKinds.Contains(kind) ? $"i{kind}{(inset ? 'i' : 'f')}{(window != '\0' && WindowKinds.Contains(window) ? window.ToString() : "")}" : "";
 
-    private static bool LiningOk(string w) => w.Length == 3 && w[0] == 'i' && LiningKinds.Contains(w[1]) && w[2] is 'f' or 'i';
+    private static bool LiningOk(string w) => w.Length is 3 or 4 && w[0] == 'i' && LiningKinds.Contains(w[1]) && w[2] is 'f' or 'i' && (w.Length == 3 || WindowKinds.Contains(w[3]));
 
     /// <summary>A key with a lining word added (as its last word), or the key as it was when it is too long for a part's name, caged, open or already lined.</summary>
-    public static string WithLining(string key, char kind, bool inset)
+    public static string WithLining(string key, char kind, bool inset, char window = '\0')
     {
-        var word = LiningWord(kind, inset);
+        var word = LiningWord(kind, inset, window);
         if (word.Length == 0 || ShapeOf(key) is not { } sh || sh.Lining.Length > 0 || sh.Cage != '\0' || sh.Open)
             return key;
         var lined = key[..^1] + " " + word + ")";
+        if (lined.Length > ConstructParts.MaxRuntimeName && word.Length == 4)
+            lined = key[..^1] + " " + word[..3] + ")"; // (no room for the window's letter: lined, unglazed)
         return lined.Length <= ConstructParts.MaxRuntimeName ? lined : key;
     }
 
@@ -156,6 +230,12 @@ public static partial class HullLoft
                 var (f0, f1) = (MathF.Max(sa.F0, sb.F0), MathF.Min(sa.F1, sb.F1));
                 if (f1 - f0 < 0.02f)
                     continue;
+                if (WindowOf(sh, side) is { } win && k >= win.K0 && k <= win.K1)
+                {
+                    if (kind != 'r') // (a bare hull's bead stops at a window: none on that row)
+                        WindowLining(p, a, b, k, side, f0, f1, z0, z1, kind, look, sh.Length, win);
+                    continue;
+                }
                 RowLining(p, a, b, k, side, f0, f1, z0, z1, kind, look, roofRow, sh.Length);
             }
         if (flatRoof && !sh.Floor)
@@ -166,7 +246,8 @@ public static partial class HullLoft
     }
 
     /// <summary>One row's lining from f0 to f1: pieces at most 0.5 m along the row (0.15 m planks), 6 mm seams, every other one 3 mm shorter along the bay.</summary>
-    private static void RowLining(Builder p, Section a, Section b, int k, float side, float f0, float f1, float z0, float z1, char kind, LineLook look, bool roofRow, float bayLen)
+    /// <param name="extra">Phase 7b: stood further in (a window's jambs, so their faces and the pieces' over and under them never meet in a plane on a twisting bay).</param>
+    private static void RowLining(Builder p, Section a, Section b, int k, float side, float f0, float f1, float z0, float z1, char kind, LineLook look, bool roofRow, float bayLen, float extra = 0)
     {
         var rowLen = MathF.Max(Vector2.Distance(a.P[k], a.P[k + 1]), Vector2.Distance(b.P[k], b.P[k + 1]));
         if (kind == 'r')
@@ -202,7 +283,7 @@ public static partial class HullLoft
                 _ => y < 1.1f ? look.Low : look.High,
             };
             var thick = kind == 'u' && y < 1.0f && !roofRow ? 0.024f : look.Thick; // (the moquette is padded)
-            RowPiece(p, a, b, k, side, u0, u1, z0 + inset, z1 - inset, 0, thick, colour);
+            RowPiece(p, a, b, k, side, u0, u1, z0 + inset, z1 - inset, extra, thick, colour);
         }
         if (roofRow)
             return;
@@ -221,8 +302,33 @@ public static partial class HullLoft
             if (f - h < f0 || f + h > f1)
                 continue;
             var colour = kind switch { 'm' => "#2b2e31", 'u' => Wood, _ => Gold };
-            RowPiece(p, a, b, k, side, f - h, f + h, z0 + 0.006f, z1 - 0.006f, (kind == 'u' ? 0.024f : look.Thick) + 0.003f, kind == 'm' ? 0.03f : 0.018f, colour);
+            RowPiece(p, a, b, k, side, f - h, f + h, z0 + 0.006f, z1 - 0.006f, extra + (kind == 'u' ? 0.024f : look.Thick) + 0.003f, kind == 'm' ? 0.03f : 0.018f, colour);
         }
+    }
+
+    /// <summary>
+    /// Phase 7b: a following lining's row round a window: under it and over it as any row, and a jamb either side 2 cm back from the opening (a reveal), the
+    /// window's band taken at its widest over both sections.
+    /// </summary>
+    private static void WindowLining(Builder p, Section a, Section b, int k, float side, float f0, float f1, float z0, float z1, char kind, LineLook look, float bayLen,
+        (int K0, int K1, float Sill, float Head, float W0, float W1) win)
+    {
+        float F(Section s, float y) => (y - s.P[k].Y) / (s.P[k + 1].Y - s.P[k].Y);
+        var rowLen = MathF.Max(Vector2.Distance(a.P[k], a.P[k + 1]), Vector2.Distance(b.P[k], b.P[k + 1]));
+        var (g, seam) = (0.02f / rowLen, 0.006f / rowLen);
+        var lowTop = k == win.K0 ? MathF.Min(F(a, win.Sill), F(b, win.Sill)) - g : f0 - seam; // (rows between the sill's and the head's: jambs only)
+        var highBot = k == win.K1 ? MathF.Max(F(a, win.Head), F(b, win.Head)) + g : f1 + seam;
+        if (k == win.K0 && lowTop - f0 > 0.05f / rowLen)
+            RowLining(p, a, b, k, side, f0, lowTop, z0, z1, kind, look, false, bayLen);
+        if (k == win.K1 && f1 - highBot > 0.05f / rowLen)
+            RowLining(p, a, b, k, side, highBot, f1, z0, z1, kind, look, false, bayLen);
+        var (j0, j1) = (MathF.Max(f0, lowTop + seam), MathF.Min(f1, highBot - seam));
+        if (j1 - j0 < 0.05f / rowLen)
+            return;
+        if (win.W0 - 0.02f - z0 > 0.05f)
+            RowLining(p, a, b, k, side, j0, j1, z0, win.W0 - 0.02f, kind, look, false, bayLen, 0.006f);
+        if (z1 - win.W1 - 0.02f > 0.05f)
+            RowLining(p, a, b, k, side, j0, j1, win.W1 + 0.02f, z1, kind, look, false, bayLen, 0.006f);
     }
 
     /// <summary>A flat roof's lining: one panel across under it (planks across a timber one), standing in from the roof's inner face.</summary>
@@ -390,13 +496,28 @@ public static partial class HullLoft
             var (xo, xi) = (wall[i], wall[i] - t);
             var step = kind == 't' ? 0.15f : 0.5f;
             var n = Math.Max(1, (int)MathF.Ceiling((under - 0.03f) / step - 1e-3f));
+            var win = WindowOf(sh, s); // (phase 7b: a window's band cut out of the panels it crosses, 2 cm back from the opening)
             for (var j = 0; j < n; j++)
             {
                 var (y0, y1) = (0.03f + (under - 0.03f) * j / n + (j > 0 ? 0.003f : 0), 0.03f + (under - 0.03f) * (j + 1) / n - (j + 1 < n ? 0.003f : 0));
                 var ins = j % 2 == 1 ? 0.003f : 0;
                 var y = (y0 + y1) / 2;
                 var colour = kind switch { 't' => j % 2 == 0 ? look.Low : look.High, 'u' => y < 1.0f ? look.Low : look.High, 's' => y < 1.05f ? look.Low : look.High, _ => y < 1.1f ? look.Low : look.High };
-                Cube(p, new Vector3(MathF.Min(s * xo, s * xi), y0, z0 + ins), new Vector3(MathF.Max(s * xo, s * xi), y1, z1 - ins), colour, false);
+                void Wall(float ya, float yb, float za, float zb)
+                {
+                    if (yb - ya > 0.0105f && zb - za > 0.05f)
+                        Cube(p, new Vector3(MathF.Min(s * xo, s * xi), ya, za), new Vector3(MathF.Max(s * xo, s * xi), yb, zb), colour, false);
+                }
+                if (win is { } w && y0 < w.Head + 0.02f && y1 > w.Sill - 0.02f)
+                {
+                    var (lo, hi) = (w.Sill - 0.02f, w.Head + 0.02f);
+                    Wall(y0, lo - 0.003f, z0 + ins, z1 - ins);
+                    Wall(hi + 0.003f, y1, z0 + ins, z1 - ins);
+                    Wall(MathF.Max(y0, lo), MathF.Min(y1, hi), z0 + ins, w.W0 - 0.02f);
+                    Wall(MathF.Max(y0, lo), MathF.Min(y1, hi), w.W1 + 0.02f, z1 - ins);
+                }
+                else
+                    Wall(y0, y1, z0 + ins, z1 - ins);
             }
             var rail = kind switch { 'm' => 1.1f, 'u' => 1.0f, 's' => 1.05f, _ => -1f };
             if (rail > 0)
