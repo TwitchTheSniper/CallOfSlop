@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.25 m, front under the hood, inset 1 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.43 m, flare 0.09, raked 1.0, brow 0.77 1.25 m, tail 0.77 0.75 m, door right, cab slab caged cab, nose flat, trim plates+cage on 9 bay sides, wear age 0.93 (47 rusty, 27 dirty, 0 sooty, 1 patched, 5 rusted out), body room+bed, cab caged, nose ram, rear porch hitch, under skirted, flank panniers, sides walls, roof none, layout room(Brow N,Bay N-L,Bay L-T,Door,Tail T)+bed 1.5 m, plan 2
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.25 m, front under the hood, inset 1 m, hydraulic/hydraulic, wing 0.5, language slab standard 2.43 m, flare 0.09, raked 1.0, brow 0.77 1.25 m, tail 0.77 0.75 m, door right, cab slab caged cab, nose flat, lopsided left, pods podw on 1 bay sides, trim plates+cage on 4 bay sides, wear age 0.93 (44 rusty, 27 dirty, 0 sooty, 1 patched, 5 rusted out), body room+bed, cab caged, nose ram, rear porch hitch, under skirted, flank panniers, sides walls, roof none, layout room(Brow N,Bay N-L,Bay L-T,Door,Tail T)+bed 1.5 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit War Bus 1",
   "group": "Bandit",
@@ -178,19 +178,14 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 169, "pos": [0.131, 0.383, -1.369], "rot": [-0.7025, -0.0184, 0.0017, 0.7114]}, "paint": "#8c5230"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 167, "pos": [1.57, 0.945, 7.997], "rot": [-0.0056, -0.036, -0.6903, 0.7226]}, "paint": "#94603a"},
     {"part": "Iron Spike", "on": 165, "socket": "front10", "by": "base"},
-    {"part": "Iron Spike", "on": 167, "socket": "front13", "by": "base"},
-    {"part": "Long Iron Spike", "on": 166, "socket": "front10", "by": "base"},
+    {"part": "Iron Spike", "on": 164, "socket": "front11", "by": "base"},
     {"part": "Skull Trophy", "on": 168, "socket": "top", "by": "base"},
     {"part": "Skull Trophy", "on": 44, "socket": "top", "by": "base"},
-    {"part": "Hull Loft (trimc6 XzW5 ~Au0B0yBg78oY02Y ~BW0BeyCIu9RS03S)", "on": 99, "socket": "+x0", "by": "base", "paint": "#2f2c2a"},
+    {"part": "Hull Loft (podw XaWCYWWZ ~D00D8yEZRBC6046 ~D00D8yEYuBBS03S)", "on": 101, "socket": "-x0", "by": "base", "paint": "#7a4326"},
     {"part": "Hull Loft (trimc8 XzW5 ~BW0BeyCIu9RS03S ~Au0B0yBg78oY02Y)", "on": 99, "socket": "-x0", "by": "base", "paint": "#94603a"},
-    {"part": "Hull Loft (trimc7 XaW5 ~BW0BeyCIu9RS03S ~D00D8yEYuBBS03S)", "on": 100, "socket": "+x0", "by": "base", "paint": "#2f2c2a"},
-    {"part": "Hull Loft (trimc9 XaW5 ~D00D8yEYuBBS03S ~BW0BeyCIu9RS03S)", "on": 100, "socket": "-x0", "by": "base", "paint": "#6b3a22"},
-    {"part": "Hull Loft (trimc8 XaW5 ~D00D8yEYuBBS03S ~D00D8yEZRBC6046)", "on": 101, "socket": "+x0", "by": "base", "paint": "#5e3320"},
-    {"part": "Hull Loft (trimc6 XaW5 ~D00D8yEZRBC6046 ~D00D8yEYuBBS03S)", "on": 101, "socket": "-x0", "by": "base", "paint": "#5e3320"},
+    {"part": "Hull Loft (trimc9 XaW5 ~D00D8yEYuBBS03S ~BW0BeyCIu9RS03S)", "on": 100, "socket": "-x0", "by": "base", "paint": "#2f2c2a"},
     {"part": "Hull Loft (trimp1 YMW5 ~D00D8yEZRBC6046 =)", "on": 102, "socket": "-x0", "by": "base", "paint": "#6b3a22"},
-    {"part": "Hull Loft (trimc2 XBW5 ~D00D8yEZRBC6046 ~C80CGyDAjA3E03E)", "on": 106, "socket": "+x0", "by": "base", "paint": "#2f2c2a"},
-    {"part": "Hull Loft (trimp1 XBW5 ~C80CGyDAjA3E03E ~D00D8yEZRBC6046)", "on": 106, "socket": "-x0", "by": "base", "paint": "#7a4326"},
+    {"part": "Hull Loft (trimp1 XBW5 ~C80CGyDAjA3E03E ~D00D8yEZRBC6046)", "on": 106, "socket": "-x0", "by": "base", "paint": "#5e3320"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 165, "pos": [-1.068, 0.633, 8.017], "rot": [0.0069, 0.0511, 0.7097, 0.7026]}, "paint": "#94603a"}
   ],
   "wires": [[42, 43], [43, 36], [117, 144], [144, 140], [150, 147]],

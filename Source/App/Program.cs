@@ -144,6 +144,8 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--no-spaces", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.BodyLook.NoSpaces = true; // body styles phase 5: kit-5 bodies without the new spaces (upper storeys, cages, side pods), to measure against
         VehicleKit.BodyLook.NoPods = args.Any(a => a.Equals("--no-pods", StringComparison.OrdinalIgnoreCase)); // body styles phase 5: one kind of space left out, to measure each
+        VehicleKit.BodyLook.NoBalconies = args.Any(a => a.Equals("--no-balconies", StringComparison.OrdinalIgnoreCase)); // body styles phase 6: without balconies, or without lopsided vehicles
+        VehicleKit.BodyLook.NoAsym = args.Any(a => a.Equals("--no-asym", StringComparison.OrdinalIgnoreCase));
         VehicleKit.BodyLook.NoCages = args.Any(a => a.Equals("--no-cages", StringComparison.OrdinalIgnoreCase));
         VehicleKit.BodyLook.NoUppers = args.Any(a => a.Equals("--no-uppers", StringComparison.OrdinalIgnoreCase));
         if (args.SkipWhile(a => !a.Equals("--upper", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } upperKind)

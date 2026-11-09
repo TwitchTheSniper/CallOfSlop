@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, pusher 1.5 m, front under the hood, inset 2 m, leaf/leaf/leaf, wing 0.5, language slab standard 2.19 m, flare 0.00, stepped 0.9, brow 0.62 1 m, tail 0.87 1.25 m, door left, space cage w, cab ledge caged cab, nose grille, sections slab+ledge, wear age 1.27 (38 rusty, 38 dirty, 3 sooty, 0 patched, 1 rusted out), body room, cab caged, nose short hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Bay T-L,Bay L-T,Door,Tail T), plan 3
+  // kit 5; seeds chassis 10 body 10 kit 10 wear 10, chassis 3 axles, pusher 1.5 m, front under the hood, inset 2 m, leaf/leaf/leaf, wing 0.5, language slab standard 2.19 m, flare 0.00, stepped 0.9, brow 0.62 1 m, tail 0.87 1.25 m, door left, space cage w, cab ledge caged cab, nose grille, sections slab+ledge, lopsided right, wear age 1.27 (38 rusty, 38 dirty, 3 sooty, 0 patched, 1 rusted out), body room, cab caged, nose short hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Bay T-L,Bay L-T,Door,Tail T), plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit War Bus 10",
   "group": "Bandit",

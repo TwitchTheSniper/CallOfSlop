@@ -548,6 +548,8 @@ public static partial class HullLoft
             json = StairOf(name) is { } st ? StairJson(name, st) : null;
         else if (name.StartsWith(Prefix + PodWord, StringComparison.Ordinal))
             json = PodOf(name) is { } pd ? PodJson(name, pd) : null;
+        else if (name.StartsWith(Prefix + BalconyWord, StringComparison.Ordinal))
+            json = BalconyOf(name) is { } bc ? BalconyJson(name, bc) : null; // (phase 6: HullLoft.Balcony.cs)
         else
             return null;
         if (json == null)

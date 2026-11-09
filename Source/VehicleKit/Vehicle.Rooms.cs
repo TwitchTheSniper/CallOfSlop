@@ -27,6 +27,10 @@ public sealed class Room
 
     /// <summary>Phase 5: the storey over this room (its floor the cut roofs, reached by <see cref="Stair"/>), and for an upper storey, whether it is an open deck.</summary>
     public Room? Upper;
+
+    /// <summary>Phase 6: a balcony outside the door (Vehicle.Balcony.cs): the part, its deck's middle (vehicle coordinates, at the room's floor), the way out from the
+    /// wall, along it toward the closed end, its depth and half length; null: none.</summary>
+    public (VPart Part, Vector3 Mid, Vector3 Out, Vector3 Closed, float Depth, float Half)? Balcony;
     public VPart? Stair;
     public bool Open;
     public Vector3 StairFoot; // where a player stands to walk up the stair, at floor height (vehicle coordinates), and the way up it
