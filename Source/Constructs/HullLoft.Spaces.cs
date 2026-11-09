@@ -170,6 +170,10 @@ public static partial class HullLoft
                         float In(float z) => z < 0.01f ? 0.02f : z > len - 0.01f ? len - 0.02f : z;
                         (za, zb) = (In(za), In(zb));
                         var (lo, hi) = (Vector2.Lerp(a0, b0, za / len), Vector2.Lerp(a1, b1, zb / len));
+                        // (and 1.8 cm short of the row's ends, inside the rail there: the next row's diagonal starts at the same corner, nearly in the same plane on a ledge's wall)
+                        var dir = hi - lo;
+                        var cut = MathF.Min(0.018f, dir.Length() * 0.1f) / MathF.Max(dir.Length(), 1e-4f);
+                        (lo, hi) = (lo + dir * cut, hi - dir * cut);
                         Bar(p, At(lo, s, za) - nn * 0.0237f, At(hi, s, zb) - nn * 0.0237f, nn, 0.029f, 0.0151f, colour, hide: false); // (inside the rails' inner faces, its own planes)
                     }
                 }

@@ -655,7 +655,7 @@ public static class VehicleChecks
         var (got, stuck, by) = Climb(c, below, up);
         if (got < up.FloorTop - 0.05f)
             r.Failures.Add($"the {up.Tag}: a player can't walk up the stair to it (got {got - below.FloorTop:0.00} m up of {up.FloorTop - below.FloorTop:0.00}, held at {Show(stuck)}: {by})");
-        r.Notes.Add($"the {up.Tag}: {(up.Open ? "an open deck" : $"{head:0.00} m headroom")}, walked {walked:0.0} m, the stair walked up to it");
+        r.Notes.Add($"the {up.Tag}: {(up.Open ? "an open deck" : $"{head:0.00} m headroom")}, walked {walked:0.0} m{(got < up.FloorTop - 0.05f ? "" : ", the stair walked up to it")}");
     }
 
     private static void Interior(ConstructBuild.Blueprint bp, Room room, VehicleReport r)
@@ -678,15 +678,18 @@ public static class VehicleChecks
         // Stand at the middle, then walk towards the far wall.
         var settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
         var stood = settle.Position.Y - World(middle).Y;
-        for (var step = 1; room.Stair != null && MathF.Abs(stood) > 0.2f && step < 40; step++)
+        for (var step = 1; room.Stair != null && MathF.Abs(stood) > 0.2f && step < 80; step++)
         {
-            // (phase 5: a stair in the middle of the room, which a player standing there walks onto: the nearest spot along the middle where one stands on the floor)
-            var z = room.Middle.Z + (step % 2 == 0 ? 1 : -1) * 0.125f * ((step + 1) / 2);
+            // (phase 5: a stair in the middle of the room, which a player standing there walks onto: the nearest spot along the middle where one stands on the floor;
+            // then, when seats and furniture fill the middle's ends, the same along the aisle a body's width off the middle, away from the stair, beside it too)
+            var k = step < 40 ? step : step - 39;
+            var z = room.Middle.Z + (k % 2 == 0 ? 1 : -1) * 0.125f * ((k + 1) / 2);
             if (z < room.R.Z0 + 0.5f || z > room.R.Z1 - 0.5f)
                 continue;
-            if (room.Upper is { } su && z > MathF.Min(room.StairFoot.Z, su.DoorMid.Z) - 0.6f && z < MathF.Max(room.StairFoot.Z, su.DoorMid.Z) + 0.6f)
+            if (step < 40 && room.Upper is { } su && z > MathF.Min(room.StairFoot.Z, su.DoorMid.Z) - 0.6f && z < MathF.Max(room.StairFoot.Z, su.DoorMid.Z) + 0.6f)
                 continue; // (not beside the stair: a body there is pushed out of its blocks)
-            middle = room.Middle with { Z = z };
+            var x = step < 40 ? 0f : -MathF.Sign(room.StairFoot.X - room.Middle.X) * 0.3f;
+            middle = room.Middle with { X = room.Middle.X + x, Z = z };
             start = World(middle + new Vector3(0, 0.15f, 0));
             settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
             stood = settle.Position.Y - World(middle).Y;

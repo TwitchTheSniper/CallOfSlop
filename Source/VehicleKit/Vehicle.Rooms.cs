@@ -131,7 +131,7 @@ public sealed partial class Vehicle
                 for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
                 {
                     var z = from + way * at;
-                    if (InDoorway(room, x, z, deep, run) || room.Kept(x, z, deep, run) || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
+                    if (InDoorway(room, x, z, deep, run) || room.Kept(x, z, deep + 0.4f, run + 0.4f) /* (Put may move it up to 0.2 m to a socket) */ || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
                         taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try
