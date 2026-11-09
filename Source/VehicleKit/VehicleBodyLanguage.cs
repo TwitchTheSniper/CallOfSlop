@@ -1121,7 +1121,11 @@ public static class BodyReportCli
                             foreach (var m in v.Modules.Where(m => m.StartsWith("trim ", StringComparison.Ordinal) || m.StartsWith("fitting ", StringComparison.Ordinal)))
                                 Tally(m.StartsWith("trim ", StringComparison.Ordinal) ? "trim" : "fitting", m.StartsWith("trim ", StringComparison.Ordinal) ? m[5..m.IndexOf(" on ", StringComparison.Ordinal)] : m[8..]);
                             if (v.Rooms.Count > 0) // (phase 5: the new spaces, a tally a vehicle with a room)
+                            {
                                 Tally("space", v.Rooms.Any(r => r.Caged) ? "cage" : v.Rooms.FirstOrDefault(r => r.Upper != null)?.Upper is { } ur ? (ur.Open ? "open deck" : "upper storey") : "none");
+                                Tally("balcony", v.Rooms.FirstOrDefault(r => r.Balcony != null)?.Balcony is { } vb ? (MathF.Abs(vb.Out.Z) > 0.5f ? "at the back" : "at a side door") : "none"); // (phase 6)
+                                Tally("lopsided", v.Lean == 0 ? "even" : "lopsided");
+                            }
                             if (v.Modules.FirstOrDefault(m => m.StartsWith("pods ", StringComparison.Ordinal)) is { } pm)
                                 Tally("pods", pm[5..]);
                             Tally("cab", v.CabShape is { } cs ? CabLook.KindName(cs.Kind) + (v.HoodShape is { } hs ? " + " + CabLook.NoseName(hs.Nose) + " hood" : "") : (v.Panels.GetValueOrDefault("cabshell")?.FirstOrDefault()?.Def.Name ?? "none"));

@@ -666,14 +666,15 @@ public static class VehicleChecks
     {
         Vector3 World(Vector3 v) => c.ToWorld(v + room.FloorRest);
         var settle = SelfTest.BuildingWalk(w, World(b.Mid + new Vector3(0, 0.15f, 0)), _ => Vector3.Zero, 14, CallOfSlop.World.PlayerHeight, out _, 0); // (a few ticks: once it rides the deck, the walker's ride step walks it forward, off an open end)
-        var stood = settle.Position.Y - World(b.Mid).Y;
+        Vector3 Here(in MoveState m) => (m.RideUp != Vector3.Zero ? m.Position : c.ToLocal(m.Position)) - room.FloorRest; // (a rider's place is in the body's rest frame)
+        var stood = Here(settle).Y - b.Mid.Y;
         if (MathF.Abs(stood) > 0.2f)
-            r.Failures.Add($"the {room.Tag}'s balcony: a player stands {stood:0.00} m off its deck (at {Show(c.ToLocal(settle.Position) - room.FloorRest)}, from {Show(b.Mid)})");
+            r.Failures.Add($"the {room.Tag}'s balcony: a player stands {stood:0.00} m off its deck (at {Show(Here(settle))}, from {Show(b.Mid)})");
         // Out of the room onto it: from inside the doorway toward the balcony's middle, the walker's own steps.
         var inside = room.DoorMid - room.DoorFace * 0.7f;
         var way = Vector3.Normalize((b.Mid - inside) with { Y = 0 });
         var s = SelfTest.BuildingWalk(w, World(inside + new Vector3(0, 0.15f, 0)), _ => way, 90, CallOfSlop.World.PlayerHeight, out _);
-        var got = c.ToLocal(s.Position) - room.FloorRest;
+        var got = Here(s);
         var outAt = Vector3.Dot(got - room.DoorMid, b.Out);
         if (outAt < 0.2f || MathF.Abs(got.Y - room.FloorTop) > 0.2f)
             r.Failures.Add($"the {room.Tag}'s balcony: a player can't walk out onto it from the room (got to {Show(got)})");

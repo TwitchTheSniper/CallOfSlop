@@ -41,7 +41,8 @@ public sealed partial class Vehicle
         var plane = Vector3.Dot(room.DoorMid, outV);
         var lc = Vector3.Dot(room.DoorMid, alongV);
         var (yLo, yHi) = (room.FloorTop - 0.15f, room.FloorTop + s.Rail + 0.1f);
-        var inner = plane;
+        var (inner, head) = (plane, plane);
+        var headTop = room.FloorTop + CallOfSlop.World.PlayerHeight + 0.15f;
         for (var i = 0; i < C.PartCount; i++)
         {
             var def = C.DefOf(i);
@@ -50,17 +51,27 @@ public sealed partial class Vehicle
             {
                 C.BoxOf(i, k, out var oc, out var oh);
                 (oc, oh) = (FromRest(t + Vector3.Transform(oc, q)), Spread(q, oh));
-                if (oc.Y + oh.Y < yLo || oc.Y - oh.Y > yHi)
+                if (oc.Y + oh.Y < yLo || oc.Y - oh.Y > headTop)
                     continue;
                 if (MathF.Abs(Vector3.Dot(oc, alongV) - lc) > s.Length / 2 + Vector3.Dot(oh, Vector3.Abs(alongV)) + 0.02f)
                     continue;
                 var (mid, half) = (Vector3.Dot(oc, outV), Vector3.Dot(oh, Vector3.Abs(outV)));
-                if (mid - half < plane + 0.4f && mid + half > inner)
-                    inner = mid + half; // (at the wall: what stands out of it there)
+                if (mid - half > plane + 0.4f)
+                    continue;
+                if (oc.Y - oh.Y <= yHi)
+                    inner = MathF.Max(inner, mid + half); // (at the wall: what stands out of it there)
+                else
+                    head = MathF.Max(head, mid + half); // (over the rail: a flare or an eave a standing player's head must clear)
             }
         }
         if (inner - plane > 0.3f)
             return false;
+        // A player standing on the deck's middle keeps their head clear of a flared wall over it: the deck made deeper, up to 1.2 m, or none.
+        var need = MathF.Ceiling(2 * (head + CallOfSlop.World.PlayerRadius + 0.08f - inner - 0.012f) * 100) / 100;
+        if (need > 1.2f)
+            return false;
+        if (need > s.Depth)
+            s = s with { Depth = need };
         // The floor's free edge socket outward nearest the doorway's middle: the balcony stands on it.
         var want = room.DoorMid;
         var (sock, best) = (Vector3.Zero, float.MaxValue);
