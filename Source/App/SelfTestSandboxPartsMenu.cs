@@ -75,7 +75,7 @@ public static partial class SelfTest
         if (!farRack.Contains("rack") || !rackOk)
             Fail("parts menu: the parts rack stopped working as before");
 
-        // A blueprint in front of the player.
+        // A blueprint in front of the player (past the yard's set where it stands in the way: GameSandbox.SandboxBuildInFront).
         me.Teleport(ConstructWorld.Ground(World.Query, sb.RackX + 12, sb.RackZ - 12));
         Run(g, ref now, 0.2);
         var turret = IndexOfBlueprint("Turret");
@@ -90,7 +90,7 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Blueprint, part: 255); // (past every blueprint: the index is a byte, so 255 is never one)
         var badBp = g.SandboxNotice;
         Line($"parts menu blueprint: the Turret spawned {(spawned != null ? $"as construct {spawned.Id} with {parts} parts, {ahead:0.0} m ahead and {apart:0.0} m away" : $"no (\"{spawnWhy}\")")}; index 255: \"{badBp}\"");
-        if (spawned == null || parts < 4 || ahead < 2 || apart > 12 || !badBp.Contains("no such blueprint"))
+        if (spawned == null || parts < 4 || ahead < 2 || apart > 25 || !badBp.Contains("no such blueprint"))
             Fail("parts menu: a blueprint didn't spawn in front of the player (or a bad index wasn't refused)");
 
         // The map flag turns both off.

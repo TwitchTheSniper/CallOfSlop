@@ -79,7 +79,7 @@ public sealed partial class Ui
     /// <summary>Asks for a standard build complete in the hands (the server checks creative and the build again).</summary>
     public void SbSpawnBuild(Game game, StandardBuild b)
     {
-        game.SandboxSendBench(Game.BenchSpawn, 0, b.Build().ToText());
         SbSpawned(game, b.Name); // (into its weapon slot, nothing to aim: the window stays open for the next)
+        game.SandboxSendBench(Game.BenchSpawn, 0, b.Build().ToText());
     }
 }

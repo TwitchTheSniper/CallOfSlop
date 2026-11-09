@@ -41,7 +41,7 @@ public sealed partial class Ui
     private string _sbSpawnNote = "";
     private double _sbSpawnNoteUntil;
 
-    /// <summary>A spawn from the window (it stays open): the note says what was asked for; a stale notice is cleared so the server's answer to this one shows.</summary>
+    /// <summary>A spawn from the window (it stays open), before it is asked for: the note says what; a stale notice is cleared so the server's answer to this one (a host's at once) shows.</summary>
     private void SbSpawned(Game game, string name)
     {
         game.SandboxSay(""); // (an older refusal mustn't read as this spawn's)
@@ -453,9 +453,9 @@ public sealed partial class Ui
         }
         if (game.Local is { } me && !def.PhysicsOnly && def.Tool != ConstructTool.None && game.SandboxHands.Hand(me.Id).Tool != def.Tool)
             game.SandboxSend(CActKind.Tool, part: (byte)def.Tool);
-        game.SandboxTakePart(def.Id);
         if (def.PhysicsOnly)
             SbSpawned(game, def.Name); // (in front of you, not in the hands: the window stays open)
+        game.SandboxTakePart(def.Id);
         var at = Array.IndexOf(_sbRecent, def.Id);
         if (at < 0)
             at = _sbRecent.Length - 1;
@@ -469,9 +469,9 @@ public sealed partial class Ui
     /// <summary>A blueprint tile (or the self-test): the server builds it in front of you; the window stays open for the next.</summary>
     public void SandboxPartsSpawn(Game game, int blueprint)
     {
-        game.SandboxSend(CActKind.Blueprint, part: (byte)blueprint);
         var all = ConstructBuild.Blueprints;
         SbSpawned(game, blueprint >= 0 && blueprint < all.Count ? all[blueprint].Name : "blueprint");
+        game.SandboxSend(CActKind.Blueprint, part: (byte)blueprint);
     }
 
     /// <summary>A tool tile: that tool comes out (again: put away).</summary>

@@ -104,12 +104,12 @@ public sealed partial class Ui
         if (SandboxVehicleNewSeed && index >= 0 && index < all.Count && VehicleSpawnKit.FromBlueprintName(all[index].Name, out var g, out _) && g != null)
         {
             var (style, shape) = VehicleSpawnKit.Names(g);
+            SbSpawned(game, all[index].Name); // (the window stays open for the next)
             if (SandboxVehicleBy == 0 || !game.VehicleSpawn.RolesAndConvoys && game.IsServer)
                 game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed);
             else
                 game.SandboxSpawnFaction(SandboxVehicleBy == 2, style, SandboxVehicleBy == 1 && SandboxVehicleRole > 0 && SandboxVehicleRole <= VehicleRoles.All.Length ? VehicleRoles.All[SandboxVehicleRole - 1].Name : "",
                     SandboxVehicleTier, SandboxConvoyCount, SandboxVehicleSeed);
-            SbSpawned(game, all[index].Name); // (the window stays open for the next)
             return;
         }
         SandboxPartsSpawn(game, index);
