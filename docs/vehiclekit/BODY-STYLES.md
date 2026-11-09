@@ -1033,7 +1033,28 @@ walls set the density as much as the rule.
 
 `--no-interiors` makes rooms as before (no lining, dash, gear or props; the same dice), to measure against.
 
-MEASURED_7A
+### Measured (2-core box; before is this branch with `--no-interiors`, which makes main's vehicles)
+
+`--body-report all --seeds 6` and the full check `--sweep-vehicle "STYLE SHAPE" --seeds 6` over six styles and five shapes.
+
+| | before | after |
+| --- | --- | --- |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 | 177 of 180 (the same three: Bandit Scrap Tanker 3's barrel, Highland War Bus 5 a box, Highland Scrap Tanker 3's Pipe Box) |
+| coplanar pairs inside lofted parts | 0 | 0 (65, then 10 on the way: a weld bead's outer face on a rib's, then beads and ribs meeting nearly in a plane on twisting rows: beads now stand 3 mm further in and break round the ribs) |
+| room exteriors, cabs and hoods, whole body (between over within) | 1.48, 1.59, 1.02 | 1.48, 1.57, 1.02 (an interior is inside the outline; the cab measure moved with plans that furnishing sent to another attempt, within its run-to-run spread of 1.57 to 1.59) |
+| parts a vehicle, mean a style (`--body-report`, Bandit .. Militia) | 130, 136, 140, 141, 138, 133 | 130, 136, 141, 141, 139, 133 (a lining and a dash are drawn by the bay and the cab: no parts; gear and props stand where the walls have room, and plans move) |
+| parts, mean a shape in the full check | - | War Bus 163 to 188, Box Truck 141 to 152, Flatbed Fort 158 to 171, Gun Wagon 108 to 134, Scrap Tanker 68 to 87 |
+| generation, mean a style; worst | 282 to 562 ms; 5.8 s (Bandit Box Truck 1) | 293 to 567 ms; 5.6 s (the same). Phase 6's 48.5 s worst didn't come back in either run |
+
+**Found on the way.**
+- A prop stood with its back on the same wall line as the next piece of furniture, and `Put` moved it up to 0.2 m onto a socket, so the two overlapped in a plane
+  (Scam War Bus 4: an Ammo Container and a Gift Card Sign; Scam Gun Wagon 5: a Loudhailer by an end chest). Named pieces now move 0.1 m at most and keep 0.17 m from
+  where the others stand.
+- An Ammo Container holds rounds, not slots: placed first, it took the wall a short room's only container would have stood on, and Highland Box Truck 5 planned
+  again into a top-heavy plan. Racks without slots go after the last-resort chest; an end chest keeps clear of the gear.
+
+**Committed seeds**: unchanged; 66 files written again (lined bays, dashes, gear and props; 189 lined bays in all); `--gen-vehicles` reports all 123 identical;
+`--check-construct-parts` clean.
 
 **Left for 7b.** Upper storeys' and side pods' insides, caged rooms and balconies (no lining: bars and open tops); closed ends (brow and tail caps) and the back
 door's cap; windows cut in rooms (they have no glass); a capsule's and a merged cab's dash; a steering wheel; working stations wired (a radio, a powered

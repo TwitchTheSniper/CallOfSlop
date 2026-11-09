@@ -85,11 +85,11 @@
     {"part": "Bolt Deck 0.25 m", "on": 76, "socket": "+z0", "by": "-x0", "paint": "#b0b4b8"},
     {"part": "Bolt Deck 0.25 m", "on": 60, "socket": "-z0", "by": "-x0", "paint": "#9aa0a6"},
     {"part": "Bolt Deck 0.25 m", "on": 60, "socket": "-z1", "by": "-x0", "paint": "#8a9096"},
-    {"part": "Hull Loft (100f ~Be0CGfCGyCnaCnuBQF7QQ02T ~Cm0DOyDf5EXaEJ9Cpl8S1046)", "on": 61, "socket": "front02", "by": "footL0", "paint": "#8a9096"},
-    {"part": "Hull Loft (150d ~Cm0DOyDf5EXaEJ9Cpl8S1046 =)", "on": 62, "socket": "front12", "by": "footL0", "paint": "#9aa0a6"},
+    {"part": "Hull Loft (100f ~Be0CGfCGyCnaCnuBQF7QQ02T ~Cm0DOyDf5EXaEJ9Cpl8S1046 isi)", "on": 61, "socket": "front02", "by": "footL0", "paint": "#8a9096"},
+    {"part": "Hull Loft (150d ~Cm0DOyDf5EXaEJ9Cpl8S1046 = isi)", "on": 62, "socket": "front12", "by": "footL0", "paint": "#9aa0a6"},
     {"part": "Long Door Hinge", "weld": {"on": 81, "pos": [1.275, 1.675, 3.99], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 82, "socket": "leaf", "by": "hang", "paint": "#9aa0a6"},
-    {"part": "Hull Loft (100r ~Cm0DOyDf5EXaEJ9Cpl8S1046 ~Bm0CWtCWyD1aD2WAA_6ZD03H)", "on": 63, "socket": "front02", "by": "footL0", "paint": "#9aa0a6"},
+    {"part": "Hull Loft (100r ~Cm0DOyDf5EXaEJ9Cpl8S1046 ~Bm0CWtCWyD1aD2WAA_6ZD03H isi)", "on": 63, "socket": "front02", "by": "footL0", "paint": "#9aa0a6"},
     {"part": "Hull Loft (balcg YCXZXaW5W5 +)", "on": 72, "socket": "+x0", "by": "base", "paint": "#7d8a92"},
     {"part": "Scrap Ladder", "on": 85, "socket": "ladder", "by": "back", "paint": "#9aa0a6"},
     {"part": "Square Beam 0.75 m", "on": 3, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
@@ -141,8 +141,8 @@
     {"part": "Ammo Box", "on": 131, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 123, "socket": "+x", "by": "-x"},
     {"part": "Chest", "on": 64, "socket": "front00", "by": "bottom", "spin": 3},
+    {"part": "Tall Shelf Bay 1", "on": 61, "socket": "front11", "by": "-y.3.1", "spin": 1},
     {"part": "Water Cooler", "on": 62, "socket": "front16", "by": "foot00", "spin": 1},
-    {"part": "Water Cooler", "on": 62, "socket": "front14", "by": "foot00", "spin": 1},
     {"part": "Square Beam 0.75 m", "on": 12, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Square Beam 0.75 m", "on": 138, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Plate Steel 1 m", "on": 139, "socket": "+x2", "by": "back02", "paint": "#b0b4b8"},
@@ -168,5 +168,5 @@
     {"type": "shaft", "from": 35, "to": 11, "fromPort": "Branch shaft", "toPort": "Input shaft", "nodes": [[0.7, 0.62, 1.25], [0.7, -0.4, 1.25], [0.7, -0.4, 7.12], [0.25, -0.4, 7.12], [0.25, 0, 7.12]], "laid": true},
     {"type": "pipe", "from": 146, "to": 33, "nodes": [[1.25, 0.82, 7.55], [1.25, 0.55, 7.55], [0.67, 0.55, 7.55], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 135, "table": "scam"}]
+  "loot": [{"step": 135, "table": "scam"}, {"step": 136, "table": "scam"}]
 }

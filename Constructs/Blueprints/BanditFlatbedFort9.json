@@ -48,7 +48,7 @@
     {"part": "Seat", "on": 38, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 40, "socket": "-x", "by": "+x"},
     {"part": "Seat", "on": 39, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabg V4V4WWXmYTW3VYWMW0W0Xa ~Au0BIE8Qf02f =)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#5e3320"},
+    {"part": "Hull Loft (cabg V4V4WWXmYTW3VYWMW0W0Xa ~Au0BIE8Qf02f = ir)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#5e3320"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y4", "by": "back02", "spin": 2, "paint": "#2f2c2a"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y4", "by": "back00", "spin": 2, "paint": "#8c5230"},
     {"part": "Plate Steel 0.25 m", "on": 45, "socket": "+z1", "by": "-x", "paint": "#46392f"},
