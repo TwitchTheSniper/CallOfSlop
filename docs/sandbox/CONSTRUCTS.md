@@ -3106,6 +3106,31 @@ The user asked (2026-11-07) that "bombs or missiles or ordnance that take enough
 
 **Not done yet / decisions the developer may change.** No wind on designed weapons; the drop aid's cross is the plain fall, not a glide or a boosted path; a missile has no lift of its own (it arcs as the Missile Rail's does); the HUD doesn't show a designed weapon's lock; mines are set off by bodies, not by players on foot.
 
+### Fuel blasts
+
+The user asked (2026-11-09) that "any tank containing fuel when destroyed should explode" (code `Source/Constructs/ConstructFuelBlasts.cs`,
+called from `ConstructWorld.CookOff`; numbers in `Constructs/FuelBlasts.json`; measured with `--bench-fuelblast`).
+
+- **What goes up.** Any part that holds something that burns, burning or not, when it breaks: a fuel tank of any size (Fuel Tank, the
+  small and large ones, the Fuel Drum, the Tanker Barrels, the Fuel Bunkers) by its share of the body's fuel pool (its capacity over the
+  working tanks', itself counted), a Fluid Tank or Tank Volume by what it holds, and a designed weapon with fuel or a burning motor but no
+  warhead by its fuel's kilograms (`propellantPerKg`). A part that only stops working (the tanks) goes up all the same, and its share leaves
+  the pool. Empty: nothing. Lift cells keep their own hydrogen rule ("Air and lift"). Props (jerrycans on maps) are not parts and are not covered.
+- **How big.** Litres times the fluid's `energy` (fuel 1, hydrogen 1.5, oxidiser 0.6, oil 0.35; water and the rest 0). Radius
+  `0.5 + cube root` m, damage at the middle `60 + 30 x square root`, crater a fifth of the radius, held to 160 m, 3,000 and 25 m: a 15 l
+  can 3 m and 176, a 60 l drum 4.4 m and 292, a 600 l tanker barrel 8.9 m and 795, a 20,000 l bunker 27.6 m and 3,000, the Capital Fuel
+  Bunker (4 million l) a 159 m shock front ("Massive blasts").
+- **The blast.** A landed incendiary shell (`ShellKind.Incendiary`: an orange fireball, the shell blast's sound and shake, and it lights
+  what burns in reach), so it walks bodies, digs, hurts players and sets off ordnance and other tanks like any shell's blast, queued within
+  the parts budget. It goes off `delayTicks` (0.3 s) after the break plus up to `staggerTicks` by the part's place, riding the body, so a
+  chain ripples. No wire change: clients see the ShellLand event. Server only; nothing allocates.
+- **Fused units.** Every member keeps its own health, so a tank fused into a hull goes up when it breaks like any other.
+- **Cost** (`--bench-fuelblast`, second of two runs, a host and a client over loopback on the shared 2-core box): a drum, a tanker or a
+  bunker, worst server tick under 1 ms CPU; a row of 24 drums 2 m apart, one shot: all 24 go over 516 ticks, worst 0.5 ms; the Capital
+  bunker's front, worst 1.9 ms; a fused 616-part sheet with 16 tanks 1.5 m apart: 5 go at once (the blast lights what burns in reach), the blasts' ticks
+  under 3.3 ms; the one tick of 7 to 10 ms is the sheet's rebuild after the first tank breaks (a part that stops working on a big fused
+  body, as before this change), not the blasts.
+
 ### The yard
 
 Construct Yard gains a **Gunner Turret** (a turntable, a gunner's seat on the arm, a Mounted MG on a motor hinge at the
@@ -5000,8 +5025,8 @@ part and rides in blueprints, world saves and joiners' CBody like any setting. T
   gauge and the driver's HUD count both. A tank of water reaches the engine, and the engine has no fuel.
 - **Between constructs.** A world pipe works as a pipe does, at the same flow rule. A fluid hose first moves the pools as
   before, then from the first tank with something in it to the first that has room for it (`ConstructFluid.MoveAny`).
-- **Wrecked.** What it held is lost, and it stops working until mended. A Fluid Tank doesn't burn or cook off, even holding
-  fuel. Taken off, it goes back to the inventory empty, as a part loses its settings.
+- **Wrecked.** What it held is lost, and it stops working until mended. A Fluid Tank holding fuel, hydrogen, oxidiser or oil goes
+  up when it is wrecked ("Fuel blasts"). Taken off, it goes back to the inventory empty, as a part loses its settings.
 
 **Creative only.** The configure tool sets the fluid and the fill in creative worlds. Both are `"creative": true` settings: in
 survival the panel shows them read-only (Reset, Paste and Apply to selected go too), and the server refuses a request that
@@ -5055,7 +5080,7 @@ A Tank Volume or Storage Volume is meant to sit inside walls. Code: `Source/Cons
 2. **Tilt.** Down is apparent gravity. The level is the fill's share of the box's height along it; if the lowest corner of an open face is under the level, it pours. So an open bottom empties a box, an open side drains a tank at rest, and an open top only matters when tipped or braked.
 3. **Acceleration.** The same check with the body's acceleration taken off gravity (`Construct.Accel`), so hard braking throws contents out and a parked base is safe.
 4. **Where it goes.** Off the open face's lowest corner, clear of the rim. Fluid goes into a tank under it (a part, or a Tank Volume's box), else it is lost with a spill splash. Bulk goes as a tipped scoop's does (`ConstructScoops.PourVolume`): into a store under it, heaped ground for dirt, stone and sand, or Material Bundles, in lumps of 40 or more. Stored parts stay put.
-5. **Fire.** An incendiary round or flame landing in or at an open box of something that burns lights its block (`ConstructSeal.IgniteAt`, `ConstructWorld.CanBurn`). The fire then eats the contents and lasts while they do; a Tank Volume of fuel wrecked burning cooks off. A plain Storage Volume's block doesn't otherwise burn.
+5. **Fire.** An incendiary round or flame landing in or at an open box of something that burns lights its block (`ConstructSeal.IgniteAt`, `ConstructWorld.CanBurn`). The fire then eats the contents and lasts while they do; a Tank Volume holding fuel goes up when it is wrecked, burning or not ("Fuel blasts"). A plain Storage Volume's block doesn't otherwise burn.
 
 **Old builds.** The mask needs no data, so saves and blueprints load unchanged and every box is checked on load. An open box over its new limit starts to pour within a quarter of a second of the world starting, and an open side or bottom drains what stands above it.
 
