@@ -43,8 +43,8 @@ public sealed partial class Game
     private int _zBlockCount;
 
     /// <summary>Standing players' feet and heights (for zombies walking; rebuilt each horde tick).</summary>
-    private readonly Vector3[] _zBlockPlayerPos = new Vector3[32];
-    private readonly float[] _zBlockPlayerHeight = new float[32];
+    private readonly Vector3[] _zBlockPlayerPos = new Vector3[MaxPlayers];
+    private readonly float[] _zBlockPlayerHeight = new float[MaxPlayers];
     private int _zBlockPlayers;
 
     /// <summary>Players pushed out of zombies and pushes refused by a wall (self-test, logs).</summary>
@@ -113,6 +113,7 @@ public sealed partial class Game
         SepPlayer(p, ref s); // eased apart from other players' and bots' bodies (PlayerSeparation.cs)
         ZBlockOutOfBodies(p, ref s);
         CrowdSurfacePlayer(p, ref s); // a crowd map: the crowd as ground (ZombiesCrowdSurface.cs)
+        CorpsePlayer(p, ref s); // Sandbox: settled bodies are ground, a tall pile a wall (GameCorpses.cs)
         SandboxPlayer(p, ref s); // Sandbox: drivers in their seats, everyone else out of (or on) the constructs (GameSandbox.cs)
     }
 

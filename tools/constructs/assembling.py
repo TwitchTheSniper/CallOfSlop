@@ -19,6 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import zfight  # noqa: E402
+import upgrade_parts  # noqa: E402
 
 FORMAT = "call-of-slop-assembling/1"
 ABOUT = ("Assembling (docs/sandbox/CONSTRUCTS.md, 'Assembling'): what an Assembler builds. Written by tools/constructs/assembling.py: fix it, not this file. "
@@ -231,6 +232,9 @@ HAND = [
     rec("Timer Fuse", 4, 2, m={"steel": 2, "copper": 1}),
     rec("Airburst Fuse", 6, 3, m={"steel": 2, "copper": 1}, p={"Circuit Board": 1}),
     rec("Remote Fuse", 6, 3, m={"steel": 2, "copper": 2}, p={"Circuit Board": 1}),
+    # Robot shells (shell_parts.py; docs/sandbox/CONSTRUCTS.md "Robot shells"): a body to risk, and the chair that wakes you in it.
+    rec("Robot Shell", 30, 2, m={"steel": 30, "copper": 8, "rubber": 4}, p={"Circuit Board": 2}),
+    rec("Shell Control Chair", 12, 2, m={"steel": 14, "copper": 6, "rubber": 3}, p={"Circuit Board": 1}),
     rec("Cluster Dispenser", 10, 3, m={"steel": 10, "concrete": 3}),
     rec("Fire Bomblets", 10, 3, m={"steel": 8, "concrete": 2, "rubber": 2}),
     rec("Mine Dispenser", 12, 4, m={"steel": 10, "concrete": 3}, p={"Circuit Board": 1}),
@@ -268,6 +272,9 @@ HAND = [
     rec("Panel", 3, m={"steel": 4}),
     rec("Wood Panel", 2, m={"laminate": 4}),
 ]
+
+# The tool upgrades' modules (upgrade_parts.py holds their recipes, beside their stats).
+HAND += [rec(name, seconds, tier, m=m, p=p) for name, seconds, tier, m, p in upgrade_parts.RECIPES]
 
 
 def rack_recipe(name, layout, a, b, length, diameter):

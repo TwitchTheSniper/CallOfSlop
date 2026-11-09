@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-tool-upgrades/1",
+  "about": "Tool upgrades (docs/sandbox/TOOL-UPGRADES.md). Written by tools/constructs/upgrade_parts.py: fix it, not this file. Each stat: 'base' is where every survivor starts, 'creative' what creative gives, 'levels' each made by fitting its module 'part' (F on it, lying loose), in order of value; a higher Mk may be fitted over a lower. A function is base 0 and one level of 1. The stats' order is ToolStat's (Source/Constructs/ToolUpgrades.cs).",
+  "stats": [
+    {"stat": "lift", "name": "Lift", "about": "the heaviest thing the physics gun takes, in kg; its pull rises with it (30 N a kg)", "base": 1500, "creative": 20000000, "levels": [{"part": "Lift Coil Mk 2", "value": 3000}, {"part": "Lift Coil Mk 3", "value": 6000}, {"part": "Lift Coil Mk 4", "value": 12000}, {"part": "Lift Coil Mk 5", "value": 25000}]},
+    {"stat": "reach", "name": "Reach", "about": "how far the physics gun's beam reaches, in metres", "base": 12, "creative": 30, "levels": [{"part": "Beam Lens Mk 2", "value": 15}, {"part": "Beam Lens Mk 3", "value": 18}, {"part": "Beam Lens Mk 4", "value": 22}, {"part": "Beam Lens Mk 5", "value": 26}]},
+    {"stat": "drillBit", "name": "Drill bit", "about": "the ground drill's scoop, times the digging table's radius", "base": 1, "creative": 1, "levels": [{"part": "Drill Bit Mk 2", "value": 1.25}, {"part": "Drill Bit Mk 3", "value": 1.5}, {"part": "Drill Bit Mk 4", "value": 1.8}]},
+    {"stat": "drillMotor", "name": "Drill motor", "about": "how fast the ground drill scoops, times the digging table's pace", "base": 1, "creative": 1, "levels": [{"part": "Drill Motor Mk 2", "value": 1.35}, {"part": "Drill Motor Mk 3", "value": 1.75}, {"part": "Drill Motor Mk 4", "value": 2.25}]},
+    {"stat": "fitter", "name": "Fitting speed", "about": "how fast timed fits, removals and welds go, times their usual pace", "base": 1, "creative": 1, "levels": [{"part": "Fitter Servo Mk 2", "value": 1.5}, {"part": "Fitter Servo Mk 3", "value": 2}, {"part": "Fitter Servo Mk 4", "value": 3}]},
+    {"stat": "tractor", "name": "Tractor beam", "about": "the physics gun catches things out to twice its reach and reels them in", "base": 0, "creative": 1, "levels": [{"part": "Tractor Emitter", "value": 1}]},
+    {"stat": "throw", "name": "Throw", "about": "with the physics gun holding something, Reload throws it along the look", "base": 0, "creative": 1, "levels": [{"part": "Kinetic Coil", "value": 1}]}
+  ]
+}

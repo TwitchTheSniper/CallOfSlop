@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146, DepotTag = 0x4F504544, ToolsTag = 0x4C4F4F54;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -118,6 +118,7 @@ public static class WorldSaveWriter
                     if (p.Opened)
                         w.U64(p.Key).U64(p.SteamId);
                 w.U16(op.Barracks); // (the lockdown's barracks, GameColonyLockdown.cs: last, so an older reader stops before it)
+                w.U16(op.Works).U16(op.Depot); // (the Orbital Depot's, GameDepot.cs: after it, likewise)
             });
         if (Array.Exists(s.Players, p => p.TutorialState != TutorialState.None))
             w.Section(TutorialTag, () =>
@@ -127,6 +128,15 @@ public static class WorldSaveWriter
                 foreach (var p in s.Players)
                     w.U64(p.Key).U64(p.SteamId).U8(p.TutorialStep).U8((byte)p.TutorialState);
             });
+        if (Array.Exists(s.Players, p => p.DepotState != 0))
+            w.Section(DepotTag, () =>
+            {
+                // (the Orbital Depot's runs, GameDepot.cs: a section of its own, so an older reader skips it)
+                var those = Array.FindAll(s.Players, p => p.DepotState != 0);
+                w.I32(those.Length);
+                foreach (var p in those)
+                    w.U64(p.Key).U64(p.SteamId).U8(p.DepotState).U16(p.DepotLander);
+            });
         if (Array.Exists(s.Players, p => p.Fallen || p.Died || p.BunkBody != 0))
             w.Section(Fate, () =>
             {
@@ -135,6 +145,19 @@ public static class WorldSaveWriter
                 w.I32(those.Length);
                 foreach (var p in those)
                     w.U64(p.Key).U64(p.SteamId).U8((byte)((p.Fallen ? 1 : 0) | (p.Died ? 2 : 0))).U16(p.BunkBody).U8(p.BunkSeg).Vec(p.BunkPos);
+            });
+        if (Array.Exists(s.Players, p => Array.Exists(p.Upgrades, v => v != 0)))
+            w.Section(ToolsTag, () =>
+            {
+                // (tool upgrades, ConstructEditsUpgrades.cs: a section of its own, so an older reader skips it and everyone starts at the base)
+                var those = Array.FindAll(s.Players, p => Array.Exists(p.Upgrades, v => v != 0));
+                w.I32(those.Length);
+                foreach (var p in those)
+                {
+                    w.U64(p.Key).U64(p.SteamId).U8((byte)p.Upgrades.Length);
+                    foreach (var v in p.Upgrades)
+                        w.U8(v);
+                }
             });
         w.Section(Stores, () =>
         {
@@ -160,7 +183,11 @@ public static class WorldSaveWriter
         {
             w.U8((byte)(s.GroundOnPlanet ? 1 : 0)).I32(s.OpCount);
             foreach (ref var op in s.Ops.AsSpan(0, s.OpCount))
+            {
                 w.U8((byte)op.Kind).Vec(op.At).F32(op.Radius);
+                if (GroundShape.IsGrade(op.Kind))
+                    w.Vec(op.To); // (a grade's far end: GameWorldSave.WorldReadGround)
+            }
         });
         if (s.Resources is { } field)
             w.Section(Resources, () =>

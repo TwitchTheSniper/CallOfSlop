@@ -36,8 +36,16 @@ public sealed partial class Ui
                 TutorialFill(game.TutorialStepNow, step, settings);
                 if (since < 1.5 && game.TutorialStepNow > 0)
                     ImGuiSafe.TextColored(Green, "Noted.");
-                ImGuiSafe.TextColored(Dim, $"INDUCTION  {game.TutorialStepNow + 1} / {Tutorial.Steps.Length}");
+                var others = game.TutorialGroupOthers;
+                if (others > 0)
+                    ImGuiSafe.TextColored(Dim, $"INDUCTION  {game.TutorialStepNow + 1} / {Tutorial.Steps.Length}   with {others} other{(others == 1 ? "" : "s")}");
+                else
+                    ImGuiSafe.TextColored(Dim, $"INDUCTION  {game.TutorialStepNow + 1} / {Tutorial.Steps.Length}");
                 ImGuiSafe.TextColored(Orange, _tutTitle);
+                if (others > 0 && game.TutorialGroupDone)
+                    ImGuiSafe.TextColored(Green, game.TutorialGroupWaiting.Length > 0 ? $"Done. Waiting for {game.TutorialGroupWaiting}." : "Done. The warden waits for the rest.");
+                else if (others > 0 && game.TutorialGroupOthersDone > 0)
+                    ImGuiSafe.TextColored(Orange, $"{game.TutorialGroupOthersDone} of {others} done: the warden is waiting for you.");
                 ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 380 * _scale);
                 ImGuiSafe.TextWrapped(_tutText);
                 if (_tutWarden.Length > 0)

@@ -148,6 +148,18 @@
     { "on": "Help", "say": [ "Leave {target.first} alone!", "Hold on, {target.first}, I'm coming!", "Get away from {target.first}!" ] },
     { "on": "Help", "if": "?me Grudge ?them >= 20", "say": [ "I've had enough of you, {them}!", "Not {target.first}, {them}. Not today." ] },
 
+    // ---- Moods (Story/Moods, GameStoryMoods.cs): said as one takes hold. ?them is whoever caused it (the killer, the
+    // attacker), ?target whoever it is about (the dead, the one helped, the one they killed). ----
+    { "on": "Rage", "say": [ "{target.first}! NO! You're dead, {them}!", "You killed {target.first}! I'll tear you apart!", "{them}! I'm going to KILL you!" ] },
+    { "on": "Rage", "if": "?them is Player", "say": [ "{them}! You murdering scum!", "That was {target.first}, {them}! You're DEAD!" ] },
+    { "on": "Vengeance", "say": [ "For {target.first}.", "You shouldn't have done that, {them}.", "Stay right there, {them.first}." ] },
+    { "on": "Panic", "say": [ "{target.first}!? Oh no, oh no, oh no!", "They killed {target.first}! Run!", "I'm not dying here! Not like {target.first}!" ] },
+    { "on": "Shaken", "chance": 0.6, "say": [ "Oh god. Oh god.", "Did... did they just...", "This is bad. This is really bad." ] },
+    { "on": "Grief", "chance": 0.8, "say": [ "{target.first}... why?", "It should have been me.", "I can't... not {target.first}." ] },
+    { "on": "Desperate", "say": [ "Is that all you've got?", "I'm not going down like this!", "Come on then! Finish it!" ] },
+    { "on": "Protective", "say": [ "Get behind me, {target.first}!", "You'll have to go through me, {them}!" ] },
+    { "on": "Bloodlust", "say": [ "Who's next?", "That's one.", "Anyone else want some?" ] },
+
     { "on": "Saw", "verb": "Attack", "chance": 0.7, "say": [ "{actor} is shooting at {target}!", "Get down!" ] },
     { "on": "Saw", "verb": "Defend", "chance": 0.6, "say": [ "Go on, {actor.first}!", "Somebody stop them!" ] },
     { "on": "Saw", "verb": "Fight", "chance": 0.5, "if": "?me Likes ?actor >= 20", "say": [ "Give it to them, {actor.first}!" ] }

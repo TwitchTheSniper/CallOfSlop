@@ -130,15 +130,19 @@ public sealed class WorldPlayer
     public bool Opened; // has been through the survival opening here (GameSandboxOpening.cs; saved in the Opening section)
     public TutorialState TutorialState; // the warden's induction (GameTutorial.cs): not started, running, finished or skipped, and at which step
     public byte TutorialStep;
+    public byte DepotState; // the Orbital Depot's run (GameDepot.cs; saved in the Depot section): none, reported, a step, done
+    public ushort DepotLander; // ...and their lander's construct (stable in a save; 0: none)
     public bool Fallen; // dead for good in a permadeath world (GameSandboxDeath.cs; saved in the Fate section)
     public bool Died; // dead when last seen: their next spawn is a respawn, at their checkpoint
     public ushort BunkBody; // their checkpoint: the bunk they last lay in (its construct, stable in a save; 0: none), segment and place in its rest frame
     public byte BunkSeg;
     public Vector3 BunkPos;
+    public byte[] Upgrades = []; // their tool upgrade levels, a byte a ToolStat (ConstructEditsUpgrades.cs; saved in the Tools section)
 
     public WorldPlayer Copy()
     {
         var c = (WorldPlayer)MemberwiseClone();
+        c.Upgrades = (byte[])Upgrades.Clone();
         c.Pack = new CStore();
         WorldStores.Copy(Pack, c.Pack);
         return c;
@@ -149,7 +153,7 @@ public sealed class WorldPlayer
 public sealed class WorldSession
 {
     /// <summary>Owner bytes from here up mean someone who is away (player ids stay under <see cref="Game.MaxPlayers"/>; 255: nobody).</summary>
-    public const int OfflineBase = 64;
+    public const int OfflineBase = Game.MaxPlayers; // (31 away records fit: 224 to 254; later ones read as nobody's while away)
 
     public string Folder = "";
     public WorldMeta Meta = new();

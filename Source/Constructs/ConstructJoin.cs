@@ -56,17 +56,35 @@ public sealed partial class ConstructWorld
         for (var j = 0; j < b.JointCount; j++)
         {
             var jt = b.Joints[j];
+            // A joint placed in b's body frame turns into a's; one placed in a freeform weld's frame (FrameOf) keeps its numbers,
+            // since that frame moves with the weld's own pose. A weld on b's body frame takes the turn in its pose.
+            var inBody = b.FrameOf(jt.ParentSeg) == 0;
             jt.Hinge = (ushort)(jt.Hinge + off);
+            if (jt.Freeform)
+            {
+                jt.Child = (ushort)(jt.Child + off); // (its welded-on part: a's index now, or a client refuses the body's Full)
+                if (inBody)
+                {
+                    jt.FixPos = plan.Offset + Rot24.Apply(turn, jt.FixPos);
+                    jt.FixRot = Quaternion.Normalize(Rot24.Quat(turn) * jt.FixRot);
+                }
+            }
+            else if (inBody)
+            {
+                jt.Pivot = plan.Offset + Rot24.Apply(turn, jt.Pivot);
+                jt.Axis = Rot24.Apply(turn, jt.Axis);
+            }
             jt.ParentSeg = jt.ParentSeg == 0 ? plan.Seg : (byte)(jt.ParentSeg + joints);
-            jt.Pivot = plan.Offset + Rot24.Apply(turn, jt.Pivot);
-            jt.Axis = Rot24.Apply(turn, jt.Axis);
             a.Joints[a.JointCount++] = jt;
         }
         for (var i = 0; i < b.PartCount; i++)
         {
             var p = b.Parts[i];
-            p.Pos = Quantise(plan.Offset + Rot24.Apply(turn, p.Pos));
-            p.Rot = Rot24.Compose(turn, p.Rot);
+            if (b.FrameOf(p.Seg) == 0) // (a part on a freeform weld's segment sits in that weld's frame, which moved with it above)
+            {
+                p.Pos = Quantise(plan.Offset + Rot24.Apply(turn, p.Pos));
+                p.Rot = Rot24.Compose(turn, p.Rot);
+            }
             p.Seg = p.Seg == 0 ? plan.Seg : (byte)(p.Seg + joints);
             a.Parts[a.PartCount++] = p;
             b.Parts[i].Store = 0; // (physical storage: the store moves with its part; b's removal mustn't free it)

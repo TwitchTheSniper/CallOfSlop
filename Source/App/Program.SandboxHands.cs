@@ -10,6 +10,13 @@ namespace CallOfSlop;
 public static partial class Program
 {
     /// <summary>The look line on something loose, or a wrecked part lying alone: "Lamp - LMB: pick up". A refusal replaces it (the aim's reason).</summary>
+    /// <summary>The look line on a loose tool upgrade: what it gives, and F to fit it, or why it can't be (ConstructEditsUpgrades.cs).</summary>
+    private static string UpgradeLook(Game g, Player me, Construct c, ConstructPartDef d, ToolStat stat, byte level)
+    {
+        var why = g.SandboxHands.UpgradeRefusal(c, me.Id, g.SandboxInfiniteParts, out _, out _);
+        return SandboxKeys.Line(d.Name, ToolUpgrades.Current.Gives(stat, level), why, why != null ? null : SandboxKeys.Do(SandboxKeys.Use, "fit to your tools"));
+    }
+
     private static string HandsLook(Construct c, ConstructPartDef d, bool near, bool full, string carriedIn)
     {
         if (ConstructEdits.WreckedAlone(c))

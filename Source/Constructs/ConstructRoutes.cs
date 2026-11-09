@@ -1808,7 +1808,8 @@ public static partial class ConstructRoutes
             for (var i = 0; i < r.Count; i++)
             {
                 var node = b.RouteNodes[start + i];
-                node.Pos = ConstructWorld.Quantise(offset + Rot24.Apply(turn, node.Pos));
+                if (node.Host >= b.PartCount || b.FrameOf(b.Parts[node.Host].Seg) == 0) // (a node on a freeform weld's part stays in that weld's frame)
+                    node.Pos = ConstructWorld.Quantise(offset + Rot24.Apply(turn, node.Pos));
                 node.Host = (ushort)(node.Host + off);
                 a.RouteNodes[a.RouteNodeCount++] = node;
             }

@@ -92,7 +92,7 @@ public sealed partial class Game
     public bool LobbyModeAllowed(GameMode mode)
     {
         var m = GameModeRegistry.Get(mode);
-        return m.Fits(World.Map) && Math.Min(m.MaxPlayers(World.Map), MaxPlayers) >= HumanCount;
+        return m.Fits(World.Map) && Math.Min(m.MaxPlayers(World.Map), MaxPeople) >= HumanCount;
     }
 
     /// <summary>Every person here (bots are always ready) is ready, apart from <paramref name="except"/> (the host pressing START).</summary>

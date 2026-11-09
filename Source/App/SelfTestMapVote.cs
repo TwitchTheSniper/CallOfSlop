@@ -107,7 +107,7 @@ public static partial class SelfTest
     /// </summary>
     private static void CheckMapVotePlayerFit()
     {
-        static int Cap(Map m) => Math.Min(m.MaxPlayers, Game.MaxPlayers); // the free-for-all limit
+        static int Cap(Map m) => Math.Min(m.MaxPlayers, Game.MaxPeople); // the free-for-all limit
         var largest = Maps.All.MaxBy(m => Cap(m))!;
 
         // ---- The rule on the real maps, for many player counts ---------------------------------------------------
@@ -185,7 +185,7 @@ public static partial class SelfTest
         // ---- In a game: lots of bots don't count, people do ---------------------------------------------------------
         foreach (var (humans, trueRandom) in new[] { (0, false), (11, false), (Cap(largest) - 1, false), (15, true) })
         {
-            using var game = VoteGame(out var now, bots: Game.MaxPlayers - 1, mapId: largest.Id, humans: humans, trueRandom: trueRandom);
+            using var game = VoteGame(out var now, bots: Game.MaxPeople - 1, mapId: largest.Id, humans: humans, trueRandom: trueRandom);
             if (game == null)
                 return;
             var people = game.HumanCount;
@@ -211,7 +211,7 @@ public static partial class SelfTest
 
         // ---- Someone joins during the vote: a too-small option is replaced, the other votes keep counting --------------
         {
-            using var game = VoteGame(out var now, bots: Game.MaxPlayers - 1, mapId: largest.Id);
+            using var game = VoteGame(out var now, bots: Game.MaxPeople - 1, mapId: largest.Id);
             if (game == null)
                 return;
             var before = game.VoteOptions.Select(id => Maps.Get(id)).ToArray();

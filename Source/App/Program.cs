@@ -97,6 +97,8 @@ public static unsafe partial class Program
             selfTestOnly = ""; // given without names: an error that lists the valid ones, never a silent full run
         if (selfTestOnly != null || args.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.Run(selfTestOnly); // headless checks (all, or only the named sections), see SelfTest.cs
+        if (args.Any(a => a.Equals("--bot-bench", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BotBench(args); // headless: a Sandbox fight of hundreds of spawned bots, the server tick's cost (SelfTestBotBench.cs)
         if (args.Any(a => a.Equals("--crowd-bench", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.CrowdBench(args); // headless: the crowd's per-frame preparation on Horde Stress, host and client (SelfTestCrowdBench.cs)
         if (args.SkipWhile(a => !a.Equals("--export-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } exportDir)
@@ -565,7 +567,7 @@ public static unsafe partial class Program
                     bots = _rangeLaunch != null ? 0 : _settings.Bots; // the Workbench Range is just you
                     break;
                 case LobbyAction.Host:
-                    net = HostNet(_settings.Port, Game.MaxPlayers - 1); // RakNet, plus Steam sockets and a lobby with Steam (Program.SteamNet.cs)
+                    net = HostNet(_settings.Port, Game.MaxPeople - 1); // RakNet, plus Steam sockets and a lobby with Steam (Program.SteamNet.cs)
                     bots = _settings.HostBots;
                     BeginHostAddressing(); // the address line, UPnP, STUN and the invite code (Program.Listing.cs)
                     break;

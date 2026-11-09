@@ -10,6 +10,9 @@ namespace CallOfSlop;
 /// <see cref="CActKind.AnalogLever"/> (<see cref="ConstructEdits.AnalogSet"/>); moves reach clients in small
 /// <see cref="CBodyKind.Analog"/> messages, not as the whole construct. A pose's signal is in tenths, too coarse for a handle,
 /// so the handle is drawn from the value and never from <see cref="CPart.Out"/>. The input is Program.SandboxLever.cs.
+/// A Joystick is an Analog Lever with <c>"axes": 2</c> (<see cref="ConstructPartDef.Stick"/>): "value" is its X (side to side,
+/// the part's +x), "valueY" its Y (fore and aft, the part's +z), each with its own rest; X is its first output and Y its
+/// second (<see cref="CPart.Out1"/>), and both ride every message a lever's value does.
 /// </summary>
 public static class AnalogLever
 {
@@ -24,6 +27,9 @@ public static class AnalogLever
     private const float SendStep = 0.05f; // a spring's way back reaches clients in steps of this
 
     public static float Value(in CPart p, ConstructPartDef d) => ConstructConfig.Get(p, d, CfgKey.Value, 0);
+
+    /// <summary>A Joystick's Y (0 on a one-axis lever).</summary>
+    public static float ValueY(in CPart p, ConstructPartDef d) => d.Stick ? ConstructConfig.Get(p, d, CfgKey.ValueY, 0.5f) : 0;
 
     /// <summary><paramref name="v"/> within 0..1 and on the part's snap step.</summary>
     public static float Snapped(in CPart p, ConstructPartDef d, float v)
@@ -44,38 +50,78 @@ public static class AnalogLever
     public static bool SetValue(ref CPart p, ConstructPartDef d, float v) =>
         d.Logic == CLogic.AnalogLever && ConstructConfig.Set(ref p, d, d.CfgSlot[(int)CfgKey.Value], v);
 
+    /// <summary>Both axes (<paramref name="y"/> only on a Joystick). True when either changed.</summary>
+    public static bool SetValue(ref CPart p, ConstructPartDef d, float v, float y)
+    {
+        var changed = SetValue(ref p, d, v);
+        if (d.Stick)
+            changed |= ConstructConfig.Set(ref p, d, d.CfgSlot[(int)CfgKey.ValueY], y);
+        return changed;
+    }
+
     /// <summary>Server, after the configure tool: on its snap step, and a hand's hold gone.</summary>
     public static void SettingsChanged(ref CPart p, ConstructPartDef d)
     {
-        SetValue(ref p, d, Snapped(p, d, Value(p, d)));
+        SetValue(ref p, d, Snapped(p, d, Value(p, d)), Snapped(p, d, ValueY(p, d)));
         p.Count = 0;
     }
 
-    /// <summary>Server, the logic step: the spring, then the output (0..1 of the way from "low" to "high").</summary>
+    /// <summary>
+    /// Server, the logic step: the spring, then the output (0..1 of the way from "low" to "high"). A Joystick's Y goes
+    /// out on its second output.
+    /// </summary>
     public static float Step(ConstructWorld world, Construct c, int i, float dt)
     {
         ref var p = ref c.Parts[i];
         var d = p.D;
         var v = Value(p, d);
+        var y = ValueY(p, d);
         if (p.Count > 0)
             p.Count--; // (a hand is on it)
         else if (ConstructConfig.Get(p, d, CfgKey.Spring, 0) >= 0.5f)
         {
-            var rest = ConstructConfig.Get(p, d, CfgKey.Rest, 0);
-            if (v != rest)
-            {
-                var next = v < rest ? MathF.Min(v + SpringRate * dt, rest) : MathF.Max(v - SpringRate * dt, rest);
-                p.Cfg[d.CfgSlot[(int)CfgKey.Value]] = next; // (not on the setting's step: it glides)
-                if (next == rest || (int)(next / SendStep) != (int)(v / SendStep))
-                    world.AnalogDirty.Add((c.Id, (ushort)i));
-                v = next;
-            }
+            var sent = Spring(ref p, d, CfgKey.Value, CfgKey.Rest, ref v, dt);
+            if (d.Stick)
+                sent |= Spring(ref p, d, CfgKey.ValueY, CfgKey.RestY, ref y, dt);
+            if (sent)
+                world.AnalogDirty.Add((c.Id, (ushort)i));
         }
-        return float.Lerp(ConstructConfig.Get(p, d, CfgKey.Low, 0), ConstructConfig.Get(p, d, CfgKey.High, 1), v);
+        var low = ConstructConfig.Get(p, d, CfgKey.Low, 0);
+        var high = ConstructConfig.Get(p, d, CfgKey.High, 1);
+        if (d.Stick)
+            p.Out1 = float.Lerp(low, high, y);
+        return float.Lerp(low, high, v);
+    }
+
+    /// <summary>One axis glides towards its rest. True when clients should hear it (at rest, or past a send step).</summary>
+    private static bool Spring(ref CPart p, ConstructPartDef d, CfgKey key, CfgKey restKey, ref float v, float dt)
+    {
+        var rest = ConstructConfig.Get(p, d, restKey, 0);
+        if (v == rest)
+            return false;
+        var next = v < rest ? MathF.Min(v + SpringRate * dt, rest) : MathF.Max(v - SpringRate * dt, rest);
+        p.Cfg[d.CfgSlot[(int)key]] = next; // (not on the setting's step: it glides)
+        var send = next == rest || (int)(next / SendStep) != (int)(v / SendStep);
+        v = next;
+        return send;
     }
 
     /// <summary>The value as the look line shows it.</summary>
     public static string Text(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
+
+    /// <summary>A part's look-line value: a lever's 0..1; a Joystick's two outputs, "X 0.00 Y 0.00".</summary>
+    public static string Text(in CPart p, ConstructPartDef d, float v, float y)
+    {
+        if (!d.Stick)
+            return Text(v);
+        var low = ConstructConfig.Get(p, d, CfgKey.Low, 0);
+        var high = ConstructConfig.Get(p, d, CfgKey.High, 1);
+        return "X " + Text(float.Lerp(low, high, v)) + " Y " + Text(float.Lerp(low, high, y));
+    }
+
+    /// <summary>The tilt of a Joystick's stick at <paramref name="y"/>, about the part's x (as a lever's), and at <paramref name="x"/> about its z.</summary>
+    public static System.Numerics.Matrix4x4 StickTurn(byte rot, float x, float y) =>
+        System.Numerics.Matrix4x4.CreateFromAxisAngle(Rot24.Apply(rot, Vector3.UnitZ), -Angle(x)) * System.Numerics.Matrix4x4.CreateFromAxisAngle(Rot24.Apply(rot, Vector3.UnitX), Angle(y));
 }
 
 public sealed partial class ConstructEdits
@@ -84,7 +130,7 @@ public sealed partial class ConstructEdits
     /// Server: a hand on an Analog Lever (any tool, seated or not): sets its value, on its snap step. A lever is used like
     /// any other, so no owner's rule; the configure tool's slider has that. <paramref name="final"/>: the hand let go.
     /// </summary>
-    public string? AnalogSet(ConstructWorld world, byte player, Vector3 eye, ushort body, ushort part, float value, bool final)
+    public string? AnalogSet(ConstructWorld world, byte player, Vector3 eye, ushort body, ushort part, float value, float y, bool final)
     {
         if (world.Get(body) is not { } c || part >= c.PartCount || c.Loose)
             return "that lever is gone";
@@ -98,7 +144,7 @@ public sealed partial class ConstructEdits
             return $"the {d.Name} is wrecked";
         if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.UseReach + AnalogLever.DragReach) is { } far)
             return far;
-        AnalogLever.SetValue(ref p, d, AnalogLever.Snapped(p, d, value));
+        AnalogLever.SetValue(ref p, d, AnalogLever.Snapped(p, d, value), AnalogLever.Snapped(p, d, y));
         p.Count = (ushort)(final ? 0 : AnalogLever.HoldTicks);
         world.AnalogDirty.Add((c.Id, part)); // (even at the same value: the host's own hand has already moved it)
         c.Wake();

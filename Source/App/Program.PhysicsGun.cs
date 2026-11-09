@@ -145,16 +145,17 @@ public static partial class Program
     private static void PhysGunInput(Game g, Player me, ref SandboxHand h, Vector3 eye, Vector3 dir, double now)
     {
         var creative = g.SandboxInfiniteParts;
-        var range = creative ? ConstructGrab.Range : ConstructGrab.SurvivalRange;
+        var range = g.SandboxHands.ReachOf(me.Id, creative); // (this player's, with their tool upgrades: ConstructEditsUpgrades.cs)
+        var catchRange = g.SandboxHands.CatchOf(me.Id, creative); // (the tractor beam catches further and reels it in to the reach)
         var holding = h.GrabBody != 0 && g.Constructs.Get(h.GrabBody) != null;
         if (!holding)
         {
             _pgScroll = 0;
             PhysGunSnapEnd(g);
-            var wall = World.RaycastWorld(eye, dir, range);
-            var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, range), out var hit);
+            var wall = World.RaycastWorld(eye, dir, catchRange);
+            var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, catchRange), out var hit);
             // A carriage or a free rotation part's moving side, or what hangs on one: the beam moves that alone (ConstructGrab.cs).
-            var reach = aimed ? hit.Distance + 0.03f : MathF.Min(wall, range);
+            var reach = aimed ? hit.Distance + 0.03f : MathF.Min(wall, catchRange);
             var leaf = ConstructGrab.AimLeaf(g.Constructs, eye, dir, reach, _pgNear, out var leafBody, out var leafPart, out var leafDist);
             var freeBody = leaf ? leafBody : aimed ? hit.Body : null;
             var freePart = leaf ? leafPart : aimed && ConstructGrab.LeafJoint(hit.Body, hit.Part, false) >= 0 ? hit.Part : -1;
@@ -250,6 +251,12 @@ public static partial class Program
             g.SandboxLetGo(freeze: false);
         else if (Pressed(GameAction.Aim))
             g.SandboxLetGo(freeze: true);
+        else if (Pressed(GameAction.Reload) && h.GrabSeg == 0 && g.SandboxHands.Has(me.Id, ToolStat.Throw, creative))
+        {
+            g.SandboxThrow(); // (the throw upgrade: Reload while holding; not a tap towards unfreeze-all)
+            _pgReloadAt = -10;
+            return;
+        }
         else
         {
             PhysGunSnapHold(g);

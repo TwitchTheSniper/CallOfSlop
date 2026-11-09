@@ -15,6 +15,16 @@ public enum GoreMode : byte
     Off,
 }
 
+/// <summary>Settings > Video "Bodies and gore": whether dead bodies and gibs fade away after a while or stay where they fell (<see cref="Ragdolls.Stay"/>, <see cref="Gibs.Stay"/>).</summary>
+public enum GoreLasting : byte
+{
+    /// <summary>Bodies fade after about 14 s (zombies 7 s), gibs after about 15 s.</summary>
+    Fade,
+
+    /// <summary>Bodies and gibs stay where they came to rest; only the oldest go once a lot are lying about.</summary>
+    Stay,
+}
+
 /// <summary>What an animal prop's skin bursts into besides meat and bone (the "style" of its "gibs" block).</summary>
 public enum GibStyle : byte
 {
@@ -84,6 +94,9 @@ public static class Gibs
 
     /// <summary>The player's setting (Program applies it every frame). Servers and the self-test default to Full.</summary>
     public static GoreMode Mode = GoreMode.Full;
+
+    /// <summary>Settings > Video "Bodies and gore" Stay (Program applies it every frame): pieces at rest never age (the oldest is still recycled when the pool is full).</summary>
+    public static bool Stay;
 
     public static readonly Vector3 MeatRed = new(0.56f, 0.07f, 0.06f), MeatPink = new(0.8f, 0.38f, 0.37f), MeatDark = new(0.3f, 0.03f, 0.03f),
         BoneWhite = new(0.9f, 0.87f, 0.78f), WoolWhite = new(0.88f, 0.86f, 0.8f);
@@ -560,7 +573,8 @@ public static class Gibs
         for (var i = 0; i < _count; i++)
         {
             ref var p = ref Pool[i];
-            p.Age += dt;
+            if (!Stay || !p.Resting)
+                p.Age += dt; // (Settings > Video "Bodies and gore" Stay: a piece that came to rest lies there until the pool needs its slot)
             if (p.Age >= p.Life)
             {
                 Pool[i] = Pool[--_count]; // swap with the last live piece

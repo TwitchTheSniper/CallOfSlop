@@ -88,6 +88,8 @@ public sealed partial class Game
             case CActKind.GrabRelease:
                 hands.Release(Constructs, p.Id);
                 return null;
+            case CActKind.GrabThrow:
+                return hands.Throw(Constructs, p.Id, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch)); // (the throw function: ConstructEditsUpgrades.cs)
             case CActKind.GrabFreeze:
                 return hands.Freeze(Constructs, p.Id);
             case CActKind.FreezePiece:
@@ -134,6 +136,20 @@ public sealed partial class Game
         _sbPredOn = false;
         h.GrabAskedAt = SandboxNow;
         PhysGunSend(freeze ? CActKind.GrabFreeze : CActKind.GrabRelease, 0, default, 0);
+    }
+
+    /// <summary>Client (or host), with the throw function: what the beam holds is thrown along the look and let go.</summary>
+    public void SandboxThrow()
+    {
+        ref var h = ref SandboxHands.Hand(LocalId);
+        if (!IsServer)
+        {
+            h.GrabBody = 0; // (shown at once, as a let go is)
+            h.GrabSeg = 0;
+        }
+        _sbPredOn = false;
+        h.GrabAskedAt = SandboxNow;
+        PhysGunSend(CActKind.GrabThrow, 0, default, 0);
     }
 
     /// <summary>Client (or host): freeze or unfreeze one piece of a mechanism (segment <paramref name="seg"/>; 0: the base).</summary>
@@ -380,7 +396,7 @@ public sealed partial class Game
             return aboard;
         if (c.Anchored && !c.Frozen)
             return "it is anchored to the ground";
-        var cap = creative ? ConstructGrab.MaxMass : ConstructGrab.SurvivalMaxMass;
+        var cap = SandboxHands.LiftOf(player, creative);
         if (c.Mass > cap)
             return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(creative ? "" : " in survival")})";
         return creative ? null : ConstructGrab.Defended(c, player, SandboxAliveAt, SandboxNameOf);
@@ -390,7 +406,7 @@ public sealed partial class Game
     public string? SandboxLeafRefusal(Construct c, int part, bool leaf, byte player)
     {
         var creative = IsServer ? SandboxHands.InfiniteParts : SandboxInfiniteParts;
-        if (ConstructGrab.LeafRefusal(c, part, leaf, creative) is { } why)
+        if (ConstructGrab.LeafRefusal(c, part, leaf, creative, SandboxHands.LiftOf(player, false)) is { } why)
             return why;
         var seg = ConstructGrab.LeafJoint(c, part, leaf) + 1;
         foreach (var pl in Players.Values)
@@ -419,8 +435,12 @@ public sealed partial class Game
             if (spot.Why != null)
                 return spot.Why;
         }
-        if (_sbPhysHint.Stale((SandboxKeys.Stamp * 2L + (h.GrabBody != 0 ? 1 : 0)) * 31 + (SandboxSnapLabel?.GetHashCode() ?? 0)))
-            _sbPhysHint.Text = h.GrabBody != 0 && SandboxSnapLabel != null ? $"{SandboxKeys.PhysGun} [{SandboxSnapLabel}]" : SandboxKeys.PhysGun;
+        var throws = h.GrabBody != 0 && h.GrabSeg == 0 && SandboxHands.Has(LocalId, ToolStat.Throw, IsServer ? SandboxHands.InfiniteParts : SandboxInfiniteParts);
+        if (_sbPhysHint.Stale((SandboxKeys.Stamp * 4L + (h.GrabBody != 0 ? 1 : 0) + (throws ? 2 : 0)) * 31 + (SandboxSnapLabel?.GetHashCode() ?? 0)))
+        {
+            var keys = throws ? $"{SandboxKeys.Reload}: throw, {SandboxKeys.PhysGun}" : SandboxKeys.PhysGun; // (the throw upgrade: ConstructEditsUpgrades.cs)
+            _sbPhysHint.Text = h.GrabBody != 0 && SandboxSnapLabel != null ? $"{keys} [{SandboxSnapLabel}]" : keys;
+        }
         return _sbPhysHint.Text;
     }
 }

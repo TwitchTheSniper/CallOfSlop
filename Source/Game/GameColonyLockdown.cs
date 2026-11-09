@@ -243,15 +243,7 @@ public sealed partial class Game
     /// <summary>One riot officer out of the barracks door, with a rifle or an SMG. False: no player id free.</summary>
     private bool LockdownTurnOutOne()
     {
-        if (FreeBotIds() <= 0)
-            return false;
-        byte id = 0;
-        for (var k = 1; k < MaxPlayers; k++)
-            if (!Players.ContainsKey((byte)k))
-            {
-                id = (byte)k;
-                break;
-            }
+        var id = FreeNpcId();
         if (id == 0)
             return false;
         var n = _ldTurnedOut++;

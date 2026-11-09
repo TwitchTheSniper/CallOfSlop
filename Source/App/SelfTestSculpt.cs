@@ -95,12 +95,12 @@ public static partial class SelfTest
         foreach (var k in DiggingTable.KindNames)
             if (RecyclingTable.Current.IdOf(k) == 0)
                 Fail($"ground drill: the Recycler has no material \"{k}\"");
-        // The ring: dirt, the default, straight out from the tool (the 2026-11-02 lesson).
+        // The ring: Dig, the default mode, straight out from the tool (the 2026-11-02 lesson); dirt the default material.
         var ring = new SandboxSculptWheel();
         const int n = SandboxToolWheel.DefaultTools;
         var middle = (ring.Options.Length - 1) / 2;
         var straight = MathF.Abs(RadialMenu.OptionAngle(middle, slot, n, ring.Options.Length) - RadialMenu.SegmentAngle(slot, n)) < 1e-4f;
-        if (ring.Options.Length != 3 || ring.CurrentOption != middle || ring.Kind != GroundKind.Dirt || ring.Options[middle].Label != "Dirt" || !straight)
+        if (ring.Options.Length != 7 || ring.CurrentOption != middle || ring.Kind != GroundKind.Dirt || ring.Mode != SandboxSculptWheel.DrillMode.Dig || ring.Options[middle].Label != "Dig" || !straight)
             Fail($"ground drill: the ring's default isn't the middle of its arc ({ring.Options.Length} options, current {ring.CurrentOption}, straight out {straight})");
         SculptLine($"ground drill: wheel slot {slot}, wire byte {(byte)ConstructTool.GroundDrill}, model {model?.Boxes.Length} boxes; table reach {t.Reach} m, scoop {t.ScoopRadius} m, repeat {t.RepeatSeconds} s, stone under {t.StoneDepth} m, log cap {t.LogCap} of {TerrainEdits.MaxOps}");
     }
@@ -467,8 +467,8 @@ public static partial class SelfTest
             Run(g, ref now, 0.1);
             if (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.GroundDrill)
                 Fail($"sculpting: a flick on the tool wheel took out {g.SandboxHands.Hand(me.Id).Tool}, want the ground drill");
-            if (wheel.Menu.Items[slot].Options == null || wheel.Menu.Items[slot].OptionCurrent != 1)
-                Fail("sculpting: the wheel's ground drill has no ring, or it isn't on dirt");
+            if (wheel.Menu.Items[slot].Options == null || wheel.Menu.Items[slot].OptionCurrent != 3)
+                Fail("sculpting: the wheel's ground drill has no ring, or it isn't on Dig");
             if (OpenSpot(g.Constructs) is not { } spot)
             {
                 Fail("sculpting: no open spot on the yard");

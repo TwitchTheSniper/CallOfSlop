@@ -59,7 +59,7 @@ public sealed class SandboxModule : GameModeModule
     }
 
     /// <summary>A kill or a death, for the story (GameStory.cs). Nothing is scored.</summary>
-    public override void OnKill(Game game, Player attacker, Player victim, byte killId, double now) => game.StoryKill(attacker, victim);
+    public override void OnKill(Game game, Player attacker, Player victim, byte killId, double now) => game.StoryKill(attacker, victim, now);
 
     /// <summary>The constructs, the edits, the drivers (GameSandbox.cs). Nothing ends the match.</summary>
     public override void ServerTickPlaying(Game game, double now) => game.ServerTickSandbox(now);
@@ -92,23 +92,48 @@ public sealed class SandboxModule : GameModeModule
 
     // ---- Each player's hands, ~10 Hz -------------------------------------------------------------------------------
 
-    public override byte StateVersion => 3; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88)
+    public override byte StateVersion => 4; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88); 4: tool upgrade levels (protocol 215)
 
     public override void WriteState(Game game, PacketWriter w)
     {
         var hands = game.SandboxHands;
-        w.U8((byte)Math.Min(game.Players.Count, 64));
+        // People always (every seat); a spawned body only while its hand holds something, and three times after it goes
+        // idle (the state is unreliable): hundreds of bots with empty hands would be kilobytes ten times a second.
+        var countAt = w.Length;
+        w.U8(0);
         var n = 0;
-        foreach (var p in game.Players.Values)
+        for (var pass = 0; pass < 2; pass++)
+            foreach (var p in game.Players.Values)
+            {
+                if ((p.Id < Game.MaxPeople) != (pass == 0) || n == 255)
+                    continue;
+                ref var h = ref hands.Hand(p.Id);
+                if (pass == 1)
+                {
+                    var idle = h.Tool == default && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0;
+                    ref var quiet = ref game.SbHandQuiet[p.Id];
+                    quiet = idle ? (byte)Math.Min(quiet + 1, 255) : (byte)0;
+                    if (quiet > 3)
+                        continue;
+                }
+                n++;
+                WriteHand(game, w, p, ref h);
+            }
+        w.PatchU8(countAt, (byte)n);
+    }
+
+    private static void WriteHand(Game game, PacketWriter w, Player p, ref SandboxHand h)
+    {
         {
-            if (n++ == 64)
-                break;
-            ref var h = ref hands.Hand(p.Id);
             w.U8(p.Id).U8((byte)h.Tool).U16(h.Held).U16(h.SeatBody).U16(h.SeatPart).U8((byte)h.Edit)
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
                 w.CmVec(h.GrabLocal).U8(h.GrabSeg); // (protocol 137: a free joint held on its own, GrabLocal in its frame)
+            var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 215: a byte a stat, ConstructEditsUpgrades.cs)
+            w.U8((byte)ToolStat.COUNT);
+            for (var s = 0; s < (int)ToolStat.COUNT; s++)
+                w.U8(levels[s]);
         }
     }
 
@@ -128,6 +153,20 @@ public sealed class SandboxModule : GameModeModule
             var grab = r.U16();
             var grabAt = grab == 0 ? Vector3.Zero : r.CmVec();
             var grabSeg = grab == 0 ? (byte)0 : r.U8();
+            int stats = r.U8();
+            if (!game.IsServer)
+            {
+                var levels = game.SandboxHands.LevelsOf(id);
+                for (var s = 0; s < stats; s++)
+                {
+                    var v = r.U8();
+                    if (s < ToolUpgrades.Slots)
+                        levels[s] = v;
+                }
+            }
+            else
+                for (var s = 0; s < stats; s++)
+                    r.U8();
             if (game.IsServer)
                 continue;
             ref var h = ref game.SandboxHands.Hand(id);

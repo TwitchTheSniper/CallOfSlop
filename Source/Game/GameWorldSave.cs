@@ -305,6 +305,9 @@ public sealed partial class Game
         WorldStores.Copy(SandboxHands.Pack(p.Id), rec.Pack);
         TutorialCatch(p, rec); // (the induction: GameTutorial.cs)
         DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
+        ShellCatch(p, rec); // (in a robot shell: the body's place and things, GameRobotShell.cs)
+        DepotCatch(p, rec); // (the Orbital Depot's run: GameDepot.cs)
+        UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 
@@ -570,8 +573,14 @@ public sealed partial class Game
             case WorldSaveWriter.TutorialTag:
                 WorldReadTutorial(r, ws); // (GameTutorial.cs)
                 break;
+            case WorldSaveWriter.DepotTag:
+                WorldReadDepot(r, ws); // (the Orbital Depot: GameDepot.cs)
+                break;
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
+                break;
+            case WorldSaveWriter.ToolsTag:
+                WorldReadUpgrades(r, ws); // (tool upgrades: GameSandboxUpgrades.cs)
                 break;
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
@@ -593,6 +602,8 @@ public sealed partial class Game
                 }
                 if (r.Has(2))
                     op.Barracks = r.U16(); // (a world from before the barracks has none: GameColonyLockdown.cs builds one)
+                if (r.Has(4))
+                    (op.Works, op.Depot) = (r.U16(), r.U16()); // (a world from before the depot has none: GameDepot.cs builds one)
                 if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
                     _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
                 break;
@@ -692,8 +703,9 @@ public sealed partial class Game
             var kind = (DigKind)r.U8();
             var at = r.At();
             var radius = r.F32();
-            if (kind <= DigKind.FillSand)
-                g.Apply(new DigOp(kind, at, radius));
+            var to = GroundShape.IsGrade(kind) ? r.At() : default; // (a grade's far end follows its radius)
+            if (kind <= GroundShape.LastKind)
+                g.Apply(new DigOp(kind, at, radius, To: to));
         }
     }
 
@@ -838,6 +850,8 @@ public sealed partial class Game
         FactionPlayerBack(p, rec.Offline); // (their faction again: GameSandboxFactions.cs)
         TutorialArrive(p, rec); // (where they were in the induction: GameTutorial.cs)
         DeathArrive(p, rec); // (their checkpoint, and whether they are dead for good: GameSandboxDeath.cs)
+        DepotArrive(p, rec); // (where they were on the Orbital Depot's run: GameDepot.cs)
+        UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)

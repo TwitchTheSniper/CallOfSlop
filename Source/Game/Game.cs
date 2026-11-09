@@ -55,8 +55,17 @@ public readonly record struct FeedEntry(double Time, string Text, bool Mine, Sys
 /// </summary>
 public sealed partial class Game : IDisposable
 {
-    /// <summary>The most players (people + bots) a server holds; each map has its own limit up to this (GameLobby.cs).</summary>
-    public const int MaxPlayers = Map.HardMaxPlayers;
+    /// <summary>
+    /// The player id space: every body with a player id (people, lobby bots, Sandbox spawned bots, story people) is under
+    /// this. Ids 0 to <see cref="MaxPeople"/> - 1 are the lobby's seats (people and the arena modes' bots, each map's own
+    /// limit up to that: GameLobby.cs); ids from <see cref="MaxPeople"/> up are for bodies the world spawns (Sandbox spawns,
+    /// story people: <see cref="FreeNpcId"/>), so hundreds of them never take a seat a person joining needs. Owner bytes
+    /// from here up are players away from a saved world (<see cref="WorldSession.OfflineBase"/>), and 255 is nobody.
+    /// </summary>
+    public const int MaxPlayers = 224;
+
+    /// <summary>The lobby's seats: people and lobby bots (each map has its own limit up to this: GameLobby.cs).</summary>
+    public const int MaxPeople = Map.HardMaxPlayers;
     private const int InputRedundancy = 4;
     private const int JitterBufferTarget = 2;
     private const int MaxStarvedTicks = 4;
@@ -221,7 +230,7 @@ public sealed partial class Game : IDisposable
             Players[0] = host;
             PlaceWaiting(host, 0); // you pick a loadout and click Respawn to drop in
             OnLocalSpawn(host);
-            WantedBots = Math.Clamp(bots, 0, MaxPlayers - 1);
+            WantedBots = Math.Clamp(bots, 0, MaxPeople - 1);
             _botSkill = botSkill;
             for (var i = 0; i < bots && FreeId() != null; i++) // the map's limit caps it (GameLobby.cs)
                 AddBot(botSkill);
@@ -1517,6 +1526,8 @@ public sealed partial class Game : IDisposable
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.FlakMult));
         if (kind == DamageKind.Bullet && victim.Perks.Has(PerkId.Entrenched) && IsDugIn(victim))
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.EntrenchedMult));
+        if (_bodyCount > 0 && attacker != victim && (attacker.Team == SbPeopleTeam || victim.Team == SbPeopleTeam))
+            amount = StoryMoodDamage(attacker, victim, amount); // (a story person's rage, panic...: GameStoryMoods.cs)
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
@@ -1537,6 +1548,8 @@ public sealed partial class Game : IDisposable
             StartLastStand(victim, now);
             return false;
         }
+        if (ShellTakesDeath(victim))
+            return false; // (a robot shell: only the shell is lost, GameRobotShell.cs)
         victim.Health = 0;
         victim.Alive = false;
         victim.Deaths++;
@@ -1634,10 +1647,29 @@ public sealed partial class Game : IDisposable
         _resolveBusy = true;
         var targets = nested ? new List<(Player P, Box Hitbox, HistoryEntry At)>() : _resolveTargets;
         targets.Clear();
+        AllocProfile.Mark("shot: targets");
+        // Hundreds of Sandbox bots: only bodies that could be near the shot's line are rewound (a generous bound: where the
+        // body is now against its line, its own speed over the rewind, the cone, the round's fall, a built gun's barrels).
+        var cull = Players.Count > MaxPeople && World.Map.Movers.Count == 0 && shooter.Sim.RideBody == 0 && spread < 0.6f && def.MuzzlePoints is not { Length: > 0 };
+        var rewindSec = (float)((ServerTick - rewindTo) / World.TickRate) + 0.1f;
+        var fall = ArcSpeed(def) is > 1f and var v0 ? 12f / (v0 * v0) : 0f; // (half of a generous gravity over speed squared: the drop at a distance squared)
+        var cone = spread * 1.5f + 0.05f; // (over tan(spread) below 0.6 rad)
         foreach (var p in Players.Values)
         {
             if (p == shooter || !p.Alive || p.SpawnTick > rewindTo)
                 continue;
+            if (cull && p.Sim.RideBody == 0)
+            {
+                var rel = p.Position - origin;
+                var along = Vector3.Dot(rel, dir);
+                var margin = 4f + p.Sim.Velocity.Length() * rewindSec;
+                if (along < -margin)
+                    continue; // behind the gun
+                var a = MathF.Max(along, 0f);
+                margin += a * cone + a * a * fall;
+                if (rel.LengthSquared() - along * along > margin * margin)
+                    continue; // nowhere near the line
+            }
             var at = HistoricState(p, rewindTo);
             RideTarget(shooter, ref at); // (on the shooter's own deck: in its frame, GameSandboxRide.cs)
             at.Position = CarryRewound(at.Position, rewindTo, ref at.Yaw); // on a moving platform: where the shooter saw it
@@ -1665,6 +1697,7 @@ public sealed partial class Game : IDisposable
 
         var harpooned = false;
         var arcV = ArcSpeed(def);
+        AllocProfile.Mark("shot: rays");
         foreach (var ray in rays)
         {
             var o = ray.Origin;
@@ -1768,6 +1801,7 @@ public sealed partial class Game : IDisposable
 
         if (pfx)
             _pFxHits.Clear();
+        AllocProfile.Mark("shot: damage");
         for (var di = 0; di < damage.Count; di++)
         {
             var (victim, dmg) = damage[di];
@@ -1803,6 +1837,7 @@ public sealed partial class Game : IDisposable
         if (_pveShotCount > 0)
             flags |= PveShotApply(shooter, def.Id, now); // the same for co-op enemies (GamePve.cs)
 
+        AllocProfile.Mark("shot: fx, net");
         if (_shotPenetrated)
             flags |= ShotPenetrated; // the origin follows the ends: every client marks both sides of the walls
         // Host-side feedback
@@ -1825,8 +1860,8 @@ public sealed partial class Game : IDisposable
     }
 
     // ServerResolveShot's scratch lists (the game thread only; a shot never fires another shot while it resolves).
-    private readonly List<(Player P, Box Hitbox, HistoryEntry At)> _resolveTargets = new(Map.HardMaxPlayers);
-    private readonly List<(Player Victim, float Damage)> _resolveDamage = new(Map.HardMaxPlayers);
+    private readonly List<(Player P, Box Hitbox, HistoryEntry At)> _resolveTargets = new(MaxPlayers);
+    private readonly List<(Player Victim, float Damage)> _resolveDamage = new(MaxPlayers);
     private readonly HashSet<Player> _resolveHeads = new();
     private readonly List<ShotRay> _resolveRays = new(16);
     private readonly List<Vector3> _resolveEnds = new(16);
@@ -1861,14 +1896,37 @@ public sealed partial class Game : IDisposable
         PlayHitConfirm(flags); // GameSounds.cs
     }
 
+    /// <summary>A free lobby seat (a person joining, a lobby bot), or null when the map is full.</summary>
     private byte? FreeId()
     {
-        if (Players.Count >= MapMaxPlayers)
+        if (SeatCount >= MapMaxPlayers)
             return null; // the map is full
-        for (byte id = 1; id < MaxPlayers; id++)
+        for (byte id = 1; id < MaxPeople; id++)
             if (!Players.ContainsKey(id))
                 return id;
         return null;
+    }
+
+    /// <summary>
+    /// A free id for a body the world spawns (a Sandbox spawned bot, a story person, a rescuer, riot officers): above the
+    /// lobby's seats, so they never stop a person joining; 0 when every one is taken.
+    /// </summary>
+    internal byte FreeNpcId()
+    {
+        for (var id = MaxPeople; id < MaxPlayers; id++)
+            if (!Players.ContainsKey((byte)id))
+                return (byte)id;
+        return 0;
+    }
+
+    /// <summary>Free ids for bodies the world spawns (<see cref="FreeNpcId"/>).</summary>
+    private int FreeBotIds()
+    {
+        var n = MaxPlayers - MaxPeople;
+        foreach (var id in Players.Keys)
+            if (id >= MaxPeople)
+                n--;
+        return Math.Max(0, n);
     }
 
     // =====================================================================
@@ -1914,6 +1972,7 @@ public sealed partial class Game : IDisposable
                 SendResourceState(sender); // felled trees so far (GameResources.cs)
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
+                SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
                 {
@@ -2217,6 +2276,12 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Tutorial:
                 OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
                 break;
+            case (byte)Msg.Shell when !IsServer && r.Has(2):
+                ReadShell(ref r); // who wears a robot shell (GameRobotShell.cs)
+                break;
+            case (byte)Msg.Depot when !IsServer && r.Has(14):
+                ReadDepot(ref r); // the Orbital Depot's steps (GameDepot.cs)
+                break;
             case (byte)Msg.ColonyAlarm when !IsServer:
                 ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)
                 break;
@@ -2228,6 +2293,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Opening when !IsServer:
                 ReadOpening(ref r); // the survival opening's beat (GameSandboxOpening.cs)
+                break;
+            case (byte)Msg.Corpse when !IsServer:
+                ReadCorpse(ref r); // a body the host settled, or one that went (GameCorpses.cs)
                 break;
             case (byte)Msg.Fate when !IsServer:
                 ReadFate(ref r); // where we wake after a death, and permadeath (GameSandboxDeath.cs)

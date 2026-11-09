@@ -43,6 +43,11 @@ public sealed partial class Game
         public byte Fight, Foe; // in a fight (GameStoryFights.cs): calm, fighting or fleeing; the foe's player id
         public int FoeEntity; // the foe's entity (-1: none)
         public double FightUntil; // game time: the fight, the flight, is over when nothing has happened since
+        public bool Wounded; // hurt below StoryFightHurt in this fight (the Wounded moment was had)
+        public short MoodOn; // their mood (GameStoryMoods.cs): the mood's id + 1 (0: none)
+        public double MoodUntil; // game time
+        public byte MoodCause; // whoever caused it: their player id (MoodCauseEntity -1: nobody)
+        public int MoodCauseEntity, MoodAbout; // story entities: whoever caused it, whom it is about (-1: none)
     }
 
     private readonly StoryBody[] _bodies = new StoryBody[StoryBodiesMax];
@@ -268,15 +273,7 @@ public sealed partial class Game
     /// <summary>A body for a person here (at the spot their step is at) or arriving (at the road's end), or null when there's no room.</summary>
     private Player? StoryBodySpawn(StoryEngine s, StoryAgent a, int place, bool arriving)
     {
-        if (FreeBotIds() <= 0)
-            return null; // (one id is always kept for a person joining)
-        byte id = 0;
-        for (var k = 1; k < MaxPlayers; k++)
-            if (!Players.ContainsKey((byte)k))
-            {
-                id = (byte)k;
-                break;
-            }
+        var id = FreeNpcId(); // (above the lobby's seats: a person joining always has one)
         if (id == 0)
             return null;
         var w = s.World;
@@ -290,6 +287,8 @@ public sealed partial class Game
             SpokeFor = a.Busy ? a.DoingFrom : -1, // (a step already under way when they appear isn't said again)
             HurtSaidAt = -1e9,
             FoeEntity = -1,
+            MoodCauseEntity = -1,
+            MoodAbout = -1,
         };
         StoryNearForget(id);
         var p = s.Rules.People;

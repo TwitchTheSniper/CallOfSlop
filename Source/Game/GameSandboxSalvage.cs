@@ -91,6 +91,7 @@ public sealed partial class Game
             return;
         SandboxSpawnsOrphan(p); // (what they spawned is nobody's now: GameSandboxSpawns.cs)
         OpeningLeave(p); // (mid-opening: kept as if woken in the colony, GameSandboxOpening.cs)
+        ShellLeaveGame(p); // (in a robot shell: back in their body first, GameRobotShell.cs)
         var kept = WorldLeaves(p); // (a saved world: what they have and what they built wait for them, GameWorldSave.cs)
         SandboxDeathLeave(p.Id); // (after their record took their checkpoint: GameSandboxDeath.cs)
         if (!kept)

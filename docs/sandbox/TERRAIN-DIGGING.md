@@ -90,8 +90,10 @@ ball of 0.8 m radius, one every 0.3 s while held, 10 units a cubic metre both wa
   never acts on what it laid: a new spot must clear every spot of the stroke by 1.1 radii across the ground
   (`SculptStroke`), so a stationary hold places once, and a sweep lays a line. Refused, with the reason on the HUD: it would
   bury a player or a construct (`Game.FillBuries`, column by column: only new ground inside a body's box counts), not enough carried, more than 16 m over the surface as built. Creative: free.
-- **What it places.** The wheel's outer ring round the tool: Stone, **Dirt** (the default, in the middle of the arc), Sand.
-  When none of the pick is carried it uses the first of dirt, stone, sand that is. The HUD line shows the choice and what is carried.
+- **What it places.** The wheel's outer ring round the tool holds the materials, Stone, **Dirt** (the default) and Sand (a green
+  dot on the pick), then the modes: **Dig** (the default, in the middle of the arc: the ring's marker), Flatten, Clean holes
+  and Fill slope ("Shaping" below). When none of the pick is carried it uses the first of dirt, stone, sand that is. The HUD line
+  shows the mode, the material and what is carried.
 - **A fill draws as what it was made of**, in the map's own dirt, rock or sand colour. A column remembers one fill, the last,
   from the lowest ground it added up (`_fillKind`, `_fillLo`): a stone fill with dirt laid over it digs and draws as dirt.
   Per-span materials would be exact and cost a list per column.
@@ -108,6 +110,33 @@ been worked over many times. The log is empty again when the map restores. Nothi
 Overhangs and pits follow the rules above. A pit can be dug too deep to climb out of; dirt carried builds a way out.
 Constructs and loose bodies near a change wake (`AfterDig`). Zombies and props are not checked by a fill. "Terrain sculpting"
 and "Terrain sculpting network" (`Source/App/SelfTestSculpt.cs`) cover all of this.
+
+## Shaping
+
+The drill's other three modes (protocol 215; `GroundShape.cs`, `TerrainEditsShape.cs`, `PlanetEditsShape.cs`, the input in
+`Program.SandboxSculpt.cs`). Each is one op in the log, so it syncs, replays to joiners and saves like a scoop. The table's
+`shapeRadius` (1.5 m) and `cleanRadius` (2 m) size them; a yellow outline shows what the next one touches.
+
+- **Flatten** (`DigKind.GradeDirt`, `GradeStone`, `GradeSand` with its two ends at one point). LMB held levels a pad of
+  `shapeRadius` round the crosshair to the height of the ground where the stroke began; RMB to the height of your feet. A
+  sweep lays pads 0.66 radii apart. Ground over the level is cut away up to `GroundShape.Headroom` (4 m) above it and carried
+  off as digging gives it; the gap under it is filled with the picked material, at most `GroundShape.Depth` (12 m) deep. What
+  the same op cuts counts towards what it fills, so levelling a bump into a dip pays for itself.
+- **Fill slope** (the same op with two ends). LMB on one end, LMB on the other: a ramp twice `shapeRadius` wide, its top the
+  straight line between the two ends' heights, cut and filled as Flatten. At most `GroundShape.MaxLength` (32 m) long. RMB
+  lets go of the first end, as does changing mode or tool. On a planetoid a height is a distance from the centre and the
+  ramp's top runs between the ends' altitudes.
+- **Clean holes** (`DigKind.SmoothDirt`, `SmoothStone`, `SmoothSand`). LMB held fills pits and ragged dig marks in a disc of
+  `cleanRadius`: the surface under the crosshair is closed (the most of its neighbours' heights within `GroundShape.Kernel`,
+  1.25 m, then the least of those), so a pit up to about 2.5 m across comes up to the ground round it and a slope, a bump or a
+  wide dip stays as it is. It only fills, at most `GroundShape.SmoothRise` (3 m) a go.
+
+The server checks reach (to the nearest point of a ramp), the 16 m over the surface rule, what is carried and burial (`FillBuries`
+through each op's own fill) exactly as for a fill, and is quiet when a Flatten or Clean holes spot needs nothing (a sweep goes over
+ground already done). A grade carries its far end after the op on the wire (`Msg.TerrainDig`, `CActKind.Sculpt`) and in a world
+save's ground section (`GNDS`), so an older build can't read the ground of a world saved with a grade in it. A plan of every column's top
+is made once for the ground's version (the measure, the burial checks and the op share it): a Clean holes op is about 0.5 ms, a
+32 m diagonal ramp about 0.1 ms.
 
 ## Next slices
 

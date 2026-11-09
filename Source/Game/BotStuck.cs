@@ -336,7 +336,7 @@ public sealed partial class Game
         var n = nav.Nodes.Length > 0 ? nav.Nearest(p.Position) : -1;
         if (n >= 0 && Flat(nav.Nodes[n] - p.Position) > 0.6f)
         {
-            b.RescueAt = nav.Nodes[n];
+            b.RescueAt = nav.At(n);
             b.RescueUntil = now + 1.2;
         }
     }
@@ -349,7 +349,7 @@ public sealed partial class Game
     {
         if (nav.Nodes.Length == 0)
             return BotStuckCause.None;
-        if (pos.Y < nav.MinNodeY - 10f)
+        if (pos.Y < nav.MinNodeY - 10f && !NavGraph.InDugColumn(pos))
             return BotStuckCause.Void;
         var n = nav.Nearest(pos, needSight: false);
         if (n < 0)
@@ -426,7 +426,7 @@ public sealed partial class Game
             if (d > 2f * 2f && d < bestD)
                 (best, bestD) = (i, d);
         }
-        return best >= 0 ? nav.Nodes[best] : null;
+        return best >= 0 ? nav.At(best) : null; // (a teleport: onto the ground as it is now, not over a pit or into a fill)
     }
 
     private static void StuckTeleport(Player p, Vector3 feet)

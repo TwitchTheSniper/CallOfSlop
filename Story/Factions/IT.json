@@ -58,7 +58,10 @@
     { "name": "Video Network", "tier": "Admin",
       "about": "admin rights: screens that show the web, video and cameras, on the network IT says it runs",
       "parts": [ "Browser Screen", "Medium Browser Screen", "Large Browser Screen", "Video Screen", "Medium Video Screen", "Large Video Screen",
-        "Camera Screen", "Medium Camera Screen", "Large Camera Screen" ] }
+        "Camera Screen", "Medium Camera Screen", "Large Camera Screen" ] },
+    { "name": "Remote Access", "tier": "Registered",
+      "about": "a beam that reaches what you can't: a tractor emitter, and the long lens, for registered users",
+      "parts": [ "Tractor Emitter", "Beam Lens Mk 5" ] }
   ],
   "rivals": { "The Call Centre": 25 },
   "voice": "IT HELPDESK",

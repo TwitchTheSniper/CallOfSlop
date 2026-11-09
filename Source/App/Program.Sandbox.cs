@@ -236,6 +236,7 @@ public static unsafe partial class Program
                       ^ (d.Role == PartRole.FluidTank ? ConstructFluid.LookKey(hit.Body, hit.Part) << 8 : 0) // (what a Fluid Tank holds, and any pipe it refuses)
                       ^ (d.Rotor != null ? ConstructRotor.LookKey(hit.Body, hit.Part) << 8 : d.Surface != null ? ConstructAero.LookKey(hit.Body, hit.Part) << 8 : 0) // (a rotor's speed and blades, a wing's stall speed)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
+                      ^ (hit.Body.Loose && ToolUpgrades.Current.ModuleOf(d.Id) is { } module ? (g.SandboxHands.Level(me.Id, module.Stat) + 1L) * 7919L << 24 : 0) // (a tool upgrade: what you have of it)
                       ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0); // (hands out: what the click does, and whether they are full)
             if (key != _sbLookKey)
             {
@@ -289,6 +290,7 @@ public static unsafe partial class Program
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
                     PartRole.AmmoBox => SandboxKeys.Line(d.Name, SandboxKeys.Join($"{part.Rounds} rounds", wrecked), part.Burn > 0 ? "ON FIRE" : null),
                     _ when part.Burn > 0 => SandboxKeys.Line(d.Name, hp, "ON FIRE"),
+                    _ when hit.Body.Loose && near && h.Tool != ConstructTool.Hands && ToolUpgrades.Current.ModuleOf(d.Id) is { } up => UpgradeLook(g, me, hit.Body, d, up.Stat, up.Level),
                     _ when hit.Body.Loose && d.PhysicsOnly => SandboxKeys.Line(d.Name, carriedIn, "physics gun only"),
                     _ when hit.Body.Loose && near => SandboxKeys.Line(d.Name, carriedIn, null, SandboxKeys.Do(use, "pick up")),
                     _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
@@ -380,6 +382,8 @@ public static unsafe partial class Program
             }
             else if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (ushort)hit.Part);
+            else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body is { Loose: true, PartCount: 1 } && ToolUpgrades.Current.ModuleOf(hit.Body.Parts[0].Def) != null)
+                g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part); // (a tool upgrade: F fits it, ConstructEditsUpgrades.cs)
             else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body.Loose && h.Held == ConstructParts.None)
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach)

@@ -352,8 +352,16 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 206: body styles phase 4 (docs/vehiclekit/BODY-STYLES.md, section 10): a faction's trim and fittings named by their keys ("Hull Loft (trim...", "(deco..."; HullLoft.Trim.cs) go on the wire as a lofted bay does, and the parts some phase-3 keys name changed (a capsule's side panes, a pane's shorter seal, a cage's ridge bar), so both ends must make the same part; a 205 peer makes stand-ins of the new ones.
     // 207: survival death options (GameSandboxDeath.cs, docs/sandbox/DEATH.md): a death byte after the survival byte in the Welcome, its bits in the lobby state's second Zombies byte, Msg.Fate at the end of Msg (where a player wakes, permadeath).
     // 208: the penal colony's lockdown (GameColonyLockdown.cs, docs/story/OPENING.md "Lockdown"): Msg.ColonyAlarm at the end of Msg.
-    // 209: body styles phase 5 (docs/vehiclekit/BODY-STYLES.md, section 11): lofted bays' keys take a fourth word (a cage's pattern, an open top, an upper floor and its hatch), and stairs and side pods are named by their keys ("Hull Loft (stair...", "(pod..."; HullLoft.Spaces.cs); all go on the wire as a lofted bay does, so both ends must make the same part; a 208 peer makes stand-ins of them.
-    public const byte ProtocolVersion = 209;
+    // 209: co-op story opening and induction (docs/story/OPENING.md, docs/sandbox/TUTORIAL.md "Together"): TutorialOp.Group (server to one client: their group's progress on the step) at the end of TutorialOp.
+    // 210: corpses that pile up and that players walk over (GameCorpses.cs, docs/sandbox/CORPSES.md): Msg.Corpse at the end of Msg.
+    // 211: the Joystick (AnalogLever.cs, an Analog Lever with "axes": 2): a u16 Y after CActKind.AnalogLever's flags, and after each value of CBodyKind.Analog.
+    // 212: hundreds of Sandbox bots (GameSandboxSpawns.cs): player ids up to 223 (spawned bodies above the 32 lobby seats), the snapshot's presence mask a word count and 64-bit words (PlayerMask), up to 15 snapshot parts, and the Sandbox hands state sends people always and a spawned body only while its hand holds something.
+    // 213: robot shells (GameRobotShell.cs, docs/sandbox/CONSTRUCTS.md "Robot shells"): Msg.Shell at the end of Msg, CActKind.ShellLeave at the end of CActKind.
+    // 214: the Orbital Depot (GameDepot.cs, docs/story/DEPOT.md): Msg.Depot at the end of Msg.
+    // 215: per-player tool upgrades (docs/sandbox/TOOL-UPGRADES.md): each player's levels after their hands in the Sandbox mode state (state version 4), CActKind.GrabThrow at the end of CActKind.
+    // 216: the ground drill's shaping modes (TerrainEditsShape.cs, GroundShape.cs): DigKind.GradeDirt..SmoothSand at the end of DigKind; a grade's far end follows its op on the wire (Msg.TerrainDig) and its point in CActKind.Sculpt.
+    // 217: body styles phase 5 (docs/vehiclekit/BODY-STYLES.md, section 11): lofted bays' keys take a fourth word (a cage's pattern, an open top, an upper floor and its hatch), and stairs and side pods are named by their keys ("Hull Loft (stair...", "(pod..."; HullLoft.Spaces.cs); all go on the wire as a lofted bay does, so both ends must make the same part; a 216 peer makes stand-ins of them.
+    public const byte ProtocolVersion = 217;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

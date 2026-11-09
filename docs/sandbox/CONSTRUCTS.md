@@ -397,7 +397,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
 
 | Key | With the physics gun out |
 | --- | --- |
-| Fire (hold) | Grab the construct, wreck or loose part under the crosshair (30 m reach; 12 m in survival). Let go to drop it (it keeps its speed: a flick throws it). |
+| Fire (hold) | Grab the construct, wreck or loose part under the crosshair (30 m reach; 12 m in survival, more with [tool upgrades](TOOL-UPGRADES.md)). Let go to drop it (it keeps its speed: a flick throws it). |
 | Mouse wheel | While holding: pull it in or push it out (12% of the distance a notch, at least 25 cm; 1.2 m nearest). |
 | Interact (F) held + mouse | While holding: turn it (about up, and about your right); the view stands still meanwhile. Sprint (Shift) snaps its WORLD turn to whole 45 degree steps about the world's axes (or those of another construct within 2 m; the key line says "snap: world" or "snap: construct N"): a notch of mouse left/right is 45 degrees about up, up/down about the world horizontal axis nearest your right, and while Shift stays down the piece keeps its world turn as you turn the view. |
 | Aim | While holding: **freeze** it where it is and let go. Not holding: freeze or unfreeze the piece of a mechanism you look at. |
@@ -417,7 +417,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
   every step, so the held thing only turned with the look), and of a coupled pair the held one leads on the hitch while the other follows (`Contact.KinA/KinB`). A held body never sleeps. The holder's own
   client draws the piece at the pose its aim asks for now (`ConstructGrab.Predict`, no protocol change), never further from
   the server's pose than 15 cm plus 0.2 s of the motion in hand; other players see the server's motion.
-- **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 60 t (a tier 5 Foundry is 48 t); survival 20 kN, up to 500 kg (heavier: "too
+- **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 60 t (a tier 5 Foundry is 48 t); survival 45 kN, up to 1,500 kg where a player starts (Karl, 2026-11-08; was 20 kN and 500 kg), raised per player by [tool upgrades](TOOL-UPGRADES.md) (heavier: "too
   heavy for the physics gun"), so heavy things are slow to pull.
 - **Refused**: players (a construct with anyone in a seat), anything anchored to the ground (a foundation, a pinned
   construct), something another player holds (one holder per construct), and in survival an enemy construct that is
@@ -436,7 +436,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
   is what a save will hold, and the self-test round-trips it.
 - **Cost**: nothing when unused: the physics checks one byte a body, the server one short a player.
 - **A free joint on its own** (`ConstructGrab.AimLeaf`, `LeafJoint`, `DriveJoint`, `ConstructEdits.GrabJoint`): the beam on a Free Slider's carriage or a free rotation part's moving side, or on anything that hangs on one, moves that joint alone: along its rail between the stops, or about its axis inside any limits. The rest of the construct stays where it is, and a frozen or anchored construct stays frozen or anchored. On the rail or a free part's base the beam takes the whole construct, as before.
-  - **What it carries goes with it**, at the beam's strength (the same acceleration as a body of that mass, plus its weight, so it hangs against gravity), and survival's 500 kg cap counts what the joint carries. It stops on the stops and on what it meets. The beam pushes against the player, not the base, so a free body isn't shoved back. Let go, it keeps its speed.
+  - **What it carries goes with it**, at the beam's strength (the same acceleration as a body of that mass, plus its weight, so it hangs against gravity), and survival's cap (1,500 kg, or the player's upgraded lift) counts what the joint carries. It stops on the stops and on what it meets. The beam pushes against the player, not the base, so a free body isn't shoved back. Let go, it keeps its speed.
   - **A carriage with nothing on it** has no joint, so the first grab makes one (it stays, carrying nothing, and is drawn where it was left). Hanging a part on such a carriage puts it back at its rest, as for any empty joint.
   - **Refused, with the reason on the look line**: a Linear Actuator ("its motor holds it: use its Set signal"), a Shaft Linear Drive ("its lead screw holds it: turn its shaft"), a mixed rail a powered section runs, a Lock signal that is on, someone seated on it. What hangs on a powered rail is taken with the whole construct as before; when that is refused too, the look line gives the motor's or screw's reason.
   - **Aim** freezes the held piece and lets go ([Pieces of a mechanism](#pieces-of-a-mechanism)). The wheel changes the distance; F + mouse does nothing.
@@ -1470,7 +1470,7 @@ Code: `Source/Game/GameSandboxSurvival.cs`.
   chosen in the lobby starts with `Constructs/SurvivalStart.json`: Starter Assembler, Smelter, Foundry and Sawmill (each a machine,
   its bins on chutes and a Small Genset on a Fuel Tank, anchored on 4 m slabs), a Drill Rig and a Saw Rig. Each goes on the nearest
   clear, level ground round the rack (`SandboxKitPiece`; no room: it is left out and logged). They belong to nobody, as the map's
-  constructs do. A rig starts frozen, upright, and is under the survival physics gun's 500 kg while its bin is near empty: carry
+  constructs do. A rig starts frozen, upright, and is under the survival physics gun's starting 1,500 kg while its bin is near empty: carry
   it to a vein, hold the bit just over the ground, freeze it. A map's `"survivalStart": ["name", ...]` (blueprints or parts)
   replaces the list and also applies to a map that is survival by itself; `[]` gives nothing. Without it such a map gets no kit.
 - **What a fresh game can reach** (choices made, the developer may change them): gather iron, stone, sand and wood; smelt, saw and
@@ -2055,6 +2055,35 @@ The user: "a wireless seat connection. I want the player to be able to control d
 - **A far drone.** The world is whole on every client. What falls off with distance is how often a body's pose goes out, so a pilot's poses are centred on the drone (`SandboxInterestAt`), and what is round it stays current. A piloted body goes in every pose packet already, as a driven one does.
 - **Scout Drone**: a Drone Frame, four Drone Rotors for lift, two Drone Pushers at the back for W and A/D, a Drone Battery, a receiver, a Driving Module and a camera, 34 kg. Sprint lifts it into the hover hold. Light rotors matter: the hover hold is weak off a planet against a big fan on a small body, and a 750 kg version on Light Lift Fans tumbled under its own pushers.
 
+## Robot shells
+
+Karl's idea (2026-11-08): a body you can risk. Code: `Source/Constructs/ConstructShell.cs` (the part keys, which shell a chair
+reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the save); parts made by `tools/constructs/shell_parts.py`
+(`Constructs/Parts/Shells`), recipes in `tools/constructs/assembling.py`. The story's first use of them is the Orbital Depot
+(docs/story/DEPOT.md).
+
+- **Robot Shell**: a standing robot, its own construct of one part (`"shell": {"body": true}`), with a channel. A shell fitted
+  onto something else can't be woken (stand it on its own).
+- **Shell Control Chair**: a seat with `"shell": {"range": 3000}` and a channel. Sit in it for 2 s (`ShellLinkSeconds`) and you
+  wake in the nearest Robot Shell on its channel within range that is yours, nobody's or your faction's.
+- **The swap.** The player is moved onto the shell and the shell's construct is taken away while they wear it, so a shell is
+  played exactly as a player is: movement, prediction, every tool, seats, driving and flying. The body's place in the chair,
+  its health, its hands (tool, held part, seat) and its backpack are kept on the server (`ShellRun`); the shell starts with
+  full health, empty hands and an empty backpack of the same size. The chair stays taken (its sitter is still them).
+- **Leaving.** The Esc menu's "Leave the robot shell" (`CActKind.ShellLeave`), the link dropping (the chair gone or wrecked, or
+  the shell more than the chair's range from it, checked every `ShellCheckEvery` ticks), or leaving the game: a Robot Shell
+  stands again where they were (frozen, its channel and owner kept) and they are back in the chair, seated. They stand up and
+  sit again to link again.
+- **Destroyed.** A hit that would kill someone in a shell (`DamagePlayer` asks `ShellTakesDeath` first) destroys the shell: no
+  death, no kill line, no respawn, whatever the world's death rules; they wake in the chair with their body's health and things.
+  Whatever the shell held or carried in its pack is set down where it was, as a death drops a pack.
+- **Seen as a robot.** Every peer knows who wears a shell (`Player.InShell`, `Msg.Shell`, protocol 213) and draws them in
+  steel with a lit visor and their colour as the accent (`BodyColors.Robot`, `BodyModel.RobotVariant`). The HUD says so.
+- **Saves.** A world saved while someone wears a shell records their body (in the chair) and its things (`ShellCatch`). A shell
+  being worn is not a construct, so a game closed with someone in a shell loses that shell (leaving the game first stands it).
+
+Not yet: a body drawn in the chair while you are away; a shell's damage kept between visits.
+
 ## Touch panels
 
 With Hands out and empty, the crosshair on a panel is a finger (`PanelTouch.cs`, `Program.SandboxPointer.cs`). A panel declares its buttons in its part file, and any panel can have them:
@@ -2118,7 +2147,7 @@ Fitting time grows from x1 to x2.
 - **A building, not a brick.** Boxes are in units of the machine's width (`BIG_WIDTH`), so every socket lands on the 0.25 m grid and a building has no pads. Each has a floor plate you step onto (2% of its width), stepped solids and
   open space: a Smelter or Foundry has an aisle across it, between the furnace and the tray, wide enough to walk through at every tier; a Sawmill is two open bays and a saw frame; an Assembler is an open frame with a low hopper at the back. Less than 55% of the bounds is solid.
 - **Reach.** A part wider than 3.2 m a side (`ConstructEdits.BigPartHalf`) is reached at the point of its bounds nearest the eye, not its centre (`ConstructEdits.ReachPoint`): the attach tool, paint, configure tool, F and the look ray agree, and you use a 10 m machine from beside it. A smaller part keeps the old rule.
-- **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap stays 500 kg, so a machine goes on by the attach tool or stays where it was built.
+- **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap starts at 1,500 kg ([tool upgrades](TOOL-UPGRADES.md) raise it to 25 t), so a heavy machine goes on by the attach tool or stays where it was built.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
   a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
@@ -2199,7 +2228,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 - **Network (protocol 118).** The recipe is a setting; the mixed input is the Foundry's (bit 64), the parts input is a store's kinds (bit 16), and bit 128 of the flags byte adds u8 blocked and u16 refused part. The job is server-only, and a body is any other construct.
 - **Performance.** `ConstructAssembling.Step` runs at 10 Hz and looks only at constructs with `HasAssembler`; a recipe is an array index; nothing allocates except the body a batch makes.
 
-**In survival ([Creative or Survival](#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Tier 1 machines ask only for what a tier 1 Assembler can make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun stops at 500 kg, so a built machine stays where it left until the attach tool fits it.
+**In survival ([Creative or Survival](#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Tier 1 machines ask only for what a tier 1 Assembler can make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun starts at 1,500 kg (a player's Lift Coils raise it), so a heavy built machine stays where it left until the attach tool fits it.
 
 **Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, tier gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
 
@@ -5665,11 +5694,13 @@ world"): Msg.CAct `Spawn` (u8 what, u8 difficulty, u8 gun kind, u8 its value, u8
 and `ClearSpawns`. The server checks the permission (joined players may spawn unless the host turns that off in the Spawn
 tab), the spot (`SandboxSpawnSpot`: ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and
 the caps (a request over a cap is cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a
-bot a tick, 8 individual zombies a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+4 bots a tick, 8 individual zombies a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks). A tick's new bots share
+one roster message.
 
-**Joined players** have the same tab within limits of their own, so a client can't take the host's tick: at most
-`SpawnClientBots` (8) bots and `SpawnClientZombies` (64) zombies out at once, spawners on their constructs included, all
-under the host's bot cap (16 by default, shared with everyone) and the individual tier's cap (300 zombies at once, shared).
+**Joined players** have the same tab. Bots have no limit of their own any more (Karl, 2026-11-08: fights of hundreds):
+`SpawnClientBots` is the whole bot cap, shared with everyone, which the host can lower in the Spawn tab ("Most bots";
+192 by default, the most there are ids for). Zombies stay limited: `SpawnClientZombies` (64) out at once, spawners on
+their constructs included, under the individual tier's cap (300 zombies at once, shared).
 Their zombies are always individuals: the crowd and mass tiers have no owners, so they couldn't be counted or cleared per
 player. A client's clear (**Clear mine**) takes only what is theirs, even when the host has turned their spawning off; the
 host's Clear all takes everything. What a player spawned is nobody's once they leave, so the next person given that id
@@ -5679,8 +5710,20 @@ neither inherits it nor has it count against them.
 mode state like any team. The Sandbox's `AreEnemies`: enemy bots against everyone else and never each other; friendly bots
 never against people or each other; people still free-for-all among themselves. A friendly bot follows whoever spawned it
 (a spawner's holds near the spawner), and with zombies within 22 m fights them as a Zombies co-op bot does; an enemy bot
-hunts. Spawned bots never respawn: 3 s after dying they leave. Bots need player ids: at most 28 spawned bots (the host's
-cap, 16 by default; one id is always kept free for a person joining).
+hunts. Spawned bots never respawn: 3 s after dying they leave.
+
+**Ids and scale.** Every body needs a player id (a byte). Ids 0 to 31 are the lobby's seats, for people (and the arena
+modes' bots); ids 32 to 223 (`Game.FreeNpcId`) are for bodies the world spawns: Spawn tab and spawner bots, the story's
+people, the opening's rescuers, the colony's riot officers. So there are at most 192 such bodies at once
+(`SpawnBotCapMax`), and a world full of them never stops a person joining. Owner bytes from 224 up are players away from
+a saved world (`WorldSession.OfflineBase`; 31 records fit, a later one's things are nobody's while they're away). The
+snapshot's presence mask has a bit per id (`PlayerMask`, protocol 212) and a snapshot splits into up to 15 parts. Far
+bodies already go every other snapshot; the Sandbox hands state sends a spawned body only while its hand holds
+something. `--bot-bench [sizes] [--seconds S] [--net]` measures a fight (README, "Testing without playing"): on the
+cloud box 183 bots fighting cost about 6 ms a server tick (budget 8), 100 about 3 ms; a client gets about 115 KB/s of
+snapshots with 190 bodies. What keeps it there: a crowded scan looks at the nearest 12 enemies in view, nearest first
+(`BotScanLooksCrowded`), and a shot only rewinds bodies near its line (`ServerResolveShot`'s cull). Ragdolls stay
+capped by their pool (`Ragdolls.Capacity`), so a battlefield keeps the newest bodies.
 
 **Zombies**: the Sandbox gives the Zombies AI a stand-in Zombies map (`SandboxZMap`: one area over the whole map, one
 spawner out of the ground, no doors, windows or buyables, a crowd so the mass horde is on), ticked from the Sandbox tick
@@ -6165,6 +6208,15 @@ Seats and Logic > Controls). Wire it into any data input: an engine's throttle p
   collision, so a hidden box stands where it swings for the crosshair.
 - The lever held is a part index another player's edit can shift, so it is stamped when taken and checked each frame:
   a hand on a lever that changed just comes off.
+- **The Joystick** (Joystick, Medium and Large, from the same script) is an Analog Lever with `"axes": 2` in its logic
+  block (`ConstructPartDef.Stick`): a stick in a square gate that goes any way. `value` is its X (the tip towards the
+  part's +x) and `valueY` its Y (towards +z, as a lever's), each with a rest (`rest`, `restY`); `snap`, `low`, `high`
+  and `spring` serve both. It puts X out on its first output (`x`, the part itself) and Y on its second (`y`,
+  `CPart.Out1`), so link Y from the `y` port in the linking tool's picker. Out of the box it springs back to the middle
+  and puts out -1 to 1. The hand drags it the same way: the mouse along the screen's picture of the part's +x moves X,
+  square to that moves Y; the wheel leaves it alone. Both axes ride `CActKind.AnalogLever` and `CBodyKind.Analog`
+  (a u16 Y each since protocol 211, 0 on a lever) and are settings, so saves, blueprints and joiners keep them. Its
+  boxes are a `"stick"` rig: tilted about the part's z by X and its x by Y, 35 degrees either way (`AnalogLever.StickTurn`).
 
 ### The Nudge tool
 

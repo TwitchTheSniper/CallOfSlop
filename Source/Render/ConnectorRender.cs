@@ -18,6 +18,11 @@ public static class ConnectorRender
 
     // The tool's ghost (Program.SandboxConnectors.cs sets it each frame) and the line under the crosshair.
     public static bool PreviewOn, PreviewOk;
+
+    /// <summary>The ground drill's shaping outline (Program.SandboxSculpt.cs): a ring of <see cref="ShapeRadius"/> at each end, the sides between.</summary>
+    public static bool ShapeOn, ShapeOk;
+    public static Vector3 ShapeA, ShapeB, ShapeUp = Vector3.UnitY;
+    public static float ShapeRadius;
     public static Vector3 PreviewA, PreviewB;
     public static ConnectorKind PreviewKind;
     public static byte PreviewSize;
@@ -244,9 +249,11 @@ public static class ConnectorRender
     {
         DrawNoCollides(gfx, world);
         var aim = AimConnector >= 0 && AimConnector < world.ConnectorCount;
-        if (!PreviewOn && !aim)
+        if (!PreviewOn && !aim && !ShapeOn)
             return;
         gfx.SetDepthTest(false);
+        if (ShapeOn)
+            DrawShape(gfx);
         if (aim && world.EndPoint(world.Connectors[AimConnector].A, out var a) && world.EndPoint(world.Connectors[AimConnector].B, out var b))
         {
             ref var cn = ref world.Connectors[AimConnector];
@@ -268,5 +275,39 @@ public static class ConnectorRender
             gfx.Draw(Matrix4x4.CreateScale(MathF.Max(r * 4f, 0.04f)) * Matrix4x4.CreateTranslation(PreviewB), colour, 0.85f, mode: 2);
         }
         gfx.SetDepthTest(true);
+    }
+
+    /// <summary>The shaping outline: rings at the ends and the ramp's two sides, green or red.</summary>
+    private static void DrawShape(Renderer gfx)
+    {
+        var colour = ShapeOk ? new Vector3(0.95f, 0.8f, 0.35f) : new Vector3(1f, 0.3f, 0.25f);
+        var up = ShapeUp.LengthSquared() > 1e-6f ? Vector3.Normalize(ShapeUp) : Vector3.UnitY;
+        var lift = up * 0.05f;
+        var any = MathF.Abs(up.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX;
+        var u = Vector3.Normalize(Vector3.Cross(up, any));
+        var v = Vector3.Cross(up, u);
+        const int Pieces = 20;
+        for (var end = 0; end < 2; end++)
+        {
+            var c = (end == 0 ? ShapeA : ShapeB) + lift;
+            if (end == 1 && Vector3.DistanceSquared(ShapeA, ShapeB) < 1e-4f)
+                break;
+            var prev = c + u * ShapeRadius;
+            for (var i = 1; i <= Pieces; i++)
+            {
+                var t = i * (MathF.Tau / Pieces);
+                var p = c + (u * MathF.Cos(t) + v * MathF.Sin(t)) * ShapeRadius;
+                RouteRender.Line(gfx, prev, p, colour, 0.8f, 0.025f);
+                prev = p;
+            }
+        }
+        var along = ShapeB - ShapeA;
+        along -= up * Vector3.Dot(along, up);
+        if (along.LengthSquared() < 1e-4f)
+            return;
+        var side = Vector3.Normalize(Vector3.Cross(up, along)) * ShapeRadius;
+        RouteRender.Line(gfx, ShapeA + lift + side, ShapeB + lift + side, colour, 0.8f, 0.03f);
+        RouteRender.Line(gfx, ShapeA + lift - side, ShapeB + lift - side, colour, 0.8f, 0.03f);
+        RouteRender.Line(gfx, ShapeA + lift, ShapeB + lift, colour, 0.5f, 0.015f);
     }
 }

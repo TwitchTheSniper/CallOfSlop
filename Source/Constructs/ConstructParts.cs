@@ -384,7 +384,7 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 /// How a suspension's box moves with its wheel: <see cref="Hub"/> goes with the wheel (a knuckle, a strut's rod), <see cref="Arm"/>
 /// turns about its pivot by the arm's angle, <see cref="Leg"/> is drawn stretched between a fixed point and one that moves (a damper).
 /// </summary>
-public enum BoxRig : byte { None, Hub, Arm, Leg, Lever, Knob, Slide, Flip, Press } // (Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value: AnalogLever.cs)
+public enum BoxRig : byte { None, Hub, Arm, Leg, Lever, Knob, Slide, Flip, Press, Stick } // (Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value; Stick: a Joystick's, tilted both ways by its X and Y: AnalogLever.cs)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -731,6 +731,8 @@ public sealed class ConstructPartDef
     public OfficeKind Office; // a Fax Machine or a Computer: the IT Department's lines (OfficeParts.cs)
     public bool CameraScreen => Array.Exists(Panels, x => x.Source == "camera");
     public float RemoteRange, CameraFov;
+    public bool ShellBody; // a Robot Shell: a body a player wakes in from a Shell Control Chair (ConstructShell.cs)
+    public float ShellRange; // a Shell Control Chair: how far its shells may be, metres (0: not a chair)
     public Vector3 CameraAt;
     public bool IsPress, IsLathe, IsPressDie; // ConstructPress.cs
     public PressBayDef[] PressBays = [];
@@ -748,6 +750,7 @@ public sealed class ConstructPartDef
     /// <see cref="ConstructRoutes.DataPort"/>. Empty: the one port.
     /// </summary>
     public string[] DataIn = [], DataOut = [];
+    public bool Stick; // an Analog Lever with "axes": 2, a Joystick: X and Y (AnalogLever.cs)
     public float DecoupleKick, AntiShare, AntiRadius; // a Decoupler: the m/s it parts its two sides at; Anti-Grav: the share of weight it cancels, and its radius (ConstructBoost.cs)
     public float Gyro; // a Flight Stabilizer: the N m its gyro turns the craft about its up with (ConstructFlight.cs)
 
@@ -1009,6 +1012,19 @@ public static partial class ConstructParts
             badTable++;
             Console.WriteLine($"REFUSED Categories.json: {PartCategories.Current.Problem}");
         }
+        if (ToolUpgrades.Current.Problem.Length > 0)
+        {
+            badTable++;
+            Console.WriteLine($"REFUSED ToolUpgrades.json: {ToolUpgrades.Current.Problem}");
+        }
+        else
+            foreach (var st in ToolUpgrades.Current.Stats)
+                for (var k = 0; k < st.Levels.Length; k++)
+                    if (Find(st.Levels[k].Part) == null)
+                    {
+                        badTable++;
+                        Console.WriteLine($"REFUSED ToolUpgrades.json: {st.Name} level {k + 1} names \"{st.Levels[k].Part}\", which isn't a part");
+                    }
         var catalogue = SandboxCatalogue.Make().Parts;
         foreach (var g in catalogue.Groups)
         {
@@ -1214,7 +1230,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "requisition", "media", "speaker",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1443,7 +1459,7 @@ public static partial class ConstructParts
         ReadFlames(root, d, file);
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
-        d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide).ToArray(); // (an Analog Lever's rig is its handle)
+        d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
         d.BoundsMin = new Vector3(float.MaxValue);
@@ -1716,6 +1732,7 @@ public static partial class ConstructParts
         ParseSurface(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
+        ConstructShell.Parse(d, root, file); // (robot shells and their chairs: ConstructShell.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
         ConstructSpeakers.Parse(d, root, file);
@@ -2041,7 +2058,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load", "rail", "station", "modular"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load", "rail", "station", "modular", "axes"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -2096,6 +2113,17 @@ public static partial class ConstructParts
             d.DataOut = ["alive", "spawned"]; // (how many it has alive; a pulse each time it spawns)
         }
         LogicBlocks.Ports(d, Opt(b, "ports") is { } wide ? (int)Num(wide, file, "logic.ports") : 0);
+        if (Opt(b, "axes") is { } axes)
+        {
+            var n = (int)Num(axes, file, "logic.axes");
+            if (d.Logic != CLogic.AnalogLever || n is < 1 or > 2)
+                throw new ConstructPartException($"{file}: \"logic.axes\" is an Analog Lever's, 1 or 2 (2: a Joystick)");
+            if (n == 2)
+            {
+                d.Stick = true;
+                d.DataOut = ["x", "y"]; // (X its first output, Y its second: AnalogLever.Step)
+            }
+        }
         d.TextSlots = Opt(b, "text") is { } texts ? (int)Num(texts, file, "logic.text") : 0;
         if (d.TextSlots is < 0 or > 2)
             throw new ConstructPartException($"{file}: \"logic.text\" is how many messages it holds, 0 to 2");

@@ -18,6 +18,8 @@ public static class AllocProfile
     private const int MaxSections = 128;
     private static readonly string[] Names = new string[MaxSections];
     private static readonly long[] Bytes = new long[MaxSections];
+    private static readonly long[] Ticks = new long[MaxSections]; // Stopwatch ticks a section took (--bot-bench)
+    private static long _markTime;
     private static int _count;
     private static int _current = -1;
     private static long _mark;
@@ -35,8 +37,12 @@ public static class AllocProfile
         var now = GC.GetAllocatedBytesForCurrentThread();
         if (_current >= 0)
             Bytes[_current] += now - _mark;
+        var t = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (_current >= 0)
+            Ticks[_current] += t - _markTime;
         _current = IndexOf(section);
         _mark = GC.GetAllocatedBytesForCurrentThread();
+        _markTime = System.Diagnostics.Stopwatch.GetTimestamp();
     }
 
     /// <summary>The running section ends (nothing is charged until the next <see cref="Mark"/>).</summary>
@@ -46,7 +52,10 @@ public static class AllocProfile
             return;
         var now = GC.GetAllocatedBytesForCurrentThread();
         if (_current >= 0)
+        {
             Bytes[_current] += now - _mark;
+            Ticks[_current] += System.Diagnostics.Stopwatch.GetTimestamp() - _markTime;
+        }
         _current = -1;
     }
 
@@ -54,6 +63,7 @@ public static class AllocProfile
     public static void Reset()
     {
         Array.Clear(Bytes);
+        Array.Clear(Ticks);
         _current = -1;
     }
 
@@ -76,6 +86,16 @@ public static class AllocProfile
         var sb = new StringBuilder();
         foreach (var i in idx)
             sb.Append(sb.Length > 0 ? ", " : "").Append(Names[i]).Append(' ').Append((Bytes[i] / Math.Max(1, ticks)).ToString("0.#"));
+        return sb.Length > 0 ? sb.ToString() : "none";
+    }
+
+    /// <summary>The <paramref name="n"/> sections that took longest, as "name 0.12" ms per tick (the marks' own cost included; allocates).</summary>
+    public static string TopTime(int n, double ticks)
+    {
+        var idx = Enumerable.Range(0, _count).Where(i => Ticks[i] > 0).OrderByDescending(i => Ticks[i]).Take(n);
+        var sb = new StringBuilder();
+        foreach (var i in idx)
+            sb.Append(sb.Length > 0 ? ", " : "").Append(Names[i]).Append(' ').Append((Ticks[i] * 1000.0 / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, ticks)).ToString("0.00"));
         return sb.Length > 0 ? sb.ToString() : "none";
     }
 

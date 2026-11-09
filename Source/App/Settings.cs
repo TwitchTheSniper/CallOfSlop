@@ -106,6 +106,7 @@ public sealed class Settings
     public BloodMode BloodOverlay = BloodMode.Full; // Settings > Video "Blood overlay": screen splatters by your health + blood marks on bodies (BloodOverlay.cs, BodyBloodRender.cs)
     public BloodColour BloodColour = BloodColour.Red; // Settings > Video "Blood colour": red or dark
     public GoreMode Gore = GoreMode.Full; // Settings > Video "Gore": meaty gibs from animals and blast kills, blood splats (Source/Props/Gibs.cs)
+    public GoreLasting GoreLasting = GoreLasting.Fade; // Settings > Video "Bodies and gore": dead bodies and gibs fade or stay (Ragdolls.Stay, Gibs.Stay; a host's choice holds for the bodies it settles, GameCorpses.cs)
     public FrenzyGunSoundMode FrenzyGunSound = FrenzyGunSoundMode.Full; // Settings > Audio "Frenzy gun sound": per-class frenzy layers on your gun (Source/Audio/FrenzyGunSound.cs)
 
     /// <summary>Camera head bob when moving, in percent (0 = none, the steady camera; 100 = full). See HeadBob.</summary>
@@ -492,12 +493,12 @@ public sealed class Settings
                     case "weapon_tweaks": s.AllowWeaponTweaks = v == "1"; break;
                     case "dev_tools": s.AllowDevTools = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
-                    case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPlayers - 1); break;
+                    case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPeople - 1); break;
                     case "difficulty" when Enum.TryParse<BotDifficulty>(v, out var d): s.Difficulty = d; break;
                     case "bot_gear": s.BotGear = CallOfSlop.BotGear.Parse(v); break;
                     case "port" when ushort.TryParse(v, out var p) && p > 0: s.Port = p; break;
                     case "upnp": s.UseUpnp = v == "1"; break;
-                    case "host_bots" when int.TryParse(v, out var i): s.HostBots = Math.Clamp(i, 0, Game.MaxPlayers - 2); break;
+                    case "host_bots" when int.TryParse(v, out var i): s.HostBots = Math.Clamp(i, 0, Game.MaxPeople - 2); break;
                     case "join_address": s.JoinAddress = CleanAddress(v); break;
                     case "map" when Maps.Find(v) != null: s.MapName = v; break;
                     case "map_random": s.MapRandom = v == "1"; break;
@@ -560,6 +561,7 @@ public sealed class Settings
                     case "blood_overlay" when Enum.TryParse<BloodMode>(v, true, out var bo) && Enum.IsDefined(bo): s.BloodOverlay = bo; break;
                     case "blood_colour" when Enum.TryParse<BloodColour>(v, true, out var bc) && Enum.IsDefined(bc): s.BloodColour = bc; break;
                     case "gore" when Enum.TryParse<GoreMode>(v, true, out var gm) && Enum.IsDefined(gm): s.Gore = gm; break;
+                    case "gore_lasting" when Enum.TryParse<GoreLasting>(v, true, out var gl) && Enum.IsDefined(gl): s.GoreLasting = gl; break;
                     case "frenzy_gunsound" when Enum.TryParse<FrenzyGunSoundMode>(v, true, out var fg) && Enum.IsDefined(fg): s.FrenzyGunSound = fg; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action is >= 0 and < GameAction.COUNT && int.TryParse(v, out var code):
@@ -702,6 +704,7 @@ public sealed class Settings
                     $"impact_decals={ImpactDecals}",
                     $"frenzy_visuals={FrenzyVisuals}",
                     $"gore={Gore}",
+                    $"gore_lasting={GoreLasting}",
                     $"frenzy_gunsound={FrenzyGunSound}",
                     $"blood_overlay={BloodOverlay}",
                     $"blood_colour={BloodColour}",
