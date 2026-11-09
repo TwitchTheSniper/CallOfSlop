@@ -189,6 +189,9 @@ public static unsafe class LightGrid
 
     // ---- Dynamic lights ---------------------------------------------------------------------------------------------
 
+    /// <summary>Dynamic lights this frame still has room for (phase 7b: lamps on constructs take what is left: ConstructLamps.cs).</summary>
+    public static int DynamicFree => MaxDynamic - _dynCount;
+
     /// <summary>Adds a light for this frame only (a muzzle flash, a blast); at most <see cref="MaxDynamic"/>, the rest are dropped.</summary>
     public static void AddDynamic(Vector3 pos, Vector3 color, float range)
     {
@@ -276,15 +279,20 @@ public static unsafe class LightGrid
     /// <summary>Fills the world pass's block (no GL: the self-test runs it; no allocation).</summary>
     public static void Fill(ref FrameBlock b, LightBake? bake, double time, int dynamic, Vector4[] dynPos, Vector4[] dynCol)
     {
+        var n = Math.Min(dynamic, MaxDynamic);
         if (bake == null)
         {
-            b.Mode = Vector4.Zero;
-            return;
+            // An unlit map: the classic light, plus this frame's dynamic lights when there are any (mode 5: phase 7b's lamps on constructs, ConstructLamps.cs).
+            b.Mode = n > 0 ? new Vector4(5f, PropAnim.ShaderTime(time), 0f, n) : Vector4.Zero;
+            if (n == 0)
+                return;
         }
-        var n = Math.Min(dynamic, MaxDynamic);
-        b.Mode = new Vector4(1f, PropAnim.ShaderTime(time), NormalOffset(bake), n);
-        b.Origin = new Vector4(bake.Origin, NormalOffsetY(bake));
-        b.Scale = new Vector4(1f / (bake.NX * bake.Cell), 1f / (bake.NY * bake.CellY), 1f / (bake.NZ * bake.Cell), 0f);
+        else
+        {
+            b.Mode = new Vector4(1f, PropAnim.ShaderTime(time), NormalOffset(bake), n);
+            b.Origin = new Vector4(bake.Origin, NormalOffsetY(bake));
+            b.Scale = new Vector4(1f / (bake.NX * bake.Cell), 1f / (bake.NY * bake.CellY), 1f / (bake.NZ * bake.Cell), 0f);
+        }
         b.Dyn0 = n > 0 ? dynPos[0] : default;
         b.Dyn1 = n > 1 ? dynPos[1] : default;
         b.Dyn2 = n > 2 ? dynPos[2] : default;

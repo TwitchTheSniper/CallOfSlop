@@ -1062,6 +1062,77 @@ workbench, a lamp on a switch: today's stations are the gunners' seats and the m
 (Bandit's clutter is held back by wall length); lamps that light their surroundings; a network round trip of a lined bay between two peers (a run-time part by its
 key as phase 1 proved; not sent here); nothing was tried in the game window.
 
+## 14. Phase 7b, as built (2026-11-09): windows and lamps that light
+
+The brief: phase 7a's left-overs, in order: room windows where the body has glass (per faction, glass counting as closed, no coplanar faces); lamps that really
+light the room through the game's light system within the frame budget; then upper storeys', pods', cages' and balconies' insides, closed end walls' lining, a dash
+in capsule and merged cabs, a steering wheel, props on shelves and wired stations. Windows and lamps were done; the rest is listed under "Not done".
+
+Code: `Source/Constructs/HullLoft.Lining.cs` (`WindowKinds`, `WindowOf`, `RoomPanesOf`, `WindowLining`, the lamps' lights), `HullLoft.cs` (`WindowRow`, the window's
+pad and the slabs cut round it), `Vehicle.Hulls.cs` (`Glaze`), the style rows' `Window` and `WindowChance` (`BodyStyleRule`), `Source/Render/ConstructLamps.cs`,
+`LightGrid` (`DynamicFree`, mode 5), `Lighting.cs` (`ApplyLightAt`), `Program.Lighting.cs`. Protocol 221: a lined bay's lining word may carry a window letter
+(`i` kind mode window, `Hull Loft (100 ~... = iuft)`), which a 220 peer can't make.
+
+### Windows
+
+A lined bay's key takes the faction's window letter on its lining word when the vehicle rolls windows (the style's `WindowChance`, on a fork of its own). The bay
+cuts a window in each side wall but a door bay's doorway side, centred along it, when the bay is the window's width and 15 cm either side long, and the window's
+sill and head each fall 3 cm or more inside a row, the same row on both sections, with every row between upright (half again as tall as it leans). The sill
+stands 5 cm over the waist's pad at least (a pannier's or a sponson's socket; a pane's seal would meet it). The wall rows it crosses are cut in four: under the
+sill and over the head the bay's length, and a jamb either side on every row between (6 mm thinner than the skin, so their faces stand 3 mm in from the pieces
+over and under them: on a twisting bay they met nearly in a plane). The hidden slabs behind the wall stop either side of it. A pane (the cab's pane part, its
+corners in the bay's frame) stands on a hidden pad at the sill's middle (`win-x`, `win+x`), a centimetre into the jambs and the head; its glass counts as closed
+for the room's hole rays, and a shot breaks the pane, not the bay. The opening is too small for a player. The lining is cut round it 2 cm back (a reveal): a
+following lining's jambs stand 6 mm further in than the pieces over and under them, an inset lining's panels split round the band; a bare hull's weld bead stops
+on that row. Room panes go in the `roomglass` list, not the cab's `glass`, which the cab measure and the identity gate read.
+
+| Style | window | chance a vehicle | width, sill to head |
+| --- | --- | --- | --- |
+| Bandit | `s` slit | 0.5 | 0.6 m, 1.45 to 1.62 m |
+| Militia | `s` slit | 0.6 | 0.6 m, 1.45 to 1.62 m |
+| IT | `b` band | 0.9 | 0.9 m, 1.22 to 1.72 m |
+| Scam | `b` band | 0.85 | 0.9 m, 1.22 to 1.72 m |
+| Highland | `p` port | 0.75 | 0.45 m, 1.3 to 1.72 m |
+| British | `t` tall bus window | 0.95 | 0.6 m, 1.2 to 1.82 m |
+
+### Lamps that light
+
+Each lamp a lining hangs (phase 7a's, one a bay of 0.7 m and more under a 2 m roof) is also a light: the bay's part carries its lamps' points and colours
+(`ConstructPartDef.Lamps`, made with the part from its key: no file field, nothing on the wire), and a Lamp logic part that is on is one too. Each frame,
+`ConstructLamps.AddLights` gives the dynamic lights the frame has left after flashes and blasts (at most four in all, `LightGrid.MaxDynamic`) to the lamps nearest
+the eye within 16 m, at the bodies' drawn pose, 4.5 m of reach, each faded as it nears the reach or the next lamp left out, so lights hand over without popping.
+A body's lamp parts are gathered once a rebuild (`Construct.LampParts`, by `RebuildStamp`): nothing allocates in a steady frame. On an unlit map (every Sandbox map)
+the light block's new mode 5 adds the dynamic lights to the classic light in `ApplyLightAt`, so every scene shader takes them; muzzle flashes still light lit maps
+only, as before. A point light has no shadow: a lamp lights the inner faces round it, faces turned away from it get nothing (a hull's outside, a roof's top), and
+the ground under the floor a little (4.5 m reach from 2 m up).
+
+Cost: at most four lights a frame whatever the number of vehicles (the shader loop lit maps already run for flashes); CPU a pass over the bodies within 46 m and
+their lamp parts. Lamps a vehicle with rooms (`--body-report`): Bandit 1.1, IT 1.9, Highland 1.5, Scam 1.5, British 2.2, Militia 1.0. The frame cost wasn't
+measured on a GPU (the container has none); the shader compiled and the smoke test ran with GL error 0.
+
+### Measured (2-core box shared with other agents: times are noisy; before is this branch with `--no-interiors`, which makes main's vehicles less 7a)
+
+| | before | after |
+| --- | --- | --- |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 (phase 7a) | 177 of 180 (the same three: Bandit Scrap Tanker 3, Highland War Bus 5, Highland Scrap Tanker 3); room walks, hole rays and balconies pass with glass in; parts, mean a shape: 68 (Bandit Scrap Tanker) to 190 (Highland War Bus) |
+| coplanar pairs inside lofted parts | 0 | 0 (14, then 1 on the way: under-sill pieces and jambs, then the lining's, on twisting bays) |
+| room exteriors, cabs and hoods, whole body (between over within) | 1.48, 1.59, 1.02 | 1.46, 1.57, 1.02 (the cabs as phase 7a; windows bring the room exteriors a little closer: within 0.127, between 0.185 from 0.190) |
+| parts a vehicle, mean a style (Bandit .. Militia) | 130, 136, 140, 141, 138, 133 | 130, 136, 142, 141, 139, 134 (panes: 0.7 to 3.8 a vehicle with rooms, cab panes included) |
+| generation, mean a style; worst | 282 to 527 ms; 5.3 s (Bandit Box Truck 1) | 296 to 390 ms, Bandit 1127 ms (554 ms in a Bandit-only run); worst 5.0 s in a Bandit-only run (Bandit Box Truck 1), but the same vehicle took 23.4 s in each `all` run, unexplained |
+
+**Found on the way.**
+- A socket facing up must stand on a solid face: the pane's socket stands on a hidden pad.
+- The pane's seal met the waist's pad and the wall's hidden slabs on a leaning row (Scam Flatbed Fort 1, Militia Box Truck 6): the sill keeps over the waist and
+  the slabs stop at the window.
+- Room panes in the cab's `glass` list moved the cab measure from 1.59 to 1.19 and sent Bandit seeds to more plans; they have a list of their own.
+
+**Committed seeds**: unchanged; 34 files written again (137 glazed bays and their panes); `--gen-vehicles` reports all 123 identical; `--check-construct-parts`
+clean.
+
+**Not done** (7c): upper storeys', side pods', caged rooms' and balconies' insides; lining on closed end walls; a dash in capsule and merged cabs; a steering
+wheel; props on shelves; wired stations (a radio, a powered workbench, lamps on a switch: a Lamp logic part already lights when on); the `all` run's Bandit Box
+Truck 1 time; a network round trip of a glazed bay; nothing was tried in the game window with a kit vehicle near (the lights' look is unseen).
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1095,5 +1166,5 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
 --sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
 --body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
---body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props
+--body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows)
 ```

@@ -364,7 +364,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 218: Msg.ZEnts ends with a gone list (a count and that many zombie ids): zombies a client was sent that the server put back into the crowd or freed, dropped at once (ZombiesNet.cs).
     // 219: body styles phase 6 (docs/vehiclekit/BODY-STYLES.md, section 12): balconies are named by their keys ("Hull Loft (balc..."; HullLoft.Balcony.cs) and go on the wire as a pod does; a 218 peer makes stand-ins of them.
     // 220: body styles phase 7a (docs/vehiclekit/BODY-STYLES.md, section 13): lofted bays' keys may carry a lining word (a faction's interior lining, HullLoft.Lining.cs); both ends must make the same part, so a 219 peer makes stand-ins of lined bays.
-    public const byte ProtocolVersion = 220;
+    // 221: body styles phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): a lined bay's lining word may carry a window letter (its walls cut, panes on "win" sockets; HullLoft.Lining.cs), so a 220 peer makes stand-ins of glazed bays.
+    public const byte ProtocolVersion = 221;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
