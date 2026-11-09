@@ -205,11 +205,13 @@ public sealed partial class Vehicle
     /// The drive check as a gate (<see cref="VehicleDriveCheck"/>): the vehicle as its text builds, settled, level and moving on a throttle pulse, else a
     /// <see cref="VehicleKitException"/> and the plan is made again (the shape grammar and kit 4 take the next plan; a kit-1 seed made for a spawn rerolls).
     /// Only for what no file holds: a committed seed is never gated. The spawn context's gravity is the check's.
+    /// <paramref name="towed"/>: a trailer (<see cref="VehicleCheckOptions.Towed"/>) has no engine to pulse, so it is never refused for that: a Tanker Rig's
+    /// trailer seed that no file holds used to fail here when the rig's check or spawn made it, alone, while a batch that never checked the rig wrote it fine.
     /// </summary>
-    public void DriveGate()
+    public void DriveGate(bool towed = false)
     {
         ContextKit(); // (the spawn context's last parts first: an electric drive's battery, VehicleContext.cs)
-        if (!VehicleDriveCheck.GateOn)
+        if (!VehicleDriveCheck.GateOn || towed)
             return;
         VehicleGenJob.Yield();
         var text = Text();

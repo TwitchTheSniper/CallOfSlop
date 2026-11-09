@@ -71,6 +71,9 @@ public static class VehicleRegistry
     public static IVehicleGenerator? Find(string name) =>
         Styles.All.SelectMany(st => For(st, true)).FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || Slug(g.Name).Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Whether a generator makes something towed (a trailer): the drive check doesn't pulse it (<see cref="Vehicle.DriveGate"/>).</summary>
+    public static bool Towed(IVehicleGenerator g) => g.Checks?.Towed == true;
+
     public static string Slug(string name) => new(name.Where(char.IsLetterOrDigit).ToArray());
 
     public static string BlueprintName(IVehicleGenerator g, int seed) => $"{g.Name} {seed}";
@@ -129,7 +132,7 @@ public static class VehicleRegistry
         if (shipsNowhere)
             v.GuaranteeMarks(); // (a shape the grammar doesn't make is kit 1, but its seeds that ship nowhere get kit 2's marks: VehicleMarks.cs)
         if (shipsNowhere || v.Context is { Matters: true })
-            v.DriveGate(); // (and the spawn's drive check, as any vehicle no file holds: a seed that fails it rerolls in the spawner)
+            v.DriveGate(Towed(g)); // (and the spawn's drive check, as any vehicle no file holds: a seed that fails it rerolls in the spawner)
         return v;
     }
 
@@ -201,6 +204,7 @@ public static class VehicleKitCli
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
             {
                 Console.WriteLine($"{g.Name} {seed}: FAIL {ex.Message}");
+                Console.WriteLine("DIAG " + ex); // DIAG
                 failed++;
             }
         }
@@ -293,8 +297,7 @@ public static class VehicleKitCli
         var outDir = Flag(args, "--out");
         var folder = VehicleRegistry.RepoBlueprints();
         int total = 0, differ = 0;
-        foreach (var g in VehicleRegistry.All)
-        foreach (var seed in g.Seeds)
+        foreach (var (g, seed) in Order(args))
         {
             total++;
             var file = VehicleRegistry.FileName(g, seed);
@@ -305,6 +308,8 @@ public static class VehicleKitCli
                 // (git may check a file out with CRLF on Windows; the kit writes LF, as git stores it)
                 var verdict = !File.Exists(committed) ? "new (no committed file)" : File.ReadAllText(committed).Replace("\r\n", "\n") == text ? "identical" : "DIFFERS";
                 Console.WriteLine($"{file}: {verdict}");
+                if (args.Any(a => a.Equals("--between", StringComparison.OrdinalIgnoreCase)))
+                    Between(text, g, total);
                 differ += verdict == "identical" ? 0 : 1;
                 if (outDir != null)
                 {
@@ -320,6 +325,42 @@ public static class VehicleKitCli
         }
         Console.WriteLine(differ == 0 ? $"{total} vehicle(s), all identical to the committed files" : $"{differ} of {total} differ");
         return differ;
+    }
+
+    /// <summary>
+    /// The seeds --gen-vehicles makes, in order: as they ship, or with <c>--order reverse</c> or <c>--order shuffle:N</c> (a seeded shuffle), and <c>--only FILE,FILE</c>
+    /// for some of them. A seed's text never depends on what was made before it in the process, so every order reports the same.
+    /// </summary>
+    private static List<(IVehicleGenerator G, int Seed)> Order(string[] args)
+    {
+        var all = VehicleRegistry.All.SelectMany(g => g.Seeds.Select(s => (g, s))).ToList();
+        if (Flag(args, "--only") is { } only)
+        {
+            var want = only.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            all = all.Where(x => want.Contains(VehicleRegistry.FileName(x.g, x.s))).ToList();
+        }
+        var order = Flag(args, "--order") ?? "";
+        if (order.Equals("reverse", StringComparison.OrdinalIgnoreCase))
+            all.Reverse();
+        else if (order.StartsWith("shuffle", StringComparison.OrdinalIgnoreCase))
+        {
+            var rng = new Random(int.TryParse(order.AsSpan(order.IndexOf(':') + 1), out var n) ? n : 1);
+            for (var i = all.Count - 1; i > 0; i--)
+            {
+                var j = rng.Next(i + 1);
+                (all[i], all[j]) = (all[j], all[i]);
+            }
+        }
+        return all;
+    }
+
+    /// <summary><c>--between</c>: what a game or a tool does between two generations, so --gen-vehicles shows whether it changes the next seed: the full check (a tow's own generation with it) on every third seed, and a turret-seat count on the rest.</summary>
+    private static void Between(string text, IVehicleGenerator g, int n)
+    {
+        if (n % 3 == 0)
+            Console.WriteLine($"  (between: the check {(VehicleChecks.Check(text, "between.json", g.Checks).Passed ? "passes" : "FAILS")})");
+        else
+            Console.WriteLine($"  (between: {VehicleChecks.SeatsOffGuns(text).Count} turret seats)");
     }
 
     private static string? Flag(string[] args, string flag) => args.SkipWhile(a => !a.Equals(flag, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--"));
