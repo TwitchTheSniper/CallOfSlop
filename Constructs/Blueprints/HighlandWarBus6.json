@@ -132,7 +132,7 @@
     {"part": "Scrap Ladder", "on": 92, "socket": "+x0", "by": "back", "paint": "#8c2a2a"},
     {"part": "Seat", "on": 68, "socket": "front12", "by": "bottom"},
     {"part": "Seat", "on": 72, "socket": "front22", "by": "bottom"},
-    {"part": "Turntable", "on": 109, "socket": "top", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 109, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 127, "socket": "top", "by": "-y1", "paint": "#2a2622"},
     {"part": "Motor Hinge", "on": 128, "socket": "+y0", "by": "base"},
     {"part": "Gravedigger Auto Receiver", "on": 129, "socket": "leaf", "by": "bottom"},

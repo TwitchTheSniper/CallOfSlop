@@ -78,7 +78,7 @@
     {"part": "Bed Rail 1 m", "on": 41, "socket": "+x2", "by": "edge0", "paint": "#b0b4b8"},
     {"part": "Fuel Drum", "on": 44, "socket": "front10", "by": "-y"},
     {"part": "Square Beam 0.5 m", "on": 38, "socket": "+x1", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Turntable", "on": 73, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 73, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 74, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Seat", "on": 75, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 75, "socket": "+y0", "by": "base"},

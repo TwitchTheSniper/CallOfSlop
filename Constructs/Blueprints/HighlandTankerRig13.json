@@ -66,7 +66,7 @@
     {"part": "Bolt Deck 0.25 m", "on": 47, "socket": "+x0", "by": "-x0", "paint": "#23395d"},
     {"part": "Fuel Drum", "on": 41, "socket": "front23", "by": "-y"},
     {"part": "Square Beam 0.5 m", "on": 38, "socket": "+x1", "by": "-z", "paint": "#33302b"},
-    {"part": "Turntable", "on": 61, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 61, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 62, "socket": "top", "by": "-y1", "paint": "#33302b"},
     {"part": "Seat", "on": 63, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 63, "socket": "+y0", "by": "base"},
@@ -84,6 +84,7 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 75, "pos": [1.311, 0.553, -0.366], "rot": [0.029, -0.0027, -0.722, 0.6913]}, "paint": "#23395d"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 74, "pos": [0.13, 0.463, -0.999], "rot": [-0.6953, -0.0144, 0.0006, 0.7186]}, "paint": "#1f4a2e"},
     {"part": "Pipe Box", "on": 73, "socket": "top", "by": "base"},
+    {"part": "Coo Heid", "on": 32, "socket": "top", "by": "base"},
     {"part": "Coo Heid", "on": 52, "socket": "front00", "by": "base"},
     {"part": "Coo Heid", "on": 48, "socket": "front00", "by": "base"},
     {"part": "Coo Heid", "on": 51, "socket": "front00", "by": "base"}

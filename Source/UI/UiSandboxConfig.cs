@@ -566,7 +566,17 @@ public sealed partial class Ui
             {
                 var inputW = 74 * _scale;
                 ImGui.SetNextItemWidth(fieldW - inputW - ImGui.GetStyle().ItemSpacing.X);
-                if (ImGui.SliderFloat(e.UiId, ref v, e.Min, e.Max, e.Format, ImGuiSliderFlags.AlwaysClamp))
+                if (e.Rated > 0)
+                {
+                    // (a rotary joint's speed: the slider runs -100% to +100% of its rated speed, the box beside it in deg/s)
+                    var pct = (v / e.Rated - 1) * 100;
+                    if (ImGui.SliderFloat(e.UiId, ref pct, (e.Min / e.Rated - 1) * 100, (e.Max / e.Rated - 1) * 100, "%+.0f%%", ImGuiSliderFlags.AlwaysClamp))
+                    {
+                        v = e.Clamp(e.Rated * (1 + pct / 100));
+                        changed = true;
+                    }
+                }
+                else if (ImGui.SliderFloat(e.UiId, ref v, e.Min, e.Max, e.Format, ImGuiSliderFlags.AlwaysClamp))
                     changed = true;
                 if (ImGui.IsItemHovered())
                     ImGuiSafe.SetTooltip(e.TooltipText);

@@ -142,7 +142,7 @@
     {"part": "Plate Steel 0.25 m", "on": 119, "socket": "+x2", "by": "back", "paint": "#94603a"},
     {"part": "Plate Steel 0.25 m", "on": 124, "socket": "-x2", "by": "-x", "paint": "#8c5230"},
     {"part": "Sheet Steel 0.25 m", "on": 120, "socket": "-z2", "by": "-x", "paint": "#3a3330"},
-    {"part": "Turntable", "on": 102, "socket": "top", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 102, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 137, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Motor Hinge", "on": 138, "socket": "+y0", "by": "base"},
     {"part": "Bastille LMG Receiver", "on": 139, "socket": "leaf", "by": "bottom"},

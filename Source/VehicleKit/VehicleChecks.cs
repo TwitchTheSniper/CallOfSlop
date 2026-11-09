@@ -811,6 +811,43 @@ public static class VehicleChecks
             r.Failures.Add($"the {name} is {MathF.Max(worstAim, worst):0} degrees off where its gunner looks: its turntable or hinge doesn't point it");
     }
 
+    /// <summary>How far a turret's gunner's seat may face off its gun's line at rest, in degrees (a sideways seat on a turret arm was a tester's report).</summary>
+    public const float SeatGunLimit = 15;
+
+    /// <summary>
+    /// How many degrees gun <paramref name="g"/>'s seat faces off the gun's own line at rest, both read level in the body's rest frame: 0 when the gun has no seat
+    /// or points straight up or down at rest.
+    /// </summary>
+    public static float SeatOffGun(Construct c, int g) =>
+        c.Guns[g].Seat < 0 || c.Guns[g].Seat >= c.PartCount ? 0 : SeatOffGun(c, c.Guns[g].Part, c.Guns[g].Seat);
+
+    /// <summary>Each seated gun's <see cref="SeatOffGun(Construct, int)"/> on blueprint <paramref name="text"/> as built (for the reports' counts).</summary>
+    public static List<float> SeatsOffGuns(string text)
+    {
+        var w = new ConstructWorld();
+        var bp = ConstructBuild.ParseBlueprint(text, "seats.json");
+        var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out _, TowOf(bp));
+        var offs = new List<float>();
+        if (c == null)
+            return offs;
+        if (c.Dirty)
+            c.Rebuild();
+        for (var g = 0; g < c.GunCount; g++)
+            if (c.Guns[g].Seat >= 0)
+                offs.Add(SeatOffGun(c, g));
+        return offs;
+    }
+
+    /// <summary>The same for a receiver part and a seat part (the gun points along its receiver's -Z, ConstructWeapons; a seat faces its -Z, Construct.SeatForward).</summary>
+    public static float SeatOffGun(Construct c, int receiver, int seat)
+    {
+        var fg = c.DirToRest(c.Parts[receiver].Seg, Rot24.Apply(c.Parts[receiver].Rot, -Vector3.UnitZ)) with { Y = 0 };
+        var fs = c.DirToRest(c.Parts[seat].Seg, Rot24.Apply(c.Parts[seat].Rot, -Vector3.UnitZ)) with { Y = 0 };
+        if (fg.LengthSquared() < 0.01f || fs.LengthSquared() < 0.01f)
+            return 0;
+        return MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(fg), Vector3.Normalize(fs)), -1, 1)) * 180 / MathF.PI;
+    }
+
     /// <summary>Every seat with a Turret Module fires its guns: a sitter on Fire for a second after the first load.</summary>
     private static void Guns(ConstructBuild.Blueprint bp, VehicleReport r)
     {
@@ -839,6 +876,8 @@ public static class VehicleChecks
             if (gun.BoxCount == 0 && gun.FeedRoute < 0 && gun.FeedSocket < 0 && !flame)
                 r.Failures.Add($"the {name} has no ammo in reach");
             var seat = gun.Seat;
+            if (SeatOffGun(c, g) is var off and > SeatGunLimit)
+                r.Failures.Add($"the {name}'s gunner sits {off:0} degrees off the gun's line at rest: a turret's seat faces where its gun points");
             var ticks = gun.ReloadTicks + 10;
             for (var t = 0; t < ticks; t++)
             {

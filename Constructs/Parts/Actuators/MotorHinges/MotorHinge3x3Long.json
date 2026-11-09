@@ -88,10 +88,10 @@
       "label": "Speed",
       "group": "Motor",
       "unit": "deg/s",
-      "min": 5.0,
-      "max": 180.0,
+      "min": 0.0,
+      "max": 360.0,
       "step": 1,
-      "tooltip": "How fast it turns, up to 180 deg/s."
+      "tooltip": "How fast it turns: rated 180 deg/s (0%), from stopped (-100%) to 360 deg/s (+100%)."
     },
     {
       "key": "strength",

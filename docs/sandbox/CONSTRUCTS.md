@@ -779,7 +779,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `units`, `threshold` | Speed Sensor | m/s, km/h or mph; above 0, on/off at that speed instead of the number |
 | `colour`, `brightness`, `blink` | Lamp | Its glow's colour and brightness; flashes a second while lit |
 | `pitch`, `volume` | Horn | Its beep |
-| `min`, `max`, `speed`, `strength` | Piston, Motor Hinge, Hinge (limits), Turntable (speed, strength) | Limits (degrees; a piston's metres) inside the part's own, speed, force or torque |
+| `min`, `max`, `speed`, `strength` | Piston, Motor Hinge, Hinge (limits), Turntable (speed, strength) | Limits (degrees; a piston's metres) inside the part's own, speed, force or torque. A turntable's or motor hinge's speed runs from stopped to twice its rated speed, the rated speed (the default) in the middle; the panel's slider shows it as -100% to +100% of rated (`CConfigDef.Rated`), the box beside it in deg/s, and the stored value stays deg/s, so older saves and blueprints keep their speed |
 | `pushable` | Passive hinges | A player walking into what hangs on it swings it (on by default). [Doors](#doors) |
 | `strength` | Brake | 100%: the wheels lock; less: they drag (`jFwd` blended towards a stop) |
 | `stiffness`, `damping` | Suspension (a plain spring) | Spring frequency (Hz) and damping ratio |

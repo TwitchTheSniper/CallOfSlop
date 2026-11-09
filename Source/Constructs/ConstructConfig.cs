@@ -200,6 +200,7 @@ public sealed class CConfigDef
     public bool CreativeOnly; // set only in creative worlds: the server refuses it in survival, the panel shows it read-only, a blueprint's value is left out there
     public bool Bound; // kept in CPart.Setting (the part's legacy choice: the linking tool's R cycles it) rather than CPart.Cfg
     public float[] Presets = []; // the values the linking tool's R cycles a number through (the part's old "settings" list)
+    public float Rated; // a rotary joint's speed: its rated speed (deg/s) when the range runs from stopped to twice it, so the panel's slider shows -100% to +100% of it; else 0
 
     // Text made once at load (the panel draws without allocating)
     public string UiId = "", InputId = "", ResetId = "", CaptureId = "", Format = "", DefaultText = "", TooltipText = "";
@@ -530,6 +531,10 @@ public static class ConstructConfig
             if (e.Type == CfgType.Number && (e.Default < e.Min || e.Default > e.Max))
                 throw new ConstructPartException($"{file}: \"config\" \"{e.Key}\": the default {e.Default.ToString(CultureInfo.InvariantCulture)} is outside {e.Min.ToString(CultureInfo.InvariantCulture)} to {e.Max.ToString(CultureInfo.InvariantCulture)}");
             e.Default = e.Clamp(e.Default);
+            var rated = d.MotorSpeed * 180f / MathF.PI;
+            if (e.Type == CfgType.Number && e.Id == CfgKey.Speed && d.Role == PartRole.Joint && d.JointType is not (JointType.Piston or JointType.Slider) && rated > 0
+                && e.Min <= 0 && MathF.Abs(e.Max - 2 * rated) < 0.51f)
+                e.Rated = rated;
             foreach (var pv in e.Presets)
                 if (pv < e.Min || pv > e.Max)
                     throw new ConstructPartException($"{file}: \"config\" \"{e.Key}\": the preset {pv.ToString(CultureInfo.InvariantCulture)} (from \"settings\") is outside its range");

@@ -78,10 +78,10 @@
     {"part": "Bed Rail 1 m", "on": 41, "socket": "+x2", "by": "edge0", "paint": "#7d8186"},
     {"part": "Fuel Drum", "on": 44, "socket": "front10", "by": "-y"},
     {"part": "Square Beam 0.5 m", "on": 38, "socket": "+x1", "by": "-z", "paint": "#2b2a28"},
-    {"part": "Turntable", "on": 73, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 73, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 74, "socket": "top", "by": "-y1", "paint": "#2b2a28"},
     {"part": "Seat", "on": 75, "socket": "+y3", "by": "bottom"},
-    {"part": "Motor Hinge", "on": 75, "socket": "+y0", "by": "base"},
+    {"part": "Motor Hinge 1x1 Long", "on": 75, "socket": "+y0", "by": "base"},
     {"part": "Farmhand Pump Receiver", "on": 77, "socket": "leaf", "by": "bottom"},
     {"part": "Scattermouth Barrel", "on": 78, "socket": "front", "by": "back"},
     {"part": "Shell Feed", "on": 78, "socket": "top", "by": "bottom"},
@@ -94,9 +94,9 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 70, "pos": [1.334, 1.006, 2.134], "rot": [-0.0042, 0.0016, -0.7066, 0.7076]}, "paint": "#7d8186"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 69, "pos": [-0.833, 0.681, 3.382], "rot": [-0.0031, -0.0104, 0.706, 0.7082]}, "paint": "#7d8186"},
     {"part": "Rain Gauge", "on": 85, "socket": "top", "by": "base"},
+    {"part": "Teapot", "on": 31, "socket": "top", "by": "base"},
     {"part": "Queue Post", "on": 66, "socket": "front00", "by": "base"},
-    {"part": "Queue Post", "on": 67, "socket": "front00", "by": "base"},
-    {"part": "Belisha Beacon", "on": 31, "socket": "top", "by": "base"}
+    {"part": "Queue Post", "on": 67, "socket": "front00", "by": "base"}
   ],
   "wires": [[28, 29], [29, 23], [76, 83], [83, 78]],
   "links": [

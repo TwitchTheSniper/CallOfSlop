@@ -56,13 +56,13 @@
     {"part": "Square Beam 0.75 m", "on": 47, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Tanker Barrel 3 m", "on": 46, "socket": "+x0", "by": "footL0"},
     {"part": "Square Beam 1 m", "on": 44, "socket": "+x1", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Turntable", "on": 50, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 50, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 51, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Seat", "on": 52, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 52, "socket": "+y0", "by": "base"},
     {"part": "Kingpin Revolver Receiver", "on": 54, "socket": "leaf", "by": "bottom"},
     {"part": "Cannon Sleeve", "on": 55, "socket": "front", "by": "back"},
-    {"part": "Heavy Box", "on": 55, "socket": "top", "by": "bottom"},
+    {"part": "Heavy Box", "on": 55, "socket": "left", "by": "right"},
     {"part": "Revolver Hammer", "on": 55, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 57, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 53, "socket": "+x", "by": "-x"},
@@ -70,8 +70,7 @@
     {"part": "Slat Grille", "on": 61, "socket": "front", "by": "back", "paint": "#2a2c30"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 62, "pos": [0.122, 0.458, -1.712], "rot": [-0.7056, 0.0081, -0.0153, 0.7084]}, "paint": "#8a9096"},
     {"part": "Call Headset", "on": 61, "socket": "top", "by": "base"},
-    {"part": "Square Beam 0.5 m", "on": 9, "socket": "+y3", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Phone Mast", "on": 65, "socket": "+z", "by": "base"}
+    {"part": "Loudhailer", "on": 36, "socket": "top", "by": "base"}
   ],
   "wires": [[33, 34], [34, 28], [53, 60], [60, 55]],
   "links": [

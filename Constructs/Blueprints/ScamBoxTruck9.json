@@ -105,7 +105,7 @@
     {"part": "Plate Steel 0.25 m", "on": 85, "socket": "+z1", "by": "-x", "paint": "#7d8a92"},
     {"part": "Plate Steel 0.25 m", "on": 83, "socket": "+x2", "by": "-x", "paint": "#2a2c30"},
     {"part": "Fuel Drum", "on": 90, "socket": "front00", "by": "-y"},
-    {"part": "Turntable", "on": 73, "socket": "top", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 73, "socket": "top", "by": "base"},
     {"part": "Square Beam 1 m", "on": 100, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Motor Hinge", "on": 101, "socket": "+y0", "by": "base"},
     {"part": "Courier Carbine Receiver", "on": 102, "socket": "leaf", "by": "bottom"},

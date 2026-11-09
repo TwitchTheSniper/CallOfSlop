@@ -66,7 +66,7 @@
     {"part": "Pickup Bed Side", "on": 47, "socket": "+x0", "by": "edge1", "paint": "#6b3a22"},
     {"part": "Fuel Drum", "on": 40, "socket": "front10", "by": "-y"},
     {"part": "Square Beam 0.75 m", "on": 38, "socket": "+x1", "by": "-z", "paint": "#2f2c2a"},
-    {"part": "Turntable", "on": 61, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 61, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 62, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Seat", "on": 63, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 63, "socket": "+y0", "by": "base"},
