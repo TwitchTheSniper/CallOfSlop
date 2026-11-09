@@ -336,6 +336,7 @@ public static class VehicleArmouryCli
             }
         foreach (var (style, all) in byStyle)
             Console.WriteLine($"  style {style}: {all.Names.Count} gun names, {all.Builds.Count} distinct guns over every shape");
+        Console.WriteLine($"  turret joints fitted: {string.Join(", ", Vehicle.TurretJoints.OrderBy(k => k.Key).Select(k => $"{k.Key} {k.Value}"))}");
         foreach (var f in failures)
             Console.WriteLine($"  FAIL {f}");
         Console.WriteLine($"armoury report: {made} made, {failed} failed to generate, {times.DefaultIfEmpty().Average():0} ms a generation (worst {times.DefaultIfEmpty().Max():0}){(check ? $", full check passed {passed}/{checkedN}" : "")}; turret seats more than {VehicleChecks.SeatGunLimit:0} degrees off their gun: {sideways}/{seats}");

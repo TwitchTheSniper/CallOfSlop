@@ -55,6 +55,13 @@ def num(key, label, group, unit, lo, hi, step, tip, default=None):
     return e
 
 
+def speed_setting(rated):
+    """A rotary joint's speed setting: its rated speed in the middle of a range from stopped to twice as fast (-100% to +100%), so a player
+    can always turn it either way; the configure window shows it as a share of the rated speed (UiSandboxConfig.cs)."""
+    return num("speed", "Speed", "Motor", "deg/s", 0, 2 * rated, 1,
+               f"How fast it turns: rated {rated:g} deg/s (0%), from stopped (-100%) to {2 * rated:g} deg/s (+100%).")
+
+
 def size_word(w, l):
     return f"{w}x{w} {LENGTHS[l].lower()}"
 
@@ -155,7 +162,7 @@ def motor_hinge(w, l, legacy=False):
         "config": [
             num("min", "Lowest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of -1 turns it to."),
             num("max", "Highest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of 1 (or opening it) turns it to."),
-            num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns, up to {top} deg/s."),
+            speed_setting(speed),
             num("strength", "Torque", "Motor", "N m", torque / 10, torque, 50,
                 f"What it holds, up to {torque} N m."),
         ],
@@ -203,7 +210,7 @@ def turntable(w, l, legacy=False):
             "give": 20, "overloadDamage": 0,
         },
         "config": [
-            num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns, up to {top} deg/s."),
+            speed_setting(speed),
             num("strength", "Torque", "Motor", "N m", torque / 10, torque, 100,
                 f"What it holds, up to {torque} N m."),
         ],

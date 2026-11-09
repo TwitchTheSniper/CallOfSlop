@@ -367,12 +367,12 @@ public sealed partial class Vehicle : BlueprintScript
         }
         C.PartBounds(mount.Index, out _, out var top);
         var mid = CentreOf(mount);
-        var table = Put("Turntable", new Vector3(mid.X, FromRest(top).Y + 0.1f, mid.Z), Orient.Upright, 0.65f, mount, "base");
+        var table = TurretTable(mount, new Vector3(mid.X, FromRest(top).Y, mid.Z));
         var arm = Stand($"{Beam} 1 m", SocketPoint(table, "top"), aft ? new Orient(Vector3.UnitZ, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY) : Orient.Along(Vector3.UnitZ), table, "-y1");
         // Every piece is turned as the arm is (an aft arm faces back): the seat faces where the gun points at rest, never across it (a tester's report).
         GunnerSeat = seat ?? Onto(arm, "+y3", "Seat", "bottom", SpinLike(arm, "+y3", "Seat", "bottom", arm, Vector3.UnitX, Vector3.UnitY));
         Seats.Add(GunnerSeat);
-        var hinge = Onto(arm, "+y0", "Motor Hinge", "base", SpinLike(arm, "+y0", "Motor Hinge", "base", arm, Vector3.UnitY, -Vector3.UnitX, aft ? 2 : 0));
+        var hinge = TurretHinge(arm, aft);
         Gun = FitGun(hinge, Weapon, SpinLike(hinge, hinge.Def.HasJoint ? hinge.Def.LeafSocket : "top", GunDef(WeaponOption.Parse(Weapon.Build).Part).Name, "bottom", arm, Vector3.UnitX, Vector3.UnitY, aft ? 2 : 0));
         var module = seat == null ? Onto(GunnerSeat, "+x", "Turret Module", "-x", 0) : Onto(GunnerSeat, "back", "Turret Module", "-z", 0); // (a seat in a room keeps its module out of the aisle)
         Wire(GunnerSeat, module);
@@ -384,6 +384,58 @@ public sealed partial class Vehicle : BlueprintScript
         Turrets.Add((Gun, GunnerSeat, Weapon));
         return this;
     }
+
+    /// <summary>Which turntables and elevation hinges the kit's turrets are given, by name, with how many of each (for the reports).</summary>
+    public static readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> TurretJoints = new();
+
+    /// <summary>
+    /// A turret's turntable by its gun (<see cref="Weapon"/>): a light gun turns fast on a small table (180 degrees a second, 3000 N m), a medium one on a
+    /// 2x2 (90, 12000), a heavy or merged one on the slow, heavy Turntable (45). Highland and British light guns take a steadier 1x1 Medium half the time.
+    /// Where the chosen one has no room the Turntable goes on.
+    /// </summary>
+    private VPart TurretTable(VPart mount, Vector3 top)
+    {
+        var cls = VehicleRoles.ClassOf(Weapon!);
+        var name = cls switch
+        {
+            GunClass.Light => Style.Name is "Highland" or "British" && Dice.Fork("turntable " + Turrets.Count).Chance(0.5) ? "Turntable 1x1 Medium" : "Turntable 1x1 Long",
+            GunClass.Medium => "Turntable 2x2 Medium",
+            _ => "Turntable",
+        };
+        if (name != "Turntable")
+            try
+            {
+                return Counted(Put(name, top + new Vector3(0, HalfHeight(name), 0), Orient.Upright, 0.65f, mount, "base"));
+            }
+            catch (VehicleKitException)
+            {
+                // (no room for it there: the plain one)
+            }
+        return Counted(Put("Turntable", top + new Vector3(0, HalfHeight("Turntable"), 0), Orient.Upright, 0.65f, mount, "base"));
+    }
+
+    /// <summary>A turret's elevation hinge: a light gun's lifts fast (Motor Hinge 1x1 Long, 180 degrees a second), the rest on the Motor Hinge (90). Turned as the arm is.</summary>
+    private VPart TurretHinge(VPart arm, bool aft)
+    {
+        if (VehicleRoles.ClassOf(Weapon!) == GunClass.Light)
+            try
+            {
+                return Counted(Onto(arm, "+y0", "Motor Hinge 1x1 Long", "base", SpinLike(arm, "+y0", "Motor Hinge 1x1 Long", "base", arm, Vector3.UnitY, -Vector3.UnitX, aft ? 2 : 0)));
+            }
+            catch (VehicleKitException)
+            {
+                // (no room for it there: the plain one)
+            }
+        return Counted(Onto(arm, "+y0", "Motor Hinge", "base", SpinLike(arm, "+y0", "Motor Hinge", "base", arm, Vector3.UnitY, -Vector3.UnitX, aft ? 2 : 0)));
+    }
+
+    private static VPart Counted(VPart p)
+    {
+        TurretJoints.AddOrUpdate(p.Def.Name, 1, (_, n) => n + 1);
+        return p;
+    }
+
+    private static float HalfHeight(string part) => (Def(part).BoundsMax.Y - Def(part).BoundsMin.Y) * 0.5f;
 
     /// <summary>
     /// The spin that fits <paramref name="part"/> on <paramref name="on"/>'s <paramref name="socket"/> turned as <paramref name="like"/> is, from the turn it takes on an
