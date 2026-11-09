@@ -276,6 +276,17 @@ client only every third time. A new crowd round or a new client gets a keyframe.
 The client keeps a picture of the cells (`CrowdPicture`); its persistent crowd agents (below, "Rendering") stand in for
 each cell's zombies.
 
+**Gone list** (protocol 218, 2026-11-09). `Msg.ZEnts` ends with the ids of zombies the client was sent that the server
+no longer has (put back into the crowd, or a dead one cleared), each sent three times (the message is unreliable), new
+ones first, within one datagram. The client drops them at once, and its drawn crowd carries on where they stood. Before,
+a demoted individual stayed on the client, frozen after a quarter of a second, until `ZEntTimeout` (1.6 s): a car
+outrunning the front demotes a few hundred, so the client showed awake zombies the host had already put back into the
+crowd. Tracked by id (`ZEntView.Known`), not by slot: a crowd map swaps zombies in and out of the same slots in one tick.
+A client's individual takes over the drawn crowd zombie within `CrowdTakeOverReach` (6 m, was 3 m: the picture trails
+the server by a send or two, metres behind a crowd chasing a car) and eases the offset out.
+`--zombie-probe [--seated] [--map NAME] [--cap N] [--lag MS] [--loss PCT]` measures it over the real transport
+(SelfTestZombieProbe.cs): zombies appearing or vanishing in view, ghosts, a turret firing into the crowd.
+
 ## Rendering
 
 `Source/Render/CrowdRig.cs`, `CrowdInstances.cs`, `CrowdView.cs`, `Renderer.Crowd.cs`; `Source/Game/Horde/CrowdAgents.cs`,
