@@ -2288,6 +2288,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Jobs:
                 OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)
                 break;
+            case (byte)Msg.TalkChoices when !IsServer:
+                ReadTalkChoices(ref r); // a storylet's answers in the talk panel (GameStoryStorylets.cs)
+                break;
             case (byte)Msg.Factions:
                 ReadFactions(ref r); // Sandbox player factions (GameSandboxFactions.cs)
                 break;

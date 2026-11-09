@@ -134,7 +134,7 @@ public sealed partial class Game
             ref var run = ref _dp[p.Id];
             if (run.State == DepotNone)
             {
-                if (_tutState[p.Id] is TutorialState.Finished or TutorialState.Skipped && !OpeningHas(p.Id))
+                if (_tutState[p.Id] is TutorialState.Finished or TutorialState.Skipped && !OpeningHas(p.Id) && !DepotByStorylet) // (else a storylet's "depot" hook: DepotOffer)
                     DepotSet(p, DepotReport, now, DepotScript.Current.Memo.Replace("{name}", p.Name));
                 continue;
             }
@@ -243,6 +243,20 @@ public sealed partial class Game
             Log($"[depot] {p.Name}: step {state - DepotFirstStep + 1}, {step.Id}");
         }
         DepotSend(p);
+    }
+
+    /// <summary>Server: a storylet's "depot" hook (GameStoryStorylets.cs): the report memo, for a player who hasn't had the depot yet.</summary>
+    private void DepotOffer(Player p, double now)
+    {
+        if (_dpDepot == 0 || p.Bot != null || p.Id >= _dp.Length)
+            return;
+        if (_dpWho[p.Id] != p)
+        {
+            _dpWho[p.Id] = p;
+            _dp[p.Id] = default;
+        }
+        if (_dp[p.Id].State == DepotNone)
+            DepotSet(p, DepotReport, now, DepotScript.Current.Memo.Replace("{name}", p.Name));
     }
 
     private void DepotSay(Player p, string text, double now) => OpeningSay(p, null, DepotScript.Current.Speaker, text, now);

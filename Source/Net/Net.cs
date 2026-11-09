@@ -109,6 +109,7 @@ public enum Msg : byte
     Corpse, // server -> all and each joiner: a body the host's ragdolls settled (u8 1, u16 its number, u8 owner, u16 zombie id, u8 look, vec, 14 x 3 i16 mm), or bodies that went (u8 2, u8 n, u16 each) (reliable ordered; GameCorpses.cs, protocol 210)
     Shell, // server -> all and each joiner, Sandbox: a player wakes in a robot shell or is back in their body (u8 player, u8 on) (reliable ordered; GameRobotShell.cs, protocol 213)
     Depot, // server -> one client, Sandbox story: that player's Orbital Depot state (u8 state, u8 has a target, vec the target) when it changes (reliable ordered; GameDepot.cs, protocol 214)
+    TalkChoices, // server -> one client, Sandbox story: the answers a storylet offers in their talk panel (u8 the body's player, u8 n, n texts) when they change (reliable ordered; GameStoryStorylets.cs, protocol 218)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -51,6 +51,16 @@ public sealed partial class Ui
             ImGui.PopStyleColor();
             ImGui.Separator();
             var w = new float2(-1, 28 * _scale);
+            // A storylet's answers this person waits for (GameStoryStorylets.cs), first.
+            if (game.TalkChoicesBody == person.Id && game.TalkChoiceCount > 0)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, Orange);
+                for (var k = 0; k < game.TalkChoiceCount; k++)
+                    if (ImGui.Button(game.TalkChoiceLabels[k], w))
+                        asked = (TalkAsk)((int)TalkAsk.Choose + k);
+                ImGui.PopStyleColor();
+                ImGui.Separator();
+            }
             if (ImGui.Button("Hello##talkhello"u8, w))
                 asked = TalkAsk.Greet;
             if (ImGui.Button("Any news?##talknews"u8, w))
