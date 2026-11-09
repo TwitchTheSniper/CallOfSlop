@@ -99,6 +99,8 @@ public static unsafe partial class Program
             return SelfTest.Run(selfTestOnly); // headless checks (all, or only the named sections), see SelfTest.cs
         if (args.Any(a => a.Equals("--bot-bench", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BotBench(args); // headless: a Sandbox fight of hundreds of spawned bots, the server tick's cost (SelfTestBotBench.cs)
+        if (args.Any(a => a.Equals("--zombie-probe", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.ZombieProbe(args); // headless: a host and a client over the real transport, a car through a zombie crowd and a turret firing into it (SelfTestZombieProbe.cs)
         if (args.Any(a => a.Equals("--crowd-bench", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.CrowdBench(args); // headless: the crowd's per-frame preparation on Horde Stress, host and client (SelfTestCrowdBench.cs)
         if (args.SkipWhile(a => !a.Equals("--export-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } exportDir)

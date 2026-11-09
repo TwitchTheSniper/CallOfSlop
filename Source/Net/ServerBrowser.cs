@@ -361,7 +361,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 215: per-player tool upgrades (docs/sandbox/TOOL-UPGRADES.md): each player's levels after their hands in the Sandbox mode state (state version 4), CActKind.GrabThrow at the end of CActKind.
     // 216: the ground drill's shaping modes (TerrainEditsShape.cs, GroundShape.cs): DigKind.GradeDirt..SmoothSand at the end of DigKind; a grade's far end follows its op on the wire (Msg.TerrainDig) and its point in CActKind.Sculpt.
     // 217: body styles phase 5 (docs/vehiclekit/BODY-STYLES.md, section 11): lofted bays' keys take a fourth word (a cage's pattern, an open top, an upper floor and its hatch), and stairs and side pods are named by their keys ("Hull Loft (stair...", "(pod..."; HullLoft.Spaces.cs); all go on the wire as a lofted bay does, so both ends must make the same part; a 216 peer makes stand-ins of them.
-    public const byte ProtocolVersion = 217;
+    // 218: Msg.ZEnts ends with a gone list (a count and that many zombie ids): zombies a client was sent that the server put back into the crowd or freed, dropped at once (ZombiesNet.cs).
+    public const byte ProtocolVersion = 218;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -18,7 +18,11 @@ public sealed partial class Game : IConstructTargets
     /// <summary>Fire events drawn on this machine (the self-test: a client sees the server's guns fire).</summary>
     public int ConstructShotsSeen, ConstructBlastsSeen, ConstructShattersSeen; // (the self-test: fire events drawn here)
 
-    private const int CwZombieTarget = 1000;
+    private const int CwZombieTarget = 1000, CwCrowdTarget = 1001;
+
+    // The crowd zombie the last RayTarget found (a crowd map, the Sandbox's big groups: ZombiesCrowd.cs): a particle's index,
+    // or a mass zombie's cell and slot (particle -1). Read in the same tick, before anything moves the crowd.
+    private int _cwParticle = -1, _cwMassCell, _cwMassSlot;
 
     bool IConstructTargets.RayTarget(Vector3 o, Vector3 d, float maxDist, ushort ignoreBody, out float dist, out int id)
     {
@@ -47,8 +51,50 @@ public sealed partial class Game : IConstructTargets
                 _cwZombie = z;
             }
         }
+        if (CrowdOn && Crowd.Total > 0 && CwCrowdRay(o, d, ref dist))
+            id = CwCrowdTarget;
         return id >= 0;
     }
+
+    /// <summary>
+    /// The crowd and mass tiers for a construct gun's ray (the same capsules a player's shot meets: ZombiesCrowd.cs,
+    /// <see cref="CrowdRayHit"/>), so a turret's rounds hurt the zombies that haven't woken as individuals, which near a
+    /// moving car is most of them. Notes the one hit for <see cref="CwCrowdHit"/>.
+    /// </summary>
+    private bool CwCrowdRay(Vector3 o, Vector3 d, ref float dist)
+    {
+        var cd = dist;
+        var i = Crowd.Count > 0 ? Crowd.RayHit(o, d, ref cd, out _) : -1;
+        if (Crowd.MassTotal > 0 && Crowd.MassRayHit(o, d, ref cd, -1f, out var cell, out var slot, out _))
+        {
+            (dist, _cwParticle, _cwMassCell, _cwMassSlot) = (cd, -1, cell, slot);
+            return true; // (nearer than the particle, if any: the mass test ran to its distance)
+        }
+        if (i < 0)
+            return false;
+        (dist, _cwParticle) = (cd, i);
+        return true;
+    }
+
+    /// <summary>Damage on the crowd zombie the last <see cref="CwCrowdRay"/> found, credited as a player's shot into the crowd is.</summary>
+    private void CwCrowdHit(Player? credit, float amount, double now)
+    {
+        if (credit == null || amount <= 0)
+            return;
+        if (_cwParticle >= 0)
+        {
+            if (_cwParticle < Crowd.Count)
+                CrowdDamage(credit, _cwParticle, amount, head: false, explosive: false, drops: true, now);
+        }
+        else if (_cwMassCell >= 0 && _cwMassCell < Crowd.MassCount.Length)
+            CrowdMassDamage(credit, _cwMassCell, _cwMassSlot, amount, head: false, explosive: false, drops: true, now);
+        _cwParticle = -1;
+        _cwMassCell = -1;
+        CwCrowdHits++;
+    }
+
+    /// <summary>Construct gun hits on crowd and mass zombies (log, self-test).</summary>
+    public int CwCrowdHits;
 
     /// <summary>Who a construct's shots are credited to: the gunner in the gun's seat, else whoever last built on it, else nobody.</summary>
     private Player? ConstructCredit(Construct? by, int gunPart)
@@ -73,6 +119,11 @@ public sealed partial class Game : IConstructTargets
             _cwZombie = null;
             return;
         }
+        if (id == CwCrowdTarget)
+        {
+            CwCrowdHit(Players.GetValueOrDefault(by), amount, SandboxNow);
+            return;
+        }
         if (Players.TryGetValue((byte)id, out var victim) && victim.Alive)
             DamagePlayer(Players.GetValueOrDefault(by) ?? victim, victim, amount, false, weapon, SandboxNow, DamageKind.Bullet, at);
     }
@@ -88,6 +139,11 @@ public sealed partial class Game : IConstructTargets
             if (_cwZombie is { } z && credit != null && amount > 0)
                 DamageZombie(credit, z, amount, false, melee: false, now);
             _cwZombie = null;
+            return;
+        }
+        if (id == CwCrowdTarget)
+        {
+            CwCrowdHit(credit, amount, now);
             return;
         }
         if (!Players.TryGetValue((byte)id, out var victim) || !victim.Alive)
