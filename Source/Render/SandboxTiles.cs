@@ -21,6 +21,12 @@ public readonly record struct TileBox(Matrix4x4 Model, Vector3 Color, ushort Sha
 /// a frame badly). It is made again only when the parts, blueprints or tools change (<see cref="Key"/>). Until a tile is
 /// ready (or if pictures can't be made at all) the window draws a plain swatch in its place.
 /// </para>
+/// <para>
+/// Failures don't turn pictures off for good: a slot whose data throws gets a swatch alone; a set-up or batch failure
+/// (incomplete framebuffer, a first picture read back empty) is tried again <see cref="MaxTries"/> times before the
+/// swatches stay, and Options > Regenerate icons (<see cref="Regenerate"/>) starts over. Every reason is one throttled
+/// <c>[icons]</c> line in callofslop.log. The atlas is GPU memory only: no icon cache on disk.
+/// </para>
 /// Slots: parts by id, then blueprints by index, then tool models by index (<see cref="SlotOf"/>).
 /// </summary>
 public static unsafe class SandboxTiles
