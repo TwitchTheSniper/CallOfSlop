@@ -85,7 +85,7 @@ public sealed partial class Vehicle
         if (HullLoft.ShapeOf(name) is not { Window: > '\0' } sh)
             return;
         foreach (var (socket, pane) in HullLoft.RoomPanesOf(sh))
-            PanelList("glass").Add(AsIs(bay, socket, pane.Key(), "frame"));
+            PanelList("roomglass").Add(AsIs(bay, socket, pane.Key(), "frame")); // (not "glass": that is the cab's, which the cab measure reads)
     }
 
     /// <summary>

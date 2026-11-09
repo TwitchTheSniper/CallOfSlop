@@ -1164,7 +1164,7 @@ public static class BodyReportCli
                             else
                                 sections.Add(b.Def.Name);
                         }
-                        foreach (var cp in new[] { "cabshell", "hood", "glass", "stairs", "balcony" }.SelectMany(t => v.Panels.GetValueOrDefault(t) ?? []).Concat(v.Rooms.SelectMany(r => r.Upper?.Bays ?? [])))
+                        foreach (var cp in new[] { "cabshell", "hood", "glass", "roomglass", "stairs", "balcony" }.SelectMany(t => v.Panels.GetValueOrDefault(t) ?? []).Concat(v.Rooms.SelectMany(r => r.Upper?.Bays ?? [])))
                             if (keys.Add(cp.Def.Name) && OwnFights(cp.Def, out var cf) is var cown and > 0)
                             {
                                 fights += cown;
