@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 2.25 m, leaf/leaf, wing 0.5, language van heavy 2.48 m, flare 0.19, plain 0.6, brow 0.75 1.25 m, tail 0.79 1 m, door left, cab van cab, nose flat, fitting roof sign, trim signboards on 3 bay sides, wear age 0.49 (5 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room+gun bed, cab enclosed, nose short hood, rear hitch, under skirted, flank loaded, sides open, roof none, layout room(Brow T,Door,Tail T)+gun bed 2.5 m, plan 2
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 2.25 m, leaf/leaf, wing 0.5, language van heavy 2.48 m, flare 0.19, plain 0.6, brow 0.75 1.25 m, tail 0.79 1 m, door left, cab van cab, nose flat, fitting roof sign, lopsided right, trim signboards on 3 bay sides, wear age 0.49 (5 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room+gun bed, cab enclosed, nose short hood, rear hitch, under skirted, flank loaded, sides open, roof none, layout room(Brow T,Door,Tail T)+gun bed 2.5 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Gun Wagon 5",
   "group": "The Call Centre",
@@ -87,8 +87,8 @@
     {"part": "Hull Loft (150d ~D00DmyDv1G9aGA-EZYA3p03u =)", "on": 59, "socket": "front02", "by": "footR1", "spin": 3, "paint": "#b0b4b8"},
     {"part": "Long Door Hinge", "weld": {"on": 79, "pos": [-0.775, 1.675, 2.76], "rot": [0.7071, 0, 0.7071, -0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 80, "socket": "leaf", "by": "hang", "paint": "#7d8a92"},
-    {"part": "Scrap Ladder", "on": 59, "socket": "+z2", "by": "back", "paint": "#b0b4b8"},
     {"part": "Hull Loft (100r ~D00DmyDv1G9aGA-EZYA3p03u ~C80CupCuyEHaEILCwo8Y_033)", "on": 63, "socket": "front03", "by": "footL0", "paint": "#b0b4b8"},
+    {"part": "Scrap Ladder", "on": 59, "socket": "+z2", "by": "back", "paint": "#b0b4b8"},
     {"part": "Hull Skirt 1 m", "on": 62, "socket": "back11", "by": "top2", "spin": 2, "paint": "#7d8a92"},
     {"part": "Hull Skirt 1 m", "on": 59, "socket": "back03", "by": "top0", "spin": 2, "paint": "#7d8a92"},
     {"part": "Hull Skirt 1 m", "on": 60, "socket": "back03", "by": "top0", "spin": 2, "paint": "#9aa0a6"},
@@ -167,8 +167,8 @@
     {"part": "Office Phone", "on": 107, "socket": "front", "by": "base"},
     {"part": "Loudhailer", "on": 100, "socket": "front10", "by": "base"},
     {"part": "Hull Loft (trimg4 XaW5 ~D00DmyDv1G9aGA-EZYA3p03u ~C00CmnCmyE9aEAECoe8Yr02v)", "on": 78, "socket": "-x0", "by": "base", "paint": "#ffd400"},
-    {"part": "Hull Loft (trimg3 XaW5 ~D00DmyDv1G9aGA-EZYA3p03u ~C80CupCuyEHaEILCwo8Y_033)", "on": 83, "socket": "+x0", "by": "base", "paint": "#ffd400"},
-    {"part": "Hull Loft (trimg7 XaW5 ~C80CupCuyEHaEILCwo8Y_033 ~D00DmyDv1G9aGA-EZYA3p03u)", "on": 83, "socket": "-x0", "by": "base", "paint": "#b0b4b8"}
+    {"part": "Hull Loft (trimg3 XaW5 ~D00DmyDv1G9aGA-EZYA3p03u ~C80CupCuyEHaEILCwo8Y_033)", "on": 82, "socket": "+x0", "by": "base", "paint": "#ffd400"},
+    {"part": "Hull Loft (trimg7 XaW5 ~C80CupCuyEHaEILCwo8Y_033 ~D00DmyDv1G9aGA-EZYA3p03u)", "on": 82, "socket": "-x0", "by": "base", "paint": "#b0b4b8"}
   ],
   "wires": [[35, 36], [36, 30], [90, 135], [135, 128], [138, 144], [144, 140], [150, 147]],
   "hoses": [[148, 149]],

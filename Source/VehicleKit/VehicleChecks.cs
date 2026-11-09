@@ -669,7 +669,7 @@ public static class VehicleChecks
         Vector3 Here(in MoveState m) => (m.RideUp != Vector3.Zero ? m.Position : c.ToLocal(m.Position)) - room.FloorRest; // (a rider's place is in the body's rest frame)
         var stood = Here(settle).Y - b.Mid.Y;
         if (MathF.Abs(stood) > 0.2f)
-            r.Failures.Add($"the {room.Tag}'s balcony: a player stands {stood:0.00} m off its deck (at {Show(Here(settle))}, from {Show(b.Mid)})");
+            r.Failures.Add($"the {room.Tag}'s balcony: a player stands {stood:0.00} m off its deck (at {Show(Here(settle))}, from {Show(b.Mid)}{(Hit(c, b.Mid + room.FloorRest + new Vector3(0, 1.2f, 0), 0.4f) || Hit(c, b.Mid + room.FloorRest + new Vector3(0, 0.6f, 0), 0.4f) || Hit(c, b.Mid + room.FloorRest + new Vector3(0, 1.6f, 0), 0.4f) ? ": over it, " + _blocker : "")})");
         // Out of the room onto it: from inside the doorway toward the balcony's middle, the walker's own steps.
         var inside = room.DoorMid - room.DoorFace * 0.7f;
         var way = Vector3.Normalize((b.Mid - inside) with { Y = 0 });

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front forward, inset 2 m, leaf/leaf, wing 0.5, language slab standard 2.29 m, flare 0.10, raked 0.9, brow 0.79 1.25 m, tail 0.80 1.25 m, door right, cab slab cab, nose grille, fitting mascot, trim clinker on 5 bay sides, wear age 0.88 (6 rusty, 15 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear porch, under skirted, flank loaded, sides open, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T), plan 3
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front forward, inset 2 m, leaf/leaf, wing 0.5, language slab standard 2.29 m, flare 0.10, raked 0.9, brow 0.79 1.25 m, tail 0.80 1.25 m, door right, cab slab cab, nose grille, fitting mascot, lopsided right, trim clinker on 5 bay sides, wear age 0.88 (6 rusty, 15 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear porch, under skirted, flank loaded, sides open, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T), plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Box Truck 7",
   "group": "Clan MacSlop",

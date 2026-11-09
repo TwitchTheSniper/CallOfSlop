@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 3 axles, tag 1.25 m, front under the hood, inset 2 m, coil/hydraulic/hydraulic, wing 0.5, language boat standard 2.38 m, flare 0.19, sheer 0.8, brow 0.76 1.5 m, tail 0.63 1 m, door left, cab boat caged cab, nose rounded, fitting chrome grille, fitting mascot, wear age 0.72 (1 rusty, 8 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+tank+bed, cab caged, nose long hood, rear bare, under stilts, sides walls, layout gun bay 2 m+tank 2 m+bed 1.5 m, plan 3
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 3 axles, tag 1.25 m, front under the hood, inset 2 m, coil/hydraulic/hydraulic, wing 0.5, language boat standard 2.38 m, flare 0.19, sheer 0.8, brow 0.76 1.5 m, tail 0.63 1 m, door left, cab boat caged cab, nose rounded, fitting chrome grille, fitting mascot, lopsided left, wear age 0.72 (1 rusty, 8 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+tank+bed, cab caged, nose long hood, rear bare, under stilts, sides walls, layout gun bay 2 m+tank 2 m+bed 1.5 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 2",
   "group": "Clan MacSlop",
@@ -103,8 +103,7 @@
     {"part": "Hull Loft (decoO UhVr)", "on": 88, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 65, "socket": "front", "by": "base"},
     {"part": "Iron Spike", "on": 84, "socket": "front01", "by": "base"},
-    {"part": "Iron Spike", "on": 85, "socket": "front00", "by": "base"},
-    {"part": "Wee Caber", "on": 86, "socket": "front01", "by": "base"},
+    {"part": "Iron Spike", "on": 82, "socket": "front01", "by": "base"},
     {"part": "Coo Heid", "on": 56, "socket": "front12", "by": "base"},
     {"part": "Saltire Flag", "on": 59, "socket": "front01", "by": "base"},
     {"part": "Coo Heid", "on": 63, "socket": "front", "by": "base"}

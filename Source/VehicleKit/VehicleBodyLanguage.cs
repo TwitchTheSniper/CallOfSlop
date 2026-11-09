@@ -279,8 +279,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     public char BalconyKind { get; init; } = 'w';
     public float BalconyLenMin { get; init; } = 1.2f;
     public float BalconyLenMax { get; init; } = 1.45f;
-    public float BalconyDepthMin { get; init; } = 0.7f;
-    public float BalconyDepthMax { get; init; } = 0.9f;
+    public float BalconyDepthMin { get; init; } = 0.92f; // (a player is 0.8 m across: a shallower deck's rail meets them standing at its middle)
+    public float BalconyDepthMax { get; init; } = 1.0f;
     public float BalconyRailMin { get; init; } = 0.95f;
     public float BalconyRailMax { get; init; } = 1.05f;
     public double Asym { get; init; }
@@ -310,7 +310,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: a welded cage for a room half the time: the faction's own space (welded boxes on the flanks are data, left at 0: they washed out its trim))
                 Cage = 0.6, CageKind = 'w', Uppers = [("none", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0)],
                 // (phase 6: a welded grating balcony now and then; lopsided most of all: welded boxes and the plates down one flank; caged rooms its signature, 0.6)
-                Balcony = 0.35, BalconyKind = 'w', BalconyDepthMin = 0.6f, BalconyDepthMax = 0.85f, Asym = 0.7, AsymAmount = 0.9f, AsymPod = 0.6, AsymTrim = 0.9f,
+                Balcony = 0.35, BalconyKind = 'w', Asym = 0.7, AsymAmount = 0.9f, AsymPod = 0.6, AsymTrim = 0.9f,
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
             },
         // (low and wide, flat-faceted: little height, a glacis brow)
@@ -352,7 +352,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: a portacabin stacked on the portacabin; kiosks are data, left at 0: they washed out its signboards)
                 Uppers = [("none", 1.5), ("saloon", 1.5)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
                 // (phase 6: a showy balcony with a sign band at every door it fits, deep; kiosks down one side when lopsided)
-                Balcony = 1, BalconyKind = 'g', BalconyLenMin = 1.3f, BalconyDepthMin = 0.8f, BalconyDepthMax = 1.0f, Asym = 0.4, AsymAmount = 0.7f, AsymPod = 0.7,
+                Balcony = 1, BalconyKind = 'g', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.1f, Asym = 0.4, AsymAmount = 0.7f, AsymPod = 0.7,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
             },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
@@ -366,7 +366,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: an open deck behind a bulwark in the boat's lines; a stock wagon of timber stakes now and then; clinker lockers are data, left at 0)
                 Cage = 0, CageKind = 't', Uppers = [("none", 2), ("deck", 0.4)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0)], PodMax = 2,
                 // (phase 6: a timber veranda at every door it fits, deep, its signature in place of the deck and the stock wagon; lockers on one side now and then)
-                Balcony = 1, BalconyKind = 't', BalconyLenMin = 1.3f, BalconyDepthMin = 0.75f, BalconyDepthMax = 1.0f, Asym = 0.3, AsymAmount = 0.5f, AsymPod = 0.5,
+                Balcony = 1, BalconyKind = 't', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.15f, Asym = 0.3, AsymAmount = 0.5f, AsymPod = 0.5,
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
             },
         // (tall, upright buses: the heavy class first, the door kerbside)

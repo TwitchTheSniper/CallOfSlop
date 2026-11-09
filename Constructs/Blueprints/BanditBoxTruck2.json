@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, leaf/swing arm, wing 0.5, language armour standard 2.32 m, flare 0.06, sloped 1.0, brow 0.66 1.25 m, tail 0.79 1.25 m, door right, space cage w, cab armour caged cab, nose wedge, sections armour+ledge, wear age 0.97 (21 rusty, 14 dirty, 0 sooty, 0 patched, 1 rusted out), body room, cab caged, nose long hood, rear porch hitch, under stilts, flank bare, roof none, layout room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.75 m, leaf/swing arm, wing 0.5, language armour standard 2.32 m, flare 0.06, sloped 1.0, brow 0.66 1.25 m, tail 0.79 1.25 m, door right, space cage w, cab armour caged cab, nose wedge, sections armour+ledge, lopsided left, wear age 0.97 (21 rusty, 14 dirty, 0 sooty, 0 patched, 1 rusted out), body room, cab caged, nose long hood, rear porch hitch, under stilts, flank bare, roof none, layout room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Box Truck 2",
   "group": "Bandit",
