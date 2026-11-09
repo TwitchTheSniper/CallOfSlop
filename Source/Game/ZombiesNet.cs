@@ -167,6 +167,7 @@ public sealed partial class Game
         public readonly byte[] SentState = new byte[MaxZombies];
         public readonly byte[] SentLimbs = new byte[MaxZombies];
         public readonly byte[] SentTypeState = new byte[MaxZombies];
+        public readonly byte[] GoneSent = new byte[MaxZombies]; // (times its gone entry went out: the list is unreliable, so it goes three times)
     }
 
     private readonly Dictionary<ulong, ZEntView> _zViews = new();
@@ -277,6 +278,7 @@ public sealed partial class Game
             if (view != null && z.Hm.Slot is >= 0 and < MaxZombies)
             {
                 view.SentId[z.Hm.Slot] = z.Id;
+                view.GoneSent[z.Hm.Slot] = 0;
                 view.Age[z.Hm.Slot] = 0;
                 view.SentState[z.Hm.Slot] = sb;
                 view.SentLimbs[z.Hm.Slot] = z.Limbs;
@@ -290,6 +292,46 @@ public sealed partial class Game
                 if (slot is >= 0 and < MaxZombies && view.Age[slot] < 255)
                     view.Age[slot]++;
             }
+        WriteZGone(w, view);
+    }
+
+    /// <summary>The most ids in one <see cref="Msg.ZEnts"/>'s gone list (protocol 218): 969 + 1 + 2 x 64 bytes still fit one datagram.</summary>
+    public const int ZGoneMax = 64;
+
+    // The id in each zombie slot this send (0: free), for the gone list (the game thread only).
+    private readonly ushort[] _zSlotId = new ushort[MaxZombies];
+
+    /// <summary>
+    /// The gone list (protocol 218): the zombies this client was sent that the server no longer has alive in that slot
+    /// (one put back into the crowd, or freed), so the client drops them at once and its drawn crowd takes them back where
+    /// they stood (CrowdView.Individuals), instead of keeping a frozen zombie for <see cref="ZEntTimeout"/> that the host
+    /// doesn't have. No allocation.
+    /// </summary>
+    private void WriteZGone(PacketWriter w, ZEntView? view)
+    {
+        var countAt = w.Length;
+        w.U8(0);
+        if (view == null)
+            return;
+        Array.Clear(_zSlotId);
+        foreach (var z in Horde)
+            if (z.Hm.Slot is >= 0 and < MaxZombies)
+                _zSlotId[z.Hm.Slot] = z.Id;
+        var gone = 0;
+        for (var s = 0; s < MaxZombies && gone < ZGoneMax; s++)
+        {
+            var sent = view.SentId[s];
+            if (sent == 0 || _zSlotId[s] == sent)
+                continue;
+            w.U16(sent);
+            if (++view.GoneSent[s] >= 3)
+            {
+                view.SentId[s] = 0; // (told: a new zombie in this slot is new to the client)
+                view.GoneSent[s] = 0;
+            }
+            gone++;
+        }
+        w.PatchU8(countAt, (byte)gone);
     }
 
     /// <summary>
@@ -803,6 +845,20 @@ public sealed partial class Game
             if (z.Snaps.Count > Zombie.MaxSnaps)
                 z.Snaps.RemoveAt(0);
         }
+        // The gone list (protocol 218): zombies the server no longer has (back in the crowd, or freed). A dead one is left
+        // to finish its fall (DropStaleZombies).
+        var goneN = r.Has(1) ? r.U8() : 0;
+        for (var i = 0; i < goneN && r.Has(2); i++)
+        {
+            var id = r.U16();
+            if (!SelfTestOldZombies && _zById.TryGetValue(id, out var z) && z.State != ZState.Dead && (latest || z.Snaps.Count == 0 || z.Snaps[^1].Tick < tick))
+            {
+                Horde.Remove(z);
+                _zById.Remove(id);
+                ReturnZombie(z);
+                ZGoneRead++;
+            }
+        }
         if (latest && total == 0 && Horde.Count > 0)
         {
             ReturnHorde();
@@ -815,6 +871,12 @@ public sealed partial class Game
 
     /// <summary>Client: the server's horde size in the last <see cref="Msg.ZEnts"/> (it may send fewer than that).</summary>
     public int ZEntsLastTotal;
+
+    /// <summary>Self-test (--zombie-probe --old): the zombies' behaviour before the 2026-11-09 fixes (no gone list read, the old hand-over reach, construct guns blind to the crowd), to compare.</summary>
+    public static bool SelfTestOldZombies;
+
+    /// <summary>Client: zombies dropped by the server's gone lists (protocol 218).</summary>
+    public int ZGoneRead;
 
     /// <summary>Client: <see cref="Msg.ZEnts"/> packets read, and the longest wait between two (self-test, logs).</summary>
     public int ZEntsRead;

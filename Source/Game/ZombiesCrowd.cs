@@ -310,12 +310,17 @@ public sealed partial class Game
     /// drawing. Host and client: while it has an offset to where it was drawn in the crowd, it is drawn there, eased out
     /// over a moment and turned from that one's yaw to its own, so nothing jumps as it changes tier.
     /// </summary>
+    /// <summary>How far (m) a client's individual looks for the drawn crowd zombie it came out of.</summary>
+    public const float CrowdTakeOverReach = 6f;
+
     private void CrowdHandFrame(Zombie z, float dt)
     {
         if (!IsServer && !z.CrowdTook && z.Alive && ZRules.Crowd.SoftWake)
         {
             z.CrowdTook = true;
-            if (DrawnCrowd is { } a && a.TakeOver(z.RenderPos.X, z.RenderPos.Z, 3f, (int)z.Speed, counted: true, out var pose) >= 0)
+            // (Within a few metres: the client's picture of the cells trails the server by a send or two, more with lag, and a
+            // crowd chasing a car is metres on by then; the offset is eased out below, so a far take-over slides, never pops.)
+            if (DrawnCrowd is { } a && a.TakeOver(z.RenderPos.X, z.RenderPos.Z, SelfTestOldZombies ? 3f : CrowdTakeOverReach, (int)z.Speed, counted: true, out var pose) >= 0)
             {
                 var off = new Vector3(pose.X - z.RenderPos.X, 0, pose.Z - z.RenderPos.Z);
                 var dur = Math.Clamp(off.Length() / CrowdView.HandSpeed, CrowdView.HandMin, CrowdView.HandMax);
