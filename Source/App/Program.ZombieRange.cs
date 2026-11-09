@@ -97,11 +97,16 @@ public static unsafe partial class Program
         // Both stand in the corner (the client a little to the side), looking along the diagonal.
         var spot = ZrCorner() + (_zr == 2 ? new Vector3(2, 0, -2) : Vector3.Zero);
         spot.Y = World.Map.GroundHeight(spot.X, spot.Z) + 0.05f;
-        if (!_zrPlaced || Vector3.DistanceSquared(new Vector3(me.Position.X, 0, me.Position.Z), new Vector3(spot.X, 0, spot.Z)) > 4f)
-        {
-            me.Teleport(spot);
-            _zrPlaced = true;
-        }
+        if (_zr == 1)
+            foreach (var p in g.Players.Values)
+            {
+                // (the host moves both players, the client's through the server)
+                var ps = ZrCorner() + (p.Id == me.Id ? Vector3.Zero : new Vector3(2, 0, -2));
+                ps.Y = World.Map.GroundHeight(ps.X, ps.Z) + 0.05f;
+                if (p.Alive && Vector3.DistanceSquared(new Vector3(p.Position.X, 0, p.Position.Z), new Vector3(ps.X, 0, ps.Z)) > 4f)
+                    p.Teleport(ps);
+            }
+        _zrPlaced = true;
         // The drawn crowd: its middle, and the drawn zombie nearest it (what a player would aim at).
         var inst = Crowd.Inst;
         var drawn = inst.Total;
@@ -123,7 +128,7 @@ public static unsafe partial class Program
                 iz += z.RenderPos.Z;
             }
         Vector3? aim = null;
-        var eye = me.RenderEye;
+        var eye = _zr == 2 ? CrowdCam : me.RenderEye; // (the client: where its camera is)
         if (drawn > 0)
         {
             float cx = sx / drawn, cz = sz / drawn, best = float.MaxValue;
@@ -202,7 +207,7 @@ public static unsafe partial class Program
                 picture = $", server crowd {c.Count} particles{(c.Count > 0 ? $" round ({px / c.Count:0},{pz / c.Count:0})" : "")} + {c.MassTotal} mass, individuals {g.Horde.Count(z => z.Alive)}";
             }
             Console.WriteLine($"[zrange] {(_zr == 1 ? "host" : "client")} t {now - _zrStart:0}: drawn crowd {drawn} ({Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar}, {Program.CrowdDrawnCulled} culled) "
-                              + $"middle {(drawn > 0 ? $"({sx / drawn:0},{sz / drawn:0})" : "-")}, individuals {aliveInd}, aim {(aim is { } a2 ? $"({a2.X:0},{a2.Z:0}) {aimDist:0} m" : "none")}{picture}, shots {_zrShots}; eye ({eye.X:0},{eye.Y:0.0},{eye.Z:0}) yaw {g.LookYaw:0.00}, cam ({Gfx.CameraPosition.X:0},{Gfx.CameraPosition.Z:0}), cells {Crowd.Agents.CellsDrawn} drawn {Crowd.Agents.CellsCulled} out {Crowd.Agents.CellsFogged} fogged {Crowd.Agents.CellsHidden} hidden");
+                              + $"middle {(drawn > 0 ? $"({sx / drawn:0},{sz / drawn:0})" : "-")}, individuals {aliveInd}, aim {(aim is { } a2 ? $"({a2.X:0},{a2.Z:0}) {aimDist:0} m" : "none")}{picture}, shots {_zrShots}; eye ({eye.X:0},{eye.Y:0.0},{eye.Z:0}) yaw {g.LookYaw:0.00}, cam ({CrowdCam.X:0},{CrowdCam.Y:0.0},{CrowdCam.Z:0}) pitch {g.LookPitch:0.00}, cells {Crowd.Agents.CellsDrawn} drawn {Crowd.Agents.CellsCulled} out {Crowd.Agents.CellsFogged} fogged {Crowd.Agents.CellsHidden} hidden");
         }
         // Fire at what is drawn (4 s in on the host's schedule; the client whenever it draws a crowd).
         var w = g.Active;
