@@ -81,6 +81,18 @@ public static partial class Program
             fwd = g.LookDir(yaw, pitch);
         }
         var look = Vector3.Transform(fwd, Quaternion.Conjugate(seat));
+        if (d.Receiver >= 0 && d.Receiver < d.PartCount && ConstructWeapons.RemoteSight(d, d.Receiver, g.TickAlpha, true, out var sight, g.IsServer))
+        {
+            // A remote turret: the view is its gun sight, past the muzzle and above the bore, so the turret's own housing is behind the
+            // camera, and the crosshair is where the guns converge (the server aims from this same point: ConstructWeapons.SeatEye).
+            ref var sr = ref d.Parts[d.Receiver];
+            d.WorldFrame(sr.Seg, out var sq, out _);
+            var st = sq * Rot24.Quat(sr.Rot);
+            fwd = Vector3.Transform(look, st);
+            up = Vector3.Transform(Vector3.UnitY, st);
+            eye = sight;
+            return true;
+        }
         if (d.CameraParts.Length > 0 && d.CameraParts[0] < d.PartCount)
         {
             // A camera turns only so far: past this the view would look into its own housing.

@@ -83,6 +83,11 @@ public static unsafe partial class Program
         }
         g.ThirdAimDir = null;
         ref var h = ref g.SandboxHands.Hand(me.Id);
+        if (g.Constructs.Get(h.SeatBody) is { } sc && h.SeatPart < sc.PartCount && g.LocalDrone() is { } d)
+        {
+            PilotThirdPersonAim(g, sc, h.SeatPart, d);
+            return;
+        }
         if (g.Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount || c.SeatKindOf(h.SeatPart) != SeatKind.Gunner)
             return;
         var f = g.LookDir(ThirdPerson.OrbitYaw, ThirdPerson.OrbitPitch);
@@ -95,6 +100,34 @@ public static unsafe partial class Program
             g.LookYaw = look.Yaw;
             g.LookPitch = Math.Clamp(look.Pitch, -1.5f, 1.5f);
         }
+    }
+
+    /// <summary>
+    /// Third person on a drone whose receiver aims guns: the look follows the orbit's crosshair, as a gunner seat's does. The guns are aimed from the
+    /// remote sight (ConstructWeapons.RemoteSight), so the look is the way from there to what the camera's ray meets (other bodies too, never the drone),
+    /// turned back from the receiver's frame into the console seat's (the inverse of ConstructRemote.MapLook).
+    /// </summary>
+    private static void PilotThirdPersonAim(Game g, Construct c, int seat, Construct d)
+    {
+        var rx = d.Receiver;
+        if (rx < 0 || rx >= d.PartCount || !d.SeatAims(rx) || !ConstructWeapons.RemoteSight(d, rx, g.TickAlpha, true, out var sight, g.IsServer))
+            return;
+        var f = g.LookDir(ThirdPerson.OrbitYaw, ThirdPerson.OrbitPitch);
+        if (!g.ThirdPersonSeatPoint(out var point, out _, out _, out _, out _, out _))
+            return;
+        var camPos = point - f * (ThirdPerson.SeatDist * ThirdPerson.PullRatio);
+        var o = ThirdPerson.AimOrigin(camPos, f, sight);
+        var dist = World.Query.Raycast(o, f, World.Range, QueryFilter.Shots);
+        if (g.Constructs.Raycast(o, f, dist, out var hit, d, ignoreCargo: true) && hit.Distance < dist)
+            dist = hit.Distance;
+        var w = ThirdPerson.DirTo(o + f * dist, sight, f);
+        ref var r = ref d.Parts[rx];
+        d.WorldFrame(r.Seg, out var rq, out _);
+        ref var s = ref c.Parts[seat];
+        c.WorldFrame(s.Seg, out var sq, out _);
+        var look = Vector3.Transform(Vector3.Transform(w, Quaternion.Conjugate(rq * Rot24.Quat(r.Rot))), sq * Rot24.Quat(s.Rot));
+        g.LookYaw = MathF.Atan2(look.X, -look.Z);
+        g.LookPitch = Math.Clamp(MathF.Asin(Math.Clamp(look.Y, -1f, 1f)), -1.5f, 1.5f);
     }
 
     /// <summary>The on-foot camera for this frame's look without a cast: last frame's pull applied to the wanted spot.</summary>
