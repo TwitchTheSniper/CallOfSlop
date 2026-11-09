@@ -1542,6 +1542,7 @@ public sealed partial class Game
         var fwd = GravityFrames.FlatForward(p.Position, p.Yaw); // (a planetoid: along its ground there)
         var probe = p.Position + fwd * 6f;
         var ground = ConstructWorld.Ground(World.Query, probe);
+        var before = Constructs.Bodies.Count; // (what is built from here on is this spawn's: it, a trailer, its cargo)
         var c = job != null ? job.Join(ground, p.Yaw, out why) : ConstructBuild.BuildOnGround(Constructs, bp, ground, p.Yaw, out why, tow);
         if (c == null)
         {
@@ -1553,17 +1554,39 @@ public sealed partial class Game
         // Out past its own size (a buggy is longer than a gate): its widest reach from its origin, plus a metre and a half.
         var reach = MathF.Max(MathF.Max(MathF.Abs(c.LocalMin.X), MathF.Abs(c.LocalMax.X)), MathF.Max(MathF.Abs(c.LocalMin.Z), MathF.Abs(c.LocalMax.Z)));
         var dist = MathF.Max(3f, reach + 1.5f);
-        if (MathF.Abs(dist - 6f) > 0.05f)
+        var g0 = ground;
+        for (var tries = 0; ; tries++)
         {
-            var at = p.Position + fwd * dist;
-            var g0 = ConstructWorld.Ground(World.Query, probe);
-            var g1 = ConstructWorld.Ground(World.Query, at);
-            c.Pos += g1 - g0; // (a planetoid: moved along its ground, a few metres, so it stays all but upright)
-            c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
-            c.NetHistReset();
-            ConstructCargo.FollowAll(Constructs); // (what its cargo volumes carry moves with it)
+            if (tries > 0 || MathF.Abs(dist - 6f) > 0.05f)
+            {
+                var g1 = ConstructWorld.Ground(World.Query, p.Position + fwd * dist);
+                SandboxSpawnMove(before, g1 - g0); // (a planetoid: moved along its ground, a few metres, so it stays all but upright)
+                g0 = g1;
+            }
+            // Spawned back to back (the inventory stays open): the last one may stand on the spot, so the next goes on past it.
+            if (!ConstructPhysics.SpawnOverlaps(Constructs, before))
+                return c;
+            if (tries == 7)
+                break;
+            dist += MathF.Max(2 * reach + 1f, 2 * c.Radius);
         }
-        return c;
+        for (var i = Constructs.Bodies.Count - 1; i >= before; i--)
+            Constructs.Remove(Constructs.Bodies[i]);
+        why = $"no room in front of you for the {bp.Name}";
+        return null;
+    }
+
+    /// <summary>A spawn moved as one: every body from <paramref name="from"/> on (it, a trailer), what cargo volumes carry following.</summary>
+    private void SandboxSpawnMove(int from, Vector3 by)
+    {
+        for (var i = from; i < Constructs.Bodies.Count; i++)
+        {
+            var b = Constructs.Bodies[i];
+            b.Pos += by;
+            b.PrevPos = b.NetPos = b.NetFromPos = b.Pos;
+            b.NetHistReset();
+        }
+        ConstructCargo.FollowAll(Constructs); // (what its cargo volumes carry moves with it)
     }
 
     // ---- Players in and on constructs ------------------------------------------------------------------------------
