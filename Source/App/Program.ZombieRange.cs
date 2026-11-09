@@ -32,7 +32,7 @@ public static unsafe partial class Program
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         _zr = args.Any(a => a.Equals("--zrange-client", StringComparison.OrdinalIgnoreCase)) ? 2 : 1;
         if (int.TryParse(Arg("--size"), out var n))
-            _zrSize = Math.Clamp(n, 65, 20000);
+            _zrSize = Math.Clamp(n, 65, 500000);
         if (Arg("--dists") is { } ds)
             _zrDists = ds.Split(',').Select(s => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         _settings.Mode = GameMode.Sandbox;
@@ -204,7 +204,7 @@ public static unsafe partial class Program
                     px += c.X[i];
                     pz += c.Z[i];
                 }
-                picture = $", server crowd {c.Count} particles{(c.Count > 0 ? $" round ({px / c.Count:0},{pz / c.Count:0})" : "")} + {c.MassTotal} mass, individuals {g.Horde.Count(z => z.Alive)}";
+                picture = $", server crowd {c.Count} particles{(c.Count > 0 ? $" round ({px / c.Count:0},{pz / c.Count:0})" : "")} + {c.MassTotal} mass, individuals {g.Horde.Count(z => z.Alive)}; client's picture off in {g.CrowdStale().Cells} cells by {g.CrowdStale().Zombies} of {g.CrowdStale().Total} (oldest {g.CrowdStale().OldestSends} sends), ZCrowd {(g.ZCrowdPacketsSent > 0 ? g.ZCrowdBytesSent / g.ZCrowdPacketsSent : 0)} B/send";
             }
             Console.WriteLine($"[zrange] {(_zr == 1 ? "host" : "client")} t {now - _zrStart:0}: drawn crowd {drawn} ({Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar}, {Program.CrowdDrawnCulled} culled) "
                               + $"middle {(drawn > 0 ? $"({sx / drawn:0},{sz / drawn:0})" : "-")}, individuals {aliveInd}, aim {(aim is { } a2 ? $"({a2.X:0},{a2.Z:0}) {aimDist:0} m" : "none")}{picture}, shots {_zrShots}; eye ({eye.X:0},{eye.Y:0.0},{eye.Z:0}) yaw {g.LookYaw:0.00}, cam ({CrowdCam.X:0},{CrowdCam.Y:0.0},{CrowdCam.Z:0}) pitch {g.LookPitch:0.00}, cells {Crowd.Agents.CellsDrawn} drawn {Crowd.Agents.CellsCulled} out {Crowd.Agents.CellsFogged} fogged {Crowd.Agents.CellsHidden} hidden");

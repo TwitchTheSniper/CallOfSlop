@@ -23,6 +23,7 @@ public sealed partial class Game
     public sealed class CrowdNetView
     {
         public byte[] Count = [], Head = [];
+        public int[] SentAt = [];
         public int Round = -1, Sends;
     }
 
@@ -102,11 +103,13 @@ public sealed partial class Game
             {
                 v.Count = new byte[n];
                 v.Head = new byte[n];
+                v.SentAt = new int[n];
             }
             else
             {
                 Array.Clear(v.Count);
                 Array.Clear(v.Head);
+                Array.Fill(v.SentAt, v.Sends);
             }
             v.Round = _crowdRound;
         }
@@ -158,11 +161,37 @@ public sealed partial class Game
                 w.U8(h);
             v.Count[i] = c;
             v.Head[i] = h;
+            v.SentAt[i] = v.Sends;
             last = i;
             entries++;
         }
         w.PatchU16(countAt, (ushort)entries);
         v.Sends++;
+    }
+
+    /// <summary>
+    /// Server (--zrange-host's log): for the first client, the cells whose count it was last sent differs from the crowd's
+    /// count now, and the zombies in that difference.
+    /// </summary>
+    public (int Cells, int Zombies, int Total, int OldestSends) CrowdStale()
+    {
+        foreach (var v in _crowdViews.Values)
+        {
+            int cells = 0, zombies = 0, total = 0, oldest = 0;
+            var n = Math.Min(v.Count.Length, _crowdCount.Length);
+            for (var i = 0; i < n; i++)
+            {
+                total += _crowdCount[i];
+                if (v.Count[i] != _crowdCount[i])
+                {
+                    cells++;
+                    zombies += Math.Abs(v.Count[i] - _crowdCount[i]);
+                    oldest = Math.Max(oldest, v.Sends - v.SentAt[i]);
+                }
+            }
+            return (cells, zombies, total, oldest);
+        }
+        return default;
     }
 
     /// <summary>Headings within about 17 degrees count as the same (no resend for a wobble).</summary>
