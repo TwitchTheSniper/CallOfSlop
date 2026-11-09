@@ -269,6 +269,24 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     public (char Kind, double Chance)[] Pods { get; init; } = [];
     public int PodMax { get; init; } = 3;
 
+    /// <summary>
+    /// Phase 6 (docs/vehiclekit/BODY-STYLES.md, section 12): <see cref="Balcony"/>, the chance a room's door opens onto a balcony (a <see cref="HullLoft.BalconyKinds"/>
+    /// letter, <see cref="BalconyKind"/>), its length along the wall, depth and rail's height. <see cref="Asym"/>: the chance a vehicle is lopsided, and by how much
+    /// (<see cref="AsymAmount"/>, 0 to 1): its pods all on one side (at <see cref="AsymPod"/> a free bay side at least, one more than <see cref="PodMax"/>), the other
+    /// side's trim thinned by the amount, its spikes on the one side.
+    /// </summary>
+    public double Balcony { get; init; }
+    public char BalconyKind { get; init; } = 'w';
+    public float BalconyLenMin { get; init; } = 1.2f;
+    public float BalconyLenMax { get; init; } = 1.45f;
+    public float BalconyDepthMin { get; init; } = 0.7f;
+    public float BalconyDepthMax { get; init; } = 0.9f;
+    public float BalconyRailMin { get; init; } = 0.95f;
+    public float BalconyRailMax { get; init; } = 1.05f;
+    public double Asym { get; init; }
+    public float AsymAmount { get; init; } = 0.5f;
+    public double AsymPod { get; init; }
+
     /// <summary>The weight of a cab kind (0: the style never builds it).</summary>
     public double CabWeight(string kind)
     {
@@ -290,6 +308,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Trims = [("p", 2), ("pc", 2), ("c", 1)], TrimMix = true, TrimShare = 0.7,
                 // (phase 5: a welded cage for a room half the time: the faction's own space (welded boxes on the flanks are data, left at 0: they washed out its trim))
                 Cage = 0.5, CageKind = 'w', Uppers = [("none", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0)],
+                // (phase 6: a welded grating balcony now and then; lopsided most of all: welded boxes down one flank, the plates on that side)
+                Balcony = 0.35, BalconyKind = 'w', BalconyDepthMin = 0.6f, BalconyDepthMax = 0.85f, Asym = 0.6, AsymAmount = 0.9f, AsymPod = 0.6,
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
             },
         // (low and wide, flat-faceted: little height, a glacis brow)
@@ -302,6 +322,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Trims = [("s", 2), ("b", 1.5), ("sb", 1.5)], TrimShare = 0.9, Decos = [('B', 0.7)],
                 // (phase 5: slatted frame rooms, an armoured fighting deck over the middle, armoured stowage pods)
                 Cage = 0.1, CageKind = 's', Uppers = [("none", 2.5), ("deck", 1)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
+                // (phase 6: a slatted firing step outside the door now and then; stowage loaded on one side)
+                Balcony = 0.25, BalconyKind = 's', Asym = 0.35, AsymAmount = 0.6f, AsymPod = 0.6,
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
             },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
@@ -314,6 +336,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Trims = [("f", 1)], Decos = [('R', 0.75)],
                 // (phase 5: a short pod storey set in on the roof, smooth blisters on the flanks)
                 Uppers = [("none", 2), ("saloon", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.5)], PodMax = 2,
+                // (phase 6: a faired balcony rarely; nearly always even)
+                Balcony = 0.2, BalconyKind = 'f', BalconyLenMin = 1.3f, Asym = 0.12, AsymAmount = 0.4f,
                 CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
             },
         // (a portacabin on a chassis: boxy, square ends, tall)
@@ -326,6 +350,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Trims = [("g", 1)], TrimShare = 0.8, Decos = [('S', 0.9)],
                 // (phase 5: a portacabin stacked on the portacabin; kiosks are data, left at 0: they washed out its signboards)
                 Uppers = [("none", 1.5), ("saloon", 1.5)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
+                // (phase 6: a showy balcony with a sign band, long; kiosks down one side when lopsided)
+                Balcony = 0.6, BalconyKind = 'g', BalconyLenMin = 1.4f, BalconyLenMax = 2.2f, BalconyDepthMin = 0.8f, BalconyDepthMax = 1.0f, Asym = 0.4, AsymAmount = 0.7f, AsymPod = 0.7,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
             },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
@@ -338,6 +364,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Trims = [("r", 1)], Decos = [('O', 0.8), ('G', 0.75)],
                 // (phase 5: an open deck behind a bulwark in the boat's lines; a stock wagon of timber stakes now and then; clinker lockers are data, left at 0)
                 Cage = 0.06, CageKind = 't', Uppers = [("none", 2), ("deck", 1)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0)], PodMax = 2,
+                // (phase 6: a timber veranda along the door's side; lockers on one side now and then)
+                Balcony = 0.6, BalconyKind = 't', BalconyLenMin = 1.4f, BalconyLenMax = 2.4f, BalconyDepthMin = 0.75f, BalconyDepthMax = 1.0f, Asym = 0.3, AsymAmount = 0.5f, AsymPod = 0.5,
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
             },
         // (tall, upright buses: the heavy class first, the door kerbside)
@@ -350,6 +378,8 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 Trims = [("l", 1)], Decos = [('D', 0.9)],
                 // (phase 5: the double deck: an upper saloon flush with the walls, over most of the room)
                 Uppers = [("saloon", 5), ("none", 0.5)], UpperShareMin = 0.9f, UpperShareMax = 1f, UpperTallMin = 2.06f, UpperTallMax = 2.16f, UpperNarrow = 1f,
+                // (phase 6: a wrought-rail platform at the door; even)
+                Balcony = 0.7, BalconyKind = 'r', BalconyRailMin = 1.0f, BalconyRailMax = 1.1f, Asym = 0.1, AsymAmount = 0.3f,
                 CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,
             },
     };
@@ -536,6 +566,7 @@ public sealed class BodyLook
     public static Roofline? ForceLine;
 
     /// <summary>Phase 5: <c>--no-spaces</c> (no upper storeys, cages or pods), <c>--upper KIND</c>, <c>--cage</c>.</summary>
+    public static bool NoBalconies, NoAsym; // (phase 6: --no-balconies, --no-asym, to measure each)
     public static bool NoSpaces, ForceCage, NoPods, NoCages, NoUppers; // (and --no-pods, --no-cages, --no-uppers: one kind of space left out, to measure each)
     public static string? ForceUpper;
     public static BodyScale? ForceScale;
@@ -1067,7 +1098,7 @@ public static class BodyReportCli
                             else
                                 sections.Add(b.Def.Name);
                         }
-                        foreach (var cp in new[] { "cabshell", "hood", "glass", "stairs" }.SelectMany(t => v.Panels.GetValueOrDefault(t) ?? []).Concat(v.Rooms.SelectMany(r => r.Upper?.Bays ?? [])))
+                        foreach (var cp in new[] { "cabshell", "hood", "glass", "stairs", "balcony" }.SelectMany(t => v.Panels.GetValueOrDefault(t) ?? []).Concat(v.Rooms.SelectMany(r => r.Upper?.Bays ?? [])))
                             if (keys.Add(cp.Def.Name) && OwnFights(cp.Def, out var cf) is var cown and > 0)
                             {
                                 fights += cown;

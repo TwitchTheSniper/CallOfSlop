@@ -658,6 +658,35 @@ public static class VehicleChecks
         r.Notes.Add($"the {up.Tag}: {(up.Open ? "an open deck" : $"{head:0.00} m headroom")}, walked {walked:0.0} m{(got < up.FloorTop - 0.05f ? "" : ", the stair walked up to it")}");
     }
 
+    /// <summary>
+    /// Phase 6: a room's balcony. A player stands on its deck, walks out onto it from the room through the door (open), and is held in by its rail outward and toward
+    /// its closed end (the open end is its ladder's way).
+    /// </summary>
+    private static void Balcony(ConstructWorld w, Construct c, Room room, (VPart Part, Vector3 Mid, Vector3 Out, Vector3 Closed, float Depth, float Half) b, VehicleReport r)
+    {
+        Vector3 World(Vector3 v) => c.ToWorld(v + room.FloorRest);
+        var settle = SelfTest.BuildingWalk(w, World(b.Mid + new Vector3(0, 0.15f, 0)), _ => Vector3.Zero, 14, CallOfSlop.World.PlayerHeight, out _, 0); // (a few ticks: once it rides the deck, the walker's ride step walks it forward, off an open end)
+        var stood = settle.Position.Y - World(b.Mid).Y;
+        if (MathF.Abs(stood) > 0.2f)
+            r.Failures.Add($"the {room.Tag}'s balcony: a player stands {stood:0.00} m off its deck (at {Show(c.ToLocal(settle.Position) - room.FloorRest)}, from {Show(b.Mid)})");
+        // Out of the room onto it: from inside the doorway toward the balcony's middle, the walker's own steps.
+        var inside = room.DoorMid - room.DoorFace * 0.7f;
+        var way = Vector3.Normalize((b.Mid - inside) with { Y = 0 });
+        var s = SelfTest.BuildingWalk(w, World(inside + new Vector3(0, 0.15f, 0)), _ => way, 90, CallOfSlop.World.PlayerHeight, out _);
+        var got = c.ToLocal(s.Position) - room.FloorRest;
+        var outAt = Vector3.Dot(got - room.DoorMid, b.Out);
+        if (outAt < 0.2f || MathF.Abs(got.Y - room.FloorTop) > 0.2f)
+            r.Failures.Add($"the {room.Tag}'s balcony: a player can't walk out onto it from the room (got to {Show(got)})");
+        foreach (var dir in new[] { b.Out, b.Closed })
+        {
+            var d = Clear(c, b.Mid + room.FloorRest, dir, 3f);
+            var reach = Vector3.Dot(dir, b.Out) > 0.5f ? b.Depth / 2 : b.Half;
+            if (d > reach + 0.6f)
+                r.Failures.Add($"the {room.Tag}'s balcony: a player moving {Show(dir)} from its middle gets off it, {d:0.00} m");
+        }
+        r.Notes.Add($"the {room.Tag}'s balcony: stood on, walked out onto, railed (out {outAt:0.00} m past the door)");
+    }
+
     private static void Interior(ConstructBuild.Blueprint bp, Room room, VehicleReport r)
     {
         const float y0 = SelfTest.BuildingY;
@@ -733,6 +762,8 @@ public static class VehicleChecks
         var open = Out();
         if (!open && !shut) // (a player walking into a door leaf swings it, so a door shut needn't stop them)
             r.Failures.Add($"the {room.Tag}: a player can't get out by its door");
+        if (room.Balcony is { } balcony)
+            Balcony(w, c, room, balcony, r);
         if (room.Containers.Count == 0)
             r.Failures.Add($"the {room.Tag}: nothing to loot: no wall took a container");
         var reach = 0f;
