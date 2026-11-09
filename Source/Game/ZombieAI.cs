@@ -1028,6 +1028,7 @@ public sealed partial class Game
             amount = Math.Max(amount, z.Health);
         var healthBefore = z.Health;
         z.Health -= amount;
+        ZHitsBy[attacker.Id]++;
         attacker.LastCombatTime = now;
         if (z.Grabbing && !dot)
             ReleaseGrab(z, now); // any hit frees whoever it holds (ZombieTypes.cs)

@@ -672,6 +672,7 @@ public sealed partial class Game
         if (now < ZInstaKillUntil)
             amount = MathF.Max(amount, Crowd.HP[i]);
         Crowd.HP[i] -= amount;
+        CrowdHitsBy[attacker.Id]++;
         attacker.LastCombatTime = now;
         if (Crowd.HP[i] > 0)
         {
@@ -698,6 +699,7 @@ public sealed partial class Game
         if (now < ZInstaKillUntil)
             amount = MathF.Max(amount, hp);
         hp -= amount;
+        CrowdHitsBy[attacker.Id]++;
         attacker.LastCombatTime = now;
         if (hp > 0)
         {
@@ -710,6 +712,12 @@ public sealed partial class Game
         CrowdKillCredit(attacker, at, head, explosive, drops, now);
         return true;
     }
+
+    /// <summary>Server: crowd and mass zombies hit, by the player credited (since the start; --zrange-host's log).</summary>
+    public readonly int[] CrowdHitsBy = new int[256];
+
+    /// <summary>Server: individual zombies hit, by the player credited (since the start; --zrange-host's log).</summary>
+    public readonly int[] ZHitsBy = new int[256];
 
     /// <summary>Mass zombies killed by blasts (log, self-test).</summary>
     public int CrowdMassKills;
