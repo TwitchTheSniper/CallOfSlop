@@ -1130,8 +1130,11 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   the categories). Hover a tile for its tool, mass, health, armour and description;
   the badge is how many you have ("inf" while parts are endless). Click a part (or the arrow keys and Enter) and it is in
   your hands, with its tool out, exactly as if you took it from the rack; a blueprint (Buggy, Gate, Lift, ...) is built
-  in front of you; a tool comes out. The recent row keeps your last picks. "Keep open after picking" leaves the window
-  up; Tab again or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
+  in front of you; a tool comes out. The recent row keeps your last picks. Spawning something into the world (a
+  blueprint, a faction vehicle, a physics-only part) or a build from the Builds tab leaves the window up, search and
+  scroll kept, so you can spawn things back to back; a green note says what came (red: the server's refusal). Taking a
+  part into your hands or a tool out closes it, back to building, unless "Keep open after picking" is ticked; Tab again
+  or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
 - **Links** (the linking tool): on the tool wheel, point at the linking tool and flick further out onto its outer ring
   for its modes (route links, delete, move node, re-route, highlight all). There is no link type to pick: Fire on a device and it lists its ports (data, power, pipe, shaft or chute, in and out) by name; the port you pick gives the link's type. Fire to place each node on the
   surface (the preview goes red and says why when a rule is broken: pipes bend in 15 degree steps, chutes in 45, shafts

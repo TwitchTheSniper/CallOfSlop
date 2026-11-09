@@ -31,8 +31,23 @@ public sealed partial class Ui
     /// <summary>The Sandbox inventory is open over the match (the mouse is free for it).</summary>
     public bool SandboxPartsOpen { get; private set; }
 
-    /// <summary>Keep the window open after picking a part, blueprint or tool (off: it closes, back to building).</summary>
+    /// <summary>
+    /// Keep the window open after taking a part into the hands or a tool out (off: it closes, back to building). What
+    /// spawns into the world (a blueprint, a faction vehicle, a physics-only part) or a build into the weapon slots never
+    /// closes it, so things can be spawned back to back; a short note in the window says what came (or the server's refusal).
+    /// </summary>
     public bool SandboxPartsKeepOpen;
+
+    private string _sbSpawnNote = "";
+    private double _sbSpawnNoteUntil;
+
+    /// <summary>A spawn from the window (it stays open), before it is asked for: the note says what; a stale notice is cleared so the server's answer to this one (a host's at once) shows.</summary>
+    private void SbSpawned(Game game, string name)
+    {
+        game.SandboxSay(""); // (an older refusal mustn't read as this spawn's)
+        _sbSpawnNote = $"Spawned: {name}";
+        _sbSpawnNoteUntil = ImGui.GetTime() + 3;
+    }
 
     /// <summary>The tiles' size (pixels at scale 1; the window's slider).</summary>
     public float SandboxTileSize = 112;
@@ -438,6 +453,8 @@ public sealed partial class Ui
         }
         if (game.Local is { } me && !def.PhysicsOnly && def.Tool != ConstructTool.None && game.SandboxHands.Hand(me.Id).Tool != def.Tool)
             game.SandboxSend(CActKind.Tool, part: (byte)def.Tool);
+        if (def.PhysicsOnly)
+            SbSpawned(game, def.Name); // (in front of you, not in the hands: the window stays open)
         game.SandboxTakePart(def.Id);
         var at = Array.IndexOf(_sbRecent, def.Id);
         if (at < 0)
@@ -445,16 +462,16 @@ public sealed partial class Ui
         for (var i = at; i > 0; i--)
             _sbRecent[i] = _sbRecent[i - 1];
         _sbRecent[0] = def.Id;
-        if (!SandboxPartsKeepOpen)
+        if (!SandboxPartsKeepOpen && !def.PhysicsOnly) // (a part in the hands is placed by aiming: back to building)
             CloseSandboxParts();
     }
 
-    /// <summary>A blueprint tile (or the self-test): the server builds it in front of you.</summary>
+    /// <summary>A blueprint tile (or the self-test): the server builds it in front of you; the window stays open for the next.</summary>
     public void SandboxPartsSpawn(Game game, int blueprint)
     {
+        var all = ConstructBuild.Blueprints;
+        SbSpawned(game, blueprint >= 0 && blueprint < all.Count ? all[blueprint].Name : "blueprint");
         game.SandboxSend(CActKind.Blueprint, part: (byte)blueprint);
-        if (!SandboxPartsKeepOpen)
-            CloseSandboxParts();
     }
 
     /// <summary>A tool tile: that tool comes out (again: put away).</summary>
@@ -661,6 +678,7 @@ public sealed partial class Ui
             }
             ImGui.AlignTextToFramePadding();
             ImGuiSafe.TextColored(Dim, $"In your hands: {(held != null ? held.Name : "nothing")}   |   {_sbVisibleCount} of {items.Length} shown");
+            SbDrawSpawnNote(game);
             var mini = ImGui.GetFrameHeight() * 1.25f;
             picked ??= SbDrawFavorites(game, me.Id, settings, mini);
             ImGui.AlignTextToFramePadding();
@@ -702,6 +720,19 @@ public sealed partial class Ui
         ImGui.End();
         if (!open)
             CloseSandboxParts();
+    }
+
+    /// <summary>The last spawn's note on the line above, or the server's notice (a refusal) while it lasts.</summary>
+    private void SbDrawSpawnNote(Game game)
+    {
+        var notice = game.SandboxNotice;
+        if (notice.Length == 0 && ImGui.GetTime() >= _sbSpawnNoteUntil)
+            return;
+        ImGui.SameLine(0, 16 * _scale);
+        if (notice.Length > 0)
+            ImGuiSafe.TextColored(new float4(1f, 0.55f, 0.4f, 1f), notice);
+        else
+            ImGuiSafe.TextColored(new float4(0.5f, 0.9f, 0.5f, 1f), _sbSpawnNote);
     }
 
     private static readonly string[] SbRecentIds = ["##sbrecent0", "##sbrecent1", "##sbrecent2", "##sbrecent3", "##sbrecent4", "##sbrecent5", "##sbrecent6", "##sbrecent7"];

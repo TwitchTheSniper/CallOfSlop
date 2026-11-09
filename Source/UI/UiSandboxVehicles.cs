@@ -97,20 +97,19 @@ public sealed partial class Ui
             ImGui.SetTooltip("The threat ladder within the faction: 1 a scrappy crew's, 4 a warlord's (more guns and armour, better loot)."u8);
     }
 
-    /// <summary>A blueprint tile: a faction vehicle's makes a new one when "New seed" is on, anything else spawns as it is.</summary>
+    /// <summary>A blueprint tile: a faction vehicle's makes a new one when "New seed" is on, anything else spawns as it is (the window stays open).</summary>
     private void SbSpawnBlueprintTile(Game game, int index)
     {
         var all = ConstructBuild.Blueprints;
         if (SandboxVehicleNewSeed && index >= 0 && index < all.Count && VehicleSpawnKit.FromBlueprintName(all[index].Name, out var g, out _) && g != null)
         {
             var (style, shape) = VehicleSpawnKit.Names(g);
+            SbSpawned(game, all[index].Name); // (the window stays open for the next)
             if (SandboxVehicleBy == 0 || !game.VehicleSpawn.RolesAndConvoys && game.IsServer)
                 game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed);
             else
                 game.SandboxSpawnFaction(SandboxVehicleBy == 2, style, SandboxVehicleBy == 1 && SandboxVehicleRole > 0 && SandboxVehicleRole <= VehicleRoles.All.Length ? VehicleRoles.All[SandboxVehicleRole - 1].Name : "",
                     SandboxVehicleTier, SandboxConvoyCount, SandboxVehicleSeed);
-            if (!SandboxPartsKeepOpen)
-                CloseSandboxParts();
             return;
         }
         SandboxPartsSpawn(game, index);
