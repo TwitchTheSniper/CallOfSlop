@@ -57,8 +57,40 @@ public static unsafe class SandboxTiles
 
     public static int Pages => _pages.Length;
 
-    /// <summary>Pictures can't be made on this PC (the window draws plain swatches).</summary>
+    /// <summary>Pictures can't be made on this PC after <see cref="MaxTries"/> tries (the window draws plain swatches until <see cref="Regenerate"/>).</summary>
     public static bool Broken => _glBroken;
+
+    /// <summary>Set-up or drawing failures in a row before the atlas gives up, and the wait between tries (ms).</summary>
+    public const int MaxTries = 3;
+
+    public const int RetryMs = 2000;
+
+    private static int _failures, _slotErrors, _remakes;
+    private static long _retryAt, _progressAt, _remakeWindow, _whyAt;
+    private static bool _regenerate, _checked;
+    private static string _why = "";
+    private static byte[]? _probe;
+
+    /// <summary>
+    /// Options > Regenerate icons: forgets the atlas and every failure, and makes it again over the next frames (the
+    /// button only notes it; <see cref="Pump"/> does it, outside the ImGui pass). The atlas lives in GPU memory only:
+    /// there is no icon file on disk to clear.
+    /// </summary>
+    public static void Regenerate() => _regenerate = true;
+
+    /// <summary>
+    /// One <c>[icons]</c> line saying why the inventory shows plain tiles: a new reason at once, the same reason at most
+    /// every 30 s (callofslop.log). Only called on rare paths, never in a steady frame.
+    /// </summary>
+    private static void Why(string text)
+    {
+        var now = Environment.TickCount64;
+        if (text == _why && now - _whyAt < 30_000)
+            return;
+        _why = text;
+        _whyAt = now;
+        Console.WriteLine($"[icons] {text}");
+    }
 
     /// <summary>Every slot's tile is in the atlas.</summary>
     public static bool Complete => _count > 0 && _next >= _count && _key == Key();
@@ -99,7 +131,19 @@ public static unsafe class SandboxTiles
     private static int _keyCounts, _keyHash;
 
     /// <summary>The window is open: make the atlas (over the next frames) if it isn't made yet.</summary>
-    public static void Want() => _wanted = true;
+    public static void Want()
+    {
+        _wanted = true;
+        // A window that has wanted pictures for a while with none made: say why (e.g. Pump not reached, a wait that never ends).
+        if (_progressAt != 0 && !_glBroken && (_count == 0 || _next < _count) && Environment.TickCount64 - _progressAt > 10_000)
+            Stalled();
+    }
+
+    private static void Stalled()
+    {
+        _progressAt = Environment.TickCount64;
+        Why($"no tile pictures made for 10 s: {_next} of {_count} drawn, GL {(_glReady ? "ready" : "not ready")}, {_failures} failure(s), key {_key:X8}/{Key():X8}");
+    }
 
     /// <summary>A slot's picture: the page's texture and its UVs (ImGui's: v from the top), or false while it isn't drawn yet.</summary>
     public static bool TryGet(int slot, out uint texture, out Vector2 uv0, out Vector2 uv1)
@@ -289,22 +333,27 @@ public static unsafe class SandboxTiles
     /// <summary>Draws the next few missing tiles while the window wants them (call before the scene: it changes framebuffer, viewport and shader state).</summary>
     public static void Pump(Renderer gfx)
     {
+        if (_regenerate)
+            DoRegenerate();
         if (!_wanted || _glBroken)
             return;
         _wanted = false;
+        if (_progressAt == 0)
+            _progressAt = Environment.TickCount64;
         var key = Key();
         if (key != _key || _ready.Length != Count)
-        {
-            Invalidate();
-            _key = key;
-            _count = Count;
-            _ready = new bool[_count];
-        }
+            Remake(key);
         if (_next >= _count)
             return;
+        if (_retryAt != 0)
+        {
+            if (Environment.TickCount64 < _retryAt)
+                return;
+            _retryAt = 0;
+        }
         if (!_glReady)
             InitGl();
-        if (_glBroken)
+        if (!_glReady)
             return;
         var sw = Stopwatch.StartNew();
         int prevFbo;
@@ -313,6 +362,10 @@ public static unsafe class SandboxTiles
         Native.glGetIntegerv(GL_VIEWPORT, vp);
         var n = 0;
         int pageLo = int.MaxValue, pageHi = -1;
+        string? failed = null;
+        var stale = GlDebug.Error(); // (an error left by earlier drawing is not ours: cleared so the check below reads only the tiles)
+        if (stale != 0 && _next == 0)
+            Why($"a GL error 0x{stale:X} was pending before the tiles (not theirs; ignored)");
         try
         {
             while (_next < _count && n < PerFrame && (n == 0 || sw.Elapsed.TotalMilliseconds < BudgetMs))
@@ -325,24 +378,15 @@ public static unsafe class SandboxTiles
                 Native.glClearColor(0, 0, 0, 0); // a clear backdrop: the window's tile shows through round the thing
                 Native.glClear(GL_COLOR_BUFFER_BIT);
                 SkyRenderer.UseDefaultLight(); // lit the same whatever the map's sky
-                if (CollectBoxes(slot, Scratch))
+                if (!DrawSlot(gfx, slot))
+                    continue; // (no boxes, or the slot's data failed: a plain swatch for this one, the rest go on)
+                if (!_checked)
                 {
-                    var d = slot < ConstructParts.All.Count ? ConstructParts.All[slot] : null;
-                    var screen = d != null && LogicDisplays.Preview(d, PreviewCard, out _);
-                    var normal = screen ? ConstructParts.DirVector(d!.Panels[0].Face) : default;
-                    var up = screen ? ConstructParts.DirVector(d!.Panels[0].Up) : Vector3.UnitY;
-                    Frame(Scratch, screen ? ScreenEye(normal, up) : EyeDir, up, out var view, out var proj);
-                    gfx.SetCamera(view, proj);
-                    gfx.SetFog(Vector3.Zero, 0, 0);
-                    DrawTile(gfx, Scratch);
-                    if (screen)
-                    {
-                        // The real panel on the part's own screen, through the panels' own path (LogicDisplays.Preview).
-                        var panel = d!.Panels[0];
-                        PanelRender.Begin();
-                        PanelRender.DrawOnce(PreviewCard, panel.Size, panel.Rows, panel.At - gfx.Origin, normal, up);
-                        PanelRender.Flush(gfx);
-                    }
+                    // The first picture of a run is read back once: a driver that draws nothing into the framebuffer
+                    // would otherwise give invisible icons forever.
+                    _checked = true;
+                    if (!TileHasPixels())
+                        throw new InvalidOperationException("the first tile picture came out empty");
                 }
                 // Down into the page, averaging 2x2 (smooth edges).
                 Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _tileFbo);
@@ -364,8 +408,7 @@ public static unsafe class SandboxTiles
         }
         catch (Exception ex)
         {
-            _glBroken = true;
-            Console.WriteLine($"[inventory] tile pictures off ({ex.Message}): the inventory shows plain tiles");
+            failed = ex.Message;
         }
         finally
         {
@@ -373,14 +416,156 @@ public static unsafe class SandboxTiles
             Native.glViewport(vp[0], vp[1], vp[2], vp[3]);
             gfx.Rebind();
         }
+        if (failed != null)
+        {
+            Fail(failed);
+            return;
+        }
+        if (n > 0)
+        {
+            _failures = 0;
+            _progressAt = Environment.TickCount64;
+        }
         Rendered += n;
         _ms += sw.Elapsed.TotalMilliseconds;
         var err = GlDebug.Error();
         if (err != 0)
-            Console.WriteLine($"[inventory] GL error 0x{err:X} after tile pictures");
+            Why($"GL error 0x{err:X} after tile pictures");
         if (_next >= _count && n > 0)
-            Console.WriteLine($"[inventory] {_count} tiles in {_pages.Length} atlas page(s) of {PageSize} px ({Tile} px tiles), {_ms:0.0} ms in all");
+            Console.WriteLine($"[icons] {_count} inventory tiles in {_pages.Length} atlas page(s) of {PageSize} px ({Tile} px tiles), {_ms:0.0} ms in all");
     }
+
+    /// <summary>One slot's boxes into the bound tile framebuffer. False (and a throttled line) when it has none or its data throws.</summary>
+    private static bool DrawSlot(Renderer gfx, int slot)
+    {
+        try
+        {
+            if (!CollectBoxes(slot, Scratch))
+                return false;
+            var d = slot < ConstructParts.All.Count ? ConstructParts.All[slot] : null;
+            var screen = d != null && LogicDisplays.Preview(d, PreviewCard, out _);
+            var normal = screen ? ConstructParts.DirVector(d!.Panels[0].Face) : default;
+            var up = screen ? ConstructParts.DirVector(d!.Panels[0].Up) : Vector3.UnitY;
+            Frame(Scratch, screen ? ScreenEye(normal, up) : EyeDir, up, out var view, out var proj);
+            gfx.SetCamera(view, proj);
+            gfx.SetFog(Vector3.Zero, 0, 0);
+            DrawTile(gfx, Scratch);
+            if (screen)
+            {
+                // The real panel on the part's own screen, through the panels' own path (LogicDisplays.Preview).
+                var panel = d!.Panels[0];
+                PanelRender.Begin();
+                PanelRender.DrawOnce(PreviewCard, panel.Size, panel.Rows, panel.At - gfx.Origin, normal, up);
+                PanelRender.Flush(gfx);
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // One thing's data, not the GL: before, this turned every picture off for the session.
+            if (++_slotErrors <= 5)
+                Why($"slot {slot} has no picture ({ex.GetType().Name}: {ex.Message})");
+            gfx.SetDepthWrite(true);
+            gfx.SetBlend(false);
+            return false;
+        }
+    }
+
+    /// <summary>Any drawn pixel (alpha) in the tile framebuffer: read back once per run (a stall of one 256 px read).</summary>
+    private static bool TileHasPixels()
+    {
+        _probe ??= new byte[Render * Render * 4];
+        Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _tileFbo);
+        fixed (byte* p = _probe)
+            Native.glReadPixels(0, 0, Render, Render, GL_RGBA, GL_UNSIGNED_BYTE, p);
+        for (var i = 3; i < _probe.Length; i += 4)
+            if (_probe[i] != 0)
+                return true;
+        return false;
+    }
+
+    /// <summary>The atlas starts again for a new key (parts, blueprints or tools changed); a key that keeps changing is logged.</summary>
+    private static void Remake(int key)
+    {
+        var now = Environment.TickCount64;
+        if (now - _remakeWindow > 60_000)
+        {
+            _remakeWindow = now;
+            _remakes = 0;
+        }
+        if (_count > 0 && ++_remakes == 4)
+            Why($"atlas remade 4 times in a minute: its key keeps changing ({ConstructParts.All.Count} parts, {ConstructBuild.Blueprints.Count} blueprints, {ConstructTools.All.Count} tools, {_next} of {_count} drawn)");
+        Invalidate();
+        _key = key;
+        _count = Count;
+        _ready = new bool[_count];
+        _checked = false;
+    }
+
+    /// <summary>A failed set-up or batch: the atlas and the framebuffers go, and it is tried again after a wait, <see cref="MaxTries"/> times.</summary>
+    private static void Fail(string why)
+    {
+        _failures++;
+        Invalidate();
+        ReleaseGl();
+        _ready = new bool[Count];
+        _key = Key();
+        _count = _ready.Length;
+        _checked = false;
+        if (_failures >= MaxTries)
+        {
+            _glBroken = true;
+            Why($"tile pictures off after {_failures} tries ({why}): the inventory shows plain tiles; Options > Regenerate icons tries again");
+        }
+        else
+        {
+            _retryAt = Environment.TickCount64 + RetryMs;
+            Why($"tile pictures failed ({why}): try {_failures} of {MaxTries}, again in {RetryMs / 1000} s");
+        }
+    }
+
+    private static void DoRegenerate()
+    {
+        _regenerate = false;
+        Invalidate();
+        ReleaseGl();
+        _glBroken = false;
+        _failures = _slotErrors = _remakes = 0;
+        _retryAt = 0;
+        _progressAt = Environment.TickCount64;
+        _ms = 0;
+        _key = Key();
+        _count = Count;
+        _ready = new bool[_count];
+        _checked = false;
+        _wanted = true;
+        _why = ""; // (a reason seen again after a regenerate is logged again)
+        Console.WriteLine($"[icons] regenerating {_count} inventory tiles (Options > Regenerate icons)");
+    }
+
+    /// <summary>Deletes the tile and page framebuffers and the tile texture (made again by <see cref="InitGl"/>).</summary>
+    private static void ReleaseGl()
+    {
+        if (!_glReady)
+            return;
+        var fbos = stackalloc GlFramebuffer[2];
+        fbos[0] = _tileFbo;
+        fbos[1] = _pageFbo;
+        Native.glDeleteFramebuffers(2, fbos);
+        var tex = new GlTexture(_tileTex);
+        Native.glDeleteTextures(1, &tex);
+        if (_tileDepth.Id != 0)
+        {
+            var depth = _tileDepth;
+            Native.glDeleteRenderbuffers(1, &depth);
+        }
+        _tileFbo = _pageFbo = default;
+        _tileTex = 0;
+        _tileDepth = default;
+        _glReady = false;
+    }
+
+    private static GlRenderbuffer _tileDepth;
 
     private static void EnsurePage(int page)
     {
@@ -418,6 +603,9 @@ public static unsafe class SandboxTiles
 
     private static void InitGl()
     {
+        var stale = GlDebug.Error(); // (an error left by earlier drawing would fail the check below: not ours)
+        if (stale != 0)
+            Why($"a GL error 0x{stale:X} was pending before the tile set-up (not theirs; ignored)");
         try
         {
             GlFramebuffer tileFbo, pageFbo;
@@ -448,12 +636,12 @@ public static unsafe class SandboxTiles
             _tileFbo = tileFbo;
             _pageFbo = pageFbo;
             _tileTex = tex.Id;
+            _tileDepth = depth;
             _glReady = true;
         }
         catch (Exception ex)
         {
-            _glBroken = true;
-            Console.WriteLine($"[inventory] no tile framebuffer ({ex.Message}): plain tiles instead");
+            Fail($"no tile framebuffer: {ex.Message}");
         }
     }
 }
