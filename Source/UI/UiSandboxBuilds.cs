@@ -45,6 +45,7 @@ public sealed partial class Ui
             ClearSandboxPartsSearch();
             _sbFocusSearch = true;
         }
+        SbDrawSpawnNote(game);
         ImGui.Separator();
         if (ImGui.BeginChild("##sbbuilds"u8, new float2(0, 0), ImGuiChildFlags.None))
         {
@@ -79,7 +80,6 @@ public sealed partial class Ui
     public void SbSpawnBuild(Game game, StandardBuild b)
     {
         game.SandboxSendBench(Game.BenchSpawn, 0, b.Build().ToText());
-        if (!SandboxPartsKeepOpen)
-            CloseSandboxParts();
+        SbSpawned(game, b.Name); // (into its weapon slot, nothing to aim: the window stays open for the next)
     }
 }
