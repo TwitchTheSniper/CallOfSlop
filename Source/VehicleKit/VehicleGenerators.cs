@@ -292,7 +292,7 @@ public static class VehicleKitCli
     {
         var outDir = Flag(args, "--out");
         var folder = VehicleRegistry.RepoBlueprints();
-        int total = 0, differ = 0, seats = 0, oldSide = 0, newSide = 0;
+        int total = 0, differ = 0;
         foreach (var g in VehicleRegistry.All)
         foreach (var seed in g.Seeds)
         {
@@ -306,11 +306,6 @@ public static class VehicleKitCli
                 var verdict = !File.Exists(committed) ? "new (no committed file)" : File.ReadAllText(committed).Replace("\r\n", "\n") == text ? "identical" : "DIFFERS";
                 Console.WriteLine($"{file}: {verdict}");
                 differ += verdict == "identical" ? 0 : 1;
-                var offs = VehicleChecks.SeatsOffGuns(text);
-                seats += offs.Count;
-                newSide += offs.Count(o => o > VehicleChecks.SeatGunLimit);
-                if (File.Exists(committed))
-                    oldSide += VehicleChecks.SeatsOffGuns(File.ReadAllText(committed)).Count(o => o > VehicleChecks.SeatGunLimit);
                 if (outDir != null)
                 {
                     Directory.CreateDirectory(outDir);
@@ -323,7 +318,6 @@ public static class VehicleKitCli
                 differ++;
             }
         }
-        Console.WriteLine($"turret seats more than {VehicleChecks.SeatGunLimit:0} degrees off their gun: committed {oldSide}, generated {newSide}, of {seats}");
         Console.WriteLine(differ == 0 ? $"{total} vehicle(s), all identical to the committed files" : $"{differ} of {total} differ");
         return differ;
     }
