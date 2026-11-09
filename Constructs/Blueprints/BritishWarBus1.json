@@ -109,14 +109,14 @@
     {"part": "Bolt Deck 0.25 m", "on": 63, "socket": "+z0", "by": "-x0", "paint": "#7d8186"},
     {"part": "Bolt Deck 0.25 m", "on": 64, "socket": "-z0", "by": "-x0", "paint": "#1f4a32"},
     {"part": "Bolt Deck 0.25 m", "on": 64, "socket": "-z1", "by": "-x0", "paint": "#c8102e"},
-    {"part": "Hull Loft (150f ~AW0AmPB0oB0yB9BBHaB9kAvy9gK72Z3og02g ~Bu0C0KCGdCOyCnED9kD9qD2RCokCZ2BhQ03Q)", "on": 65, "socket": "front02", "by": "footL0", "paint": "#b5121b"},
-    {"part": "Hull Loft (75 ~Bu0CGdCOyCnED9kD9qD2RCZ2BhQ03Q ~Cm0D8dDGyDnEEvkEvrEgSEB3DJQ03Q u-92,-4,55,75)", "on": 76, "socket": "front03", "by": "footL0", "paint": "#c8102e"},
-    {"part": "Hull Loft (100 ~Cm0D8dDGyDnEEvkEvrEgSEB3DJQ03Q ~Cm0D8fDGyE1JEvkEvyEgcEBFDpQ03Q u-92,-4,0,100)", "on": 76, "socket": "front00", "by": "footL0", "paint": "#c8102e"},
-    {"part": "Hull Loft (150d ~Cm0D8fDGyE1JEvkEvyEgcEBFDpQ03Q = u-92,-4,0,70)", "on": 68, "socket": "front13", "by": "footL0", "paint": "#1f4a32"},
+    {"part": "Hull Loft (150f ~AW0AmPB0oB0yB9BBHaB9kAvy9gK72Z3og02g ~Bu0C0KCGdCOyCnED9kD9qD2RCokCZ2BhQ03Q iuf)", "on": 65, "socket": "front02", "by": "footL0", "paint": "#b5121b"},
+    {"part": "Hull Loft (75 ~Bu0CGdCOyCnED9kD9qD2RCZ2BhQ03Q ~Cm0D8dDGyDnEEvkEvrEgSEB3DJQ03Q u-92,-4,55,75 iuf)", "on": 76, "socket": "front03", "by": "footL0", "paint": "#c8102e"},
+    {"part": "Hull Loft (100 ~Cm0D8dDGyDnEEvkEvrEgSEB3DJQ03Q ~Cm0D8fDGyE1JEvkEvyEgcEBFDpQ03Q u-92,-4,0,100 iuf)", "on": 76, "socket": "front00", "by": "footL0", "paint": "#c8102e"},
+    {"part": "Hull Loft (150d ~Cm0D8fDGyE1JEvkEvyEgcEBFDpQ03Q = u-92,-4,0,70 iuf)", "on": 68, "socket": "front13", "by": "footL0", "paint": "#1f4a32"},
     {"part": "Long Door Hinge", "weld": {"on": 107, "pos": [1.275, 1.675, 7.24], "rot": [0.7071, 0, -0.7071, 0]}},
     {"part": "Steel Flush Door 1.25x2 m", "on": 108, "socket": "leaf", "by": "hang", "paint": "#b5121b"},
-    {"part": "Hull Loft (75 ~Cm0D8fDGyE1JEvkEvyEgcEBFDpQ03Q ~Cm0D8bDGyDfAEHSEvlEgKEAuCpQ03Q u)", "on": 69, "socket": "front12", "by": "footL0", "paint": "#1f4a32"},
-    {"part": "Hull Loft (100r ~Cm0D0ID8bDGyDfAEHSEvlEgKEAuCpQ03Q ~BW0BuSC8uC8yCXJCvlCQBBAb8Is4g-02-)", "on": 77, "socket": "front01", "by": "footL0", "paint": "#c8102e"},
+    {"part": "Hull Loft (75 ~Cm0D8fDGyE1JEvkEvyEgcEBFDpQ03Q ~Cm0D8bDGyDfAEHSEvlEgKEAuCpQ03Q u iuf)", "on": 69, "socket": "front12", "by": "footL0", "paint": "#1f4a32"},
+    {"part": "Hull Loft (100r ~Cm0D0ID8bDGyDfAEHSEvlEgKEAuCpQ03Q ~BW0BuSC8uC8yCXJCvlCQBBAb8Is4g-02- iuf)", "on": 77, "socket": "front01", "by": "footL0", "paint": "#c8102e"},
     {"part": "Hull Loft (balcr XuXXXdW2W5 +)", "on": 93, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Scrap Ladder", "on": 112, "socket": "ladder", "by": "back", "paint": "#c8102e"},
     {"part": "Hull Skirt 1 m", "on": 65, "socket": "back03", "by": "top0", "spin": 2, "paint": "#1b1c1e"},
@@ -171,11 +171,8 @@
     {"part": "Full-Auto Sear", "on": 156, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 162, "socket": "top", "by": "bottom"},
     {"part": "Turret Module", "on": 153, "socket": "+x", "by": "-x"},
-    {"part": "Phone Box", "on": 68, "socket": "front26", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 59, "socket": "front33", "by": "foot10", "spin": 2},
-    {"part": "Tea Urn", "on": 77, "socket": "front03", "by": "foot00", "spin": 1},
-    {"part": "Phone Box", "on": 63, "socket": "front02", "by": "foot10", "spin": 2},
-    {"part": "Tea Urn", "on": 59, "socket": "front36", "by": "foot10", "spin": 2},
+    {"part": "Scrap Bunk", "on": 68, "socket": "front16", "by": "foot00"},
+    {"part": "Phone Box", "on": 59, "socket": "front23", "by": "foot00", "spin": 2},
     {"part": "Hull Loft (decoD WoWMUVVy)", "on": 39, "socket": "top", "by": "base"},
     {"part": "Traffic Cone", "on": 149, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml7 YMW5 ~AW0AmPB0oB0yB9BBHaB9kAvy9gK72Z3og02g ~Bu0C0KCGdCOyCnED9kD9qD2RCokCZ2BhQ03Q)", "on": 104, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
@@ -190,12 +187,12 @@
     {"part": "Hull Loft (triml0 XaW5 ~Cm0D0ID8bDGyDfAEHSEvlEgKEAuCpQ03Q ~BW0BuSC8uC8yCXJCvlCQBBAb8Is4g-02-)", "on": 111, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml9 XaW5 ~BW0BuSC8uC8yCXJCvlCQBBAb8Is4g-02- ~Cm0D0ID8bDGyDfAEHSEvlEgKEAuCpQ03Q)", "on": 111, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Square Beam 0.5 m", "on": 126, "socket": "top", "by": "-z", "paint": "#1b1c1e"},
-    {"part": "Furled Brolly", "on": 184, "socket": "+z", "by": "base"}
+    {"part": "Furled Brolly", "on": 181, "socket": "+z", "by": "base"}
   ],
   "wires": [[36, 37], [37, 31], [153, 165], [165, 155], [165, 156]],
   "links": [
     {"type": "shaft", "from": 32, "to": 11, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 150, "to": 31, "nodes": [[1.5, 0.82, 9.05], [1.5, 0.55, 9.05], [0.67, 0.55, 9.05], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 166, "table": "british"}, {"step": 169, "table": "british"}]
+  "loot": [{"step": 166, "table": "british"}, {"step": 167, "table": "british"}]
 }

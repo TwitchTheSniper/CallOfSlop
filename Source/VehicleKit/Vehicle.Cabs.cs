@@ -187,6 +187,8 @@ public sealed partial class Vehicle
 
     private void PlaceCab(HullLoft.CabShape shape)
     {
+        if (Look is { Lining: not '\0' and var lining } && (shape with { Lining = lining }).Key().Length <= ConstructParts.MaxRuntimeName)
+            shape = shape with { Lining = lining }; // (phase 7a: the faction's dash, where the key has room for its word; a capsule takes none yet)
         var key = shape.Key();
         if (ConstructParts.Find(key) == null)
             throw new VehicleKitException($"the lofted cab won't make: {key}");

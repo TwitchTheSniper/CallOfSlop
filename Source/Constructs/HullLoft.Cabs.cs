@@ -56,6 +56,9 @@ public static partial class HullLoft
     /// <summary>A lofted cab's shape: what its key says (lengths in metres, the cab's frame: its feet at z 0.25, its floor y 0, its front toward -z).</summary>
     public sealed record CabShape(char Kind, float Zf, float Zm, float Zb, float Yb, float Yt, float Rake, float D0, float D1, float D2, float D3, float FrontX, Section T, Section B)
     {
+        /// <summary>Phase 7a (docs/vehiclekit/BODY-STYLES.md, section 13): the faction's dash inside the front, a <see cref="LiningKinds"/> letter (0: none; a key's last word <c>i</c> and the letter).</summary>
+        public char Lining { get; init; }
+
         /// <summary>A windscreen pane (and a back window on a closed back).</summary>
         public bool Glass => Kind is 'e' or 'w' or 'o' or 'm';
         public bool Cage => Kind == 'g';
@@ -71,8 +74,10 @@ public static partial class HullLoft
             var sb = new StringBuilder(Prefix).Append(CabWord).Append(Kind).Append(' ');
             foreach (var v in (float[])[Zf, Zm, Zb, Yb, Yt, Rake, D0, D1, D2, D3, FrontX])
                 Num(sb, v);
-            sb.Append(' ').Append(T.Key()).Append(' ').Append(B.SameAs(T) ? "=" : B.Key()).Append(')');
-            return sb.ToString();
+            sb.Append(' ').Append(T.Key()).Append(' ').Append(B.SameAs(T) ? "=" : B.Key());
+            if (Lining != '\0' && Kind is 'e' or 'w' or 'a' or 'g')
+                sb.Append(" i").Append(Lining);
+            return sb.Append(')').ToString();
         }
     }
 
@@ -113,12 +118,17 @@ public static partial class HullLoft
         if (!name.StartsWith(Prefix + CabWord, StringComparison.Ordinal) || !name.EndsWith(')'))
             return null;
         var words = name[(Prefix.Length + CabWord.Length)..^1].Split(' ');
+        var lining = '\0';
+        if (words.Length == 5 && words[4].Length == 2 && words[4][0] == 'i' && LiningKinds.Contains(words[4][1]))
+            (lining, words) = (words[4][1], words[..4]);
         if (words.Length != 4 || words[0].Length != 1 || !CabKinds.Contains(words[0][0]) || Nums(words[1], 11) is not { } n || Section.Parse(words[2]) is not { } t)
             return null;
         var b = words[3] == "=" ? t : Section.Parse(words[3]);
         if (b == null || b.P.Length != t.P.Length)
             return null;
-        var c = new CabShape(words[0][0], n[0], n[1], n[2], n[3], n[4], n[5], n[6], n[7], n[8], n[9], n[10], t, b);
+        var c = new CabShape(words[0][0], n[0], n[1], n[2], n[3], n[4], n[5], n[6], n[7], n[8], n[9], n[10], t, b) { Lining = lining };
+        if (lining != '\0' && c.Kind is not ('e' or 'w' or 'a' or 'g'))
+            return null; // (a capsule's front is over the engine, far from the seats: no dash there yet)
         var ok = c.Zf < c.Zb - 0.5f && c.Zm >= c.Zf && c.Zm < c.Zb && c.Yb > 0.4f && c.Yt > c.Yb + 0.25f && t.Top > c.Yt + 0.04f && b.Top > c.Yt + 0.04f && c.Rake >= 0
             && c.D0 > c.Zf + c.Rake + 0.03f && c.D1 > c.D0 + 0.3f && c.D1 < c.Zb && (c.D3 <= c.D2 + 0.01f || c.D2 > c.D1 + 0.05f && c.D3 < c.Zb) && c.FrontX is >= 0.5f and <= 1.0f
             && (c.Zm <= c.Zf + 0.01f || c.Zm > c.Zf + c.Rake + 0.05f && c.Zm < c.D0);
@@ -548,6 +558,9 @@ public static partial class HullLoft
             bars += Vector3.Distance(bl, br);
         }
 
+        if (c.Lining != '\0')
+            Dash(p, c);
+
         // Sockets: its feet on the rails (as the fixed cab shells'), its roof's top, and a socket for each pane.
         p.Sock("footL", new Vector3(-0.25f, 0, 0.25f), "-y");
         p.Sock("footR", new Vector3(0.25f, 0, 0.25f), "-y");
@@ -709,5 +722,28 @@ public static partial class HullLoft
             ["sockets"] = p.Sockets,
         };
         return part.ToJsonString();
+    }
+
+    /// <summary>
+    /// Phase 7a: the dash, a shelf inside the front under the belt (over the gearbox, which stands through the firewall under 0.8 m), in the faction's look, with a
+    /// glowing gauge strip on it. Drawn only: it stands 6 mm in from the front's inner face and clear of the sides by 5 cm; below the windscreen, so the glass and
+    /// the driver's view (level and up from the seated eye) are as they were.
+    /// </summary>
+    private static void Dash(Builder p, CabShape c)
+    {
+        var (y0, y1) = (c.Yb - 0.075f, c.Yb - 0.03f);
+        var half = c.FrontX;
+        for (var y = y0; y <= c.Yb; y += 0.01f)
+            half = MathF.Min(half, MathF.Min(c.T.XAt(y), c.B.XAt(y)));
+        half -= CabT / 2 + 0.05f;
+        if (half < 0.3f || y0 < 0.82f)
+            return;
+        var (z0, z1) = (c.Zf + CabT / 2 + 0.006f, c.Zf + 0.24f);
+        var (top, gauge) = c.Lining switch
+        {
+            'm' => ("#4f5843", "#9cff7a"), 'c' => ("#cfccc2", "#6fc3ff"), 's' => ("#5b2a6e", "#ff4fd8"), 't' => ("#6e4b2a", "#ffb347"), 'u' => ("#5b3a22", "#fff1c8"), _ => ("#3a3330", "#ffb030"),
+        };
+        Cube(p, new Vector3(-half, y0, z0), new Vector3(half, y1, z1), top, false);
+        Cube(p, new Vector3(-0.2f, y1 + 0.002f, z0 + 0.05f), new Vector3(0.2f, y1 + 0.014f, z0 + 0.1f), gauge, false, true);
     }
 }

@@ -185,8 +185,9 @@ public static partial class HullLoft
     /// What a key says: the bay's length, its door and closed ends, and its two sections. <see cref="Extra"/> (phase 5, docs/vehiclekit/BODY-STYLES.md section 11): a fourth word,
     /// <c>c</c> and a pattern for a caged bay (<see cref="CageKinds"/>), <c>o</c> for an open top (a bulwark: its roof row isn't drawn), <c>u</c> for a flat roof that is an
     /// upper floor (walkable, with sockets for an upper storey and its furniture), with a hatch <c>uX0,X1,Z0,Z1</c> (centimetres in the bay's frame) where a stair comes up.
+    /// <see cref="Lining"/> (phase 7a, section 13): a last word <c>i</c>, a kind and a mode, the room's lining (HullLoft.Lining.cs).
     /// </summary>
-    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B, bool BackDoor = false, string Extra = "")
+    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B, bool BackDoor = false, string Extra = "", string Lining = "")
     {
         /// <summary>A caged bay's pattern (0: a skinned bay).</summary>
         public char Cage => Extra.Length == 2 && Extra[0] == 'c' ? Extra[1] : '\0';
@@ -227,6 +228,9 @@ public static partial class HullLoft
         if (!name.StartsWith(Prefix, StringComparison.Ordinal) || !name.EndsWith(')'))
             return null;
         var words = name[Prefix.Length..^1].Split(' ');
+        var lining = words.Length >= 4 && LiningOk(words[^1]) ? words[^1] : "";
+        if (lining.Length > 0)
+            words = words[..^1];
         if (words.Length is not (3 or 4))
             return null;
         var head = words[0];
@@ -244,7 +248,9 @@ public static partial class HullLoft
         var extra = words.Length == 4 ? words[3] : "";
         if (extra.Length > 0 && (!ExtraOk(extra, cm / 100f) || extra == "o" && flags.Contains('d') || extra[0] == 'u' && flags.Contains('b')))
             return null;
-        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b, flags.Contains('b'), extra);
+        if (lining.Length > 0 && (extra.Length > 0 && (extra[0] == 'c' || extra == "o")))
+            return null; // (a frame of bars or an open top isn't lined)
+        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b, flags.Contains('b'), extra, lining);
     }
 
     private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
@@ -687,6 +693,7 @@ public static partial class HullLoft
             CageSides(p, sh); // (phase 5: a frame of bars, HullLoft.Spaces.cs)
         else
             Sides(p, a, b, 0, length, door, sh.Open, sh.Floor ? sh.Hatch ?? (0, 0, 0, 0) : null);
+        var ceiling = sh.Lining.Length > 0 ? Lining(p, sh) : null; // (phase 7a: the room's lining, HullLoft.Lining.cs; an inset ceiling's underside, the lever under it)
         if (front)
         {
             if (sh.Cage != '\0')
@@ -719,7 +726,7 @@ public static partial class HullLoft
         if (!sh.Open && !sh.Floor) // (an upper floor's roof is walked on and may be cut by a hatch: nothing hangs under it, nothing stands on its middle)
         {
             p.Pad("top", new Vector3(0, top + 0.03f, length / 2), "+y");
-            p.Pad("lever", new Vector3(0, MathF.Min(top, p.Centre) - 0.03f, length / 2), "-y");
+            p.Pad("lever", new Vector3(0, MathF.Min(MathF.Min(top, p.Centre), ceiling ?? float.MaxValue) - 0.03f, length / 2), "-y");
         }
         if (sh.Floor)
             FloorSockets(p, sh); // (phase 5: an upper storey's feet and its furniture stand on the roof: HullLoft.Spaces.cs)
