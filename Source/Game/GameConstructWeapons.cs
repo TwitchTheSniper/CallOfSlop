@@ -51,7 +51,7 @@ public sealed partial class Game : IConstructTargets
                 _cwZombie = z;
             }
         }
-        if (CrowdOn && Crowd.Total > 0 && !SelfTestOldZombies && CwCrowdRay(o, d, ref dist))
+        if (CrowdOn && Crowd.Total > 0 && CwCrowdRay(o, d, ref dist))
             id = CwCrowdTarget;
         return id >= 0;
     }

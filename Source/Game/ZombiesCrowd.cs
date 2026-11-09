@@ -320,7 +320,7 @@ public sealed partial class Game
             z.CrowdTook = true;
             // (Within a few metres: the client's picture of the cells trails the server by a send or two, more with lag, and a
             // crowd chasing a car is metres on by then; the offset is eased out below, so a far take-over slides, never pops.)
-            if (DrawnCrowd is { } a && a.TakeOver(z.RenderPos.X, z.RenderPos.Z, SelfTestOldZombies ? 3f : CrowdTakeOverReach, (int)z.Speed, counted: true, out var pose) >= 0)
+            if (DrawnCrowd is { } a && a.TakeOver(z.RenderPos.X, z.RenderPos.Z, CrowdTakeOverReach, (int)z.Speed, counted: true, out var pose) >= 0)
             {
                 var off = new Vector3(pose.X - z.RenderPos.X, 0, pose.Z - z.RenderPos.Z);
                 var dur = Math.Clamp(off.Length() / CrowdView.HandSpeed, CrowdView.HandMin, CrowdView.HandMax);

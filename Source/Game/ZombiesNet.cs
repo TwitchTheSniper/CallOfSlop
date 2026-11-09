@@ -167,7 +167,8 @@ public sealed partial class Game
         public readonly byte[] SentState = new byte[MaxZombies];
         public readonly byte[] SentLimbs = new byte[MaxZombies];
         public readonly byte[] SentTypeState = new byte[MaxZombies];
-        public readonly byte[] GoneSent = new byte[MaxZombies]; // (times its gone entry went out: the list is unreliable, so it goes three times)
+        public readonly ulong[] Known = new ulong[(MaxZombieId + 64) / 64]; // (by zombie id: sent and not yet told gone)
+        public readonly byte[] GoneSent = new byte[MaxZombieId + 1]; // (by id: times its gone entry went out; the list is unreliable, so three times)
     }
 
     private readonly Dictionary<ulong, ZEntView> _zViews = new();
@@ -275,10 +276,14 @@ public sealed partial class Game
                 if (z.Type != 0)
                     w.U8(z.TypeState); // plates on, holding someone
             }
+            if (view != null && z.Id <= MaxZombieId)
+            {
+                view.Known[z.Id >> 6] |= 1UL << (z.Id & 63);
+                view.GoneSent[z.Id] = 0;
+            }
             if (view != null && z.Hm.Slot is >= 0 and < MaxZombies)
             {
                 view.SentId[z.Hm.Slot] = z.Id;
-                view.GoneSent[z.Hm.Slot] = 0;
                 view.Age[z.Hm.Slot] = 0;
                 view.SentState[z.Hm.Slot] = sb;
                 view.SentLimbs[z.Hm.Slot] = z.Limbs;
@@ -295,17 +300,17 @@ public sealed partial class Game
         WriteZGone(w, view);
     }
 
-    /// <summary>The most ids in one <see cref="Msg.ZEnts"/>'s gone list (protocol 218): 969 + 1 + 2 x 64 bytes still fit one datagram.</summary>
-    public const int ZGoneMax = 64;
+    /// <summary>The most ids in one <see cref="Msg.ZEnts"/>'s gone list (protocol 218), and the bytes the whole message keeps within.</summary>
+    public const int ZGoneMax = 64, ZEntsDatagram = 1180;
 
-    // The id in each zombie slot this send (0: free), for the gone list (the game thread only).
-    private readonly ushort[] _zSlotId = new ushort[MaxZombies];
+    // The ids in the horde this send, a bit each (the gone list; the game thread only).
+    private readonly ulong[] _zHordeIds = new ulong[(MaxZombieId + 64) / 64];
 
     /// <summary>
-    /// The gone list (protocol 218): the zombies this client was sent that the server no longer has alive in that slot
-    /// (one put back into the crowd, or freed), so the client drops them at once and its drawn crowd takes them back where
-    /// they stood (CrowdView.Individuals), instead of keeping a frozen zombie for <see cref="ZEntTimeout"/> that the host
-    /// doesn't have. No allocation.
+    /// The gone list (protocol 218): the zombies this client was sent that the server no longer has (one put back into the
+    /// crowd, or a dead one cleared), by id, so the client drops them at once and its drawn crowd takes them back where they
+    /// stood (CrowdView.Individuals), instead of keeping a frozen zombie for <see cref="ZEntTimeout"/> that the host
+    /// doesn't have. By id, not by slot: a crowd map swaps zombies in and out of the same slots in one tick. No allocation.
     /// </summary>
     private void WriteZGone(PacketWriter w, ZEntView? view)
     {
@@ -313,23 +318,46 @@ public sealed partial class Game
         w.U8(0);
         if (view == null)
             return;
-        Array.Clear(_zSlotId);
+        Array.Clear(_zHordeIds);
         foreach (var z in Horde)
-            if (z.Hm.Slot is >= 0 and < MaxZombies)
-                _zSlotId[z.Hm.Slot] = z.Id;
+            if (z.Id <= MaxZombieId)
+                _zHordeIds[z.Id >> 6] |= 1UL << (z.Id & 63);
+        // News first, so a burst of zombies put back goes out in one send; then the repeats (each goes three times). Never
+        // past one datagram (a full packet of typed, limbless zombies at windows is 1129 bytes).
         var gone = 0;
-        for (var s = 0; s < MaxZombies && gone < ZGoneMax; s++)
-        {
-            var sent = view.SentId[s];
-            if (sent == 0 || _zSlotId[s] == sent)
-                continue;
-            w.U16(sent);
-            if (++view.GoneSent[s] >= 3)
+        var room = Math.Min(ZGoneMax, (ZEntsDatagram - w.Length) / 2);
+        for (var pass = 0; pass < 2; pass++)
+            for (var k = 0; k < view.Known.Length && gone < room; k++)
             {
-                view.SentId[s] = 0; // (told: a new zombie in this slot is new to the client)
-                view.GoneSent[s] = 0;
+                var bits = view.Known[k] & ~_zHordeIds[k];
+                while (bits != 0 && gone < room)
+                {
+                    var b = System.Numerics.BitOperations.TrailingZeroCount(bits);
+                    bits &= bits - 1;
+                    var id = k * 64 + b;
+                    var times = view.GoneSent[id];
+                    if (pass == 0 ? times != 0 : times is 0 or >= 0x80)
+                        continue;
+                    w.U16((ushort)id);
+                    view.GoneSent[id] = pass == 0 ? (byte)0x81 : (byte)(times + 1); // (0x80: written this send)
+                    gone++;
+                }
             }
-            gone++;
+        for (var k = 0; k < view.Known.Length; k++)
+        {
+            var bits = view.Known[k] & ~_zHordeIds[k];
+            while (bits != 0)
+            {
+                var b = System.Numerics.BitOperations.TrailingZeroCount(bits);
+                bits &= bits - 1;
+                ref var times = ref view.GoneSent[k * 64 + b];
+                times &= 0x7F;
+                if (times >= 3)
+                {
+                    view.Known[k] &= ~(1UL << b); // (told)
+                    times = 0;
+                }
+            }
         }
         w.PatchU8(countAt, (byte)gone);
     }
@@ -851,7 +879,7 @@ public sealed partial class Game
         for (var i = 0; i < goneN && r.Has(2); i++)
         {
             var id = r.U16();
-            if (!SelfTestOldZombies && _zById.TryGetValue(id, out var z) && z.State != ZState.Dead && (latest || z.Snaps.Count == 0 || z.Snaps[^1].Tick < tick))
+            if (_zById.TryGetValue(id, out var z) && z.State != ZState.Dead && (latest || z.Snaps.Count == 0 || z.Snaps[^1].Tick < tick))
             {
                 Horde.Remove(z);
                 _zById.Remove(id);
@@ -871,9 +899,6 @@ public sealed partial class Game
 
     /// <summary>Client: the server's horde size in the last <see cref="Msg.ZEnts"/> (it may send fewer than that).</summary>
     public int ZEntsLastTotal;
-
-    /// <summary>Self-test (--zombie-probe --old): the zombies' behaviour before the 2026-11-09 fixes (no gone list read, the old hand-over reach, construct guns blind to the crowd), to compare.</summary>
-    public static bool SelfTestOldZombies;
 
     /// <summary>Client: zombies dropped by the server's gone lists (protocol 218).</summary>
     public int ZGoneRead;

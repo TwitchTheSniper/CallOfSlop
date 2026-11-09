@@ -4,11 +4,13 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--zombie-probe [--lag MS] [--loss PCT] [--seconds S] [--size N]</c>: headless, a Sandbox host and a joined client over
+/// <c>--zombie-probe [--map NAME] [--seated] [--cap N] [--lag MS] [--loss PCT] [--seconds S] [--size N]</c>: headless, a Sandbox host and a joined client over
 /// the real transport (the yard map), a big zombie group spawned in front of the host, then (A) the host moves through it
-/// at a car's speed while both peers prepare their crowd frames from a chase camera, and (B) the host sits in the yard's
-/// gunner turret and fires at the nearest zombie. Logs (zombieprobe.log): zombies appearing and vanishing in view per
-/// minute on each peer, the individuals each side has, what the turret's rounds did, and the server tick's cost.
+/// at a car's speed (with <c>--seated</c> it drives the map's car) while both peers prepare their crowd frames from a chase
+/// camera, and (B) on a map with a gunner turret (Construct Yard) the host sits in it and fires at the nearest crowd
+/// zombie (<c>--cap N</c>: the host's horde cap, so few wake as individuals). Logs (zombieprobe.log): zombies appearing or
+/// vanishing at full height in view per minute on each peer, "ghosts" (individuals the client has that the server
+/// doesn't), what the turret's rounds did, and the server tick's cost. Proving Ground unless named.
 /// </summary>
 public static partial class SelfTest
 {
@@ -19,7 +21,7 @@ public static partial class SelfTest
         var loss = int.TryParse(After("--loss"), out var ls) ? ls : 0;
         var seconds = double.TryParse(After("--seconds"), System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : 20;
         var size = int.TryParse(After("--size"), out var n) ? n : 3000;
-        Game.SelfTestOldZombies = args.Any(x => x.Equals("--old", StringComparison.OrdinalIgnoreCase));
+        ProbeCap = int.TryParse(After("--cap"), out var cap) ? cap : 0;
         Brutal.GlfwApi.Glfw.Init();
         SavePaths.UseFolder(SelfTestSaveFolder, "self-test");
         BlueprintStore.ReadOnly = true;
@@ -28,7 +30,7 @@ public static partial class SelfTest
         MapBake.CacheWrites = false;
         using (_log = new StreamWriter(AppFolders.LogPath("zombieprobe.log"), false))
         {
-            Line($"zombie probe {DateTime.Now}{(Game.SelfTestOldZombies ? " (old behaviour)" : "")}: lag {lag} ms, loss {loss}%, {size} zombies, {seconds} s");
+            Line($"zombie probe {DateTime.Now}: lag {lag} ms, loss {loss}%, {size} zombies, {seconds} s");
             if (Maps.Find(After("--map") ?? "Proving Ground") is not { } map)
                 return 1;
             map.RestoreProps();
@@ -39,6 +41,8 @@ public static partial class SelfTest
         return 0;
     }
 
+    private static int ProbeCap;
+
     private sealed class ProbePeer(string name)
     {
         public readonly string Name = name;
@@ -47,7 +51,7 @@ public static partial class SelfTest
         public readonly int[] AppearBy = new int[4]; // agent, particle, individual, client instance
         public Matrix4x4 PrevVp;
         public bool HasPrev;
-        public int Appear, Vanish, Frames, Logged;
+        public int Appear, Vanish, Frames;
         public long Drawn;
     }
 
@@ -58,6 +62,8 @@ public static partial class SelfTest
         var now = 0.0;
         using var server = new Game(NetPeer.Host(port, 4), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: map.Id) { MapVoteEnabled = false };
         server.Mode = GameMode.Sandbox;
+        if (ProbeCap > 0)
+            server.HostHordeCap = ProbeCap; // (--cap N: few individuals, so the turret meets the crowd tiers)
         using var a = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         if (lag > 0 || loss > 0)
         {
@@ -239,6 +245,7 @@ public static partial class SelfTest
         var ask2 = server.SandboxSpawnRequest(me, SbSpawnKind.Zombies, BotDifficulty.Normal, SbLoadKind.Any, 0, 0, 600, ConstructWorld.Ground(World.Query, tc.X + 30, tc.Z));
         Pump(server, [a], 3.0, ref now, clock);
         int Total() => server.Crowd.Total + server.Horde.Count(z => z.Alive);
+        var crowd0 = server.Crowd.Total;
         long Hurt() => server.Horde.Where(z => z.Alive).Sum(z => (long)(z.MaxHealth - z.Health))
                        + Enumerable.Range(0, server.Crowd.Count).Sum(i => (long)MathF.Max(0, server.Crowd.MassHP - server.Crowd.HP[i]));
         var total0 = Total();
@@ -253,9 +260,10 @@ public static partial class SelfTest
             var eye = ConstructWeapons.SeatEye(turret, seat);
             var best = new Vector3(float.NaN);
             var bd = float.MaxValue;
-            foreach (var z in server.Horde)
-                if (z.Alive && Vector3.DistanceSquared(z.Position, eye) is var d2 && d2 < bd)
-                    (bd, best) = (d2, z.Position + new Vector3(0, 1.2f, 0));
+            if (server.Crowd.Count == 0)
+                foreach (var z in server.Horde)
+                    if (z.Alive && Vector3.DistanceSquared(z.Position, eye) is var d2 && d2 < bd)
+                        (bd, best) = (d2, z.Position + new Vector3(0, 1.2f, 0));
             for (var i = 0; i < server.Crowd.Count; i++)
             {
                 var pz = new Vector3(server.Crowd.X[i], server.Crowd.GroundAt(server.Crowd.X[i], server.Crowd.Z[i]) + 1.2f, server.Crowd.Z[i]);
@@ -278,7 +286,7 @@ public static partial class SelfTest
         server.SandboxSend(CActKind.SeatKeys, part: 0);
         Pump(server, [a], 0.5, ref now, clock);
         Line($"B: spawn \"{ask2 ?? "ok"}\", seated {server.SandboxHands.Hand(me.Id).Seated}; turret fired {server.Constructs.ShotsFired - fired0}, crowd hits {server.CwCrowdHits}, rounds landed {server.Constructs.RoundsLanded - landed0}; "
-             + $"zombies {total0} -> {Total()} (killed {total0 - Total()}; crowd {server.Crowd.Count} particles, {server.Crowd.MassTotal} mass), wounds (individuals and particles) {hurt0} -> {Hurt()}; individuals server {server.Horde.Count(z => z.Alive)}, client {a.Horde.Count(z => z.Alive)}");
+             + $"zombies {total0} -> {Total()} (killed {total0 - Total()}, the crowd tiers {crowd0} -> {server.Crowd.Total}; crowd {server.Crowd.Count} particles, {server.Crowd.MassTotal} mass), wounds (individuals and particles) {hurt0} -> {Hurt()}; individuals server {server.Horde.Count(z => z.Alive)}, client {a.Horde.Count(z => z.Alive)}");
     }
 
     private static void ProbeFrame(Game g, ProbePeer p, Vector3 at, Vector3 fwd, Matrix4x4 proj, Vector2 fog, double now)
@@ -362,21 +370,6 @@ public static partial class SelfTest
             n++;
             if (who == null || g == null)
                 continue;
-            var agents = g.IsServer ? who.View.Host : who.View.Client;
-            if (who.Logged < 25 && who.Frames > 300)
-            {
-                who.Logged++;
-                var best = -1;
-                var bd = float.MaxValue;
-                for (var i = 0; i < agents.Count; i++)
-                    if ((agents.X[i] - q.X) * (agents.X[i] - q.X) + (agents.Z[i] - q.Y) * (agents.Z[i] - q.Y) is var d2 && d2 < bd)
-                        (bd, best) = (d2, i);
-                var ind = 99f;
-                foreach (var z in g.Horde)
-                    ind = MathF.Min(ind, Vector2.Distance(new Vector2(z.RenderPos.X, z.RenderPos.Z), new Vector2(q.X, q.Y)));
-                Line($"    {who.Name} appear f{who.Frames} kind {q.Z} at {Vector2.Distance(new Vector2(q.X, q.Y), new Vector2(eye.X, eye.Z)):0.0} m; nearest agent {MathF.Sqrt(bd):0.00} m "
-                     + (best >= 0 ? $"{agents.State[best]} fade {agents.Fade[best]:0.00} cell want {agents.WantOf(agents.CellOf[best])}" : "") + $"; nearest individual {ind:0.0} m; hand overs {who.View.HandOvers} misses {who.View.HandMisses}");
-            }
             if (q.Z == 2)
                 who.AppearBy[2]++;
             else if (!g.IsServer)
