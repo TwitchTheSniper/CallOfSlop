@@ -860,9 +860,7 @@ public static class ConstructWeapons
             if (seated && g.AimJoints > 0)
             {
                 // At what the gunner looks at (the guns converge on it: no parallax from the gun sitting off the eye).
-                MuzzleWorld(c, k, out var muzzle, out _);
-                var point = g.Sight == SightKind.Lead ? ConstructOrdnance.SightPoint(world, c, ref g, g.Seat, muzzle, query, g.MaxRange) : GunnerPoint(world, c, g.Seat, query, g.MaxRange);
-                Aim(c, k, AimWay(c, k, muzzle, point), force: true);
+                Aim(c, k, LaidWay(world, c, k, query), force: true);
             }
             else if (g.Director >= 0 && g.AimJoints > 0 && g.Director < c.PartCount && c.Parts[g.Director].Count is var manned and > 0 && manned <= c.PartCount)
             {
@@ -969,6 +967,18 @@ public static class ConstructWeapons
         if (want > 0 && (g.Effects & GunEffect.Flame) != 0)
             p.Rounds += (ushort)ConstructHarpoon.TakeFuel(c, want);
         world.NoteAmmo(c, g.Part);
+    }
+
+    /// <summary>
+    /// Which way gun <paramref name="k"/>'s gunner lays it this tick: at the point the gunner looks at (the guns converge on it: no parallax from the gun
+    /// sitting off the eye), or the lead sight's point, along the arc that lands there. The vehicle kit's aim check judges a gun by this (VehicleChecks.Aim).
+    /// </summary>
+    public static Vector3 LaidWay(ConstructWorld world, Construct c, int k, IWorldQuery query)
+    {
+        ref var g = ref c.Guns[k];
+        MuzzleWorld(c, k, out var muzzle, out _);
+        var point = g.Sight == SightKind.Lead ? ConstructOrdnance.SightPoint(world, c, ref g, g.Seat, muzzle, query, g.MaxRange) : GunnerPoint(world, c, g.Seat, query, g.MaxRange);
+        return AimWay(c, k, muzzle, point);
     }
 
     /// <summary>Which way to point gun <paramref name="k"/> at a point: straight at it, or along the arc that lands there for a shell gun. Holding the seat's aim key takes the high arc.</summary>
@@ -1141,15 +1151,20 @@ public static class ConstructWeapons
             float err;
             if (MathF.Abs(a.Y) < 0.7f)
             {
-                // A joint across the gun (a hinge for the elevation): the climb to the target, never over the top to point behind.
+                // A joint across the gun (a hinge for the elevation): the climb to the target, never over the top to point behind. Level is the side the
+                // gun points at the joint's zero (its parent's frame), not where it points now: a gun that went past the vertical read its own way as level
+                // and stayed over the top at its stop (phase 9b, the gunsmith's heavy guns on a slow Turntable). The target's climb is read against the
+                // horizontal, not only along the gun's own plane, so a gun whose turntable is still slewing round holds its elevation instead of standing up.
                 var h = Vector3.Cross(a, Vector3.UnitY);
                 if (h.LengthSquared() < 1e-6f)
                     continue;
                 h = Vector3.Normalize(h);
-                if (Vector3.Dot(f, h) < 0)
+                var f0 = Vector3.Transform(f, Quaternion.CreateFromAxisAngle(a, -jt.Angle));
+                if (Vector3.Dot(f0, h) < 0)
                     h = -h;
                 var u = Vector3.Cross(a, h);
-                err = MathF.Atan2(Vector3.Dot(want, u), MathF.Abs(Vector3.Dot(want, h))) - MathF.Atan2(Vector3.Dot(f, u), Vector3.Dot(f, h));
+                var flat = MathF.Sqrt(Vector3.Dot(want, h) * Vector3.Dot(want, h) + Vector3.Dot(want, a) * Vector3.Dot(want, a));
+                err = MathF.Atan2(Vector3.Dot(want, u), flat) - MathF.Atan2(Vector3.Dot(f, u), Vector3.Dot(f, h));
             }
             else
             {

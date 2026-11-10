@@ -170,10 +170,9 @@
     {"part": "Sheet Steel 0.5x1 m", "on": 65, "socket": "+x", "by": "back02", "spin": 3, "paint": "#8c2a2a"},
     {"part": "Scrap Ladder", "on": 158, "socket": "front02", "by": "back", "paint": "#8c2a2a"},
     {"part": "Hull Loft (hoodg USV2WyWjXYXYVd ~6W07GM70j5uz3X5016)", "on": 30, "socket": "+y", "by": "engine", "paint": "#5b4a2f"},
-    {"part": "Bull Bar", "on": 164, "socket": "front", "by": "back", "paint": "#c8102e"},
+    {"part": "Bull Bar", "on": 164, "socket": "front", "by": "back", "paint": "#e8e4d8"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 157, "pos": [-1.046, 0.663, 1.997], "rot": [-0.0153, -0.0118, 0.6913, 0.7223]}, "paint": "#2b5a3a"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 163, "pos": [-1.09, 0.162, 3.129], "rot": [-0.0268, 0.0072, 0.7232, 0.6901]}, "paint": "#7b1e22"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 165, "pos": [0.129, 0.493, -1.305], "rot": [-0.7125, -0.0131, -0.0144, 0.7014]}, "paint": "#5b4a2f"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 165, "pos": [0.134, 0.55, -1.3], "rot": [-0.7236, -0.0264, 0.0067, 0.6896]}, "paint": "#7b1e22"},
     {"part": "Hull Loft (decoO UdV-)", "on": 164, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 38, "socket": "top", "by": "base"},
     {"part": "Iron Spike", "on": 159, "socket": "front02", "by": "base"},
@@ -184,8 +183,8 @@
     {"part": "Hull Loft (trimr1 XaW5 ~Cu0E8yEPBEPVDwRBhH73j03o ~Bm0COTD0wCvVCnu9wX62u02x)", "on": 110, "socket": "-x0", "by": "base", "paint": "#7b1e22"},
     {"part": "Hull Loft (trimr9 XaW5 ~Cu0E8yEPBEPVDwRBhH73j03o ~A80B8nB0yAvVAvc9IA5gT02W)", "on": 115, "socket": "+x0", "by": "base", "paint": "#2b5a3a"},
     {"part": "Hull Loft (trimr8 XaW5 ~A80B8nB0yAvVAvc9IA5gT02W ~Cu0E8yEPBEPVDwRBhH73j03o)", "on": 115, "socket": "-x0", "by": "base", "paint": "#2b5a3a"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 161, "pos": [1.56, 0.889, 3], "rot": [-0.0023, 0.0354, -0.7252, 0.6877]}, "paint": "#1f4a2e"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 160, "pos": [1.546, 0.827, 1.999], "rot": [-0.0041, 0.0235, -0.7225, 0.691]}, "paint": "#7b1e22"}
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 161, "pos": [1.532, 0.813, 2.993], "rot": [-0.0243, 0.0102, -0.688, 0.7252]}, "paint": "#7b1e22"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 160, "pos": [1.551, 0.839, 1.995], "rot": [-0.0154, 0.0048, -0.6932, 0.7205]}, "paint": "#7b1e22"}
   ],
   "wires": [[35, 36], [36, 30], [118, 128], [128, 122], [133, 140], [140, 135], [146, 143]],
   "hoses": [[144, 145]],
