@@ -170,7 +170,7 @@ public static partial class SelfTest
         var gateBp = IndexOfBlueprint("Gate");
         StandAt(me, 10, 0);
         Run(g, ref now, 0.3);
-        g.SandboxSend(CActKind.Blueprint, part: (byte)gateBp);
+        g.SandboxSend(CActKind.Blueprint, part: (ushort)gateBp);
         var gate = w.Bodies[^1];
         gate.Owner = 42; // (as if another player built it)
         Run(g, ref now, 1.0);
@@ -236,7 +236,7 @@ public static partial class SelfTest
         StandAt(me, 2, -6);
         Run(g, ref now, 0.3);
         sb.InfiniteParts = true; // (the menu's blueprints aren't counted)
-        g.SandboxSend(CActKind.Blueprint, part: (byte)gateBp);
+        g.SandboxSend(CActKind.Blueprint, part: (ushort)gateBp);
         sb.InfiniteParts = false;
         var mine = w.Bodies[^1];
         Run(g, ref now, 1.0);
@@ -417,7 +417,7 @@ public static partial class SelfTest
         var onOther = b.SandboxInventory(b.LocalId).Count(wheel.Id) + b.SandboxInventory(a.LocalId).Count(wheel.Id);
         var flag = a.SandboxInfiniteParts;
         // The owner travels with a construct: a gate a client spawns is theirs on every copy.
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Gate"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Gate"));
         Pump(server, [a, b], 0.6, ref now, clock);
         var gate = server.Constructs.Bodies[^1];
         var ownerA = a.Constructs.Get(gate.Id)?.Owner;

@@ -318,8 +318,8 @@ public static class SnapBuild
                 for (var s = 0; s < n; s++)
                     info.Own[s] = cat2 switch { PartCategory.Muzzle => ConnType.Muzzle, PartCategory.Optic => ConnType.Optic, PartCategory.Barrel or PartCategory.Splitter => ConnType.Barrel, _ => ConnType.Feed };
         }
-        else if (d.Role is PartRole.Wheel or PartRole.Door)
-            info.Single = true;
+        else if (d.Role is PartRole.Wheel || d.Role == PartRole.Door && d.Door == null)
+            info.Single = true; // (an event door hangs by a plain socket on the jamb: below, that one only)
         if (d.Piece != EnginePiece.None)
             EngineConnections(d, info);
         var order = new List<byte>(n);
@@ -334,6 +334,11 @@ public static class SnapBuild
                 if ((pass == 0) == (functional == (d.Piece == EnginePiece.Crank))) // (a crank section goes on by its ends first, everything else by a structural face)
                     order.Add((byte)s);
             }
+        if (d.Door is { Hang: >= 0 } door)
+        {
+            order.Clear(); // (an event door goes on only by its hang: its other faces take what rides on the leaf)
+            order.Add((byte)door.Hang);
+        }
         info.Order = order.ToArray();
         return info;
     }

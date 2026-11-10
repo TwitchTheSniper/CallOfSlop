@@ -509,7 +509,7 @@ public static partial class SelfTest
         sp.Yaw = 0;
         Pump(server, [a], 0.3, ref now, clock);
         var before = w.Bodies.Select(b => b.Id).ToHashSet();
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Cargo Rack"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Cargo Rack"));
         Pump(server, [a], 0.8, ref now, clock);
         var rack = w.Bodies.FirstOrDefault(b => !before.Contains(b.Id) && b.CarriedBy == 0 && ConstructCargo.CountVolumes(b) > 0);
         if (rack == null)
