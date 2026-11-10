@@ -72,6 +72,12 @@ public static class InteriorPlanner
                         if (hi.X > x * rules.GridCell && lo.X < (x + 1) * rules.GridCell && hi.Z > z * rules.GridCell && lo.Z < (z + 1) * rules.GridCell)
                             p.Cells[k][x, z] = InteriorPlan.KeepOut;
             }
+        // (a deck over a keep-out has no slab there: the builder lays none on what can't hold one, so the cell is out on the decks above too)
+        for (var k = 1; k < p.Decks; k++)
+            for (var x = 0; x < p.W; x++)
+                for (var z = 0; z < p.D; z++)
+                    if (p.Cells[k - 1][x, z] == InteriorPlan.KeepOut)
+                        p.Cells[k][x, z] = InteriorPlan.KeepOut;
         // the spine, down the middle on every deck
         p.SpineZ0 = (p.D - rules.Corridor) / 2;
         p.SpineZ1 = p.SpineZ0 + rules.Corridor - 1;

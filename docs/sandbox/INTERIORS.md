@@ -550,7 +550,75 @@ The Titan Walker with this interior, driven from the bridge with riders, doors a
 docs/sandbox/GIANTS.md, "Fitted walker". In short: worst ticks 1 to 3 ms after the press fix (a Press or Die Lathe scanned every link
 of the construct to find its die and pieces), riders, doors and lifts work while it walks, and stabilisers have no room yet.
 
-### Next (phase 8 and on)
+## Phase 8 record (branch `feat/interior-rooms`)
 
-A long floor panel if a bigger build needs it; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
+User decisions that apply (2026-11-10): rooms are fully working (real machines, storage, power), each room type keeps its loot, the
+contents include armouries, production, storage, crew quarters, weapon stations, medical and logistics; critical rooms are weak points.
+
+**Parts** (`tools/constructs/interior_parts.py`, `Constructs/Parts/Interior/Furniture`, small class, group Interior, recipes by
+`assembling.py`'s rules): Locker, Gun Rack, Medicine Cabinet, Tool Rack, Mess Table, Chart Table, Galley Stove and Repair Station are
+stores (storage slots: loot and players' things); the Power Board (engineering) and the Engineer's Panel (bridge) read the circuit's
+charge as the Charge Gauge does; the **Medical Station** is a seat that heals whoever sits in it, 4 health a second
+(`"seat": {"heal": 4}`, `ConstructPartDef.SeatHeal`, the server's seat loop: `Game.SandboxSeatHeal`; health goes out in the snapshot as
+before, no wire change). Inventory: Storage and Logistics, Seats and Logic (Categories.json).
+
+**Gaps listed by the run** (furniture placed, behaviour not this phase): the repair station doesn't mend parts in place; the galley stove
+doesn't cook (no food items); the engineer's panel has no damage board; the medicine cabinet holds the nearest things (no medkit or
+bandage); the hangar's ramp (a medium floor and hinge). A fuel pump is not needed: a pipe from a tank feeds a plant directly.
+
+**Class lookup.** A module item's `part` may be a list, biggest size class first; `SizeClasses.json` `partClass` is the biggest a class's
+rooms may hold (medium and large: small; extra large and capital: medium). The builder takes the first that is allowed, has an adapter
+(`shell.adapters`) and fits a block (2.5 m high, 3.6 m across): a bigger part stands on its adapter pad turned face down on the slab. The
+capital Hangar now has a Hangar Bay Medium and the Magazine a Shell Magazine Medium. An item with no part that fits is listed once.
+
+**Feeds** (`ModuleSets.json` `feeds`, `InteriorBuilder.Feeds`): a chute from the nearest storage room's Materials Bin into each
+production room's Assembler ("Chute in"), and a pipe from the nearest fuel bunker's or fuel store's Fuel Tank ("Fuel out") into each
+engineering room's Small Genset ("Fuel in"), laid at ceiling height (x, then z, then down; a node every 7.5 m at most; laid, so through
+walls and slabs). A construct holds 254 links (routes) in all: the feeds go before generated rooms' light switches, and both stop where
+the players would keep fewer than 64.
+
+**Room mix.** `fill` is a weighted programme (`FillEntry`: weight, cap on the share, where deck, chassis or any, perQuarters). Narrow
+leftovers (2 or 3 cells) draw from it too, where a type fits; storage only when none does. The score adds 20 x (the type's target share
+less its share so far), and a mess or medical bay is wanted per 4 quarters; over its cap a type is skipped unless every type is. Critical
+rooms (engineering, magazine) are never generated in a sealed hull or in an inner band (their one door would trap the rooms behind them).
+New room type **Gun station** (outer row: a Crew Station and Fire Director wired, a Gun Rack, ammunition loot); magazines want gun
+stations and avoid fuel.
+
+**Floor panels** (`Steel Floor Panel 8x8 m` and `16x16 m`, `Constructs/Parts/Interior/Floors`, `shell.floorPanels`): the 8 m panel has
+every slab socket; the 16 m one (255 sockets at most) keeps tops on its 4 m blocks' edge lines, bottoms on its rim and edge sockets at
+each block's ends. `Slabs` lays the biggest panel first on its own lattice, inside one bulkhead section, over blocks that all take a plain
+slab; a panel that finds nothing to stand on when the passes stop is broken into the next size down, at last 4x4 m slabs. Furniture takes
+only its block's sockets of a panel.
+
+**The runs** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed N`, seeds 1 to 3): every programme room placed, every room
+reached on deck and in the void, 0 refused; 39 to 40 feeds laid; power 0 electrical parts off, every plant fed.
+
+| | Before (main, seed 1) | Seed 1 | Seed 2 | Seed 3 |
+| --- | --- | --- | --- | --- |
+| Parts | 6,322 | 4,372 | 4,282 | 4,258 |
+| Links | 23,485 | 16,026 | 15,716 | 15,650 |
+| Slabs | 2,760 parts, 13,814 links | 672, 5,990 | 672, 5,951 | 672, 5,956 |
+| Storage / Workshop / Production | 79 / 45 / 1 | 37 / 31 / 36 | 37 / 31 / 37 | 37 / 31 / 38 |
+| Engineering / Magazine / Gun station | 1 / 1 / 0 | 3 / 1 / 3 | 3 / 2 / 4 | 2 / 2 / 4 |
+| Medical / Mess / Quarters | 1 / 1 / 16 | 5 / 9 / 22 | 4 / 6 / 18 | 4 / 6 / 18 |
+
+Seeds differ in layout as well as counts: about 130 of the 186 lines of the deck maps differ between any two. A 500 m hull: slabs at
+a 16 m panel a 256 m2 square are about 6 links a panel, so a 500 x 60 m deck is roughly 120 panels a storey.
+
+**Build time.** 69 s before; about 30 s now (the box is shared, so runs vary). Furnishing tried 21,000 placements to fit 1,300 things
+(each refusal costs about a millisecond: the build rules' overlap test and an exception); it now skips spots where a solid box of the
+room already stands and spots an item has already failed on. What is left is the kit's `C.Rebuild()` after every placed part
+(`BlueprintScript.Commit`), quadratic in parts: a runtime spawn of a fitted giant would want a batch mode (rebuild once at the end) in
+the kit, and the generation spread over ticks as `VehicleGenJob.Yield` already allows.
+
+**Not tried:** a player using the new furniture (sitting in a medical station, opening a locker), the chutes and pipes carrying in play,
+drawing anything (z-fighting between floor panels and the 4x4 m slabs beside them, the adapter pad face down on a slab), the smaller
+classes, a client.
+
+**Known gaps:** about 30 generated rooms per seed keep their lamps dark: the 254-link cap is spent on the lift, seals, feeds and the
+other rooms' switches (a lamp lights only from a wire). Lockers are many (130 on seed 1: two per quarters' cells).
+
+### Next (phase 9 and on)
+
+Lamps that need no wire (or a higher link cap); the kit's batch rebuild; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
 track; static bases from a plot; joining the vehicle kit; the missing parts listed by the run.
