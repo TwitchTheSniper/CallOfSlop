@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Stabiliser",
+  "description": "A gyro stabiliser: steadies a walker's ride. More and bigger ones take out more of the footfalls' thump, the shake and the sway its riders feel, and keep loose cargo from being thrown about.",
+  "group": "Large",
+  "section": "Legs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "stabiliser": {
+    "steady": 1500000
+  },
+  "mass": 60000.0,
+  "health": 38400,
+  "armour": 32,
+  "material": "steel",
+  "color": "#56606a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        -2.0,
+        -4.0
+      ],
+      "max": [
+        4.0,
+        -0.8,
+        4.0
+      ]
+    },
+    {
+      "min": [
+        -2.48,
+        -0.736,
+        -2.48
+      ],
+      "max": [
+        2.48,
+        2.0,
+        2.48
+      ],
+      "color": "#2f3a44",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.8,
+        2.064,
+        -0.8
+      ],
+      "max": [
+        0.8,
+        2.5,
+        0.8
+      ],
+      "color": "#c8a040",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        -1.4,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        -1.4,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        -1.4,
+        4.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        -1.4,
+        -4.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

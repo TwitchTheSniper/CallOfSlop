@@ -111,6 +111,8 @@ public sealed partial class Construct
         FeetSet = feetWere && kept == LegCount;
         WalkLive = -1;
         WalkStepping = false;
+        if (LegCount > 0)
+            BuildSteady(); // (the stabilisers: ConstructWalkFeel.cs)
     }
 }
 
@@ -170,7 +172,10 @@ public static partial class ConstructPhysics
         c.WalkTop = 0.45f * c.WalkStride * reach / (c.LegGroups * swing) * MathF.Min(1, live / (float)Math.Max(1, c.LegCount) * 1.5f); // (a lost leg slows it)
         c.WalkProblem = "";
         c.Walking = true;
+        c.WalkLanded = false;
         WalkFeet(c, query, c.Pos, c.Rot, c.Vel, c.AngVel, swing, dt, true);
+        if (c.WalkLanded)
+            Thump(world, c); // (the ride feel: ConstructWalkFeel.cs)
         WalkBody(c, reach, dt);
         LegWork(c);
         FeetPushBodies(world, c);
@@ -282,7 +287,10 @@ public static partial class ConstructPhysics
                 }
             }
             if (s >= 1)
+            {
                 c.WalkStepping = false;
+                c.WalkLanded = true; // (the server thumps the body: ConstructWalkFeel.cs)
+            }
             return;
         }
         // Down: lift the next group that needs a step, if the feet left down hold the body.
@@ -465,7 +473,14 @@ public static partial class ConstructPhysics
         // Tilt with the ground (half of it), and the turn.
         var up = Vector3.Transform(Vector3.UnitY, c.Rot);
         var ground = down > 0 && normal.LengthSquared() > 1e-4f ? Vector3.Normalize(normal) : Vector3.UnitY;
-        var level = Vector3.Normalize(Vector3.UnitY + (ground - Vector3.UnitY) * 0.5f);
+        var sway = Vector3.Zero;
+        if (c.WalkStepping && down >= 3)
+        {
+            // The ride feel (ConstructWalkFeel.cs): with a group in the air it leans towards the feet still down, less with stabilisers.
+            sway = new Vector3(centre.X - com.X, 0, centre.Z - com.Z);
+            sway = sway.LengthSquared() > 1e-4f ? Vector3.Normalize(sway) * (SwayLean * c.WalkRough) : Vector3.Zero;
+        }
+        var level = Vector3.Normalize(Vector3.UnitY + (ground - Vector3.UnitY) * 0.5f + sway);
         var radius = MathF.Max(1, c.Radius);
         var yaw = -turn * c.WalkTop / radius * 0.8f;
         var turnAccel = MathF.Max(0.2f, c.WalkTop / radius) * 2 * dt;
