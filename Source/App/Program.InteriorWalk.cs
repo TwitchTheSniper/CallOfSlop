@@ -7,18 +7,19 @@ namespace CallOfSlop;
 public static unsafe partial class Program
 {
     /// <summary>
-    /// <c>--interior-walk [fitted blueprint file] [--of base blueprint] [--seed S] [--walk S]</c>: a scripted player walk-through of a fitted
+    /// <c>--interior-walk [fitted blueprint file] [--of base blueprint] [--seed S] [--damage] [--walk S]</c>: a scripted player walk-through of a fitted
     /// construct (docs/sandbox/INTERIORS.md "Phase 6"). The construct is built frozen in the air over the Proving Ground; a player
     /// (the server's own movement, World.Simulate and ConstructWorld.BlockPlayer, with the ride frame) walks every corridor end to
     /// end, through every doorway both ways (leaves opened with the Use path first; one closed leaf must stop them), up and down every
     /// stair flight, and rides every lift car on its button and walks off at the landing. Every place they stick, fall, don't fit or are
-    /// pushed aside is printed. With --walk S the construct is then set on the ground, its bank charged, and driven forward S seconds
+    /// pushed aside is printed, and furniture standing in front of a doorway. --damage shoots long panels and a slab until they break and
+    /// sets off blasts on panels, walls and a slab, printing what came off and in which bulkhead sections. With --walk S the construct is then set on the ground, its bank charged, and driven forward S seconds
     /// with one player in a room and one on a lift car: both must stay with the frame.
     /// </summary>
     private static int InteriorWalk(string[] args)
     {
         string? Flag(string f) => args.SkipWhile(a => !a.Equals(f, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
-        var file = Flag("--interior-walk") ?? Path.Combine(VehicleRegistry.RepoBlueprints(), "TitanWalkerFitted.json");
+        var file = args.SkipWhile(a => !a.Equals("--interior-walk", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } fa && !fa.StartsWith("--", StringComparison.Ordinal) ? fa : Path.Combine(VehicleRegistry.RepoBlueprints(), "TitanWalkerFitted.json");
         var ofName = Flag("--of") ?? Path.Combine(VehicleRegistry.RepoBlueprints(), "TitanWalker.json");
         var seed = int.TryParse(Flag("--seed"), out var sd) ? sd : 1;
         var walkSeconds = float.TryParse(Flag("--walk"), System.Globalization.CultureInfo.InvariantCulture, out var ws) ? ws : 0f;
@@ -183,13 +184,10 @@ public static unsafe partial class Program
                     hi = Vector3.Max(hi, p);
                 }
                 var jt = c.Joints[c.Parts[i].Seg - 1];
-                var hingePart = jt.Hinge;
                 if (hi.Y - lo.Y < 1f && flat++ < 6)
-                    Console.WriteLine($"flat leaf {i}: rest {Fmt(a0)}..{Fmt(b0)} open {Fmt(lo)}..{Fmt(hi)}; hinge {c.DefOf(hingePart).Name} rot up {Rot24.Apply(c.Parts[hingePart].Rot, Vector3.UnitY)} x {Rot24.Apply(c.Parts[hingePart].Rot, Vector3.UnitX)}; open {jt.Open}");
-                else if (hi.Y - lo.Y >= 1f && flat < 100 && i == leaves[0])
-                    Console.WriteLine($"upright leaf {i}: hinge rot up {Rot24.Apply(c.Parts[hingePart].Rot, Vector3.UnitY)} x {Rot24.Apply(c.Parts[hingePart].Rot, Vector3.UnitX)}");
+                    problems.Add($"door: the leaf at {Fmt(lo)}..{Fmt(hi)} lies flat open (hinge {c.DefOf(jt.Hinge).Name})");
             }
-            Console.WriteLine($"walk: {flat} of {leaves.Count} open leaves lie flat");
+            Tally("door leaves upright", flat == 0, null);
         }
         // ---- doorways: every Door Wall, Door Corner and Garage Wall, both ways, 1.6 m out each side
         foreach (var i in Enumerable.Range(0, c.PartCount))
@@ -292,8 +290,6 @@ public static unsafe partial class Program
         {
             var rot = c.Parts[i].Rot;
             var o = c.Parts[i].Pos;
-            c.RestBounds(i, out var slo, out var shi);
-            Console.WriteLine($"stair {i}: origin {Fmt(o)} rises {Rot24.Apply(rot, Vector3.UnitZ)} up {Rot24.Apply(rot, Vector3.UnitY)} bounds {Fmt(slo)} {Fmt(shi)} seg {c.Parts[i].Seg}");
             var foot = o + Rot24.Apply(rot, new Vector3(0.375f, -0.1f, -0.55f));
             var head = o + Rot24.Apply(rot, new Vector3(0.375f, 2.9f, 3.5f));
             var kind = $"stairs L{Level(foot.Y)} up";
@@ -334,23 +330,6 @@ public static unsafe partial class Program
             UseFrom(i, c.ToWorld(mid + new Vector3(0, 0.3f, 0)));
         }
 
-        foreach (var i in Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Name == "Freight Lift Car"))
-        {
-            c.PartBounds(i, out var lo, out var hi);
-            Console.WriteLine($"car {i}: rest {Fmt(lo)}..{Fmt(hi)} now {Fmt(c.ToLocal(c.SegToWorld(c.Parts[i].Seg, lo)))}");
-        }
-        for (var lvq = -5; lvq <= 2; lvq++)
-        {
-            var row = "";
-            for (var z = 2; z <= 6; z++)
-                for (var x = 15; x <= 18; x++)
-                {
-                    var f = Floor(lvq, x, z) - new Vector3(0, 0.2f, 0);
-                    var has = Enumerable.Range(0, c.PartCount).Any(i => c.Parts[i].Seg == 0 && c.DefOf(i).Name.StartsWith("Steel Floor", StringComparison.Ordinal) && (c.Parts[i].Pos - (f - new Vector3(1.875f, -0.075f, 1.875f))).Length() < 0.3f);
-                    row += (x == 15 ? " " : "") + (has ? "#" : ".");
-                }
-            Console.WriteLine($"slabs L{lvq} blocks x15-18 z2-6: {row}");
-        }
         // ---- lifts: each car ridden up on its own button, then walked off at the landing; then called down from the lower landing
         var cars = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Name == "Freight Lift Car").ToList();
         clock.Restart();
@@ -406,8 +385,64 @@ public static unsafe partial class Program
 
         if (walkSeconds > 0)
             WalkWithRiders(w, c, q, walkSeconds, Floor, plan, cars);
+        if (args.Any(a => a.Equals("--damage", StringComparison.OrdinalIgnoreCase)))
+            Damage(w, c, Floor, b, plan);
         World.OpenSky = false;
         return problems.Count;
+    }
+
+    /// <summary>
+    /// Damage: a long panel and a slab shot until they break (DamagePart, as a round does), and a blast against a panel (Blast): what came off,
+    /// how far from the hit, whether any of it lay outside the hit's bulkhead section.
+    /// </summary>
+    private static void Damage(ConstructWorld w, Construct c, Func<int, int, int, Vector3> floor, InteriorBuilder b, InteriorPlan plan)
+    {
+        var x0 = floor(0, 0, 0).X - 2f; // (block 0's west edge)
+        int Section(Vector3 l) => plan.SectionOf((int)MathF.Floor((l.X - x0) / 4f));
+        HashSet<(int, int, int, ushort)> Snapshot()
+        {
+            var set = new HashSet<(int, int, int, ushort)>();
+            for (var i = 0; i < c.PartCount; i++)
+                set.Add(((int)MathF.Round(c.Parts[i].Pos.X * 100), (int)MathF.Round(c.Parts[i].Pos.Y * 100), (int)MathF.Round(c.Parts[i].Pos.Z * 100), c.Parts[i].Def));
+            return set;
+        }
+        void Report(string what, Vector3 at, HashSet<(int, int, int, ushort)> before, int bodies)
+        {
+            var after = Snapshot();
+            var gone = before.Where(k => !after.Contains(k)).ToList();
+            var far = gone.Count == 0 ? 0 : gone.Max(k => Vector3.Distance(new Vector3(k.Item1, k.Item2, k.Item3) * 0.01f, at));
+            var sections = gone.Select(k => Section(new Vector3(k.Item1, k.Item2, k.Item3) * 0.01f)).Distinct().OrderBy(x => x).ToList();
+            var kinds = gone.GroupBy(k => ConstructParts.Def(k.Item4)?.Name ?? "?").OrderByDescending(g => g.Count()).Take(6).Select(g => $"{g.Count()} {g.Key}");
+            Console.WriteLine($"damage: {what} at section {Section(at)}: {gone.Count} parts off ({string.Join(", ", kinds)}), farthest {far:0.0} m, sections {string.Join(",", sections)}, {w.Bodies.Count - bodies} new bodies");
+        }
+        foreach (var name in new[] { "Steel Panel Wall 16 m", "Steel Panel Wall 12 m", "Steel Floor 4x4 m" })
+        {
+            var i = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Name == name && c.Parts[i].Seg == 0 && c.Parts[i].Pos.Y > floor(0, 0, 0).Y - 0.5f).Skip(5).FirstOrDefault(-1);
+            if (i < 0)
+                continue;
+            c.RestBounds(i, out var lo, out var hi);
+            var at = (lo + hi) * 0.5f;
+            var before = Snapshot();
+            var bodies = w.Bodies.Count;
+            var (armour, health) = (c.DefOf(i).Armour, c.DefOf(i).Health);
+            var shots = 0;
+            while (shots < 2000 && i < c.PartCount && c.DefOf(i).Name == name && !w.DamagePart(c, i, 60, out _))
+                shots++;
+            Report($"a {name} shot {shots + 1} times (60 a round; health {health}, armour {armour})", at, before, bodies);
+        }
+        var pick = 0;
+        foreach (var (name, dmg) in new[] { ("Steel Panel Wall 16 m", 3000f), ("Steel Panel Wall 16 m", 8000f), ("Steel Panel Wall 16 m", 16000f), ("Steel Wall 4 m", 3000f), ("Steel Wall 4 m", 8000f), ("Steel Floor 4x4 m", 8000f) })
+        {
+            var i = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Name == name && c.Parts[i].Seg == 0).Skip(3 + 2 * pick++).FirstOrDefault(-1);
+            if (i < 0)
+                continue;
+            c.RestBounds(i, out var lo, out var hi);
+            var at = (lo + hi) * 0.5f;
+            var before = Snapshot();
+            var bodies = w.Bodies.Count;
+            w.Blast(c.ToWorld(at), 4f, dmg);
+            Report($"a blast (4 m, {dmg:0}) on a {name}", at, before, bodies);
+        }
     }
 
     /// <summary>The walk: set down on the ground, the bank charged, a player in the Bridge and one on a lift car, driven forward from the helm.</summary>
@@ -429,6 +464,7 @@ public static unsafe partial class Program
         }
         for (var t = 0; t < 5 * World.TickRate; t++)
             Step();
+        Console.WriteLine($"walk: the helm (part {helm}) is the drive seat: {c.DriveSeat == helm}; legs {c.LegCount}");
         Console.WriteLine($"walk: settled 5 s: deck {c.Pos.Y - g.Y:0.0} m over the ground, tilt {MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.0} deg, charge {c.Charge:0} kJ, worst tick {worst:0} ms");
         var bridge = plan.Rooms.First(r => r.Type == "bridge");
         var riders = new List<(string What, MoveState S)>();
@@ -467,6 +503,9 @@ public static unsafe partial class Program
         for (var t = 0; t < seconds * World.TickRate; t++)
         {
             c.Parts[helm].Keys = (ushort)((ushort)Buttons.Forward | 0x8000);
+            c.Driver = 0;
+            c.DriverSeat = helm;
+            c.Throttle = 1;
             c.Wake();
             TickAll();
         }

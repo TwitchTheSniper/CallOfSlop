@@ -103,6 +103,9 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
   compares part counts. With `--seed` it also plans twice and compares. `--plan` prints the ASCII maps. Console output goes to
   `callofslop.log` next to the exe, as for every tool.
 
+- **`Program.InteriorWalk.cs`** (phase 6): `--interior-walk [fitted file] [--of base blueprint] [--seed S] [--damage] [--walk S]`, a
+  scripted player walk-through of a fitted construct, headless (see "Phase 6 record"). Output in `callofslop.log`.
+
 Nothing runs per tick. The planner and builder run offline, at generation time.
 
 ## Phase 1 record (branch `feat/interiors-1`)
@@ -406,7 +409,87 @@ hit panel may come off sooner); other seeds; the armoured hull; the smaller clas
 **Known gaps:** 41 doorways have no leaf (the joint budget); slabs are now the main link cost; the helm still can't be wired to the
 Driving Module (one input).
 
-### Next (phase 6 and on)
+## Phase 6 record (branch `feat/interiors-6`)
+
+User decision (2026-11-10): a walk-through and look check of the fitted Titan Walker.
+
+**Regenerated on the walker's current blueprint** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1`, no `--chassis`:
+its root is the hollow chassis, its helm on the deck, and it has the Capital Battery Bank).
+- **The bridge takes over the walker's helm** (`InteriorBuilder.HelmChain`, `CarryHelm`). The blueprint's helm chain is a seat wired
+  into a Driving Module, plus what hangs on it (the module and its Battery). It is left out of the replay, along with the adapter it
+  stood on. The bridge's helm item becomes that helm: it faces the way the old one did, it stands on the bridge's free spot nearest the
+  leg the module is wired to (a wire reaches 8 m), and the module, the Battery and the wires are fitted back on it. It counts as the
+  vehicle's in the budget. There is no second helm. It is the drive seat.
+- **Budget:** 6,462 of 9,600 parts, 23,619 of 28,800 links (49% of the engine's), 191 of 191 joints, 137 wires, 38,228 t. All 13 + 7
+  programme rooms are placed and all rooms are reached. None refused or welded. 185 door leaves, 33 doorways open, 700 loot
+  containers. It loads back as 6,462 parts.
+- **The walker's "Centre sockets" self-test section passes** (0 failures).
+
+**The walk-through** (`--interior-walk`). The fitted walker is built frozen 60 m over the Proving Ground. A player uses the server's own
+movement (`World.Simulate`, `ConstructWorld.BlockPlayer`, the ride frame) and is steered to points:
+- every doorway both ways, 1.6 m out each side: 452 crossings on levels -5 to 1;
+- every corridor end to end through its bulkheads, on 6 levels;
+- all 10 stair flights, up and down;
+- each of the 6 lift cars, ridden up on its button, then walked off at the landing;
+- a shut leaf, to check it stops a player.
+
+The leaves are opened through `ConstructEdits.Use`, and all 185 open. Result after the fixes: **nothing sticks, falls or is pushed.**
+
+Then the walker is set on the ground and driven forward for 4 s from the carried helm. It stands with its deck 30 m up on the bank,
+and walks 11.6 m (2.9 m/s from rest). The worst tick is 8 to 10 ms (27 to 93 ms while it settles). A rider in the Bridge and one on a
+lift car stay on their frames with 0.00 m drift.
+
+**Found and fixed (builder and planner):**
+- **27 of 185 door leaves hung flat**, as a waist-high shelf across the doorway. Left to `SmartRotation.BestSpin`, the leaf took a
+  spin that laid it down. Opened, it pushed a player standing beside it 3 m through the floor (see "For other owners"). `Hang` now
+  takes the first spin that stands the leaf's tallest side up.
+- **A bulkhead door opened onto a keep-out.** The walker's Capital Battery Bank stands across the spine at grid x 19 to 23 on both
+  decks, so the x 24 bulkhead's door led onto the bank (deck 0) or onto a 2.2 m drop with no slab (deck 1). Where a keep-out is beside
+  the bulkhead on the spine, the builder now builds a plain wall.
+- **Lift doorways onto a car's rail.** The cars ride the shaft's west column, on its north blocks. The void storage room's door in the
+  shaft's north wall opened onto the parked car's side rail. A lift shaft's north and south doorways now go in their piece's east
+  half. The planner never puts a landing door in a lift shaft's west wall, and prefers stairwells.
+- **Furniture in front of doorways.** A Bunk stood 1.6 m inside a door, and a player walking in landed on it. A room's things now keep
+  their footprint plus 1.6 m from any doorway's middle on their floor (`Blocks`).
+
+**Look check:** the "No z-fighting" self-test section passes (the panels, the hollow chassis, the armoured hull and the lift car are
+among the part files it checks). `interior_parts.py` rewrites its 7 parts unchanged. The built interior was checked with
+`--check-vehicle` (`VehicleChecks.ZFighting`): **0 coplanar faces between parts among 19,201 boxes** (555 slivers under its area
+limit). No screenshots were taken.
+
+**Damage** (`--interior-walk --damage`, 60 a round):
+- Shot until they broke, a 16 m panel took 566 rounds and a 12 m panel 425 (their health is 14,140 and 10,620, the same per metre as a
+  4 m wall). A slab took 90 rounds. Each came off alone, as one wreck, and nothing else was cut off.
+- Blasts of 4 m radius: at 3,000 and 8,000, a 16 m panel held while 4 m walls broke (8,000 took 10 wall parts and a door). At 16,000 it
+  broke: a 16 m breach plus two slabs.
+- Every breach stayed in its bulkhead section. No room, and so no panel, crosses a bulkhead line.
+- A 3,000 blast on a lift shaft's wall took a lift car and its call logic (15 parts).
+
+**For other owners (not fixed here):**
+- **Walker (`leg_parts.py` `blueprint()`):** the Capital Battery Bank on `top5.1` covers the chassis's stair hatch at grid 22,3. The
+  deck's second stairwell moves to 24,3, off the hatch, so the void's east stair stack stops at the top storey (10 flights, not
+  12). The bank also cuts the deck's spine on both decks, though deck 1 east of it is still reached by its stairs. A top socket off
+  the spine and the hatches would fix both.
+- **Construct movement (`ConstructWorld.BlockPlayer`):** a player overlapping a joint-moved part (a door leaf swinging into them) is
+  pushed out vertically, through a 0.25 m slab, 2.6 to 3.7 m up or down. It is seen only with the flat leaves, now gone, but any hinged
+  panel can do it.
+- **Blast balance:** blast damage is per part, so a long panel is about 4 times as hard to blast through as 4 m walls, and then opens a
+  4 times wider breach. This is a design question for the panels or the blast code.
+- **Freight Lift Car (mine, not changed):** its rails are on the north and south sides and it is open at the east end. Boarding is
+  through the shaft's east column.
+
+**Tight but working:** the stair flights in a stairwell's first block start 0.875 m from its end wall. The player is 0.8 m wide and
+can step on from the side.
+
+**Not tried:** a real client; drawing; doors opened by a player's aim rather than `Use` from a computed eye; other seeds; the armoured
+hull fitted; the medium to extra-large classes on a real build; walking into every room's far corners (only doorways, corridors,
+stairs and lifts were walked).
+
+### Next (phase 7 and on)
+
+**Event doors** (main 77407028, protocol 226: `Construct.Doors`, `ConstructDoors.cs`, `door_parts.py`): switch the builder's leaves to
+them, with Bulkhead Doors (sliding) on bulkhead lines (a bulkhead needs wall beside its opening to slide into). That gives the 33 open
+doorways doors and frees the 185 joints the leaves hold. Not done in phase 6.
 
 A long floor panel if a bigger build needs it; a jointless sliding door; a single lift car through all storeys (a medium or large rail through adapters); medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
 track; static bases from a plot; joining the vehicle kit; the missing parts listed by the run.
