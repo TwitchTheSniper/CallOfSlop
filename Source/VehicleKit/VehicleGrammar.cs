@@ -726,10 +726,11 @@ public static class ShapeGrammar
         var (gunsLo, gunsHi) = role?.GunRange(r.MinGuns, r.MaxGuns) ?? (r.MinGuns, r.MaxGuns);
         var want = d.Int(gunsLo, gunsHi);
         var count = 0;
-        var noWhaler = st.Weapons.Where(w => w.Name != "Whaler" && !w.Build.StartsWith("Whaler", StringComparison.Ordinal)).ToArray();
         WeaponOption Pick(int k, bool aft)
         {
-            var list = aft && noWhaler.Length > 0 ? noWhaler : st.Weapons;
+            var arsenal = v.Arsenal; // (the style's guns and the gunsmith's for this vehicle as it is now: VehicleGunsmith.cs)
+            var noWhaler = arsenal.Where(w => w.Name != "Whaler" && !w.Build.StartsWith("Whaler", StringComparison.Ordinal)).ToArray();
+            var list = aft && noWhaler.Length > 0 ? noWhaler : arsenal;
             var w = role != null ? role.Pick(d.Fork("weapon " + k), list) : VehicleArmoury.Pick(d.Fork("weapon " + k), list);
             FactionStyle.Noted("weapon", w.Name);
             return w;
@@ -1223,7 +1224,8 @@ public static class ShapeGrammar
         // A flame gun on a sponson doesn't follow its gunner's look round (it swings 20 degrees and more off), and a long gun on a roof low and far forward would
         // want a pedestal over the cab, which a roof has no socket for: the next of the style's guns, in a seeded order.
         var at = v.CentreOf(mount);
-        var order = v.Role is { } role ? role.Order(d.Fork("weapon " + v.Turrets.Count), v.Style.Weapons) : VehicleArmoury.Order(d.Fork("weapon " + v.Turrets.Count), v.Style.Weapons);
+        var arsenal = v.Arsenal; // (the style's guns and the gunsmith's for this vehicle: VehicleGunsmith.cs)
+        var order = v.Role is { } role ? role.Order(d.Fork("weapon " + v.Turrets.Count), arsenal) : VehicleArmoury.Order(d.Fork("weapon " + v.Turrets.Count), arsenal);
         var w = order.FirstOrDefault(x => !(side && x.Box == null) && !((side || at.Y < 1.5f) && at.Z - v.GunReach(x) < 0.25f)) ?? order[0]; // (a sponson hangs low on the waist)
         FactionStyle.Noted("weapon", w.Name);
         return w;
