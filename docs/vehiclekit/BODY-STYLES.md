@@ -1148,7 +1148,7 @@ with a lining word, and the same keys now making end linings, consoles and wheel
 
 | Space | lining | furnishing | lamps | windows |
 | --- | --- | --- | --- | --- |
-| Upper saloon | the room's (kind, inset or following, as the vehicle rolled), its closed ends too | `Furnish` down its side walls (gear, layout, props, a chest if nothing else holds loot), the hatch and a metre of landing past it kept clear, and the centreline (0.3 m either side, padded 0.2 m: a player's width and 10 cm) the whole way | the lining's, where the roof is 2 m up (most saloons are 2.0 to 2.1 m: few) | the room's kind, glazed (`roomglass`) |
+| Upper saloon | the room's (kind, inset or following, as the vehicle rolled), its closed ends too | `Furnish` down its side walls (gear, layout, props, a chest if nothing else holds loot), the hatch and a metre of landing past it kept clear, and the centreline (0.3 m either side, padded 0.2 m: a player's width and 10 cm) the whole way | the lining's, where the roof is 2 m up (a saloon has about 2.0 to 2.1 m of headroom, so a low one has none) | the room's kind, glazed (`roomglass`) |
 | Open deck | its bulwark's rows followed (an open top is never inset; no roof row, no ceiling, no lamp), its ends' bulwark too | as a saloon | none | none |
 | Caged room | none (bars) | as before (it was furnished already) | none: nothing to hang one from | none |
 | Side pod | none: a pod is a closed locker standing off the skin, with no way in, so nothing inside it is seen | none | none | none |
@@ -1175,7 +1175,8 @@ seated eye: the driver's view rays are as they were. Drawn only. A merged cab wh
 ### Props on furniture
 
 A faction prop that finds no floor on the walls (Bandit's 0.9 a metre fills the walls first) is stood on a furniture piece's free top socket instead
-(`OnFurniture`): the room's furniture in a shuffled order, not seats, its top under 2 m and 0.3 m under the ceiling, the piece 0.3 m tall and more. Containers
+(`OnFurniture`): the room's furniture in a shuffled order, not seats, its top under 2 m and 0.3 m under the ceiling, the piece 0.3 m tall and more, a centimetre
+wider than the prop all round, with a free socket facing up level with its highest drawn box; the prop is asked for right over that socket within 12 cm. Containers
 among them roll loot as on the floor.
 
 ### Fixed on the way
@@ -1185,11 +1186,24 @@ among them roll loot as on the floor.
   stands on the deck 0.3 m past the door (`BuildingWalk`'s new `until`). The vehicle was right; the check was wrong.
 - **Upper storeys furnished**: the first try put a shelf and a bunk across the storey's middle, where the check stands a player (British War Bus 2 and 3); the
   centreline is kept.
+- **A prop in a knob**: the first try stood a Union Flag on an Ammo Container's top socket, which is under the knob on its lid, so the two boxes' tops were one
+  plane (British Box Truck 2, the z-fighting check). A top counts only where its socket is level with the piece's highest drawn box (a part's bounds leave the
+  knob out).
 - **A merged cab with a lining word** was refused by the key's reader (7a's rule: no dash in a capsule); the reader takes it now.
 
 ### Measured (2-core box shared with other agents: times are noisy; before is main at 861c3bde5)
 
-MEASURED
+`--body-report all --seeds 6` and the full check `--sweep-vehicle "STYLE SHAPE" --seeds 6` over six styles and five shapes.
+
+| | before | after |
+| --- | --- | --- |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 (Bandit Box Truck 3's balcony walk, Bandit Scrap Tanker 3's barrel, Highland Scrap Tanker 3's Pipe Box) | 178 of 180 (the two tankers; the balcony walk fixed); upper storeys' walk, hole rays and stair climb pass with their furniture; turret seats on their guns as before |
+| coplanar pairs inside lofted parts | 0 | 0 (end linings, storeys' and bulwarks' linings, consoles and wheels) |
+| room exteriors, cabs and hoods, whole body (between over within) | 1.46, 1.50, 1.03 | 1.46, 1.50, 1.03 (all inside the outline) |
+| lamps a vehicle with rooms (Bandit, IT, Highland, Scam, British, Militia) | 1.1, 1.8, 1.5, 1.6, 2.2, 1.0 | 1.1, 1.8, 1.5, 1.7, 2.7, 1.0 (lined saloons) |
+| parts a vehicle, mean a style (`--body-report`) | 130, 135, 142, 141, 139, 132 | 131, 135, 142, 141, 139, 132 (props on tops; storeys' furniture) |
+| parts, mean a shape in the full check | - | Box Truck 131 to 153, War Bus 161 to 190, Flatbed Fort 158 to 171, Gun Wagon 108 to 137, Scrap Tanker 68 to 87; 135.6 over all (136.2 before) |
+| generation, mean a sweep; worst | 1629 ms; 24.2 s (Bandit Box Truck 1, `--body-report all`) | 1394 ms; 36.5 s (the same vehicle, in the `all` run only, as in 7b: unexplained) |
 
 **Committed seeds**: unchanged; 49 files written again (lined ends and storeys, consoles and wheels, props on tops); `--gen-vehicles` reports all 123 identical, and
 with `--order reverse`; `--check-construct-parts` clean.
