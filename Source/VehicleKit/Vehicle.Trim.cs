@@ -120,7 +120,7 @@ public sealed partial class Vehicle
     /// <summary>The faction's trim down its rooms' free bay sides (after the guns, panniers and dressing have taken theirs), each where it draws into nothing.</summary>
     private void FactionTrim()
     {
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         if (NoTrim || Look == null || Rooms.Count == 0 || rule.Trims.Length == 0)
             return;
         var d = Dice.Fork("faction trim");
@@ -198,7 +198,7 @@ public sealed partial class Vehicle
     /// <summary>The style's fittings on the cab and the hood (a chrome grille goes on with the hood: <see cref="ChromeGrille"/>).</summary>
     private void FactionDecos()
     {
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         if (NoTrim || CabLook == null)
             return;
         var cab = Panels.GetValueOrDefault("cabshell")?.FirstOrDefault();
@@ -251,7 +251,7 @@ public sealed partial class Vehicle
     /// <summary>A Highland chrome grille on a lofted hood's nose, where the plan's nose is a grille or none (a ram or a bull bar keeps the socket), on its own fork.</summary>
     private bool ChromeGrille(VPart hood)
     {
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         if (NoTrim || HoodShape is not { } h || !rule.Decos.Any(x => x.Kind == 'G'))
             return false;
         var d = Dice.Fork("deco G");

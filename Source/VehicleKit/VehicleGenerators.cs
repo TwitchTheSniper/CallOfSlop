@@ -57,6 +57,7 @@ public static class VehicleRegistry
     public static readonly Func<FactionStyle, IVehicleGenerator>[] Extras =
     [
         s => new Generators.DoubleDecker(s),
+        s => new Generators.Car(s),
     ];
 
     internal static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>

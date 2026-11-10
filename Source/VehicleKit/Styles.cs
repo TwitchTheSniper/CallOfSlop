@@ -13,6 +13,7 @@ public static class Styles
     public static readonly FactionStyle Bandit = new()
     {
         Name = "Bandit",
+        Extra = ["Car"], // (phase 8a: its archetypes' cars)
         Group = "Bandit",
         Palette = new()
         {
@@ -110,6 +111,7 @@ public static class Styles
     public static readonly FactionStyle It = new()
     {
         Name = "IT",
+        Extra = ["Car"], // (phase 8a: its archetypes' cars)
         Group = "IT Department",
         Palette = new()
         {
@@ -176,6 +178,7 @@ public static class Styles
     public static readonly FactionStyle Scam = new()
     {
         Name = "Scam",
+        Extra = ["Car"], // (phase 8a: its archetypes' cars)
         Group = "The Call Centre",
         Palette = new()
         {
@@ -229,6 +232,7 @@ public static class Styles
     public static readonly FactionStyle Highland = new()
     {
         Name = "Highland",
+        Extra = ["Car"], // (phase 8a: its archetypes' cars)
         Group = "Clan MacSlop",
         Palette = new()
         {
@@ -336,7 +340,7 @@ public static class Styles
             new("Strongly Worded Letter", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
             new("Builder's Tea", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
         ],
-        Extra = ["Double Decker"],
+        Extra = ["Double Decker", "Car"],
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
         {

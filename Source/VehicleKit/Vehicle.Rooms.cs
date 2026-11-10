@@ -108,7 +108,7 @@ public sealed partial class Vehicle
         var layout = Style.Part(d, "layout");
         var (length, width) = (room.R.Z1 - room.R.Z0, room.R.X1 - room.R.X0);
         var slots = d.Shuffled(Style.Choices("layout " + layout)).ToList();
-        var inside = Look != null && !BodyLook.NoInteriors ? BodyStyleRule.Of(Style) : null; // (phase 7a: the faction's density, role gear and props, kit 5's rooms)
+        var inside = Look != null && !BodyLook.NoInteriors ? Rule : null; // (phase 7a: the faction's density, role gear and props, kit 5's rooms)
         var repeat = inside == null ? 4 : (int)MathF.Round(4 * inside.Fill);
         if (length >= 3) // (a bigger room fills up: the list again, then once more for a bus)
             slots.AddRange(d.Shuffled(slots.Take(repeat)));
