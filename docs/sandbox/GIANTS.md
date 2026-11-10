@@ -273,15 +273,62 @@ blueprint; drawing; a client.
 - **Power**: the legs draw about 3 MW standing (3.6 MW fitted) and 45 to 50 MW walking, and are fed only while the battery
   holds 60 kJ a tick. Keep the Capital Battery Bank (step 11): the interior's batteries and 100 kW genset can't hold it up.
 - **Regenerate** `TitanWalkerFitted.json` with `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1` (left to the
-  interiors session: the file is theirs). The fitted body's tick (19 to 30 ms here) is over the 8 ms budget on a busy box.
+  interiors session: the file is theirs). The fitted body's tick was 19 to 30 ms here; the presses' link scans were the cost ("Fitted walker" below: 1 to 3 ms now).
+
+## Fitted walker (branch `feat/walker-interior`, with the interiors track)
+
+The joint record for the Titan Walker with its interior (`TitanWalkerFitted.json`, `--gen-interior
+Constructs/Blueprints/TitanWalker.json --seed 1`); INTERIORS.md points here.
+
+- **Current.** Regenerating on main gives the committed file byte for byte: 6,322 parts, 23,485 links, 6 joints (the lifts),
+  38,234 t, the Capital Battery Bank kept, the Bridge Helm (part 4902) is the drive seat. Driven through the seat as
+  `GameSandbox` does (the seat's keys with `Occupied`, `Driver`, `DriverSeat`, `ConstructEdits.DriveInput`): it stands at 29.2 m,
+  walks at 3.05 m/s on W and turns right on D (5 degrees in 4 s, from a walk).
+- **Tick time: the presses.** The worst ticks (19 to 30 ms in phase 5) were not the legs. Every sixth tick
+  `ConstructPress.Step` took 3 to 6 ms: the interior's 45 Presses and 45 Die Lathes each looked for their die and pieces with
+  `OnSocket`, a scan of all 23,485 links, a dozen times a machine. `OnSocket` and `MachineOf` now walk the part's own links
+  (`Construct.FirstLink`/`NextLink`, the index the fuse code already keeps). The press step is 0.05 ms a tick on average now.
+
+  | Fitted walker, 2-core box at load 6 to 7 | before | after |
+  | --- | --- | --- |
+  | Standing: median, p95, worst (ms) | 0.6, 5.0, 8 to 25 | 0.55, 0.7 to 1.1, 1.7 to 3 |
+  | Walking | 0.5 to 0.7, 4.2 to 7.2, 9.1 to 9.4 | 0.55, 0.7 to 0.8, 1.2 to 1.4 |
+  | Turning | 0.5 to 0.8, 3.8 to 7.2, 6.5 to 8.9 | 0.5 to 0.6, 0.6 to 1.0, 1.1 to 1.3 |
+  | Sat down, no power (hull on the ground) | not measured | 2.5, 4.2, 4.5 |
+
+  A quiet tick's cost is the logic step (0.15 to 0.3 ms over 6,322 parts), the gait (0.2 to 0.3 ms) and the world contacts (0.1
+  ms). Single ticks of 9 to 45 ms still show up, once or twice a run, in a different stage each time (the box's other builds
+  taking the core; with tiered compilation off none passed 9 ms), plus one 14 ms tick in `ConstructCargo.Step` in three runs of
+  four that tiered compilation off also removed (a JIT tier-up). The first ticks after the build (100 to 140 ms, then 30 to 40)
+  are the first rebuild and the JIT. Standing and walking allocate nothing in the step; sitting down without power, the doors
+  and the power step allocate 7 to 12 KB in 6 s (doors settling as their wired logic loses power).
+- **Living inside while it walks** (a throwaway probe: two players on room floors, one on a lift car, a loose Chest body on a
+  room floor, the walker driven 6 s):
+  - players on the floors stay put: 0.00 m drift in the ride frame, on the deck storeys and in the chassis void;
+  - a swing door opened on Use mid-walk and settled open; a lift car's button pressed mid-walk raised the car 3.00 m with its
+    rider on it (0.00 m drift on the car's segment);
+  - the loose Chest slid 0.51 m across its floor in 6 s and was not thrown up.
+  The ride is rougher than the bare walker's (phase 4: worst tilt rate 0.109 rad/s, dip 0.31 m/s): fitted, 0.16 rad/s and 1.1 to
+  1.2 m/s, at roughness 1 (no stabilisers).
+- **Stabilisers: no room yet.** The fitted walker would need about 38,000 t steadied for the smoothest ride. A Capital Stabiliser
+  (6,000 t, 32 x 32 x 18 m) is taller than the chassis void (14 m), and on the deck top each takes 2 storeys of a 32 m square
+  from the rooms. Large Stabilisers (1,500 t, 8 x 8 x 4.5 m) fit the void, but the void's three floor sockets are the void
+  interior's pads now (an adapter on them left the void storeys with nothing to stand on: 839 refusals). Hung under the belly on
+  adapters (23 Large, about 1,800 t) they would steady most of it and leave about 16 m under the hull when standing, but a walker
+  that sits down would sit on them. Left for a decision: under the belly, on the deck top (fewer rooms), or a stabiliser that
+  is a room's furniture (a small-class part the builder can place).
+
+What was not tried: a client (the walker drawn and its riders' views), a player walking through the rooms while it walks (the
+probe's players stand), the seal switches by aim while walking, the production room working while walking (an Assembler fed
+from storage), other seeds, real map terrain, more than one fitted walker in a world.
 
 ### Next phases
 
 1. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
    step-over measured on real maps.
 2. Autopilot to a destination.
-3. Crew stations, the hangar and production line on a walker (the interiors track's `TitanWalkerFitted`; regenerate it
-   from phase 5's blueprint: hollow chassis, helm on the deck, battery bank).
+3. Crew stations, the hangar and production line on a walker: the fitted walker runs ("Fitted walker"); next, its stabilisers
+   (a decision), the production room working on the move, and a client.
 4. 500 m and more: the part reach cap (200 m), the broadphase sphere (a leg's reach now widens it), instanced leg drawing,
    legs of several parts.
 5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
