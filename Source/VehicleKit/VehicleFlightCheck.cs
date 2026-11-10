@@ -163,7 +163,7 @@ public static class VehicleFlightCheck
         var p0 = c.WorldCom;
         var t = 0;
         var debug = Environment.GetEnvironmentVariable("PLANE_DEBUG") == "1";
-        for (; t < PlaneRunTicks && c.Vel.Length() < rotateAt; t += 15)
+        for (; t < PlaneRunTicks && c.Vel.Length() < rotateAt && Up(c) - h0 < LiftOff; t += 15) // (a tail-dragger sitting nose up may lift off by itself)
         {
             Fly(w, q, place, c, Buttons.Sprint, 15, ref r);
             if (debug && t % 60 == 0)
@@ -171,7 +171,7 @@ public static class VehicleFlightCheck
         }
         var run = c.WorldCom - p0;
         r = r with { RunSpeed = c.Vel.Length(), RunDist = MathF.Sqrt(run.X * run.X + run.Z * run.Z) };
-        if (r.RunSpeed < rotateAt)
+        if (r.RunSpeed < rotateAt && Up(c) - h0 < LiftOff)
             return r with { Why = $"down the runway for {t / (float)World.TickRate:0} s it reached {r.RunSpeed:0.0} m/s, {Vector3.Dot(c.Vel, Forward(c, c.Rot)):0.0} forward, nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0} degrees up (it rotates at {rotateAt:0}, stalls at {stall:0}; {Pushing(c)})" };
         for (t = 0; t < RotateTicks && Up(c) - h0 < LiftOff; t += 10)
         {

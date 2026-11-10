@@ -41,11 +41,12 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         var first = plan.Wing == WingAt.Mid ? 3 : 1; // (a mid wing's root would cut the cockpit block further forward)
         var last = Stations - 1;
         // Two trial builds with the wing at either end, then the station that gives the margin (both sums move in a line with the wing's place).
-        var a = Trial(v, plan, first);
-        var b = Trial(v, plan, last);
+        var (a, _) = Trial(v, plan, first, 0);
+        var (b, _) = Trial(v, plan, last, 0);
         var per = (b - a) / (last - first);
-        var k = Math.Abs(per) < 1e-4f ? last : (int)MathF.Round(first + (Margin - a) / per);
-        Make(v, plan, Math.Clamp(k, first, last));
+        var k = Math.Clamp(Math.Abs(per) < 1e-4f ? last : (int)MathF.Round(first + (Margin - a) / per), first, last);
+        var (_, com) = Trial(v, plan, k, 0); // (then where its centre of mass is, for the mains)
+        Make(v, plan, k, com);
     }
 
     /// <summary>The seed's dice, its bits mixed first (as <see cref="Drone"/>'s: <see cref="Dice"/>'s first roll of a fork follows a seed's low bits).</summary>
@@ -61,7 +62,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
     {
         var rig = d.Fork("rig");
         var power = rig.Pick((Power[])[Power.Tractor, Power.Tractor, Power.Twin, Power.Pusher]);
-        var turbine = power == Power.Tractor && rig.Chance(0.5);
+        var turbine = true; // (a Two-Blade Prop on an Engine pushes some 1,500 N: too little for a 600 kg plane at this game's gravity; AIRCRAFT.md)
         var wing = power switch
         {
             Power.Pusher => rig.Pick((WingAt[])[WingAt.Low, WingAt.Mid]), // (the pylon stands on the spine where a high wing's tank would be)
@@ -81,17 +82,18 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
     }
 
     /// <summary>A plane built off to one side with its wing at station <paramref name="station"/>: how far its centre of mass is ahead of its centre of lift (m).</summary>
-    private float Trial(Vehicle v, Layout plan, int station)
+    private (float Margin, float Com) Trial(Vehicle v, Layout plan, int station, float com)
     {
         var t = new Vehicle(v.Name, Style, v.Seed);
-        Make(t, plan, station);
+        Make(t, plan, station, com);
         var c = t.Live;
         if (!c.LiftCentre(out var lift, out _))
             throw new VehicleKitException("the trial plane has no lift");
-        return lift.Z - c.Com.Z; // (forward is -z: the centre of mass ahead is a smaller z)
+        return (lift.Z - c.Com.Z, c.Com.Z); // (forward is -z: the centre of mass ahead is a smaller z; the rest frame's z is the plane's, the cockpit at 0)
     }
 
-    private void Make(Vehicle v, Layout l, int station)
+    /// <summary>The plane with its wing at <paramref name="station"/>; a tricycle's mains half a metre behind <paramref name="com"/> (the centre of mass's z, 0 on a trial).</summary>
+    private void Make(Vehicle v, Layout l, int station, float com)
     {
         var twin = l.Power == Power.Twin;
         var engineName = l.Turbine ? "Turbine" : "Engine";
@@ -209,27 +211,24 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         }
 
         // The gear: a nose leg under the cockpit and mains behind the wing, or mains under the cockpit and a tail wheel under the boom.
-        var tall = l.Tricycle || twin;
         if (l.Tricycle)
         {
-            // Legs sized so the nose wheels stand level with the mains, which hang under the inner panels just behind the centre of mass: the elevator can lift the nose.
-            var (noseLeg, mainLeg) = l.Wing switch { WingAt.Low => ("Square Beam 0.75 m", "Square Beam 1 m"), WingAt.Mid => ("Square Beam 1 m", "Square Beam 1.5 m"), _ => ("Square Beam 1 m", Spine) };
-            var nose = v.Onto(cockpit, "-y", noseLeg, "+z");
+            // A nose leg that stands the nose wheels level with the mains, which hang from the spine half a metre behind the centre of mass, clear of the tank: the elevator can lift the nose.
+            var nose = v.Onto(cockpit, "-y", "Square Beam 0.75 m", "+z");
             v.Paint(nose, l.Frame);
             var foot = v.Onto(nose, "-z", "Frame Block", "+y");
             v.Paint(foot, l.Frame);
             Wheels(v, foot);
-            foreach (var (w, side) in (ReadOnlySpan<(VPart, float)>)[(left[0], -1f), (right[0], 1f)])
-            {
-                var post = v.Onto(w, "-y", mainLeg, "+z");
-                v.Paint(post, l.Frame);
-                var i = Array.FindIndex(post.Def.Sockets, s => s.Name is "-x0" or "+x0" && Rot24.Apply(v.TurnOf(post), s.At).X * side > 0.05f);
-                v.Onto(v.Onto(post, post.Def.Sockets[i].Name, "Suspension", "mount"), "axle", "Wheel", "axle");
-            }
+            var at = Math.Max((int)MathF.Ceiling((com + 0.5f - 0.375f) / 0.25f), 0); // (spine socket k sits at 0.375 + 0.25 k)
+            if (twin)
+                at = Math.Max(at, station - 1); // (behind the props' discs, which hang below the wing's front)
+            if (Math.Abs(at - station) < 2)
+                at = station + 2; // (the tank, or a high wing's battery, hangs under the spine there)
+            Mains(v, l, at < Stations ? spine : boom, $"-y{Math.Min(at < Stations ? at : at - Stations, tailEnd)}", "Square Beam 1 m");
         }
         else
         {
-            Mains(v, l, cockpit, "-y", tall ? "Square Beam 1 m" : "Square Beam 0.5 m");
+            Mains(v, l, cockpit, "-y", "Square Beam 1 m"); // (taller than the tail wheel: it sits nose up, so its wing lifts it off as it gathers speed)
             var strut = v.Onto(boom, $"-y{tailEnd}", "Square Beam 0.5 m", "+z"); // (at the boom's end, well behind a wing set far back, and below the tail plane)
             v.Paint(strut, l.Frame);
             var foot = v.Onto(strut, "-z", "Frame Block", "+y");

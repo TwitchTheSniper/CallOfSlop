@@ -57,9 +57,45 @@ the flight check, as a spawned ground vehicle is by the drive check. Two familie
 - The stabilizer is set to Rotorcraft keys with a max lean of 15 to 30 degrees from the seed. Colours come from the style's `frame` and `body` palettes.
 - No weapons (phase 1).
 
+## The Plane generator (phase 2, unfinished)
+
+`Generators/Plane.cs`, shape "Plane", in `VehicleRegistry.Extras` (no seeds ship): `--gen-vehicle "Bandit Plane" --seed 3`, `--sweep-vehicle "Bandit Plane" --seeds 12`.
+The Light Plane's wiring on a cockpit Frame Block and a beam spine: a seat into a Flight Stabilizer on Plane keys, its `throttle` into each prop, `pitch` into the
+elevator, `yaw` into the rudder, `left aileron` and `right aileron` into the outer panels' ailerons, `flaps` into flaps on the inner panels (half the seeds).
+From the seed: a single tractor Turbine with a Three-Blade Prop, twin Turbines on the inner panels' fronts (opposite hands), or a pusher Turbine on a 1 m pylon
+(prop set `pusher`); low (tank under the spine), mid (wings on the spine's sides) or high (tank on top) wing of three or four straight, narrow or fabric panels a
+side; a conventional tail on the boom's end or a T-tail; a 1 m or 2 m boom; tricycle gear (nose leg under the cockpit, mains on a cross axle from the spine half a
+metre behind the centre of mass) or a tail wheel (mains under the cockpit, a short strut at the boom's end).
+
+**Balance by building twice.** The wing's place is the one thing the balance moves: the plane is built off to one side with its wing at the first and last
+spine station, `Construct.Com` and `Construct.LiftCentre` read from each (both move in a line with the wing), and the station that puts the centre of mass 0.2 m
+ahead of the lift is built; a third trial gives the centre of mass the tricycle mains are hung behind. About 4 s a generation with the flight check.
+
+**The flight check's plane mode** (`VehicleFlightCheck.RunPlane`, chosen when the stabilizer's keys are Plane): Shift down the runway (the flat floor) for at
+most 20 s until 1.05 times `ConstructAero.StallSpeed` or off the ground by itself; S until 2 m up (3 s at most); the autopilot's altitude hold set 40 m up for
+4 s (at least 5 m climbed), then set where it is: 2.5 s to settle, then 3 s in which its height may wander 8 m and its heading 8 degrees, with at most 12 degrees of
+bank; then D for 3 s turns it at least 10 degrees right; never past 75 degrees of tilt; a plane may stand 16 degrees off level. The autopilot is engaged as
+its panel would (`apMode`, `targetAlt`, `autopilot` settings): the hook bot pilots will use. Its line gives the stall speed, rotation speed and run, climb,
+level drift, turn and the balance.
+
+**State at the stop (2026-11-10): 1 of 12 seeds pass** (seed 3 passes the whole check). What the sweep refuses, in order of count:
+- **Too little push.** At this game's gravity (18 m/s2) a 650-750 kg plane on one Three-Blade Prop (about 2,000-3,000 N, falling with speed) reaches its
+  stall speed (26-34 m/s) only after 15-20 s, and tail-draggers sitting nose up never do. The Engine with a Two-Blade Prop was dropped for this. Next: two props
+  on every single-engined plane too, a lighter airframe (fabric panels, no tank under a high wing), or bigger props; then the runway limit back to 15 s.
+- **Rotation**: tricycles at their speed don't lift with S held 3 s: the mains' place behind the centre of mass is the lever to check first (the elevator's
+  moment against the nose's weight), with the debug trace (`PLANE_DEBUG=1` prints the stations, centres and the run and rotation by the second; remove it
+  once the generator passes).
+- **Geometry refusals**: the Turbine's sides are flush with the cockpit block's (z-fighting: put a 0.5 m beam stub between them); a pusher's prop hits a fin
+  or the seat (the pylon at the station clashes with a far-back wing: put the pylon behind the seat and in front of the fin by its own place); a T-tail fin
+  on some booms won't stand level; the mains' spine socket may already hold the battery.
+- **Level flight**: the autopilot's altitude hold on a plane overshoots (11 m in 3 s at 54 m/s): the check may need a longer settle, or the hold a plane gain.
+- Not built: a jet variant (Turbojet, swept wings, which have no aileron sockets: elevons or ailerons on a straight outer panel).
+
+Headless runs on the shared box: until main's start-up fix (268108ac) the parallel map load hung every command; `DOTNET_PROCESSOR_COUNT=1` was the way round.
+
 ## Next steps
 
-1. **Fixed-wing prop plane generator** (the next phase): fuselage of beams or a lofted hull, wings from the Wings parts (straight, swept, fabric by faction),
+1. **Fixed-wing prop plane generator** (started in phase 2, above; this was the plan): fuselage of beams or a lofted hull, wings from the Wings parts (straight, swept, fabric by faction),
    tail plane and fin, ailerons, elevator, rudder wired from the stabilizer's outputs (the Light Plane's wiring is the template), a Turbine or Engine with a
    prop on its Drive out, or an Electric Prop on a Battery Pack; tricycle or tail-dragger gear. Place the centre of mass ahead of `Construct.LiftCentre`
    (balance by moving the tank or battery, then check with the sum). Its flight check: a take-off run (throttle up, S to rotate), a climb, level flight at
