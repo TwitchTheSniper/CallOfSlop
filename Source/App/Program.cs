@@ -1181,6 +1181,12 @@ public static unsafe partial class Program
             _swallowClick = true;
             return;
         }
+        if (key == GlfwKey.Escape && Ui.OrdnanceBenchOpen)
+        {
+            Ui.CloseOrdnanceBench(); // Esc closes the Ordnance Bench (back to the match), not the match
+            SetMouseCaptured(true);
+            return;
+        }
         if (key == GlfwKey.Escape && Ui.SandboxMaterialPickerOpen)
         {
             Ui.CloseSandboxMaterialPicker(); // Esc closes the material painter's list (back to painting)
