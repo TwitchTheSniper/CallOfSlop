@@ -5766,7 +5766,10 @@ off by a construct swipes the part in its way like a building door (40 damage, e
 give way. Crowd and mass zombies pass through constructs (they are far away). The zombie messages (ZEnts, ZEvent, ZCrowd)
 go to Sandbox clients as in Zombies. Construct guns hit zombies of every tier (2026-11-09): individuals by their hit boxes, crowd particles and mass
 zombies by the same capsules a player's shot meets (`Game.CwCrowdRay`), and their shells and explosive rounds blast
-individuals, the crowd and the mass (`BlastZombies` was Zombies-mode only).
+individuals, the crowd and the mass (`BlastZombies` was Zombies-mode only). A hand gun's straight shot that meets nothing
+within its reach (World.Range, 200 m) goes on into the far crowd up to the fog (at most `CrowdShotReach`, 1200 m),
+stopped by the ground and constructs (`CrowdShotFar`, server and the client's prediction alike); a round that falls flies
+on as a round of its own (ConstructRounds.cs). Damage falls off with range as ever.
 
 **Spawner parts** (`"logic": {"kind": "botspawner"}` / `"zombiespawner"`, role logic, the attach tool): settings from the
 configure tool (team, difficulty, gun class; or walkers / mixed types; rate a minute, group size, max alive, total (0: no
