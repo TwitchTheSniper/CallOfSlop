@@ -1131,7 +1131,7 @@ public sealed partial class ConstructWorld
                 continue;
             var k = 1f - MathF.Min(1, dist / (radius + c.Radius * 0.5f));
             c.Wake();
-            c.Vel += (d / dist + new Vector3(0, 0.5f, 0)) * k * maxDamage * 0.4f / MathF.Max(c.Mass, 20f) * 6f;
+            Shove(c, d / dist + new Vector3(0, 0.5f, 0), k * maxDamage * 0.4f / MathF.Max(c.Mass, 20f) * 6f);
         }
         return hits;
     }

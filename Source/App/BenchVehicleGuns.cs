@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--bench-vehicle-guns [BLUEPRINT...] [--shells N] [--map NAME]</c>: the gunsmith's guns by hand (docs/sandbox/VEHICLE-WEAPONS.md). A command-line benchmark, not a
+/// <c>--bench-vehicle-guns [BLUEPRINT...] [--shells N] [--merge N] [--gap M] [--map NAME]</c>: the gunsmith's guns by hand (docs/sandbox/VEHICLE-WEAPONS.md). A command-line benchmark, not a
 /// self-test section: it fails nothing. A host alone on a Sandbox map with terrain; the committed blueprints named (by default some that carry the gunsmith's shell and
 /// rapid guns) stand in a row. Each gun is listed with its numbers and fired once (did a round or a shell leave?). Then each shell gun's shell lands, N at once (4 by
 /// default), on the next vehicle in the row: every server tick until the blasts are done is timed (the thread's CPU), then the parts lost, the shove and the ground dug.
@@ -19,6 +19,7 @@ public static partial class SelfTest
             names = ["HighlandFlatbedFort8", "ITBoxTruck3", "HighlandBoxTruck7", "ITWarBus10", "ScamFlatbedFort6", "BanditTankerRig10", "ITTankerRig20", "BritishDoubleDecker9"];
         var salvo = int.TryParse(Arg("--shells"), out var ns) ? Math.Clamp(ns, 1, 64) : 4;
         var merge = int.TryParse(Arg("--merge"), out var nm) ? Math.Clamp(nm, 1, 6) : 0; // (shells as an N x N Howitzer's, whatever the guns are)
+        var gap = float.TryParse(Arg("--gap"), System.Globalization.CultureInfo.InvariantCulture, out var ng) ? Math.Clamp(ng, 10f, 200f) : 30f; // (metres between vehicles: 100 keeps a 4x4 shell's 46 m blast off the neighbours)
         var map = Maps.Find(Arg("--map") ?? "Proving Ground") ?? Maps.All.First(m => m.Terrain != null);
         var clock = Stopwatch.StartNew();
         var now = 0.0;
@@ -52,7 +53,7 @@ public static partial class SelfTest
             while (!job.Step(50))
             {
             }
-            var x = at.X + row.Count * 30f;
+            var x = at.X + row.Count * gap;
             var c = job.Join(new Vector3(x, Ground(x, at.Z), at.Z), 0, out var why);
             if (c == null)
             {
