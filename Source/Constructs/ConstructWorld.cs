@@ -1974,19 +1974,12 @@ public sealed partial class ConstructWorld
 
     public void Step(IWorldQuery query, float dt)
     {
-        ProbeT.Start(); // PROBE
         _partTally = -1; // (counted again when next asked)
-        ProbeT.Mark(0, "_partTally"); // PROBE
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
-        ProbeT.Mark(1, "StepLinks"); // PROBE
         StepHydraulics(); // (the circuits, a few times a second: ConstructHydraulics.cs)
-        ProbeT.Mark(2, "StepHydraulics"); // PROBE
         StepNoCollide(); // no-collide pairs (ConstructNoCollide.cs): each finds its parts, or goes
-        ProbeT.Mark(3, "StepNoCollide"); // PROBE
         StepConnectors(query); // ropes and springs (ConstructConnectors.cs): resolved, snapped when overloaded, what they hold woken
-        ProbeT.Mark(4, "StepConnectors"); // PROBE
         StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
-        ProbeT.Mark(5, "StepWorldLinks"); // PROBE
         foreach (var c in Bodies)
         {
             ConstructPower.Step(this, c, dt);
@@ -2003,55 +1996,31 @@ public sealed partial class ConstructWorld
             }
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
-        ProbeT.Mark(6, "loop6"); // PROBE
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
-        ProbeT.Mark(7, "ConstructWeapons.Step"); // PROBE
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
-        ProbeT.Mark(8, "FlushSnaps"); // PROBE
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
-        ProbeT.Mark(9, "RadioGather"); // PROBE
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
-        ProbeT.Mark(10, "ConstructBoost.Separate"); // PROBE
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
-        ProbeT.Mark(11, "ConstructOrdnance.Release"); // PROBE
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
-        ProbeT.Mark(12, "ConstructLauncher.Step"); // PROBE
         ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
-        ProbeT.Mark(13, "ConstructDoors.Step"); // PROBE
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
-        ProbeT.Mark(14, "ConstructRide.BeforePhysics"); // PROBE
         ConstructPhysics.Step(this, query, dt);
-        ProbeT.Mark(15, "ConstructPhysics.Step"); // PROBE
         OverloadDamage();
-        ProbeT.Mark(16, "OverloadDamage"); // PROBE
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
-        ProbeT.Mark(17, "ConstructRecycler.Step"); // PROBE
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
-        ProbeT.Mark(18, "ConstructGatherer.Step"); // PROBE
         ConstructScoops.Step(this, query, dt); // (scoops dig where they are really pushed in, and pour when tipped)
-        ProbeT.Mark(19, "ConstructScoops.Step"); // PROBE
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
-        ProbeT.Mark(20, "ConstructRefining.Step"); // PROBE
         ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
-        ProbeT.Mark(21, "ConstructAssembling.Step"); // PROBE
         ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
-        ProbeT.Mark(22, "ConstructExtruder.Step"); // PROBE
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
-        ProbeT.Mark(23, "ConstructPress.Step"); // PROBE
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
-        ProbeT.Mark(24, "Beacons.Step"); // PROBE
         ConstructSeal.Step(this, query, ref _sealTicks, server: true);
-        ProbeT.Mark(25, "ConstructSeal.Step"); // PROBE
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
-        ProbeT.Mark(26, "ConstructLift.Step"); // PROBE
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
-        ProbeT.Mark(27, "LoadStep"); // PROBE
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
-        ProbeT.Mark(28, "ConstructCargo.Step"); // PROBE
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)
-        ProbeT.Mark(29, "ConstructGravity.Refresh"); // PROBE
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {
             Bodies[i].RecoilCount = 0; // (recoil on a body the step didn't simulate is dropped, never kept for later)
@@ -2061,7 +2030,6 @@ public sealed partial class ConstructWorld
                 Remove(Bodies[i]);
             }
         }
-        ProbeT.Mark(30, "loop30"); // PROBE
         GridMoved(); // (the awake bodies moved: the broadphase is rebuilt at its next query)
     }
 }

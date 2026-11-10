@@ -544,6 +544,12 @@ F on one was refused ("it's locked") and the player was stopped. Switched off, a
 **Not tried:** a client (drawing a moving leaf, the wire events); a swing door's leaf against furniture when open (the leaf is not checked
 against what it sweeps into); other seeds; the smaller classes' door budgets on a real build; a player using the seal switches by aim.
 
+### Fitted walker
+
+The Titan Walker with this interior, driven from the bridge with riders, doors and lifts in use, and its tick time, are recorded in
+docs/sandbox/GIANTS.md, "Fitted walker". In short: worst ticks 1 to 3 ms after the press fix (a Press or Die Lathe scanned every link
+of the construct to find its die and pieces), riders, doors and lifts work while it walks, and stabilisers have no room yet.
+
 ### Next (phase 8 and on)
 
 A long floor panel if a bigger build needs it; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
