@@ -124,7 +124,7 @@ public sealed class InteriorData
             if (!Rooms.TryAdd(id, t))
                 throw new InteriorDataException($"{where}: listed twice");
         }
-        foreach (var need in new[] { "stairs", "elevator", "storage", "fuel", "dead" })
+        foreach (var need in new[] { "stairs", "elevator", "storage", "fuel", "spare", "dead" })
             if (!Rooms.ContainsKey(need))
                 throw new InteriorDataException($"{f.File}: the planner needs a room \"{need}\"");
     }

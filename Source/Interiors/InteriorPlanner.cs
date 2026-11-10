@@ -121,7 +121,7 @@ public static class InteriorPlanner
         var marks = "ABCDFGHIJKLMNOPQRTUVWXYZabcdghijklmnopqrstuvwyz0123456789";
         var n = 0;
         foreach (var r in p.Rooms)
-            r.Mark = r.Shaft == "stairs" ? 'S' : r.Shaft == "elevator" ? 'E' : r.Type == "dead" ? 'x' : r.Type == "fuel" ? 'f' : r.Type == "storage" && r.Origin == "leftover" ? 's' : marks[n++ % marks.Length];
+            r.Mark = r.Shaft == "stairs" ? 'S' : r.Shaft == "elevator" ? 'E' : r.Type == "dead" ? 'x' : r.Type == "fuel" ? 'f' : r.Type == "spare" ? '-' : r.Type == "storage" && r.Origin == "leftover" ? 's' : marks[n++ % marks.Length];
         return p;
     }
 
@@ -318,7 +318,7 @@ public static class InteriorPlanner
                             p.Cells[k][c, z] = into.Id;
                     continue;
                 }
-                var kind = band.Depth < 2 ? "dead" : k == 0 && run.W == 1 ? "fuel" : run.W >= 2 || k == 0 ? "storage" : "dead";
+                var kind = band.Depth < 2 ? "dead" : run.W >= data.Rooms["spare"].MinW ? "spare" : k == 0 && run.W == 1 ? "fuel" : run.W >= 2 || k == 0 ? "storage" : "dead";
                 Add(p, data.Rooms[kind], k, run, "leftover", band);
             }
         }

@@ -86,7 +86,7 @@ public sealed class InteriorPlan
     {
         var sb = new StringBuilder();
         sb.Append($"Interior plan: class {Class.Name}, seed {Seed}, {W}x{D} cells of {Class.Deck.GridCell:0} m, {Decks} deck(s), bow at {(BowAtMinX ? "x 0" : $"x {W - 1}")}\n");
-        sb.Append("Key: letters rooms (list below), . corridor, = reserved logistics lane, # keep-out, S stairs, E elevator shaft, | bulkhead line, + door\n");
+        sb.Append("Key: letters rooms (list below), . corridor, = reserved logistics lane, # keep-out, S stairs, E elevator shaft, s storage, f fuel, - spare (unassigned), x void, | bulkhead line, + door\n");
         for (var k = Decks - 1; k >= 0; k--)
         {
             sb.Append($"\nDeck {k}:\n");

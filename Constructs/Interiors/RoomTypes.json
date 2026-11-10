@@ -16,6 +16,7 @@
     { "id": "stairs", "name": "Stairwell", "min": [1, 2], "want": 2, "layout": "grid", "deck": "any", "row": "inner", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
     { "id": "elevator", "name": "Freight elevator shaft", "min": [1, 1], "want": 1, "layout": "grid", "deck": "any", "row": "inner", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
     { "id": "fuel", "name": "Fuel store", "min": [1, 1], "want": 1, "layout": "grid", "deck": "lower", "row": "any", "system": true, "wants": [], "avoids": ["magazine"], "modules": "fuel", "loot": null },
+    { "id": "spare", "name": "Spare space", "min": [4, 2], "want": 8, "layout": "grid", "deck": "any", "row": "any", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
     { "id": "dead", "name": "Void", "min": [1, 1], "want": 1, "layout": "grid", "deck": "any", "row": "any", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null }
   ]
 }
