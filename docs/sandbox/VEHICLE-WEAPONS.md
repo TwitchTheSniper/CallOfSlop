@@ -38,7 +38,7 @@ Measured with `--check-armoury` (41 recipes, damage a shot x rounds, rounds a mi
 - **Off switch:** `--no-gunsmith` (the old lists, to measure what it changes), as `--no-armoury` does for the armoury.
 - `--gunsmith-report` prints what the gunsmith offers vehicles of 0.8 to 24 t at each tier, with each gun's mass and recoil.
 
-Phase 1 measured: all 123 shipped seeds still generate (71 change; regenerate after merge); a 60-vehicle `--armoury-report --seeds 2` drew 13 gunsmith guns of 145. `--gunsmith-report`: an 800 kg buggy gets single autocannons and chain guns (a 2x2 at tier 3); a 3 t truck a single Field Gun or Howitzer (1500 N s, a
+Phase 1 measured: all 123 shipped seeds still generate (71 change; regenerate after merge); a 60-vehicle `--armoury-report --seeds 2` carried 71 guns, about 13 of them the gunsmith's. `--gunsmith-report`: an 800 kg buggy gets single autocannons and chain guns (a 2x2 at tier 3); a 3 t truck a single Field Gun or Howitzer (1500 N s, a
 512-damage shell with a 13 m blast) and up to a 4x4 autocannon; a 12 t truck a 2x2 Howitzer at tier 3 (2048 damage, a 23 m blast); 24 t a 3x3 (4608 damage, a 34 m blast,
 a 14 m crater).
 
