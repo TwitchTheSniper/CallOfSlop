@@ -23,7 +23,7 @@ kit or the construct code is touched.
 ## How it works
 
 The host decides each craft's script (when it starts, how long it takes to come in, stand and go, where it lands, which
-way it travels) and sends it once in `Msg.StandIn` (protocol 231), again every 3 s for anyone who joined; every PC poses
+way it travels) and sends it once in `Msg.StandIn` (protocol 232), again every 3 s for anyone who joined; every PC poses
 it from the server tick (`Game.MoverRenderTick`), so nothing streams while it flies.
 
 | File | What |

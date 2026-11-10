@@ -310,8 +310,13 @@ public sealed partial class PlanetEdits : IDigGround
                         continue; // (only touch a cell the dig really reaches)
                     col = Touch(f, ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
                 }
+                if (op.Kind == DigKind.Crater)
+                    hi = TerrainEdits.CraterTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, op.Radius);
                 if (Subtract(col, lo, hi))
+                {
                     changed++;
+                    TouchBeside(f, ci, cj);
+                }
             }
         }
         if (changed == 0)
@@ -344,6 +349,8 @@ public sealed partial class PlanetEdits : IDigGround
         var h = Math.Sqrt(r2 - Math.Max(perp2, 0)) * (op.Kind == DigKind.Crater ? TerrainEdits.CraterDepth : 1.0);
         lo = (float)Math.Max(t - h - _r, Bedrock);
         hi = (float)(t + h - _r);
+        if (op.Kind == DigKind.Crater)
+            hi = (float)(t + op.Radius - _r); // (a blast throws out what is over it too: TerrainEdits.CraterTop)
         return hi - lo >= MinSpan;
     }
 
@@ -646,6 +653,23 @@ public sealed partial class PlanetEdits : IDigGround
             _reserved++;
         }
         return want - _reserved;
+    }
+
+    /// <summary>
+    /// A column on its cell's border was dug: the cells it borders become dug cells too (still the ground as built), so
+    /// the hole's side can run out across the border as a slope (<see cref="GroundTops"/>) and isn't held to a cell's
+    /// straight edge. (Across a face's seam the next cell is left as it is.)
+    /// </summary>
+    private void TouchBeside(int f, int ci, int cj)
+    {
+        int a = ci % Sub, b = cj % Sub;
+        int di = a == 0 ? -1 : a == Sub - 1 ? 1 : 0, dj = b == 0 ? -1 : b == Sub - 1 ? 1 : 0;
+        if (di != 0 && (uint)(ci + di) < (uint)Cols)
+            Touch(f, (ci + di) / Sub, cj / Sub);
+        if (dj != 0 && (uint)(cj + dj) < (uint)Cols)
+            Touch(f, ci / Sub, (cj + dj) / Sub);
+        if (di != 0 && dj != 0 && (uint)(ci + di) < (uint)Cols && (uint)(cj + dj) < (uint)Cols)
+            Touch(f, (ci + di) / Sub, (cj + dj) / Sub);
     }
 
     private int _reserved; // (Reserve's cursor: every span list below it is made)
@@ -982,7 +1006,7 @@ public sealed partial class PlanetEdits : IDigGround
                 var covered = k + 2 < s.Length;
                 if (covered)
                 {
-                    var (col, rock) = shaded ? TopShade(c, ux, uy, uz, hi, covered) : default;
+                    var (col, rock) = shaded ? Shade(c, hi, true) : default;
                     Emit(ref sink, ctx.P(d00, hi), ctx.P(d01, hi), ctx.P(d11, hi), ctx.P(d10, hi), up, col, rock);
                 }
                 else
@@ -1312,14 +1336,51 @@ public sealed partial class PlanetEdits : IDigGround
         return (col * (covered ? 0.6f : 1f), rock);
     }
 
-    /// <summary><see cref="Shade"/> for a span's top: open ground as built keeps the surface's own colour (the drawing's rules).</summary>
-    private (Vector3 Color, float Rock) TopShade(int c, double ux, double uy, double uz, float y, bool covered)
+    /// <summary>
+    /// <see cref="Shade"/> for a column's open top: ground as built keeps the surface's colour there (<paramref name="own"/>:
+    /// rgb and rockiness), and a shallow cut fades from it (<see cref="TerrainEdits.ShadeFade"/>).
+    /// </summary>
+    private (Vector3 Color, float Rock) TopShade(int c, Vector4 own, float y)
     {
-        if (covered || MathF.Abs(y - _orig[c]) >= 0.01f || _fillKind[c] != 0)
-            return Shade(c, y, covered);
-        var rule = SurfaceMaterial(ux, uy, uz, out var cs, out var h);
+        var depth = _orig[c] - y;
+        if (_fillKind[c] != 0 || depth >= TerrainEdits.ShadeFade || depth <= -0.01f)
+            return Shade(c, y, false);
+        if (depth < 0.01f)
+            return (new Vector3(own.X, own.Y, own.Z), own.W);
+        var (col, rock) = Shade(c, y, false);
+        var f = depth / TerrainEdits.ShadeFade;
+        return (Vector3.Lerp(new Vector3(own.X, own.Y, own.Z), col, f), own.W + (rock - own.W) * f);
+    }
+
+    /// <summary>
+    /// The surface's colour (rgb, rockiness) at grid point (fi, fj) of a face, worked out as the planetoid's own drawing
+    /// does at a cell's corner (PlanetRenderer: the slope across the cells either side, not the finer slope right there),
+    /// so untouched ground in a dug cell is the colour of the ground round it and a hole has no square patch about it.
+    /// </summary>
+    private Vector4 GroundColour(int face, double fi, double fj)
+    {
+        _p.DirOf(face, fi, fj, out var x, out var y, out var z);
+        var h = BaseAlt(x, y, z);
+        Vector3 Off(double gi, double gj)
+        {
+            _p.DirOf(face, gi, gj, out var ax, out var ay, out var az);
+            var ra = _r + BaseAlt(ax, ay, az);
+            var r0 = _r + h;
+            return new Vector3((float)(ax * ra - x * r0), (float)(ay * ra - y * r0), (float)(az * ra - z * r0));
+        }
+        var du = Off(Math.Min(fi + 1, _n), fj) - Off(Math.Max(fi - 1, 0), fj);
+        var dv = Off(fi, Math.Min(fj + 1, _n)) - Off(fi, Math.Max(fj - 1, 0));
+        var up = new Vector3((float)x, (float)y, (float)z);
+        var cs = Math.Clamp(MathF.Abs(Vector3.Dot(Vector3.Normalize(Vector3.Cross(dv, du)), up)), 0f, 1f);
+        var slope = MathF.Acos(cs) * (180f / MathF.PI);
+        var surf = _p.Surface;
+        var rule = slope >= surf.RockSlope ? TerrainMaterial.Rock
+            : slope >= surf.DirtSlope ? TerrainMaterial.Dirt
+            : surf.SandBelow is { } sb && h <= sb ? TerrainMaterial.Sand
+            : TerrainMaterial.Grass;
         var local = new Vector3(MathF.Sqrt(MathF.Max(0, 1 - cs * cs)), cs, 0);
-        double px = ux * _r, py = uy * _r, pz = uz * _r;
-        return TerrainData.ColourOf(_p.Surface, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
+        double px = x * (_r + h), py = y * (_r + h), pz = z * (_r + h);
+        var (col, rock) = TerrainData.ColourOf(surf, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
+        return new Vector4(col, Math.Clamp(rock, 0f, 1f));
     }
 }
