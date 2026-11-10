@@ -267,76 +267,8 @@ public static partial class SelfTest
             }
             Line("ray down onto the site", $"{Stopwatch.GetElapsedTime(t0).TotalMicroseconds / rays,8:0.00} us   ({sum / rays:0.000} m mean)");
         }
-        if (pl != null)
-        {   // TEMP parts
-            const int n = 20000;
-            double s1 = 0;
-            var e = pl.Edits;
-            Vector3 P(int k) => site + east * (k % 200 * 0.14f) + north * (k / 200 * 0.05f - 2f) + up * 0.6f;
-            var t0 = Stopwatch.GetTimestamp();
-            for (var k = 0; k < n; k++) s1 += pl.RoughAltitude(P(k));
-            Line("TEMP rough", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
-            t0 = Stopwatch.GetTimestamp();
-            for (var k = 0; k < n; k++) s1 += pl.Altitude(P(k));
-            Line("TEMP alt", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
-            t0 = Stopwatch.GetTimestamp();
-            for (var k = 0; k < n; k++) { var q = P(k) - pl.Center; s1 += e.NearDug(q.X, q.Y, q.Z) ? 1 : 0; }
-            Line("TEMP neardug", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
-            t0 = Stopwatch.GetTimestamp();
-            for (var k = 0; k < n; k++) { var q = P(k) - pl.Center; s1 += e.SegmentHit(q, q + Vector3.Normalize(-up + east * 0.8f) * 0.05f); }
-            Line("TEMP seg 5cm", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
-            t0 = Stopwatch.GetTimestamp();
-            for (var k = 0; k < n; k++) { var q = P(k) - pl.Center; s1 += e.SegmentHit(q, q + Vector3.Normalize(-up + east * 0.8f) * 0.5f); }
-            Line("TEMP seg 50cm", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns {s1}");
-        }
         Line("log", $"{ground.Ops.Count} ops");
         ground.Clear();
         map.RestoreProps();
-    }
-}
-
-// TEMP (remove before the PR): a dug site for pictures, COS_DIG_DEMO=1 with --light-shots.
-public static partial class SelfTest
-{
-    public static void DigDemo(Map map)
-    {
-        var pl = map.Planetoid;
-        var t = map.Terrain;
-        IDigGround ground = pl != null ? pl.Edits : t!.Edits;
-        var phys = World.Physics;
-        var spawn = map.Spawns.Count > 0 ? map.Spawns[0] : Vector3.Zero;
-        Vector3 UpAt(Vector3 p) => pl != null ? Vector3.Normalize(p - pl.Center) : Vector3.UnitY;
-        var up = UpAt(spawn);
-        var east = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
-        var north = Vector3.Cross(east, up);
-        Vector3 OnGround(Vector3 p)
-        {
-            var u = UpAt(p);
-            var from = p + u * 60f;
-            var d = phys.Raycast(from, -u, 400f, QueryFilter.All);
-            return from - u * d;
-        }
-        var site = OnGround(spawn + east * 40f + north * 40f);
-        var ops = new List<DigOp>();
-        void Do(DigOp op) => ops.Add(op.Quantised);
-        for (var k = 0; k < 24; k++)
-            Do(new DigOp(DigKind.Scoop, OnGround(site + east * (k * 0.3f)) - up * 0.1f, 0.8f)); // a drill swept along a line
-        for (var k = 0; k < 30; k++)
-            Do(new DigOp(DigKind.Scoop, OnGround(site + north * 5f) + east * (k % 6 * 0.4f) - up * (0.2f + k * 0.05f), 0.8f)); // held: boring down
-        for (var k = 0; k < 14; k++)
-            Do(new DigOp(DigKind.FillDirt, OnGround(site + north * 9f + east * (k * 0.5f)) + up * 0.2f, 0.8f)); // a bank laid along a line
-        for (var k = 0; k < 6; k++)
-            Do(new DigOp(DigKind.FillDirt, OnGround(site + north * 9f + east * (2f + k * 0.5f)) + up * 0.9f, 0.8f)); // and heaped
-        var pad = OnGround(site + north * 14f) + up * 0.6f;
-        for (var k = 0; k < 6; k++)
-            Do(new DigOp(DigKind.GradeDirt, pad + east * k, 1.5f, To: pad + east * k));
-        var r0 = OnGround(site + north * 19f);
-        Do(new DigOp(DigKind.GradeDirt, r0, 1.5f, To: r0 + east * 14f + up * 4f));
-        Do(new DigOp(DigKind.Crater, OnGround(site - north * 8f + east * 4f), 6f));
-        Do(new DigOp(DigKind.Crater, OnGround(site - north * 8f + east * 16f), 3f));
-        foreach (var op in ops)
-            ground.Apply(op);
-        var eye = site + up * 9f - east * 6f + north * 5f;
-        Console.WriteLine(FormattableString.Invariant($"[dig demo] site {site.X:0.0},{site.Y:0.0},{site.Z:0.0} east {east} north {north} up {up}; {ground.Ops.Count} ops"));
     }
 }

@@ -62,8 +62,6 @@ public static unsafe partial class Program
             return;
         }
         World.SetMap(map);
-        if (Environment.GetEnvironmentVariable("COS_DIG_DEMO") != null)
-            SelfTest.DigDemo(map); // TEMP
         var views = new List<(string Name, Vector3 Eye, Vector3 Target, float Fov)>();
         var (oe, ot, ofov, _) = MapThumbs.Camera(map);
         views.Add(("overview", oe, ot, ofov));
@@ -115,7 +113,7 @@ public static unsafe partial class Program
                     Gfx.SetFog(map.Sky, 0, 0);
                     if (shot.Dbg > 0)
                         DrawLightDebug(map, shot.Dbg == 1);
-                    var last = frame >= (Environment.GetEnvironmentVariable("COS_DIG_DEMO") != null ? 40 : 2) && (TerrainGfx.StreamedSettled || frame >= 600); // TEMP
+                    var last = frame >= 2 && (TerrainGfx.StreamedSettled || frame >= 600);
                     if (last)
                         SaveScreenshot(shot.T >= 0 ? $"light_{view.Name}_t{shot.T * 1000:00000}"
                             : $"light_{view.Name}_{(shot.Dbg switch { 1 => "occ", 3 => "grid", 4 => "sky", _ => on ? "on" : "off" })}");

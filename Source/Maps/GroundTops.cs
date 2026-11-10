@@ -16,11 +16,12 @@ namespace CallOfSlop;
 /// comes up (or down) to that ground's surface with no wall.
 /// </para>
 /// <para>
-/// Columns changed alike (within <see cref="Walk"/>) weigh fully and share one height: a slope. Ones far apart
+/// Columns changed alike (within <see cref="Near"/>) weigh fully and share one height: a slope. Ones far apart
 /// (<see cref="Far"/>) don't weigh at all: a wall, as before. In between the wall shrinks as the tops lean towards each
-/// other, so nothing pops between slope and wall along a crater's rim. What was a walkable step is a walkable ramp or a
-/// lower step, never a slope too steep to walk. Everything is worked out from the spans, the same on every peer, and is the
-/// ground for drawing, movement, rays and physics alike.
+/// other, so nothing pops between slope and wall along a crater's rim. A column's middle stays at its span's top
+/// (<see cref="Fans"/>), so the ground is where the spans say there and a heap or a pit keeps its size. On filled ground
+/// a step a player could walk up stays walkable (<see cref="Ease"/>). Everything is worked out from the spans, the same
+/// on every peer, and is the ground for drawing, movement, rays and physics alike.
 /// </para>
 /// </summary>
 public static class GroundTops
@@ -38,14 +39,15 @@ public static class GroundTops
     public const float HalfStep = 0.275f;
 
     /// <summary>Past this (metres off its column's own height) a corner is left where the mean put it.</summary>
-    public const float EaseEnd = 0.45f;
+    public const float EaseEnd = 0.31f;
 
     /// <summary>
-    /// Keeps what was a walkable step walkable. A corner <paramref name="off"/> metres from its column's own height makes
-    /// a slope of that over half a column (<paramref name="size"/> metres wide); where that would be steeper than a
-    /// player walks (40 degrees here, the limit is 42) and the step it stands for was one they could walk up, the corner
-    /// stays at the walkable slope and the rest is a low riser between the two columns. Taller steps ease back to the plain
-    /// slope by <see cref="EaseEnd"/>, so nothing pops.
+    /// Keeps what was a walkable step walkable on ground that was filled in (a heap, a bank, a ramp: what players build to
+    /// walk on). A corner <paramref name="off"/> metres from its column's own height makes a slope of that over half a
+    /// column (<paramref name="size"/> metres wide); where that would be steeper than a player walks (40 degrees here, the
+    /// limit is 42) and the step it stands for was one they could walk up, the corner stays at the walkable slope and the
+    /// rest is a low riser between the two columns (13 cm at most). Past that it is back to the plain slope by
+    /// <see cref="EaseEnd"/>. Dug ground (a crater's side, a hole) is left alone: its slopes stay unbroken.
     /// </summary>
     public static float Ease(float off, float size)
     {
@@ -102,7 +104,8 @@ public static class GroundTops
             var h = baseAt + sum / weights;
             h += (baseAt - h) * pin;
             var own = baseAt + delta[k];
-            h = own + Ease(h - own, size);
+            if (delta[k] > 0)
+                h = own + Ease(h - own, size); // (ground a player put there: a heap, a bank, a ramp)
             height[k] = MathF.Max(h, lo[k] + TerrainEdits.MinSpan);
         }
     }

@@ -126,10 +126,12 @@ code doesn't care which ground it has.
   without gaps; an op's footprint is worked out per face from its box's corners, and a side face looks its neighbour up
   across a seam (`Neighbour`) by direction. Craters across one, two and three faces come out round.
 - **Collision.** `Altitude`, `GroundUnder` and `NormalUnder` read the spans; `Gather` gives touched cells' column faces
-  instead of their triangles. Near dug cells the raycast steps by the height over the ground as built, tests each step
-  against the columns exactly (`SegmentHit`) and checks untouched cells against their triangles.
+  instead of their triangles; a column's highest top slopes (TERRAIN-DIGGING.md "Smooth tops", `PlanetEditsTops.cs`).
+  Near dug cells the raycast steps by the height over the ground as built (at least 25 cm), tests each step against the
+  columns exactly (`SegmentHit`) and checks untouched cells against their triangles.
 - **Drawing.** Level-0 pages with a dug cell get a mask (a texture array on unit 8) that drops those cells and their
-  skirts; each touched 32 x 32 chunk gets its own block mesh (`PlanetRendererDug.cs`), at most 3 rebuilt a frame.
+  skirts; the columns' faces go into one small mesh per block of 8 x 8 cells (`DigBlocks`, `PlanetRendererDug.cs`),
+  and only changed blocks are made again, for at most 2 ms a frame.
 - `RestoreProps` clears the digging like a flat map's. "Planetoid digging" tests a crater at the pole, on a seam and at a
   cube corner (depth, roundness, 400 rays each against brute force, walks, fill and burying, a copy's digest, drawing,
   host + client + late joiner, the ground drill).
@@ -190,7 +192,8 @@ walk south for day and night.
 - Map boxes more than 500 m below Y 0 count as "parked" (switched off) in `PhysicsWorld`: harmless on the Dev map (its
   blocks are at the pole) but a trap for anything placed in the southern half. (Rockets leave a planetoid map below
   its ground or past its sky's edge.)
-- Dug rims are blocky (no smoothing) and bots don't see digging.
+- Dug tops slope (smooth tops), but a tall rim's outline is still the column grid's staircase seen from above (flat maps
+  cut those corners; planetoids don't yet), and bots don't see digging.
 - Bots have no nav graph on a planetoid (they steer straight); props, foliage, weather and buildings are flat-map things.
 - Other renderers (boxes, props, players) still take their ambient light from world +Y, so far from the pole things
   lit only by the sky look a little off.

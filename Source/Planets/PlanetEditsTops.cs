@@ -170,7 +170,10 @@ public sealed partial class PlanetEdits
         c = Col(face, ci, cj);
         if (c < 0)
             return false;
-        EnsureTops(face, ci / Sub, cj / Sub);
+        // (a cell's columns are stored together, Sub x Sub of them: its ordinal and first column straight from c)
+        var per = Sub * Sub;
+        if (!_topsMade[c / per])
+            MakeTops(face, ci / Sub, cj / Sub, c - c % per, c / per);
         return true;
     }
 
