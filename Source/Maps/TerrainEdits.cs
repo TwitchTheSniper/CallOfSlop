@@ -100,6 +100,19 @@ public interface IDigFaceSink
 {
     /// <summary>A quad a-b-c-d, wound counter-clockwise seen from the side <paramref name="n"/> points to.</summary>
     void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock);
+
+    /// <summary>
+    /// A column's sloping top (<see cref="GroundTops"/>): the two triangles a-b-c and a-c-d, wound counter-clockwise seen from
+    /// above, with a shading normal and a colour (rgb, rockiness in w) at each corner, both shared with the columns it makes
+    /// one surface with there.
+    /// </summary>
+    void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd);
+
+    /// <summary>One triangle of a column's sloping top (a fan round its middle: <see cref="GroundTops.Fans"/>), wound and shaded as <see cref="Smooth"/>.</summary>
+    void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc);
+
+    /// <summary>Does this sink use colours and shading normals (drawing)? Collision doesn't, and isn't given them.</summary>
+    bool Shaded { get; }
 }
 
 /// <summary>
@@ -159,6 +172,12 @@ public sealed partial class TerrainEdits : IDigGround
 
     /// <summary>Bumped when a chunk's dug ground changes (the renderer rebuilds what it has seen change).</summary>
     public readonly int[] ChunkVersion;
+
+    /// <summary>The drawing blocks whose dug ground changed (key: row x <see cref="BlocksX"/> + column).</summary>
+    public readonly DigBlocks Blocks = new();
+
+    /// <summary>Drawing blocks across the terrain (<see cref="DigBlocks.Cells"/> cells each).</summary>
+    public int BlocksX => (_cellsX + DigBlocks.Cells - 1) / DigBlocks.Cells;
 
     /// <summary>Bumped on every change anywhere (one compare per frame for the renderer).</summary>
     public int Version { get; private set; }
@@ -366,9 +385,11 @@ public sealed partial class TerrainEdits : IDigGround
     public Vector3 HitNormal(ReadOnlySpan<float> s, Vector3 p, Vector3 dir)
     {
         const float near = 0.04f;
+        if (ColumnAt(p.X, p.Z, out _, out _, out var u, out var v, out var c) && MathF.Abs(p.Y - GroundTops.At(Tops(c), u, v)) < near)
+            return TopNormal(c, u, v); // (the highest span's top slopes: GroundTops)
         for (var k = 0; k < s.Length; k += 2)
         {
-            if (MathF.Abs(p.Y - s[k + 1]) < near)
+            if (k < s.Length - 2 && MathF.Abs(p.Y - s[k + 1]) < near)
                 return Vector3.UnitY;
             if (k > 0 && MathF.Abs(p.Y - s[k]) < near)
                 return -Vector3.UnitY;
@@ -652,9 +673,11 @@ public sealed partial class TerrainEdits : IDigGround
             ChunkVersion[j / ChunkCells * ChunksX + i / ChunkCells]++;
         }
         _touchedCells.Clear();
+        Blocks.BumpAll();
         _cols = 0;
         _reserved = 0; // (the span lists made stay: Reserve walks past them)
         Log.Clear();
+        ForgetTops();
         Highest = _t.MaxHeight;
         Version++;
         BuildIslands(); // (the map's own floating islands come back with its ground)
@@ -662,6 +685,11 @@ public sealed partial class TerrainEdits : IDigGround
 
     private void Bump(int i0, int j0, int i1, int j1)
     {
+        // A column's top leans on the columns next to it, and a rim's level tops reach a column further (GroundTops,
+        // TerrainEditsSmooth.cs): three columns from a change, which is one cell unless cells are small.
+        var pad = Sub >= 3 ? 0 : 1;
+        (i0, j0, i1, j1) = (i0 - pad, j0 - pad, i1 + pad, j1 + pad);
+        ForgetTops(i0, j0, i1, j1);
         var a0 = Math.Max(i0, 0) / ChunkCells;
         var a1 = Math.Min(i1, _cellsX - 1) / ChunkCells;
         var b0 = Math.Max(j0, 0) / ChunkCells;
@@ -669,6 +697,10 @@ public sealed partial class TerrainEdits : IDigGround
         for (var b = b0; b <= b1; b++)
         for (var a = a0; a <= a1; a++)
             ChunkVersion[b * ChunksX + a]++;
+        var per = BlocksX;
+        for (var b = Math.Max(j0, 0) / DigBlocks.Cells; b <= Math.Min(j1, _cellsZ - 1) / DigBlocks.Cells; b++)
+        for (var a = Math.Max(i0, 0) / DigBlocks.Cells; a <= Math.Min(i1, _cellsX - 1) / DigBlocks.Cells; a++)
+            Blocks.Bump(b * per + a);
         Version++;
     }
 
@@ -686,6 +718,7 @@ public sealed partial class TerrainEdits : IDigGround
             Array.Resize(ref _orig, size);
             Array.Resize(ref _fillKind, size);
             Array.Resize(ref _fillLo, size);
+            GrowTops();
         }
         var made = 0;
         _reserved = from;
@@ -719,6 +752,7 @@ public sealed partial class TerrainEdits : IDigGround
             Array.Resize(ref _orig, size);
             Array.Resize(ref _fillKind, size);
             Array.Resize(ref _fillLo, size);
+            GrowTops();
         }
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
@@ -732,6 +766,7 @@ public sealed partial class TerrainEdits : IDigGround
         }
         _cols += n;
         slot = first + 1;
+        ForgetCell(first);
         _touchedCells.Add(k);
         return first;
     }
@@ -879,15 +914,44 @@ public sealed partial class TerrainEdits : IDigGround
     {
         if (!Touched(i, j))
             return;
-        var sf = _t.Surface;
         var vs = Sub + 1;
         Span<bool> rim = stackalloc bool[vs * vs];
         var anyRim = smooth && RimVertices(i, j, rim);
+        var first = EnsureTops(i, j);
+        var cornerBase = new ReadOnlySpan<float>(_cornerBase, CellOrdinal(first) * vs * vs, vs * vs);
+        var shaded = sink.Shaded;
+        if (shaded)
+            EnsureColours(i, j, first);
+        // This cell's columns and the ring round them: their tops' corners (NaN where a column isn't dug), for the sides
+        // against the next column and for the shading across columns.
+        var rs = Sub + 2;
+        Span<float> ring = stackalloc float[rs * rs * GroundTops.Stride];
+        Span<int> ringCol = stackalloc int[rs * rs];
+        for (var b = -1; b <= Sub; b++)
+        for (var a = -1; a <= Sub; a++)
+        {
+            var k = (b + 1) * rs + a + 1;
+            int ci = i * Sub + a, cj = j * Sub + b;
+            var c = Col(ci, cj);
+            ringCol[k] = c;
+            if (c < 0)
+            {
+                ring.Slice(k * GroundTops.Stride, GroundTops.Stride).Fill(float.NaN);
+                continue;
+            }
+            if ((uint)a >= (uint)Sub || (uint)b >= (uint)Sub)
+            {
+                var other = EnsureTops(ci / Sub, cj / Sub);
+                if (shaded)
+                    EnsureColours(ci / Sub, cj / Sub, other);
+            }
+            Tops(c).CopyTo(ring.Slice(k * GroundTops.Stride, GroundTops.Stride));
+        }
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
         {
             int ci = i * Sub + a, cj = j * Sub + b;
-            var c = Col(ci, cj);
+            var c = first + b * Sub + a;
             if (anyRim && (rim[b * vs + a] || rim[b * vs + a + 1] || rim[(b + 1) * vs + a] || rim[(b + 1) * vs + a + 1]))
             {
                 RimColumn(ref sink, ci, cj, c, rim.Slice(b * vs + a), vs);
@@ -897,27 +961,196 @@ public sealed partial class TerrainEdits : IDigGround
             float x0 = _t.OriginX + ci * Size, x1 = x0 + Size, z0 = _t.OriginZ + cj * Size, z1 = z0 + Size;
             var top = s[^1];
             var island = _islands.Length > 0 && IslandColumn(c, ci, cj); // (a floating island's column: TerrainIslands.cs)
+            var rk = (b + 1) * rs + a + 1;
+            var t = ring.Slice(rk * GroundTops.Stride, GroundTops.Stride);
             for (var k = 0; k < s.Length; k += 2)
             {
                 float lo = s[k], hi = s[k + 1];
                 var covered = k + 2 < s.Length;
-                var (col, rock) = TopShade(c, ci, cj, hi, covered);
-                Emit(ref sink, new(x0, hi, z0), new(x0, hi, z1), new(x1, hi, z1), new(x1, hi, z0), Vector3.UnitY, col, rock);
+                if (covered)
+                {
+                    var (col, rock) = shaded ? TopShade(c, ci, cj, hi, covered) : default;
+                    Emit(ref sink, new(x0, hi, z0), new(x0, hi, z1), new(x1, hi, z1), new(x1, hi, z0), Vector3.UnitY, col, rock);
+                }
+                else
+                {
+                    // Its sloping top (GroundTops): two triangles, or a fan round its middle.
+                    Vector3 p00 = new(x0, t[0], z0), p10 = new(x1, t[1], z0), p01 = new(x0, t[2], z1), p11 = new(x1, t[3], z1);
+                    Vector3 n00 = Vector3.UnitY, n10 = Vector3.UnitY, n01 = Vector3.UnitY, n11 = Vector3.UnitY, nm = Vector3.UnitY;
+                    Vector4 c00 = default, c10 = default, c01 = default, c11 = default, cm = default;
+                    if (shaded)
+                    {
+                        TopVertex(ring, ringCol, rs, a, b, 0, out n00, out c00);
+                        TopVertex(ring, ringCol, rs, a, b, 1, out n10, out c10);
+                        TopVertex(ring, ringCol, rs, a, b, 2, out n01, out c01);
+                        TopVertex(ring, ringCol, rs, a, b, 3, out n11, out c11);
+                    }
+                    if (!GroundTops.Fans(t))
+                        sink.Smooth(p00, p01, p11, p10, n00, n01, n11, n10, c00, c01, c11, c10);
+                    else
+                    {
+                        var pm = new Vector3(x0 + Size * 0.5f, t[4], z0 + Size * 0.5f);
+                        if (shaded)
+                        {
+                            cm = _topColour[c];
+                            nm = Vector3.Normalize(new Vector3(-(t[1] + t[3] - t[0] - t[2]) * 0.5f, Size, -(t[2] + t[3] - t[0] - t[1]) * 0.5f));
+                        }
+                        sink.Tri(pm, p00, p01, nm, n00, n01, cm, c00, c01);
+                        sink.Tri(pm, p01, p11, nm, n01, n11, cm, c01, c11);
+                        sink.Tri(pm, p11, p10, nm, n11, n10, cm, c11, c10);
+                        sink.Tri(pm, p10, p00, nm, n10, n00, cm, c10, c00);
+                    }
+                }
                 if (k > 0)
                 {
                     var (bc, br) = Shade(c, lo, !island); // (an island's underside sees the sky below: not darkened as cover)
                     Emit(ref sink, new(x0, lo, z0), new(x1, lo, z0), new(x1, lo, z1), new(x0, lo, z1), -Vector3.UnitY, bc * 0.85f, br);
                 }
             }
-            Side(ref sink, s, c, top, ci - 1, cj, new(x0, z0), new(x0, z1), -Vector3.UnitX);
-            Side(ref sink, s, c, top, ci + 1, cj, new(x1, z1), new(x1, z0), Vector3.UnitX);
-            Side(ref sink, s, c, top, ci, cj - 1, new(x1, z0), new(x0, z0), -Vector3.UnitZ);
-            Side(ref sink, s, c, top, ci, cj + 1, new(x0, z1), new(x1, z1), Vector3.UnitZ);
+            // Each side: the edge p..q, this column's top at its ends, the next column's (ring) and its corners there.
+            Side(ref sink, s, c, top, ci - 1, cj, new(x0, z0), new(x0, z1), -Vector3.UnitX, t[0], t[2], ringCol[rk - 1], ring.Slice((rk - 1) * GroundTops.Stride, GroundTops.Stride), 1, 3, cornerBase[b * vs + a], cornerBase[(b + 1) * vs + a]);
+            Side(ref sink, s, c, top, ci + 1, cj, new(x1, z1), new(x1, z0), Vector3.UnitX, t[3], t[1], ringCol[rk + 1], ring.Slice((rk + 1) * GroundTops.Stride, GroundTops.Stride), 2, 0, cornerBase[(b + 1) * vs + a + 1], cornerBase[b * vs + a + 1]);
+            Side(ref sink, s, c, top, ci, cj - 1, new(x1, z0), new(x0, z0), -Vector3.UnitZ, t[1], t[0], ringCol[rk - rs], ring.Slice((rk - rs) * GroundTops.Stride, GroundTops.Stride), 3, 2, cornerBase[b * vs + a + 1], cornerBase[b * vs + a]);
+            Side(ref sink, s, c, top, ci, cj + 1, new(x0, z1), new(x1, z1), Vector3.UnitZ, t[2], t[3], ringCol[rk + rs], ring.Slice((rk + rs) * GroundTops.Stride, GroundTops.Stride), 0, 1, cornerBase[(b + 1) * vs + a], cornerBase[(b + 1) * vs + a + 1]);
         }
     }
 
-    /// <summary>The sides of one column facing neighbour (ni, nj) along the edge p..q (outward normal <paramref name="n"/>).</summary>
-    private void Side<T>(ref T sink, ReadOnlySpan<float> s, int c, float top, int ni, int nj, Vector2 p, Vector2 q, Vector3 n) where T : struct, IDigFaceSink
+    /// <summary>
+    /// The shading normal and the colour of column (a, b)'s top at its corner <paramref name="q"/> (0..3): the mean slope and
+    /// colour of the columns that share the corner's height there (one surface: <see cref="GroundTops"/>), so a slope is lit
+    /// as one face, not a facet a column, and grass runs into dug dirt without a saw's edge. <paramref name="ring"/> holds
+    /// the tops of the cell's columns and the ring round them.
+    /// </summary>
+    private void TopVertex(ReadOnlySpan<float> ring, ReadOnlySpan<int> ringCol, int rs, int a, int b, int q, out Vector3 normal, out Vector4 colour)
+    {
+        var mine = ring[((b + 1) * rs + a + 1) * GroundTops.Stride + q];
+        // The corner in ring coordinates, and the four columns round it.
+        int va = a + 1 + (q & 1), vb = b + 1 + (q >> 1);
+        float dx = 0, dz = 0;
+        var n = 0;
+        colour = default;
+        for (var k = 0; k < 4; k++)
+        {
+            int ma = va - 1 + (k & 1), mb = vb - 1 + (k >> 1);
+            var t = ring.Slice((mb * rs + ma) * GroundTops.Stride, GroundTops.Stride);
+            if (!(MathF.Abs(t[3 - k] - mine) < 0.03f))
+                continue; // (not dug, or a top of its own there)
+            dx += (t[1] + t[3] - t[0] - t[2]) * 0.5f;
+            dz += (t[2] + t[3] - t[0] - t[1]) * 0.5f;
+            colour += _topColour[ringCol[mb * rs + ma]];
+            n++;
+        }
+        colour /= n; // (its own column is always one of them)
+        normal = Vector3.Normalize(new Vector3(-dx / n, Size, -dz / n));
+    }
+
+    /// <summary>
+    /// The sides of one column facing neighbour (ni, nj) along the edge p..q (outward normal <paramref name="n"/>). The
+    /// column's top is at <paramref name="tp"/>, <paramref name="tq"/> at the edge's ends; the neighbour (<paramref name="nc"/>,
+    /// -1 not dug) has its tops in <paramref name="nt"/>, corners <paramref name="np"/> and <paramref name="nq"/> at the
+    /// ends; the ground as built is at <paramref name="sp"/>, <paramref name="sq"/> there.
+    /// </summary>
+    private void Side<T>(ref T sink, ReadOnlySpan<float> s, int c, float top, int ni, int nj, Vector2 p, Vector2 q, Vector3 n,
+        float tp, float tq, int nc, ReadOnlySpan<float> nt, int np, int nq, float sp, float sq) where T : struct, IDigFaceSink
+    {
+        if ((uint)ni >= (uint)ColsX || (uint)nj >= (uint)ColsZ)
+            return; // the terrain's edge
+        var topK = s.Length - 2;
+        if (nc >= 0)
+        {
+            // Both dug: where this column is solid and the next is not, facing out (the next column draws its own).
+            var ns = new ReadOnlySpan<float>(_spans[nc], 0, _count[nc] * 2);
+            var nTop = ns.Length - 2;
+            float ntp = nt[np], ntq = nt[nq];
+            for (var k = 0; k < s.Length; k += 2)
+            {
+                var lo = s[k];
+                var hi = s[k + 1];
+                var covered = k < topK;
+                // Walk the next column's spans that overlap [lo, hi]: the gaps between them are open faces.
+                var y = lo;
+                var onTop = false; // (y is the next column's sloping top)
+                var done = false;
+                for (var m = 0; m < ns.Length && y < hi; m += 2)
+                {
+                    if (ns[m + 1] <= y)
+                        continue;
+                    if (ns[m] >= hi)
+                        break;
+                    if (ns[m] > y)
+                        Wall(ref sink, p, q, y, y, ns[m], ns[m], n, c, covered);
+                    y = MathF.Max(y, ns[m + 1]);
+                    if (m != nTop)
+                        continue;
+                    onTop = true;
+                    if (k == topK)
+                    {
+                        // Two tops side by side: the wall is what this one stands over the other (nothing where they are one surface).
+                        Between(ref sink, p, q, ntp, ntq, tp, tq, n, c, false);
+                        done = true;
+                    }
+                }
+                if (done)
+                    continue;
+                if (k == topK)
+                {
+                    if (onTop || y < hi)
+                        Between(ref sink, p, q, onTop ? ntp : y, onTop ? ntq : y, tp, tq, n, c, false);
+                }
+                else if (y < hi)
+                    Between(ref sink, p, q, onTop ? ntp : y, onTop ? ntq : y, hi, hi, n, c, covered);
+            }
+            return;
+        }
+        // The next column is untouched heightfield: solid up to its surface along the shared edge.
+        for (var k = 0; k < s.Length; k += 2)
+        {
+            float lo = s[k], hi = s[k + 1];
+            var covered = k < topK;
+            if (!covered && lo <= MathF.Min(sp, sq))
+            {
+                // The highest span: its sloping top against the ground as built, standing over it or dug under it.
+                Between(ref sink, p, q, sp, sq, tp, tq, n, c, false);
+                Between(ref sink, p, q, tp, tq, sp, sq, -n, c, MathF.Max(sp, sq) < top);
+                continue;
+            }
+            // This column's ground standing above the next one's surface: faces out. Air over this span (up to the next
+            // span, or the sky) below the next column's surface: the dug wall, facing in.
+            var g1 = covered ? s[k + 2] : float.PositiveInfinity;
+            Sloped(ref sink, p, q, sp, sq, lo, hi, true, n, c, covered);
+            Sloped(ref sink, p, q, sp, sq, hi, g1, false, -n, c, covered || MathF.Max(sp, sq) < top);
+        }
+    }
+
+    /// <summary>
+    /// The wall along p..q between a lower line (<paramref name="loP"/>, <paramref name="loQ"/>) and an upper one, where the
+    /// upper really is above: all of it, the part to one side of where they cross, or nothing.
+    /// </summary>
+    private void Between<T>(ref T sink, Vector2 p, Vector2 q, float loP, float loQ, float hiP, float hiQ, Vector3 n, int c, bool covered) where T : struct, IDigFaceSink
+    {
+        const float eps = 0.001f;
+        float dp = hiP - loP, dq = hiQ - loQ;
+        if (dp <= eps && dq <= eps)
+            return;
+        if (dp >= -eps && dq >= -eps)
+        {
+            Wall(ref sink, p, q, loP, loQ, MathF.Max(hiP, loP), MathF.Max(hiQ, loQ), n, c, covered);
+            return;
+        }
+        var u = dp / (dp - dq);
+        var m = Vector2.Lerp(p, q, u);
+        var h = loP + (loQ - loP) * u;
+        if (dp > 0)
+            Wall(ref sink, p, m, loP, h, hiP, h, n, c, covered);
+        else
+            Wall(ref sink, m, q, h, loQ, h, hiQ, n, c, covered);
+    }
+
+    /// <summary>
+    /// <see cref="Side{T}"/> for a column with a level top (a smoothed rim's: TerrainEditsSmooth.cs), whose neighbours'
+    /// tops are level along the shared edge too.
+    /// </summary>
+    private void SideLevel<T>(ref T sink, ReadOnlySpan<float> s, int c, float top, int ni, int nj, Vector2 p, Vector2 q, Vector3 n) where T : struct, IDigFaceSink
     {
         if ((uint)ni >= (uint)ColsX || (uint)nj >= (uint)ColsZ)
             return; // the terrain's edge

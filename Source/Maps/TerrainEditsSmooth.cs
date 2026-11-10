@@ -23,7 +23,7 @@ public sealed partial class TerrainEdits
     /// A step shorter than this (metres) keeps its square corners: the 0.5 m terraces of an island's underside and its
     /// hole's floor would turn nearly every column there into a rim (about 3x the triangles) for little to see.
     /// </summary>
-    public const float MinSmoothStep = 0.75f;
+    public const float MinSmoothStep = GroundTops.Near;
 
     /// <summary>Most height levels four columns can have between them (every span's bottom and top).</summary>
     private const int MaxLevels = 4 * MaxSpans * 2 + 2;
@@ -36,26 +36,24 @@ public sealed partial class TerrainEdits
     {
         var vs = Sub + 1;
         var any = false;
-        Span<float> ys = stackalloc float[MaxLevels];
-        Span<byte> solid = stackalloc byte[MaxLevels];
         for (var b = 0; b < vs; b++)
         for (var a = 0; a < vs; a++)
-        {
-            int vi = i * Sub + a, vj = j * Sub + b;
-            var r = false;
-            if (Corner(vi - 1, vj - 1, out var c0) && Corner(vi, vj - 1, out var c1) && Corner(vi - 1, vj, out var c2) && Corner(vi, vj, out var c3))
-            {
-                if (!Plain(c0, c1, c2, c3))
-                {
-                    var n = Levels(Spans(c0), Spans(c1), Spans(c2), Spans(c3), ys, solid);
-                    for (var k = 0; k < n && !r; k++)
-                        r = Count(ys, solid, k) is 1 or 3;
-                }
-            }
-            rim[b * vs + a] = r;
-            any |= r;
-        }
+            any |= rim[b * vs + a] = RimVertex(i * Sub + a, j * Sub + b);
         return any;
+    }
+
+    /// <summary>Is the column corner (vi, vj) a rim vertex: all four columns round it dug, and at some height one or three of them solid over a tall enough step?</summary>
+    private bool RimVertex(int vi, int vj)
+    {
+        if (!(Corner(vi - 1, vj - 1, out var c0) && Corner(vi, vj - 1, out var c1) && Corner(vi - 1, vj, out var c2) && Corner(vi, vj, out var c3)) || Plain(c0, c1, c2, c3))
+            return false;
+        Span<float> ys = stackalloc float[MaxLevels];
+        Span<byte> solid = stackalloc byte[MaxLevels];
+        var n = Levels(Spans(c0), Spans(c1), Spans(c2), Spans(c3), ys, solid);
+        for (var k = 0; k < n; k++)
+            if (Count(ys, solid, k) is 1 or 3)
+                return true;
+        return false;
     }
 
     /// <summary>
@@ -213,8 +211,8 @@ public sealed partial class TerrainEdits
                         Quarter(ref sink, QFull, v, ma, mid, mb, lo, -Vector3.UnitY, bc, br);
                     }
                 }
-                Side(ref sink, s, c, top, ai, cj, v, ma, nA);
-                Side(ref sink, s, c, top, ci, bj, v, mb, nB);
+                SideLevel(ref sink, s, c, top, ai, cj, v, ma, nA);
+                SideLevel(ref sink, s, c, top, ci, bj, v, mb, nB);
                 continue;
             }
             // A rim quarter: the four columns' levels at this vertex (all four are dug: RimVertices).
@@ -350,7 +348,8 @@ public sealed partial class TerrainEdits
         var c = Col(ci, cj);
         if (c < 0)
             return _t.SolidAt(x, z, y);
-        var own = Solid(Spans(c), y);
+        EnsureTops(ci / Sub, cj / Sub);
+        var own = GroundTops.Solid(Spans(c), y, GroundTops.At(Tops(c), fx - ci, fz - cj)); // (the top slopes: GroundTops)
         int vi = fx - ci >= 0.5f ? ci + 1 : ci, vj = fz - cj >= 0.5f ? cj + 1 : cj;
         if (!(Corner(vi - 1, vj - 1, out var c0) && Corner(vi, vj - 1, out var c1) && Corner(vi - 1, vj, out var c2) && Corner(vi, vj, out var c3)))
             return own;

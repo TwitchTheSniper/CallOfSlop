@@ -157,6 +157,16 @@ public sealed class TerrainData
         return false;
     }
 
+    /// <summary><see cref="DugColumn(float, float, out ReadOnlySpan{float})"/>, and the column's top right at (x, z) (its highest span ends there: <see cref="GroundTops"/>).</summary>
+    private bool DugColumn(float x, float z, out ReadOnlySpan<float> spans, out float top)
+    {
+        if (_edits is { Any: true } e)
+            return e.TryColumn(x, z, out spans, out top);
+        spans = default;
+        top = 0;
+        return false;
+    }
+
     /// <summary>The map's own ground top at (x, z), ignoring anything dug: the surface, or in a hole its floor.</summary>
     public float BaseGroundTop(float x, float z)
     {
@@ -173,8 +183,8 @@ public sealed class TerrainData
     /// </summary>
     public float Sample(float x, float z)
     {
-        if (DugColumn(x, z, out var dug))
-            return TerrainEdits.Top(dug);
+        if (DugColumn(x, z, out _, out var dugTop))
+            return dugTop;
         Locate(x, z, out var i, out var j, out var tx, out var tz);
         var k = j * CountX + i;
         if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
@@ -186,7 +196,7 @@ public sealed class TerrainData
     public Vector3 SampleNormal(float x, float z)
     {
         if (DugColumn(x, z, out _))
-            return Vector3.UnitY; // dug ground is blocks: flat tops
+            return _edits!.NormalAt(x, z, float.PositiveInfinity); // dug ground: its top's slope (GroundTops)
         Locate(x, z, out var i, out var j, out var tx, out var tz);
         var k = j * CountX + i;
         if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
@@ -257,10 +267,10 @@ public sealed class TerrainData
     /// <summary><see cref="Column"/> for a known cell and a position inside it (0..1).</summary>
     public byte ColumnInCell(int i, int j, float tx, float tz, out float floor, out float ceiling, out float top, out bool hollow)
     {
-        if (DugColumn(OriginX + (i + tx) * Cell, OriginZ + (j + tz) * Cell, out var dug))
+        if (DugColumn(OriginX + (i + tx) * Cell, OriginZ + (j + tz) * Cell, out _, out var dugTop))
         {
             // Dug ground answers as plain ground at its top (callers that need the spans ask GroundBelow, CeilingAbove, SolidAt).
-            top = floor = ceiling = TerrainEdits.Top(dug);
+            top = floor = ceiling = dugTop;
             hollow = false;
             return TerrainVoids.Solid;
         }
@@ -291,8 +301,8 @@ public sealed class TerrainData
     /// </summary>
     public float GroundBelow(float x, float z, float y)
     {
-        if (DugColumn(x, z, out var dug))
-            return TerrainEdits.GroundBelow(dug, y);
+        if (DugColumn(x, z, out var dug, out var dugTop))
+            return GroundTops.GroundBelow(dug, y, dugTop);
         if (Voids == null)
             return Sample(x, z);
         var kind = Column(x, z, out var floor, out var ceiling, out var top, out var hollow);
@@ -319,7 +329,7 @@ public sealed class TerrainData
     public Vector3 NormalBelow(float x, float z, float y)
     {
         if (DugColumn(x, z, out _))
-            return Vector3.UnitY;
+            return _edits!.NormalAt(x, z, y);
         if (Voids == null)
             return SampleNormal(x, z);
         Locate(x, z, out var i, out var j, out var tx, out var tz);
@@ -348,8 +358,8 @@ public sealed class TerrainData
 
     internal bool SolidInCell(int i, int j, float tx, float tz, float y)
     {
-        if (DugColumn(OriginX + (i + tx) * Cell, OriginZ + (j + tz) * Cell, out var dug))
-            return TerrainEdits.Solid(dug, y);
+        if (DugColumn(OriginX + (i + tx) * Cell, OriginZ + (j + tz) * Cell, out var dug, out var dugTop))
+            return GroundTops.Solid(dug, y, dugTop);
         var kind = ColumnInCell(i, j, tx, tz, out var floor, out var ceiling, out var top, out var hollow);
         return kind switch
         {

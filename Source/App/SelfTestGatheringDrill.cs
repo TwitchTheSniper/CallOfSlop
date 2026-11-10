@@ -133,7 +133,9 @@ public static partial class SelfTest
         want(ops == 2, $"after two scoops' time: {ops} ops");
         const float long_ = 30 * 60;
         Gather(long_, st);
-        var floor = t.Sample(bit.X, bit.Z);
+        // (the floor where the hole is dug, at its column's middle: a top slopes to its corners, GroundTops)
+        t.Edits.ColumnOf(bit.X, bit.Z, out var fi, out var fj);
+        var floor = t.Sample(t.OriginX + (fi + 0.5f) * t.Edits.Size, t.OriginZ + (fj + 0.5f) * t.Edits.Size);
         Line($"gathering: drilled {long_ / 60:0} min: {ops} ops, floor {surface - floor:0.00} m down, {taken} units, bit {bottom - floor:0.00} m over the floor");
         want(ops >= 4 && ops <= DrillShaft.Scoops, $"a hole took {ops} ops");
         want(surface - floor >= DrillShaft.Depth && surface - floor < DrillShaft.Depth + 0.5f, $"the hole is {surface - floor:0.00} m deep");
@@ -309,7 +311,10 @@ public static partial class SelfTest
         {
             var scoops = Hole(s.X, s.Y);
             scoopsMost = Math.Max(scoopsMost, scoops);
-            var deep = t.BaseGroundTop(s.X, s.Y) - t.Sample(s.X, s.Y);
+            // (measured where the hole is dug, at its column's middle: a top slopes to its corners, GroundTops)
+            t.Edits.ColumnOf(s.X, s.Y, out var hi, out var hj);
+            float hx = t.OriginX + (hi + 0.5f) * t.Edits.Size, hz = t.OriginZ + (hj + 0.5f) * t.Edits.Size;
+            var deep = t.BaseGroundTop(hx, hz) - t.Sample(hx, hz);
             if (deep < DrillShaft.Depth || deep > DrillShaft.Depth + 0.5f || scoops > DrillShaft.Scoops)
                 Fail($"a drill's hole at ({s.X}, {s.Y}): {scoops} scoops, {deep:0.00} m deep");
             for (var z = s.Y - 2.5f; z <= s.Y + 2.5f; z += 0.25f)
