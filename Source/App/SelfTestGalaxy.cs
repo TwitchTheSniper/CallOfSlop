@@ -278,6 +278,8 @@ public static partial class SelfTest
         var ds = Galaxy.System(dev);
         var hd = hi >= 0 ? (flight.Ships.PositionOf(hi) - ds.PositionOf(ds.ArrivalBody, flight.Ships.Time)).Length : 0;
         PumpFast(server, [a], 1.0, ref now);
+        for (var wait = 0; wait < 50 && copy is { SpaceAway: not 0 }; wait++)
+            Pump(server, [a], 0.1, ref now, clock); // (the client hears it over the lagged link: real time)
         Line($"galaxy: home: parked {ship.SpaceAway}, ship {hi} in the Dev flight {hd / 1000:0.0} km from {ds.Bodies[ds.ArrivalBody].Name}; Ember's flight holds {away.Ships.Count}; the client's copy parked {copy?.SpaceAway}");
         Want(ship.SpaceAway == 0 && hi >= 0 && away.Ships.Count == 0 && Math.Abs(hd - ds.Arrival) < ds.Arrival * 0.01 && copy is { SpaceAway: 0 },
             $"it jumps home: back in the Dev system's flight in orbit round its world, within the bubble's reach again, and the client knows (parked {ship.SpaceAway}, index {hi}, {hd / 1000:0.0} of {ds.Arrival / 1000:0.0} km, client {copy?.SpaceAway})");
