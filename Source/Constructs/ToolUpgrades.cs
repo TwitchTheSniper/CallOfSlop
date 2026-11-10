@@ -72,7 +72,7 @@ public sealed class ToolUpgrades
     public ToolUpgrades()
     {
         // The built-in table: what the file says, should it go missing.
-        Put(ToolStat.Lift, ConstructTool.PhysicsGun, "Lift", "kg", ConstructGrab.SurvivalMaxMass, ConstructGrab.MaxMass, 3000, 6000, 12000, 25000);
+        Put(ToolStat.Lift, ConstructTool.PhysicsGun, "Lift", "kg", ConstructGrab.SurvivalMaxMass, ConstructGrab.MaxMass, 10000, 20000, 40000, 80000);
         Put(ToolStat.Reach, ConstructTool.PhysicsGun, "Reach", "m", ConstructGrab.SurvivalRange, ConstructGrab.Range, 15, 18, 22, 26);
         Put(ToolStat.DrillBit, ConstructTool.GroundDrill, "Drill bit", "x", 1, 1, 1.25f, 1.5f, 1.8f);
         Put(ToolStat.DrillMotor, ConstructTool.GroundDrill, "Drill motor", "x", 1, 1, 1.35f, 1.75f, 2.25f);

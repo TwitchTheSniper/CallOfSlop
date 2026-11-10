@@ -20,10 +20,10 @@ public static class ConstructGrab
     /// <summary>
     /// How hard the beam pulls (newtons) and the heaviest thing it takes (kg): creative, survival. pr02: the spring of
     /// before pr01 again, stronger (was 200 kN and 8 kN): a 15 t truck now gets 100 m/s2 in creative. Survival's are where a
-    /// player starts (Karl, 2026-11-08: 1,500 kg, was 500 kg at 20 kN), 30 m/s2 at the limit; tool upgrades raise both per
+    /// player starts (user, 2026-11-10: 5,000 kg; Karl, 2026-11-08: 1,500 kg; was 500 kg at 20 kN; the nudge tool keeps 1,500: NudgeMaxMass), 30 m/s2 at the limit; tool upgrades raise both per
     /// player (<see cref="ToolUpgrades"/>, <see cref="ConstructEdits.LiftOf"/>, <see cref="ConstructEdits.PullOf"/>).
     /// </summary>
-    public const float Strength = 1_500_000f, MaxMass = 20_000_000f, SurvivalStrength = SurvivalMaxMass * ToolUpgrades.PullPerKg, SurvivalMaxMass = 1500f;
+    public const float Strength = 1_500_000f, MaxMass = 20_000_000f, SurvivalStrength = SurvivalMaxMass * ToolUpgrades.PullPerKg, SurvivalMaxMass = 5000f, NudgeMaxMass = 1500f;
 
     /// <summary>The most the beam accelerates anything (m/s2, on top of holding it up against gravity; was 40): light parts don't snap about.</summary>
     public const float MaxAccel = 120f;

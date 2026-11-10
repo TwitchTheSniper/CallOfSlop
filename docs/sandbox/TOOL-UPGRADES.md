@@ -11,7 +11,7 @@ Creative ignores upgrades, since every tool is already at its best there.
 
 | Stat | Tool | Start | Modules (value) | What it does |
 | --- | --- | --- | --- | --- |
-| Lift | physics gun | 1,500 kg | Lift Coil Mk 2 (3,000), Mk 3 (6,000), Mk 4 (12,000), Mk 5 (25,000) | the heaviest thing the beam takes; its pull is 30 N a kg of lift, so anything at the limit still gets 30 m/s2 |
+| Lift | physics gun | 5,000 kg | Lift Coil Mk 2 (10,000), Mk 3 (20,000), Mk 4 (40,000), Mk 5 (80,000) | the heaviest thing the beam takes; its pull is 30 N a kg of lift, so anything at the limit still gets 30 m/s2 |
 | Reach | physics gun | 12 m | Beam Lens Mk 2 (15), Mk 3 (18), Mk 4 (22), Mk 5 (26) | how far the beam reaches and holds |
 | Drill bit | ground drill | x1 | Drill Bit Mk 2 (x1.25), Mk 3 (x1.5), Mk 4 (x1.8) | the scoop's radius, times `Digging.json`'s |
 | Drill motor | ground drill | x1 | Drill Motor Mk 2 (x1.35), Mk 3 (x1.75), Mk 4 (x2.25) | scoops a second |
@@ -57,6 +57,6 @@ line adds "R: throw" while it holds something.
   record and gives them back on arrival. A new match without a saved world starts everyone at the base; a death does not
   take upgrades away.
 
-**Choices made (Karl may change them).** Start at 1,500 kg and 12 m; five Mks of lift up to 25 t; fitting by F on a loose
+**Choices made (Karl may change them).** Start at 5,000 kg (user, 2026-11-10; was 1,500) and 12 m; five Mks of lift up to 80 t (each Mk doubles, as before); fitting by F on a loose
 module rather than from the backpack; a module is used up; the nudge tool keeps its own 1,500 kg cap and 12 m reach and
 isn't upgraded; the tractor beam and throw are physics gun functions; creative has every function.

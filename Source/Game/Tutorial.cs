@@ -25,7 +25,17 @@ public enum TutorialCue : byte
     Configure, // any part's settings set
     Stow, // a part stowed in the backpack
     Draw, // a part drawn from the backpack
+    Carry, // the physics gun took hold of something
+    Bunk, // lay in a Bunk (the checkpoint)
     COUNT,
+}
+
+/// <summary>What a step's marker points at (a step's "target"): the nearest one, found on each peer from the constructs it has.</summary>
+public enum TutorialTarget : byte
+{
+    None,
+    Loose, // a loose single part lying about (the step's "drops" first)
+    Bunk, // a Bunk
 }
 
 /// <summary>Where a player is in the induction. A byte on the wire and in the save: never renumber.</summary>
@@ -40,8 +50,11 @@ public enum TutorialState : byte
 /// <summary>One step of the induction, as its file has it.</summary>
 public sealed class TutorialStep
 {
-    public string Id = "", Title = "", Text = "", Warden = "";
+    public string Id = "", Title = "", Text = "", Warden = "", Hint = "";
     public TutorialCue Cue;
+    public TutorialTarget Target;
+    public float HintAfter; // the hint shows once the step has been up this long
+    public string[] Drops = []; // parts the warden sets down in front of the player as the step starts ("drops")
     public float Seconds, Amount;
     public ConstructTool Tool;
     public GameAction[] Keys = []; // the actions its text names, in order of first use
@@ -110,7 +123,7 @@ public static class Tutorial
                 return need ? throw new FormatException($"steps[{n}] has no \"{key}\"") : "";
             }
             float Num(string key, float fallback) => e.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : fallback;
-            var s = new TutorialStep { Id = Str("id", true), Title = Str("title", true), Text = Str("text", true), Warden = Str("warden", false) };
+            var s = new TutorialStep { Id = Str("id", true), Title = Str("title", true), Text = Str("text", true), Warden = Str("warden", false), Hint = Str("hint", false) };
             if (!ids.Add(s.Id))
                 throw new FormatException($"steps[{n}]: the id \"{s.Id}\" is used twice");
             var cue = Str("cue", true);
@@ -122,6 +135,19 @@ public static class Tutorial
                 throw new FormatException($"steps[{n}] ({s.Id}): seconds must be over 0 and at most 120");
             if (s.Amount is not (> 0 and <= 1000))
                 throw new FormatException($"steps[{n}] ({s.Id}): amount must be over 0 and at most 1000");
+            s.HintAfter = Num("hintAfter", 35);
+            if (s.HintAfter is not (>= 0 and <= 600))
+                throw new FormatException($"steps[{n}] ({s.Id}): hintAfter must be 0 to 600 seconds");
+            var target = Str("target", false);
+            if (target.Length > 0 && (!Enum.TryParse(target, true, out s.Target) || int.TryParse(target, out _) || s.Target == TutorialTarget.None))
+                throw new FormatException($"steps[{n}] ({s.Id}): no such target \"{target}\" (loose, bunk)");
+            if (e.TryGetProperty("drops", out var drops))
+            {
+                if (drops.ValueKind != JsonValueKind.Array || drops.GetArrayLength() > 4)
+                    throw new FormatException($"steps[{n}] ({s.Id}): \"drops\" is a list of at most 4 part names");
+                s.Drops = drops.EnumerateArray().Select(d => d.ValueKind == JsonValueKind.String && d.GetString() is { Length: > 0 } name
+                    ? name : throw new FormatException($"steps[{n}] ({s.Id}): \"drops\" holds part names")).ToArray();
+            }
             if (s.Cue == TutorialCue.Tool)
             {
                 var tool = Str("tool", true);
@@ -155,6 +181,9 @@ public static class Tutorial
         }
         if (steps.Count == 0)
             throw new FormatException("no steps");
+        foreach (var s in steps)
+            if (s.Cue == TutorialCue.Carry && (s.Issued & Bit(ConstructTool.PhysicsGun)) == 0)
+                throw new FormatException($"{s.Id}: asks for a carry, but no step up to it gives the physics gun");
         return (steps.ToArray(), speaker);
     }
 

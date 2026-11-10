@@ -182,8 +182,40 @@ public sealed partial class Game
             _tutLastYaw[id] = p.Yaw;
             _tutLastPos[id] = p.Position;
             TutorialIssue(p, step, state);
+            if (state == TutorialState.Running && step < Tutorial.Steps.Length && Tutorial.Steps[step].Drops.Length > 0 && p.Alive)
+                TutorialDrop(p, Tutorial.Steps[step]);
         }
         TutorialSend(id);
+    }
+
+    /// <summary>
+    /// Server: the warden sets the step's parts ("drops") down in a row in front of the person, so a step that needs a part
+    /// always has one to hand (they belong to that person, like a part they dropped).
+    /// </summary>
+    private void TutorialDrop(Player p, TutorialStep step)
+    {
+        var fwd = GravityFrames.FlatForward(p.Position, p.Yaw);
+        var up = GravityFrames.UpAt(p.Position);
+        var side = Vector3.Normalize(Vector3.Cross(fwd, up));
+        for (var k = 0; k < step.Drops.Length; k++)
+        {
+            if (ConstructParts.Find(step.Drops[k]) is not { } def)
+            {
+                Console.WriteLine($"[tutorial] {step.Id}: no part named \"{step.Drops[k]}\" to drop");
+                continue;
+            }
+            var at = p.Position + fwd * 2f + side * ((k - (step.Drops.Length - 1) * 0.5f) * 1.2f) + up * 0.4f;
+            if (ConstructBuild.PlaceNew(Constructs, def, at, p.Yaw) is { } c)
+                c.Owner = p.Id;
+        }
+        SandboxHands.Notices.Add((p.Id, step.Drops.Length == 1 ? $"{WardenName} sets a {step.Drops[0]} down in front of you" : $"{WardenName} sets some parts down in front of you"));
+    }
+
+    /// <summary>Server: something the induction counts happened for this person outside an action (a bunk lain in).</summary>
+    private void TutorialSee(byte id, TutorialCue cue)
+    {
+        if (id < MaxPlayers && _tutState[id] == TutorialState.Running)
+            _tutSaw[id] |= 1u << (int)cue;
     }
 
     /// <summary>
@@ -472,6 +504,9 @@ public sealed partial class Game
                 break;
             case CActKind.Sculpt:
                 saw = Bit(TutorialCue.Drill);
+                break;
+            case CActKind.Grab:
+                saw = Bit(TutorialCue.Carry);
                 break;
             case CActKind.Stow:
                 saw = Bit(TutorialCue.Stow);

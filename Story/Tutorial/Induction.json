@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-tutorial/1",
- "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun, no tools but bare hands and no backpack while it runs: \"gives\" names the tools a step hands over (kept for every later step; \"backpack\" hands over the backpack), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings), stow (a part put in the backpack), draw (a part taken out of it).",
+ "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun, no tools but bare hands and no backpack while it runs: \"gives\" names the tools a step hands over (kept for every later step; \"backpack\" hands over the backpack), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings), stow (a part put in the backpack), draw (a part taken out of it), carry (the physics gun took hold of something), bunk (lay in a Bunk). Optional per step: \"target\" (loose: a loose single part, the step's drops first; bunk) shows an orange marker on the nearest one and how far it is; \"hint\" shows after \"hintAfter\" seconds on the step (default 35); \"drops\" (part names, at most 4) are set down in front of the player as the step starts. The induction is about the person (Karl, 2026-11-10): the machines are taught later, on Ministry duties.",
  "speaker": "Warden Pettigrew",
  "steps": [
   {
@@ -16,21 +16,24 @@
    "title": "Look around",
    "text": "Move the mouse to look around. Take in the facilities.",
    "warden": "Yes, that's all of them.",
-   "cue": "look"
+   "cue": "look",
+   "hint": "Just the mouse. Turn right round, all the way."
   },
   {
    "id": "move",
    "title": "Walk",
    "text": "Walk with {MoveForward} {MoveLeft} {MoveBack} {MoveRight}.",
    "warden": "One foot in front of the other. We'll have you filing in no time.",
-   "cue": "move"
+   "cue": "move",
+   "hint": "Hold {MoveForward} and keep walking for a few metres."
   },
   {
    "id": "sprint",
    "title": "Run",
    "text": "Hold {Sprint} while you walk to run.",
    "warden": "Running in the corridors is permitted. Running away is a separate form.",
-   "cue": "sprint"
+   "cue": "sprint",
+   "hint": "Hold {Sprint} and {MoveForward} together, for a second or so."
   },
   {
    "id": "jump",
@@ -51,21 +54,29 @@
    "title": "Your inventory",
    "text": "Press {SandboxInventory} to open your inventory: parts, materials and tools you carry. {SandboxInventory} or Esc closes it.",
    "warden": "Your personal effects have been confiscated, catalogued and lost. That's what's left.",
-   "cue": "inventory"
+   "cue": "inventory",
+   "hint": "One press of {SandboxInventory}. It opens, you look, it shuts."
   },
   {
    "id": "toolwheel",
    "title": "The tool wheel",
    "text": "Hold {ToolWheel} for the tool wheel. Flick the mouse to a tool and let go to take it out; let go in the middle to cancel. Tools are issued as this induction needs them; your gun comes back at the end.",
    "warden": "Prison issue. Sign for it and don't lick it.",
-   "cue": "toolwheel"
+   "cue": "toolwheel",
+   "hint": "Hold {ToolWheel} down until the wheel shows; you needn't pick anything."
   },
   {
    "id": "hold",
    "title": "Pick up a part",
-   "text": "Pick up a loose part: look at it and press {Interact}, or take one from your inventory or a shelf. It goes into your hands.",
+   "text": "Pick up a loose part: look at it and press {Interact}. It goes into your hands. The warden has set two Frame Blocks down for you; the orange marker shows the nearest.",
    "warden": "Lift with the knees. The Ministry does not cover backs.",
-   "cue": "hold"
+   "cue": "hold",
+   "target": "loose",
+   "drops": [
+    "Frame Block",
+    "Frame Block"
+   ],
+   "hint": "Walk up close to a Frame Block, aim the crosshair at it and press {Interact}. Lost them? Your inventory ({SandboxInventory}) may hold a part too."
   },
   {
    "id": "backpack",
@@ -73,7 +84,10 @@
    "text": "You've been issued a backpack. With a part in your hands, press {Stow} to put it in; its slots show at the bottom of the screen. Then press {DrawPack} to take it back out. A part too big or too heavy for a slot stays in your hands.",
    "warden": "Your backpack, returned from the evidence locker. The contents were evidence. They still are.",
    "cue": "draw",
-   "gives": ["backpack"]
+   "gives": [
+    "backpack"
+   ],
+   "hint": "Part in your hands: {Stow} puts it in. Hands empty: {DrawPack} takes it out. Both count, in that order."
   },
   {
    "id": "attach",
@@ -82,29 +96,30 @@
    "warden": "The attach tool. Our most trusted inmate. Unlike you.",
    "cue": "tool",
    "tool": "attach",
-   "gives": ["attach"]
+   "gives": [
+    "attach"
+   ],
+   "hint": "Hold {ToolWheel} and flick to the attach tool, or just press {Weapon3}."
   },
   {
    "id": "place",
    "title": "Build",
    "text": "With a part in your hands and the attach tool out, aim at a socket or the ground and hold {Fire} to fit it. Turn the ghost with {RotateLeft} {RotateRight} {RotateUp} {RotateDown}. {Aim} takes a part back off.",
    "warden": "Build something. Anything. The rehabilitation figures need a lift.",
-   "cue": "place"
+   "cue": "place",
+   "hint": "Aim at the ground a few metres away, or at the other Frame Block. When the ghost shows, hold {Fire} until it is fitted."
   },
   {
    "id": "weld",
    "title": "Join two pieces",
-   "text": "Set a part down so it touches another construct, then with the attach tool out aim at it and press {Interact} to join the two into one.",
+   "text": "The warden sets down one more block. Pick it up, set it down touching your build, then with the attach tool out aim at the seam and press {Interact} to join the two into one.",
    "warden": "Two pieces become one. Rather like a merger, only less paperwork.",
-   "cue": "weld"
-  },
-  {
-   "id": "power",
-   "title": "Power",
-   "text": "Machines need power. Take out the linking tool ({Streak2}), press {Fire} on a genset's power port, then {Fire} on a machine's to run a power cable. {Aim} takes the last node off.",
-   "warden": "The generator runs on fuel, not goodwill. We tried goodwill. It was a cold winter.",
-   "cue": "power",
-   "gives": ["linker"]
+   "cue": "weld",
+   "target": "loose",
+   "drops": [
+    "Frame Block"
+   ],
+   "hint": "The two pieces must touch. Set the block down right against your build (hold {Fire} on the ground beside it), then aim where they meet and press {Interact}."
   },
   {
    "id": "drill",
@@ -112,21 +127,46 @@
    "text": "Take out the ground drill from the tool wheel and hold {Fire} on the ground to dig dirt, stone and sand. {Aim} puts it back.",
    "warden": "Every convict digs. It builds character, and the character is cheap.",
    "cue": "drill",
-   "gives": ["grounddrill"]
+   "gives": [
+    "grounddrill"
+   ],
+   "hint": "Aim at bare ground near your feet, not at a construct, and hold {Fire} for a moment."
   },
   {
-   "id": "assembler",
-   "title": "The Assembler",
-   "text": "The Assembler makes parts from materials. Pick a recipe with the configure tool ({Fire} on the Assembler), or press {Interact} on it to tip in what you carry.",
-   "warden": "Your labour quota is posted on the wall. The wall is also your quota.",
-   "cue": "assembler",
-   "gives": ["configure"]
+   "id": "physicsgun",
+   "title": "The physics gun",
+   "text": "Take out the physics gun from the tool wheel ({ToolWheel}). It moves what is too heavy for your hands.",
+   "warden": "Handle with care. It's lifted heavier convicts than you, and mostly put them down again.",
+   "cue": "tool",
+   "tool": "physicsgun",
+   "gives": [
+    "physicsgun"
+   ],
+   "hint": "Hold {ToolWheel} and flick to the physics gun."
+  },
+  {
+   "id": "carry",
+   "title": "Carry something",
+   "text": "Aim the physics gun at something loose, your Frame Blocks will do, and hold {Fire} to lift it. The mouse wheel brings it closer or pushes it away; let go of {Fire} to drop it, {Aim} to freeze it in the air.",
+   "warden": "Gently. Ministry property includes the bits you drop it on.",
+   "cue": "carry",
+   "target": "loose",
+   "hint": "The beam takes hold of what is under the crosshair: aim at a block and keep {Fire} held down."
+  },
+  {
+   "id": "bunk",
+   "title": "Your bunk",
+   "text": "Lie in a Bunk: look at one and press {Interact}; {Interact} again gets you up. The last bunk you lay in is where you wake after a death. The colony's are by the yard's west fence; the orange marker shows the nearest.",
+   "warden": "The open-air dormitory. Fresh air is a privilege. So is a roof, which you haven't earned.",
+   "cue": "bunk",
+   "target": "bunk",
+   "hint": "Walk to the orange marker, aim at the Bunk and press {Interact}."
   },
   {
    "id": "done",
    "title": "Induction complete",
-   "text": "That's the induction. Gather, build and survive. The Esc menu replays this whenever you like.",
-   "warden": "Off you go. And do remember: we're all in this together. Some of us more than others.",
+   "text": "That's the induction. You can move, carry and build, and you know where you'll wake. Ministry duties come next: the machines are taught on the job. The Esc menu replays this whenever you like.",
+   "warden": "Off you go. Report for duties when called. And do remember: we're all in this together. Some of us more than others.",
    "cue": "wait",
    "seconds": 9
   }

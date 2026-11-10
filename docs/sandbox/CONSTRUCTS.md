@@ -417,7 +417,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
   every step, so the held thing only turned with the look), and of a coupled pair the held one leads on the hitch while the other follows (`Contact.KinA/KinB`). A held body never sleeps. The holder's own
   client draws the piece at the pose its aim asks for now (`ConstructGrab.Predict`, no protocol change), never further from
   the server's pose than 15 cm plus 0.2 s of the motion in hand; other players see the server's motion.
-- **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 60 t (a tier 5 Foundry is 48 t); survival 45 kN, up to 1,500 kg where a player starts (Karl, 2026-11-08; was 20 kN and 500 kg), raised per player by [tool upgrades](TOOL-UPGRADES.md) (heavier: "too
+- **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 60 t (a tier 5 Foundry is 48 t); survival 150 kN, up to 5,000 kg where a player starts (user, 2026-11-10; Karl's 2026-11-08 1,500 kg; was 20 kN and 500 kg), raised per player by [tool upgrades](TOOL-UPGRADES.md) (heavier: "too
   heavy for the physics gun"), so heavy things are slow to pull.
 - **Refused**: players (a construct with anyone in a seat), anything anchored to the ground (a foundation, a pinned
   construct), something another player holds (one holder per construct), and in survival an enemy construct that is
@@ -436,7 +436,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
   is what a save will hold, and the self-test round-trips it.
 - **Cost**: nothing when unused: the physics checks one byte a body, the server one short a player.
 - **A free joint on its own** (`ConstructGrab.AimLeaf`, `LeafJoint`, `DriveJoint`, `ConstructEdits.GrabJoint`): the beam on a Free Slider's carriage or a free rotation part's moving side, or on anything that hangs on one, moves that joint alone: along its rail between the stops, or about its axis inside any limits. The rest of the construct stays where it is, and a frozen or anchored construct stays frozen or anchored. On the rail or a free part's base the beam takes the whole construct, as before.
-  - **What it carries goes with it**, at the beam's strength (the same acceleration as a body of that mass, plus its weight, so it hangs against gravity), and survival's cap (1,500 kg, or the player's upgraded lift) counts what the joint carries. It stops on the stops and on what it meets. The beam pushes against the player, not the base, so a free body isn't shoved back. Let go, it keeps its speed.
+  - **What it carries goes with it**, at the beam's strength (the same acceleration as a body of that mass, plus its weight, so it hangs against gravity), and survival's cap (5,000 kg, or the player's upgraded lift) counts what the joint carries. It stops on the stops and on what it meets. The beam pushes against the player, not the base, so a free body isn't shoved back. Let go, it keeps its speed.
   - **A carriage with nothing on it** has no joint, so the first grab makes one (it stays, carrying nothing, and is drawn where it was left). Hanging a part on such a carriage puts it back at its rest, as for any empty joint.
   - **Refused, with the reason on the look line**: a Linear Actuator ("its motor holds it: use its Set signal"), a Shaft Linear Drive ("its lead screw holds it: turn its shaft"), a mixed rail a powered section runs, a Lock signal that is on, someone seated on it. What hangs on a powered rail is taken with the whole construct as before; when that is refused too, the look line gives the motor's or screw's reason.
   - **Aim** freezes the held piece and lets go ([Pieces of a mechanism](#pieces-of-a-mechanism)). The wheel changes the distance; F + mouse does nothing.
@@ -1524,7 +1524,7 @@ Code: `Source/Game/GameSandboxSurvival.cs`.
   chosen in the lobby starts with `Constructs/SurvivalStart.json`: Starter Assembler, Smelter, Foundry and Sawmill (each a machine,
   its bins on chutes and a Small Genset on a Fuel Tank, anchored on 4 m slabs), a Drill Rig and a Saw Rig. Each goes on the nearest
   clear, level ground round the rack (`SandboxKitPiece`; no room: it is left out and logged). They belong to nobody, as the map's
-  constructs do. A rig starts frozen, upright, and is under the survival physics gun's starting 1,500 kg while its bin is near empty: carry
+  constructs do. A rig starts frozen, upright, and is under the survival physics gun's starting 5,000 kg while its bin is near empty: carry
   it to a vein, hold the bit just over the ground, freeze it. A map's `"survivalStart": ["name", ...]` (blueprints or parts)
   replaces the list and also applies to a map that is survival by itself; `[]` gives nothing. Without it such a map gets no kit.
 - **What a fresh game can reach** (choices made, the developer may change them): gather iron, stone, sand and wood; smelt, saw and
@@ -2226,7 +2226,7 @@ Fitting time grows from x1 to x2.
 - **A building, not a brick.** Boxes are in units of the machine's width (`BIG_WIDTH`), so every socket lands on the 0.25 m grid and a building has no pads. Each has a floor plate you step onto (2% of its width), stepped solids and
   open space: a Smelter or Foundry has an aisle across it, between the furnace and the tray, wide enough to walk through at every tier; a Sawmill is two open bays and a saw frame; an Assembler is an open frame with a low hopper at the back. Less than 55% of the bounds is solid.
 - **Reach.** A part wider than 3.2 m a side (`ConstructEdits.BigPartHalf`) is reached at the point of its bounds nearest the eye, not its centre (`ConstructEdits.ReachPoint`): the attach tool, paint, configure tool, F and the look ray agree, and you use a 10 m machine from beside it. A smaller part keeps the old rule.
-- **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap starts at 1,500 kg ([tool upgrades](TOOL-UPGRADES.md) raise it to 25 t), so a heavy machine goes on by the attach tool or stays where it was built.
+- **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap starts at 5,000 kg ([tool upgrades](TOOL-UPGRADES.md) raise it to 80 t), so a heavy machine goes on by the attach tool or stays where it was built.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
   a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.

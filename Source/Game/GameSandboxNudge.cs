@@ -43,8 +43,8 @@ public sealed partial class Game
         {
             if (c.Anchored && !c.Frozen)
                 return "it is anchored to the ground";
-            if (c.Mass > ConstructGrab.SurvivalMaxMass)
-                return $"too heavy to nudge ({c.Mass:0} kg; {ConstructGrab.SurvivalMaxMass:0} kg at most in survival)";
+            if (c.Mass > ConstructGrab.NudgeMaxMass)
+                return $"too heavy to nudge ({c.Mass:0} kg; {ConstructGrab.NudgeMaxMass:0} kg at most in survival)";
             return ConstructEdits.SalvageRefusal(c, player) != null ? "that construct is someone else's" : ConstructGrab.Defended(c, player, SandboxAliveAt, SandboxNameOf);
         }
         return ConstructEdits.SalvageRefusal(c, player) != null ? "that construct is someone else's" : null;

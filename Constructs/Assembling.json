@@ -1342,6 +1342,8 @@
     {"output": "Input Reader", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Capital Armoured Hull 128x64 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Capital Hollow Chassis 128x64 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
+    {"output": "Steel Floor Panel 16x16 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
+    {"output": "Steel Floor Panel 8x8 m", "materials": {"steel": 1152, "concrete": 230}, "seconds": 174.8},
     {"output": "Freight Lift Car", "materials": {"steel": 114, "concrete": 23}, "seconds": 19.0},
     {"output": "Chart Table", "materials": {"steel": 14, "rubber": 3}, "seconds": 4.1},
     {"output": "Engineer's Panel", "materials": {"steel": 12, "copper": 20}, "parts": {"Circuit Board": 1}, "seconds": 3.8, "minTier": 3},

@@ -11,7 +11,13 @@ namespace CallOfSlop;
 public sealed partial class Ui
 {
     private int _tutFilledStep = -1, _tutFilledStamp;
-    private string _tutTitle = "", _tutText = "", _tutWarden = "";
+    private string _tutTitle = "", _tutText = "", _tutWarden = "", _tutHint = "", _tutFar = "";
+    private int _tutFarMetres = -1;
+    private double _tutLookedAt = -1;
+    private System.Numerics.Vector3? _tutTarget; // the step's marker (its "target"), looked for twice a second
+
+    /// <summary>How far the marker looks for a step's target.</summary>
+    private const float TutorialTargetRange = 60f, TutorialBunkRange = 200f;
 
     private static readonly float4 Warden = new(0.78f, 0.82f, 0.62f, 1f);
 
@@ -53,11 +59,109 @@ public sealed partial class Ui
                     ImGui.Spacing();
                     ImGuiSafe.TextColored(Warden, _tutWarden);
                 }
+                if (_tutHint.Length > 0 && since >= step.HintAfter)
+                {
+                    ImGui.Spacing();
+                    ImGuiSafe.TextColored(Orange, _tutHint);
+                }
                 ImGui.PopTextWrapPos();
+                TutorialLook(game, step);
+                if (_tutTarget is { } at && game.Local is { } me)
+                {
+                    var metres = (int)System.Numerics.Vector3.Distance(me.Position, at);
+                    if (metres != _tutFarMetres)
+                    {
+                        _tutFarMetres = metres;
+                        _tutFar = metres < 3 ? "It's right here (the orange marker)." : $"The orange marker: {metres} m away.";
+                    }
+                    ImGuiSafe.TextColored(Dim, _tutFar);
+                }
                 ImGuiSafe.TextColored(Dim, "Esc menu: skip the induction");
             }
         }
         ImGui.End();
+        if (step != null && _tutTarget is { } spot)
+            TutorialMarker(spot);
+    }
+
+    /// <summary>
+    /// The step's target (<see cref="TutorialStep.Target"/>), nearest to this PC's player, from the constructs this peer has:
+    /// looked for twice a second (a walk over the bodies, nothing allocated), none when the step has no target.
+    /// </summary>
+    private void TutorialLook(Game game, TutorialStep step)
+    {
+        var now = Brutal.GlfwApi.Glfw.Time;
+        if (step.Target == TutorialTarget.None || game.Local is not { } me)
+        {
+            _tutTarget = null;
+            return;
+        }
+        if (now - _tutLookedAt < 0.5 && now >= _tutLookedAt)
+            return;
+        _tutLookedAt = now;
+        _tutTarget = null;
+        var from = me.Position;
+        var best = step.Target == TutorialTarget.Bunk ? TutorialBunkRange * TutorialBunkRange : TutorialTargetRange * TutorialTargetRange;
+        var bestDropped = false;
+        foreach (var c in game.Constructs.Bodies)
+        {
+            if (step.Target == TutorialTarget.Loose)
+            {
+                if (c.PartCount != 1 || c.Anchored || c.Pinned)
+                    continue;
+                var at = c.WorldCom;
+                var d = System.Numerics.Vector3.DistanceSquared(from, at);
+                var dropped = TutorialDropped(step, c.DefOf(0).Name);
+                if (dropped && !bestDropped && d < TutorialTargetRange * TutorialTargetRange || dropped == bestDropped && d < best)
+                {
+                    best = d;
+                    bestDropped = dropped;
+                    _tutTarget = at;
+                }
+                continue;
+            }
+            if (System.Numerics.Vector3.DistanceSquared(from, c.WorldCom) > (TutorialBunkRange + 60) * (TutorialBunkRange + 60))
+                continue;
+            for (var k = 0; k < c.PartCount; k++)
+            {
+                ref var part = ref c.Parts[k];
+                if (!part.D.Bunk || part.Broken || part.SitterPlus1 != 0)
+                    continue;
+                var at = c.SegToWorld(part.Seg, part.Pos);
+                var d = System.Numerics.Vector3.DistanceSquared(from, at);
+                if (d < best)
+                {
+                    best = d;
+                    _tutTarget = at;
+                }
+            }
+        }
+    }
+
+    private static bool TutorialDropped(TutorialStep step, string name)
+    {
+        foreach (var n in step.Drops)
+            if (string.Equals(n, name, StringComparison.OrdinalIgnoreCase))
+                return true;
+        return false;
+    }
+
+    /// <summary>A diamond over the step's target (the background list, under the HUD windows), while it is on screen.</summary>
+    private void TutorialMarker(System.Numerics.Vector3 spot)
+    {
+        var cam = Hud.Camera;
+        if (!cam.Valid)
+            return;
+        var vp = ImGui.GetMainViewport();
+        float2 org = vp.WorkPos, area = vp.WorkSize;
+        if (!Hud.Project(cam.ViewProj, spot + new System.Numerics.Vector3(0, 0.9f, 0), area.X, area.Y, out var sp, out _, 30f))
+            return;
+        var dl = ImGui.GetBackgroundDrawList();
+        var c = new float2(org.X + sp.X, org.Y + sp.Y);
+        var r = 7f * _scale;
+        var pulse = 1.5f + 0.3f * MathF.Sin((float)Brutal.GlfwApi.Glfw.Time * 4f);
+        ImDrawListExtensions.AddNgonFilled(dl, in c, r, Hud.Colour(new System.Numerics.Vector3(0.95f, 0.55f, 0.18f), 0.85f), 4);
+        ImDrawListExtensions.AddCircle(dl, in c, r * pulse, Hud.Colour(new System.Numerics.Vector3(1f, 0.75f, 0.35f), 0.6f), 4, 1.5f * _scale);
     }
 
     private void TutorialFill(int index, TutorialStep step, Settings settings)
@@ -69,6 +173,9 @@ public sealed partial class Ui
         _tutFilledStamp = stamp;
         _tutTitle = step.Title;
         _tutText = Tutorial.Fill(step.Text, settings);
+        _tutHint = step.Hint.Length == 0 ? "" : Tutorial.Fill(step.Hint, settings);
+        _tutFarMetres = -1;
+        _tutLookedAt = -1;
         _tutWarden = step.Warden.Length == 0 ? "" : Tutorial.Speaker.Length > 0 ? $"{Tutorial.Speaker}: \"{step.Warden}\"" : $"\"{step.Warden}\"";
     }
 
