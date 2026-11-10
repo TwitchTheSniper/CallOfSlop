@@ -171,7 +171,7 @@
     {"part": "Water Cooler", "on": 62, "socket": "front15", "by": "foot00", "spin": 1},
     {"part": "Water Cooler", "on": 62, "socket": "front13", "by": "foot00", "spin": 1},
     {"part": "Chest", "on": 63, "socket": "front12", "by": "bottom", "spin": 1},
-    {"part": "Loudhailer", "on": 165, "socket": "lid", "by": "base", "spin": 2},
+    {"part": "Loudhailer", "on": 165, "socket": "lid", "by": "base"},
     {"part": "Water Cooler", "on": 90, "socket": "up41", "by": "foot00", "spin": 1},
     {"part": "Loudhailer", "on": 90, "socket": "up34", "by": "base"},
     {"part": "Office Phone", "on": 94, "socket": "up2", "by": "base", "spin": 1},

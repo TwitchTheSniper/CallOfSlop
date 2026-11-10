@@ -145,7 +145,7 @@
     {"part": "Lever", "on": 101, "socket": "lever", "by": "-y"},
     {"part": "Shelf Bay 1", "on": 77, "socket": "front12", "by": "-y.3.1", "spin": 2},
     {"part": "Ammo Container", "on": 86, "socket": "front11", "by": "-y", "spin": 1},
-    {"part": "Wee Keg", "on": 139, "socket": "+y", "by": "base"},
+    {"part": "Wee Keg", "on": 138, "socket": "+y.1.0", "by": "base"},
     {"part": "Tow Hitch", "on": 10, "socket": "+z", "by": "-z0"},
     {"part": "Hull Loft (hoodg URV2WyWjXYXYVd ~6O06Wu4v3013)", "on": 28, "socket": "+y", "by": "engine", "paint": "#c8102e"},
     {"part": "Bull Bar", "on": 142, "socket": "front", "by": "back", "paint": "#005eb8"},

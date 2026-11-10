@@ -169,7 +169,7 @@
     {"part": "Water Cooler", "on": 101, "socket": "front11", "by": "foot00", "spin": 1},
     {"part": "Water Cooler", "on": 100, "socket": "front21", "by": "foot00", "spin": 1},
     {"part": "Ammo Container", "on": 99, "socket": "front13", "by": "-y", "spin": 2},
-    {"part": "Call Headset", "on": 163, "socket": "+y", "by": "base"},
+    {"part": "Call Headset", "on": 160, "socket": "lid", "by": "base"},
     {"part": "Tow Hitch", "on": 12, "socket": "+z", "by": "-z0"},
     {"part": "Plate Steel 0.5x1 m", "on": 70, "socket": "+x", "by": "back02", "paint": "#8a9096"},
     {"part": "Sheet Steel 0.5 m", "on": 71, "socket": "+x", "by": "back00", "paint": "#9aa0a6"},

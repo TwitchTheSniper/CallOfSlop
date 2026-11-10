@@ -198,22 +198,31 @@ public sealed partial class Vehicle
             if (top + size.Y > MathF.Min(room.FloorTop + 2.0f, room.Ceiling - 0.3f) || top - room.FloorTop < 0.3f)
                 continue;
             var c = (lo + hi) * 0.5f;
-            // (only a top that is flat where it stands: a free socket facing up at the piece's drawn top, and room on it for the prop and a centimetre all
-            // round. A socket under a lid's rim sank a Union Flag's foot into an Ammo Container's lid, their tops in one plane: British Box Truck 2)
+            // (only a top it stands on: a free socket facing up at the piece's drawn top, and room on it for the prop and a centimetre all round)
             if (MathF.Max(size.X, size.Z) > MathF.Min(MathF.Abs(hi.X - lo.X), MathF.Abs(hi.Z - lo.Z)) - 0.02f)
                 continue;
-            var flat = false;
+            Vector3? spot = null;
             var def = C.DefOf(f.Index);
-            for (var k = 0; k < def.Sockets.Length && !flat; k++)
+            var drawn = float.MinValue; // (the highest drawn box, in the rest frame: a knob on a lid stands over the lid's socket)
+            for (var k = 0; k < def.Boxes.Length; k++)
+            {
+                C.BoxOf(f.Index, k, out var bc, out var bh);
+                drawn = MathF.Max(drawn, bc.Y + bh.Y);
+            }
+            for (var k = 0; k < def.Sockets.Length; k++)
             {
                 C.SocketAt(f.Index, k, out var at, out var dir);
-                flat = !C.SocketUsed(f.Index, k) && ConstructParts.DirVector(dir).Y > 0.9f && FromRest(at).Y >= top - 0.003f;
+                var w = FromRest(at);
+                if (!C.SocketUsed(f.Index, k) && ConstructParts.DirVector(dir).Y > 0.9f && at.Y >= drawn - 0.003f && (spot is not { } sp || Vector2.Distance(new(w.X, w.Z), new(c.X, c.Z)) < Vector2.Distance(new(sp.X, sp.Z), new(c.X, c.Z))))
+                    spot = w;
             }
-            if (!flat)
+            if (spot is not { } on)
                 continue;
             try
             {
-                return Put(part, new Vector3(c.X, top + size.Y / 2, c.Z), Orient.Upright, 0.25f, f, onTop: true);
+                // (asked for right over that socket, within 12 cm: a socket lower down, a base's say, is further off than that by the piece's height; the
+                // British Box Truck 2's flag stood on an Ammo Container's foot socket, in its foot)
+                return Put(part, new Vector3(on.X, top + size.Y / 2, on.Z), Orient.Upright, 0.12f, f, onTop: true);
             }
             catch (VehicleKitException)
             {
