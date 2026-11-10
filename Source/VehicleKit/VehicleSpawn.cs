@@ -351,6 +351,7 @@ public sealed class VehicleGenJob
             return;
         _warm = true;
         var start = Stopwatch.GetTimestamp();
+        var kitMs = 0.0;
         try
         {
             if (VehicleRegistry.Find("Bandit Technical") is { } g && g.Seeds.Count > 0)
@@ -366,6 +367,7 @@ public sealed class VehicleGenJob
             }
             if (VehicleRegistry.Find("Bandit Box Truck") is { } grammar)
                 ShapeGrammar.PlanOnly(grammar, 1); // (the shape grammar's planner: a plan, nothing built)
+            kitMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
             VehicleGunsmith.WarmFits(); // (every gunsmith design and size fitted on its test stand once, here, rather than in a spawn's slices)
         }
         catch (Exception ex) // (only a warm-up: never a reason for a match not to start)
@@ -373,7 +375,7 @@ public sealed class VehicleGenJob
             Console.WriteLine($"[vehicles] warm-up failed: {ex.GetType().Name}: {ex.Message}");
         }
         WarmMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
-        Console.WriteLine($"[vehicles] warmed the kit in {WarmMs:0} ms");
+        Console.WriteLine($"[vehicles] warmed the kit in {WarmMs:0} ms ({kitMs:0} ms a Technical and a plan, {WarmMs - kitMs:0} ms after them; {VehicleGunsmith.FitCount} gunsmith test fits, {VehicleGunsmith.FitMs:0} ms in all)");
     }
 
     /// <summary>Spans by their two yields (<c>--slice-vehicle</c>): count, total and longest ms. Null (off) in the game.</summary>

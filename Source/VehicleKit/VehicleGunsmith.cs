@@ -169,6 +169,20 @@ public static class VehicleGunsmith
 
     private static readonly Dictionary<(string, int), bool> _fits = new();
 
+    /// <summary>What the test fits have cost in this process (ms) and how many ran: the warm-up logs it.</summary>
+    public static double FitMs { get; private set; }
+
+    public static int FitCount { get; private set; }
+
+    private readonly struct FitTimer(long t0) : IDisposable
+    {
+        public void Dispose()
+        {
+            FitMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            FitCount++;
+        }
+    }
+
     /// <summary>Does <paramref name="d"/> at merge <paramref name="n"/> build as one gun that fires on a test turret through the game's rules (as <c>--check-armoury</c> fits a recipe)? Once a process.</summary>
     private static bool Fits(Design d, int n)
     {
@@ -176,6 +190,8 @@ public static class VehicleGunsmith
         {
             if (_fits.TryGetValue((d.Name, n), out var ok))
                 return ok;
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            using var count = new FitTimer(t0);
             var w = Make(d, n, 4);
             string? why = null;
             try
