@@ -40,6 +40,10 @@ public static class VehicleFlightCheck
     /// <summary>The least climb in <see cref="ClimbTicks"/> (m), the most height it may gain or lose over the hover's last second (m), the most tilt in the hover (degrees), the least way forward (m).</summary>
     public const float MinClimb = 1.5f, MaxHoverDrift = 1f, MaxHoverTilt = 8f, MinForward = 1f;
 
+    /// <summary>The most tilt in a helicopter's hover (degrees): it hangs rolled against its tail rotor's push, which holds the main rotor's torque; at this game's gravity that push
+    /// is a sixth of the weight on a 3 m arm (some 9 degrees), so the drones' 8 would refuse every one.</summary>
+    public const float MaxHeliHoverTilt = 14f;
+
     /// <summary>The most tilt at rest (degrees), and at any moment of the flight.</summary>
     public const float MaxRestTilt = 8f, MaxFlightTilt = 35f;
 
@@ -108,6 +112,8 @@ public static class VehicleFlightCheck
         if (plane)
             return Done(start, RunPlane(w, q, place, c, r), gate);
         var weight = c.Mass * World.Gravity * place.Ctx.GravityScale;
+        for (var t = 0; t < SpoolTicks && !Spooled(c); t += 30)
+            Fly(w, q, place, c, 0, 30, ref r); // (a helicopter's blades wind up for some seconds before the collective bites, as a pilot waits on the ground)
         var h0 = Up(c);
         Fly(w, q, place, c, Buttons.Sprint, ClimbTicks, ref r);
         r = r with { Lift = weight > 0 ? c.Stabs[0].UpForce / weight : 0 };
@@ -123,8 +129,9 @@ public static class VehicleFlightCheck
         r = r with { HoverDrift = drift, HoverTilt = Tilt(c), HoverSpeed = along.Length() };
         if (drift > MaxHoverDrift)
             return Done(start, r with { Why = $"let go, it went {(Up(c) > mid ? "up" : "down")} {drift:0.00} m in a second (at most {MaxHoverDrift:0.#})" }, gate);
-        if (r.HoverTilt > MaxHoverTilt)
-            return Done(start, r with { Why = $"let go, it hangs {r.HoverTilt:0.0} degrees off level (at most {MaxHoverTilt:0})" }, gate);
+        var hang = Heli(c) ? MaxHeliHoverTilt : MaxHoverTilt;
+        if (r.HoverTilt > hang)
+            return Done(start, r with { Why = $"let go, it hangs {r.HoverTilt:0.0} degrees off level (at most {hang:0}; {Attitude(c)} at {r.HoverSpeed:0.0} m/s)" }, gate);
         var f0 = Vector3.Transform(-Vector3.UnitZ, Quaternion.Multiply(c.Rot, Rot24.Quat(c.Parts[c.Stabs[0].Part].Rot)));
         var fwd = Vector3.Normalize(new Vector3(f0.X, 0, f0.Z));
         var p0 = c.WorldCom;
@@ -283,6 +290,36 @@ public static class VehicleFlightCheck
     }
 
     private static float Up(Construct c) => c.WorldCom.Y;
+
+    /// <summary>For a refusal: its pitch (nose up positive) and roll (right side down positive), in degrees, by its stabilizer's frame.</summary>
+    private static string Attitude(Construct c)
+    {
+        var frame = Quaternion.Multiply(c.Rot, Rot24.Quat(c.Parts[c.Stabs[0].Part].Rot));
+        var fwd = Vector3.Transform(-Vector3.UnitZ, frame);
+        var right = Vector3.Transform(Vector3.UnitX, frame);
+        return $"pitch {MathF.Asin(Math.Clamp(fwd.Y, -1, 1)) * 180 / MathF.PI:0}, roll {-MathF.Asin(Math.Clamp(right.Y, -1, 1)) * 180 / MathF.PI:0}";
+    }
+
+    /// <summary>The most ticks the rotorcraft check waits, seated and hands off, for a helicopter's rotors to wind up before the climb.</summary>
+    public const int SpoolTicks = 600;
+
+    /// <summary>It has a helicopter rotor.</summary>
+    private static bool Heli(Construct c)
+    {
+        for (var k = 0; k < c.RotorCount; k++)
+            if (c.Rotors[k].Part < c.PartCount && c.Parts[c.Rotors[k].Part].D.Rotor is { Heli: true, Radius: > 2 })
+                return true;
+        return false;
+    }
+
+    /// <summary>Every helicopter rotor at nine tenths of its rated speed or more (drone rotors and props spool in a moment, so they don't count).</summary>
+    private static bool Spooled(Construct c)
+    {
+        for (var k = 0; k < c.RotorCount; k++)
+            if (c.Rotors[k].Part < c.PartCount && c.Parts[c.Rotors[k].Part].D.Rotor is { Heli: true } d && c.Rotors[k].Omega < 0.9f * d.RatedOmega)
+                return false;
+        return true;
+    }
 
     private static float Tilt(Construct c) => MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI;
 
