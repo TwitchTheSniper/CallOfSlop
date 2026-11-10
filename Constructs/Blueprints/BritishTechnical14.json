@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 14 body 14 kit 14 wear 14, chassis 2 axles, front under the hood, inset 2.25 m, hydraulic/hydraulic, wing 0.5, cab style bus front, language bus standard 2.75 m, flare 0.05, kick-up 0.9, brow 0.88 1 m, tail 0.87 1 m, door right, 8 facets, cab bus capsule, 6 facets, nose rounded, fitting destination board, wear age 0.72 (4 rusty, 7 dirty, 1 sooty, 1 patched, 0 rusted out), body gun bay+bed, cab cab-over, nose flat, rear bare, under tub, sides walls, layout gun bay 2 m+bed 2 m
+  // kit 5; seeds chassis 14 body 14 kit 14 wear 14, chassis 2 axles, front under the hood, inset 2.25 m, hydraulic/hydraulic, wing 0.5, cab style bus front, language bus standard 2.75 m, flare 0.05, kick-up 0.9, brow 0.88 1 m, tail 0.87 1 m, door right, 8 facets, cab bus capsule, 6 facets, nose rounded, fitting destination board, wear age 0.72 (4 rusty, 7 dirty, 1 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab cab-over, nose flat, rear bare, under tub, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Technical 14",
   "group": "Ministry of Slop",
@@ -88,8 +88,7 @@
     {"part": "Belisha Beacon", "on": 73, "socket": "front13", "by": "base"},
     {"part": "Traffic Cone", "on": 45, "socket": "front10", "by": "base"},
     {"part": "Traffic Cone", "on": 57, "socket": "front", "by": "base"},
-    {"part": "Traffic Cone", "on": 46, "socket": "front00", "by": "base"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 75, "pos": [-1.122, 0.093, 4.387], "rot": [-0.0036, 0.0047, 0.7011, 0.713]}, "paint": "#b5121b"}
+    {"part": "Traffic Cone", "on": 46, "socket": "front00", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [62, 72], [72, 64]],
   "links": [

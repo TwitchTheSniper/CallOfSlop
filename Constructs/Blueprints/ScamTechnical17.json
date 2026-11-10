@@ -81,14 +81,13 @@
     {"part": "Plate Steel 0.5x1 m", "on": 45, "socket": "+x0", "by": "back03", "paint": "#7d8a92"},
     {"part": "Plate Steel 0.5 m", "on": 50, "socket": "+x", "by": "back00", "paint": "#7d8a92"},
     {"part": "Scrap Ladder", "on": 74, "socket": "front00", "by": "back", "paint": "#8a9096"},
-    {"part": "Hull Loft (hoodf UpV2WyWjXWXWVd ~7m07us014)", "on": 26, "socket": "+y", "by": "engine", "paint": "#ff3d8b"},
-    {"part": "Slat Grille", "on": 76, "socket": "front", "by": "back", "paint": "#ff3d8b"},
+    {"part": "Hull Loft (hoodf UpV2WyWjXWXWVd ~7m07us014)", "on": 26, "socket": "+y", "by": "engine", "paint": "#21c45a"},
+    {"part": "Slat Grille", "on": 76, "socket": "front", "by": "back", "paint": "#21c45a"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 74, "pos": [-1.073, 0.564, 4.995], "rot": [0.0029, -0.0138, 0.7081, 0.7059]}, "paint": "#b0b4b8"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 75, "pos": [-1.115, 0.136, 4.87], "rot": [0.0079, -0.0161, 0.7181, 0.6957]}, "paint": "#b0b4b8"},
     {"part": "Prize Wheel", "on": 76, "socket": "top", "by": "base"},
     {"part": "Prize Wheel", "on": 48, "socket": "front", "by": "base"},
     {"part": "Loudhailer", "on": 45, "socket": "front00", "by": "base"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 73, "pos": [-1.053, 0.634, 4.244], "rot": [-0.0019, -0.0193, 0.717, 0.6968]}, "paint": "#8a9096"}
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 77, "pos": [0.132, 0.458, -0.757], "rot": [-0.6982, -0.0207, -0.0005, 0.7156]}, "paint": "#8a9096"}
   ],
   "wires": [[31, 32], [32, 26], [61, 71], [71, 63]],
   "links": [

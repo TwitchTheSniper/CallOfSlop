@@ -41,14 +41,14 @@ Bandit Technical 7: OK; 90 parts from 90 steps, 2 freeform welds, 6 links, 3 car
   centre of mass 0.95 m up, 0.02 m off the middle, 53% of the way back along the wheelbase
   coplanar faces between parts: 0 among 315 boxes
   guns: 1, seats Driver, Gunner
-  the Mounted MG follows the gunner's look within 2.2 degrees (sides, behind, up), 0.4 off the point it is laid on
+  the Mounted MG bears within 2.2 degrees of the gunner's look (sides, behind, up), 0.4 off the way it is laid
 ```
 
 and every `FAIL` line says what went wrong and, where it can, what to do. What it checks (`VehicleChecks`, defaults in `VehicleCheckOptions`; a generator's `Checks` may change them):
 it builds from the file with no refusal; a working powertrain, a seat that drives through a Driving Module and fuel piped to the engine; driven and steered wheels; the centre of mass inside the
 wheels and its stability (half the track over its height); no coplanar faces between parts, in their paint (wheels and what's on joints don't count: they don't stay at rest); part count and mass; it
 stands level and stays in one piece; full throttle for 6 s through the seat (distance, heading drift, that forward is forward); a full-right turn at speed (that right is right, and it doesn't roll);
-every gun has a load (a flame gun drinks the construct's fuel), joints and a gunner, fires on Fire in that seat and follows the gunner's look round the sides, behind and up (judged against the way the game lays it, `ConstructWeapons.AimWay`: at the point the gunner looks at, out to the gun's reach, raised for a slow round's drop, within 12 degrees; a short gun mounted off its gunner's eye, or a slow round's lead, stands off the look's own line by design, so that line is only held to 30 degrees. Before 2026-11-08 the look's line was the measure, at 12 and 20 degrees, which failed a roof Firebreather on British War Bus 6 at 25 degrees while it was laid on its point to 0.0, and every slow-round Kingpin gun at 14); every cargo piece rides in a frozen volume and is still there after the drive; six spawns' loot rolls differ, and something rolled.
+every gun has a load (a flame gun drinks the construct's fuel), joints and a gunner, fires on Fire in that seat and follows the gunner's look round the sides, behind and up (since phase 9b: its bearing, read level, within 30 degrees of the look's, and its line within 12 degrees of the way the game lays it each tick, `ConstructWeapons.LaidWay`, the very call the gunner's seat makes; a shell gun laid for range stands 40 degrees and more over a level look by design; before that, judged against `ConstructWeapons.AimWay`: at the point the gunner looks at, out to the gun's reach, raised for a slow round's drop, within 12 degrees; a short gun mounted off its gunner's eye, or a slow round's lead, stands off the look's own line by design, so that line is only held to 30 degrees. Before 2026-11-08 the look's line was the measure, at 12 and 20 degrees, which failed a roof Firebreather on British War Bus 6 at 25 degrees while it was laid on its point to 0.0, and every slow-round Kingpin gun at 14); every cargo piece rides in a frozen volume and is still there after the drive; six spawns' loot rolls differ, and something rolled.
 
 **Rooms** (`Vehicle.Rooms`, given to the check by the generator): headroom against a 1.8 m player; the real walker stands on the floor, walks towards the far wall, and goes out by the door; the seats and stores are near the aisle; the report gives the door sill's height and whether a ladder is under it. A player walking out into a door leaf swings it (`BlockPlayer`), so a shut door doesn't count as stopping anyone. Coplanar faces under 6 cm2 count as slivers, not failures: sockets land on a 1 cm grid, so a quarter plate's edge can sit in a wall's end.
 
@@ -247,8 +247,8 @@ Kit 1 made each shape with one generator: a Box Truck was always a hull on a cha
 and hardly at all in outline (Bandit Box Truck, November 2026: silhouette 0.057 of the distance against 0.39 for parts). **Kit 2** (`VehicleGrammar.cs`) assembles the
 heavy shapes from **modules** instead, so the outline varies with the seed while every part still comes from the style.
 
-**Which kit.** `VehicleKitVersion.For(generator, seed)`: `Force` (`--kit N`), else kit 1 for a shape with no recipe (the Technical, the Fuel Trailer, the Tanker Rig,
-and any new generator; the Double Decker is the grammar's since body styles phase 5) or a seed in `VehicleKitVersion.Frozen`, else the current kit: **kit 5 since 2026-11-07** (the user's decision), kit 3's
+**Which kit.** `VehicleKitVersion.For(generator, seed)`: `Force` (`--kit N`), else kit 1 for a shape with no recipe (the Fuel Trailer
+and any new generator; the Double Decker is the grammar's since body styles phase 5, the Technical and the Tanker Rig since phase 9b, BODY-STYLES.md section 20) or a seed in `VehicleKitVersion.Frozen`, else the current kit: **kit 5 since 2026-11-07** (the user's decision), kit 3's
 grammar and layers (or kit 4's role) with its rooms lofted in the style's body language ("Body styles" in BODY-STYLES.md). Every committed seed of a shape with a
 recipe was made again by kit 5 that day (continuity wasn't required: a saved world holds built constructs, not seeds), with new seeds picked from each shape's
 sweep, so `Frozen` is empty and `--gen-vehicles` reports every file identical. Kits 1 to 3 still make what they made (`--kit 2` byte for byte). A kit file says

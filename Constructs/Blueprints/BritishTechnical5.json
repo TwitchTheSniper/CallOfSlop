@@ -80,7 +80,6 @@
     {"part": "Plate Steel 0.5 m", "on": 53, "socket": "+x", "by": "back00", "paint": "#1f4a32"},
     {"part": "Scrap Ladder", "on": 71, "socket": "front01", "by": "back", "paint": "#1b1c1e"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 71, "pos": [-1.058, 0.581, 4.254], "rot": [-0.0118, 0.0107, 0.7112, 0.7028]}, "paint": "#b5121b"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 73, "pos": [-1.117, 0.113, 4.376], "rot": [-0.008, 0.0027, 0.713, 0.7011]}, "paint": "#be0f2a"},
     {"part": "Hull Loft (decoD WoWMUSVy)", "on": 32, "socket": "top", "by": "base"},
     {"part": "Furled Brolly", "on": 71, "socket": "front10", "by": "base"},
     {"part": "Garden Gnome", "on": 54, "socket": "front33", "by": "base"},

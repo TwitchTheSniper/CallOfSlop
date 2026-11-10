@@ -103,7 +103,7 @@
     {"part": "Queue Post", "on": 60, "socket": "front", "by": "base"},
     {"part": "Garden Gnome", "on": 51, "socket": "front00", "by": "base"},
     {"part": "Garden Gnome", "on": 82, "socket": "front", "by": "base"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 89, "pos": [-1.122, 0.013, 4.38], "rot": [0.0078, 0.0166, 0.7129, 0.701]}, "paint": "#c8102e"}
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 87, "pos": [1.573, 0.924, 4.002], "rot": [0.0063, 0.018, -0.7077, 0.7063]}, "paint": "#c8102e"}
   ],
   "wires": [[32, 33], [33, 27], [64, 74], [74, 66]],
   "links": [
