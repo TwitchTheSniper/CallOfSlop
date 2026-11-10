@@ -1,0 +1,97 @@
+{
+  // The ending (docs/story/STORY.md "The ending"; Karl's premise, 2026-11-10): with all five of the old records a player
+  // knows where the machine is and how to work it, and at the machine there are three things to do: switch it off (the
+  // universe comes back and the planets fall to what was folded away with them), build in a delay (a short time to go
+  // round the systems and see people, then it stops), or keep it (the five systems go on at the cost of everything
+  // else). Nobody speaks at the machine: there is no voice to argue with. DRAFT words; Karl settles them. The machine as
+  // a place and what stopping does to the world aren't built: the three ends wait for the events SwitchOff, Delay and
+  // KeepFold (Story/Verbs/Ending.json), which nothing records in play yet.
+  // An end's "world" lines say in plain words what physically happens (for the story map and whoever builds it): the
+  // game doesn't read them.
+  "format": "call-of-slop-storylets/1",
+  "about": "the ending: the five records lead to the machine, and its three choices",
+  "storylets": [
+    {
+      "id": "five-records", "title": "The five records", "bucket": "A", "priority": 5,
+      "about": "with all five old records in the Logbook, they give a place and a way to work what is there",
+      "needs": "?me Fragments >= 5",
+      "ends": [
+        { "id": "read", "world": ["The Logbook gains a lead: The Machine.", "Nothing else changes yet: the player has to go there."],
+          "after": "10s", "learn": "The Machine",
+          "say": [ "[LOGBOOK] Five records, five hands. Together they give a place, and how to work what still runs there." ],
+          "next": "the-machine" }
+      ]
+    },
+    {
+      "id": "the-machine", "title": "The machine", "bucket": "A", "priority": 5,
+      "about": "at the machine: switch it off, build in a delay, or keep it. Nobody is there to ask",
+      "needs": "?me Lead 'The Machine', not ?me Ending ?e",
+      "ends": [
+        { "id": "switched-off", "world": ["The machine winds down and its sound stops.", "The empty sky fills with stars, seen from every one of the five systems.", "What was folded away with the planets comes back too: the threat is in the sky again.", "The planets start to fall to it. Nothing the player builds can stop it."],
+          "when": { "verb": "SwitchOff", "actor": "?me" }, "then": [ "?me Ending 'Unrolled'" ],
+          "say": [ "[THE MACHINE] It stops. No alarm. The layers let go, one by one, from the middle out." ], "next": "the-sky-returns" },
+        { "id": "delayed", "world": ["A one hour countdown starts, shown to every player.", "For that hour the world runs as normal: players can fly between the systems.", "Anyone who likes the player stops them for a goodbye.", "When the hour is up the machine stops by itself, as if it had been switched off."],
+          "when": { "verb": "Delay", "actor": "?me" }, "then": [ "?me Ending 'Last Round'" ],
+          "say": [ "[THE MACHINE] The delay holds. One hour. Long enough to go round, if you don't stop long anywhere." ], "next": "last-round" },
+        { "id": "kept", "world": ["Nothing changes in the sky: it stays empty.", "The five systems carry on and the game continues.", "Word reaches the Thousand Layers, and one of them comes to find the player."],
+          "when": { "verb": "KeepFold", "actor": "?me" }, "then": [ "?me Ending 'Kept'" ],
+          "say": [ "[THE MACHINE] You leave it running. It doesn't notice. It never noticed anyone." ], "next": "kept" }
+      ]
+    },
+    {
+      "id": "last-round", "title": "The last round", "bucket": "A", "priority": 5,
+      "about": "the delay is running: an hour to go round the systems and see people before the machine stops",
+      "needs": "?me Ending 'Last Round'",
+      "ends": [
+        { "id": "time-up", "world": ["The countdown reaches zero wherever the player is standing.", "The machine stops by itself: the same as switching it off."],
+          "after": "1h", "then": [ "?me Ending 'Unrolled'" ],
+          "say": [ "[THE MACHINE] The hour is up. Wherever you are standing is where you chose to be." ], "next": "the-sky-returns" }
+      ]
+    },
+    {
+      "id": "goodbye", "title": "A goodbye", "bucket": "B", "again": "2m", "priority": 5,
+      "about": "during the last round, someone who likes the player stops to talk; the player may tell them, or not",
+      "needs": "?me Ending 'Last Round'",
+      "cast": "?p is Person, ?p Likes ?me >= 20",
+      "prefer": "?p Likes ?me",
+      "beats": [
+        { "by": "?p", "to": "?me", "say": [ "{me.first}. You look like someone counting. Counting what?", "There you are, {me.first}. Sit a minute. You never sit.", "You've got a face on, {me.first}. Go on. What is it?" ] }
+      ],
+      "ends": [
+        { "id": "told", "choice": "It ends tonight. I wanted to see you.", "then": [ "?p Likes ?me +20" ],
+          "say": [ "...Then I'm glad it's you who came to say it. Stay till the kettle boils, at least.", "Tonight. Right. Well. Thank you for coming round. Most wouldn't." ] },
+        { "id": "kept-quiet", "choice": "Nothing. Just passing.", "then": [ "?p Likes ?me +5" ],
+          "say": [ "Pass by again tomorrow, then.", "Just passing. You always are. Mind how you go." ] },
+        { "id": "walked-on", "after": "2m", "say": [ "Another time, then." ] }
+      ]
+    },
+    {
+      "id": "the-sky-returns", "title": "The sky returns", "bucket": "A", "final": true, "priority": 5,
+      "about": "the fold is undone: the stars come back, and what was folded away with the planets comes back too",
+      "needs": "?me Ending 'Unrolled'",
+      "ends": [
+        { "id": "unrolled", "world": ["Stars everywhere, then the threat.", "The planets are lost, and everyone on them.", "The story ends here."],
+          "after": "10s",
+          "say": [ "The empty sky fills. Everything that was folded away is there again. All of it. The Hunger too." ] }
+      ]
+    },
+    {
+      "id": "kept", "title": "The oven door stays shut", "bucket": "A", "final": true, "priority": 5,
+      "about": "the fold is kept: life in the five systems goes on, and one of the Thousand Layers has heard where the player stood",
+      "needs": "?me Ending 'Kept'",
+      "cast": "?c MemberOf 'The Thousand Layers', ?c is Person",
+      "prefer": "?c Likes ?me",
+      "beats": [
+        { "by": "?c", "to": "?me", "say": [ "They say you stood at the oven door, {me.first}, with both hands, and left it shut." ] },
+        { "by": "?c", "to": "?me", "after": "5s", "say": [ "I won't ask what it cost. The bread is warm. That is not nothing. Is it enough?" ] }
+      ],
+      "ends": [
+        { "id": "enough", "choice": "It's enough.", "then": [ "?me Faith +1", "?c Likes ?me +10" ],
+          "say": [ "Then eat. A clean table is a gift to those with work to do." ] },
+        { "id": "not-enough", "choice": "I don't know.", "then": [ "?me Doubt +1" ],
+          "say": [ "No. Nor do I, some mornings. Eat anyway." ] },
+        { "id": "silence", "after": "3m", "say": [ "Well. The bread will keep." ] }
+      ]
+    }
+  ]
+}

@@ -57,6 +57,7 @@ public sealed partial class Game
         _fgHere = false;
         FragmentsHeld.Clear();
         FragmentLeads.Clear();
+        StoryPathsReset(); // (the Logbook's other page: GameStoryPaths.cs)
         _fgFor = null;
     }
 

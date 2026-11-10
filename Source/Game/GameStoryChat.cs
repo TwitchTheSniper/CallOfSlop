@@ -11,6 +11,7 @@ public enum TalkAsk : byte
     News, // any news? the best news they have that this player hasn't had from them
     Trade, // a trader takes the part in the player's hands and gives one of theirs for it
     Bye, // the panel closed: they go back to what they were doing
+    Join, // join the talk another player is having with them, from anywhere (GameStoryTalkJoin.cs): hear it, and ask too
     Choose = 8, // + the choice's index (below Game.TalkChoicesMax): an answer a storylet offers (GameStoryStorylets.cs)
 }
 
@@ -57,6 +58,8 @@ public sealed partial class Game
         _storyChatAt.Clear();
         _storyTold.Clear();
         Array.Clear(_talkWith);
+        Array.Clear(_talkJoined);
+        Array.Clear(_talkInviteAt);
         Array.Clear(_faceOwner);
         _vGreet = -2;
     }
@@ -83,8 +86,16 @@ public sealed partial class Game
             return ask == TalkAsk.Bye ? null : "nobody to talk to";
         StoryChatIds(s);
         StoryFaceClaim(bodyPlayer, a.Entity);
+        if (ask == TalkAsk.Join)
+            return StoryTalkJoin(p, bodyPlayer);
+        var joined = _talkJoined[p.Id] == bodyPlayer + 1 && ask != TalkAsk.Trade; // (listening in from afar: no reach to keep, and the talk stays the first player's)
         if (ask == TalkAsk.Bye)
         {
+            if (_talkJoined[p.Id] == bodyPlayer + 1)
+            {
+                _talkJoined[p.Id] = 0;
+                return null;
+            }
             if (_talkWith[bodyPlayer] == p.Id + 1)
             {
                 _talkWith[bodyPlayer] = 0;
@@ -93,15 +104,20 @@ public sealed partial class Game
             }
             return null;
         }
-        if (Flat2(body.Position - p.Position) > (StoryTalkReach + 1) * (StoryTalkReach + 1))
+        if (!joined && Flat2(body.Position - p.Position) > (StoryTalkReach + 1) * (StoryTalkReach + 1))
             return "too far away to talk";
         var who = StoryWho(p);
         if (who < 0)
             return "they don't know who you are yet";
-        if (_talkWith[bodyPlayer] is var other and > 0 && other != p.Id + 1 && Players.TryGetValue((byte)(other - 1), out var busy) && busy.Alive
+        if (!joined && _talkWith[bodyPlayer] is var other and > 0 && other != p.Id + 1 && Players.TryGetValue((byte)(other - 1), out var busy) && busy.Alive
             && SbClock < _talkUntil[bodyPlayer] && Flat2(busy.Position - body.Position) <= StoryTalkLeave * StoryTalkLeave)
             return $"{body.Name} is talking to {busy.Name}";
-        _talkWith[bodyPlayer] = (byte)(p.Id + 1);
+        if (!joined)
+        {
+            if (_talkWith[bodyPlayer] != p.Id + 1 || ask == TalkAsk.Open)
+                StoryTalkInvite(p, body); // (the other players may join: GameStoryTalkJoin.cs)
+            _talkWith[bodyPlayer] = (byte)(p.Id + 1);
+        }
         _talkUntil[bodyPlayer] = SbClock + StoryTalkHold;
         StoryTalkAsks++;
         switch (ask)

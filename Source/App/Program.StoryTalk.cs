@@ -14,6 +14,25 @@ public static partial class Program
     private static byte _talkTo = 255; // the person's body (its player id), 255: no panel
     private static byte _talkLookFor = 255;
     private static string _talkLookText = "";
+    private static bool _talkRemote; // the panel is another player's talk, joined from afar (no reach to keep)
+    private static int _inviteSeen, _joinOverSeen;
+    private static double _inviteUntil;
+    private static string _inviteText = "", _talkWithText = "";
+    public const double TalkInviteShown = 12; // s the notice stays
+
+    /// <summary>The join key, while another player's talk is on offer: opens the same panel from wherever the player is. True when it used the key.</summary>
+    private static bool TalkJoinKey(Brutal.GlfwApi.GlfwKey key)
+    {
+        if (_inviteUntil <= 0 || _talkTo != 255 || key == Brutal.GlfwApi.GlfwKey.Unknown || !_settings.HasBind(GameAction.JoinTalk, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput
+            || _session is not { SandboxOn: true } g || MenusOpen || !g.Players.TryGetValue(g.TalkInviteBody, out var them) || !them.Alive || them.Team != Game.SbPeopleTeam)
+            return false;
+        _inviteUntil = 0;
+        (_talkTo, _talkRemote) = (them.Id, true);
+        _talkWithText = g.Players.TryGetValue(g.TalkInviteFrom, out var with) ? $"With {with.Name}, from afar." : "From afar.";
+        g.StoryTalkAsk(them.Id, TalkAsk.Join);
+        SetMouseCaptured(false);
+        return true;
+    }
 
     /// <summary>One frame of the Sandbox input: a person under the crosshair. True when the use key's press went to them.</summary>
     private static bool TalkFrame(Game g, Player me, Vector3 eye, Vector3 dir, bool aimed, float aimedAt)
@@ -76,6 +95,7 @@ public static partial class Program
             return;
         _game.StoryTalkAsk(_talkTo, TalkAsk.Bye);
         _talkTo = 255;
+        _talkRemote = false;
         if (!Ui.PauseOpen && !MenusOpen)
             SetMouseCaptured(true);
         _swallowClick = true;
@@ -84,16 +104,37 @@ public static partial class Program
     /// <summary>The frame's ImGui pass: the panel while its person is still there, alive and near.</summary>
     private static void DrawTalkInMatch(double now)
     {
+        var g = _game;
+        // Another player began a talk: a notice for a while, to join or ignore.
+        if (g.TalkInviteSerial != _inviteSeen)
+        {
+            _inviteSeen = g.TalkInviteSerial;
+            _inviteUntil = 0;
+            if (_session != null && g.Players.TryGetValue(g.TalkInviteFrom, out var from) && g.Players.TryGetValue(g.TalkInviteBody, out var to))
+            {
+                _inviteUntil = now + TalkInviteShown;
+                _inviteText = $"{from.Name} is talking to {to.Name}.";
+            }
+        }
+        if (_inviteUntil > 0 && (now >= _inviteUntil || _session == null || !g.SandboxOn))
+            _inviteUntil = 0;
+        if (_inviteUntil > 0 && _talkTo == 255 && !MenusOpen)
+            Ui.DrawTalkInvite(_inviteText, _settings.Bind(GameAction.JoinTalk));
+        if (g.TalkJoinOverSerial != _joinOverSeen)
+        {
+            _joinOverSeen = g.TalkJoinOverSerial;
+            if (_talkRemote)
+                TalkClose(); // (the talk they joined is over)
+        }
         if (_talkTo == 255)
             return;
-        var g = _game;
         if (_session == null || !g.SandboxOn || g.Local is not { Alive: true } me || !g.Players.TryGetValue(_talkTo, out var them) || !them.Alive
-            || them.Team != Game.SbPeopleTeam || Vector3.DistanceSquared(me.Position, them.Position) > Game.StoryTalkLeave * Game.StoryTalkLeave)
+            || them.Team != Game.SbPeopleTeam || !_talkRemote && Vector3.DistanceSquared(me.Position, them.Position) > Game.StoryTalkLeave * Game.StoryTalkLeave)
         {
             TalkClose();
             return;
         }
-        if (Ui.DrawStoryTalk(g, them, g.SandboxHands.Hand(g.LocalId).Held, now) is { } ask)
+        if (Ui.DrawStoryTalk(g, them, g.SandboxHands.Hand(g.LocalId).Held, now, _talkRemote ? _talkWithText : null) is { } ask)
         {
             if (ask == TalkAsk.Bye)
                 TalkClose();

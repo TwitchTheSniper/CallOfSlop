@@ -1,0 +1,12 @@
+{
+  // What a player does at the machine (docs/story/STORY.md "The ending"). The machine itself isn't built yet, so nothing
+  // records these in play: the F4 Storylets tab's End buttons stand in for it.
+  "verbs": [
+    { "name": "SwitchOff", "players": true, "sentence": "{actor} switched the machine off",
+      "about": "a player switched the fold's machine off: the universe comes back, and the threat with it" },
+    { "name": "Delay", "players": true, "sentence": "{actor} set the machine to stop after a last round",
+      "about": "a player built a delay into the machine: a short time to go round the systems, then it stops" },
+    { "name": "KeepFold", "players": true, "sentence": "{actor} left the machine running",
+      "about": "a player chose to keep the fold: the five systems go on, the rest of the universe stays folded away" }
+  ]
+}

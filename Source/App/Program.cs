@@ -1282,6 +1282,8 @@ public static unsafe partial class Program
             return;
         if (LogbookKey(key)) // F1 (rebindable) or Esc: the Logbook (Program.Logbook.cs)
             return;
+        if (TalkJoinKey(key)) // Backspace (rebindable): join another player's talk while its notice shows (Program.StoryTalk.cs)
+            return;
         if (PerfKey(key)) // F9 (rebindable) cycles the perf window, overlay, off; Esc closes the window (Program.Perf.cs)
             return;
         if (WeaponTweaksKey(key)) // F7 (rebindable) or Esc: the weapon tweak window (Program.WeaponTweaks.cs)
