@@ -57,6 +57,7 @@ public static class VehicleRegistry
     public static readonly Func<FactionStyle, IVehicleGenerator>[] Extras =
     [
         s => new Generators.DoubleDecker(s),
+        s => new Generators.Car(s),
         s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: no style ships them yet)
     ];
 

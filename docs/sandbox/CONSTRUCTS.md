@@ -872,7 +872,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | Field | Meaning |
 | --- | --- |
 | `name` | Unique, 1-32 ASCII characters. Blueprints, maps and the rack name parts by it. |
-| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fluidtank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)); `generator`, `thruster` ([Big drive](#big-drive)). |
+| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fluidtank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)); `generator`, `thruster` ([Big drive](#big-drive)); `leg`, a walker leg (docs/sandbox/GIANTS.md). |
 | `tool` | Optional, `wrench` or `welder`: only a hint that the part is structural (`welder`: physics-only; `wrench`, or none: an item unless it is heavy or bulky). The attach tool fits every part whichever it says, and the words stay so part files need no change. Old files load unchanged. |
 | `attachSeconds` | Time to fit (default 1.5 an item, 2.5 a structural part); removing takes 60% of it. |
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |

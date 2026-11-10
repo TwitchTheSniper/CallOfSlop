@@ -221,6 +221,8 @@ public static partial class ConstructPhysics
                 }
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
                     SpringFeet(c, query, _invI[i], dt);
+                if (c.LegCount > 0 && c.GrabbedBy == 255)
+                    Walk(c, query, dt); // (the gait brain: ConstructWalk.cs)
             }
             else if (EngineLive(c))
                 Powertrain(c, false, dt); // (board item cs03: an anchored base's engine runs its wheels and its power take-off too)

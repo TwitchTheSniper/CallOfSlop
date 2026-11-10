@@ -487,7 +487,7 @@ public static class VehicleIdentity
         if (b.V.Rooms.Count == 0 && b.V.CabShape == null)
             return double.NaN;
         Geometry(b);
-        var rule = BodyStyleRule.Of(st);
+        var rule = b.V.Style.Name == st.Name ? b.V.Rule : BodyStyleRule.Of(st); // (phase 8a: its own style as its archetype draws it)
         var langs = FrontProfile.OfStyle(rule); // (phase 2: its languages as the style draws them, overhang and taper included)
         var sum = 0.0;
         var n = 0;

@@ -1133,6 +1133,162 @@ clean.
 wheel; props on shelves; wired stations (a radio, a powered workbench, lamps on a switch: a Lamp logic part already lights when on); the `all` run's Bandit Box
 Truck 1 time; a network round trip of a glazed bay; nothing was tried in the game window with a kit vehicle near (the lights' look is unseen).
 
+## 15. Phase 7c, as built (2026-11-10): finishing interiors
+
+The brief: phase 7b's left-overs, in order: upper storeys', side pods', cages' and balconies' insides; closed end walls' lining; a dash in capsule and merged cabs and
+a steering wheel in every driver cab; props on shelves and racks rather than only the floor; then, if there was time, wired stations. The first four were done; wired
+stations were not.
+
+Code: `HullLoft.Lining.cs` (`FollowEnd`, `EndBands`, the inset ends; open tops), `HullLoft.cs` (`ShapeOf`: an open top's lining word), `HullLoft.Cabs.cs` (`Dash`,
+`SteeringWheel`; a capsule's and a merged cab's key take the lining word), `VehicleBodyLanguage.cs` (`UpperNames` lines the storey), `Vehicle.Spaces.cs`
+(`FurnishUpper`, the storey's panes), `Vehicle.Rooms.cs` (`OnFurniture`), `VehicleGrammar.cs`, `VehicleChecks.cs` (the balcony walk). Protocol 223: an open top's key
+with a lining word, and the same keys now making end linings, consoles and wheels, so a 222 peer makes other parts.
+
+### What each space got
+
+| Space | lining | furnishing | lamps | windows |
+| --- | --- | --- | --- | --- |
+| Upper saloon | the room's (kind, inset or following, as the vehicle rolled), its closed ends too | `Furnish` down its side walls (gear, layout, props, a chest if nothing else holds loot), the hatch and a metre of landing past it kept clear, and the centreline (0.3 m either side, padded 0.2 m: a player's width and 10 cm) the whole way | the lining's, where the roof is 2 m up (a saloon has about 2.0 to 2.1 m of headroom, so a low one has none) | the room's kind, glazed (`roomglass`) |
+| Open deck | its bulwark's rows followed (an open top is never inset; no roof row, no ceiling, no lamp), its ends' bulwark too | as a saloon | none | none |
+| Caged room | none (bars) | as before (it was furnished already) | none: nothing to hang one from | none |
+| Side pod | none: a pod is a closed locker standing off the skin, with no way in, so nothing inside it is seen | none | none | none |
+| Balcony | none (a deck and a rail outside) | none: the walk out onto it and its rail are what the check holds, and a prop there would stand in a ladder's way | none | none |
+
+### Closed ends
+
+A front cap (`f`) and a back cap (`r`, not a back doorway's) are lined unless the bay is a door bay (its doorway's frame) or the lining is a bare hull (Bandit's
+ribs and beads are the look). **Following**: the section offset inward by `EndIn` (the skin's half, the gap and 3 cm, so the end stands inside the walls' lining, a
+padded one too), mitred at each point (a pitched roof's peak by its mirror), up to the bulwark's top on an open deck. **Inset**: upright between the walls' inner
+faces less 6 mm, from 3 cm up to 6 mm under the walls' top. Both are bands across the end, 0.5 m tall (planks 0.15 m), split where the outline turns so each
+band's edges are on one row's line, 6 mm seams, every other band 3 mm further in; the first stands 6 mm in from the cap's inner face. Colours as the walls' (below
+and above the rail height, moquette padded).
+
+### Cabs
+
+Every lined cab (the key's `i` word: enclosed, crew, armoured, caged, and now capsule and merged) draws a dash and a steering wheel. A capsule's and a merged cab's
+front is over the engine, 1.5 m ahead of the seats, so theirs is a **console** standing where a conventional cab's front is (0.6 m ahead of the driver's seat,
+the cab frame's z -0.6), from 0.82 m up to 3 cm under the belt. The **steering wheel** stands in front of the driver's seat (x -0.5 m, the cab frame's z 0:
+`Vehicle.Driver`), its centre 2 cm under the belt and 7 cm behind the dash, its top leaning 25 degrees forward: a rim of eight pieces (each running 3 degrees into
+the next, alternately 3 mm thinner, no shared planes), two spokes, a chrome boss and a column down into the dash. Its top is about 1.15 m up, 15 cm under the
+seated eye: the driver's view rays are as they were. Drawn only. A merged cab whose key has no room for the word stays bare.
+
+### Props on furniture
+
+A faction prop that finds no floor on the walls (Bandit's 0.9 a metre fills the walls first) is stood on a furniture piece's free top socket instead
+(`OnFurniture`): the room's furniture in a shuffled order, not seats, its top under 2 m and 0.3 m under the ceiling, the piece 0.3 m tall and more, a centimetre
+wider than the prop all round, with a free socket facing up level with its highest drawn box; the prop is asked for right over that socket within 12 cm. Containers
+among them roll loot as on the floor.
+
+### Fixed on the way
+
+- **Bandit Box Truck 3's balcony** (a full-check failure since the turret-seat merge): the walk out from the doorway toward the deck's middle ran 90 ticks, so a
+  player who reached the deck walked on along the rail and off its open end (its ladder's way) and was judged from the ground. The walk now stops once the player
+  stands on the deck 0.3 m past the door (`BuildingWalk`'s new `until`). The vehicle was right; the check was wrong.
+- **Upper storeys furnished**: the first try put a shelf and a bunk across the storey's middle, where the check stands a player (British War Bus 2 and 3); the
+  centreline is kept.
+- **A prop in a knob**: the first try stood a Union Flag on an Ammo Container's top socket, which is under the knob on its lid, so the two boxes' tops were one
+  plane (British Box Truck 2, the z-fighting check). A top counts only where its socket is level with the piece's highest drawn box (a part's bounds leave the
+  knob out).
+- **A merged cab with a lining word** was refused by the key's reader (7a's rule: no dash in a capsule); the reader takes it now.
+
+### Measured (2-core box shared with other agents: times are noisy; before is main at 861c3bde5)
+
+`--body-report all --seeds 6` and the full check `--sweep-vehicle "STYLE SHAPE" --seeds 6` over six styles and five shapes.
+
+| | before | after |
+| --- | --- | --- |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 (Bandit Box Truck 3's balcony walk, Bandit Scrap Tanker 3's barrel, Highland Scrap Tanker 3's Pipe Box) | 178 of 180 (the two tankers; the balcony walk fixed); upper storeys' walk, hole rays and stair climb pass with their furniture; turret seats on their guns as before |
+| coplanar pairs inside lofted parts | 0 | 0 (end linings, storeys' and bulwarks' linings, consoles and wheels) |
+| room exteriors, cabs and hoods, whole body (between over within) | 1.46, 1.50, 1.03 | 1.46, 1.50, 1.03 (all inside the outline) |
+| lamps a vehicle with rooms (Bandit, IT, Highland, Scam, British, Militia) | 1.1, 1.8, 1.5, 1.6, 2.2, 1.0 | 1.1, 1.8, 1.5, 1.7, 2.7, 1.0 (lined saloons) |
+| parts a vehicle, mean a style (`--body-report`) | 130, 135, 142, 141, 139, 132 | 131, 135, 142, 141, 139, 132 (props on tops; storeys' furniture) |
+| parts, mean a shape in the full check | - | Box Truck 131 to 153, War Bus 161 to 190, Flatbed Fort 158 to 171, Gun Wagon 108 to 137, Scrap Tanker 68 to 87; 135.6 over all (136.2 before) |
+| generation, mean a sweep; worst | 1629 ms; 24.2 s (Bandit Box Truck 1, `--body-report all`) | 1394 ms; 36.5 s (the same vehicle, in the `all` run only, as in 7b: unexplained) |
+
+**Committed seeds**: unchanged; 49 files written again (lined ends and storeys, consoles and wheels, props on tops); `--gen-vehicles` reports all 123 identical, and
+with `--order reverse`; `--check-construct-parts` clean.
+
+**Not done** (7d): wired stations (a radio, a powered workbench, lamps on a switch: a Lamp logic part already lights when on); Highland Technical 10's stability
+(0.69 under 0.72; not looked at); lamps in low saloons (under 2 m, the rule keeps them out of a player's way) and in cages; anything in pods (they would need a way
+in) or on balconies; a network round trip of a lined storey between two peers; nothing was tried in the game window with a kit vehicle near.
+
+## 16. Phase 8a, as built (2026-11-10): the archetype library, part 1
+
+The brief (the user, 2026-11-07): "Don't be afraid to look into more body styling, like American muscle cars from different eras, supercars, European car lines,
+European trucks... different widths, lengths, overall scales." Real vehicles are inspiration for proportions and silhouettes only: no maker's or game's design,
+name or badge. Code: `Source/VehicleKit/VehicleArchetypes.cs` (the languages, the archetypes, `Vehicle.Rule`), `Generators/Car.cs` (the new shape, made by the
+grammar's `"Car"` recipe), `BodyStyleRule.CabBackMin/Max` and `CabLanguage`, three new rooflines (`fastback`, `wedge`, `level`), `--archetype NAME` and `--no-archetypes`.
+
+### How it works
+
+An archetype (`BodyArchetype`) is a row: a name, a family, the shapes it may take (`Shapes`), the factions that build it and how often (`Factions`), and what it
+lays over the faction's own rule (`Over`: languages, cab kinds, noses, cab height, belt, rake, cab half width, hood reach, width and crown, the cab's fastback,
+brows, tails, scale classes, ride bands, the cab's own language). A kit-5 vehicle of a shape rolls one on its own fork ("archetype"; `BodyArchetype.Share`:
+always for a Car, 0.4 for a Box Truck, 0.3 for a War Bus), so nothing else of a seed moves; the vehicle is then made by `Vehicle.Rule`, the style's rule with the
+archetype over it. The faction keeps its paint, trim, fittings, lining, props, guns and marks: the archetype changes the silhouette, the faction the dressing.
+The identity's section term reads a vehicle against its own rule (its archetype's languages count as its style's).
+
+A cab's **fastback** (`CabBackMin/Max`, rolled into `CabLook.Back`): the cab's back section comes down toward the window band's top (6 cm over it), so the roof
+runs down to the tail. Enclosed and caged cabs only.
+
+### The new shape: the Car
+
+`Generators/Car.cs`, an extra shape (`VehicleRegistry.Extras`) that Bandit, IT, Scam, Highland and British ship (`Extra`). Recipe `"Car"`: a lofted cab in the
+archetype's language, the hood, a 2.5 to 3 m gun bed behind with a turret seat facing its gun (the grammar's gun bed and armoury), a bare tail or a hitch, low
+gear (swing, wishbone, leaf, hydraulic). About 100 parts and 1.5 t (a Box Truck is 130 to 190 parts, 2.5 to 3.3 t).
+
+### The archetypes and who builds them
+
+| Archetype | Family | Language | Shape | Silhouette | Factions (weight) |
+| --- | --- | --- | --- | --- | --- |
+| early fastback | muscle | fastback (soft hip, long tumblehome) | Car | long flat bonnet (+0.15 m), low wide cab (1.56-1.62 m), fastback 0.6-0.85, grille | Highland 2, Bandit 0.5 |
+| coke bottle | muscle | coke (hip flare, pinched belt) | Car | semi-fastback 0.3-0.55, +0.1 m bonnet, grille or flat, a caged cab now and then | Bandit 2 |
+| seventies wedge | muscle | wedge (slab sides, belt crease, flat roof), faceted | Car | formal roof (fastback 0.1-0.25), widest cab, flat nose | Bandit 1.5, Scam 0.5 |
+| supercar | supercar | superwedge (very wide sills, strong tumblehome) | Car | cab-forward capsule (rake 0.75-0.8) or a low cab, wedge nose, lowest ride | IT 2 |
+| compact hatch | european car | hatch (tall glasshouse) | Car | short bonnet (-0.08 m), tall cab 1.72-1.8 m, upright tail | British 2, Scam 1 |
+| estate | european car | estate (square shoulders, level roof) | Car | tall cab, flat or grille nose, upright back | Scam 1.5, British 1 |
+| minibus | european van | minibus (tall glazed band, domed roof) | War Bus | merged cab or capsule, standard class, no upper storey | Scam 1.5 |
+| rigid box | european truck | box body (flat panels, crisp corners), cab-over cab | Box Truck | flat-fronted cab-over, one-height box (`level` line), rear doors likelier | IT 1.5, Scam 0.5 |
+| curtain-sider | european truck | curtain (bowed between rails), cab-over cab | Box Truck | as the rigid box, the curtain bowed | British 1.5, Highland 0.4 |
+
+Separation by design: Bandit's cars are the old muscle (coke-bottle, wedge), Highland's the long-bonnet fastback, IT's the supercar, British and Scam the European
+lines; IT's trucks are rigid boxes, British's curtain-siders, Scam's vans minibuses. Militia builds none (its armour stays its own).
+
+### Measured (2-core box shared with another run: times noisy)
+
+`--body-report all --seeds 6`, before with `--no-archetypes` (the same shapes, the Car on its style's own body), after with the archetypes (an IT minibus row
+was in this run; removed after, see below).
+
+| | before | after |
+| --- | --- | --- |
+| room exteriors ratio (between over within) | 1.46 | 1.48 (between 0.182 to 0.185) |
+| cabs ratio | 1.52 | 1.27 (within 0.054 to 0.063, between 0.083 to 0.080) |
+| whole body ratio | 1.02 | 1.02 |
+| room front profile, mean pair within a style | 0.035 to 0.071 | 0.035 to 0.060 (Scam 0.048 to 0.057, Highland 0.051 to 0.055, IT 0.071 to 0.060) |
+| generation mean a style | 316 to 1026 ms | 315 to 645 ms |
+
+What the numbers say: the archetypes widen what a style's cabs look like (Highland's within-style cab distance 0.020 to 0.047: low fastback cars beside its tall
+truck cabs), which the cab ratio counts against it; between styles the cabs hold (0.083 to 0.080). The whole-body ratio doesn't rise: the measure compares outlines
+each in its own box, and the Car's outline (cab, hood, open bed) is close to a technical's in every style. Part 2 has to separate the cars' outlines: a car
+body that is not a cab plus a bed (below).
+
+Full check: `--sweep-vehicle "STYLE Car" --seeds 8`: Bandit 7, IT 6, Scam 6, Highland 7, British 5 of 8 (the rest: a drum's whole plate on the gun bed with
+nowhere beside it, and coplanar deck plates on the bed); forced archetypes `--sweep-vehicle --seeds 6 --archetype`: rigid box on IT Box Truck 6 of 6,
+curtain-sider on British Box Truck 6 of 6, minibus on Scam War Bus 6 of 6. IT War Bus 1 with a minibus failed ("no wall took a container"), so IT builds no minibus.
+
+**Committed seeds**: Car Bandit 1 7 5, IT 1 2 8, Scam 1 4 3, Highland 1 2 5, British 2 4 3 (15 new files, all OK through the full check); four committed Box Trucks
+took an archetype and were made again (Highland 3 and 7, Scam 1, British 1; all OK). `--gen-vehicles` reports every file identical, also with `--order reverse`;
+`--check-construct-parts` clean. No part key or wire change (the cab's back section was already in its key): protocol stays 223.
+
+### Left for part 2
+
+- A car body that is not a cab plus an open bed: a lofted boot or tail deck (a hood turned round on the bed), a fastback over the whole cabin, a two-seat cabin
+  with a short wheelbase, a compact chassis (the Car rides the heavy chassis today); then the whole-body ratio can rise.
+- A European cab-over tractor with a semi-trailer (the Tanker Rig's hitch, a box or curtain trailer), and long and short rigid wheelbases.
+- Coaches on the War Bus, a pickup line, American trucks (long-nose conventional tractors) for Bandit and Highland.
+- The cab ratio: the cab references (`CabLook.Refs`) read only the style's own languages; an archetype's cab language should join them.
+- The gun bed's drum and deck-plate refusals on a short bed (a third of the Car sweep's failures).
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1166,5 +1322,7 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
 --sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
 --body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
---body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows)
+--body-report all --seeds 6 --no-archetypes  # phase 8a: the styles' own bodies, without archetypes
+--sweep-vehicle "IT Box Truck" --seeds 6 --archetype "rigid box"   # phase 8a: one archetype on every seed that can take it
+--body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows, phase 7c's ends, storeys, consoles and wheels)
 ```

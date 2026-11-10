@@ -1,0 +1,91 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Titan Mech Leg",
+  "description": "A mech walker leg: hip, segments, knees, foot and actuators in one part. The gait brain walks it.",
+  "group": "Capital",
+  "section": "Legs",
+  "role": "leg",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "leg": {
+    "type": "mech",
+    "tier": "titan",
+    "segments": [
+      20.16,
+      20.16,
+      7.68
+    ],
+    "width": 4.5,
+    "foot": 4.05,
+    "hip": [
+      0,
+      0,
+      0
+    ],
+    "load": 12000000,
+    "stepTime": 2.4,
+    "stepHeight": 0.15,
+    "stand": 0.62,
+    "spread": 0.3,
+    "power": {
+      "hydraulic": 1.0,
+      "electric": 0.8,
+      "shaft": 1.2
+    },
+    "jointColor": "#2a2d31"
+  },
+  "mass": 188069.0,
+  "health": 99766,
+  "armour": 40,
+  "material": "steel",
+  "color": "#5d6670",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        8.256,
+        -4.4,
+        -4.4
+      ],
+      "max": [
+        10.4,
+        4.4,
+        4.4
+      ],
+      "color": "#2a2d31",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

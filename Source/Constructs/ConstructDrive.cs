@@ -150,6 +150,7 @@ public sealed partial class Construct
             Caps.Hit("wheel and track rays a construct", MaxWheels); // (a raycast each a tick: past this a wheel is a plain part)
         ConstructTracks.BuildStations(this, keep, old);
         BuildSprings();
+        BuildLegs(); // (walker legs: ConstructWalk.cs)
         BuildHubMotors();
     }
 

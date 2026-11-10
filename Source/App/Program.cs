@@ -158,7 +158,10 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--cab", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } cabKind)
             VehicleKit.CabLook.Force = cabKind; // body styles phase 3: every lofted cab of one kind where the plan allows it (enclosed, crew, caged, armoured, cab-over, merged)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
-            VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
+            VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.Concat(VehicleKit.BodyArchetype.Languages).FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
+        VehicleKit.BodyArchetype.None = args.Any(a => a.Equals("--no-archetypes", StringComparison.OrdinalIgnoreCase)); // body styles phase 8a: the styles' own bodies, without archetypes (to measure against)
+        if (args.SkipWhile(a => !a.Equals("--archetype", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } archetype)
+            VehicleKit.BodyArchetype.Force = VehicleKit.BodyArchetype.Find(archetype) ?? throw new ArgumentException($"--archetype {archetype}: one of {string.Join(", ", VehicleKit.BodyArchetype.All.Select(a => a.Name))}"); // body styles phase 8a: every vehicle of a shape it takes in that archetype
         if (args.SkipWhile(a => !a.Equals("--roofline", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } roofline)
             VehicleKit.BodyLook.ForceLine = VehicleKit.Roofline.All.FirstOrDefault(l => l.Name.Equals(roofline, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--roofline {roofline}: one of {string.Join(", ", VehicleKit.Roofline.All.Select(l => l.Name))}"); // body styles phase 2: every body with one line
         if (args.SkipWhile(a => !a.Equals("--scale", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } scale)
@@ -184,6 +187,10 @@ public static unsafe partial class Program
         }
         if (args.Any(a => a.Equals("--no-armoury", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleArmoury.On = false; // the styles' own guns only, to measure what the vehicle armoury changes (VehicleArmoury.cs)
+        if (args.Any(a => a.Equals("--no-gunsmith", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleGunsmith.On = false; // the style's guns only, without the gunsmith's big guns made for each vehicle (VehicleGunsmith.cs)
+        if (args.Any(a => a.Equals("--gunsmith-report", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleGunsmith.Report(); // what the gunsmith offers vehicles of a range of masses at each tier
         if (args.Any(a => a.Equals("--check-armoury", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleArmouryCli.CheckArmoury(args); // every armoury recipe fitted on a test turret, round-tripped through a blueprint, with its numbers
         if (args.Any(a => a.Equals("--armoury-report", StringComparison.OrdinalIgnoreCase)))

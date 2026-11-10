@@ -22,7 +22,7 @@ public sealed partial class Vehicle
     {
         var lk = Look!;
         var up = lk.Upper!;
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         var plan = room.Plan.ToArray();
         var lengths = lk.Lengths(plan);
         var names = lk.UpperNames(plan, rule.UpperNarrow);
@@ -65,6 +65,7 @@ public sealed partial class Vehicle
             }
             if (bay == null)
                 throw new VehicleKitException($"the {room.Tag}'s upper storey over bay {k}: {why}");
+            Glaze(bay, name); // (phase 7c: a lined saloon's windows)
             bays.Add(bay);
             walls.Add(bay);
             VehicleGenJob.Yield();
@@ -95,6 +96,21 @@ public sealed partial class Vehicle
         Modules.Add($"space upper {up.Kind}");
     }
 
+    /// <summary>
+    /// Phase 7c (docs/vehiclekit/BODY-STYLES.md, section 15): the upper storey's furnishing, a saloon's or an open deck's, by <see cref="Furnish"/>'s rules down its
+    /// side walls, the hatch and a metre of landing past it kept clear (the way up the stair onto the floor), and its centreline.
+    /// </summary>
+    public void FurnishUpper(Room room)
+    {
+        if (room.Upper is not { } up || Look?.Upper is not { } plan || plan.Stair is not { } st || BodyLook.NoInteriors)
+            return;
+        var foot = room.R.Z0 + plan.StairZ;
+        var top = foot + plan.StairWay * (st.Run + 1.0f);
+        up.Keep.Add(new Rect(plan.StairX - 0.55f, plan.StairX + 0.55f, MathF.Min(foot, top) - 0.2f, MathF.Max(foot, top) + 0.2f));
+        up.Keep.Add(new Rect(-0.3f, 0.3f, up.R.Z0, up.R.Z1)); // (a narrow storey: the centreline kept, a player's width and 10 cm, the whole way along: Kept pads a footprint by 0.2 m)
+        Furnish(up, clearMiddle: true);
+    }
+
     /// <summary>Paints an upper storey's bays as the bays they stand on (one body, two floors), after the room's runs.</summary>
     private void PaintUpper(Room room)
     {
@@ -111,7 +127,7 @@ public sealed partial class Vehicle
     /// </summary>
     private void FactionPods()
     {
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         if (NoTrim || BodyLook.NoSpaces || BodyLook.NoPods || Look == null || Rooms.Count == 0 || rule.Pods.Length == 0)
             return;
         var d = Dice.Fork("side pods");

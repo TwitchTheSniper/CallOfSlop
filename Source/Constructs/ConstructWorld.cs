@@ -1048,6 +1048,19 @@ public sealed partial class ConstructWorld
             var c = near[bi];
             if (Vector3.Distance(c.WorldCom, centre) > radius + c.Radius)
                 continue;
+            if (_blastDepth == 0)
+            {
+                _blastDepth++;
+                try
+                {
+                    hits += BlastBody(c, centre, radius, maxDamage);
+                }
+                finally
+                {
+                    _blastDepth--;
+                }
+                continue;
+            }
             for (var guard = 0; guard < Construct.MaxParts; guard++)
             {
                 // The next part not yet hit by this blast, nearest first (parts are removed as they break).
@@ -1104,6 +1117,74 @@ public sealed partial class ConstructWorld
     }
 
     private readonly HashSet<ulong> _blasted = new(256);
+
+    // One body's parts in a blast's reach, nearest first (BlastBody): gathered once, so a big blast over a big body costs a sort, not a scan of the body per part it hits.
+    private float[] _blastDist = new float[256];
+    private int[] _blastIdent = new int[256];
+    private int[] _blastIndex = new int[256];
+    private int _blastDepth;
+
+    /// <summary>
+    /// A blast on one body: every part within <paramref name="radius"/> (to its nearest point) takes <paramref name="maxDamage"/> x k squared, k = 1 - distance / radius,
+    /// nearest first, each once. The parts in reach are found and sorted once; a part's index is checked by its identity before it is hit (parts are removed as they break,
+    /// and a body may split) and looked up again only when it moved. A part split off to another body is that body's to take (the walk reaches the piece next).
+    /// </summary>
+    private int BlastBody(Construct c, Vector3 centre, float radius, float maxDamage)
+    {
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var dist = PartDistance(c, i, centre);
+            if (dist >= radius)
+                continue;
+            if (n == _blastDist.Length)
+            {
+                Array.Resize(ref _blastDist, n * 2); // (grows to the biggest body a blast has reached, then stays)
+                Array.Resize(ref _blastIdent, n * 2);
+                Array.Resize(ref _blastIndex, n * 2);
+            }
+            _blastDist[n] = dist;
+            _blastIdent[n] = Ident(c, i);
+            _blastIndex[n] = i;
+            n++;
+        }
+        if (n == 0)
+            return 0;
+        Array.Sort(_blastDist, _blastIndex, 0, n);
+        for (var k = 0; k < n; k++)
+            _blastIdent[k] = Ident(c, _blastIndex[k]); // (the identities in the sorted order: the index array was sorted with the distances)
+        var hits = 0;
+        for (var k = 0; k < n; k++)
+        {
+            if (!IsLive(c))
+                break;
+            var i = _blastIndex[k];
+            if (i >= c.PartCount || Ident(c, i) != _blastIdent[k])
+            {
+                // It moved: parts before it broke off. Compact keeps the order, so it is a little below where it was: look down from there first, then up.
+                var from = Math.Min(i, c.PartCount - 1);
+                i = -1;
+                for (var j = from; j >= 0; j--)
+                    if (Ident(c, j) == _blastIdent[k])
+                    {
+                        i = j;
+                        break;
+                    }
+                for (var j = from + 1; i < 0 && j < c.PartCount; j++)
+                    if (Ident(c, j) == _blastIdent[k])
+                        i = j;
+                if (i < 0)
+                    continue; // (gone with a piece that split off, or broken)
+            }
+            if (!_blasted.Add(((ulong)c.Id << 32) | (uint)_blastIdent[k]))
+                continue;
+            var f = 1f - _blastDist[k] / radius;
+            BlastStored(c, i, maxDamage * f * f); // (what is stored in it first: it may spill)
+            DamagePart(c, i, maxDamage * f * f, out _);
+            hits++;
+        }
+        return hits;
+    }
 
     // The broadphase's answers, one list per kind of query (they never nest), and the blast going off now (its walk).
     private readonly List<Construct> _rayNear = new(256), _blockNear = new(256), _blastNear = new(256);

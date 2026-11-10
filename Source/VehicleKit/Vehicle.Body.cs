@@ -476,7 +476,7 @@ public sealed partial class Vehicle
             Piper(); // (before the trophies take the hood's sockets)
         d = Dice.Fork("show");
         var sides = Panels.GetValueOrDefault("sides") ?? [];
-        var lean = BodyStyleRule.Of(Style).AsymAmount >= 0.5f ? Lean : 0; // (phase 6: a lopsided vehicle's spikes on its one side)
+        var lean = Rule.AsymAmount >= 0.5f ? Lean : 0; // (phase 6: a lopsided vehicle's spikes on its one side)
         Dress("spike", sides.Where(p => CentreOf(p).X < 0), -Vector3.UnitX, Spikes(d.Int(1, 3), -1, lean), d);
         Dress("spike", sides.Where(p => CentreOf(p).X > 0), Vector3.UnitX, Spikes(d.Int(1, 3), 1, lean), d);
         Dress("trophy", Panels.GetValueOrDefault("hood") ?? [], Vector3.UnitY, d.Int(1, 2), d);
