@@ -174,6 +174,8 @@ public static partial class Program
                 }
                 piece = ConstructGrab.PieceOf(freeBody!, freePart, leaf);
                 var pieceCold = piece >= 0 && (piece == 0 ? freeBody!.Frozen : freeBody!.Joints[piece - 1].Frozen);
+                if (!pieceCold && g.SandboxIsFrame(freeBody!, me.Id))
+                    piece = -1; // (no freezing a piece of the body underfoot: it would hold still in the world while the rest moves on; unfreezing stays)
                 var key = ((long)freeBody!.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)freePart << 50) ^ (1L << 49) ^ ((long)(pieceCold ? 1 : 0) << 48);
                 if (key != _pgLookKey)
                 {
@@ -199,6 +201,8 @@ public static partial class Program
                 }
                 piece = ConstructGrab.PieceOf(hit.Body, hit.Part, false);
                 var baseCold = piece >= 0 && hit.Body.PieceFrozen(hit.Part);
+                if (!baseCold && g.SandboxIsFrame(hit.Body, me.Id))
+                    piece = -1; // (the body underfoot: no freeze key on offer, only unfreeze)
                 var key = ((long)hit.Body.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)(hit.Body.Frozen ? 1 : 0) << 48) ^ ((long)hit.Part << 50) ^ ((long)(baseCold ? 1 : 0) << 47) ^ ((long)(piece + 1) << 40);
                 if (key != _pgLookKey)
                 {

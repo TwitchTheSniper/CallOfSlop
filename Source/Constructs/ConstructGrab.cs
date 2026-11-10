@@ -480,6 +480,22 @@ public sealed partial class ConstructEdits
     /// <summary>Why a player aboard stops this one moving a construct, or null (the game's friendly rule: Game.SandboxAboardRefusal).</summary>
     public Func<Construct, byte, string?>? Aboard;
 
+    /// <summary>Whether this construct is the player's own reference frame: the body they stand on or sit in (the game's rule: Game.SandboxIsFrame).</summary>
+    public Func<Construct, byte, bool>? IsFrame;
+
+    /// <summary>Why the physics gun won't take or freeze the body a player stands on.</summary>
+    public const string FrameRefusal = "you are standing on it";
+
+    /// <summary>
+    /// The physics gun never takes or freezes the player's own reference frame (user, 2026-11-10): building on a moving vehicle,
+    /// a stray grab or freeze would stop it dead. With no game behind it, the hand's own ride and seat. Null, or why not.
+    /// </summary>
+    public string? FrameWhy(Construct c, byte player)
+    {
+        var frame = IsFrame != null ? IsFrame(c, player) : Hands[player].RideBody == c.Id || Hands[player].SeatBody == c.Id;
+        return frame ? FrameRefusal : null;
+    }
+
     /// <summary>The physics gun's and the Nudge tool's rule for who is aboard. With no game behind it, anyone in a seat refuses.</summary>
     public string? AboardWhy(Construct c, byte player)
     {
@@ -554,6 +570,8 @@ public sealed partial class ConstructEdits
             return "that is gone";
         if (!float.IsFinite(local.X + local.Y + local.Z) || Vector3.Clamp(local, c.LocalMin - new Vector3(0.3f), c.LocalMax + new Vector3(0.3f)) != local)
             return "the beam missed it";
+        if (FrameWhy(c, player) is { } frame)
+            return frame;
         if (GrabRefusal(c, player) is { } why)
             return why;
         var at = c.ToWorld(local);
@@ -755,12 +773,16 @@ public sealed partial class ConstructEdits
         {
             int seg = h.GrabSeg;
             Release(world, player);
+            if (FrameWhy(held, player) is { } onIt)
+                return onIt; // (a piece of the body they stand on, frozen in the world, would tear at the moving rest: let go, not frozen)
             SetPiece(world, held, seg, true, player); // (holding one piece: that piece)
             return null;
         }
         if (h.GrabBody == 0 || world.Get(h.GrabBody) is not { } c || c.GrabbedBy != player)
             return "hold something with the physics gun to freeze it";
         Release(world, player);
+        if (FrameWhy(c, player) is { } frame)
+            return frame; // (they stepped onto what they held: it goes free, never frozen under them)
         FreezeBody(world, c, player);
         return null;
     }
@@ -800,7 +822,10 @@ public sealed partial class ConstructEdits
         seg = c.MoveSeg(seg);
         if (seg == 0 && c.Anchored && !c.Frozen)
             return "it is anchored to the ground";
-        SetPiece(world, c, seg, seg == 0 ? !c.Frozen : !c.Joints[seg - 1].Frozen, player);
+        var freeze = seg == 0 ? !c.Frozen : !c.Joints[seg - 1].Frozen;
+        if (freeze && FrameWhy(c, player) is { } frame)
+            return frame; // (unfreezing the body underfoot is fine; freezing it is not)
+        SetPiece(world, c, seg, freeze, player);
         return null;
     }
 
