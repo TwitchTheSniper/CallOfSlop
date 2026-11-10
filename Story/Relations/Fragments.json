@@ -3,7 +3,7 @@
   // ("frag.threat"); a player who has found it holds Fragment towards it, its value the entity it came from plus one (a data
   // centre's site, a person who told it), so the Logbook can say where. Saved with the story, like any relation.
   "relations": [
-    { "name": "Fragment", "about": "a player and a fragment of the old records they hold (value: its source's entity + 1)" }
+    { "name": "Fragment", "about": "a player and a fragment of the old records they hold (value: its source's entity + 1; -1 none)" }
   ],
   "qualities": [
     { "name": "Fragments", "about": "how many of the old records' fragments a player holds" }

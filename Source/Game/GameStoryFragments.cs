@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// The story's fragments and the sealed data centres (docs/story/FRAGMENTS.md; data Story/Fragments/Fragments.json, read by
 /// <see cref="FragmentScript"/>). A fragment is a record a player has found: the story world holds it (a Thing named by the
 /// fragment's id, the relation <c>Fragment</c> from the player towards it, its value the source's entity plus one, and a Recover
-/// event), so it is saved with the story and storylets can ask for it. Found in any order.
+/// event; the value is -1 with no source), so it is saved with the story and storylets can ask for it. Found in any order.
 /// <para>
 /// A site (a data centre) is a blueprint the host stands on level ground near the penal colony with the rest of the colony's
 /// buildings. Its Data Centre Terminal (a logic part, kind <c>cipher</c>) is dead until the player fits a battery to the building's
@@ -38,7 +38,7 @@ public sealed partial class Game
 
     // ---- Every peer: this player's own log, as the server tells it ----
 
-    /// <summary>The fragments the local player holds (an index into <see cref="FragmentScript.Fragments"/>, and where it came from), in the order found.</summary>
+    /// <summary>The fragments the local player holds (an index into <see cref="FragmentScript.Fragments"/>, and where it came from).</summary>
     public readonly List<(int Fragment, string Source)> FragmentsHeld = new(FragmentScript.MaxFragments);
 
     /// <summary>The local player's leads (things they learnt of), and whether what the lead points to has been found.</summary>
@@ -270,7 +270,7 @@ public sealed partial class Game
             return false;
         if (_vRecover >= 0)
             s.Record(_vRecover, who, target: source, place: StoryPlace(), item: thing);
-        s.World.Set(who, _fgRelFragment, thing, source + 1);
+        s.World.Set(who, _fgRelFragment, thing, s.World.Valid(source) ? source + 1 : -1); // (never 0: that is no pair)
         Log($"[fragments] {p.Name} recovered {id} from {s.World.NameOf(source)}");
         FragmentSendIfChanged(s, p, who);
         return true;

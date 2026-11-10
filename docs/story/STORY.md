@@ -665,6 +665,10 @@ offer* (A, the choice of Trustee or Escapee) and the first beat of each road (*F
 mine*). Not yet: the Pilfer event from a marked crate (Bellweather's test ends "left" until it is), the old mine as a
 place.
 
+## Fragments
+
+The old records the main storyline is told through, found in any order, and the sealed data centres that hold them: [FRAGMENTS.md](FRAGMENTS.md). A fragment is a Thing named by its id (`frag.threat`), held through the `Fragment` relation; the Logbook (F1) shows them.
+
 ## Scenarios
 
 `Story/Scenarios/*.json`: entities to make (`"owner"` gives a construct its owner's `Owns`), events at times from the
