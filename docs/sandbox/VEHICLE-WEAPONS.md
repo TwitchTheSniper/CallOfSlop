@@ -73,7 +73,8 @@ started): **4x4 shells are over the 8 ms tick** and the gunsmith still offers th
 **Turrets.** `Generators/Turret.cs`: a random complete turret from a seed (a steel base plate, the kit's turret: turntable, elevation hinge, gun, the gunner's seat and Turret Module),
 its gun the gunsmith's for a mount rated as a 0.8 to 16 t vehicle's at tier 1 to 4, or a quarter of the time one of the style's own. It is in
 `VehicleRegistry.Everywhere` (every shipped style ships seeds 1 and 2; roles and convoys never draw it), so creative gets a tile per style and "New seed" makes another.
-Checked as a towed thing (its build, faces, how it stands).
+Checked as a towed thing (its build, faces, how it stands); a 1 m base plate with an outrigger plate on each side (without them heavy guns tipped it 8 to 17 degrees).
+`--sweep-vehicle` Bandit and Highland Turret: 8 of 8 seeds pass each. Its blueprint files (10, seeds 1 and 2 of five styles) come with the next regeneration of `Constructs/Blueprints`.
 
 ## Next steps (queued)
 
@@ -82,7 +83,7 @@ Checked as a towed thing (its build, faces, how it stands).
 2. **Missile batteries (not started):** an Ordnance Rack (`ModularRack`) of designed heat-seeking missiles on the turret's hinge leaf beside a spotting gun (a rack is not a gun: only a
    gun aims a turret's joints; a rack fires on its input, wired from the Turret Module), stations and missile size from the same mass ceiling.
 3. **Turret loot (not done):** loot tables hold parts, not bodies: a survival turret needs a world spawn of the Turret blueprint (a site) or a kit item that builds one.
-   Turret seeds still to sweep across styles (a 4x4 autocannon didn't merge on a ground-level base; the base now starts at the test stand's height).
+   Turret seeds swept for two styles only; a 4x4 block didn't merge on a ground-level base (the base now starts at the gunsmith's test-stand height, 2 m, and is set down).
 4. **Exotic:** railguns (Railspike Coil merged), mortars (Hand Mortar, Bucket Launcher merged), flamethrowers (Firebreather merged), bomb drops (ordnance released down).
 5. **Giant moving bases (100-500 m):** merges to 6x6 and batteries of them (capital weapons are a separate catalogue: project doc capital-weapons.md).
 6. **Gunners and auto-targeting:** AI vehicles crewed by bots in gunner seats now; a full auto-targeting parts set after this.
