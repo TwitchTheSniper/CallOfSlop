@@ -747,12 +747,13 @@ Deck 0:
 Joints: 14 are the welded hall flights. Build time tripled: the halls' big floors give the furnishing many more spots to try; not chased.
 
 **Tried by hand:** `--gen-interior` on seeds 1 to 3: every room reached on deck and in the chassis, 0 refused, the drive seat the bridge's
-helm; `--interior-walk --walk 4` on seed 1 (before the stair column moved west): every door opened, every doorway, corridor, lift car and
-stairwell passed, and the walker walked 11.6 m in 4 s (2.9 m/s) from the bridge's helm. That run found one hall flight whose foot the
-railing blocked (its column was then the east end); the column is now the west end, not walked again.
+helm. `--interior-walk --walk 4` on seed 1 (final build): every door opened, every doorway (2 into a hall's west wall had opened onto its
+flight: halls now take no doorway in that wall), corridor and lift car passed, and the walker walked 11.6 m in 4 s (2.9 m/s, worst tick
+1 ms) from the bridge's helm. **Open:** one flight on level -3 (block 1,0 of the walk's frame) fails "the foot won't hold a player" with a
+gallery railing (Steel Half Wall 4 m) at its foot, 14 tries; not chased.
 
 **Not tried:** a player climbing the hall stairs (the walk-through knows stairwells and finds hall flights only by part), drawing anything
-(railings, galleries, the open volumes), `--check-construct-parts`, the extra-large class on a real build, a client.
+(railings, galleries, the open volumes), `--check-construct-parts` (no part file changed), the extra-large class on a real build, a client.
 
 **Not done (step 2 and 3 of the brief):** an off-centre spine, an off-centre lift, free-form L/T/notched rooms beyond the bridge's and
 mess's; decoration (pipes, ducts, cable trays, ribs, signs, hoists) and the dark lamps (26 to 42 generated rooms a seed: the 254-wire cap).
