@@ -79,6 +79,102 @@ def door(kind, w, h):
     return p
 
 
+# Event doors (docs/sandbox/CONSTRUCTS.md, "Event doors"): no hinge part and no joint. The door part goes straight on the
+# opening's jamb (its "hang" socket is a plain one, GAP off its edge, so the gap is kept), and its "door" block says how it
+# moves: a swing door turns a quarter turn about its edge on its outer face (towards its own -z, out past the jamb), a
+# bulkhead slides into the wall beside the opening. Its state is the game's (shut, open, moving), its F line is a door's,
+# and it has Open, Toggle and Lock ports. A Left and a Right leaf hung on either jamb of one opening meet in the middle
+# ("meet" sockets): linked there, F on either works both.
+EVENT_SECONDS = 0.8
+BULKHEAD_THICK = 0.06
+EVENT_OPENINGS = [(1.0, 2.0), (1.25, 2.0), (1.25, 2.35), (1.5, 2.25)]
+
+
+def slab(p, kind, x0, x1, dh, t):
+    word, colour, trim, material, kg, hp, armour = kind
+    p.add(box((x0, -dh / 2, -t), (x1, dh / 2, t)))
+    m = 0.1
+    mid = dh * 0.1
+    p.add(box((x0 + m, mid + 0.05, -t - 0.003), (x1 - m, dh / 2 - m, t + 0.003), trim, detail=True))
+    p.add(box((x0 + m, -dh / 2 + m, -t - 0.003), (x1 - m, mid - 0.05, t + 0.003), trim, detail=True))
+
+
+def hang_strip(p, s=1):
+    """A hidden solid strip in the gap on the hang side: what the plain "hang" socket sits on (a socket is on a face)."""
+    x0, x1 = (-GAP, 0) if s > 0 else (0, GAP)
+    p.add(box((x0, -0.2, -0.01), (x1, 0.2, 0.01), hidden=True))
+
+
+def event_stats(p, kind, area):
+    word, colour, trim, material, kg, hp, armour = kind
+    p.stats(kg * area, hp * area, armour, 2.0)
+    if kg * area <= 40:
+        p.set(physicsOnly=True)
+
+
+def swing_door(kind, w, h):
+    word, colour, trim, material = kind[:4]
+    name = f"{word} Swing Door {w:g}x{h:g} m"
+    dw, dh = w - 2 * GAP, h - 2 * GAP
+    p = Part(name, SMALL, SECTION, f"Fills a {w:g} by {h:g} m opening: goes straight on its jamb, no hinge. F opens it; it swings out past the jamb.",
+             role="door", tool="wrench", material=material, color=colour, group=GROUP)
+    t = THICK / 2
+    slab(p, kind, 0, dw, dh, t)
+    p.add(box((dw - 0.15, -0.05, -t - 0.04), (dw - 0.1, 0.05, t + 0.04), GRIP, detail=True, use=True, paintable=False))
+    hang_strip(p)
+    p.sock("hang", (-GAP, 0, 0), "-x")
+    p.sock("front", (dw / 2, 0, t), "+z")
+    p.sock("back", (dw / 2, 0, -t), "-z")
+    p.set(door={"kind": "swing", "axis": "+y", "pivot": [0, 0, -t], "angle": 90, "seconds": EVENT_SECONDS, "hang": "hang"})
+    event_stats(p, kind, dw * dh)
+    return p
+
+
+def double_leaf(kind, w, h, side):
+    """Half of a double door for a w-wide opening: Left hangs on the left jamb, Right on the right; they meet in the middle."""
+    word, colour, trim, material = kind[:4]
+    name = f"{word} Double Door {side[0]} {w:g}x{h:g} m"  # (L or R: a name is at most 32 characters)
+    dw, dh = w / 2 - 1.5 * GAP, h - 2 * GAP
+    p = Part(name, SMALL, SECTION, f"One leaf of a double door for a {w:g} by {h:g} m opening, on the {side.lower()} jamb; the other leaf meets it. F on either opens both.",
+             role="door", tool="wrench", material=material, color=colour, group=GROUP)
+    t = THICK / 2
+    s = 1 if side == "Left" else -1  # (the Right leaf is the Left one mirrored: it hangs on its +x edge)
+    x0, x1 = (0, dw) if s > 0 else (-dw, 0)
+    slab(p, kind, x0, x1, dh, t)
+    gx = dw - 0.12 if s > 0 else -dw + 0.07
+    p.add(box((gx, -0.05, -t - 0.04), (gx + 0.05, 0.05, t + 0.04), GRIP, detail=True, use=True, paintable=False))
+    hang_strip(p, s)
+    p.sock("hang", (-s * GAP, 0, 0), "-x" if s > 0 else "+x")
+    m0, m1 = sorted((s * (dw - GAP), s * (dw + GAP / 2)))
+    p.add(box((m0, -0.2, -0.01), (m1, 0.2, 0.01), hidden=True))  # (the meeting edge's socket sits on it, half the gap out)
+    p.sock("meet", (s * (dw + GAP / 2), 0, 0), "+x" if s > 0 else "-x")
+    p.sock("front", (s * dw / 2, 0, t), "+z")
+    p.sock("back", (s * dw / 2, 0, -t), "-z")
+    p.set(door={"kind": "swing", "axis": "+y", "pivot": [0, 0, -t], "angle": 90 * s, "seconds": EVENT_SECONDS, "hang": "hang"})
+    event_stats(p, kind, dw * dh)
+    return p
+
+
+def bulkhead(w, h):
+    kind = KINDS[0]
+    name = f"Bulkhead Door {w:g}x{h:g} m"
+    dw, dh = w - 2 * GAP, h - 2 * GAP
+    p = Part(name, SMALL, SECTION, f"A sliding steel door for a {w:g} by {h:g} m opening: goes on its jamb and slides into the wall on that side (keep {dw:g} m of wall there).",
+             role="door", tool="wrench", material="steel", color="#6a6f58", group=GROUP)
+    t = BULKHEAD_THICK / 2
+    p.add(box((0, -dh / 2, -t), (dw, dh / 2, t)))
+    for y in (-dh / 2 + 0.25, dh / 2 - 0.25):  # (two ribs across, both faces)
+        p.add(box((0.06, y - 0.04, -t - 0.012), (dw - 0.06, y + 0.04, t + 0.012), "#4f5442", detail=True))
+    p.add(box((dw - 0.12, -0.15, -t - 0.03), (dw - 0.06, 0.15, t + 0.03), GRIP, detail=True, use=True, paintable=False))
+    hang_strip(p)
+    p.sock("hang", (-GAP, 0, 0), "-x")
+    p.sock("front", (dw / 2, 0, t), "+z")
+    p.sock("back", (dw / 2, 0, -t), "-z")
+    p.set(door={"kind": "slide", "axis": "-x", "travel": round(dw + GAP, 2), "seconds": 1.2, "hang": "hang"})
+    p.stats(kind[4] * 1.5 * dw * dh, kind[5] * 1.5 * dw * dh, kind[6] + 10, 2.5)
+    return p
+
+
 def handle():
     p = Part("Door Handle", SMALL, SECTION, "On anything hung on a hinge: what F takes hold of. A panel works without one; this shows where.", tool="wrench", color=GRIP, group=GROUP)
     p.add(box((-0.03, 0, -0.08), (0.03, 0.012, 0.08), STEEL))
@@ -95,6 +191,12 @@ def main():
     for kind in KINDS:
         for w, h in OPENINGS:
             parts.append((kind[0], door(kind, w, h)))
+        for w, h in EVENT_OPENINGS:
+            parts.append(("Event" + kind[0], swing_door(kind, w, h)))
+        for side in ("Left", "Right"):
+            parts.append(("Event" + kind[0], double_leaf(kind, 1.5, 2.25, side)))
+    for w, h in [(1.25, 2.0), (1.5, 2.25)]:
+        parts.append(("EventSteel", bulkhead(w, h)))
     return write_parts(OUT, parts)
 
 

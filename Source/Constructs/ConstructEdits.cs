@@ -1140,6 +1140,8 @@ public sealed partial class ConstructEdits
         }
         if (d.Role == PartRole.Hitch)
             return Hitch(world, player, c, part);
+        if (ConstructDoors.Use(world, c, part) is { } door)
+            return door.Length == 0 ? null : door; // (an event door, or a part on its leaf: ConstructDoors.cs)
         var seg = c.MoveSeg(c.Parts[part].Seg); // (a freeform weld is rigid: nothing there to open)
         if (d.HasJoint && c.RailJointOf(part) is var own and >= 0)
             seg = own + 1;

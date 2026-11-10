@@ -188,6 +188,8 @@ public enum CfgKey : byte
     Gait, // walker leg, Basic: Auto, Tripod or Wave
     LegPace, LegLift, LegSpread, // walker leg, Advanced: this leg's step speed, lift and foot spread, %
     LegGroup, // walker leg, Advanced: which half of a tripod it steps with (Auto, First, Second)
+    DoorOpen, // event door: where it last settled, open or shut (not on the panel; ConstructDoors.cs)
+    DoorLocked, // event door: F can't work it (a wire into its Lock port locks it too)
     COUNT,
 }
 
@@ -516,6 +518,8 @@ public static class ConstructConfig
             AddWheelSettings(d, list);
         if (d.Rotor != null)
             AddRotorSettings(d, list);
+        if (d.Door != null)
+            ConstructDoors.AddSettings(d, list);
         AddThrowSettings(d, list);
         Finish(d, list, file);
     }
@@ -825,6 +829,7 @@ public static class ConstructConfig
                 CfgKey.Low or CfgKey.High => d.Logic is CLogic.Scale or CLogic.AnalogLever or CLogic.Display or CLogic.Instrument or CLogic.Filter or CLogic.RandomPulse,
                 CfgKey.Latched => d.Logic is CLogic.Button or CLogic.Switch,
                 CfgKey.Pushable => d.Role == PartRole.Hinge,
+                CfgKey.DoorOpen or CfgKey.DoorLocked => d.Door != null,
                 CfgKey.Hold => d.Logic is CLogic.Button or CLogic.Switch or CLogic.CodeLock or CLogic.DamageSensor,
                 CfgKey.Radius => d.Logic is CLogic.Proximity or CLogic.GravityWell or CLogic.RadioTx || d.IsSpawner,
                 CfgKey.Rate => d.IsSpawner || d.Logic == CLogic.Filter,

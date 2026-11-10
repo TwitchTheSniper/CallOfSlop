@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bulkhead Door 1.25x2 m",
+  "description": "A sliding steel door for a 1.25 by 2 m opening: goes on its jamb and slides into the wall on that side (keep 1.21 m of wall there).",
+  "group": "Building",
+  "section": "Doors and gates",
+  "role": "door",
+  "tool": "wrench",
+  "door": {
+    "kind": "slide",
+    "axis": "-x",
+    "travel": 1.23,
+    "seconds": 1.2,
+    "hang": "hang"
+  },
+  "mass": 153.0,
+  "health": 765,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6a6f58",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.98,
+        -0.03
+      ],
+      "max": [
+        1.21,
+        0.98,
+        0.03
+      ]
+    },
+    {
+      "min": [
+        0.06,
+        -0.77,
+        -0.042
+      ],
+      "max": [
+        1.15,
+        -0.69,
+        0.042
+      ],
+      "color": "#4f5442",
+      "detail": true
+    },
+    {
+      "min": [
+        0.06,
+        0.69,
+        -0.042
+      ],
+      "max": [
+        1.15,
+        0.77,
+        0.042
+      ],
+      "color": "#4f5442",
+      "detail": true
+    },
+    {
+      "min": [
+        1.09,
+        -0.15,
+        -0.06
+      ],
+      "max": [
+        1.15,
+        0.15,
+        0.06
+      ],
+      "color": "#c8c8c8",
+      "detail": true,
+      "use": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        -0.2,
+        -0.01
+      ],
+      "max": [
+        0.0,
+        0.2,
+        0.01
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        -0.02,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.605,
+        0.0,
+        0.03
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.605,
+        0.0,
+        -0.03
+      ],
+      "dir": "-z"
+    }
+  ]
+}

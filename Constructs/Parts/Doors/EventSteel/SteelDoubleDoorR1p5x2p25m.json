@@ -1,0 +1,149 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Double Door R 1.5x2.25 m",
+  "description": "One leaf of a double door for a 1.5 by 2.25 m opening, on the right jamb; the other leaf meets it. F on either opens both.",
+  "group": "Building",
+  "section": "Doors and gates",
+  "role": "door",
+  "tool": "wrench",
+  "door": {
+    "kind": "swing",
+    "axis": "+y",
+    "pivot": [
+      0,
+      0,
+      -0.02
+    ],
+    "angle": -90,
+    "seconds": 0.8,
+    "hang": "hang"
+  },
+  "mass": 68.4,
+  "health": 342,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5a6168",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.72,
+        -1.105,
+        -0.02
+      ],
+      "max": [
+        0.0,
+        1.105,
+        0.02
+      ]
+    },
+    {
+      "min": [
+        -0.62,
+        0.271,
+        -0.023
+      ],
+      "max": [
+        -0.1,
+        1.005,
+        0.023
+      ],
+      "color": "#4c5359",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.62,
+        -1.005,
+        -0.023
+      ],
+      "max": [
+        -0.1,
+        0.171,
+        0.023
+      ],
+      "color": "#4c5359",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.65,
+        -0.05,
+        -0.06
+      ],
+      "max": [
+        -0.6,
+        0.05,
+        0.06
+      ],
+      "color": "#c8c8c8",
+      "detail": true,
+      "use": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        -0.2,
+        -0.01
+      ],
+      "max": [
+        0.02,
+        0.2,
+        0.01
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.73,
+        -0.2,
+        -0.01
+      ],
+      "max": [
+        -0.7,
+        0.2,
+        0.01
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.02,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "meet",
+      "at": [
+        -0.73,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "front",
+      "at": [
+        -0.36,
+        0.0,
+        0.02
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        -0.36,
+        0.0,
+        -0.02
+      ],
+      "dir": "-z"
+    }
+  ]
+}
