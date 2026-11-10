@@ -402,35 +402,40 @@ public static class InteriorPlanner
         var weight = mix.Sum(f => f.Weight);
         var made = p.Rooms.Count(o => o.Origin == "generated");
         var quarters = p.Rooms.Count(o => o.Type == "quarters");
-        foreach (var f in mix)
+        foreach (var capped in new[] { true, false }) // (every type over its cap: the best of them, rather than spare space)
         {
-            var t = data.Rooms[f.Room];
-            if (run.W < t.MinW || run.D < t.MinD)
-                continue;
-            var fuel = t.Modules != null && data.Sets[t.Modules].Items.Any(i => i.Part == "Fuel Tank");
-            if (fuel && k != 0 || t.Critical && band.Kind == "inner") // (a critical room keeps one door, so never in front of an outer band whose rooms may need a way through it)
-                continue;
-            var have = p.Rooms.Count(o => o.Type == f.Room && o.Origin == "generated");
-            if (made >= 4 && (have + 1.0) / (made + 1) > f.Cap)
-                continue;
-            double s = (t.Deck, k == 0, k == p.Decks - 1) switch { (DeckWant.Lower, true, _) => 2, (DeckWant.Upper, _, true) => 2, (DeckWant.Any, _, _) => 0, _ => -4 };
-            s += (t.Row, band.Kind) switch { (RowWant.Inner, "inner") => 2, (RowWant.Outer, "outer") => 2, (RowWant.Inner, "outer") => -2, (RowWant.Outer, "inner") => -2, _ => 0 };
-            foreach (var o in p.Rooms.Where(o => o.Deck == k && !o.System && Touches(o.Rect, run)))
+            if (pick != null)
+                break;
+            foreach (var f in mix)
             {
-                if (t.Wants.Contains(o.Type) || data.Rooms[o.Type].Wants.Contains(t.Id))
-                    s += 4;
-                if (t.Avoids.Contains(o.Type) || data.Rooms[o.Type].Avoids.Contains(t.Id))
-                    s -= 6;
-            }
-            s += 20 * (f.Weight / weight - (double)have / Math.Max(1, made)); // (under its share: wanted more)
-            if (f.PerQuarters > 0 && quarters / f.PerQuarters - p.Rooms.Count(o => o.Type == f.Room) is var short1 && short1 > 0)
-                s += 3 * Math.Min(short1, 2);
-            s += 3 * rng.Next();
-            if (s > best)
-            {
-                best = s;
-                pick = t;
-            }
+                var t = data.Rooms[f.Room];
+                if (run.W < t.MinW || run.D < t.MinD)
+                    continue;
+                var fuel = t.Modules != null && data.Sets[t.Modules].Items.Any(i => i.Part == "Fuel Tank");
+                if (fuel && k != 0 || t.Critical && (band.Kind == "inner" || p.Sealed)) // (a critical room keeps one door, so never in front of an outer band whose rooms may need a way through it, nor in a sealed hull, whose rooms have no outside doors)
+                    continue;
+                var have = p.Rooms.Count(o => o.Type == f.Room && o.Origin == "generated");
+                if (capped && made >= 4 && (have + 1.0) / (made + 1) > f.Cap)
+                    continue;
+                double s = (t.Deck, k == 0, k == p.Decks - 1) switch { (DeckWant.Lower, true, _) => 2, (DeckWant.Upper, _, true) => 2, (DeckWant.Any, _, _) => 0, _ => -4 };
+                s += (t.Row, band.Kind) switch { (RowWant.Inner, "inner") => 2, (RowWant.Outer, "outer") => 2, (RowWant.Inner, "outer") => -2, (RowWant.Outer, "inner") => -2, _ => 0 };
+                foreach (var o in p.Rooms.Where(o => o.Deck == k && !o.System && Touches(o.Rect, run)))
+                {
+                    if (t.Wants.Contains(o.Type) || data.Rooms[o.Type].Wants.Contains(t.Id))
+                        s += 4;
+                    if (t.Avoids.Contains(o.Type) || data.Rooms[o.Type].Avoids.Contains(t.Id))
+                        s -= 6;
+                }
+                s += 20 * (f.Weight / weight - (double)have / Math.Max(1, made)); // (under its share: wanted more)
+                if (f.PerQuarters > 0 && quarters / f.PerQuarters - p.Rooms.Count(o => o.Type == f.Room) is var short1 && short1 > 0)
+                    s += 3 * Math.Min(short1, 2);
+                s += 3 * rng.Next();
+                if (s > best)
+                {
+                    best = s;
+                    pick = t;
+                }
+        }
         }
         if (pick == null)
         {
