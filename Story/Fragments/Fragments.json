@@ -67,6 +67,49 @@
       "power": "The terminal hums awake. Its screen asks for an answer to its carrier.",
       "decoded": "The cipher gives. The terminal's screen fills with text: stand at it to copy what it holds.",
       "copied": "You copy the terminal's record into your Logbook (F1 by default)."
+    },
+    // The other four stand on the story's worlds (docs/planets/WORLDS.md "Places kept flat": each world's data centre's site),
+    // built the first time the group comes to that world. "map" is the planetoid, "lat" and "lon" where on it; "inside"
+    // stands it on the wall of a hollow world's cavity under that point.
+    {
+      "id": "datacentre-2", "name": "Night Side Data Centre", "blueprint": "Sealed Data Centre", "fragment": "frag.fold",
+      "map": "Cinder", "lat": -10, "lon": 50,
+      "multiply": 2, "add": 7, "locks": 3, "every": 6,
+      "source": "the data centre in a crater on Cinder's night side",
+      "arrive": "A sealed building on the crater's floor, black with ash. No light has touched it in a long time.",
+      "power": "The terminal hums awake. Its screen asks for an answer to its carrier.",
+      "decoded": "The cipher gives. The terminal's screen fills with a drawing's notes: stand at it to copy what it holds.",
+      "copied": "You copy the terminal's record into your Logbook (F1 by default)."
+    },
+    {
+      "id": "datacentre-3", "name": "Rent Data Centre", "blueprint": "Sealed Data Centre", "fragment": "frag.reading",
+      "map": "Glacier", "lat": 15, "lon": 170,
+      "multiply": 4, "add": -3, "locks": 3, "every": 6,
+      "source": "the data centre at the bottom of the Rent on Glacier",
+      "arrive": "A sealed building at the bottom of the crevasse, rimed white. The ice has grown round it and not into it.",
+      "power": "The terminal hums awake. Its screen asks for an answer to its carrier.",
+      "decoded": "The cipher gives. An observatory's record scrolls up the screen: stand at it to copy what it holds.",
+      "copied": "You copy the terminal's record into your Logbook (F1 by default)."
+    },
+    {
+      "id": "datacentre-4", "name": "Corrie Data Centre", "blueprint": "Sealed Data Centre", "fragment": "frag.silence",
+      "map": "Caledon", "lat": 60, "lon": 152,
+      "multiply": 5, "add": 1, "locks": 4, "every": 6,
+      "source": "the data centre in the corrie under Ben Slop on Caledon",
+      "arrive": "A sealed building on a shelf under the ben, heather up to its door. The clan's paths all go round it.",
+      "power": "The terminal hums awake. Its screen asks for an answer to its carrier.",
+      "decoded": "The cipher gives. A council's minutes fill the screen: stand at it to copy what they hold.",
+      "copied": "You copy the terminal's record into your Logbook (F1 by default)."
+    },
+    {
+      "id": "datacentre-5", "name": "Proving Bowl Data Centre", "blueprint": "Sealed Data Centre", "fragment": "frag.switch",
+      "map": "Mille", "lat": 70, "lon": 40, "inside": true,
+      "multiply": -2, "add": 9, "locks": 4, "every": 5,
+      "source": "the data centre inside Mille, under the Proving Bowl",
+      "arrive": "A sealed building on the cavity's wall, lit from below by the core. The Layers say nobody built it.",
+      "power": "The terminal hums awake. Its screen asks for an answer to its carrier.",
+      "decoded": "The cipher gives. A set of instructions fills the screen: stand at it to copy what it holds.",
+      "copied": "You copy the terminal's record into your Logbook (F1 by default)."
     }
   ]
 }
