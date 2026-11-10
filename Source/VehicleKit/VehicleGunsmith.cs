@@ -29,10 +29,15 @@ public static class VehicleGunsmith
     {
         HeavyCannon,
         RapidHeavy,
+        MissileBattery,
     }
 
-    /// <summary>One design: its build at N = 1, a name, its class's least tier and job tags.</summary>
-    private sealed record Design(Kind Kind, string Name, string Build, int Tier, string[] Tags, bool Shell);
+    /// <summary>One design: its build at N = 1, a name, its class's least tier and job tags. A missile battery's build is its spotting gun, and its sizes are
+    /// <see cref="Racks"/> (size N the Nth rack, every station holding <see cref="Missile"/>) in place of N x N merges.</summary>
+    private sealed record Design(Kind Kind, string Name, string Build, int Tier, string[] Tags, bool Shell, string[]? Racks = null, string? Missile = null);
+
+    /// <summary>A battery's missile: a radar seeker (the unanchored body nearest its axis as it leaves, moving or not: a parked truck too), impact fuse, HE, fins, a solid motor.</summary>
+    private const string RadarMissile = "Ordnance:M25:Radar Seeker+Impact Fuse+Warhead HE+Tail Fins+Solid Motor";
 
     private static readonly Design[] Designs =
     [
@@ -43,7 +48,12 @@ public static class VehicleGunsmith
         new(Kind.RapidHeavy, "Flak Block", "Thumper Chain Gun Receiver{barrel:Cross Splitter{barrel_1:Standard Barrel,barrel_2:Standard Barrel,barrel_3:Standard Barrel,barrel_4:Standard Barrel},feed:Belt Box,action:Chain Drive Motor}", 2, ["heavy", "aa", "suppress"], false),
         new(Kind.RapidHeavy, "Chain Cannon", "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}", 1, ["heavy", "suppress"], false),
         new(Kind.RapidHeavy, "Bunker Buster", "Bunker Buster Receiver{barrel:Cannon Sleeve,feed:Heavy Box,action:Autocannon Drive}", 3, ["heavy", "anti-armour"], false),
+        new(Kind.MissileBattery, "Missile Battery", "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}", 1, ["heavy", "anti-armour", "aa"], false,
+            ["Launch Rack"], RadarMissile), // (the 1x2, 2x2 and 3x2 grids on a half-metre stand-off build and fire, but in the bench their missiles met the ground: VEHICLE-WEAPONS.md, next steps)
     ];
+
+    /// <summary>A battery's name by its size (ASCII: players read it).</summary>
+    private static readonly string[] BatteryNames = ["", "Missile Launcher", "Twin Missile Launcher", "Missile Battery", "Heavy Missile Battery"];
 
     /// <summary>The word for a merge's size in a gun's name (ASCII: players read it).</summary>
     private static readonly string[] Sizes = ["", "", "Heavy", "Siege", "Super-Heavy", "Colossal", "Titan"];
@@ -72,12 +82,24 @@ public static class VehicleGunsmith
     /// <summary>The biggest merge of <paramref name="d"/> a vehicle of <paramref name="mass"/> kg is rated for (0: not even one receiver).</summary>
     private static int Ceiling(Design d, float mass)
     {
-        var (m1, k1) = Rating(d);
         var best = 0;
-        for (var n = 1; n <= MaxMerge; n++)
-            if (m1 * n * n <= GunMassShare * mass && k1 * n * n <= KickPerKg * mass)
+        for (var n = 1; n <= MaxSize(d); n++)
+            if (Rating(d, n) is var (m, k) && m <= GunMassShare * mass && k <= KickPerKg * mass)
                 best = n;
         return best;
+    }
+
+    private static int MaxSize(Design d) => d.Racks?.Length ?? MaxMerge;
+
+    /// <summary>A design's mass (kg) and recoil impulse (N s) at size <paramref name="n"/>: a gun's go with N squared; a battery's mass adds its rack and a missile a station.</summary>
+    private static (float Mass, float Kick) Rating(Design d, int n)
+    {
+        var (m1, k1) = Rating(d);
+        if (d.Racks == null)
+            return (m1 * n * n, k1 * n * n);
+        var rack = ConstructParts.Find(d.Racks[n - 1]);
+        var missile = ConstructParts.Find(d.Missile!);
+        return (m1 + (rack?.Mass ?? 0) + (rack?.Rack.Stations ?? 0) * (missile?.Mass ?? 0), k1);
     }
 
     private static readonly Dictionary<string, (float Mass, float Kick)> _ratings = new(StringComparer.Ordinal);
@@ -118,9 +140,10 @@ public static class VehicleGunsmith
     {
         lock (_fits)
         {
-            if (_fits.TryGetValue((d.Build, n), out var ok))
+            if (_fits.TryGetValue((d.Name, n), out var ok))
                 return ok;
             var w = Make(d, n, 4);
+            string? why = null;
             try
             {
                 var v = new Vehicle("Gunsmith Stand", Styles.Militia, 1);
@@ -129,21 +152,50 @@ public static class VehicleGunsmith
                 var c = v.Live;
                 ok = false;
                 for (var g = 0; g < c.GunCount; g++)
-                    if (c.Guns[g].Part == v.Gun!.Index && c.Guns[g].Def != null && c.Guns[g].Problem.Length == 0 && (n == 1 || c.Guns[g].MergeN == n))
+                    if (c.Guns[g].Part == v.Gun!.Index && c.Guns[g].Def != null && c.Guns[g].Problem.Length == 0 && (n == 1 || d.Racks != null || c.Guns[g].MergeN == n))
                         ok = true;
+                if (ok && d.Racks != null)
+                {
+                    // (a battery: its rack holds a missile on every station, as the game counts what it holds)
+                    c.Rebuild();
+                    var held = -1;
+                    for (var k = 0; k < c.RackCount; k++)
+                        held = Math.Max(held, c.Racks[k].Held);
+                    ok = ConstructParts.Find(d.Racks[n - 1]) is { } rd && held == rd.Rack.Stations;
+                    if (!ok)
+                        why = $"its rack holds {held} missiles";
+                }
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
             {
                 ok = false;
+                why = ex.Message;
             }
             if (!ok)
-                Console.WriteLine($"[vehicles] gunsmith: {d.Name} won't build as a {n}x{n}: left out");
-            return _fits[(d.Build, n)] = ok;
+                Console.WriteLine($"[vehicles] gunsmith: {d.Name} won't build as {(d.Racks == null ? $"a {n}x{n}" : $"its {d.Racks[n - 1]}")}{(why == null ? "" : ": " + why)}: left out");
+            return _fits[(d.Name, n)] = ok;
         }
+    }
+
+    /// <summary>A missile battery of size <paramref name="n"/> (1 to 4) on the gunsmith's test stand, as blueprint text (<c>--bench-vehicle-guns --battery N</c>).</summary>
+    public static string BatteryStand(int n)
+    {
+        var d = Designs.First(x => x.Kind == Kind.MissileBattery);
+        n = Math.Clamp(n, 1, d.Racks!.Length);
+        var v = new Vehicle("Missile Stand", Styles.Militia, n);
+        var root = v.Root("Plate Steel 1 m", new System.Numerics.Vector3(0, 2f, 0), Orient.Facing(System.Numerics.Vector3.UnitY));
+        v.Turret(root, Make(d, n, 4));
+        return v.Text();
     }
 
     private static WeaponOption Make(Design d, int n, int tier)
     {
+        if (d.Racks != null)
+            return new WeaponOption(BatteryNames[Math.Min(n, BatteryNames.Length - 1)], d.Build)
+            {
+                Mount = "rack", Rack = d.Racks[n - 1], Ordnance = d.Missile, Recipe = $"gunsmith:{d.Kind}:{d.Name}", Class = n >= 2 ? GunClass.Heavy : GunClass.Medium,
+                Tier = Math.Min(d.Tier, Math.Max(1, tier)), Tags = n >= 3 && !d.Tags.Contains("boss") ? [.. d.Tags, "boss"] : d.Tags,
+            };
         var name = n > 1 ? $"{Sizes[Math.Min(n, Sizes.Length - 1)]} {d.Name}" : d.Name;
         // (a shell gun's crew stand behind a shield; a rapid gun is a pintle's: a shield on every turret filled a bus's side box past the Silhouette rule)
         var cls = d.Kind == Kind.RapidHeavy && n == 1 && d.Tier <= 1 ? GunClass.Medium : GunClass.Heavy; // (a single autocannon or chain gun is a crew's gun; merged, or a shell gun, a cannon)
@@ -186,7 +238,7 @@ public static class VehicleGunsmith
             for (var tier = 1; tier <= 4; tier++)
             {
                 var offer = Offer(mass, tier);
-                Console.WriteLine($"  {mass,6:0} kg tier {tier}: {(offer.Count == 0 ? "nothing" : string.Join("; ", offer.Select(w => { var (m, k) = Rating(Designs.First(d => d.Build == w.Build)); return $"{w.Name} {w.Merge}x{w.Merge} ({m * w.Merge * w.Merge:0} kg, {k * w.Merge * w.Merge:0} N s)"; })))}");
+                Console.WriteLine($"  {mass,6:0} kg tier {tier}: {(offer.Count == 0 ? "nothing" : string.Join("; ", offer.Select(w => { var d = Designs.First(d => w.Recipe.EndsWith(":" + d.Name, StringComparison.Ordinal)); var n = d.Racks == null ? w.Merge : Array.IndexOf(d.Racks, w.Rack) + 1; var (m, k) = Rating(d, n); return d.Racks == null ? $"{w.Name} {w.Merge}x{w.Merge} ({m:0} kg, {k:0} N s)" : $"{w.Name} ({w.Rack}, {m:0} kg)"; })))}");
             }
         return 0;
     }
