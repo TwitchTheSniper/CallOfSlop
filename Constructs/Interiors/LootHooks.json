@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-interiors/1",
+  "about": "Per-room-type loot hooks (docs/sandbox/INTERIORS.md): a room's loot id to a table in Constructs/Loot.json. Every room of a type rolls from the same table, so a medical bay holds medical things and an armoury guns, ammunition and weapon parts. PROVISIONAL: Loot.json has faction tables only, so every hook points at 'trader' until per-room tables are written; null leaves the containers empty.",
+  "provisional": true,
+  "hooks": {
+    "personal": "trader",
+    "food": "trader",
+    "medical": "trader",
+    "stores": "trader",
+    "armoury": "trader",
+    "engineering": "trader",
+    "ammunition": "trader"
+  }
+}

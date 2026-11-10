@@ -1289,6 +1289,56 @@ took an archetype and were made again (Highland 3 and 7, Scam 1, British 1; all 
 - The cab ratio: the cab references (`CabLook.Refs`) read only the style's own languages; an archetype's cab language should join them.
 - The gun bed's drum and deck-plate refusals on a short bed (a third of the Car sweep's failures).
 
+## 17. Phase 8a part 2, as built (2026-11-10): a car body
+
+Part 1's cars still read as a cab plus an open bed (a technical). Part 2 gives the Car a body of its own. Code: the grammar's `"boot"` segment and `Row`
+(`VehicleGrammar.cs`), `Vehicle.Boot` and `LoftedBoot` (`Vehicle.Cabs.cs`), `Turret(..., lift: true)`.
+
+### How it works
+
+- **The cabin.** The Car's recipe has two patterns: a boot alone (two seats; 2.25 to 2.75 m) or a 1 m second row and a boot (2.5 to 3 m), weighted 1 to 1.5
+  (`CarRows`: a supercar and a compact hatch always seat two). Over a second row a car's cabin is a crew cab (`w`), one roof from the screen to the boot,
+  and the archetype's fastback (`CabBackMin/Max`) now draws on a crew cab too, so the roof runs down over the whole cabin. A crew cabin over the rear axle is
+  planned again (the differential's face met the cabin floor).
+- **The boot.** A Fuel Tank (0.5 m) on a sill clear of the axles, piped to the engine, and over it a hood lofted in the cabin's language turned round: the
+  cabin's width (less 3 cm, 0.6 to 0.92 m a side), 0.45 m tall, its foot 0.6 m up (clear of the rear tyres), its pad on the tank's top, its nose the tail (flat,
+  rounded or wedge; never a grille); the style's fenders on its sides. The tank hangs under the deck, as a car's does. The tank's place is planned with the
+  gun (`TankSpot`: nearest the lid's middle, 0.45 m off an axle, clear of a wedge tail's cap), so a boot without room plans again.
+- **The gun.** On a sill just behind the cabin, always on a pedestal (`lift`) over the cabin's roof, forward, its seat on the arm facing it; the lid starts
+  15 cm behind the pedestal and runs under the turret's table. No deck plates and no drum: part 1's gun-bed failures (the drum's whole plate, coplanar bed
+  plates) don't arise on a car. Other shapes' gun beds are unchanged.
+- **Fixes on the way.** A hatch's short bonnet (`HoodReach` -0.08) made a hood whose nose wasn't ahead of its full section (`zf` -0.67): refused; the hood's
+  front now stops at -0.68 at most. The identity's cab references (`CabLook.Refs`) include an archetype's own cab language (the cab-over ahead of a box body).
+
+### Measured
+
+| | before (main f1b5486d5) | after |
+| --- | --- | --- |
+| room exteriors ratio | 1.47 | 1.47 |
+| cabs ratio | 1.27 | 1.25 (within 0.063 to 0.064, between 0.080) |
+| whole body ratio | 1.02 (within 0.156, between 0.159) | 1.02 (0.154, 0.157) |
+| generation mean a style | 310 to 994 ms | 272 to 967 ms |
+| Car sweeps, `--seeds 8` | Bandit 7, IT 6, Scam 6, Highland 7, British 5 (31 of 40) | Bandit 8, IT 8, Scam 8, Highland 7, British 8 (39 of 40) |
+| full check, 6 styles x 5 recipe shapes x 6 seeds | 178 of 180 | 178 of 180 (Bandit Scrap Tanker 3's barrel; Highland Scrap Tanker 3's Pipe Box) |
+| Car full check, 5 styles x 6 seeds | - | 30 of 30 |
+
+What the numbers say: a car now outlines as a car (bonnet, cabin, boot deck, a gun ring over the roof), about 70 parts and 1.4 to 1.7 t. The whole-body ratio
+doesn't move because every faction's car shares the same body plan (bonnet, cabin, boot), so between-style car pairs are as close as within-style ones; the
+measure counts a car against its own style's trucks and buses. What tells factions apart on a car is the cabin's section and proportions (the archetype), which
+the cab ratio reads, and four-seat crew cabins widen a style's cabs (within 0.063 to 0.064). Bandit cars take about 3 s a generation: its signature asks for
+fuel in the open, and a car's tank is covered, so the identity gate plans each again.
+
+**Committed seeds**: the Car seeds as before (Bandit 1 7 5, IT 1 2 8, Scam 1 4 3, Highland 1 2 5, British 2 4 3), the 15 files made again, all OK through the full
+check. `--gen-vehicles` reports all 138 identical, also with `--order reverse`; `--check-construct-parts` clean. No part key or wire change (the boot is a hood's
+key): protocol stays 223.
+
+### Left
+
+- A cab-over tractor with a semi-trailer (a box or curtain trailer on the Fuel Trailer's drawbar and a Tow Eye, towed as the Tanker Rig tows its trailer seeds).
+- Coaches on the War Bus, a pickup line, American long-nose trucks for Bandit and Highland.
+- A roof-hatch turret (needs a hatch in the cab's key) and a bonnet mount; a Bandit car's fuel in the open (a drum on the boot, its signature).
+- The whole-body ratio: faction-specific car outlines (lengths, deck heights, a pickup or a coupe per faction) rather than one body plan.
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1324,5 +1374,6 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
 --body-report all --seeds 6 --no-archetypes  # phase 8a: the styles' own bodies, without archetypes
 --sweep-vehicle "IT Box Truck" --seeds 6 --archetype "rigid box"   # phase 8a: one archetype on every seed that can take it
+--sweep-vehicle "Bandit Car" --seeds 8   # phase 8a part 2: the car body
 --body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows, phase 7c's ends, storeys, consoles and wheels)
 ```
