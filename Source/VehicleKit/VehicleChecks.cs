@@ -31,6 +31,9 @@ public sealed class VehicleCheckOptions
 
     /// <summary>It's towed: nothing drives it, so only its build, its z-fighting and how it stands are checked.</summary>
     public bool Towed;
+
+    /// <summary>It flies (an aircraft generator, <see cref="IAircraftShape"/>): no road drive or turn; the flight check (<see cref="VehicleFlightCheck"/>) instead.</summary>
+    public bool Flies;
 }
 
 /// <summary>What <see cref="VehicleChecks.Check"/> found: failures (it is wrong), notes (numbers worth reading).</summary>
@@ -98,6 +101,11 @@ public static class VehicleChecks
             r.Failures.Add($"it came apart standing still: {cargoBodies} bodies became {w.Bodies.Count}");
         if (o.Towed)
             return r;
+        if (o.Flies)
+        {
+            VehicleFlightCheck.Into(text, file, r);
+            return r;
+        }
         Drive(bp, o, r);
         Turn(bp, o, r);
         Guns(bp, r);
@@ -191,7 +199,7 @@ public static class VehicleChecks
             r.Failures.Add($"{r.Mass:0} kg: outside {o.MinMass:0} to {o.MaxMass:0} kg");
         if (c.PartCount < bp.Steps.Count)
             r.Notes.Add($"{bp.Steps.Count - c.PartCount} step(s) became links (old fuel lines or shafts)");
-        if (o.Towed)
+        if (o.Towed || o.Flies)
             return;
         if (!c.HasPowertrain)
             r.Failures.Add($"no working powertrain: {c.DriveProblem}");
