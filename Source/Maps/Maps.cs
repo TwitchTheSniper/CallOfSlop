@@ -536,6 +536,9 @@ public static partial class Maps
     private static MapPack[]? _packs;
     public static Map[] All => _all ??= LoadAll();
 
+    /// <summary>Have the maps loaded (code that may run while they load, such as a blueprint's guns, mustn't start World's statics: they load the maps).</summary>
+    public static bool Loaded => _all != null;
+
     /// <summary>Every map pack (one per top-level folder in Maps, plus "Other" for loose files), sorted by order then name.</summary>
     public static MapPack[] Packs
     {

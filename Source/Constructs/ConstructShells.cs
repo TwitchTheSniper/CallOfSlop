@@ -106,7 +106,9 @@ public static class ConstructShells
     {
         var n = Math.Max(1, (int)g.MergeN);
         w.RangeM *= (1f + R.ShellRangePerStep * (n - 1)) * w.ChargeV; // (BuildStats took the range by the charge once: reach goes with the speed squared)
-        var pull = MathF.Max(1f, World.Gravity * World.GravityScale);
+        // (not World.GravityScale before the maps are up: reading it starts World, which loads the maps, and a map's blueprints build guns: a shell gun in a committed blueprint
+        // hung the start-up while maps loaded in parallel, or threw in a serial load)
+        var pull = MathF.Max(1f, World.Gravity * (Maps.Loaded ? World.GravityScale : 1f));
         g.MaxRange = w.RangeM;
         g.Speed = MathF.Sqrt(w.RangeM * (pull > 1f ? pull : FlatGravity)); // (range is the reach at 45 degrees)
         g.Shell = kind;
