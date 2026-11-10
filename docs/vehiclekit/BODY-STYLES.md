@@ -1472,7 +1472,7 @@ What the numbers say: the cab family wins back cab separation (within-style cabs
 room exteriors move from nearest British to well apart. The whole body barely moves: a car is one shape of six to nine a style, and the other shapes' outlines are the
 plan's. Diversity within a style holds (falls of 0.005 at most).
 
-**Committed vehicles**: 135 of 193 files made again (fenders, cab sub-styles, car plans); `--gen-vehicles` reports all identical, also with `--order reverse`;
+**Committed vehicles**: 131 of 193 files made again (fenders, cab sub-styles, car plans); `--gen-vehicles` reports all identical, also with `--order reverse`;
 `--check-construct-parts` clean. Every changed file through the full check (`--check-vehicle`): all pass but the gunsmith's big guns 41 to 67 degrees off their gunners (Bandit Box Truck 4, War Bus 10; British Flatbed Fort 7; Highland Box Truck 3 and 7, Flatbed Fort 8; IT Box Truck 3, War Bus 10; Scam Flatbed Fort 1 and 6: phase 9b's; Bandit Box Truck 4 fails so on main too). Two found on the way: Bandit's scrap-plate cabs at the style's own bodies' first proportions (1.56-1.64 m, belt 1.1-1.14) left 8 of 14 driver's rays on the cab (Gun Wagon 8, Wagon 1): that sub-style now keeps the faction's proportions; Scam's fenders as IT's (slim arches only) made two kit-1 Technicals read as a box: Scam keeps both arches. Scam Technical 21 (identical to main) fails stability 0.69 there too. No part key or wire change: protocol stays 225.
 
 ### Left
