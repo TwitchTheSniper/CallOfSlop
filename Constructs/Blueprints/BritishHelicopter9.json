@@ -1,0 +1,40 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "British Helicopter 9",
+  "group": "Ministry of Slop",
+  "description": "A light helicopter on skids, a cab round its seat. Shift climbs, Ctrl sinks, W and S lean it on, Q and E sideways, A and D turn.",
+  "steps": [
+    {"part": "Square Beam 2 m", "paint": "#2b2a28"},
+    {"part": "Seat", "on": 0, "socket": "-z", "by": "back"},
+    {"part": "Frame Block", "on": 1, "socket": "+x", "by": "-x", "paint": "#004225"},
+    {"part": "Frame Block", "on": 1, "socket": "-x", "by": "+x", "paint": "#004225"},
+    {"part": "Square Beam 2 m", "on": 0, "socket": "+z", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Turbine", "on": 4, "socket": "+y1", "by": "-z", "paint": "#2b2a28"},
+    {"part": "T Gearbox", "on": 5, "socket": "+z", "by": "-z"},
+    {"part": "Helicopter Rotor", "on": 6, "socket": "+z", "by": "base"},
+    {"part": "Fuel Tank", "on": 0, "socket": "-y1", "by": "+y", "paint": "#004225"},
+    {"part": "Battery", "on": 8, "socket": "+z", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 1 m", "on": 4, "socket": "+z", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 2 m", "on": 10, "socket": "+z", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 0.5 m", "on": 11, "socket": "+y7", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Right-Angle Gearbox", "on": 12, "socket": "-x1", "by": "+y"},
+    {"part": "Tail Rotor", "on": 13, "socket": "-y", "by": "base", "config": {"torqueMix": 1, "reverse": 0}},
+    {"part": "Tail Fin", "on": 11, "socket": "+z", "by": "front", "spin": 1, "paint": "#004225"},
+    {"part": "Flight Stabilizer", "on": 0, "socket": "+y2", "by": "-y", "config": {"keys": "Rotorcraft", "maxTilt": 30}},
+    {"part": "Square Beam 0.5 m", "on": 4, "socket": "-y1", "by": "+z", "paint": "#2b2a28"},
+    {"part": "Square Beam 2 m", "on": 17, "socket": "-z", "by": "+y3", "spin": 1, "paint": "#2b2a28"},
+    {"part": "Square Beam 0.5 m", "on": 18, "socket": "-y0", "by": "+z", "paint": "#2b2a28"},
+    {"part": "Square Beam 2 m", "on": 19, "socket": "-z", "by": "+y3", "paint": "#2b2a28"},
+    {"part": "Square Beam 0.5 m", "on": 18, "socket": "-y7", "by": "+z", "paint": "#2b2a28"},
+    {"part": "Square Beam 2 m", "on": 21, "socket": "-z", "by": "+y3", "paint": "#2b2a28"}
+  ],
+  "links": [
+    {"type": "data", "from": 1, "to": 16},
+    {"type": "data", "from": 16, "to": 7, "fromPort": "lift", "toPort": "collective"},
+    {"type": "data", "from": 16, "to": 7, "fromPort": "pitch", "toPort": "cyclic pitch"},
+    {"type": "data", "from": 16, "to": 7, "fromPort": "roll", "toPort": "cyclic roll"},
+    {"type": "data", "from": 16, "to": 14, "fromPort": "yaw", "toPort": "collective"},
+    {"type": "shaft", "from": 6, "to": 13, "fromPort": "Branch shaft", "toPort": "Input shaft"},
+    {"type": "pipe", "from": 8, "to": 5, "fromPort": "Fuel out", "toPort": "Fuel in"}
+  ]
+}

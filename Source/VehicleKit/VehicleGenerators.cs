@@ -61,7 +61,7 @@ public static class VehicleRegistry
     [
         s => new Generators.DoubleDecker(s),
         s => new Generators.Car(s),
-        s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: no style ships them yet)
+        s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: every shipped style names them, seeds in Styles.cs)
         s => new Generators.Plane(s),
         s => new Generators.Helicopter(s),
         s => new Generators.Buggy(s), // (phase 8b: the archetype library, part 2)

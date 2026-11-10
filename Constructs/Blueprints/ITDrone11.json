@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "IT Drone 11",
+  "group": "IT Department",
+  "description": "A home-made drone: eight small rotors on four tube arms round a battery. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
+  "steps": [
+    {"part": "Battery", "paint": "#2a64a8"},
+    {"part": "Steel Tube 1 m", "on": 0, "socket": "-z", "by": "end-", "paint": "#3b3f44"},
+    {"part": "Drone Rotor", "on": 1, "socket": "-y3", "by": "front"},
+    {"part": "Drone Rotor", "on": 1, "socket": "-y2", "by": "front"},
+    {"part": "Steel Tube 1 m", "on": 0, "socket": "+z", "by": "end-", "paint": "#3b3f44"},
+    {"part": "Drone Rotor", "on": 4, "socket": "-y3", "by": "front"},
+    {"part": "Drone Rotor", "on": 4, "socket": "-y2", "by": "front"},
+    {"part": "Steel Tube 1 m", "on": 0, "socket": "-x", "by": "end-", "paint": "#3b3f44"},
+    {"part": "Drone Rotor", "on": 7, "socket": "-y3", "by": "front"},
+    {"part": "Drone Rotor", "on": 7, "socket": "-y2", "by": "front"},
+    {"part": "Steel Tube 1 m", "on": 0, "socket": "+x", "by": "end-", "paint": "#3b3f44"},
+    {"part": "Drone Rotor", "on": 10, "socket": "-y3", "by": "front"},
+    {"part": "Drone Rotor", "on": 10, "socket": "-y2", "by": "front"},
+    {"part": "Flight Stabilizer", "on": 4, "socket": "+y1", "by": "-y", "config": {"keys": "Rotorcraft", "maxTilt": 30}},
+    {"part": "Drone Receiver", "on": 4, "socket": "+y3", "by": "bottom"},
+    {"part": "Camera", "on": 1, "socket": "-y0", "by": "+y"}
+  ]
+}

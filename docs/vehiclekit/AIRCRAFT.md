@@ -5,6 +5,45 @@ The user (2026-11-10): the vehicle kit should generate small aircraft at run tim
 The goal is the tools and systems that make aircraft at run time, not a few hand-made ones. Flight design: the project doc `claude/flight.md`, code guide:
 docs/sandbox/CONSTRUCTS.md ("Air and lift", "Flight control", "Jets, rockets and repulsors", "Wings", "Propellers and rotors").
 
+## In the game (2026-11-10)
+
+What a player sees now, and how to get it:
+
+- **Shipped seeds.** Every shipped style (Bandit, IT, Highland, Scam, British) names "Drone", "Plane" and "Helicopter" in its `Extra` list, with three seeds
+  each in its `Seeds` (`Styles.cs`; a different three per style, all passing a 12-seed sweep): 45 committed blueprints in `Constructs/Blueprints`
+  (`BanditDrone1.json` ...), made by `--gen-vehicle "<Style> <Shape>" --out Constructs/Blueprints` and covered by `--gen-vehicles`. Their files carry the style's
+  group, so they sit with the faction's vehicles in the blueprint catalogue (Tab, Blueprints). A committed seed skips the flight gate when made again (it passed
+  it when written); every other seed is flown first. Militia ships no files, as for its ground vehicles.
+- **Creative spawn** (the parts menu, Blueprints tab, "Faction vehicles: new seed" on): an aircraft tile follows **"An aircraft tile makes one"**:
+  - *on the ground* (the default): a new seed of the tile's style and shape stands 6 m in front of you (the same `CActKind.Vehicle` path as ground vehicles,
+    gated by the flight check). Sit in a helicopter's or plane's seat and fly it on the stabilizer's keys (Shift climbs, Ctrl sinks, W A S D). A drone has a Drone
+    Receiver, not a seat: fly it from a Remote Console on its channel. With "new seed" off the tile places the committed file.
+  - *flying, piloted*: one of the tile's shape launched 20 m ahead of you at its height (drone 25 m, helicopter 35, plane 60) with a bot pilot patrolling about that point.
+  - *faction air role* (scout, patrol, escort or any): the style picks the aircraft for the role through the faction hook below, flying with a pilot.
+  Both flying choices are `CActKind.Aircraft` (protocol 230: u8 `AirAsk`, style, shape or role, seed), so a client asks as the host does. "By role" and
+  "a convoy" stay ground choices: an aircraft tile with either set makes one on the ground.
+- **Faction aircraft.** No runtime faction system spawns vehicles yet (convoys and roles come only from player or creative requests; StoryFactions has no
+  spawner). The hook it will call is `Game.SandboxRequestAir(style, role, over, seed?, order, radius, yaw, done, owner)` (`GameSandboxAircraft.cs`): an air role
+  (`AircraftRoles.cs`: scout mostly drones, patrol planes and helicopters, escort helicopters and drones; only shapes the style names) becomes a shape and a
+  seed, made at spawn time, launched over the point and flown by an `AircraftPilot`. At most `Game.MaxFactionAir` = 8 such aircraft live (pilots flying plus
+  requests on the way; all pilots stay within `MaxPilots` = 32). Ground roles never pick an aircraft (their shape lists name none).
+- **Convoy escorts.** A convoy request (creative "a convoy") gets a helicopter or drone escort patrolling over it one time in three (`AirEscortChance`, from the
+  convoy's seed), never sooner than 45 s after the last (`AirEscortEvery`).
+- **Capture.** A player who takes the seat of a piloted aircraft takes it over: the pilot lets go on its next look (`Driver` set) and the keys are theirs. A
+  landed or parked aircraft is entered like any vehicle.
+
+Tried by hand (a throwaway host + client probe over RakNet with 80 ms lag and 2 % loss, Proving Ground): the client's catalogue lists 327 blueprints, 45 of
+them aircraft; a client's "on the ground" Bandit Helicopter stood 7.5 m ahead, level (0.1 degrees); the client sat in it, Sprint climbed 18.6 m in 3 s after
+the wind-up, W moved it 4 m, its copy within 0.5 m; a client's "flying, piloted" IT Helicopter launched 35 m up with a pilot, the copy within 1.4 m; a faction
+scout (a Highland Drone) through the role; two pilots cost 2.5 us a tick and allocated nothing; the client boarded the piloted helicopter in the air through
+its seat (pilot let go, the captor climbed 11.7 m on Sprint); a Bandit convoy got a helicopter escort; ten more requests filled the cap of 8 and the rest
+were refused. Not tried: a piloted plane spawned from the menu (only through `--bench-aircraft`), a drone flown from a Remote Console in the game, a client
+capturing a drone, round worlds.
+
+**Left:** armed aircraft (the gunsmith: guns on the wings or under the tank, wired to the stabilizer's `fire`), a plane's landing (a piloted plane circles home),
+loot tables for parked and crashed aircraft (`Loot.json`'s `aircraft`, a Remote Console found with a drone), the faction AI calling `SandboxRequestAir`
+(bases, patrols, escorts that follow a moving convoy), per-style aircraft slots (prop or jet, fabric or metal, drone family) in `FactionStyle`.
+
 ## Survey (phase 1, 2026-11-10)
 
 Flight in the construct game is much further along than "partly built". What a generator needs, and what exists:
@@ -41,7 +80,7 @@ climbs of 8 to 11 m in the 2 s, hover drift under 0.5 m, lift 1.4 to 2.2 times t
 
 ## The Drone generator
 
-`Generators/Drone.cs`, shape "Drone", registered in `VehicleRegistry.Extras` so no style ships files of it (`--gen-vehicles` is unchanged) while any style can
+`Generators/Drone.cs`, shape "Drone", registered in `VehicleRegistry.Extras`; every shipped style names it (see "In the game"), and any style can
 make it by name: `--gen-vehicle "Bandit Drone" --seed 7 --out /tmp/d`, `--sweep-vehicle "Bandit Drone" --seeds 20`. Every seed is made at run time and gated by
 the flight check, as a spawned ground vehicle is by the drive check. Two families by the seed:
 
@@ -59,7 +98,7 @@ the flight check, as a spawned ground vehicle is by the drive check. Two familie
 
 ## The Plane generator (phases 2 and 3)
 
-`Generators/Plane.cs`, shape "Plane", in `VehicleRegistry.Extras` (no seeds ship): `--gen-vehicle "Bandit Plane" --seed 3`, `--sweep-vehicle "Bandit Plane" --seeds 30`.
+`Generators/Plane.cs`, shape "Plane", in `VehicleRegistry.Extras` (seeds ship per style: "In the game"): `--gen-vehicle "Bandit Plane" --seed 3`, `--sweep-vehicle "Bandit Plane" --seeds 30`.
 The Light Plane's wiring on a cockpit Frame Block and a beam spine: a seat into a Flight Stabilizer on Plane keys, its `throttle` into the prop, `pitch` into the
 elevators, `yaw` into the rudder, `left aileron` and `right aileron` into the outer panels' ailerons, `flaps` into flaps on the inner panels (half the seeds).
 From the seed:
@@ -95,7 +134,7 @@ keeps within 8 m, so the thrust line was not the cause. Not verified: flying one
 
 ## The Helicopter generator (phase 3)
 
-`Generators/Helicopter.cs`, shape "Helicopter", in `VehicleRegistry.Extras` (no seeds ship): `--gen-vehicle "Bandit Helicopter" --seed 7`, `--sweep-vehicle "Bandit Helicopter" --seeds 30`.
+`Generators/Helicopter.cs`, shape "Helicopter", in `VehicleRegistry.Extras` (seeds ship per style: "In the game"): `--gen-vehicle "Bandit Helicopter" --seed 7`, `--sweep-vehicle "Bandit Helicopter" --seeds 30`.
 The Small Helicopter's wiring: a Turbine stood on end, a T Gearbox on it and a Helicopter Rotor on top; the gearbox's branch shaft to a Right-Angle Gearbox on a
 short mast at the tail's end and a Tail Rotor on it (`torqueMix` 1, `reverse` by its side); a Flight Stabilizer on Rotorcraft keys wired `lift` to the
 collective, `pitch` and `roll` to the cyclic, `yaw` to the tail rotor. A 2 m keel with the seat on its front (an open seat, or a cab of two frame blocks), a fuel
@@ -155,9 +194,9 @@ long patrol, two pilots near each other (no avoidance), and Goto/Hold orders (on
 
 ## What comes next for AI aircraft
 
-- **Faction style slots** (the other session owns `Styles.cs`): which aircraft a style fields (prop or jet, fabric or metal, drone family), its colours, and
-  "Drone", "Plane", "Helicopter" in its extras once the look is decided, so seeds ship and `--gen-vehicles` covers them.
-- **Who calls `SandboxSpawnAircraft`**: the faction AI (StoryFactions, convoys) has no air slot yet; a patrol over a base or a convoy's escort is the first use.
+- **Faction style slots** (the other session owns `Styles.cs`): which aircraft a style fields (prop or jet, fabric or metal, drone family). The three shapes are
+  in every shipped style's extras with seeds since 2026-11-10 ("In the game").
+- **Who calls `SandboxRequestAir`**: the hook and convoy escorts exist ("In the game"); the faction AI (StoryFactions) doesn't call it yet.
 - **Loot and capture**: a parked or landed generated aircraft with a Chest (`Loot.json`'s `aircraft` table), a Remote Console found with a drone (the receiver's
   channel as the key), and a captured craft staying the player's (the pilot already lets go when a seat is taken).
 - **Armed aircraft** through VehicleGunsmith (guns on the wings or under the tank, wired to the stabilizer's `fire` as the Strike Plane is); a gunner or the
