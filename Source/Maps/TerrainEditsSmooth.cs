@@ -23,7 +23,7 @@ public sealed partial class TerrainEdits
     /// A step shorter than this (metres) keeps its square corners: the 0.5 m terraces of an island's underside and its
     /// hole's floor would turn nearly every column there into a rim (about 3x the triangles) for little to see.
     /// </summary>
-    public const float MinSmoothStep = GroundTops.Near;
+    public const float MinSmoothStep = 1f;
 
     /// <summary>Most height levels four columns can have between them (every span's bottom and top).</summary>
     private const int MaxLevels = 4 * MaxSpans * 2 + 2;

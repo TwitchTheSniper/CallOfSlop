@@ -256,7 +256,7 @@ public sealed unsafe partial class PlanetRenderer
         Native.glUniform1f(_dlDip, HorizonDip(pl, cam));
         Native.glUniform1i(_dlTex, 0);
         Native.glUniform1f(_dlGround, (float)Material.Dirt);
-        Native.glUniform1f(_dlRock, (float)Material.Concrete);
+        Native.glUniform1f(_dlRock, (float)Material.Dirt); // (dug ground is loose: the rock layer's slab lines ran across every crater)
         var fog = gfx.FogColor;
         Native.glUniform3f(_dlFog, fog.X, fog.Y, fog.Z);
         Native.glUniform2f(_dlFogRange, gfx.FogRange.X, gfx.FogRange.Y);
