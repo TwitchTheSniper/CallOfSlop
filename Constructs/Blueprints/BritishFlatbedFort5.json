@@ -123,8 +123,8 @@
     {"part": "Square Beam 1 m", "on": 114, "socket": "top", "by": "-y1", "paint": "#1b1c1e"},
     {"part": "Motor Hinge", "on": 115, "socket": "+y0", "by": "base"},
     {"part": "Bastille LMG Receiver", "on": 116, "socket": "leaf", "by": "bottom"},
-    {"part": "Bloat Barrel", "on": 117, "socket": "front", "by": "back"},
-    {"part": "Gun Muzzle Brake", "on": 118, "socket": "front", "by": "back"},
+    {"part": "Long Gun Barrel", "on": 117, "socket": "front", "by": "back"},
+    {"part": "Compensator", "on": 118, "socket": "front", "by": "back"},
     {"part": "Full-Auto Sear", "on": 117, "socket": "back", "by": "front"},
     {"part": "Turret Module", "on": 75, "socket": "back", "by": "-z"},
     {"part": "Turntable", "on": 85, "socket": "+x1", "by": "base"},
@@ -162,7 +162,7 @@
     {"part": "Hull Loft (triml3 YMW5 ~D00DGUDWyFHRG1kG1vFwNFgrFBJDxlBi38iC5aJ04J =)", "on": 70, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml3 XaW5 ~D00DGUDWyFHRG1kG1vFwNFgrFBJDxlBi38iC5aJ04J ~Bm0C0MCGjCOyCX3DHQDfmDQ7CwTBon9p07374JC03C)", "on": 73, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml4 XaW5 ~Bm0C0MCGjCOyCX3DHQDfmDQ7CwTBon9p07374JC03C ~D00DGUDWyFHRG1kG1vFwNFgrFBJDxlBi38iC5aJ04J)", "on": 73, "socket": "-x0", "by": "base", "paint": "#004225"},
-    {"part": "Rain Gauge", "on": 142, "socket": "front33", "by": "base"}
+    {"part": "Furled Brolly", "on": 142, "socket": "front33", "by": "base"}
   ],
   "wires": [[33, 34], [34, 28], [75, 121], [121, 117], [124, 131], [131, 126], [137, 134]],
   "hoses": [[135, 136]],
