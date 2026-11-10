@@ -26,7 +26,7 @@ public static class RuntimeParts
     private static readonly List<WeakReference<ConstructEdits>> Hands = new();
     private static readonly object TrackGate = new();
     private static bool[] _mark = [];
-    private static long _nextSweep, _nextCheck, _lastWarn = long.MinValue;
+    private static long _nextSweep, _nextCheck, _lastWarn = -WarnEveryMs;
     private static volatile bool _pressed;
 
     /// <summary>Freed in all, and in the last sweep.</summary>
@@ -57,7 +57,7 @@ public static class RuntimeParts
         if (now - Interlocked.Read(ref _lastWarn) < WarnEveryMs)
             return;
         Interlocked.Exchange(ref _lastWarn, now);
-        Console.WriteLine($"[parts] warning: {what} at {used} of {cap} ({used * 100 / cap}%); {Line()}");
+        Console.WriteLine($"[parts] warning: {what} at {used} of {cap} ({used * 100 / cap}%): a sweep frees what nothing holds (RuntimeParts.cs)"); // (no other table's lock here: callers hold theirs)
     }
 
     /// <summary>Use of both tables, for a log line.</summary>
