@@ -299,6 +299,7 @@ public static partial class ConstructRender
         LastStoredCount = 0;
         n += DrawCouplings(gfx, world, alpha, blendTicks);
         n += DrawTracks(gfx, world, alpha, blendTicks); // (tracks: links running round their wheels; instanced)
+        n += DrawLegs(gfx, world, alpha, blendTicks); // (walker legs, posed by IK: ConstructRenderLegs.cs)
         RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
         n += RouteRender.LastSegments;
         n += ConnectorRender.Draw(gfx, world, alpha, blendTicks); // (ropes and springs)
