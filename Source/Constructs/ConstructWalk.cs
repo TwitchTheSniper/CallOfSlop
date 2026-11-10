@@ -141,9 +141,10 @@ public static partial class ConstructPhysics
         if (live != c.WalkLive)
             PlanGait(c, live);
         var ratio = load > 0 ? c.Mass / load : float.PositiveInfinity;
-        if (live < MinWalkLegs || ratio > MaxWalkLoad)
+        var over = live >= MinWalkLegs && c.FeetSet && !HeldWithout(c, c.WorldCom, 255); // (every working foot down, and still the centre of mass is outside them)
+        if (live < MinWalkLegs || ratio > MaxWalkLoad || over)
         {
-            c.WalkProblem = live < MinWalkLegs ? $"{live} working legs: it needs {MinWalkLegs}" : "the legs can't carry its weight";
+            c.WalkProblem = live < MinWalkLegs ? $"{live} working legs: it needs {MinWalkLegs}" : over ? "its legs don't stand round its weight" : "the legs can't carry its weight";
             c.Walking = false;
             c.WalkTop = 0;
             HangFeet(c);
@@ -296,7 +297,7 @@ public static partial class ConstructPhysics
         return false;
     }
 
-    /// <summary>With group <paramref name="g"/> in the air, do at least three feet stay down round the centre of mass?</summary>
+    /// <summary>With group <paramref name="g"/> in the air (255: none), do at least three feet stay down round the centre of mass?</summary>
     private static bool HeldWithout(Construct c, Vector3 com, byte g)
     {
         var first = -1;
