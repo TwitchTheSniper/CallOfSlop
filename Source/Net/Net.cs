@@ -112,6 +112,7 @@ public enum Msg : byte
     TalkChoices, // server -> one client, Sandbox story: the answers a storylet offers in their talk panel (u8 the body's player, u8 n, n texts) when they change (reliable ordered; GameStoryStorylets.cs, protocol 222)
     Fragments, // server -> one client, Sandbox story: what they hold of the old records and their leads (u8 sites, u16 each site's construct; u8 held, (u8 fragment, str source) each; u8 leads, (str name, u8 found) each) when it changes (reliable ordered; GameStoryFragments.cs, protocol 227)
     StoryPaths, // server -> one client, Sandbox story: their storylets for the Logbook's Paths (u8 n, (u16 storylet, u8 state, u8 ends had, u8 times, u32 story second, str who led) each; u8 tracks, (u8 quality, i16 value) each; u8 people, (str name, i8 standing) each) when it changes (reliable ordered; GameStoryPaths.cs, protocol 231)
+    TalkInvite, // server -> one client, Sandbox story: another player began talking to one of the story's people and this one may join (u8 1, u8 the talker, u8 the body's player), or the talk they joined is over (u8 0, u8 0, u8 the body) (reliable ordered; GameStoryTalkJoin.cs, protocol 231)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -453,6 +453,13 @@ Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, 
   someone faces them for 4 s (and stands still for a player within 6 m); a body beside whoever its step is with faces
   them. The face is the bot's glance (BotMove.cs) held on them, so nothing in the bot code changed.
 
+- **Joining a talk** (co-op; `Source/Game/GameStoryTalkJoin.cs`, protocol 231): when a player begins talking to someone,
+  every other player gets a notice at the top right for 12 s ("Karl is talking to Officer Crumb. Backspace: join the
+  chat"), offered again for the same talk after 20 s at the soonest. It can be ignored. The join key (`GameAction.JoinTalk`,
+  Backspace, rebindable) opens the same panel wherever the joiner is: they hear what the person says while the talk lasts
+  and may say hello or ask for news; a trade still wants them there, and a storylet's answers stay with the player whose
+  storylet it is. The talk stays the first player's: when it ends, the joiners' panels close.
+
 Nothing allocates in a tick; asking does (a line, a dictionary entry). What was told to whom and the Chat clock aren't
 saved.
 

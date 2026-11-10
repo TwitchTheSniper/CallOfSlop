@@ -16,8 +16,27 @@ public sealed partial class Ui
     private string _talkTradeLabel = "", _talkTitle = "";
     private byte _talkTitleFor = 255;
 
-    /// <summary>The panel for <paramref name="person"/>; returns what was asked this frame, or null.</summary>
-    public TalkAsk? DrawStoryTalk(Game game, Player person, ushort held, double now)
+    private string _inviteLine = "";
+    private int _inviteBind = int.MinValue;
+
+    /// <summary>The notice that another player began a talk, at the top right: who with whom, and the key that joins. It takes no input.</summary>
+    public void DrawTalkInvite(string text, int bind)
+    {
+        if (bind != _inviteBind)
+            (_inviteBind, _inviteLine) = (bind, $"{Keybinds.Name(bind)}: join the chat (or ignore this)");
+        var vp = ImGui.GetMainViewport();
+        ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X - 24 * _scale, vp.WorkPos.Y + vp.WorkSize.Y * 0.22f), ImGuiCond.Always, new float2(1, 0.5f));
+        ImGui.SetNextWindowBgAlpha(0.8f);
+        if (ImGui.Begin("##talkinvite"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav))
+        {
+            ImGuiSafe.TextColored(StoryPlain, text);
+            ImGuiSafe.TextColored(Orange, _inviteLine);
+        }
+        ImGui.End();
+    }
+
+    /// <summary>The panel for <paramref name="person"/>; returns what was asked this frame, or null. <paramref name="joined"/>: a line saying whose talk this is, when it was joined from afar.</summary>
+    public TalkAsk? DrawStoryTalk(Game game, Player person, ushort held, double now, string? joined = null)
     {
         TalkAsk? asked = null;
         if (_talkTitleFor != person.Id || !_talkTitle.EndsWith(person.Name, StringComparison.Ordinal))
@@ -35,6 +54,8 @@ public sealed partial class Ui
         {
             ImGui.PushTextWrapPos(0);
             ImGuiSafe.TextColored(Orange, _talkTitle);
+            if (joined != null)
+                ImGuiSafe.TextColored(Dim, joined);
             ImGui.Separator();
             // What they said lately (to anyone near: you heard it).
             var chat = game.Chat;
@@ -65,7 +86,7 @@ public sealed partial class Ui
                 asked = TalkAsk.Greet;
             if (ImGui.Button("Any news?##talknews"u8, w))
                 asked = TalkAsk.News;
-            ImGui.BeginDisabled(held == ConstructParts.None);
+            ImGui.BeginDisabled(held == ConstructParts.None || joined != null); // (a trade wants you there)
             if (ImGui.Button(_talkTradeLabel, w))
                 asked = TalkAsk.Trade;
             ImGui.EndDisabled();
