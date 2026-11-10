@@ -49,7 +49,7 @@ public static class VehicleGunsmith
         new(Kind.RapidHeavy, "Chain Cannon", "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}", 1, ["heavy", "suppress"], false),
         new(Kind.RapidHeavy, "Bunker Buster", "Bunker Buster Receiver{barrel:Cannon Sleeve,feed:Heavy Box,action:Autocannon Drive}", 3, ["heavy", "anti-armour"], false),
         new(Kind.MissileBattery, "Missile Battery", "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}", 1, ["heavy", "anti-armour", "aa"], false,
-            ["Launch Rack"], RadarMissile), // (the 1x2, 2x2 and 3x2 grids on a half-metre stand-off build and fire, but in the bench their missiles met the ground: VEHICLE-WEAPONS.md, next steps)
+            ["Launch Rack", "Twin Launch Rack", "Launch Rack 2x2", "Launch Rack 1x6"], RadarMissile),
     ];
 
     /// <summary>A battery's name by its size (ASCII: players read it).</summary>

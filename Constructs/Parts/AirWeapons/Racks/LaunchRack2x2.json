@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Launch Rack 2x2",
+  "description": "Four long stations, two rows of two: a missile battery.",
+  "modularRack": {
+    "layout": "grid",
+    "rows": 2,
+    "columns": 2,
+    "length": 3.0,
+    "diameter": 0.25
+  }
+}
