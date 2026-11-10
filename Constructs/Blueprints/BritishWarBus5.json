@@ -46,7 +46,7 @@
     {"part": "Seat", "on": 36, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 38, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 37, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabo SfUSWUXcYYWOVMWKW0W0XK ~Bu0C95CA7BIR8we4gk02l =)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#b5121b"},
+    {"part": "Hull Loft (cabo SfUSWUXcYYWOVMWKW0W0XK ~Bu0C95CA7BIR8we4gk02l = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#b5121b"},
     {"part": "Hull Loft (pane UrXfSgXBXfSgX2YVSyU-YVSy)", "on": 41, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane XIXfSkXXXfVKXKYVVKX9YVT0)", "on": 41, "socket": "glass2", "by": "frame"},
     {"part": "Hull Loft (pane UkXfSkUVXfVKUiYVVKUtYVT0)", "on": 41, "socket": "glass3", "by": "frame"},

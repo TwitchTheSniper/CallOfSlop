@@ -40,7 +40,7 @@
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 31, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabo SfUSWUXcYWWUVMWKW0W0XK ~Bu0C8VC8zC9SC9wBAO8Ql4Iw02w =)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
+    {"part": "Hull Loft (cabo SfUSWUXcYWWUVMWKW0W0XK ~Bu0C8VC8zC9SC9wBAO8Ql4Iw02w = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
     {"part": "Hull Loft (pane UrXfSgXBXfSgX3YTSzUzYTSz)", "on": 35, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane XIXfSlXXXfVKXKYTVKXAYTT1)", "on": 35, "socket": "glass2", "by": "frame"},
     {"part": "Hull Loft (pane UkXfSlUVXfVKUiYTVKUsYTT1)", "on": 35, "socket": "glass3", "by": "frame"},
@@ -100,22 +100,22 @@
     {"part": "Ammo Socket", "on": 80, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 71, "socket": "lever", "by": "-y"},
     {"part": "Chest", "on": 52, "socket": "front10", "by": "bottom", "spin": 1},
+    {"part": "Union Flag", "on": 94, "socket": "lid", "by": "base"},
     {"part": "Square Beam 0.75 m", "on": 9, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
-    {"part": "Square Beam 0.75 m", "on": 95, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
-    {"part": "Plate Steel 1 m", "on": 96, "socket": "+x2", "by": "back02", "paint": "#be0f2a"},
+    {"part": "Square Beam 0.75 m", "on": 96, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
+    {"part": "Plate Steel 1 m", "on": 97, "socket": "+x2", "by": "back02", "paint": "#be0f2a"},
     {"part": "Plate Steel 0.5x1 m", "on": 47, "socket": "+x3", "by": "-x0", "paint": "#c8102e"},
-    {"part": "Plate Steel 0.5x1 m", "on": 96, "socket": "+x0", "by": "back02", "spin": 1, "paint": "#1f4a32"},
+    {"part": "Plate Steel 0.5x1 m", "on": 97, "socket": "+x0", "by": "back02", "spin": 1, "paint": "#1f4a32"},
     {"part": "Plate Steel 0.25 m", "on": 53, "socket": "+x3", "by": "-x", "paint": "#c8102e"},
-    {"part": "Plate Steel 0.25 m", "on": 99, "socket": "-z1", "by": "-x", "paint": "#7d8186"},
-    {"part": "Fuel Drum", "on": 97, "socket": "front30", "by": "-y"},
+    {"part": "Plate Steel 0.25 m", "on": 100, "socket": "-z1", "by": "-x", "paint": "#7d8186"},
+    {"part": "Fuel Drum", "on": 98, "socket": "front30", "by": "-y"},
     {"part": "Hull Loft (decoD WoWMUUVy)", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 98, "socket": "front03", "by": "base"},
+    {"part": "Queue Post", "on": 99, "socket": "front03", "by": "base"},
     {"part": "Hull Loft (triml9 XaW5 ~BG0BWGBeVBmlBm-C1ECHUC1jAvx9267o86QB52C3oE02E ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l)", "on": 71, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml0 XaW5 ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l ~BG0BWGBeVBmlBm-C1ECHUC1jAvx9267o86QB52C3oE02E)", "on": 71, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml5 YMW5 ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l =)", "on": 72, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml9 XaW5 ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l ~BO0BeNBukC0yC95CfSCvkCvqCoBCAXBAt9B66ZD3pJ03J)", "on": 75, "socket": "+x0", "by": "base", "paint": "#004225"},
-    {"part": "Hull Loft (triml2 XaW5 ~BO0BeNBukC0yC95CfSCvkCvqCoBCAXBAt9B66ZD3pJ03J ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l)", "on": 75, "socket": "-x0", "by": "base", "paint": "#004225"},
-    {"part": "Belisha Beacon", "on": 101, "socket": "front", "by": "base"}
+    {"part": "Hull Loft (triml2 XaW5 ~BO0BeNBukC0yC95CfSCvkCvqCoBCAXBAt9B66ZD3pJ03J ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l)", "on": 75, "socket": "-x0", "by": "base", "paint": "#004225"}
   ],
   "wires": [[32, 33], [33, 27], [76, 87], [87, 80], [93, 90]],
   "hoses": [[91, 92]],
@@ -124,7 +124,7 @@
     {"type": "feed", "from": 88, "to": 90, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
     {"type": "feed", "from": 89, "to": 90, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
     {"type": "feed", "from": 90, "to": 91, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
-    {"type": "pipe", "from": 102, "to": 27, "nodes": [[1.25, 0.82, 5.55], [1.25, 0.55, 5.55], [0.67, 0.55, 5.55], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
+    {"type": "pipe", "from": 103, "to": 27, "nodes": [[1.25, 0.82, 5.55], [1.25, 0.55, 5.55], [0.67, 0.55, 5.55], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
   "loot": [{"step": 94, "table": "british"}]
 }
