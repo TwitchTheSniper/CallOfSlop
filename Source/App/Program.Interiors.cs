@@ -66,6 +66,22 @@ public static unsafe partial class Program
         Console.WriteLine($"{bp.Name}: {b.Tonnes:0} t, class {b.Class!.Name}{(data.ProvisionalClasses ? " (provisional bands)" : "")}, hull {b.Hull!.Size.X:0}x{b.Hull.Size.Z:0} m, {b.Hull.KeepOuts.Count} parts checked as keep-outs");
         if (args.Any(a => a.Equals("--plan", StringComparison.OrdinalIgnoreCase)))
             Console.Write(plan.Ascii());
+        if (args.Any(a => a.Equals("--plan", StringComparison.OrdinalIgnoreCase)) && b.Class.Chassis.Count > 0)
+        {
+            // the chassis void (phase 3): planned with the class's chassis rooms on as many storeys as the hollow holds; not built yet
+            if (b.ChassisVoid(out var whyNot, out var inner) is not { } hollow)
+                Console.WriteLine($"chassis void: none ({whyNot})");
+            else
+            {
+                var decks = (int)MathF.Floor(hollow.Size.Y / b.Class.Deck.Storey + 1e-4f);
+                var cls = b.Class with { Deck = b.Class.Deck with { Decks = decks, ReserveRoute = false }, Programme = b.Class.Chassis, Fill = b.Class.Fill.Where(f => b.Class.Chassis.Contains(f)).ToList() }; // (crew stay above: the void fills only with its own kinds)
+                var vplan = InteriorPlanner.Plan(data, cls, hollow, seed);
+                Console.WriteLine($"chassis void: {hollow.Size.X:0}x{hollow.Size.Y:0.0}x{hollow.Size.Z:0} m, {decks} storeys, {hollow.KeepOuts.Count} beams as keep-outs, {inner} floor sockets inside: PLANNED ONLY, not built");
+                Console.Write(vplan.Ascii());
+                foreach (var l in InteriorPlanner.Check(vplan, data, out _))
+                    Console.WriteLine("  void " + l);
+            }
+        }
         var lines = InteriorPlanner.Check(plan, data, out var failures);
         try
         {

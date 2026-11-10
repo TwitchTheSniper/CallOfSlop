@@ -14,7 +14,11 @@ public sealed record DeckRules(
 /// A size class by tonnage, like a ship class, with its deck rules, the rooms it asks for and <paramref name="Fill"/>: the room types a big
 /// leftover may become (INTERIORS.md phase 3; empty: it stays spare space).
 /// </summary>
-public sealed record SizeClass(string Id, string Name, double MinTonnes, double MaxTonnes, DeckRules Deck, IReadOnlyList<string> Programme, IReadOnlyList<string> Fill);
+public sealed record SizeClass(string Id, string Name, double MinTonnes, double MaxTonnes, DeckRules Deck, IReadOnlyList<string> Programme, IReadOnlyList<string> Fill)
+{
+    /// <summary>The rooms that go inside a hollow chassis, below the deck (phase 3: planned only; INTERIORS.md "The chassis is the interior").</summary>
+    public IReadOnlyList<string> Chassis { get; init; } = [];
+}
 
 public enum RoomLayout { Grid, Free }
 public enum DeckWant { Any, Lower, Upper }
@@ -103,7 +107,7 @@ public sealed class InteriorData
             if (max <= min)
                 throw new InteriorDataException($"{where}: maxTonnes must be above minTonnes");
             var prog = Arr(c, "programme", where).Select(e => e.GetString() ?? "").ToList();
-            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, Names(c, "fill")));
+            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, Names(c, "fill")) { Chassis = Names(c, "chassis") });
         }
         Classes.Sort((a, b) => a.MinTonnes.CompareTo(b.MinTonnes));
         for (var i = 1; i < Classes.Count; i++)
@@ -164,11 +168,11 @@ public sealed class InteriorData
                 else if (t.System)
                     throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": \"{r}\" is a system room the planner places itself");
         foreach (var c in Classes)
-            foreach (var r in c.Fill)
+            foreach (var r in c.Fill.Concat(c.Chassis))
                 if (!Rooms.TryGetValue(r, out var t))
-                    throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": fill names an unknown room \"{r}\"");
+                    throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": fill or chassis names an unknown room \"{r}\"");
                 else if (t.System)
-                    throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": fill names \"{r}\", a system room (spare, void, fuel and shafts are the planner's own)");
+                    throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": fill or chassis names \"{r}\", a system room (spare, void, fuel and shafts are the planner's own)");
         foreach (var t in Rooms.Values)
         {
             foreach (var w in t.Wants.Concat(t.Avoids))
