@@ -238,6 +238,9 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
 
     /// <summary>Phase 8a: how far a cab's roof runs down to its back (0 square; 1 as far as the window band allows: a fastback), rolled between the two.</summary>
     public float CabBackMin { get; init; }
+
+    /// <summary>Phase 8a: the language a cab is drawn in when it isn't the room's (a European truck's flat-faced cab-over ahead of its box body); null: the room's.</summary>
+    public BodyLanguage? CabLanguage { get; init; }
     public float CabBackMax { get; init; }
 
     /// <summary>A hood's half width and its crown over the engine's top (the engines' rocker covers stand 12 cm up: it clears them by 4 cm or more).</summary>

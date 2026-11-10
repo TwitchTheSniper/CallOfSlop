@@ -119,7 +119,7 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 HoodReach = 0, HoodHalfMin = 0.54f, HoodHalfMax = 0.58f, CabBackMin = 0, CabBackMax = 0,
             }),
         // A European minibus on the War Bus: a merged cab, upright and glazed.
-        new("minibus", "european van", "a European minibus: a merged cab under one domed roof, upright and glazed", Bus, [("Scam", 1.5), ("IT", 0.5)],
+        new("minibus", "european van", "a European minibus: a merged cab under one domed roof, upright and glazed", Bus, [("Scam", 1.5)],
             r => r with
             {
                 Languages = [(Minibus, 1)], Mix = 0, Scales = [(BodyScale.Standard, 1)], TallMin = 0.95f, TallMax = 1.05f, Cabs = [("merged", 2), ("cab-over", 1)], Noses = [('r', 1)],
@@ -131,14 +131,14 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
             {
                 Languages = [(BoxBody, 1)], Mix = 0, FacetsMin = 0, FacetsMax = 0, Scales = [(BodyScale.Heavy, 1.5), (BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.1f, FlareShare = 0.15f,
                 Brows = [(1f, 1)], Tails = [(0.75f, 1), (1f, 1)], Cabs = [("cab-over", 1)], CapsuleRakeMin = 0.12f, CapsuleRakeMax = 0.22f, Uppers = [("none", 1)], Cage = 0, Ride = (0.5, 2, 0.2),
-                CabTallMin = 1.8f, CabTallMax = 1.9f, DoorRear = 0.6,
+                CabTallMin = 1.8f, CabTallMax = 1.9f, DoorRear = 0.6, CabLanguage = CabOver,
             }),
         new("curtain-sider", "european truck", "a European curtain-sider: a flat-fronted cab-over ahead of a bowed curtain between rails", Rigid, [("British", 1.5), ("Highland", 0.4)],
             r => r with
             {
                 Languages = [(Curtain, 1)], Mix = 0, Scales = [(BodyScale.Heavy, 1.5), (BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.1f, FlareShare = 0.2f,
                 Brows = [(1f, 1)], Tails = [(0.75f, 1), (1f, 1)], Cabs = [("cab-over", 1)], CapsuleRakeMin = 0.12f, CapsuleRakeMax = 0.22f, Uppers = [("none", 1)], Cage = 0, Ride = (0.5, 2, 0.2),
-                CabTallMin = 1.8f, CabTallMax = 1.9f, DoorRear = 0.6,
+                CabTallMin = 1.8f, CabTallMax = 1.9f, DoorRear = 0.6, CabLanguage = CabOver,
             }),
     ];
 

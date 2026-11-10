@@ -28,6 +28,8 @@ public sealed class CabLook
         var rule = v.Rule;
         var d = v.Dice.Fork("cab loft");
         Language = rule.Mix > 0 && d.Fork("language").Chance(rule.Mix) ? rule.Pick(d.Fork("which")) : look.At(0); // (a mixing style's cab may come off another wreck)
+        if (rule.CabLanguage is { } own)
+            Language = own; // (phase 8a: an archetype's own cab, a European cab-over ahead of a box body)
         if (BodyLook.Force is { } forced)
             Language = forced;
         Facets = look.Facets > 0 ? Math.Min(MaxFacets, Math.Max(6, look.Facets - 3)) : 0; // (a cab is smaller than a room: a few facets fewer reads as smooth)
