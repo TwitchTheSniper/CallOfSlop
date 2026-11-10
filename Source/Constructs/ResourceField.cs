@@ -149,10 +149,14 @@ public sealed partial class ResourceField
     private struct Deposit
     {
         public int Kind, Left;
+        public byte Face; // (a planetoid's cube face; 0 on a flat map)
         public float X, Z, Rx, Rz, Cos, Sin, Phase;
     }
 
     private readonly Map _map;
+    private readonly Planetoid? _planet; // a round world: deposits lie on its six cube faces (ResourceSphere.cs)
+    private readonly int _faces; // 1 on a flat map, 6 on a planetoid
+    private readonly float _halfX, _halfZ; // half the field's size (m): the map's, or a planetoid face's
     private readonly ResourceTable _table;
     private readonly uint _seed;
     private readonly List<Deposit> _deposits = new();
@@ -198,19 +202,27 @@ public sealed partial class ResourceField
         _grid = new int[n][];
         _nx = new int[n];
         _nz = new int[n];
-        var generate = (rules?.Generate ?? true) && Math.Min(map.HalfX, map.HalfZ) >= table.MinWorldHalf;
+        _planet = map.Planetoid;
+        _faces = _planet != null ? 6 : 1;
+        (_halfX, _halfZ) = _planet != null ? (FaceHalf(_planet), FaceHalf(_planet)) : (map.HalfX, map.HalfZ);
+        var generate = (rules?.Generate ?? true) && Math.Min(_halfX, _halfZ) >= table.MinWorldHalf;
         for (var k = 0; k < n; k++)
         {
             var kind = table.Kinds[k];
-            _nx[k] = generate ? (int)MathF.Ceiling(map.HalfX * 2 / kind.Cell) : 0;
-            _nz[k] = generate ? (int)MathF.Ceiling(map.HalfZ * 2 / kind.Cell) : 0;
-            _grid[k] = new int[_nx[k] * _nz[k]];
+            var chance = kind.Chance * (rules != null && rules.Mix.TryGetValue(kind.Name, out var mul) ? mul : 1f);
+            var here = generate && chance > 0 && !(kind.Surface && _planet != null); // (no forests on a round world yet: trees stand along +Y)
+            _nx[k] = here ? (int)MathF.Ceiling(_halfX * 2 / kind.Cell) : 0;
+            _nz[k] = here ? (int)MathF.Ceiling(_halfZ * 2 / kind.Cell) : 0;
+            _grid[k] = new int[_faces * _nx[k] * _nz[k]];
             Array.Fill(_grid[k], -1);
-            for (var z = 0; z < _nz[k]; z++)
-                for (var x = 0; x < _nx[k]; x++)
-                    Generate(k, kind, x, z);
+            for (var f = 0; f < _faces; f++)
+                for (var z = 0; z < _nz[k]; z++)
+                    for (var x = 0; x < _nx[k]; x++)
+                        Generate(k, kind, chance, f, x, z);
         }
-        if (rules != null)
+        if (_planet != null)
+            SphereReady();
+        if (rules != null && _planet == null)
             foreach (var p in rules.Deposits)
             {
                 var kind = table.IndexOf(p.Kind);
@@ -225,18 +237,18 @@ public sealed partial class ResourceField
         BuildForestMask();
     }
 
-    private void Generate(int k, ResourceKind kind, int cx, int cz)
+    private void Generate(int k, ResourceKind kind, float chance, int face, int cx, int cz)
     {
-        var h = Mix(Mix(Mix(_seed, (uint)k), (uint)cx), (uint)cz);
-        if (Unit(ref h) >= kind.Chance)
+        var h = Mix(Mix(Mix(face == 0 ? _seed : Mix(_seed, 0xFACE0000u + (uint)face), (uint)k), (uint)cx), (uint)cz);
+        if (Unit(ref h) >= chance)
             return;
-        var x = -_map.HalfX + (cx + Unit(ref h)) * kind.Cell;
-        var z = -_map.HalfZ + (cz + Unit(ref h)) * kind.Cell;
+        var x = -_halfX + (cx + Unit(ref h)) * kind.Cell;
+        var z = -_halfZ + (cz + Unit(ref h)) * kind.Cell;
         var r = kind.RadiusMin + Unit(ref h) * (kind.RadiusMax - kind.RadiusMin);
         var aspect = kind.AspectMin + Unit(ref h) * (kind.AspectMax - kind.AspectMin);
         var yaw = Unit(ref h) * MathF.PI;
-        _grid[k][cz * _nx[k] + cx] = _deposits.Count;
-        _deposits.Add(new Deposit { Kind = k, Left = kind.Units, X = x, Z = z, Rx = r, Rz = r * aspect, Cos = MathF.Cos(yaw), Sin = MathF.Sin(yaw), Phase = Unit(ref h) * 6.28f });
+        _grid[k][(face * _nz[k] + cz) * _nx[k] + cx] = _deposits.Count;
+        _deposits.Add(new Deposit { Face = (byte)face, Kind = k, Left = kind.Units, X = x, Z = z, Rx = r, Rz = r * aspect, Cos = MathF.Cos(yaw), Sin = MathF.Sin(yaw), Phase = Unit(ref h) * 6.28f });
     }
 
     private void BlockLattice(Box b)
@@ -267,7 +279,7 @@ public sealed partial class ResourceField
     }
 
     /// <summary>The strongest deposit of the wanted layer here, or -1. Strength above 0 is inside it.</summary>
-    private int At(float x, float z, bool surface, bool withLeft, out float best)
+    private int At(float x, float z, bool surface, bool withLeft, out float best, int face = 0)
     {
         best = 0;
         var found = -1;
@@ -276,13 +288,13 @@ public sealed partial class ResourceField
             var kind = _table.Kinds[k];
             if (kind.Surface != surface || _nx[k] == 0)
                 continue;
-            var cx = (int)MathF.Floor((x + _map.HalfX) / kind.Cell);
-            var cz = (int)MathF.Floor((z + _map.HalfZ) / kind.Cell);
+            var cx = (int)MathF.Floor((x + _halfX) / kind.Cell);
+            var cz = (int)MathF.Floor((z + _halfZ) / kind.Cell);
             var reach = (int)MathF.Ceiling(kind.RadiusMax * 1.25f / kind.Cell);
             for (var j = Math.Max(cz - reach, 0); j <= Math.Min(cz + reach, _nz[k] - 1); j++)
                 for (var i = Math.Max(cx - reach, 0); i <= Math.Min(cx + reach, _nx[k] - 1); i++)
                 {
-                    var di = _grid[k][j * _nx[k] + i];
+                    var di = _grid[k][(face * _nz[k] + j) * _nx[k] + i];
                     if (di >= 0)
                         Consider(di, x, z, withLeft, ref best, ref found);
                 }
@@ -306,6 +318,8 @@ public sealed partial class ResourceField
     /// <summary>The name of the resource layer under a point, or null (the look text and the self-test).</summary>
     public ResourceKind? KindAt(float x, float z, bool surface)
     {
+        if (_planet != null)
+            return null; // (a round world is asked by a point: ResourceSphere.cs)
         var i = At(x, z, surface, false, out _);
         return i < 0 ? null : _table.Kinds[_deposits[i].Kind];
     }
@@ -313,6 +327,8 @@ public sealed partial class ResourceField
     /// <summary>Server: the underground kind a drill here would tap: the strongest deposit with anything left, or null.</summary>
     public ResourceKind? TappableAt(float x, float z)
     {
+        if (_planet != null)
+            return null;
         var i = At(x, z, false, true, out _);
         return i < 0 ? null : _table.Kinds[_deposits[i].Kind];
     }
@@ -420,7 +436,12 @@ public sealed partial class ResourceField
     public int Tap(float x, float z, int want, out byte material)
     {
         material = 0;
-        var i = At(x, z, false, true, out _);
+        var i = _planet != null ? -1 : At(x, z, false, true, out _);
+        return TapDeposit(i, want, ref material);
+    }
+
+    private int TapDeposit(int i, int want, ref byte material)
+    {
         if (i < 0)
             return 0;
         var d = _deposits[i];
@@ -434,13 +455,15 @@ public sealed partial class ResourceField
     /// <summary>Server: how much the underground deposit a drill here would tap holds.</summary>
     public int LeftAt(float x, float z)
     {
-        var i = At(x, z, false, true, out _);
+        var i = _planet != null ? -1 : At(x, z, false, true, out _);
         return i < 0 ? 0 : _deposits[i].Left;
     }
 
     /// <summary>The nearest underground deposit's edge-side centre a drill of <paramref name="tier"/> can work: for "the nearest iron vein is 84 m north east".</summary>
     public string NearestUnderground(float x, float z, int tier = ConstructParts.MaxTier)
     {
+        if (_planet != null)
+            return "no deposits known here";
         var bestD = float.MaxValue;
         var name = "";
         var (bx, bz) = (0f, 0f);
@@ -486,6 +509,12 @@ public sealed partial class ResourceField
             return;
         _drawnAt = cam;
         _drawn.Clear();
+        if (_planet != null)
+        {
+            AddSphereOutcrops(cam);
+            DrawVersion++;
+            return;
+        }
         foreach (var d in _deposits)
         {
             if (!_table.Kinds[d.Kind].Surface)

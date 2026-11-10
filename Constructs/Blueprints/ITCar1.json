@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.25 m, wishbone/leaf, wing 0.5, archetype supercar, cab style glasshouse, language superwedge standard 2.34 m, flare 0.11, fastback 0.9, brow 0.59 1.25 m, tail 0.63 1.25 m, door right, 8 facets, cab superwedge cab, 6 facets, nose rounded, fitting radome, wear age 0.77 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under tub, layout boot 3 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.25 m, wishbone/leaf, wing 0.5, archetype supercar, cab style glasshouse, language superwedge standard 2.34 m, flare 0.11, fastback 0.9, brow 0.59 1.25 m, tail 0.63 1.25 m, door right, 8 facets, cab superwedge cab, 6 facets, nose rounded, wear age 0.77 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under tub, layout boot 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Car 1",
   "group": "IT Department",
@@ -51,26 +51,26 @@
     {"part": "Fuel Tank", "on": 42, "socket": "+x1", "by": "-y"},
     {"part": "Hull Loft (hoodr V2VMYvWSXIXEW- ~BW0Bu7BuHBmU78g00j)", "on": 43, "socket": "+y", "by": "engine", "spin": 3, "paint": "#8e9296"},
     {"part": "Square Beam 0.75 m", "on": 41, "socket": "+x1", "by": "-z", "paint": "#3b3f44"},
-    {"part": "Turntable 2x2 Medium", "on": 45, "socket": "+z", "by": "base"},
+    {"part": "Turntable", "on": 45, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 46, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 47, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 47, "socket": "+y0", "by": "base"},
-    {"part": "Gravedigger Auto Receiver", "on": 49, "socket": "leaf", "by": "bottom"},
-    {"part": "Scattermouth Barrel", "on": 50, "socket": "front", "by": "back"},
-    {"part": "Tumbler Ring", "on": 51, "socket": "front", "by": "back"},
-    {"part": "Shell Drum", "on": 50, "socket": "top", "by": "bottom"},
-    {"part": "Heavy Auto Sear", "on": 50, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 53, "socket": "left", "by": "right"},
+    {"part": "Hammerfall Autocannon Receiver", "on": 49, "socket": "leaf", "by": "bottom"},
+    {"part": "Hammerfall Autocannon Receiver", "on": 50, "socket": "right", "by": "left"},
+    {"part": "Hammerfall Autocannon Receiver", "on": 50, "socket": "top", "by": "bottom"},
+    {"part": "Hammerfall Autocannon Receiver", "on": 51, "socket": "top", "by": "bottom"},
+    {"part": "Cannon Sleeve", "on": 50, "socket": "merged front", "by": "back"},
+    {"part": "Heavy Box", "on": 50, "socket": "merged left", "by": "right"},
+    {"part": "Autocannon Drive", "on": 50, "socket": "merged back", "by": "front"},
+    {"part": "Ammo Box", "on": 55, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 48, "socket": "+x", "by": "-x"},
     {"part": "Hull Loft (hoodr UnV2WyWjXIXEVd ~80080A80P80h50z011)", "on": 26, "socket": "+y", "by": "engine", "paint": "#c0392b"},
-    {"part": "Slat Grille", "on": 57, "socket": "front", "by": "back", "paint": "#c0392b"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 58, "pos": [0.123, 0.461, -1.782], "rot": [-0.7092, 0.0075, 0.0045, 0.705]}, "paint": "#8e9296"},
-    {"part": "Hull Loft (decoR WTWK)", "on": 34, "socket": "top", "by": "base"},
-    {"part": "Network Switch", "on": 57, "socket": "top", "by": "base"},
-    {"part": "Square Beam 0.5 m", "on": 44, "socket": "top", "by": "-z", "paint": "#3b3f44"},
-    {"part": "Satellite Dish", "on": 62, "socket": "+z", "by": "base"}
+    {"part": "Slat Grille", "on": 59, "socket": "front", "by": "back", "paint": "#c0392b"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 60, "pos": [0.123, 0.461, -1.782], "rot": [-0.7092, 0.0075, 0.0045, 0.705]}, "paint": "#8e9296"},
+    {"part": "Network Switch", "on": 59, "socket": "top", "by": "base"},
+    {"part": "Router Antenna", "on": 34, "socket": "top", "by": "base"}
   ],
-  "wires": [[31, 32], [32, 26], [48, 56], [56, 50]],
+  "wires": [[31, 32], [32, 26], [48, 58], [58, 50]],
   "links": [
     {"type": "shaft", "from": 27, "to": 6, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 43, "to": 26, "laid": true}

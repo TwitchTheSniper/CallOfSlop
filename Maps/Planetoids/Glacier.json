@@ -251,7 +251,12 @@
   },
   "sandbox": {
     "resources": {
-      "generate": false
+      "mix": {
+        "helium pocket": 2.5,
+        "copper vein": 1.5,
+        "sand bed": 0,
+        "iron vein": 0.7
+      }
     }
   },
   "teamSpawns": [

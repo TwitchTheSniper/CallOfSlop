@@ -266,8 +266,8 @@ public static class VehicleArmouryCli
         {
         }
         Console.WriteLine($"armoury report: {(VehicleArmoury.On ? "with" : "WITHOUT")} the armoury, seeds {seeds.FirstOrDefault()} to {seeds.LastOrDefault()}{(check ? ", with the full check" : "")}");
-        Console.WriteLine($"  {"style",-9} {"shape",-13} {"made",4} {"guns",5} {"names",5} {"builds",6} {"mixed",5} {"merged",6} {"heavy",5} {"ms",6} {(check ? "check" : ""),5}  guns seen");
-        int made = 0, failed = 0, passed = 0, checkedN = 0, seats = 0, sideways = 0;
+        Console.WriteLine($"  {"style",-9} {"shape",-13} {"made",4} {"guns",5} {"names",5} {"builds",6} {"mixed",5} {"merged",6} {"heavy",5} {"smith",5} {"ms",6} {(check ? "check" : ""),5}  guns seen");
+        int made = 0, failed = 0, smithAll = 0, gunsAll = 0, passed = 0, checkedN = 0, seats = 0, sideways = 0;
         var times = new List<double>();
         var byStyle = new Dictionary<string, (HashSet<string> Names, HashSet<string> Builds)>();
         var failures = new List<string>();
@@ -278,7 +278,7 @@ public static class VehicleArmouryCli
                     continue;
                 var names = new HashSet<string>();
                 var builds = new HashSet<string>();
-                int vehicles = 0, guns = 0, mixed = 0, merged = 0, heavy = 0, ok = 0;
+                int vehicles = 0, guns = 0, mixed = 0, merged = 0, heavy = 0, smith = 0, ok = 0;
                 var ms = new List<double>();
                 foreach (var seed in seeds)
                 {
@@ -296,6 +296,7 @@ public static class VehicleArmouryCli
                             here.Add(Key(w));
                             merged += w.Merge > 1 ? 1 : 0;
                             heavy += VehicleRoles.ClassOf(w) == GunClass.Heavy ? 1 : 0;
+                            smith += w.Recipe.StartsWith("gunsmith:", StringComparison.Ordinal) ? 1 : 0;
                         }
                         mixed += here.Count > 1 ? 1 : 0;
                         foreach (var off in VehicleChecks.SeatsOffGuns(text))
@@ -327,19 +328,21 @@ public static class VehicleArmouryCli
                     }
                 }
                 made += vehicles;
+                smithAll += smith;
+                gunsAll += guns;
                 times.AddRange(ms);
                 if (!byStyle.TryGetValue(st.Name, out var all))
                     byStyle[st.Name] = all = (new(), new());
                 all.Names.UnionWith(names);
                 all.Builds.UnionWith(builds);
-                Console.WriteLine($"  {st.Name,-9} {shape,-13} {vehicles,4} {guns,5} {names.Count,5} {builds.Count,6} {mixed,5} {merged,6} {heavy,5} {ms.DefaultIfEmpty().Average(),6:0} {(check ? $"{ok}/{vehicles}" : ""),5}  {string.Join("; ", names.Order())}");
+                Console.WriteLine($"  {st.Name,-9} {shape,-13} {vehicles,4} {guns,5} {names.Count,5} {builds.Count,6} {mixed,5} {merged,6} {heavy,5} {smith,5} {ms.DefaultIfEmpty().Average(),6:0} {(check ? $"{ok}/{vehicles}" : ""),5}  {string.Join("; ", names.Order())}");
             }
         foreach (var (style, all) in byStyle)
             Console.WriteLine($"  style {style}: {all.Names.Count} gun names, {all.Builds.Count} distinct guns over every shape");
         Console.WriteLine($"  turret joints fitted: {string.Join(", ", Vehicle.TurretJoints.OrderBy(k => k.Key).Select(k => $"{k.Key} {k.Value}"))}");
         foreach (var f in failures)
             Console.WriteLine($"  FAIL {f}");
-        Console.WriteLine($"armoury report: {made} made, {failed} failed to generate, {times.DefaultIfEmpty().Average():0} ms a generation (worst {times.DefaultIfEmpty().Max():0}){(check ? $", full check passed {passed}/{checkedN}" : "")}; turret seats more than {VehicleChecks.SeatGunLimit:0} degrees off their gun: {sideways}/{seats}");
+        Console.WriteLine($"armoury report: {made} made, {failed} failed to generate, {gunsAll} guns ({smithAll} the gunsmith's), {times.DefaultIfEmpty().Average():0} ms a generation (worst {times.DefaultIfEmpty().Max():0}){(check ? $", full check passed {passed}/{checkedN}" : "")}; turret seats more than {VehicleChecks.SeatGunLimit:0} degrees off their gun: {sideways}/{seats}");
         return 0;
     }
 

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Numerics;
 
 namespace CallOfSlop;
@@ -6,8 +5,8 @@ namespace CallOfSlop;
 /// <summary>
 /// Drawing walker legs (ConstructWalk.cs, docs/sandbox/GIANTS.md): each leg is posed by analytic IK from its hip on the
 /// drawn body to its foot (a coxa out for an insect, the last segment set by the leg's kind, two bones solved by the law of
-/// cosines) and drawn as boxes in one batch. On the host the feet are the server's; a client poses them itself on the
-/// pose it draws (ConstructPhysics.WalkFeet), so nothing about the feet is on the wire. Nothing allocates.
+/// cosines) and drawn as boxes in one batch. The feet are always the server's: the host's own, a client's from the poses at
+/// the tick the body is drawn (protocol 229, ConstructNet.SampleFeet). Nothing allocates.
 /// </summary>
 public static partial class ConstructRender
 {
@@ -19,7 +18,6 @@ public static partial class ConstructRender
         var cam = gfx.CameraPosition;
         var cull = !gfx.ViewProj.IsIdentity;
         var origin = gfx.Origin;
-        var now = Stopwatch.GetTimestamp();
         gfx.BeginBatch();
         gfx.Relative = true;
         foreach (var c in world.Bodies)
@@ -30,10 +28,6 @@ public static partial class ConstructRender
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             if (cull && CullLevel(cam, c, pos, rot) == 0)
                 continue;
-            var serverFeet = (now - c.WalkStamp) < Stopwatch.Frequency / 4; // (the host's server stepped them: draw those)
-            if (!serverFeet)
-                PoseFeet(c, pos, rot, now);
-            c.WalkDrawStamp = now;
             var up = Vector3.Transform(Vector3.UnitY, rot);
             for (var k = 0; k < c.LegCount; k++)
             {
@@ -95,33 +89,6 @@ public static partial class ConstructRender
             _drawingRiders = false;
         }
         return n;
-    }
-
-    /// <summary>A client's feet: stepped on the drawn pose, at the frame's own pace.</summary>
-    private static void PoseFeet(Construct c, Vector3 pos, Quaternion rot, long now)
-    {
-        var dt = c.WalkDrawStamp == 0 ? 0f : MathF.Min(0.1f, (float)((now - c.WalkDrawStamp) / (double)Stopwatch.Frequency));
-        var vel = (c.Pos - c.PrevPos) * World.TickRate;
-        var turn = Quaternion.Normalize(c.Rot * Quaternion.Conjugate(c.PrevRot));
-        if (turn.W < 0)
-            turn = Quaternion.Negate(turn);
-        var axis = new Vector3(turn.X, turn.Y, turn.Z);
-        var angVel = axis.LengthSquared() > 1e-12f ? Vector3.Normalize(axis) * (2 * MathF.Acos(Math.Min(1, turn.W)) * World.TickRate) : Vector3.Zero;
-        ConstructPhysics.PowerLegs(null, c, false); // (what feeds each leg, from its links: a client has no pump flow or shaft rpm of its own)
-        ConstructPhysics.WalkTune(c); // (the gait profile, from the legs' settings as the server reads them)
-        var live = 0;
-        var swing = 0f;
-        for (var k = 0; k < c.LegCount; k++)
-        {
-            swing += c.Parts[c.Legs[k].Part].D.Leg!.StepTime / ConstructPhysics.LegPace(c, k);
-            if (ConstructPhysics.LegLive(c, k))
-                live++;
-        }
-        swing /= Math.Max(1, c.LegCount);
-        if (live != c.WalkLive)
-            ConstructPhysics.PlanGait(c, live);
-        if (dt > 0 || !c.FeetSet)
-            ConstructPhysics.WalkFeet(c, World.Query, pos, rot, vel, angVel, swing, dt, false);
     }
 
     private static int Bone(Renderer gfx, Vector3 a, Vector3 b, float width, Vector3 across, Vector3 origin, Vector3 colour)

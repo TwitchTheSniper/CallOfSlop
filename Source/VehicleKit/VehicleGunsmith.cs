@@ -19,6 +19,13 @@ public static class VehicleGunsmith
     /// <summary>A shot's recoil impulse (N s) at most this times the vehicle's mass (kg): the most a shot moves it, m/s (the mount's recoil rating).</summary>
     public const float KickPerKg = 0.8f;
 
+    /// <summary>All of a vehicle's guns together at most this share of its mass (each one alone: <see cref="GunMassShare"/>), spent as its guns are picked.</summary>
+    public const float GunBudgetShare = 0.2f;
+
+    /// <summary>All of a vehicle's guns firing together push it back at most this many newtons a kilogram (recoil impulse times rounds a second, summed: 1.5 is
+    /// about a sixth of its weight), spent as its guns are picked, so four rapid guns can't each take the whole per-shot rating.</summary>
+    public const float PullPerKg = 1.5f;
+
     /// <summary>The biggest merge the gunsmith makes in phase 1 (the game merges to 6x6: giant bodies come later).</summary>
     public const int MaxMerge = 4;
 
@@ -63,24 +70,48 @@ public static class VehicleGunsmith
 
     /// <summary>The guns the gunsmith offers a vehicle of <paramref name="mass"/> kg armed at <paramref name="tier"/>: per class, the designs its tier reaches, each at the merge
     /// the ceiling and tier give (none where even a single receiver is over the ceiling).</summary>
-    public static List<WeaponOption> Offer(float mass, int tier)
+    public static List<WeaponOption> Offer(float mass, int tier) => Offer(mass, tier, float.MaxValue, float.MaxValue);
+
+    /// <summary>
+    /// As <see cref="Offer(float, int)"/>, each gun within what is left of the vehicle's budget (<paramref name="massLeft"/> kg of gun, <paramref name="pullLeft"/> N of
+    /// sustained recoil: <see cref="GunBudgetShare"/>, <see cref="PullPerKg"/>), stepped down a size at a time until it is, or left out.
+    /// </summary>
+    public static List<WeaponOption> Offer(float mass, int tier, float massLeft, float pullLeft)
     {
         var list = new List<WeaponOption>();
+        tier = Math.Max(tier, 1);
         foreach (var d in Designs)
         {
-            if (d.Tier > Math.Max(tier, 1) + 1)
-                continue; // (a design two tiers past the vehicle's isn't offered at all; one past it is, at a tenth: VehicleArmoury.TierWeight)
+            if (d.Tier > tier + (d.Kind == Kind.Exotic ? 0 : 1))
+                continue; // (a design two tiers past the vehicle's isn't offered at all; one past it is, at a tenth: VehicleArmoury.TierWeight; an exotic only from its own tier)
             var ceiling = Ceiling(d, mass);
-            if (ceiling < 1)
+            if (d.Kind == Kind.Exotic)
+                ceiling = Math.Min(ceiling, Math.Min(tier, 1 + (int)(mass / ExoticKgPerSize))); // (a flame projector grows with the tier and the vehicle: no 4x4 on a buggy)
+            if (ceiling < MinSize(d))
                 continue;
-            var n = Math.Clamp(ceiling - (tier <= 1 ? 2 : tier == 2 ? 1 : 0), 1, ceiling);
-            while (n >= 1 && !Fits(d, n))
-                n--; // (a size the game's rules won't build: the next smaller)
-            if (n >= 1)
+            var n = Math.Clamp(ceiling - (tier <= 1 ? 2 : tier == 2 ? 1 : 0), MinSize(d), ceiling);
+            while (n >= MinSize(d) && (!Fits(d, n) || Rating(d, n).Mass > massLeft || Pull(d, n) > pullLeft))
+                n--; // (a size the game's rules won't build, or over what the vehicle has left: the next smaller)
+            if (n >= MinSize(d))
                 list.Add(Make(d, n, tier));
         }
         return list;
     }
+
+    /// <summary>An exotic's size steps with the vehicle's mass: a 2x2 from 2 t, a 3x3 from 4 t, a 4x4 from 6 t.</summary>
+    private const float ExoticKgPerSize = 2000f;
+
+    /// <summary>The least size a design is offered at (a flame projector is a merged block: one Firebreather is a hand gun).</summary>
+    private static int MinSize(Design d) => d.Kind == Kind.Exotic ? 2 : 1;
+
+    /// <summary>A design's sustained recoil at size <paramref name="n"/> (N: impulse a shot times shots a second, as the test fit measured it; 0 before it is fitted).</summary>
+    private static float Pull(Design d, int n)
+    {
+        lock (_fits)
+            return _pulls.TryGetValue((d.Name, n), out var p) ? p : 0f;
+    }
+
+    private static readonly Dictionary<(string, int), float> _pulls = new();
 
     /// <summary>The biggest merge of <paramref name="d"/> a vehicle of <paramref name="mass"/> kg is rated for (0: not even one receiver).</summary>
     private static int Ceiling(Design d, float mass)
@@ -156,7 +187,10 @@ public static class VehicleGunsmith
                 ok = false;
                 for (var g = 0; g < c.GunCount; g++)
                     if (c.Guns[g].Part == v.Gun!.Index && c.Guns[g].Def != null && c.Guns[g].Problem.Length == 0 && (n == 1 || d.Racks != null || c.Guns[g].MergeN == n))
+                    {
                         ok = true;
+                        _pulls[(d.Name, n)] = ConstructWeapons.PullKick(c.Guns[g]) * World.TickRate / Math.Max(1, (int)c.Guns[g].Interval);
+                    }
                 if (ok && d.Racks != null)
                 {
                     // (a battery: its rack holds a missile on every station, as the game counts what it holds)
@@ -178,6 +212,16 @@ public static class VehicleGunsmith
                 Console.WriteLine($"[vehicles] gunsmith: {d.Name} won't build as {(d.Racks == null ? $"a {n}x{n}" : $"its {d.Racks[n - 1]}")}{(why == null ? "" : ": " + why)}: left out");
             return _fits[(d.Name, n)] = ok;
         }
+    }
+
+    /// <summary>Every design at every size it may be offered fitted on its test stand once (<see cref="Fits"/>), at the server's warm-up rather than in a spawn's slices.</summary>
+    public static void WarmFits()
+    {
+        if (!On)
+            return;
+        foreach (var d in Designs)
+            for (var n = MinSize(d); n <= MaxSize(d); n++)
+                Fits(d, n);
     }
 
     /// <summary>A missile battery of size <paramref name="n"/> (1 to 4) on the gunsmith's test stand, as blueprint text (<c>--bench-vehicle-guns --battery N</c>).</summary>
@@ -210,11 +254,11 @@ public static class VehicleGunsmith
     /// <paramref name="own"/> (the style's list) with the gunsmith's guns for a vehicle of <paramref name="mass"/> kg at <paramref name="tier"/>, each repeated so together they take
     /// about <paramref name="share"/> of the draws (the list's weights are counts, as a style's are).
     /// </summary>
-    public static WeaponOption[] Arm(IReadOnlyList<WeaponOption> own, float mass, int tier, double share)
+    public static WeaponOption[] Arm(IReadOnlyList<WeaponOption> own, float mass, int tier, double share, float massLeft = float.MaxValue, float pullLeft = float.MaxValue)
     {
         if (!On || own.Count == 0)
             return own as WeaponOption[] ?? own.ToArray();
-        var made = Offer(mass, tier);
+        var made = Offer(mass, tier, massLeft, pullLeft);
         if (made.Count == 0)
             return own as WeaponOption[] ?? own.ToArray();
         // Each class takes an equal part of the share, split among its designs: two shell guns weigh as much as five rapid ones.
@@ -231,17 +275,70 @@ public static class VehicleGunsmith
         return list.ToArray();
     }
 
+    /// <summary>A gun's mass (kg, the estimate a mount is rated by) and sustained recoil (N; measured for the gunsmith's guns, 0 for a style's own, which aren't fitted on a stand).</summary>
+    public static (float Mass, float Pull) Weight(WeaponOption w)
+    {
+        if (DesignOf(w) is { } d)
+        {
+            var n = d.Racks == null ? w.Merge : Array.IndexOf(d.Racks, w.Rack) + 1;
+            return (Rating(d, n).Mass, Pull(d, n));
+        }
+        var m = 0f;
+        lock (_ratings)
+            if (!_styleMass.TryGetValue(w.Build, out m))
+            {
+                void Walk(string text)
+                {
+                    var (part, children) = WeaponOption.Parse(text);
+                    m += ConstructWeaponParts.DefFor(part)?.Mass ?? 0f;
+                    foreach (var c in children.Values)
+                        Walk(c);
+                }
+                Walk(w.Build);
+                _styleMass[w.Build] = m;
+            }
+        return (m * w.Merge * w.Merge * (w.Mount == "twin" ? 2 : 1), 0f);
+    }
+
+    private static readonly Dictionary<string, float> _styleMass = new(StringComparer.Ordinal);
+
+    private static Design? DesignOf(WeaponOption w) =>
+        w.Recipe.StartsWith("gunsmith:", StringComparison.Ordinal) ? Designs.FirstOrDefault(d => w.Recipe.EndsWith(":" + d.Name, StringComparison.Ordinal)) : null;
+
+    /// <summary>Is <paramref name="w"/> (a gunsmith gun; any other is the style's own and always passes) within the ceiling of a vehicle of <paramref name="mass"/> kg?</summary>
+    public static bool Rated(WeaponOption w, float mass)
+    {
+        if (DesignOf(w) is not { } d)
+            return true;
+        var n = d.Racks == null ? w.Merge : Array.IndexOf(d.Racks, w.Rack) + 1;
+        return n <= Ceiling(d, mass);
+    }
+
+    /// <summary>
+    /// After the build: every gunsmith gun the plan picked by its estimated mass must be within the ceiling of the vehicle as built, or the plan is refused (the grammar plans
+    /// again), so an estimate that ran high never leaves a gun too big for its vehicle.
+    /// </summary>
+    public static void CheckBuilt(Vehicle v)
+    {
+        if (!On || v.PlanMass == null)
+            return;
+        var mass = v.BuiltMass;
+        foreach (var (_, _, w) in v.Turrets)
+            if (!Rated(w, mass))
+                throw new VehicleKitException($"its {w.Name} is over the mount rating of {mass:0} kg as built (planned for {v.PlanMass:0} kg)");
+    }
+
     private static string KindOf(WeaponOption w) => w.Recipe.Split(':') is { Length: >= 2 } p ? p[1] : "";
 
     /// <summary><c>--gunsmith-report</c>: what the gunsmith offers vehicles of a range of masses at each tier, with each gun's estimated mass and recoil.</summary>
     public static int Report()
     {
-        Console.WriteLine($"gunsmith: mass share {GunMassShare}, recoil {KickPerKg} m/s a shot at most, merges to {MaxMerge}x{MaxMerge}");
+        Console.WriteLine($"gunsmith: mass share {GunMassShare} a gun and {GunBudgetShare} in all, recoil {KickPerKg} m/s a shot and {PullPerKg} N a kg sustained in all, merges to {MaxMerge}x{MaxMerge}");
         foreach (var mass in (float[])[800, 1500, 3000, 6000, 12000, 24000])
             for (var tier = 1; tier <= 4; tier++)
             {
                 var offer = Offer(mass, tier);
-                Console.WriteLine($"  {mass,6:0} kg tier {tier}: {(offer.Count == 0 ? "nothing" : string.Join("; ", offer.Select(w => { var d = Designs.First(d => w.Recipe.EndsWith(":" + d.Name, StringComparison.Ordinal)); var n = d.Racks == null ? w.Merge : Array.IndexOf(d.Racks, w.Rack) + 1; var (m, k) = Rating(d, n); return d.Racks == null ? $"{w.Name} {w.Merge}x{w.Merge} ({m:0} kg, {k:0} N s)" : $"{w.Name} ({w.Rack}, {m:0} kg)"; })))}");
+                Console.WriteLine($"  {mass,6:0} kg tier {tier}: {(offer.Count == 0 ? "nothing" : string.Join("; ", offer.Select(w => { var d = Designs.First(d => w.Recipe.EndsWith(":" + d.Name, StringComparison.Ordinal)); var n = d.Racks == null ? w.Merge : Array.IndexOf(d.Racks, w.Rack) + 1; var (m, k) = Rating(d, n); return d.Racks == null ? $"{w.Name} {w.Merge}x{w.Merge} ({m:0} kg, {k:0} N s, {Pull(d, n):0} N)" : $"{w.Name} ({w.Rack}, {m:0} kg)"; })))}");
             }
         return 0;
     }
@@ -249,6 +346,47 @@ public static class VehicleGunsmith
 
 public sealed partial class Vehicle
 {
+    /// <summary>The mass (kg) the plan expects this vehicle to have once built (the grammar's estimate, <see cref="ShapeGrammar"/>), or null: rate guns by what is built so far.
+    /// A plan picks its bay guns before anything is built, when the parts weigh next to nothing.</summary>
+    public float? PlanMass;
+
+    /// <summary>The mass the gunsmith rates this vehicle's mounts by: <see cref="PlanMass"/> when the plan gave one, else its parts' as they are now.</summary>
+    public float ArmedMass
+    {
+        get
+        {
+            if (PlanMass is { } planned)
+                return planned;
+            var mass = 0f;
+            for (var i = 0; i < C.PartCount; i++)
+                mass += C.PartMass(i);
+            return mass;
+        }
+    }
+
+    /// <summary>What its guns picked so far have taken of the gun budget: kg and sustained recoil (N) (<see cref="VehicleGunsmith.GunBudgetShare"/>, <see cref="VehicleGunsmith.PullPerKg"/>).</summary>
+    public float GunMassSpent, GunPullSpent;
+
+    /// <summary>A gun picked for this vehicle takes its share of the budget (<paramref name="sign"/> -1: a pick that found no place gives it back).</summary>
+    public void SpendGun(WeaponOption w, int sign = 1)
+    {
+        var (m, pull) = VehicleGunsmith.Weight(w);
+        GunMassSpent += sign * m;
+        GunPullSpent += sign * pull;
+    }
+
+    /// <summary>The built mass (kg): its parts' masses.</summary>
+    public float BuiltMass
+    {
+        get
+        {
+            var mass = 0f;
+            for (var i = 0; i < C.PartCount; i++)
+                mass += C.PartMass(i);
+            return mass;
+        }
+    }
+
     /// <summary>The guns this vehicle draws from: its style's, plus the gunsmith's made for its mass now and its role's tier (<see cref="VehicleGunsmith"/>).</summary>
     public WeaponOption[] Arsenal
     {
@@ -256,11 +394,10 @@ public sealed partial class Vehicle
         {
             if (!VehicleGunsmith.On)
                 return Style.Weapons;
-            var mass = 0f;
-            for (var i = 0; i < C.PartCount; i++)
-                mass += C.PartMass(i);
+            var mass = ArmedMass;
             var share = Role is { } r ? r.Role.Combat ? VehicleGunsmith.CombatShare : VehicleGunsmith.OtherShare : VehicleGunsmith.PlainShare;
-            return VehicleGunsmith.Arm(Style.Weapons, mass, Role?.Tier ?? VehicleArmoury.PlainTier, share);
+            return VehicleGunsmith.Arm(Style.Weapons, mass, Role?.Tier ?? VehicleArmoury.PlainTier, share,
+                VehicleGunsmith.GunBudgetShare * mass - GunMassSpent, VehicleGunsmith.PullPerKg * mass - GunPullSpent);
         }
     }
 }

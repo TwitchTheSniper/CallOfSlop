@@ -202,7 +202,12 @@
   },
   "sandbox": {
     "resources": {
-      "generate": false
+      "mix": {
+        "iron vein": 2,
+        "sand bed": 2,
+        "gold vein": 0.5,
+        "helium pocket": 0.5
+      }
     }
   },
   "teamSpawns": [

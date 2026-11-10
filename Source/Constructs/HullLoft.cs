@@ -368,6 +368,8 @@ public static partial class HullLoft
                     pts.Add(V(v.X, v.Y, v.Z));
                     (mn, mx) = (Vector3.Min(mn, v), Vector3.Max(mx, v));
                 }
+            if (Thin(mn, mx))
+                return; // (a sliver under the loader's centimetre, as rounded: nothing to see, and the part would be refused)
             var b = new JsonObject { ["min"] = V(mn.X, mn.Y, mn.Z), ["max"] = V(mx.X, mx.Y, mx.Z), ["color"] = colour, ["detail"] = true, ["shape"] = "hull", ["points"] = pts };
             if (!paint)
                 b["paintable"] = false;
@@ -383,10 +385,16 @@ public static partial class HullLoft
         public void Hide(Vector3 a, Vector3 b)
         {
             var (mn, mx) = (Vector3.Min(a, b), Vector3.Max(a, b));
-            if (mx.X - mn.X < 0.0099f || mx.Y - mn.Y < 0.0099f || mx.Z - mn.Z < 0.0099f)
+            if (Thin(new Vector3(R(mn.X), R(mn.Y), R(mn.Z)), new Vector3(R(mx.X), R(mx.Y), R(mx.Z))))
                 return;
             Boxes.Add(new JsonObject { ["min"] = V(mn.X, mn.Y, mn.Z), ["max"] = V(mx.X, mx.Y, mx.Z), ["hidden"] = true });
         }
+
+        /// <summary>
+        /// A box under a centimetre on an axis as the file has it (four decimals): the loader refuses the whole part for it ("thinner than 1 cm"). Judged on the rounded
+        /// numbers: a hidden box 9.95 mm thick passed the old 9.9 mm test here and was refused there (a War Bus's room bay, 2026-11-10). Such a box is left out.
+        /// </summary>
+        private static bool Thin(Vector3 mn, Vector3 mx) => mx.X - mn.X < 0.01f || mx.Y - mn.Y < 0.01f || mx.Z - mn.Z < 0.01f;
 
         public void Sock(string name, Vector3 at, string dir) => Sockets.Add(new JsonObject { ["name"] = name, ["at"] = V(at.X, at.Y, at.Z), ["dir"] = dir });
 
