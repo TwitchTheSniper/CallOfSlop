@@ -1145,6 +1145,7 @@ public static class BodyReportCli
             foreach (var g in VehicleRegistry.For(st, false).Where(g => ShapeGrammar.RecipeOf(g) != null))
                 for (var seed = from; seed < from + seeds; seed++)
                 {
+                    RuntimeParts.Sweep(0); // (the last vehicle's run-time parts and shapes go back: a report over every style would fill the tables)
                     try
                     {
                         var (_, v, _, t) = VehicleDiversity.Generate(g, seed);
@@ -1343,6 +1344,7 @@ public static class BodyReportCli
             foreach (var (st, t) in trims)
                 Console.WriteLine($"  {st}: {(double)t.Trims / Math.Max(1, t.Vehicles):0.0} trims and {(double)t.Fittings / Math.Max(1, t.Vehicles):0.0} fittings a vehicle");
         }
+        Console.WriteLine($"[parts] {RuntimeParts.Line()}");
         Console.WriteLine($"failures: {failures}; coplanar pairs inside lofted bays, cabs, hoods, panes, trims and fittings: {fights}");
         return failures + fights;
     }

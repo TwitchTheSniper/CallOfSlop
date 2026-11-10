@@ -761,6 +761,7 @@ public static unsafe partial class Program
             CrashLog.Phase = "voice, lists, audio";
             using (Perf.Measure(PerfArea.Audio))
                 UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
+            RuntimeParts.Tick(); // run-time parts nothing uses are freed when their tables fill, between ticks (RuntimeParts.cs)
             TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
             UpdateListing(now); // server lists and the invite code (Program.Listing.cs)
             UpdateSteamNet(); // pending lobby joins, the lobby's data, Rich Presence (Program.SteamNet.cs)

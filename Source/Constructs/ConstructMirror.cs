@@ -87,6 +87,13 @@ public static class ConstructMirror
     private static readonly Dictionary<long, Turn> Turns = [];
     private static readonly Dictionary<ushort, ushort> Partners = [];
 
+    /// <summary>(RuntimeParts) Run-time ids may name other parts from now on.</summary>
+    internal static void ForgetRuntime()
+    {
+        Turns.Clear();
+        Partners.Clear();
+    }
+
     /// <summary>A part's Left / Right partner by name, or itself.</summary>
     private static ConstructPartDef Partner(ConstructPartDef d)
     {

@@ -108,9 +108,66 @@ public static class Extrusion
     private static readonly Dictionary<ExtrusionKey, ConstructPartDef> Interned = new(1024);
     private static readonly ConstructPartDef?[] ById = new ConstructPartDef?[MaxDefs];
     private static int _count;
+    internal static int Limit = MaxDefs; // (--bench-parts lowers it, so freed slots are taken again within a short run)
+    private static readonly Queue<int> FreeSlots = new(); // slots RuntimeParts freed, oldest first: taken again only once every slot has been used, so a stale id lasts
 
-    /// <summary>How many pieces the table holds.</summary>
+    /// <summary>How many slots have been used (the high-water mark, freed ones included).</summary>
     public static int DefCount => Volatile.Read(ref _count);
+
+    /// <summary>Run-time parts held now: the slots used less the freed ones waiting.</summary>
+    public static int Live
+    {
+        get
+        {
+            lock (Interned)
+                return _count - FreeSlots.Count;
+        }
+    }
+
+    /// <summary>No new run-time part can be made (every slot used and none freed).</summary>
+    public static bool Full
+    {
+        get
+        {
+            lock (Interned)
+                return _count >= Limit && FreeSlots.Count == 0;
+        }
+    }
+
+    /// <summary>The lock every run-time part is made and freed under.</summary>
+    internal static object Gate => Interned;
+
+    // (under Interned) A slot for a new part: a never-used one first, then the oldest freed one. False: the table is full.
+    private static bool Place(ConstructPartDef d)
+    {
+        int slot;
+        if (_count < Limit)
+            slot = _count;
+        else if (!FreeSlots.TryDequeue(out slot))
+            return false;
+        d.Id = (ushort)(RuntimeBase + slot);
+        d.Touched = Environment.TickCount64;
+        ById[slot] = d;
+        if (slot == _count)
+            Volatile.Write(ref _count, _count + 1);
+        RuntimeParts.NoteFill(_count - FreeSlots.Count, Limit, "run-time parts");
+        return true;
+    }
+
+    /// <summary>(RuntimeParts, under <see cref="Gate"/>) Frees a run-time part's slot. Its def stays readable by its old id until the slot is taken again.</summary>
+    internal static void FreeSlot(ConstructPartDef d)
+    {
+        var slot = d.Id - RuntimeBase;
+        if (slot < 0 || slot >= MaxDefs || !ReferenceEquals(ById[slot], d))
+            return;
+        FreeSlots.Enqueue(slot);
+    }
+
+    /// <summary>(RuntimeParts, under <see cref="Gate"/>) Run-time part <paramref name="slot"/>, or null.</summary>
+    internal static ConstructPartDef? AtSlot(int slot) => slot < _count ? ById[slot] : null;
+
+    /// <summary>(RuntimeParts, under <see cref="Gate"/>) Drops the doomed pieces from the key table.</summary>
+    internal static void Forget(Func<ConstructPartDef, bool> doomed) => RuntimeParts.Drop(Interned, doomed);
 
     public static bool IsRuntimeId(ushort id) => id >= RuntimeBase && id != ConstructParts.None;
 
@@ -255,14 +312,7 @@ public static class Extrusion
     internal static bool Adopt(ConstructPartDef d)
     {
         lock (Interned)
-        {
-            if (_count >= MaxDefs)
-                return false;
-            d.Id = (ushort)(RuntimeBase + _count);
-            ById[_count] = d;
-            Volatile.Write(ref _count, _count + 1);
-            return true;
-        }
+            return Place(d);
     }
 
     /// <summary>The piece for a key, made the first time it is asked for. Null: a bad key, or the table is full.</summary>
@@ -271,14 +321,16 @@ public static class Extrusion
         lock (Interned)
         {
             if (Interned.TryGetValue(key, out var have))
+            {
+                have.Touched = Environment.TickCount64;
                 return have;
-            if (_count >= MaxDefs || !Valid(key))
+            }
+            if (!Valid(key) || _count >= Limit && FreeSlots.Count == 0)
                 return null;
-            var d = Build(key);
-            d.Id = (ushort)(RuntimeBase + _count);
+            var d = Build(key); // (its shapes are unit lathes and sections, few and kept for good)
+            if (!Place(d))
+                return null;
             Interned[key] = d;
-            ById[_count] = d;
-            Volatile.Write(ref _count, _count + 1);
             return d;
         }
     }

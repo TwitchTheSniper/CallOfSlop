@@ -91,7 +91,11 @@ public sealed partial class ConstructEdits
     /// </summary>
     public bool Survival;
 
-    public ConstructEdits() => Reset();
+    public ConstructEdits()
+    {
+        Reset();
+        RuntimeParts.Track(this); // (what hands hold keeps a run-time part: RuntimeParts.cs)
+    }
 
     /// <summary>
     /// Salvage (milestone 3, the loot loop): what anyone may take apart into their inventory: a wreck (cut off, or a part

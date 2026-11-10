@@ -407,7 +407,10 @@ public static class Ordnance
     {
         lock (Interned)
             if (Interned.TryGetValue(key, out var have))
+            {
+                have.Touched = Environment.TickCount64;
                 return have;
+            }
         return OrdnanceDesign.Parse(key, out _) is { } d ? Def(d) : null;
     }
 
@@ -417,7 +420,10 @@ public static class Ordnance
         lock (Interned)
         {
             if (Interned.TryGetValue(key, out var have))
+            {
+                have.Touched = Environment.TickCount64;
                 return have;
+            }
             var st = d.Stats();
             if (st.Problem.Length > 0)
                 return null;
@@ -427,6 +433,13 @@ public static class Ordnance
             Interned[key] = def;
             return def;
         }
+    }
+
+    /// <summary>(RuntimeParts) Drops the doomed designs from the key table.</summary>
+    internal static void Forget(Func<ConstructPartDef, bool> doomed)
+    {
+        lock (Interned)
+            RuntimeParts.Drop(Interned, doomed);
     }
 
     /// <summary>The run-time part whose key hashes to <paramref name="hash"/> (<see cref="ConstructPartDef.ExHash"/>), if this machine has made it. A launch's look; walks the few designs made.</summary>
@@ -598,7 +611,7 @@ public static class Ordnance
         }
         if (Def(d) is { } def)
             return def.Id;
-        if (Extrusion.DefCount >= Extrusion.MaxDefs)
+        if (Extrusion.Full)
             return ConstructParts.Need("Frame Beam").Id;
         throw new MalformedPacketException("an ordnance design that doesn't add up");
     }

@@ -266,11 +266,22 @@ public static partial class HullLoft
         lock (Interned)
         {
             if (Interned.TryGetValue(name, out var have))
+            {
+                if (have != null)
+                    have.Touched = Environment.TickCount64;
                 return have;
+            }
             var made = Make(name);
             Interned[name] = made;
             return made;
         }
+    }
+
+    /// <summary>(RuntimeParts) Drops the doomed parts from the key table, and the keys that made nothing (they are made again if asked for).</summary>
+    internal static void Forget(Func<ConstructPartDef, bool> doomed)
+    {
+        lock (Interned)
+            RuntimeParts.DropOrNull(Interned, d => d == null || doomed(d));
     }
 
     private static ConstructPartDef? Make(string name)
