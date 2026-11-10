@@ -125,6 +125,9 @@ public sealed class StarSystem
     /// <summary>How far from the star a jump into this system arrives (m; the file's "galaxy" "arrive", else <see cref="Galaxy.DefaultArrival"/>).</summary>
     public double Arrival;
 
+    /// <summary>The body that distance is from (0: the star; the file's "arrive" "at": a jump arrives in orbit round one of its worlds).</summary>
+    public int ArrivalBody;
+
     /// <summary>The deepest parent chain allowed (star, planet, moon, moon of a moon...).</summary>
     public const int MaxDepth = 8;
 

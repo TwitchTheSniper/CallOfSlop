@@ -215,7 +215,8 @@ public static partial class ConstructPhysics
 
     /// <summary>
     /// Server: the feet against loose bodies. A body much lighter than the walker that a working foot pad overlaps is pushed
-    /// out of it (up and away from the pad's centre) and moves with the foot; heavier ones are left to the walker's own contacts.
+    /// out of it: a planted foot only eases it out (<see cref="PadEase"/>, up and away from the pad's centre, nothing once it is
+    /// clear), a stepping foot pushes it by the foot's own motion. Heavier ones are left to the walker's own contacts.
     /// </summary>
     private static void FeetPushBodies(ConstructWorld world, Construct c)
     {
@@ -233,18 +234,22 @@ public static partial class ConstructPhysics
                 var away = o.WorldCom - centre;
                 away.Y = 0;
                 away = away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : Vector3.UnitX;
-                var foot = c.Legs[k].Swinging ? (c.Legs[k].To - c.Legs[k].From) / MathF.Max(0.2f, c.Parts[c.Legs[k].Part].D.Leg!.StepTime) : Vector3.Zero;
-                var push = 2f + MathF.Max(0, Vector3.Dot(foot, away));
+                var swinging = c.Legs[k].Swinging;
+                var foot = swinging ? (c.Legs[k].To - c.Legs[k].From) / MathF.Max(0.2f, c.Parts[c.Legs[k].Part].D.Leg!.StepTime) : Vector3.Zero;
+                var push = PadEase + (swinging ? MathF.Max(0, Vector3.Dot(foot, away)) : 0);
                 var vel = o.Vel;
                 if (Vector3.Dot(vel, away) < push)
                     vel += away * (push - Vector3.Dot(vel, away));
-                if (vel.Y < 1f)
-                    vel.Y = 1f;
+                var up = swinging ? 1f : PadEase;
+                if (vel.Y < up)
+                    vel.Y = up;
                 o.Vel = vel;
                 o.Wake();
             }
         }
     }
+
+    public const float PadEase = 0.5f; // m/s a planted pad eases a body it overlaps out at (a stepping one adds its own motion)
 
     private static readonly List<Construct> _feetNear = new(64);
 
@@ -364,7 +369,41 @@ public static partial class ConstructPhysics
     /// trickle switched the legs on every other tick and a 37,000 t walker walked on it at full speed (its draw clamped to the
     /// little charge there was).
     /// </summary>
-    public static float HoldKJ(Construct c) => c.Mass * 9.81f * World.GravityScale * LegHoldRate * World.TickDt / 1000f;
+    public static float HoldKJ(Construct c) => c.Mass * WalkGravity(c) * LegHoldRate * World.TickDt / 1000f;
+
+    /// <summary>
+    /// m/s2 the legs hold the body up against: the game's gravity (<see cref="GravityAccel"/>, as the physics weighs it), or
+    /// the body's own where a round world or a gravity generator applies, less what Anti-Grav takes off.
+    /// </summary>
+    public static float WalkGravity(Construct c)
+    {
+        var g = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, c.WorldCom).Length() : GravityAccel;
+        return g * (1 - c.AntiShare);
+    }
+
+    /// <summary>
+    /// What the circuit can feed the legs' work at, as metres a second of lifting the body (+infinity when no leg draws on it):
+    /// what the plants and alternators make plus the batteries' charge spent over <see cref="BankSeconds"/>, a share
+    /// (<see cref="PowerMargin"/>) of it, less the holding work. The walk along the ground costs <see cref="LegCarryCost"/>
+    /// of it a metre a second and a rise all of it (WalkBody shares it out). A full bank lets the legs walk at their best; as it
+    /// runs down the walk slows to what the plant alone keeps up, and with no plant it stops (the legs still stand while the
+    /// bank holds a tick of holding, <see cref="HoldKJ"/>). Without this a flat bank on a plant flickered on and off every tick,
+    /// and the legs with it.
+    /// </summary>
+    private static float PowerLift(Construct c)
+    {
+        var draws = false;
+        for (var k = 0; k < c.LegCount; k++)
+            draws |= LegLive(c, k) && (c.Legs[k].Feed == FeedElectric || c.Legs[k].Feed == FeedOil && c.Legs[k].Pump >= 0 && c.Legs[k].Pump < c.HydPumpCount && !c.HydPumps![c.Legs[k].Pump].Shaft);
+        if (!draws)
+            return float.PositiveInfinity;
+        var weight = c.Mass * WalkGravity(c);
+        var watts = ((c.EngineRunning ? c.AlternatorRate : 0) + c.PlantOut + c.Charge / BankSeconds) * 1000f * ConstructPower.MotorEfficiency * PowerMargin;
+        return MathF.Max(0, watts / MathF.Max(1, weight) - LegHoldRate);
+    }
+
+    public const float PowerMargin = 0.8f; // the legs plan on this share of what the circuit gives (the body's bob and other draws take the rest)
+    public const float BankSeconds = 20f; // the legs spend the bank no faster than over this long (so a running-down bank slows the walk smoothly)
 
     public const float LegCarryCost = 0.03f; // the legs' work walking: this share of the weight times the speed (a cost of transport)
     public const float LegHoldRate = 0.01f; // ... and holding it up, as if lifting it this many m/s
@@ -384,7 +423,7 @@ public static partial class ConstructPhysics
             c.HydPumps[u].LegNeed = 0;
         }
         var flat = MathF.Sqrt(c.Vel.X * c.Vel.X + c.Vel.Z * c.Vel.Z);
-        var watts = c.Mass * 9.81f * World.GravityScale * (LegCarryCost * flat + MathF.Max(0, c.Vel.Y) + LegHoldRate);
+        var watts = c.Mass * WalkGravity(c) * (LegCarryCost * flat + MathF.Max(0, c.Vel.Y) + LegHoldRate);
         var carry = 0f;
         for (var k = 0; k < c.LegCount; k++)
             if (LegLive(c, k))

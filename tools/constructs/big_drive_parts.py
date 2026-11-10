@@ -78,7 +78,7 @@ PLANTS = {
 }
 PLANT_MASS = {SMALL: 0.4, MEDIUM: 24, LARGE: 900, CAPITAL: 4800}  # t, a Boiler; a Reactor weighs half as much again, a Genset half
 TANKS = {MEDIUM: (3, 2.5, 20000), LARGE: (3, 90, 1000000), CAPITAL: (1, 280, 4000000)}  # cells, mass t, litres
-BATTERIES = {MEDIUM: (3, 8, 1e6), LARGE: (3, 300, 2e8), CAPITAL: (1, 1800, 1e10)}  # cells, mass t, kJ
+BATTERIES = {MEDIUM: (3, 8, 1e6), LARGE: (3, 300, 1e7), CAPITAL: (1, 1800, 3e7)}  # cells, mass t, kJ (capital: a titan walker standing up once, then about an hour standing or minutes walking on it alone; docs/sandbox/GIANTS.md)
 ALTERNATORS = {MEDIUM: (0.6, 100), LARGE: (30, 5000), CAPITAL: (300, 50000)}  # mass t, kW
 BALLAST = {MEDIUM: 8, LARGE: 400, CAPITAL: 5000}  # t a block
 # Thrusters: (name, cls, cells long, force N, seconds of spool)

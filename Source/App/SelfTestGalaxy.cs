@@ -43,17 +43,17 @@ public static partial class SelfTest
         Galaxy.Nearest(ember, 1, out var e1, out _);
         Want(Math.Abs(de - 4.2732) < 0.001 && n1 == ember && n2 == frost && Galaxy.Nearest(dev, Galaxy.Count - 1, out _, out _) && !Galaxy.Nearest(dev, Galaxy.Count, out _, out _) && e1 == dev,
             $"distances and the nearest order (Dev-Ember {de:0.0000} ly; Dev's 1st {n1}, 2nd {n2}; Ember's 1st {e1})");
-        // The jump arrives at the edge, on the side it came from, in a circular orbit round the star.
+        // The jump arrives by the system's world (its file's "arrive" "at"), on the side it came from, in a circular orbit round it.
         var t0 = SpaceTime.FromSeconds(1e6);
         var es = Galaxy.System(ember);
         Galaxy.Arrive(dev, ember, t0, out var ap, out var av);
-        es.StateOf(0, t0, out var sp, out var sv);
+        es.StateOf(es.ArrivalBody, t0, out var sp, out var sv);
         var ar = ap - sp;
-        var circ = Math.Sqrt(es.Bodies[0].Mu / es.Arrival);
+        var circ = Math.Sqrt(es.Bodies[es.ArrivalBody].Mu / es.Arrival);
         var back = Galaxy.DirectionTo(ember, dev);
         Want(Math.Abs(ar.Length - es.Arrival) < 1 && Math.Abs((av - sv).Length - circ) < 1e-6 && Math.Abs(Vec3d.Dot(ar, av - sv)) < 1e-3 * ar.Length * circ
              && Vec3d.Dot(ar.Normalized(), new Vec3d(back.X, back.Y, 0).Normalized()) > 0.9999,
-            $"a jump arrives {es.Arrival / StarSystemFile.Au:0.00} AU out, towards where it came from, in a circular orbit ({ar.Length / StarSystemFile.Au:0.000} AU, {(av - sv).Length:0.0} of {circ:0.0} m/s)");
+            $"a jump arrives {es.Arrival / 1000:0} km from {es.Bodies[es.ArrivalBody].Name}, towards where it came from, in a circular orbit ({ar.Length / 1000:0.0} km, {(av - sv).Length:0.0} of {circ:0.0} m/s)");
         // Refused: an eleventh system, two on one spot, a bad key.
         var tmp = Path.Combine(Path.GetTempPath(), $"cos-galaxy-{Environment.ProcessId}");
         Directory.CreateDirectory(tmp);
@@ -203,11 +203,11 @@ public static partial class SelfTest
         var away = space.Away[ember];
         var ai = away?.Ships.IndexOfId(id) ?? -1;
         var es = Galaxy.System(ember);
-        var dist = ai >= 0 ? (away!.Ships.PositionOf(ai) - es.PositionOf(0, away.Ships.Time)).Length : 0;
-        Line($"galaxy: charging ({charging}), {half * 100:0}% after 4 s; jumped: away {ship.SpaceAway}, ship {ai} in Ember's flight {dist / StarSystemFile.Au:0.000} AU from Ember, charge {full:0} to {ship.Charge:0} kJ");
+        var dist = ai >= 0 ? (away!.Ships.PositionOf(ai) - es.PositionOf(es.ArrivalBody, away.Ships.Time)).Length : 0;
+        Line($"galaxy: charging ({charging}), {half * 100:0}% after 4 s; jumped: away {ship.SpaceAway}, ship {ai} in Ember's flight {dist / 1000:0.0} km from {es.Bodies[es.ArrivalBody].Name}, charge {full:0} to {ship.Charge:0} kJ");
         Want(half > 0.35f && half < 0.65f, $"the drive charges over its time ({half * 100:0}% after 4 of 8 s)");
         Want(ship.SpaceAway == ember + 1 && ai >= 0 && flight.Ships.IndexOfId(id) < 0 && ship.SpaceShip == id, $"it jumps: the ship moves to Ember's flight with its id (away {ship.SpaceAway}, index {ai})");
-        Want(Math.Abs(dist - es.Arrival) < es.Arrival * 0.01, $"it arrives at Ember's edge ({dist / StarSystemFile.Au:0.000} of {es.Arrival / StarSystemFile.Au:0.000} AU)");
+        Want(Math.Abs(dist - es.Arrival) < es.Arrival * 0.01, $"it arrives in orbit round Ember's world ({dist / 1000:0.0} of {es.Arrival / 1000:0.0} km)");
         Want(full - ship.Charge > cost * 0.95f, $"the batteries pay the jump ({full - ship.Charge:0} kJ of {cost:0})");
         Want(server.SpaceSeated(me), "the driver is still seated");
 
@@ -250,7 +250,7 @@ public static partial class SelfTest
         PumpFast(server, [a], 0.5, ref now);
         ai = away.Ships.IndexOfId(id);
         var dv = ai >= 0 ? (away.Ships.VelocityOf(ai) - v0).Length : 0;
-        var grav = es.Bodies[0].Mu / (es.Arrival * es.Arrival) * 1.5;
+        var grav = es.Bodies[es.ArrivalBody].Mu / (es.Arrival * es.Arrival) * 1.5;
         Want(dv > grav * 3 + 1, $"W pushes the ship in Ember ({dv:0.00} m/s in 1.5 s; gravity alone {grav:0.00})");
 
         // ---- No allocation with a ship away ----------------------------------------------------------------------------
@@ -276,11 +276,13 @@ public static partial class SelfTest
             PumpFast(server, [a], 0.1, ref now);
         var hi = flight.Ships.IndexOfId(id);
         var ds = Galaxy.System(dev);
-        var hd = hi >= 0 ? (flight.Ships.PositionOf(hi) - ds.PositionOf(0, flight.Ships.Time)).Length : 0;
+        var hd = hi >= 0 ? (flight.Ships.PositionOf(hi) - ds.PositionOf(ds.ArrivalBody, flight.Ships.Time)).Length : 0;
         PumpFast(server, [a], 1.0, ref now);
-        Line($"galaxy: home: parked {ship.SpaceAway}, ship {hi} in the Dev flight {hd / StarSystemFile.Au:0.000} AU from {ds.Bodies[0].Name}; Ember's flight holds {away.Ships.Count}; the client's copy parked {copy?.SpaceAway}");
-        Want(ship.SpaceAway == dev + 1 && hi >= 0 && away.Ships.Count == 0 && Math.Abs(hd - ds.Arrival) < ds.Arrival * 0.01 && copy is { SpaceAway: var cb } && cb == dev + 1,
-            $"it jumps home: back in the Dev system's flight at its edge, parked (far out), and the client knows (parked {ship.SpaceAway}, index {hi}, client {copy?.SpaceAway})");
+        for (var wait = 0; wait < 50 && copy is { SpaceAway: not 0 }; wait++)
+            Pump(server, [a], 0.1, ref now, clock); // (the client hears it over the lagged link: real time)
+        Line($"galaxy: home: parked {ship.SpaceAway}, ship {hi} in the Dev flight {hd / 1000:0.0} km from {ds.Bodies[ds.ArrivalBody].Name}; Ember's flight holds {away.Ships.Count}; the client's copy parked {copy?.SpaceAway}");
+        Want(ship.SpaceAway == 0 && hi >= 0 && away.Ships.Count == 0 && Math.Abs(hd - ds.Arrival) < ds.Arrival * 0.01 && copy is { SpaceAway: 0 },
+            $"it jumps home: back in the Dev system's flight in orbit round its world, within the bubble's reach again, and the client knows (parked {ship.SpaceAway}, index {hi}, {hd / 1000:0.0} of {ds.Arrival / 1000:0.0} km, client {copy?.SpaceAway})");
         // Brought back within reach of the bubble, it is posed from its ship again.
         if (hi >= 0)
         {

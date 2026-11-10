@@ -27,14 +27,17 @@ public sealed record SandboxDeposit(string Kind, float X, float Z, float Radius,
 
 /// <summary>
 /// A map's say over its raw resources (<c>"resources": {"generate": false, "seed": 7, "deposits": [{"kind": "forest", "x": 0,
-/// "z": 0, "radius": 80, "aspect": 0.7, "yaw": 30}]}</c>): worlds generate their deposits unless told not to, and a map
-/// may add its own (docs/sandbox/CONSTRUCTS.md "Gathering").
+/// "z": 0, "radius": 80, "aspect": 0.7, "yaw": 30}], "mix": {"gold vein": 2}}</c>): worlds generate their deposits unless told
+/// not to, a map may add its own (flat maps), and "mix" makes a kind commoner or rarer here (docs/sandbox/CONSTRUCTS.md "Gathering").
 /// </summary>
 public sealed class SandboxResources
 {
     public bool Generate = true;
     public int Seed; // 0: from the map's name
     public List<SandboxDeposit> Deposits = new();
+
+    /// <summary>How common each kind is here, as a multiple of its own chance (<c>"mix": {"iron vein": 2, "gold vein": 0}</c>; a kind not named: 1).</summary>
+    public Dictionary<string, float> Mix = new(StringComparer.OrdinalIgnoreCase);
 
     public static SandboxResources Read(JsonElement e, string source)
     {
@@ -49,6 +52,18 @@ public sealed class SandboxResources
                     break;
                 case "seed":
                     r.Seed = p.Value.GetInt32();
+                    break;
+                case "mix":
+                    if (p.Value.ValueKind != JsonValueKind.Object)
+                        throw new MapFileException($"{source}: sandbox.resources: \"mix\" must be an object like {{ \"iron vein\": 2 }}");
+                    foreach (var m in p.Value.EnumerateObject())
+                    {
+                        if (ResourceTable.Current.IndexOf(m.Name) < 0)
+                            throw new MapFileException($"{source}: sandbox.resources: \"{m.Name}\" isn't a resource kind");
+                        if (m.Value.ValueKind != JsonValueKind.Number || m.Value.GetSingle() is < 0 or > 4)
+                            throw new MapFileException($"{source}: sandbox.resources: mix \"{m.Name}\" is a number from 0 (none) to 4");
+                        r.Mix[m.Name] = m.Value.GetSingle();
+                    }
                     break;
                 case "deposits":
                     foreach (var d in p.Value.EnumerateArray())

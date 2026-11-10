@@ -56,7 +56,8 @@ public static class PlanetCli
         var cell = p.Radius * Math.PI / 2 / p.N;
         Console.WriteLine($"OK: '{m.Name}': radius {p.Radius:0} m, {p.N} cells a face ({cell:0.00} m), gravity {p.Strength:0.#}, {p.Features.Count} features, "
                           + $"bounds {p.MinHeight:0} to {p.MaxHeight:0} m" + (p.Crust > 0 ? $", hollow (crust {p.Crust:0} m)" : "")
-                          + $", sky edge {Math.Max(m.HalfX, m.HalfZ):0} m, {m.Spawns.Count} spawns");
+                          + $", sky edge {Math.Max(m.HalfX, m.HalfZ):0} m, {m.Spawns.Count} spawns"
+                          + (p.LandingTonnes > 0 ? $", ships land up to {p.LandingTonnes:0} t ({p.LandingWhy})" : ""));
 
         // A sampling: W x W/2 points, evenly over the sphere's area down each column (sin of the latitude uniform).
         const int w = 720, hgt = 360;
@@ -103,6 +104,22 @@ public static class PlanetCli
             if (slope < 40) walk++;
         }
         Console.WriteLine($"ground: {rock * 100.0 / n:0}% cliff, {dirt * 100.0 / n:0}% slope, {sand * 100.0 / n:0}% low ground, {snow * 100.0 / n:0}% above the snow line; {walk * 100.0 / n:0}% under 40 degrees");
+
+        // Ore: what the world's ground holds (WORLDS.md "Ore"), and how much of the sampled ground lies over a deposit.
+        if (m.Resources is { } ore)
+        {
+            var over = 0;
+            for (var j = 0; j < hgt; j += 4)
+            for (var i = 0; i < w; i += 4)
+            {
+                Dir(Math.Asin(1 - (j + 0.5) * 2.0 / hgt), (i + 0.5) * 2 * Math.PI / w - Math.PI, out var x, out var y, out var z);
+                if (ore.KindAt(p.Center + new Vector3((float)x, (float)y, (float)z) * (float)p.Radius, false) != null)
+                    over++;
+            }
+            Console.WriteLine($"ore: {ore.DepositCount} deposits ({ore.Summary()}); {over * 100.0 / n:0}% of the ground lies over one");
+        }
+        else
+            Console.WriteLine("ore: none (the map has no \"sandbox\" section)");
 
         foreach (var (la, lon) in at)
         {

@@ -49,6 +49,7 @@ FINE = noise(0.5, 12, 2, 9)  # the grain under your feet, on every world
 WORLDS = [
     {
         "name": "Redrock", "order": 1, "radius": 4000, "strength": 9,
+        "ore": {"iron vein": 2, "sand bed": 2, "gold vein": 0.5, "helium pocket": 0.5},
         "description": "Redrock, a 4 km red desert in the home system (Systems/Dev.json): stepped mesas in the north, the Gash (a canyon 5 km long) across the middle and a dune sea in the south. A Ministry mining concession, and a practice landing before the first jump.",
         "surface": {"grass": "#b5653a", "dirt": "#9c4f2e", "rock": "#7a3b26", "sand": "#d9a066", "dirtSlope": 20, "rockSlope": 32, "sandBelow": -30},
         "skybox": {"preset": "desert", "zenith": "#b98a5e", "horizon": "#e2b98a", "ground": "#8a5a3c",
@@ -74,6 +75,8 @@ WORLDS = [
     },
     {
         "name": "Cinder", "order": 2, "radius": 5000, "strength": 12,
+        "ore": {"copper vein": 2, "gold vein": 1.5, "stone seam": 1.5, "helium pocket": 0, "sand bed": 0.5},
+        "limit": (60, "the ash flats swallow anything heavier"),
         "description": "Cinder, a 5 km scorched rock close to the red dwarf Ember (Systems/Ember.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
         "surface": {"grass": "#3b3331", "dirt": "#4d3a33", "rock": "#221d1d", "sand": "#a3472a", "dirtSlope": 22, "rockSlope": 34, "sandBelow": -28},
         "skybox": {"preset": "dusk", "zenith": "#1a0d10", "horizon": "#6e2a1c", "ground": "#1c1414", "stars": 1.4,
@@ -111,6 +114,7 @@ WORLDS = [
     },
     {
         "name": "Glacier", "order": 3, "radius": 8000, "strength": 14,
+        "ore": {"helium pocket": 2.5, "copper vein": 1.5, "sand bed": 0, "iron vein": 0.7},
         "description": "Glacier, the 8 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 9 km long. The IT Department keeps its Server Farm here, for the cooling.",
         "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#7ba3c8", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18},
         "skybox": {"preset": "alpine", "zenith": "#6f9fd0", "horizon": "#dbe8f2", "ground": "#c9d6e0",
@@ -139,6 +143,7 @@ WORLDS = [
     },
     {
         "name": "Caledon", "order": 4, "radius": 6000, "strength": 11,
+        "ore": {"stone seam": 2, "iron vein": 1.5, "sand bed": 0.5},
         "description": "Caledon, the 6 km highland world of Glenmore (Systems/Glenmore.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
         "surface": {"grass": "#56733f", "dirt": "#75597a", "rock": "#5d5f66", "sand": "#4a4a33", "snow": "#e8eef0", "dirtSlope": 17, "rockSlope": 36, "sandBelow": -70, "snowAbove": 520},
         "skybox": {"preset": "overcast", "zenith": "#7d8a96", "horizon": "#b9c2c8", "ground": "#5b6a55",
@@ -170,6 +175,8 @@ WORLDS = [
     },
     {
         "name": "Mille", "order": 5, "radius": 3000, "strength": 8,
+        "ore": {"levite seam": 3, "gold vein": 2, "sand bed": 1.5, "iron vein": 0.5},
+        "limit": (40, "the crust is thin over the cavity"),
         "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. The Thousand Layers keep the Bakehouse here. The crust is thinnest under the Proving Bowl: dig there to get in.",
         "surface": {"grass": "#c99a4e", "dirt": "#a8733a", "rock": "#7d4f28", "sand": "#e8cf8f", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -22},
         "skybox": {"preset": "dusk", "zenith": "#5e6f9a", "horizon": "#f0c48a", "ground": "#8a6a3c",
@@ -204,6 +211,8 @@ def build(w):
     planetoid = {"radius": r, "cell": 2, "strength": w["strength"], "surface": w["surface"]}
     if "cavity" in w:
         planetoid["cavity"] = w["cavity"]
+    if "limit" in w:  # the heaviest ship that may come down (WORLDS.md "Landing limits")
+        planetoid["landing"] = {"tonnes": w["limit"][0], "why": w["limit"][1]}
     planetoid["features"] = features
 
     def y(x, z, lift=0.0):
@@ -217,7 +226,7 @@ def build(w):
     return {
         "format": "call-of-slop-map/1", "name": w["name"], "description": w["description"], "author": "Call of Slop", "order": w["order"],
         "halfX": half, "halfZ": half, "maxPlayers": 8, "skybox": w["skybox"], "planetoid": planetoid,
-        "sandbox": {"resources": {"generate": False}},
+        "sandbox": {"resources": {"mix": w["ore"]}},  # each world's own ground (WORLDS.md "Ore")
         "teamSpawns": [[[x, y(x, z, 0.24), z] for x, z in ((-6, s * 40), (6, s * 40), (-12, s * 36), (12, s * 36))] for s in (-1, 1)],
         "hills": [{"x": s * 30, "y": y(30, 30), "z": s * 30, "radius": 6} for s in (1, -1)],
         "flags": [[0, y(0, 45, 0.5), -45], [0, y(0, 45, 0.5), 45]],

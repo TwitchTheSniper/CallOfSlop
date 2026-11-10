@@ -2,7 +2,7 @@
   "name": "Dev System",
   "description": "A test system for the space layer (docs/space/SPACE.md): a Sun-like star, the 10 km Planetoid (the Dev map) with a moonlet, Bluestone (a 3 km sister planetoid 1,500 km out: moons and sisters close, planets far), and Redrock, a 4 km red desert further out (Maps/Planetoids/Redrock.json).",
   "start": { "days": 252 },
-  "galaxy": { "ly": [0, 0, 0] },
+  "galaxy": { "ly": [0, 0, 0], "arrive": { "at": "Planetoid", "km": 40 } },
   "bodies": [
     { "name": "Slopstar", "gm": 1.32712440018e20, "radius": 6.957e8, "rotation": { "hours": 609.12, "tilt": 7.25 } },
     {

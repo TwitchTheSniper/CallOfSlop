@@ -162,6 +162,9 @@ latitude 78, longitude 35), a 1,020 m cavity and a glowing core 45 m across at t
 "cavity": { "crust": 180, "glow": "#ff8a3a", "core": 45 }
 ```
 
+A world may also set the heaviest ship that can land from space, `"landing": { "tonnes": 40, "why": "..." }`
+(docs/planets/WORLDS.md "Landing limits").
+
 `crust` (10 to 2000 m, at most 80% of the radius) is the thickness under the base height: the cavity's roof is the
 sphere at `radius + base - crust`. `glow` colours the cavity's seams, haze and core; `core` is the core's radius (0: none;
 it's a light, nothing touches it). A map is refused if its features can bring the ground within 8 m of the roof
@@ -204,7 +207,7 @@ walk south for day and night.
 
 
 - Constructs (step 2): loose bodies fall and rest (above), but vehicles, wheels, suspension, thrusters, the physics gun,
-  build ghosts and joints still assume Y is up, and construct drills don't dig a planetoid yet.
+  build ghosts and joints still assume Y is up. (Drill Modules do tap ore and dig their hole on a planetoid: WORLDS.md "Ore".)
 - Map boxes more than 500 m below Y 0 count as "parked" (switched off) in `PhysicsWorld`: harmless on the Dev map (its
   blocks are at the pole) but a trap for anything placed in the southern half. (Rockets leave a planetoid map below
   its ground or past its sky's edge.)

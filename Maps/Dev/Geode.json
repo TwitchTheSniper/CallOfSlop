@@ -79,9 +79,7 @@
     ]
   },
   "sandbox": {
-    "resources": {
-      "generate": false
-    }
+    "resources": {}
   },
   "teamSpawns": [
     [

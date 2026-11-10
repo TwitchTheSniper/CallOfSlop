@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Battery Bank",
-  "description": "Holds 10000 GJ for the circuit it is on.",
+  "description": "Holds 30 GJ for the circuit it is on.",
   "group": "Capital",
   "section": "Fuel and charge",
   "role": "battery",
@@ -14,7 +14,7 @@
   "color": "#23272c",
   "attachSeconds": 15.0,
   "battery": {
-    "capacity": 10000000000.0
+    "capacity": 30000000.0
   },
   "ports": [
     {
