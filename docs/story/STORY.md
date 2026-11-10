@@ -640,7 +640,8 @@ the game is the source of truth, and `--check-story` decides what is valid.
   'Trustee'"`, the Thing made if nobody has the name), `"learn"`s a fact `"from"` someone (a Lead, and a Learn event, so
   the chronicle keeps where the player heard it), says one of its `"say"` lines (by `"by"`; a storylet with no cast sends
   it to the player as a notice), starts a `"hook"`, and `"next"` names the storylet it leads to (for the builder and the
-  checks: the next one still needs its needs).
+  checks: the next one still needs its needs). `"world"` is a list of plain sentences saying what physically happens (the story map shows
+  them when an outcome is pressed; the game does nothing with them: they are the brief for whoever builds it).
 - **The runner**: per player, once a second: an urgent storylet that can play pauses the one under way (its events still
   count, its times stand still) and plays first; with none under way a paused one goes on, else the A and B plots take
   turns, with a rest of 2 minutes after each. What is under way and what was had are relations (OnStorylet, StoryletAt,

@@ -53,6 +53,7 @@ public sealed class StoryletEnd
     public int By = -1; // the variable who says it (and asks the choice), -1 the lead
     public string Hook = "";
     public int Learn = -1, LearnFrom = -1; // a fact the player learns (a variable, usually a named one) and from whom (-1 nobody)
+    public string[] World = []; // the author's plain words for what physically happens (the story map shows them; the game does nothing with them)
     public string Next = ""; // a storylet this one leads to (only for the builder and the checks: the next one still needs its needs)
 }
 
@@ -106,7 +107,7 @@ public sealed class StoryletRules
     private static readonly string[] QualityKeys = ["name", "about", "kind", "min", "max", "decay"];
     private static readonly string[] SpotKeys = ["name", "near", "reach"];
     private static readonly string[] StoryletKeys = ["id", "title", "about", "bucket", "scope", "again", "priority", "needs", "cast", "prefer", "beats", "job", "hook", "ends", "final"];
-    private static readonly string[] EndKeys = ["id", "when", "within", "after", "choice", "if", "then", "say", "by", "hook", "learn", "from", "next"];
+    private static readonly string[] EndKeys = ["id", "when", "within", "after", "choice", "if", "then", "say", "by", "hook", "learn", "from", "next", "world"];
     private static readonly string[] WhenKeys = ["verb", "actor", "target", "owner", "place", "item"];
 
     /// <summary>
@@ -445,6 +446,7 @@ public sealed class StoryletRules
             else if (x.TryGetProperty("from", out _))
                 throw new StoryException($"{at}: \"from\" goes with \"learn\"");
             end.Next = StoryRules.Str(x, "next", at);
+            end.World = StoryRules.List(x, "world", at).Select(v => v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : throw new StoryException($"{at}: each of \"world\" is a sentence")).ToArray();
             end.Text = end.When != null ? $"when {end.When.Text}{(end.Within > 0 ? $" within {StoryRules.Span(end.Within)}" : "")}"
                 : end.After > 0 ? $"after {StoryRules.Span(end.After)}" : $"choice \"{end.Choice}\"";
             if (cond.Length > 0)
