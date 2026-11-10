@@ -209,6 +209,9 @@ public static class ConstructLogic
                     case CLogic.AnalogLever:
                         next = AnalogLever.Step(world, c, i, dt);
                         break;
+                    case CLogic.Cipher:
+                        next = p.Mem; // (a data centre terminal's carrier: the server sets it, GameStoryFragments.cs)
+                        break;
                     case >= CLogic.Xor and <= CLogic.BusOut and not CLogic.KeySwitch:
                         next = LogicBlocks.Step(world, c, i, ref p, d, sum[i], sum1[i], sum2[i], count[i], count1[i], high[i], count[i] > 0 ? firstFrom[i] : ushort.MaxValue, dt);
                         if (d.Logic is not (CLogic.Display or CLogic.Numpad or CLogic.CodeLock) && d.HasReading)

@@ -371,7 +371,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 225: walker legs phase 2 (docs/sandbox/GIANTS.md): leg parts gain a "drive" socket, an "Oil in" pipe port and a "Drive in" shaft port (socket and port indices on legs shift), and a leg works only when fed; a 224 peer would link and power them differently.
     // 226: event doors (ConstructDoors.cs, docs/sandbox/CONSTRUCTS.md "Event doors"): CBodyKind.Door ((u16 body, u16 part, u8 flags) each) at the end of CBodyKind, CfgKey.DoorOpen and DoorLocked at the end of CfgKey, and a door part's three data ports.
     // 227: CActKind.Blueprint's index is two bytes (281 shipped blueprints: those past 255 spawned the wrong one or none)
-    public const byte ProtocolVersion = 227;
+    // 228: story fragments (docs/story/FRAGMENTS.md): Msg.Fragments at the end of Msg, CLogic.Cipher at the end of CLogic (the Data Centre Terminal, a new part file in Constructs/Parts/Office, so part ids after it shift).
+    public const byte ProtocolVersion = 228;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

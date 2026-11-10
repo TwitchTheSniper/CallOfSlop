@@ -604,6 +604,13 @@ public sealed partial class Game
                     op.Barracks = r.U16(); // (a world from before the barracks has none: GameColonyLockdown.cs builds one)
                 if (r.Has(4))
                     (op.Works, op.Depot) = (r.U16(), r.U16()); // (a world from before the depot has none: GameDepot.cs builds one)
+                if (r.Has(1))
+                {
+                    var sites = new List<(string, ushort)>();
+                    for (int k = 0, sn = r.U8(); k < sn; k++)
+                        sites.Add((r.Str(), r.U16()));
+                    op.Sites = [.. sites]; // (a world from before the data centres has none: GameStoryFragments.cs builds them)
+                }
                 if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
                     _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
                 break;

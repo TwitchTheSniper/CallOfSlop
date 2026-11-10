@@ -203,6 +203,7 @@ public enum CLogic : byte
     AntiGrav, // on power cancels a share of its construct's weight, within its radius (ConstructBoost.cs)
     Mooring, // a mast: on (unwired: always), it ropes a balloon in reach; off or Interact casts it off (ConstructCarrier.cs)
     BombRack, // lets go of the explosive parts bolted to it, one at a time while its input is on (ConstructOrdnance.cs)
+    Cipher, // a data centre's terminal (Game/GameStoryFragments.cs, docs/story/FRAGMENTS.md): puts out the carrier the server gives it (CPart.Mem); its key input is what the decode reads
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -781,7 +782,7 @@ public sealed partial class ConstructPartDef
     /// <summary>A control module: it breaks out the controls of the seat linked into it (ConstructModules.cs).</summary>
     public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule; // (a Remote Transmitter reads a seat too: ConstructModules.LinkWhy)
     public bool Watches => Logic is CLogic.LevelSensor or CLogic.DamageSensor; // has a watch link (ConstructRoutes.WatchPort)
-    public bool HasReading => Logic is >= CLogic.Xor and <= CLogic.BusOut and not (CLogic.KeySwitch or CLogic.Instrument or CLogic.RadioTx or CLogic.BusIn); // its number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
+    public bool HasReading => Logic is >= CLogic.Xor and <= CLogic.BusOut and not (CLogic.KeySwitch or CLogic.Instrument or CLogic.RadioTx or CLogic.BusIn) || Logic == CLogic.Cipher; // (a terminal's: its key and locks, GameStoryFragments.cs) // its number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
     public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut or CLogic.FlightStabilizer || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
     public int TextSlots; // messages it holds ("logic.text": CPart.Text and Text2; LogicText.cs)
 
@@ -811,7 +812,7 @@ public sealed partial class ConstructPartDef
             CLogic.Numpad or CLogic.CodeLock or CLogic.KeySwitch or CLogic.Instrument or CLogic.AltitudeSensor or CLogic.TiltSensor or CLogic.HeadingSensor or CLogic.LevelSensor or CLogic.DamageSensor or CLogic.RadioRx => 0,
             CLogic.Filter or CLogic.RandomPulse or CLogic.OccupancySensor or CLogic.RadioTx or CLogic.BusOut => 1,
             CLogic.Mux or CLogic.BusIn or CLogic.Display or CLogic.FlightStabilizer => 16,
-            CLogic.Decoupler or CLogic.AntiGrav => 1,
+            CLogic.Decoupler or CLogic.AntiGrav or CLogic.Cipher => 1,
             CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director or CLogic.DriveModule or CLogic.TurretModule => 1,
             CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
