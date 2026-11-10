@@ -493,7 +493,6 @@ public static partial class ConstructPhysics
     /// them, and a shift back over the feet when the centre of mass leaves them. Velocity-level: it sets what the body moves
     /// at, so gravity is held by the legs; contacts still stop it.
     /// </summary>
-    public static int ProbeDebug;
     public const float EdgeLag = 0.3f; // a foot with no foothold ahead lets the body go on until it is this share of its reach behind its rest point
     public const float StretchSlow = 0.95f, StretchStop = 0.99f; // a planted leg's hip to foot, a share of its reach: the body slows past the first and stops at the second
 
@@ -620,7 +619,6 @@ public static partial class ConstructPhysics
         var want = stand * reach + c.WalkHeight;
         var vy = Math.Clamp(MathF.Min(want - have, rise) * 2f, -0.25f * reach, 0.25f * reach);
         vy = MathF.Min(vy, c.WalkPowerLift); // (a rise takes its weight times the speed: no faster than the circuit feeds)
-        if (ProbeDebug > 0 && ProbeDebug-- % 30 == 0) Console.WriteLine($"DBG want {want:0.0} have {have:0.0} rise {rise:0.0} vy {vy:0.00} n {n} down {down} H {c.WalkHeight:0.0}");
         // Along the ground: the keys, at what the build walks at.
         var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
         fwd.Y = 0;
