@@ -73,7 +73,7 @@ public sealed class CabLook
                 return have;
             var facets = rule.FacetsMax > 0 ? Math.Min(MaxFacets, Math.Max(6, (rule.FacetsMin + rule.FacetsMax) / 2 - 3)) : 0;
             var list = new List<float[]>();
-            foreach (var (l, _) in rule.Languages)
+            foreach (var l in rule.Languages.Select(x => x.Item1).Append(rule.CabLanguage).OfType<BodyLanguage>().Distinct()) // (phase 8a part 2: an archetype's own cab language too, a cab-over ahead of a box body)
             {
                 var t = l.Drawn(facets);
                 foreach (var h in hood ? new[] { HoodY0 + rule.HoodCrownMin, HoodY0 + rule.HoodCrownMax } : [rule.CabTallMin, rule.CabTallMax])
