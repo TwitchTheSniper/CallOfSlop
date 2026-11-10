@@ -200,6 +200,8 @@ public static unsafe partial class Program
             VehicleKit.VehicleIdentity.GateOn = false; // kit 2 without its identity re-plan, to measure what the check changes
         if (args.SkipWhile(a => !a.Equals("--gen-interior", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } interiorOf)
             return GenInterior(interiorOf, args); // the interior planner and builder (Source/Interiors, docs/sandbox/INTERIORS.md)
+        if (args.Any(a => a.Equals("--interior-walk", StringComparison.OrdinalIgnoreCase)))
+            return InteriorWalk(args); // a scripted player walk-through of a fitted construct (docs/sandbox/INTERIORS.md "Phase 6")
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)

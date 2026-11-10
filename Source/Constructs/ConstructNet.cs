@@ -30,6 +30,7 @@ public enum CBodyKind : byte
     Flight, // protocol 174: what a stabilizer commands, for Flight Diagnostic Panels (ConstructFlight.WriteDiagnostic)
     WebState, // protocol 181: one Browser Screen's page: u16 body, u16 part, u8 lead, u16 scroll, u8 inner, u32 tick, f32 seconds (ConstructMedia.cs)
     Finish, // protocol 192: texture changes (the texture paint tool): (id, part, material name) each (ConstructFinish.WriteChanges)
+    Door, // protocol 226: event doors that started moving or settled: (id, part, flags) each (ConstructDoors.Write)
 }
 
 /// <summary>
@@ -822,6 +823,9 @@ public static class ConstructNet
                 break;
             case CBodyKind.Reading:
                 LogicDisplays.ReadChanges(ref r, world);
+                break;
+            case CBodyKind.Door:
+                ConstructDoors.Read(ref r, world);
                 break;
             case CBodyKind.Analog:
             {

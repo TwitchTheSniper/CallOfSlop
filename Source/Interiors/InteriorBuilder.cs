@@ -43,15 +43,34 @@ public sealed class InteriorBuilder : BlueprintScript
         if (bp.StepWeld.Any(w => w != null) || bp.Links.Count > 0 || bp.Hoses.Count > 0 || bp.Connectors.Count > 0 || bp.Tracks.Count > 0)
             throw new VehicleKitException("phase 1 carries socket steps and wires only; this blueprint has welds, links, hoses, connectors or tracks");
         var root = ConstructParts.Find(bp.Steps[0].Part) ?? throw new VehicleKitException($"no part \"{bp.Steps[0].Part}\"");
+        // phase 6: the vehicle's own helm (a seat wired into a Driving Module) and what hangs on it are carried into the bridge
+        // (CarryHelm), so the bridge takes it over rather than holding a second helm that can't drive (a module takes one input)
+        var carry = HelmChain(bp);
+        Vector3? fwd = null;
+        if (carry != null)
+        {
+            var scratch = new InteriorBuilder(data, "scratch");
+            var all = new List<VPart> { scratch.Root(root.Name, (root.BoundsMin + root.BoundsMax) * 0.5f) };
+            for (var i = 1; i < bp.Steps.Count; i++)
+                all.Add(scratch.Onto(all[bp.Steps[i].On], bp.Steps[i].Socket, bp.Steps[i].Part, bp.Steps[i].Own, bp.Steps[i].Spin));
+            fwd = scratch.C.SeatForward();
+            b._helmAxis = Rot24.Apply(scratch.C.Parts[all[carry.Value.Helm].Index].Rot, Vector3.UnitX);
+            b._carry = (bp, carry.Value.Helm, carry.Value.Steps);
+        }
         b._base.Add(b.Root(root.Name, (root.BoundsMin + root.BoundsMax) * 0.5f));
+        b._byStep[0] = b._base[0];
         for (var i = 1; i < bp.Steps.Count; i++)
         {
+            if (carry != null && (carry.Value.Steps.Contains(i) || carry.Value.Pad == i))
+                continue;
             var s = bp.Steps[i];
-            b._base.Add(b.Onto(b._base[s.On], s.Socket, s.Part, s.Own, s.Spin));
+            b._byStep[i] = b.Onto(b._byStep[s.On], s.Socket, s.Part, s.Own, s.Spin);
+            b._base.Add(b._byStep[i]);
         }
         foreach (var (f, t) in bp.Wires)
-            b.Wire(b._base[f], b._base[t]);
-        b.Measure();
+            if (b._byStep.ContainsKey(f) && b._byStep.ContainsKey(t))
+                b.Wire(b._byStep[f], b._byStep[t]);
+        b.Measure(fwd);
         foreach (var pn in data.Panels)
             if (ConstructParts.Find(pn) is { } pd)
                 b._panels.Add((pn, (int)MathF.Round((pd.BoundsMax.X - pd.BoundsMin.X) / 4f)));
@@ -59,8 +78,71 @@ public sealed class InteriorBuilder : BlueprintScript
         return b;
     }
 
+    private readonly Dictionary<int, VPart> _byStep = new(); // the blueprint's steps as replayed (and the carried helm chain's, once in the bridge)
+    private readonly HashSet<int> _carried = new(); // part indices of the carried helm chain (counted as the vehicle's)
+    private (ConstructBuild.Blueprint Bp, int Helm, HashSet<int> Steps)? _carry;
+    private Vector3 _helmAxis = Vector3.UnitX; // the carried helm's own +x, so it faces the way it did
+
+    /// <summary>
+    /// The blueprint's helm chain: a seat step wired into a Driving Module, with every step that hangs on it (the module, its battery). Null
+    /// when there is none, or when a step outside the chain hangs on it. <c>Pad</c>: the adapter the helm stood on, when nothing else does.
+    /// </summary>
+    private static (int Helm, HashSet<int> Steps, int Pad)? HelmChain(ConstructBuild.Blueprint bp)
+    {
+        for (var i = 1; i < bp.Steps.Count; i++)
+        {
+            if (ConstructParts.Find(bp.Steps[i].Part) is not { Role: PartRole.Seat })
+                continue;
+            if (!bp.Wires.Any(w => w.Item1 == i && bp.Steps[w.Item2].Part == "Driving Module"))
+                continue;
+            var steps = new HashSet<int> { i };
+            for (var grew = true; grew;)
+            {
+                grew = false;
+                for (var j = i + 1; j < bp.Steps.Count; j++)
+                    if (!steps.Contains(j) && steps.Contains(bp.Steps[j].On))
+                        grew = steps.Add(j);
+            }
+            var on = bp.Steps[i].On;
+            var pad = on > 0 && ConstructParts.Find(bp.Steps[on].Part)?.Name == "Adapter Capital to Small" && Enumerable.Range(1, bp.Steps.Count - 1).All(j => j == i || bp.Steps[j].On != on) ? on : -1;
+            return (i, steps, pad);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Fits the carried helm chain's other steps on <paramref name="helm"/> (the bridge's helm, placed as the vehicle's) and its wires. False,
+    /// with the reason in Refused, when a step won't go.
+    /// </summary>
+    private bool CarryHelm(VPart helm, string room)
+    {
+        var (bp, h, steps) = _carry!.Value;
+        _carry = null;
+        _byStep[h] = helm;
+        _carried.Add(helm.Index);
+        foreach (var j in steps.Where(j => j != h).OrderBy(j => j))
+        {
+            var s = bp.Steps[j];
+            try
+            {
+                _byStep[j] = Onto(_byStep[s.On], s.Socket, s.Part, s.Own, s.Spin);
+                _carried.Add(_byStep[j].Index);
+            }
+            catch (VehicleKitException e)
+            {
+                Refused.Add($"{room}: the vehicle's {s.Part} won't go on its {bp.Steps[s.On].Part} ({e.Message})");
+                return false;
+            }
+        }
+        foreach (var (f, t) in bp.Wires)
+            if ((steps.Contains(f) || steps.Contains(t)) && _byStep.ContainsKey(f) && _byStep.ContainsKey(t))
+                TryWire(_byStep[f], _byStep[t], $"{room}: the vehicle's {bp.Steps[f].Part} to its {bp.Steps[t].Part}");
+        Notes.Add($"{room}: the vehicle's helm is the bridge's, with its {string.Join(", ", steps.Where(j => j != h).Select(j => bp.Steps[j].Part))}");
+        return true;
+    }
+
     /// <summary>The class from the body's mass, the grid laid on the root's top sockets with a margin, keep-outs from every other part, the bow from the helm.</summary>
-    private void Measure()
+    private void Measure(Vector3? helmForward = null)
     {
         double kg = 0;
         for (var i = 0; i < C.PartCount; i++)
@@ -97,7 +179,7 @@ public sealed class InteriorBuilder : BlueprintScript
             C.RestBounds(i, out var a, out var z);
             keep.Add((a - new Vector3(_corner.X, hi.Y, _corner.Z), z - new Vector3(_corner.X, hi.Y, _corner.Z)));
         }
-        var fwd = C.SeatForward();
+        var fwd = helmForward ?? C.SeatForward();
         var bowAtMin = MathF.Abs(fwd.X) > MathF.Abs(fwd.Z) ? fwd.X < 0 : true;
         if (MathF.Abs(fwd.X) <= MathF.Abs(fwd.Z))
             Notes.Add($"the helm faces across the deck ({fwd.X:0},{fwd.Z:0}): the bow is taken at the x-min end");
@@ -151,6 +233,12 @@ public sealed class InteriorBuilder : BlueprintScript
         why = "";
         return new HullVolume(new Vector3(x1 - x0, roofY - floorY, z1 - z0), keep, Hull!.BowAtMinX);
     }
+
+    /// <summary>Block <paramref name="x"/>, <paramref name="z"/>'s floor top at its middle, level <paramref name="level"/>, in this builder's rest frame (the walk-through, --interior-walk).</summary>
+    public Vector3 FloorAt(int level, int x, int z) => Slab(level, x, z) + new Vector3(1.875f, 0.125f, 1.875f);
+
+    /// <summary>The root part's origin in this builder's rest frame (to carry <see cref="FloorAt"/> into a built body's).</summary>
+    public Vector3 RootPos => C.Parts[0].Pos;
 
     /// <summary>A slab origin (cell 0's centre) of block <paramref name="x"/>, <paramref name="z"/> at level <paramref name="level"/> (0: deck 0's floor).</summary>
     private Vector3 Slab(int level, int x, int z) => new(_corner.X + 0.125f + x * 4, _floorY + (level + _lv) * 3, _corner.Z + 0.125f + z * 4);
@@ -280,10 +368,10 @@ public sealed class InteriorBuilder : BlueprintScript
         foreach (var g in gaps)
             Lift(g.Lo, g.LoLv, g.Hi, g.HiLv);
         // (in the budget's order: the deck's other doorways' leaves, then the void's, then the generated rooms' things; what doesn't fit is left out and reported)
-        foreach (var (frame, door, what, lv) in _laterLeaves.OrderByDescending(l => l.Lv))
+        foreach (var (frame, door, what, lv, kind, beside) in _laterLeaves.OrderByDescending(l => l.Lv))
         {
             _lv = lv;
-            Hang(frame, door, what, true);
+            Hang(frame, door, what, true, kind, beside);
         }
         foreach (var (p, r, lv) in _laterRooms)
         {
@@ -298,7 +386,7 @@ public sealed class InteriorBuilder : BlueprintScript
         }
         _lv = 0;
         if (OpenDoorways > 0)
-            Notes.Add($"budget: {OpenDoorways} doorways left open (a frame, no leaf): each leaf's hinge is a joint and the class's budget is {_budget.Joints} of {Construct.MaxJoints}; critical rooms and bulkheads first, then the deck's, then the void's");
+            Notes.Add($"budget: {OpenDoorways} doorways left open (a frame, no door): the class's door budget is {_budget.Doors} of {Construct.MaxDoors}; critical rooms and bulkheads first, then the deck's, then the void's");
         if (Bare.Count > 0)
             Notes.Add($"budget: {Bare.Count} generated rooms left bare (over the class's {_budget.Links} links or {_budget.Parts} parts): {string.Join(", ", Bare.Take(12))}{(Bare.Count > 12 ? ", ..." : "")}");
         if (Lifts > 0)
@@ -307,6 +395,9 @@ public sealed class InteriorBuilder : BlueprintScript
             foreach (var t in p.Rooms.Select(r => _data.Rooms[r.Type].Modules).OfType<string>().Distinct())
                 foreach (var m in _data.Sets[t].Missing)
                     Missing.Add($"{_data.Rooms.Values.First(r => r.Modules == t).Name}: {m}");
+        Seals();
+        if (_carry != null)
+            Refused.Add($"the vehicle's {_carry.Value.Bp.Steps[_carry.Value.Helm].Part} had no bridge to go in: the fitted construct has no helm");
         Power();
     }
 
@@ -619,7 +710,11 @@ public sealed class InteriorBuilder : BlueprintScript
 
     public int PowerOff, OpenDoorways;
     private int _jointReserve; // joints kept for the lifts, built last
-    private readonly List<(VPart Frame, (PlanDoor D, bool Own) Door, string What, int Lv)> _laterLeaves = new(); // doorways other than critical rooms' and bulkheads', hung last while the budget lasts
+    private readonly List<(VPart Frame, (PlanDoor D, bool Own) Door, string What, int Lv, Leaf Kind, VPart? Beside)> _laterLeaves = new(); // doorways other than critical rooms' and bulkheads', hung last while the budget lasts
+    public int SwingDoors, SlideDoors, DoubleDoors; // doorways hung, by kind (phase 7: event doors)
+    private int _doorParts; // event door parts placed (a double door is two), against the class's door budget
+    private readonly List<(int X, VPart Door)> _bulkheadDoors = new(); // the spine's bulkhead doors by their line (grid x), for the bridge's seal switches
+    private VPart? _bridgeSwitch; // the bridge's lights Switch: the seal switches go on beside it
     private readonly List<(InteriorPlan Plan, PlanRoom Room, int Lv)> _laterRooms = new(); // generated rooms, furnished last while the budget lasts
     public readonly List<string> Bare = new(); // generated rooms the budget left without things
     private Budget _budget => Class?.Budget ?? Budget.None;
@@ -833,14 +928,30 @@ public sealed class InteriorBuilder : BlueprintScript
                                 Remember(k, blocks, gw);
                             continue;
                         }
-                        if (Place(Shell("doorWall"), o, a, FloorsUnder(k, blocks), $"{what} door") is { } dw)
+                        // (a lift shaft's north or south doorway goes in its piece's east half: its cars ride the west column, and a
+                        // doorway over it opened onto a car's side rail: phase 6's walk-through)
+                        var lift = r.Shaft == "elevator" || door.D.Other >= 0 && plan.Rooms[door.D.Other].Shaft == "elevator" || door.D.Room >= 0 && plan.Rooms[door.D.Room].Shaft == "elevator";
+                        var (dAt, wAt) = lift && sd.AlongX && a.X > 0 ? (o + a * 2, o) : (o, o + a * 2); // (a run going west: its first half is the east one)
+                        var dw = Place(Shell("doorWall"), dAt, a, FloorsUnder(k, blocks), $"{what} door");
+                        if (dw != null)
                         {
                             Remember(k, blocks, dw);
                             _pieces[(_lv, r.Id, sd.S, slot)] = dw;
-                            Hang(dw, door, what, r.Critical || door.D.Room >= 0 && plan.Rooms[door.D.Room].Critical);
                         }
-                        if (Place(Shell("wall2"), o + a * 2, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
+                        var w2 = Place(Shell("wall2"), wAt, a, FloorsUnder(k, blocks), $"{what} wall");
+                        if (w2 != null)
                             Remember(k, blocks, w2);
+                        if (dw != null)
+                        {
+                            // (phase 7: a critical room's door and a lift landing's slide into the wall beside them, a hangar's and a mess's
+                            // are double doors, the rest swing)
+                            bool Is(int id, Func<PlanRoom, bool> f) => id >= 0 && f(plan.Rooms[id]);
+                            var critical = r.Critical || Is(door.D.Room, q => q.Critical) || Is(door.D.Other, q => q.Critical);
+                            var kind = critical || lift ? Leaf.Slide
+                                : r.Type is "hangar" or "mess" || Is(door.D.Room, q => q.Type is "hangar" or "mess") || Is(door.D.Other, q => q.Type is "hangar" or "mess") ? Leaf.Double
+                                : Leaf.Swing;
+                            Hang(dw, door, what, critical, kind, w2);
+                        }
                         continue;
                     }
                     // the longest panel that fits before the run's end or its next doorway (4 m pieces where there is none)
@@ -883,36 +994,206 @@ public sealed class InteriorBuilder : BlueprintScript
     /// <summary>The shell's panel walls (phase 5) with their length in grid cells, longest first: data's <c>shell.panels</c>, those this build has.</summary>
     private List<(string Part, int Cells)> _panels = new();
 
+    private enum Leaf { Swing, Slide, Double }
+
+    private readonly HashSet<int> _sealParts = new();
+    public int SealLines, SealDoors;
+    private const int RouteReserve = 64; // wires (routes) left for the players out of Construct.MaxRoutes
+
     /// <summary>
-    /// A door leaf on its hinge in a doorway the plan gives this room (a shared doorway's leaf hangs in one room's half only). A hinge is a
-    /// joint and a construct has at most <see cref="Construct.MaxJoints"/>: in the chassis void only <paramref name="important"/> doorways (critical
-    /// rooms, bulkheads) get a leaf, and none is hung into the joints kept for the lifts; those doorways stay open and are counted.
+    /// The bulkheads seal from the bridge (phase 7): for each bulkhead line (grid x) a Switch beside the bridge's lights switch and a NOT Gate
+    /// on it. The Switch is wired into each of the line's Bulkhead Doors' Lock port (on: F can't work them), the NOT into their Open port (on:
+    /// a fall, so they shut; off: a rise, so they open). The wires are laid straight through the decks, nodes at most 6 m apart. A line
+    /// that would leave the players fewer than <see cref="RouteReserve"/> wires is left unwired and noted.
     /// </summary>
-    private void Hang(VPart frame, (PlanDoor D, bool Own) door, string what, bool important = false)
+    private void Seals()
     {
-        if (!door.Own || door.D.Wide)
+        if (_bulkheadDoors.Count == 0)
             return;
-        if (!important)
+        if (_bridgeSwitch == null)
         {
-            _laterLeaves.Add((frame, door, what, _lv));
+            Notes.Add("bulkhead seals: no bridge lights switch to put the seal switches beside, so the bulkhead doors are not wired");
             return;
         }
-        if (C.JointCount >= Math.Min(Construct.MaxJoints, _budget.Joints) - _jointReserve || C.LinkCount + 2 > _budget.Links)
+        var anchor = _bridgeSwitch;
+        var sides = new[] { "+x", "-x", "+z", "-z", "+y" };
+        foreach (var line in _bulkheadDoors.GroupBy(d => d.X).OrderBy(g => g.Key))
+        {
+            if (C.RouteCount + 1 + 2 * line.Count() > Construct.MaxRoutes - RouteReserve)
+            {
+                Notes.Add($"bulkhead seals: the line at grid x {line.Key} left unwired (it would leave the players fewer than {RouteReserve} of {Construct.MaxRoutes} wires)");
+                continue;
+            }
+            VPart? sw = null, not = null;
+            foreach (var sk in sides)
+                try
+                {
+                    sw = Onto(anchor, sk, "Switch");
+                    break;
+                }
+                catch (VehicleKitException)
+                {
+                }
+            if (sw != null)
+                foreach (var sk in sides)
+                    try
+                    {
+                        not = Onto(sw, sk, "NOT Gate");
+                        break;
+                    }
+                    catch (VehicleKitException)
+                    {
+                    }
+            if (sw == null || not == null)
+            {
+                Notes.Add($"bulkhead seals: no room on the bridge for the line at grid x {line.Key}'s switch");
+                break;
+            }
+            Placed += 2;
+            _sealParts.Add(sw.Index);
+            _sealParts.Add(not.Index);
+            anchor = sw;
+            TryWire(sw, not, null);
+            var all = true;
+            foreach (var (_, door) in line)
+                try
+                {
+                    Link("data", sw, door, toPort: "Lock", laid: true, nodes: Way(sw, door));
+                    Link("data", not, door, toPort: "Open", laid: true, nodes: Way(not, door));
+                    SealDoors++;
+                }
+                catch (VehicleKitException e)
+                {
+                    all = false;
+                    Notes.Add($"bulkhead seals: a door on the line at grid x {line.Key} not wired ({e.Message})");
+                }
+            if (all)
+                SealLines++;
+        }
+        Notes.Add($"bulkhead seals: {SealLines} line(s) wired from the bridge, {SealDoors} of {_bulkheadDoors.Count} bulkhead doors (a Switch each into their Lock, its NOT Gate into their Open); {C.RouteCount} of {Construct.MaxRoutes} wires used");
+    }
+
+    /// <summary>A straight wire's nodes from part <paramref name="a"/> to <paramref name="b"/>, at most 6 m apart, in vehicle coordinates.</summary>
+    private Vector3[] Way(VPart a, VPart b)
+    {
+        C.RestBounds(a.Index, out var a0, out var a1);
+        C.RestBounds(b.Index, out var b0, out var b1);
+        var from = (a0 + a1) * 0.5f;
+        var to = (b0 + b1) * 0.5f;
+        var n = (int)MathF.Ceiling(Vector3.Distance(from, to) / 6f);
+        var nodes = new Vector3[Math.Max(0, n - 1)];
+        for (var i = 1; i < n; i++)
+        {
+            var p = Vector3.Lerp(from, to, (float)i / n);
+            nodes[i - 1] = FromRest(new Vector3(MathF.Round(p.X * 20) / 20, MathF.Round(p.Y * 20) / 20, MathF.Round(p.Z * 20) / 20));
+        }
+        return nodes;
+    }
+
+    /// <summary>
+    /// An event door in a doorway the plan gives this room (a shared doorway's door hangs in one room's half only), on the frame's jamb with
+    /// no hinge and no joint (phase 7, docs/sandbox/CONSTRUCTS.md "Event doors"): a swing door, a Bulkhead Door that slides into
+    /// <paramref name="beside"/> (the wall piece next to the frame; without one, or on a door corner, it swings), or a double door's two
+    /// leaves (a door corner has one jamb: it swings). Doorways other than <paramref name="important"/> ones (critical rooms, bulkheads) are
+    /// hung last, deck first, while the class's door, part and link budget lasts; the rest stay open and are counted. Returns the
+    /// door part (a double door's left leaf), or null.
+    /// </summary>
+    private VPart? Hang(VPart frame, (PlanDoor D, bool Own) door, string what, bool important = false, Leaf kind = Leaf.Swing, VPart? beside = null)
+    {
+        if (!door.Own || door.D.Wide)
+            return null;
+        if (!important)
+        {
+            _laterLeaves.Add((frame, door, what, _lv, kind, beside));
+            return null;
+        }
+        var fdef = C.DefOf(frame.Index);
+        var two = fdef.Sockets.Any(x => x.Name == "hinge2");
+        if (kind == Leaf.Slide && (!two || beside == null) || kind == Leaf.Double && !two)
+            kind = Leaf.Swing;
+        var need = kind == Leaf.Double ? 2 : 1;
+        if (_doorParts + need > Math.Min(Construct.MaxDoors, _budget.Doors) || C.LinkCount + need + 1 > _budget.Links || C.PartCount + need > _budget.Parts)
         {
             OpenDoorways++;
-            return;
+            return null;
         }
         try
         {
-            var hinge = Onto(frame, "hinge", Shell("hinge"), "base");
-            Onto(hinge, "leaf", Shell("door"), "hang");
-            Placed += 2;
+            VPart got;
+            switch (kind)
+            {
+                case Leaf.Slide:
+                {
+                    // (it slides towards the jamb it hangs on: the one on the wall piece's side)
+                    C.RestBounds(frame.Index, out var f0, out var f1);
+                    C.RestBounds(beside!.Index, out var b0, out var b1);
+                    var plus = Vector3.Dot((b0 + b1 - f0 - f1) * 0.5f, Rot24.Apply(C.Parts[frame.Index].Rot, Vector3.UnitX)) > 0;
+                    got = Upright(frame, plus ? "hinge2" : "hinge", Shell("bulkheadDoor"));
+                    SlideDoors++;
+                    break;
+                }
+                case Leaf.Double:
+                {
+                    VPart l, rr;
+                    try
+                    {
+                        l = Upright(frame, "hinge", Shell("doubleDoorL"));
+                    }
+                    catch (VehicleKitException)
+                    {
+                        l = Upright(frame, "hinge2", Shell("doubleDoorL"));
+                    }
+                    rr = Upright(frame, C.SocketUsed(frame.Index, Array.FindIndex(fdef.Sockets, x => x.Name == "hinge")) ? "hinge2" : "hinge", Shell("doubleDoorR"));
+                    var met = false;
+                    for (var i = 0; i < C.LinkCount && !met; i++)
+                        met = C.Links[i].A == l.Index && C.Links[i].B == rr.Index || C.Links[i].A == rr.Index && C.Links[i].B == l.Index;
+                    if (!met && _unmet++ == 0)
+                        Notes.Add($"{what}: a double door's leaves don't meet (no link between them): F works each alone");
+                    got = l;
+                    Placed++;
+                    DoubleDoors++;
+                    break;
+                }
+                default:
+                    try
+                    {
+                        got = Upright(frame, "hinge", Shell("swingDoor"));
+                    }
+                    catch (VehicleKitException) when (two)
+                    {
+                        got = Upright(frame, "hinge2", Shell("swingDoor"));
+                    }
+                    SwingDoors++;
+                    break;
+            }
+            Placed++;
             Doors++;
+            _doorParts += need;
+            return got;
         }
         catch (VehicleKitException e)
         {
-            Refused.Add($"{what} door leaf: {e.Message}");
+            Refused.Add($"{what} door: {e.Message}");
+            return null;
         }
+    }
+
+    private int _unmet;
+
+    /// <summary>A door part on the frame's jamb socket, standing upright (phase 6: a leaf left to the best spin could hang flat).</summary>
+    private VPart Upright(VPart frame, string jamb, string part)
+    {
+        VehicleKitException? last = null;
+        for (var sp = 0; sp < 4; sp++)
+            try
+            {
+                return Onto(frame, jamb, part, "hang", sp, veto: (_, g) => Rot24.Apply(g.Rot, Vector3.UnitY).Y > 0.9f ? null : "it would not stand upright");
+            }
+            catch (VehicleKitException e)
+            {
+                last = e;
+            }
+        throw last!;
     }
 
     /// <summary>Bulkheads across the corridor (a door in the spine, a wide opening over the reserved lane), and the upper decks' closed spine ends.</summary>
@@ -929,15 +1210,23 @@ public sealed class InteriorBuilder : BlueprintScript
                     if (Place(Shell("garageWall"), o, Vector3.UnitZ, FloorsUnder(k, blocks), what) is { } gw)
                         Remember(k, blocks, gw);
                 }
+                else if (z == plan.SpineZ0 && (b.X == 0 || plan.Cells[k][b.X - 1, z] == InteriorPlan.KeepOut || plan.Cells[k][b.X, z] == InteriorPlan.KeepOut))
+                {
+                    // (a keep-out across the spine on one side: a door there would open onto it, or onto the drop where no slab is: a plain wall)
+                    if (Place(Shell("wall4"), o, Vector3.UnitZ, FloorsUnder(k, blocks), what) is { } w4)
+                        Remember(k, blocks, w4);
+                    Notes.Add($"{what}: a keep-out beside it on the spine, so a wall, no door");
+                }
                 else if (z == plan.SpineZ0)
                 {
-                    if (Place(Shell("doorWall"), o, Vector3.UnitZ, FloorsUnder(k, blocks), what) is { } dw)
-                    {
+                    var dw = Place(Shell("doorWall"), o, Vector3.UnitZ, FloorsUnder(k, blocks), what);
+                    var w2 = Place(Shell("wall2"), o + Vector3.UnitZ * 2, Vector3.UnitZ, FloorsUnder(k, blocks), what);
+                    if (dw != null)
                         Remember(k, blocks, dw);
-                        Hang(dw, (new PlanDoor { Why = "bulkhead" }, true), what, true);
-                    }
-                    if (Place(Shell("wall2"), o + Vector3.UnitZ * 2, Vector3.UnitZ, FloorsUnder(k, blocks), what) is { } w2)
+                    if (w2 != null)
                         Remember(k, blocks, w2);
+                    if (dw != null && Hang(dw, (new PlanDoor { Why = "bulkhead" }, true), what, true, Leaf.Slide, w2) is { } bd)
+                        _bulkheadDoors.Add((b.X, bd));
                 }
                 else if (Place(Shell("wall4"), o, Vector3.UnitZ, FloorsUnder(k, blocks), what) is { } w4)
                     Remember(k, blocks, w4);
@@ -1038,6 +1327,14 @@ public sealed class InteriorBuilder : BlueprintScript
                 var pc = (plo + phi) * 0.5f;
                 spots.Sort((a, b) => Vector3.DistanceSquared(a.At, pc).CompareTo(Vector3.DistanceSquared(b.At, pc)));
             }
+            // (the carried helm goes on the free spot nearest the base parts its chain is wired to, a leg's hip: a wire reaches 8 m)
+            if (item.Role == "helm" && _carry is { } cy && def.Name == cy.Bp.Steps[cy.Helm].Part)
+            {
+                var ends = cy.Bp.Wires.SelectMany(w => new[] { (w.From, w.To), (w.To, w.From) }).Where(w => cy.Steps.Contains(w.Item1) && !cy.Steps.Contains(w.Item2) && _byStep.ContainsKey(w.Item2))
+                    .Select(w => { C.PartBounds(_byStep[w.Item2].Index, out var lo, out var hi); return (lo, hi); }).ToList();
+                if (ends.Count > 0)
+                    spots.Sort((a, b) => ends.Sum(e => Vector3.Distance(a.At, Vector3.Clamp(a.At, e.lo, e.hi))).CompareTo(ends.Sum(e => Vector3.Distance(b.At, Vector3.Clamp(b.At, e.lo, e.hi)))));
+            }
             for (var i = 0; i < n; i++)
             {
                 VPart? got = null;
@@ -1050,7 +1347,10 @@ public sealed class InteriorBuilder : BlueprintScript
                         spots.RemoveAt(j--);
                         continue;
                     }
-                    foreach (var a in new[] { Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitX, -Vector3.UnitZ })
+                    var takeOver = item.Role == "helm" && _carry != null && def.Name == _carry.Value.Bp.Steps[_carry.Value.Helm].Part;
+                    if (Blocks(def, foot, spot.At))
+                        continue;
+                    foreach (var a in takeOver ? new[] { _helmAxis } : new[] { Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitX, -Vector3.UnitZ })
                     {
                         try
                         {
@@ -1085,7 +1385,9 @@ public sealed class InteriorBuilder : BlueprintScript
                     lamps.Add(got);
                 if (item.Role == "plant" && def.PlantFuel == EngineFuel.Fuel)
                     Fuel(got, r);
-                if (item.Role == "helm")
+                if (item.Role == "helm" && _carry != null && def.Name == _carry.Value.Bp.Steps[_carry.Value.Helm].Part)
+                    CarryHelm(got, r.Name);
+                else if (item.Role == "helm")
                     helm = got;
                 else if (item.Role == "gunner" && def.Role == PartRole.Seat)
                     gunner = got;
@@ -1108,6 +1410,8 @@ public sealed class InteriorBuilder : BlueprintScript
                 catch (VehicleKitException)
                 {
                 }
+            if (sw != null && r.Type == "bridge")
+                _bridgeSwitch ??= sw;
             if (sw == null)
                 Refused.Add($"{r.Name} deck {r.Deck}: no place for the lights' Switch on its lamp");
             else
@@ -1119,6 +1423,36 @@ public sealed class InteriorBuilder : BlueprintScript
             TryWire(helm, drive, $"{r.Name}: helm to the Driving Module");
         if (gunner != null && director != null)
             TryWire(gunner, director, $"{r.Name}: gunner's station to the Fire Director");
+    }
+
+    private readonly List<Vector3> _openings = new(); // the doorways' middles on their floor (door walls, door corners, garage walls), rest frame
+    private int _openingsAt = -1; // (the part count they were found at)
+
+    /// <summary>
+    /// Would a <paramref name="def"/> standing at <paramref name="at"/> stand in front of a doorway: within its reach and 1.6 m of an
+    /// opening's middle on the same floor (phase 6's walk-through: a Bunk in front of a door left a player 0.5 m up on it).
+    /// </summary>
+    private bool Blocks(ConstructPartDef def, string foot, Vector3 at)
+    {
+        if (_openingsAt != C.PartCount)
+        {
+            _openingsAt = C.PartCount;
+            _openings.Clear();
+            for (var i = 0; i < C.PartCount; i++)
+            {
+                var n = C.DefOf(i).Name;
+                var mid = n == Shell("garageWall") ? 1.875f : n == Shell("doorWall") || n == Shell("doorCorner") ? 0.875f : -1f;
+                if (mid > 0)
+                    _openings.Add(C.Parts[i].Pos + Rot24.Apply(C.Parts[i].Rot, new Vector3(mid, -0.125f, 0)));
+            }
+        }
+        // (the farthest its footprint reaches from the socket it stands on, whichever way it turns)
+        var f = def.Sockets.First(s => s.Name == foot).At;
+        var reach = new Vector2(MathF.Max(MathF.Abs(def.BoundsMin.X - f.X), MathF.Abs(def.BoundsMax.X - f.X)), MathF.Max(MathF.Abs(def.BoundsMin.Z - f.Z), MathF.Abs(def.BoundsMax.Z - f.Z))).Length() + 1.6f;
+        foreach (var o in _openings)
+            if (MathF.Abs(o.Y - at.Y) < 1f && new Vector2(o.X - at.X, o.Z - at.Z).LengthSquared() < reach * reach)
+                return true;
+        return false;
     }
 
     /// <summary>A fuel plant's day tank: a Fuel Tank fitted to it, so fuel reaches it as it reaches an engine (Construct.FuelReaches).</summary>
@@ -1140,7 +1474,7 @@ public sealed class InteriorBuilder : BlueprintScript
     /// <summary>What a part is for the budget (INTERIORS.md "Phase 5"): the base vehicle's own parts, then the interior's by kind.</summary>
     private string KindOf(int i)
     {
-        if (i < _base.Count)
+        if (i < _base.Count || _carried.Contains(i))
             return "vehicle";
         var n = C.DefOf(i).Name;
         if (n == Shell("floor") || n == Shell("stairFloor"))
@@ -1149,10 +1483,12 @@ public sealed class InteriorBuilder : BlueprintScript
             return "walls";
         if (n == Shell("doorWall") || n == Shell("doorCorner") || n == Shell("garageWall"))
             return "doorways";
-        if (n == Shell("hinge") || n == Shell("door"))
+        if (n == Shell("hinge") || n == Shell("door") || n == Shell("swingDoor") || n == Shell("bulkheadDoor") || n == Shell("doubleDoorL") || n == Shell("doubleDoorR"))
             return "doors";
         if (n == Shell("adapter"))
             return "pads";
+        if (_sealParts.Contains(i))
+            return "seals";
         if (n == Shell("stair"))
             return "stairs";
         if (n is LiftRail or LiftCar or "Toggle" or "AND Gate" or "NOT Gate" or "Button")

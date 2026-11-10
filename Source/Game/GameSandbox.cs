@@ -523,6 +523,12 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.AnalogDirty.Clear();
+        for (var from = 0; from < Constructs.DoorEvents.Count;)
+        {
+            from = ConstructDoors.Write(w, Constructs.DoorEvents, from); // (before the digest: a client has settled a door before it compares)
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.DoorEvents.Clear();
         if (ServerTick % LogicDisplays.ScanTicks == 0)
             LogicDisplays.Scan(Constructs);
         for (var from = 0; from < Constructs.ReadingDirty.Count;)

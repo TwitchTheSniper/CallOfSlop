@@ -1131,7 +1131,7 @@ public sealed partial class ConstructWorld
                 continue;
             var k = 1f - MathF.Min(1, dist / (radius + c.Radius * 0.5f));
             c.Wake();
-            c.Vel += (d / dist + new Vector3(0, 0.5f, 0)) * k * maxDamage * 0.4f / MathF.Max(c.Mass, 20f) * 6f;
+            Shove(c, d / dist + new Vector3(0, 0.5f, 0), k * maxDamage * 0.4f / MathF.Max(c.Mass, 20f) * 6f);
         }
         return hits;
     }
@@ -2004,6 +2004,7 @@ public sealed partial class ConstructWorld
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
+        ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         ConstructPhysics.Step(this, query, dt);
         OverloadDamage();

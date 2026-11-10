@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--bench-vehicle-guns [BLUEPRINT...] [--shells N] [--map NAME]</c>: the gunsmith's guns by hand (docs/sandbox/VEHICLE-WEAPONS.md). A command-line benchmark, not a
+/// <c>--bench-vehicle-guns [BLUEPRINT...] [--shells N] [--merge N] [--gap M] [--map NAME]</c>: the gunsmith's guns by hand (docs/sandbox/VEHICLE-WEAPONS.md). A command-line benchmark, not a
 /// self-test section: it fails nothing. A host alone on a Sandbox map with terrain; the committed blueprints named (by default some that carry the gunsmith's shell and
 /// rapid guns) stand in a row. Each gun is listed with its numbers and fired once (did a round or a shell leave?). Then each shell gun's shell lands, N at once (4 by
 /// default), on the next vehicle in the row: every server tick until the blasts are done is timed (the thread's CPU), then the parts lost, the shove and the ground dug.
@@ -19,6 +19,7 @@ public static partial class SelfTest
             names = ["HighlandFlatbedFort8", "ITBoxTruck3", "HighlandBoxTruck7", "ITWarBus10", "ScamFlatbedFort6", "BanditTankerRig10", "ITTankerRig20", "BritishDoubleDecker9"];
         var salvo = int.TryParse(Arg("--shells"), out var ns) ? Math.Clamp(ns, 1, 64) : 4;
         var merge = int.TryParse(Arg("--merge"), out var nm) ? Math.Clamp(nm, 1, 6) : 0; // (shells as an N x N Howitzer's, whatever the guns are)
+        var gap = float.TryParse(Arg("--gap"), System.Globalization.CultureInfo.InvariantCulture, out var ng) ? Math.Clamp(ng, 10f, 200f) : 30f; // (metres between vehicles: 100 keeps a 4x4 shell's 46 m blast off the neighbours)
         var map = Maps.Find(Arg("--map") ?? "Proving Ground") ?? Maps.All.First(m => m.Terrain != null);
         var clock = Stopwatch.StartNew();
         var now = 0.0;
@@ -52,7 +53,7 @@ public static partial class SelfTest
             while (!job.Step(50))
             {
             }
-            var x = at.X + row.Count * 30f;
+            var x = at.X + row.Count * gap;
             var c = job.Join(new Vector3(x, Ground(x, at.Z), at.Z), 0, out var why);
             if (c == null)
             {
@@ -60,6 +61,20 @@ public static partial class SelfTest
                 continue;
             }
             row.Add((n, c));
+        }
+        if (int.TryParse(Arg("--battery"), out var nb))
+        {
+            // A missile battery of that size on the gunsmith's stand, first in the row (none of the committed blueprints carry one yet).
+            var bp = ConstructBuild.ParseBlueprint(VehicleKit.VehicleGunsmith.BatteryStand(nb), "battery stand");
+            var job = new ConstructBuild.GroundJob(w, bp, null);
+            while (!job.Step(50))
+            {
+            }
+            var x = at.X - gap;
+            if (job.Join(new Vector3(x, Ground(x, at.Z), at.Z), 0, out var why) is { } c)
+                row.Insert(0, ($"Missile stand {nb}", c));
+            else
+                Console.WriteLine($"[guns bench] the battery stand doesn't build: {why}");
         }
         Pump(server, [], 2.0, ref now, clock); // (settle)
         const double dt = 1.0 / World.TickRate;
@@ -89,6 +104,7 @@ public static partial class SelfTest
             }
         }
         Pump(server, [], 6.0, ref now, clock); // (the test shots land)
+        Racks(server, w, row, ref now);
         var dug0 = t?.Edits?.TouchedCells ?? 0;
         for (var s = 0; s < shells.Count && row.Count > 1; s++)
         {
@@ -145,5 +161,68 @@ public static partial class SelfTest
         }
         Console.WriteLine($"[guns bench] craters dug {(t?.Edits?.TouchedCells ?? 0) - dug0}; shells landed {w.ShellsLanded}, parts walked {w.ShellPartsWalked}");
         return 0;
+    }
+
+    /// <summary>Each vehicle with an Ordnance Rack: the next in the row is set 70 m ahead of the rack, the rack lets everything go (as the Turret Module's fire would ask),
+    /// and the missiles fly: fired, landed, the target's parts and health.</summary>
+    private static void Racks(Game server, ConstructWorld w, List<(string Name, Construct C)> row, ref double now)
+    {
+        const double dt = 1.0 / World.TickRate;
+        for (var r = 0; r < row.Count; r++)
+        {
+            var (name, c) = row[r];
+            if (!w.IsLive(c) || c.RackCount == 0 || row.Count < 2)
+                continue;
+            var (tname, t) = row[(r + 1) % row.Count];
+            if (!w.IsLive(t))
+                continue;
+            var rack = c.Racks[0].Part;
+            var fwd = ConstructOrdnance.LaunchDir(c, rack, -1);
+            fwd.Y = 0;
+            fwd = Vector3.Normalize(fwd);
+            var dest = c.WorldCom + fwd * 70f;
+            var ground = World.Map.Terrain?.Sample(dest.X, dest.Z) ?? 0;
+            var lift = t.WorldCom.Y - (World.Map.Terrain?.Sample(t.WorldCom.X, t.WorldCom.Z) ?? 0); // (as high over the ground as it stood)
+            t.Pos += new Vector3(dest.X, ground + lift + 0.2f, dest.Z) - t.WorldCom;
+            t.Vel = Vector3.Zero;
+            t.Wake();
+            for (var i = 0; i < World.TickRate; i++)
+            {
+                now += dt;
+                server.Update(now, dt); // (the target settles where it was put)
+            }
+            // A stand is held 3 m up, level, as on a truck's bed (on the ground its rack launches 0.5 m up and a missile drops into the ground before its fins bite).
+            var pin = name.StartsWith("Missile stand", StringComparison.Ordinal);
+            var pinAt = c.Pos + new Vector3(0, 3f, 0);
+            void Pin()
+            {
+                if (!pin || !w.IsLive(c))
+                    return;
+                (c.Pos, c.Rot, c.Vel, c.AngVel) = (pinAt, Quaternion.Identity, Vector3.Zero, Vector3.Zero);
+            }
+            Pin();
+            var held0 = c.Racks[0].Held;
+            var (fired0, landed0, parts0) = (w.ShellsFired, w.ShellsLanded, t.PartCount);
+            var hp0 = 0f;
+            for (var i = 0; i < t.PartCount; i++)
+                hp0 += t.Parts[i].Health;
+            var cpu = new List<double>();
+            for (var i = 0; i < 10 * World.TickRate; i++)
+            {
+                if (i < 6 * World.TickRate && c.RackCount > 0 && c.Racks[0].Held > 0 && c.Parts[c.Racks[0].Part].Cool == 0 && w.Drops.Count < w.Drops.Capacity)
+                    w.Drops.Add((c.Id, (ushort)c.Racks[0].Part)); // (fire held down: a station each interval, as the rack's own step lets)
+                Pin();
+                var c0 = ThreadCpu.NowMs();
+                now += dt;
+                server.Update(now, dt);
+                cpu.Add(ThreadCpu.NowMs() - c0);
+            }
+            var live = w.IsLive(t);
+            var hp1 = 0f;
+            for (var i = 0; live && i < t.PartCount; i++)
+                hp1 += t.Parts[i].Health;
+            Console.WriteLine($"[guns bench] {name}'s {c.DefOf(rack).Name} ({held0} held, {(c.RackCount > 0 ? c.Racks[0].Held : 0)} left): {w.ShellsFired - fired0} fired, {w.ShellsLanded - landed0} landed; "
+                + $"{tname} 70 m ahead: parts {parts0} -> {(live ? t.PartCount : 0)}, hp {hp0:0} -> {hp1:0}; worst tick {cpu.Max():0.00} ms");
+        }
     }
 }

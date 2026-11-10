@@ -381,8 +381,70 @@ public sealed partial class Vehicle : BlueprintScript
             Wire(module, twin); // (one gunner lays both: the cradle's second gun fires with the first)
         if (Weapon.Mount == "shield")
             GunShield(arm);
+        if (Weapon.Rack is { } rack && Weapon.Ordnance is { } missile)
+            MissileRack(arm, module, rack, missile);
         Turrets.Add((Gun, GunnerSeat, Weapon));
         return this;
+    }
+
+    /// <summary>A missile battery's rack (docs/sandbox/VEHICLE-WEAPONS.md): on the arm's side, hooks out and its front the gun's way, a missile on every station,
+    /// wired from the Turret Module so the gunner's fire lets them go. Only a gun aims a turret's joints, so the rack turns with the turntable and the gun spots.</summary>
+    public VPart? Rack { get; private set; }
+
+    private void MissileRack(VPart arm, VPart module, string rack, string missile)
+    {
+        var along = Rot24.Apply(TurnOf(arm), Vector3.UnitZ);
+        var up = Rot24.Apply(TurnOf(arm), Vector3.UnitY);
+        string? why = null;
+        // On the arm's side, hooks out; a rack of more than one station stands out on a half-metre beam (on its side its stations reach down to the turntable and up to the gunner).
+        var standOff = Def(rack).Rack.Stations > 1;
+        foreach (var side in (string[])["+x1", "-x1", "+x2", "-x2", "+x0", "-x0"])
+        {
+            var (on, socket) = (arm, side);
+            if (standOff)
+            {
+                if (TurnOf(arm, side, $"{Beam} 0.5 m", "-z", 0) == null)
+                    continue;
+                try
+                {
+                    (on, socket) = (Onto(arm, side, $"{Beam} 0.5 m", "-z", 0, clear: true), "+z");
+                }
+                catch (VehicleKitException ex)
+                {
+                    why = ex.Message;
+                    continue;
+                }
+            }
+            for (var spin = 0; spin < 4; spin++)
+            {
+                if (TurnOf(on, socket, rack, "top", spin) is not { } turn || Vector3.Dot(Rot24.Apply(turn, Vector3.UnitZ), along) < 0.9f || MathF.Abs(Vector3.Dot(Rot24.Apply(turn, Vector3.UnitY), up)) > 0.1f)
+                    continue; // (its front not the gun's way; or on top, where a rack longer than the arm meets the gun and the seat)
+                try
+                {
+                    Rack = Onto(on, socket, rack, "top", spin, clear: true);
+                }
+                catch (VehicleKitException ex)
+                {
+                    why = ex.Message;
+                    continue;
+                }
+                for (var k = 0; k < Rack.Def.Rack.Stations; k++)
+                    try
+                    {
+                        Onto(Rack, $"lug{k}", missile, "lug", 0);
+                    }
+                    catch (VehicleKitException ex)
+                    {
+                        // (no undo for the rack once it is on: a station whose missile meets the body stays empty, and the gun still fights; seen on cab-over tankers)
+                        Console.WriteLine($"[vehicles] gunsmith: {Name}: station {k} of its {rack} stays empty: {ex.Message}");
+                    }
+                Wire(module, Rack);
+                return;
+            }
+            if (standOff)
+                break; // (the stand-off is on: no second one)
+        }
+        throw new VehicleKitException($"no room on the arm for a {rack}{(why == null ? "" : ": " + why)}");
     }
 
     /// <summary>Which turntables and elevation hinges the kit's turrets are given, by name, with how many of each (for the reports).</summary>
