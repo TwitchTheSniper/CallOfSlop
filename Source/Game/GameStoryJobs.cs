@@ -154,6 +154,8 @@ public sealed partial class Game
                 w.CourierAt = now + CourierSeconds;
                 if (now >= w.LookAgainAt)
                     JobSay(s, w.Party, def, $"Your crate for {job.Name} is complete and sealed. The courier is on the way: leave it be.");
+                if (Constructs.Get(w.Crate) is { } sealedCrate)
+                    StandInCourierCalled(w.Party, w.Faction, sealedCrate, w.CratePart, Math.Max(w.CourierAt, w.LookAgainAt) - now); // STAND-IN: the courier's flyer (Source/StandIns)
             }
             else if (!w.Full && was && now < w.CourierAt)
                 JobSay(s, w.Party, def, $"Your crate for {job.Name} is short again. The courier will wait until it isn't.");
@@ -355,6 +357,7 @@ public sealed partial class Game
             JobSay(s, w.Party, def, job.Refused.Length > 0 ? job.Refused : $"The courier has sent your crate for {job.Name} back: the paperwork is wrong. Leave it as it is; they will look again.");
             w.LookAgainAt = now + RefusedSeconds;
             w.Full = false; // (so the next look, after the wait, seals it again)
+            StandInCourierDone(w.Party, w.Faction, 3); // STAND-IN: the courier's flyer goes (Source/StandIns)
             return;
         }
         Span<int> took = stackalloc int[FactionRules.MaxNeeds];
@@ -363,6 +366,7 @@ public sealed partial class Game
         JobSay(s, w.Party, def, def.Courier.Length > 0 ? def.Courier : $"{def.Name}'s courier has collected your crate.");
         s.Factions.FinishJob(w.Actor, w.Faction, w.Job);
         _jobWatch.Remove((w.Party, w.Faction));
+        StandInCourierDone(w.Party, w.Faction, 3); // STAND-IN: the courier's flyer goes (Source/StandIns)
     }
 
     /// <summary>Jobs the factions signed off: the job's line in the faction's voice and a HUD line to the party.</summary>
