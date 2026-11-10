@@ -5,7 +5,8 @@ namespace CallOfSlop.VehicleKit.Generators;
 /// <summary>
 /// The technical: an armed pickup, a driver and a gunner. Three trucks of one family, by the seed: a stepside pickup on a low bed between wide-set wheels, a long flatbed ute on a closed tub
 /// with tube rails, a short sand rail with nothing behind the cage but a gun and a drum. Hood, nose, fenders, cab and wheels vary on top of that.
-/// Designed to be fought: an exposed drum feeds the engine, nothing covers the rear tyres on two of the three, the crew sit in the open.
+/// Kit 1's body: since body styles phase 9b every seed is made by the shape grammar's "Technical" recipe (a lofted cab and hood, a gun bay and a short bed or a porch), so this is
+/// what <c>--kit 1</c> makes. Designed to be fought: an exposed drum feeds the engine, nothing covers the rear tyres on two of the three, the crew sit in the open.
 /// </summary>
 public sealed class Technical(FactionStyle style) : VehicleShape(style)
 {

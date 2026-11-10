@@ -129,6 +129,8 @@ public sealed partial class Vehicle
         {
             if (_patched >= want)
                 break;
+            if (p.Name.Contains("Ladder", StringComparison.Ordinal))
+                continue; // (phase 9b: a boarding ladder is listed with the walls it hangs from, and a patch welded across its rails shared their end faces: British Technical 14)
             VehicleGenJob.Yield(); // (each try reads every part's bounds)
             var c = CentreOf(p);
             var face = MathF.Abs(c.X) > 0.6f ? new Vector3(MathF.Sign(c.X), 0, 0) : c.Z > 0 ? Vector3.UnitZ : -Vector3.UnitZ;

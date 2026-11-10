@@ -73,6 +73,8 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         };
         var wings = d.Fork("wings");
         var panel = wings.Pick((string[])["Wing Segment", "Wing Segment", "Narrow Wing Segment", "Fabric Wing Segment"]);
+        if (power == Power.Jet && panel == "Fabric Wing Segment")
+            panel = "Wing Segment"; // (a jet's wings are metal: on cloth a twin-jet is some 70 kg lighter for the same push, climbs at 1.7 m/s through its cruise throttle, and its altitude hold rocks 10-17 m)
         var panels = panel == "Narrow Wing Segment" || power == Power.Jet ? 4 : wings.Pick((int[])[3, 3, 4]); // (at this game's gravity a 700 kg plane wants 18 m2 or more to stall under 30 m/s; a narrow panel is 2 m2)
         var flaps = wings.Chance(0.5);
         var tail = d.Fork("tail");

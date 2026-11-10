@@ -26,15 +26,20 @@ public static class ConstructDoor
         return jt.Type is JointType.Passive or JointType.Motor && !(jt.Wired && jt.Motorised) ? seg - 1 : -1;
     }
 
-    public static bool Swings(Construct c, int part) => JointOf(c, part) >= 0;
+    /// <summary>A door to a player: on a joint (above), or an event door's leaf (ConstructDoors.cs).</summary>
+    public static bool Swings(Construct c, int part) => JointOf(c, part) >= 0 || EventDoor(c, part) >= 0;
 
-    public static bool IsOpen(Construct c, int part) => JointOf(c, part) is var j and >= 0 && c.Joints[j].Open;
+    /// <summary>The event door part whose leaf <paramref name="part"/> is on, or -1.</summary>
+    public static int EventDoor(Construct c, int part) => (uint)part < (uint)c.PartCount && !c.Loose && c.DoorOf(part) is var k and >= 0 ? c.Doors[k].Part : -1;
+
+    public static bool IsOpen(Construct c, int part) =>
+        JointOf(c, part) is var j and >= 0 ? c.Joints[j].Open : EventDoor(c, part) is var door and >= 0 && ConstructDoors.TargetOpen(c, door);
 
     /// <summary>The look line: "Door: shut - F: open". <paramref name="key"/> null: out of reach, or the joint can't be worked.</summary>
     public static string Look(Construct c, int part, string? key)
     {
         var open = IsOpen(c, part);
-        var locked = JointOf(c, part) is var j and >= 0 && c.Joints[j].Locked;
+        var locked = JointOf(c, part) is var j and >= 0 ? c.Joints[j].Locked : EventDoor(c, part) is var door and >= 0 && ConstructDoors.Locked(c, door);
         return SandboxKeys.Line(c.DefOf(part).Name, locked ? "locked" : open ? "open" : "shut", null, key == null || locked ? null : SandboxKeys.Do(key, open ? "shut" : "open"));
     }
 
@@ -57,6 +62,17 @@ public static class ConstructDoor
     /// <summary>A part on the same swinging piece with a handle's "use" boxes (the Door Handle), or -1.</summary>
     public static int HandleOn(Construct c, int part)
     {
+        if (JointOf(c, part) < 0)
+        {
+            // An event door: a handle among its leaf's parts.
+            if (c.DoorOf(part) is not (var k and >= 0))
+                return -1;
+            ref var dr = ref c.Doors[k];
+            for (var m = 0; m < dr.LeafCount; m++)
+                if (c.DefOf(c.DoorLeaves[dr.LeafFirst + m]).UseBoxes.Length > 0)
+                    return c.DoorLeaves[dr.LeafFirst + m];
+            return -1;
+        }
         var seg = c.MoveSeg(c.Parts[part].Seg);
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -74,14 +90,25 @@ public static class ConstructDoor
     public static void UseArea(Construct c, int part, out Vector3 centre, out Vector3 half)
     {
         ref var p = ref c.Parts[part];
-        ref var jt = ref c.Joints[JointOf(c, part)];
         c.ShapeBounds(part, out var mn, out var mx);
-        // The hinge in the part's own frame (it swings, and a freeform weld may turn it): through the world.
-        c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
-        c.WorldFrame(p.Seg, out var q, out var t);
-        var back = Quaternion.Conjugate(q);
-        var pivot = Vector3.Transform(pt + Vector3.Transform(jt.Pivot, pq) - t, back);
-        var axis = Vector3.Transform(Vector3.Transform(jt.Axis, pq), back);
+        Vector3 pivot, axis;
+        if (JointOf(c, part) is var j and >= 0)
+        {
+            ref var jt = ref c.Joints[j];
+            // The hinge in the part's own frame (it swings, and a freeform weld may turn it): through the world.
+            c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
+            c.WorldFrame(p.Seg, out var q, out var t);
+            var back = Quaternion.Conjugate(q);
+            pivot = Vector3.Transform(pt + Vector3.Transform(jt.Pivot, pq) - t, back);
+            axis = Vector3.Transform(Vector3.Transform(jt.Axis, pq), back);
+        }
+        else
+        {
+            ref var dp = ref c.Parts[EventDoor(c, part)]; // (an event door: its pivot in the body frame, where the leaf is)
+            var dd = dp.D.Door!;
+            axis = Rot24.Apply(dp.Rot, ConstructParts.DirVector(dd.Axis));
+            pivot = dd.Slide ? dp.Pos : dp.Pos + Rot24.Apply(dp.Rot, dd.Pivot);
+        }
         var along = Biggest(axis);
         var size = mx - mn;
         int free = -1, thin = -1;

@@ -2004,6 +2004,7 @@ public sealed partial class ConstructWorld
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
+        ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         ConstructPhysics.Step(this, query, dt);
         OverloadDamage();

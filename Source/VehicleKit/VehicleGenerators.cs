@@ -36,6 +36,9 @@ public abstract class VehicleShape(FactionStyle style) : IVehicleGenerator
 
     public virtual VehicleCheckOptions? Checks => null;
     public abstract void Build(Vehicle v);
+
+    /// <summary>Phase 9b: what a shape made by the grammar sets before its plan (a Tanker Rig's trailer). Kit 1's <see cref="Build"/> does its own.</summary>
+    public virtual void Begin(Vehicle v) { }
 }
 
 public static class VehicleRegistry
@@ -60,6 +63,7 @@ public static class VehicleRegistry
         s => new Generators.Car(s),
         s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: no style ships them yet)
         s => new Generators.Plane(s),
+        s => new Generators.Helicopter(s),
         s => new Generators.Buggy(s), // (phase 8b: the archetype library, part 2)
         s => new Generators.MonsterTruck(s),
         s => new Generators.Wagon(s),
