@@ -245,7 +245,7 @@ public static partial class SelfTest
     internal struct DrawnFaceCheck : IDigFaceSink
     {
         public TerrainEdits E;
-        public int Faces, Wrong, Slants;
+        public int Faces, Wrong, Slants, Triangles;
         public string First;
 
         public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
@@ -255,8 +255,11 @@ public static partial class SelfTest
         }
 
         // (a triangle as a quad with a doubled corner: its middle is on the triangle, its normal the triangle's)
-        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc) =>
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc)
+        {
+            Triangles--;
             Quad(a, b, c, c, Vector3.Normalize(Vector3.Cross(b - a, c - a)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+        }
 
         public bool Shaded => true;
 
@@ -264,6 +267,7 @@ public static partial class SelfTest
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             Faces++;
+            Triangles += 2;
             if (n.X != 0 && n.Z != 0)
                 Slants++;
             if (Sliver(a, b, c, d))
