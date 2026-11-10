@@ -412,16 +412,16 @@ public static partial class SelfTest
         if (dmg != want || (flags & Game.ShotWallbang) == 0 || (flags & Game.ShotPenetrated) == 0 || (flags & 1) == 0)
             Fail($"penetration shot: {dmg} damage, flags {flags} (want {want}, a hit with the wallbang and penetrated flags)");
         var packet = game.SelfTestLastPacket;
-        if (packet.Length != 5 + 12 + 12 || (packet[3] & Game.ShotPenetrated) == 0)
-            Fail($"penetration shot: the Shot packet is {packet.Length} bytes with flags {packet[3]} (want the end then the origin, 29 bytes)");
+        if (packet.Length != 6 + 12 + 12 || (packet[3] & Game.ShotPenetrated) == 0)
+            Fail($"penetration shot: the Shot packet is {packet.Length} bytes with flags {packet[3]} (want the end then the origin, 30 bytes)");
         (dmg, flags) = Shoot(needle, -20, Vector3.Zero, head: true);
         if ((flags & 2) == 0 || dmg <= want)
             Fail($"penetration shot: a headshot through the wall gave {dmg} damage, flags {flags}");
         (dmg, flags) = Shoot(pistol, -20, new Vector3(-20, 1.2f, -14));
         if (dmg != 0 || (flags & (1 | Game.ShotPenetrated)) != 0)
             Fail($"penetration shot: the P9 went through 10 cm of wood ({dmg} damage, flags {flags})");
-        if (game.SelfTestLastPacket.Length != 5 + 12)
-            Fail($"penetration shot: a shot that passed nothing sent {game.SelfTestLastPacket.Length} bytes (want 17, no origin)");
+        if (game.SelfTestLastPacket.Length != 6 + 12)
+            Fail($"penetration shot: a shot that passed nothing sent {game.SelfTestLastPacket.Length} bytes (want 18, no origin)");
         (dmg, _) = Shoot(needle, -10, new Vector3(-10, 1.2f, -14));
         if (dmg != 0)
             Fail($"penetration shot: through 50 cm of concrete ({dmg} damage)");

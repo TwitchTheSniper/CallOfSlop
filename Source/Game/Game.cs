@@ -128,6 +128,8 @@ public sealed partial class Game : IDisposable
     public double MuzzleFlashUntil;
     public double HitMarkerUntil;
     public bool HitMarkerHead;
+    /// <summary>The hit marker showing now is for a shot that hit only a build (a construct's part), drawn in its own colour (Program.cs).</summary>
+    public bool HitMarkerBuild;
     public double DamageFlashUntil;
     public bool Disconnected;
     public string Status = "";
@@ -686,6 +688,7 @@ public sealed partial class Game : IDisposable
         {
             HitMarkerUntil = now + 0.12;
             HitMarkerFriendly = false;
+            HitMarkerBuild = false;
         }
 
         var tickBase = (uint)Math.Max(0, Math.Floor(RenderTick));
@@ -1687,6 +1690,7 @@ public sealed partial class Game : IDisposable
         headshotOn.Clear();
         _bloodShotPart.Clear();
         byte flags = 0;
+        var buildHit = false; // a construct's part took a round (its bit 1 goes on after everything else, for ShotKindBuildOnly)
         var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _resolveRays, groups); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
@@ -1771,7 +1775,7 @@ public sealed partial class Game : IDisposable
             if (construct is { } ch && hit == null && turret == null && zombie == null && device == null && ch.Distance <= dist + 1e-3f)
             {
                 SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist + flown) * pen, shooter.Id, def.BuildFlags.Length > 0 ? ConstructWeapons.EffectsOf(def.BuildFlags) : GunEffect.None); // the part it hit (armour first; GameSandbox.cs)
-                flags |= 1;
+                buildHit = true;
             }
             if (SandboxOn)
                 SandboxGlassShot(d, dist, ray.Damage * def.DamageMultAt(dist + flown) * pen, shooter.Id); // the glass it went through on the way breaks (GameSandbox.cs)
@@ -1847,16 +1851,20 @@ public sealed partial class Game : IDisposable
         AllocProfile.Mark("shot: fx, net");
         if (_shotPenetrated)
             flags |= ShotPenetrated; // the origin follows the ends: every client marks both sides of the walls
+        // Only a build was hit (nothing living, no machine): the shooter's marker takes the build colour.
+        var kinds = buildHit && (flags & 1) == 0 ? ShotKindBuildOnly : (byte)0;
+        if (buildHit)
+            flags |= 1;
         // Host-side feedback
         if (shooter.Id == LocalId)
-            OnOwnShotConfirmed(flags, now);
+            OnOwnShotConfirmed(flags, now, kinds);
         else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
             AddTracer(TracerStart(shooter, def, barrels[i], now), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null); // from the muzzle that fired (GameMuzzle.cs)
         CrowdShotFx(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(ends), origin, flags); // blood in the far crowd (ZombiesCrowdFx.cs)
 
-        _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
+        _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count).U8(kinds); // protocol 234: what kind of thing was hit
         foreach (var end in ends)
             _w.Vec(end);
         if (_shotPenetrated)
@@ -1887,7 +1895,10 @@ public sealed partial class Game : IDisposable
         damage.Add((victim, dmg));
     }
 
-    private void OnOwnShotConfirmed(byte flags, double now)
+    /// <summary>Msg.Shot's kinds byte (protocol 234), bit 0: the shot hit a build's part and nothing else (no player, zombie or machine).</summary>
+    public const byte ShotKindBuildOnly = 1;
+
+    private void OnOwnShotConfirmed(byte flags, double now, byte kinds = 0)
     {
         LastHitFlags = flags;
         if ((flags & 1) == 0)
@@ -1899,6 +1910,7 @@ public sealed partial class Game : IDisposable
         HitMarkerFriendly = false;
         HitMarkerUntil = now + 0.15;
         HitMarkerHead = (flags & 2) != 0;
+        HitMarkerBuild = (kinds & ShotKindBuildOnly) != 0; // a build, not a body: its own colour (Program.cs)
         HitMarkerWallbang = (flags & ShotWallbang) != 0; // through a wall (GamePenetration.cs)
         PlayHitConfirm(flags); // GameSounds.cs
     }
@@ -2376,16 +2388,17 @@ public sealed partial class Game : IDisposable
                 SnapPackets++;
                 ReadState(ref r, now);
                 break;
-            case (byte)Msg.Shot when !IsServer && r.Has(4):
+            case (byte)Msg.Shot when !IsServer && r.Has(5):
             {
                 var shooter = r.U8();
                 var weaponId = r.U8();
                 var def = Players.TryGetValue(shooter, out var who) ? who.DefFor(weaponId) : Weapons.Get(weaponId);
                 var flags = r.U8();
                 int n = r.U8();
+                var kinds = r.U8(); // what was hit (ShotKindBuildOnly)
                 if (shooter == LocalId)
                 {
-                    OnOwnShotConfirmed(flags, now);
+                    OnOwnShotConfirmed(flags, now, kinds);
                     CrowdOwnShotConfirmed(flags); // a kill in the far crowd sinks the zombie we saw hit (ZombiesCrowdFx.cs)
                     break; // we already drew and heard our own shot
                 }
