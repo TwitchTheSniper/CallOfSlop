@@ -115,6 +115,8 @@ public static partial class SelfTest
                 foreach (var (name, before) in _needs)
                     foreach (var b in before.Where(b => !_names.Contains(b)))
                         Fail($"section \"{name}\" needs \"{b}\", which isn't a section");
+                foreach (var h in ShardHeavy.Where(h => !_names.Contains(h.Name)))
+                    Fail($"long section \"{h.Name}\" isn't a section (renamed or removed: fix SelfTest.ShardHeavy)");
                 foreach (var a in Archived.Where(a => !_names.Contains(a)))
                     Fail($"archived section \"{a}\" isn't a section (renamed or removed: fix SelfTest.Archived)");
                 foreach (var (name, before) in _needs.Where(n => !Archived.Contains(n.Key)))
@@ -193,10 +195,20 @@ public static partial class SelfTest
         return (names.Where(picked.Contains).ToArray(), null); // suite order, whatever order the terms came in
     }
 
+    /// <summary>The suite's long sections and about what each takes on CI's Linux runner, in seconds (a run's SLOWEST
+    /// lines): <see cref="ResolveShard"/> spreads these over the parts by cost. Only the balance depends on it: a section
+    /// that isn't here, or a stale number, still runs once. Add a section when a part's SLOWEST line shows it over ~30 s.</summary>
+    internal static readonly (string Name, double Seconds)[] ShardHeavy =
+    [
+        ("Sandbox full hands", 192), ("Interaction sweep", 113), ("Music", 80), ("Decals", 48), ("Joint chain network", 39),
+        ("Map packs", 23), ("Gathering network", 23), ("Maps", 22), ("Link tool online", 21), ("Wheel orders", 21),
+    ];
+
     /// <summary>
     /// Part K of N of the full suite (--selftest-shard "K/N", CI's side-by-side jobs): of the sections the full suite runs
-    /// (not the <paramref name="archived"/> ones), in suite order, every N-th from the K-th, plus the sections those need.
-    /// Every section is in exactly one part by its place, so the N parts together run the whole suite.
+    /// (not the <paramref name="archived"/> ones), the long ones (<see cref="ShardHeavy"/>) dealt out by their cost and
+    /// the rest in suite order, every N-th from the K-th, plus the sections those need. Every section is in exactly one
+    /// part by its place, so the N parts together run the whole suite.
     /// </summary>
     internal static (string[] Picked, string? Error) ResolveShard(string shard, IReadOnlyList<string> names, IReadOnlyDictionary<string, string[]> needs, IReadOnlySet<string> archived)
     {
@@ -204,9 +216,21 @@ public static partial class SelfTest
         if (kn.Length != 2 || !int.TryParse(kn[0], out var k) || !int.TryParse(kn[1], out var n) || n < 1 || n > 64 || k < 1 || k > n)
             return ([], $"--selftest-shard: \"{shard}\" isn't K/N with 1 <= K <= N <= 64 (e.g. 2/4)");
         var suite = names.Where(s => !archived.Contains(s)).ToArray();
+        // The long sections first, each to the part with the least so far (so two of them never share a part by chance:
+        // "Sandbox full hands" and "Interaction sweep" together made one part of four take twice the others); then
+        // the rest in turn.
         var picked = new HashSet<string>(StringComparer.Ordinal);
-        for (var i = k - 1; i < suite.Length; i += n)
-            picked.Add(suite[i]);
+        var load = new double[n];
+        foreach (var (name, secs) in ShardHeavy.Where(h => suite.Contains(h.Name)).OrderByDescending(h => h.Seconds))
+        {
+            var part = Array.IndexOf(load, load.Min());
+            load[part] += secs;
+            if (part == k - 1)
+                picked.Add(name);
+        }
+        var rest = suite.Where(s => !ShardHeavy.Any(h => h.Name == s)).ToArray();
+        for (var i = k - 1; i < rest.Length; i += n)
+            picked.Add(rest[i]);
         for (var grew = true; grew;)
         {
             grew = false;

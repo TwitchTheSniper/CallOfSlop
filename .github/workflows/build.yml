@@ -15,9 +15,10 @@ name: Build and self-test
 # main (pushes and manual runs) and release.yml ALWAYS run the full suite and ignore the tag, so a filtered run can never
 # make main look green; a main run whose log says FILTERED fails.
 #
-# Shards: a full suite runs as SHARDS jobs side by side on each system ("linux (2/4)"), each running its part of the
-# suite (CallOfSlop --selftest-shard K/N: every N-th section from the K-th, plus the sections those need), so a run takes
-# about as long as its slowest part instead of the sum. The suite passed when every part did. A filtered run is one job.
+# Shards: a full suite runs as SHARDS jobs side by side on each system ("linux (2)" is part 2), each running its part of
+# the suite (CallOfSlop --selftest-shard K/N: the long sections dealt out by cost, then every N-th section from the K-th,
+# plus the sections those need), so a run takes about as long as its slowest part instead of the sum. The suite passed
+# when every part did. A filtered run is one job, "linux (0)".
 # To change the number of parts, change SHARDS in the "plan" job: nothing else names it.
 on:
   push:
@@ -81,7 +82,6 @@ jobs:
   linux:
     needs: plan
     if: ${{ github.ref == 'refs/heads/main' || !contains(github.event.head_commit.message, '[windows ci]') }}
-    name: linux${{ matrix.shard != 0 && format(' ({0}/{1})', matrix.shard, needs.plan.outputs.of) || '' }}
     strategy:
       fail-fast: false # every part reports: one part's failure says nothing about the others
       matrix:
@@ -212,7 +212,6 @@ jobs:
   windows:
     needs: plan
     if: ${{ github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[windows ci]') || github.event_name == 'workflow_dispatch' }}
-    name: windows${{ matrix.shard != 0 && format(' ({0}/{1})', matrix.shard, needs.plan.outputs.of) || '' }}
     strategy:
       fail-fast: false
       matrix:
