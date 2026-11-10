@@ -134,9 +134,10 @@ the gunsmith's draw for every vehicle; roles don't pick by tag yet, so "by role"
   the rounded numbers: `HullLoft.Builder.Thin` now drops boxes and facets under it); Highland War Bus 16, two 1 m panniers on bays under a metre whose faceted shells met
   (the overlap test now uses the drawn bounds, `Vehicle.PannierClear`): passes. Bandit Box Truck 3 still fails the driver's view: its armoured chop-top cab, with or without
   the gunsmith (body styles' to fix).
-- **Not done: generation time** (step 5). `--slice-vehicle` lists where it goes: on this box, loaded, a Box Truck spent about 1.3 s of 2.3 s in `Put`'s scan of every part's
-  free sockets (VehicleCore.cs, the yield per part), then the silhouette outline, the brief's rays and making lofted bays (12 to 20 ms each, under `HullLoft`'s lock, so no yield
-  can go inside). Those are the first things to cut.
+- **Generation time** (step 5, done on perf/kit-gen, VEHICLEKIT.md "Generation time"): `Put`'s scan was the cost, and not its tries: every try out of reach wrote
+  the refusal's text, with a pass over every part's boxes for its blocker, though only a refusal reads it. `Put` now passes over parts and sockets too far to matter, asks
+  the rules only within reach and writes the refusal only when it refuses, and reads a part's taken sockets once; every committed seed stays identical. The gunsmith's test
+  fits cost about 0.3 s now (they were slow for the same reason), so they stay in the warm-up.
 
 ## Next steps (queued)
 
