@@ -34,10 +34,10 @@
       "label": "Speed",
       "group": "Motor",
       "unit": "deg/s",
-      "min": 1,
-      "max": 45,
+      "min": 0,
+      "max": 90,
       "step": 1,
-      "tooltip": "How fast it turns at a full signal (up to 45 deg/s)."
+      "tooltip": "How fast it turns at a full signal: rated 45 deg/s (0%), from stopped (-100%) to 90 deg/s (+100%)."
     },
     {
       "key": "strength",

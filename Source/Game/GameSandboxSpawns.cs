@@ -514,7 +514,13 @@ public sealed partial class Game
             BroadcastRoster();
         }
         // The zombies: the Zombies AI and horde on the stand-in map, then constructs keep them out (and get swiped at).
-        if ((Horde.Count > 0 || Crowd.Total > 0) && SandboxZMap is { } zm)
+        var zLive = Horde.Count > 0 || Crowd.Total > 0;
+        if (zLive || _crowdRound != _zFlushRound)
+            _zFlushUntil = ServerTick + ZFlushTicks; // (the last zombie gone, or Clear all: the empty crowd still goes out)
+        _zFlushRound = _crowdRound;
+        if (!zLive && ServerTick <= _zFlushUntil && !Net.IsOffline)
+            SandboxZombiesFlush();
+        if (zLive && SandboxZMap is { } zm)
         {
             _zNow = now;
             TickHorde(zm, now); // ZombieAI.cs (the crowd and mass tiers in it: ZombiesCrowd.cs)
@@ -526,6 +532,26 @@ public sealed partial class Game
                 ServerSendCrowd(); // ZombiesCrowdNet.cs
             }
         }
+    }
+
+    /// <summary>Ticks the clients are still sent the zombies after the last one went: a far cell's change waits for a far turn (ZombiesCrowdNet.cs), so a few of them.</summary>
+    private int ZFlushTicks => Math.Max(1, ZRules.Crowd.NetEvery) * (Math.Max(1, ZRules.Crowd.NetFarEvery) + 1);
+
+    private long _zFlushUntil = -1;
+    private int _zFlushRound = -1;
+
+    /// <summary>
+    /// Server, for a while after the last zombie went (all killed, Clear all): the crowd's counts and the individuals' gone
+    /// list still go to the clients, so the cells go out as empty and nobody is left drawing a horde the host doesn't have.
+    /// Before, the send stopped with the last zombie and a client's picture (CrowdPicture, which has no timeout) kept its
+    /// last counts until the match changed: a far horde only the client saw, which no shot could hurt.
+    /// </summary>
+    private void SandboxZombiesFlush()
+    {
+        if (Crowd.Ready && ServerTick % Math.Max(1, ZRules.Crowd.NetEvery) == 0)
+            CrowdCount(); // (CrowdTick, which counts them, doesn't run with no zombies)
+        SendZEnts(); // ZombiesNet.cs
+        ServerSendCrowd(); // ZombiesCrowdNet.cs
     }
 
     private void SandboxRunJobs(double now)

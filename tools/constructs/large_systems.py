@@ -365,7 +365,7 @@ def motor_hinge(c):
           config=[
               num("min", "Lowest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of -1 turns it to."),
               num("max", "Highest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of 1 (or opening it) turns it to."),
-              num("speed", "Speed", "Motor", "deg/s", 1, top, 1, f"How fast it turns (up to {top} deg/s)."),
+              num("speed", "Speed", "Motor", "deg/s", 0, 2 * top, 1, f"How fast it turns: rated {top:g} deg/s (0%), from stopped (-100%) to {2 * top:g} deg/s (+100%)."),
               num("strength", "Torque", "Motor", "N m", torque / 10, torque, torque / 100, f"What it holds, up to {torque} N m."),
           ], centreSockets=False)
     return p
@@ -389,7 +389,7 @@ def turntable(c):
     p.stats(plate_mass(c, area) * 1.5, plate_health(c, area) * 1.5, c.armour + 10, c.seconds * 1.5)
     p.set(power=torque * top * 3.14159 / 180 / 1000, joint={"type": "turntable", "axis": "+y", "pivot": [0, h, 0], "leaf": "top", "speed": top, "strength": torque, "give": 20, "overloadDamage": 0},
           config=[
-              num("speed", "Speed", "Motor", "deg/s", 1, top, 1, f"How fast it turns at a full signal (up to {top} deg/s)."),
+              num("speed", "Speed", "Motor", "deg/s", 0, 2 * top, 1, f"How fast it turns at a full signal: rated {top:g} deg/s (0%), from stopped (-100%) to {2 * top:g} deg/s (+100%)."),
               num("strength", "Torque", "Motor", "N m", torque / 10, torque, torque / 100, f"What it holds, up to {torque} N m."),
           ], centreSockets=False)
     return p

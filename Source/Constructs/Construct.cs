@@ -434,6 +434,8 @@ public sealed partial class Construct
 
     /// <summary>The next time this copy looks for where its wheels meet the ground, for the springs drawn (ConstructRender.FitWheels).</summary>
     public double FitAt;
+    public int LampStamp = -1; // (phase 7b: LampParts was gathered at this RebuildStamp; ConstructLamps.cs)
+    public int[] LampParts = []; // the parts that light the space round them (a lined bay's lamps, a Lamp logic part)
     public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
     internal ushort[] SigList = []; // the signal parts in part order (ConstructNet.Signals: kept for the poses)
     internal int SigListCount, SigListStamp = -1, SigListParts = -1;

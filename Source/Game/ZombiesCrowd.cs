@@ -310,12 +310,17 @@ public sealed partial class Game
     /// drawing. Host and client: while it has an offset to where it was drawn in the crowd, it is drawn there, eased out
     /// over a moment and turned from that one's yaw to its own, so nothing jumps as it changes tier.
     /// </summary>
+    /// <summary>How far (m) a client's individual looks for the drawn crowd zombie it came out of.</summary>
+    public const float CrowdTakeOverReach = 6f;
+
     private void CrowdHandFrame(Zombie z, float dt)
     {
         if (!IsServer && !z.CrowdTook && z.Alive && ZRules.Crowd.SoftWake)
         {
             z.CrowdTook = true;
-            if (DrawnCrowd is { } a && a.TakeOver(z.RenderPos.X, z.RenderPos.Z, 3f, (int)z.Speed, counted: true, out var pose) >= 0)
+            // (Within a few metres: the client's picture of the cells trails the server by a send or two, more with lag, and a
+            // crowd chasing a car is metres on by then; the offset is eased out below, so a far take-over slides, never pops.)
+            if (DrawnCrowd is { } a && a.TakeOver(z.RenderPos.X, z.RenderPos.Z, CrowdTakeOverReach, (int)z.Speed, counted: true, out var pose) >= 0)
             {
                 var off = new Vector3(pose.X - z.RenderPos.X, 0, pose.Z - z.RenderPos.Z);
                 var dur = Math.Clamp(off.Length() / CrowdView.HandSpeed, CrowdView.HandMin, CrowdView.HandMax);
@@ -450,6 +455,32 @@ public sealed partial class Game
 
     /// <summary>The most drops and power-ups rolled for one blast's crowd kills (a blast in a crowd of hundreds stays readable). Points are never capped.</summary>
     public const int CrowdBlastDrops = 4;
+
+    /// <summary>How far a hand gun's shot reaches into the far crowd (m): as far as a crowd zombie is drawn (CrowdAgents' fog cut), at most this.</summary>
+    public const float CrowdShotReach = 1200f;
+
+    /// <summary>
+    /// Server and client, per ray of a hand gun's shot that met nothing within its reach (<paramref name="reach"/>, World.Range
+    /// for most guns): how far it may go on into the far crowd, stopped by the ground and constructs. Before, a straight shot
+    /// ended at World.Range (200 m), so a horde both peers drew further off couldn't be hurt at all. A round that falls
+    /// (<paramref name="arcSpeed"/> over 0) flies on as a round of its own instead (ConstructRounds.cs), and a gun with a
+    /// reach of its own (flames, ropes) stops there. Returns <paramref name="dist"/> unchanged otherwise.
+    /// </summary>
+    internal float CrowdShotFar(Vector3 o, Vector3 d, float dist, float reach, WeaponDef def, float arcSpeed)
+    {
+        if (!CrowdOn || dist < reach - 0.01f || def.Reach > 0 || arcSpeed > 0)
+            return dist;
+        var fog = World.Map.FogEnd;
+        var far = fog > reach ? MathF.Min(fog + 2f, CrowdShotReach) : CrowdShotReach;
+        if (far <= dist)
+            return dist;
+        // (from the reach's end on: what lies within it was already tested)
+        var from = o + d * dist;
+        var more = World.Query.Raycast(from, d, far - dist, QueryFilter.Shots);
+        if (SandboxOn && Constructs.Raycast(from, d, more, out var ch) && ch.Distance < more)
+            more = ch.Distance;
+        return dist + more;
+    }
 
     /// <summary>
     /// Server, per ray of a shot that hit no individual zombie: the nearest crowd zombie on it, a particle or a mass
@@ -667,6 +698,7 @@ public sealed partial class Game
         if (now < ZInstaKillUntil)
             amount = MathF.Max(amount, Crowd.HP[i]);
         Crowd.HP[i] -= amount;
+        CrowdHitsBy[attacker.Id]++;
         attacker.LastCombatTime = now;
         if (Crowd.HP[i] > 0)
         {
@@ -693,6 +725,7 @@ public sealed partial class Game
         if (now < ZInstaKillUntil)
             amount = MathF.Max(amount, hp);
         hp -= amount;
+        CrowdHitsBy[attacker.Id]++;
         attacker.LastCombatTime = now;
         if (hp > 0)
         {
@@ -705,6 +738,12 @@ public sealed partial class Game
         CrowdKillCredit(attacker, at, head, explosive, drops, now);
         return true;
     }
+
+    /// <summary>Server: crowd and mass zombies hit, by the player credited (since the start; --zrange-host's log).</summary>
+    public readonly int[] CrowdHitsBy = new int[256];
+
+    /// <summary>Server: individual zombies hit, by the player credited (since the start; --zrange-host's log).</summary>
+    public readonly int[] ZHitsBy = new int[256];
 
     /// <summary>Mass zombies killed by blasts (log, self-test).</summary>
     public int CrowdMassKills;

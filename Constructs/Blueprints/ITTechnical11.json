@@ -44,7 +44,7 @@
     {"part": "Bolt Deck 0.25 m", "on": 6, "socket": "+y1", "by": "back00", "paint": "#8e9296"},
     {"part": "Fuel Drum", "on": 35, "socket": "front11", "by": "-y"},
     {"part": "Square Beam 0.75 m", "on": 34, "socket": "+x1", "by": "-z", "paint": "#3b3f44"},
-    {"part": "Turntable", "on": 39, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 39, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 40, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 41, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 41, "socket": "+y0", "by": "base"},
@@ -61,7 +61,8 @@
     {"part": "Snub Hood", "on": 21, "socket": "+y", "by": "engine", "paint": "#f2c400"},
     {"part": "Slat Grille", "on": 54, "socket": "front", "by": "back", "paint": "#f2c400"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 55, "pos": [0.123, 0.521, -0.908], "rot": [-0.7075, 0.0072, 0.0044, 0.7066]}, "paint": "#d8d0b8"},
-    {"part": "CRT Monitor", "on": 54, "socket": "top", "by": "base"}
+    {"part": "CRT Monitor", "on": 54, "socket": "top", "by": "base"},
+    {"part": "Desk Fan", "on": 29, "socket": "top", "by": "base"}
   ],
   "wires": [[26, 27], [27, 21], [42, 53], [53, 44]],
   "links": [

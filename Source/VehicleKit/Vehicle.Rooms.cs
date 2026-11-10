@@ -27,6 +27,10 @@ public sealed class Room
 
     /// <summary>Phase 5: the storey over this room (its floor the cut roofs, reached by <see cref="Stair"/>), and for an upper storey, whether it is an open deck.</summary>
     public Room? Upper;
+
+    /// <summary>Phase 6: a balcony outside the door (Vehicle.Balcony.cs): the part, its deck's middle (vehicle coordinates, at the room's floor), the way out from the
+    /// wall, along it toward the closed end, its depth and half length; null: none.</summary>
+    public (VPart Part, Vector3 Mid, Vector3 Out, Vector3 Closed, float Depth, float Half)? Balcony;
     public VPart? Stair;
     public bool Open;
     public Vector3 StairFoot; // where a player stands to walk up the stair, at floor height (vehicle coordinates), and the way up it
@@ -104,20 +108,34 @@ public sealed partial class Vehicle
         var layout = Style.Part(d, "layout");
         var (length, width) = (room.R.Z1 - room.R.Z0, room.R.X1 - room.R.X0);
         var slots = d.Shuffled(Style.Choices("layout " + layout)).ToList();
+        var inside = Look != null && !BodyLook.NoInteriors ? BodyStyleRule.Of(Style) : null; // (phase 7a: the faction's density, role gear and props, kit 5's rooms)
+        var repeat = inside == null ? 4 : (int)MathF.Round(4 * inside.Fill);
         if (length >= 3) // (a bigger room fills up: the list again, then once more for a bus)
-            slots.AddRange(d.Shuffled(slots.Take(4)));
+            slots.AddRange(d.Shuffled(slots.Take(repeat)));
         if (length >= 5)
-            slots.AddRange(d.Shuffled(slots.Take(4)));
+            slots.AddRange(d.Shuffled(slots.Take(repeat)));
+        var props = new List<string>();
+        var lateGear = 0;
+        if (inside != null)
+            (slots, props, lateGear) = Interior(room, inside, d.Fork("interior"), length, slots);
         const float Aisle = 0.9f; // (a player is 0.8 m across)
         var from = room.DoorMid.Z > room.Middle.Z ? room.R.Z0 : room.R.Z1; // (from the end away from the door)
         var way = room.DoorMid.Z > room.Middle.Z ? 1f : -1f;
         var taken = new List<(float Side, float Z, float Run, float Deep)>();
         var first = d.Chance(0.5) ? -1f : 1f;
-        foreach (var slot in slots.Append("chest")) // (a room with nothing to loot gets a chest: lazily, so this reads what the list above placed)
+        var index = -1;
+        var firstProp = slots.Count + 1 + lateGear; // (role gear with no slots, an ammo rack, after the last-resort chest: it mustn't take a container's wall)
+        foreach (var slot in slots.Append("chest").Concat(props)) // (a room with nothing to loot gets a chest: lazily, so this reads what the list above placed; phase 7a's props after it)
         {
             if (slot == "chest" && room.Containers.Count > 0)
                 continue;
-            var part = Style.Part(d, slot);
+            index++;
+            var named = slot.StartsWith('=');
+            var prop = index >= firstProp;
+            var part = named ? slot[1..] : Style.Part(d, slot); // ("=Name": a part by its name, phase 7a's gear and props)
+            // (phase 7a's gear and props: put no further than 0.1 m from where asked, kept 0.17 m from what stands on the wall already and 0.9 m from the room's
+            // ends, where an end chest stands: two backs on one wall line meet in a plane wherever they overlap)
+            var (reach, gap, endKeep) = named ? (0.1f, 0.17f, prop ? 0.9f : 0f) : (0.2f, 0.05f, 0f); // (role gear may stand by an end: it is a container, as a chest is)
             var def = Def(part);
             var size = def.BoundsMax - def.BoundsMin;
             var alongWall = size.X >= size.Z;
@@ -128,16 +146,18 @@ public sealed partial class Vehicle
                 var inward = new Vector3(-side, 0, 0);
                 var o = alongWall ? new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, inward, Vector3.UnitY, Vector3.UnitY);
                 var x = (side < 0 ? room.R.X0 : room.R.X1) + inward.X * (deep / 2 + 0.03f); // (the floor's sockets may move it in by an eighth)
-                for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
+                for (var at = MathF.Max(0.1f, endKeep) + run / 2; placed == null && at + run / 2 < length - MathF.Max(0.1f, endKeep); at += 0.25f)
                 {
                     var z = from + way * at;
+                    if (named && NearFurniture(room, x, z, alongWall ? size.X : size.Z, alongWall ? size.Z : size.X, prop ? 0.17f + reach : 0.12f, seats: prop)) // (phase 7a: an end chest or a seat stands there)
+                        continue;
                     if (InDoorway(room, x, z, deep, run) || room.Kept(x, z, deep + 0.4f, run + 0.4f) /* (Put may move it up to 0.2 m to a socket) */ || (slot != "chest" || clearMiddle) && MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
-                        taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
+                        taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + gap && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try
                     {
-                        placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, z), o, 0.2f, onTop: true);
-                        taken.Add((side, z, run, deep));
+                        placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, z), o, reach, onTop: true);
+                        taken.Add((side, named ? CentreOf(placed).Z : z, run, deep)); // (phase 7a: a named piece where it stands, not where it was asked for)
                     }
                     catch (VehicleKitException)
                     {
@@ -159,6 +179,48 @@ public sealed partial class Vehicle
             }
         }
         return this;
+    }
+
+    /// <summary>Whether a footprint (x by z) centred at (x, z) comes within <paramref name="margin"/> of what already stands in the room (its furniture and seats, by their bounds' widest).</summary>
+    private bool NearFurniture(Room room, float x, float z, float dx, float dz, float margin, bool seats = true)
+    {
+        foreach (var f in seats ? room.Furniture.Concat(room.Seats) : room.Furniture)
+        {
+            var def = C.DefOf(f.Index);
+            var size = def.BoundsMax - def.BoundsMin;
+            var r = MathF.Max(size.X, size.Z) / 2; // (turned any way: its widest each way)
+            var c = CentreOf(f);
+            if (MathF.Abs(c.X - x) < r + dx / 2 + margin && MathF.Abs(c.Z - z) < r + dz / 2 + margin)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Phase 7a (docs/vehiclekit/BODY-STYLES.md, section 13): a kit-5 room's furnishing by its faction and its role. Role gear first (it has the walls' first pick; an ammo rack, which holds rounds and no slots, after the last-resort chest):
+    /// ammo racks (Ammo Containers) where gunners sit or for a fighting role, bunks in a carrier or a long room with no guns, racks for spares (a Parts Shelf, a Wheel
+    /// Rack) in a hauler; then the layout (and the last-resort chest); then the faction's props, <see cref="BodyStyleRule.Clutter"/> a metre. Everything goes down the side walls by
+    /// <see cref="Furnish"/>'s rules (never in the doorway, the middle or a stair's way, the aisle kept), so what doesn't fit is left out.
+    /// </summary>
+    private (List<string> Slots, List<string> Props, int LateGear) Interior(Room room, BodyStyleRule rule, Dice d, float length, List<string> layout)
+    {
+        var gunners = Turrets.Any(t => room.Seats.Contains(t.Seat));
+        var role = Role?.Role.Name ?? "";
+        var gear = new List<string>();
+        var n = Math.Max(0, rule.Gear);
+        if (gunners || role is "gun platform" or "boss" or "raider" or "command")
+            gear.AddRange(Enumerable.Repeat("=Ammo Container", n));
+        else if (role == "carrier" || length >= 5)
+            gear.AddRange(Enumerable.Repeat("bunk", n));
+        else
+            gear.AddRange(Enumerable.Range(0, n).Select(_ => d.Pick((string[])["=Wheel Rack", "shelf"])));
+        var props = new List<string>();
+        if (rule.Props.Length > 0)
+            for (var i = (int)MathF.Round(rule.Clutter * length); i > 0; i--)
+                props.Add("=" + d.Pick(rule.Props));
+        var late = gear.Where(g => g.StartsWith('=') && Def(g[1..]).Slots.Length == 0).ToList(); // (an Ammo Container holds rounds, not slots)
+        gear.RemoveAll(late.Contains);
+        return ([.. gear, .. layout], [.. late, .. props], late.Count);
     }
 
     /// <summary>
@@ -185,6 +247,8 @@ public sealed partial class Vehicle
             {
                 if (room.Kept(x, wall - away * (deep / 2 + In), MathF.Max(size.X, size.Z), MathF.Max(size.X, size.Z)))
                     continue;
+                if (Look != null && !BodyLook.NoInteriors && NearFurniture(room, x, wall - away * (deep / 2 + In), MathF.Max(size.X, size.Z), MathF.Max(size.X, size.Z), 0.05f, seats: false))
+                    continue; // (phase 7a: the role gear and props stand down the walls further toward the ends)
                 var placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, wall - away * (deep / 2 + In)), o, 0.1f, onTop: true);
                 PanelList("furniture").Add(placed);
                 room.Furniture.Add(placed);

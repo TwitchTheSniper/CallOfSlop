@@ -88,5 +88,5 @@
     {"type": "shaft", "from": 25, "to": 6, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 57, "to": 24, "nodes": [[0.75, 0.82, 2.8], [0.75, 0.55, 2.8], [0.67, 0.55, 2.8], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "tow": "British Fuel Trailer 2"
+  "tow": "British Fuel Trailer 3"
 }

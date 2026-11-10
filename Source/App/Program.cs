@@ -99,6 +99,8 @@ public static unsafe partial class Program
             return SelfTest.Run(selfTestOnly); // headless checks (all, or only the named sections), see SelfTest.cs
         if (args.Any(a => a.Equals("--bot-bench", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BotBench(args); // headless: a Sandbox fight of hundreds of spawned bots, the server tick's cost (SelfTestBotBench.cs)
+        if (args.Any(a => a.Equals("--zombie-probe", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.ZombieProbe(args); // headless: a host and a client over the real transport, a car through a zombie crowd and a turret firing into it (SelfTestZombieProbe.cs)
         if (args.Any(a => a.Equals("--crowd-bench", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.CrowdBench(args); // headless: the crowd's per-frame preparation on Horde Stress, host and client (SelfTestCrowdBench.cs)
         if (args.SkipWhile(a => !a.Equals("--export-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } exportDir)
@@ -144,6 +146,9 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--no-spaces", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.BodyLook.NoSpaces = true; // body styles phase 5: kit-5 bodies without the new spaces (upper storeys, cages, side pods), to measure against
         VehicleKit.BodyLook.NoPods = args.Any(a => a.Equals("--no-pods", StringComparison.OrdinalIgnoreCase)); // body styles phase 5: one kind of space left out, to measure each
+        VehicleKit.BodyLook.NoBalconies = args.Any(a => a.Equals("--no-balconies", StringComparison.OrdinalIgnoreCase)); // body styles phase 6: without balconies, or without lopsided vehicles
+        VehicleKit.BodyLook.NoInteriors = args.Any(a => a.Equals("--no-interiors", StringComparison.OrdinalIgnoreCase)); // body styles phase 7a: rooms without lining, lamps, props or role gear
+        VehicleKit.BodyLook.NoAsym = args.Any(a => a.Equals("--no-asym", StringComparison.OrdinalIgnoreCase));
         VehicleKit.BodyLook.NoCages = args.Any(a => a.Equals("--no-cages", StringComparison.OrdinalIgnoreCase));
         VehicleKit.BodyLook.NoUppers = args.Any(a => a.Equals("--no-uppers", StringComparison.OrdinalIgnoreCase));
         if (args.SkipWhile(a => !a.Equals("--upper", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } upperKind)
@@ -213,6 +218,8 @@ public static unsafe partial class Program
             return SelfTest.BenchMaterial(args); // the material painter: parts of other materials, round trips, a client's requests over RakNet (Source/App/BenchMaterial.cs)
         if (args.Any(a => a.Equals("--bench-cookoff", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchCookOff(args); // an ordnance rack's cook-off chain and bombs set off in the air (Source/App/BenchCookOff.cs)
+        if (args.Any(a => a.Equals("--bench-fuelblast", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchFuelBlast(args); // tanks with fuel in them going up: drums, a tanker, a chain, a fused hull (Source/App/BenchFuelBlast.cs)
         if (args.Any(a => a.Equals("--bench-mega", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchMega(args); // what a massive blast costs: tick time, allocation, bytes sent, over a busy scene (Source/App/BenchMegaBlast.cs)
         if (args.Any(a => a.Equals("--bench-fuse-net", StringComparison.OrdinalIgnoreCase)))
@@ -267,7 +274,8 @@ public static unsafe partial class Program
         // The smoke test works on a throwaway copy and never touches the real save folder.
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
         var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
-        var megaWindow = args.Any(a => a.Equals("--mega-host", StringComparison.OrdinalIgnoreCase) || a.Equals("--mega-client", StringComparison.OrdinalIgnoreCase)); // (Program.MegaWindow.cs)
+        var megaWindow = args.Any(a => a.Equals("--mega-host", StringComparison.OrdinalIgnoreCase) || a.Equals("--mega-client", StringComparison.OrdinalIgnoreCase)
+            || a.Equals("--zrange-host", StringComparison.OrdinalIgnoreCase) || a.Equals("--zrange-client", StringComparison.OrdinalIgnoreCase)); // (Program.MegaWindow.cs, Program.ZombieRange.cs)
         Ui.BackendDraw = args.Any(a => a.Equals("--imgui-backend-draw", StringComparison.OrdinalIgnoreCase)); // the package's ImGui GL renderer (ImGuiRenderer.cs)
         Ui.BackendNewFrame = args.Any(a => a.Equals("--imgui-backend-frame", StringComparison.OrdinalIgnoreCase)); // the GLFW backend's own NewFrame every frame (UiPlatformFrame.cs)
         var allocFrames = args.Any(a => a.Equals("--alloc-frames", StringComparison.OrdinalIgnoreCase)); // (Program.AllocFrames.cs)
@@ -367,6 +375,8 @@ public static unsafe partial class Program
                 StartAllocFrames(args); // --alloc-frames: bytes allocated per frame by perf area, frame-counted, then quit (Program.AllocFrames.cs)
             else if (perfShot)
                 StartPerfShot(args); // --perf-shot: the perf window and overlay over a short match, screenshotted, then quit (Program.Perf.cs)
+            else if (megaWindow && args.Any(a => a.StartsWith("--zrange-", StringComparison.OrdinalIgnoreCase)))
+                StartZombieRange(args); // --zrange-host / --zrange-client: the far zombie crowd drawn and hit on each peer (Program.ZombieRange.cs)
             else if (megaWindow)
                 StartMegaWindow(args); // --mega-host / --mega-client: a massive blast's cost in the real window, frame by frame, then quit (Program.MegaWindow.cs)
             if (_glBench)
@@ -916,6 +926,8 @@ public static unsafe partial class Program
             Perf.EndFrame(); // the frame time always; the areas and counters while the perf window is up (Source/Perf)
             if (_mega != 0)
                 MegaWindowFrame(Glfw.Time); // --mega-host / --mega-client (Program.MegaWindow.cs)
+            if (_zr != 0)
+                ZombieRangeFrame(Glfw.Time); // --zrange-host / --zrange-client (Program.ZombieRange.cs)
             if (_perfShot)
                 PerfShotFrame(); // --perf-shot: slow frames logged with the area that spiked (Program.Perf.cs)
             if (_allocFrames)

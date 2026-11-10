@@ -213,6 +213,20 @@ public static unsafe class Lighting
             gSunVis = 1.0;
             if (uLitMode.x < 0.5)
                 return ApplyLight(albedo, n, wrap);
+            if (uLitMode.x > 4.5) // (an unlit map's classic light plus the frame's dynamic lights: lamps on constructs, ConstructLamps.cs)
+            {
+                vec3 dl = vec3(0.0);
+                int nd5 = int(uLitMode.w + 0.5);
+                for (int i = 0; i < nd5; i++) // at most 4 (LightGrid.MaxDynamic)
+                {
+                    vec3 l = uDynPos[i].xyz - p;
+                    float d = length(l);
+                    float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
+                    float f = (1.0 - q * q) * (1.0 - q * q);
+                    dl += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0);
+                }
+                return ApplyLight(albedo, n, wrap) + albedo * dl;
+            }
             vec4 a;
             vec4 b;
             vec4 c;

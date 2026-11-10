@@ -308,6 +308,9 @@ public static unsafe partial class Program
     /// <summary>Shots: the host draws its own picture of the cells, as a client would (--stress-shots --crowd-as-client).</summary>
     public static bool CrowdAsClient;
 
+    /// <summary>The camera the last frame's crowd was prepared from (--zrange-host's log).</summary>
+    public static Vector3 CrowdCam;
+
     /// <summary>Wall-clock ms of the last frame's crowd preparation (culling, agents, levels of detail, placing; all its threads).</summary>
     public static double CrowdPrepMs;
 
@@ -325,6 +328,7 @@ public static unsafe partial class Program
     {
         Crowd.AsClient = CrowdAsClient;
         Crowd.Tiers = CrowdTiers;
+        CrowdCam = Gfx.CameraPosition;
         Crowd.Prepare(_game, Gfx.CameraPosition, now, Gfx.FogRange.Y > Gfx.FogRange.X ? Gfx.FogRange.Y : 0f);
         var inst = Crowd.Inst;
         CrowdPrepMs = Crowd.PrepMs;

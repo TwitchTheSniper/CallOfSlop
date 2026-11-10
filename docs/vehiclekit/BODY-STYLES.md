@@ -877,6 +877,262 @@ room meeting without a skinned bay between them is not checked for bars meeting 
 between two peers (they are run-time parts by their keys exactly as lofted bays are, which phase 1 proved over the network; not sent here); the British Double
 Decker's three failing seeds.
 
+## 12. Phase 6, as built (2026-11-09): balconies and lopsided vehicles
+
+The brief (the user's words): "I'd like to see balconies, and more asymmetry on the vehicle sometimes." Balconies reached from inside, styled per faction, passing
+the room checks; asymmetry by style as data, the vehicle level and driving; the room exteriors' separation (1.94 before phase 5, 1.48 after it) raised where the
+new rates can be faction signatures.
+
+Code: `Source/Constructs/HullLoft.Balcony.cs` (the part), `Source/VehicleKit/Vehicle.Balcony.cs` (placing it; `Lean`), `Vehicle.Hulls.cs` (the door's ladder moves to
+the balcony), `Vehicle.Spaces.cs`, `Vehicle.Trim.cs` and `Vehicle.Body.cs` (pods, trim and spikes by `Lean`), the style rows' `Balcony*` and `Asym*`
+(`BodyStyleRule`, VehicleBodyLanguage.cs), `VehicleChecks.Balcony`. Protocol 219.
+
+### The part
+
+**A balcony** (`Hull Loft (balc<kind> <length, depth, rail, inset, rise> <open end>)`): a deck at the room's floor (its top 4 mm under it) outside the door, posts
+round its outer edge and one end at most 0.7 m apart, a top and a middle rail (their hidden boxes hold a player in), an edge beam and two knee brackets under it,
+and the faction's infill. The other end is open: the door's ladder hangs there (on the balcony's `ladder` socket) instead of under the doorway. It stands on the
+room floor's free edge socket outward nearest the doorway (`base`), so it is an ordinary socketed part (no freeform weld): the key carries how far its deck's
+inner edge stands past that socket (a centimetre past whatever stands out of the wall there: jambs, the hinge, the floor's edge) and how far its deck's top is
+over it. Kinds: `w` welded grating with zigzag diagonals (Bandit), `s` green slats outside the posts (Militia), `f` an ivory fairing panel under a chrome rail
+(IT), `g` chrome posts with gold knobs and a lit sign band (Scam), `t` timber posts, rails and balusters on planks (Highland), `r` thin dark wrought balusters
+(British). Every family of pieces differs in size from those it meets (posts 5 cm, rails 4.5 and 4, infill 3 and less), so no two share a face's plane.
+
+A side door's balcony keeps to its own bay, a middle one (its length at most the bay's): past it a cab's side, a brow's rake or a neighbour's pods and sponsons
+come later and would stand over its deck. It is refused (and the ladder goes under the door as before) when more than 0.3 m stands out of the wall at the deck's
+height (a flare, a wheel), when it would draw into anything, and when a flared wall over it would meet a standing player's head and a deck up to 1.2 m deep
+wouldn't clear it. A door in the tail's back takes one across the back (1.3 to 1.7 m); no style rolls a rear door often enough to show it in six seeds.
+
+### Lopsided vehicles
+
+`BodyStyleRule.Asym` is the chance a vehicle is lopsided (`Lean`, its own fork of the seed: toward its side balcony when it has one). A lopsided vehicle hangs
+its pods on that side only (one more than `PodMax`, at `AsymPod` a free bay side at least: Bandit's welded boxes, Scam's kiosks and Highland's lockers, at 0
+otherwise, show only here), thins the far side's trim by `AsymTrim` (Bandit only: thinning another faction's trim washed out its sides' signature), and with
+`AsymAmount` 0.5 or more puts its spikes on the one side. Pods weigh 20 to 120 kg on a 2.5 to 3.5 t vehicle: every lopsided seed stood level and passed the drive
+check, so no balancing was needed. An offset cab and uneven roof clutter were left out (the cab's place feeds the drive line and the view check).
+
+| Style | balcony (kind, chance a door) | lopsided (chance, amount) | pods when lopsided | other rates changed (phase 5's) |
+| --- | --- | --- | --- | --- |
+| Bandit | welded, 0.35 | 0.7, 0.9 (trim thinned 0.9) | welded boxes 0.6 | cage 0.5 to 0.6 |
+| Militia | (slatted, 0) | 0.35, 0.6 | stowage 0.6 | cage 0.1 to 0.05, deck 1 to 0.4 |
+| IT | (faired, 0) | 0.1, 0.4 | - | - |
+| Scam | showy, 1 (0.95 to 1.1 m deep) | 0.4, 0.7 | kiosks 0.7 | - |
+| Highland | timber, 1 (0.95 to 1.15 m deep) | 0.3, 0.5 | lockers 0.5 | cage 0.06 to 0, deck 1 to 0.4 |
+| British | wrought, 1 (rail 1.0 to 1.1 m) | 0.05, 0.3 | - | - |
+
+### The check
+
+`VehicleChecks.Balcony`, with the room's: a player stands on the deck's middle (a few ticks: once the walker rides a deck it walks forward), walks out from
+inside the doorway onto it (with the door open), and moving outward or toward the closed end from its middle meets the rail. The door's own check, the room's
+hole rays, the driver's view and the coplanar checks are unchanged and cover it.
+
+### Measured (2-core box shared with other agents' builds: times are noisy; before is main at 8af91803)
+
+`--body-report all --seeds 6`, `--diversity-style STYLE --seeds 6` (mean of the five recipe shapes' mean pair), the full check `--sweep-vehicle "STYLE SHAPE"
+--seeds 6` over six styles and five shapes.
+
+| | before | after |
+| --- | --- | --- |
+| room exteriors, between over within | 1.48 (0.195 over 0.132) | 1.48 (0.190 over 0.128); 1.37 with the first rates (balconies and lopsidedness rolled per vehicle in every style) |
+| ... nearest other style over the style's own (Bandit, IT, Highland, Scam, British, Militia) | 1.34, 1.36, 1.05, 1.34, 1.31, 1.06 | 1.51, 1.33, 1.42, 1.26, 1.25, 0.99 |
+| whole body (front and side outline), between over within | 1.03 | 1.02 |
+| cabs and hoods, between over within | 1.58 | 1.59 |
+| diversity within a style, mean pair (Bandit .. Militia) | 0.221, 0.204, 0.222, 0.228, 0.218, 0.192 | 0.221, 0.204, 0.213, 0.223, 0.218, 0.191 |
+| identity, mean | 0.94, 0.93, 0.95, 0.95, 0.94, 0.89 | the same |
+| balconies (vehicles with rooms: Bandit, Highland, Scam, British) | - | 2 of 18, 10 of 19, 12 of 22, 7 of 21 |
+| lopsided (vehicles with rooms, Bandit .. Militia) | - | 14 of 18, 3 of 18, 6 of 19, 10 of 22, 2 of 21, 6 of 18 |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 | 177 of 180 (the same three: Bandit Scrap Tanker 3's barrel, Highland War Bus 5 a box, Highland Scrap Tanker 3's Pipe Box) |
+| coplanar pairs inside lofted parts | 0 | 0 |
+| generation, mean a style (`--body-report`); worst | 398 to 1076 ms; 11.5 s | 417 to 2094 ms; 48.5 s (a Bandit seed of many plans: more caged rooms re-plan more) |
+
+What the numbers say: as rolled extras in every style (the first rates), balconies and lopsidedness widened each style's own spread more than they parted the
+styles (1.48 to 1.37). As signatures (a balcony at every door it fits on Scam, Highland and British, none on IT and Militia; Bandit lopsided most of the time and
+caged more often; Highland's decks and stock wagons and Militia's cages and decks rarer, since those two read as each other) the room exteriors' separation is
+back to 1.48, with Highland now well apart (1.05 to 1.42) and Bandit further (1.34 to 1.51); Militia is the weakest (0.99, nearest Highland: without its rarer
+cages and decks it has slats and bins only, which phase 4 measured close to Highland's laps). The phase-4 level (1.94) wasn't reached: spaces are still rolled per
+room. Diversity within a style holds but for Highland (-0.009: its decks and cages made rarer) and Scam (-0.005). The whole body's outline doesn't move:
+balconies stand inside the side outline's silhouette. Balconies fit on half of the doors at most: flared walls, wheels under the doorway and front or tail door
+bays refuse them.
+
+**Found on the way.**
+- A freeform-welded balcony isn't on segment 0, so `Put` (which takes only segment-0 parts) never found its ladder socket and hung the ladder on the nearest
+  socket of anything, under the chassis: the drive check moved 0.00 m. The balcony now stands on the floor's edge socket.
+- The walker steps a player who rides a deck forward each tick (`ConstructRide.Step` with Forward held), so a 40-tick stand walked off an open end; and a
+  0.92 m player met a middle post on a 0.8 m deck and was pushed under it. The stand test takes 14 ticks, decks are 0.92 m deep at least, and a failure names
+  what stands in the player's way.
+
+**Committed seeds**: unchanged; 41 files written again (balconies, lopsided pods and the retuned rates moved their plans); `--gen-vehicles` reports all 123
+identical; `--check-construct-parts` clean.
+
+**Not done**: balconies off an upper storey (a saloon's end or side would need a door bay in the storey, and an open deck's bulwark a gap); balconies at a front
+or tail door bay; an offset cab and uneven roof clutter; Militia's separation (0.99: its own new space, a slatted firing step, is data at 0 because it read as
+Highland's veranda); Bandit's worst generation (48 s with cages at 0.6); a network round trip of a balcony between two peers (a run-time part by its key exactly
+as a pod is; not sent here).
+
+## 13. Phase 7a, as built (2026-11-09): interiors that follow the body
+
+The brief (the user's decisions): the inside look per faction, walls and ceiling either following the hull's own shape or an inset lining, chosen per faction as
+data, nothing through the hull and no coplanar faces with it; furnishing by role (ammo racks for gunships, bunks for carriers, racks for haulers), faction flavour
+props, loot stowed where a player would, working stations; always a walkable aisle; density by faction as data; lamps per faction and windows where the body has
+glass. This phase is ground-floor rooms and cabs; upper storeys, pods, caged rooms and balconies are 7b's.
+
+Code: `Source/Constructs/HullLoft.Lining.cs` (the lining and lamps, drawn by the bay), `HullLoft.cs` (a bay key's last word), `HullLoft.Cabs.cs` (`Dash`, a cab
+key's last word), `Vehicle.Rooms.cs` (`Interior`, `Furnish`), `Vehicle.Cabs.cs` (`PlaceCab`), the style rows' `Lining`, `LiningInset`, `Clutter`, `Props`, `Fill`,
+`Gear` (`BodyStyleRule`, VehicleBodyLanguage.cs), `BodyLook.Lining`, `LiningInset` and `Names`. Protocol unchanged (219): a lining is a word on a run-time part's
+key, which the wire carries as text.
+
+### The lining
+
+A ground-floor bay's key takes a last word `i`, the kind and the mode (`Hull Loft (100 ~... ~... irf)`); the bay draws it, so a room has no more parts than
+before. Every piece stands in from the skin's inner face by 4 mm or more and is drawn only: a player stands against the bay's hidden slabs (1 to 5 cm inside the
+skin), which a following lining (2.4 to 4 cm inside) never reaches past. Pieces end short of each other at a corner (by the offset's overlap there), are at most
+0.5 m along a row (planks 0.15 m) with 6 mm seams, every other one 3 mm shorter along the bay, and stop 1.5 cm short of an open bay end (2.6 cm at a closed one, past
+the cap). Modes:
+
+- `f` **follows** the hull's rows: sloped walls, tumblehomes, curved and pitched roofs, ledges (a row under 8 cm is left bare).
+- `i` an **inset** lining: upright walls where the hull is narrowest up to 2.05 m and a flat ceiling as high as the walls stay upright and the roof clears it. A bay
+  where that would stand more than 12 cm off the hull, or put the ceiling under 2.05 m, follows instead. The lever socket hangs under an inset ceiling.
+
+A door bay's doorway side is bare below the cant; an upper floor's ceiling isn't lined (its hatch); closed ends (brow and tail caps) aren't lined yet.
+
+| Style | kind | mode (chance inset) | lamp | dash |
+| --- | --- | --- | --- | --- |
+| Bandit | `r` bare hull: ribs across the section (one a bay, two over 0.9 m) and weld beads along the wall rows, broken round the ribs | follows | a bare bulb on a flex | rusty, amber gauges |
+| Militia | `m` olive panels, a dark rack rail at 1.1 m | 0.8 | a caged bulkhead lamp | olive, green |
+| IT | `c` pale panels, a blue-grey kick strip | 0.9 | a flush light panel | pale, blue |
+| Scam | `s` purple below a gold rail at 1.05 m, dark above, pink neon along an inset wall's top | 0.75 | a pink neon tube | purple, pink |
+| Highland | `t` varnished planks, two tones | 0.1 | a lantern on a hook | timber, amber |
+| British | `u` padded moquette under a wood dado at 1.0 m, cream panelling above, cream ceiling | 0.2 | a chrome-rimmed dome lamp | wood, cream |
+
+Lamps are glowing boxes (drawn bright and unlit, as a lit lamp's lens is), one a bay of 0.7 m and more, 0.32 m off the centreline (the lever hangs on it), only
+where the roof is 2 m up or more. They light nothing around them: construct lamps don't cast light (dynamic lights are capped at four a frame,
+docs/render/LIGHTING.md). **Windows**: rooms have no glass to keep clear (a room's windows are 7b's); cabs keep theirs, the dash stands under the belt.
+
+**Cabs**: an enclosed, crew, armoured or caged cab's key takes `i` and the kind (when the key has room for it): a dash shelf under the belt across the front, 6 mm in
+from its inner face, 5 cm clear of the sides, over the gearbox (0.82 m up and more), with a glowing gauge strip. A capsule's and a merged cab's front is over the
+engine, far from the seats: no dash yet.
+
+### Furnishing
+
+`Furnish` on a kit-5 room (`Interior`) puts, down the side walls by its old rules (never in the doorway, the middle, a stair's way; the aisle kept): **role gear**
+first, `Gear` pieces of it (Ammo Containers where a room's seats work guns or for a raider, gun platform, boss or command; bunks for a carrier or a room 5 m and longer
+with no gunners; a Parts Shelf, a Wheel Rack or a shelf otherwise); then the layout, its repeats in a long room scaled by `Fill`; then the faction's props,
+`Clutter` a metre of room. Containers (Ammo Containers, shelves, racks) roll loot and take the cargo pass's stowage as any furniture does. A named piece is put no
+further than 0.1 m from where it was asked, 0.17 m from what stands on that wall already (where it stands, not where it was asked) and 0.9 m from the room's ends
+(an end chest): two backs on one wall line meet in a plane wherever they overlap (Scam War Bus 4 and Gun Wagon 5 on the way). What doesn't fit is left out, so the
+walls set the density as much as the rule.
+
+| Style | gear | fill | clutter a metre | props |
+| --- | --- | --- | --- | --- |
+| Bandit | 2 | 1 | 0.9 | Fuel Drum, Ammo Crate, Crate Stack, Small Fuel Tank, Ammo Box |
+| Militia | 2 | 0.6 | 0.25 | Ammo Crate, Small Fuel Tank, Cable Reel |
+| IT | 1 | 0.35 | 0.12 | Office Plant, Network Switch, Desk Fan |
+| Scam | 1 | 0.8 | 0.6 | Office Phone, Call Headset, Gift Card Sign, Loudhailer, CRT Monitor |
+| Highland | 1 | 0.9 | 0.45 | Wee Keg, Thistle |
+| British | 1 | 0.8 | 0.35 | Teapot, Garden Gnome, Union Flag, Traffic Cone |
+
+`--no-interiors` makes rooms as before (no lining, dash, gear or props; the same dice), to measure against.
+
+### Measured (2-core box; before is this branch with `--no-interiors`, which makes main's vehicles)
+
+`--body-report all --seeds 6` and the full check `--sweep-vehicle "STYLE SHAPE" --seeds 6` over six styles and five shapes.
+
+| | before | after |
+| --- | --- | --- |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 | 177 of 180 (the same three: Bandit Scrap Tanker 3's barrel, Highland War Bus 5 a box, Highland Scrap Tanker 3's Pipe Box) |
+| coplanar pairs inside lofted parts | 0 | 0 (65, then 10 on the way: a weld bead's outer face on a rib's, then beads and ribs meeting nearly in a plane on twisting rows: beads now stand 3 mm further in and break round the ribs) |
+| room exteriors, cabs and hoods, whole body (between over within) | 1.48, 1.59, 1.02 | 1.48, 1.57, 1.02 (an interior is inside the outline; the cab measure moved with plans that furnishing sent to another attempt, within its run-to-run spread of 1.57 to 1.59) |
+| parts a vehicle, mean a style (`--body-report`, Bandit .. Militia) | 130, 136, 140, 141, 138, 133 | 130, 136, 141, 141, 139, 133 (a lining and a dash are drawn by the bay and the cab: no parts; gear and props stand where the walls have room, and plans move) |
+| parts, mean a shape in the full check | - | War Bus 163 to 188, Box Truck 141 to 152, Flatbed Fort 158 to 171, Gun Wagon 108 to 134, Scrap Tanker 68 to 87 |
+| generation, mean a style; worst | 282 to 562 ms; 5.8 s (Bandit Box Truck 1) | 293 to 567 ms; 5.6 s (the same). Phase 6's 48.5 s worst didn't come back in either run |
+
+**Found on the way.**
+- A prop stood with its back on the same wall line as the next piece of furniture, and `Put` moved it up to 0.2 m onto a socket, so the two overlapped in a plane
+  (Scam War Bus 4: an Ammo Container and a Gift Card Sign; Scam Gun Wagon 5: a Loudhailer by an end chest). Named pieces now move 0.1 m at most and keep 0.17 m from
+  where the others stand.
+- An Ammo Container holds rounds, not slots: placed first, it took the wall a short room's only container would have stood on, and Highland Box Truck 5 planned
+  again into a top-heavy plan. Racks without slots go after the last-resort chest; an end chest keeps clear of the gear.
+
+**Committed seeds**: unchanged; 66 files written again (lined bays, dashes, gear and props; 189 lined bays in all); `--gen-vehicles` reports all 123 identical;
+`--check-construct-parts` clean.
+
+**Left for 7b.** Upper storeys' and side pods' insides, caged rooms and balconies (no lining: bars and open tops); closed ends (brow and tail caps) and the back
+door's cap; windows cut in rooms (they have no glass); a capsule's and a merged cab's dash; a steering wheel; working stations wired (a radio, a powered
+workbench, a lamp on a switch: today's stations are the gunners' seats and the magazine's feeds, as before); props on shelves and workbenches rather than the floor
+(Bandit's clutter is held back by wall length); lamps that light their surroundings; a network round trip of a lined bay between two peers (a run-time part by its
+key as phase 1 proved; not sent here); nothing was tried in the game window.
+
+## 14. Phase 7b, as built (2026-11-09): windows and lamps that light
+
+The brief: phase 7a's left-overs, in order: room windows where the body has glass (per faction, glass counting as closed, no coplanar faces); lamps that really
+light the room through the game's light system within the frame budget; then upper storeys', pods', cages' and balconies' insides, closed end walls' lining, a dash
+in capsule and merged cabs, a steering wheel, props on shelves and wired stations. Windows and lamps were done; the rest is listed under "Not done".
+
+Code: `Source/Constructs/HullLoft.Lining.cs` (`WindowKinds`, `WindowOf`, `RoomPanesOf`, `WindowLining`, the lamps' lights), `HullLoft.cs` (`WindowRow`, the window's
+pad and the slabs cut round it), `Vehicle.Hulls.cs` (`Glaze`), the style rows' `Window` and `WindowChance` (`BodyStyleRule`), `Source/Render/ConstructLamps.cs`,
+`LightGrid` (`DynamicFree`, mode 5), `Lighting.cs` (`ApplyLightAt`), `Program.Lighting.cs`. Protocol 221: a lined bay's lining word may carry a window letter
+(`i` kind mode window, `Hull Loft (100 ~... = iuft)`), which a 220 peer can't make.
+
+### Windows
+
+A lined bay's key takes the faction's window letter on its lining word when the vehicle rolls windows (the style's `WindowChance`, on a fork of its own). The bay
+cuts a window in each side wall but a door bay's doorway side, centred along it, when the bay is the window's width and 15 cm either side long, and the window's
+sill and head each fall 3 cm or more inside a row, the same row on both sections, with every row between upright (half again as tall as it leans). The sill
+stands 5 cm over the waist's pad at least (a pannier's or a sponson's socket; a pane's seal would meet it). The wall rows it crosses are cut in four: under the
+sill and over the head the bay's length, and a jamb either side on every row between (6 mm thinner than the skin, so their faces stand 3 mm in from the pieces
+over and under them: on a twisting bay they met nearly in a plane). The hidden slabs behind the wall stop either side of it. A pane (the cab's pane part, its
+corners in the bay's frame) stands on a hidden pad at the sill's middle (`win-x`, `win+x`), a centimetre into the jambs and the head; its glass counts as closed
+for the room's hole rays, and a shot breaks the pane, not the bay. The opening is too small for a player. The lining is cut round it 2 cm back (a reveal): a
+following lining's jambs stand 6 mm further in than the pieces over and under them, an inset lining's panels split round the band; a bare hull's weld bead stops
+on that row. Room panes go in the `roomglass` list, not the cab's `glass`, which the cab measure and the identity gate read.
+
+| Style | window | chance a vehicle | width, sill to head |
+| --- | --- | --- | --- |
+| Bandit | `s` slit | 0.5 | 0.6 m, 1.45 to 1.62 m |
+| Militia | `s` slit | 0.6 | 0.6 m, 1.45 to 1.62 m |
+| IT | `b` band | 0.9 | 0.9 m, 1.22 to 1.72 m |
+| Scam | `b` band | 0.85 | 0.9 m, 1.22 to 1.72 m |
+| Highland | `p` port | 0.75 | 0.45 m, 1.3 to 1.72 m |
+| British | `t` tall bus window | 0.95 | 0.6 m, 1.2 to 1.82 m |
+
+### Lamps that light
+
+Each lamp a lining hangs (phase 7a's, one a bay of 0.7 m and more under a 2 m roof) is also a light: the bay's part carries its lamps' points and colours
+(`ConstructPartDef.Lamps`, made with the part from its key: no file field, nothing on the wire), and a Lamp logic part that is on is one too. Each frame,
+`ConstructLamps.AddLights` gives the dynamic lights the frame has left after flashes and blasts (at most four in all, `LightGrid.MaxDynamic`) to the lamps nearest
+the eye within 16 m, at the bodies' drawn pose, 4.5 m of reach, each faded as it nears the reach or the next lamp left out, so lights hand over without popping.
+A body's lamp parts are gathered once a rebuild (`Construct.LampParts`, by `RebuildStamp`): nothing allocates in a steady frame. On an unlit map (every Sandbox map)
+the light block's new mode 5 adds the dynamic lights to the classic light in `ApplyLightAt`, so every scene shader takes them; muzzle flashes still light lit maps
+only, as before. A point light has no shadow: a lamp lights the inner faces round it, faces turned away from it get nothing (a hull's outside, a roof's top), and
+the ground under the floor a little (4.5 m reach from 2 m up).
+
+Cost: at most four lights a frame whatever the number of vehicles (the shader loop lit maps already run for flashes); CPU a pass over the bodies within 46 m and
+their lamp parts. Lamps a vehicle with rooms (`--body-report`): Bandit 1.1, IT 1.9, Highland 1.5, Scam 1.5, British 2.2, Militia 1.0. The frame cost wasn't
+measured on a GPU (the container has none); the shader compiled and the smoke test ran with GL error 0.
+
+### Measured (2-core box shared with other agents: times are noisy; before is this branch with `--no-interiors`, which makes main's vehicles less 7a)
+
+| | before | after |
+| --- | --- | --- |
+| full check, 6 styles x 5 shapes x 6 seeds | 177 of 180 (phase 7a) | 177 of 180 (the same three: Bandit Scrap Tanker 3, Highland War Bus 5, Highland Scrap Tanker 3); room walks, hole rays and balconies pass with glass in; parts, mean a shape: 68 (Bandit Scrap Tanker) to 190 (Highland War Bus) |
+| coplanar pairs inside lofted parts | 0 | 0 (14, then 1 on the way: under-sill pieces and jambs, then the lining's, on twisting bays) |
+| room exteriors, cabs and hoods, whole body (between over within) | 1.48, 1.59, 1.02 | 1.46, 1.57, 1.02 (the cabs as phase 7a; windows bring the room exteriors a little closer: within 0.127, between 0.185 from 0.190) |
+| parts a vehicle, mean a style (Bandit .. Militia) | 130, 136, 140, 141, 138, 133 | 130, 136, 142, 141, 139, 134 (panes: 0.7 to 3.8 a vehicle with rooms, cab panes included) |
+| generation, mean a style; worst | 282 to 527 ms; 5.3 s (Bandit Box Truck 1) | 296 to 390 ms, Bandit 1127 ms (554 ms in a Bandit-only run); worst 5.0 s in a Bandit-only run (Bandit Box Truck 1), but the same vehicle took 23.4 s in each `all` run, unexplained |
+
+**Found on the way.**
+- A socket facing up must stand on a solid face: the pane's socket stands on a hidden pad.
+- The pane's seal met the waist's pad and the wall's hidden slabs on a leaning row (Scam Flatbed Fort 1, Militia Box Truck 6): the sill keeps over the waist and
+  the slabs stop at the window.
+- Room panes in the cab's `glass` list moved the cab measure from 1.59 to 1.19 and sent Bandit seeds to more plans; they have a list of their own.
+
+**Committed seeds**: unchanged; 34 files written again (137 glazed bays and their panes); `--gen-vehicles` reports all 123 identical; `--check-construct-parts`
+clean.
+
+**Not done** (7c): upper storeys', side pods', caged rooms' and balconies' insides; lining on closed end walls; a dash in capsule and merged cabs; a steering
+wheel; props on shelves; wired stations (a radio, a powered workbench, lamps on a switch: a Lamp logic part already lights when on); the `all` run's Bandit Box
+Truck 1 time; a network round trip of a glazed bay; nothing was tried in the game window with a kit vehicle near (the lights' look is unseen).
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -909,4 +1165,6 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-trim    # phase 4: without the faction trim and fittings (the room exteriors matrix, relief by band)
 --body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
 --sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
+--body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
+--body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows)
 ```

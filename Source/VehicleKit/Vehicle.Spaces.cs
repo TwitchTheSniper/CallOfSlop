@@ -117,8 +117,10 @@ public sealed partial class Vehicle
         var d = Dice.Fork("side pods");
         var inside = Rooms.SelectMany(r => r.Bays.Concat(r.Furniture).Concat(r.Containers).Concat(r.Seats)).Concat(Panels.GetValueOrDefault("furniture") ?? []).Select(b => b.Index).ToHashSet();
         var placed = 0;
+        var lean = Lean; // (phase 6: a lopsided vehicle's pods all on one side, one more of them, at its style's chance at least)
+        var max = rule.PodMax + (lean != 0 ? 1 : 0);
         foreach (var room in Rooms)
-            for (var k = 1; k + 1 < room.Bays.Count && placed < rule.PodMax; k++)
+            for (var k = 1; k + 1 < room.Bays.Count && placed < max; k++)
             {
                 var bay = room.Bays[k];
                 if (room.Plan[k] == "Door" || HullLoft.ShapeOf(bay.Def.Name) is not { } sh || sh.Cage != '\0' || sh.Length < 0.7f)
@@ -126,14 +128,16 @@ public sealed partial class Vehicle
                 foreach (var (socket, side) in new[] { ("+x0", 1f), ("-x0", -1f) })
                 {
                     var at = Array.FindIndex(bay.Def.Sockets, s => s.Name == socket);
-                    if (at < 0 || C.SocketUsed(bay.Index, at) || placed >= rule.PodMax)
-                        continue;
-                    var bd = d.Fork($"bay {room.Tag} {k} {socket}");
-                    var (kind, chance) = rule.Pods[bd.Int(0, rule.Pods.Length - 1)];
-                    if (!bd.Chance(chance))
+                    if (at < 0 || C.SocketUsed(bay.Index, at) || placed >= max)
                         continue;
                     C.SocketAt(bay.Index, at, out _, out var face);
                     var outward = ConstructParts.DirVector(face).X > 0 ? 1f : -1f;
+                    if (lean != 0 && outward != lean)
+                        continue;
+                    var bd = d.Fork($"bay {room.Tag} {k} {socket}");
+                    var (kind, chance) = rule.Pods[bd.Int(0, rule.Pods.Length - 1)];
+                    if (!bd.Chance(lean != 0 ? Math.Max(chance, rule.AsymPod) : chance))
+                        continue;
                     var (a, b) = side > 0 ? (sh.A, sh.B) : (sh.B, sh.A);
                     // Each faction's pods at the heights its trim reads at (a kiosk high where Scam's signboards are, a locker low where Highland's laps are).
                     var low = MathF.Max(0.12f, TrimLow(bay, outward, room.FloorTop));

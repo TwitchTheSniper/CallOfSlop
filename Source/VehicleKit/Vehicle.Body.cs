@@ -476,8 +476,9 @@ public sealed partial class Vehicle
             Piper(); // (before the trophies take the hood's sockets)
         d = Dice.Fork("show");
         var sides = Panels.GetValueOrDefault("sides") ?? [];
-        Dress("spike", sides.Where(p => CentreOf(p).X < 0), -Vector3.UnitX, d.Int(1, 3), d);
-        Dress("spike", sides.Where(p => CentreOf(p).X > 0), Vector3.UnitX, d.Int(1, 3), d);
+        var lean = BodyStyleRule.Of(Style).AsymAmount >= 0.5f ? Lean : 0; // (phase 6: a lopsided vehicle's spikes on its one side)
+        Dress("spike", sides.Where(p => CentreOf(p).X < 0), -Vector3.UnitX, Spikes(d.Int(1, 3), -1, lean), d);
+        Dress("spike", sides.Where(p => CentreOf(p).X > 0), Vector3.UnitX, Spikes(d.Int(1, 3), 1, lean), d);
         Dress("trophy", Panels.GetValueOrDefault("hood") ?? [], Vector3.UnitY, d.Int(1, 2), d);
         Dress("trophy", Panels.GetValueOrDefault("cabshell") ?? [], Vector3.UnitY, 1, d);
         Dress("trophy", Panels.GetValueOrDefault("headboard") ?? [], -Vector3.UnitZ, d.Int(1, 2), d);
@@ -490,7 +491,7 @@ public sealed partial class Vehicle
         foreach (var p in Parts.Where(p => p.Name.StartsWith(Beam, StringComparison.Ordinal)))
             Paint(p, frame);
         foreach (var (tag, list) in Panels)
-            if (tag is not ("furniture" or "glass" or "trim" or "fittings"))
+            if (tag is not ("furniture" or "glass" or "roomglass" or "trim" or "fittings"))
                 PaintAll(list.Where(p => p.Def.Slots.Length == 0), tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
         PaintRooms(Dice.Fork("paint runs"), "rust"); // (phase 2: a room's bays by runs, one colour each, so its sections read: VehicleBodyLanguage.cs)
         PaintTrim();
@@ -500,6 +501,8 @@ public sealed partial class Vehicle
             Paint(p, war);
         return this;
     }
+
+    private static int Spikes(int n, int side, int lean) => lean == 0 ? n : lean == side ? n + 1 : 0;
 
     /// <summary>
     /// A style that has "mast" and "gear" slots dresses more than the flanks and the hood (the IT Department's dishes and masts): masts on

@@ -45,6 +45,7 @@ public sealed partial class Vehicle
         if (main < floorHalf)
             Deck(tag + "floor", under, new Rect(main, floorHalf, z0, z1), "floor");
         var walls = PanelList(tag + "walls");
+        var balcony = Look != null && (bays.Contains("Door") || rear) ? BalconyPlan(tag, rear) : null; // (phase 6: Vehicle.Balcony.cs; its ladder at its open end)
         var z = z0;
         var ceiling = 0f;
         for (var k = 0; k < names.Length; k++)
@@ -57,22 +58,34 @@ public sealed partial class Vehicle
                 : Stand(names[k], new Vector3(-foot, room.FloorTop, z + 0.125f), Orient.Forward, null, "footL0", 0.06f);
             walls.Add(bay);
             room.Bays.Add(bay);
+            Glaze(bay, names[k]);
             ceiling = MathF.Max(ceiling, room.FloorTop + Def(names[k]).BoundsMax.Y); // (the tallest bay: a brow or a tail comes down)
             if (bays[k] == "Door" && !rear)
-                HullDoorIn(room, bay, z, tag, doorSide);
+                HullDoorIn(room, bay, z, tag, doorSide, balcony == null);
             else if (rear && k == names.Length - 1)
-                RearDoorIn(room, bay, z + lengths[k], tag);
+                RearDoorIn(room, bay, z + lengths[k], tag, balcony == null);
             z += lengths[k];
         }
         room.Walls.AddRange(walls);
         room.Ceiling = ceiling - 0.1f;
         room.FloorRest = ToRest(Vector3.Zero);
+        if (balcony != null && !Balcony(room, balcony))
+            room.Ladder = rear ? Boarding(new Vector3(0, room.FloorTop, room.DoorMid.Z + 0.13f), tag + "walls") : Boarding(new Vector3(doorSide * 1.13f, room.FloorTop, room.DoorMid.Z), tag + "walls"); // (no room for it: the ladder under the door, as without)
         if (Skirted)
             Skirts(new Rect(-floorHalf, floorHalf, z0, z1));
         foreach (var (x, sz) in seatSpots ?? [])
             room.Seats.Add(Put("Seat", new Vector3(x, room.FloorTop + 0.475f, sz), Orient.Forward, 0.2f, null, "bottom", onTop: true));
         Rooms.Add(room);
         return room;
+    }
+
+    /// <summary>Phase 7b: a lined bay's windows glazed, a pane on each window's sill (HullLoft.RoomPanesOf), cut in the bay's frame as a cab's panes are.</summary>
+    private void Glaze(VPart bay, string name)
+    {
+        if (HullLoft.ShapeOf(name) is not { Window: > '\0' } sh)
+            return;
+        foreach (var (socket, pane) in HullLoft.RoomPanesOf(sh))
+            PanelList("roomglass").Add(AsIs(bay, socket, pane.Key(), "frame")); // (not "glass": that is the cab's, which the cab measure reads)
     }
 
     /// <summary>
@@ -95,7 +108,7 @@ public sealed partial class Vehicle
     }
 
     /// <summary>The flush door in a Door Bay: its hinge welded to the jamb behind the opening, the door swung shut in it; on <paramref name="side"/> (+1 right, -1 left: the right one turned round).</summary>
-    private void HullDoorIn(Room room, VPart bay, float z, string tag, float side = 1)
+    private void HullDoorIn(Room room, VPart bay, float z, string tag, float side = 1, bool ladder = true)
     {
         const float plane = 1.0f;
         var mid = z + 0.75f;
@@ -106,14 +119,15 @@ public sealed partial class Vehicle
         room.Hinge = Weld(HullHinge, bay, at + Rot24.Apply(FirstTurn(turn), (def.BoundsMin + def.BoundsMax) * 0.5f), turn, 0, 0, 0);
         room.Door = Onto(room.Hinge, "leaf", HullDoor, "hang", 0);
         Paint(room.Door, Style.Colour(Dice.Fork("door " + tag), "rust"));
-        room.Ladder = Boarding(new Vector3(side * 1.13f, room.FloorTop, mid), tag + "walls");
+        if (ladder)
+            room.Ladder = Boarding(new Vector3(side * 1.13f, room.FloorTop, mid), tag + "walls");
     }
 
     /// <summary>
     /// The flush door in a tail's back doorway (phase 2, HullLoft's "b" flag): the side door's hinge and leaf turned a quarter round, the hinge on the left jamb, the
     /// door swung shut across the opening, a ladder under it.
     /// </summary>
-    private void RearDoorIn(Room room, VPart bay, float zBack, string tag)
+    private void RearDoorIn(Room room, VPart bay, float zBack, string tag, bool ladder = true)
     {
         room.DoorMid = new Vector3(0, room.FloorTop, zBack);
         var turn = new Orient(Vector3.UnitX, Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitZ);
@@ -122,7 +136,8 @@ public sealed partial class Vehicle
         room.Hinge = Weld(HullHinge, bay, at + Rot24.Apply(FirstTurn(turn), (def.BoundsMin + def.BoundsMax) * 0.5f), turn, 0, 0, 0);
         room.Door = Onto(room.Hinge, "leaf", HullDoor, "hang", 0);
         Paint(room.Door, Style.Colour(Dice.Fork("door " + tag), "rust"));
-        room.Ladder = Boarding(new Vector3(0, room.FloorTop, zBack + 0.13f), tag + "walls");
+        if (ladder)
+            room.Ladder = Boarding(new Vector3(0, room.FloorTop, zBack + 0.13f), tag + "walls");
     }
 
     /// <summary>A gun on a side: a Gun Sponson on <paramref name="on"/>'s waist socket, a turntable and the gun on it. <paramref name="seat"/> works it from inside.</summary>

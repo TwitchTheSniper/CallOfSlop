@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, strut/strut, wing 0.75, language ledge standard 2.28 m, flare 0.06, kick-up 0.8, brow 0.76 1.5 m, tail 0.84 1 m, door right, cab slab caged cab, nose wedge, wear age 0.76 (4 rusty, 4 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+tank, cab caged, nose plated hood, rear bare, under tub, layout gun bay 2 m+tank 3 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, strut/strut, wing 0.75, language ledge standard 2.28 m, flare 0.06, kick-up 0.8, brow 0.76 1.5 m, tail 0.84 1 m, door right, cab slab caged cab, nose wedge, lopsided left, wear age 0.76 (4 rusty, 4 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+tank, cab caged, nose plated hood, rear bare, under tub, layout gun bay 2 m+tank 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Scrap Tanker 1",
   "group": "Bandit",
@@ -40,7 +40,7 @@
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 31, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabg V4V4WWXgYQW5VYWMW0W0Xa ~B80BYB8gc02c =)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2f2c2a"},
+    {"part": "Hull Loft (cabg V4V4WWXgYQW5VYWMW0W0Xa ~B80BYB8gc02c = ir)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2f2c2a"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#8c5230"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#8c5230"},
     {"part": "Plate Steel 0.25 m", "on": 37, "socket": "+z0", "by": "-x", "paint": "#7a4326"},

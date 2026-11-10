@@ -750,6 +750,68 @@ public static partial class ConstructPhysics
         return false;
     }
 
+    /// <summary>
+    /// A spawn just set down (the parts menu's blueprints, back to back on one spot): does any piece of a body from
+    /// <paramref name="from"/> on (the spawn and what came with it: a trailer, cargo) sit inside a body before it?
+    /// </summary>
+    internal static bool SpawnOverlaps(ConstructWorld world, int from)
+    {
+        var bodies = world.Bodies;
+        for (var n = from; n < bodies.Count; n++)
+        {
+            var c = bodies[n];
+            if (c.PartCount == 0)
+                continue;
+            if (c.Dirty)
+                c.Rebuild();
+            for (var j = 0; j < from && j < bodies.Count; j++)
+            {
+                var b = bodies[j];
+                if (b.PartCount == 0)
+                    continue;
+                var reach = c.Radius + b.Radius;
+                if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) > reach * reach)
+                    continue;
+                if (b.Dirty)
+                    b.Rebuild();
+                if (PiecesIn(c, b))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Is a piece of <paramref name="c"/> inside a piece of <paramref name="b"/> as they stand (wheels by their boxes)?</summary>
+    private static bool PiecesIn(Construct c, Construct b)
+    {
+        var ca = c.Collider;
+        var cb = b.Collider;
+        Span<int> pairs = _pairBuf.AsSpan();
+        const float In = 0.01f;
+        for (var ga = 0; ga < ca.GroupCount; ga++)
+        {
+            c.WorldFrame(ca.Groups[ga].Seg, out var qa, out var ta);
+            var fa = CFrame.Of(qa, ta);
+            for (var gb = 0; gb < cb.GroupCount; gb++)
+            {
+                b.WorldFrame(cb.Groups[gb].Seg, out var qb, out var tb);
+                var fb = CFrame.Of(qb, tb);
+                var ba = new CFrame { X = fa.LocalDir(fb.X), Y = fa.LocalDir(fb.Y), Z = fa.LocalDir(fb.Z), T = fa.Local(fb.T) };
+                var count = ca.Pairs(ga, cb, gb, ba, 0f, pairs);
+                for (var i = 0; i < count; i++)
+                {
+                    if (ca.Leaves[pairs[i * 2]].WheelIx >= 0 || cb.Leaves[pairs[i * 2 + 1]].WheelIx >= 0)
+                        continue; // (a cylinder's leaf is the bounds of its travel; the wheel's boxes stand for it here)
+                    ca.World(pairs[i * 2], fa, out var wa);
+                    cb.World(pairs[i * 2 + 1], fb, out var wb);
+                    if (PiecesOverlap(wa, ca, fa, wb, cb, fb, In))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private static bool NewOverlapAt(Construct c, Construct b, Vector3 from, Vector3 to, Quaternion turn)
     {
         var ca = c.Collider;

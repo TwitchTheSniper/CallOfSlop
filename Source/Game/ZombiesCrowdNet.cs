@@ -23,7 +23,11 @@ public sealed partial class Game
     public sealed class CrowdNetView
     {
         public byte[] Count = [], Head = [];
+        public int[] SentAt = [];
         public int Round = -1, Sends;
+
+        /// <summary>Where the next send's walk over the cells starts: the cell the last full message stopped at (0: it got to the end).</summary>
+        public int Next;
     }
 
     /// <summary>Client: the crowd as the server describes it (empty on the host, which draws the particles themselves).</summary>
@@ -102,11 +106,13 @@ public sealed partial class Game
             {
                 v.Count = new byte[n];
                 v.Head = new byte[n];
+                v.SentAt = new int[n];
             }
             else
             {
                 Array.Clear(v.Count);
                 Array.Clear(v.Head);
+                Array.Fill(v.SentAt, v.Sends);
             }
             v.Round = _crowdRound;
         }
@@ -115,11 +121,19 @@ public sealed partial class Game
             w.U8((byte)cols).U8((byte)rows).F32(cell).F32(Crowd.MinX).F32(Crowd.MinZ).F32(Crowd.Y);
         var countAt = w.Length;
         w.U16(0);
-        var farTurn = key || v.Sends % Math.Max(1, ZRules.Crowd.NetFarEvery) == 0;
+        // A message that filled up stopped part-way along the cells: the next one carries on from there (and sends the far
+        // cells too), so the cells past it take their turn. Walking from the first cell every time starved them: with a big
+        // crowd every far turn filled up on the first rows, and the client kept the last rows' old counts (a horde drawn
+        // where the host had none, which no shot could hurt). Entries stay in cell order within a message.
+        if (key || v.Next >= n)
+            v.Next = 0;
+        var start = v.Next;
+        var farTurn = key || start > 0 || v.Sends % Math.Max(1, ZRules.Crowd.NetFarEvery) == 0;
         var far2 = ZRules.Crowd.NetFarRange * ZRules.Crowd.NetFarRange;
         var last = -1;
         var entries = 0;
-        for (var i = 0; i < n; i++)
+        v.Next = 0;
+        for (var i = start; i < n; i++)
         {
             var c = _crowdCount[i];
             var h = _crowdHead[i];
@@ -133,7 +147,10 @@ public sealed partial class Game
                     continue;
             }
             if (w.Length > ZCrowdMaxBytes - 8)
-                break; // (the rest next time: the view only records what went)
+            {
+                v.Next = i; // (the rest next time, from here: the view only records what went)
+                break;
+            }
             // A gap over 15 bits (a grid of more than 32,768 cells with nothing changed between): a filler entry that
             // repeats what the client already has, 32,768 cells on.
             while (i - last - 1 > 0x7FFF && w.Length <= ZCrowdMaxBytes - 8)
@@ -147,7 +164,10 @@ public sealed partial class Game
                 entries++;
             }
             if (i - last - 1 > 0x7FFF)
+            {
+                v.Next = i;
                 break;
+            }
             var gap = i - last - 1;
             if (gap < 128)
                 w.U8((byte)gap);
@@ -158,11 +178,37 @@ public sealed partial class Game
                 w.U8(h);
             v.Count[i] = c;
             v.Head[i] = h;
+            v.SentAt[i] = v.Sends;
             last = i;
             entries++;
         }
         w.PatchU16(countAt, (ushort)entries);
         v.Sends++;
+    }
+
+    /// <summary>
+    /// Server (--zrange-host's log): for the first client, the cells whose count it was last sent differs from the crowd's
+    /// count now, and the zombies in that difference.
+    /// </summary>
+    public (int Cells, int Zombies, int Total, int OldestSends) CrowdStale()
+    {
+        foreach (var v in _crowdViews.Values)
+        {
+            int cells = 0, zombies = 0, total = 0, oldest = 0;
+            var n = Math.Min(v.Count.Length, _crowdCount.Length);
+            for (var i = 0; i < n; i++)
+            {
+                total += _crowdCount[i];
+                if (v.Count[i] != _crowdCount[i])
+                {
+                    cells++;
+                    zombies += Math.Abs(v.Count[i] - _crowdCount[i]);
+                    oldest = Math.Max(oldest, v.Sends - v.SentAt[i]);
+                }
+            }
+            return (cells, zombies, total, oldest);
+        }
+        return default;
     }
 
     /// <summary>Headings within about 17 degrees count as the same (no resend for a wobble).</summary>

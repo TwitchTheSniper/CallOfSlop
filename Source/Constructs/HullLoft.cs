@@ -185,13 +185,17 @@ public static partial class HullLoft
     /// What a key says: the bay's length, its door and closed ends, and its two sections. <see cref="Extra"/> (phase 5, docs/vehiclekit/BODY-STYLES.md section 11): a fourth word,
     /// <c>c</c> and a pattern for a caged bay (<see cref="CageKinds"/>), <c>o</c> for an open top (a bulwark: its roof row isn't drawn), <c>u</c> for a flat roof that is an
     /// upper floor (walkable, with sockets for an upper storey and its furniture), with a hatch <c>uX0,X1,Z0,Z1</c> (centimetres in the bay's frame) where a stair comes up.
+    /// <see cref="Lining"/> (phase 7a, section 13): a last word <c>i</c>, a kind and a mode, the room's lining (HullLoft.Lining.cs).
     /// </summary>
-    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B, bool BackDoor = false, string Extra = "")
+    public readonly record struct Shape(float Length, bool Door, bool Front, bool Back, Section A, Section B, bool BackDoor = false, string Extra = "", string Lining = "")
     {
         /// <summary>A caged bay's pattern (0: a skinned bay).</summary>
         public char Cage => Extra.Length == 2 && Extra[0] == 'c' ? Extra[1] : '\0';
         public bool Open => Extra == "o";
         public bool Floor => Extra.Length > 0 && Extra[0] == 'u';
+
+        /// <summary>Phase 7b: the windows' kind (a <see cref="WindowKinds"/> letter, the lining word's fourth; 0: none).</summary>
+        public char Window => Lining.Length == 4 ? Lining[3] : '\0';
 
         /// <summary>The hatch in an upper floor, metres in the bay's frame (null: none).</summary>
         public (float X0, float X1, float Z0, float Z1)? Hatch => Floor && Extra.Length > 1 && Extra[1..].Split(',') is { Length: 4 } w && w.All(x => int.TryParse(x, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
@@ -227,6 +231,9 @@ public static partial class HullLoft
         if (!name.StartsWith(Prefix, StringComparison.Ordinal) || !name.EndsWith(')'))
             return null;
         var words = name[Prefix.Length..^1].Split(' ');
+        var lining = words.Length >= 4 && LiningOk(words[^1]) ? words[^1] : "";
+        if (lining.Length > 0)
+            words = words[..^1];
         if (words.Length is not (3 or 4))
             return null;
         var head = words[0];
@@ -244,7 +251,9 @@ public static partial class HullLoft
         var extra = words.Length == 4 ? words[3] : "";
         if (extra.Length > 0 && (!ExtraOk(extra, cm / 100f) || extra == "o" && flags.Contains('d') || extra[0] == 'u' && flags.Contains('b')))
             return null;
-        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b, flags.Contains('b'), extra);
+        if (lining.Length > 0 && (extra.Length > 0 && (extra[0] == 'c' || extra == "o")))
+            return null; // (a frame of bars or an open top isn't lined)
+        return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b, flags.Contains('b'), extra, lining);
     }
 
     private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
@@ -284,7 +293,8 @@ public static partial class HullLoft
         ConstructPartDef def;
         try
         {
-            def = ConstructParts.Parse(Json(name, sh), name);
+            def = ConstructParts.Parse(Json(name, sh, out var lamps), name);
+            def.Lamps = lamps;
         }
         catch (ConstructPartException e)
         {
@@ -330,6 +340,7 @@ public static partial class HullLoft
     private sealed class Builder
     {
         public readonly JsonArray Boxes = new(), Sockets = new();
+        public readonly List<(Vector3 At, Vector3 Colour)> Lamps = new(); // (phase 7b: the lamps that light the room: ConstructPartDef.Lamps)
         public float Centre = float.MaxValue; // the lowest of the roof's slabs over the centreline: a lever hangs under it
 
         /// <param name="off">Each corner's own offset for the thickness (a mitre, <see cref="Mitre"/>), so facets meeting at an angle share the joint's plane; null: along <paramref name="n"/>.</param>
@@ -452,7 +463,8 @@ public static partial class HullLoft
 
     /// <param name="open">Phase 5: the roof row isn't drawn (a bulwark round an open deck).</param>
     /// <param name="floor">Phase 5: the flat roof is an upper floor, walked on (its slab's top is the panel's), cut round a hatch (x0, x1, z0, z1; all 0: none).</param>
-    private static void Sides(Builder p, Section a, Section b, float z0, float z1, bool door, bool open = false, (float X0, float X1, float Z0, float Z1)? floor = null)
+    /// <param name="sh">Phase 7b: the bay's shape, for its windows (<see cref="WindowOf"/>; null: none).</param>
+    private static void Sides(Builder p, Section a, Section b, float z0, float z1, bool door, bool open = false, (float X0, float X1, float Z0, float Z1)? floor = null, Shape? sh = null)
     {
         var (ma, mb) = (Mitres(a), Mitres(b));
         var (da, db) = door ? (DoorMitres(a, ma), DoorMitres(b, mb)) : (ma, mb); // (the +x side's)
@@ -497,7 +509,10 @@ public static partial class HullLoft
                 if (n.LengthSquared() < 1e-6f)
                     continue;
                 var (colour, paint) = Row(a0, a1, k);
-                p.Panel(q, n, colour, paint, [Off(oa0, s), Off(oa1, s), Off(ob1, s), Off(ob0, s)]);
+                if (sh is { } shw && WindowOf(shw, s) is { } win && k >= win.K0 && k <= win.K1)
+                    WindowRow(p, a, b, k, s, z0, z1, win, n, colour, paint, (oa0, oa1, ob0, ob1));
+                else
+                    p.Panel(q, n, colour, paint, [Off(oa0, s), Off(oa1, s), Off(ob1, s), Off(ob0, s)]);
                 // What stands for it to the build rules and a player's feet: slabs along the row, just inside its skin (a sponson or a pannier on the waist
                 // stands against the skin, and furniture reaches a metre out), a slanted row in steps of 30 cm at most.
                 var steps = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(a0, a1) / 0.3f));
@@ -510,7 +525,15 @@ public static partial class HullLoft
                     if (MathF.Abs(c1.Y - c0.Y) >= MathF.Abs(c1.X - c0.X))
                     {
                         var x = (c0.X + c1.X + d0.X + d1.X) / 4;
-                        p.Hide(new Vector3(s * (x - 0.05f), MathF.Min(c0.Y, d0.Y), z0), new Vector3(s * (x - 0.01f), MathF.Min(c1.Y, d1.Y), z1));
+                        var (ys0, ys1) = (MathF.Min(c0.Y, d0.Y), MathF.Min(c1.Y, d1.Y));
+                        if (sh is { } shs && WindowOf(shs, s) is { } ws && ys1 > ws.Sill - 0.03f && ys0 < ws.Head + 0.02f)
+                        {
+                            // (phase 7b: a slab across a window stops either side of it, clear of its pane's seal; the opening is too small for a player)
+                            p.Hide(new Vector3(s * (x - 0.05f), ys0, z0), new Vector3(s * (x - 0.01f), ys1, ws.W0 - 0.01f));
+                            p.Hide(new Vector3(s * (x - 0.05f), ys0, ws.W1 + 0.01f), new Vector3(s * (x - 0.01f), ys1, z1));
+                        }
+                        else
+                            p.Hide(new Vector3(s * (x - 0.05f), ys0, z0), new Vector3(s * (x - 0.01f), ys1, z1));
                     }
                     else
                     {
@@ -548,6 +571,38 @@ public static partial class HullLoft
                 if (Crossing(s) is { } yc && yc < DoorTop - 0.01f && s.P.FirstOrDefault(q => q.Y > DoorTop + 0.05f) is var pj && pj != default)
                     p.Facet([new(DoorPlane, yc, z), new(DoorPlane, DoorTop, z), new(pj.X, pj.Y, z)], Vector3.UnitZ, Steel, 0.05f);
         }
+    }
+
+    /// <summary>
+    /// Phase 7b: a wall row with a window cut in it: under the sill (its row) and over the head (its row) the bay's length, and a jamb either side of the opening on every row it crosses. Pieces meet
+    /// on cuts across the row (their faces there face each other), the row's own mitres at its ends, the row's normal at a cut.
+    /// </summary>
+    private static void WindowRow(Builder p, Section a, Section b, int k, float s, float z0, float z1, (int K0, int K1, float Sill, float Head, float W0, float W1) win,
+        Vector3 n, string colour, bool paint, (Vector2 A0, Vector2 A1, Vector2 B0, Vector2 B1) m)
+    {
+        var len = z1 - z0;
+        var (na, nb) = (RowNormal(a.P[k], a.P[k + 1]), RowNormal(b.P[k], b.P[k + 1]));
+        // y: float.MinValue the row's foot, float.MaxValue its top; t along the bay
+        (Vector3 At, Vector3 Off) C(float y, float t)
+        {
+            Vector2 On(Section sec, int e) => y == float.MinValue ? sec.P[k] : y == float.MaxValue ? sec.P[k + 1] : Vector2.Lerp(sec.P[k], sec.P[k + 1], (y - sec.P[k].Y) / (sec.P[k + 1].Y - sec.P[k].Y));
+            var v = Vector2.Lerp(On(a, 0), On(b, 1), t);
+            var o = y == float.MinValue ? Vector2.Lerp(m.A0, m.B0, t) : y == float.MaxValue ? Vector2.Lerp(m.A1, m.B1, t) : Vector2.Normalize(Vector2.Lerp(na, nb, t));
+            return (new Vector3(s * v.X, v.Y, z0 + len * t), Off(o, s));
+        }
+        void Piece(float y0, float y1, float t0, float t1, float thick = T)
+        {
+            var c = new[] { C(y0, t0), C(y1, t0), C(y1, t1), C(y0, t1) };
+            p.Facet([c[0].At, c[1].At, c[2].At, c[3].At], n, colour, thick, paint, [c[0].Off, c[1].Off, c[2].Off, c[3].Off]);
+        }
+        var (tw0, tw1) = ((win.W0 - z0) / len, (win.W1 - z0) / len);
+        var (lo, hi) = (k == win.K0 ? win.Sill : float.MinValue, k == win.K1 ? win.Head : float.MaxValue); // (a row between the sill's and the head's: jambs only)
+        if (k == win.K0)
+            Piece(float.MinValue, win.Sill, 0, 1);
+        if (k == win.K1)
+            Piece(win.Head, float.MaxValue, 0, 1);
+        Piece(lo, hi, 0, tw0, T - 0.006f); // (the jambs 3 mm in from both faces: on a twisting bay their faces and the pieces' over and under them met nearly in a plane)
+        Piece(lo, hi, tw1, 1, T - 0.006f);
     }
 
     /// <summary>The +x outline of a door bay's side at height <paramref name="y"/>: the frame's plane up to its top, then the cant to the first point above it.</summary>
@@ -679,14 +734,18 @@ public static partial class HullLoft
         }
     }
 
-    private static string Json(string name, Shape sh)
+    private static string Json(string name, Shape sh, out (Vector3 At, Vector3 Colour)[] lamps)
     {
         var (length, door, front, back, a, b, backDoor) = (sh.Length, sh.Door, sh.Front, sh.Back, sh.A, sh.B, sh.BackDoor);
         var p = new Builder();
+        lamps = [];
         if (sh.Cage != '\0')
             CageSides(p, sh); // (phase 5: a frame of bars, HullLoft.Spaces.cs)
         else
-            Sides(p, a, b, 0, length, door, sh.Open, sh.Floor ? sh.Hatch ?? (0, 0, 0, 0) : null);
+            Sides(p, a, b, 0, length, door, sh.Open, sh.Floor ? sh.Hatch ?? (0, 0, 0, 0) : null, sh);
+        foreach (var (socket, pane) in RoomPanesOf(sh))
+            p.Pad(socket, pane.Socket, "+y", 0.015f); // (phase 7b: a window's pane stands on its sill's middle, a hidden pad under it)
+        var ceiling = sh.Lining.Length > 0 ? Lining(p, sh) : null; // (phase 7a: the room's lining, HullLoft.Lining.cs; an inset ceiling's underside, the lever under it)
         if (front)
         {
             if (sh.Cage != '\0')
@@ -719,7 +778,7 @@ public static partial class HullLoft
         if (!sh.Open && !sh.Floor) // (an upper floor's roof is walked on and may be cut by a hatch: nothing hangs under it, nothing stands on its middle)
         {
             p.Pad("top", new Vector3(0, top + 0.03f, length / 2), "+y");
-            p.Pad("lever", new Vector3(0, MathF.Min(top, p.Centre) - 0.03f, length / 2), "-y");
+            p.Pad("lever", new Vector3(0, MathF.Min(MathF.Min(top, p.Centre), ceiling ?? float.MaxValue) - 0.03f, length / 2), "-y");
         }
         if (sh.Floor)
             FloorSockets(p, sh); // (phase 5: an upper storey's feet and its furniture stand on the roof: HullLoft.Spaces.cs)
@@ -750,6 +809,7 @@ public static partial class HullLoft
             ["boxes"] = p.Boxes,
             ["sockets"] = p.Sockets,
         };
+        lamps = [.. p.Lamps];
         return part.ToJsonString();
     }
 }

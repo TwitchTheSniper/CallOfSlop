@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 2 m, leaf/leaf, wing 0.5, language pod heavy 2.62 m, flare 0.16, sloped 0.6, brow 0.65 1.25 m, tail 0.69 1.25 m, door right, 9 facets, cab pod capsule, 6 facets, nose wedge, wear age 0.21 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank+bed, cab cab-over, nose flat, rear bare, under stilts, sides open, layout gun bay 2 m+tank 2 m+bed 2 m, plan 3
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 2 m, leaf/leaf, wing 0.5, language pod heavy 2.62 m, flare 0.16, sloped 0.6, brow 0.65 1.25 m, tail 0.69 1.25 m, door right, 9 facets, cab pod capsule, 6 facets, nose wedge, fitting radome, wear age 0.21 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank+bed, cab cab-over, nose flat, rear bare, under stilts, sides open, layout gun bay 2 m+tank 2 m+bed 2 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Scrap Tanker 1",
   "group": "IT Department",
@@ -86,7 +86,7 @@
     {"part": "Plate Steel 0.25 m", "on": 62, "socket": "+x1", "by": "-x", "paint": "#8e9296"},
     {"part": "Plate Steel 0.25 m", "on": 62, "socket": "-z0", "by": "-x", "paint": "#8e9296"},
     {"part": "Square Beam 0.75 m", "on": 53, "socket": "+x1", "by": "-z", "paint": "#3b3f44"},
-    {"part": "Turntable", "on": 80, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 80, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 81, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 82, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 82, "socket": "+y0", "by": "base"},
@@ -97,6 +97,7 @@
     {"part": "Heavy Auto Sear", "on": 85, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 88, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 83, "socket": "+x", "by": "-x"},
+    {"part": "Hull Loft (decoR WUWM)", "on": 43, "socket": "top", "by": "base"},
     {"part": "CRT Monitor", "on": 75, "socket": "front", "by": "base"},
     {"part": "Cable Reel", "on": 72, "socket": "front", "by": "base"},
     {"part": "Cable Reel", "on": 63, "socket": "front", "by": "base"},

@@ -551,7 +551,11 @@ same on the GL 4.1 and 4.6 paths. The window asks for the atlas when it opens; t
 the scene, draws up to 12 tiles a frame within a 3 ms budget (the first frame's GL set-up aside), so opening the window
 never stalls a frame for long (on Mesa's software GL the 52 tiles took about 20 frames). The atlas is kept for the session
 and made again only when the loaded parts, blueprints or tools change; until a tile is ready (or if the framebuffer can't
-be made) its card shows a plain colour swatch instead.
+be made) its card shows a plain colour swatch instead. A failure is not final: a slot whose data throws gets a swatch
+alone; a set-up or batch failure (a stale GL error is cleared first; an incomplete framebuffer; the first picture of a run
+read back empty) is tried again three times, 2 s apart, before the swatches stay. Options > Regenerate icons starts over
+(the atlas is GPU memory only, no icon file on disk). Each reason is one throttled `[icons]` line in callofslop.log, and a
+window that has made no picture for 10 s says where it stands.
 
 It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in its `"sandbox"` section, as Survival in the
 lobby does: the key then says why ("the parts menu is off on this map", "... in survival") and the server refuses both requests. The
@@ -775,7 +779,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `units`, `threshold` | Speed Sensor | m/s, km/h or mph; above 0, on/off at that speed instead of the number |
 | `colour`, `brightness`, `blink` | Lamp | Its glow's colour and brightness; flashes a second while lit |
 | `pitch`, `volume` | Horn | Its beep |
-| `min`, `max`, `speed`, `strength` | Piston, Motor Hinge, Hinge (limits), Turntable (speed, strength) | Limits (degrees; a piston's metres) inside the part's own, speed, force or torque |
+| `min`, `max`, `speed`, `strength` | Piston, Motor Hinge, Hinge (limits), Turntable (speed, strength) | Limits (degrees; a piston's metres) inside the part's own, speed, force or torque. A turntable's or motor hinge's speed runs from stopped to twice its rated speed, the rated speed (the default) in the middle; the panel's slider shows it as -100% to +100% of rated (`CConfigDef.Rated`), the box beside it in deg/s, and the stored value stays deg/s, so older saves and blueprints keep their speed |
 | `pushable` | Passive hinges | A player walking into what hangs on it swings it (on by default). [Doors](#doors) |
 | `strength` | Brake | 100%: the wheels lock; less: they drag (`jFwd` blended towards a stop) |
 | `stiffness`, `damping` | Suspension (a plain spring) | Spring frequency (Hz) and damping ratio |
@@ -3102,6 +3106,31 @@ The user asked (2026-11-07) that "bombs or missiles or ordnance that take enough
 
 **Not done yet / decisions the developer may change.** No wind on designed weapons; the drop aid's cross is the plain fall, not a glide or a boosted path; a missile has no lift of its own (it arcs as the Missile Rail's does); the HUD doesn't show a designed weapon's lock; mines are set off by bodies, not by players on foot.
 
+### Fuel blasts
+
+The user asked (2026-11-09) that "any tank containing fuel when destroyed should explode" (code `Source/Constructs/ConstructFuelBlasts.cs`,
+called from `ConstructWorld.CookOff`; numbers in `Constructs/FuelBlasts.json`; measured with `--bench-fuelblast`).
+
+- **What goes up.** Any part that holds something that burns, burning or not, when it breaks: a fuel tank of any size (Fuel Tank, the
+  small and large ones, the Fuel Drum, the Tanker Barrels, the Fuel Bunkers) by its share of the body's fuel pool (its capacity over the
+  working tanks', itself counted), a Fluid Tank or Tank Volume by what it holds, and a designed weapon with fuel or a burning motor but no
+  warhead by its fuel's kilograms (`propellantPerKg`). A part that only stops working (the tanks) goes up all the same, and its share leaves
+  the pool. Empty: nothing. Lift cells keep their own hydrogen rule ("Air and lift"). Props (jerrycans on maps) are not parts and are not covered.
+- **How big.** Litres times the fluid's `energy` (fuel 1, hydrogen 1.5, oxidiser 0.6, oil 0.35; water and the rest 0). Radius
+  `0.5 + cube root` m, damage at the middle `60 + 30 x square root`, crater a fifth of the radius, held to 160 m, 3,000 and 25 m: a 15 l
+  can 3 m and 176, a 60 l drum 4.4 m and 292, a 600 l tanker barrel 8.9 m and 795, a 20,000 l bunker 27.6 m and 3,000, the Capital Fuel
+  Bunker (4 million l) a 159 m shock front ("Massive blasts").
+- **The blast.** A landed incendiary shell (`ShellKind.Incendiary`: an orange fireball, the shell blast's sound and shake, and it lights
+  what burns in reach), so it walks bodies, digs, hurts players and sets off ordnance and other tanks like any shell's blast, queued within
+  the parts budget. It goes off `delayTicks` (0.3 s) after the break plus up to `staggerTicks` by the part's place, riding the body, so a
+  chain ripples. No wire change: clients see the ShellLand event. Server only; nothing allocates.
+- **Fused units.** Every member keeps its own health, so a tank fused into a hull goes up when it breaks like any other.
+- **Cost** (`--bench-fuelblast`, second of two runs, a host and a client over loopback on the shared 2-core box): a drum, a tanker or a
+  bunker, worst server tick under 1 ms CPU; a row of 24 drums 2 m apart, one shot: all 24 go over 516 ticks, worst 0.5 ms; the Capital
+  bunker's front, worst 1.9 ms; a fused 616-part sheet with 16 tanks 1.5 m apart: 5 go at once (the blast lights what burns in reach), the blasts' ticks
+  under 3.3 ms; the one tick of 7 to 10 ms is the sheet's rebuild after the first tank breaks (a part that stops working on a big fused
+  body, as before this change), not the blasts.
+
 ### The yard
 
 Construct Yard gains a **Gunner Turret** (a turntable, a gunner's seat on the arm, a Mounted MG on a motor hinge at the
@@ -4996,8 +5025,8 @@ part and rides in blueprints, world saves and joiners' CBody like any setting. T
   gauge and the driver's HUD count both. A tank of water reaches the engine, and the engine has no fuel.
 - **Between constructs.** A world pipe works as a pipe does, at the same flow rule. A fluid hose first moves the pools as
   before, then from the first tank with something in it to the first that has room for it (`ConstructFluid.MoveAny`).
-- **Wrecked.** What it held is lost, and it stops working until mended. A Fluid Tank doesn't burn or cook off, even holding
-  fuel. Taken off, it goes back to the inventory empty, as a part loses its settings.
+- **Wrecked.** What it held is lost, and it stops working until mended. A Fluid Tank holding fuel, hydrogen, oxidiser or oil goes
+  up when it is wrecked ("Fuel blasts"). Taken off, it goes back to the inventory empty, as a part loses its settings.
 
 **Creative only.** The configure tool sets the fluid and the fill in creative worlds. Both are `"creative": true` settings: in
 survival the panel shows them read-only (Reset, Paste and Apply to selected go too), and the server refuses a request that
@@ -5051,7 +5080,7 @@ A Tank Volume or Storage Volume is meant to sit inside walls. Code: `Source/Cons
 2. **Tilt.** Down is apparent gravity. The level is the fill's share of the box's height along it; if the lowest corner of an open face is under the level, it pours. So an open bottom empties a box, an open side drains a tank at rest, and an open top only matters when tipped or braked.
 3. **Acceleration.** The same check with the body's acceleration taken off gravity (`Construct.Accel`), so hard braking throws contents out and a parked base is safe.
 4. **Where it goes.** Off the open face's lowest corner, clear of the rim. Fluid goes into a tank under it (a part, or a Tank Volume's box), else it is lost with a spill splash. Bulk goes as a tipped scoop's does (`ConstructScoops.PourVolume`): into a store under it, heaped ground for dirt, stone and sand, or Material Bundles, in lumps of 40 or more. Stored parts stay put.
-5. **Fire.** An incendiary round or flame landing in or at an open box of something that burns lights its block (`ConstructSeal.IgniteAt`, `ConstructWorld.CanBurn`). The fire then eats the contents and lasts while they do; a Tank Volume of fuel wrecked burning cooks off. A plain Storage Volume's block doesn't otherwise burn.
+5. **Fire.** An incendiary round or flame landing in or at an open box of something that burns lights its block (`ConstructSeal.IgniteAt`, `ConstructWorld.CanBurn`). The fire then eats the contents and lasts while they do; a Tank Volume holding fuel goes up when it is wrecked, burning or not ("Fuel blasts"). A plain Storage Volume's block doesn't otherwise burn.
 
 **Old builds.** The mask needs no data, so saves and blueprints load unchanged and every box is checked on load. An open box over its new limit starts to pour within a quarter of a second of the world starting, and an open side or bottom drains what stands above it.
 
@@ -5735,7 +5764,12 @@ the mass tier (a count per cell), and the tiers wake the nearest as individuals 
 500,000 (the Horde Stress lobby's custom size too). Constructs keep individuals out as they keep players out, and one held
 off by a construct swipes the part in its way like a building door (40 damage, every windup + 0.6 s): doors and panels
 give way. Crowd and mass zombies pass through constructs (they are far away). The zombie messages (ZEnts, ZEvent, ZCrowd)
-go to Sandbox clients as in Zombies.
+go to Sandbox clients as in Zombies. Construct guns hit zombies of every tier (2026-11-09): individuals by their hit boxes, crowd particles and mass
+zombies by the same capsules a player's shot meets (`Game.CwCrowdRay`), and their shells and explosive rounds blast
+individuals, the crowd and the mass (`BlastZombies` was Zombies-mode only). A hand gun's straight shot that meets nothing
+within its reach (World.Range, 200 m) goes on into the far crowd up to the fog (at most `CrowdShotReach`, 1200 m),
+stopped by the ground and constructs (`CrowdShotFar`, server and the client's prediction alike); a round that falls flies
+on as a round of its own (ConstructRounds.cs). Damage falls off with range as ever.
 
 **Spawner parts** (`"logic": {"kind": "botspawner"}` / `"zombiespawner"`, role logic, the attach tool): settings from the
 configure tool (team, difficulty, gun class; or walkers / mixed types; rate a minute, group size, max alive, total (0: no

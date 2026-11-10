@@ -668,8 +668,12 @@ public sealed partial class Game : IDisposable
                 dist = ZombieRayDrawn(o, d, dist, out var zHit, BulletRadius(ray.Size)); // Zombies, as you see them (ZombieAI.cs); a fat round clips them as on the server
                 predictedHit |= zHit;
             }
-            if (CrowdRayDrawn(o, d, ref dist))
+            var crowdDist = CrowdShotFar(o, d, dist, aimReach, def, ArcSpeed(def)); // (past the gun's reach: the far crowd you can see, ZombiesCrowd.cs)
+            if (CrowdRayDrawn(o, d, ref crowdDist))
+            {
+                dist = crowdDist;
                 predictedHit = true; // the far crowd as you see it (ZombiesCrowdFx.cs)
+            }
             if (Enemies.Count > 0)
             {
                 dist = PveRayDrawn(o, d, dist, out var eHit, BulletRadius(ray.Size)); // Co-op enemies, as you see them (GamePve.cs)
@@ -1732,8 +1736,10 @@ public sealed partial class Game : IDisposable
                 turret = null;
                 ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist + flown) * (zHead ? def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage) : 1f) * PenFactor(dist), zHead); // (Marksman Malt: head pellets)
             }
-            if (zombie == null && Crowd.Total > 0 && CrowdRayHit(o, d, ref dist, ray.Damage, def, def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage)))
+            var crowdDist = zombie == null && Crowd.Total > 0 && hit == null ? CrowdShotFar(o, d, dist, reach, def, arcV) : dist; // (past the gun's reach: the far crowd, ZombiesCrowd.cs)
+            if (zombie == null && Crowd.Total > 0 && CrowdRayHit(o, d, ref crowdDist, ray.Damage, def, def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage)))
             {
+                dist = crowdDist;
                 hit = null; // a crowd zombie past the front (ZombiesCrowd.cs)
                 turret = null;
             }

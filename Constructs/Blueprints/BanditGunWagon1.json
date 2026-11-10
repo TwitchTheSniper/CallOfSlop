@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, language slab standard 2.09 m, flare 0.13, raked 0.8, brow 0.72 1.25 m, tail 0.89 1 m, door left, cab ledge capsule, nose grille, wear age 1.08 (23 rusty, 17 dirty, 2 sooty, 0 patched, 7 rusted out), body hutch, cab cab-over, nose flat, rear bare, under tub, layout hutch 4 m, plan 3
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, language slab standard 2.09 m, flare 0.13, raked 0.8, brow 0.72 1.25 m, tail 0.89 1 m, door left, cab ledge capsule, nose grille, lopsided right, wear age 1.08 (23 rusty, 17 dirty, 2 sooty, 0 patched, 7 rusted out), body hutch, cab cab-over, nose flat, rear bare, under tub, layout hutch 4 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Gun Wagon 1",
   "group": "Bandit",

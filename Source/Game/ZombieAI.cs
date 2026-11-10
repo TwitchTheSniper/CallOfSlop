@@ -1028,6 +1028,7 @@ public sealed partial class Game
             amount = Math.Max(amount, z.Health);
         var healthBefore = z.Health;
         z.Health -= amount;
+        ZHitsBy[attacker.Id]++;
         attacker.LastCombatTime = now;
         if (z.Grabbing && !dot)
             ReleaseGrab(z, now); // any hit frees whoever it holds (ZombieTypes.cs)
@@ -1128,8 +1129,8 @@ public sealed partial class Game
     /// <summary>Server: a grenade or blast: zombies in the radius take damage falling off with distance (walls shield).</summary>
     private void BlastZombies(Player? owner, Vector3 center, float radius, float maxDamage, double now)
     {
-        if (owner == null || Mode != GameMode.Zombies)
-            return;
+        if (owner == null || Mode != GameMode.Zombies && !SandboxOn)
+            return; // (the Sandbox's zombies too: construct guns' shells and explosive rounds, GameConstructWeapons.cs)
         HordeExplosion(owner, center, radius, now); // the horde scatters and regroups (ZombieHorde.cs)
         for (var zi = 0; zi < Horde.Count; zi++)
         {

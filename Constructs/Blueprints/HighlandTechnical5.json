@@ -61,10 +61,10 @@
     {"part": "Pickup Bed Side", "on": 42, "socket": "+x0", "by": "edge1", "paint": "#5b4a2f"},
     {"part": "Fuel Drum", "on": 38, "socket": "front10", "by": "-y"},
     {"part": "Square Beam 0.75 m", "on": 33, "socket": "+x1", "by": "-z", "paint": "#33302b"},
-    {"part": "Turntable", "on": 56, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 56, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 57, "socket": "top", "by": "-y1", "paint": "#33302b"},
     {"part": "Seat", "on": 58, "socket": "+y3", "by": "bottom"},
-    {"part": "Motor Hinge", "on": 58, "socket": "+y0", "by": "base"},
+    {"part": "Motor Hinge 1x1 Long", "on": 58, "socket": "+y0", "by": "base"},
     {"part": "Farmhand Pump Receiver", "on": 60, "socket": "leaf", "by": "bottom"},
     {"part": "Farmhand Pump Receiver", "on": 61, "socket": "right", "by": "left"},
     {"part": "Scattermouth Barrel", "on": 61, "socket": "front", "by": "back"},
@@ -85,10 +85,10 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 53, "pos": [-0.685, 0.154, 3.121], "rot": [-0.0027, -0.0139, 0.7124, 0.7016]}, "paint": "#8c2a2a"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 54, "pos": [1.202, 0.427, 3.131], "rot": [0.0175, 0.0194, -0.7121, 0.7016]}, "paint": "#5b4a2f"},
     {"part": "Pipe Box", "on": 76, "socket": "top", "by": "base"},
+    {"part": "Wee Keg", "on": 29, "socket": "top", "by": "base"},
     {"part": "Wee Keg", "on": 37, "socket": "front00", "by": "base"},
     {"part": "Coo Heid", "on": 41, "socket": "front00", "by": "base"},
-    {"part": "Coo Heid", "on": 35, "socket": "front10", "by": "base"},
-    {"part": "Thistle", "on": 29, "socket": "top", "by": "base"}
+    {"part": "Coo Heid", "on": 35, "socket": "front10", "by": "base"}
   ],
   "wires": [[27, 28], [28, 22], [59, 73], [73, 61], [73, 62]],
   "links": [

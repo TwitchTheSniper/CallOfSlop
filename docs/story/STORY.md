@@ -649,7 +649,7 @@ the game is the source of truth, and `--check-story` decides what is valid.
 - **Facts**: `Course` (exclusive: the road chosen), `Lead` (what a player learnt of), `Visited` (spots), the qualities
   `Inducted` (an Induct when the induction ends or is skipped) and `Contraband` (a Pilfer sets it). Verbs:
   `Story/Verbs/Storylets.json` (Storylet, Learn, Choose, Induct, Pilfer).
-- **Answers** (protocol 218): while a player's talk panel is open on someone a storylet waits for an answer from, the
+- **Answers** (protocol 222): while a player's talk panel is open on someone a storylet waits for an answer from, the
   host sends them its choices (`Msg.TalkChoices`, when they change); the button sends `TalkAsk.Choose + n`, and the
   storylet ends, recorded as a Choose.
 - **Warnings** (`--check-story`; the builder shows the same): a storylet that can never play (nothing sets what it needs
