@@ -87,6 +87,7 @@ public static unsafe partial class Program
             Ui.CloseSandboxPaintPicker();
             Ui.CloseSandboxTexturePicker();
             Ui.CloseSandboxMaterialPicker();
+            Ui.CloseOrdnanceBench(); // (it holds the mouse like the others: left open, every later click went nowhere)
             if (Ui.WorkbenchOpen)
                 Ui.CloseBench();
             ConstructRender.ClearAim();

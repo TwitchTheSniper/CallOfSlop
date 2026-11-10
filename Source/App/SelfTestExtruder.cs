@@ -983,7 +983,7 @@ public static partial class SelfTest
             sp.Yaw = 0;
             Pump(server, [a], 0.3, ref now, clock);
             var known = w.Bodies.Select(b => b.Id).ToHashSet();
-            a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Extruder Line"));
+            a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Extruder Line"));
             Pump(server, [a], 1.0, ref now, clock);
             var line = w.Bodies.FirstOrDefault(b => !known.Contains(b.Id) && b.HasExtruder);
             if (line == null)

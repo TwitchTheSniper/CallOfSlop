@@ -1,0 +1,67 @@
+{
+  // The Thousand Layers at the penal colony (docs/story/STORY.md "The Thousand Layers"; the faith is
+  // Story/Factions/ThousandLayers.json). Side-plot beats (bucket B): the Baker's sermon, the morning laminate (the faith's
+  // first job), and Sister Wren, an Unroller, who reads the Two Hands as a promise. Faith and Doubt are left for the
+  // fragments (the data centres) and the ending to read: what the player believes when they reach the machine.
+  "format": "call-of-slop-storylets/1",
+  "about": "the Thousand Layers' Baker and laundress at the penal colony: the scripture, and the sect that waits for keys",
+  "qualities": [
+    { "name": "Faith", "kind": "progress", "max": 5, "about": "how far a player has come into the Thousand Layers (sermons heard, laminates rolled)" },
+    { "name": "Doubt", "kind": "progress", "max": 5, "about": "how far a player has listened to the Unrollers, who would open the oven door" }
+  ],
+  "spots": [
+    { "name": "Baking Board", "near": "Baker Marlow", "reach": 4 }
+  ],
+  "storylets": [
+    {
+      "id": "sermon", "title": "The Baker's sermon", "bucket": "B",
+      "about": "the colony's Baker catches a new inmate by the bread and tells them how the five were saved",
+      "needs": "?me Inducted, ?me Visited 'Baking Board' >= 1",
+      "cast": "?c MemberOf 'The Thousand Layers', ?c is Person, not ?c Unroller, not ?c Grudge ?me >= 30",
+      "beats": [
+        { "by": "?c", "to": "?me", "say": [ "Bread, {me.first}? Take it. It's laminate. A thousand layers, and the Hunger under every one." ] },
+        { "by": "?c", "to": "?me", "after": "5s", "say": [ "Before the first layer there was the Hunger, and it had no face. It ate the dark and was not filled." ] },
+        { "by": "?c", "to": "?me", "after": "6s", "say": [ "So the Five Bakers rolled the world from the middle out, and the Hunger was folded under. It is under still." ] },
+        { "by": "?c", "to": "?me", "after": "6s", "say": [ "Do not grieve the empty sky. A clean table is a gift to those with work to do." ] }
+      ],
+      "ends": [
+        { "id": "heard", "after": "4s", "learn": "The Rolling", "from": "?c", "then": [ "?me Faith +1", "?c Likes ?me +5" ],
+          "say": [ "Come to the board in the morning, if you like. We roll the laminate at first light." ], "next": "laminate" }
+      ]
+    },
+    {
+      "id": "laminate", "title": "The morning laminate", "bucket": "B", "priority": 1,
+      "about": "the Baker asks for layers for the faith's daily laminate (its first job)",
+      "needs": "?me Faith >= 1, ?me Lead 'The Rolling'",
+      "cast": "?c MemberOf 'The Thousand Layers', ?c is Person, not ?c Unroller",
+      "prefer": "?c Likes ?me",
+      "beats": [
+        { "by": "?c", "to": "?me", "say": [ "The morning laminate wants layers, {me.first}. Steel will do. The Ministry won't miss a few plates." ] }
+      ],
+      "job": "The Thousand Layers: The Daily Laminate",
+      "ends": [
+        { "id": "rolled", "when": { "verb": "Job", "actor": "?me", "item": "The Daily Laminate" }, "within": "1h",
+          "then": [ "?me Faith +1", "?c Likes ?me +10" ], "say": [ "Twenty-four layers, {me.first}. You have a Baker's hands." ], "next": "unrollers" },
+        { "id": "unrolled", "after": "1h", "say": [ "No layers? Never mind. Dough is patient. So are we." ], "next": "unrollers" }
+      ]
+    },
+    {
+      "id": "unrollers", "title": "The Unrollers", "bucket": "B", "final": true,
+      "about": "the laundress, quietly an Unroller, asks the player what the Two Hands really means",
+      "needs": "?me Faith >= 1",
+      "cast": "?w MemberOf 'The Thousand Layers', ?w is Person, ?w Unroller",
+      "beats": [
+        { "by": "?w", "to": "?me", "say": [ "Heard the sermon? Don't grieve the empty sky, he says. I grieve it. Somebody ought to." ] },
+        { "by": "?w", "to": "?me", "after": "5s", "say": [ "Two hands at the oven door, one day, to open it, and all that was folded made whole." ] },
+        { "by": "?w", "to": "?me", "after": "6s", "say": [ "Some of us think that day is coming. We're waiting for someone with keys. Will you keep that quiet?" ] }
+      ],
+      "ends": [
+        { "id": "listened", "choice": "I'll keep it quiet.", "learn": "The Unrollers", "from": "?w", "then": [ "?me Doubt +1", "?w Likes ?me +15" ],
+          "say": [ "Keep your hands open, {me.first}. Somebody took the old records away. They had to put them somewhere." ] },
+        { "id": "told", "choice": "The Baker should hear this.", "then": [ "?me Faith +1", "?w Grudge ?me +20" ],
+          "say": [ "Then tell him. He'll forgive me. He always does." ] },
+        { "id": "shrugged", "after": "3m", "say": [ "Think about it. That's all I ask." ] }
+      ]
+    }
+  ]
+}

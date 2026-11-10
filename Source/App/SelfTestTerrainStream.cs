@@ -59,6 +59,9 @@ public static partial class SelfTest
     }
 
     /// <summary>The same small map built whole and streamed: every sample, query and ray agrees.</summary>
+    /// <summary>Bombs gone off so far: prop blasts plus construct shells that went off (a broken warhead is set off as a landed shell).</summary>
+    private static int Went(Game g) => g.PropDetonations + g.Constructs.ShellsLanded;
+
     private static void StreamMatchesWhole()
     {
         var whole = MapFile.Load(StreamLabJson(false), "Dev/StreamLab.json");
@@ -552,7 +555,7 @@ public static partial class SelfTest
             }
             var bid = b.Id;
             var h0 = t.Sample(spot.X, spot.Y);
-            var went0 = g.PropDetonations;
+            var went0 = Went(g); // (a broken warhead goes off as a landed shell since the ordnance cook-offs, b3da5279; the older path as a prop blast)
             g.Constructs.DamagePart(a, 0, def.Health * 10, out _);
             var fuseTicks = (int)MathF.Round(ex.ExplodeFuse * World.TickRate);
             int early = 0, wentAt = -1;
@@ -560,7 +563,7 @@ public static partial class SelfTest
             {
                 now += 1.0 / World.TickRate;
                 g.Update(now, 1.0 / World.TickRate);
-                if (g.PropDetonations > went0)
+                if (Went(g) > went0)
                     wentAt = k + 1;
                 else if (t.Sample(spot.X, spot.Y) < h0 - 0.05f)
                     early++;
@@ -572,7 +575,7 @@ public static partial class SelfTest
             }
             var floor = t.Sample(spot.X, spot.Y);
             var chained = g.Constructs.Get(bid) is not { } bc || bc.Parts[0].Broken || bc.PartCount == 0;
-            Line($"  {name} part: went off {wentAt} ticks after it broke (fuse {fuseTicks}), crater {h0 - floor:0.0} m deep, {g.PropDetonations - went0} blasts, the one beside it went too {chained}");
+            Line($"  {name} part: went off {wentAt} ticks after it broke (fuse {fuseTicks}), crater {h0 - floor:0.0} m deep, {Went(g) - went0} blasts, the one beside it went too {chained}");
             if (wentAt < fuseTicks - 1 || wentAt > fuseTicks + 2 || early > 0)
                 Fail($"terrain streaming: the {name} part went off {wentAt} ticks after breaking (want its fuse, {fuseTicks})");
             if (floor > h0 - want * 0.25f)

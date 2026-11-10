@@ -471,7 +471,7 @@ public sealed partial class Ui
     {
         var all = ConstructBuild.Blueprints;
         SbSpawned(game, blueprint >= 0 && blueprint < all.Count ? all[blueprint].Name : "blueprint");
-        game.SandboxSend(CActKind.Blueprint, part: (byte)blueprint);
+        game.SandboxSend(CActKind.Blueprint, part: (ushort)blueprint);
     }
 
     /// <summary>A tool tile: that tool comes out (again: put away).</summary>

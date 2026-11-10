@@ -114,11 +114,13 @@ public static partial class SelfTest
         // 3. Own connection points of every part with sockets.
         var bad = 0;
         var singles = 0;
+        var badNames = new List<string>();
         Span<OwnPoint> pts = stackalloc OwnPoint[32];
         foreach (var d in ConstructParts.All)
         {
             if (d.Sockets.Length == 0 || d.Sockets.Length > 32)
                 continue;
+            var bad0 = bad;
             var n = SnapBuild.OwnPoints(d, pts);
             var usable = 0;
             for (var k = 0; k < n; k++)
@@ -131,9 +133,11 @@ public static partial class SelfTest
             }
             if (n != d.Sockets.Length || usable == 0)
                 bad++;
+            if (bad > bad0 && badNames.Count < 4)
+                badNames.Add(d.Name);
             singles += SnapBuild.SinglePurpose(d) ? 1 : 0;
         }
-        Want(bad == 0 && singles > 0, $"every part with sockets should report its points, a single-purpose one only functional ({bad} bad)");
+        Want(bad == 0 && singles > 0, $"every part with sockets should report its points, a single-purpose one only functional ({bad} bad, first {string.Join(", ", badNames)})");
         Want(SnapBuild.SinglePurpose(ConstructParts.Need("Wheel")) && SnapBuild.OwnType(ConstructParts.Need("Wheel"), 0) == ConnType.Hub, "a wheel is single-purpose by its hub");
 
         // 4. The switch key: another own point mates.
