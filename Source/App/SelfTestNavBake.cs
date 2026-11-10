@@ -15,6 +15,7 @@ public static partial class SelfTest
         var root = Path.Combine(Path.GetTempPath(), $"callofslop-navbake-{Guid.NewGuid():N}");
         var baked = Path.Combine(root, "Baked");
         var cache = Path.Combine(root, "Cache");
+        var mapBefore = World.Map; // put back at the end: this section ends on Pocket Planet, whose gravity sent the next section's ragdolls over a wall
         try
         {
             NavBakeRoundTrips();
@@ -32,6 +33,7 @@ public static partial class SelfTest
             NavBake.CacheFolderOverride = null;
             foreach (var m in Maps.All)
                 NavGraph.Forget(m); // the next section builds its graphs live again
+            World.SetMap(mapBefore);
             try
             {
                 Directory.Delete(root, true);
