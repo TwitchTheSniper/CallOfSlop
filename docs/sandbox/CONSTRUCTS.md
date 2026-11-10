@@ -788,6 +788,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `setting` | Input Reader, gearboxes, selectors, differentials, transfer cases, adjustable suspensions | Their own choice, above |
 | `rackLayout`, `rackRows`, `rackColumns`, `rackLength`, `rackDiameter` | Ordnance Rack | Its shape: grid or drum, rows (layers) by columns (segments), the longest and widest ordnance a station takes; setting one swaps the part for that shape ([Ordnance racks](#ordnance-racks)). The old Modular Bomb Rack's `stations` and `rackSize` are retired |
 | `fireOrder`, `rackInterval` | Ordnance Rack | One at a time or a salvo; seconds between releases |
+| `walkProfile`, `stride`, `stepLift`, `bodyHeight`, `gait`; `legPace`, `legLift`, `legSpread`, `legGroup` | Walker legs | The gait profile (Simple, Basic, Advanced) and its settings: the walker reads its lead leg's (the highest profile), each leg's own under Advanced (docs/sandbox/GIANTS.md, phase 3) |
 
 Values live on the part (`CPart.Cfg`, eight floats inline, so they move with the part when parts are renumbered or a
 construct splits; a colour is 0xRRGGBB, exact in a float), are read through `ConstructConfig.Get` (a table lookup, no

@@ -146,21 +146,55 @@ legs") and the body sits down on its hips; the part check's walker line; worst t
 Not tried: a hydraulic or shaft-fed leg (only the electric feed was probed); drawing (no window run); a client over the
 network (its feet and feed are its own); a player riding while shot at; the welder fitting a leg by hand.
 
+## Phase 3 (branch `feat/giant-walker-3`)
+
+- **Weld sockets on segments** (`Source/Constructs/ConstructWalkRiders.cs`): every leg part gets a socket a segment, `seg0`
+  hip first, appended at load after the file's own (`ConstructParts.WithLegSockets`: socket indices never shift; the leg's own
+  size class). They sit on a canonical rest pose: the leg hanging straight down from under its hip housing, outer face +x,
+  so each segment's rest frame is square to the part (`LegDef.RestCentre`, `LegDef.RestFrame`). A plain part welded there,
+  and plain parts welded only to such parts, is a **rider** (`Construct.RideOf`, `RideSeg`, found by `BuildRiders` at a full
+  rebuild, before the collider; a walker never rebuilds by the journal). A rider keeps its place in the rest frame on the
+  canonical segment; `ConstructPhysics.RideFrame` carries it to the segment as posed (`t + q x`). It is left out of
+  `SolidCount` (so the collider, decks, fused units and the rays' part loop), the merged mesh and the part-by-part draw;
+  `DrawLegs` draws it on its segment and `LegRay` hits it (the rider takes the damage). Its mass is in the body's (at its
+  canonical place: the centre of mass is a little off) and in its leg's `Carry`: a leg swinging a tenth of its load steps
+  half as slow again, at most twice (`CarrySlows`). A part that isn't plain (a gun, a seat, a light) on a segment socket
+  stays a body part at the canonical place.
+- **The welder on a leg**: an aim at a drawn segment (or a rider) is taken to the rest frame of the nearest segment
+  (`RestOfDrawn`), so the ghosts are the segment sockets there; the crosshair pick, the ghost drawing and the server's
+  reach (`ConstructEdits.AttachReach`) put a segment socket where the leg is drawn (`RideFrameOf`).
+- **Gait profiles** (`Source/Constructs/ConstructWalkProfile.cs`): part settings on every leg (configure tool, from
+  `leg_parts.py`; so blueprints, saves and the wire carry them as any setting). `walkProfile`: Simple (default, nothing
+  read), Basic, Advanced. The walker follows its lead leg (the highest profile, the first). Basic: `stride` (50-150%: the
+  foothold lead, the step trigger and the top speed), `stepLift` (50-250%), `bodyHeight` (60-130% of the standing height,
+  still capped by the stretch), `gait` (Auto, Tripod: half the legs from four up, Wave). Advanced, each leg's own:
+  `legPace` (its step time), `legLift`, `legSpread` (its rest foot out from the hip, 70-130%), `legGroup` (its tripod half).
+  `WalkTune` reads them each tick on the server and in a client's `PoseFeet`; a change re-plans the gait (`WalkGaitKey`).
+  No wire change (protocol stays 225).
+
+What was tried by hand (a throwaway probe, removed: an offline Sandbox game on the Construct Yard with the Titan Walker):
+a Capital Strut welded through the real Attach request onto the last segment of a leg, aimed from beside the drawn
+segment (the ghost found from the drawn point, reach good; from the canonical place it is "too far away"); it became a
+rider (`SolidCount` 0, the leg's carry 76.8 t); a ray at the drawn strut hits it, a ray at its canonical place misses,
+standing and after the legs moved. Through the real Configure request: a stride of 150% does nothing under Simple, and
+under Basic gives 1.5 times the top speed; Wave makes six groups (a third of the speed); Advanced with a leg's group set to
+Second moves that leg to the other half. Worst game tick about 10 ms once on the busy 2-core box (5 ms before).
+
+Not tried: the body height setting in a clean scene (the yard spot was uneven: the planted legs read 41 to 54 m hip over
+foot for a 48 m reach, worth a look on flat ground); walking with a rider while driven (the probe's throttle didn't take
+without a seated driver); a client over the network (its riders come from the links and its gait from the settings, as on
+the host); drawing (no window run); a blueprint round trip with a rider; a hydraulic or shaft-fed walker.
+
 ### Next phases
 
-1. Weld sockets on each segment: a part welded to a segment rides that segment's pose (drawn, hit and carried with it,
-   out of the body's collider) and adds its mass to the leg. The plan: generator sockets `seg0`.. at each segment's middle
-   on its outer face in a canonical rest pose (part frame: out along +x, knee towards -z), the rest pose taken from the
-   part's own +x; riders found from the links at the rebuild, kept as a transform in their segment's rest frame; their
-   boxes left out of `SolidCount`, the collider and the merged mesh, and drawn and ray-tested by the leg code.
-2. Legs use what feeds them: draw on the battery, take load off the engine's shaft, flow from the pump; a valve's signal
-   as a throttle.
-3. The Basic profile (stride, step height, body height, gait override) and the Advanced profile (per-leg tuning), on the
-   configure tool; tunable segment lengths and joint count as part settings.
-4. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
+1. Legs use what feeds them: draw on the battery, take load off the engine's shaft, flow from the pump; a valve's signal
+   as a throttle. Probe a hydraulic-fed and a shaft-fed walker (only electric has been tried).
+2. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding
+   (lights, guns: their systems would need the posed frame); tunable segment lengths and joint count as part settings.
+3. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
    step-over measured on real maps.
-5. Ride feel: thumps, shake and tilt for riders and loose parts; stabiliser parts that reduce it.
-6. Autopilot to a destination.
-7. Crew stations, the hangar and production line on a walker.
-8. 500 m and more: the part reach cap (200 m), the broadphase sphere (a leg's reach now widens it), instanced leg drawing,
+4. Ride feel: thumps, shake and tilt for riders and loose parts; stabiliser parts that reduce it.
+5. Autopilot to a destination.
+6. Crew stations, the hangar and production line on a walker.
+7. 500 m and more: the part reach cap (200 m), the broadphase sphere (a leg's reach now widens it), instanced leg drawing,
    legs of several parts.

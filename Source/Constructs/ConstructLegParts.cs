@@ -33,6 +33,11 @@ public sealed class LegDef
     public float Hydraulic, Electric, Shaft; // strength on each power source, a share of the leg's own (0: it doesn't take it)
     public Vector3 JointColour = new(0.18f, 0.18f, 0.19f);
     public Vector3 Colour = new(0.45f, 0.45f, 0.47f); // the segments' (the hip housing's first box)
+    public int SegSocket = -1; // the first segment weld socket ("seg0"; one a segment, added at load: ConstructParts.WithLegSockets)
+    public Vector3[] RestCentre = []; // each segment's middle on the canonical rest pose (straight down from the hip housing), the part's frame
+
+    /// <summary>Every segment's frame on the canonical rest pose (ConstructPhysics.BoneFrame of a bone straight down, outer face +x).</summary>
+    public static readonly Quaternion RestFrame = ConstructPhysics.BoneFrame(Vector3.Zero, -Vector3.UnitY, Vector3.UnitX);
 
     /// <summary>Hip to foot, every segment straight.</summary>
     public float Reach
@@ -49,6 +54,32 @@ public sealed class LegDef
 
 public static partial class ConstructParts
 {
+    /// <summary>
+    /// A weld socket on each segment of a leg (docs/sandbox/GIANTS.md, phase 3), "seg0" hip first, appended after the file's
+    /// own sockets (their indices never shift). They sit on a canonical rest pose, the leg hanging straight down from under
+    /// its hip housing with its outer face +x, at each segment's middle on that face; a plain part welded there rides the
+    /// segment as it is posed (ConstructWalkRiders.cs). The leg's own size class.
+    /// </summary>
+    public static CSocket[] WithLegSockets(ConstructPartDef d)
+    {
+        if (d.Leg is not { } leg || leg.SegSocket >= 0)
+            return d.Sockets;
+        var n = leg.Segments.Length;
+        var add = new CSocket[n];
+        leg.RestCentre = new Vector3[n];
+        var top = MathF.Min(leg.Hip.Y, d.BoundsMin.Y) - 0.01f;
+        for (var s = 0; s < n; s++)
+        {
+            var mid = MathF.Round((top - leg.Segments[s] * 0.5f) * 100) / 100;
+            leg.RestCentre[s] = new Vector3(leg.Hip.X, mid, leg.Hip.Z);
+            var face = MathF.Ceiling(ConstructPhysics.LegWidth(leg, s) * 50) / 100; // (half its side, up to the centimetre)
+            add[s] = new CSocket("seg" + s, new Vector3(MathF.Round((leg.Hip.X + face) * 100) / 100, mid, MathF.Round(leg.Hip.Z * 100) / 100), 0, SocketKind.Struct, d.Class);
+            top -= leg.Segments[s];
+        }
+        leg.SegSocket = d.Sockets.Length;
+        return [.. d.Sockets, .. add];
+    }
+
     private static void ParseLeg(ConstructPartDef d, JsonElement b, string file, string bw)
     {
         Known(b, ["type", "tier", "segments", "width", "foot", "hip", "load", "stepTime", "stepHeight", "stand", "spread", "power", "jointColor"], bw);

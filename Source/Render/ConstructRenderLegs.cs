@@ -53,10 +53,47 @@ public static partial class ConstructRender
                 var foot = LegPts[count];
                 gfx.Draw(Matrix4x4.CreateScale(d.Foot * 2, d.Foot * 0.35f, d.Foot * 2) * Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(foot + up * (d.Foot * 0.175f) - origin), d.JointColour);
                 n++;
+                if (c.RiderCount > 0)
+                    n += DrawRiders(gfx, world, c, k, count, pos, rot, origin, alpha);
             }
         }
         gfx.Relative = false;
         gfx.EndBatch();
+        return n;
+    }
+
+    private static bool _drawingRiders;
+
+    /// <summary>The parts riding leg <paramref name="k"/>'s segments (ConstructWalkRiders.cs), each segment's in its frame as drawn.</summary>
+    private static int DrawRiders(Renderer gfx, ConstructWorld world, Construct c, int k, int segs, Vector3 pos, Quaternion rot, Vector3 origin, float alpha)
+    {
+        var n = 0;
+        var leg = c.Legs[k].Part + 1;
+        _drawingRiders = true;
+        try
+        {
+            for (var s = 0; s < segs; s++)
+            {
+                var framed = false;
+                var frame = Matrix4x4.Identity;
+                for (var i = 0; i < c.PartCount; i++)
+                {
+                    if (c.RideOf[i] != leg || c.RideSeg[i] != s)
+                        continue;
+                    if (!framed)
+                    {
+                        ConstructPhysics.RideFrame(c, k, s, pos, rot, out var q, out var t);
+                        frame = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t - origin);
+                        framed = true;
+                    }
+                    n += DrawPart(gfx, world, c, i, frame, alpha, 1f);
+                }
+            }
+        }
+        finally
+        {
+            _drawingRiders = false;
+        }
         return n;
     }
 
@@ -70,18 +107,19 @@ public static partial class ConstructRender
             turn = Quaternion.Negate(turn);
         var axis = new Vector3(turn.X, turn.Y, turn.Z);
         var angVel = axis.LengthSquared() > 1e-12f ? Vector3.Normalize(axis) * (2 * MathF.Acos(Math.Min(1, turn.W)) * World.TickRate) : Vector3.Zero;
-        if (c.LegGroups == 0)
-        {
-            var tripod = c.LegCount >= 6 && c.LegCount % 2 == 0;
-            for (var k = 0; k < c.LegCount; k++)
-                c.Legs[k].Group = (byte)(tripod ? k % 2 : k); // (unfed legs aren't left out here: the server's plan isn't known)
-            c.LegGroups = (byte)(tripod ? 2 : Math.Max(1, c.LegCount));
-        }
+        ConstructPhysics.PowerLegs(null, c, false); // (what feeds each leg, from its links: a client has no pump flow or shaft rpm of its own)
+        ConstructPhysics.WalkTune(c); // (the gait profile, from the legs' settings as the server reads them)
+        var live = 0;
         var swing = 0f;
         for (var k = 0; k < c.LegCount; k++)
-            swing += c.Parts[c.Legs[k].Part].D.Leg!.StepTime;
+        {
+            swing += c.Parts[c.Legs[k].Part].D.Leg!.StepTime / ConstructPhysics.LegPace(c, k);
+            if (ConstructPhysics.LegLive(c, k))
+                live++;
+        }
         swing /= Math.Max(1, c.LegCount);
-        ConstructPhysics.PowerLegs(null, c, false); // (what feeds each leg, from its links: a client has no pump flow or shaft rpm of its own)
+        if (live != c.WalkLive)
+            ConstructPhysics.PlanGait(c, live);
         if (dt > 0 || !c.FeetSet)
             ConstructPhysics.WalkFeet(c, World.Query, pos, rot, vel, angVel, swing, dt, false);
     }

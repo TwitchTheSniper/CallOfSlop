@@ -163,7 +163,7 @@ public sealed partial class Construct
     }
 
     /// <summary>Does this body keep the journal (and is the journal still good)?</summary>
-    private bool Journalling => !_needFull && PartCount >= IncrementalMin && _jBase >= IncrementalMin && FreeformCount == 0 && MergeCount == 0;
+    private bool Journalling => !_needFull && PartCount >= IncrementalMin && _jBase >= IncrementalMin && FreeformCount == 0 && MergeCount == 0 && LegCount == 0; // (a walker rebuilds whole: what rides its legs is found before the collider, ConstructWalkRiders.cs)
 
     /// <summary>
     /// Is part <paramref name="i"/> plain structure: a plain type (<see cref="PlainParts"/>) on the body's own segment,

@@ -200,6 +200,11 @@ public sealed partial class ConstructEdits
         c.SocketAt(part, socket, out var at, out _);
         var seg = c.Parts[part].Seg;
         Vector3 a = c.SegToWorld(seg, at), b = c.SegToWorld(seg, g.Pos);
+        if (ConstructPhysics.RideFrameOf(c, part, socket, c.Pos, c.Rot, out var lq, out var lt))
+        {
+            a = lt + Vector3.Transform(at, lq); // (a weld socket on a walker leg's segment: as the leg is posed, ConstructWalkRiders.cs)
+            b = lt + Vector3.Transform(g.Pos, lq);
+        }
         var limit = ConstructBuild.Reach + 0.75f;
         if (Vector3.Distance(eye, a) <= limit || Vector3.Distance(eye, b) <= limit)
             return null;

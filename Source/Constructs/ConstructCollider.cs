@@ -99,8 +99,8 @@ internal sealed partial class ConstructCollider
             _wheelOf[c.Wheels[k].Part] = k;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (c.FuseRough(i))
-                continue; // (inside its unit's rough shape)
+            if (c.FuseRough(i) || c.Rides(i))
+                continue; // (inside its unit's rough shape; a rider is on a leg segment, not the body: ConstructWalkRiders.cs)
             total += Math.Max(1, c.SolidCount(i));
             if (c.MergeOf[i] == 0)
             {
@@ -120,7 +120,7 @@ internal sealed partial class ConstructCollider
         GroupCount = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (c.FuseRough(i))
+            if (c.FuseRough(i) || c.Rides(i))
                 continue; // (its unit's rough boxes stand for it: below)
             ref var p = ref c.Parts[i];
             int seg = p.Seg;
