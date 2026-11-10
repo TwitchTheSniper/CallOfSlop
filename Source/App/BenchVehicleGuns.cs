@@ -18,6 +18,7 @@ public static partial class SelfTest
         if (names.Count == 0)
             names = ["HighlandFlatbedFort8", "ITBoxTruck3", "HighlandBoxTruck7", "ITWarBus10", "ScamFlatbedFort6", "BanditTankerRig10", "ITTankerRig20", "BritishDoubleDecker9"];
         var salvo = int.TryParse(Arg("--shells"), out var ns) ? Math.Clamp(ns, 1, 64) : 4;
+        var merge = int.TryParse(Arg("--merge"), out var nm) ? Math.Clamp(nm, 1, 6) : 0; // (shells as an N x N Howitzer's, whatever the guns are)
         var map = Maps.Find(Arg("--map") ?? "Proving Ground") ?? Maps.All.First(m => m.Terrain != null);
         var clock = Stopwatch.StartNew();
         var now = 0.0;
@@ -92,6 +93,13 @@ public static partial class SelfTest
         for (var s = 0; s < shells.Count && row.Count > 1; s++)
         {
             var (from, g) = shells[s];
+            if (merge > 0)
+            {
+                g.BlastDamage = 512 * merge * merge;
+                g.Shell = s % 2 == 1 ? ShellKind.Siege : ShellKind.Explosive;
+                (g.Blast, g.Crater) = ConstructShells.ShellSize(g.BlastDamage, g.Shell, merge);
+                from = $"{merge}x{merge} Howitzer ({g.Shell})";
+            }
             var target = row[(s + 1) % row.Count];
             if (!w.IsLive(target.C))
             {
@@ -132,7 +140,7 @@ public static partial class SelfTest
             var hp1 = 0f;
             for (var i = 0; live && i < target.C.PartCount; i++)
                 hp1 += target.C.Parts[i].Health;
-            Console.WriteLine($"[guns bench] {salvo} x {from}'s {g.Def!.Name} shells ({g.BlastDamage:0} dmg, {g.Blast:0.0} m) on {target.Name}: parts {parts0} -> {(live ? target.C.PartCount : 0)}, hp {hp0:0} -> {hp1:0}, "
+            Console.WriteLine($"[guns bench] {salvo} x {from}'s {g.Def!.Name} shells ({g.BlastDamage:0} dmg, {g.Blast:0.0} m, crater {g.Crater:0.0} m) on {target.Name}: parts {parts0} -> {(live ? target.C.PartCount : 0)}, hp {hp0:0} -> {hp1:0}, "
                 + $"bodies {bodies0} -> {w.Bodies.Count}, moved {(live ? Vector3.Distance(target.C.WorldCom, com0) : -1):0.0} m; ticks {cpu.Count}, CPU median {cs[cs.Count / 2]:0.00} ms, worst {cs[^1]:0.00} ms, {cpu.Count(v => v > 8)} over 8 ms, {alloc / 1024} KB allocated");
         }
         Console.WriteLine($"[guns bench] craters dug {(t?.Edits?.TouchedCells ?? 0) - dug0}; shells landed {w.ShellsLanded}, parts walked {w.ShellPartsWalked}");
