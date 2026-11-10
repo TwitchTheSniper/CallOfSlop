@@ -154,6 +154,8 @@ public sealed unsafe partial class TerrainRenderer
     {
         if (_dug.Count == 0)
             return;
+        // Dug ground is loose: the rock layer's slab lines ran across every crater.
+        Native.glUniform1f(_locRock, (float)Material.Dirt);
         foreach (var m in _dug.Values)
         {
             if (!Visible(planes, m.Min, m.Max))
@@ -164,6 +166,7 @@ public sealed unsafe partial class TerrainRenderer
             _drawCalls++;
             _visibleTris += m.IndexCount / 3;
         }
+        Native.glUniform1f(_locRock, (float)Material.Concrete);
         _vao.Bind();
     }
 

@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Scam Drone 4",
+  "group": "The Call Centre",
+  "description": "A small scout drone on a Drone Frame. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
+  "steps": [
+    {"part": "Drone Frame", "paint": "#2a2c30"},
+    {"part": "Drone Rotor", "on": 0, "socket": "r0", "by": "front"},
+    {"part": "Drone Rotor", "on": 0, "socket": "r1", "by": "front"},
+    {"part": "Drone Rotor", "on": 0, "socket": "r2", "by": "front"},
+    {"part": "Drone Rotor", "on": 0, "socket": "r3", "by": "front"},
+    {"part": "Flight Stabilizer", "on": 0, "socket": "top", "by": "-y", "config": {"keys": "Rotorcraft", "maxTilt": 30}},
+    {"part": "Drone Battery", "on": 0, "socket": "topB", "by": "-y", "paint": "#1a8c8c"},
+    {"part": "Drone Receiver", "on": 0, "socket": "topF", "by": "bottom"},
+    {"part": "Camera", "on": 0, "socket": "nose", "by": "back"}
+  ]
+}

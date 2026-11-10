@@ -13,7 +13,7 @@ public static class Styles
     public static readonly FactionStyle Bandit = new()
     {
         Name = "Bandit",
-        Extra = ["Car", "Buggy", "Monster Truck", "Wagon", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
+        Extra = ["Car", "Buggy", "Monster Truck", "Wagon", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "Bandit",
         Palette = new()
         {
@@ -97,6 +97,7 @@ public static class Styles
         Seeds = new() // (kit 5's, 2026-11-07, again after body styles phases 2 and 3: the most different passing seeds of a 10-seed sweep; the Technical and Tanker Rig keep their seed numbers, made by the grammar since phase 9b; the Fuel Trailer keeps its generator's)
         {
             ["Buggy"] = [1, 3, 4], ["Monster Truck"] = [1, 2, 8], ["Wagon"] = [1, 5, 6], ["Giant Truck"] = [1, 6, 2], ["Car"] = [1, 7, 5], ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 8, 2], ["Scrap Tanker"] = [1, 10, 5],
+            ["Drone"] = [1, 12, 5], ["Plane"] = [1, 2, 7], ["Helicopter"] = [1, 2, 10], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
         LootTable = "bandit",
         Limits = new() { ["crookedPlates"] = 4, ["tiltDegrees"] = 5, ["thirdSeat"] = 0.5, ["slits"] = 0.25 },
@@ -112,7 +113,7 @@ public static class Styles
     public static readonly FactionStyle It = new()
     {
         Name = "IT",
-        Extra = ["Car", "Buggy", "Concept", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
+        Extra = ["Car", "Buggy", "Concept", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "IT Department",
         Palette = new()
         {
@@ -164,6 +165,7 @@ public static class Styles
         {
             ["Technical"] = [2, 5, 6, 8, 11], ["Buggy"] = [1, 3, 6], ["Concept"] = [1, 8, 3], ["Giant Truck"] = [3, 6, 7], ["Car"] = [1, 2, 8], ["Box Truck"] = [1, 5, 3], ["War Bus"] = [1, 5, 10], ["Flatbed Fort"] = [1, 2, 7],
             ["Gun Wagon"] = [1, 9, 7], ["Scrap Tanker"] = [1, 2, 5], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
+            ["Drone"] = [3, 8, 11], ["Plane"] = [3, 6, 9], ["Helicopter"] = [3, 5, 8], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
         LootTable = "it",
         Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
@@ -179,7 +181,7 @@ public static class Styles
     public static readonly FactionStyle Scam = new()
     {
         Name = "Scam",
-        Extra = ["Car", "Buggy", "Concept"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
+        Extra = ["Car", "Buggy", "Concept", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "The Call Centre",
         Palette = new()
         {
@@ -218,6 +220,7 @@ public static class Styles
         {
             ["Technical"] = [1, 13, 16, 17, 21], ["Buggy"] = [1, 5, 6], ["Concept"] = [1, 8, 6], ["Car"] = [1, 4, 3], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 6], ["Flatbed Fort"] = [1, 9, 6],
             ["Gun Wagon"] = [1, 6, 5], ["Scrap Tanker"] = [1, 6, 2], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
+            ["Drone"] = [4, 7, 10], ["Plane"] = [5, 10, 12], ["Helicopter"] = [6, 9, 12], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
         LootTable = "scam",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 1, ["slits"] = 0 },
@@ -234,7 +237,7 @@ public static class Styles
     public static readonly FactionStyle Highland = new()
     {
         Name = "Highland",
-        Extra = ["Car", "Monster Truck", "Wagon", "Concept", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
+        Extra = ["Car", "Monster Truck", "Wagon", "Concept", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "Clan MacSlop",
         Palette = new()
         {
@@ -281,6 +284,7 @@ public static class Styles
         {
             ["Technical"] = [1, 14, 10, 11, 5], ["Monster Truck"] = [1, 3, 2], ["Wagon"] = [2, 3, 7], ["Concept"] = [1, 2, 4], ["Giant Truck"] = [1, 8, 5], ["Car"] = [1, 2, 5], ["Box Truck"] = [1, 3, 7], ["War Bus"] = [1, 7, 6], ["Flatbed Fort"] = [1, 8, 9],
             ["Gun Wagon"] = [1, 6, 2], ["Scrap Tanker"] = [1, 2, 7], ["Tanker Rig"] = [1, 13], ["Fuel Trailer"] = [1, 2],
+            ["Drone"] = [2, 6, 9], ["Plane"] = [4, 8, 11], ["Helicopter"] = [4, 7, 11], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
         LootTable = "highland",
         Limits = new() { ["crookedPlates"] = 3, ["tiltDegrees"] = 3, ["thirdSeat"] = 0.7, ["slits"] = 0.2 },
@@ -343,12 +347,13 @@ public static class Styles
             new("Strongly Worded Letter", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
             new("Builder's Tea", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
         ],
-        Extra = ["Double Decker", "Car", "Wagon", "Concept"],
+        Extra = ["Double Decker", "Car", "Wagon", "Concept", "Drone", "Plane", "Helicopter"],
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
         {
             ["Technical"] = [2, 14, 4, 5, 18], ["Wagon"] = [1, 2, 7], ["Concept"] = [1, 7, 8], ["Car"] = [2, 4, 3], ["Box Truck"] = [1, 9, 8], ["War Bus"] = [1, 3, 5], ["Flatbed Fort"] = [1, 5, 7],
             ["Gun Wagon"] = [1, 4, 5], ["Scrap Tanker"] = [1, 8, 2], ["Tanker Rig"] = [1, 19], ["Fuel Trailer"] = [1, 3], ["Double Decker"] = [1, 4, 9],
+            ["Drone"] = [2, 4, 11], ["Plane"] = [1, 3, 8], ["Helicopter"] = [2, 5, 9], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
         LootTable = "british",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 0.8, ["slits"] = 0.1 },

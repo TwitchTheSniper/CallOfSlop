@@ -133,6 +133,14 @@ public sealed partial class TerrainEdits
                 _tops[c * GroundTops.Stride + 4] = _spans[c][_count[c] * 2 - 1];
             }
         }
+        for (var c = first; c < first + Sub * Sub; c++)
+        {
+            var t = new Span<float>(_tops, c * GroundTops.Stride, GroundTops.Stride);
+            var own = _spans[c][_count[c] * 2 - 1];
+            var floor = _spans[c][_count[c] * 2 - 2];
+            if (own > floor)
+                t[4] = GroundTops.Middle(t, own, MathF.Min(floor + TerrainEdits.MinSpan, own));
+        }
         _topsMade[ord] = true;
     }
 

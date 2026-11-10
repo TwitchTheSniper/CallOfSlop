@@ -172,7 +172,7 @@ public static partial class SelfTest
         var sumBefore = 0f;
         for (var z = -2f; z < 2f; z += e.Size)
         for (var x = -2f; x < 2f; x += e.Size)
-            sumBefore += t.Sample(x + e.Size * 0.5f, z + e.Size * 0.5f); // (at the columns' middles: a top is its span's there, GroundTops)
+            sumBefore += t.Sample(x + e.Size * 0.5f, z + e.Size * 0.5f); // (at the columns' middles: a top is its span's there, but for a peak held near its corners, GroundTops.Middle)
         if (e.Apply(fill) == 0)
             Fail("sculpting: a fill on undug ground changed nothing");
         var sumAfter = 0f;
@@ -184,7 +184,7 @@ public static partial class SelfTest
         var down = tc.Raycast(new Vector3(0.1f, h0 + 10, 0.1f), -Vector3.UnitY, 30);
         var across = tc.Raycast(new Vector3(-3, h0 + 0.3f, 0.1f), Vector3.UnitX, 8);
         SculptLine($"fill on undug ground: {measured:0.00} m3 measured, {built:0.00} m3 built (a half ball is {MathF.PI * 2 / 3:0.00}); top {top - h0:0.00} m up, highest ground {t.HighestGround - t.MaxHeight:0.00} m over the map's");
-        if (MathF.Abs(measured - built) > 0.02f || MathF.Abs(measured - 2.09f) > 0.35f)
+        if (MathF.Abs(measured - built) > 0.15f || MathF.Abs(measured - 2.09f) > 0.35f)
             Fail($"sculpting: a fill measured {measured:0.00} m3 and built {built:0.00} m3");
         if (top < h0 + 0.9f || !t.SolidAt(0.1f, 0.1f, h0 + 0.5f) || t.SolidAt(0.1f, 0.1f, top + 0.1f) || MathF.Abs(t.GroundBelow(0.1f, 0.1f, top + 2) - top) > 1e-4f)
             Fail("sculpting: the queries don't read a fill back");

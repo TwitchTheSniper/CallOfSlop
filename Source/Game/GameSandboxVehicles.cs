@@ -673,6 +673,7 @@ public sealed partial class Game
         if (VehicleSpawn.RequestConvoy(style, n, tier, seed > 0 ? seed : null, anchor, heading, id, _vehicleSpawned ??= VehicleSpawned, context: SpawnContexts.At(anchor)) is { } busy)
             return busy;
         SandboxHands.Notices.Add((id, $"making a {style} convoy of {n}, tier {tier}"));
+        SandboxConvoyAir(style, anchor, heading, seed); // (now and then an air escort over it: GameSandboxAircraft.cs)
         return null;
     }
 

@@ -410,14 +410,65 @@ every foot within 8 mm (the centimetre grid); turning in place, the worst foot o
 worst 37 cm (late or lost poses while a foot swings at up to 9 m/s); one tick of offset either way doubles the error, so
 the ticks line up. The old client feet in the same run: about 1 m off standing, 4 m (median) to 36 m turning. A client
 teleported onto a planted pad was never corrected by more than 3 mm. Not tried: walking straight (in the probe the
-walker turned on A/D but didn't walk on W, with the throttle set straight on the body: to look at on a seated driver), a
+walker turned on A/D but didn't walk on W, with the throttle set straight on the body: see "Walking on real maps"), a
 ramp, shooting a leg as a client, a big world's interest-banded poses (a far walker is sent every 8th pose tick, longer
 than `HotWalkTicks`: its feet arrive in turn), a walker with more than 24 legs, a window.
 
+## Walking on real maps (branch `feat/walker-drive`)
+
+The walker-net probe saw the bare Titan Walker turn but not walk on the Proving Ground. A probe through the real chain (the host's
+player respawned, seated in the Bridge Helm by `ConstructEdits.Use`, W/S/A/D in `HeldButtons`, the roll keys through
+`CActKind.SeatKeys`, so `GameSandbox`'s seat loop, `DriveInput` and the Driving Module wire to the leg) found three things:
+
+- **The probe's driver was gone.** A player who never spawned isn't alive, so the seat loop stood them up on the first tick
+  (`SandboxStand`) and the walker had no driver (`Driver` 255): the gait ignores the keys then. Not a game bug; a probe must
+  respawn its player before seating them.
+- **A fresh walker spent its first 25 s standing up**, from its hull on the ground (the spawn set its lowest point, the hull,
+  on the ground), and the rise took all the power the circuit feeds (`PowerLift`), so the walk's share was 0: W did nothing,
+  with no HUD reason. Now **a walker is set down standing** (`ConstructBuild.SetDown`): when at least `MinWalkLegs` of its legs
+  are fed (from their links, `PowerLegs(.., live: false)`), the legs' resting feet are its lowest point, as a vehicle's wheels'
+  bottoms are, so its hull is about 22 m up, it costs no stand-up energy and it walks on its first tick. An unfed walker is set
+  down on its hull as before.
+- **The hull pinned by what it was set down over.** On the Proving Ground's flattest spot the hull's stern came down over a
+  0.6 x 4 m post: the hollow chassis' floor slab is thinner than the post's overlap, so the contact pushed the hull down (normal
+  -Y, 1.1 m deep) and the legs could neither lift nor move it. Set down standing, the hull clears anything under 22 m. A walker
+  that sits down (no power) on a post is still pinned when it stands again: crushing what is underfoot (next phases) is the answer.
+- **The walk's power before the rise** (`WalkBody`): a rise no longer starves the walk. Walking costs `LegCarryCost` of the
+  weight a metre a second (0.1 m/s of lift at 3.5 m/s, against 1.6 m/s the bank feeds), so the walk the driver asks for takes
+  its share first (at most half the power) and the rise the rest. A walker standing up from its hips with W held drags its hull
+  0.1 to 0.4 m/s for about 10 s and walks at full speed once clear, instead of standing still for 25 s.
+
+Measured (a throwaway probe, removed; 6 s a key from a standing start, host alone unless said):
+
+| | W | S | D (turn) | Strafe (roll key) | Raise |
+| --- | --- | --- | --- | --- | --- |
+| Proving Ground, bare | 3.20 m/s | 2.37 m/s (brakes first) | 7.5 degrees | 2.0 m/s | +6.5 m |
+| Streamed Terrain, bare | 3.19 | 2.35 | 7.5 | 2.0 | +7.5 |
+| Proving Ground, one leg wrecked | 1.20 | 0.89 | 2.8 | 0.75 | |
+| Proving Ground, two legs wrecked | 1.39 | 1.02 | 3.2 | 0.85 | |
+| Proving Ground, `TitanWalkerFitted.json` (main's) | 3.03 | 2.24 | 7.3 | 1.9 | +5.2 |
+| Fitted, two legs wrecked | 1.25 | 0.92 | 3.0 | 0.75 | +6.2 |
+
+Top speed 3.5 m/s bare, 3.31 fitted (as before). With a client over RakNet (60 ms lag, 2% loss) the client's copy follows: 0.3
+to 1.1 m behind the host's pose while walking (its drawn delay), problem and top speed the same, feet set. The Construct Yard
+(64 m square) is too small for a 128 m walker: it falls off the edge, not tried further. Worst game ticks 5 to 9 ms bare on the
+loaded 2-core box (load 20 to 40 from other builds), 150 to 225 ms on the fitted walker's first ticks (its first rebuild and JIT).
+
+Found on the way, not fixed (other tracks' files):
+- `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1` on main now writes a fitted walker with **no drive seat**: its
+  Bridge Helm went to the deck's `t15_7` and its Driving Module has no wire to a leg (the committed file has `[4903, 1]`). The
+  interiors track's builder should keep the helm's wire to a leg (or give the bridge's module one within 8 m of a hip).
+- A standing walker falls asleep when nothing moves, and an asleep walker runs no gait, so emptying its bank and bunker while it
+  sleeps doesn't sit it down until something wakes it; awake with charge and fuel at 0 it still stood (power 0, `WalkProblem`
+  empty). Worth a look with the power phase.
+
+Not tried: a client driving (only the host drove; the client watched), strafing and raising as a client, other leg kinds,
+a walker that falls into a pit, drawing (no window run).
+
 ### Next phases
 
-1. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
-   step-over measured on real maps.
+1. Terrain: crushing trees, cars, posts and small structures underfoot and under a hull that sits down (the pads' push is the
+   start; `Map.BreakProp` through `Game.ServerBreakProp` exists); wading; the obstacle step-over measured on real maps.
 2. Autopilot to a destination.
 3. Crew stations, the hangar and production line on a walker: the fitted walker runs ("Fitted walker"); next, its stabilisers
    (a decision), the production room working on the move, and a client.
@@ -425,8 +476,8 @@ than `HotWalkTicks`: its feet arrive in turn), a walker with more than 24 legs, 
    legs of several parts.
 5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
    signal as a throttle; shaft splitters for six shaft-fed legs.
-8. Walker fixes, rest: biped gaits (two legs, a
-   dynamic balance the static support polygon can't give); crushing what is underfoot; the power cap for shaft-fed legs and pumps
+8. Walker fixes, rest: biped gaits and a trot for four legs (a dynamic balance the static support polygon can't give:
+   the capture point, wider feet and a lower stance at rest, a fall past recovery; for the mech suit); crushing what is underfoot; the power cap for shaft-fed legs and pumps
    on a shaft (the engine's torque); a walker that falls into a pit tried on a real map.
 6. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding
    (lights, guns: their systems would need the posed frame); tunable segment lengths and joint count as part settings.
