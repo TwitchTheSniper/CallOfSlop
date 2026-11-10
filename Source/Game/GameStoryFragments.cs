@@ -233,6 +233,7 @@ public sealed partial class Game
         {
             _fgHere = true;
             FragmentSitesHere(s); // (its own method: the search and the build are once a match)
+            SettlementsHere(s); // (the factions' homes on this world: GameStorySettlements.cs)
         }
         for (var k = 0; k < script.Sites.Length; k++)
             FragmentTerminalTick(s, k, script.Sites[k], now);

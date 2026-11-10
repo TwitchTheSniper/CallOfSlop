@@ -739,6 +739,8 @@ Department is the first (`Story/Factions/IT.json`); the Call Centre (`CallCentre
 Ministry of Slop (`Ministry.json`) are data in the same shape, and so is the Thousand Layers (`ThousandLayers.json`), the faith
 ("The Thousand Layers" below).
 
+- **Where they live**: a `"settlement"` stands the home on a planetoid as buildings the faction claims (docs/planets/WORLDS.md
+  "Settlements").
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
   `"staff"` names people of a cast who are its members too, whenever they are in the story (the penal colony's warden and

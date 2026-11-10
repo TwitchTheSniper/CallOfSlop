@@ -34,6 +34,27 @@ on the Planetoid; Redrock's site is spare): `Story/Fragments/Fragments.json` nam
 host builds the Sealed Data Centre there the first time a story game plays the world (docs/story/FRAGMENTS.md "On
 another world"). Mille's stands on the cavity's wall under the Proving Bowl.
 
+### Settlements
+
+A faction's file (`Story/Factions/*.json`) may hold a `"settlement"`: the planetoid's `map`, a `lat` and `lon` (its home
+site above) and up to 12 `buildings`, each a `blueprint` so many metres `east` and `north` of the place (60 m at most)
+turned by `yaw` degrees. The host builds them the first time a story game plays that world (`Game.SettlementsHere`,
+`Source/Game/GameStorySettlements.cs`), each upright on the ground under its spot, and the story's Thing for the
+settlement notes it, so a building pulled down since isn't built again. Each building is the faction's own (its Claims):
+wrecking or stripping one is a deed against the faction. On a later visit a building is found again by where it stands
+(an anchored construct within 6 m of its spot) and claimed again. Keep buildings 8 m or more from the place itself, where
+the survey post stands.
+
+| Faction | Home | World | Buildings |
+| --- | --- | --- | --- |
+| The Call Centre | The Call Floor | Cinder | two huts facing each other, the manager's house, a control post, a store, a mast |
+| The IT Department | The Server Farm | Glacier | the office, a smart depot and a beacon depot, a hut, a lookout |
+| Clan MacSlop | The Glen | Caledon | the chief's hall and two houses, the smithy (a foundry), a lookout, the gate |
+| The Thousand Layers | The Bakehouse | Mille | the house, the ovens (a smelter), the store, a lookout |
+
+The Ministry's home is the penal colony on the Planetoid (the opening builds it). Nobody lives in the settlements yet:
+the factions' people are still met by radio and in their vehicles.
+
 Cinder turns once an orbit, so its sun stays over latitude 0, longitude 220 (`--check-planetoid` prints it): the day
 side is centred there, the night side on longitude 40, and the twilight line runs through both poles and longitudes
 130 and 310. Change the body's rotation `"angle"` and those move.

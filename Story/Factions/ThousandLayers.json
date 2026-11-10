@@ -12,6 +12,18 @@
   "name": "The Thousand Layers",
   "about": "the faith of the Rolling: the Five Bakers rolled the world from the middle out, and the Hunger is folded under still",
   "home": "The Bakehouse",
+  // The Bakehouse on Mille's terrace: the house, the ovens, the store and a lookout (docs/planets/WORLDS.md "Settlements").
+  "settlement": {
+    "map": "Mille", "lat": 55, "lon": 300,
+    "buildings": [
+      { "blueprint": "Two-Storey House", "east": 0, "north": 22, "yaw": 180 },
+      { "blueprint": "Smelting Station", "east": -18, "north": 4, "yaw": 90 },
+      { "blueprint": "Storage Bay", "east": 18, "north": 4, "yaw": 270 },
+      { "blueprint": "Watchtower", "east": -20, "north": -20, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": -7, "north": 8, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": 7, "north": 8, "yaw": 0 }
+    ]
+  },
   "staff": [ "Baker Marlow", "Sister Wren" ],
   "members": [
     { "name": "Eldest Baker Agathe", "about": "head of the faith; has kneaded the same dough every morning for sixty years and calls it one loaf",

@@ -54,6 +54,19 @@ public readonly record struct FactionVerse(string Name, string Fragment, string 
 public readonly record struct FactionMember(string Name, string About, (ushort Quality, int Value)[] Qualities);
 
 /// <summary>A faction from Story/Factions/*.json: who they are, where they live, what is theirs, what they want and what they remember.</summary>
+/// <summary>
+/// A faction's home on a planetoid (<c>"settlement"</c>, docs/planets/WORLDS.md): buildings round a place given by latitude and
+/// longitude, each a blueprint so many metres east and north of it.
+/// </summary>
+public sealed class FactionSettlement
+{
+    public const int MaxBuildings = 12;
+    public const float Reach = 60f; // (m from the place a building may stand)
+    public string Map = "";
+    public float Lat, Lon;
+    public (string Blueprint, float East, float North, float Yaw)[] Buildings = [];
+}
+
 public sealed class FactionDef
 {
     public string Name = "", About = "", File = "", Home = "";
@@ -66,6 +79,7 @@ public sealed class FactionDef
     public FactionTech[] Teaches = [];
     public FactionJob[] Jobs = []; // what it offers work for (StoryFactionJobs.cs)
     public string Voice = ""; // the tag its lines go out under ("MINISTRY MEMO": "[MINISTRY MEMO] ...")
+    public FactionSettlement? Settlement; // where its home stands on a world (Game/GameStorySettlements.cs)
     public string Courier = ""; // its line when its courier collects a crate
     public string[] Staff = []; // people from a cast (by name) who are its members whenever they are in the story
     public FactionVerse[] Scripture = []; // what its believers say (a faith's verses), in order
@@ -102,7 +116,9 @@ public sealed partial class FactionRules
 
     public FactionDef? Find(string name) => Array.Find(Factions, f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals", "jobs", "voice", "courier", "scripture"];
+    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals", "jobs", "voice", "courier", "scripture", "settlement"];
+    private static readonly string[] SettlementKeys = ["map", "lat", "lon", "buildings"];
+    private static readonly string[] BuildingKeys = ["blueprint", "east", "north", "yaw"];
     private static readonly string[] TechKeys = ["name", "about", "tier", "parts"];
     private static readonly string[] MemberKeys = ["name", "about", "qualities"];
     private static readonly string[] WantKeys = ["name", "about", "start", "perHour"];
@@ -186,6 +202,8 @@ public sealed partial class FactionRules
         def.Home = StoryRules.Str(root, "home", where);
         if (def.Home.Length > 0)
             Plain(def.Home, $"{where}: home", 40);
+        if (root.TryGetProperty("settlement", out var se))
+            def.Settlement = ReadSettlement(se, $"{where}: settlement");
         def.Claims = StoryRules.List(root, "claims", where).Select(c => c.ValueKind == JsonValueKind.String && c.GetString() is { Length: >= 2 and <= 40 } s ? s
             : throw new StoryException($"{where}: each of \"claims\" is the start of a construct's name, 2 to 40 characters (\"IT \")")).ToArray();
 
@@ -376,6 +394,32 @@ public sealed partial class FactionRules
         if (verses.Count > MaxVerses)
             throw new StoryException($"{where}: {MaxVerses} verses at most");
         return verses.ToArray();
+    }
+
+    private static FactionSettlement ReadSettlement(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new StoryException($"{where}: an object (\"map\", \"lat\", \"lon\", \"buildings\")");
+        StoryRules.Keys(e, SettlementKeys, where);
+        var st = new FactionSettlement { Map = StoryRules.Str(e, "map", where, true), Lat = Real(e, "lat", where, -89, 89), Lon = Real(e, "lon", where, -360, 360) };
+        var list = new List<(string, float, float, float)>();
+        foreach (var b in StoryRules.List(e, "buildings", where, true))
+        {
+            StoryRules.Keys(b, BuildingKeys, where);
+            list.Add((StoryRules.Str(b, "blueprint", where, true), Real(b, "east", where, -FactionSettlement.Reach, FactionSettlement.Reach),
+                Real(b, "north", where, -FactionSettlement.Reach, FactionSettlement.Reach), Real(b, "yaw", where, -360, 360)));
+        }
+        if (list.Count is 0 or > FactionSettlement.MaxBuildings)
+            throw new StoryException($"{where}: 1 to {FactionSettlement.MaxBuildings} buildings");
+        st.Buildings = [.. list];
+        return st;
+    }
+
+    private static float Real(JsonElement e, string key, string where, float min, float max)
+    {
+        if (!e.TryGetProperty(key, out var v))
+            return 0;
+        return v.ValueKind == JsonValueKind.Number && v.TryGetSingle(out var n) && n >= min && n <= max ? n : throw new StoryException($"{where}: \"{key}\" is a number from {min} to {max}");
     }
 
     private static int Int(JsonElement e, string key, string where, int min, int max, int? fallback)
@@ -689,6 +733,13 @@ public sealed partial class StoryFactions
             W.Set(player, rel, group, 1);
         else
             W.Set(player, rel, now, 0);
+    }
+
+    /// <summary>A construct a faction built itself (a building of its settlement) is its own.</summary>
+    public void ClaimFor(int f, int construct)
+    {
+        if (EntityOf(f) is var id and >= 0 && W.Valid(construct) && R.Claims >= 0)
+            W.Set(id, R.Claims, construct, 1);
     }
 
     /// <summary>A construct the story has just met, by its name: a faction whose claim it starts with takes it as its own.</summary>
