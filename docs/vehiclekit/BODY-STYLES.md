@@ -1339,6 +1339,76 @@ key): protocol stays 223.
 - A roof-hatch turret (needs a hatch in the cab's key) and a bonnet mount; a Bandit car's fuel in the open (a drum on the boot, its signature).
 - The whole-body ratio: faction-specific car outlines (lengths, deck heights, a pickup or a coupe per faction) rather than one body plan.
 
+## 18. Phase 8b, as built (2026-11-10): the archetype library, part 2
+
+The brief: sci-fi open-top gun buggies, monster trucks, fantasy vehicles, one-off concept vehicles and a giant truck class, as archetypes and shapes, each assigned to
+the factions that suit it. Real vehicles and games are inspiration only: no maker's or game's design, name or badge. Code: five extra shapes, each made by a grammar
+recipe only (`Generators/Buggy.cs`, `MonsterTruck.cs`, `Wagon.cs`, `GiantTruck.cs`, `Concept.cs`; recipes in `VehicleGrammar.cs`), six languages and eight archetypes
+(`VehicleArchetypes.cs`), a `monster` gear (`Styles.cs`).
+
+### How it works
+
+Each new shape always takes one of its style's archetypes (`BodyArchetype.Share` 1), so a style that ships it builds it in its own archetype; the faction keeps its
+paint, trim (Bandit's plates and spikes on a war wagon), fittings, lining, props and guns. Gear recipes in `ShapeGrammar.SpecialGears` (the `monster` gear) are taken
+only by a recipe that names them, and a bed's sides are chosen only from those the recipe's gear can carry: no existing recipe's choices move (`--gen-vehicles`: every
+committed file identical).
+
+| Shape | Recipe | Archetype | Language | Factions (weight) |
+| --- | --- | --- | --- | --- |
+| Buggy | a caged cab, a gun bay behind it (the gun on a ring, its seat facing it), the drum on a porch; wishbone, swing or hydraulic gear | gun buggy (sci-fi, low wedge nose) | tub: wide flat sill, sides tucked hard in | IT 2, Scam 1 |
+| | | scrap buggy (faceted, flat nose, higher) | tub | Bandit 2 |
+| Monster Truck | a gun bay and a short bed (or the gun bay alone and a porch) on the `monster` gear: Heavy Pogo Struts and Monster Wheels (1.2 m) | monster truck | pickup: square shoulders, tall upright glasshouse | Bandit 2, Highland 1.5 |
+| Wagon | a room, a bed behind it now and then | war wagon (caged or slit cab) | hoop: low sides under a tall round arch | Bandit 2 |
+| | | carriage (a coachman's cab, a rear door likelier) | carriage: bowed out at the waist, crowned top | British 2, Highland 1 |
+| Concept | the car body with two seats only (cabin, hood, boot over the tank, gun on a pedestal) | bubble car (cab-forward capsule) | bubble: round from sill to dome | IT 2, Scam 1 |
+| | | streamliner (long bonnet, fastback 0.8-0.95) | streamliner: a low teardrop | Highland 1.5, British 1.5 |
+| Giant Truck | a long room (5.5 to 7.5 m), a gun bed behind it or a gap ahead; leaf, hydraulic, tandem, six or dually gear | giant hauler: the giant scale class (`BodyScale.Giant`) over the faction's own languages | the style's | Highland, IT, Bandit 1 |
+
+Who ships what (`Extra`): Bandit Buggy, Monster Truck, Wagon, Giant Truck; IT Buggy, Concept, Giant Truck; Scam Buggy, Concept; Highland Monster Truck, Wagon, Concept,
+Giant Truck; British Wagon, Concept. Militia builds none.
+
+### Measured
+
+Sweeps, `--sweep-vehicle "STYLE SHAPE" --seeds 8` (the full check): 105 of 120.
+
+| | Bandit | IT | Scam | Highland | British |
+| --- | --- | --- | --- | --- | --- |
+| Buggy (68-70 parts, 0.8 s a generation) | 8 | 6 | 8 | - | - |
+| Monster Truck (83-86 parts, 0.8-1 s) | 8 | - | - | 8 | - |
+| Wagon (154-266 parts, 1-1.3 s) | 6 | - | - | 5 | 4 |
+| Concept (62-66 parts, 0.7 s) | - | 8 | 8 | 7 | 8 |
+| Giant Truck (204-424 parts, 1.3 s) | 6 | 3 | - | 6 | - |
+
+The failures: 12 of 15 are the gunsmith's big guns (Field Gun, Howitzer, Hammerfall Autocannon, `VehicleGunsmith.cs`) 41 to 68 degrees off where their gunner looks,
+on the heavy bodies their mass earns them (also seen on `--scale giant` Box Trucks on main); one IT Buggy too short for its frame and one with no socket for a beam,
+one Highland Concept with no room for its Pipe Box, one IT Giant Truck that fills 63 % of its boxes. Monster trucks: the drive check refuses 15 to 21 % of plans
+(10 to 14 degrees off level) and the next plan passes. Spawn cost: the drive check's simulated run is 21 to 35 ms a plan on the new shapes (Giant Truck 30 to 33 ms).
+
+`--body-report all --seeds 4` (6 seeds runs out of the process's 65535 part shapes before Militia once the new shapes are in: `PartShapes.For`):
+
+| | before (main 350927634) | after |
+| --- | --- | --- |
+| room exteriors ratio | 1.42 (within 0.129, between 0.183) | 1.49 (0.125, 0.187) |
+| cabs ratio | 1.26 (0.063, 0.079) | 1.15 (0.065, 0.075) |
+| whole body ratio | 1.01 (0.154, 0.156) | 1.02 (0.149, 0.152) |
+| generation mean a style | 299 to 1811 ms | 258 to 833 ms |
+
+What the numbers say: the rooms separate further (the hooped and bowed wagons, the giant rooms); the whole body barely moves, since each style now spans more shapes
+(a buggy beside a giant truck), so within-style outlines spread as much as between-style ones; the cab ratio falls because the new cabs (a tub cage, a pickup, a bubble)
+widen a style's cabs and are near other styles' (a buggy's caged tub in IT and Bandit).
+
+**Committed seeds** (the most different passing three of each sweep): Bandit Buggy 1 3 4, Monster Truck 1 2 8, Wagon 1 5 6, Giant Truck 1 6 2; IT Buggy 1 3 6,
+Concept 1 8 3, Giant Truck 3 6 7; Scam Buggy 1 5 6, Concept 1 8 6; Highland Monster Truck 1 3 2, Wagon 2 3 7, Concept 1 2 4, Giant Truck 1 8 5; British Wagon 1 2 7,
+Concept 1 7 8 (45 new files). `--gen-vehicles` reports all 193 identical, also with `--order reverse`; `--check-construct-parts` clean. No part key or wire change:
+protocol stays 225.
+
+### Left
+
+- A three-wheeler (one steered front wheel on the centre line: a chassis with a single front corner), bone and scrap totems for Bandit (a fitting kind), spikes on a
+  war wagon's wheels (an archetype can't lean the gear yet: `BodyStyleRule` has no gear weights).
+- The cab-over tractor with a semi-trailer, coaches, faction-specific car outlines (part 2's list); the whole-body ratio needs those per-faction outlines, not more shapes.
+- The gunsmith's big guns that don't point (above) and the 65535 part-shape table (a long session generating many lofted vehicles fills it).
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1375,5 +1445,6 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-archetypes  # phase 8a: the styles' own bodies, without archetypes
 --sweep-vehicle "IT Box Truck" --seeds 6 --archetype "rigid box"   # phase 8a: one archetype on every seed that can take it
 --sweep-vehicle "Bandit Car" --seeds 8   # phase 8a part 2: the car body
+--sweep-vehicle "Bandit Monster Truck" --seeds 8   # phase 8b: a new shape (Buggy, Monster Truck, Wagon, Concept, Giant Truck)
 --body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows, phase 7c's ends, storeys, consoles and wheels)
 ```
