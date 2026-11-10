@@ -1070,6 +1070,7 @@ public static unsafe partial class Program
                         Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
             BenchPass(1);
             DrawMovers(map); // moving platforms at this frame's pose
+            StandInRender.Draw(Gfx, _session); // STAND-IN: the story's placeholder craft (Source/StandIns)
         }
         using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
             TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)

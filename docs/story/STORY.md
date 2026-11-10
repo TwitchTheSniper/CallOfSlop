@@ -286,6 +286,12 @@ is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodi
 The look over who has a body runs four times a second and allocates nothing once the bodies exist; the bodies
 themselves are ordinary bots (the bot tick, the nav graph, the stuck watch, constructs as obstacles).
 
+**Stand-in craft** (STAND-IN, placeholder until the vehicle and ship redo: `Source/StandIns/README.md`): a person
+arriving by road comes in a craft that sets down beside the road's end as their body appears, and one setting off waits
+there for a craft to land before going; a long road (5 minutes or more) is a shuttle out of the sky, a short one a hover
+hauler. A sealed Requisition Crate gets the faction's courier flyer. They are pictures only, sent once per craft
+(`Msg.StandIn`); the Story window's People tab turns them off ("Craft") or calls one of each near you ("Call craft").
+
 ### Sight
 
 What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70

@@ -76,6 +76,7 @@ public sealed partial class Game
         StoryPlaying = null;
         StoryWorkForget();
         StoryBodiesForget();
+        StandInsForget(); // STAND-IN: the story's placeholder craft (Source/StandIns)
         StoryChatForget(); // (talking to people: GameStoryChat.cs)
         Array.Fill(_storyGroup, (-1, -1)); // (the groups: GameStoryFactions.cs)
         StoryJobsForget(); // (faction jobs: GameStoryJobs.cs)
@@ -115,6 +116,7 @@ public sealed partial class Game
         StoryGroupsTick(); // (the players' groups: GameStoryFactions.cs)
         StoryJobsTick(s, now); // (faction jobs: crates, builds, couriers, the window: GameStoryJobs.cs)
         StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
+        StandInsTick(s, now); // STAND-IN: craft for the people's trips (Source/StandIns)
         StoryletsTick(s, now); // (the storylets' hooks, spots and talk-panel answers: GameStoryStorylets.cs)
         FragmentsTick(s, now); // (the data centres' terminals and what each player holds: GameStoryFragments.cs)
         if (StoryPlaying is { } run)
