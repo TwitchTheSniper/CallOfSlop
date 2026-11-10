@@ -63,6 +63,7 @@ Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, peo
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
 Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC.md), Synth*
 Source/Perf/         the F9 profiler
+Source/Interiors/    interiors for big vehicles and bases (docs/sandbox/INTERIORS.md): InteriorData (Constructs/Interiors), InteriorPlanner (hull volume to decks, rooms, doors, bulkheads), InteriorBuilder (on the kit's BlueprintScript); --gen-interior
 Source/VehicleKit/   the vehicle kit (docs/vehiclekit/VEHICLEKIT.md): BlueprintScript (steps through the game's own build rules), Vehicle* (the fluent layer), FactionStyle/Styles, Dice,
                      IVehicleGenerator + Generators/<Vehicle>.cs, VehicleChecks (the real game's report), VehiclePlan
 Source/ also:        Maps/ MapKit/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/ Platform/Steam/ DevTools/
