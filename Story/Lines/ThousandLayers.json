@@ -1,0 +1,55 @@
+{
+  // What the Thousand Layers' people say (docs/story/STORY.md "The Thousand Layers"; the faith is
+  // Story/Factions/ThousandLayers.json). The faithful quote the scripture as they were taught it and hold to the Covered
+  // Bowl; the Unrollers (?me Unroller) read the Two Hands as a promise and wait for someone with keys. Sincere and kind:
+  // the joke is only ever in the pastry. Two clauses outrank everyday words, one ties with them. Lines are at most 110
+  // characters, so a verse is said in pieces.
+  "about": "the Thousand Layers' people: blessings, scripture, and the Unrollers' hopes",
+  "rules": [
+    // ---- Meeting someone ----
+    { "on": "Step", "verb": "Greet", "if": "?me MemberOf 'The Thousand Layers', not ?me Unroller", "reply": "Greeted",
+      "say": [ "Welcome, friend. I'm {me.first}. Have you eaten?", "Layer on layer, and peace on you. {me}.",
+        "A new face! I'm {me.first}. There's bread if you want it. There's always bread." ] },
+    { "on": "Step", "verb": "Greet", "if": "?me MemberOf 'The Thousand Layers', ?me Unroller", "reply": "Greeted",
+      "say": [ "{me.first}. I do the washing. Mind the floor, it's wet.", "Hello. {me.first}. You've got kind hands. Keep them that way." ] },
+    { "on": "Greeted", "if": "?me MemberOf 'The Thousand Layers', not ?me Unroller",
+      "say": [ "Layer on layer, {them.first}.", "{me.first}. The Bakehouse door is always open, and the oven is always warm." ] },
+
+    // ---- Chatting: the scripture as the faithful teach it ----
+    { "on": "Step", "verb": "Chat", "if": "?me MemberOf 'The Thousand Layers', not ?me Unroller", "reply": "Chatted", "every": "2m",
+      "say": [ "Before the first layer there was the Hunger, and it had no face. It ate the dark and was not filled.",
+        "Five houses heard the Hunger at the door, and each house held one thing the others lacked.",
+        "The Five Bakers rolled the world from the middle out, and the Hunger was folded under. It is under still.",
+        "Do not grieve the empty sky, {them.first}. A clean table is a gift to those with work to do.",
+        "The dough is resting. Do not lift the cloth to look. That's the whole of it, really.",
+        "Have you eaten? It's laminate. A thousand layers. The Hunger is under every one of them.",
+        "Flour, fat, water, salt and patience. Most people forget the patience." ] },
+    { "on": "Chatted", "if": "?me MemberOf 'The Thousand Layers', not ?me Unroller",
+      "say": [ "Layer on layer, {them.first}.", "Let the dough rest.", "Come to the Bakehouse on a baking day." ] },
+    { "on": "Step", "verb": "Chat", "if": "?me MemberOf 'The Thousand Layers', ?me Likes ?them >= 30", "reply": "Chatted", "every": "5m",
+      "say": [ "You've a Baker's hands, {them.first}. Have you thought about it?",
+        "Baker Anselm says the old copies say something different. Baker Anselm needs more sleep.",
+        "Two hands at the oven door, one day. To open it or to hold it shut. We have agreed not to ask." ] },
+
+    // ---- Chatting: the Unrollers, quietly ----
+    { "on": "Step", "verb": "Chat", "if": "?me MemberOf 'The Thousand Layers', ?me Unroller", "reply": "Chatted", "every": "2m",
+      "say": [ "Two hands at the oven door, the verse says. To open it, and all that was folded made whole.",
+        "The sky was cleared like a table, they say. Cleared of what, {them.first}? Who was sitting there?",
+        "Do not lift the cloth. Why would a cloth need a commandment, unless there was something under it?",
+        "There's another book, you know. The Bakers don't read that one aloud.",
+        "Dough that rests too long goes sour. That's not scripture. That's baking." ] },
+    { "on": "Step", "verb": "Chat", "if": "?me MemberOf 'The Thousand Layers', ?me Unroller, ?me Likes ?them >= 30", "reply": "Chatted", "every": "5m",
+      "say": [ "There are more of us than you'd think. Unrollers, they call us. We're waiting for someone with keys.",
+        "Somebody took the old records away, {them.first}. Records are kept by people. People leave things behind." ] },
+    { "on": "Chatted", "if": "?me MemberOf 'The Thousand Layers', ?me Unroller",
+      "say": [ "Keep your hands open, {them.first}.", "Think about it. That's all I ask.", "Shh. Here comes the Baker." ] },
+
+    // ---- Hurt, and what they see ----
+    { "on": "Hurt", "if": "?me MemberOf 'The Thousand Layers'",
+      "say": [ "Peace! Peace, {them.first}!", "Why? I've nothing but flour.", "Please. I'll forgive you, but stop." ] },
+    { "on": "Saw", "verb": "Kill", "if": "?me MemberOf 'The Thousand Layers', not ?me Unroller",
+      "say": [ "Rest now, {target.first}. Layer on layer.", "Someone fetch a cloth. Cover them. Gently." ] },
+    { "on": "Saw", "verb": "Kill", "if": "?me MemberOf 'The Thousand Layers', ?me Unroller",
+      "say": [ "They'll say {target.first} is resting under the cloth. They're dead, {actor.first}. They're dead." ] }
+  ]
+}

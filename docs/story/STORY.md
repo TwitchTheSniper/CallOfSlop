@@ -736,7 +736,8 @@ A faction (living factions, F1; code `Source/Story/StoryFactions.cs`, the game's
 Story window's *Factions* tab `Source/UI/UiStoryFactions.cs`; data `Story/Factions/*.json`, relations in
 `Story/Relations/Factions.json`, verbs in `Story/Verbs/Factions.json`) is a Faction entity in the story world. The IT
 Department is the first (`Story/Factions/IT.json`); the Call Centre (`CallCentre.json`), Clan MacSlop (`MacSlop.json`) and the
-Ministry of Slop (`Ministry.json`) are data in the same shape.
+Ministry of Slop (`Ministry.json`) are data in the same shape, and so is the Thousand Layers (`ThousandLayers.json`), the faith
+("The Thousand Layers" below).
 
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
@@ -816,6 +817,9 @@ learnt. What ships:
 | Ministry of Slop | Trusty | Explosives Licence | Warhead Blast, Warhead Bunker, Aerial Bomb, Mine Dispenser |
 | Ministry of Slop | Contractor | Atomic Licence | Small Nuke, Fission Warhead, Fusion Warhead |
 | Ministry of Slop | Crown Servant | The Antimatter Bomb | Antimatter Warhead |
+| The Thousand Layers | Proved | The Weight of the Centre | Gravity Generator, Gravity Well |
+| The Thousand Layers | Laminated | The Lesser Fold | Jump Drive |
+| The Thousand Layers | Baker | The Rising | Anti-Grav Generator, all sizes |
 
 How standing is earned for now: IT as above; the Call Centre likes anyone who falls for one of its adverts (a Hooked
 event, +12) or wrecks a Ministry van (+6); Clan MacSlop likes wrecking (+10) and stripping (+3) Ministry vans; the
@@ -869,7 +873,7 @@ factions": what each asks, what it pays, and why one can't be taken yet.
 - **Network (protocol 203)**: `Msg.Jobs` carries a take or a drop from a client, and to each player their window when it
   changes (checked once a second against a key of their party, the standings, the jobs held and their progress, and the minute).
 
-What ships (21 jobs): the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
+What ships (26 jobs; the Thousand Layers' five are in its own section): the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
 for Registered users a Hardware Refresh and a Satellite Uplink), the Call Centre's dodgy errands (six Computers "for
 refurbishment", Prize Draw Logistics, a glass "Fibre Optic Upgrade"; for Valued Customers a Cubicle Farm and a Gift Card
 Run in gold), Clan MacSlop's Highland games (a wood caber, stones for the stone put, whisky for the ceilidh, a pipe band to
@@ -877,6 +881,49 @@ build; for Friends of the Clan "Something Enormous", a 6 m wheel for the cheese 
 Rocks, Number Plates and Tea for the Warden for inmates; Fit Out the Cell Block in steel I-beams and a Public Information
 Point for Trusties; Concrete for the New Wing for Contractors). Sabotage jobs (wreck a rival's things) and a courier who
 walks in as a body are for later.
+
+## The Thousand Layers
+
+The faith (storyline step 2, 2026-11-10; the storyline is the plan doc https://claude.ai/artifact/MawQPS11ypRiLZa7WjUu1q,
+the verses and fragments the draft https://claude.ai/artifact/N8XemUxW1d9rseLeDyTHxZ). Long ago the engineers of the five
+systems rolled the space around them over on itself to wrap the threat inside, and the roll never stopped. The same five
+records, told aloud for centuries, became scripture: the Five Bakers rolled the world from the middle out and the Hunger
+is folded under still. Its people are sincere and kind, its ritual is baking and its priests are Bakers: the joke is
+only ever in the pastry, the belief is played straight. Data only, in the shapes above:
+
+- **The faction** (`Story/Factions/ThousandLayers.json`): home The Bakehouse; members the Eldest Baker, Baker Hollis of the
+  ovens, Baker Anselm the copyist (who keeps finding the old copies differ), and Coyle the Unroller; wants Devotion and
+  Stillness; tiers Burnt Offering, Unleavened, Seeker, Proved (15), Laminated (40), Baker (70). Its deeds are the
+  Ministry's kind, towards its two people at the colony: a greeting (+2), a chat (+1, once in ten minutes), a trade (+3),
+  an offering (a Give, +4); mocking (-4), striking (-15) and killing (-40) cost. Rival of the Ministry (20%). Its voice is
+  `[THE THOUSAND LAYERS]`.
+- **Scripture** (`"scripture"`, any faction may have one: up to 16 verses, each a `"name"`, the `"fragment"` it retells, its
+  `"text"` up to 320 characters, and `"bends"`, a note for writers on how it bends the record, never shown to players; the
+  Story window's Factions tab lists them). Each verse bends one fragment, by the fragments' own ids: *The Hunger*
+  (`frag.threat`: the edge made a beast with an appetite), *The Rolling* (`frag.fold`: the engineers made Five Bakers and
+  the design a recipe), *The Long Night* (`frag.reading`: the missing stars a blessing, not a loss), *The Covered Bowl*
+  (`frag.silence`: the cover-up a holy rule, do not lift the cloth), *The Two Hands* (`frag.switch`: the release a
+  prophecy the faithful disagree about). Heard first, a verse is a riddle; heard after its fragment, a record you know.
+- **The Unrollers**: a sect inside the faith (people with the `Unroller` quality) who read the Two Hands as a promise and
+  wait for someone with keys. Most of the faithful hold to the Covered Bowl: leave it alone.
+- **People**: the penal colony's chaplain, Baker Marlow, and its laundress, Sister Wren (an Unroller), are in the Penal
+  Colony cast and are the faith's `"staff"`. Being in the colony, hurting either starts the lockdown too.
+- **Lines** (`Story/Lines/ThousandLayers.json`): the faithful greet and offer bread, quote the verses in pieces when they
+  chat, and the Unrollers whisper their reading; both have words when hurt and when they see a killing.
+- **Storylets** (`Story/Storylets/ThousandLayers.json`, bucket B): *The Baker's sermon* (after the induction, once the
+  player has been near the Baker: the first verses; Faith +1 and the lead "The Rolling"), *The morning laminate* (the
+  faith's first job, The Daily Laminate: 24 steel plates), *The Unrollers* (Sister Wren's hope; keep it quiet: Doubt +1
+  and the lead "The Unrollers"; tell the Baker: Faith +1 and her grudge). Faith and Doubt are for the fragments and the
+  ending to read: nothing reads them yet (`--check-story` warns so).
+- **Jobs**: The Daily Laminate (24 steel plates), Cloth for the Board (40 kg of cloth), A Wayside Shrine (build five Lamps
+  and two Seats on one construct), and for the Proved A Pin for the Chapel (a wooden round 2.5 m by 0.3 m), for the
+  Laminated Stone for the Oven (6 t of stone and 400 kg of wood).
+- **Technologies**: gravity at Proved, the Jump Drive at Laminated (the Bakers teach the small fold as a prayer and will not
+  say where they learnt it), anti-gravity at Baker. In survival the Jump Drive now needs the faith.
+
+Not yet: the Bakehouse as a place in the world, the faith's people with bodies outside the colony, radio sermons, and the
+faith's reaction to fragments found (step 4 of the plan; the fragments are `Fragment` relations towards the Things
+`frag.threat` and so on).
 
 ## The Scammers
 

@@ -59,7 +59,7 @@ where it was found, a `?` line with the hint for each one still missing, and the
 
 ## Network and save
 
-- **`Msg.Fragments`** (protocol 227), server to one client, reliable, when it changes (checked once a second): u8 sites, u16 each
+- **`Msg.Fragments`** (protocol 228), server to one client, reliable, when it changes (checked once a second): u8 sites, u16 each
   site's construct (the terminals' screens find their site by it); u8 held, (u8 fragment, str source) each; u8 leads, (str name,
   u8 found) each.
 - What a player holds is in the story (above); the sites' constructs in the Opening section; a terminal's decoded bit in its part.

@@ -96,6 +96,17 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, "Tiers: " + string.Join(", ", def.Tiers.Select((t, k) => k == def.Tiers.Length - 1 ? $"{t.Name} above" : $"{t.Name} below {t.Below}")));
             ImGui.TreePop();
         }
+        if (def.Scripture.Length > 0 && ImGui.TreeNode("Scripture"u8))
+        {
+            foreach (var v in def.Scripture)
+            {
+                ImGuiSafe.TextColored(StoryPlain, v.Fragment.Length > 0 ? $"{v.Name} (fragment: {v.Fragment})" : v.Name);
+                if (v.Bends.Length > 0 && ImGui.IsItemHovered())
+                    ImGuiSafe.SetItemTooltip("How it bends the fragment: " + v.Bends);
+                DimWrapped(v.Text);
+            }
+            ImGui.TreePop();
+        }
         ImGui.Unindent();
     }
 

@@ -347,7 +347,7 @@ public static partial class SelfTest
             sp.Yaw = 0;
             Pump(server, [a], 0.3, ref now, clock);
             var before = w.Bodies.Select(b => b.Id).ToHashSet();
-            a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Recycling Station"));
+            a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Recycling Station"));
             Pump(server, [a], 1.0, ref now, clock);
             var station = w.Bodies.FirstOrDefault(b => !before.Contains(b.Id) && RecyclerPartOf(b) >= 0);
             if (station == null)

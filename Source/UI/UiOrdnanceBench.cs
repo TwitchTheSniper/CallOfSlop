@@ -39,6 +39,8 @@ public sealed partial class Ui
             .OrderBy(d => d.Ord!.GroupOrder).ThenBy(d => d.Ord!.Group, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).ToArray();
     }
 
+    public void CloseOrdnanceBench() => OrdnanceBenchOpen = false;
+
     /// <summary>The window, between NewFrame and Render.</summary>
     public void DrawOrdnanceBench()
     {

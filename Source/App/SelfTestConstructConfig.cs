@@ -462,7 +462,7 @@ public static partial class SelfTest
             return;
         }
         var before = g.Constructs.Bodies.Count;
-        g.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Wired Buggy"));
+        g.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Wired Buggy"));
         Run(g, ref now, 0.5);
         if (g.Constructs.Bodies.Count != before + 1)
         {
@@ -646,7 +646,7 @@ public static partial class SelfTest
             server.SelfTestRespawn(sp, now);
         Pump(server, [a], 0.3, ref now, clock);
         var before = server.Constructs.Bodies.Count;
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Motor Gate"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Motor Gate"));
         Pump(server, [a], 0.6, ref now, clock);
         if (server.Constructs.Bodies.Count != before + 1)
         {
