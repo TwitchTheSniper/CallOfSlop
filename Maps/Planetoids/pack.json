@@ -1,0 +1,8 @@
+{
+  "format": "call-of-slop-pack/1",
+  "name": "Planetoids",
+  "description": "The story's worlds (docs/planets/WORLDS.md): whole planetoids, one or more to a star system, each with its own ground, sky, gravity and faction. Made by tools/planets/make_worlds.py. Land on them by ship, or start a Sandbox on one.",
+  "author": "Call of Slop",
+  "order": 915,
+  "trueRandom": false
+}
