@@ -309,7 +309,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         throw new VehicleKitException($"{part} won't stand level on {on.Name}'s {socket}" + Why(v, on, socket, part, by));
     }
 
-    /// <summary>TEMP: why each spin is refused.</summary>
+    /// <summary>For a refusal: what each spin would turn the part to, or that the rules refuse it there.</summary>
     private static string Why(Vehicle v, VPart on, string socket, string part, string by)
     {
         var s = "";

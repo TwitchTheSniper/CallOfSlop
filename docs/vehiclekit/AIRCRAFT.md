@@ -57,58 +57,61 @@ the flight check, as a spawned ground vehicle is by the drive check. Two familie
 - The stabilizer is set to Rotorcraft keys with a max lean of 15 to 30 degrees from the seed. Colours come from the style's `frame` and `body` palettes.
 - No weapons (phase 1).
 
-## The Plane generator (phase 2, unfinished)
+## The Plane generator (phases 2 and 3)
 
-`Generators/Plane.cs`, shape "Plane", in `VehicleRegistry.Extras` (no seeds ship): `--gen-vehicle "Bandit Plane" --seed 3`, `--sweep-vehicle "Bandit Plane" --seeds 12`.
-The Light Plane's wiring on a cockpit Frame Block and a beam spine: a seat into a Flight Stabilizer on Plane keys, its `throttle` into each prop, `pitch` into the
-elevator, `yaw` into the rudder, `left aileron` and `right aileron` into the outer panels' ailerons, `flaps` into flaps on the inner panels (half the seeds).
-From the seed: a single tractor Turbine with a Three-Blade Prop, twin Turbines on the inner panels' fronts (opposite hands), or a pusher Turbine on a 1 m pylon
-(prop set `pusher`); low (tank under the spine), mid (wings on the spine's sides) or high (tank on top) wing of three or four straight, narrow or fabric panels a
-side; a conventional tail on the boom's end or a T-tail; a 1 m or 2 m boom; tricycle gear (nose leg under the cockpit, mains on a cross axle from the spine half a
-metre behind the centre of mass) or a tail wheel (mains under the cockpit, a short strut at the boom's end).
+`Generators/Plane.cs`, shape "Plane", in `VehicleRegistry.Extras` (no seeds ship): `--gen-vehicle "Bandit Plane" --seed 3`, `--sweep-vehicle "Bandit Plane" --seeds 30`.
+The Light Plane's wiring on a cockpit Frame Block and a beam spine: a seat into a Flight Stabilizer on Plane keys, its `throttle` into the prop, `pitch` into the
+elevators, `yaw` into the rudder, `left aileron` and `right aileron` into the outer panels' ailerons, `flaps` into flaps on the inner panels (half the seeds).
+From the seed:
+- **Power**: a tractor Turbine with a Three-Blade Prop on a 0.5 m beam neck ahead of the cockpit (half the seeds); a pusher Turbine on a 1 m pylon (prop set `pusher`),
+  at the wing's station but at least spine socket 3 back so it clears the seat (a quarter); or **twin Light Turbojets** hung under the second wing panels, fed from the
+  tank (a quarter: the jet variant). Twin props are gone: a construct drives shafts from one engine only (`Construct.Engine`, `BuildShaftFeeds`), so the second
+  engine's prop never turned and the plane drove in circles on the runway.
+- **Wing**: low (tank under the spine), mid (wings on the spine's sides) or high (tank on top) of three or four straight, narrow or fabric panels a side (four on a
+  jet); a pusher is low or mid.
+- **Tail**: on a 2 m boom (a 1 m boom put the tail plane in a far-back wing's flaps and a pusher's prop in the fin), a conventional tail or a T-tail; three tail
+  planes side by side (6 m, three elevators), so the elevator lifts a tricycle's nose at take-off speed.
+- **Gear**: tricycle (nose leg under the cockpit; mains on a cross axle from the first free spine or boom socket at least 0.25 m behind the centre of mass, clear of
+  the tank and nose wheels) or a tail wheel (mains under the cockpit, a short strut at the boom's end). A tail-dragger sits up to 10 degrees nose up:
+  `VehicleCheckOptions.MaxRestTilt` (8 for every other vehicle) is the flight check's 16 for planes.
+- Control surfaces are put on level and facing forward (`Level`): fitted by the smart rotation, a flap stood on end and hit the mains' wheels.
+- **The stabilizer's settings**: `strength` 200 (at the default its pitch lags the altitude hold by 10 degrees and the hold rocks 15 m), and a jet's
+  `throttleCurve` 100 (24 kN at full throttle for the take-off, a third of it at a cruise throttle of 0.7; at full push it cruises past 60 m/s, where the hold rocks).
 
 **Balance by building twice.** The wing's place is the one thing the balance moves: the plane is built off to one side with its wing at the first and last
 spine station, `Construct.Com` and `Construct.LiftCentre` read from each (both move in a line with the wing), and the station that puts the centre of mass 0.2 m
-ahead of the lift is built; a third trial gives the centre of mass the tricycle mains are hung behind. About 4 s a generation with the flight check.
+ahead of the lift is built; a third trial gives the centre of mass the tricycle mains are hung behind.
 
 **The flight check's plane mode** (`VehicleFlightCheck.RunPlane`, chosen when the stabilizer's keys are Plane): Shift down the runway (the flat floor) for at
-most 20 s until 1.05 times `ConstructAero.StallSpeed` or off the ground by itself; S until 2 m up (3 s at most); the autopilot's altitude hold set 40 m up for
-4 s (at least 5 m climbed), then set where it is: 2.5 s to settle, then 3 s in which its height may wander 8 m and its heading 8 degrees, with at most 12 degrees of
-bank; then D for 3 s turns it at least 10 degrees right; never past 75 degrees of tilt; a plane may stand 16 degrees off level. The autopilot is engaged as
-its panel would (`apMode`, `targetAlt`, `autopilot` settings): the hook bot pilots will use. Its line gives the stall speed, rotation speed and run, climb,
-level drift, turn and the balance.
+most 20 s until 1.05 times `ConstructAero.StallSpeed` or off the ground by itself; S and Shift until 2 m up (3 s at most); the autopilot's altitude hold set 40 m
+up for 4 s (at least 5 m climbed), then set where it is with Ctrl held 0.6 s (the throttle back to 0.7, as a pilot levels off): 5 s to settle, then 3 s in which
+its height may wander 8 m and its heading 8 degrees, with at most 12 degrees of bank; then D for 3 s turns it at least 10 degrees right; never past 75 degrees of
+tilt. The autopilot is engaged as its panel would (`apMode`, `targetAlt`, `autopilot` settings): the hook bot pilots will use.
 
-**State at the stop (2026-11-10): 1 of 12 seeds pass** (seed 3 passes the whole check). What the sweep refuses, in order of count:
-- **Too little push.** At this game's gravity (18 m/s2) a 650-750 kg plane on one Three-Blade Prop (about 2,000-3,000 N, falling with speed) reaches its
-  stall speed (26-34 m/s) only after 15-20 s, and tail-draggers sitting nose up never do. The Engine with a Two-Blade Prop was dropped for this. Next: two props
-  on every single-engined plane too, a lighter airframe (fabric panels, no tank under a high wing), or bigger props; then the runway limit back to 15 s.
-- **Rotation**: tricycles at their speed don't lift with S held 3 s: the mains' place behind the centre of mass is the lever to check first (the elevator's
-  moment against the nose's weight), with the debug trace (`PLANE_DEBUG=1` prints the stations, centres and the run and rotation by the second; remove it
-  once the generator passes).
-- **Geometry refusals**: the Turbine's sides are flush with the cockpit block's (z-fighting: put a 0.5 m beam stub between them); a pusher's prop hits a fin
-  or the seat (the pylon at the station clashes with a far-back wing: put the pylon behind the seat and in front of the fin by its own place); a T-tail fin
-  on some booms won't stand level; the mains' spine socket may already hold the battery.
-- **Level flight**: the autopilot's altitude hold on a plane overshoots (11 m in 3 s at 54 m/s): the check may need a longer settle, or the hold a plane gain.
-- Not built: a jet variant (Turbojet, swept wings, which have no aileron sockets: elevons or ailerons on a straight outer panel).
+**State (2026-11-10): `--sweep-vehicle "Bandit Plane" --seeds 30` passes 27 of 30**, about 1.1 s a generation with its flight check; `"IT Plane"` 11 of 12
+(styles only change colours). The three refusals are all jets whose altitude hold still rocks 10-17 m at 41-42 m/s: the jets hang under the wing, below the
+centre of mass, so each throttle change pitches the nose. `--gen-vehicles`: all 148 shipped vehicles identical. Not verified: flying one by hand in the game,
+planes on a round world or in wind, and how long the fuel lasts.
 
-Headless runs on the shared box: until main's start-up fix (268108ac) the parallel map load hung every command; `DOTNET_PROCESSOR_COUNT=1` was the way round.
+Headless runs on the shared box spend about 60 s building the maps before any vehicle command (no cache under the agent's save folder).
 
 ## Next steps
 
-1. **Fixed-wing prop plane generator** (started in phase 2, above; this was the plan): fuselage of beams or a lofted hull, wings from the Wings parts (straight, swept, fabric by faction),
-   tail plane and fin, ailerons, elevator, rudder wired from the stabilizer's outputs (the Light Plane's wiring is the template), a Turbine or Engine with a
-   prop on its Drive out, or an Electric Prop on a Battery Pack; tricycle or tail-dragger gear. Place the centre of mass ahead of `Construct.LiftCentre`
-   (balance by moving the tank or battery, then check with the sum). Its flight check: a take-off run (throttle up, S to rotate), a climb, level flight at
-   cruise holding height and heading with the autopilot. Then a jet variant (Turbojet, swept wings).
+1. **Jets**: the twin-jet planes' level hold (thrust line on the centre of mass: jets on the spine's sides or a pod under the tank), swept wings (Large/Medium
+   Swept Wing L/R have no aileron sockets: elevons from the tail planes, or ailerons on a straight outer panel), the afterburner on a wire for a dash, a
+   Small Turbojet (75 kN) for heavier strike jets.
 2. **Helicopters**: a Helicopter Rotor on an engine's shaft with a Tail Rotor, wired `lift`, `pitch`, `roll` and `yaw` (the Small Helicopter blueprint);
    coaxial and tandem as odd craft.
 3. **Odd craft**: repulsor hover platforms, small airships on lift cells and burners, tilt-rotors (rotors on joints: the stabilizer doesn't map a rotor on a joint yet).
-4. **Faction styles**: aircraft slots in `FactionStyle` (which lifters, frames, skins, how big), and each style naming "Drone" in its extras once its look is
-   decided (then seeds ship and `--gen-vehicles` covers them). The other session owns `Styles.cs`.
-5. **Spawning**: the spawner and convoys (`VehicleSpawn.cs`, `VehicleConvoys.cs`) place ground vehicles; an aircraft needs a spawn in the air or on a pad,
-   and AI pilots: bots fly through the stabilizer's autopilot (waypoint, hover, home) by its inputs, which is the natural hook.
+4. **Faction style slots**: aircraft slots in `FactionStyle` (which lifters, frames, skins, how big: prop or jet, fabric or metal wings), and each style naming
+   "Drone" and "Plane" in its extras once its look is decided (then seeds ship and `--gen-vehicles` covers them). The other session owns `Styles.cs`.
+5. **Spawning**: the spawner and convoys (`VehicleSpawn.cs`, `VehicleConvoys.cs`) place ground vehicles; an aircraft needs a spawn in the air (at cruise, the
+   autopilot's altitude hold on) or on a pad or strip.
+5a. **Bot pilots via the autopilot**: bots fly through the stabilizer's autopilot (altitude, heading, waypoint, hover, home) by its settings or wired inputs, as
+   the flight check does (`VehicleFlightCheck.Autopilot`); a pilot sets the throttle back to cruise once level.
 6. **Loot and capture**: a parked or crashed generated aircraft with a Chest (`Loot.json`'s `aircraft` table), a Remote Console found with a drone, the
    receiver's channel as the key to steal one.
-7. **Roles and weapons**: gun drones and bombers once the vehicle-weapons work (VehicleArmoury, ConstructWeapons) lands.
+7. **Armed aircraft**: gun drones, strafing planes and bombers through VehicleGunsmith (guns on the wings or under the tank, wired to the stabilizer's `fire`
+   as the Strike Plane is), and ConstructWeapons for the aim.
 8. **Check gaps**: the flight check doesn't look at blade discs overlapping each other or the frame (the generator spaces them by its own sums), at
    endurance (battery minutes), or at a round world (it flies on a flat map, as the drive check drives on one).
