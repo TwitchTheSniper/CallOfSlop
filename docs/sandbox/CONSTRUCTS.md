@@ -1427,7 +1427,7 @@ body frame as an ordinary part, shut or open, and changes only when a player or 
   after the logic step: a body with no moving and no wired door costs one compare, a wired door its port readings, and only a
   moving door counts down. 1,000 idle doors on 1,000 bodies: 10 us a tick, nothing allocated.
 - **Settling.** At the end its parts are put at the new pose (whole quarter turns and centimetres, so they stay on the grid),
-  `Construct.RefreshShape` refreshes the mass, bounds and collider once, and the part tree is rebuilt when next asked: no
+  `Construct.RefreshShape` refreshes the mass, bounds and collider once (once for all the doors that settle in a tick: interiors phase 7), and the part tree is rebuilt when next asked: no
   rebuild, no joint, no segment. While it moves the leaf stays solid where it was: an opening door blocks until it is open, a
   shutting one lets a player through until it is shut. A door due to shut on a living player (`PlayerSpots`) opens again.
   Constructs in the doorway are not checked.
