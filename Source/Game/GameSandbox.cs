@@ -154,6 +154,7 @@ public sealed partial class Game
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
+        _pilots.Clear(); // (no bot pilots: GameSandboxAircraft.cs)
         OpeningReset(); // (no beats, no colony yet: GameSandboxOpening.cs)
         ShellResetAll(); // (nobody wears a robot shell: GameRobotShell.cs)
         if (!IsServer)
@@ -377,6 +378,7 @@ public sealed partial class Game
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
+        SandboxPilotsTick(); // bot pilots of AI aircraft (GameSandboxAircraft.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();

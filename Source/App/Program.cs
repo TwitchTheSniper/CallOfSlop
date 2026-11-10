@@ -236,6 +236,8 @@ public static unsafe partial class Program
             return SelfTest.BenchMega(args); // what a massive blast costs: tick time, allocation, bytes sent, over a busy scene (Source/App/BenchMegaBlast.cs)
         if (args.Any(a => a.Equals("--bench-vehicle-guns", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchVehicleGuns(args); // the gunsmith's guns by hand: fire each, land salvoes of each shell on the next vehicle, tick CPU (Source/App/BenchVehicleGuns.cs)
+        if (args.Any(a => a.Equals("--bench-aircraft", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchAircraft(args); // AI aircraft: ground and air spawn through the dynamic spawn, bot pilots on patrol and landing (Source/App/BenchAircraft.cs)
         if (args.Any(a => a.Equals("--bench-fuse-net", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchFuseNet(args); // the fuse tool's requests and units between a host and a client over RakNet (Source/App/BenchFuse.cs)
         if (args.Any(a => a.Equals("--bench-fuse", StringComparison.OrdinalIgnoreCase)))

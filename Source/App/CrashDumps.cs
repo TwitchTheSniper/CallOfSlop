@@ -47,7 +47,7 @@ public static class CrashDumps
     [
         "--selftest", "--selftest-only", "--selftest-list", "--net-client", "--crowd-bench", "--bot-bench", "--export-maps", "--check-map", "--check-maps", "--map-ops", "--weather-sim",
         "--gen-map", "--gen-maps", "--gen-plan", "--gen-interior", "--gen-vehicle", "--gen-vehicles", "--check-vehicle", "--sweep-vehicle", "--diversity", "--diversity-style", "--body-report", "--bench-parts", "--kit-report", "--role", "--family", "--convoy", "--context", "--brief", "--cargo", "--drive-check", "--identity", "--grade-vehicle", "--grade-report", "--check-devedit", "--check-weapon", "--export-weapons", "--check-part", "--check-construct-parts", "--check-mods",
-        "--check-parts", "--export-parts", "--bench-fuse", "--bench-fuse-net", "--bench-material", "--bench-mega", "--bench-vehicle-guns", "--master", "--bake", "--stuck-report", "--verify-update",
+        "--check-parts", "--export-parts", "--bench-fuse", "--bench-fuse-net", "--bench-material", "--bench-mega", "--bench-vehicle-guns", "--bench-aircraft", "--master", "--bake", "--stuck-report", "--verify-update",
     ];
 
     /// <summary>
