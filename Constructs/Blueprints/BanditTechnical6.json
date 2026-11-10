@@ -66,35 +66,34 @@
     {"part": "Square Beam 1 m", "on": 58, "socket": "top", "by": "-y1", "paint": "#46392f"},
     {"part": "Seat", "on": 59, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 59, "socket": "+y0", "by": "base"},
-    {"part": "Firebreather Receiver", "on": 61, "socket": "leaf", "by": "bottom"},
-    {"part": "Firebreather Receiver", "on": 62, "socket": "right", "by": "left"},
-    {"part": "Firebreather Receiver", "on": 62, "socket": "top", "by": "bottom"},
-    {"part": "Firebreather Receiver", "on": 63, "socket": "top", "by": "bottom"},
-    {"part": "Flame Nozzle", "on": 62, "socket": "merged front", "by": "back"},
-    {"part": "Fuel Canister", "on": 62, "socket": "merged left", "by": "right"},
-    {"part": "Flame Valve", "on": 62, "socket": "merged back", "by": "front"},
+    {"part": "Bucket Launcher Receiver", "on": 61, "socket": "leaf", "by": "bottom"},
+    {"part": "Launcher Tube", "on": 62, "socket": "front", "by": "back"},
+    {"part": "Single Breech", "on": 62, "socket": "left", "by": "right"},
+    {"part": "Lob Trigger", "on": 62, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 64, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 60, "socket": "+x", "by": "-x"},
+    {"part": "Plate Steel 0.5 m", "on": 59, "socket": "+y1", "by": "-z0", "spin": 3, "paint": "#7a4326"},
     {"part": "Cargo Volume", "on": 34, "socket": "+y1", "by": "-z", "config": {"startOn": true, "sizeX": 0.6, "sizeY": 1, "sizeZ": 1.2, "atX": -0.3, "atY": 0.4, "atZ": 0.7}},
     {"part": "Plate Steel 0.5x1 m", "on": 22, "socket": "+y", "by": "back02", "paint": "#d8cdb0"},
-    {"part": "Plate Steel 0.5x1 m", "on": 71, "socket": "-x0", "by": "-x3", "paint": "#d8cdb0"},
-    {"part": "Sheet Steel 0.5 m", "on": 72, "socket": "+x0", "by": "back00", "spin": 3, "paint": "#d8cdb0"},
-    {"part": "Plate Steel 0.5x1 m", "on": 71, "socket": "-z0", "by": "back02", "spin": 1, "paint": "#7a4326"},
+    {"part": "Plate Steel 0.5x1 m", "on": 70, "socket": "-x0", "by": "-x3", "paint": "#d8cdb0"},
+    {"part": "Sheet Steel 0.5 m", "on": 71, "socket": "+x0", "by": "back00", "spin": 3, "paint": "#d8cdb0"},
+    {"part": "Plate Steel 0.5x1 m", "on": 70, "socket": "-z0", "by": "back02", "spin": 1, "paint": "#7a4326"},
     {"part": "Bumper", "on": 9, "socket": "-z", "by": "back0", "paint": "#94603a"},
     {"part": "Steel Tube 0.5 m", "on": 9, "socket": "+y0", "by": "end-"},
     {"part": "Steel Tube 0.5 m", "on": 10, "socket": "+y0", "by": "end-"},
-    {"part": "Steel Tube 1 m", "on": 76, "socket": "+y1", "by": "+x0", "spin": 3, "paint": "#94603a"},
-    {"part": "Iron Spike", "on": 78, "socket": "-x1", "by": "base"},
+    {"part": "Steel Tube 1 m", "on": 75, "socket": "+y1", "by": "+x0", "spin": 3, "paint": "#94603a"},
+    {"part": "Iron Spike", "on": 77, "socket": "-x1", "by": "base"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 54, "pos": [-0.689, 0.129, 3.119], "rot": [-0.022, -0.0187, 0.7308, 0.6819]}, "paint": "#8c5230"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 73, "pos": [-0.541, 0.661, 0.007], "rot": [-0.0131, 0.0197, 0.721, 0.6926]}, "paint": "#5e3320"},
-    {"part": "Horned Skull", "on": 71, "socket": "front13", "by": "base"},
-    {"part": "Skull Trophy", "on": 72, "socket": "front00", "by": "base"}
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 72, "pos": [-0.541, 0.661, 0.007], "rot": [-0.0131, 0.0197, 0.721, 0.6926]}, "paint": "#5e3320"},
+    {"part": "Horned Skull", "on": 70, "socket": "front13", "by": "base"},
+    {"part": "Skull Trophy", "on": 71, "socket": "front00", "by": "base"}
   ],
-  "wires": [[27, 28], [28, 22], [60, 69], [69, 62]],
+  "wires": [[27, 28], [28, 22], [60, 67], [67, 62]],
   "links": [
     {"type": "shaft", "from": 23, "to": 6, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 56, "to": 22, "nodes": [[0.5, 0.32, 3.56], [0.5, 0.55, 3.56], [0.67, 0.55, 3.56], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
   "cargo": [
-    {"part": "Ammo Crate", "at": [-0.05, 0.48, 2.85], "turn": 0}
+    {"part": "Small Fuel Tank", "at": [-0.05, 0.43, 2.85], "turn": 0}
   ]
 }

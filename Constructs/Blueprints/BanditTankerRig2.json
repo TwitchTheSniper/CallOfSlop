@@ -65,7 +65,7 @@
     {"part": "Bolt Deck 0.25 m", "on": 46, "socket": "+x0", "by": "-x0", "paint": "#5e3320"},
     {"part": "Fuel Drum", "on": 40, "socket": "front23", "by": "-y"},
     {"part": "Square Beam 0.5 m", "on": 37, "socket": "+x1", "by": "-z", "paint": "#2f2c2a"},
-    {"part": "Turntable", "on": 60, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 60, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 61, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Seat", "on": 62, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 62, "socket": "+y0", "by": "base"},
@@ -84,7 +84,8 @@
     {"part": "Steel Tube 0.5 m", "on": 10, "socket": "+y0", "by": "end-"},
     {"part": "Steel Tube 1 m", "on": 76, "socket": "+y1", "by": "+x0", "spin": 3, "paint": "#5e3320"},
     {"part": "Iron Spike", "on": 78, "socket": "-x0", "by": "base"},
-    {"part": "Hubcap Plate", "on": 72, "socket": "front12", "by": "base"}
+    {"part": "Hubcap Plate", "on": 72, "socket": "front12", "by": "base"},
+    {"part": "Horned Skull", "on": 31, "socket": "top", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [63, 70], [70, 65]],
   "links": [

@@ -82,10 +82,10 @@
     {"part": "Square Beam 1 m", "on": 74, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Seat", "on": 75, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 75, "socket": "+y0", "by": "base"},
-    {"part": "Kingpin Revolver Receiver", "on": 77, "socket": "leaf", "by": "bottom"},
-    {"part": "Cannon Sleeve", "on": 78, "socket": "front", "by": "back"},
-    {"part": "Heavy Box", "on": 78, "socket": "left", "by": "right"},
-    {"part": "Revolver Hammer", "on": 78, "socket": "back", "by": "front"},
+    {"part": "Heavy Receiver", "on": 77, "socket": "leaf", "by": "bottom"},
+    {"part": "Big Iron Barrel", "on": 78, "socket": "front", "by": "back"},
+    {"part": "Belt Feed", "on": 78, "socket": "left", "by": "right"},
+    {"part": "Chain Drive Motor", "on": 78, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 80, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 76, "socket": "+x", "by": "-x"},
     {"part": "Cargo Volume", "on": 38, "socket": "+y1", "by": "-z", "config": {"startOn": true, "sizeX": 1, "sizeY": 1, "sizeZ": 1.2, "atX": 0.4, "atY": 0.7, "atZ": 0.7}},
@@ -96,10 +96,10 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 87, "pos": [1.259, 0.457, -0.376], "rot": [-0.0011, -0.0068, -0.7026, 0.7116]}, "paint": "#7d8a92"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 88, "pos": [-0.757, 0.315, -0.375], "rot": [-0.0009, -0.0004, 0.7162, 0.6979]}, "paint": "#9aa0a6"},
     {"part": "Office Phone", "on": 85, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 31, "socket": "top", "by": "base"},
     {"part": "Loudhailer", "on": 62, "socket": "front00", "by": "base"},
     {"part": "Loudhailer", "on": 65, "socket": "front00", "by": "base"},
-    {"part": "Office Phone", "on": 51, "socket": "front00", "by": "base"}
+    {"part": "Office Phone", "on": 51, "socket": "front00", "by": "base"},
+    {"part": "Loudhailer", "on": 31, "socket": "top", "by": "base"}
   ],
   "wires": [[28, 29], [29, 23], [76, 83], [83, 78]],
   "links": [
