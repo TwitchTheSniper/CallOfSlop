@@ -1400,6 +1400,48 @@ A door is whatever hangs on a hinge, not a kind of part. F on any part on a pass
 
 Choices made (the developer may change them): a 2 cm gap; one hinge per door (a Long Door Hinge looks like a run of knuckles, but it is one joint); doors open one way, with no way to open inwards but turning the hinge; F works on the whole leaf and the use area only lights; the Hinge's own leaf takes any panel too.
 
+## Event doors
+
+A door that is neither a joint nor a segment (user, 2026-11-10): a construct has only 255 joints, and every hinged door spent
+one and a physics segment every tick, so the Titan Walker's interiors ran out with 41 doorways bare. An event door sits in the
+body frame as an ordinary part, shut or open, and changes only when a player or a wire works it. Code:
+`Source/Constructs/ConstructDoors.cs` (events, the step, settling, drawing, the wire) and `Construct.Doors.cs` (the list).
+
+- **The parts** (`tools/constructs/door_parts.py`, `Constructs/Parts/Doors/EventSteel` and `EventWood`). A door part with a
+  `"door"` block is an event door: `"kind"` `swing` (a whole number of quarter turns, `"angle"` about `"axis"` through
+  `"pivot"`, in the part's frame) or `slide` (`"travel"` metres along `"axis"`), `"seconds"` to open or shut, and `"hang"`, the
+  socket it goes on by. That socket is a plain one, so the wrench puts it straight on a jamb (a Door Wall's or Door Corner's
+  `hinge` socket) with no hinge part. The Steel and Wood **Swing Doors** (1x2, 1.25x2, 1.25x2.35 and 1.5x2.25 m) swing out
+  past the jamb towards their own -z, as a Flush Door on a Door Hinge does, and keep the 2 cm gap. A **Double Door L** and
+  **R** (1.5x2.25 m) hang on either jamb and meet in the middle on their `meet` sockets: linked there, F on either works both.
+  The **Bulkhead Door** (1.25x2 and 1.5x2.25 m, steel, 6 cm) slides into the wall on its hang side, so keep its width of wall
+  there. A hidden 2 cm strip in the gap carries each plain socket (a socket is on a face).
+- **The list.** `Construct.Doors` (at most `MaxDoors`, 1,024, its own array) holds each door part on segment 0 and the parts
+  that ride its leaf: anything linked to that door part alone, on a socket other than its hang socket (a Door Handle, a sign),
+  at most 8. It is built from the special parts after a rebuild (`EnsureDoors`). What lasts lives in the door part: where it
+  settled in the hidden setting `doorOpen` (so saves, blueprints and CBody carry it), and while it moves `CPart.State` (moving,
+  heading open) and on the server `CPart.Count` (ticks left).
+- **Events, not ticks.** F (`ConstructEdits.Use` hands an event door's part to `ConstructDoors.Use`) or an edge on a wired port
+  starts it. The ports: **Open** (the part itself: a rise opens, a fall shuts), **Toggle** (a rise) and **Lock** (high: F is
+  refused); the configure tool's **Locked** does the same as a held Lock. Wires work a locked door. `ConstructDoors.Step` runs
+  after the logic step: a body with no moving and no wired door costs one compare, a wired door its port readings, and only a
+  moving door counts down. 1,000 idle doors on 1,000 bodies: 10 us a tick, nothing allocated.
+- **Settling.** At the end its parts are put at the new pose (whole quarter turns and centimetres, so they stay on the grid),
+  `Construct.RefreshShape` refreshes the mass, bounds and collider once, and the part tree is rebuilt when next asked: no
+  rebuild, no joint, no segment. While it moves the leaf stays solid where it was: an opening door blocks until it is open, a
+  shutting one lets a player through until it is shut. A door due to shut on a living player (`PlayerSpots`) opens again.
+  Constructs in the doorway are not checked.
+- **Drawing.** A moving leaf leaves the merged meshes (`DoorEpoch` makes them plan again), is walked at
+  `ConstructDoors.DrawPose` (the turn or slide from its settled pose, on `ConstructRender.Now`), and rejoins its chunk when it
+  settles.
+- **The wire** (protocol 226). `CBodyKind.Door` carries `(u16 body, u16 part, u8 flags)` each: bit 0 heading open, bit 1
+  settled. A client draws a start from where it has the door and puts the parts where the server did on the settle; both go
+  before the body digest, so a client has settled before it compares hashes. A joiner gets the settled pose in the Full.
+- **Joint doors stay.** A panel on a Door Hinge (above) works as before, and old saves and blueprints load unchanged.
+
+Choices made (the developer may change them): F works a door and its partner together; a lock stops F, not wires; the leaf is
+solid at its old pose while it moves (no sweeping push); the bulkhead slides sideways into the wall rather than up.
+
 ## Factions
 
 Players group into factions and share what they own (`Source/Constructs/Factions.cs`, the server's side

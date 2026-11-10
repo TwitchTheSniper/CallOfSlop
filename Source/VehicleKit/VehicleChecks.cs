@@ -809,19 +809,19 @@ public static class VehicleChecks
             }
             ConstructWeapons.MuzzleWorld(c, gun, out var muzzle, out var fwd);
             fwd = Vector3.Normalize(fwd);
-            worst = MathF.Max(worst, MathF.Acos(Math.Clamp(Vector3.Dot(fwd, World.Forward(yaw, pitch)), -1, 1)) * 180 / MathF.PI);
-            // What the game points it at: the point its gunner looks at, within its reach (the guns converge on it, ConstructWeapons.GunnerPoint), so a short gun
-            // set off its gunner's eye stands off the look's line by design; it is judged by how far it is off that point.
-            var point = ConstructWeapons.GunnerPoint(w, c, seat, q, c.Guns[gun].MaxRange);
-            var at = point - muzzle;
-            ref var cg = ref c.Guns[gun];
-            if ((cg.Effects & GunEffect.Shell) == 0 ? cg.RoundV > 0 && ConstructShells.Lead(muzzle, point, cg.RoundV, false, out var lead) : c.DefOf(cg.Part).GunThrust <= 0 && ConstructShells.Lead(muzzle, point, cg.Speed, false, out lead))
-                at = lead; // (as the game lays it, ConstructWeapons.AimWay: a slow round is aimed up for its drop)
+            // The bearing: the gun's heading against the look's, both read level (a shell gun laid for range climbs 40 degrees and more over a level look, by design).
+            var flatFwd = fwd with { Y = 0 };
+            var look = World.Forward(yaw, pitch) with { Y = 0 };
+            if (flatFwd.LengthSquared() > 1e-4f)
+                worst = MathF.Max(worst, MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(flatFwd), Vector3.Normalize(look)), -1, 1)) * 180 / MathF.PI);
+            // What the game points it at (ConstructWeapons.LaidWay, as the gunner's seat lays it each tick): the point its gunner looks at within its reach (the
+            // guns converge on it, so a short gun set off its gunner's eye stands off the look's line by design), the arc that lands a shell there, the lead sight.
+            var at = ConstructWeapons.LaidWay(w, c, gun, q);
             if (at.LengthSquared() > 1e-4f)
                 worstAim = MathF.Max(worstAim, MathF.Acos(Math.Clamp(Vector3.Dot(fwd, Vector3.Normalize(at)), -1, 1)) * 180 / MathF.PI);
         }
-        r.Notes.Add($"the {name} follows the gunner's look within {worst:0.0} degrees (sides, behind, up), {worstAim:0.0} off the point it is laid on");
-        if (worstAim > 12 || worst > 30) // (the point it's laid on is the measure: a short gun converges close by and a slow round is aimed up for its drop, so either stands off its gunner's line by design)
+        r.Notes.Add($"the {name} bears within {worst:0.0} degrees of the gunner's look (sides, behind, up), {worstAim:0.0} off the way it is laid");
+        if (worstAim > 12 || worst > 30) // (the way it's laid is the measure, with the bearing: a short gun converges close by and a shell is laid up for its range, so either stands off its gunner's line by design)
             r.Failures.Add($"the {name} is {MathF.Max(worstAim, worst):0} degrees off where its gunner looks: its turntable or hinge doesn't point it");
     }
 

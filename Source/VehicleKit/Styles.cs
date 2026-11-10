@@ -94,7 +94,7 @@ public static class Styles
             new("Firebreather", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
             new("Whaler", "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}"),
         ],
-        Seeds = new() // (kit 5's, 2026-11-07, again after body styles phases 2 and 3: the most different passing seeds of a 10-seed sweep; the Technical, Tanker Rig and Fuel Trailer keep their generators')
+        Seeds = new() // (kit 5's, 2026-11-07, again after body styles phases 2 and 3: the most different passing seeds of a 10-seed sweep; the Technical and Tanker Rig keep their seed numbers, made by the grammar since phase 9b; the Fuel Trailer keeps its generator's)
         {
             ["Buggy"] = [1, 3, 4], ["Monster Truck"] = [1, 2, 8], ["Wagon"] = [1, 5, 6], ["Giant Truck"] = [1, 6, 2], ["Car"] = [1, 7, 5], ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 8, 2], ["Scrap Tanker"] = [1, 10, 5],
         },

@@ -25,7 +25,7 @@ public static class VehicleKitVersion
     /// <summary>
     /// Seeds made by kit 1 for good, by generator: none since 2026-11-07, when every committed faction vehicle was made again by kit 5 (the user: continuity isn't
     /// required). A kit that changes a committed seed lists the seeds committed before it here with their kit's number, or the shapes are committed again.
-    /// Only shapes with a recipe need listing: a shape without one is kit 1 whatever the seed (the Technical, the Fuel Trailer, the Tanker Rig; the Double Decker has had a recipe since body styles phase 5).
+    /// Only shapes with a recipe need listing: a shape without one is kit 1 whatever the seed (the Fuel Trailer: a barrel on a sprung frame, no cab or body to loft; the Double Decker has had a recipe since body styles phase 5, the Technical and the Tanker Rig since phase 9b).
     /// </summary>
     public static readonly Dictionary<string, int[]> Frozen = new(StringComparer.Ordinal);
 
@@ -106,6 +106,7 @@ public static class ShapeGrammar
 
     /// <summary>Phase 8b: gear recipes only a recipe naming them takes (a recipe with no gear list takes every other one of its style's).</summary>
     public static readonly string[] SpecialGears = ["monster"];
+    private static readonly string[] TechGears = ["leaf", "swing", "wishbone", "hydraulic", "dually"]; // (phase 9b: a technical rides low on two axles, as kit 1's did)
     private static readonly string[] TankGears = ["leaf", "hydraulic", "tandem", "dually", "six", "stilt"];
 
     private static BodySegment Room(int minBays, int maxBays) => new("room", 3.5f + minBays, 3.5f + maxBays);
@@ -117,7 +118,7 @@ public static class ShapeGrammar
     internal static BodySegment Boot(float min, float max) => new("boot", min, max);
     internal static readonly BodySegment Row = new("gap", 1f, 1f); // (phase 8a part 2: a car's second row of seats, under its crew cabin)
 
-    /// <summary>The recipes, by shape name: kit 1's shapes as module families. A shape not here (the Technical, the trailers) is made by its generator.</summary>
+    /// <summary>The recipes, by shape name: kit 1's shapes as module families. A shape not here (the Fuel Trailer) is made by its generator.</summary>
     public static readonly Dictionary<string, ShapeRecipe> Recipes = new(StringComparer.Ordinal)
     {
         ["Box Truck"] = new("Box Truck", "box", "box truck",
@@ -149,6 +150,11 @@ public static class ShapeGrammar
         ["Giant Truck"] = new("Giant Truck", "hauler", "giant truck", [new(2, Room(2, 4)), new(1, Room(2, 3), GunBed(2f, 2.5f)), new(1, Gap, Room(2, 3))],
             [("porch", 2), ("gun deck", 2), ("porch hitch", 1), ("hitch", 1)], 2, 4, GiantGears),
         ["Concept"] = new("Concept", "car", "concept car", [new(1, Boot(2.25f, 3f))], [("bare", 2), ("hitch", 0.5)], 1, 1, CarGears),
+        // (phase 9b: kit 1's Technical as a recipe: a lofted cab and hood in the style's language, a gun behind the cab on its own sill and a short open bed (the drum
+        // in it) or the drum on a porch, as the kit-1 stepside, ute and sand rail were; low gear, never stilts. Its generator keeps its own checks)
+        ["Technical"] = new("Technical", "truck", "technical", [new(2, GunBay, Bed(1.5f, 2f)), new(1, GunBay)], [("porch", 1), ("bare", 2), ("hitch", 0.5)], 1, 1, TechGears),
+        // (phase 9b: kit 1's Tanker Rig: the Technical's gun bay and a short bed, always a tow hitch behind for its Fuel Trailer (VehicleShape.Begin sets the tow))
+        ["Tanker Rig"] = new("Tanker Rig", "crew", "tanker rig", [new(2, GunBay, Bed(1.5f, 2f)), new(1, GunBay)], [("hitch", 2), ("porch hitch", 1)], 1, 1, TechGears),
         ["Scrap Tanker"] = new("Scrap Tanker", "crew", "scrap tanker",
             [new(3, GunBay, Tank(2f, 3f)), new(1, GunBay, Tank(2f, 2f), Bed(1.5f, 2f)), new(1, Room(0, 0), Tank(2f, 3f))],
             [("bare", 3), ("hitch", 1)], 1, 2, TankGears),
@@ -321,6 +327,8 @@ public static class ShapeGrammar
         var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed) + layers.Suffix + (role?.Suffix ?? ""), g.Name, g.Style, seed) { Kit = kit, Role = role };
         v.UseLayers(layers);
         v.StartWear(LayerTables.WearOf(g.Style));
+        if (g is VehicleShape begin)
+            begin.Begin(v); // (phase 9b: a Tanker Rig's trailer, on its own fork)
         if (kit >= VehicleKitVersion.Lofted)
         {
             if (g is VehicleShape shape)
@@ -1083,10 +1091,32 @@ public static class ShapeGrammar
                     while (front < s.Z0 + (open ? -0.2f : 0.1f))
                         front += 0.25f;
                     var barrel = MathF.Round(s.Len);
+                    // (phase 9b: the barrel stood on its front foot's sill, and a front over the rear axle or a station took that sill away and left it nowhere to
+                    // stand (Bandit and Highland Scrap Tanker 3): the front steps back a row at a time, up to 0.75 m, until every cradle can go in, and failing
+                    // that the barrel stands on the first cradle there is)
+                    bool Fits(float f)
+                    {
+                        for (var k = 0; k < barrel; k++)
+                            if (MathF.Abs(f + k - v.RearAxleZ) <= 0.3f || !Clear(p, f + k))
+                                return false;
+                        return true;
+                    }
+                    for (var step = 0; step < 3 && !Fits(front); step++)
+                        if (Fits(front + 0.25f * (step + 1)))
+                        {
+                            front += 0.25f * (step + 1);
+                            break;
+                        }
+                    var foot = -1; // (the first cradle that goes in carries the barrel: its front one taken by an axle, it stands on the next foot)
                     for (var k = 0; k < barrel; k++)
                         if (MathF.Abs(front + k - v.RearAxleZ) > 0.3f && Clear(p, front + k))
+                        {
                             v.Sill(v.RailZ(front + k), layers: 2);
-                    var tank = v.Stand(barrel > 2.5f ? "Tanker Barrel 3 m" : "Tanker Barrel 2 m", new Vector3(-0.25f, Vehicle.SillTop(2), v.RailZ(front)), Orient.Forward, null, "footL0", 0.03f);
+                            if (foot < 0)
+                                foot = k;
+                        }
+                    foot = Math.Max(foot, 0);
+                    var tank = v.Stand(barrel > 2.5f ? "Tanker Barrel 3 m" : "Tanker Barrel 2 m", new Vector3(-0.25f, Vehicle.SillTop(2), v.RailZ(front + foot)), Orient.Forward, null, "footL" + foot, 0.03f);
                     if (!v.Electric)
                         v.Link("pipe", tank, v.Engine!, laid: true);
                     v.Tanks.Add(tank);

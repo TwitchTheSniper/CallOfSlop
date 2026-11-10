@@ -1,0 +1,127 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Swing Door 1x2 m",
+  "description": "Fills a 1 by 2 m opening: goes straight on its jamb, no hinge. F opens it; it swings out past the jamb.",
+  "group": "Building",
+  "section": "Doors and gates",
+  "role": "door",
+  "tool": "wrench",
+  "door": {
+    "kind": "swing",
+    "axis": "+y",
+    "pivot": [
+      0,
+      0,
+      -0.02
+    ],
+    "angle": 90,
+    "seconds": 0.8,
+    "hang": "hang"
+  },
+  "mass": 80.9,
+  "health": 405,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5a6168",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.98,
+        -0.02
+      ],
+      "max": [
+        0.96,
+        0.98,
+        0.02
+      ]
+    },
+    {
+      "min": [
+        0.1,
+        0.246,
+        -0.023
+      ],
+      "max": [
+        0.86,
+        0.88,
+        0.023
+      ],
+      "color": "#4c5359",
+      "detail": true
+    },
+    {
+      "min": [
+        0.1,
+        -0.88,
+        -0.023
+      ],
+      "max": [
+        0.86,
+        0.146,
+        0.023
+      ],
+      "color": "#4c5359",
+      "detail": true
+    },
+    {
+      "min": [
+        0.81,
+        -0.05,
+        -0.06
+      ],
+      "max": [
+        0.858,
+        0.05,
+        0.06
+      ],
+      "color": "#c8c8c8",
+      "detail": true,
+      "use": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        -0.2,
+        -0.01
+      ],
+      "max": [
+        0.0,
+        0.2,
+        0.01
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        -0.02,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.48,
+        0.0,
+        0.02
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.48,
+        0.0,
+        -0.02
+      ],
+      "dir": "-z"
+    }
+  ]
+}

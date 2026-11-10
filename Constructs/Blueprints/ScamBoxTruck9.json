@@ -133,8 +133,7 @@
     {"part": "Plate Steel 0.5 m", "on": 98, "socket": "+x", "by": "back00", "paint": "#7d8a92"},
     {"part": "Sheet Steel 0.5 m", "on": 90, "socket": "-z", "by": "back00", "spin": 1, "paint": "#b0b4b8"},
     {"part": "Scrap Ladder", "on": 124, "socket": "front02", "by": "back", "paint": "#8a9096"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 127, "pos": [-1.096, 0.154, 6.128], "rot": [-0.0145, 0.0073, 0.7137, 0.7002]}, "paint": "#9aa0a6"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 125, "pos": [-1.072, 0.589, 6.75], "rot": [-0.0027, -0, 0.7129, 0.7012]}, "paint": "#7d8a92"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 125, "pos": [-1.056, 0.679, 6.753], "rot": [-0.0145, 0.0073, 0.7137, 0.7002]}, "paint": "#9aa0a6"},
     {"part": "Loudhailer", "on": 126, "socket": "front11", "by": "base"},
     {"part": "Call Headset", "on": 37, "socket": "top", "by": "base"},
     {"part": "Prize Wheel", "on": 85, "socket": "front33", "by": "base"},
@@ -144,7 +143,7 @@
     {"part": "Hull Loft (trimg3 YMW5 ~Cm0CuyDIzE3203k =)", "on": 75, "socket": "-x0", "by": "base", "paint": "#9aa0a6"},
     {"part": "Hull Loft (trimg9 XaW5 ~Cm0CuyDIzE3203k ~CG0COyCgUDQZ037)", "on": 79, "socket": "+x0", "by": "base", "paint": "#21c45a"},
     {"part": "Hull Loft (trimg6 XaW5 ~CG0COyCgUDQZ037 ~Cm0CuyDIzE3203k)", "on": 79, "socket": "-x0", "by": "base", "paint": "#21c45a"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 123, "pos": [-1.045, 0.669, 5.248], "rot": [-0.0108, -0.0086, 0.6982, 0.7158]}, "paint": "#8a9096"}
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 123, "pos": [-1.048, 0.587, 5.249], "rot": [0.0007, -0.0031, 0.6974, 0.7167]}, "paint": "#9aa0a6"}
   ],
   "wires": [[34, 35], [35, 29], [82, 112], [112, 105], [118, 115]],
   "hoses": [[116, 117]],

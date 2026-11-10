@@ -113,7 +113,7 @@
     {"part": "Wee Caber", "on": 91, "socket": "front11", "by": "base"},
     {"part": "Wee Keg", "on": 59, "socket": "front11", "by": "base"},
     {"part": "Coo Heid", "on": 63, "socket": "front13", "by": "base"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 93, "pos": [-1.114, 0.138, 6.371], "rot": [0.0127, -0.0108, 0.7105, 0.7035]}, "paint": "#5b4a2f"}
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 95, "pos": [0.118, 0.51, -1.346], "rot": [-0.7093, 0.0233, 0.0094, 0.7045]}, "paint": "#7b1e22"}
   ],
   "wires": [[39, 40], [40, 33], [72, 86], [86, 74], [86, 75]],
   "links": [

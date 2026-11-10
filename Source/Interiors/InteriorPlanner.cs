@@ -510,8 +510,11 @@ public static class InteriorPlanner
                     (pass > 0 ? p.Rooms.Where(o => reached.Contains(o.Id) && !o.Critical && o.Shaft == null && o.Type != "dead")
                         .Select(o => Between(p, r, o, "way in through a bulkhead", anySection: true)).OfType<PlanDoor>().FirstOrDefault() : null) ??
                     // (a sealed hull has no outside: last, a door onto a shaft's landing)
-                    (p.Sealed && pass > 1 ? p.Rooms.Where(o => reached.Contains(o.Id) && o.Shaft != null)
-                        .Select(o => Between(p, r, o, "way in from a shaft's landing", anySection: true)).OfType<PlanDoor>().FirstOrDefault() : null);
+                    // (stairs first; never through a lift shaft's west wall, where its cars hang: the builder puts a lift shaft's north
+                    // and south doorways in their piece's east half, clear of the cars' column: phase 6's walk-through)
+                    (p.Sealed && pass > 1 ? p.Rooms.Where(o => reached.Contains(o.Id) && o.Shaft != null).OrderBy(o => o.Shaft == "stairs" ? 0 : 1)
+                        .Select(o => Between(p, r, o, "way in from a shaft's landing", anySection: true))
+                        .OfType<PlanDoor>().FirstOrDefault(d => p.Rooms[d.Other].Shaft != "elevator" || d.Side != Side.East) : null);
                 if (via != null)
                 {
                     p.Doors.Add(via);
