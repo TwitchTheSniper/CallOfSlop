@@ -220,3 +220,4 @@ Folded by theme on 2026-11-03 and 2026-11-09; the dated stories are in `git show
 - Dressing goes on with `Onto(..., clear: true)`; turret and gear spots come from the bays as built (`BaySpots`); a refusal names its blocker in the rest frame (`Vehicle.Blocker`); judge shapes on real meshes (`--plan`, `--vehicle-shots`) and `VehicleChecks.Gaps`.
 
 **Added after the fold**
+- 2026-11-09: after fix/zombie-lod a Sandbox client still drew a far horde the host didn't have, which no shot could hurt: the zombies' sends stopped with the last zombie (no empty cells went out) and a full Msg.ZCrowd always restarted at cell 0, starving the last rows of a big crowd. A delta stream sends its final empty state and resumes where a full message stopped; measure what the client holds against the server's counts (`--zrange-host`, `CrowdStale`).

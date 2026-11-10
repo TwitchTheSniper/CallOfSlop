@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <c>--zrange-host|--zrange-client [--map NAME] [--port P] [--size N] [--dists 50,100,200,400]</c>: the far zombie crowd in the
 /// real window, host and client (a measurement, not a test; it fails nothing). Start one host and one client process (each under
 /// xvfb in the container, on a throwaway copy of the saves; <c>--lag</c> / <c>--loss</c> as ever). Both players stand in the
-/// map's south-west corner looking north-east; for each distance the host spawns a crowd group of N that far ahead, both peers
+/// map's south-west corner looking north-east (51 degrees from +X); for each distance the host spawns a crowd group of N that far ahead, both peers
 /// log the crowd zombies they draw (and the individuals they have), then each aims at the drawn zombie nearest the middle of
 /// what it draws and fires its hand gun; the host logs the hits the server credited to each (crowd and individuals). Lines
 /// start "[zrange]"; the host quits after the last distance, the client when the host goes.
@@ -17,6 +17,7 @@ public static unsafe partial class Program
     private static int _zr; // 0 off, 1 host, 2 client
     private static int _zrSize = 400;
     private static float[] _zrDists = [50, 100, 200, 400];
+    private static double _zrQuitAt = -1;
     private static double _zrStart = -1, _zrReady = -1, _zrPhaseAt = -1, _zrLastLog;
     private static int _zrPhase = -1;
     private static bool _zrPlaced, _zrPress;
@@ -24,7 +25,7 @@ public static unsafe partial class Program
     private static long _zrDrawnSum, _zrIndSum, _zrSamples;
     private const double ZrPhaseSeconds = 16;
 
-    private static readonly Vector3 ZrDir = Vector3.Normalize(new Vector3(1, 0, 1));
+    private static readonly Vector3 ZrDir = new(MathF.Cos(51f * MathF.PI / 180f), 0, MathF.Sin(51f * MathF.PI / 180f)); // (Proving Ground: the ground stays within 0.8 m along it, past the track's banks)
     private static readonly float ZrYaw = MathF.Atan2(ZrDir.X, -ZrDir.Z);
 
     private static void StartZombieRange(string[] args)
@@ -141,7 +142,7 @@ public static unsafe partial class Program
                         if (d < best)
                         {
                             best = d;
-                            aim = new Vector3(o.X, (float)o.Y + inst.BaseY + 1.0f, o.Z);
+                            aim = new Vector3(o.X, (float)o.Y + inst.BaseY + 1.45f, o.Z); // (the chest: over a rise far off only the upper body shows)
                         }
                     }
         }
@@ -161,11 +162,21 @@ public static unsafe partial class Program
             }
             else if (now - _zrPhaseAt > ZrPhaseSeconds)
             {
-                ZrPhaseSummary(g, me);
+                if (_zrQuitAt < 0)
+                    ZrPhaseSummary(g, me);
                 if (_zrPhase + 1 >= _zrDists.Length)
                 {
-                    g.SandboxClearSpawns(me);
-                    ZrQuit(null);
+                    if (_zrQuitAt < 0)
+                    {
+                        g.SandboxClearSpawns(me); // (Clear all: the client's picture must empty too)
+                        _zrQuitAt = now + 6;
+                    }
+                    else if (now > _zrQuitAt)
+                    {
+                        ZrQuit(null);
+                        return;
+                    }
+                    _zrPhaseAt = now - ZrPhaseSeconds - 1; // (keeps coming back here)
                     return;
                 }
                 ZrNextPhase(g, me, now);
@@ -205,6 +216,19 @@ public static unsafe partial class Program
                     pz += c.Z[i];
                 }
                 picture = $", server crowd {c.Count} particles{(c.Count > 0 ? $" round ({px / c.Count:0},{pz / c.Count:0})" : "")} + {c.MassTotal} mass, individuals {g.Horde.Count(z => z.Alive)}; client's picture off in {g.CrowdStale().Cells} cells by {g.CrowdStale().Zombies} of {g.CrowdStale().Total} (oldest {g.CrowdStale().OldestSends} sends), ZCrowd {(g.ZCrowdPacketsSent > 0 ? g.ZCrowdBytesSent / g.ZCrowdPacketsSent : 0)} B/send";
+            }
+            if (_zr == 1 && g.Crowd.MassTotal > 0)
+            {
+                // A perfect shot at a mass zombie: how far the shot reaches and whether the mass's own test meets it.
+                var c = g.Crowd;
+                var cell = Array.FindIndex(c.MassCount, m => m > 0);
+                var tgt = c.MassFeet(cell, 0) + new Vector3(0, 1.45f, 0);
+                var dd = Vector3.Normalize(tgt - eye);
+                var ground = World.Query.Raycast(eye, dd, 1200f, QueryFilter.Shots);
+                var far = g.CrowdShotFar(eye, dd, World.Range, World.Range, g.Active.Def, 0);
+                var rd = far;
+                var hitM = c.MassRayHit(eye, dd, ref rd, -1f, out var hc, out var hs, out _);
+                Console.WriteLine($"[zrange] spread {g.CurrentSpread():0.0000} probe ray to mass cell {cell} at {Vector3.Distance(eye, tgt):0} m: ground at {ground:0} m, shot reaches {far:0} m, mass ray hit {hitM} ({hc}/{hs}) at {rd:0} m; stop at {eye + dd * far} ground there {World.Map.GroundHeight((eye + dd * far).X, (eye + dd * far).Z):0.00}; construct {g.Constructs.Raycast(eye + dd * 200f, dd, 1000f, out var chh)} {chh.Distance + 200f:0}");
             }
             Console.WriteLine($"[zrange] {(_zr == 1 ? "host" : "client")} t {now - _zrStart:0}: drawn crowd {drawn} ({Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar}, {Program.CrowdDrawnCulled} culled) "
                               + $"middle {(drawn > 0 ? $"({sx / drawn:0},{sz / drawn:0})" : "-")}, individuals {aliveInd}, aim {(aim is { } a2 ? $"({a2.X:0},{a2.Z:0}) {aimDist:0} m" : "none")}{picture}, shots {_zrShots}; eye ({eye.X:0},{eye.Y:0.0},{eye.Z:0}) yaw {g.LookYaw:0.00}, cam ({CrowdCam.X:0},{CrowdCam.Y:0.0},{CrowdCam.Z:0}) pitch {g.LookPitch:0.00}, cells {Crowd.Agents.CellsDrawn} drawn {Crowd.Agents.CellsCulled} out {Crowd.Agents.CellsFogged} fogged {Crowd.Agents.CellsHidden} hidden");

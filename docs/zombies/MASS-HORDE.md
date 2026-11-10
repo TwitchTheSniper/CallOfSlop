@@ -284,6 +284,15 @@ outrunning the front demotes a few hundred, so the client showed awake zombies t
 crowd. Tracked by id (`ZEntView.Known`), not by slot: a crowd map swaps zombies in and out of the same slots in one tick.
 A client's individual takes over the drawn crowd zombie within `CrowdTakeOverReach` (6 m, was 3 m: the picture trails
 the server by a send or two, metres behind a crowd chasing a car) and eases the offset out.
+**Taking turns and the last send** (2026-11-09). A message that fills up (`ZCrowdMaxBytes`) now stops at a cell and the
+next send carries on from there (`CrowdNetView.Next`, and sends the far cells too); walking from the first cell every
+time starved the last rows of a big crowd, so the client kept their old counts. In the Sandbox the zombies' sends used to
+stop with the last zombie: after a blast or Clear all the client's picture (which has no timeout) kept a horde the host
+no longer had, and no shot could hurt it. The sends now go on for `ZFlushTicks` after the last one goes or a new round
+starts (`SandboxZombiesFlush`), so the empty cells reach the client.
+`--zrange-host` / `--zrange-client` (Program.ZombieRange.cs) measure it in the real window, one process each: the crowd
+each peer draws at 50/100/200/400 m on Proving Ground, the hits the server credits to each, and how far the client's
+picture is from the server's counts.
 `--zombie-probe [--seated] [--map NAME] [--cap N] [--lag MS] [--loss PCT]` measures it over the real transport
 (SelfTestZombieProbe.cs): zombies appearing or vanishing in view, ghosts, a turret firing into the crowd.
 
