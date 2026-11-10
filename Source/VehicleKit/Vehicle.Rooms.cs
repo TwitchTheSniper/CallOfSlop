@@ -168,6 +168,8 @@ public sealed partial class Vehicle
                     break;
             }
             first = -first;
+            if (placed == null && prop)
+                placed = OnFurniture(room, part, size, d); // (phase 7c: no floor left for it: on a shelf's, a rack's or a chest's top)
             if (placed == null)
                 continue;
             PanelList("furniture").Add(placed);
@@ -179,6 +181,33 @@ public sealed partial class Vehicle
             }
         }
         return this;
+    }
+
+    /// <summary>
+    /// Phase 7c: a faction prop stood on what furniture the room has (a shelf's, a rack's, a chest's free top socket), when the walls have no floor left for it:
+    /// the furniture in a shuffled order, its top no higher than 2 m (a lamp hangs there, a window's sill is 1.2 m up and more: it stands back against the wall
+    /// with its furniture) and 0.3 m under the ceiling. Null: nothing takes it.
+    /// </summary>
+    private VPart? OnFurniture(Room room, string part, Vector3 size, Dice d)
+    {
+        foreach (var f in d.Fork("on top").Shuffled(room.Furniture.Where(f => !room.Seats.Contains(f))).ToList())
+        {
+            C.PartBounds(f.Index, out var mn, out var mx);
+            var (lo, hi) = (FromRest(mn), FromRest(mx));
+            var top = MathF.Max(lo.Y, hi.Y);
+            if (top + size.Y > MathF.Min(room.FloorTop + 2.0f, room.Ceiling - 0.3f) || top - room.FloorTop < 0.3f)
+                continue;
+            var c = (lo + hi) * 0.5f;
+            try
+            {
+                return Put(part, new Vector3(c.X, top + size.Y / 2, c.Z), Orient.Upright, 0.4f, f, onTop: true);
+            }
+            catch (VehicleKitException)
+            {
+                // (no free top there, or it's in the way: the next piece)
+            }
+        }
+        return null;
     }
 
     /// <summary>Whether a footprint (x by z) centred at (x, z) comes within <paramref name="margin"/> of what already stands in the room (its furniture and seats, by their bounds' widest).</summary>

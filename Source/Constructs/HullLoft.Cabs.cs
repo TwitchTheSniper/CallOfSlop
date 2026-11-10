@@ -75,7 +75,7 @@ public static partial class HullLoft
             foreach (var v in (float[])[Zf, Zm, Zb, Yb, Yt, Rake, D0, D1, D2, D3, FrontX])
                 Num(sb, v);
             sb.Append(' ').Append(T.Key()).Append(' ').Append(B.SameAs(T) ? "=" : B.Key());
-            if (Lining != '\0' && Kind is 'e' or 'w' or 'a' or 'g')
+            if (Lining != '\0' && Kind is 'e' or 'w' or 'a' or 'g' or 'o' or 'm') // (phase 7c: a capsule and a merged cab too)
                 sb.Append(" i").Append(Lining);
             return sb.Append(')').ToString();
         }
@@ -127,8 +127,6 @@ public static partial class HullLoft
         if (b == null || b.P.Length != t.P.Length)
             return null;
         var c = new CabShape(words[0][0], n[0], n[1], n[2], n[3], n[4], n[5], n[6], n[7], n[8], n[9], n[10], t, b) { Lining = lining };
-        if (lining != '\0' && c.Kind is not ('e' or 'w' or 'a' or 'g'))
-            return null; // (a capsule's front is over the engine, far from the seats: no dash there yet)
         var ok = c.Zf < c.Zb - 0.5f && c.Zm >= c.Zf && c.Zm < c.Zb && c.Yb > 0.4f && c.Yt > c.Yb + 0.25f && t.Top > c.Yt + 0.04f && b.Top > c.Yt + 0.04f && c.Rake >= 0
             && c.D0 > c.Zf + c.Rake + 0.03f && c.D1 > c.D0 + 0.3f && c.D1 < c.Zb && (c.D3 <= c.D2 + 0.01f || c.D2 > c.D1 + 0.05f && c.D3 < c.Zb) && c.FrontX is >= 0.5f and <= 1.0f
             && (c.Zm <= c.Zf + 0.01f || c.Zm > c.Zf + c.Rake + 0.05f && c.Zm < c.D0);
@@ -727,23 +725,78 @@ public static partial class HullLoft
     /// <summary>
     /// Phase 7a: the dash, a shelf inside the front under the belt (over the gearbox, which stands through the firewall under 0.8 m), in the faction's look, with a
     /// glowing gauge strip on it. Drawn only: it stands 6 mm in from the front's inner face and clear of the sides by 5 cm; below the windscreen, so the glass and
-    /// the driver's view (level and up from the seated eye) are as they were.
+    /// the driver's view (level and up from the seated eye) are as they were. Phase 7c: a capsule's and a merged cab's front is far ahead over the engine, so theirs
+    /// is a console standing where a conventional cab's front is (0.6 m ahead of the driver's seat), from 0.82 m up to the dash's top; and every lined cab has a
+    /// steering wheel in front of the driver's seat (x -0.5 m, the cab frame's z 0: Vehicle.Driver), its column into the dash.
     /// </summary>
     private static void Dash(Builder p, CabShape c)
     {
         var (y0, y1) = (c.Yb - 0.075f, c.Yb - 0.03f);
+        var console = c.Kind is 'o' or 'm';
+        var front = console ? -0.6f : c.Zf + CabT / 2 + 0.006f;
+        if (console)
+            y0 = 0.82f;
         var half = c.FrontX;
         for (var y = y0; y <= c.Yb; y += 0.01f)
             half = MathF.Min(half, MathF.Min(c.T.XAt(y), c.B.XAt(y)));
         half -= CabT / 2 + 0.05f;
-        if (half < 0.3f || y0 < 0.82f)
+        if (half < 0.3f || y0 < 0.82f || y1 - y0 < 0.03f)
             return;
-        var (z0, z1) = (c.Zf + CabT / 2 + 0.006f, c.Zf + 0.24f);
+        var (z0, z1) = (front, front + 0.234f);
         var (top, gauge) = c.Lining switch
         {
             'm' => ("#4f5843", "#9cff7a"), 'c' => ("#cfccc2", "#6fc3ff"), 's' => ("#5b2a6e", "#ff4fd8"), 't' => ("#6e4b2a", "#ffb347"), 'u' => ("#5b3a22", "#fff1c8"), _ => ("#3a3330", "#ffb030"),
         };
         Cube(p, new Vector3(-half, y0, z0), new Vector3(half, y1, z1), top, false);
         Cube(p, new Vector3(-0.2f, y1 + 0.002f, z0 + 0.05f), new Vector3(0.2f, y1 + 0.014f, z0 + 0.1f), gauge, false, true);
+        SteeringWheel(p, new Vector3(-0.5f, c.Yb - 0.02f, z1 + 0.07f), z1 - 0.04f);
+    }
+
+    /// <summary>
+    /// Phase 7c: a steering wheel, its centre at <paramref name="hub"/>, its top leaning 25 degrees forward (its face up and back toward the driver): a rim of eight pieces (each running 3 degrees
+    /// into the next, alternately 3 mm thinner, so no two faces share a plane), two spokes, a boss and a column down into the dash to <paramref name="columnZ"/>.
+    /// Drawn only (dark, unpainted); its top stands 15 cm under the seated eye, so the driver's view is as it was.
+    /// </summary>
+    private static void SteeringWheel(Builder p, Vector3 hub, float columnZ)
+    {
+        const float R = 0.17f, Tilt = 25 * MathF.PI / 180;
+        var u = Vector3.UnitX;
+        var v = new Vector3(0, MathF.Cos(Tilt), -MathF.Sin(Tilt)); // (the wheel's up, its top leaning forward)
+        var n = Vector3.Cross(u, v); // (its face's normal, up and back toward the driver)
+        Vector3 On(float a, float r) => hub + (u * MathF.Cos(a) + v * MathF.Sin(a)) * r;
+        for (var i = 0; i < 8; i++)
+        {
+            var (a0, a1) = ((i - 0.5f) * MathF.PI / 4 - 0.05f, (i + 0.5f) * MathF.PI / 4 + 0.05f);
+            var (tube, deep) = i % 2 == 0 ? (0.026f, 0.03f) : (0.02f, 0.024f);
+            var pts = new List<Vector3>(8);
+            foreach (var a in (float[])[a0, a1])
+                foreach (var r in (float[])[R - tube / 2, R + tube / 2])
+                    foreach (var d in (float[])[-deep / 2, deep / 2])
+                        pts.Add(On(a, r) + n * d);
+            Solid(p, pts, Dark, false);
+        }
+        foreach (var a in (float[])[0, MathF.PI])
+        {
+            var pts = new List<Vector3>(8);
+            foreach (var r in (float[])[0.03f, R - 0.008f])
+                foreach (var w in (float[])[-0.012f, 0.012f])
+                    foreach (var d in (float[])[-0.007f, 0.007f])
+                        pts.Add(On(a, r) + v * w + n * d);
+            Solid(p, pts, Dark, false);
+        }
+        var boss = new List<Vector3>(8);
+        foreach (var x in (float[])[-0.045f, 0.045f])
+            foreach (var y in (float[])[-0.045f, 0.045f])
+                foreach (var d in (float[])[-0.019f, 0.017f])
+                    boss.Add(hub + u * x + v * y + n * d);
+        Solid(p, boss, Chrome, false);
+        var back = hub - n * 0.019f;
+        var tail = back - n * MathF.Max(0.03f, (back.Z - columnZ) / n.Z); // (down and forward into the dash)
+        var col = new List<Vector3>(8);
+        foreach (var e in new[] { back - n * 0.004f, tail })
+            foreach (var x in (float[])[-0.017f, 0.017f])
+                foreach (var y in (float[])[-0.017f, 0.017f])
+                    col.Add(e + u * x + v * y);
+        Solid(p, col, Dark, false);
     }
 }

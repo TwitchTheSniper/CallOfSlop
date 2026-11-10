@@ -98,7 +98,7 @@ public sealed partial class Vehicle
 
     /// <summary>
     /// Phase 7c (docs/vehiclekit/BODY-STYLES.md, section 15): the upper storey's furnishing, a saloon's or an open deck's, by <see cref="Furnish"/>'s rules down its
-    /// side walls, the hatch and a metre of landing past it kept clear (the way up the stair onto the floor).
+    /// side walls, the hatch and a metre of landing past it kept clear (the way up the stair onto the floor), and its centreline.
     /// </summary>
     public void FurnishUpper(Room room)
     {
@@ -107,6 +107,7 @@ public sealed partial class Vehicle
         var foot = room.R.Z0 + plan.StairZ;
         var top = foot + plan.StairWay * (st.Run + 1.0f);
         up.Keep.Add(new Rect(plan.StairX - 0.55f, plan.StairX + 0.55f, MathF.Min(foot, top) - 0.2f, MathF.Max(foot, top) + 0.2f));
+        up.Keep.Add(new Rect(-0.3f, 0.3f, up.R.Z0, up.R.Z1)); // (a narrow storey: the centreline kept, a player's width and 10 cm, the whole way along: Kept pads a footprint by 0.2 m)
         Furnish(up, clearMiddle: true);
     }
 
