@@ -119,6 +119,7 @@ public static partial class ConstructPhysics
 {
     public const int MinWalkLegs = 3; // fewer working legs and it collapses
     public const float MaxWalkLoad = 1.5f; // the body's mass over what its legs carry: past it, it collapses
+    public const float MaxStretch = 0.94f; // a planted leg's hip to foot, a share of its reach: the body rises no higher
 
     /// <summary>Server, each tick of a free awake body with legs: the feet, then the body.</summary>
     private static void Walk(Construct c, IWorldQuery query, float dt)
@@ -361,31 +362,40 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.LegCount; k++)
             stand += c.Parts[c.Legs[k].Part].D.Leg!.Stand;
         stand /= Math.Max(1, c.LegCount);
-        c.WalkHeight = Math.Clamp(c.WalkHeight + raise * reach * 0.15f * dt, -0.3f * stand * reach, (0.85f - stand) * reach);
-        // Height: the hips over their feet.
+        // Height: the hips over their feet, and how far the body can still rise before a planted leg is stretched past
+        // MaxStretch of its reach (on a slope the uphill legs' hips stand lower over their feet than the others').
         var have = 0f;
         var n = 0;
         var normal = Vector3.Zero;
         var com = c.WorldCom;
         var centre = Vector3.Zero;
         var down = 0;
+        var rise = float.PositiveInfinity;
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var leg = ref c.Legs[k];
             if (!c.Parts[leg.Part].Working)
                 continue;
-            have += c.ToWorld(leg.Hip).Y - (leg.Swinging ? leg.To.Y : leg.Foot.Y);
+            var hip = c.ToWorld(leg.Hip);
+            have += hip.Y - (leg.Swinging ? leg.To.Y : leg.Foot.Y);
             n++;
             if (!leg.Swinging)
             {
                 normal += leg.Normal;
                 centre += leg.Foot;
                 down++;
+                var dx = hip.X - leg.Foot.X;
+                var dz = hip.Z - leg.Foot.Z;
+                var most = leg.Reach * MaxStretch;
+                rise = MathF.Min(rise, MathF.Sqrt(MathF.Max(0, most * most - dx * dx - dz * dz)) - (hip.Y - leg.Foot.Y));
             }
         }
         have /= Math.Max(1, n);
+        if (raise <= 0 || rise > 0.01f * reach)
+            c.WalkHeight += raise * reach * 0.15f * dt; // (raising stops where a planted leg runs out of stretch)
+        c.WalkHeight = Math.Clamp(c.WalkHeight, -0.3f * stand * reach, (0.85f - stand) * reach);
         var want = stand * reach + c.WalkHeight;
-        var vy = Math.Clamp((want - have) * 2f, -0.25f * reach, 0.25f * reach);
+        var vy = Math.Clamp(MathF.Min(want - have, rise) * 2f, -0.25f * reach, 0.25f * reach);
         // Along the ground: the keys, at what the build walks at.
         var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
         fwd.Y = 0;
