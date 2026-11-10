@@ -1324,6 +1324,8 @@
     {"output": "Medium Lever Valve", "materials": {"steel": 18, "copper": 30}, "parts": {"Circuit Board": 2}, "seconds": 4.7, "minTier": 3},
     {"output": "Input Reader", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Freight Lift Car", "materials": {"steel": 114, "concrete": 23}, "seconds": 19.0},
+    {"output": "Capital Hollow Chassis 128x64 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
+    {"output": "Capital Armoured Hull 128x64 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Lever", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Linear Actuator 1x1 0.5 m", "materials": {"steel": 1}, "parts": {"Servo Motor": 1}, "seconds": 2.0, "minTier": 2},
     {"output": "Linear Actuator 1x1 1 m", "materials": {"steel": 1}, "parts": {"Servo Motor": 1}, "seconds": 2.1, "minTier": 2},
