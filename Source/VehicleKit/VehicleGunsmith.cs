@@ -30,6 +30,7 @@ public static class VehicleGunsmith
         HeavyCannon,
         RapidHeavy,
         MissileBattery,
+        Exotic,
     }
 
     /// <summary>One design: its build at N = 1, a name, its class's least tier and job tags. A missile battery's build is its spotting gun, and its sizes are
@@ -50,6 +51,8 @@ public static class VehicleGunsmith
         new(Kind.RapidHeavy, "Bunker Buster", "Bunker Buster Receiver{barrel:Cannon Sleeve,feed:Heavy Box,action:Autocannon Drive}", 3, ["heavy", "anti-armour"], false),
         new(Kind.MissileBattery, "Missile Battery", "Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,action:Chain Drive Motor}", 1, ["heavy", "anti-armour", "aa"], false,
             ["Launch Rack", "Twin Launch Rack", "Launch Rack 2x2", "Launch Rack 1x6"], RadarMissile),
+        // Exotic: a flame projector for close work (a merged Firebreather: a longer, hotter jet that sets wood, fuel and crews alight). Mortars, railguns and bomb drops: VEHICLE-WEAPONS.md.
+        new(Kind.Exotic, "Flame Projector", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,ammo:Napalm Gel,action:Flame Valve}", 2, ["heavy", "close", "flame"], false),
     ];
 
     /// <summary>A battery's name by its size (ASCII: players read it).</summary>

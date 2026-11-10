@@ -95,16 +95,29 @@ and the rack emptied: the Launch Rack's missile locked the truck, flew and wreck
 Where the body is in a station's way (cab-over tankers, a double-decker), the station stays empty and the gun still fights: no undo for the rack once on (4 of 193 seeds).
 The standalone Turret never takes one (0.5 m up its missile drops into the ground). `--gen-vehicles`: 36 of 193 committed vehicles differ, none fail.
 
+## Phase 4 (2026-11-10): multi-station batteries, a flame projector
+
+**Multi-station batteries.** The gunsmith's ladder is back to four sizes: Launch Rack (1), Twin Launch Rack (1 x 2), Launch Rack 2x2 (rows fore and aft) and Launch Rack 1x6, all 25 cm
+by 3 m presets from `tools/constructs/air_weapons_parts.py`; a six-station rack stands out on a 1 m beam, the others on half a metre. The misses were never in the flight: on
+`--bench-vehicle-guns --battery N` (now printing each missile's lock and where it ended) every missile of the 2-, 4- and 6-station racks locked the truck 70 m ahead and
+burst within 3 m of it (one of six went off on the first missile's wreckage 15 m short). What failed was the loading: stations were refused by a centimetre's rounding.
+A designed missile's hidden lug box poked 1 cm past its lug into the rack's face, and its body box was exactly the station pitch wide; a part's place rounds to the
+centimetre and a 25 cm missile hangs 17.5 cm under its lug, so a station took its missile or not by luck (all six of a 1x6 empty; a double-decker's twin rack empty).
+The lug box now stops at the lug and the body box is 5 mm inside the missile's radius (`OrdnanceDesign`); the kit's refusal names the real blocker before the rack it
+hangs on (`VehicleCore.Blocker`). Offered by mass: twin from 3 t (tier 3) or 6 t, 2x2 from 6 t at tier 2 and up; the 1x6 is over every vehicle's 0.4 mass share so far
+(it is in the ladder for heavier ones). Salvo ticks on the bench: worst 14 to 21 ms with the process cold (JIT not yet told apart).
+
+**Flame Projector** (the first exotic class, `Kind.Exotic`): a Firebreather receiver merged 2x2 to 4x4 (23 to 93 kg), tags heavy, close, flame, from tier 2. It joins
+the gunsmith's draw for every vehicle; roles don't pick by tag yet, so "by role" is still to do (mortars for artillery roles, flame for close ones).
+`--gen-vehicles`: 35 of 193 committed vehicles differ (10 now carry a Firebreather), none fail; two stations stayed empty where the body was in the way.
+
 ## Next steps (queued)
 
-1. **Multi-station batteries.** 1x2, 2x2 and 3x2 grids (25 cm by 3 m) on a half-metre stand-off build, hold and fire (`--battery` sizes 2 to 4 before they were cut),
-   but in the bench only the first missiles locked and they met nothing; the rest got no lock and flew into the ground 15 m out. Find why (the radar lock with missiles
-   in the air ahead, launches a station apart), then put the larger racks back in the ladder (`Designs`, "Missile Battery"). A rack on the elevation hinge's leaf would
-   let the gunner lift it (only a gun aims a turret's joints today), and let ground turrets carry one.
-2. **Exotic (not started):** mortars (Hand Mortar, Bucket Launcher merged) for artillery roles, flamethrowers (Firebreather merged) for close ones, picked by role; then
+1. **Racks that aim.** A rack on the elevation hinge's leaf would let the gunner lift it (only a gun aims a turret's joints today), and let ground turrets carry one.
+2. **Exotic:** the Flame Projector is in (phase 4); next mortars (Hand Mortar, Bucket Launcher merged) for artillery roles, and picking by role tag (flame for close roles); then
    railguns (Railspike Coil merged) and bomb drops (ordnance released down).
-3. **Gunners (not started):** AI vehicles crewed by bots in gunner seats that aim and fire at players (reuse the bot and turret aim code); then the auto-targeting parts set.
+3. **Gunners (not started, phase 4 ran out of time):** AI vehicles crewed by bots in gunner seats that aim and fire at players (reuse the bot and turret aim code); then the auto-targeting parts set.
 4. **Turret loot (not done):** loot tables hold parts, not bodies: a survival turret needs a world spawn of the Turret blueprint (a site) or a kit item that builds one.
    Turret seeds swept for two styles only.
-5. Ammo and fuel cook-offs chain through the existing queue (not tried with 4x4 shells). The first-salvo ticks (12 to 25 ms) are worth a warm-up pass if they show in play.
+5. Ammo and fuel cook-offs chain through the existing queue (not tried with 4x4 shells). The first-salvo ticks (12 to 25 ms) and the cold missile salvo ticks (14 to 21 ms) still want a warm-up pass (warm, then measure) to tell JIT from real cost.
 6. **Giant moving bases (100-500 m):** merges to 6x6 and batteries of them (capital weapons are a separate catalogue: project doc capital-weapons.md).
