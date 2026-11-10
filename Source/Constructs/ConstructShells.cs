@@ -82,6 +82,7 @@ public struct CShellBlast
     public int Body; // the next index in the list of bodies
     public int Part; // the next part of that body, counted down (-1: start it)
     public int BodyCount;
+    public int Debris; // wrecks it may still leave (ConstructWorld.BlastDebris): past them a part it breaks off, or a piece it cuts off, is gone
 }
 
 /// <summary>
@@ -106,16 +107,31 @@ public static class ConstructShells
     {
         var n = Math.Max(1, (int)g.MergeN);
         w.RangeM *= (1f + R.ShellRangePerStep * (n - 1)) * w.ChargeV; // (BuildStats took the range by the charge once: reach goes with the speed squared)
-        var pull = MathF.Max(1f, World.Gravity * World.GravityScale);
+        // (not World.GravityScale before the maps are up: reading it starts World, which loads the maps, and a map's blueprints build guns: a shell gun in a committed blueprint
+        // hung the start-up while maps loaded in parallel, or threw in a serial load)
+        var pull = MathF.Max(1f, World.Gravity * (Maps.Loaded ? World.GravityScale : 1f));
         g.MaxRange = w.RangeM;
         g.Speed = MathF.Sqrt(w.RangeM * (pull > 1f ? pull : FlatGravity)); // (range is the reach at 45 degrees)
         g.Shell = kind;
         w.Damage = (int)MathF.Round(w.Damage / w.ChargeDamage); // (a shell's blast is its filling: the charge moves it, nothing more)
         g.BlastDamage = w.Damage;
-        g.Blast = MathF.Min(R.ShellBlast * MathF.Sqrt(w.Damage / 320f), R.ShellBlastMax);
-        g.Crater = kind == ShellKind.Smoke ? 0 : MathF.Min(g.Blast * R.ShellCrater * (kind == ShellKind.Siege ? R.ShellSiegeCrater : 1f), R.ShellCraterMax);
+        (g.Blast, g.Crater) = ShellSize(w.Damage, kind, n);
         g.Fx = GunFx.Cannon;
         g.Kick = R.ShellKick * n * n;
+    }
+
+    /// <summary>
+    /// A shell's blast and crater (m) for its filling's <paramref name="damage"/>, fired from an <paramref name="n"/> x <paramref name="n"/> merged gun: 9 m x sqrt(damage / 320), the crater
+    /// 0.4 of that (a siege shell's 1.5 times more). The caps (45 m and 14 m in WeaponParts.json) are a single gun's and grow with sqrt(N) (docs/sandbox/VEHICLE-WEAPONS.md,
+    /// "Blasts by shell size"): a 4x4 Howitzer's 8192-damage shell blasts 46 m and digs 18 m, a 6x6's 18432 blasts 68 m and digs 27 m, still a plain blast
+    /// (<see cref="ConstructWorld.MegaRadius"/> is 100 m) walked <see cref="ConstructWorld.ShellPartsPerTick"/> parts a tick.
+    /// </summary>
+    public static (float Blast, float Crater) ShellSize(float damage, ShellKind kind, int n = 1)
+    {
+        var grow = MathF.Sqrt(Math.Max(1, n));
+        var blast = MathF.Min(R.ShellBlast * MathF.Sqrt(MathF.Max(0, damage) / 320f), R.ShellBlastMax * grow);
+        var crater = kind == ShellKind.Smoke ? 0 : MathF.Min(blast * R.ShellCrater * (kind == ShellKind.Siege ? R.ShellSiegeCrater : 1f), R.ShellCraterMax * grow);
+        return (blast, crater);
     }
 
     /// <summary>The way to fire to land on <paramref name="target"/> from <paramref name="muzzle"/> at <paramref name="speed"/>: the low arc, or the high one to lob over something. False (45 degrees at it) when it is out of reach.</summary>
@@ -242,6 +258,11 @@ public sealed partial class ConstructWorld
     public const int ShellTestsPerTick = 22; // ...so that no tick tests many more than this
     public const int ShellPartsPerTick = 400; // parts of a blast walked a tick
     public const int ShellMaxBodies = 256; // bodies one blast reaches (the nearest the broadphase gives)
+    public const int BlastDebrisMin = 8, BlastDebrisMax = 32; // wrecks one blast leaves (parts broken off, pieces cut off): 8, and one more each 2 m of its radius, to 32; past that they are gone.
+                                                                // (4 Howitzer shells left 110 one-part wrecks of a 2.5 t truck: their first ticks of contacts took 30 to 89 ms)
+
+    /// <summary>The wrecks a blast of <paramref name="radius"/> m may leave (<see cref="BlastDebrisMin"/> to <see cref="BlastDebrisMax"/>).</summary>
+    public static int BlastDebris(float radius) => Math.Clamp(BlastDebrisMin + (int)(radius * 0.5f), BlastDebrisMin, BlastDebrisMax);
     public const int ShellMaxAge = 90 * World.TickRate; // ticks in the air before it is given up on
     public const int ShellMuzzleClear = 30; // ticks it passes its own construct
 
@@ -476,7 +497,7 @@ public sealed partial class ConstructWorld
         var n = 0;
         for (var i = 0; i < near.Count && n < ShellMaxBodies; i++)
             _blastBodies[n++] = near[i].Id;
-        _blast = new CShellBlast { Active = n > 0, Incendiary = s.Kind == ShellKind.Incendiary, At = s.Pos, Radius = s.Blast, Damage = s.Damage, By = s.By, BodyCount = n, Part = -1 };
+        _blast = new CShellBlast { Active = n > 0, Incendiary = s.Kind == ShellKind.Incendiary, At = s.Pos, Radius = s.Blast, Damage = s.Damage, By = s.By, BodyCount = n, Part = -1, Debris = BlastDebris(s.Blast) };
     }
 
     /// <summary>The blast under way, <see cref="ShellPartsPerTick"/> parts on. Walks each body's parts from the last, so one that breaks off never moves those still to come.</summary>
@@ -486,6 +507,9 @@ public sealed partial class ConstructWorld
             return;
         ref var b = ref _blast;
         DamageBy = b.By;
+        var ownDebris = MegaDebrisLeft < 0; // (inside a massive blast's walk its own count rules)
+        if (ownDebris)
+            MegaDebrisLeft = b.Debris;
         while (budget > 0 && b.Body < b.BodyCount)
         {
             if (Get(_blastBodies[b.Body]) is not { } c)
@@ -534,6 +558,11 @@ public sealed partial class ConstructWorld
             b.Part = -1;
         }
         DamageBy = 255;
+        if (ownDebris)
+        {
+            b.Debris = Math.Max(0, MegaDebrisLeft);
+            MegaDebrisLeft = -1;
+        }
         if (b.Body >= b.BodyCount)
             b.Active = false;
     }

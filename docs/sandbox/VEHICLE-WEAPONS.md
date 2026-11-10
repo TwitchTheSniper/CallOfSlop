@@ -49,13 +49,41 @@ and looking a moved part up from where it was (Compact keeps the order). A blast
 (none today) takes the old walk. Shove, damage and craters already go with a shell's filling (damage x k squared to 1 - distance / radius; push 2.4 x damage x k / mass
 m/s; blast 9 m x sqrt(damage / 320) to 45 m, crater 0.4 x blast to 14 m), so the gunsmith's bigger shells blast wider without a rule change.
 
+## Phase 2 (2026-11-10): tried by hand, blasts by shell size, turrets
+
+**By hand.** `--bench-vehicle-guns [BLUEPRINT...] [--shells N] [--merge N] [--map NAME]` (`Source/App/BenchVehicleGuns.cs`, a bench, not a test): committed blueprints in a row on
+Proving Ground, each gun listed and fired once, then N shells of each shell gun (or of an N x N Howitzer with `--merge`) landed on the next vehicle, every tick's thread CPU timed.
+Every gunsmith gun built and fired (Howitzer and Field Gun shells left the muzzle; autocannon, Bunker Buster 2x2 and 3x3 rounds). Found and fixed:
+
+- **Start-up hang.** A committed blueprint with a shell gun built its guns while the maps loaded (a sandbox map names blueprints), `ConstructShells.GunNumbers` read
+  `World.GravityScale`, which starts `World`, which loads the maps: a deadlock in the parallel load (every command that loads maps hung on main), a Lazy recursion in a serial one.
+  It reads 1 until `Maps.Loaded`.
+- **Wreck storms.** Four 512-damage shells on a 2.5 t truck broke it into 110 one-part wrecks, and their first ticks took 30 to 89 ms. A blast now leaves at most
+  `ConstructWorld.BlastDebris(radius)` wrecks (8, plus one each 2 m of radius, to 32: a shell's walk and `ConstructWorld.Blast` alike; a massive blast's count also covers parts broken
+  off); past that what it breaks off is gone. The same salvo: worst tick 9 ms, median 0.2 to 0.5 ms; Field Gun salvoes under 4.4 ms.
+- **Recoil** reads 0 m/s straight after `Fire`: it is applied in the physics step (`AddRecoil`), so the bench can't see it; not checked.
+
+**Blasts by shell size.** The 45 m blast and 14 m crater caps (`WeaponParts.json`) are now a single gun's: a merged gun's grow with sqrt(N) (`ConstructShells.ShellSize`).
+A 4x4 Howitzer's 8192-damage shell blasts 46 m and digs 18 m (27 m siege); a 6x6's (not offered yet) 68 m and 27 m (34 m cap), still a plain blast under the 100 m massive-blast line.
+A shell crater of 8 m or more is dug in bands like a massive blast's (`Game.BandedCrater`, `MegaGround`): at once, an 18 m crater took 50 to 1000 ms.
+Measured, four 4x4 shells a vehicle on five vehicles 30 m apart: medians 0.3 to 1 ms, but landing ticks still 10 to 37 ms, one 133 ms (the 400-part walk, wrecks made, bands
+started): **4x4 shells are over the 8 ms tick** and the gunsmith still offers them to 24 t vehicles. Caps today: blast 45 x sqrt(N) m, crater 14 x sqrt(N) m, 400 parts walked a tick
+(`ShellPartsPerTick`), 256 bodies a blast, 8-32 wrecks a blast, 1024 shells in the air.
+
+**Turrets.** `Generators/Turret.cs`: a random complete turret from a seed (a steel base plate, the kit's turret: turntable, elevation hinge, gun, the gunner's seat and Turret Module),
+its gun the gunsmith's for a mount rated as a 0.8 to 16 t vehicle's at tier 1 to 4, or a quarter of the time one of the style's own. It is in
+`VehicleRegistry.Everywhere` (every shipped style ships seeds 1 and 2; roles and convoys never draw it), so creative gets a tile per style and "New seed" makes another.
+Checked as a towed thing (its build, faces, how it stands); a 1 m base plate with an outrigger plate on each side (without them heavy guns tipped it 8 to 17 degrees).
+`--sweep-vehicle` Bandit and Highland Turret: 8 of 8 seeds pass each. Its blueprint files (10, seeds 1 and 2 of five styles) come with the next regeneration of `Constructs/Blueprints`.
+
 ## Next steps (queued)
 
-1. **Bigger blasts.** Tune shove and part damage for the biggest shells by trying them on real vehicles; lift the 45 m blast and 14 m crater caps for giant guns
-   (`WeaponParts.json`), measured against the 8 ms tick. Report the caps (blast budget, `MaxShells` 1024, the 8 ms tick) as they scale; cook-offs of ammo and fuel chain through
-   the existing cook-off queue (fuel tanks already go up: commit 6530762a).
-2. **Missile batteries:** the modular ordnance (ConstructOrdnance, OrdnanceDesign, OrdnanceFlight, ModularRack) as a class, racks sized by the same ceiling.
-3. **Exotic:** railguns (Railspike Coil merged), mortars (Hand Mortar, Bucket Launcher merged), flamethrowers (Firebreather merged), bomb drops (ordnance released down).
-4. **Giant moving bases (100-500 m):** merges to 6x6 and batteries of them; needs the blast walk fix first.
-5. **Standalone turret generator:** a random turret as a creative spawn and as survival loot.
+1. **Blast landing ticks.** 4x4 shells: split a landing's work (the first walk slice, the wrecks it makes) so no landing tick passes 8 ms, or cap the gunsmith at 3x3 until then.
+   Ammo and fuel cook-offs chain through the existing queue (not tried with big shells yet).
+2. **Missile batteries (not started):** an Ordnance Rack (`ModularRack`) of designed heat-seeking missiles on the turret's hinge leaf beside a spotting gun (a rack is not a gun: only a
+   gun aims a turret's joints; a rack fires on its input, wired from the Turret Module), stations and missile size from the same mass ceiling.
+3. **Turret loot (not done):** loot tables hold parts, not bodies: a survival turret needs a world spawn of the Turret blueprint (a site) or a kit item that builds one.
+   Turret seeds swept for two styles only; a 4x4 block didn't merge on a ground-level base (the base now starts at the gunsmith's test-stand height, 2 m, and is set down).
+4. **Exotic:** railguns (Railspike Coil merged), mortars (Hand Mortar, Bucket Launcher merged), flamethrowers (Firebreather merged), bomb drops (ordnance released down).
+5. **Giant moving bases (100-500 m):** merges to 6x6 and batteries of them (capital weapons are a separate catalogue: project doc capital-weapons.md).
 6. **Gunners and auto-targeting:** AI vehicles crewed by bots in gunner seats now; a full auto-targeting parts set after this.
