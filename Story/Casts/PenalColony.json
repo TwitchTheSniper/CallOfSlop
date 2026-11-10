@@ -2,8 +2,10 @@
   // The penal colony's staff (docs/story/OPENING.md): the Ministry of Slop's warden and guards, put into a new survival
   // world with the colony (Game/GameSandboxOpening.cs). The one place is the host's world, so they live and work there
   // and have bodies round the colony. Serious world, funny people: by the book, underpaid, and very fond of forms.
+  // The chaplain and the laundress are not the Ministry's: they are the Order of the Fold's (Story/Factions/Fold.json),
+  // there by an old arrangement nobody has the form for. Wren is of the Open Hand, the sect that would unroll the fold.
   "name": "Penal Colony",
-  "about": "the Ministry of Slop's warden and three guards at the penal colony",
+  "about": "the Ministry of Slop's warden and three guards at the penal colony, and the Order of the Fold's chaplain and laundress",
   "places": [
     { "name": "Penal Colony", "world": true }
   ],
@@ -15,11 +17,17 @@
     { "name": "Officer Crumb", "about": "guard, mostly guards the kettle", "home": "Penal Colony", "works": "Penal Colony",
       "qualities": { "Sociable": 80, "Honest": 55, "Brave": 30, "Vengeful": 20, "Gossipy": 85, "Greedy": 40, "Wealth": 6 } },
     { "name": "Officer Nettles", "about": "guard, new, keen, armed with a clipboard", "home": "Penal Colony", "works": "Penal Colony",
-      "qualities": { "Sociable": 60, "Honest": 80, "Brave": 55, "Vengeful": 30, "Gossipy": 50, "Greedy": 15, "Wealth": 5 } }
+      "qualities": { "Sociable": 60, "Honest": 80, "Brave": 55, "Vengeful": 30, "Gossipy": 50, "Greedy": 15, "Wealth": 5 } },
+    { "name": "Chaplain Marlow", "about": "the colony's chaplain, of the Order of the Fold; kneads bread for the inmates and believes every verse", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 70, "Honest": 85, "Brave": 40, "Vengeful": 15, "Gossipy": 45, "Greedy": 10, "Wealth": 4 } },
+    { "name": "Sister Wren", "about": "the colony's laundress, of the Order of the Fold; quietly of the Open Hand, who would unroll it", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 35, "Honest": 70, "Brave": 65, "Vengeful": 30, "Gossipy": 55, "Greedy": 10, "Wealth": 2, "Unroller": 1 } }
   ],
   "feelings": [
     { "who": "Sergeant Bellweather", "rel": "Likes", "to": "Warden Pettigrew", "value": 30 },
     { "who": "Officer Crumb", "rel": "Likes", "to": "Officer Nettles", "value": 25 },
-    { "who": "Officer Nettles", "rel": "Likes", "to": "Sergeant Bellweather", "value": 35 }
+    { "who": "Officer Nettles", "rel": "Likes", "to": "Sergeant Bellweather", "value": 35 },
+    { "who": "Chaplain Marlow", "rel": "Likes", "to": "Sister Wren", "value": 40 },
+    { "who": "Officer Crumb", "rel": "Likes", "to": "Chaplain Marlow", "value": 20 }
   ]
 }

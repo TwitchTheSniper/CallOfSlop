@@ -732,7 +732,8 @@ A faction (living factions, F1; code `Source/Story/StoryFactions.cs`, the game's
 Story window's *Factions* tab `Source/UI/UiStoryFactions.cs`; data `Story/Factions/*.json`, relations in
 `Story/Relations/Factions.json`, verbs in `Story/Verbs/Factions.json`) is a Faction entity in the story world. The IT
 Department is the first (`Story/Factions/IT.json`); the Call Centre (`CallCentre.json`), Clan MacSlop (`MacSlop.json`) and the
-Ministry of Slop (`Ministry.json`) are data in the same shape.
+Ministry of Slop (`Ministry.json`) are data in the same shape, and so is the Order of the Fold (`Fold.json`), the faith
+("The Order of the Fold" below).
 
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
@@ -812,6 +813,9 @@ learnt. What ships:
 | Ministry of Slop | Trusty | Explosives Licence | Warhead Blast, Warhead Bunker, Aerial Bomb, Mine Dispenser |
 | Ministry of Slop | Contractor | Atomic Licence | Small Nuke, Fission Warhead, Fusion Warhead |
 | Ministry of Slop | Crown Servant | The Antimatter Bomb | Antimatter Warhead |
+| Order of the Fold | Proved | The Weight of the Centre | Gravity Generator, Gravity Well |
+| Order of the Fold | Laminated | The Lesser Fold | Jump Drive |
+| Order of the Fold | Of the Thousand Layers | The Rising | Anti-Grav Generator, all sizes |
 
 How standing is earned for now: IT as above; the Call Centre likes anyone who falls for one of its adverts (a Hooked
 event, +12) or wrecks a Ministry van (+6); Clan MacSlop likes wrecking (+10) and stripping (+3) Ministry vans; the
@@ -865,7 +869,7 @@ factions": what each asks, what it pays, and why one can't be taken yet.
 - **Network (protocol 203)**: `Msg.Jobs` carries a take or a drop from a client, and to each player their window when it
   changes (checked once a second against a key of their party, the standings, the jobs held and their progress, and the minute).
 
-What ships (21 jobs): the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
+What ships (26 jobs; the Order of the Fold's five are in its own section): the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
 for Registered users a Hardware Refresh and a Satellite Uplink), the Call Centre's dodgy errands (six Computers "for
 refurbishment", Prize Draw Logistics, a glass "Fibre Optic Upgrade"; for Valued Customers a Cubicle Farm and a Gift Card
 Run in gold), Clan MacSlop's Highland games (a wood caber, stones for the stone put, whisky for the ceilidh, a pipe band to
@@ -873,6 +877,49 @@ build; for Friends of the Clan "Something Enormous", a 6 m wheel for the cheese 
 Rocks, Number Plates and Tea for the Warden for inmates; Fit Out the Cell Block in steel I-beams and a Public Information
 Point for Trusties; Concrete for the New Wing for Contractors). Sabotage jobs (wreck a rival's things) and a courier who
 walks in as a body are for later.
+
+## The Order of the Fold
+
+The faith (storyline step 2, 2026-11-10; the storyline is the plan doc https://claude.ai/artifact/MawQPS11ypRiLZa7WjUu1q).
+Long ago the builders of the five systems folded them away from a threat, and the fold rolled out to infinity and took
+the rest of the universe with it. The story of it was told and retold until it became scripture: the Order of the Fold
+believes the Baker rolled the five worlds out from the centre like pastry, rolling the Hunger under, and that the dough
+must be left to rest. Serious faith, absurd surface: its sacrament is laminated dough, a thousand layers, a world kept in
+every one. Data only, in the shapes above:
+
+- **The faction** (`Story/Factions/Fold.json`): home The Bakehouse; members the Rolling Mother, a deacon, a scribe who
+  keeps finding that the old copies differ, and Elder Coyle of the Open Hand; wants Devotion and Stillness; tiers Burnt
+  Offering, Unleavened, Seeker, Proved (15), Laminated (40), Of the Thousand Layers (70). Its deeds are the Ministry's kind,
+  towards its two people at the colony: a greeting (+2), a chat (+1, once in ten minutes), a trade (+3), an offering (a Give,
+  +4); mocking (-4), striking (-15) and killing (-40) cost. Rival of the Ministry (20%). Its voice is `[THE ORDER]`.
+- **Scripture** (`"scripture"`, any faction may have one: up to 16 verses, each a `"name"`, the `"fragment"` it retells, its
+  `"text"` up to 240 characters, and `"bends"`, a note for writers on how it bends the truth, never shown to players; the
+  Story window's Factions tab lists them). The five verses bend the five fragments the player can find (the fragments'
+  ids are the same: `threat`, `fold`, `instruments`, `undone`, `machine`): *The Hunger* (the threat, made a beast, and
+  forgotten that it is still inside), *The Rolling* (the fold, given to one Baker as a holy act), *The Thousand Layers*
+  (the instruments' empty sky, made a comfort: nothing is lost), *The Resting* (why nobody undid it: a commandment, and
+  the builders' vanishing an ascension), *The Pin* (the machine in five pieces: the true cost of turning it back, the
+  planets eaten, and silence on what else comes back).
+- **The Open Hand**: a sect inside the Order (people with the `Unroller` quality) that reads the same verses the other
+  way: the stars are under us, pressed flat, and owed the light; the Pin should be turned back. Most believers want the
+  fold kept.
+- **People**: the penal colony's chaplain, Chaplain Marlow, and its laundress, Sister Wren (of the Open Hand), are in the
+  Penal Colony cast and are the Order's `"staff"`. Being in the colony, hurting either starts the lockdown too.
+- **Lines** (`Story/Lines/Fold.json`): the faithful greet with "Blessed be the centre", quote the verses in pieces when they
+  chat, and the Open Hand whisper their reading; both have words when hurt and when they see a killing.
+- **Storylets** (`Story/Storylets/Fold.json`, bucket B): *The chaplain's sermon* (after the induction, once the player has
+  been near the chaplain: the first two verses; Faith +1 and the lead "The Rolling"), *The morning laminate* (the Order's
+  first job, The Daily Laminate: 24 steel plates), *The Open Hand* (Sister Wren's whisper; keep it to yourself: Doubt +1 and
+  the lead "The Open Hand"; tell the chaplain: Faith +1 and her grudge). Faith and Doubt are for the fragments and the
+  ending to read: nothing reads them yet (`--check-story` warns so).
+- **Jobs**: The Daily Laminate (24 steel plates), Cloth for the Board (40 kg of cloth), A Wayside Shrine (build five Lamps
+  and two Seats on one construct), and for the Proved A Pin for the Chapel (a wooden round 2.5 m by 0.3 m), for the
+  Laminated Stone for the Oven (6 t of stone and 400 kg of wood).
+- **Technologies**: gravity at Proved, the Jump Drive at Laminated (the Order teaches the small fold as a prayer and will not
+  say where it learnt it), anti-gravity at Of the Thousand Layers. In survival the Jump Drive now needs the Order.
+
+Not yet: the Bakehouse as a place in the world, Order members with bodies outside the colony, radio sermons, and the
+Order's reaction to fragments found (step 4 of the plan).
 
 ## The Scammers
 
