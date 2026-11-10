@@ -17,6 +17,12 @@ lays on the top sockets), the cross beams have a full-height portal where the co
 hatches over the planner's stairwells and lift shaft, and each storey of the hollow has capital floor sockets for the
 adapter pads in the corridor (one a bay). The armoured hull is the same frame with heavier plate.
 
+The panel walls (INTERIORS.md "Phase 5"): Steel Panel Wall 4, 8, 12 and 16 m, the Steel Wall 4 m's section and plate in long
+runs with few links: a bottom and a top socket at each end only (on the floors' and walls' 2 m module points, so they meet a
+Steel Floor 4x4 m's sockets wherever a 4 m wall's would) and one end socket each side at mid height. The faces keep sockets
+every 2 m for things a player hangs on them; they link to nothing unless something is fitted. A fitted construct holds at
+most Construct.MaxLinks links, and a 4 m wall makes about ten.
+
 Run it from the repo root: python3 -I tools/constructs/interior_parts.py (--check only compares).
 Boxes go through zfight.resolve (CLAUDE.md, "No coplanar faces"). Fix this file, not its output.
 """
@@ -26,6 +32,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scale import SMALL, CAPITAL, Part, box, pick, write_parts  # noqa: E402
+import building_parts as bp  # noqa: E402 (the Building pieces' wall section, plate and sockets)
+import zfight  # noqa: E402
 
 OUT = os.path.join("Constructs", "Parts", "Interior")
 PLATE, FRAME, RAIL, STRIPE = "#5d6670", "#3b4046", "#c9a21c", "#f08a12"
@@ -154,8 +162,44 @@ def hollow_chassis(armoured=False):
     return p.stats(area * c.kg_m2 * 2.5, min(16_000_000, 40 + area * c.health_m2 * 2.5), c.armour * 2)
 
 
+class Panel(bp.Part):
+    """A Building piece longer than the Building generator's 4 m limit (its json() asserts it): the same output otherwise."""
+
+    def json(self):
+        assert 0 < len(self.boxes) <= 16 and 0 < len(self.sockets) <= 255 and len(self.d["name"]) <= 32, self.d["name"]
+        zfight.resolve(self.boxes, self.sockets)
+        d = dict(self.d)
+        d.update(self.extra)
+        d["boxes"] = self.boxes
+        d["sockets"] = self.sockets
+        return d
+
+
+def panel_wall(metres):
+    """A steel storey wall `metres` long (a multiple of 4) with links only where they hold it: see the module docstring."""
+    n = int(metres / bp.C)
+    h = bp.WALL_H
+    L = n * bp.C
+    p = Panel(f"Steel Panel Wall {metres} m", bp.SECTION_WALLS, "Long storey wall with few links (interiors). " + bp.MAT_WORDS["steel"],
+              role="frame", tool=bp.MATS["steel"][7], material=bp.MATS["steel"][4], color=bp.MATS["steel"][5])
+    p.fbox(0, 0, 0, L, h * bp.C, bp.C)
+    bp.wall_details(p, "steel", n, h, [(0, 0, L, h * bp.C)])
+    for x in (0, n - 1):
+        p.csock(f"b{x}", (x, 0, 0), "-y")
+        p.csock(f"t{x}", (x, h - 1, 0), "+y")
+    p.csock(f"l{h // 2}", (0, h // 2, 0), "-x")
+    p.csock(f"r{h // 2}", (n - 1, h // 2, 0), "+x")
+    for x in sorted(set(range(0, n, 8)) | {n - 1}):
+        for y in bp.thirds(h):
+            p.csock(f"f{x}_{y}", (x, y, 0), "-z")
+            p.csock(f"k{x}_{y}", (x, y, 0), "+z")
+    area = L * h * bp.C
+    return bp.mat_stats(p, "steel", area, seconds_scale=0.6 + 0.4 * n / 16)
+
+
 def main():
-    return write_parts(OUT, [("", car()), ("Capital", hollow_chassis()), ("Capital", hollow_chassis(armoured=True))])
+    panels = [("Walls", panel_wall(m)) for m in (4, 8, 12, 16)]
+    return write_parts(OUT, [("", car()), ("Capital", hollow_chassis()), ("Capital", hollow_chassis(armoured=True))] + panels)
 
 
 if __name__ == "__main__":

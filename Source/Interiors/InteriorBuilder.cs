@@ -52,6 +52,10 @@ public sealed class InteriorBuilder : BlueprintScript
         foreach (var (f, t) in bp.Wires)
             b.Wire(b._base[f], b._base[t]);
         b.Measure();
+        foreach (var pn in data.Panels)
+            if (ConstructParts.Find(pn) is { } pd)
+                b._panels.Add((pn, (int)MathF.Round((pd.BoundsMax.X - pd.BoundsMin.X) / 4f)));
+        b._panels.Sort((x, y) => y.Cells.CompareTo(x.Cells));
         return b;
     }
 
@@ -275,12 +279,28 @@ public sealed class InteriorBuilder : BlueprintScript
         _jointReserve = 0;
         foreach (var g in gaps)
             Lift(g.Lo, g.LoLv, g.Hi, g.HiLv);
-        _lv = 0;
-        _jointReserve = FreeJoints;
-        foreach (var (frame, door, what) in _laterLeaves)
+        // (in the budget's order: the deck's other doorways' leaves, then the void's, then the generated rooms' things; what doesn't fit is left out and reported)
+        foreach (var (frame, door, what, lv) in _laterLeaves.OrderByDescending(l => l.Lv))
+        {
+            _lv = lv;
             Hang(frame, door, what, true);
+        }
+        foreach (var (p, r, lv) in _laterRooms)
+        {
+            _lv = lv;
+            var (items, parts) = Estimate(r);
+            if (C.LinkCount + items * 3 > _budget.Links || C.PartCount + parts > _budget.Parts)
+            {
+                Bare.Add($"{r.Name} (level {r.Deck + lv})");
+                continue;
+            }
+            Furnish(p, r, rng);
+        }
+        _lv = 0;
         if (OpenDoorways > 0)
-            Notes.Add($"{OpenDoorways} doorways left open (a frame, no leaf): a construct has at most {Construct.MaxJoints} joints and each hinge is one, so the void's other doorways get leaves last, while {FreeJoints} stay free; {C.JointCount} used");
+            Notes.Add($"budget: {OpenDoorways} doorways left open (a frame, no leaf): each leaf's hinge is a joint and the class's budget is {_budget.Joints} of {Construct.MaxJoints}; critical rooms and bulkheads first, then the deck's, then the void's");
+        if (Bare.Count > 0)
+            Notes.Add($"budget: {Bare.Count} generated rooms left bare (over the class's {_budget.Links} links or {_budget.Parts} parts): {string.Join(", ", Bare.Take(12))}{(Bare.Count > 12 ? ", ..." : "")}");
         if (Lifts > 0)
             Notes.Add($"freight lift: {Lifts} car(s) of {gaps.Count}, stacked a storey each (levels {string.Join(", ", gaps.Select(g => $"{g.Lo.Deck + g.LoLv}-{g.Hi.Deck + g.HiLv}"))}), calls from every landing and each car");
         foreach (var p in voidPlan != null ? new[] { voidPlan, plan } : new[] { plan })
@@ -303,7 +323,10 @@ public sealed class InteriorBuilder : BlueprintScript
             if (k + 1 < plan.Decks || mezz == null)
                 Slabs(plan, k + 1);
             foreach (var r in plan.Rooms.Where(r => r.Deck == k))
-                Furnish(plan, r, rng);
+                if (r.Origin == "generated")
+                    _laterRooms.Add((plan, r, _lv));
+                else
+                    Furnish(plan, r, rng);
         }
         if (mezz == null || mezz.Count == 0)
             return;
@@ -484,12 +507,14 @@ public sealed class InteriorBuilder : BlueprintScript
             if (_pieces.TryGetValue((hiLv, hi.Id, Side.West, i), out var w1))
                 up.Add(w1);
         var landing = new Vector3(bx + 0.4f, floorTop + 1.4f, bz + 4.1f);
+        // (the landing buttons first, at hand height: 1 to 1.8 m over their floor, where the wall's middle row of face sockets is, 1.375 m up;
+        // then the gates low down by the rail, on what is left)
+        var callLow = Mount("Button", low, inward, landing, $"{what}: lower landing", floorTop + 1f, floorTop + 1.8f);
+        var callHigh = Mount("Button", up, inward, landing + new Vector3(0, 3, 0), $"{what}: upper landing", floorTop + 4f, floorTop + 4.8f);
         var toggle = Mount("Toggle", low, inward, new Vector3(bx, floorTop, bz + 1), what);
         var and1 = Mount("AND Gate", low, inward, new Vector3(bx, floorTop, bz + 1), what);
         var and2 = Mount("AND Gate", low, inward, new Vector3(bx, floorTop, bz + 1), what);
         var not = Mount("NOT Gate", low, inward, new Vector3(bx, floorTop, bz + 1), what);
-        var callLow = Mount("Button", low, inward, landing, $"{what}: lower landing");
-        var callHigh = Mount("Button", up, inward, landing + new Vector3(0, 3, 0), $"{what}: upper landing");
         VPart? send = null;
         try
         {
@@ -516,7 +541,7 @@ public sealed class InteriorBuilder : BlueprintScript
     public readonly List<(int Level, VPart Rail, VPart Car, VPart Send, VPart CallLow, VPart CallHigh)> LiftCars = new();
 
     /// <summary>A part on the first free socket of <paramref name="on"/> that faces <paramref name="face"/>, nearest <paramref name="near"/> first.</summary>
-    private VPart? Mount(string part, IEnumerable<VPart> on, Vector3 face, Vector3 near, string what)
+    private VPart? Mount(string part, IEnumerable<VPart> on, Vector3 face, Vector3 near, string what, float minY = float.NegativeInfinity, float maxY = float.PositiveInfinity)
     {
         var spots = new List<(float D, VPart P, string S)>();
         foreach (var p in on)
@@ -527,7 +552,7 @@ public sealed class InteriorBuilder : BlueprintScript
                 if (C.SocketUsed(p.Index, s))
                     continue;
                 C.SocketAt(p.Index, s, out var at, out var dir);
-                if (Vector3.Dot(ConstructParts.DirVector(dir), face) > 0.9f)
+                if (Vector3.Dot(ConstructParts.DirVector(dir), face) > 0.9f && at.Y >= minY && at.Y <= maxY)
                     spots.Add((Vector3.Distance(at, near), p, def.Sockets[s].Name));
             }
         }
@@ -594,8 +619,20 @@ public sealed class InteriorBuilder : BlueprintScript
 
     public int PowerOff, OpenDoorways;
     private int _jointReserve; // joints kept for the lifts, built last
-    private readonly List<(VPart Frame, (PlanDoor D, bool Own) Door, string What)> _laterLeaves = new(); // the void's other doorways, hung last while joints last
-    public const int FreeJoints = 32; // joints a fitted construct leaves for its players (doors, hatches, turrets they add)
+    private readonly List<(VPart Frame, (PlanDoor D, bool Own) Door, string What, int Lv)> _laterLeaves = new(); // doorways other than critical rooms' and bulkheads', hung last while the budget lasts
+    private readonly List<(InteriorPlan Plan, PlanRoom Room, int Lv)> _laterRooms = new(); // generated rooms, furnished last while the budget lasts
+    public readonly List<string> Bare = new(); // generated rooms the budget left without things
+    private Budget _budget => Class?.Budget ?? Budget.None;
+
+    /// <summary>A room's things as <see cref="Furnish"/> counts them (items, and parts with their switch and day tanks), for the budget.</summary>
+    private (int Items, int Parts) Estimate(PlanRoom r)
+    {
+        if (_data.Rooms[r.Type].Modules is not { } setId || r.Shaft != null)
+            return (0, 0);
+        var cells = r.Area;
+        var items = _data.Sets[setId].Items.Sum(i => Math.Min(i.PerCells > 0 ? Math.Max(i.Count, cells / i.PerCells) : i.Count, 3 * cells));
+        return (items, items * 2 + 1);
+    }
 
     /// <summary>Every block's slab at <paramref name="level"/> (the top level is the roof), on the walls below or a neighbour, in passes until none is added. <paramref name="only"/>: just these blocks.</summary>
     private void Slabs(InteriorPlan plan, int level, HashSet<(int X, int Z)>? only = null)
@@ -653,10 +690,31 @@ public sealed class InteriorBuilder : BlueprintScript
     private static Side Opposite(Side s) => s switch { Side.North => Side.South, Side.South => Side.North, Side.East => Side.West, _ => Side.East };
 
     /// <summary>
-    /// A room's own walls along the outline of its cells (a rectangle, or a free room's L or T): each straight run of edges gets 4 m pieces from
-    /// 2 m into a cell to 2 m into the next, a corner piece (2 m legs) at each convex corner and a 2 m piece at each end that meets an inner
-    /// corner. Doorways go where the plan has doors (both rooms of a shared door open theirs, lined up); a door's side and slot count along the
-    /// room's rectangle, so only runs on the rectangle's edges take doors.
+    /// Whether room <paramref name="r"/> leaves its wall on side <paramref name="s"/> of cell <paramref name="x"/>, <paramref name="z"/> to the
+    /// neighbour across it (phase 5: one wall between two rooms, not two back to back). The neighbour's wall stands at the shared edge
+    /// either way, so the room on the south or east side of an edge builds it; a shaft always builds its own (its lift and calls hang on it),
+    /// so its neighbours leave theirs out. The chassis void's dead space builds none, so its neighbours keep theirs.
+    /// </summary>
+    private bool Shares(InteriorPlan plan, PlanRoom r, Side s, int x, int z)
+    {
+        if (r.Shaft != null || r.Deck >= plan.Decks)
+            return false;
+        var (ax, az) = s switch { Side.North => (x, z - 1), Side.South => (x, z + 1), Side.East => (x + 1, z), _ => (x - 1, z) };
+        if (ax < 0 || az < 0 || ax >= plan.W || az >= plan.D || plan.Cells[r.Deck][ax, az] is var id && id < 0 || id == r.Id)
+            return false;
+        var o = plan.Rooms[id];
+        if (_lv < 0 && o.Type == "dead")
+            return false;
+        return o.Shaft != null || s is Side.North or Side.West;
+    }
+
+    /// <summary>
+    /// A room's walls along the outline of its cells (a rectangle, or a free room's L or T), less the edges it shares with a neighbour that
+    /// builds them (<see cref="Shares"/>): each straight run of edges gets wall from 2 m into a cell to 2 m into the next (the longest panel
+    /// that fits between doorways, phase 5, or 4 m pieces in a shaft), a corner piece (2 m legs) at each convex corner and a 2 m piece at each
+    /// end that meets an inner corner or a shared edge. Doorways go where the plan has doors; a doorway in a shared wall is built (and its
+    /// leaf hung) by the room that builds the wall. A door's side and slot count along the room's rectangle, so only runs on the rectangle's
+    /// edges take doors.
     /// </summary>
     private void Walls(InteriorPlan plan, PlanRoom r)
     {
@@ -670,7 +728,10 @@ public sealed class InteriorBuilder : BlueprintScript
             var a = plan.Rooms[d.Room].Rect;
             var startA = d.Side is Side.North or Side.South ? a.X0 : a.Z0;
             var startB = d.Side is Side.North or Side.South ? g.X0 : g.Z0;
-            doors[(Opposite(d.Side), startA + d.Slot - startB)] = (d, false);
+            // (the owner left its half of a shared wall to this room: the doorway and its leaf are this room's)
+            var owner = plan.Rooms[d.Room];
+            var leftToMe = owner.Shaft == null && (r.Shaft != null || d.Side is Side.North or Side.West);
+            doors[(Opposite(d.Side), startA + d.Slot - startB)] = (d, leftToMe);
         }
         var what = $"{r.Name} deck {k}";
         var mine = r.Cells().ToHashSet();
@@ -683,17 +744,18 @@ public sealed class InteriorBuilder : BlueprintScript
             (Side.South, 0, 1, true, 0, 3.75f, -Vector3.UnitX, 3.75f, 3.75f, false),
             (Side.West, -1, 0, false, 0, 0, -Vector3.UnitZ, 0, 3.75f, false),
         };
+        var panels = r.Shaft == null ? _panels : new List<(string Part, int Cells)>();
         var done = new HashSet<(Side, int, int)>();
         var late = new List<(string Part, Vector3 At, Vector3 A, (int X, int Z) Block, (PlanDoor D, bool Own) Door)>();
         foreach (var sd in sides)
             foreach (var (cx, cz) in mine.OrderBy(c => c.X).ThenBy(c => c.Z))
             {
-                if (In(cx + sd.Dx, cz + sd.Dz) || done.Contains((sd.S, cx, cz)))
+                if (In(cx + sd.Dx, cz + sd.Dz) || done.Contains((sd.S, cx, cz)) || Shares(plan, r, sd.S, cx, cz))
                     continue;
                 // the run of edges this cell's starts, along x (north, south) or z (east, west)
                 var (ux, uz) = sd.AlongX ? (1, 0) : (0, 1);
                 var cellsOf = new List<(int X, int Z)>();
-                for (var (x, z) = (cx, cz); In(x, z) && !In(x + sd.Dx, z + sd.Dz); x += ux, z += uz)
+                for (var (x, z) = (cx, cz); In(x, z) && !In(x + sd.Dx, z + sd.Dz) && !Shares(plan, r, sd.S, x, z); x += ux, z += uz)
                 {
                     cellsOf.Add((x, z));
                     done.Add((sd.S, x, z));
@@ -703,7 +765,7 @@ public sealed class InteriorBuilder : BlueprintScript
                              (sd.AlongX ? cellsOf[0].X >= g.X0 && cellsOf[^1].X <= g.X1 : cellsOf[0].Z >= g.Z0 && cellsOf[^1].Z <= g.Z1);
                 var start = sd.AlongX ? g.X0 : g.Z0;
                 var first = sd.AlongX ? cellsOf[0].X : cellsOf[0].Z;
-                // an end is an inner corner when the cell beyond it along the run is the room's (the wall turns outward there)
+                // an end is an inner corner (or meets a shared edge) when the cell beyond it along the run is the room's
                 bool Inner(bool atMin)
                 {
                     var (ex, ez) = atMin ? cellsOf[0] : cellsOf[^1];
@@ -714,17 +776,27 @@ public sealed class InteriorBuilder : BlueprintScript
                 foreach (var atMin in new[] { true, false })
                 {
                     var (ex, ez) = atMin ? cellsOf[0] : cellsOf[^1];
+                    var half = At(k, ex, ez, sd.AlongX ? (atMin ? 0 : 2) : sd.Lx, sd.AlongX ? sd.Lz : (atMin ? 0 : 2)); // (a 2 m piece over the end cell's half at this end)
                     if (Inner(atMin))
                     {
-                        // a 2 m piece over the half of the end cell at the inner corner
-                        var o = At(k, ex, ez, sd.AlongX ? (atMin ? 0 : 2) : sd.Lx, sd.AlongX ? sd.Lz : (atMin ? 0 : 2));
-                        if (Place(Shell("wall2"), o, a, FloorsUnder(k, [(ex, ez)]), $"{what} wall") is { } w2)
+                        if (Place(Shell("wall2"), half, a, FloorsUnder(k, [(ex, ez)]), $"{what} wall") is { } w2)
                             Remember(k, [(ex, ez)], w2);
+                        continue;
                     }
-                    else if (atMin == sd.CornerAtMin)
+                    // a convex corner: the side across it at this end (west or east of a run along x, north or south of one along z)
+                    var across = sd.AlongX ? (atMin ? Side.West : Side.East) : (atMin ? Side.North : Side.South);
+                    var acrossShared = Shares(plan, r, across, ex, ez);
+                    if (atMin == sd.CornerAtMin)
                     {
                         // the convex corner this side starts at (walking the outline clockwise): the door corner of a one-cell side
                         var door = onRect && doors.TryGetValue((sd.S, -1), out var dd) && first == (sd.CornerAtMin ? start : (sd.AlongX ? g.X1 : g.Z1)) - (sd.CornerAtMin ? 0 : n - 1) ? dd : default;
+                        if (acrossShared && door.D == null)
+                        {
+                            // (the side across is the neighbour's: this side's own end half only)
+                            if (Place(Shell("wall2"), half, a, FloorsUnder(k, [(ex, ez)]), $"{what} wall") is { } w2c)
+                                Remember(k, [(ex, ez)], w2c);
+                            continue;
+                        }
                         var cornerPart = door.D != null ? Shell("doorCorner") : Shell("corner");
                         if (!FloorsUnder(k, [(ex, ez)]).Any())
                         {
@@ -739,6 +811,12 @@ public sealed class InteriorBuilder : BlueprintScript
                             if (door.D != null)
                                 Hang(v, door, what, r.Critical);
                         }
+                    }
+                    else if (acrossShared)
+                    {
+                        // (the corner's owner, the side across, is the neighbour's: this side's end half)
+                        if (Place(Shell("wall2"), half, a, FloorsUnder(k, [(ex, ez)]), $"{what} wall") is { } w2e)
+                            Remember(k, [(ex, ez)], w2e);
                     }
                 }
                 for (var i = 0; i < n - 1; i++)
@@ -759,18 +837,38 @@ public sealed class InteriorBuilder : BlueprintScript
                         {
                             Remember(k, blocks, dw);
                             _pieces[(_lv, r.Id, sd.S, slot)] = dw;
-                            Hang(dw, door, what, r.Critical);
+                            Hang(dw, door, what, r.Critical || door.D.Room >= 0 && plan.Rooms[door.D.Room].Critical);
                         }
                         if (Place(Shell("wall2"), o + a * 2, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
                             Remember(k, blocks, w2);
                         continue;
                     }
-                    if (Place(Shell("wall4"), o, a, FloorsUnder(k, blocks), $"{what} wall") is { } w4)
+                    // the longest panel that fits before the run's end or its next doorway (4 m pieces where there is none)
+                    var free = 1;
+                    while (i + free < n - 1 && !(onRect && doors.ContainsKey((sd.S, slot + free))))
+                        free++;
+                    VPart? wall = null;
+                    var len = 1;
+                    foreach (var (pn, cells) in panels)
+                        if (cells <= free)
+                        {
+                            var span = cellsOf.Skip(i).Take(cells + 1).ToArray();
+                            if (Try(pn, o, a, FloorsUnder(k, span), out _) is { } pv)
+                            {
+                                Remember(k, span, pv);
+                                (wall, len) = (pv, cells);
+                                break;
+                            }
+                        }
+                    if (wall == null && Place(Shell("wall4"), o, a, FloorsUnder(k, blocks), $"{what} wall") is { } w4)
                     {
                         Remember(k, blocks, w4);
-                        if (onRect)
-                            _pieces[(_lv, r.Id, sd.S, slot)] = w4;
+                        wall = w4;
                     }
+                    if (wall != null && onRect)
+                        for (var j = 0; j < len; j++)
+                            _pieces[(_lv, r.Id, sd.S, slot + j)] = wall;
+                    i += len - 1;
                 }
             }
         foreach (var (part, at, a, (bx, bz), door) in late)
@@ -782,6 +880,9 @@ public sealed class InteriorBuilder : BlueprintScript
             }
     }
 
+    /// <summary>The shell's panel walls (phase 5) with their length in grid cells, longest first: data's <c>shell.panels</c>, those this build has.</summary>
+    private List<(string Part, int Cells)> _panels = new();
+
     /// <summary>
     /// A door leaf on its hinge in a doorway the plan gives this room (a shared doorway's leaf hangs in one room's half only). A hinge is a
     /// joint and a construct has at most <see cref="Construct.MaxJoints"/>: in the chassis void only <paramref name="important"/> doorways (critical
@@ -791,12 +892,12 @@ public sealed class InteriorBuilder : BlueprintScript
     {
         if (!door.Own || door.D.Wide)
             return;
-        if (_lv < 0 && !important)
+        if (!important)
         {
-            _laterLeaves.Add((frame, door, what));
+            _laterLeaves.Add((frame, door, what, _lv));
             return;
         }
-        if (C.JointCount >= Construct.MaxJoints - _jointReserve || C.LinkCount > Construct.MaxLinks - 400)
+        if (C.JointCount >= Math.Min(Construct.MaxJoints, _budget.Joints) - _jointReserve || C.LinkCount + 2 > _budget.Links)
         {
             OpenDoorways++;
             return;
@@ -929,9 +1030,14 @@ public sealed class InteriorBuilder : BlueprintScript
                 Refused.Add($"{r.Name}: a {def.Name} has no socket to stand on");
                 continue;
             }
-            // (in the chassis void, things by the cell at half the density: a construct holds at most Construct.MaxLinks socket links)
-            var per = _lv < 0 ? item.PerCells * 2 : item.PerCells;
-            var n = Math.Min(per > 0 ? Math.Max(item.Count, cells / per) : item.Count, 3 * cells);
+            var n = Math.Min(item.PerCells > 0 ? Math.Max(item.Count, cells / item.PerCells) : item.Count, 3 * cells);
+            // (the gunner's station and its Fire Director within a wire's reach: the second goes on the free spot nearest the first)
+            if (item.Role == "gunner" && (gunner ?? director) is { } partner)
+            {
+                C.PartBounds(partner.Index, out var plo, out var phi);
+                var pc = (plo + phi) * 0.5f;
+                spots.Sort((a, b) => Vector3.DistanceSquared(a.At, pc).CompareTo(Vector3.DistanceSquared(b.At, pc)));
+            }
             for (var i = 0; i < n; i++)
             {
                 VPart? got = null;
@@ -1029,6 +1135,54 @@ public sealed class InteriorBuilder : BlueprintScript
             {
             }
         Refused.Add($"{r.Name} deck {r.Deck}: no place for the {plant.Name}'s Fuel Tank");
+    }
+
+    /// <summary>What a part is for the budget (INTERIORS.md "Phase 5"): the base vehicle's own parts, then the interior's by kind.</summary>
+    private string KindOf(int i)
+    {
+        if (i < _base.Count)
+            return "vehicle";
+        var n = C.DefOf(i).Name;
+        if (n == Shell("floor") || n == Shell("stairFloor"))
+            return "slabs";
+        if (n == Shell("wall4") || n == Shell("wall2") || n == Shell("corner") || _panels.Any(p => p.Part == n))
+            return "walls";
+        if (n == Shell("doorWall") || n == Shell("doorCorner") || n == Shell("garageWall"))
+            return "doorways";
+        if (n == Shell("hinge") || n == Shell("door"))
+            return "doors";
+        if (n == Shell("adapter"))
+            return "pads";
+        if (n == Shell("stair"))
+            return "stairs";
+        if (n is LiftRail or LiftCar or "Toggle" or "AND Gate" or "NOT Gate" or "Button")
+            return "lift";
+        if (n is "Lamp" or "Switch")
+            return "lights";
+        return "furniture";
+    }
+
+    /// <summary>
+    /// The construct's use of its limits by kind (INTERIORS.md "Phase 5"): parts, socket links (a link goes to the later of its two parts,
+    /// the one whose placing made it), joints, wires and mass. Totals against the engine's limits and the class's budget.
+    /// </summary>
+    public List<string> BudgetLines()
+    {
+        var kinds = new SortedDictionary<string, (int Parts, int Links, int Joints, int Wires, double Kg)>();
+        void Add(string k, int p, int l, int j, int w, double kg)
+        {
+            var v = kinds.GetValueOrDefault(k);
+            kinds[k] = (v.Parts + p, v.Links + l, v.Joints + j, v.Wires + w, v.Kg + kg);
+        }
+        for (var i = 0; i < C.PartCount; i++)
+            Add(KindOf(i), 1, 0, C.DefOf(i).HasJoint ? 1 : 0, 0, C.DefOf(i).Mass);
+        for (var l = 0; l < C.LinkCount; l++)
+            Add(KindOf(Math.Max(C.Links[l].A, C.Links[l].B)), 0, 1, 0, 0, 0);
+        for (var w = 0; w < C.WireCount; w++)
+            Add(KindOf(Math.Max(C.Wires[w].From, C.Wires[w].To)), 0, 0, 0, 1, 0);
+        var lines = kinds.Select(kv => $"budget {kv.Key}: {kv.Value.Parts} parts, {kv.Value.Links} links, {kv.Value.Joints} joints, {kv.Value.Wires} wires, {kv.Value.Kg / 1000:0} t").ToList();
+        lines.Add($"budget total: {C.PartCount} of {Construct.MaxParts} parts, {C.LinkCount} of {Construct.MaxLinks} links ({100.0 * C.LinkCount / Construct.MaxLinks:0}%), {C.JointCount} of {Construct.MaxJoints} joints, {C.WireCount} of {Construct.MaxWires} wires, {kinds.Values.Sum(v => v.Kg) / 1000:0} t");
+        return lines;
     }
 
     private bool TryWire(VPart a, VPart b, string? what)
