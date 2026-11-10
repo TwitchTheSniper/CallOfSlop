@@ -1083,10 +1083,32 @@ public static class ShapeGrammar
                     while (front < s.Z0 + (open ? -0.2f : 0.1f))
                         front += 0.25f;
                     var barrel = MathF.Round(s.Len);
+                    // (phase 9b: the barrel stood on its front foot's sill, and a front over the rear axle or a station took that sill away and left it nowhere to
+                    // stand (Bandit and Highland Scrap Tanker 3): the front steps back a row at a time, up to 0.75 m, until every cradle can go in, and failing
+                    // that the barrel stands on the first cradle there is)
+                    bool Fits(float f)
+                    {
+                        for (var k = 0; k < barrel; k++)
+                            if (MathF.Abs(f + k - v.RearAxleZ) <= 0.3f || !Clear(p, f + k))
+                                return false;
+                        return true;
+                    }
+                    for (var step = 0; step < 3 && !Fits(front); step++)
+                        if (Fits(front + 0.25f * (step + 1)))
+                        {
+                            front += 0.25f * (step + 1);
+                            break;
+                        }
+                    var foot = -1; // (the first cradle that goes in carries the barrel: its front one taken by an axle, it stands on the next foot)
                     for (var k = 0; k < barrel; k++)
                         if (MathF.Abs(front + k - v.RearAxleZ) > 0.3f && Clear(p, front + k))
+                        {
                             v.Sill(v.RailZ(front + k), layers: 2);
-                    var tank = v.Stand(barrel > 2.5f ? "Tanker Barrel 3 m" : "Tanker Barrel 2 m", new Vector3(-0.25f, Vehicle.SillTop(2), v.RailZ(front)), Orient.Forward, null, "footL0", 0.03f);
+                            if (foot < 0)
+                                foot = k;
+                        }
+                    foot = Math.Max(foot, 0);
+                    var tank = v.Stand(barrel > 2.5f ? "Tanker Barrel 3 m" : "Tanker Barrel 2 m", new Vector3(-0.25f, Vehicle.SillTop(2), v.RailZ(front + foot)), Orient.Forward, null, "footL" + foot, 0.03f);
                     if (!v.Electric)
                         v.Link("pipe", tank, v.Engine!, laid: true);
                     v.Tanks.Add(tank);

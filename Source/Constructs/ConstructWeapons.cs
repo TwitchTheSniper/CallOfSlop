@@ -1151,15 +1151,20 @@ public static class ConstructWeapons
             float err;
             if (MathF.Abs(a.Y) < 0.7f)
             {
-                // A joint across the gun (a hinge for the elevation): the climb to the target, never over the top to point behind.
+                // A joint across the gun (a hinge for the elevation): the climb to the target, never over the top to point behind. Level is the side the
+                // gun points at the joint's zero (its parent's frame), not where it points now: a gun that went past the vertical read its own way as level
+                // and stayed over the top at its stop (phase 9b, the gunsmith's heavy guns on a slow Turntable). The target's climb is read against the
+                // horizontal, not only along the gun's own plane, so a gun whose turntable is still slewing round holds its elevation instead of standing up.
                 var h = Vector3.Cross(a, Vector3.UnitY);
                 if (h.LengthSquared() < 1e-6f)
                     continue;
                 h = Vector3.Normalize(h);
-                if (Vector3.Dot(f, h) < 0)
+                var f0 = Vector3.Transform(f, Quaternion.CreateFromAxisAngle(a, -jt.Angle));
+                if (Vector3.Dot(f0, h) < 0)
                     h = -h;
                 var u = Vector3.Cross(a, h);
-                err = MathF.Atan2(Vector3.Dot(want, u), MathF.Abs(Vector3.Dot(want, h))) - MathF.Atan2(Vector3.Dot(f, u), Vector3.Dot(f, h));
+                var flat = MathF.Sqrt(Vector3.Dot(want, h) * Vector3.Dot(want, h) + Vector3.Dot(want, a) * Vector3.Dot(want, a));
+                err = MathF.Atan2(Vector3.Dot(want, u), flat) - MathF.Atan2(Vector3.Dot(f, u), Vector3.Dot(f, h));
             }
             else
             {
