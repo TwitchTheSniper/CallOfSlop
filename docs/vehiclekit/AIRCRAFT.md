@@ -88,25 +88,63 @@ up for 4 s (at least 5 m climbed), then set where it is with Ctrl held 0.6 s (th
 its height may wander 8 m and its heading 8 degrees, with at most 12 degrees of bank; then D for 3 s turns it at least 10 degrees right; never past 75 degrees of
 tilt. The autopilot is engaged as its panel would (`apMode`, `targetAlt`, `autopilot` settings): the hook bot pilots will use.
 
-**State (2026-11-10): `--sweep-vehicle "Bandit Plane" --seeds 30` passes 27 of 30**, about 1.1 s a generation with its flight check; `"IT Plane"` 11 of 12
-(styles only change colours). The three refusals are all jets whose altitude hold still rocks 10-17 m at 41-42 m/s: the jets hang under the wing, below the
-centre of mass, so each throttle change pitches the nose. `--gen-vehicles`: every shipped vehicle identical (193 after the merge of main). Not verified: flying one by hand in the game,
-planes on a round world or in wind, and how long the fuel lasts.
+**State (phase 3, 2026-11-10): `--sweep-vehicle "Bandit Plane" --seeds 60` passes 60 of 60, `"IT Plane"` 60 of 60.** The three phase-2 refusals were all
+twin-jets on **fabric** wings: some 70 kg lighter for the same 24 kN, they climbed 1.7 m/s through the cruise throttle and the altitude hold rocked 10-17 m. A
+jet's wings are now metal (a fabric pick becomes a Wing Segment; no other seed changes). The jets still hang under the second panels; with metal wings the hold
+keeps within 8 m, so the thrust line was not the cause. Not verified: flying one by hand in the game, planes on a round world or in wind, and how long the fuel lasts.
+
+## The Helicopter generator (phase 3)
+
+`Generators/Helicopter.cs`, shape "Helicopter", in `VehicleRegistry.Extras` (no seeds ship): `--gen-vehicle "Bandit Helicopter" --seed 7`, `--sweep-vehicle "Bandit Helicopter" --seeds 30`.
+The Small Helicopter's wiring: a Turbine stood on end, a T Gearbox on it and a Helicopter Rotor on top; the gearbox's branch shaft to a Right-Angle Gearbox on a
+short mast at the tail's end and a Tail Rotor on it (`torqueMix` 1, `reverse` by its side); a Flight Stabilizer on Rotorcraft keys wired `lift` to the
+collective, `pitch` and `roll` to the cyclic, `yaw` to the tail rotor. A 2 m keel with the seat on its front (an open seat, or a cab of two frame blocks), a fuel
+tank (or two) and the battery under the keel's front, then a 2 m and a 1 m boom and a 1, 1.5 or 2 m tail with the fin (and maybe small tail planes). Skids:
+a cross beam under the mast, posts and two 2 m skids. About 800-890 kg; lift 1.3-1.4 times the weight.
+
+- **Balance by building twice** (as the plane's wing): the mast (turbine, gearbox, rotor) goes on one of the keel's and boom's top sockets (stations 3 to 13).
+  The craft is built off to one side with it at either end, the gap between the hub and the centre of mass read from each, and the station where it is least is
+  built (within some 5 cm). The cyclic trims little: its 5 degrees and hub moment hold about 5 cm of offset at hover thrust, so a mast 0.5 m off hung it 10-25
+  degrees nose up. Both are read in the body's frame (`PartBounds`, `Construct.Com`): `Vehicle.CentreOf` is in vehicle coordinates and doesn't compare with `Com`.
+- **The tail rotor's push** holds the main rotor's torque (some 8.5 kN m at 340 kW and 380 rpm): on a 3 m arm about a sixth of the weight, so a helicopter
+  hangs rolled 8-12 degrees against it in the hover and drifts about 2 m/s sideways. The boom is long and the tank and battery sit forward, so the mast comes
+  forward and the arm is long. The stabilizer's lean (`maxTilt`) is 25 to 35 degrees, on top of that hang.
+- **Wheels** are off for now: on wheels under the tank and a tail leg it stood 17 degrees nose up. They wait for mains placed by the balance and a tail wheel.
+
+**Changes to the flight check** (`VehicleFlightCheck.Run`, rotorcraft): it waits, seated and hands off, up to 10 s (`SpoolTicks`) for every helicopter
+rotor to reach nine tenths of its rated speed before the climb (its blades take some 4 s to wind up; drones' rotors don't count, so the drone check is
+unchanged: Bandit Drone 30 of 30). A craft with a big helicopter rotor may hang up to 14 degrees in the hover (`MaxHeliHoverTilt`; drones keep 8). A hover
+refusal now says the pitch and roll and the speed.
+
+**State: `"Bandit Helicopter"` 30 of 30, `"IT Helicopter"` 30 of 30**, about 1.4 s a generation with the check (three builds). Seed 7: climbed 12 m in 2 s,
+hover drift 0.3 m, hang 10 degrees at 2 m/s, 3 m forward on W, worst tilt 15. Not verified: flying one by hand, forward flight beyond 1.5 s, autorotation,
+the fuel's endurance.
+
+## Spawning and bot pilots (not built yet)
+
+What exists: an aircraft can already be spawned on the ground like any faction vehicle by shape. `VehicleSpawner.Request(style, "Helicopter", ...)` makes it
+through `VehicleRegistry.Make`, which sends an `IAircraftShape` down `AircraftKit.Make` (built, then flight-checked; a refused seed rerolls as a ground vehicle's
+does). Tried only through `--sweep-vehicle` and `--gen-vehicle`, not in a running game. What is missing for AI factions:
+- **An air spawn**: the spawner sets a vehicle down on the ground (`GroundJob.Join` at the ground point). In the air it needs a height, its rotors at speed
+  (`CRotor.Omega` set to rated, as the check's spool wait reaches) or a plane's cruise speed (`Construct.Vel` along its nose), and the autopilot on.
+- **A bot pilot**: the flight check engages the autopilot as its panel would (`VehicleFlightCheck.Autopilot`: `apMode`, `targetAlt`, `autopilot` settings) and
+  flies by seat keys (`ConstructEdits.DriveInput`). A pilot is that from a bot: a seated driver, the altitude hold set, a waypoint mode for routes, and throttle
+  back to cruise once level on a plane. `Autopilot` is private to the check today: lift it into a small public helper when the pilot is written.
 
 Headless runs on the shared box spend about 60 s building the maps before any vehicle command (no cache under the agent's save folder).
 
 ## Next steps
 
-1. **Jets**: the twin-jet planes' level hold (thrust line on the centre of mass: jets on the spine's sides or a pod under the tank), swept wings (Large/Medium
+1. **Jets**: the level hold passes with metal wings (phase 3); the thrust line is still under the centre of mass, so a heavier jet may want them on the spine's sides; swept wings (Large/Medium
    Swept Wing L/R have no aileron sockets: elevons from the tail planes, or ailerons on a straight outer panel), the afterburner on a wire for a dash, a
    Small Turbojet (75 kN) for heavier strike jets.
-2. **Helicopters**: a Helicopter Rotor on an engine's shaft with a Tail Rotor, wired `lift`, `pitch`, `roll` and `yaw` (the Small Helicopter blueprint);
-   coaxial and tandem as odd craft.
+2. **Helicopters** (phase 3 made the conventional one): wheels (mains placed by the balance, a tail wheel); tandem (two rotors of opposite hands on one
+   turbine's shafts, 9 m apart or overlapping at different heights, no tail rotor: the stabilizer yaws by differential cyclic); coaxial needs a part (a
+   rotor has only its base socket, so a second disc can't stack on one shaft); a door gunner's seat; the Medium Helicopter Rotor for a 5 t lifter.
 3. **Odd craft**: repulsor hover platforms, small airships on lift cells and burners, tilt-rotors (rotors on joints: the stabilizer doesn't map a rotor on a joint yet).
 4. **Faction style slots**: aircraft slots in `FactionStyle` (which lifters, frames, skins, how big: prop or jet, fabric or metal wings), and each style naming
    "Drone" and "Plane" in its extras once its look is decided (then seeds ship and `--gen-vehicles` covers them). The other session owns `Styles.cs`.
-5. **Spawning**: the spawner and convoys (`VehicleSpawn.cs`, `VehicleConvoys.cs`) place ground vehicles; an aircraft needs a spawn in the air (at cruise, the
-   autopilot's altitude hold on) or on a pad or strip.
+5. **Spawning**: see "Spawning and bot pilots" above: on the ground it works by shape; in the air it needs a height, spun rotors or cruise speed, and the autopilot on.
 5a. **Bot pilots via the autopilot**: bots fly through the stabilizer's autopilot (altitude, heading, waypoint, hover, home) by its settings or wired inputs, as
    the flight check does (`VehicleFlightCheck.Autopilot`); a pilot sets the throttle back to cruise once level.
 6. **Loot and capture**: a parked or crashed generated aircraft with a Chest (`Loot.json`'s `aircraft` table), a Remote Console found with a drone, the
