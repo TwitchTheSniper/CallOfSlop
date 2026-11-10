@@ -2,10 +2,10 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Titan Walker",
   "group": "Walkers",
-  "description": "A bare 128 m walking chassis on six titan legs (docs/sandbox/GIANTS.md). The helm walks it: W/S, A/D turn, Q/E strafe, Sprint/Crouch height.",
+  "description": "A bare 128 m hollow walking chassis on six titan legs (docs/sandbox/GIANTS.md). The helm walks it: W/S, A/D turn, Q/E strafe, Sprint/Crouch height.",
   "steps": [
     {
-      "part": "Capital Chassis Deck 128x64 m"
+      "part": "Capital Hollow Chassis 128x64 m"
     },
     {
       "part": "Titan Mech Leg",
@@ -45,8 +45,8 @@
     },
     {
       "part": "Adapter Capital to Small",
-      "on": 1,
-      "socket": "top",
+      "on": 0,
+      "socket": "top0.0",
       "by": "back"
     },
     {
