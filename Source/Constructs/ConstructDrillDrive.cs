@@ -231,7 +231,7 @@ public static class ConstructDrillDrive
     /// <summary>The torque the drills take off the engine this tick at <paramref name="rpm"/> (<see cref="Construct.ShaftShare"/>: how much of it the engine can carry).</summary>
     public static float Carry(Construct c, ConstructPartDef e, float rpm, float amount)
     {
-        var load = c.ShaftLoad + c.RailLoad + c.HydLoad + c.RotorLoad;
+        var load = c.ShaftLoad + c.RailLoad + c.HydLoad + c.RotorLoad + c.LegLoad; // (walker legs on a shaft: ConstructWalkLegs.cs)
         if (load <= 0)
         {
             c.ShaftShare = 1;

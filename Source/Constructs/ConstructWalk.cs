@@ -20,6 +20,8 @@ public struct CLeg
     public Vector3 Normal; // the ground's normal under the foot
     public float Power; // its strength from what feeds it (0: unfed, locked; ConstructWalkLegs.cs), a share of its own
     public float Carry; // kg of parts riding its segments (ConstructWalkRiders.cs): it swings them, so it steps slower
+    public byte Feed; // what feeds it (ConstructPhysics.FeedElectric, FeedOil, FeedShaft; 0: nothing)
+    public short Pump; // the pump whose oil it takes (FeedOil)
 }
 
 public sealed partial class Construct
@@ -39,6 +41,8 @@ public sealed partial class Construct
     public string WalkProblem = ""; // why it doesn't stand (the HUD)
     public long WalkStamp; // when the server last stepped the feet (the renderer poses them itself when it doesn't)
     public long WalkDrawStamp; // the renderer's last pose of them (its own clock)
+    public float LegLoad; // N m at the crank that shaft-fed legs take (server; ConstructWalkLegs.cs, LegWork)
+    public float LegWatts; // W the legs did last tick (server; the HUD and the checks)
 
     /// <summary>
     /// The legs (on every rebuild): every working leg part on the body's own frame, its hip and its resting foot, ordered
@@ -128,6 +132,8 @@ public static partial class ConstructPhysics
     private static void Walk(ConstructWorld world, Construct c, IWorldQuery query, float dt)
     {
         var fed = PowerLegs(world, c, true);
+        c.LegLoad = 0;
+        c.LegWatts = 0;
         WalkTune(c); // (the gait profile: ConstructWalkProfile.cs)
         var live = 0;
         var load = 0f;
@@ -166,6 +172,7 @@ public static partial class ConstructPhysics
         c.Walking = true;
         WalkFeet(c, query, c.Pos, c.Rot, c.Vel, c.AngVel, swing, dt, true);
         WalkBody(c, reach, dt);
+        LegWork(c);
         FeetPushBodies(world, c);
         if (c.WalkStepping)
             c.Wake(); // (a foot in the air finishes its step)

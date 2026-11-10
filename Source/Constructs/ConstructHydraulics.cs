@@ -47,6 +47,7 @@ public struct CHydPump
     public float Rpm;
     public bool Shaft; // on a drive shaft (else on power)
     public float Through; // the turning force's gain to the crank
+    public float LegUsed, LegNeed; // what walker legs on it ask (litres a second, Pa; set each tick by ConstructPhysics.LegWork)
 }
 
 public struct CHydValve
@@ -296,6 +297,15 @@ public static class ConstructHydraulics
             if (h.Speed != 0 && c.Asleep)
                 c.Wake();
         }
+        for (var p = 0; p < c.HydPumpCount; p++)
+        {
+            // Walker legs on it (ConstructWalkLegs.cs): their flow and the pressure their work asks.
+            ref var pu = ref c.HydPumps![p];
+            if (pu.LegUsed <= 0 || c.Parts[pu.Part].Broken)
+                continue;
+            pu.Used += pu.LegUsed;
+            pu.Need = MathF.Max(pu.Need, MathF.Min(pu.Pressure, pu.LegNeed));
+        }
         var torque = 0f;
         for (var p = 0; p < c.HydPumpCount; p++)
         {
@@ -338,7 +348,7 @@ public static class ConstructHydraulics
             c.StallTicks--;
             return;
         }
-        if (c.HydLoad > 0 && c.ShaftShare < StallShare && c.EngineRunning)
+        if ((c.HydLoad > 0 || c.LegLoad > 0) && c.ShaftShare < StallShare && c.EngineRunning) // (walker legs on a shaft too: ConstructWalkLegs.cs)
         {
             if (++c.LugTicks >= StallAfter)
             {
@@ -346,6 +356,7 @@ public static class ConstructHydraulics
                 c.StallTicks = StallTicks;
                 c.Rpm = 0;
                 c.HydLoad = 0;
+                c.LegLoad = 0;
             }
         }
         else if (c.LugTicks > 0)

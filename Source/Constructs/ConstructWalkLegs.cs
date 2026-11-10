@@ -273,27 +273,50 @@ public static partial class ConstructPhysics
     /// tick) asks for a pump that is pumping and a shaft that is turning; otherwise (a client, the checks) only that they
     /// are fitted, as their links stand.
     /// </summary>
-    public static float LegPower(ConstructWorld? world, Construct c, int part, bool live)
+    public static float LegPower(ConstructWorld? world, Construct c, int part, bool live) => LegPower(world, c, part, live, out _, out _);
+
+    /// <summary>The same, and which feed gives it (<see cref="CLeg.Feed"/>) and, for oil, the pump's index.</summary>
+    public static float LegPower(ConstructWorld? world, Construct c, int part, bool live, out byte feed, out short pump)
     {
+        feed = FeedNone;
+        pump = -1;
         ref var p = ref c.Parts[part];
         if (p.Broken || p.D.Leg is not { } d)
             return 0;
         var best = 0f;
         if (d.Electric > 0 && c.HasBattery && p.Powered && (!live || c.PowerOn || world is { CreativeRecycling: true }))
+        {
             best = d.Electric;
-        if (d.Hydraulic > best && OilFed(c, part, live))
-            best = d.Hydraulic;
+            feed = FeedElectric;
+        }
+        if (d.Hydraulic > best && OilFed(c, part, live) is var u and >= 0)
+        {
+            // (a pump asked for more oil than it gives shares it out: the legs get weaker, down to a quarter)
+            ref var pu = ref c.HydPumps![u];
+            var share = live && pu.Used > 0 ? Math.Clamp(pu.Flow / pu.Used, 0.25f, 1f) : 1f;
+            if (d.Hydraulic * share > best)
+            {
+                best = d.Hydraulic * share;
+                feed = FeedOil;
+                pump = (short)u;
+            }
+        }
         if (d.Shaft > best && d.Shaft > 0)
         {
             var state = ConstructLinear.ShaftOf(c, part, out _, out _);
-            if (state == ShaftState.Turning || !live && state is ShaftState.EngineOff or ShaftState.ClutchOut)
-                best = d.Shaft * (live ? Math.Clamp(c.ShaftShare, 0.25f, 1f) : 1f);
+            if ((state == ShaftState.Turning || !live && state is ShaftState.EngineOff or ShaftState.ClutchOut) && d.Shaft * (live ? Math.Clamp(c.ShaftShare, 0.25f, 1f) : 1f) is var s && s > best)
+            {
+                best = s;
+                feed = FeedShaft;
+            }
         }
         return best;
     }
 
-    /// <summary>Does a hose reach the leg's oil port from a pump, or from a valve on a pump (pumping, when <paramref name="live"/>)?</summary>
-    private static bool OilFed(Construct c, int part, bool live)
+    public const byte FeedNone = 0, FeedElectric = 1, FeedOil = 2, FeedShaft = 3;
+
+    /// <summary>The pump whose hose reaches the leg's oil port, straight or through a valve on it (pumping, when <paramref name="live"/>); -1: none.</summary>
+    private static int OilFed(Construct c, int part, bool live)
     {
         for (var k = 0; k < c.RouteCount; k++)
         {
@@ -309,15 +332,15 @@ public static partial class ConstructPhysics
                 {
                     ref var hv = ref c.HydValves![v];
                     if (hv.Part == src && hv.Pump >= 0 && hv.Route >= 0 && c.Routes[hv.Route].FedEnd && PumpLive(c, hv.Pump, live))
-                        return true;
+                        return hv.Pump;
                 }
                 continue;
             }
             for (var u = 0; u < c.HydPumpCount; u++)
                 if (c.HydPumps![u].Part == src && PumpLive(c, u, live))
-                    return true;
+                    return u;
         }
-        return false;
+        return -1;
     }
 
     private static bool PumpLive(Construct c, int pump, bool live) => !c.Parts[c.HydPumps![pump].Part].Broken && (!live || c.HydPumps[pump].Flow > 0);
@@ -328,11 +351,64 @@ public static partial class ConstructPhysics
         var fed = 0;
         for (var k = 0; k < c.LegCount; k++)
         {
-            c.Legs[k].Power = LegPower(world, c, c.Legs[k].Part, live);
+            c.Legs[k].Power = LegPower(world, c, c.Legs[k].Part, live, out c.Legs[k].Feed, out c.Legs[k].Pump);
             if (c.Legs[k].Power > 0)
                 fed++;
         }
         return fed;
+    }
+
+    public const float LegCarryCost = 0.03f; // the legs' work walking: this share of the weight times the speed (a cost of transport)
+    public const float LegHoldRate = 0.01f; // ... and holding it up, as if lifting it this many m/s
+
+    /// <summary>
+    /// Server, each tick the legs walk: their work (the weight times the pace along the ground, the climb and a holding
+    /// share) shared out by what each leg carries, taken from what feeds each one. An electric leg draws on the battery
+    /// (<see cref="Construct.MotorWork"/>); an oiled leg asks its pump for flow (<see cref="CHydPump.LegUsed"/>: a pump on
+    /// power draws the battery for it, one on a shaft loads the engine); a shaft-fed leg loads the engine
+    /// (<see cref="Construct.LegLoad"/>). A flat battery, a stalled engine or a starved pump then stops the legs.
+    /// </summary>
+    private static void LegWork(Construct c)
+    {
+        for (var u = 0; u < c.HydPumpCount; u++)
+        {
+            c.HydPumps![u].LegUsed = 0;
+            c.HydPumps[u].LegNeed = 0;
+        }
+        var flat = MathF.Sqrt(c.Vel.X * c.Vel.X + c.Vel.Z * c.Vel.Z);
+        var watts = c.Mass * 9.81f * World.GravityScale * (LegCarryCost * flat + MathF.Max(0, c.Vel.Y) + LegHoldRate);
+        var carry = 0f;
+        for (var k = 0; k < c.LegCount; k++)
+            if (LegLive(c, k))
+                carry += c.Parts[c.Legs[k].Part].D.Leg!.Load;
+        if (carry <= 0 || watts <= 0)
+            return;
+        c.LegWatts = watts;
+        for (var k = 0; k < c.LegCount; k++)
+        {
+            ref var leg = ref c.Legs[k];
+            if (!LegLive(c, k))
+                continue;
+            var w = watts * c.Parts[leg.Part].D.Leg!.Load / carry;
+            switch (leg.Feed)
+            {
+                case FeedElectric:
+                    c.MotorWork += w;
+                    break;
+                case FeedOil when leg.Pump >= 0 && leg.Pump < c.HydPumpCount:
+                    ref var pu = ref c.HydPumps![leg.Pump];
+                    var bar = MathF.Max(1e5f, c.Parts[pu.Part].D.HydBar * 1e5f);
+                    pu.LegUsed += w / bar * 1000f; // (litres a second at the pump's pressure)
+                    pu.LegNeed = bar;
+                    if (!pu.Shaft)
+                        c.MotorWork += w; // (a pump on power: the battery does the work)
+                    break;
+                case FeedShaft:
+                    if (ConstructLinear.ShaftOf(c, leg.Part, out var rpm, out var through) == ShaftState.Turning)
+                        c.LegLoad += w / (MathF.Max(1, rpm) / ConstructDrive.RpmPerRadS * through);
+                    break;
+            }
+        }
     }
 
     /// <summary>Does leg <paramref name="k"/> walk (its part works and something feeds it)?</summary>
