@@ -127,7 +127,16 @@ public static partial class World
 
     // ---- Map -----------------------------------------------------------------
     /// <summary>The map being played. Client and server always load the same one (sent in the Welcome).</summary>
-    public static Map Map { get; private set; } = Maps.All[0];
+    /// (Taken on first use, not in World's static initializer: reading any World static (GravityScale from a shell gun
+    /// built while the blueprints load) ran the initializer, which loaded the maps, whose sandbox maps look up blueprints,
+    /// re-entering the blueprints' Lazy and failing every World use after it.)
+    public static Map Map
+    {
+        get => _map ??= Maps.All[0];
+        private set => _map = value;
+    }
+
+    private static Map? _map;
 
     public static void SetMap(Map map)
     {
