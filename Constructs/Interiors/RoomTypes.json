@@ -18,6 +18,7 @@
     { "id": "gunnery", "name": "Gun station", "min": [2, 2], "want": 6, "layout": "grid", "deck": "any", "row": "outer", "wants": ["magazine", "armoury"], "avoids": ["quarters", "fuelbay"], "modules": "gunnery", "loot": "ammunition" },
     { "id": "lockers", "name": "Locker room", "min": [2, 2], "want": 6, "layout": "grid", "deck": "upper", "row": "any", "wants": ["quarters", "armoury"], "avoids": ["engineering"], "modules": "lockers", "loot": "personal" },
 
+    { "id": "gallery", "name": "Gallery", "min": [1, 1], "want": 1, "layout": "grid", "deck": "any", "row": "any", "modules": "gallery", "loot": "stores" },
     { "id": "stairs", "name": "Stairwell", "min": [1, 2], "want": 2, "layout": "grid", "deck": "any", "row": "inner", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
     { "id": "elevator", "name": "Freight elevator shaft", "min": [1, 1], "want": 1, "layout": "grid", "deck": "any", "row": "inner", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
     { "id": "fuel", "name": "Fuel store", "min": [1, 1], "want": 1, "layout": "grid", "deck": "lower", "row": "any", "system": true, "wants": [], "avoids": ["magazine"], "modules": "fuel", "loot": null },

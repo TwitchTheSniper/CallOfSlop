@@ -70,6 +70,8 @@ public static unsafe partial class Program
         {
             b = InteriorBuilder.From(data, bp);
             var top = b.Class!;
+            if (args.Any(a => a.Equals("--no-halls", StringComparison.OrdinalIgnoreCase)))
+                top = top with { Halls = [] }; // (phase 9: the plan as before the halls, to compare)
             if (top.Chassis.Count > 0 && b.VoidHull(out var notHollow) is { } hollow)
             {
                 // phase 4: the class's chassis rooms go below, in the hollow (sealed: its way in is the stairs and the lift), and leave the deck's programme

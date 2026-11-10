@@ -24,7 +24,7 @@
           "Steel Panel Wall 8 m",
           "Steel Panel Wall 4 m"
       ],
-      "floorPanels": [
+      "railing": "Steel Half Wall 4 m", "floorPanels": [
           "Steel Floor Panel 16x16 m",
           "Steel Floor Panel 8x8 m"
       ],
@@ -76,6 +76,49 @@
         {"part": "Parts Shelf", "count": 2, "perCells": 2, "loot": true},
         {"part": "Materials Bin", "count": 1, "perCells": 3, "role": "stock"},
         {"part": "Chest", "count": 1, "loot": true} ],
+      "missing": [] },
+    { "id": "hangarHall", "items": [
+        {"part": ["Hangar Bay Medium", "Hangar Bay"], "count": 1, "role": "dock"},
+        {"part": "Repair Station", "count": 1},
+        {"part": "Tool Rack", "count": 2, "perCells": 16},
+        {"part": "Crate Stack", "count": 2, "perCells": 12},
+        {"part": "Chest", "count": 1, "loot": true},
+        {"part": "Lamp", "count": 3} ],
+      "missing": ["an overhead crane (no small-class gantry part)", "ramp on a motor hinge (the Garage Wall openings stay open; Ramp Deck Medium 8x5 needs a medium floor and hinge)"] },
+    { "id": "engineeringHall", "items": [
+        {"part": ["Medium Genset", "Small Genset"], "count": 1, "role": "plant"},
+        {"part": "Battery", "count": 3, "role": "power"},
+        {"part": "Power Board", "count": 1},
+        {"part": ["Medium Hydraulic Pump", "Hydraulic Pump"], "count": 1, "perCells": 16},
+        {"part": "Fluid Tank", "count": 2, "perCells": 12},
+        {"part": "Tool Rack", "count": 1},
+        {"part": "Crate Stack", "count": 1, "perCells": 16},
+        {"part": "Lamp", "count": 3} ],
+      "missing": [],
+      "feeds": [{"link": "pipe", "from": ["fuelbay", "fuel"], "fromRole": "fuel", "fromPort": "Fuel out", "toRole": "plant", "toPort": "Fuel in", "reach": 96}] },
+    { "id": "storageHall", "items": [
+        {"part": "Materials Bin", "count": 2, "perCells": 6, "role": "stock"},
+        {"part": "Parts Shelf", "count": 2, "perCells": 6, "loot": true},
+        {"part": "Crate Stack", "count": 2, "perCells": 6},
+        {"part": "Chest", "count": 1, "loot": true},
+        {"part": "Lamp", "count": 3} ],
+      "missing": ["pallet racking several storeys high (no rack part taller than a storey)"] },
+    { "id": "productionHall", "items": [
+        {"part": "Assembler", "count": 2, "perCells": 12, "role": "machine"},
+        {"part": "Press", "count": 1},
+        {"part": "Die Lathe", "count": 1},
+        {"part": "Die Rack", "count": 1},
+        {"part": "Battery", "count": 1, "role": "power"},
+        {"part": "Materials Bin", "count": 2, "perCells": 10},
+        {"part": "Parts Shelf", "count": 1, "perCells": 12},
+        {"part": "Lamp", "count": 3} ],
+      "missing": ["a conveyor between the machines"],
+      "feeds": [{"link": "chute", "from": "storage", "fromRole": "stock", "toRole": "machine", "toPort": "Chute in", "reach": 64}] },
+    { "id": "gallery", "items": [
+        {"part": "Crate Stack", "count": 1, "perCells": 8},
+        {"part": "Locker", "count": 1, "loot": true},
+        {"part": "Tool Rack", "count": 1, "perCells": 12},
+        {"part": "Lamp", "count": 1} ],
       "missing": [] },
     { "id": "hangar", "items": [
         {"part": ["Hangar Bay Medium", "Hangar Bay"], "count": 1, "role": "dock"},

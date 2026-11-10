@@ -44,7 +44,10 @@ public sealed class PlanRoom
     public int Section;
     public bool Critical, System, Inner, Outer;
     public string? Shaft; // "stairs" or "elevator": the same rectangle on every deck it joins
-    public string Origin = "programme"; // programme, system, leftover, generated (a big leftover given a fill room), merged
+    public string Origin = "programme"; // programme, system, leftover, generated (a big leftover given a fill room), merged, hall, gallery
+    public int Hall = -1; // (phase 9) the id of the hall's floor room for every storey of a hall (the floor room's own id on it), else -1
+    public int Storeys = 1; // (a hall's floor room) how many storeys the hall spans
+    public string? Set; // a module set other than the type's (a hall's or a gallery's)
     public char Mark;
     public override string ToString() => $"{Name} {Rect} deck {Deck}";
 }

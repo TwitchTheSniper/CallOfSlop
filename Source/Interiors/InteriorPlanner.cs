@@ -108,8 +108,11 @@ public static class InteriorPlanner
             PlaceShaft(p, data.Rooms["elevator"], "elevator", rules.Elevator.W, north, p.W / 2);
         }
 
+        // phase 9: the halls first (big volumes through several storeys), then the people-sized rooms round them
+        var programme = cls.Programme.ToList();
+        Halls(p, data, cls, bands, programme, rng);
         // the programme: which deck, then where on it
-        var wants = cls.Programme.Select(id => data.Rooms[id]).ToList();
+        var wants = programme.Select(id => data.Rooms[id]).ToList();
         var order = wants.Select((t, i) => (t, i)).OrderByDescending(e => e.t.Critical).ThenByDescending(e => e.t.MinW * e.t.MinD).ThenByDescending(e => e.t.Want).ThenBy(e => e.i).Select(e => e.t).ToList();
         var deckArea = new int[p.Decks];
         foreach (var t in order)
@@ -130,6 +133,83 @@ public static class InteriorPlanner
         foreach (var r in p.Rooms)
             r.Mark = r.Shaft == "stairs" ? 'S' : r.Shaft == "elevator" ? 'E' : r.Type == "dead" ? 'x' : r.Type == "fuel" ? 'f' : r.Type == "spare" ? '-' : r.Type == "storage" && r.Origin == "leftover" ? 's' : marks[n++ % marks.Length];
         return p;
+    }
+
+    /// <summary>
+    /// The class's halls (phase 9, INTERIORS.md "Phase 9"): each a room through several storeys, placed before the other rooms, as long as its
+    /// share of the hull asks (the longest that fits, down to its minimum), across a whole strip on one side of the spine (or the strip's outer
+    /// band where the shafts stand in the inner one). Its floor room is on the lowest storey; each storey above holds a gallery room over the same
+    /// cells (out to the spine on that deck), whose floor the builder lays only round its walls and its stair column. A hall of a programme room
+    /// takes that room's place in <paramref name="programme"/>. Each hall goes on the side with less hall floor so far, for a lopsided plan.
+    /// </summary>
+    private static void Halls(InteriorPlan p, InteriorData data, SizeClass cls, List<Band>[] bands, List<string> programme, InteriorRng rng)
+    {
+        var area = new int[2];
+        foreach (var h in cls.Halls.Where(h => h.Where == "any" || (h.Where == "chassis") == p.Sealed))
+        {
+            var storeys = Math.Min(h.Storeys, p.Decks);
+            if (storeys < 2)
+                continue;
+            var t = data.Rooms[h.Room];
+            var len = Math.Clamp((int)Math.Round(h.Share * p.W), h.MinW, p.W);
+            (GridRect[] Rects, int K0, Band Band, double Score)? best = null;
+            for (var k0 = 0; k0 + storeys <= p.Decks; k0++)
+                foreach (var band in bands[k0].Where(b => b.Kind is "full" or "outer"))
+                {
+                    if (band.Depth < Math.Max(t.MinD, 3))
+                        continue;
+                    var found = false;
+                    for (var w = len; w >= h.MinW && !found; w--)
+                        for (var x0 = 0; x0 + w <= p.W; x0++)
+                        {
+                            var rects = new GridRect[storeys];
+                            var ok = true;
+                            for (var j = 0; j < storeys && ok; j++)
+                            {
+                                // (a storey above reaches out to its own deck's strip edge: the lane is on the lowest deck only)
+                                var up = band.Kind == "full" ? bands[k0 + j].FirstOrDefault(b => b.Strip == band.Strip && b.Kind == "full") : band;
+                                if (up == null)
+                                    ok = false;
+                                else
+                                {
+                                    rects[j] = new GridRect(x0, Math.Min(band.Z0, up.Z0), x0 + w - 1, Math.Max(band.Z1, up.Z1));
+                                    ok = FreeRect(p, k0 + j, j == 0 ? new GridRect(x0, band.Z0, x0 + w - 1, band.Z1) : rects[j]);
+                                    if (j == 0)
+                                        rects[0] = new GridRect(x0, band.Z0, x0 + w - 1, band.Z1);
+                                }
+                            }
+                            if (!ok || p.SectionOf(x0 + w - 1) - p.SectionOf(x0) > 1)
+                                continue;
+                            found = true;
+                            // (on the open deck the bow section is the crew's: the bridge stands there, by the legs its helm drives)
+                            var bowSec = p.SectionOf(p.BowAtMinX ? 0 : p.W - 1);
+                            var crew = !p.Sealed && (p.SectionOf(x0) == bowSec || p.SectionOf(x0 + w - 1) == bowSec) ? 40 : 0;
+                            // (deep first, then the side with less hall so far, then the hull's ends: halls at the ends leave the middle to the crew)
+                            var sc = w * band.Depth * 0.5 + band.Depth * 2 - area[band.Strip] * 0.3 + (band.Kind == "full" ? 3 : 0) + Math.Abs(x0 + w * 0.5 - p.W * 0.5) * 0.1 + rng.Next() * 2 - crew;
+                            if (best == null || sc > best.Value.Score)
+                                best = (rects, k0, band, sc);
+                        }
+                }
+            if (best is not { } pick)
+            {
+                p.Notes.Add($"no place for a {t.Name} hall ({h.MinW} cells long and {storeys} storeys at least)");
+                continue;
+            }
+            var origin = programme.Remove(h.Room) ? "programme" : "hall";
+            var floor = Add(p, t, pick.K0, pick.Rects[0], origin, pick.Band);
+            floor.Hall = floor.Id;
+            floor.Storeys = storeys;
+            floor.Set = data.Sets.ContainsKey(h.Room + "Hall") ? h.Room + "Hall" : null;
+            var g = data.Rooms["gallery"];
+            for (var j = 1; j < storeys; j++)
+            {
+                var up = Add(p, g, pick.K0 + j, pick.Rects[j], "gallery", pick.Band);
+                up.Name = $"{t.Name} gallery";
+                up.Hall = floor.Id;
+            }
+            area[pick.Band.Strip] += pick.Rects[0].Area;
+            p.Notes.Add($"hall: {t.Name} {pick.Rects[0]} on deck {pick.K0}, {storeys} storeys ({pick.Rects[0].W * 4} x {pick.Rects[0].D * 4} x {storeys * 3} m)");
+        }
     }
 
     private static void Claim(InteriorPlan p, int k, int x, int z, int what)
@@ -351,11 +431,11 @@ public static class InteriorPlanner
                 var b = x++;
                 var run = new GridRect(a, band.Z0, b, band.Z1);
                 PlanRoom? Mergeable(int at) =>
-                    at >= 0 && at < p.W && p.Cells[k][at, band.Z0] is var id && id >= 0 && p.Rooms[id] is { System: false, Critical: false } n &&
+                    at >= 0 && at < p.W && p.Cells[k][at, band.Z0] is var id && id >= 0 && p.Rooms[id] is { System: false, Critical: false, Hall: -1 } n &&
                     n.Rect.Z0 == band.Z0 && n.Rect.Z1 == band.Z1 && n.Section == p.SectionOf(a) && n.Rect.W + run.W <= p.Class.Deck.Section ? n : null;
                 // (a free room's wing in this band takes a narrow run beside it the same way: the outline stays an L or T)
                 (PlanRoom R, int Wing)? WingBeside(int at) =>
-                    at >= 0 && at < p.W && p.Cells[k][at, band.Z0] is var id && id >= 0 && p.Rooms[id] is { System: false, Critical: false } n &&
+                    at >= 0 && at < p.W && p.Cells[k][at, band.Z0] is var id && id >= 0 && p.Rooms[id] is { System: false, Critical: false, Hall: -1 } n &&
                     n.Wings.FindIndex(w => w.Z0 == band.Z0 && w.Z1 == band.Z1 && (w.X1 + 1 == a || w.X0 - 1 == b)) is var wi && wi >= 0 &&
                     n.Section == p.SectionOf(a) ? (n, wi) : null;
                 if (run.W <= 2 && (WingBeside(a - 1) ?? WingBeside(b + 1)) is { } hit)
@@ -503,7 +583,7 @@ public static class InteriorPlanner
             var spineSide = north ? Side.South : Side.North;
             var edge = north ? r.Rect.Z1 + 1 : r.Rect.Z0 - 1;
             if (edge >= 0 && edge < p.D && p.Cells[r.Deck][r.Rect.X0, edge] is InteriorPlan.Corridor or InteriorPlan.Lane)
-                p.Doors.Add(new PlanDoor { Deck = r.Deck, Room = r.Id, Other = PlanDoor.Corridor, Side = spineSide, Slot = MidSlot(r.Rect.W), Why = "corridor" });
+                p.Doors.Add(new PlanDoor { Deck = r.Deck, Room = r.Id, Other = PlanDoor.Corridor, Side = spineSide, Slot = MidSlot(r.Rect.W), Why = r.Hall == r.Id && !r.Critical ? "open bay" : "corridor", Wide = r.Hall == r.Id && !r.Critical });
             // the hangar's ramp and outside doors on the lowest deck
             var hullSide = north ? Side.North : Side.South;
             var onHull = north ? r.Rect.Z0 == 0 : r.Rect.Z1 == p.D - 1;
@@ -527,9 +607,10 @@ public static class InteriorPlanner
             foreach (var r in p.Rooms.Where(r => r.Type != "dead" && !reached.Contains(r.Id)))
             {
                 // (from the second pass, through a bulkhead line too: a room with no other way in gets a door in the bulkhead)
-                var via = p.Rooms.Where(o => reached.Contains(o.Id) && !o.Critical && o.Shaft == null && o.Type != "dead")
+                // (a hall, critical or not, has a way in on every storey already: a room behind it may open off it)
+                var via = p.Rooms.Where(o => reached.Contains(o.Id) && (!o.Critical || o.Hall >= 0) && o.Shaft == null && o.Type != "dead")
                     .Select(o => Between(p, r, o, "way in")).OfType<PlanDoor>().FirstOrDefault() ??
-                    (pass > 0 ? p.Rooms.Where(o => reached.Contains(o.Id) && !o.Critical && o.Shaft == null && o.Type != "dead")
+                    (pass > 0 ? p.Rooms.Where(o => reached.Contains(o.Id) && (!o.Critical || o.Hall >= 0) && o.Shaft == null && o.Type != "dead")
                         .Select(o => Between(p, r, o, "way in through a bulkhead", anySection: true)).OfType<PlanDoor>().FirstOrDefault() : null) ??
                     // (a sealed hull has no outside: last, a door onto a shaft's landing)
                     // (stairs first; never through a lift shaft's west wall, where its cars hang: the builder puts a lift shaft's north
@@ -595,6 +676,10 @@ public static class InteriorPlanner
                 else if (other >= 0 && seen.Add(other))
                     q.Enqueue(other);
             }
+            if (r.Hall >= 0) // (a hall's storeys: its own stairs join them)
+                foreach (var o in p.Rooms.Where(o => o.Hall == r.Hall))
+                    if (seen.Add(o.Id))
+                        q.Enqueue(o.Id);
             if (r.Shaft != null) // (stairs, and the freight lift: the builder runs one between two decks)
                 foreach (var o in p.Rooms.Where(o => o.Shaft == r.Shaft && o.Rect == r.Rect && Math.Abs(o.Deck - r.Deck) == 1))
                     if (seen.Add(o.Id))
@@ -613,6 +698,28 @@ public static class InteriorPlanner
                 p.Notes.Add($"the {r.Name} has {p.DoorsOf(r.Id).Count()} doors (a critical room wants one)");
     }
 
+    /// <summary>
+    /// The share of room cells (every deck; shafts, void and spare left out) whose mirror cell across the hull's centreline (z to D-1-z) holds a
+    /// room of the same type (phase 9: a plan that repeats port and starboard scores high).
+    /// </summary>
+    public static double Symmetry(InteriorPlan p)
+    {
+        int all = 0, same = 0;
+        for (var k = 0; k < p.Decks; k++)
+            for (var x = 0; x < p.W; x++)
+                for (var z = 0; z < p.D; z++)
+                {
+                    if (p.Cells[k][x, z] is not (>= 0 and var id) || p.Rooms[id] is { System: true } or { Type: "dead" or "spare" })
+                        continue;
+                    all++;
+                    var m = p.Cells[k][x, p.D - 1 - z];
+                    if (m >= 0 && TypeOf(p.Rooms[m]) == TypeOf(p.Rooms[id]))
+                        same++;
+                }
+        return all == 0 ? 0 : same / (double)all;
+        string TypeOf(PlanRoom r) => r.Hall >= 0 ? p.Rooms[r.Hall].Type : r.Type;
+    }
+
     /// <summary>The plan's check lines: rooms, minimum sizes, reachability, what was refused.</summary>
     public static List<string> Check(InteriorPlan p, InteriorData data, out int failures)
     {
@@ -627,6 +734,13 @@ public static class InteriorPlanner
         var open = p.Rooms.Where(r => r.Type != "dead").ToList();
         lines.Add($"reachable: {open.Count(r => reached.Contains(r.Id))} of {open.Count} rooms from outside{(open.All(r => reached.Contains(r.Id)) ? "" : " FAIL")}");
         lines.Add($"doors {p.Doors.Count}, bulkheads {p.Bulkheads.Count}, entry points {p.Entries.Count}, critical rooms {string.Join(", ", p.Rooms.Where(r => r.Critical).Select(r => $"{r.Name} ({p.DoorsOf(r.Id).Count()} door)"))}");
+        var halls = p.Rooms.Where(r => r.Hall >= 0).Sum(r => r.Area);
+        var smallRooms = p.Rooms.Where(r => r.Hall < 0 && !r.System && r.Type is not ("dead" or "spare")).Sum(r => r.Area);
+        var share = smallRooms / (double)Math.Max(1, smallRooms + halls);
+        lines.Add($"floor: halls {halls} cells a storey summed, small rooms {smallRooms} ({share:P0} of the room floor; target at most {p.Class.SmallShare:P0}{(share > p.Class.SmallShare + 1e-9 ? ", OVER" : "")})");
+        foreach (var h in p.Rooms.Where(r => r.Hall == r.Id))
+            lines.Add($"hall: {h.Name} {h.Rect.W * 4}x{h.Rect.D * 4} m, {h.Storeys} storeys ({h.Storeys * 3} m) from deck {h.Deck}");
+        lines.Add($"symmetry: {Symmetry(p):P0} of room cells have a room of the same kind across the centreline");
         foreach (var r in p.Refused)
             lines.Add($"FAIL {r}");
         foreach (var n in p.Notes)
