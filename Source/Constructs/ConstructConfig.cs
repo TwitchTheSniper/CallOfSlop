@@ -183,6 +183,11 @@ public enum CfgKey : byte
     RackDiameter, // Ordnance Rack: the widest ordnance a station takes, m
     ValueY, // Joystick: where the stick stands fore and aft, 0..1 (its X is Value; AnalogLever.cs)
     RestY, // Joystick: where the spring takes its Y (its X's is Rest)
+    WalkProfile, // walker leg: Simple, Basic or Advanced (the walker reads its lead leg's: ConstructWalkProfile.cs)
+    Stride, StepLift, BodyHeight, // walker leg, Basic: % of the build's own stride, step height and standing height
+    Gait, // walker leg, Basic: Auto, Tripod or Wave
+    LegPace, LegLift, LegSpread, // walker leg, Advanced: this leg's step speed, lift and foot spread, %
+    LegGroup, // walker leg, Advanced: which half of a tripod it steps with (Auto, First, Second)
     COUNT,
 }
 
@@ -850,6 +855,8 @@ public static class ConstructConfig
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 CfgKey.RackLayout or CfgKey.RackRows or CfgKey.RackColumns or CfgKey.RackLength or CfgKey.RackDiameter => d.IsModularRack,
                 CfgKey.FireOrder or CfgKey.RackInterval => d.Logic == CLogic.BombRack && !d.RackRail,
+                CfgKey.WalkProfile or CfgKey.Stride or CfgKey.StepLift or CfgKey.BodyHeight or CfgKey.Gait
+                    or CfgKey.LegPace or CfgKey.LegLift or CfgKey.LegSpread or CfgKey.LegGroup => d.Role == PartRole.Leg, // (the gait profiles: ConstructWalkProfile.cs)
                 _ => false,
             };
             if (!ok)

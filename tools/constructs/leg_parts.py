@@ -41,6 +41,31 @@ KINDS = [
 
 POWER = {"hydraulic": 1.0, "electric": 0.8, "shaft": 1.2}  # strength on each source (phase 2 gates the legs on them)
 
+# The gait profiles on the configure tool (docs/sandbox/GIANTS.md, phase 3). Simple: no settings, it just walks. Basic: the
+# walker's stride, step height, body height and gait, read from its lead leg (the one with the highest profile). Advanced:
+# each leg's own pace, lift, spread and gait group too.
+WHOLE = "The walker follows its leg with the highest profile."
+CONFIG = [
+    {"key": "walkProfile", "label": "Gait profile", "group": "Gait", "type": "choice", "options": ["Simple", "Basic", "Advanced"], "default": 0,
+     "tooltip": "Simple: it just walks. Basic: the gait settings. Advanced: each leg's own tuning too. " + WHOLE},
+    {"key": "stride", "label": "Stride", "group": "Gait", "unit": "%", "min": 50, "max": 150, "step": 5, "default": 100,
+     "tooltip": "How far each step reaches: longer strides walk faster. Basic and Advanced. " + WHOLE},
+    {"key": "stepLift", "label": "Step height", "group": "Gait", "unit": "%", "min": 50, "max": 250, "step": 5, "default": 100,
+     "tooltip": "How high the feet lift: higher clears bigger obstacles. Basic and Advanced. " + WHOLE},
+    {"key": "bodyHeight", "label": "Body height", "group": "Gait", "unit": "%", "min": 60, "max": 130, "step": 5, "default": 100,
+     "tooltip": "How high it stands (still no higher than the legs reach). Basic and Advanced. " + WHOLE},
+    {"key": "gait", "label": "Gait", "group": "Gait", "type": "choice", "options": ["Auto", "Tripod", "Wave"], "default": 0,
+     "tooltip": "Auto: a tripod with six or more legs in an even count, else a wave. Tripod: half the legs at a time. Wave: one leg at a time. " + WHOLE},
+    {"key": "legPace", "label": "Leg pace", "group": "This leg", "unit": "%", "min": 50, "max": 150, "step": 5, "default": 100, "advanced": True,
+     "tooltip": "This leg's step speed. Advanced profile only."},
+    {"key": "legLift", "label": "Leg lift", "group": "This leg", "unit": "%", "min": 50, "max": 200, "step": 5, "default": 100, "advanced": True,
+     "tooltip": "How high this leg lifts its foot, on top of the step height. Advanced profile only."},
+    {"key": "legSpread", "label": "Leg spread", "group": "This leg", "unit": "%", "min": 70, "max": 130, "step": 5, "default": 100, "advanced": True,
+     "tooltip": "How far out this leg puts its foot. Advanced profile only."},
+    {"key": "legGroup", "label": "Gait group", "group": "This leg", "type": "choice", "options": ["Auto", "First", "Second"], "default": 0, "advanced": True,
+     "tooltip": "In a tripod, which half this leg steps with. Advanced profile only."},
+]
+
 
 def leg(tier, kind):
     tname, c, reach, width, load, step = tier
@@ -75,6 +100,7 @@ def leg(tier, kind):
         {"type": "pipe", "fluid": "oil", "name": "Oil in", "dir": "in", "at": [0, r(-h * 0.5), r(h)], "face": "+z"},
         {"name": "Drive in", "type": "shaft", "dir": "in", "socket": "drive"},
     ])
+    p.set(config=CONFIG)
     mass = 8 * reach ** 2.6
     return p.stats(mass, 300 * reach ** 1.5, c.armour)
 

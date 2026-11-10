@@ -1180,6 +1180,7 @@ public static partial class ConstructParts
             {
                 var def = Parse(df.Text, df.File);
                 def.Folder = df.RelFolder;
+                def.Sockets = WithLegSockets(def); // (a leg's segment weld sockets: ConstructLegParts.cs)
                 def.Sockets = WithCentreSockets(def);
                 if (!names.Add(def.Name))
                     throw new ConstructPartException($"{df.File}: another file already has the name \"{def.Name}\"");
