@@ -148,6 +148,39 @@ public sealed partial class Vehicle
         return Turret(sponson, weapon, seat: seat);
     }
 
+    private const string PannierBeside = "a pannier beside it";
+
+    /// <summary>
+    /// A pannier mustn't overlap one already on: a 1 m pannier on a bay under a metre long reached into its neighbour's, and their tops shared a plane once wear
+    /// painted them apart (Highland War Bus 16, 2026-11-10: the placing check took them as one look).
+    /// </summary>
+    private string? PannierClear(ConstructPartDef def, ConstructGhost g)
+    {
+        var (mn, mx) = Drawn(def, g.Pos, g.Rot);
+        foreach (var p in PanelList("panniers"))
+        {
+            var (pn, px) = Drawn(C.DefOf(p.Index), C.Parts[p.Index].Pos, C.Parts[p.Index].Rot);
+            if (pn.X < mx.X - 0.005f && px.X > mn.X + 0.005f && pn.Y < mx.Y - 0.005f && px.Y > mn.Y + 0.005f && pn.Z < mx.Z - 0.005f && px.Z > mn.Z + 0.005f)
+                return PannierBeside;
+        }
+        return null;
+    }
+
+    /// <summary>A part's drawn boxes' bounds (its detail boxes too: a pannier's faceted shell is a metre long round a 0.76 m solid box) where it stands, rest frame.</summary>
+    private static (Vector3 Min, Vector3 Max) Drawn(ConstructPartDef def, Vector3 pos, byte rot)
+    {
+        var (mn, mx) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        foreach (var b in def.Boxes)
+        {
+            if (b.Hidden)
+                continue;
+            var c = pos + Rot24.Apply(rot, b.Center);
+            var h = Rot24.ApplyHalf(rot, b.Half);
+            (mn, mx) = (Vector3.Min(mn, c - h), Vector3.Max(mx, c + h));
+        }
+        return (mn, mx);
+    }
+
     /// <summary>Faceted boxes hung on the free waist sockets of some bays: a broken flank.</summary>
     public Vehicle Panniers(IEnumerable<VPart> bays, Dice d, double chance = 0.5)
     {
@@ -161,11 +194,11 @@ public sealed partial class Vehicle
                     continue;
                 try
                 {
-                    PanelList("panniers").Add(Onto(bay, side, "Hull Pannier 1 m", "back", 0));
+                    PanelList("panniers").Add(Onto(bay, side, "Hull Pannier 1 m", "back", 0, veto: PannierClear));
                 }
-                catch (VehicleKitException e) when (e.Message.Contains("in the way", StringComparison.Ordinal))
+                catch (VehicleKitException e) when (e.Message.Contains("in the way", StringComparison.Ordinal) || e.Message.Contains(PannierBeside, StringComparison.Ordinal))
                 {
-                    // (a ladder or a door there: that side stays flat)
+                    // (a ladder or a door there, or the last bay's pannier: that side stays flat)
                 }
             }
         return this;
