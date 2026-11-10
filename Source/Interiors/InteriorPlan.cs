@@ -79,6 +79,7 @@ public sealed class InteriorPlan
 
     public SizeClass Class = null!;
     public int Seed, W, D, Decks;
+    public bool Sealed; // no doors to the outside (a chassis void: InteriorPlanner.Plan)
     public bool BowAtMinX;
     public int SpineZ0, SpineZ1;
     public int[][,] Cells = []; // [deck][x, z]: a room id, or Corridor, Lane, KeepOut, Free

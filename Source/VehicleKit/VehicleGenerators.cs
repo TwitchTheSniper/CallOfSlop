@@ -60,6 +60,11 @@ public static class VehicleRegistry
         s => new Generators.Car(s),
         s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: no style ships them yet)
         s => new Generators.Plane(s),
+        s => new Generators.Buggy(s), // (phase 8b: the archetype library, part 2)
+        s => new Generators.MonsterTruck(s),
+        s => new Generators.Wagon(s),
+        s => new Generators.GiantTruck(s),
+        s => new Generators.Concept(s),
     ];
 
     /// <summary>Things every shipped style ships that are not vehicles a role or a convoy draws: the standalone turret (docs/sandbox/VEHICLE-WEAPONS.md, "Turrets").</summary>

@@ -26,9 +26,9 @@ planner knows nothing of vehicles: its input is a hull volume and keep-outs, so 
 
 | File | What |
 | --- | --- |
-| `SizeClasses.json` | Each class's tonnage band (bands must meet), deck rules, programme (the rooms it asks for), `fill` (what a big leftover may become) and `chassis` (the rooms planned inside a hollow chassis). **Provisional.** |
+| `SizeClasses.json` | Each class's tonnage band (bands must meet), deck rules, programme (the rooms it asks for), `fill` (what a big leftover may become), `chassis` (the rooms planned inside a hollow chassis) and `budget` (the most parts, links and joints the fitted construct may use: phase 5). **Provisional.** |
 | `RoomTypes.json` | Each room type's minimum size `[along the spine, deep]` in cells, `want` (cells of floor), `layout` (`grid`, or `free`: a rectangle plus a wing, phase 2; system rooms stay on the grid), `deck` (lower/upper/any), `row` (inner beside the spine, outer on the hull side), `end` (bow/stern), `wants`/`avoids`, `critical`, `exterior` (may open outside), `modules`, `loot`. System rooms (stairs, elevator, storage, fuel, spare, dead) are placed by the planner. |
-| `ModuleSets.json` | The `shell` parts (slab, stair slab, stair, walls, corners, door wall, door corner, garage wall, hinge, door leaf, adapter pad) and, for each set, the parts a room holds (`count`, `perCells`, `loot`, `role`) and `missing`: what it should hold that no part does yet. |
+| `ModuleSets.json` | The `shell` parts (slab, stair slab, stair, walls, corners, door wall, door corner, garage wall, hinge, door leaf, adapter pad, and `panels`: the long walls of phase 5, longest first) and, for each set, the parts a room holds (`count`, `perCells`, `loot`, `role`) and `missing`: what it should hold that no part does yet. |
 | `LootHooks.json` | A room's loot id mapped to a `Constructs/Loot.json` table: the interiors' own `room ...` tables (phase 3). |
 
 Provisional numbers (phase 1):
@@ -80,22 +80,25 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
   3. `Build` places, in this order:
      - adapter pads (`Adapter Capital to Small`) on the root's capital sockets under the grid;
      - slabs, in passes from the pads and from neighbours;
-     - each deck's room walls along the outline of its cells (every room is closed by its own corner pieces and 4 m pieces, so
-       neighbours stand wall to wall, a 0.5 m bulkhead, and shared doorways line up; a free room's inner corner gets a 2 m piece
-       at each wall that meets it);
-     - door walls and door corners with a Door Hinge and a Steel Flush Door (one leaf per shared doorway);
+     - each deck's room walls along the outline of its cells, one wall between two rooms (phase 5: the room on the south or
+       east side of an edge builds it, and a shaft always builds its own); plain runs take the longest Steel Panel Wall that fits
+       before a doorway, shafts 4 m pieces; corners, and a 2 m piece at each end that meets an inner corner or a shared edge;
+     - door walls and door corners; a Door Hinge and a Steel Flush Door at once on critical rooms and bulkheads, the other leaves
+       last (the deck's, then the void's) while the class's joint budget lasts;
      - bulkheads (a door in the spine, a Garage Wall opening over the lane);
      - closed spine ends on upper decks;
      - stairs: a Steel Straight Stair a cell in from the stairwell's west wall, rising +z under a Stair Floor's opening. If the
        rules refuse it, it is welded on and counted.
      - the next level's slabs, on the walls below;
-     - each room's things from its module set, one to a free slab socket (block middles first), with the loot hook on
+     - each room's things from its module set (generated rooms' last, while the budget lasts), one to a free slab socket (block middles first; the gunner's station and Fire Director side by side), with the loot hook on
        containers marked `loot`, and the helm and gunner wired where the rules allow; a fuel plant (`role: plant`) gets a Fuel
        Tank fitted to it, and a room's lamps a Switch on the first lamp, wired to each;
      - the freight lift ("Phase 2 record");
      - the power report: every electrical part no working battery or plant reaches, and plants no fuel reaches.
-  4. Refusals, notes and missing parts are listed.
-- **`Program.Interiors.cs`**: `--gen-interior <blueprint name or file> [--seed S] [--out DIR] [--plan]`. Writes `<Name> Fitted`
+  4. Refusals, notes and missing parts are listed, then the budget by kind (`budget walls: ... parts, ... links, ... joints,
+     ... wires, ... t`; a link counts for the later of its two parts) and the totals against the engine's limits.
+- **`Program.Interiors.cs`**: `--gen-interior <blueprint name or file> [--seed S] [--out DIR] [--plan] [--chassis hollow|armoured]`
+  (`--chassis` swaps the blueprint's root for the hollow chassis or armoured hull in the written file only: "Phase 4 record"). Writes `<Name> Fitted`
   (default `Constructs/Blueprints`) and prints the check. It loads the file back through `ConstructBuild.BuildOnGround` and
   compares part counts. With `--seed` it also plans twice and compares. `--plan` prints the ASCII maps. Console output goes to
   `callofslop.log` next to the exe, as for every tool.
@@ -245,7 +248,7 @@ the hollow inside the edge beams (125 x 14 x 61 m), its inner beams as keep-outs
 `--gen-interior ... --plan` prints it as "PLANNED ONLY". On seed 1: 7 of 7 rooms placed; 178 of 181 rooms reached (3 storage
 rooms against the north edge of the upper void storeys have no door), with 4 stairwells and a lift shaft through all 4 storeys.
 
-To build it, these are still needed (not done):
+To build it, these were needed (all done in phase 4, below):
 1. **A hollow chassis set** (a new generator, not `capital_parts.py`): the same deck with floor sockets on the bottom plate's top
    on the small 0.25 m lattice (or capital sockets for the adapter pads), hatch openings in the top plate over the stair and lift
    shafts, and doorways through the cross beams on the spine.
@@ -270,8 +273,140 @@ and blueprints; the smaller classes; a client.
 
 **Note for Assembling.json:** phase 3 added no recipes.
 
-### Next (phase 4 and on)
+## Phase 4 record (branch `feat/interiors-4`)
 
-Phase 3 did the spare space and the loot tables, and planned the chassis void. Next: the hollow chassis set and building the void
-(above); medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
+User decision (2026-11-10): the chassis is the interior. The parts that make up a giant's chassis can be interior parts, and a
+heavily armoured walker gets an armoured hull with the interior inside it.
+
+**The hollow chassis set** (`tools/constructs/interior_parts.py`, `Constructs/Parts/Interior/Capital`). There are two parts.
+- **Capital Hollow Chassis 128x64 m**: the Capital Chassis Deck 128x64 m's outside. It has the same footprint and 16 m depth. Its
+  44 under, top and side sockets have the same names and places, so the legs' `-z0`... `+z7` mounts and the deck's `top` sockets
+  carry over. It also has the same mass (28,160 t), health and armour (80). The hollow is built for the interior.
+  - The end and edge beams stand just outside the interior's 4 m grid (the one `Measure` lays on the top sockets). The two inner
+    cross beams each fill one grid column (11 and 19), with a full-height portal where the 8 m corridor runs through.
+  - The top plate has hatches over the planner's two stairwells and the lift shaft (grid 7,3 and 22,3, 1x3; 16,3, 2x3). The
+    hatches are 5 cm larger than the cells.
+  - It has 12 capital `floor{storey}.{bay}` sockets, one per bay on each of the 4 storeys. Each is in the middle of a corridor
+    block. The upper ones sit on small brackets just under the slab, because a socket must sit on a solid face.
+- **Capital Armoured Hull 128x64 m**: the same frame with belt armour drawn on the long sides. It has 3.5x the plate (39,424 t)
+  and armour 160.
+
+Both are opted out of centre sockets. They have recipes in Assembling.json (added by hand). "Centre sockets" names neither: its 24
+failures are main's leg weld sockets.
+
+**Building the void.** A root with floor sockets inside its hollow gets the void built (`InteriorBuilder.VoidHull`):
+- The void is laid on the deck's own grid, with the same corner and size, so the shafts land under the hatches. Its storeys are
+  levels -5 to -2 (the deck's deck 0 is level 0).
+- The class's `chassis` rooms go below and leave the deck's programme. The void plan is **sealed**: it has no outside doors.
+  From the second pass, an unreached room gets a door through a bulkhead line. In a sealed plan it can also get one onto a shaft's
+  landing. Rooms are kept whole (no split, runs up to 3 cells merge) to keep the wall count down.
+- A **mezzanine** (level -1) is built only in the shafts that have the deck's shafts over them, up through the hatches.
+- Stair flights alternate between a stairwell's first two blocks, so no flight stands over the one below. The void's stairs run
+  through the mezzanine into the deck's stairwells.
+- The 3 doorless storage rooms of phase 3 are gone. The void's rooms are now 108 of 108 reached.
+
+**The lift for 3+ decks: stacked cars**, one car a storey. Every gap from level -5 to 1 has its own 4 m rail and car. The cars
+alternate between the shaft's middle block and its first block, and the slab is left out over each car. Each car has the phase 2
+calls: its own button, plus a lower and an upper landing button. Riders change cars at each landing. Corners over a car's block
+are fitted to the walls beside them.
+
+**Limits met.** A construct holds at most 255 joints and 48,000 socket links (`Construct.MaxJoints`, `MaxLinks` = 3x
+`MaxParts`).
+- **Joints:** in the void, only critical rooms and bulkheads get a door leaf first. The rest get one last, while 32 joints stay
+  free (9 stay open).
+- **Links:** the void has half the things per cell and no slab or wall in its dead space. **The fitted walker uses 46,883 of
+  48,000 links**, so players can add only about 200 parts.
+
+**The run** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1 --chassis hollow`, in `TitanWalkerFitted.json`;
+its root is the hollow chassis):
+- Rooms: the deck has 13 of 13 programme rooms and 77 of 77 reached. The void has 7 of 7 and 108 of 108 reached.
+- Parts: 7,350 placed, none refused or welded. There are 217 door leaves, 488 loot containers and 12 stair flights.
+- Lift: 6 of 6 cars.
+- Power: 304 electrical parts, none off.
+- The file loads back as 7,361 parts from 7,361 steps. Building took 37 s.
+
+**Tried by hand (headless, a throwaway run, not kept):**
+- **Build:** it loads as 7,361 parts, 223 joints and 46,883 links. It weighs 37,705 t, against 32,698 t for phase 3's fitted
+  walker and 29,289 t bare.
+- **Lift:** all 6 cars went up 2.98 m on their car buttons, down on the lower landings' calls, and up again on the upper
+  landings'.
+- **Power:** all 304 electrical parts are on, and 82 of 82 lamps are lit.
+- **Walk:** forward from rest for 6 s, with no wrecks. Over the last 3 s the bare walker made 0.23 m/s, phase 3's fitted walker
+  0.20 m/s and the hollow-fitted walker 0.09 m/s. All three crept and sank in this crude run (the bare one is also tilted 15
+  degrees), so read the numbers as relative.
+
+**Not tried:** a player walking the rooms, stairs, portals and mezzanine; riding and changing cars; drawing anything
+(z-fighting between the stair flights and the stair-floor openings, the hatch edges and the deck's shaft walls); other seeds;
+the armoured hull fitted; a client.
+
+**Known gaps:**
+- Landing buttons end up at the wall's foot on half the landings (Mount takes the nearest free socket). The phase 2 lift does
+  this too. (Fixed in phase 5.)
+- The car-to-car change is by hand: there is no single car through all storeys (a small rail is 4 m at most).
+- The gunner's station is now more than 8 m from its Fire Director. (Fixed in phase 5.)
+- The link limit leaves little room. (Phase 5: 50%.)
+
+**For the walker session:** to swap the base, change the Titan Walker's step 0 to `Capital Hollow Chassis 128x64 m` (or
+`Capital Armoured Hull 128x64 m`). The socket names, leg mounts and top sockets are unchanged, so nothing else moves. Then
+re-run `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1` (the `--chassis` flag is then not needed).
+
+## Phase 5 record (branch `feat/interiors-5`)
+
+User decision (2026-11-10): make interiors leaner now; a higher `Construct.MaxLinks` comes later with the 500 m scale work.
+
+**Where the links went** (phase 4's fitted walker, 46,883 links): walls 24,478 (2,528 pieces) and slabs 18,629 (2,838). About
+8,500 were wall faces linking to the wall back to back with them, two rooms' walls along every shared edge. A 4 m wall made ten
+links: 4 to the slab under it, 4 to the slab over it, 3 to its neighbour.
+
+**What changed:**
+- **Shared walls.** One wall stands between two rooms (`InteriorBuilder.Shares`). A doorway in a shared wall, with its leaf, is built by
+  the room that builds the wall.
+- **Steel Panel Wall 4, 8, 12 and 16 m** (`tools/constructs/interior_parts.py`, `Constructs/Parts/Interior/Walls`, recipes in
+  Assembling.json by hand): the Steel Wall 4 m's plate and section, with one bottom and one top socket at each end and one end socket
+  a side; face sockets every 2 m for players. Plain runs take the longest that fits; shafts keep 4 m pieces (the lift hangs on them).
+  Slabs are unchanged (4x4 m): a long floor is the next cut if one is needed (slabs now hold 14,244 links).
+- **Budget** (`SizeClasses.json` `budget`, `Budget` in InteriorData.cs): the most parts, links and joints the whole fitted construct
+  may use. Capital: 9,600 parts, 28,800 links (60%), 191 joints, so players keep 6,400 parts, 19,200 links and 64 joints. The
+  other classes (provisional): medium 2,000 / 6,000 / 48, large 4,000 / 12,000 / 96, extra large 8,000 / 24,000 / 160. Leaves other than
+  critical rooms' and bulkheads' go on last, deck first; generated rooms are furnished last. Whatever does not fit is left out and
+  reported ("doorways left open", "generated rooms left bare"). Walls and slabs are never trimmed. Tried with the capital link budget
+  set to 23,000: it stopped at 23,000 links with 114 generated rooms bare and 68 doorways open.
+- The void's furniture is back to full density (phase 4 halved it).
+- Landing buttons are fitted first, on face sockets 1 to 1.8 m over their floor; the gates then go on what is left.
+- The gunner's station and the Fire Director stand side by side (the second goes on the free spot nearest the first): wired.
+
+**The run** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1 --chassis hollow`, in `TitanWalkerFitted.json`): 13 of 13
+deck rooms, 77 of 77 reached; void 7 of 7, 108 of 108 reached; 6,576 parts placed, none refused or welded; 185 door leaves (41
+doorways open); 707 loot containers; 6 of 6 lift cars; the file loads back as 6,587 parts. Building took 52 s.
+
+| | Phase 4 | Phase 5 |
+| --- | --- | --- |
+| Links | 46,883 (98%) | 24,162 (50%) |
+| Parts | 7,361 | 6,587 |
+| Joints | 223 (32 free) | 191 (64 free) |
+| Walls | 2,528 pieces, 24,478 links | 1,545 pieces, 6,957 links |
+| Loot containers | 488 | 707 |
+| Mass | 37,705 t | 36,557 t |
+
+**Tried by hand (headless, a throwaway run, not kept):**
+- **Build:** loads as 6,587 parts, 191 joints, 24,162 links, 139 wires.
+- **Walls:** every outline edge of every room checked for a wall or doorway at four points along it: none missing on any level
+  (the check found the gaps when a corner's 2 m piece was left out on purpose).
+- **Lift:** both landing buttons of every car stand 1.38 m over their floor. All 6 cars went up 2.99 m on their car buttons, came down
+  on the lower landings' calls and went up on the upper landings'.
+- **Power:** 304 of 304 electrical parts on, 82 of 82 lamps lit.
+- **Walk and mass:** the walk controller's own top speed (`WalkTop`, from mass over what the legs carry) is 3.59 m/s bare (29,289 t),
+  3.48 phase 3 (32,698 t), 3.32 phase 4 (37,705 t) and 3.36 now (36,557 t). Every walker uses half or less of what its legs carry
+  (72,000 t), so mass slows it by at most 7%. **The 0.09 against 0.23 m/s of phase 4's crude run came from the run (all sank and
+  crept), not the mass.** The walk itself was not run again.
+
+**Not tried:** drawing anything (the panels' ends meet as the 4 m pieces do); a player walking it; damage to a panel (fewer links: a
+hit panel may come off sooner); other seeds; the armoured hull; the smaller classes' budgets on a real build; a client.
+
+**Known gaps:** 41 doorways have no leaf (the joint budget); slabs are now the main link cost; the helm still can't be wired to the
+Driving Module (one input).
+
+### Next (phase 6 and on)
+
+A long floor panel if a bigger build needs it; a jointless sliding door; a single lift car through all storeys (a medium or large rail through adapters); medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
 track; static bases from a plot; joining the vehicle kit; the missing parts listed by the run.

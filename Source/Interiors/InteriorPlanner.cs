@@ -35,13 +35,14 @@ public static class InteriorPlanner
         public int Depth => Z1 - Z0 + 1;
     }
 
-    public static InteriorPlan Plan(InteriorData data, SizeClass cls, HullVolume hull, int seed)
+    /// <param name="sealed">No doors to the outside (a hull inside another, as a chassis void: its way in is the stairs and the lift).</param>
+    public static InteriorPlan Plan(InteriorData data, SizeClass cls, HullVolume hull, int seed, bool @sealed = false)
     {
         var rules = cls.Deck;
         var rng = new InteriorRng(seed);
         var p = new InteriorPlan
         {
-            Class = cls, Seed = seed, BowAtMinX = hull.BowAtMinX,
+            Class = cls, Seed = seed, BowAtMinX = hull.BowAtMinX, Sealed = @sealed,
             W = (int)MathF.Floor(hull.Size.X / rules.GridCell + 1e-4f),
             D = (int)MathF.Floor(hull.Size.Z / rules.GridCell + 1e-4f),
             Decks = Math.Clamp((int)MathF.Floor(hull.Size.Y / rules.Storey + 1e-4f), 1, rules.Decks),
@@ -362,7 +363,7 @@ public static class InteriorPlanner
                             p.Cells[k][c, z] = wr.Id;
                     continue;
                 }
-                if (run.W <= 2 && (Mergeable(a - 1) ?? Mergeable(b + 1)) is { } into)
+                if (run.W <= (p.Sealed ? 3 : 2) && (Mergeable(a - 1) ?? Mergeable(b + 1)) is { } into)
                 {
                     into.Rect = new GridRect(Math.Min(into.Rect.X0, a), band.Z0, Math.Max(into.Rect.X1, b), band.Z1);
                     into.Origin = "merged";
@@ -425,7 +426,7 @@ public static class InteriorPlanner
             Add(p, data.Rooms["spare"], k, run, "leftover", band);
             return;
         }
-        if (run.Area >= 2 * pick.Want && run.W >= 2 * Math.Max(pick.MinW, 2))
+        if (run.Area >= 2 * pick.Want && run.W >= 2 * Math.Max(pick.MinW, 2) && !p.Sealed) // (a sealed hull keeps its rooms whole: fewer walls, CONSTRUCTS.md's link limit)
         {
             var half = run.W / 2;
             Generate(p, data, k, new GridRect(run.X0, run.Z0, run.X0 + half - 1, run.Z1), band, rng);
@@ -447,9 +448,9 @@ public static class InteriorPlanner
     private static int MidSlot(int len) => len >= 2 ? (len - 2) / 2 : -1;
 
     /// <summary>A door between two rooms through a shared edge where both have a middle piece (at least two cells in common), in one section.</summary>
-    private static PlanDoor? Between(InteriorPlan p, PlanRoom a, PlanRoom b, string why)
+    private static PlanDoor? Between(InteriorPlan p, PlanRoom a, PlanRoom b, string why, bool anySection = false)
     {
-        if (a.Deck != b.Deck || a.Section != b.Section)
+        if (a.Deck != b.Deck || a.Section != b.Section && !anySection)
             return null;
         var (ra, rb) = (a.Rect, b.Rect);
         Side side;
@@ -484,7 +485,7 @@ public static class InteriorPlanner
             // the hangar's ramp and outside doors on the lowest deck
             var hullSide = north ? Side.North : Side.South;
             var onHull = north ? r.Rect.Z0 == 0 : r.Rect.Z1 == p.D - 1;
-            if (r.Deck == 0 && onHull && data.Rooms[r.Type].Exterior && r.Rect.W >= 2)
+            if (r.Deck == 0 && onHull && data.Rooms[r.Type].Exterior && r.Rect.W >= 2 && !p.Sealed)
             {
                 var wide = r.Type == "hangar";
                 p.Doors.Add(new PlanDoor { Deck = 0, Room = r.Id, Other = PlanDoor.Outside, Side = hullSide, Slot = MidSlot(r.Rect.W), Wide = wide, Why = wide ? "ramp" : "loading door" });
@@ -498,20 +499,26 @@ public static class InteriorPlanner
                     (data.Rooms[a.Type].Wants.Contains(b.Type) || data.Rooms[b.Type].Wants.Contains(a.Type)) && Between(p, a, b, "wanted") is { } d)
                     p.Doors.Add(d);
         // outer rooms with no way in: through a neighbour on the corridor, else outside on the lowest deck
-        for (var pass = 0; pass < 3; pass++)
+        for (var pass = 0; pass < (p.Sealed ? 4 : 3); pass++)
         {
             var reached = Reached(p);
             foreach (var r in p.Rooms.Where(r => r.Type != "dead" && !reached.Contains(r.Id)))
             {
+                // (from the second pass, through a bulkhead line too: a room with no other way in gets a door in the bulkhead)
                 var via = p.Rooms.Where(o => reached.Contains(o.Id) && !o.Critical && o.Shaft == null && o.Type != "dead")
-                    .Select(o => Between(p, r, o, "way in")).OfType<PlanDoor>().FirstOrDefault();
+                    .Select(o => Between(p, r, o, "way in")).OfType<PlanDoor>().FirstOrDefault() ??
+                    (pass > 0 ? p.Rooms.Where(o => reached.Contains(o.Id) && !o.Critical && o.Shaft == null && o.Type != "dead")
+                        .Select(o => Between(p, r, o, "way in through a bulkhead", anySection: true)).OfType<PlanDoor>().FirstOrDefault() : null) ??
+                    // (a sealed hull has no outside: last, a door onto a shaft's landing)
+                    (p.Sealed && pass > 1 ? p.Rooms.Where(o => reached.Contains(o.Id) && o.Shaft != null)
+                        .Select(o => Between(p, r, o, "way in from a shaft's landing", anySection: true)).OfType<PlanDoor>().FirstOrDefault() : null);
                 if (via != null)
                 {
                     p.Doors.Add(via);
                     continue;
                 }
                 var north = r.Rect.Z1 < p.SpineZ0;
-                if (r.Deck == 0 && (north ? r.Rect.Z0 == 0 : r.Rect.Z1 == p.D - 1) && pass == 2)
+                if (r.Deck == 0 && (north ? r.Rect.Z0 == 0 : r.Rect.Z1 == p.D - 1) && pass == 2 && !p.Sealed)
                 {
                     p.Doors.Add(new PlanDoor { Deck = 0, Room = r.Id, Other = PlanDoor.Outside, Side = north ? Side.North : Side.South, Slot = MidSlot(r.Rect.W), Why = "way in from outside" });
                     p.Entries.Add(new PlanEntry(0, r.Rect.X0, north ? 0 : p.D - 1, $"{r.Name} outside door"));

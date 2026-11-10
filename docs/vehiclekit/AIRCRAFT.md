@@ -90,7 +90,7 @@ tilt. The autopilot is engaged as its panel would (`apMode`, `targetAlt`, `autop
 
 **State (2026-11-10): `--sweep-vehicle "Bandit Plane" --seeds 30` passes 27 of 30**, about 1.1 s a generation with its flight check; `"IT Plane"` 11 of 12
 (styles only change colours). The three refusals are all jets whose altitude hold still rocks 10-17 m at 41-42 m/s: the jets hang under the wing, below the
-centre of mass, so each throttle change pitches the nose. `--gen-vehicles`: all 148 shipped vehicles identical. Not verified: flying one by hand in the game,
+centre of mass, so each throttle change pitches the nose. `--gen-vehicles`: every shipped vehicle identical (193 after the merge of main). Not verified: flying one by hand in the game,
 planes on a round world or in wind, and how long the fuel lasts.
 
 Headless runs on the shared box spend about 60 s building the maps before any vehicle command (no cache under the agent's save folder).
