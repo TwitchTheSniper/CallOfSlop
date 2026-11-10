@@ -120,18 +120,49 @@ refusal now says the pitch and roll and the speed.
 hover drift 0.3 m, hang 10 degrees at 2 m/s, 3 m forward on W, worst tilt 15. Not verified: flying one by hand, forward flight beyond 1.5 s, autorotation,
 the fuel's endurance.
 
-## Spawning and bot pilots (not built yet)
+## Spawning and bot pilots (phase 4)
 
-What exists: an aircraft can already be spawned on the ground like any faction vehicle by shape. `VehicleSpawner.Request(style, "Helicopter", ...)` makes it
-through `VehicleRegistry.Make`, which sends an `IAircraftShape` down `AircraftKit.Make` (built, then flight-checked; a refused seed rerolls as a ground vehicle's
-does). Tried only through `--sweep-vehicle` and `--gen-vehicle`, not in a running game. What is missing for AI factions:
-- **An air spawn**: the spawner sets a vehicle down on the ground (`GroundJob.Join` at the ground point). In the air it needs a height, its rotors at speed
-  (`CRotor.Omega` set to rated, as the check's spool wait reaches) or a plane's cruise speed (`Construct.Vel` along its nose), and the autopilot on.
-- **A bot pilot**: the flight check engages the autopilot as its panel would (`VehicleFlightCheck.Autopilot`: `apMode`, `targetAlt`, `autopilot` settings) and
-  flies by seat keys (`ConstructEdits.DriveInput`). A pilot is that from a bot: a seated driver, the altitude hold set, a waypoint mode for routes, and throttle
-  back to cruise once level on a plane. `Autopilot` is private to the check today: lift it into a small public helper when the pilot is written.
+Code: `Source/VehicleKit/AircraftPilot.cs` (`AircraftAutopilot`, `AircraftPilot`), the server's side `Source/Game/GameSandboxAircraft.cs`, the hand probe
+`--bench-aircraft [STYLE] [--seed N] [--height H] [--seconds S] [--map NAME]` (`Source/App/BenchAircraft.cs`; it prints to callofslop.log). Nothing new on the wire.
 
-Headless runs on the shared box spend about 60 s building the maps before any vehicle command (no cache under the agent's save folder).
+- **Ground spawn** works through the real runtime path: `Game.SandboxSpawnAircraft(style, shape, seed, over, 0, yaw)` (or `VehicleSpawn.Request` by shape) makes
+  the seed in the generation thread's slices, gates it with the flight check (a refusal rerolls) and sets it down. Measured in a running offline Sandbox game on
+  Proving Ground: Bandit Drone, Plane and Helicopter 7 all generated (no reroll, no fallback; the plane in 26 ticks, longest slice 16.6 ms on the busy box) and
+  stood level (the tail-dragger plane at 6 degrees).
+- **Air spawn**: `SandboxSpawnAircraft(..., height, yaw, order, radius)` sets it down, then in the same tick moves it straight up `height` m
+  (`SandboxSpawnMove`) and `AircraftAutopilot.Launch`es it: every rotor and prop at its rated speed, the engine running at 95 % of its top rpm with a turbine fully
+  spooled and `RotorRuns` set (without these a helicopter's engine stopped on the first tick, restarted, spooled from idle and sank 9 m in 1.5 s), the stabilizer
+  armed with its autopilot holding the height (Hover; a plane: Waypoint ahead, throttle at cruise 0.7, going `max(25, 1.5 x stall)` m/s along its nose), home set
+  there. Measured 40 m up: in the first 1.5 s the drone held within 0.8 m, the helicopter 1.2 m, the plane sank 1.9 m (no stall, 44-46 m/s).
+- **Bot pilots** (`AircraftPilot`, server only, at most `Game.MaxPilots` = 32): orders `Hold`, `Patrol` (a rotorcraft flies the corners of a square of the
+  radius about the point; a plane circles the point, which the stabilizer's waypoint mode does by itself when near), `Goto`, `Return` (home, then down) and `Land`
+  (rotorcraft). It sets the autopilot through `AircraftAutopilot.Set` (mode, held height `Height` m over the higher of the ground under it and under the point,
+  waypoint) every 15 ticks and costs a counter between; the ground is one ray through `World.Query` (constructs aren't in it), the last hit standing in off the
+  map's ground. Landing steps the stabilizer's own held height (`CStab.HoldAlt`) down at 2.5 m/s over a fixed point with the landing assist at 4 m: the setting
+  can't name a height of 0 or less (it reads as "where it is"), so ground below y = 0 was out of reach. On the ground and still it turns the autopilot off,
+  disarms the stabilizer and lets go. It also lets go when the craft is gone or loses its stabilizer, and when a player takes a seat (`Driver` set: captured;
+  the autopilot goes off so the keys are theirs).
+  Measured (`--bench-aircraft`, 20 s patrol at 40 m, then return): pilots' ticks 1.2-1.8 us for three pilots, 0 bytes allocated over 1200 ticks; patrol heights
+  within 5 m (drone), 3.4 m (helicopter) and 10.6 m (the plane, banked up to 48 degrees in its circle); the drone and helicopter came home and landed
+  (the helicopter needs its ground speed under 3 m/s at home first, some seconds of hunting).
+- `VehicleFlightCheck`'s autopilot now goes through `AircraftAutopilot.Set` (same settings as before).
+- **Roles in the brief** (`AircraftAutopilot.RoleOf`, set by `VehicleBriefMake.Make` when the kit gave no role): "scout drone" / "gun drone", "gunship",
+  "transport" (a rotorcraft with more than one seat), "light helicopter", "patrol plane" / "strike plane". A string the brief already saves; no format change.
+
+Not verified: a client watching a launched or piloted craft (no wire change, but not looked at over RakNet), a player boarding a piloted craft (the let-go is
+one comparison), a round world (the pilot's ground ray and square patrol are flat-map), a plane landing (it circles home), fuel and battery running out on a
+long patrol, two pilots near each other (no avoidance), and Goto/Hold orders (only Patrol, Return and Land were flown).
+
+## What comes next for AI aircraft
+
+- **Faction style slots** (the other session owns `Styles.cs`): which aircraft a style fields (prop or jet, fabric or metal, drone family), its colours, and
+  "Drone", "Plane", "Helicopter" in its extras once the look is decided, so seeds ship and `--gen-vehicles` covers them.
+- **Who calls `SandboxSpawnAircraft`**: the faction AI (StoryFactions, convoys) has no air slot yet; a patrol over a base or a convoy's escort is the first use.
+- **Loot and capture**: a parked or landed generated aircraft with a Chest (`Loot.json`'s `aircraft` table), a Remote Console found with a drone (the receiver's
+  channel as the key), and a captured craft staying the player's (the pilot already lets go when a seat is taken).
+- **Armed aircraft** through VehicleGunsmith (guns on the wings or under the tank, wired to the stabilizer's `fire` as the Strike Plane is); a gunner or the
+  pilot firing needs the gunner bots of the vehicle-weapons work, not this pilot.
+- **Coaxial rotors** need a part: a rotor has only its base socket, so a second disc can't stack on one shaft.
 
 ## Next steps
 
@@ -144,12 +175,11 @@ Headless runs on the shared box spend about 60 s building the maps before any ve
 3. **Odd craft**: repulsor hover platforms, small airships on lift cells and burners, tilt-rotors (rotors on joints: the stabilizer doesn't map a rotor on a joint yet).
 4. **Faction style slots**: aircraft slots in `FactionStyle` (which lifters, frames, skins, how big: prop or jet, fabric or metal wings), and each style naming
    "Drone" and "Plane" in its extras once its look is decided (then seeds ship and `--gen-vehicles` covers them). The other session owns `Styles.cs`.
-5. **Spawning**: see "Spawning and bot pilots" above: on the ground it works by shape; in the air it needs a height, spun rotors or cruise speed, and the autopilot on.
-5a. **Bot pilots via the autopilot**: bots fly through the stabilizer's autopilot (altitude, heading, waypoint, hover, home) by its settings or wired inputs, as
-   the flight check does (`VehicleFlightCheck.Autopilot`); a pilot sets the throttle back to cruise once level.
+5. **Spawning and bot pilots**: built (phase 4, above). Left: a plane's landing, round worlds, avoidance between pilots, the faction AI calling it.
 6. **Loot and capture**: a parked or crashed generated aircraft with a Chest (`Loot.json`'s `aircraft` table), a Remote Console found with a drone, the
    receiver's channel as the key to steal one.
 7. **Armed aircraft**: gun drones, strafing planes and bombers through VehicleGunsmith (guns on the wings or under the tank, wired to the stabilizer's `fire`
    as the Strike Plane is), and ConstructWeapons for the aim.
 8. **Check gaps**: the flight check doesn't look at blade discs overlapping each other or the frame (the generator spaces them by its own sums), at
    endurance (battery minutes), or at a round world (it flies on a flat map, as the drive check drives on one).
+9. **Patrol heights**: a plane banking 48 degrees round its point lost up to 10 m; a lower `MaxBank` for piloted planes, or a wider circle, would hold it.

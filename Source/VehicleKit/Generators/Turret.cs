@@ -26,7 +26,7 @@ public sealed class Turret(FactionStyle style) : VehicleShape(style)
         // The mount's rating: as if it stood on a vehicle of this mass (log-even from 0.8 to 16 t), at this tier.
         var rated = (float)(800 * Math.Pow(20, d.Fork("rating").Next()));
         var tier = d.Fork("tier").Int(1, 4);
-        var offer = VehicleGunsmith.On ? VehicleGunsmith.Offer(rated, tier) : [];
+        var offer = VehicleGunsmith.On ? VehicleGunsmith.Offer(rated, tier).Where(w => w.Rack == null).ToList() : []; // (no missile battery on the ground: its rack, 0.5 m up, launches level and a missile drops into the ground before its fins bite)
         var weapon = offer.Count == 0 || d.Fork("own gun").Chance(StyleGunShare) ? d.Fork("gun").Pick(Style.Weapons) : d.Fork("gun").Pick(offer);
         const string plate = "Plate Steel 1 m"; // (a 2 m plate has no socket at its middle for the turntable; a heavy gun on this one may tip it: see VEHICLE-WEAPONS.md, next steps)
         var root = v.Root(plate, new Vector3(0, 2f, 0), Orient.Facing(Vector3.UnitY)); // (where the gunsmith's test stand fits it: on the ground a 4x4 block's receivers didn't merge; it is set down on the ground when spawned)

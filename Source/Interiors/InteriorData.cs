@@ -27,9 +27,9 @@ public sealed record SizeClass(string Id, string Name, double MinTonnes, double 
 /// A fitted construct's limits (INTERIORS.md "Phase 5"): the most parts, socket links and joints the vehicle and its interior use together,
 /// under the engine's caps (Construct.MaxParts, MaxLinks, MaxJoints); the difference is the players' reserve.
 /// </summary>
-public sealed record Budget(int Parts, int Links, int Joints)
+public sealed record Budget(int Parts, int Links, int Joints, int Doors = Construct.MaxDoors)
 {
-    public static readonly Budget None = new(Construct.MaxParts, Construct.MaxLinks, Construct.MaxJoints);
+    public static readonly Budget None = new(Construct.MaxParts, Construct.MaxLinks, Construct.MaxJoints, Construct.MaxDoors);
 }
 
 public enum RoomLayout { Grid, Free }
@@ -63,7 +63,7 @@ public sealed class InteriorData
     public readonly List<string> Panels = new(); // (the shell's long walls, longest first: phase 5; none: 4 m pieces)
     public bool ProvisionalClasses, ProvisionalLoot;
 
-    public static readonly string[] ShellKeys = ["floor", "stairFloor", "stair", "wall4", "wall2", "doorWall", "corner", "doorCorner", "garageWall", "hinge", "door", "adapter"];
+    public static readonly string[] ShellKeys = ["floor", "stairFloor", "stair", "wall4", "wall2", "doorWall", "corner", "doorCorner", "garageWall", "hinge", "door", "adapter", "swingDoor", "bulkheadDoor", "doubleDoorL", "doubleDoorR"];
 
     /// <summary>The data folder next to the exe (the build copies Constructs/**).</summary>
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Interiors");
@@ -125,7 +125,7 @@ public sealed class InteriorData
             {
                 var bg = Obj(c, "budget", where);
                 budget = new Budget(Int(bg, "parts", where + " budget", 1, Construct.MaxParts), Int(bg, "links", where + " budget", 1, Construct.MaxLinks),
-                    Int(bg, "joints", where + " budget", 0, Construct.MaxJoints));
+                    Int(bg, "joints", where + " budget", 0, Construct.MaxJoints), Int(bg, "doors", where + " budget", 0, Construct.MaxDoors));
             }
             Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, Names(c, "fill")) { Chassis = Names(c, "chassis"), Budget = budget });
         }

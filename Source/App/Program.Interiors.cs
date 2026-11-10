@@ -135,7 +135,7 @@ public static unsafe partial class Program
         Console.WriteLine($"wrote {path}");
         foreach (var l in lines)
             Console.WriteLine("  " + l);
-        Console.WriteLine($"  parts: {b.Placed} placed ({b.Welded} welded), {b.Doors} door leaves hung, {b.LootSpotsSet} loot containers, {b.Refused.Count} refused; plan {planMs:0} ms, build {buildMs:0} ms");
+        Console.WriteLine($"  parts: {b.Placed} placed ({b.Welded} welded), {b.Doors} doors hung ({b.SwingDoors} swing, {b.SlideDoors} sliding, {b.DoubleDoors} double; {b.OpenDoorways} doorways open), {b.LootSpotsSet} loot containers, {b.Refused.Count} refused; plan {planMs:0} ms, build {buildMs:0} ms");
         foreach (var g in b.Refused.GroupBy(r => string.Join(' ', r.Split(' ').Take(2))).Where(g => g.Count() > 1).OrderByDescending(g => g.Count()))
             Console.WriteLine($"  refused {g.Count()} times: {g.Key} ...");
         foreach (var r in b.Refused.GroupBy(r => string.Join(' ', r.Split(' ').Take(2))).SelectMany(g => g.Take(3)).Take(40))
