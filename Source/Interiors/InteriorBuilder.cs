@@ -234,6 +234,12 @@ public sealed class InteriorBuilder : BlueprintScript
         return new HullVolume(new Vector3(x1 - x0, roofY - floorY, z1 - z0), keep, Hull!.BowAtMinX);
     }
 
+    /// <summary>Block <paramref name="x"/>, <paramref name="z"/>'s floor top at its middle, level <paramref name="level"/>, in this builder's rest frame (the walk-through, --interior-walk).</summary>
+    public Vector3 FloorAt(int level, int x, int z) => Slab(level, x, z) + new Vector3(1.875f, 0.125f, 1.875f);
+
+    /// <summary>The root part's origin in this builder's rest frame (to carry <see cref="FloorAt"/> into a built body's).</summary>
+    public Vector3 RootPos => C.Parts[0].Pos;
+
     /// <summary>A slab origin (cell 0's centre) of block <paramref name="x"/>, <paramref name="z"/> at level <paramref name="level"/> (0: deck 0's floor).</summary>
     private Vector3 Slab(int level, int x, int z) => new(_corner.X + 0.125f + x * 4, _floorY + (level + _lv) * 3, _corner.Z + 0.125f + z * 4);
 
@@ -917,13 +923,17 @@ public sealed class InteriorBuilder : BlueprintScript
                                 Remember(k, blocks, gw);
                             continue;
                         }
-                        if (Place(Shell("doorWall"), o, a, FloorsUnder(k, blocks), $"{what} door") is { } dw)
+                        // (a lift shaft's north or south doorway goes in its piece's east half: its cars ride the west column, and a
+                        // doorway over it opened onto a car's side rail: phase 6's walk-through)
+                        var lift = r.Shaft == "elevator" || door.D.Other >= 0 && plan.Rooms[door.D.Other].Shaft == "elevator" || door.D.Room >= 0 && plan.Rooms[door.D.Room].Shaft == "elevator";
+                        var (dAt, wAt) = lift && sd.AlongX && a.X > 0 ? (o + a * 2, o) : (o, o + a * 2); // (a run going west: its first half is the east one)
+                        if (Place(Shell("doorWall"), dAt, a, FloorsUnder(k, blocks), $"{what} door") is { } dw)
                         {
                             Remember(k, blocks, dw);
                             _pieces[(_lv, r.Id, sd.S, slot)] = dw;
                             Hang(dw, door, what, r.Critical || door.D.Room >= 0 && plan.Rooms[door.D.Room].Critical);
                         }
-                        if (Place(Shell("wall2"), o + a * 2, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
+                        if (Place(Shell("wall2"), wAt, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
                             Remember(k, blocks, w2);
                         continue;
                     }
@@ -989,7 +999,25 @@ public sealed class InteriorBuilder : BlueprintScript
         try
         {
             var hinge = Onto(frame, "hinge", Shell("hinge"), "base");
-            Onto(hinge, "leaf", Shell("door"), "hang");
+            // (the leaf stands upright: its tallest side up. Left to the best spin, 27 of 185 leaves on the Titan Walker hung flat, a
+            // waist-high shelf across the doorway that pushed a player through the floor when it swung: phase 6's walk-through)
+            var leaf = ConstructParts.Find(Shell("door"))!;
+            var size = leaf.BoundsMax - leaf.BoundsMin;
+            var tall = size.Y >= size.X && size.Y >= size.Z ? Vector3.UnitY : size.X >= size.Z ? Vector3.UnitX : Vector3.UnitZ;
+            VehicleKitException? last = null;
+            for (var sp = 0; sp < 4; sp++)
+                try
+                {
+                    Onto(hinge, "leaf", Shell("door"), "hang", sp, veto: (_, g) => MathF.Abs(Rot24.Apply(g.Rot, tall).Y) > 0.9f ? null : "it would hang flat");
+                    last = null;
+                    break;
+                }
+                catch (VehicleKitException e)
+                {
+                    last = e;
+                }
+            if (last != null)
+                throw last;
             Placed += 2;
             Doors++;
         }
@@ -1012,6 +1040,13 @@ public sealed class InteriorBuilder : BlueprintScript
                 {
                     if (Place(Shell("garageWall"), o, Vector3.UnitZ, FloorsUnder(k, blocks), what) is { } gw)
                         Remember(k, blocks, gw);
+                }
+                else if (z == plan.SpineZ0 && (b.X == 0 || plan.Cells[k][b.X - 1, z] == InteriorPlan.KeepOut || plan.Cells[k][b.X, z] == InteriorPlan.KeepOut))
+                {
+                    // (a keep-out across the spine on one side: a door there would open onto it, or onto the drop where no slab is: a plain wall)
+                    if (Place(Shell("wall4"), o, Vector3.UnitZ, FloorsUnder(k, blocks), what) is { } w4)
+                        Remember(k, blocks, w4);
+                    Notes.Add($"{what}: a keep-out beside it on the spine, so a wall, no door");
                 }
                 else if (z == plan.SpineZ0)
                 {
@@ -1143,6 +1178,8 @@ public sealed class InteriorBuilder : BlueprintScript
                         continue;
                     }
                     var takeOver = item.Role == "helm" && _carry != null && def.Name == _carry.Value.Bp.Steps[_carry.Value.Helm].Part;
+                    if (Blocks(def, foot, spot.At))
+                        continue;
                     foreach (var a in takeOver ? new[] { _helmAxis } : new[] { Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitX, -Vector3.UnitZ })
                     {
                         try
@@ -1214,6 +1251,36 @@ public sealed class InteriorBuilder : BlueprintScript
             TryWire(helm, drive, $"{r.Name}: helm to the Driving Module");
         if (gunner != null && director != null)
             TryWire(gunner, director, $"{r.Name}: gunner's station to the Fire Director");
+    }
+
+    private readonly List<Vector3> _openings = new(); // the doorways' middles on their floor (door walls, door corners, garage walls), rest frame
+    private int _openingsAt = -1; // (the part count they were found at)
+
+    /// <summary>
+    /// Would a <paramref name="def"/> standing at <paramref name="at"/> stand in front of a doorway: within its reach and 1.6 m of an
+    /// opening's middle on the same floor (phase 6's walk-through: a Bunk in front of a door left a player 0.5 m up on it).
+    /// </summary>
+    private bool Blocks(ConstructPartDef def, string foot, Vector3 at)
+    {
+        if (_openingsAt != C.PartCount)
+        {
+            _openingsAt = C.PartCount;
+            _openings.Clear();
+            for (var i = 0; i < C.PartCount; i++)
+            {
+                var n = C.DefOf(i).Name;
+                var mid = n == Shell("garageWall") ? 1.875f : n == Shell("doorWall") || n == Shell("doorCorner") ? 0.875f : -1f;
+                if (mid > 0)
+                    _openings.Add(C.Parts[i].Pos + Rot24.Apply(C.Parts[i].Rot, new Vector3(mid, -0.125f, 0)));
+            }
+        }
+        // (the farthest its footprint reaches from the socket it stands on, whichever way it turns)
+        var f = def.Sockets.First(s => s.Name == foot).At;
+        var reach = new Vector2(MathF.Max(MathF.Abs(def.BoundsMin.X - f.X), MathF.Abs(def.BoundsMax.X - f.X)), MathF.Max(MathF.Abs(def.BoundsMin.Z - f.Z), MathF.Abs(def.BoundsMax.Z - f.Z))).Length() + 1.6f;
+        foreach (var o in _openings)
+            if (MathF.Abs(o.Y - at.Y) < 1f && new Vector2(o.X - at.X, o.Z - at.Z).LengthSquared() < reach * reach)
+                return true;
+        return false;
     }
 
     /// <summary>A fuel plant's day tank: a Fuel Tank fitted to it, so fuel reaches it as it reaches an engine (Construct.FuelReaches).</summary>
