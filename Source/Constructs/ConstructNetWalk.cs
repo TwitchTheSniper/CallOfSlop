@@ -133,6 +133,8 @@ public static partial class ConstructNet
                     continue;
                 leg.NetFoot = pos + d;
                 leg.NetFlags = ff;
+                if (!leg.NetHeard)
+                    FirstHeard(c, k); // (the poses before had no word of it: they hold it where it is now)
                 leg.NetHeard = true;
                 break;
             }
@@ -161,6 +163,19 @@ public static partial class ConstructNet
         {
             c.NetHistFeet[row * legs + k] = c.Legs[k].NetFoot;
             c.NetHistFootFlags[row * legs + k] = c.Legs[k].NetFlags;
+        }
+    }
+
+    /// <summary>Client: leg <paramref name="k"/>'s foot heard for the first time: every row of the history holds it there.</summary>
+    private static void FirstHeard(Construct c, int k)
+    {
+        var legs = c.LegCount;
+        if (c.NetHistFeet.Length != Construct.NetHistMax * legs)
+            return;
+        for (var r = 0; r < Construct.NetHistMax; r++)
+        {
+            c.NetHistFeet[r * legs + k] = c.Legs[k].NetFoot;
+            c.NetHistFootFlags[r * legs + k] = c.Legs[k].NetFlags;
         }
     }
 
@@ -198,7 +213,12 @@ public static partial class ConstructNet
         if (!rows)
             a = b = -1;
         else if (rt >= ticks[n - 1])
-            a = b = n - 1;
+        {
+            // (late poses: a swinging foot goes on at its last speed a little way, as the body does: SampleAt)
+            a = n > 1 ? n - 2 : n - 1;
+            b = n - 1;
+            t = n > 1 ? 1 + (float)(Math.Min(rt - ticks[n - 1], MaxAheadTicks) / Math.Max(1u, ticks[n - 1] - ticks[n - 2])) : 0;
+        }
         else if (rt <= ticks[0])
             a = b = 0;
         else
@@ -221,7 +241,9 @@ public static partial class ConstructNet
             else
             {
                 leg.Foot = Vector3.Lerp(hist[a * legs + k], hist[b * legs + k], t);
-                f = flags[a * legs + k]; // (a foot swings from the pose it lifted at to the one it landed at)
+                f = flags[(t > 1 ? b : a) * legs + k]; // (a foot swings from the pose it lifted at to the one it landed at)
+                if (t > 1 && (f & FootSwinging) == 0)
+                    leg.Foot = hist[b * legs + k]; // (down: it stays put)
             }
             leg.Swinging = (f & FootSwinging) != 0;
             leg.Grounded = (f & FootGrounded) != 0;
