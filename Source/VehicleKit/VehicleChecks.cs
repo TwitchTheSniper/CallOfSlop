@@ -673,7 +673,10 @@ public static class VehicleChecks
         // Out of the room onto it: from inside the doorway toward the balcony's middle, the walker's own steps.
         var inside = room.DoorMid - room.DoorFace * 0.7f;
         var way = Vector3.Normalize((b.Mid - inside) with { Y = 0 });
-        var s = SelfTest.BuildingWalk(w, World(inside + new Vector3(0, 0.15f, 0)), _ => way, 90, CallOfSlop.World.PlayerHeight, out _);
+        // (phase 7c: stopping once on the deck: walking on, 90 ticks took a player past the middle, along the rail and off the open end, its ladder's way: Bandit
+        // Box Truck 3 since the turret seats' merge)
+        bool OnDeck(MoveState m) { var h = Here(m); return Vector3.Dot(h - room.DoorMid, b.Out) >= 0.3f && MathF.Abs(h.Y - room.FloorTop) <= 0.1f; }
+        var s = SelfTest.BuildingWalk(w, World(inside + new Vector3(0, 0.15f, 0)), _ => way, 90, CallOfSlop.World.PlayerHeight, out _, until: OnDeck);
         var got = Here(s);
         var outAt = Vector3.Dot(got - room.DoorMid, b.Out);
         if (outAt < 0.2f || MathF.Abs(got.Y - room.FloorTop) > 0.2f)

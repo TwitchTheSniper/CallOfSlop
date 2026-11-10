@@ -251,8 +251,8 @@ public static partial class HullLoft
         var extra = words.Length == 4 ? words[3] : "";
         if (extra.Length > 0 && (!ExtraOk(extra, cm / 100f) || extra == "o" && flags.Contains('d') || extra[0] == 'u' && flags.Contains('b')))
             return null;
-        if (lining.Length > 0 && (extra.Length > 0 && (extra[0] == 'c' || extra == "o")))
-            return null; // (a frame of bars or an open top isn't lined)
+        if (lining.Length > 0 && extra.Length > 0 && (extra[0] == 'c' || extra == "o" && lining is not { Length: 3 } || extra == "o" && lining[2] != 'f'))
+            return null; // (a frame of bars isn't lined; phase 7c: an open top's bulwark is, following its rows, unglazed)
         return new Shape(cm / 100f, flags.Contains('d'), flags.Contains('f'), flags.Contains('r'), a, b, flags.Contains('b'), extra, lining);
     }
 

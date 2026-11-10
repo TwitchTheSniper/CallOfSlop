@@ -41,7 +41,7 @@
     {"part": "Square Beam 0.5 m", "on": 31, "socket": "+z", "by": "-z", "paint": "#1b1c1e"},
     {"part": "Seat", "on": 32, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 34, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (cabo SfUSWUXcYWWXVMWKW0W0XK ~Bu0C8eC9HC9vAYV5ot02t =)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a32"},
+    {"part": "Hull Loft (cabo SfUSWUXcYWWXVMWKW0W0XK ~Bu0C8eC9HC9vAYV5ot02t = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a32"},
     {"part": "Hull Loft (pane UrXfSgXBXfSgX4YTT0UyYTT0)", "on": 36, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane XIXfSlXXXfVKXLYTVKXBYTT4)", "on": 36, "socket": "glass2", "by": "frame"},
     {"part": "Hull Loft (pane UkXfSlUVXfVKUhYTVKUrYTT4)", "on": 36, "socket": "glass3", "by": "frame"},
