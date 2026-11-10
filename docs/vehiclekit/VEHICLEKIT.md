@@ -13,7 +13,7 @@ like any other. **Fix the generator, not its files.** No AI is in here yet: each
 | Command | What it does |
 | --- | --- |
 | `CallOfSlop --gen-vehicle "Bandit Technical" [--seed S] [--out DIR] [--plan]` | Runs a generator (one seed, or every seed it ships), writes `Constructs/Blueprints/<Name><seed>.json` in the repository when the game runs from a checkout, else DIR, and prints the check. Each seed runs twice and must write the same text. `--plan` draws a PNG next to the exe. Exit code: how many seeds failed. |
-| `CallOfSlop --gen-vehicles [--out DIR]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. Exit code: how many aren't identical. |
+| `CallOfSlop --gen-vehicles [--out DIR] [--only FILE,FILE] [--order reverse\|shuffle:N] [--between]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. `--only` some files, `--order` in another order, `--between` runs the full check (with its tow) or a turret-seat count between seeds: a seed's text must not depend on what ran before it. Exit code: how many aren't identical. |
 | `CallOfSlop --sweep-vehicle "Bandit War Bus" [--seeds N]` | Seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, on what, and what a generation costs. Run it before calling a shape done: a shipped seed proves only itself. It also compares seeds (`VehicleVariety`: kinds of part, plate and beam materials not counted, plus bounding shape): it prints the most different seeds it found, and fails when two shipped seeds are closer than 0.25. Choose `Seeds` from that line. |
 | `CallOfSlop --diversity "Bandit Box Truck" [--seeds N]`, `--diversity-style Bandit`, `--kit-report`, `--vehicle-sheet "Bandit Box Truck"`, `--grade-vehicle "Bandit Box Truck 7" 4 "note"`, `--grade-report` | The quality tools: how alike seeds are, what never varies, what fails and what it costs, contact sheets and grades. See "Quality tools". |
 | `CallOfSlop --identity "IT War Bus" [--seeds N] [--shipped] [--raw]`, or `--identity IT` for every shape of a style | How much each seed reads as its faction (0 to 1) with the breakdown, its weak points, the style it reads as best after its own, then the mean, the weak-point pass rate and every vehicle that reads more as another style. Default 6 seeds; `--shipped`: the committed seeds. See "Identity and weak points". |
@@ -1089,7 +1089,11 @@ at every tier (0 m in 6 s, "forward takes it backwards"), a Militia War Bus 1 fo
 at tier 1 (0.4 m; 6.8 m in 6 s). Each was planned again into a plan that passes it (the full check on those not run). The old leader of Bandit convoy 3 fails it (10.4 degrees). 8 ms mean a plan over the matrix
 (Technicals are quick), 15 to 50 ms for a Box Truck warm, 126 ms worst (cold); in slices, no span of its own showed among a generation's longest.
 
-A towed vehicle (the Tanker Rig's trailer) comes with it: a committed trailer when its blueprint ships, else made by its own generator in the same job.
+A towed vehicle (the Tanker Rig's trailer) comes with it: a committed trailer when its blueprint ships, else made by its own generator in the same job. A trailer (`VehicleCheckOptions.Towed`) is never pulsed: it has no engine, so the gate
+passes it (`DriveGate(towed: true)`, `VehicleRegistry.Towed`). Before 2026-11-09 it was pulsed and refused ("no engine"), and the rig picked its trailer from the Fuel Trailer
+class's own seeds rather than the style's shipped ones, so British Tanker Rig 19 towed an unshipped "British Fuel Trailer 2": its check (`--gen-vehicle`) and its spawn failed
+while `--gen-vehicles`, which never builds a tow, reported it identical. That looked like a seed depending on what ran before it; it was not. The rig now picks from the style's
+shipped trailer seeds (rig 19 tows trailer 3), and `--gen-vehicles --order reverse` or `--order shuffle:N`, with `--between`, shows each seed's text is the same in any order.
 
 ## Behaviour data
 

@@ -193,7 +193,7 @@ public static class ShapeGrammar
                 var plan = Plan(v, recipe, attempt);
                 VehicleGenJob.Yield();
                 Build(v, plan);
-                v.DriveGate(); // (built from its text, settled, level and moving on a throttle pulse, else the next plan: VehicleDriveCheck.cs)
+                v.DriveGate(VehicleRegistry.Towed(g)); // (built from its text, settled, level and moving on a throttle pulse, else the next plan: VehicleDriveCheck.cs)
                 if (VehicleIdentity.Gate(v, attempt, Attempts, ref kept) is { } done)
                     return done;
             }
@@ -236,7 +236,7 @@ public static class ShapeGrammar
                     Build(v, plan);
                     if (role.Family && v.Stability() is var stable && stable < (g.Checks ?? new VehicleCheckOptions()).MinStability + 0.02f)
                         throw new VehicleKitException($"stability {stable:0.00}: under the check's"); // (a family's mark isn't planned again for its role, so it is held to the check's stability as it builds: VehicleFamilies.cs)
-                    v.DriveGate();
+                    v.DriveGate(VehicleRegistry.Towed(g));
                 }
                 catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
                 {

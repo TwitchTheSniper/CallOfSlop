@@ -37,7 +37,7 @@ public sealed class TankerRig(FactionStyle style) : HeavyShape(style)
     public override void Build(Vehicle v)
     {
         v.Description = "A short rig pulling a Fuel Trailer on a tow hitch. A gun behind the cab, a drum on its back.";
-        var trailer = new FuelTrailer(v.Style);
+        IVehicleGenerator trailer = new FuelTrailer(v.Style); // (as the interface: the style's shipped trailer seeds, so a committed rig tows a committed trailer)
         v.Tow = VehicleRegistry.BlueprintName(trailer, v.Dice.Fork("trailer").Pick(trailer.Seeds.ToArray()));
         Chassis(v, 3.25f, 1.25f, "leaf", "hydraulic", "dually", "swing");
         var gun = v.Sill(v.RailZ(0.575f), layers: 2);
