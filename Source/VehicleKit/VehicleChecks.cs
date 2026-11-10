@@ -18,6 +18,9 @@ public sealed class VehicleCheckOptions
     /// <summary>Most tilt allowed at any moment of the runs (degrees).</summary>
     public float MaxTilt = 25;
 
+    /// <summary>Most tilt allowed standing still, settled (degrees): a tail-dragger plane sits nose up.</summary>
+    public float MaxRestTilt = 8;
+
     /// <summary>Part count and mass limits (kg, with its cargo).</summary>
     public int MaxParts = 220;
 
@@ -96,7 +99,7 @@ public static class VehicleChecks
         Silhouette(c, r, o);
         var cargoBodies = w.Bodies.Count;
         Settle(w, q, 90);
-        Rest(c, r);
+        Rest(c, r, o);
         if (w.Bodies.Count != cargoBodies)
             r.Failures.Add($"it came apart standing still: {cargoBodies} bodies became {w.Bodies.Count}");
         if (o.Towed)
@@ -297,10 +300,10 @@ public static class VehicleChecks
         return null;
     }
 
-    private static void Rest(Construct c, VehicleReport r)
+    private static void Rest(Construct c, VehicleReport r, VehicleCheckOptions o)
     {
         r.WorstTilt = MathF.Max(r.WorstTilt, Tilt(c));
-        if (Tilt(c) > 8)
+        if (Tilt(c) > o.MaxRestTilt)
             r.Failures.Add($"it stands {Tilt(c):0.0} degrees off level");
         if (c.Wheels.Take(c.WheelCount).Any(w => w.Radius <= 0))
             r.Failures.Add("a wheel has no size");

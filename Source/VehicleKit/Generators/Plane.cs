@@ -14,7 +14,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
 {
     public override string Shape => "Plane";
 
-    public override VehicleCheckOptions? Checks => new() { Flies = true, MinMass = 100, MaxMass = 3000, MaxSideFill = 1, MaxTopFill = 1, MinStability = 0 };
+    public override VehicleCheckOptions? Checks => new() { Flies = true, MinMass = 100, MaxMass = 3000, MaxSideFill = 1, MaxTopFill = 1, MinStability = 0, MaxRestTilt = VehicleFlightCheck.MaxPlaneRestTilt };
 
     /// <summary>None ship as files: planes are made when they spawn (no style names the shape in its extras yet).</summary>
     public override IReadOnlyList<int> Seeds => [];
@@ -77,7 +77,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         var flaps = wings.Chance(0.5);
         var tail = d.Fork("tail");
         var tTail = tail.Chance(0.35);
-        var boom = power == Power.Pusher ? 2f : tail.Pick((float[])[1f, 2f]); // (a pusher's prop turns ahead of the fin)
+        var boom = 2f; // (a 1 m boom put the tail plane in the flaps of a wing set far back, and a pusher's prop in the fin)
         var tricycle = d.Fork("gear").Chance(0.5);
         var paint = d.Fork("paint");
         return new Layout(power, turbine, wing, panel, panels, flaps, tTail, boom, tricycle, Style.Colour(paint, "frame"), Style.Colour(paint, "body"), Style.Colour(paint, "frame"));
@@ -124,10 +124,10 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         }
         else
         {
-            stab = Level(v, spine, $"+y{(l.Power != Power.Pusher ? station : station >= 2 ? station - 2 : station + 3)}", Stab, "-y", forward: true); // (a pusher's pylon stands at the station)
+            stab = Level(v, spine, $"+y{(l.Power != Power.Pusher ? station : PylonAt(station) - 2)}", Stab, "-y", forward: true); // (a pusher's pylon stands there)
             v.Paint(v.Onto(tank, "-y", "Battery", "+y"), l.Trim);
         }
-        v.Config(stab, ("keys", "Plane"), ("strength", int.Parse(Environment.GetEnvironmentVariable("PLANE_S") ?? "100")), ("climbResponse", int.Parse(Environment.GetEnvironmentVariable("PLANE_C") ?? "100")), ("climbDamping", int.Parse(Environment.GetEnvironmentVariable("PLANE_D") ?? "100")));
+        v.Config(stab, ("keys", "Plane"), ("strength", 200), ("throttleCurve", l.Power == Power.Jet ? 100 : 0)); // (twice the stabilizer's gains: at the default its pitch lags the altitude hold's asks by 10 degrees, and the hold rocks 15 m up and down; two Light Turbojets push 24 kN, so a jet's throttle is cubed: full for the take-off, a third of it at a cruise of 0.7, else it cruises past 60 m/s, where the hold rocks again)
         v.Link("data", seat, stab);
 
         // The wings, root to tip a side: ailerons on the outer panels, flaps on the inner ones when it has them.
@@ -200,7 +200,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
                 break;
             case Power.Pusher:
             {
-                var pylon = v.Onto(spine, $"+y{station}", "Square Beam 1 m", "-z");
+                var pylon = v.Onto(spine, $"+y{PylonAt(station)}", "Square Beam 1 m", "-z");
                 v.Paint(pylon, l.Frame);
                 var engine = Facing(v, pylon, "+z", engineName, "-y", Vector3.UnitZ);
                 v.Paint(engine, l.Frame);
@@ -251,6 +251,9 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
             Wheels(v, foot);
         }
     }
+
+    /// <summary>A pusher's pylon: on the wing's station, but far enough back that its engine clears the seat.</summary>
+    private static int PylonAt(int station) => Math.Max(station, 3);
 
     /// <summary>One side's panels, root to tip, onto <paramref name="socket"/> of <paramref name="on"/> by their <paramref name="by"/> socket; <paramref name="side"/> -1 left, 1 right.</summary>
     private static List<VPart> Panels(Vehicle v, Layout l, VPart on, string socket, string by, int side)
@@ -303,7 +306,19 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         for (var spin = 0; spin < 4; spin++)
             if (v.TurnOf(on, socket, part, by, spin) is { } t && Vector3.Dot(Rot24.Apply(t, Vector3.UnitY), Vector3.UnitY) > 0.9f && (!forward || Vector3.Dot(Rot24.Apply(t, -Vector3.UnitZ), -Vector3.UnitZ) > 0.9f))
                 return v.Onto(on, socket, part, by, spin);
-        throw new VehicleKitException($"{part} won't stand level on {on.Name}'s {socket}");
+        throw new VehicleKitException($"{part} won't stand level on {on.Name}'s {socket}" + Why(v, on, socket, part, by));
+    }
+
+    /// <summary>TEMP: why each spin is refused.</summary>
+    private static string Why(Vehicle v, VPart on, string socket, string part, string by)
+    {
+        var s = "";
+        for (var spin = 0; spin < 4; spin++)
+        {
+            var t = v.TurnOf(on, socket, part, by, spin);
+            s += $" | spin {spin}: " + (t is { } r ? $"up {Rot24.Apply(r, Vector3.UnitY)} z {Rot24.Apply(r, Vector3.UnitZ)}" : "refused");
+        }
+        return s;
     }
 
     /// <summary>A part onto a socket with its own +z along <paramref name="way"/>: a pusher's engine faces back.</summary>
@@ -312,7 +327,6 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         for (var spin = 0; spin < 4; spin++)
             if (v.TurnOf(on, socket, part, by, spin) is { } t && Vector3.Dot(Rot24.Apply(t, Vector3.UnitZ), way) > 0.9f)
                 return v.Onto(on, socket, part, by, spin);
-        v.Onto(on, socket, part, by); // (to name what is in the way)
-        throw new VehicleKitException($"{part} won't face {way} on {on.Name}'s {socket}");
+        throw new VehicleKitException($"{part} won't face {way} on {on.Name}'s {socket}" + Why(v, on, socket, part, by));
     }
 }
