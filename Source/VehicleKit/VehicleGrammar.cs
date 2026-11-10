@@ -222,6 +222,7 @@ public static class ShapeGrammar
                 var plan = Plan(v, recipe, attempt);
                 VehicleGenJob.Yield();
                 Build(v, plan);
+                AfterBuild(v);
                 v.DriveGate(VehicleRegistry.Towed(g)); // (built from its text, settled, level and moving on a throttle pulse, else the next plan: VehicleDriveCheck.cs)
                 if (VehicleIdentity.Gate(v, attempt, Attempts, ref kept) is { } done)
                     return done;
@@ -263,6 +264,7 @@ public static class ShapeGrammar
                     var plan = Plan(v, recipe, attempt);
                     VehicleGenJob.Yield();
                     Build(v, plan);
+                    AfterBuild(v);
                     if (role.Family && v.Stability() is var stable && stable < (g.Checks ?? new VehicleCheckOptions()).MinStability + 0.02f)
                         throw new VehicleKitException($"stability {stable:0.00}: under the check's"); // (a family's mark isn't planned again for its role, so it is held to the check's stability as it builds: VehicleFamilies.cs)
                     v.DriveGate(VehicleRegistry.Towed(g));
@@ -301,6 +303,12 @@ public static class ShapeGrammar
         best.RolePlans = built - 1; // (how many it took in all, whichever was kept)
         VehicleRoleMake.Note(best, role, recipe.Shape);
         return best;
+    }
+
+    /// <summary>A built plan's guns checked against the vehicle as built (<see cref="VehicleGunsmith.CheckBuilt"/>): one over its mount is the next plan.</summary>
+    private static void AfterBuild(Vehicle v)
+    {
+        VehicleGunsmith.CheckBuilt(v);
     }
 
     /// <summary>The first plan of a seed, nothing built: <see cref="VehicleGenJob.Warm"/> compiles the planner this way. False when it doesn't plan.</summary>
@@ -607,6 +615,7 @@ public static class ShapeGrammar
 
         if (layered)
             p.BayDice = D(VehicleLayer.Body, "bays");
+        v.PlanMass = EstimateMass(v, p); // (the guns are picked by the vehicle's expected mass: nothing is built yet)
         Guns(v, p, D(VehicleLayer.Kit, "guns"));
         return p;
     }
@@ -764,6 +773,31 @@ public static class ShapeGrammar
         return grid + MathF.Round((z - grid) / 0.25f) * 0.25f;
     }
 
+    /// <summary>
+    /// The plan's estimate of the built vehicle's mass (kg), for the gunsmith's mount rating before anything is built (<see cref="VehicleGunsmith"/>): a chassis by its axles, and each
+    /// body segment by its kind and length, fitted to built vehicles (VEHICLE-WEAPONS.md, "Bay guns"). Deterministic: the plan alone decides it.
+    /// </summary>
+    private static float EstimateMass(Vehicle v, PlanData p)
+    {
+        var g = p.Gear;
+        var mass = MassBase + (g.Tag != null ? MassTagAxle : 0f);
+        foreach (var s in p.Segs)
+            mass += s.Len * s.Kind switch
+            {
+                "room" => MassRoomPerM,
+                "bed" or "gun bed" => MassBedPerM,
+                "hutch" or "gun bay" or "boot" => MassBayPerM,
+                _ => MassOtherPerM,
+            };
+        if (p.UpperKind != null)
+            mass += MassUpper;
+        return mass;
+    }
+
+    // (fitted to 124 built grammar vehicles of five shapes and every style, 2026-11-10, and taken a tenth under the fit: a low estimate gives a smaller gun, a high one a refused plan;
+    // built over planned ran 0.85 to 1.3)
+    private const float MassBase = 1050f, MassTagAxle = 170f, MassRoomPerM = 360f, MassBedPerM = 80f, MassBayPerM = 155f, MassOtherPerM = 40f, MassUpper = 40f;
+
     /// <summary>Where each gun goes, and which: deck guns where the bed has room clear of the axles, the rest on the room's roof and flank.</summary>
     private static void Guns(Vehicle v, PlanData p, Dice d)
     {
@@ -780,6 +814,7 @@ public static class ShapeGrammar
             var list = aft && noWhaler.Length > 0 ? noWhaler : arsenal;
             var w = role != null ? role.Pick(d.Fork("weapon " + k), list) : VehicleArmoury.Pick(d.Fork("weapon " + k), list);
             FactionStyle.Noted("weapon", w.Name);
+            v.SpendGun(w); // (the vehicle's gun budget: VehicleGunsmith.GunBudgetShare)
             return w;
         }
         var room = p.Segs.FirstOrDefault(s => s.Kind == "room");
@@ -831,6 +866,8 @@ public static class ShapeGrammar
                         count++;
                         break;
                     }
+                    if (!s.Gun)
+                        v.SpendGun(w, -1); // (no spot for it: its budget back)
                     break;
             }
         }
@@ -1309,6 +1346,7 @@ public static class ShapeGrammar
         var order = v.Role is { } role ? role.Order(d.Fork("weapon " + v.Turrets.Count), arsenal) : VehicleArmoury.Order(d.Fork("weapon " + v.Turrets.Count), arsenal);
         var w = order.FirstOrDefault(x => !(side && x.Box == null) && !((side || at.Y < 1.5f) && at.Z - v.GunReach(x) < 0.25f)) ?? order[0]; // (a sponson hangs low on the waist)
         FactionStyle.Noted("weapon", w.Name);
+        v.SpendGun(w);
         return w;
     }
 
