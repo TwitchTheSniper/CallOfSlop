@@ -246,6 +246,8 @@ public static class ConstructWeaponParts
         var half = Vector3.Max((mx - mn) * 0.5f, new Vector3(0.02f));
         var mass = MathF.Max(0.5f, MathF.Round(p.Weight * rules.MassScale * 10f) / 10f);
         var receiver = p.Category == PartCategory.Receiver && p.Receiver != null;
+        if (receiver)
+            half = MergeGrid(half); // (whole centimetres a side, so an NxN square built socket to socket stays on the merge grid)
         var ic = CultureInfo.InvariantCulture;
         string V(Vector3 v) => string.Create(ic, $"[{v.X:0.####}, {v.Y:0.####}, {v.Z:0.####}]");
         string Hex(Vector3 c) => $"#{(int)Math.Clamp(c.X * 255, 0, 255):x2}{(int)Math.Clamp(c.Y * 255, 0, 255):x2}{(int)Math.Clamp(c.Z * 255, 0, 255):x2}";
@@ -311,6 +313,13 @@ public static class ConstructWeaponParts
         sb.Append('}');
         return sb.ToString();
     }
+
+    /// <summary>
+    /// A receiver's half size rounded up to 5 mm, so the receiver is whole centimetres a side. A part's place rounds to the centimetre, so receivers set socket to socket in a
+    /// row drift by the remainder each step: the Bunker Buster Receiver, 0.206 m high, sat 8 mm off its third row and never merged past 2x2 (ConstructMerge's tolerance is 6 mm).
+    /// </summary>
+    public static Vector3 MergeGrid(Vector3 half) =>
+        new(MathF.Ceiling(half.X * 200f - 0.01f) / 200f, MathF.Ceiling(half.Y * 200f - 0.01f) / 200f, MathF.Ceiling(half.Z * 200f - 0.01f) / 200f);
 
     private const string ChargeEntry = "{\"key\": \"charge\", \"label\": \"Powder charge\", \"type\": \"number\", \"min\": 25, \"max\": 300, \"default\": 100, \"step\": 5, \"unit\": \"%\", \"group\": \"Gun\", \"tooltip\": \"How hard the round leaves: low is a slow round on a long arc, high a fast flat one, with more recoil. A short barrel wastes the top of the range and shoots wide.\"}";
 

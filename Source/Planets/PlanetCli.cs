@@ -105,6 +105,22 @@ public static class PlanetCli
         }
         Console.WriteLine($"ground: {rock * 100.0 / n:0}% cliff, {dirt * 100.0 / n:0}% slope, {sand * 100.0 / n:0}% low ground, {snow * 100.0 / n:0}% above the snow line; {walk * 100.0 / n:0}% under 40 degrees");
 
+        // Ore: what the world's ground holds (WORLDS.md "Ore"), and how much of the sampled ground lies over a deposit.
+        if (m.Resources is { } ore)
+        {
+            var over = 0;
+            for (var j = 0; j < hgt; j += 4)
+            for (var i = 0; i < w; i += 4)
+            {
+                Dir(Math.Asin(1 - (j + 0.5) * 2.0 / hgt), (i + 0.5) * 2 * Math.PI / w - Math.PI, out var x, out var y, out var z);
+                if (ore.KindAt(p.Center + new Vector3((float)x, (float)y, (float)z) * (float)p.Radius, false) != null)
+                    over++;
+            }
+            Console.WriteLine($"ore: {ore.DepositCount} deposits ({ore.Summary()}); {over * 100.0 / n:0}% of the ground lies over one");
+        }
+        else
+            Console.WriteLine("ore: none (the map has no \"sandbox\" section)");
+
         foreach (var (la, lon) in at)
         {
             double worst = 0, hMin = double.MaxValue, hMax = double.MinValue;

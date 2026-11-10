@@ -45,7 +45,7 @@ public sealed partial class ResourceField
             var v = wobble * MathF.Sin(u * 2.6f + d.Phase) + (Unit(ref h) - 0.5f) * width;
             var cx = d.X + u * d.Rx * d.Cos - v * d.Sin;
             var cz = d.Z + u * d.Rx * d.Sin + v * d.Cos;
-            if (Strength(d, cx, cz) <= EdgeThin || At(cx, cz, false, false, out _) != di)
+            if (Strength(d, cx, cz) <= EdgeThin || At(cx, cz, false, false, out _, d.Face) != di)
                 continue; // (past the deposit's wavy edge, or another one is what a drill would find here)
             var rocks = 3 + (int)(Unit(ref h) * 4);
             for (var k = 0; k < rocks && left > 0; k++)
@@ -56,7 +56,15 @@ public sealed partial class ResourceField
                 var size = kind.OutcropSizeMin + f * f * (kind.OutcropSizeMax - kind.OutcropSizeMin); // (mostly small, a few big)
                 var shade = 0.85f + 0.3f * Unit(ref h);
                 var (yaw, rand) = (Unit(ref h), Unit(ref h));
-                if (MathF.Abs(x) > _map.HalfX - 2 || MathF.Abs(z) > _map.HalfZ - 2 || _blocked.Contains(TreeKey(Lattice(x), Lattice(z))))
+                if (MathF.Abs(x) > _halfX - 2 || MathF.Abs(z) > _halfZ - 2)
+                    continue;
+                if (_planet != null)
+                {
+                    _drawn.Add(new FoliageInstance(FoliageType.Outcrop, SphereSpot(d.Face, x, z, size), size, yaw, rand, kind.OutcropTint * shade));
+                    left--;
+                    continue;
+                }
+                if (_blocked.Contains(TreeKey(Lattice(x), Lattice(z))))
                     continue;
                 _drawn.Add(new FoliageInstance(FoliageType.Outcrop, new Vector3(x, _map.GroundHeight(x, z) - size * Sink, z), size, yaw, rand, kind.OutcropTint * shade));
                 left--;

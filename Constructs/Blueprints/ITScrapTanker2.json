@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 2.25 m, strut/strut, wing 0.5, cab style glasshouse, language pod standard 2.45 m, flare 0.08, sloped 1.0, brow 0.64 1 m, tail 0.82 1.25 m, door left, 11 facets, cab pod cab, 8 facets, nose rounded, wear age 0.62 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under tub, layout gun bay 2 m+tank 3 m
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 2.25 m, strut/strut, wing 0.5, cab style glasshouse, language pod standard 2.45 m, flare 0.08, sloped 1.0, brow 0.64 1 m, tail 0.82 1.25 m, door left, 11 facets, cab pod cab, 8 facets, nose rounded, fitting radome, wear age 0.62 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose short hood, rear bare, under tub, layout gun bay 2 m+tank 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Scrap Tanker 2",
   "group": "IT Department",
@@ -59,21 +59,22 @@
     {"part": "Square Beam 1 m", "on": 50, "socket": "top", "by": "-y1", "paint": "#3b3f44"},
     {"part": "Seat", "on": 51, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 51, "socket": "+y0", "by": "base"},
-    {"part": "Longbow DMR Receiver", "on": 53, "socket": "leaf", "by": "bottom"},
-    {"part": "Marksman Barrel", "on": 54, "socket": "front", "by": "back"},
-    {"part": "Velocity Booster", "on": 55, "socket": "front", "by": "back"},
-    {"part": "Extended Mag", "on": 54, "socket": "top", "by": "bottom"},
-    {"part": "Marksman Trigger", "on": 54, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 57, "socket": "left", "by": "right"},
+    {"part": "Heavy Receiver", "on": 53, "socket": "leaf", "by": "bottom"},
+    {"part": "Big Iron Barrel", "on": 54, "socket": "front", "by": "back"},
+    {"part": "Belt Feed", "on": 54, "socket": "left", "by": "right"},
+    {"part": "Chain Drive Motor", "on": 54, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 56, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 52, "socket": "+x", "by": "-x"},
+    {"part": "Launch Rack", "on": 51, "socket": "+x2", "by": "top"},
     {"part": "Hull Loft (hoodr UmV2WyWjXIXEVd ~7m080A80L80V80f7Gq5Wy2v2012)", "on": 26, "socket": "+y", "by": "engine", "paint": "#c0392b"},
     {"part": "Slat Grille", "on": 61, "socket": "front", "by": "back", "paint": "#c0392b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 62, "pos": [0.128, 0.489, -0.788], "rot": [-0.7046, -0.0089, -0.001, 0.7096]}, "paint": "#d8d0b8"},
+    {"part": "Hull Loft (decoR WPWQ)", "on": 34, "socket": "top", "by": "base"},
     {"part": "Satellite Dish", "on": 61, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 9, "socket": "+y7", "by": "-z", "paint": "#3b3f44"},
-    {"part": "Employee of the Month", "on": 65, "socket": "+z", "by": "base"}
+    {"part": "Employee of the Month", "on": 66, "socket": "+z", "by": "base"}
   ],
-  "wires": [[31, 32], [32, 26], [52, 60], [60, 54]],
+  "wires": [[31, 32], [32, 26], [52, 59], [59, 54], [59, 60]],
   "links": [
     {"type": "shaft", "from": 27, "to": 8, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 48, "to": 26, "laid": true}

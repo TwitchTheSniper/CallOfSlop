@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 13 body 13 kit 13 wear 13, chassis 2 axles, front under the hood, inset 1 m, coil/hydraulic, wing 0.5, cab style box, language cabin standard 2.54 m, flare 0.07, sloped 0.8, brow 0.82 1.25 m, tail 0.80 1 m, door right, cab cabin cab, nose flat, fitting roof sign, wear age 0.75 (3 rusty, 7 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear bare, under stilts, sides walls, layout gun bay 2 m+bed 2 m
+  // kit 5; seeds chassis 13 body 13 kit 13 wear 13, chassis 2 axles, front under the hood, inset 1 m, coil/hydraulic, wing 0.5, cab style box, language cabin standard 2.54 m, flare 0.07, sloped 0.8, brow 0.82 1.25 m, tail 0.80 1 m, door right, cab cabin cab, nose flat, wear age 0.75 (3 rusty, 7 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear bare, under stilts, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Technical 13",
   "group": "The Call Centre",
@@ -75,17 +75,17 @@
     {"part": "Turntable 2x2 Medium", "on": 66, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 67, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Seat", "on": 68, "socket": "+y3", "by": "bottom"},
-    {"part": "Motor Hinge 1x1 Long", "on": 68, "socket": "+y0", "by": "base"},
-    {"part": "Stampede Receiver", "on": 70, "socket": "leaf", "by": "bottom"},
-    {"part": "Quad Line Splitter", "on": 71, "socket": "front", "by": "back"},
-    {"part": "Stub Barrel", "on": 72, "socket": "front-1", "by": "back"},
-    {"part": "Stub Barrel", "on": 72, "socket": "front-2", "by": "back"},
-    {"part": "Stub Barrel", "on": 72, "socket": "front-3", "by": "back"},
-    {"part": "Stub Barrel", "on": 72, "socket": "front-4", "by": "back"},
-    {"part": "Drum Mag", "on": 71, "socket": "top", "by": "bottom"},
-    {"part": "Buzzsaw Sear", "on": 71, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 77, "socket": "left", "by": "right"},
+    {"part": "Motor Hinge", "on": 68, "socket": "+y0", "by": "base"},
+    {"part": "Shell Receiver", "on": 70, "socket": "leaf", "by": "bottom"},
+    {"part": "Pyramid Splitter", "on": 71, "socket": "front", "by": "back"},
+    {"part": "Scattermouth Barrel", "on": 72, "socket": "front-1", "by": "back"},
+    {"part": "Scattermouth Barrel", "on": 72, "socket": "front-2", "by": "back"},
+    {"part": "Scattermouth Barrel", "on": 72, "socket": "front-3", "by": "back"},
+    {"part": "Shell Drum", "on": 71, "socket": "top", "by": "bottom"},
+    {"part": "Riot Trigger", "on": 71, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 76, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 69, "socket": "+x", "by": "-x"},
+    {"part": "Plate Steel 0.5 m", "on": 68, "socket": "+y1", "by": "-z0", "spin": 3, "paint": "#1a8c8c"},
     {"part": "Plate Steel 0.5x1 m", "on": 52, "socket": "-z0", "by": "back01", "paint": "#8a9096"},
     {"part": "Sheet Steel 0.5 m", "on": 60, "socket": "+x", "by": "back00", "spin": 1, "paint": "#b0b4b8"},
     {"part": "Scrap Ladder", "on": 81, "socket": "front03", "by": "back", "paint": "#7d8a92"},
@@ -93,12 +93,11 @@
     {"part": "Wide Arch Fender", "on": 84, "socket": "+x0", "by": "mount", "paint": "#2a2c30"},
     {"part": "Wide Arch Fender", "on": 84, "socket": "-x0", "by": "mount", "paint": "#ff3d8b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 86, "pos": [-0.802, 0.281, -0.38], "rot": [-0.0065, -0.0165, 0.7038, 0.7102]}, "paint": "#9aa0a6"},
-    {"part": "Hull Loft (decoS XJWAWaW0)", "on": 34, "socket": "top", "by": "base", "paint": "#21c45a"},
     {"part": "Loudhailer", "on": 81, "socket": "front10", "by": "base"},
     {"part": "Prize Wheel", "on": 84, "socket": "top", "by": "base"},
     {"part": "Prize Wheel", "on": 58, "socket": "front", "by": "base"}
   ],
-  "wires": [[31, 32], [32, 26], [69, 80], [80, 71]],
+  "wires": [[31, 32], [32, 26], [69, 79], [79, 71]],
   "links": [
     {"type": "shaft", "from": 27, "to": 8, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 65, "to": 26, "nodes": [[1.5, 0.82, 4.3], [1.5, 0.55, 4.3], [0.67, 0.55, 4.3], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}

@@ -77,6 +77,12 @@ public sealed record VehicleRole(string Name, string Purpose)
 
     /// <summary>A fighting role: its guns grow with the tier.</summary>
     public bool Combat { get; init; }
+
+    /// <summary>The gun jobs it wants (<see cref="VehicleArmoury.KnownTags"/>): a gun carrying one weighs <see cref="RoleAsk.WantWeight"/> times as much.</summary>
+    public string[] WantTags { get; init; } = [];
+
+    /// <summary>The gun jobs it avoids: a gun carrying one weighs <see cref="RoleAsk.AvoidWeight"/> as much (a scout with a flame projector, a tanker with a missile battery).</summary>
+    public string[] AvoidTags { get; init; } = [];
 }
 
 /// <summary>A role at a tier for a style: the needs as that tier moves them, and the leanings the grammar reads (<see cref="ShapeGrammar"/>, <see cref="FactionStyle.Weigh"/>).</summary>
@@ -227,8 +233,24 @@ public sealed class RoleAsk
         if (Role.Combat && c == Needs.ClassMax)
             f *= 1 + 0.5 * Math.Max(0, Tier - 1);
         var rare = VehicleRoles.RareGun(w);
-        return f * (rare ? (Tier >= 3 ? 1.5 : Tier <= 1 ? 0.4 : 1) : 1) * VehicleArmoury.TierWeight(w, Tier);
+        return f * (rare ? (Tier >= 3 ? 1.5 : Tier <= 1 ? 0.4 : 1) : 1) * VehicleArmoury.TierWeight(w, Tier) * TagWeight(w);
     }
+
+    /// <summary>What the role's wanted and avoided gun jobs make of a gun's weight (an avoided tag outweighs a wanted one).</summary>
+    public double TagWeight(WeaponOption w)
+    {
+        if (w.Tags.Length == 0)
+            return 1;
+        foreach (var t in Role.AvoidTags)
+            if (Array.IndexOf(w.Tags, t) >= 0)
+                return AvoidWeight;
+        foreach (var t in Role.WantTags)
+            if (Array.IndexOf(w.Tags, t) >= 0)
+                return WantWeight;
+        return 1;
+    }
+
+    public const double WantWeight = 2.5, AvoidWeight = 0.05;
 
     /// <summary>One of <paramref name="list"/>, weighted by <see cref="WeaponWeight"/>: one roll, as <see cref="Dice.Pick"/> takes.</summary>
     public WeaponOption Pick(Dice d, IReadOnlyList<WeaponOption> list)
@@ -345,6 +367,7 @@ public static class VehicleRoles
             Needs = N(seatsMax: 3, gunsMin: 1, gunsMax: 1, classMax: GunClass.Medium, speedMin: 27, lootMax: 3, lengthMax: 7),
             Modules = M(("body", "room", 0.5), ("body", "gap", 1.5), ("rear", "gun deck", 0.3), ("flank", "loaded", 0.3)),
             LengthBias = -0.7, BedGun = 0.2, Fast = 1, LootBase = 1,
+            WantTags = ["light", "close"], AvoidTags = ["heavy", "flame", "boss", "anti-armour"],
         },
         new("raider", "fast to middling, two to four crew, guns, some loot")
         {
@@ -352,6 +375,7 @@ public static class VehicleRoles
             Needs = N(seatsMin: 2, seatsMax: 4, gunsMin: 1, gunsMax: 3, speedMin: 22, lootMin: 1, lengthMax: 9.5f),
             Modules = M(("body", "gun bed", 1.5), ("body", "bed", 1.2), ("body", "gap", 1.2), ("nose", "ram", 2)),
             LengthBias = -0.3, BedGun = 0.7, Fast = 0.6, Combat = true, LootBase = 1,
+            WantTags = ["close", "suppress"], AvoidTags = ["boss"],
         },
         new("gun platform", "slow, heavy guns on an open deck")
         {
@@ -359,6 +383,7 @@ public static class VehicleRoles
             Needs = N(gunsMin: 2, classMin: GunClass.Medium, deck: true),
             Modules = M(("body", "gun bed", 3), ("body", "hutch", 2), ("body", "gun bay", 2), ("body", "room", 0.6), ("rear", "gun deck", 3), ("sides", "walls", 2)),
             LengthBias = 0.2, BedGun = 1, Armour = 0.3, Fast = -0.5, Combat = true, LootBase = 1,
+            WantTags = ["heavy", "anti-armour", "aa"], AvoidTags = ["oddity"],
         },
         new("carrier", "an APC: crew space, armour, little gun")
         {
@@ -366,6 +391,7 @@ public static class VehicleRoles
             Needs = N(seatsMin: 3, gunsMax: 2, armour: 11, room: true),
             Modules = M(("body", "room", 2.5), ("body", "gap", 0.5), ("body", "gun bed", 0.4), ("flank", "loaded", 2)),
             LengthBias = 0.5, BedGun = 0.2, Armour = 0.7, Fast = -0.3, LootBase = 1,
+            WantTags = ["suppress", "aa"], AvoidTags = ["heavy", "flame", "boss"],
         },
         new("tanker", "fuel or cargo, its weak points in the open, rich loot")
         {
@@ -373,6 +399,7 @@ public static class VehicleRoles
             Needs = N(gunsMax: 2, lootMin: 1, fuel: 400, fuelOpen: true),
             Modules = M(("body", "tank", 3), ("body", "bed", 1.5), ("rear", "porch hitch", 2)),
             LengthBias = 0.3, BedGun = 0.3, Fast = -0.4, LootBase = 2, ExtraChests = 1,
+            WantTags = ["suppress", "aa"], AvoidTags = ["flame", "heavy", "boss"],
         },
         new("recovery", "a crane, winch or tow, little gun")
         {
@@ -380,6 +407,7 @@ public static class VehicleRoles
             Needs = N(gunsMax: 2, tow: true, winch: true),
             Modules = M(("body", "bed", 2.5), ("body", "gun bed", 0.5), ("rear", "hitch", 6), ("rear", "porch hitch", 6), ("rear", "porch", 0.3), ("rear", "gun deck", 0.2), ("rear", "bare", 0.1)),
             BedGun = 0.2, Fast = -0.2, LootBase = 1,
+            WantTags = ["suppress"], AvoidTags = ["flame", "heavy", "boss"],
         },
         new("command", "masts and radio, armour, one gun, the best loot")
         {
@@ -387,6 +415,7 @@ public static class VehicleRoles
             Needs = N(gunsMin: 1, gunsMax: 2, armour: 11, room: true, signals: 2),
             Modules = M(("body", "room", 2), ("body", "gun bed", 0.6), ("roof", "rack", 2), ("cab", "armoured", 2)),
             LengthBias = 0.2, BedGun = 0.2, Armour = 0.5, LootBase = 3, ExtraChests = 1,
+            WantTags = ["aa", "suppress"], AvoidTags = ["flame", "boss"],
         },
         new("boss", "the largest: the most guns and armour, the best loot; rare")
         {
@@ -394,6 +423,7 @@ public static class VehicleRoles
             Needs = N(gunsMin: 3, armour: 11.5f, lengthMin: 8.5f, room: true),
             Modules = M(("body", "room", 1.5), ("body", "gun bed", 2), ("body", "gap", 0.3), ("rear", "gun deck", 2), ("flank", "loaded", 2)),
             LengthBias = 0.9, BedGun = 1, Armour = 0.8, Fast = -0.6, Combat = true, LootBase = 3, ExtraChests = 2,
+            WantTags = ["heavy", "boss", "anti-armour"], AvoidTags = ["light"],
         },
     ];
 

@@ -1671,6 +1671,10 @@ instant and unpowered; the rates above; bins take one material at a time.
 The first step of the resource chain: raw material comes out of the world on its own, and it comes grouped by type (the
 developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron vein is quite large).
 
+- **On a planetoid** the field lies on the six faces of the cube round the world, underground kinds only, and a map's
+  `"mix"` makes a kind commoner or rarer there (docs/planets/WORLDS.md "Ore"; `ResourceSphere.cs`). Code that asks the
+  field passes a world point (`KindAt(Vector3, ...)`, `TappableAt`, `Tap`, `NearestUnderground`); the (x, z) calls answer
+  nothing on a round world.
 - **The field** (`Constructs/Resources.json`, format `call-of-slop-resources/1`; `ResourceTable`, `ResourceField`,
   `Map.Resources`). Each kind scatters large deposits, one `chance` per `cell` metres square: `forest` (wood, 60 a tree),
   `iron vein` (long, thin, 60,000 iron ore), `copper vein`, the rarer `gold vein`, `stone seam` and `sand bed`. Deposits are generated from the map's name, so

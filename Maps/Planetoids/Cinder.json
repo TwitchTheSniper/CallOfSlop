@@ -285,7 +285,13 @@
   },
   "sandbox": {
     "resources": {
-      "generate": false
+      "mix": {
+        "copper vein": 2,
+        "gold vein": 1.5,
+        "stone seam": 1.5,
+        "helium pocket": 0,
+        "sand bed": 0.5
+      }
     }
   },
   "teamSpawns": [

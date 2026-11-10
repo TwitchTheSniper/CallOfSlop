@@ -31,7 +31,7 @@ Measured with `--check-armoury` (41 recipes, damage a shot x rounds, rounds a mi
 - **Classes in phase 1.** Heavy cannons (Field Gun, Howitzer: HE, siege or incendiary shells, big blasts and craters) and rapid heavy guns (Hammerfall autocannon,
   Ladder-splitter rotary cannon, Cross-splitter flak, Thumper chain gun: merged blocks). Each pick is seeded by the vehicle's dice.
 - **Only sizes that build.** Each design and size is fitted once a process on a test turret through the game's rules (as `--check-armoury` fits a recipe); a size that
-  won't build as one firing gun is left out with a `[vehicles] gunsmith:` line and the next smaller is offered. Found so far: the Bunker Buster won't merge 3x3.
+  won't build as one firing gun is left out with a `[vehicles] gunsmith:` line and the next smaller is offered. Found so far: the Bunker Buster wouldn't merge 3x3 (fixed 2026-11-10, "Kit review" below).
 - **Share of the draws.** The gunsmith's guns together take about half a fighting role's draws, a quarter of another role's and 35 % of a vehicle with no role's; each class
   takes an equal part of that, split among its designs. Shell guns sit behind a gun shield, rapid guns on a pintle (a shield on every turret filled a double-decker's side
   box past the Silhouette rule).
@@ -110,6 +110,33 @@ hangs on (`VehicleCore.Blocker`). Offered by mass: twin from 3 t (tier 3) or 6 t
 **Flame Projector** (the first exotic class, `Kind.Exotic`): a Firebreather receiver merged 2x2 to 4x4 (23 to 93 kg), tags heavy, close, flame, from tier 2. It joins
 the gunsmith's draw for every vehicle; roles don't pick by tag yet, so "by role" is still to do (mortars for artillery roles, flame for close ones).
 `--gen-vehicles`: 35 of 193 committed vehicles differ (10 now carry a Firebreather), none fail; two stations stayed empty where the body was in the way.
+
+## Kit review (2026-11-10)
+
+- **Bay guns.** The grammar picks a gun bay's or hutch's gun while it plans, before anything is built, when the parts weighed next to nothing: the gunsmith offered nothing and
+  only roof and flank guns (picked as built) could be its. A plan now gives its estimated mass (`ShapeGrammar.EstimateMass`: a chassis, each segment by kind and length,
+  fitted to 124 built vehicles and taken a tenth low) as `Vehicle.PlanMass`, which `Vehicle.Arsenal` rates every pick by. After the build each gunsmith gun is checked against
+  the vehicle as built (`VehicleGunsmith.CheckBuilt`): one over its mount refuses the plan (the next plan), never a smaller gun swapped in. `--armoury-report --seeds 2`
+  (60 vehicles, new "smith" column): 10 of 85 guns the gunsmith's before, 30 of 85 after.
+- **A budget a vehicle.** Each gun alone is held to `GunMassShare` (12 %); all of them together now to `GunBudgetShare` (20 %) of the mass and `PullPerKg` (1.5 N a kg)
+  of sustained recoil (impulse x shots a second, measured on the test stand: a single Flak Block pulls 750 N, a 4x4 3000 N), spent as guns are picked (`Vehicle.SpendGun`):
+  the gunsmith steps a gun down a size, or leaves it out, to fit what is left. Style guns count by their parts' mass only (they aren't fitted on a stand).
+- **Roles read tags.** A role names the gun jobs it wants (2.5x weight) and avoids (0.05x): a scout avoids heavy, flame, boss and anti-armour, a tanker and a carrier flame
+  and heavy, a gun platform wants heavy, anti-armour and aa, command aa (`VehicleRole.WantTags`, `AvoidTags`; `RoleAsk.TagWeight`).
+- **Exotics by tier.** An exotic is offered from its own tier only (not one early), at most N = tier, and one size per 2 t of vehicle from 2x2: an 800 kg buggy gets no flame
+  projector, 3 t a 2x2, 6 t a 3x3 at tier 3 and a 4x4 at tier 4.
+- **Bunker Buster.** Its receiver is 0.206 m tall: a part's place rounds to the centimetre, so a column built socket to socket drifted 4 mm a row and the third row sat 8 mm
+  off the merge grid (6 mm tolerance). Generated receivers are now whole centimetres a side (`ConstructWeaponParts.MergeGrid`): it merges 3x3 and 4x4. This moves every
+  generated receiver's sockets by up to 2.5 mm.
+- `--gen-vehicles` after these: 139 of 193 committed vehicles differ (regenerate after merge), none fail.
+- **Spawn safety** (VEHICLEKIT.md, "Dynamic spawn"): a late slice is dropped but the game never runs beside the kit's thread; the gunsmith's test fits run in the warm-up.
+- **Seeds that failed** (`--sweep-vehicle --seeds 20`, each 19 of 20): a lofted bay refused for a hidden box 9.95 mm thick (the loft's own test was 9.9 mm, the loader's 10 mm on
+  the rounded numbers: `HullLoft.Builder.Thin` now drops boxes and facets under it); Highland War Bus 16, two 1 m panniers on bays under a metre whose faceted shells met
+  (the overlap test now uses the drawn bounds, `Vehicle.PannierClear`): passes. Bandit Box Truck 3 still fails the driver's view: its armoured chop-top cab, with or without
+  the gunsmith (body styles' to fix).
+- **Not done: generation time** (step 5). `--slice-vehicle` lists where it goes: on this box, loaded, a Box Truck spent about 1.3 s of 2.3 s in `Put`'s scan of every part's
+  free sockets (VehicleCore.cs, the yield per part), then the silhouette outline, the brief's rays and making lofted bays (12 to 20 ms each, under `HullLoft`'s lock, so no yield
+  can go inside). Those are the first things to cut.
 
 ## Next steps (queued)
 

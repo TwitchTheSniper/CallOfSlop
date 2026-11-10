@@ -206,6 +206,8 @@ public static unsafe partial class Program
             return InteriorWalk(args); // a scripted player walk-through of a fitted construct (docs/sandbox/INTERIORS.md "Phase 6")
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
+        if (args.SkipWhile(a => !a.Equals("--slice-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sliceVehicle)
+            return VehicleKit.VehicleGenJob.SliceReport(sliceVehicle, args); // seeds made in slices as a dynamic spawn makes them: time, slices, the longest spans by their yields
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
