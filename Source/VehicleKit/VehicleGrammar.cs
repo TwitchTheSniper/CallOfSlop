@@ -107,6 +107,8 @@ public static class ShapeGrammar
     private static BodySegment GunBed(float min, float max) => new("gun bed", min, max);
     private static readonly BodySegment Hutch = new("hutch", 4f, 4f), GunBay = new("gun bay", 2f, 2f), Gap = new("gap", 0.5f, 1f);
     private static BodySegment Tank(float min, float max) => new("tank", min, max);
+    private static BodySegment Boot(float min, float max) => new("boot", min, max);
+    private static readonly BodySegment Row = new("gap", 1f, 1f); // (phase 8a part 2: a car's second row of seats, under its crew cabin)
 
     /// <summary>The recipes, by shape name: kit 1's shapes as module families. A shape not here (the Technical, the trailers) is made by its generator.</summary>
     public static readonly Dictionary<string, ShapeRecipe> Recipes = new(StringComparer.Ordinal)
@@ -128,8 +130,9 @@ public static class ShapeGrammar
         ["Double Decker"] = new("Double Decker", "bus", "double-decker bus",
             [new(1, Room(3, 4))],
             [("gun deck", 3), ("porch", 1.5), ("porch hitch", 0.5)], 2, 3, BusGears) { Upper = "deck", UpperShare = (0.45f, 0.75f) },
-        // (phase 8a: a car, the archetypes' muscle cars, supercars and European cars: a lofted cab in the archetype's language and a short gun bed behind it, a turret seat facing the gun)
-        ["Car"] = new("Car", "car", "car", [new(1, GunBed(2.5f, 3f))], [("bare", 2), ("hitch", 1)], 1, 1, CarGears),
+        // (phase 8a: a car, the archetypes' muscle cars, supercars and European cars: a lofted cabin in the archetype's language, two seats or four (a crew cabin
+        // over a second row), and a boot behind it: a lofted tail deck over its fuel tank, the gun on a pedestal between the cabin and the boot, its seat facing it)
+        ["Car"] = new("Car", "car", "car", [new(1, Boot(2.25f, 2.75f)), new(1.5, Row, Boot(2.5f, 3f))], [("bare", 2), ("hitch", 1)], 1, 1, CarGears),
         ["Scrap Tanker"] = new("Scrap Tanker", "crew", "scrap tanker",
             [new(3, GunBay, Tank(2f, 3f)), new(1, GunBay, Tank(2f, 2f), Bed(1.5f, 2f)), new(1, Room(0, 0), Tank(2f, 3f))],
             [("bare", 3), ("hitch", 1)], 1, 2, TankGears),
@@ -155,6 +158,7 @@ public static class ShapeGrammar
         new("body", "hutch", "an ammo hutch and a stern gun on a flat deck"),
         new("body", "gun bay", "a gun behind the cab"),
         new("body", "gap", "bare rails behind the cab"),
+        new("body", "boot", "a boot behind the cabin, the gun on a pedestal ahead of it"),
         new("body", "tank", "a big round tank of fuel") { Gears = TankGears },
         new("rear", "porch", "a drum on the rear porch") { Excludes = ["fuel"], Provides = ["fuel"] },
         new("rear", "porch hitch", "a drum on the rear porch over a tow hitch") { Excludes = ["fuel"], Provides = ["fuel"] },
@@ -322,7 +326,7 @@ public static class ShapeGrammar
         public float Z0, Z1;
         public string[] Bays = [];
         public bool Gun, Aft, Drum;
-        public float GunZ;
+        public float GunZ, TankZ;
         public WeaponOption? Weapon;
         public int RoofGuns, SeatCount;
         public int SideBay = -1;
@@ -418,7 +422,7 @@ public static class ShapeGrammar
                 : Choose(dd, st, family, tags, also, m => (weight?.Invoke(m) ?? 1) * (role?.Module(family, m.Name) ?? 1) * VehicleContext.Module(family, m.Name)); // (a role's and a spawn context's leans: the same one roll)
 
         // The body: a pattern, weighted by the style's liking for each kind of segment, then lengths.
-        var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)) * (role?.Body(b) ?? 1))).ToList());
+        var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)) * (role?.Body(b) ?? 1) * CarRows(v, r, b))).ToList());
         var z = Front;
         var ld = D(VehicleLayer.Body, "lengths");
         foreach (var s in pattern.Segments)
@@ -436,8 +440,8 @@ public static class ShapeGrammar
         if (p.Segs.Any(s => s.Kind == "room" && s.Len >= 4.5f))
             tags.Add("long room");
         tags.Add(p.Segs[^1].Kind is "room" ? "room last" : p.Segs[^1].Kind is "bed" or "gun bed" ? "bed last" : p.Segs[^1].Kind + " last");
-        if (tags.Contains("tank"))
-            tags.Add("fuel");
+        if (tags.Contains("tank") || tags.Contains("boot"))
+            tags.Add("fuel"); // (a boot carries its own tank under its lid)
         if (tags.Contains("fuel") || p.Segs.Any(s => s.Kind is "hutch" || s.Kind is "bed" or "gun bed" && s.Len >= 1.5f))
             tags.Add("fuel or drum"); // (a bare tail needs fuel carried ahead of it)
 
@@ -479,6 +483,8 @@ public static class ShapeGrammar
             var fits = Catalogue.Where(m => m.Family == "cab" && m.Needs.All(tags.Contains) && !m.Excludes.Any(tags.Contains))
                 .Select(m => (M: m, W: (CabLook.Force is { } only ? (m.Name == only ? 1 : 0) : rule.CabWeight(m.Name)) * (role?.Module("cab", m.Name) ?? 1) * VehicleContext.Module("cab", m.Name))).Where(x => x.W > 0).ToList();
             p.Cab = fits.Count > 0 ? Weighted(D(VehicleLayer.Body, "cab"), fits) : Module("cab", "enclosed");
+            if (r.Shape == "Car" && tags.Contains("gap first") && p.Cab.Name != "cab-over")
+                p.Cab = Module("cab", "crew"); // (phase 8a part 2: a four-seat car's cabin runs over its second row, one roof from screen to boot)
             p.CabPart = "";
         }
         else
@@ -565,6 +571,8 @@ public static class ShapeGrammar
         }
         if (p.Rails < 1.5f)
             throw new VehicleKitException("too short a body for a frame");
+        if (p.Cab.Name == "crew" && tags.Contains("boot") && p.RearAxle < 1.9f)
+            throw new VehicleKitException("a car's rear axle under its crew cabin"); // (the differential's face met the cabin's floor: the next plan)
 
         p.UnderKind = p.Gear.Floor < 0.5f ? Module("under", "stilts") : Ch(D(VehicleLayer.Chassis, "under"), "under") ?? Module("under", "stilts");
         p.Flank = Ch(D(VehicleLayer.Kit, "flank"), "flank");
@@ -697,6 +705,20 @@ public static class ShapeGrammar
         return false;
     }
 
+    /// <summary>Phase 8a part 2: where a boot's tank sill goes, under a lid from <paramref name="z0"/> to <paramref name="z1"/>: nearest the lid's middle, clear of the axles and of the tail's cap; null: nowhere.</summary>
+    private static float? TankSpot(PlanData p, float z0, float z1, bool wedge)
+    {
+        float? best = null;
+        for (var z = RailZ(p, z0 + 0.3f); z <= z1 - (wedge ? 0.55f : 0.4f); z += 0.25f) // (a wedge tail's cap comes down further in)
+            if (z >= z0 + 0.29f && Clear(p, z) && (best == null || MathF.Abs(z - (z0 + z1) / 2) < MathF.Abs(best.Value - (z0 + z1) / 2)))
+                best = z;
+        return best;
+    }
+
+    /// <summary>Phase 8a part 2: a car's second row by its archetype (a supercar and a compact hatch seat two); 1 for every other recipe and pattern.</summary>
+    private static double CarRows(Vehicle v, ShapeRecipe r, BodyPattern b) =>
+        r.Shape == "Car" && b.Segments[0].Kind == "gap" && v.Archetype?.Name is "supercar" or "compact hatch" ? 0 : 1;
+
     /// <summary>The tags a gear recipe gives the rest of the plan.</summary>
     private static void GearTags(PlanData p)
     {
@@ -748,6 +770,13 @@ public static class ShapeGrammar
                 case "hutch":
                     s.Gun = true;
                     s.Weapon = Pick(count++, false);
+                    break;
+                case "boot": // (phase 8a part 2: on a pedestal just behind the cabin, clear of the axles, over the cabin's roof; the tank's sill under the lid behind it)
+                    for (var at = s.Z0 + 0.5f; at <= s.Z1 - 0.75f && !s.Gun; at += 0.25f)
+                        if (RailZ(p, at) is var bz && bz - 0.125f >= s.Z0 - 0.01f && Clear(p, bz) && TankSpot(p, bz + 0.15f, s.Z1, v.CabLook?.Nose == 'w') is { } tz)
+                            (s.Gun, s.GunZ, s.TankZ, s.Weapon) = (true, bz, tz, Pick(count++, false));
+                    if (!s.Gun)
+                        throw new VehicleKitException("a boot with no room for its gun and its tank clear of the axles"); // (the next plan)
                     break;
                 case "gun bed":
                 case "bed":
@@ -1021,6 +1050,11 @@ public static class ShapeGrammar
                 }
                 case "gap": // (bare rails: air between the cab and the body)
                     break;
+                case "boot": // (phase 8a part 2: the gun's sill, then the tank and the lofted lid behind it: Vehicle.Boot)
+                    if (s.Gun)
+                        bedSills[s] = v.Sill(s.GunZ);
+                    v.Boot(s.GunZ + 0.15f, s.Z1, s.TankZ); // (the lid runs under the turret's table, which stands over the cabin's roof line)
+                    break;
                 case "gun bay": // (Generators/ScrapTanker.cs: a gun on its own sill behind the cab)
                     bedSills[s] = v.Sill(s.GunZ, layers: 2);
                     break;
@@ -1077,7 +1111,7 @@ public static class ShapeGrammar
         foreach (var s in p.Segs.Where(s => s.Gun))
         {
             v.FedTurrets = s.Kind == "hutch";
-            v.Turret(bedSills[s], s.Weapon, aft: s.Aft);
+            v.Turret(bedSills[s], s.Weapon, aft: s.Aft, lift: s.Kind == "boot");
         }
         v.FedTurrets = false;
         if (rearSill != null)

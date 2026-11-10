@@ -355,11 +355,11 @@ public sealed partial class Vehicle : BlueprintScript
     /// <summary>Set before <see cref="Turret"/> on a vehicle that calls <see cref="Feeds"/>: its guns have no magazine or box of their own.</summary>
     public bool FedTurrets;
 
-    public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null, bool aft = false)
+    public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null, bool aft = false, bool lift = false)
     {
         Weapon = weapon ?? (Role is { } r ? r.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Style.Weapons) : VehicleArmoury.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Style.Weapons));
         aft &= Weapon.Name != "Whaler"; // (its magazine hangs where an aft gun's seat goes)
-        if (CentreOf(mount).Y < 1.5f && CentreOf(mount).Z - GunReach(Weapon) < CabBack) // (a long gun on a bed would poke through the cab: a pedestal lifts it over the cab's roof, as on a real technical)
+        if (lift || CentreOf(mount).Y < 1.5f && CentreOf(mount).Z - GunReach(Weapon) < CabBack) // (lift: a car's gun, over its cabin whichever way it turns) // (a long gun on a bed would poke through the cab: a pedestal lifts it over the cab's roof, as on a real technical)
         {
             var cab = Panels.GetValueOrDefault("cabshell")?.FirstOrDefault();
             var over = (cab == null ? 0f : CentreOf(cab).Y - (cab.Def.BoundsMin.Y + cab.Def.BoundsMax.Y) * 0.5f + cab.Def.BoundsMax.Y) + 0.2f - (CentreOf(mount).Y + 0.9f);

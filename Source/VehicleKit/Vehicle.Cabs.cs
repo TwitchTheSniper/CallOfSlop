@@ -235,10 +235,64 @@ public sealed partial class Vehicle
         var (zb, d2, d3) = kind == 'w' ? (1.125f, 0.42f, 0.98f) : (0.325f, 0f, 0f);
         var rake = MathF.Min(l.Rake, 0.24f);
         // Phase 8a: a fastback's back section comes down toward the window band's top (it keeps 6 cm over it, the part's own limit being 4).
-        var back = l.Back > 0 && kind is 'e' or 'g' ? CabLook.Clamped(t.Scaled(1f, (t.Top - l.Back * (t.Top - yt - 0.06f)) / t.Top), 0.82f, 0.95f, 1.45f) : t;
+        var back = l.Back > 0 && kind is 'e' or 'g' or 'w' ? CabLook.Clamped(t.Scaled(1f, (t.Top - l.Back * (t.Top - yt - 0.06f)) / t.Top), 0.82f, 0.95f, 1.45f) : t;
         if (back.Top <= yt + 0.05f)
             back = t;
         return new HullLoft.CabShape(kind, -0.6f, -0.6f, zb, MathF.Min(belt, yt - 0.3f), yt, rake, -0.3f, 0.22f, d2, d3, 1f, t, back);
+    }
+
+    /// <summary>
+    /// Phase 8a part 2 (docs/vehiclekit/BODY-STYLES.md, section 17): a car's boot from <paramref name="z0"/> to <paramref name="z1"/>: a Fuel Tank on a sill clear of the
+    /// axles (at <paramref name="tz"/>, the plan's), piped to the engine, and over it a hood lofted in the cabin's language turned round (its nose the tail), the rear fenders on it.
+    /// </summary>
+    public Vehicle Boot(float z0, float z1, float tz)
+    {
+        if (CabLook == null)
+            throw new VehicleKitException("a car's boot is lofted (kit 5's cabs)");
+        var sill = Sill(tz);
+        var tank = Stand("Fuel Tank", new Vector3(0, SillTop(1), tz), Orient.Forward, sill, "-y");
+        if (!Electric)
+            Link("pipe", tank, Engine!, laid: true);
+        Tanks.Add(tank);
+        var d = Dice.Fork("boot");
+        var key = LoftedBoot(z0, z1, tz);
+        var lid = Stand(key, SocketPoint(tank, "+y"), new Orient(Vector3.UnitY, Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ), tank, "engine");
+        PanelList("boot").Add(lid);
+        var fender = Style.Part(d, "fender");
+        if (fender != "none")
+            foreach (var (socket, s) in new[] { ("+x0", -1f), ("-x0", 1f) }) // (turned round: its +x is the car's left)
+                if (Array.Exists(lid.Def.Sockets, x => x.Name == socket))
+                    try
+                    {
+                        PanelList("hoodsides").Add(Stand(fender, SocketPoint(lid, socket), new Orient(Vector3.UnitX, new Vector3(s, 0, 0), Vector3.UnitY, Vector3.UnitY), lid, "mount"));
+                    }
+                    catch (VehicleKitException)
+                    {
+                        // (a wide wheel in the way: bare tyre)
+                    }
+        return this;
+    }
+
+    /// <summary>A boot lid's height over its foot, and its pad (on the tank's top, 0.875 m up) over its foot.</summary>
+    private const float BootTall = 0.45f, BootPad = 0.275f;
+
+    /// <summary>The boot's lid: the hood's section in the cabin's language, from the cabin's end (<paramref name="z0"/>) to the tail (<paramref name="z1"/>), its pad on the tank at <paramref name="tz"/>.</summary>
+    private string LoftedBoot(float z0, float z1, float tz)
+    {
+        var l = CabLook!;
+        // (the cabin's width and the hood's height: its foot 0.6 m up, clear of the rear tyres' tops, its deck about the bonnet's; the tank hangs under it, as a car's does)
+        var s = CabLook.Clamped(l.Scaled(Math.Clamp(l.Width - 0.03f, 0.6f, 0.92f), BootTall), 0.5f, 0.95f, 0.2f, 0.05f);
+        var tail = l.Nose switch { 'r' => 'r', 'w' => 'w', _ => 'f' }; // (no grille at the back)
+        var (kx, ky) = tail switch { 'w' => (0.92f, 0.7f), 'r' => (0.82f, 0.78f), _ => (0.96f, 0.9f) };
+        float Cm(float x) => MathF.Round(x * 100) / 100;
+        var (zb, zf) = (Cm(tz - z0), Cm(tz - z1));
+        var zm = Cm(zf + 0.2f);
+        var fz = Cm(Math.Clamp(tz - RearAxleZ, zm + 0.1f, zb - 0.1f));
+        var shape = new HullLoft.HoodShape(tail, zf, zm, zb, BootPad, kx, ky, fz, s);
+        var key = shape.Key();
+        if (ConstructParts.Find(key) == null)
+            throw new VehicleKitException($"the lofted boot won't make: {key}");
+        return key;
     }
 
     /// <summary>A lofted hood for the fixed hood part a plan chose (its length class: a Long Hood or a Bull Hood is long, a Snub Hood or a Slab Nose short; a Slab Nose wide).</summary>
@@ -246,7 +300,7 @@ public sealed partial class Vehicle
     {
         var l = CabLook!;
         var longHood = part is "Long Hood" or "Bull Hood";
-        var zf = MathF.Max(-1.05f, (longHood ? (float)d.Fork("hood length").Between(-1.0, -0.88) : (float)d.Fork("hood length").Between(-0.8, -0.72)) - l.Reach);
+        var zf = MathF.Min(-0.68f, MathF.Max(-1.05f, (longHood ? (float)d.Fork("hood length").Between(-1.0, -0.88) : (float)d.Fork("hood length").Between(-0.8, -0.72)) - l.Reach)); // (phase 8a part 2: a hatch's short bonnet came to -0.67, its nose no longer ahead of the full section: refused)
         var half = part == "Slab Nose" ? 0.62f : l.HoodHalf;
         var s = l.Scaled(half, CabLook.HoodY0 + l.HoodCrown);
         // The engine under it: its core and its details (a V8's rocker covers 12 cm over its top, 0.343 m out) clear of the skin by its thickness and a little.
