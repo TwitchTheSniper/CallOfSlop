@@ -153,6 +153,8 @@ public static class ShapeGrammar
         // (phase 9b: kit 1's Technical as a recipe: a lofted cab and hood in the style's language, a gun behind the cab on its own sill and a short open bed (the drum
         // in it) or the drum on a porch, as the kit-1 stepside, ute and sand rail were; low gear, never stilts. Its generator keeps its own checks)
         ["Technical"] = new("Technical", "truck", "technical", [new(2, GunBay, Bed(1.5f, 2f)), new(1, GunBay)], [("porch", 1), ("bare", 2), ("hitch", 0.5)], 1, 1, TechGears),
+        // (phase 9b: kit 1's Tanker Rig: the Technical's gun bay and a short bed, always a tow hitch behind for its Fuel Trailer (VehicleShape.Begin sets the tow))
+        ["Tanker Rig"] = new("Tanker Rig", "crew", "tanker rig", [new(2, GunBay, Bed(1.5f, 2f)), new(1, GunBay)], [("hitch", 2), ("porch hitch", 1)], 1, 1, TechGears),
         ["Scrap Tanker"] = new("Scrap Tanker", "crew", "scrap tanker",
             [new(3, GunBay, Tank(2f, 3f)), new(1, GunBay, Tank(2f, 2f), Bed(1.5f, 2f)), new(1, Room(0, 0), Tank(2f, 3f))],
             [("bare", 3), ("hitch", 1)], 1, 2, TankGears),
@@ -325,6 +327,8 @@ public static class ShapeGrammar
         var v = new Vehicle(VehicleRegistry.BlueprintName(g, seed) + layers.Suffix + (role?.Suffix ?? ""), g.Name, g.Style, seed) { Kit = kit, Role = role };
         v.UseLayers(layers);
         v.StartWear(LayerTables.WearOf(g.Style));
+        if (g is VehicleShape begin)
+            begin.Begin(v); // (phase 9b: a Tanker Rig's trailer, on its own fork)
         if (kit >= VehicleKitVersion.Lofted)
         {
             if (g is VehicleShape shape)

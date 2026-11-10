@@ -36,6 +36,9 @@ public abstract class VehicleShape(FactionStyle style) : IVehicleGenerator
 
     public virtual VehicleCheckOptions? Checks => null;
     public abstract void Build(Vehicle v);
+
+    /// <summary>Phase 9b: what a shape made by the grammar sets before its plan (a Tanker Rig's trailer). Kit 1's <see cref="Build"/> does its own.</summary>
+    public virtual void Begin(Vehicle v) { }
 }
 
 public static class VehicleRegistry
