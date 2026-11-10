@@ -2373,11 +2373,16 @@ public static unsafe partial class Program
                 DrawFriendlyHitMarker(cx, cy, k, now); // a teammate: no damage (Program.FriendlyHit.cs)
             else if (now < _game.HitMarkerUntil)
             {
-                var c = _game.HitMarkerHead ? new Vector3(1f, 0.85f, 0.2f) : new Vector3(1f, 0.25f, 0.25f);
+                // A body is red (gold for the head); a build's part only is pale violet, a colour no build part,
+                // muzzle flash or the friendly cyan uses, so a hit on a wall never reads as a hit on someone.
+                var c = _game.HitMarkerBuild ? new Vector3(0.78f, 0.62f, 1f)
+                    : _game.HitMarkerHead ? new Vector3(1f, 0.85f, 0.2f) : new Vector3(1f, 0.25f, 0.25f);
+                var o = MathF.Max(1f, MathF.Round(k)); // a dark rim, so the ticks stand out on any wall behind them
                 for (var i = 0; i < 4; i++)
                 {
                     var sx = (i & 1) == 0 ? -1 : 1;
                     var sy = (i & 2) == 0 ? -1 : 1;
+                    Gfx.Rect(cx + sx * 14 * k - 3 * k - o, cy + sy * 14 * k - 3 * k - o, 6 * k + 2 * o, 6 * k + 2 * o, black, 0.55f);
                     Gfx.Rect(cx + sx * 14 * k - 3 * k, cy + sy * 14 * k - 3 * k, 6 * k, 6 * k, c);
                     if (_game.HitMarkerWallbang) // through a wall: a second, inner set of ticks (GamePenetration.cs)
                         Gfx.Rect(cx + sx * 7 * k - 1.5f * k, cy + sy * 7 * k - 1.5f * k, 3 * k, 3 * k, c);

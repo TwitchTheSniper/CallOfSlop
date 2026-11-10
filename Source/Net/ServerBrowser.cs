@@ -377,7 +377,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 231: dug ground's shape from the same ops (docs/sandbox/TERRAIN-DIGGING.md "Smooth tops"): a crater is open upwards and thin roofs fall in (TerrainEdits.CraterTop), a dug border column makes the cells beside it dug cells, and tops slope over steps up to 4 m (GroundTops.Near/Far, Middle). No message changed.
     // 232: the Logbook's Paths (docs/story/STORY.md "Paths"): Msg.StoryPaths at the end of Msg. Joining a talk (docs/story/STORY.md "Talking to people"): Msg.TalkInvite after it, TalkAsk.Join.
     // 233: STAND-IN: Msg.StandIn at the end of Msg (Source/StandIns: the story's placeholder craft, until the vehicle and ship redo).
-    public const byte ProtocolVersion = 233;
+    // 234: Msg.Shot carries a kinds byte after the end count (Game.ShotKindBuildOnly): a hit on a build only gets its own hit-marker colour.
+    public const byte ProtocolVersion = 234;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
