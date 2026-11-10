@@ -1,0 +1,39 @@
+{
+  "format": "call-of-slop-interiors/1",
+  "about": "Interior size classes by tonnage, like ship classes, and each class's deck rules (docs/sandbox/INTERIORS.md). PROVISIONAL: the tonnage bands, corridor widths and programmes are first guesses for the user to set. Lengths are in grid cells (gridCell metres each); a storey is 3 m because the Building pieces are (2.75 m walls on 0.25 m slabs).",
+  "provisional": true,
+  "classes": [
+    {
+      "id": "medium",
+      "name": "Medium",
+      "minTonnes": 50,
+      "maxTonnes": 500,
+      "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 1, "rowDepth": 2, "roomGrow": 0, "section": 4, "margin": 0, "decks": 1, "stair": [1, 2], "elevator": [1, 1], "door": "1.5x2.25", "reserveRoute": false },
+      "programme": ["bridge", "quarters", "storage", "mess"]
+    },
+    {
+      "id": "large",
+      "name": "Large",
+      "minTonnes": 500,
+      "maxTonnes": 5000,
+      "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 1, "rowDepth": 2, "roomGrow": 0, "section": 6, "margin": 1, "decks": 2, "stair": [1, 2], "elevator": [1, 1], "door": "1.5x2.25", "reserveRoute": false },
+      "programme": ["bridge", "quarters", "production", "storage", "armoury", "medical", "mess"]
+    },
+    {
+      "id": "extra-large",
+      "name": "Extra large",
+      "minTonnes": 5000,
+      "maxTonnes": 20000,
+      "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 1, "rowDepth": 3, "roomGrow": 1, "section": 8, "margin": 1, "decks": 2, "stair": [1, 2], "elevator": [1, 2], "door": "1.5x2.25", "reserveRoute": true },
+      "programme": ["bridge", "quarters", "quarters", "production", "storage", "hangar", "armoury", "medical", "mess", "engineering", "magazine"]
+    },
+    {
+      "id": "capital",
+      "name": "Capital",
+      "minTonnes": 20000,
+      "maxTonnes": 1000000,
+      "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 2, "rowDepth": 3, "roomGrow": 1, "section": 8, "margin": 1, "decks": 2, "stair": [1, 2], "elevator": [2, 2], "door": "1.5x2.25", "reserveRoute": true },
+      "programme": ["bridge", "quarters", "quarters", "production", "storage", "storage", "hangar", "armoury", "medical", "mess", "engineering", "magazine"]
+    }
+  ]
+}

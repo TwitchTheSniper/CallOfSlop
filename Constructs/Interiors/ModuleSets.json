@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-interiors/1",
+  "about": "What fills each room type, from existing parts (docs/sandbox/INTERIORS.md). Items are placed one to a floor slab's free socket, inside first. count: how many; perCells: one more every N cells of floor; loot: true fills it from the room's loot hook; role: what it is for (helm, gunner, engineer...). missing: what the room should have that no part does yet (printed by the run, never invented). The shell (walls, floors, stairs, doors) is in 'shell'.",
+  "shell": {
+    "floor": "Steel Floor 4x4 m",
+    "stairFloor": "Steel Stair Floor 4x4 m",
+    "stair": "Steel Straight Stair 3 m",
+    "wall4": "Steel Wall 4 m",
+    "wall2": "Steel Wall 2 m",
+    "doorWall": "Steel Door Wall 2 m",
+    "corner": "Steel Wall Corner",
+    "doorCorner": "Steel Door Corner",
+    "garageWall": "Steel Garage Wall 4 m",
+    "hinge": "Door Hinge",
+    "door": "Steel Flush Door 1.5x2.25 m",
+    "adapter": "Adapter Capital to Small"
+  },
+  "sets": [
+    { "id": "bridge", "items": [
+        { "part": "Bridge Helm", "count": 1, "role": "helm" },
+        { "part": "Crew Station", "count": 1, "role": "gunner" },
+        { "part": "Fire Director", "count": 1, "role": "gunner" },
+        { "part": "Crew Station", "count": 1, "role": "engineer" },
+        { "part": "Lamp", "count": 1 } ],
+      "missing": ["engineer's panel (power and damage board)", "chart table"] },
+    { "id": "quarters", "items": [
+        { "part": "Bunk", "count": 2, "perCells": 2 },
+        { "part": "Chest", "count": 1, "perCells": 4, "loot": true },
+        { "part": "Lamp", "count": 1 } ],
+      "missing": ["locker"] },
+    { "id": "mess", "items": [
+        { "part": "Seat", "count": 4, "perCells": 2 },
+        { "part": "Chest", "count": 1, "loot": true } ],
+      "missing": ["mess table", "galley stove"] },
+    { "id": "medical", "items": [
+        { "part": "Bunk", "count": 2 },
+        { "part": "Chest", "count": 1, "loot": true },
+        { "part": "Lamp", "count": 1 } ],
+      "missing": ["medical station (heals)", "medicine cabinet"] },
+    { "id": "production", "items": [
+        { "part": "Assembler", "count": 1, "role": "machine" },
+        { "part": "Battery", "count": 1, "role": "power" },
+        { "part": "Materials Bin", "count": 2 },
+        { "part": "Parts Shelf", "count": 1 } ],
+      "missing": ["conveyor or chute from the storage room (small class)"] },
+    { "id": "storage", "items": [
+        { "part": "Parts Shelf", "count": 2, "perCells": 2, "loot": true },
+        { "part": "Materials Bin", "count": 1, "perCells": 3 },
+        { "part": "Chest", "count": 1, "loot": true } ],
+      "missing": [] },
+    { "id": "hangar", "items": [
+        { "part": "Lamp", "count": 2 },
+        { "part": "Chest", "count": 1 } ],
+      "missing": ["ramp on a motor hinge in the small class (Ramp Deck Medium 8x5 is medium class: it needs a medium floor)", "hangar bay for the small class (Hangar Bay Medium is medium class)"] },
+    { "id": "armoury", "items": [
+        { "part": "Gun Workbench", "count": 1, "role": "machine" },
+        { "part": "Chest", "count": 2, "loot": true },
+        { "part": "Parts Shelf", "count": 1, "loot": true } ],
+      "missing": ["gun rack"] },
+    { "id": "engineering", "items": [
+        { "part": "Battery", "count": 3, "role": "power" },
+        { "part": "Lamp", "count": 1 } ],
+      "missing": ["reactor or generator in the small class", "power board"] },
+    { "id": "magazine", "items": [
+        { "part": "Chest", "count": 2, "loot": true } ],
+      "missing": ["shell magazine for the small class (Shell Magazine Medium is medium class)"] },
+    { "id": "fuel", "items": [
+        { "part": "Fuel Tank", "count": 1 } ],
+      "missing": [] }
+  ]
+}
