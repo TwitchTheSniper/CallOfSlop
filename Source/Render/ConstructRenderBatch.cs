@@ -96,6 +96,9 @@ public static partial class ConstructRender
     public static int LastMergedWaiting { get; private set; }
     public static long MergedBytes { get; private set; }
 
+    /// <summary>(RuntimeParts) Freed run-time parts are let go (the cache fills again as types are drawn).</summary>
+    internal static void ForgetRuntime() => _defBoxes.Clear();
+
     /// <summary>Drawn boxes of a type that never moves or changes on its own, or -1.</summary>
     private static int StaticBoxes(ConstructPartDef d)
     {

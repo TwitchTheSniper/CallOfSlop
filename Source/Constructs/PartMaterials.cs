@@ -112,13 +112,23 @@ public static class PartMaterials
         lock (Gate)
         {
             if (Interned.TryGetValue((b.Id, material), out var have) && ReferenceEquals(have.MatBase, b))
+            {
+                have.Touched = Environment.TickCount64;
                 return have;
+            }
             var v = Make(b, material);
             if (v == null || !Extrusion.Adopt(v))
                 return null;
             Interned[(b.Id, material)] = v;
             return v;
         }
+    }
+
+    /// <summary>(RuntimeParts) Drops the doomed parts from the key table.</summary>
+    internal static void Forget(Func<ConstructPartDef, bool> doomed)
+    {
+        lock (Gate)
+            RuntimeParts.Drop(Interned, doomed);
     }
 
     /// <summary>The key a remade part goes by: its file part's name and its material.</summary>

@@ -1962,6 +1962,26 @@ table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a
 own construct, not a body of its own (so it uses one of the construct's 16,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the table of limits by class;
 one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data.
 
+### Run-time parts and their slots
+
+Every part made by key at run time (extrusions, lofted bays, cabs, hoods, panes, trims and fittings, ordnance designs, racks, parts of another material) takes a slot of
+`Extrusion.MaxDefs` (48,000 ids from `Extrusion.RuntimeBase`), and the shapes its boxes draw (a lofted part's hulls, its lamps) take slots of `PartShapes.Cap` (65,535: a
+ushort on every box, gun piece and scene node). A generated vehicle leaves about 9 parts and 165 shapes behind (the first spawns of a process about 30,000 shapes of warm-up),
+so a session spawning a couple of hundred, or a tool over every style, used to run out ("too many different part shapes"). `RuntimeParts` (RuntimeParts.cs) frees them:
+
+- **What is kept.** A sweep marks every part held by a construct, a storage slot or a hand (`Held`, `HeldGone`, `MagFor`) in every `ConstructWorld` and `ConstructEdits`
+  of the process (both register themselves), and every part made or asked for by its key in the last 2 minutes (`ConstructPartDef.Touched`, stamped under the key table's lock).
+  The rest leave their key tables (asked for again, they are made again, with a new id), their slots and their shapes go back.
+- **Shapes are counted.** `ConstructParts.Parse` counts the shapes it asks `PartShapes.For` for (`OwnShapes`); a shape asked for outside a parse (weapon parts, an
+  extrusion's unit lathes, the renderer's own) is pinned for good. A mesh nobody holds is dropped and the renderer re-uploads (its version goes up).
+- **A freed slot is taken again only once every slot has been used**, oldest first, and the old def stays behind its id until then; caches that know parts by id
+  (the mirror's partners, the ammo fit cache, the merged-mesh box counts) are emptied at each sweep. Ids never go on the wire or in a save (keys do), so each machine frees on its own.
+- **When.** The game sweeps between ticks (`RuntimeParts.Tick` in Program's loop) when either table is past half full, at most every 30 s (or at once past 90%), and logs
+  `[parts] swept in N ms`; past 80% one `[parts] warning` line a minute. Tools that make many vehicles sweep with no grace between them (`--body-report`). Nothing is
+  allocated on a frame without a sweep.
+- `--bench-parts [N] [--no-sweep] [--net K]` checks it: N generated vehicles built and taken out offline, then a host and a client over RakNet (120 ms, 3% loss) with both
+  limits lowered so slots are taken again, each client copy compared by part names, and a vehicle kept throughout.
+
 ## The Wheel Former
 
 An [Extruder](#extrusion) with a hub for a die: it builds a wheel up on the hub, in place, fed with material the same way, and a Cut signal parts the finished wheel off. Code: `ConstructExtruder.GrowWheel`, `ConstructExtrusion.BuildWheel`; the numbers are the `wheels` rows of `Constructs/Extrusion.json`; the parts come from `tools/constructs/extrusion_parts.py` (`storage.wheel`). Self-test: the Extruder sections.
