@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -140,6 +141,7 @@ public class BlueprintScript
     public VPart Onto(VPart on, string socket, string part, string? by = null, int? spin = null, bool clear = false, Func<ConstructPartDef, ConstructGhost, string?>? veto = null)
     {
         var def = Def(part);
+        var onto = KitProfile.Time(KitProfile.S.Onto);
         var target = C.DefOf(on.Index);
         var ts = Array.FindIndex(target.Sockets, s => s.Name == socket);
         if (ts < 0)
@@ -166,6 +168,7 @@ public class BlueprintScript
             throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": z-fighting: {fight}");
         if (veto?.Invoke(def, g) is { } no)
             throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": {no}");
+        onto.Dispose();
         return Commit(on.Index, on.Step, ts, def, ds, sp, g);
     }
 
@@ -201,11 +204,14 @@ public class BlueprintScript
 
     private VPart Commit(int onIndex, int onStep, int ts, ConstructPartDef def, int ds, int spin, in ConstructGhost g)
     {
-        var i = ConstructBuild.Attach(World, C, def, g);
+        int i;
+        using (KitProfile.Time(KitProfile.S.Attach))
+            i = ConstructBuild.Attach(World, C, def, g);
         if (i < 0)
             throw new VehicleKitException($"a {def.Name}: too many parts");
         VehicleGenJob.Yield();
-        C.Rebuild();
+        using (KitProfile.Time(KitProfile.S.Rebuild))
+            C.Rebuild();
         VehicleGenJob.Yield(); // (a spawn in the game hands back to the tick here: VehicleSpawn.cs)
         _steps.Add(new Step { Part = def.Name, On = onStep, Socket = ConstructMerge.SocketName(C, onIndex, ts), By = def.Sockets[ds].Name, Spin = spin });
         return Added(i, def);
@@ -219,25 +225,40 @@ public class BlueprintScript
     public VPart Put(string part, Vector3 centre, Orient o = default, float reach = DefaultReach, VPart? on = null, string? by = null, Vector3 fit = default, bool onTop = false)
     {
         var def = Def(part);
+        var scan = KitProfile.Time(KitProfile.S.PutScan);
         var want = ToRest(centre);
         var mid = (def.BoundsMin + def.BoundsMax) * 0.5f;
         var halfSize = (def.BoundsMax - def.BoundsMin) * 0.5f;
         var bestD = float.MaxValue;
         (int I, int S, int Own, int Spin) best = (-1, 0, 0, 0);
         var nearD = float.MaxValue;
-        var nearWhy = "no free socket on it";
+        (int I, int S, int Own, int Spin, Vector3 Pos, byte Turn, bool Tried, string? Why) nearest = (-1, 0, 0, 0, default, 0, false, null);
         Span<byte> turns = stackalloc byte[4];
+        // Only a socket within this of the wanted centre can put the part's centre within reach + 0.5 (the farthest any try is
+        // looked at): the centre is the socket plus the part's own arm from its socket to its centre, turned, then rounded to the
+        // centimetre. So sockets and whole parts farther than that are passed over unread, in the same order, which
+        // changes nothing a Put picks or says (VEHICLEKIT.md, "Generation time").
+        var arm = 0f;
+        for (var ds = 0; ds < def.Sockets.Length; ds++)
+            if (by == null || def.Sockets[ds].Name == by)
+                arm = MathF.Max(arm, Vector3.Distance(mid, def.Sockets[ds].At));
+        var near = reach + 0.5f + arm + 0.05f;
         for (var i = on?.Index ?? 0; i < (on == null ? C.PartCount : on.Index + 1); i++)
         {
-            VehicleGenJob.Yield();
             if (on == null && C.Parts[i].Seg != 0)
                 continue;
             var td = C.DefOf(i);
+            if (Vector3.Distance(C.Parts[i].Pos, want) > near + SocketRadius(td) * C.ScaleOf(i) && !C.MergeLead(i))
+                continue;
+            VehicleGenJob.Yield();
+            var used = UsedSockets(i);
             for (var s = 0; s < C.SocketCount(i); s++)
             {
-                if (C.SocketUsed(i, s) || s >= td.Sockets.Length)
+                if (s >= td.Sockets.Length || used[s])
                     continue;
                 C.SocketAt(i, s, out var at, out var dir);
+                if (Vector3.Distance(at, want) > near)
+                    continue;
                 if (onTop && ConstructParts.DirVector(dir).Y < 0.9f)
                     continue;
                 for (var ds = 0; ds < def.Sockets.Length; ds++)
@@ -255,28 +276,78 @@ public class BlueprintScript
                         var d = Vector3.Distance(pos + Rot24.Apply(turns[sp], mid), want);
                         if (d >= bestD - 1e-4f || d > reach + 0.5f)
                             continue;
+                        if (d > reach)
+                        {
+                            // (out of reach: it can only be the refusal's nearest try, so the rules are asked only if a refusal is written)
+                            if (d < nearD)
+                                (nearD, nearest) = (d, (i, s, ds, sp, pos, turns[sp], false, null));
+                            continue;
+                        }
                         VehicleGenJob.Yield();
-                        var why = ConstructBuild.Place(C, i, s, def, ds, sp, out _);
-                        if (why == null && d <= reach)
+                        string? why;
+                        using (KitProfile.Time(KitProfile.S.PutTry))
+                            why = ConstructBuild.Place(C, i, s, def, ds, sp, out _);
+                        if (why == null)
                         {
                             bestD = d;
                             best = (i, s, ds, sp);
                         }
                         else if (d < nearD)
-                        {
-                            nearD = d;
-                            nearWhy = why == ConstructBuild.InTheWay ? $"nearest try {d:0.00} m off: the {Blocker(def, pos, turns[sp])} is in the way" : why ?? $"{d:0.00} m from where it was asked for, the nearest a socket puts it";
-                        }
+                            (nearD, nearest) = (d, (i, s, ds, sp, pos, turns[sp], true, why));
                     }
                 }
             }
         }
+        scan.Dispose();
         if (best.I < 0)
+        {
+            // The refusal, written only now (the nearest try's reason and blocker cost a pass over every part's boxes); the construct hasn't changed since the scan.
+            var nearWhy = "no free socket on it";
+            if (nearest.I >= 0)
+            {
+                var why = nearest.Tried ? nearest.Why : ConstructBuild.Place(C, nearest.I, nearest.S, def, nearest.Own, nearest.Spin, out _);
+                nearWhy = why == ConstructBuild.InTheWay ? $"nearest try {nearD:0.00} m off: the {Blocker(def, nearest.Pos, nearest.Turn)} is in the way" : why ?? $"{nearD:0.00} m from where it was asked for, the nearest a socket puts it";
+            }
             throw new VehicleKitException($"{Name}: no socket takes a {def.Name} at {Show(centre)}: {nearWhy}");
+        }
         VehicleGenJob.Yield();
         ConstructBuild.Place(C, best.I, best.S, def, best.Own, best.Spin, out var g);
         return Commit(best.I, _parts.First(p => p.Index == best.I).Step, best.S, def, best.Own, best.Spin, g);
     }
+
+    private bool[] _used = new bool[64];
+
+    /// <summary>
+    /// Which of part <paramref name="i"/>'s sockets are taken (as <see cref="Construct.SocketUsed"/> says, socket by socket), from one walk of its links: a lofted bay has
+    /// hundreds of sockets and links, and asking socket by socket walked every link for every socket on every <see cref="Put"/>. Valid till the next call.
+    /// </summary>
+    private ReadOnlySpan<bool> UsedSockets(int i)
+    {
+        var n = C.SocketCount(i);
+        if (_used.Length < n)
+            _used = new bool[Math.Max(n, _used.Length * 2)];
+        Array.Clear(_used, 0, n);
+        for (var e = C.FirstLink(i); e >= 0; e = C.NextLink(e))
+        {
+            ref var l = ref C.Links[e >> 1];
+            var (part, sock) = (e & 1) == 0 ? (l.A, l.SA) : (l.B, l.SB);
+            if (part == i && (uint)sock < (uint)n)
+                _used[sock] = true;
+        }
+        return _used.AsSpan(0, n);
+    }
+
+    private static readonly ConditionalWeakTable<ConstructPartDef, StrongBox<float>> SocketRadii = new();
+
+    /// <summary>How far a part's farthest socket is from its origin (unscaled): <see cref="Put"/> passes over parts too far for any of theirs to matter.</summary>
+    private static float SocketRadius(ConstructPartDef d) =>
+        SocketRadii.GetValue(d, static d =>
+        {
+            var r = 0f;
+            foreach (var k in d.Sockets)
+                r = MathF.Max(r, k.At.Length());
+            return new StrongBox<float>(r);
+        }).Value;
 
     /// <summary>
     /// <see cref="Put"/> by a socket: the part goes where its own socket <paramref name="by"/> lands on <paramref name="at"/> (a seat's feet, an engine's mount), on <paramref name="on"/>.
@@ -342,6 +413,7 @@ public class BlueprintScript
         // (four decimals in the file: rounded here, so this copy and the file are the same pose)
         var rot = Quaternion.Normalize(RoundQ(Quaternion.CreateFromYawPitchRoll((float)(yaw * Math.PI / 180), (float)(pitch * Math.PI / 180), (float)(roll * Math.PI / 180)) * Rot24.Quat(turn)));
         var pos = RoundV(ToRest(centre) - Vector3.Transform((def.BoundsMin + def.BoundsMax) * 0.5f, rot));
+        using var weld = KitProfile.Time(KitProfile.S.Weld);
         var i = World.AddFreeform(C, on.Index, def, pos, rot);
         if (i < 0)
             throw new VehicleKitException($"{Name}: a {def.Name} won't weld on: at most {Freeform.MaxPerConstruct} freeform welds a construct");
@@ -364,6 +436,7 @@ public class BlueprintScript
     /// <summary>A wire (a data link), through the linking tool's rules.</summary>
     public void Wire(VPart from, VPart to)
     {
+        using var wire = KitProfile.Time(KitProfile.S.Wire);
         if (ConstructBuild.CanWire(World, C, from.Index, to.Index) is { } bad)
             throw new VehicleKitException($"a wire {from.Name} -> {to.Name}: {bad}");
         VehicleGenJob.Yield();
@@ -385,6 +458,7 @@ public class BlueprintScript
     /// <summary>A routed link: "pipe", "shaft", "power" or "data", through the linking tool's rules. <paramref name="nodes"/>: the way it goes (vehicle coordinates); none: straight. <paramref name="laid"/>: only its ends and lengths are checked, so it may pass through plates.</summary>
     public void Link(string type, VPart from, VPart to, string? fromPort = null, string? toPort = null, string? paint = null, bool laid = false, params Vector3[] nodes)
     {
+        using var link = KitProfile.Time(KitProfile.S.Link);
         var text = new StringBuilder($"{{\"type\": \"{type}\", \"from\": {from.Step}, \"to\": {to.Step}");
         if (fromPort != null)
             text.Append($", \"fromPort\": \"{fromPort}\"");
@@ -527,6 +601,7 @@ public class BlueprintScript
 
     public string Text()
     {
+        using var time = KitProfile.Time(KitProfile.S.Text);
         var sb = new StringBuilder();
         sb.Append('{');
         if (Kit > VehicleKitVersion.Legacy)

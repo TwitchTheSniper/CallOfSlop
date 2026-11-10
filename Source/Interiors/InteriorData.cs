@@ -21,7 +21,27 @@ public sealed record SizeClass(string Id, string Name, double MinTonnes, double 
 
     /// <summary>What a fitted construct of this class may use in all (the vehicle and its interior), so players keep the rest (phase 5).</summary>
     public Budget Budget { get; init; } = Budget.None;
+
+    /// <summary>The biggest part size class its rooms may hold (ConstructParts.Small and up; "partClass"): a module item lists its parts biggest first and the builder takes the biggest that is allowed and fits (phase 8).</summary>
+    public byte PartClass { get; init; }
+
+    /// <summary>The weighted programme leftovers and generated rooms draw from (phase 8; "fill"): each type's weight, its cap on the share, where it may go.</summary>
+    public IReadOnlyList<FillEntry> FillMix { get; init; } = [];
+
+    /// <summary>This class for a hollow chassis's void (phase 4): its <see cref="Chassis"/> rooms as the programme, its fill only what may go below the deck.</summary>
+    public SizeClass ForChassis(int decks)
+    {
+        var mix = FillMix.Where(f => f.Where != "deck").ToList();
+        return this with { Deck = Deck with { Decks = decks, ReserveRoute = false }, Programme = Chassis, Fill = mix.Select(f => f.Room).ToList(), FillMix = mix };
+    }
 }
+
+/// <summary>
+/// One room type of a class's weighted programme (phase 8): <paramref name="Weight"/> against the others' (its target share of the rooms the
+/// planner makes from leftovers), <paramref name="Cap"/> the most of that share it may take (1: no cap), <paramref name="Where"/> deck, chassis or
+/// any, and <paramref name="PerQuarters"/> (0: none) one wanted for every that many crew quarters (mess, medical: the crew's count).
+/// </summary>
+public sealed record FillEntry(string Room, double Weight, double Cap, string Where, int PerQuarters);
 
 /// <summary>
 /// A fitted construct's limits (INTERIORS.md "Phase 5"): the most parts, socket links and joints the vehicle and its interior use together,
@@ -43,9 +63,23 @@ public sealed record RoomType(
     bool Critical, bool Exterior, bool System, IReadOnlyList<string> Wants, IReadOnlyList<string> Avoids, string? Modules, string? Loot);
 
 /// <summary>One kind of thing in a room: a part, how many, and whether it fills from the room's loot hook.</summary>
-public sealed record ModuleItem(string Part, int Count, int PerCells, bool Loot, string? Role);
+public sealed record ModuleItem(string Part, int Count, int PerCells, bool Loot, string? Role)
+{
+    /// <summary>The part and its alternatives, biggest size class first ("part" as a list): the builder takes the first the class allows and the room fits (phase 8).</summary>
+    public IReadOnlyList<string> Parts { get; init; } = [Part];
+}
 
-public sealed record ModuleSet(string Id, IReadOnlyList<ModuleItem> Items, IReadOnlyList<string> Missing);
+/// <summary>
+/// A link the builder lays from another room's things into this room's (phase 8): <paramref name="Link"/> ("chute", "pipe") from the nearest part with
+/// role <paramref name="FromRole"/> in a room of a type in <paramref name="From"/> (its port <paramref name="FromPort"/>) to each of this room's parts with
+/// role <paramref name="ToRole"/> (port <paramref name="ToPort"/>), laid at ceiling height, at most <paramref name="Reach"/> metres apart.
+/// </summary>
+public sealed record ModuleFeed(string Link, IReadOnlyList<string> From, string FromRole, string? FromPort, string ToRole, string? ToPort, float Reach);
+
+public sealed record ModuleSet(string Id, IReadOnlyList<ModuleItem> Items, IReadOnlyList<string> Missing)
+{
+    public IReadOnlyList<ModuleFeed> Feeds { get; init; } = [];
+}
 
 /// <summary>
 /// The interior system's data (Constructs/Interiors, docs/sandbox/INTERIORS.md): size classes, room types, module sets, the shell's parts and
@@ -61,6 +95,8 @@ public sealed class InteriorData
     public readonly Dictionary<string, string> Shell = new(StringComparer.Ordinal);
     public readonly Dictionary<string, string?> LootHooks = new(StringComparer.Ordinal);
     public readonly List<string> Panels = new(); // (the shell's long walls, longest first: phase 5; none: 4 m pieces)
+    public readonly List<string> FloorPanels = new(); // (the shell's big floors, biggest first: phase 8; none: the 4x4 m slab everywhere)
+    public readonly Dictionary<byte, string> Adapters = new(); // (a part class above small to its "Adapter ... to Small": how a bigger part stands on a slab, phase 8)
     public bool ProvisionalClasses, ProvisionalLoot;
 
     public static readonly string[] ShellKeys = ["floor", "stairFloor", "stair", "wall4", "wall2", "doorWall", "corner", "doorCorner", "garageWall", "hinge", "door", "adapter", "swingDoor", "bulkheadDoor", "doubleDoorL", "doubleDoorR"];
@@ -127,7 +163,23 @@ public sealed class InteriorData
                 budget = new Budget(Int(bg, "parts", where + " budget", 1, Construct.MaxParts), Int(bg, "links", where + " budget", 1, Construct.MaxLinks),
                     Int(bg, "joints", where + " budget", 0, Construct.MaxJoints), Int(bg, "doors", where + " budget", 0, Construct.MaxDoors));
             }
-            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, Names(c, "fill")) { Chassis = Names(c, "chassis"), Budget = budget });
+            var mix = new List<FillEntry>();
+            if (c.TryGetProperty("fill", out var fl) && fl.ValueKind == JsonValueKind.Array)
+                foreach (var e in fl.EnumerateArray())
+                    if (e.ValueKind == JsonValueKind.String)
+                        mix.Add(new FillEntry(e.GetString() ?? "", 1, 1, "any", 0));
+                    else
+                    {
+                        var fw = $"{where} fill";
+                        var wh = OptStr(e, "where") ?? "any";
+                        if (wh is not ("any" or "deck" or "chassis"))
+                            throw new InteriorDataException($"{fw}: \"where\" must be any, deck or chassis");
+                        mix.Add(new FillEntry(Str(e, "room", fw), Num(e, "weight", fw, 0.01, 100), e.TryGetProperty("cap", out _) ? Num(e, "cap", fw, 0.01, 1) : 1, wh,
+                            e.TryGetProperty("perQuarters", out _) ? Int(e, "perQuarters", fw, 1, 64) : 0));
+                    }
+            var pc = OptStr(c, "partClass") ?? "small";
+            byte partClass = pc switch { "small" => ConstructParts.Small, "medium" => ConstructParts.Medium, "large" => ConstructParts.Large, "capital" => ConstructParts.Capital, _ => throw new InteriorDataException($"{where}: \"partClass\" must be small, medium, large or capital") };
+            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, mix.Select(m => m.Room).ToList()) { Chassis = Names(c, "chassis"), Budget = budget, PartClass = partClass, FillMix = mix });
         }
         Classes.Sort((a, b) => a.MinTonnes.CompareTo(b.MinTonnes));
         for (var i = 1; i < Classes.Count; i++)
@@ -162,13 +214,33 @@ public sealed class InteriorData
         foreach (var k in ShellKeys)
             Shell[k] = Str(shell, k, $"{f.File} shell");
         Panels.AddRange(Names(shell, "panels"));
+        FloorPanels.AddRange(Names(shell, "floorPanels"));
+        if (shell.TryGetProperty("adapters", out var ad) && ad.ValueKind == JsonValueKind.Object)
+            foreach (var a in ad.EnumerateObject())
+                Adapters[a.Name switch { "medium" => ConstructParts.Medium, "large" => ConstructParts.Large, "capital" => ConstructParts.Capital, _ => throw new InteriorDataException($"{f.File} shell adapters: \"{a.Name}\" must be medium, large or capital") }] =
+                    a.Value.GetString() ?? throw new InteriorDataException($"{f.File} shell adapters: \"{a.Name}\" must be a part name");
         foreach (var s in Arr(f.Root, "sets", f.File))
         {
             var id = Str(s, "id", f.File);
             var where = $"{f.File} set \"{id}\"";
-            var items = Arr(s, "items", where).Select(i => new ModuleItem(Str(i, "part", where), Int(i, "count", where, 0, 64),
-                i.TryGetProperty("perCells", out _) ? Int(i, "perCells", where, 1, 64) : 0, Bool(i, "loot"), OptStr(i, "role"))).ToList();
-            if (!Sets.TryAdd(id, new ModuleSet(id, items, Names(s, "missing"))))
+            var items = Arr(s, "items", where).Select(i =>
+            {
+                var parts = i.TryGetProperty("part", out var pv) && pv.ValueKind == JsonValueKind.Array ? Names(i, "part") : [Str(i, "part", where)];
+                if (parts.Count == 0 || parts.Any(n => n.Length == 0))
+                    throw new InteriorDataException($"{where}: \"part\" must be a name or a list of names");
+                return new ModuleItem(parts[0], Int(i, "count", where, 0, 64), i.TryGetProperty("perCells", out _) ? Int(i, "perCells", where, 1, 64) : 0, Bool(i, "loot"), OptStr(i, "role")) { Parts = parts };
+            }).ToList();
+            var feeds = new List<ModuleFeed>();
+            if (s.TryGetProperty("feeds", out var fd) && fd.ValueKind == JsonValueKind.Array)
+                foreach (var e in fd.EnumerateArray())
+                {
+                    var fw = $"{where} feed";
+                    var link = Str(e, "link", fw);
+                    if (link is not ("chute" or "pipe" or "power" or "data"))
+                        throw new InteriorDataException($"{fw}: \"link\" must be chute, pipe, power or data");
+                    feeds.Add(new ModuleFeed(link, e.TryGetProperty("from", out var fv) && fv.ValueKind == JsonValueKind.Array ? Names(e, "from") : [Str(e, "from", fw)], Str(e, "fromRole", fw), OptStr(e, "fromPort"), Str(e, "toRole", fw), OptStr(e, "toPort"), NumF(e, "reach", fw, 4, 400)));
+                }
+            if (!Sets.TryAdd(id, new ModuleSet(id, items, Names(s, "missing")) { Feeds = feeds }))
                 throw new InteriorDataException($"{where}: listed twice");
         }
     }
@@ -188,6 +260,11 @@ public sealed class InteriorData
                     throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": programme names an unknown room \"{r}\"");
                 else if (t.System)
                     throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": \"{r}\" is a system room the planner places itself");
+        foreach (var s2 in Sets.Values)
+            foreach (var fe in s2.Feeds)
+                foreach (var from in fe.From)
+                    if (!Rooms.ContainsKey(from))
+                        throw new InteriorDataException($"ModuleSets.json set \"{s2.Id}\": a feed from an unknown room \"{from}\"");
         foreach (var c in Classes)
             foreach (var r in c.Fill.Concat(c.Chassis))
                 if (!Rooms.TryGetValue(r, out var t))
@@ -211,7 +288,7 @@ public sealed class InteriorData
     /// <summary>Every part the data names that this build doesn't have (the shell's are needed; a module's is skipped with a note).</summary>
     public List<string> UnknownParts()
     {
-        var names = Shell.Values.Concat(Panels).Concat(Sets.Values.SelectMany(s => s.Items).Select(i => i.Part)).Distinct();
+        var names = Shell.Values.Concat(Panels).Concat(FloorPanels).Concat(Adapters.Values).Concat(Sets.Values.SelectMany(s => s.Items).SelectMany(i => i.Parts)).Distinct();
         return names.Where(n => ConstructParts.Find(n) == null).ToList();
     }
 

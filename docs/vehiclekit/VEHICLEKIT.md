@@ -1054,6 +1054,28 @@ game.VehicleSpawn.Request("Bandit", "Box Truck", seed: null, ground, yaw, owner:
 
 **The first one.** Without a warm-up the first generation in a process paid for compiling the kit and the build code it calls: about a second in all, with spans of 40 to 80 ms (the first rebuild of a construct with guns, the first link). In the command line it also loads the parts (1.8 s), which a game has done long before. `VehicleGenJob.Warm` runs a Bandit Technical once, at once, in a world of its own (written, hashed, parsed, measured as a spawn's is) and plans a grammar Box Truck without building it, when the server starts its first Sandbox match (`ResetSandbox`): 700 to 900 ms on this box, once a process, logged as `[vehicles] warmed the kit in N ms`. A first spawn's longest span after it is 3 to 6 ms (the grammar's builder, compiled on its first use).
 
+**Generation time** (2026-11-10, perf/kit-gen). `--slice-vehicle NAME --profile [--seeds N] [--first S]` makes seeds straight through on one thread (no slices, so no hand-offs in the times) and prints where a generation's time went by stage (`KitProfile`, VehicleKitProfile.cs: off unless a probe turns it on; stages nest, so it reads as a tree). Before, one generation (mean of seeds 1 to 6, ms; this box at load 5 to 10):
+
+| Stage | Bandit Box Truck | Highland War Bus | IT Technical | British Car |
+| --- | --- | --- | --- | --- |
+| whole generation | 467 | 1148 | 681 | 335 |
+| build (the plan's parts) | 336 | 950 | 503 | 173 |
+| `Put`'s scan, tries in it (calls) | 278 (143) | 725 (200) | 402 (65) | 78 (47) |
+| `Put`'s tries, `ConstructBuild.Place` (calls) | 40 (4604) | 79 (6223) | 21 (1851) | 8 (1310) |
+| `Onto` | 14 | 45 | 16 | 16 |
+| rebuild after a step | 11 | 47 | 21 | 12 |
+| lofted parts made | 6 | 77 | 25 | 36 |
+| drive gate / identity gate / brief | 24 / 38 / 66 | 35 / 86 / 65 | 38 / 95 / 42 | 32 / 60 / 66 |
+| fill, text, parse | 7 | 19 | 14 | 10 |
+
+`Put`'s scan was the cost, and not the rules it asks: every try out of reach (most of them) wrote the refusal's text at once, with a pass over every part's boxes for its blocker, though only a refusal ever reads it; and it asked whether each socket was taken by walking the part's links, socket by socket (a lofted bay has hundreds of both). Now (`BlueprintScript.Put`): parts and sockets too far for the part's centre to land within reach + 0.5 m of the place asked for are passed over (the part's own arm from socket to centre, plus a part's farthest socket, `SocketRadius`); a try out of reach is only remembered as the nearest, never asked of the rules; the refusal (with the nearest try's reason and blocker) is written only when `Put` refuses; a part's taken sockets come from one walk of its links (`UsedSockets`). Same parts, sockets and order, so the same picks and the same refusal text: `--gen-vehicles` all 193 identical, `--gen-interior` of the Titan Walker byte for byte as before. Tries a generation: Box Truck 4604 to 238, War Bus 6223 to 341. `--gen-vehicles` took 90 s of CPU before and 38 s after (one run each, loaded box).
+
+Sliced as a spawn makes them (`--slice-vehicle NAME --seeds 5`, the same seeds, old and new build one after the other at load 12 to 30; medians, ms): Bandit Box Truck 897 to 279, Highland War Bus 1127 to 704, IT Technical 306 to 207, British Car 305 to 195. What is left in a War Bus: the brief (its rays), lofted bays (made under `HullLoft`'s lock the first time a key is asked for: already cached by key across plans and seeds), the identity and drive gates, the rebuild after each step (about 1 ms a step on a 180-part body; the construct's journal only starts at 1024 parts, so it isn't used here).
+
+The warm-up's gunsmith test fits (35 of them) cost about 0.3 s now: they build turrets through `Put` and were slow for the same reason, so they stay in `Warm` (no cache file: a fit depends on the build rules as well as the parts, which a key of the parts' data can't see). The rest of a command-line warm-up is loading and compiling (6 to 10 s on this box loaded, much more cold); in a game the parts are loaded long before.
+
+Long spans still seen sliced on a loaded box (a span's length here is mostly the machine): `VehiclePlan.AddBody` on one part with many shaped boxes (7 to 50 ms), `Onto`'s fit and z-fight test with its attach (13 to 70 ms), a drive-check physics tick (30 to 75 ms). The silhouette profile's raster (`VehiclePlan.Profiles`, 30 to 85 ms in one span) now yields every 128 triangles and makes its two projections once.
+
 **An honest slice.** A slice over `VehicleGenJob.OverrunMs` (4 ms) is logged, the first 10 and then every 100th: `[vehicles] slice 7.4 ms in Bandit Box Truck 733786 (budget 2.5, the kit ran 7.4 of it): longest span 5.7 ms, VehicleCore.cs:226 to VehicleCore.cs:157`, with ", a garbage collection ran" when one did. `Yield` takes its caller's file and line from the compiler (constants: nothing is allocated), so the two yields named are either side of the long span. "The kit ran" is the slice's spans added up: when it is near the slice, a span needs a yield inside it (or the machine took the CPU in it); when it is much less (2.5 of 5, 0.3 of 5), the thread woke late. The "generated" line gives the generation's longest span and where it ran.
 
 **Setting it down, a slice a tick.** Building the blueprint (`ConstructBuild.BuildOnGround`, all at once) cost 6 to 20 ms for a big vehicle (a Box Truck 6 to 10, a War Bus 7 to 10, the Double Decker 12 to 19, measured on a tick on this box; 37 ms when first measured), past the tick's 8 ms. Two changes:

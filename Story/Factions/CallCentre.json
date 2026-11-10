@@ -6,6 +6,20 @@
   "name": "The Call Centre",
   "about": "a room full of headsets that never stopped ringing; they will call you back, whether you like it or not",
   "home": "The Call Floor",
+  // The Call Floor on Cinder: two huts of desks facing each other, the manager's house and a mast (docs/planets/WORLDS.md "Settlements").
+  "settlement": {
+    "map": "Cinder", "lat": 12, "lon": 130,
+    "buildings": [
+      { "blueprint": "Small Outpost", "east": -22, "north": 10, "yaw": 90 },
+      { "blueprint": "Small Outpost", "east": 22, "north": 10, "yaw": 270 },
+      { "blueprint": "Two-Storey House", "east": 0, "north": 26, "yaw": 180 },
+      { "blueprint": "Control Post", "east": -12, "north": -14, "yaw": 0 },
+      { "blueprint": "Watchtower", "east": 30, "north": -24, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": -8, "north": 6, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": 8, "north": 6, "yaw": 0 },
+      { "blueprint": "Storage Bay", "east": 14, "north": -16, "yaw": 0 }
+    ]
+  },
   "claims": [ "Scam " ],
   "members": [
     { "name": "Brenda", "about": "0.4 km away, always; nobody has met her and everybody has had her messages",

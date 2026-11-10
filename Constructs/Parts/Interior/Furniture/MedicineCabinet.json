@@ -1,0 +1,198 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medicine Cabinet",
+  "description": "Shelves of medical stores behind glass.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 35.0,
+  "health": 160,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d8dcd8",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.37,
+          0.04,
+          -0.14
+        ],
+        "max": [
+          0.37,
+          0.58,
+          0.16
+        ],
+        "label": "medical"
+      },
+      {
+        "min": [
+          -0.37,
+          0.62,
+          -0.14
+        ],
+        "max": [
+          0.37,
+          1.13,
+          0.16
+        ],
+        "label": "medical"
+      },
+      {
+        "min": [
+          -0.37,
+          1.17,
+          -0.14
+        ],
+        "max": [
+          0.37,
+          1.66,
+          0.16
+        ],
+        "label": "medical"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -0.175
+      ],
+      "max": [
+        0.4,
+        0.03,
+        0.175
+      ],
+      "color": "#d8dcd8"
+    },
+    {
+      "min": [
+        -0.4,
+        1.67,
+        -0.175
+      ],
+      "max": [
+        0.4,
+        1.7,
+        0.175
+      ],
+      "color": "#d8dcd8"
+    },
+    {
+      "min": [
+        -0.4,
+        0.03,
+        -0.175
+      ],
+      "max": [
+        0.4,
+        1.67,
+        -0.145
+      ],
+      "color": "#d8dcd8"
+    },
+    {
+      "min": [
+        -0.4,
+        0.03,
+        -0.145
+      ],
+      "max": [
+        -0.37,
+        1.67,
+        0.175
+      ],
+      "color": "#d8dcd8"
+    },
+    {
+      "min": [
+        0.37,
+        0.03,
+        -0.145
+      ],
+      "max": [
+        0.4,
+        1.67,
+        0.175
+      ],
+      "color": "#d8dcd8"
+    },
+    {
+      "min": [
+        -0.37,
+        0.585,
+        -0.145
+      ],
+      "max": [
+        0.37,
+        0.615,
+        0.175
+      ],
+      "color": "#d8dcd8"
+    },
+    {
+      "min": [
+        -0.37,
+        1.135,
+        -0.145
+      ],
+      "max": [
+        0.37,
+        1.165,
+        0.175
+      ],
+      "color": "#d8dcd8"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.7,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.85,
+        -0.175
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.4,
+        0.85,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.4,
+        0.85,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}
