@@ -146,6 +146,8 @@ public static unsafe partial class Program
             Console.WriteLine($"  note: {n}");
         foreach (var m in b.Missing.Distinct())
             Console.WriteLine($"  missing part: {m}");
+        foreach (var l in b.BudgetLines())
+            Console.WriteLine($"  {l}");
         // the real loader on what was written
         var back = ConstructBuild.ParseBlueprint(text, Path.GetFileName(path));
         var c = ConstructBuild.BuildOnGround(new ConstructWorld(), back, System.Numerics.Vector3.Zero, 0, out var why);

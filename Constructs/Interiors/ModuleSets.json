@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-interiors/1",
-  "about": "What fills each room type, from existing parts (docs/sandbox/INTERIORS.md). Items are placed one to a floor slab's free socket, inside first. count: how many; perCells: one more every N cells of floor; loot: true fills it from the room's loot hook; role: what it is for (helm, gunner, engineer...). missing: what the room should have that no part does yet (printed by the run, never invented). The shell (walls, floors, stairs, doors) is in 'shell'.",
+  "about": "What fills each room type, from existing parts (docs/sandbox/INTERIORS.md). Items are placed one to a floor slab's free socket, inside first. count: how many; perCells: one more every N cells of floor; loot: true fills it from the room's loot hook; role: what it is for (helm, gunner, engineer...). missing: what the room should have that no part does yet (printed by the run, never invented). The shell (walls, floors, stairs, doors) is in 'shell'; its 'panels' are long walls with few links, longest first, for straight runs of plain wall (phase 5).",
   "shell": {
     "floor": "Steel Floor 4x4 m",
     "stairFloor": "Steel Stair Floor 4x4 m",
@@ -13,7 +13,8 @@
     "garageWall": "Steel Garage Wall 4 m",
     "hinge": "Door Hinge",
     "door": "Steel Flush Door 1.5x2.25 m",
-    "adapter": "Adapter Capital to Small"
+    "adapter": "Adapter Capital to Small",
+    "panels": ["Steel Panel Wall 16 m", "Steel Panel Wall 12 m", "Steel Panel Wall 8 m", "Steel Panel Wall 4 m"]
   },
   "sets": [
     { "id": "bridge", "items": [
