@@ -20,7 +20,8 @@ public static unsafe partial class Program
     private static double _zrQuitAt = -1;
     private static double _zrStart = -1, _zrReady = -1, _zrPhaseAt = -1, _zrLastLog;
     private static int _zrPhase = -1;
-    private static bool _zrPlaced, _zrPress;
+    private static bool _zrPlaced, _zrPress, _zrZombies;
+    private static int _zrShot;
     private static int _zrHits0Host, _zrHits0Client, _zrZ0Host, _zrZ0Client, _zrShots;
     private static long _zrDrawnSum, _zrIndSum, _zrSamples;
     private const double ZrPhaseSeconds = 16;
@@ -36,8 +37,11 @@ public static unsafe partial class Program
             _zrSize = Math.Clamp(n, 65, 500000);
         if (Arg("--dists") is { } ds)
             _zrDists = ds.Split(',').Select(s => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-        _settings.Mode = GameMode.Sandbox;
-        _settings.MapName = (Maps.Find(Arg("--map") ?? "Proving Ground") ?? Maps.All[0]).Name;
+        // --zombies: the Zombies mode's own crowd round instead (Mass Horde Test by default): no groups spawned, no shots, only
+        // the log lines and two pictures (zrange_host_1.bmp ...) of what each peer draws from where it stands.
+        _zrZombies = args.Any(a => a.Equals("--zombies", StringComparison.OrdinalIgnoreCase));
+        _settings.Mode = _zrZombies ? GameMode.Zombies : GameMode.Sandbox;
+        _settings.MapName = (Maps.Find(Arg("--map") ?? (_zrZombies ? "Mass Horde Test" : "Proving Ground")) ?? Maps.All[0]).Name;
         _settings.MapRandom = false;
         _settings.Bots = _settings.HostBots = 0;
         _settings.AutoStart = 0;
@@ -95,6 +99,11 @@ public static unsafe partial class Program
         me.ImmuneUntil = now + 600;
         if (_zrReady < 0)
             _zrReady = now;
+        if (_zrZombies)
+        {
+            ZrZombiesFrame(g, me, now);
+            return;
+        }
         // Both stand in the corner (the client a little to the side), looking along the diagonal.
         var spot = ZrCorner() + (_zr == 2 ? new Vector3(2, 0, -2) : Vector3.Zero);
         spot.Y = World.Map.GroundHeight(spot.X, spot.Z) + 0.05f;
@@ -287,6 +296,70 @@ public static unsafe partial class Program
         Console.WriteLine($"[zrange] RESULT {d} m: host drew {(_zrSamples > 0 ? _zrDrawnSum / (double)_zrSamples : 0):0} crowd + {(_zrSamples > 0 ? _zrIndSum / (double)_zrSamples : 0):0} individuals (mean, 3-8 s); "
                           + $"server hits by host: crowd {g.CrowdHitsBy[me.Id] - _zrHits0Host}, individuals {g.ZHitsBy[me.Id] - _zrZ0Host} ({_zrShots} shots); "
                           + $"by client: crowd {(client != null ? g.CrowdHitsBy[client.Id] - _zrHits0Client : 0)}, individuals {(client != null ? g.ZHitsBy[client.Id] - _zrZ0Client : 0)}");
+    }
+
+    /// <summary>--zombies: log what each peer has and draws once a second, a picture at 15 s and 30 s, the host quits at 36 s.</summary>
+    private static void ZrZombiesFrame(Game g, Player me, double now)
+    {
+        var t = now - _zrReady;
+        // Look at the middle of the crowd as this peer knows it (the host's counts, the client's picture).
+        var ccx = 0.0;
+        var ccz = 0.0;
+        long cn = 0;
+        if (_zr == 1)
+        {
+            var cr = g.Crowd;
+            for (var i = 0; i < cr.Count; i++)
+            {
+                ccx += cr.X[i];
+                ccz += cr.Z[i];
+                cn++;
+            }
+            for (var c = 0; c < cr.MassCount.Length; c++)
+                if (cr.MassCount[c] > 0)
+                {
+                    var f = cr.MassFeet(c, 0);
+                    ccx += f.X * cr.MassCount[c];
+                    ccz += f.Z * cr.MassCount[c];
+                    cn += cr.MassCount[c];
+                }
+        }
+        else
+        {
+            var pc = g.CrowdSeen;
+            for (var c = 0; c < pc.Count.Length; c++)
+                if (pc.Count[c] > 0)
+                {
+                    ccx += (pc.MinX + (c % pc.Cols + 0.5f) * pc.Cell) * pc.Count[c];
+                    ccz += (pc.MinZ + (c / pc.Cols + 0.5f) * pc.Cell) * pc.Count[c];
+                    cn += pc.Count[c];
+                }
+        }
+        if (cn > 0)
+        {
+            var dx = (float)(ccx / cn) - me.RenderEye.X;
+            var dz = (float)(ccz / cn) - me.RenderEye.Z;
+            g.LookYaw = MathF.Atan2(dx, -dz);
+            var gy = World.Map.GroundHeight((float)(ccx / cn), (float)(ccz / cn));
+            g.LookPitch = MathF.Atan2(gy - me.RenderEye.Y, MathF.Sqrt(dx * dx + dz * dz));
+        }
+        if (now - _zrLastLog >= 1.0)
+        {
+            _zrLastLog = now;
+            var c = g.Crowd;
+            var p = g.CrowdSeen;
+            Console.WriteLine($"[zrange] {(_zr == 1 ? "host" : "client")} t {t:0}: phase {g.Phase}, round {g.ZRound}, crowd on {g.CrowdOn}, server particles {c.Count} mass {c.MassTotal}, picture {p.Total}, "
+                              + $"individuals {g.Horde.Count(z => z.Alive)}; drawn {Crowd.Inst.Total} ({Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar}, {Program.CrowdDrawnCulled} culled), "
+                              + $"agents {Crowd.Agents.Count}, cells {Crowd.Agents.CellsDrawn} drawn {Crowd.Agents.CellsCulled} out {Crowd.Agents.CellsFogged} fogged {Crowd.Agents.CellsHidden} hidden; eye ({me.RenderEye.X:0},{me.RenderEye.Y:0.0},{me.RenderEye.Z:0})");
+        }
+        if (_zrShot == 0 && t > 15 || _zrShot == 1 && t > 30)
+        {
+            _zrShot++;
+            _shotFull = true;
+            SmokeShot($"zrange_{(_zr == 1 ? "host" : "client")}_{_zrShot}");
+        }
+        if (_zr == 1 && t > 36)
+            ZrQuit(null);
     }
 
     private static void ZrQuit(string? why)
