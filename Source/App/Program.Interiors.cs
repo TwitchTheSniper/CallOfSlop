@@ -70,6 +70,8 @@ public static unsafe partial class Program
         {
             b = InteriorBuilder.From(data, bp);
             var top = b.Class!;
+            if (args.Any(a => a.Equals("--no-halls", StringComparison.OrdinalIgnoreCase)))
+                top = top with { Halls = [] }; // (phase 9: the plan as before the halls, to compare)
             if (top.Chassis.Count > 0 && b.VoidHull(out var notHollow) is { } hollow)
             {
                 // phase 4: the class's chassis rooms go below, in the hollow (sealed: its way in is the stairs and the lift), and leave the deck's programme
@@ -158,6 +160,19 @@ public static unsafe partial class Program
         }
         else
             Console.WriteLine($"  load back: {c.PartCount} parts from {back.Steps.Count} steps{(c.PartCount == b.Live.PartCount ? "" : $" (the script had {b.Live.PartCount})")}");
+        // the drive chain (phase 9, after a regression where the bridge's helm lost its wire into a leg): a base vehicle that drives must
+        // still drive from the fitted one's seat, or the run fails loudly
+        var bare = ConstructBuild.BuildOnGround(new ConstructWorld(), bp, System.Numerics.Vector3.Zero, 0, out _);
+        if (bare != null && bare.DriveSeat >= 0)
+        {
+            if (c == null || c.DriveSeat < 0)
+            {
+                Console.WriteLine($"  drive: FAIL the base {bp.Name} drives from its {bare.Parts[bare.DriveSeat].D.Name}, but the fitted one has no seat wired through a Driving Module to its drivetrain or legs");
+                failures++;
+            }
+            else
+                Console.WriteLine($"  drive: the fitted {b.Name} drives from its {c.Parts[c.DriveSeat].D.Name} (part {c.DriveSeat}), as the base drives from its {bare.Parts[bare.DriveSeat].D.Name}");
+        }
         failures += b.Refused.Count > 0 ? 1 : 0;
         if (Flag("--seed") != null && plan.Ascii() != InteriorPlanner.Plan(data, plan.Class, b.Hull, seed).Ascii())
         {

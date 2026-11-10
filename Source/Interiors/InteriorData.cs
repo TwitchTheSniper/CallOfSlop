@@ -28,6 +28,12 @@ public sealed record SizeClass(string Id, string Name, double MinTonnes, double 
     /// <summary>The weighted programme leftovers and generated rooms draw from (phase 8; "fill"): each type's weight, its cap on the share, where it may go.</summary>
     public IReadOnlyList<FillEntry> FillMix { get; init; } = [];
 
+    /// <summary>The big volumes planned first (phase 9; "halls"): rooms that span several cells and storeys, with galleries round them.</summary>
+    public IReadOnlyList<HallEntry> Halls { get; init; } = [];
+
+    /// <summary>The most of the floor area small (people-sized) rooms should take (phase 9; "smallShare"): reported against the plan.</summary>
+    public double SmallShare { get; init; } = 1;
+
     /// <summary>This class for a hollow chassis's void (phase 4): its <see cref="Chassis"/> rooms as the programme, its fill only what may go below the deck.</summary>
     public SizeClass ForChassis(int decks)
     {
@@ -41,6 +47,13 @@ public sealed record SizeClass(string Id, string Name, double MinTonnes, double 
 /// planner makes from leftovers), <paramref name="Cap"/> the most of that share it may take (1: no cap), <paramref name="Where"/> deck, chassis or
 /// any, and <paramref name="PerQuarters"/> (0: none) one wanted for every that many crew quarters (mess, medical: the crew's count).
 /// </summary>
+/// <summary>
+/// A hall (phase 9): a room of type <paramref name="Room"/> through <paramref name="Storeys"/> storeys (no floor inside: galleries round its walls),
+/// <paramref name="Share"/> of the hull's length long (at least <paramref name="MinW"/> cells), on the deck or in a hollow chassis
+/// (<paramref name="Where"/>). A hall of a programme room takes one of that room's places in the programme.
+/// </summary>
+public sealed record HallEntry(string Room, int Storeys, double Share, int MinW, string Where);
+
 public sealed record FillEntry(string Room, double Weight, double Cap, string Where, int PerQuarters);
 
 /// <summary>
@@ -177,9 +190,20 @@ public sealed class InteriorData
                         mix.Add(new FillEntry(Str(e, "room", fw), Num(e, "weight", fw, 0.01, 100), e.TryGetProperty("cap", out _) ? Num(e, "cap", fw, 0.01, 1) : 1, wh,
                             e.TryGetProperty("perQuarters", out _) ? Int(e, "perQuarters", fw, 1, 64) : 0));
                     }
+            var halls = new List<HallEntry>();
+            if (c.TryGetProperty("halls", out var hl) && hl.ValueKind == JsonValueKind.Array)
+                foreach (var e in hl.EnumerateArray())
+                {
+                    var hw = $"{where} hall";
+                    var wh = OptStr(e, "where") ?? "any";
+                    if (wh is not ("any" or "deck" or "chassis"))
+                        throw new InteriorDataException($"{hw}: \"where\" must be any, deck or chassis");
+                    halls.Add(new HallEntry(Str(e, "room", hw), Int(e, "storeys", hw, 1, 8), Num(e, "share", hw, 0.05, 1), e.TryGetProperty("minW", out _) ? Int(e, "minW", hw, 2, 64) : 4, wh));
+                }
+            var smallShare = c.TryGetProperty("smallShare", out _) ? Num(c, "smallShare", where, 0, 1) : 1;
             var pc = OptStr(c, "partClass") ?? "small";
             byte partClass = pc switch { "small" => ConstructParts.Small, "medium" => ConstructParts.Medium, "large" => ConstructParts.Large, "capital" => ConstructParts.Capital, _ => throw new InteriorDataException($"{where}: \"partClass\" must be small, medium, large or capital") };
-            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, mix.Select(m => m.Room).ToList()) { Chassis = Names(c, "chassis"), Budget = budget, PartClass = partClass, FillMix = mix });
+            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, mix.Select(m => m.Room).ToList()) { Chassis = Names(c, "chassis"), Budget = budget, PartClass = partClass, FillMix = mix, Halls = halls, SmallShare = smallShare });
         }
         Classes.Sort((a, b) => a.MinTonnes.CompareTo(b.MinTonnes));
         for (var i = 1; i < Classes.Count; i++)
@@ -203,7 +227,7 @@ public sealed class InteriorData
             if (!Rooms.TryAdd(id, t))
                 throw new InteriorDataException($"{where}: listed twice");
         }
-        foreach (var need in new[] { "stairs", "elevator", "storage", "fuel", "spare", "dead" })
+        foreach (var need in new[] { "stairs", "elevator", "storage", "fuel", "spare", "dead", "gallery" })
             if (!Rooms.ContainsKey(need))
                 throw new InteriorDataException($"{f.File}: the planner needs a room \"{need}\"");
     }
@@ -213,6 +237,8 @@ public sealed class InteriorData
         var shell = Obj(f.Root, "shell", f.File);
         foreach (var k in ShellKeys)
             Shell[k] = Str(shell, k, $"{f.File} shell");
+        if (OptStr(shell, "railing") is { } rail)
+            Shell["railing"] = rail; // (phase 9: the edge of a hall's gallery; optional)
         Panels.AddRange(Names(shell, "panels"));
         FloorPanels.AddRange(Names(shell, "floorPanels"));
         if (shell.TryGetProperty("adapters", out var ad) && ad.ValueKind == JsonValueKind.Object)
@@ -266,7 +292,7 @@ public sealed class InteriorData
                     if (!Rooms.ContainsKey(from))
                         throw new InteriorDataException($"ModuleSets.json set \"{s2.Id}\": a feed from an unknown room \"{from}\"");
         foreach (var c in Classes)
-            foreach (var r in c.Fill.Concat(c.Chassis))
+            foreach (var r in c.Fill.Concat(c.Chassis).Concat(c.Halls.Select(h => h.Room)))
                 if (!Rooms.TryGetValue(r, out var t))
                     throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": fill or chassis names an unknown room \"{r}\"");
                 else if (t.System)

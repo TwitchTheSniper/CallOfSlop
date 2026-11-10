@@ -53,7 +53,12 @@
         {"room": "armoury", "weight": 0.6, "where": "deck"}
       ],
       "partClass": "medium",
-      "budget": { "parts": 8000, "links": 24000, "joints": 24, "doors": 384 }
+      "budget": { "parts": 8000, "links": 24000, "joints": 24, "doors": 384 },
+      "halls": [
+        {"room": "hangar", "storeys": 2, "share": 0.3, "minW": 4, "where": "deck"},
+        {"room": "production", "storeys": 2, "share": 0.25, "minW": 4, "where": "deck"}
+      ],
+      "smallShare": 0.5
     },
     {
       "id": "capital",
@@ -78,6 +83,19 @@
       ],
       "partClass": "medium",
       "budget": { "parts": 9600, "links": 28800, "joints": 32, "doors": 512 },
+      "halls": [
+        {"room": "hangar", "storeys": 2, "share": 0.3, "minW": 5, "where": "deck"},
+        {"room": "production", "storeys": 2, "share": 0.25, "minW": 4, "where": "deck"},
+        {"room": "storage", "storeys": 2, "share": 0.2, "minW": 4, "where": "deck"},
+        {"room": "workshop", "storeys": 2, "share": 0.2, "minW": 4, "where": "deck"},
+        {"room": "engineering", "storeys": 3, "share": 0.27, "minW": 5, "where": "chassis"},
+        {"room": "storage", "storeys": 4, "share": 0.27, "minW": 5, "where": "chassis"},
+        {"room": "production", "storeys": 2, "share": 0.25, "minW": 4, "where": "chassis"},
+        {"room": "storage", "storeys": 3, "share": 0.25, "minW": 4, "where": "chassis"},
+        {"room": "workshop", "storeys": 2, "share": 0.2, "minW": 4, "where": "chassis"},
+        {"room": "fuelbay", "storeys": 2, "share": 0.15, "minW": 3, "where": "chassis"}
+      ],
+      "smallShare": 0.5,
       "chassis": ["engineering", "magazine", "storage", "storage", "workshop", "fuelbay", "production"]
     }
   ]

@@ -34,6 +34,9 @@ public sealed class InteriorBuilder : BlueprintScript
 
     private string Shell(string key) => _data.Shell[key];
 
+    /// <summary>A room's module set: its own (a hall's, phase 9) or its type's.</summary>
+    private string? SetOf(PlanRoom r) => r.Set ?? _data.Rooms[r.Type].Modules;
+
     /// <summary>Replays <paramref name="bp"/> (socket steps and wires; anything else is refused) and measures its root part's top as the hull.</summary>
     public static InteriorBuilder From(InteriorData data, ConstructBuild.Blueprint bp)
     {
@@ -135,10 +138,50 @@ public sealed class InteriorBuilder : BlueprintScript
             }
         }
         foreach (var (f, t) in bp.Wires)
-            if ((steps.Contains(f) || steps.Contains(t)) && _byStep.ContainsKey(f) && _byStep.ContainsKey(t))
-                TryWire(_byStep[f], _byStep[t], $"{room}: the vehicle's {bp.Steps[f].Part} to its {bp.Steps[t].Part}");
+        {
+            if (!(steps.Contains(f) || steps.Contains(t)) || !_byStep.ContainsKey(f) || !_byStep.ContainsKey(t))
+                continue;
+            var what = $"{room}: the vehicle's {bp.Steps[f].Part} to its {bp.Steps[t].Part}";
+            if (steps.Contains(f) && steps.Contains(t))
+            {
+                TryWire(_byStep[f], _byStep[t], what);
+                continue;
+            }
+            // a wire out of the chain (the module into a leg): the bridge may stand far from the leg the blueprint chose, so the nearest
+            // base part of the same name takes it (a Driving Module into any leg drives the walker: GIANTS.md)
+            var (inner, outer) = steps.Contains(f) ? (_byStep[f], _byStep[t]) : (_byStep[t], _byStep[f]);
+            var wired = false;
+            foreach (var twin in Twins(outer, inner))
+                if (steps.Contains(f) ? TryWire(inner, twin, null) : TryWire(twin, inner, null))
+                {
+                    Notes.Add($"{what}{(twin == outer ? "" : $" (the one {Near(twin)}, nearest the bridge)")}: wired");
+                    wired = true;
+                    break;
+                }
+            if (!wired)
+                Notes.Add($"{what}: not wired (no {outer.Name} within a wire's 8 m of the bridge's helm chain)");
+        }
         Notes.Add($"{room}: the vehicle's helm is the bridge's, with its {string.Join(", ", steps.Where(j => j != h).Select(j => bp.Steps[j].Part))}");
         return true;
+    }
+
+    /// <summary>The base parts named as <paramref name="part"/> (itself first if no other is nearer), nearest <paramref name="to"/> first.</summary>
+    private List<VPart> Twins(VPart part, VPart to)
+    {
+        C.PartBounds(to.Index, out var tl, out var th);
+        var mid = (tl + th) * 0.5f;
+        float Dist(VPart p)
+        {
+            C.PartBounds(p.Index, out var lo, out var hi);
+            return Vector3.Distance(mid, Vector3.Clamp(mid, lo, hi));
+        }
+        return _base.Where(p => p.Name == part.Name).OrderBy(Dist).ThenBy(p => p == part ? 0 : 1).ToList();
+    }
+
+    private string Near(VPart p)
+    {
+        C.PartBounds(p.Index, out var lo, out var hi);
+        return $"at {(lo.X + hi.X) * 0.5f:0},{(lo.Z + hi.Z) * 0.5f:0}";
     }
 
     /// <summary>The class from the body's mass, the grid laid on the root's top sockets with a margin, keep-outs from every other part, the bow from the helm.</summary>
@@ -392,9 +435,9 @@ public sealed class InteriorBuilder : BlueprintScript
         if (Lifts > 0)
             Notes.Add($"freight lift: {Lifts} car(s) of {gaps.Count}, stacked a storey each (levels {string.Join(", ", gaps.Select(g => $"{g.Lo.Deck + g.LoLv}-{g.Hi.Deck + g.HiLv}"))}), calls from every landing and each car");
         foreach (var p in voidPlan != null ? new[] { voidPlan, plan } : new[] { plan })
-            foreach (var t in p.Rooms.Select(r => _data.Rooms[r.Type].Modules).OfType<string>().Distinct())
+            foreach (var (t, name) in p.Rooms.Where(r => SetOf(r) != null).Select(r => (SetOf(r)!, r.Hall == r.Id ? $"{r.Name} hall" : r.Name)).DistinctBy(v => v.Item1))
                 foreach (var m in _data.Sets[t].Missing)
-                    Missing.Add($"{_data.Rooms.Values.First(r => r.Modules == t).Name}: {m}");
+                    Missing.Add($"{name}: {m}");
         Seals();
         // (the bulkhead seals take their wires first: then the feeds, then generated rooms' light switches, while links last)
         Feeds();
@@ -419,11 +462,13 @@ public sealed class InteriorBuilder : BlueprintScript
     /// <summary>One plan's decks, bottom up (the level base <see cref="_lv"/> set): slabs, walls, bulkheads, stairs, the next slabs, the rooms' things; then the mezzanine over its shafts, if any.</summary>
     private void Decks(InteriorPlan plan, InteriorRng rng, List<(PlanRoom Room, int Lv)> flights, List<PlanRoom>? mezz)
     {
+        HallFloors(plan, rng);
         Slabs(plan, 0);
         for (var k = 0; k < plan.Decks; k++)
         {
             foreach (var r in plan.Rooms.Where(r => r.Deck == k && !(_lv < 0 && r.Type == "dead"))) // (the void's dead space: neither slab nor walls)
                 Walls(plan, r);
+            Railings(plan, k);
             Bulkheads(plan, k);
             Stairs(plan, k, flights);
             if (k + 1 < plan.Decks || mezz == null)
@@ -441,6 +486,94 @@ public sealed class InteriorBuilder : BlueprintScript
         foreach (var m in mezz)
             Walls(plan, m);
         Stairs(plan, plan.Decks, flights);
+    }
+
+    private readonly HashSet<(int L, int X, int Z)> _open = new(); // (phase 9) a hall's cells with no floor on a gallery storey, by level
+    private readonly List<(int Lv, int K, int X, int Z)> _hallFlights = new(); // (phase 9) a hall's stairs: the plan's level base, the deck the flight stands on, its block
+    private readonly List<Vector3> _clear = new(); // (phase 9) stair feet and heads furniture keeps clear of, rest frame
+    public int HallStairs, Railed, RailGaps;
+    private readonly HashSet<int> _welded = new(); // (part indices welded on: stair flights the rules found no socket for)
+
+    /// <summary>
+    /// A hall's galleries (phase 9): on each storey over a hall's floor, a gallery's floor is laid only where it is needed: under the walls the
+    /// gallery builds itself (its hull side, its corridor side, an end it doesn't share) and down one end column, where its stairs climb from the
+    /// storey below (a flight a storey, two blocks apart, each coming up through a Stair Floor onto the column). Everything else is open: the hall
+    /// is one volume through its storeys. The column is the hall's west end.
+    /// </summary>
+    private void HallFloors(InteriorPlan plan, InteriorRng rng)
+    {
+        foreach (var floor in plan.Rooms.Where(r => r.Hall == r.Id))
+        {
+            var ups = plan.Rooms.Where(r => r.Hall == floor.Id && r.Id != floor.Id).OrderBy(r => r.Deck).ToList();
+            if (ups.Count == 0)
+                continue;
+            var f = floor.Rect;
+            // (the west end: a flight stands in its block's west metre, so the railing on the column's open side, its east side, is clear of it;
+            // at the east end the railing stood at the flight's foot and the walk-through couldn't step on)
+            var col = f.X0;
+            for (var j = 0; j < ups.Count; j++)
+            {
+                var g = ups[j];
+                var z = f.Z0 + 2 * j;
+                if (z + 1 <= f.Z1)
+                {
+                    _stairTops.Add((g.Deck + _lv, col, z));
+                    _hallFlights.Add((_lv, g.Deck - 1, col, z));
+                }
+                else
+                    Notes.Add($"{g.Name} (level {g.Deck + _lv}): no stair up to it (the hall is {f.D} cells deep, too shallow for {ups.Count} flights)");
+                foreach (var (x, cz) in g.Cells())
+                    if (x != col && plan.Cells[g.Deck - 1][x, cz] is var below && below >= 0 && plan.Rooms[below].Hall == floor.Id && !Needs(plan, g, x, cz))
+                        _open.Add((g.Deck + _lv, x, cz));
+            }
+        }
+    }
+
+    /// <summary>Whether a cell of <paramref name="g"/> holds a wall the room builds itself (an edge of its outline it doesn't leave to a neighbour).</summary>
+    private bool Needs(InteriorPlan plan, PlanRoom g, int x, int z)
+    {
+        var mine = g.Cells().ToHashSet();
+        foreach (var (s, dx, dz) in new[] { (Side.North, 0, -1), (Side.East, 1, 0), (Side.South, 0, 1), (Side.West, -1, 0) })
+            if (!mine.Contains((x + dx, z + dz)) && !Shares(plan, g, s, x, z))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// A gallery's edge over its hall (phase 9): the shell's railing (a half wall) along every side of a gallery floor block that looks over an
+    /// open block of the same gallery, on the block's own slab; where a full piece won't go (an inner corner), a 2 m piece on either half.
+    /// </summary>
+    private void Railings(InteriorPlan plan, int k)
+    {
+        if (!_data.Shell.TryGetValue("railing", out var rail))
+            return;
+        var half = rail.Replace(" 4 m", " 2 m", StringComparison.Ordinal);
+        foreach (var (l, x, z) in _open.Where(o => o.L == k + _lv).OrderBy(o => o.X).ThenBy(o => o.Z).ToList())
+            foreach (var (dx, dz) in Around)
+            {
+                var (rx, rz) = (x + dx, z + dz);
+                if (rx < 0 || rz < 0 || rx >= plan.W || rz >= plan.D || plan.Cells[k][rx, rz] != plan.Cells[k][x, z] || !_floors.ContainsKey((l, rx, rz)))
+                    continue;
+                // (the side of the gallery block that faces the open one)
+                var (lx, lz, a) = (dx, dz) switch { (0, -1) => (0f, 3.75f, Vector3.UnitX), (0, 1) => (0f, 0f, Vector3.UnitX), (-1, 0) => (3.75f, 0f, Vector3.UnitZ), _ => (0f, 0f, Vector3.UnitZ) };
+                var o = At(k, rx, rz, lx, lz);
+                var on = FloorsUnder(k, [(rx, rz)]).ToList();
+                if (Try(rail, o, a, on, out _) != null)
+                {
+                    Railed++;
+                    Placed++;
+                    continue;
+                }
+                var got = 0;
+                foreach (var at in new[] { o, o + a * 2 })
+                    if (Try(half, at, a, on, out _) != null)
+                    {
+                        got++;
+                        Placed++;
+                    }
+                Railed += got > 0 ? 1 : 0;
+                RailGaps += got < 2 ? 1 : 0;
+            }
     }
 
     /// <summary>The level of the chassis void's lowest storey (the top interior's deck 0 is level 0), set by <see cref="VoidHull"/>.</summary>
@@ -716,7 +849,7 @@ public sealed class InteriorBuilder : BlueprintScript
         if (off > 0)
             Notes.Add($"power: the parts off by level: {string.Join(", ", deadAt.Select(kv => $"{kv.Key}: {kv.Value}"))}");
         // (a construct holds at most Construct.MaxLinks socket links: a part fitted past it has none, so it is off the circuit and loose)
-        var unlinked = Enumerable.Range(1, C.PartCount - 1).Count(i => C.FirstLink(i) < 0);
+        var unlinked = Enumerable.Range(1, C.PartCount - 1).Count(i => C.FirstLink(i) < 0 && !_welded.Contains(i)); // (a welded flight holds by its weld)
         Notes.Add($"links: {C.LinkCount} of {Construct.MaxLinks}{(unlinked > 0 ? $", {unlinked} parts with none (over the limit)" : "")}");
         if (unlinked > 0)
             Refused.Add($"{unlinked} parts have no link: the construct is over its {Construct.MaxLinks} links");
@@ -737,7 +870,7 @@ public sealed class InteriorBuilder : BlueprintScript
     /// <summary>A room's things as <see cref="Furnish"/> counts them (items, and parts with their switch and day tanks), for the budget.</summary>
     private (int Items, int Parts) Estimate(PlanRoom r)
     {
-        if (_data.Rooms[r.Type].Modules is not { } setId || r.Shaft != null)
+        if (SetOf(r) is not { } setId || r.Shaft != null)
             return (0, 0);
         var cells = r.Area;
         var items = _data.Sets[setId].Items.Sum(i => Math.Min(i.PerCells > 0 ? Math.Max(i.Count, cells / i.PerCells) : i.Count, 3 * cells));
@@ -757,7 +890,7 @@ public sealed class InteriorBuilder : BlueprintScript
             for (var z = 0; z < plan.D; z++)
             {
                 var below = level == 0 ? plan.Cells[0][x, z] : plan.Cells[level - 1][x, z];
-                if (below != InteriorPlan.KeepOut && !_holes.Contains((level + _lv, x, z)) && (only == null || only.Contains((x, z))) && !(_lv < 0 && DeadAt(plan, level, x, z)))
+                if (below != InteriorPlan.KeepOut && !_holes.Contains((level + _lv, x, z)) && !_open.Contains((level + _lv, x, z)) && (only == null || only.Contains((x, z))) && !(_lv < 0 && DeadAt(plan, level, x, z)))
                     todo.Add((x, z));
             }
         // the units: (origin block, blocks a side, the panel's size index: -1 a 4x4 m slab)
@@ -775,7 +908,7 @@ public sealed class InteriorBuilder : BlueprintScript
                     var ok = true;
                     for (var x = x0; x < x0 + n && ok; x++)
                         for (var z = z0; z < z0 + n && ok; z++)
-                            ok = todo.Contains((x, z)) && !taken.Contains((x, z)) && !_stairTops.Contains((level + _lv, x, z));
+                            ok = todo.Contains((x, z)) && !taken.Contains((x, z)) && !_stairTops.Contains((level + _lv, x, z)) && !_hallFlights.Contains((_lv, level, x, z)); // (a hall's flight stands on a 4x4 m slab's sockets)
                     if (!ok)
                         continue;
                     units.Add((x0, z0, n, si));
@@ -1323,13 +1456,27 @@ public sealed class InteriorBuilder : BlueprintScript
     /// </summary>
     private void Stairs(InteriorPlan plan, int k, List<(PlanRoom Room, int Lv)> flights)
     {
-        foreach (var (r, _) in flights.Where(f => f.Lv == _lv && f.Room.Deck == k))
+        foreach (var (x, z) in flights.Where(f => f.Lv == _lv && f.Room.Deck == k).Select(f => (f.Room.Rect.X0, StairBlock(f.Room, _lv)))
+                     .Concat(_hallFlights.Where(f => f.Lv == _lv && f.K == k).Select(f => (f.X, f.Z))))
         {
-            var (x, z) = (r.Rect.X0, StairBlock(r, _lv));
+            if (_hallFlights.Contains((_lv, k, x, z)))
+            {
+                HallStairs++;
+                _clear.Add(Slab(k, x, z) + new Vector3(1.875f, 0.25f, 0.5f)); // (its foot)
+                _clear.Add(Slab(k + 1, x, z) + new Vector3(1.875f, 0.25f, 4.5f)); // (its head, on the block beyond)
+            }
             var on = FloorsUnder(k, [(x, z)]).Concat(_walls.GetValueOrDefault((k + _lv, x, z)) ?? new List<VPart>()).ToList();
             var origin = Slab(k, x, z) + new Vector3(0.25f, 0.25f, 1.0f);
             if (Try(Shell("stair"), origin, Vector3.UnitX, on, out var why) != null)
                 continue;
+            // (a hall's flight: against the column's east wall instead, or its west one built by the neighbour; the side sockets meet a wall's face)
+            if (_hallFlights.Contains((_lv, k, x, z)))
+            {
+                var near = on.Concat(Around.SelectMany(d => _walls.GetValueOrDefault((k + _lv, x + d.Dx, z + d.Dz)) ?? new List<VPart>())).ToList();
+                if (Try(Shell("stair"), Slab(k, x, z) + new Vector3(2.75f, 0.25f, 1.0f), Vector3.UnitX, near, out _) != null ||
+                    Try(Shell("stair"), origin, Vector3.UnitX, near, out _) != null)
+                    continue;
+            }
             if (on.Count == 0)
             {
                 Refused.Add($"stair level {k + _lv} at {x},{z}: {why}");
@@ -1338,7 +1485,7 @@ public sealed class InteriorBuilder : BlueprintScript
             try
             {
                 var def = ConstructParts.Find(Shell("stair"))!;
-                Weld(Shell("stair"), on[0], origin + (def.BoundsMin + def.BoundsMax) * 0.5f, new Orient(Vector3.UnitX, Vector3.UnitX, Vector3.UnitY, Vector3.UnitY), 0, 0, 0);
+                _welded.Add(Weld(Shell("stair"), on[0], origin + (def.BoundsMin + def.BoundsMax) * 0.5f, new Orient(Vector3.UnitX, Vector3.UnitX, Vector3.UnitY, Vector3.UnitY), 0, 0, 0).Index);
                 Welded++;
                 Placed++;
                 Notes.Add($"stair level {k + _lv} at {x},{z} welded on (the rules found no socket: {why})");
@@ -1353,7 +1500,7 @@ public sealed class InteriorBuilder : BlueprintScript
     /// <summary>A room's things from its module set, one to a free slab socket (block middles first, nearest the room's middle), with the room's loot hook.</summary>
     private void Furnish(InteriorPlan plan, PlanRoom r, InteriorRng rng)
     {
-        if (_data.Rooms[r.Type].Modules is not { } setId || r.Shaft != null)
+        if (SetOf(r) is not { } setId || r.Shaft != null)
             return;
         var set = _data.Sets[setId];
         var spots = new List<(float Order, VPart Floor, string Socket, Vector3 At)>();
@@ -1420,10 +1567,12 @@ public sealed class InteriorBuilder : BlueprintScript
             // (the carried helm goes on the free spot nearest the base parts its chain is wired to, a leg's hip: a wire reaches 8 m)
             if (item.Role == "helm" && _carry is { } cy && def.Name == cy.Bp.Steps[cy.Helm].Part)
             {
+                // (any base part of the same name will do: a Driving Module into any leg drives the walker)
                 var ends = cy.Bp.Wires.SelectMany(w => new[] { (w.From, w.To), (w.To, w.From) }).Where(w => cy.Steps.Contains(w.Item1) && !cy.Steps.Contains(w.Item2) && _byStep.ContainsKey(w.Item2))
-                    .Select(w => { C.PartBounds(_byStep[w.Item2].Index, out var lo, out var hi); return (lo, hi); }).ToList();
+                    .Select(w => _base.Where(p => p.Name == _byStep[w.Item2].Name).Select(p => { C.PartBounds(p.Index, out var lo, out var hi); return (lo, hi); }).ToList()).ToList();
+                float Reach(Vector3 at) => ends.Sum(e => e.Min(b => Vector3.Distance(at, Vector3.Clamp(at, b.lo, b.hi))));
                 if (ends.Count > 0)
-                    spots.Sort((a, b) => ends.Sum(e => Vector3.Distance(a.At, Vector3.Clamp(a.At, e.lo, e.hi))).CompareTo(ends.Sum(e => Vector3.Distance(b.At, Vector3.Clamp(b.At, e.lo, e.hi)))));
+                    spots.Sort((a, b) => Reach(a.At).CompareTo(Reach(b.At)));
             }
             var dead = new HashSet<(int, string)>(); // (spots this item has failed on: things are only added, so they stay failed for its next copies)
             for (var i = 0; i < n; i++)
@@ -1552,7 +1701,7 @@ public sealed class InteriorBuilder : BlueprintScript
     {
         foreach (var (room, lv, role, part) in _roleParts.ToList())
         {
-            if (_data.Rooms[room.Type].Modules is not { } setId)
+            if (SetOf(room) is not { } setId)
                 continue;
             foreach (var f in _data.Sets[setId].Feeds.Where(f => f.ToRole == role))
             {
@@ -1698,7 +1847,7 @@ public sealed class InteriorBuilder : BlueprintScript
         // (the farthest its footprint reaches from the socket it stands on, whichever way it turns)
         var f = def.Sockets.First(s => s.Name == foot).At;
         var reach = new Vector2(MathF.Max(MathF.Abs(def.BoundsMin.X - f.X), MathF.Abs(def.BoundsMax.X - f.X)), MathF.Max(MathF.Abs(def.BoundsMin.Z - f.Z), MathF.Abs(def.BoundsMax.Z - f.Z))).Length() + 1.6f;
-        foreach (var o in _openings)
+        foreach (var o in _openings.Concat(_clear))
             if (MathF.Abs(o.Y - at.Y) < 1f && new Vector2(o.X - at.X, o.Z - at.Z).LengthSquared() < reach * reach)
                 return true;
         return false;
