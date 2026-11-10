@@ -13,6 +13,7 @@ public sealed partial class Game
     private Func<byte, Vector3?>? _sbAliveAt;
     private Func<byte, string>? _sbNameOf;
     private Func<Construct, byte, string?>? _sbAboard;
+    private Func<Construct, byte, bool>? _sbIsFrame;
 
     /// <summary>Where a living player stands (null: dead or gone), for the contested rule; made once.</summary>
     public Func<byte, Vector3?> SandboxAliveAt => _sbAliveAt ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Position : null;
@@ -26,7 +27,11 @@ public sealed partial class Game
         SandboxHands.AliveAt = SandboxAliveAt;
         SandboxHands.NameOf = SandboxNameOf;
         SandboxHands.Aboard = _sbAboard ??= SandboxAboardRefusal;
+        SandboxHands.IsFrame = _sbIsFrame ??= SandboxIsFrame;
     }
+
+    /// <summary>Client and host: is this construct the player's own reference frame (seated in it or standing on it)? The physics gun never takes or freezes it.</summary>
+    public bool SandboxIsFrame(Construct c, byte player) => Players.TryGetValue(player, out var p) && SandboxOnBoard(p, c);
 
     /// <summary>
     /// Is <paramref name="aboard"/> friendly to <paramref name="who"/> for moving construct <paramref name="c"/> with them on it? Sides first
@@ -380,6 +385,8 @@ public sealed partial class Game
     /// </summary>
     public string? SandboxGrabRefusal(Construct c, byte player)
     {
+        if (SandboxIsFrame(c, player))
+            return ConstructEdits.FrameRefusal;
         if (IsServer)
         {
             SandboxRules();
