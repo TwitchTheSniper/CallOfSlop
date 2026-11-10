@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Twin Launch Rack",
+  "description": "Two long stations side by side: a vehicle's missile launcher.",
+  "modularRack": {
+    "layout": "grid",
+    "rows": 1,
+    "columns": 2,
+    "length": 3.0,
+    "diameter": 0.25
+  }
+}

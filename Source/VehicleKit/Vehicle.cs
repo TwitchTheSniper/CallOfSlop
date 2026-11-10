@@ -398,16 +398,17 @@ public sealed partial class Vehicle : BlueprintScript
         string? why = null;
         // On the arm's side, hooks out; a rack of more than one station stands out on a half-metre beam (on its side its stations reach down to the turntable and up to the gunner).
         var standOff = Def(rack).Rack.Stations > 1;
+        var beam = $"{Beam} {(Def(rack).Rack.Stations > 4 ? "1" : "0.5")} m"; // (a six-station rack is 1.5 m tall on its side: on half a metre it meets the turntable)
         foreach (var side in (string[])["+x1", "-x1", "+x2", "-x2", "+x0", "-x0"])
         {
             var (on, socket) = (arm, side);
             if (standOff)
             {
-                if (TurnOf(arm, side, $"{Beam} 0.5 m", "-z", 0) == null)
+                if (TurnOf(arm, side, beam, "-z", 0) == null)
                     continue;
                 try
                 {
-                    (on, socket) = (Onto(arm, side, $"{Beam} 0.5 m", "-z", 0, clear: true), "+z");
+                    (on, socket) = (Onto(arm, side, beam, "-z", 0, clear: true), "+z");
                 }
                 catch (VehicleKitException ex)
                 {

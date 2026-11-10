@@ -172,10 +172,17 @@ public static partial class SelfTest
         {
             var (name, c) = row[r];
             if (!w.IsLive(c) || c.RackCount == 0 || row.Count < 2)
+            {
+                if (name.StartsWith("Missile stand", StringComparison.Ordinal))
+                    Console.WriteLine($"[guns bench] {name}: no rack to fire (live {w.IsLive(c)}, racks {c.RackCount})");
                 continue;
+            }
             var (tname, t) = row[(r + 1) % row.Count];
             if (!w.IsLive(t))
+            {
+                Console.WriteLine($"[guns bench] {name}'s rack: {tname} is gone");
                 continue;
+            }
             var rack = c.Racks[0].Part;
             var fwd = ConstructOrdnance.LaunchDir(c, rack, -1);
             fwd.Y = 0;
@@ -207,6 +214,9 @@ public static partial class SelfTest
             for (var i = 0; i < t.PartCount; i++)
                 hp0 += t.Parts[i].Health;
             var cpu = new List<double>();
+            var flying = new Dictionary<ushort, (ushort Lock, int Born, Vector3 Last, int Age)>();
+            var aim = t.WorldCom;
+            Console.WriteLine($"[guns bench]   {tname} is body {t.Id}, the stand body {c.Id}");
             for (var i = 0; i < 10 * World.TickRate; i++)
             {
                 if (i < 6 * World.TickRate && c.RackCount > 0 && c.Racks[0].Held > 0 && c.Parts[c.Racks[0].Part].Cool == 0 && w.Drops.Count < w.Drops.Capacity)
@@ -216,6 +226,20 @@ public static partial class SelfTest
                 now += dt;
                 server.Update(now, dt);
                 cpu.Add(ThreadCpu.NowMs() - c0);
+                // Each missile from this rack: its lock as it left, and where it was last seen (a missile's own story when a battery misses).
+                foreach (var id in flying.Keys.ToList())
+                    if (w.ShellAt(id) < 0)
+                    {
+                        var (lk, born, last, age) = flying[id];
+                        Console.WriteLine($"[guns bench]     missile {id} (left t{born}): lock {lk}, gone after {age} ticks at {last.X:0.0},{last.Y:0.0},{last.Z:0.0}, {Vector3.Distance(last, aim):0.0} m from the target's place, {last.Y - (World.Map.Terrain?.Sample(last.X, last.Z) ?? 0):0.0} m up");
+                        flying.Remove(id);
+                    }
+                for (var k = 0; k < w.ShellCount; k++)
+                    if (w.Shells[k].Gun == c.Id && w.Shells[k].Kind == ShellKind.Missile)
+                    {
+                        ref var sh = ref w.Shells[k];
+                        flying[sh.Id] = flying.TryGetValue(sh.Id, out var was) ? (was.Lock, was.Born, sh.Pos, sh.Age) : (sh.Target, i, sh.Pos, sh.Age);
+                    }
             }
             var live = w.IsLive(t);
             var hp1 = 0f;

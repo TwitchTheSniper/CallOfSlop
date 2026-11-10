@@ -461,8 +461,8 @@ public static class Ordnance
         float r = st.Diameter * 0.5f, half = st.Length * 0.5f;
         var boxes = new List<CPartBox>(MaxBoxes)
         {
-            new(Vector3.Zero, new Vector3(r, r, half), new Vector3(0.3f, 0.34f, 0.2f), Hidden: true),
-            new(new Vector3(0, r + LugHeight * 0.5f, 0), new Vector3(0.05f, LugHeight * 0.5f + 0.01f, 0.08f), new Vector3(0.16f), Hidden: true),
+            new(Vector3.Zero, new Vector3(r - 0.005f, r - 0.005f, half), new Vector3(0.3f, 0.34f, 0.2f), Hidden: true), // (5 mm in: a rack's stations are a diameter apart on half centimetres, and a place rounded to the centimetre put neighbours into each other)
+            new(new Vector3(0, r + LugHeight * 0.5f, 0), new Vector3(0.05f, LugHeight * 0.5f, 0.08f), new Vector3(0.16f), Hidden: true), // (its top at the lug: 1 cm past it met a rack's face, and a place rounded to the centimetre (a 25 cm missile hangs 17.5 cm under its lug) refused a station or not by luck)
         };
         var solid = boxes.Count;
         var budget = MaxBoxes - solid;

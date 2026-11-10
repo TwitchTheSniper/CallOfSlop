@@ -157,7 +157,7 @@ public class BlueprintScript
             throw new VehicleKitException($"a {def.Name} doesn't fit on the {target.Name}'s \"{socket}\"");
         var sp = spin ?? Math.Max(0, SmartRotation.BestSpin(C, on.Index, ts, def, ds));
         if (ConstructBuild.Place(C, on.Index, ts, def, ds, sp, out var g) is { } bad)
-            throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": {(bad == ConstructBuild.InTheWay ? $"the {Blocker(def, g.Pos, g.Rot, g.Seg)} is in the way" : bad)}");
+            throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": {(bad == ConstructBuild.InTheWay ? $"the {Blocker(def, g.Pos, g.Rot, g.Seg, on.Index)} is in the way" : bad)}");
         if (clear && VehicleChecks.ZFightsWith(C, def, g) is { } fight)
             throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": z-fighting: {fight}");
         if (veto?.Invoke(def, g) is { } no)
@@ -288,16 +288,19 @@ public class BlueprintScript
     }
 
     /// <summary>What a part there would run into, for the refusal (<paramref name="seg"/>: the segment frame <paramref name="pos"/> is in; boxes are compared at rest, axis-aligned).</summary>
-    private string Blocker(ConstructPartDef def, Vector3 pos, byte rot, byte seg = 0)
+    private string Blocker(ConstructPartDef def, Vector3 pos, byte rot, byte seg = 0, int host = -1)
     {
         C.RestPose(seg, out var q0, out var t0);
         for (var b = 0; b < def.SolidBoxes; b++)
         {
             var bc = t0 + Vector3.Transform(pos + Rot24.Apply(rot, def.Boxes[b].Center), q0);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half) - new Vector3(0.01f);
+            for (var pass = 0; pass < 2; pass++) // (the part it goes on last: its own hooks touch what hangs on them)
             for (var i = 0; i < C.PartCount; i++)
             for (var k = 0; k < C.DefOf(i).SolidBoxes; k++)
             {
+                if ((i == host) != (pass == 1))
+                    continue;
                 C.BoxOf(i, k, out var oc, out var oh);
                 C.RestPose(C.Parts[i].Seg, out var q1, out var t1);
                 oc = t1 + Vector3.Transform(oc, q1);
