@@ -58,9 +58,10 @@
         { "part": "Parts Shelf", "count": 1, "loot": true } ],
       "missing": ["gun rack"] },
     { "id": "engineering", "items": [
+        { "part": "Small Genset", "count": 1, "role": "plant" },
         { "part": "Battery", "count": 3, "role": "power" },
         { "part": "Lamp", "count": 1 } ],
-      "missing": ["reactor or generator in the small class", "power board"] },
+      "missing": ["power board"] },
     { "id": "magazine", "items": [
         { "part": "Chest", "count": 2, "loot": true } ],
       "missing": ["shell magazine for the small class (Shell Magazine Medium is medium class)"] },
