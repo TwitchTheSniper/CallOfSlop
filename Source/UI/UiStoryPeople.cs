@@ -63,6 +63,20 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGuiSafe.SetItemTooltip($"The people in this world walk about it ({game.StoryBodyCount} now, {Game.StoryBodiesMax} at most; {game.StoryBodiesMade} came and {game.StoryBodiesGone} went this session). They go where each step happens, a step with someone waits until they have met ({ag.MeetWaits} waits, {ag.Unreached} never met), and a body killed is the person killed, for good. Off: the story's clock alone.");
         ImGui.SameLine();
+        // STAND-IN: the placeholder craft (Source/StandIns), until the vehicle and ship redo.
+        var craft = game.StandInsOn;
+        if (ImGui.Checkbox("Craft"u8, ref craft))
+            game.StandInsOn = craft;
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetItemTooltip($"Placeholder craft (yellow and black, only pictures) carry the people on their roads: a shuttle for a long road, a hover hauler for a short one, and a courier flyer comes for a sealed Requisition Crate. {game.StandInCount} about now, {game.StandInsMade} this session. They stand in for the real vehicles and ships until those are redone.");
+        ImGui.SameLine();
+        ImGui.BeginDisabled(game.Local is not { Alive: true });
+        if (ImGui.Button("Call craft"u8) && game.Local is { } me)
+            game.StandInTest(me.Position);
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetItemTooltip("A placeholder shuttle, hover hauler and courier flyer come in near you, stand for ten seconds and go.");
+        ImGui.SameLine();
         var talk = s.Talk.On;
         if (ImGui.Checkbox("Talk"u8, ref talk))
             s.Talk.On = talk;

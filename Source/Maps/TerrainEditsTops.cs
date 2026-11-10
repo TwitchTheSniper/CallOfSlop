@@ -18,6 +18,8 @@ public sealed partial class TerrainEdits
     // Per column: its open top's colour (rgb, rockiness), for drawing; per dug cell: are they made?
     private Vector4[] _topColour = [];
     private bool[] _coloursMade = [];
+    // Per column: the ground's own colour there as built (made with the top colours), which dug faces start from.
+    private Vector3[] _ownColour = [];
 
     private int CellOrdinal(int first) => first / (Sub * Sub);
 
@@ -30,6 +32,7 @@ public sealed partial class TerrainEdits
         Array.Resize(ref _topsMade, cells);
         Array.Resize(ref _cornerBase, cells * vs * vs);
         Array.Resize(ref _topColour, _spans.Length);
+        Array.Resize(ref _ownColour, _spans.Length);
         Array.Resize(ref _coloursMade, cells);
     }
 
@@ -154,7 +157,9 @@ public sealed partial class TerrainEdits
         for (var a = 0; a < Sub; a++)
         {
             var c = first + b * Sub + a;
-            var (col, rock) = TopShade(c, i * Sub + a, j * Sub + b, _spans[c][_count[c] * 2 - 1], false);
+            int ci = i * Sub + a, cj = j * Sub + b;
+            _ownColour[c] = SurfaceColour(ci, cj, IslandColumn(c, ci, cj) ? _orig[c] : float.NaN).Item1;
+            var (col, rock) = TopShade(c, ci, cj, _spans[c][_count[c] * 2 - 1], false);
             _topColour[c] = new Vector4(col, Math.Clamp(rock, 0f, 1f));
         }
         _coloursMade[ord] = true;

@@ -1297,13 +1297,13 @@ public sealed partial class TerrainEdits : IDigGround
 
     /// <summary>
     /// How column <paramref name="c"/> looks at height <paramref name="y"/> on a dug face: what a fill laid there is made of
-    /// (the map's own dirt, rock or sand colour), else freshly dug ground by its depth.
+    /// (the map's own dirt, rock or sand colour), else freshly dug ground by its depth, in the world's own colours (<see cref="DugShade"/>).
     /// </summary>
     private (Vector3 Color, float Rock) Shade(int c, float y, bool covered)
     {
         var sf = _t.Surface;
         if (_fillKind[c] == 0 || y < _fillLo[c] - 0.01f)
-            return Dug(sf, _orig[c] - y, covered);
+            return DugShade(sf, OwnColour(c), _orig[c] - y, covered);
         var (col, rock) = (GroundKind)(_fillKind[c] - 1) switch
         {
             GroundKind.Stone => (sf.Rock, 1f),
@@ -1330,13 +1330,28 @@ public sealed partial class TerrainEdits : IDigGround
         return (Vector3.Lerp(own.Item1, col, f), own.Item2 + (rock - own.Item2) * f);
     }
 
-    /// <summary>Freshly dug ground: dirt, then rock deeper down; darker under cover.</summary>
-    private static (Vector3 Color, float Rock) Dug(TerrainSurface sf, float depth, bool covered)
+    /// <summary>
+    /// Freshly dug ground, in the world's own colours: just under the surface it is the ground's top colour there
+    /// (<paramref name="own"/>: a snowy world digs white, a red one red) with a touch of its dirt, and deeper down it
+    /// turns towards its rock and darkens; darker still under cover. Shared with <see cref="PlanetEdits"/>.
+    /// </summary>
+    public static (Vector3 Color, float Rock) DugShade(TerrainSurface sf, Vector3 own, float depth, bool covered)
     {
-        var f = Math.Clamp(depth / 4f, 0f, 1f);
-        var col = Vector3.Lerp(sf.Dirt * 0.85f, sf.Rock * 0.8f, f) * (covered ? 0.6f : 1f);
+        var f = Math.Clamp(depth / DugDeep, 0f, 1f);
+        var near = Vector3.Lerp(own, sf.Dirt, DugDirt) * 0.92f;
+        var deep = Vector3.Lerp(own, sf.Rock, DugRock) * 0.78f;
+        var col = Vector3.Lerp(near, deep, f) * (covered ? 0.6f : 1f);
         return (col, Math.Clamp(0.25f + depth / 3f, 0.25f, 1f));
     }
+
+    /// <summary>How much of the world's dirt colour shows just under the surface, and of its rock at <see cref="DugDeep"/> metres down.</summary>
+    public const float DugDirt = 0.2f, DugRock = 0.4f;
+
+    /// <summary>Depth (metres) at which dug ground has turned fully to its deep colour.</summary>
+    public const float DugDeep = 4f;
+
+    /// <summary>Column <paramref name="c"/>'s ground colour as built (made with its cell's top colours, <see cref="EnsureColours"/>).</summary>
+    private Vector3 OwnColour(int c) => c < _ownColour.Length ? _ownColour[c] : _t.Surface.Grass;
 
     /// <summary>The surface's own colour at a column (its nearest terrain sample), for the undug tops of a dug cell; an island's top (<paramref name="top"/> finite) by the surface rules at its height.</summary>
     private (Vector3, float) SurfaceColour(int ci, int cj, float top)
