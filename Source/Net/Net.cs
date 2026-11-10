@@ -110,6 +110,7 @@ public enum Msg : byte
     Shell, // server -> all and each joiner, Sandbox: a player wakes in a robot shell or is back in their body (u8 player, u8 on) (reliable ordered; GameRobotShell.cs, protocol 213)
     Depot, // server -> one client, Sandbox story: that player's Orbital Depot state (u8 state, u8 has a target, vec the target) when it changes (reliable ordered; GameDepot.cs, protocol 214)
     TalkChoices, // server -> one client, Sandbox story: the answers a storylet offers in their talk panel (u8 the body's player, u8 n, n texts) when they change (reliable ordered; GameStoryStorylets.cs, protocol 222)
+    Fragments, // server -> one client, Sandbox story: what they hold of the old records and their leads (u8 sites, u16 each site's construct; u8 held, (u8 fragment, str source) each; u8 leads, (str name, u8 found) each) when it changes (reliable ordered; GameStoryFragments.cs, protocol 227)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

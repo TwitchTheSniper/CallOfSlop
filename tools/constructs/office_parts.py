@@ -188,6 +188,27 @@ def fax():
     return "", p
 
 
+def terminal():
+    """The terminal in a sealed data centre (docs/story/FRAGMENTS.md; Game/GameStoryFragments.cs): a logic part, its kind "cipher".
+    It needs power (a battery on its construct's circuit), then puts out a carrier number and waits for the answer its screen asks
+    for on its key input, which a player builds out of logic blocks. Heavy and welder-fitted, so it isn't carried off."""
+    p = Part("Data Centre Terminal", SMALL, OFFICE, "A sealed terminal older than anyone's records. Power it, then wire it the answer its screen asks for.", role="logic", tool="welder", color=DARK, group="Logic")
+    w, d, h = 0.45, 0.3, 1.3
+    p.add(box((-w, 0, -d), (w, h, d), DARK))  # (the cabinet)
+    p.add(box((-0.4, 0.66, d + 0.004), (0.4, 1.16, d + 0.02), SCREEN, detail=True, paintable=False))  # (the glass, 4 mm proud)
+    p.add(box((-0.4, 0.2, d + 0.004), (0.4, 0.5, d + 0.016), GREY, detail=True))  # (the key-in panel)
+    for k in range(4):  # (dead lamps over the screen)
+        x = -0.3 + k * 0.2
+        lit(p, (x - 0.03, 1.2, d + 0.004), (x + 0.03, 1.24, d + 0.016), LED_A if k == 0 else LED_G)
+    p.add(box((-0.06, 0.3, d + 0.018), (0.06, 0.4, d + 0.034), "#c0392b", detail=True, paintable=False))  # (the key socket)
+    p.add(box((-w + 0.04, h + 0.002, -d + 0.04), (w - 0.04, h + 0.06, d - 0.04), GREY))  # (the vent on top)
+    feet(p, (-0.25, 0.25), (0.0,))
+    p.stats(160, 600, 4, 4.0)
+    p.set(power=120, logic={"kind": "cipher"}, centreSockets=False,
+          panels=[{"source": "story.terminal", "at": [0, 0.91, round(d + 0.024, 3)], "size": [0.78, 0.48], "face": "+z", "up": "+y", "rows": 6, "range": 14}])
+    return "", p
+
+
 def switch():
     p = Part("Network Switch", SMALL, SECTION, "A network switch on a post, cables hanging out of it. Do not unplug the yellow one.", color=DARK, group=GROUP)
     top = 0.14
@@ -246,6 +267,7 @@ def main():
         server_rack(),
         computer(),
         fax(),
+        terminal(),
     ])
 
 

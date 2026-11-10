@@ -1,0 +1,194 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Data Centre Terminal",
+  "description": "A sealed terminal older than anyone's records. Power it, then wire it the answer its screen asks for.",
+  "group": "Logic",
+  "section": "Office",
+  "role": "logic",
+  "tool": "welder",
+  "mass": 160.0,
+  "health": 600,
+  "armour": 4,
+  "material": "steel",
+  "color": "#2c2e31",
+  "attachSeconds": 4.0,
+  "power": 120,
+  "logic": {
+    "kind": "cipher"
+  },
+  "centreSockets": false,
+  "panels": [
+    {
+      "source": "story.terminal",
+      "at": [
+        0,
+        0.91,
+        0.324
+      ],
+      "size": [
+        0.78,
+        0.48
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 6,
+      "range": 14
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.45,
+        1.3,
+        0.3
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        -0.4,
+        0.66,
+        0.304
+      ],
+      "max": [
+        0.4,
+        1.16,
+        0.32
+      ],
+      "color": "#1d2a33",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        0.2,
+        0.304
+      ],
+      "max": [
+        0.4,
+        0.5,
+        0.316
+      ],
+      "color": "#8e9296",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.33,
+        1.2,
+        0.304
+      ],
+      "max": [
+        -0.27,
+        1.24,
+        0.316
+      ],
+      "color": "#f0a020",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.13,
+        1.2,
+        0.304
+      ],
+      "max": [
+        -0.07,
+        1.24,
+        0.316
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.07,
+        1.2,
+        0.304
+      ],
+      "max": [
+        0.13,
+        1.24,
+        0.316
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.27,
+        1.2,
+        0.304
+      ],
+      "max": [
+        0.33,
+        1.24,
+        0.316
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.06,
+        0.3,
+        0.318
+      ],
+      "max": [
+        0.06,
+        0.4,
+        0.334
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.41,
+        1.302,
+        -0.26
+      ],
+      "max": [
+        0.41,
+        1.36,
+        0.26
+      ],
+      "color": "#8e9296"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

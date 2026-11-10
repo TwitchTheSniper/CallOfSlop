@@ -116,6 +116,7 @@ public sealed partial class Game
         StoryJobsTick(s, now); // (faction jobs: crates, builds, couriers, the window: GameStoryJobs.cs)
         StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
         StoryletsTick(s, now); // (the storylets' hooks, spots and talk-panel answers: GameStoryStorylets.cs)
+        FragmentsTick(s, now); // (the data centres' terminals and what each player holds: GameStoryFragments.cs)
         if (StoryPlaying is { } run)
         {
             run.Live(s);

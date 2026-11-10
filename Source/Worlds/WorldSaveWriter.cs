@@ -119,6 +119,9 @@ public static class WorldSaveWriter
                         w.U64(p.Key).U64(p.SteamId);
                 w.U16(op.Barracks); // (the lockdown's barracks, GameColonyLockdown.cs: last, so an older reader stops before it)
                 w.U16(op.Works).U16(op.Depot); // (the Orbital Depot's, GameDepot.cs: after it, likewise)
+                w.U8((byte)Math.Min(op.Sites.Length, 255)); // (the data centres, GameStoryFragments.cs: after those, likewise)
+                for (var k = 0; k < op.Sites.Length && k < 255; k++)
+                    w.Str(op.Sites[k].Site).U16(op.Sites[k].Body);
             });
         if (Array.Exists(s.Players, p => p.TutorialState != TutorialState.None))
             w.Section(TutorialTag, () =>

@@ -600,6 +600,19 @@ public static class StoryCli
             {
                 errors.Add(ex.Message);
             }
+        var fragFile = Path.Combine(folder, "Fragments", "Fragments.json");
+        if (File.Exists(fragFile))
+            try
+            {
+                var frags = FragmentScript.Read(File.ReadAllText(fragFile), "Fragments/Fragments.json");
+                if (rules.Relation("Fragment") == null || rules.VerbId("Recover") < 0)
+                    errors.Add("Fragments/Fragments.json: the relation Fragment and the verb Recover are needed (Story/Relations/Fragments.json, Story/Verbs/Fragments.json)");
+                Console.WriteLine($"  the fragments (Fragments/Fragments.json): {frags.Fragments.Length} records ({string.Join(", ", frags.Fragments.Select(f => f.Id))}), {frags.Sites.Length} data centres");
+            }
+            catch (StoryException ex)
+            {
+                errors.Add(ex.Message);
+            }
         var scamFile = Path.Combine(folder, "Office", "Scammers.json");
         if (File.Exists(scamFile))
             try
