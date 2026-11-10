@@ -25,9 +25,9 @@ ABOUT = ("Tool upgrades (docs/sandbox/TOOL-UPGRADES.md). Written by tools/constr
 
 # (stat, name, about, base, creative, colour, [(part, file, value, mass)])
 STATS = [
-    ("lift", "Lift", "the heaviest thing the physics gun takes, in kg; its pull rises with it (30 N a kg)", 1500, 20000000, "#5c6fa8",
-     [("Lift Coil Mk 2", "LiftCoilMk2", 3000, 3), ("Lift Coil Mk 3", "LiftCoilMk3", 6000, 4),
-      ("Lift Coil Mk 4", "LiftCoilMk4", 12000, 5), ("Lift Coil Mk 5", "LiftCoilMk5", 25000, 6)]),
+    ("lift", "Lift", "the heaviest thing the physics gun takes, in kg; its pull rises with it (30 N a kg)", 5000, 20000000, "#5c6fa8",
+     [("Lift Coil Mk 2", "LiftCoilMk2", 10000, 3), ("Lift Coil Mk 3", "LiftCoilMk3", 20000, 4),
+      ("Lift Coil Mk 4", "LiftCoilMk4", 40000, 5), ("Lift Coil Mk 5", "LiftCoilMk5", 80000, 6)]),
     ("reach", "Reach", "how far the physics gun's beam reaches, in metres", 12, 30, "#8fc5d9",
      [("Beam Lens Mk 2", "BeamLensMk2", 15, 1), ("Beam Lens Mk 3", "BeamLensMk3", 18, 1.5),
       ("Beam Lens Mk 4", "BeamLensMk4", 22, 2), ("Beam Lens Mk 5", "BeamLensMk5", 26, 2.5)]),
