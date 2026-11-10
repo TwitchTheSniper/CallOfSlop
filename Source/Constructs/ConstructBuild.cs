@@ -1048,10 +1048,17 @@ public static class ConstructBuild
             ConstructLoot.Stow(world, c, bp, partOf); // (what its maker stowed, before the loot rolls into what is left)
         if (partOf != null && bp.Loot.Count > 0)
             ConstructLoot.Fill(world, c, bp, partOf); // (a spawn rolls fresh; a scratch build or a stamp doesn't)
-        // Lowest point: the parts' bounds, or the wheels' bottoms.
+        // Lowest point: the parts' bounds, or the wheels' bottoms, or a walker's resting feet (docs/sandbox/GIANTS.md, "Walking
+        // on real maps"): one with enough fed legs to hold it is set down standing, its hull clear of the ground and of what
+        // stands on it, so it walks from the first tick instead of standing up from its hips.
+        if (c.Dirty)
+            c.Rebuild(); // (its bounds, wheels and legs as built: the first tick would rebuild it anyway)
         var low = c.LocalMin.Y;
         for (var k = 0; k < c.WheelCount; k++)
             low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
+        if (c.LegCount > 0 && ConstructPhysics.PowerLegs(world, c, false) >= ConstructPhysics.MinWalkLegs)
+            for (var k = 0; k < c.LegCount; k++)
+                low = MathF.Min(low, c.Legs[k].Rest.Y);
         c.Pos = ground - Vector3.Transform(new Vector3(0, low - 0.02f, 0), rot);
         c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
         c.NetHistReset();

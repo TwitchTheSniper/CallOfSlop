@@ -648,7 +648,11 @@ public static partial class ConstructPhysics
         c.WalkHeight = Math.Clamp(c.WalkHeight, -0.3f * stand * reach, (0.85f - stand) * reach);
         var want = stand * reach + c.WalkHeight;
         var vy = Math.Clamp(MathF.Min(want - have, rise) * 2f, -0.25f * reach, 0.25f * reach);
-        vy = MathF.Min(vy, c.WalkPowerLift); // (a rise takes its weight times the speed: no faster than the circuit feeds)
+        // A rise takes its weight times the speed: no faster than the circuit feeds, less what the walk the driver asks for
+        // takes first (walking is cheap: LegCarryCost of the weight a metre a second; at most half the power), so a walker
+        // standing up from its hips walks off as it rises instead of waiting for the rise.
+        var walkNeed = MathF.Min(MathF.Sqrt(throttle * throttle + strafe * strafe * 0.36f) * c.WalkTop * LegCarryCost, 0.5f * c.WalkPowerLift);
+        vy = MathF.Min(vy, c.WalkPowerLift - walkNeed);
         // Along the ground: the keys, at what the build walks at.
         var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
         fwd.Y = 0;
