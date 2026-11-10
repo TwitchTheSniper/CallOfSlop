@@ -665,6 +665,27 @@ offer* (A, the choice of Trustee or Escapee) and the first beat of each road (*F
 mine*). Not yet: the Pilfer event from a marked crate (Bellweather's test ends "left" until it is), the old mine as a
 place.
 
+### Paths
+
+The Logbook's second page (F1, **Paths**; `Source/Game/GameStoryPaths.cs`, `Source/UI/UiLogbookPaths.cs`) is each
+player's own branch chart of the storylets. A storylet they have had is a box in its plot's lane (the main road, on the
+side, trouble), oldest on the left, with its ends beside it: the end it came to is lit and named (a choice by its
+words), the others stay locked as "?", and a line runs from the end taken to what came of it (the end's `"next"`, else
+the one before it in its lane). The one under way is outlined, its ends all still locked. Hovering a lit end says what
+it changed ("Rank +1", "Officer Crumb thinks better of you (+5)", "Course: Escapee"). Under the chart: the storylet
+qualities as tracks (**Your record**), and **Where you stand**: a line per person who has a feeling about the player,
+from Hostile to Trusted (their Likes less their Grudge, -100 to 100; Cold from -20, Hostile from -60, Warm from 20,
+Trusted from 60).
+
+- **Kept** as relations, so it saves with the world: `Ended` (a player and a storylet: a bit per end it has had for
+  them) and `EndedWith` (who led it last, their entity + 1), set when a storylet ends, cleared by "Forget what they
+  had". A world saved before them shows such storylets with every end locked.
+- **Sent** (protocol 231): once a second the host works out each player's page and sends `Msg.StoryPaths` when it
+  changed (u8 n, (u16 storylet, u8 state, u8 ends, u8 times, u32 story second, str who led) each; the qualities; the
+  standings). Every peer has the storylets' texts, so only numbers and names travel. A player sees their own page only.
+- `--storylet-sim` prints the same path at its end ("The path"). The builder's Flowchart view draws a file the same
+  way while writing it, with the test player's path lit.
+
 ## Fragments
 
 The old records the main storyline is told through, found in any order, and the sealed data centres that hold them: [FRAGMENTS.md](FRAGMENTS.md). A fragment is a Thing named by its id (`frag.threat`), held through the `Fragment` relation; the Logbook (F1) shows them.

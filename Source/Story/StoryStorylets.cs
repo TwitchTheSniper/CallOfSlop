@@ -97,6 +97,7 @@ public sealed class StoryletRules
     public StoryletQuality[] Qualities = [];
     public StoryletSpot[] Spots = [];
     public int OnStorylet = -1, StoryletAt = -1, Played = -1, Lead = -1, Visited = -1, In = -1; // relations
+    public int Ended = -1, EndedWith = -1; // relations: which ends a player has had (a bit each), and who led it last (entity + 1): the Logbook's Paths
     public int VerbStorylet = -1, VerbLearn = -1, VerbChoose = -1; // verbs
 
     public StoryletDef? Find(string id) => Array.Find(Storylets, s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
@@ -183,6 +184,7 @@ public sealed class StoryletRules
         var sr = new StoryletRules { Qualities = qualities.ToArray() };
         int Rel(string n) => rules.Relation(n)?.Id ?? -1;
         (sr.OnStorylet, sr.StoryletAt, sr.Played, sr.Lead, sr.Visited, sr.In) = (Rel("OnStorylet"), Rel("StoryletAt"), Rel("Played"), Rel("Lead"), Rel("Visited"), Rel("In"));
+        (sr.Ended, sr.EndedWith) = (Rel("Ended"), Rel("EndedWith"));
         (sr.VerbStorylet, sr.VerbLearn, sr.VerbChoose) = (rules.VerbId("Storylet"), rules.VerbId("Learn"), rules.VerbId("Choose"));
         var files = StoryRules.Files(Path.Combine(folder, "Storylets"));
         if (files.Length == 0)
@@ -1093,6 +1095,10 @@ public sealed class StoryStorylets
             W.Set(player, R.OnStorylet, t, 0);
             W.Set(player, R.Played, t, 0);
             W.Set(player, R.StoryletAt, t, 0);
+            if (R.Ended >= 0)
+                W.Set(player, R.Ended, t, 0);
+            if (R.EndedWith >= 0)
+                W.Set(player, R.EndedWith, t, 0);
         }
         _player.Remove(player);
     }
@@ -1142,6 +1148,10 @@ public sealed class StoryStorylets
             W.Set(group[m], R.OnStorylet, t, 0);
             W.Add(group[m], R.Played, t, 1);
             W.Set(group[m], R.StoryletAt, t, (int)now);
+            if (end != null && R.Ended >= 0)
+                W.Set(group[m], R.Ended, t, W.Get(group[m], R.Ended, t) | 1 << end.Index);
+            if (R.EndedWith >= 0)
+                W.Set(group[m], R.EndedWith, t, d.CastVars > 1 && r.Binds[1] >= 0 ? r.Binds[1] + 1 : 0);
         }
         if (end != null && chose && R.VerbChoose >= 0)
             _e.Record(R.VerbChoose, r.Player, end.By >= 0 ? r.Binds[end.By] : -1, -1, PlaceOf(r.Player), t, end.Index + 1);

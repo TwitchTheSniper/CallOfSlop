@@ -113,6 +113,14 @@ public static class StoryCli
             if (e.World.Quality(me, q.Id) is var qv and not 0)
                 Console.Write($" {q.Name} {qv}");
         Console.WriteLine();
+        Console.WriteLine("The path (the Logbook's Paths):");
+        foreach (var d in sr.Storylets.Where(d => e.Storylets.PlayedCount(me, d.Index) > 0).OrderBy(d => e.World.Get(me, sr.StoryletAt, e.Storylets.Thing(d.Index))))
+        {
+            var t = e.Storylets.Thing(d.Index);
+            var ends = sr.Ended >= 0 ? e.World.Get(me, sr.Ended, t) : 0;
+            var with = sr.EndedWith >= 0 ? e.World.Get(me, sr.EndedWith, t) - 1 : -1;
+            Console.WriteLine($"    {d.Id,-22} {string.Join(" ", d.Ends.Select(x => (ends >> x.Index & 1) != 0 ? $"[{x.Id}]" : "?"))}{(with >= 0 ? $"  with {e.World.NameOf(with)}" : "")}");
+        }
         Table();
         return sr.Storylets.Count(d => e.Storylets.PlayedCount(me, d.Index) == 0);
     }

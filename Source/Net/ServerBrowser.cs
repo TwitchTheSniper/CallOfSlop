@@ -374,7 +374,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 228: story fragments (docs/story/FRAGMENTS.md): Msg.Fragments at the end of Msg, CLogic.Cipher at the end of CLogic (the Data Centre Terminal, a new part file in Constructs/Parts/Office, so part ids after it shift).
     // 229: walker feet on the wire (ConstructNetWalk.cs, docs/sandbox/GIANTS.md "Walker feet on clients"): a pose's asleep byte gains bit 1, and a walker's pose carries its gait state and the feet that moved (plus a few in turn) after the rotors; a client no longer finds its own footholds.
     // 230: CActKind.Aircraft at the end of CActKind (docs/vehiclekit/AIRCRAFT.md "In the game"): a creative aircraft spawned flying with a bot pilot, by shape or by air role.
-    public const byte ProtocolVersion = 230;
+    // 231: the Logbook's Paths (docs/story/STORY.md "Paths"): Msg.StoryPaths at the end of Msg.
+    public const byte ProtocolVersion = 231;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
