@@ -369,7 +369,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 223: body styles phase 7c (docs/vehiclekit/BODY-STYLES.md, section 15): upper storeys' and open decks' bays take a lining word (an open top's followed), closed ends are lined, and lined cabs of every kind draw a dash or console and a steering wheel, so a 222 peer makes other parts from the same keys.
     // 224: walker legs (docs/sandbox/GIANTS.md): role leg (12 part files in Constructs/Parts/Walkers, so part ids after them shift), a leg's drive port takes a Driving Module's link; the feet are posed on each peer, nothing new on the wire.
     // 225: walker legs phase 2 (docs/sandbox/GIANTS.md): leg parts gain a "drive" socket, an "Oil in" pipe port and a "Drive in" shaft port (socket and port indices on legs shift), and a leg works only when fed; a 224 peer would link and power them differently.
-    public const byte ProtocolVersion = 225;
+    // 226: event doors (ConstructDoors.cs, docs/sandbox/CONSTRUCTS.md "Event doors"): CBodyKind.Door ((u16 body, u16 part, u8 flags) each) at the end of CBodyKind, CfgKey.DoorOpen and DoorLocked at the end of CfgKey, and a door part's three data ports.
+    public const byte ProtocolVersion = 226;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

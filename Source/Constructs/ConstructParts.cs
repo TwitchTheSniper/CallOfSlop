@@ -392,7 +392,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Lever, Knob, Slide, Flip, Press
 public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketKind Kind, byte Class = 0);
 
 /// <summary>One part type, from a JSON file in Constructs/Parts (loaded by <see cref="ConstructParts"/>).</summary>
-public sealed class ConstructPartDef
+public sealed partial class ConstructPartDef
 {
     /// <summary>A copy sharing every array (the material painter's parts: PartMaterials.cs replaces what differs).</summary>
     internal ConstructPartDef ShallowCopy()
@@ -789,6 +789,7 @@ public sealed class ConstructPartDef
     public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
+        PartRole.Door => Door != null ? 3 : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs)
         PartRole.AmmoSwitch => 1, // which feed goes on
         PartRole.Leg => 2, // a Driving Module's drive link: the seat walks it (ConstructWalk.cs)
         PartRole.Hitch => IsCargoWinch ? 3 : IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
@@ -1253,7 +1254,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1800,8 +1801,9 @@ public static partial class ConstructParts
             d.DialMax = Opt(dial, "max") is { } dm ? Num(dm, file, "dial.max") : 1f;
             Range(d.DialMax, 0.01f, 1000, file, "dial.max");
         }
-        if (d.Role == PartRole.Door && !d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
-            throw new ConstructPartException($"{file}: a door needs a \"leaf\" socket (it hangs on a hinge)");
+        ConstructDoors.ParseDef(d, Opt(root, "door"), file); // (an event door: docs/sandbox/CONSTRUCTS.md, "Event doors")
+        if (d.Role == PartRole.Door && d.Door == null && !d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
+            throw new ConstructPartException($"{file}: a door needs a \"leaf\" socket (it hangs on a hinge) or a \"door\" block (an event door)");
         if (d.Role is not (PartRole.Wheel or PartRole.Suspension) && d.Sockets.Any(s => s.Kind == SocketKind.Axle))
             throw new ConstructPartException($"{file}: only wheels and suspensions have \"axle\" sockets");
         if (d.Role is not (PartRole.Hinge or PartRole.Door) && d.Sockets.Any(s => s.Kind == SocketKind.Leaf))

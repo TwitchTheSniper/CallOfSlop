@@ -52,7 +52,7 @@ public static partial class ConstructRender
 
     private sealed class MergeSet
     {
-        public int Stamp = -1;
+        public int Stamp = -1, Doors;
         public long Dyn;
         public int Seen, Draws, Parts;
         public bool On; // enough static boxes to merge
@@ -129,6 +129,8 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         if (p.Burn > 0 || p.Store != 0 || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return 0;
+        if (c.DoorMovingCount > 0 && c.MovingDoorOf(i) >= 0)
+            return 0; // (an event door on its way is walked, at its moving pose; it is merged again when it settles)
         return Math.Max(0, StaticBoxes(p.D));
     }
 
@@ -440,11 +442,13 @@ public static partial class ConstructRender
             _merges[c] = set = new MergeSet();
         set.Seen = _mergeFrame;
         var check = (++set.Draws + c.Id) % MergeCheckFrames == 0; // (counted in its own draws: a camera pass or a frame it is culled in doesn't skip a check)
-        if (set.Stamp != c.RebuildStamp || set.Parts != c.PartCount) // (parts taken out and not yet rebuilt: the indices moved)
+        if (set.Stamp != c.RebuildStamp || set.Parts != c.PartCount || set.Doors != c.DoorEpoch) // (parts taken out and not yet rebuilt: the indices moved; an event door started or stopped)
         {
+            c.EnsureDoors();
             Plan(gfx, set, c);
             set.Stamp = c.RebuildStamp;
             set.Parts = c.PartCount;
+            set.Doors = c.DoorEpoch;
             set.Dyn = DynKey(c);
         }
         else if (check && DynKey(c) is var dyn && dyn != set.Dyn)
