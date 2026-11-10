@@ -14,7 +14,15 @@ namespace CallOfSlop.VehicleKit;
 /// </summary>
 public sealed class VehicleGenJob
 {
-    /// <summary>How long a slice may run past its end before the game stops waiting and abandons the job (a generator stuck between yields).</summary>
+    /// <summary>
+    /// A slice that hasn't handed back this long (ms) past its budget is late: logged, and the job is dropped at its next yield (the request falls back), so a
+    /// generator with a long span between yields costs the game one long tick, not one a slice. The game still waits for that yield: it never runs beside a
+    /// generation thread (see <see cref="Step"/>).
+    /// </summary>
+    public const int LateMs = 50;
+
+    /// <summary>While waiting for a late slice's yield, a line is logged every this many ms (a generator in an endless loop between yields hangs the server, named in the log,
+    /// rather than running beside the game and corrupting what it shares).</summary>
     public const int StuckMs = 10000;
 
     public readonly IVehicleGenerator Generator;
@@ -54,7 +62,7 @@ public sealed class VehicleGenJob
     private Thread? _thread;
     private readonly SemaphoreSlim _go = new(0, 1), _back = new(0, 1);
     private long _until;
-    private bool _abandon;
+    private volatile bool _abandon;
 
     [ThreadStatic]
     private static VehicleGenJob? _current;
@@ -118,7 +126,11 @@ public sealed class VehicleGenJob
 
     private void At(string file, int line)
     {
+        if (_abandon)
+            throw new OperationCanceledException("the generation was abandoned"); // (dropped: no more of it runs, even where a handler swallowed the first throw)
         Note(file, line, Stopwatch.GetTimestamp());
+        if (SpanTrace != null)
+            Trace(file, line);
         if (Stopwatch.GetTimestamp() >= _until)
             Pause();
         _spanStart = Stopwatch.GetTimestamp();
@@ -163,15 +175,8 @@ public sealed class VehicleGenJob
         _budgetMs = budgetMs;
         var gc = GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2);
         _go.Release();
-        if (!_back.Wait(StuckMs + (int)budgetMs))
-        {
-            // Stuck between yields: the game goes on and the job is dropped at its next yield (logged; the caller falls back).
-            _abandon = true;
-            _go.Release(); // (so its next yield ends it)
-            Error = $"no yield in {StuckMs} ms: abandoned";
-            Done = true;
-            return true;
-        }
+        if (!_back.Wait(LateMs + (int)budgetMs))
+            return Late(start);
         var ms = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
         CpuMs += ms;
         WorstSliceMs = Math.Max(WorstSliceMs, ms);
@@ -195,6 +200,40 @@ public sealed class VehicleGenJob
         return Done;
     }
 
+    /// <summary>
+    /// A slice past <see cref="LateMs"/>: the job is dropped. The thread is still between two yields, so this waits for it, as long as it takes (the game never runs
+    /// beside it), lets it unwind from that yield to its end, and reports the request failed.
+    /// </summary>
+    private bool Late(long start)
+    {
+        _abandon = true;
+        Console.WriteLine($"[vehicles] {Name}: a slice ran past {LateMs + _budgetMs:0} ms (a span from {Site(_lastFile, _lastLine)} with no yield): dropped at its next yield");
+        WaitBack();
+        if (!_finished)
+        {
+            _go.Release(); // (it handed back at a yield before it saw the flag: wake it to unwind)
+            WaitBack();
+        }
+        var ms = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+        CpuMs += ms;
+        WorstSliceMs = Math.Max(WorstSliceMs, ms);
+        Slices++;
+        Error = $"a slice ran {ms:0} ms with no yield: dropped";
+        Done = true;
+        return true;
+    }
+
+    /// <summary>Waits for the thread to hand back (a yield or its end), however long: logged every <see cref="StuckMs"/>.</summary>
+    private void WaitBack()
+    {
+        var waited = 0;
+        while (!_back.Wait(StuckMs))
+        {
+            waited += StuckMs;
+            Console.WriteLine($"[vehicles] {Name}: no yield in {waited / 1000} s since {Site(_lastFile, _lastLine)}; the game waits for it (it never runs beside a generation)");
+        }
+    }
+
     private string SpanAt() => $"{Site(_sliceFrom, _sliceFromLine)} to {Site(_sliceTo, _sliceToLine)}";
 
     /// <summary>
@@ -216,7 +255,7 @@ public sealed class VehicleGenJob
             return;
         _abandon = true;
         _go.Release();
-        _back.Wait(StuckMs);
+        WaitBack(); // (it is at a yield: it throws there and unwinds, a span at most; the game doesn't run till it has ended)
     }
 
     private void Body()
@@ -324,6 +363,7 @@ public sealed class VehicleGenJob
             }
             if (VehicleRegistry.Find("Bandit Box Truck") is { } grammar)
                 ShapeGrammar.PlanOnly(grammar, 1); // (the shape grammar's planner: a plan, nothing built)
+            VehicleGunsmith.WarmFits(); // (every gunsmith design and size fitted on its test stand once, here, rather than in a spawn's slices)
         }
         catch (Exception ex) // (only a warm-up: never a reason for a match not to start)
         {
@@ -331,6 +371,65 @@ public sealed class VehicleGenJob
         }
         WarmMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
         Console.WriteLine($"[vehicles] warmed the kit in {WarmMs:0} ms");
+    }
+
+    /// <summary>Spans by their two yields (<c>--slice-vehicle</c>): count, total and longest ms. Null (off) in the game.</summary>
+    public static Dictionary<(string, int, string, int), (int N, double Total, double Max)>? SpanTrace;
+
+    private long _traceStart;
+    private string _traceFile = "the start";
+    private int _traceLine;
+
+    private void Trace(string file, int line)
+    {
+        var now = Stopwatch.GetTimestamp();
+        var ms = (now - (_traceStart == 0 ? _spanStart : _traceStart)) * 1000.0 / Stopwatch.Frequency;
+        var key = (Path.GetFileName(_traceFile), _traceLine, Path.GetFileName(file), line);
+        lock (SpanTrace!)
+        {
+            var (n, total, max) = SpanTrace.GetValueOrDefault(key);
+            SpanTrace[key] = (n + 1, total + ms, Math.Max(max, ms));
+        }
+        (_traceFile, _traceLine) = (file, line);
+        _traceStart = Stopwatch.GetTimestamp();
+    }
+
+    /// <summary>
+    /// <c>--slice-vehicle NAME [--seeds N] [--first S] [--spans K]</c>: seeds made as the game's dynamic spawn makes them (2.5 ms slices on the kit's thread), each with its time,
+    /// slices, longest slice and span and the text's hash, then the K longest spans by their yields. A probe for the kit's spans (VEHICLEKIT.md, "Short spans").
+    /// </summary>
+    public static int SliceReport(string name, string[] args)
+    {
+        if (VehicleRegistry.Find(name) is not { } g)
+        {
+            Console.WriteLine($"no vehicle generator named \"{name}\"");
+            return 1;
+        }
+        string? Flag(string f) => args.SkipWhile(a => !a.Equals(f, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        var n = int.TryParse(Flag("--seeds"), out var sn) ? sn : 5;
+        var first = int.TryParse(Flag("--first"), out var sf) ? sf : 1;
+        var top = int.TryParse(Flag("--spans"), out var sk) ? sk : 12;
+        Warm();
+        SpanTrace = new();
+        var times = new List<double>();
+        for (var seed = first; seed < first + n; seed++)
+        {
+            var clock = Stopwatch.StartNew();
+            var job = new VehicleGenJob(g, seed);
+            while (!job.Step(2.5))
+            {
+            }
+            var ms = clock.Elapsed.TotalMilliseconds;
+            times.Add(ms);
+            Console.WriteLine($"slice-vehicle {job.Name}: {(job.Blueprint == null ? "FAILED: " + job.Error : $"hash {job.Hash:x16}")}, {ms:0} ms, kit {job.CpuMs:0} ms over {job.Slices} slices, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt})");
+        }
+        Console.WriteLine($"slice-vehicle {g.Name}: {times.Average():0} ms a generation (median {times.Order().ElementAt(times.Count / 2):0})");
+        foreach (var ((f0, l0, f1, l1), (cnt, total, max)) in SpanTrace.OrderByDescending(x => x.Value.Max).Take(top))
+            Console.WriteLine($"  span {f0}:{l0} to {f1}:{l1}: longest {max:0.00} ms, {cnt} times, {total:0} ms in all");
+        foreach (var ((f0, l0, f1, l1), (cnt, total, max)) in SpanTrace.OrderByDescending(x => x.Value.Total).Take(top))
+            Console.WriteLine($"  total {f0}:{l0} to {f1}:{l1}: {total:0} ms in all, {cnt} times, longest {max:0.00} ms");
+        SpanTrace = null;
+        return 0;
     }
 
     public static ulong Fnv(string text)

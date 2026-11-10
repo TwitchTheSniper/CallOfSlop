@@ -155,9 +155,13 @@ public class BlueprintScript
             ds = fit.DefSocket;
         else
             throw new VehicleKitException($"a {def.Name} doesn't fit on the {target.Name}'s \"{socket}\"");
+        VehicleGenJob.Yield(); // (the fit and the turn above, the placing below: spans of their own)
         var sp = spin ?? Math.Max(0, SmartRotation.BestSpin(C, on.Index, ts, def, ds));
+        VehicleGenJob.Yield();
         if (ConstructBuild.Place(C, on.Index, ts, def, ds, sp, out var g) is { } bad)
             throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": {(bad == ConstructBuild.InTheWay ? $"the {Blocker(def, g.Pos, g.Rot, g.Seg, on.Index)} is in the way" : bad)}");
+        if (clear)
+            VehicleGenJob.Yield();
         if (clear && VehicleChecks.ZFightsWith(C, def, g) is { } fight)
             throw new VehicleKitException($"a {def.Name} on the {target.Name}'s \"{socket}\": z-fighting: {fight}");
         if (veto?.Invoke(def, g) is { } no)

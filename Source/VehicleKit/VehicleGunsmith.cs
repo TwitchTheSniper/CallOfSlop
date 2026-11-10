@@ -191,13 +191,6 @@ public static class VehicleGunsmith
                         ok = true;
                         _pulls[(d.Name, n)] = ConstructWeapons.PullKick(c.Guns[g]) * World.TickRate / Math.Max(1, (int)c.Guns[g].Interval);
                     }
-                if (!ok && n > 1 && d.Racks == null && Environment.GetEnvironmentVariable("KIT_MERGEDIAG") == "1")
-                    foreach (var p in v.Parts)
-                        if (p.Index < c.PartCount && c.Parts[p.Index].D.IsReceiverGun)
-                        {
-                            var pd = c.Parts[p.Index].D;
-                            Console.WriteLine($"[mergediag] {d.Name} {n}: part {p.Index} {pd.Name} pos {c.Parts[p.Index].Pos} rot {c.Parts[p.Index].Rot} bounds {pd.BoundsMin}..{pd.BoundsMax} solid {pd.Boxes[0].Center}+-{pd.Boxes[0].Half} sockets {string.Join(" ", pd.Sockets.Where(x => x.Name is "right" or "top").Select(x => x.Name + x.At))}");
-                        }
                 if (ok && d.Racks != null)
                 {
                     // (a battery: its rack holds a missile on every station, as the game counts what it holds)
@@ -219,6 +212,16 @@ public static class VehicleGunsmith
                 Console.WriteLine($"[vehicles] gunsmith: {d.Name} won't build as {(d.Racks == null ? $"a {n}x{n}" : $"its {d.Racks[n - 1]}")}{(why == null ? "" : ": " + why)}: left out");
             return _fits[(d.Name, n)] = ok;
         }
+    }
+
+    /// <summary>Every design at every size it may be offered fitted on its test stand once (<see cref="Fits"/>), at the server's warm-up rather than in a spawn's slices.</summary>
+    public static void WarmFits()
+    {
+        if (!On)
+            return;
+        foreach (var d in Designs)
+            for (var n = MinSize(d); n <= MaxSize(d); n++)
+                Fits(d, n);
     }
 
     /// <summary>A missile battery of size <paramref name="n"/> (1 to 4) on the gunsmith's test stand, as blueprint text (<c>--bench-vehicle-guns --battery N</c>).</summary>
