@@ -257,6 +257,8 @@ public sealed partial class PlanetEdits : IDigGround
         var changed = 0;
         var fill = op.Kind >= DigKind.FillDirt;
         Span<float> s = stackalloc float[(MaxSpans + 1) * 2];
+        Span<int> box = stackalloc int[6 * 4];
+        var reached = 0;
         for (var f = 0; f < 6; f++)
         {
             if (!Footprint(op.At, op.Radius, f, out var ci0, out var ci1, out var cj0, out var cj1))
@@ -264,7 +266,11 @@ public sealed partial class PlanetEdits : IDigGround
             op.Rows(cj0, cj1, out cj0, out cj1); // (a big crater's band of each face: Game.MegaDigTick)
             if (cj1 < cj0)
                 continue;
-            var here = 0;
+            reached |= 1 << f;
+            box[f * 4] = ci0;
+            box[f * 4 + 1] = cj0;
+            box[f * 4 + 2] = ci1;
+            box[f * 4 + 3] = cj1;
             for (var cj = cj0; cj <= cj1; cj++)
             for (var ci = ci0; ci <= ci1; ci++)
             {
@@ -276,7 +282,7 @@ public sealed partial class PlanetEdits : IDigGround
                     if (filled < 0)
                         filled = Touch(f, ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
                     if (Add(filled, flo, fhi, op.Kind))
-                        here++;
+                        changed++;
                     continue;
                 }
                 if (!Ball(in op, f, ci, cj, out var lo, out var hi))
@@ -289,14 +295,17 @@ public sealed partial class PlanetEdits : IDigGround
                     col = Touch(f, ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
                 }
                 if (Subtract(col, lo, hi))
-                    here++;
+                    changed++;
             }
-            if (here > 0)
-                Bump(f, ci0 / Sub - 1, cj0 / Sub - 1, ci1 / Sub + 1, cj1 / Sub + 1);
-            changed += here;
         }
-        if (changed > 0)
-            Log.Add(op); // (only ops that changed something: what clients and joiners replay)
+        if (changed == 0)
+            return 0;
+        // Every face the op reaches, changed there or not: a column by a seam draws its sides and its top's slope against
+        // the next face's columns.
+        for (var f = 0; f < 6; f++)
+            if ((reached & (1 << f)) != 0)
+                Bump(f, box[f * 4] / Sub - 1, box[f * 4 + 1] / Sub - 1, box[f * 4 + 2] / Sub + 1, box[f * 4 + 3] / Sub + 1);
+        Log.Add(op); // (only ops that changed something: what clients and joiners replay)
         return changed;
     }
 
@@ -531,6 +540,7 @@ public sealed partial class PlanetEdits : IDigGround
         _cols = 0;
         _reserved = 0; // (the span lists made stay: Reserve walks past them)
         Log.Clear();
+        ForgetTops();
         MaxRise = 0;
         OpenToCavity = false;
         Version++;
@@ -543,19 +553,45 @@ public sealed partial class PlanetEdits : IDigGround
         var a1 = Math.Min(i1, _n - 1) / ChunkCells;
         var b0 = Math.Max(j0, 0) / ChunkCells;
         var b1 = Math.Min(j1, _n - 1) / ChunkCells;
+        ForgetTops(face, i0, j0, i1, j1);
         for (var b = b0; b <= b1; b++)
         for (var a = a0; a <= a1; a++)
-        {
-            var key = (face * ChunksPerSide + b) * ChunksPerSide + a;
-            if (_chunkVersion.TryGetValue(key, out var v))
-                _chunkVersion[key] = v + 1;
-            else
-            {
-                _chunkVersion[key] = 1;
-                _chunks.Add(key);
-            }
-        }
+            BumpChunk((face * ChunksPerSide + b) * ChunksPerSide + a);
+        if (i0 < 0 || j0 < 0 || i1 >= _n || j1 >= _n)
+            BumpOverSeam(face, i0, j0, i1, j1);
         Version++;
+    }
+
+    private void BumpChunk(int key)
+    {
+        if (_chunkVersion.TryGetValue(key, out var v))
+            _chunkVersion[key] = v + 1;
+        else
+        {
+            _chunkVersion[key] = 1;
+            _chunks.Add(key);
+        }
+    }
+
+    /// <summary>
+    /// The part of a changed range that lies over the face's edge: the next face's cells there draw their sides and their
+    /// tops' slopes against the changed columns, so they are stale too.
+    /// </summary>
+    private void BumpOverSeam(int face, int i0, int j0, int i1, int j1)
+    {
+        for (var j = j0; j <= j1; j++)
+        for (var i = i0; i <= i1; i++)
+        {
+            bool offI = (uint)i >= (uint)_n, offJ = (uint)j >= (uint)_n;
+            if (offI == offJ)
+                continue; // (on the face, or off it both ways: past a cube's corner)
+            _p.DirOf(face, i + 0.5, j + 0.5, out var x, out var y, out var z);
+            _p.Locate(x, y, z, out var f, out var fi, out var fj);
+            int ni = Math.Clamp((int)Math.Floor(fi), 0, _n - 1), nj = Math.Clamp((int)Math.Floor(fj), 0, _n - 1);
+            ForgetTops(f, ni, nj, ni, nj);
+            if (Touched(f, ni, nj))
+                BumpChunk((f * ChunksPerSide + nj / ChunkCells) * ChunksPerSide + ni / ChunkCells);
+        }
     }
 
     /// <summary>Turns cell (i, j) of a face into columns read off the triangles along their middles. Returns its first column.</summary>
@@ -617,6 +653,10 @@ public sealed partial class PlanetEdits : IDigGround
         }
         _cols += n;
         slot = first + 1;
+        if (CellOrdinal(first) < _topsMade.Length)
+            _topsMade[CellOrdinal(first)] = false;
+        if (CellOrdinal(first) < _coloursMade.Length)
+            _coloursMade[CellOrdinal(first)] = false;
         _touchedCells.Add((face * _n + j) * _n + i);
         return first;
     }
@@ -684,6 +724,9 @@ public sealed partial class PlanetEdits : IDigGround
     /// <summary>Is altitude <paramref name="a"/> solid in a column's spans (never in a hollow planetoid's cavity)?</summary>
     private bool SolidAt(ReadOnlySpan<float> s, float a) => a >= _inner && TerrainEdits.Solid(s, a);
 
+    /// <summary><see cref="SolidAt(ReadOnlySpan{float}, float)"/> with the highest span ending at <paramref name="top"/> (its sloping top right there).</summary>
+    private bool SolidAt(ReadOnlySpan<float> s, float a, float top) => a >= _inner && GroundTops.Solid(s, a, top);
+
     // ---- Ray hits -----------------------------------------------------------------------------------------------------
 
     /// <summary>
@@ -704,18 +747,20 @@ public sealed partial class PlanetEdits : IDigGround
     {
         var a = Vector3.Lerp(p0, p1, u0);
         var b = Vector3.Lerp(p0, p1, u1);
-        ColumnAt(a.X, a.Y, a.Z, out var fa, out var ia, out var ja);
-        ColumnAt(b.X, b.Y, b.Z, out var fb, out var ib, out var jb);
+        var da = ColumnAt(a.X, a.Y, a.Z, out var fa, out var ia, out var ja, out var ua, out var va, out var ca);
+        var db = ColumnAt(b.X, b.Y, b.Z, out var fb, out var ib, out var jb, out var ub, out var vb, out var cb);
         if (fa == fb && ia == ib && ja == jb)
         {
-            var c = Col(fa, ia, ja);
-            if (c < 0)
+            if (!da)
                 return UnderTriangles(b) ? u1 : -1; // (untouched ground: the ray march settles onto its triangles)
-            var s = new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
+            var s = new ReadOnlySpan<float>(_spans[ca], 0, _count[ca] * 2);
+            var tops = Tops(ca);
             float aa = (float)(a.Length() - _r), ab = (float)(b.Length() - _r);
-            if (SolidAt(s, aa))
+            float ta = GroundTops.At(tops, ua, va), tb = GroundTops.At(tops, ub, vb);
+            if (SolidAt(s, aa, ta))
                 return u0;
             var best = float.MaxValue;
+            var topLo = MathF.Max(s[^2], _inner);
             for (var k = 0; k < s.Length; k += 2)
             {
                 // Going down it enters a span through its top, going up through its underside (a hollow planetoid's lowest
@@ -723,10 +768,24 @@ public sealed partial class PlanetEdits : IDigGround
                 var bottom = MathF.Max(s[k], _inner);
                 if (s[k + 1] <= bottom)
                     continue;
+                if (k == s.Length - 2 && ab < aa)
+                    continue; // (the highest span's top slopes: below)
                 var y = ab < aa ? s[k + 1] : bottom;
                 if (!float.IsFinite(y) || (y - aa) * (y - ab) > 0 || aa == ab)
                     continue;
                 best = MathF.Min(best, (y - aa) / (ab - aa));
+            }
+            if (s[^1] > topLo && aa >= topLo)
+            {
+                // The highest span's top: two triangles, so the height over it along the piece is two straight runs at
+                // most. Over it at the start (it wasn't solid there); look for where it first isn't, by the middle too.
+                var m = Vector3.Lerp(a, b, 0.5f);
+                var am = (float)(m.Length() - _r);
+                var tm = GroundTops.At(tops, (ua + ub) * 0.5f, (va + vb) * 0.5f);
+                float ha = aa - ta, hm = am - tm, hb = ab - tb;
+                var hit = hm <= 0 ? 0.5f * ha / (ha - hm) : hb <= 0 ? 0.5f + 0.5f * hm / (hm - hb) : float.MaxValue;
+                if (hit <= 1 && aa + (ab - aa) * hit >= topLo - 1e-3f)
+                    best = MathF.Min(best, hit);
             }
             return best <= 1 ? u0 + (u1 - u0) * Math.Clamp(best, 0f, 1f) : -1;
         }
@@ -734,11 +793,9 @@ public sealed partial class PlanetEdits : IDigGround
         {
             // Over a column line (within 2 mm): solid on the near side at the far end (a rim's very corner), or on the far side.
             var ab = (float)(b.Length() - _r);
-            var ca = Col(fa, ia, ja);
-            if (ca >= 0 ? SolidAt(new ReadOnlySpan<float>(_spans[ca], 0, _count[ca] * 2), ab + 0.001f) : UnderTriangles(b, 0.001f))
+            if (da ? SolidAt(new ReadOnlySpan<float>(_spans[ca], 0, _count[ca] * 2), ab + 0.001f, GroundTops.At(Tops(ca), ua, va)) : UnderTriangles(b, 0.001f))
                 return u0; // (more than a millimetre into it: a graze closer than that is no hit)
-            var c = Col(fb, ib, jb);
-            return (c >= 0 ? SolidAt(new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2), ab) : UnderTriangles(b)) ? u1 : -1;
+            return (db ? SolidAt(new ReadOnlySpan<float>(_spans[cb], 0, _count[cb] * 2), ab, GroundTops.At(Tops(cb), ub, vb)) : UnderTriangles(b)) ? u1 : -1;
         }
         var um = (u0 + u1) * 0.5f;
         var r = Piece(p0, p1, u0, um, len, depth + 1);
@@ -773,7 +830,14 @@ public sealed partial class PlanetEdits : IDigGround
                 var bottom = MathF.Max(s[k], _inner);
                 if (s[k + 1] <= bottom)
                     continue; // (dug open to a hollow planetoid's cavity)
-                if (MathF.Abs(a - s[k + 1]) < near)
+                if (k == s.Length - 2)
+                {
+                    EnsureTops(f, ci / Sub, cj / Sub);
+                    float u = (float)Math.Clamp(gi - ci, 0, 1), v = (float)Math.Clamp(gj - cj, 0, 1);
+                    if (MathF.Abs(a - GroundTops.At(Tops(c), u, v)) < near)
+                        return TopNormal(f, ci, cj, c, u, v); // (the highest span's top slopes)
+                }
+                else if (MathF.Abs(a - s[k + 1]) < near)
                     return up;
                 if (float.IsFinite(bottom) && MathF.Abs(a - bottom) < near)
                     return -up;
@@ -824,11 +888,47 @@ public sealed partial class PlanetEdits : IDigGround
             _p.DirOf(face, i + (double)a / Sub, j + (double)b / Sub, out corner[k], out corner[k + 1], out corner[k + 2]);
         }
         var ctx = new FaceCtx { Ox = _p.Cx - ox, Oy = _p.Cy - oy, Oz = _p.Cz - oz, R = _r };
+        var first = EnsureTops(face, i, j);
+        var cornerBase = new ReadOnlySpan<float>(_cornerBase, CellOrdinal(first) * vs * vs, vs * vs);
+        // This cell's columns and the ring round them: their tops' corners (NaN where a column isn't dug, or is over the
+        // face's edge), for the sides against the next column and for the shading across columns.
+        var rs = Sub + 2;
+        var shaded = sink.Shaded;
+        Span<float> ring = stackalloc float[rs * rs * 4];
+        Span<int> ringCol = stackalloc int[rs * rs];
+        if (shaded)
+            EnsureColours(face, i, j, first);
+        for (var b = -1; b <= Sub; b++)
+        for (var a = -1; a <= Sub; a++)
+        {
+            var k = (b + 1) * rs + a + 1;
+            int ci = i * Sub + a, cj = j * Sub + b;
+            var c = Col(face, ci, cj);
+            ringCol[k] = c;
+            if (c < 0)
+            {
+                ring.Slice(k * 4, 4).Fill(float.NaN);
+                continue;
+            }
+            if ((uint)a >= (uint)Sub || (uint)b >= (uint)Sub)
+            {
+                var other = EnsureTops(face, ci / Sub, cj / Sub);
+                if (shaded)
+                    EnsureColours(face, ci / Sub, cj / Sub, other);
+            }
+            Tops(c).CopyTo(ring.Slice(k * 4, 4));
+        }
+        // The cell's own axes for shading: one column along i and along j (not square to each other near a cube's corner).
+        var o00 = D(corner, 0);
+        var o10 = D(corner, Sub * 3);
+        var o01 = D(corner, Sub * vs * 3);
+        var along = new Vector3((float)((o10.X - o00.X) * _r), (float)((o10.Y - o00.Y) * _r), (float)((o10.Z - o00.Z) * _r)) / Sub;
+        var across = new Vector3((float)((o01.X - o00.X) * _r), (float)((o01.Y - o00.Y) * _r), (float)((o01.Z - o00.Z) * _r)) / Sub;
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
         {
             int ci = i * Sub + a, cj = j * Sub + b;
-            var c = Col(face, ci, cj);
+            var c = first + b * Sub + a;
             var s = new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
             var d00 = D(corner, (b * vs + a) * 3);
             var d10 = D(corner, (b * vs + a + 1) * 3);
@@ -836,14 +936,29 @@ public sealed partial class PlanetEdits : IDigGround
             var d11 = D(corner, ((b + 1) * vs + a + 1) * 3);
             ColDir(face, ci, cj, out var ux, out var uy, out var uz);
             var up = new Vector3((float)ux, (float)uy, (float)uz);
+            var rk = (b + 1) * rs + a + 1;
+            var t = ring.Slice(rk * 4, 4);
             for (var k = 0; k < s.Length; k += 2)
             {
                 float lo = MathF.Max(s[k], _inner), hi = s[k + 1];
                 if (hi <= lo)
                     continue; // (dug open to a hollow planetoid's cavity: nothing left here)
                 var covered = k + 2 < s.Length;
-                var (col, rock) = TopShade(c, ux, uy, uz, hi, covered);
-                Emit(ref sink, ctx.P(d00, hi), ctx.P(d01, hi), ctx.P(d11, hi), ctx.P(d10, hi), up, col, rock);
+                if (covered)
+                {
+                    var (col, rock) = shaded ? TopShade(c, ux, uy, uz, hi, covered) : default;
+                    Emit(ref sink, ctx.P(d00, hi), ctx.P(d01, hi), ctx.P(d11, hi), ctx.P(d10, hi), up, col, rock);
+                }
+                else if (shaded)
+                {
+                    TopVertex(ring, ringCol, rs, a, b, 0, up, along, across, out var n00, out var c00);
+                    TopVertex(ring, ringCol, rs, a, b, 1, up, along, across, out var n10, out var c10);
+                    TopVertex(ring, ringCol, rs, a, b, 2, up, along, across, out var n01, out var c01);
+                    TopVertex(ring, ringCol, rs, a, b, 3, up, along, across, out var n11, out var c11);
+                    sink.Smooth(ctx.P(d00, t[0]), ctx.P(d01, t[2]), ctx.P(d11, t[3]), ctx.P(d10, t[1]), n00, n01, n11, n10, c00, c01, c11, c10);
+                }
+                else
+                    sink.Smooth(ctx.P(d00, t[0]), ctx.P(d01, t[2]), ctx.P(d11, t[3]), ctx.P(d10, t[1]), up, up, up, up, default, default, default, default);
                 if (k > 0 || float.IsFinite(lo)) // (and a hollow planetoid's cavity roof under a dug cell: the cavity's own drawing leaves dug cells out)
                 {
                     var (bc, br) = Shade(c, lo, true);
@@ -851,13 +966,52 @@ public sealed partial class PlanetEdits : IDigGround
                 }
             }
             var top = s[^1];
-            Side(ref sink, ctx, s, c, top, face, ci - 1, cj, d00, d01, up);
-            Side(ref sink, ctx, s, c, top, face, ci + 1, cj, d11, d10, up);
-            Side(ref sink, ctx, s, c, top, face, ci, cj - 1, d10, d00, up);
-            Side(ref sink, ctx, s, c, top, face, ci, cj + 1, d01, d11, up);
+            // Each side: the edge p..q, this column's top at its ends, the next column's (ring) and its corners there.
+            Side(ref sink, ctx, s, c, top, face, ci - 1, cj, d00, d01, up, t[0], t[2], ringCol[rk - 1], ring.Slice((rk - 1) * 4, 4), 1, 3, cornerBase[b * vs + a], cornerBase[(b + 1) * vs + a]);
+            Side(ref sink, ctx, s, c, top, face, ci + 1, cj, d11, d10, up, t[3], t[1], ringCol[rk + 1], ring.Slice((rk + 1) * 4, 4), 2, 0, cornerBase[(b + 1) * vs + a + 1], cornerBase[b * vs + a + 1]);
+            Side(ref sink, ctx, s, c, top, face, ci, cj - 1, d10, d00, up, t[1], t[0], ringCol[rk - rs], ring.Slice((rk - rs) * 4, 4), 3, 2, cornerBase[b * vs + a + 1], cornerBase[b * vs + a]);
+            Side(ref sink, ctx, s, c, top, face, ci, cj + 1, d01, d11, up, t[2], t[3], ringCol[rk + rs], ring.Slice((rk + rs) * 4, 4), 0, 1, cornerBase[(b + 1) * vs + a], cornerBase[(b + 1) * vs + a + 1]);
         }
 
         static Dir3 D(Span<double> v, int k) => new(v[k], v[k + 1], v[k + 2]);
+    }
+
+    /// <summary>
+    /// The shading normal and the colour of column (a, b)'s top at its corner <paramref name="q"/> (0..3): the mean slope and
+    /// colour of the columns that share the corner's height there (one surface: <see cref="GroundTops"/>), so a slope is lit
+    /// as one face, not a facet a column, and grass runs into dug dirt without a saw's edge. <paramref name="ring"/> holds
+    /// the tops of the cell's columns and the ring round them.
+    /// </summary>
+    private void TopVertex(ReadOnlySpan<float> ring, ReadOnlySpan<int> ringCol, int rs, int a, int b, int q, Vector3 up, Vector3 along, Vector3 across, out Vector3 normal, out Vector4 colour)
+    {
+        var mine = ring[((b + 1) * rs + a + 1) * 4 + q];
+        // The corner in ring coordinates, and the four columns round it.
+        int va = a + 1 + (q & 1), vb = b + 1 + (q >> 1);
+        float di = 0, dj = 0;
+        var n = 0;
+        colour = default;
+        for (var k = 0; k < 4; k++)
+        {
+            int ma = va - 1 + (k & 1), mb = vb - 1 + (k >> 1);
+            var t = ring.Slice((mb * rs + ma) * 4, 4);
+            if (!(MathF.Abs(t[3 - k] - mine) < 0.03f))
+                continue; // (not dug, over the face's edge, or a top of its own there)
+            di += (t[1] + t[3] - t[0] - t[2]) * 0.5f;
+            dj += (t[2] + t[3] - t[0] - t[1]) * 0.5f;
+            colour += _topColour[ringCol[mb * rs + ma]];
+            n++;
+        }
+        colour /= n; // (its own column is always one of them)
+        normal = Vector3.Cross(across + up * (dj / n), along + up * (di / n));
+        var len = normal.Length();
+        if (len < 1e-12f)
+        {
+            normal = up;
+            return;
+        }
+        normal /= len;
+        if (Vector3.Dot(normal, up) < 0)
+            normal = -normal;
     }
 
     /// <summary>A unit direction in doubles.</summary>
@@ -883,8 +1037,14 @@ public sealed partial class PlanetEdits : IDigGround
         }
     }
 
-    /// <summary>The sides of one column facing neighbour (ni, nj) along the edge p..q.</summary>
-    private void Side<T>(ref T sink, in FaceCtx ctx, ReadOnlySpan<float> s, int c, float top, int face, int ni, int nj, Dir3 p, Dir3 q, Vector3 up)
+    /// <summary>
+    /// The sides of one column facing neighbour (ni, nj) along the edge p..q. The column's top is at <paramref name="tp"/>,
+    /// <paramref name="tq"/> at the edge's ends; the neighbour (<paramref name="nc"/>, -1 not dug or over the face's edge) has
+    /// its tops in <paramref name="nt"/>, corners <paramref name="np"/> and <paramref name="nq"/> at the ends; the ground as
+    /// built is at <paramref name="sp"/>, <paramref name="sq"/> there.
+    /// </summary>
+    private void Side<T>(ref T sink, in FaceCtx ctx, ReadOnlySpan<float> s, int c, float top, int face, int ni, int nj, Dir3 p, Dir3 q, Vector3 up,
+        float tp, float tq, int nc, ReadOnlySpan<float> nt, int np, int nq, float sp, float sq)
         where T : struct, IDigFaceSink
     {
         // The wall's plane passes through the centre; its normal faces away from this column.
@@ -892,18 +1052,28 @@ public sealed partial class PlanetEdits : IDigGround
         var mid = new Vector3((float)(p.X + q.X), (float)(p.Y + q.Y), (float)(p.Z + q.Z)) * 0.5f;
         if (Vector3.Dot(n, up - mid) > 0)
             n = -n;
-        var nc = Neighbour(face, ni, nj);
+        float ntp, ntq;
+        if (nc >= 0)
+            (ntp, ntq) = (nt[np], nt[nq]);
+        else if (((uint)ni >= (uint)Cols || (uint)nj >= (uint)Cols) && (nc = Neighbour(face, ni, nj, out var nf, out var nci, out var ncj)) >= 0)
+            SeamTops(nf, nci, ncj, nc, p, q, out ntp, out ntq); // (over the face's edge: the next face's column, its corners found by where they are)
+        else
+            ntp = ntq = 0;
+        var topK = s.Length - 2;
         if (nc >= 0)
         {
             var ns = new ReadOnlySpan<float>(_spans[nc], 0, _count[nc] * 2);
+            var nTop = ns.Length - 2;
             for (var k = 0; k < s.Length; k += 2)
             {
                 var lo = MathF.Max(s[k], _inner);
                 var hi = s[k + 1];
                 if (hi <= lo)
                     continue;
-                var covered = k + 2 < s.Length;
+                var covered = k < topK;
                 var y = lo;
+                var onTop = false; // (y is the next column's sloping top)
+                var done = false;
                 for (var m = 0; m < ns.Length && y < hi; m += 2)
                 {
                     if (ns[m + 1] <= y)
@@ -913,32 +1083,103 @@ public sealed partial class PlanetEdits : IDigGround
                     if (ns[m] > y)
                         Wall(ref sink, ctx, p, q, y, y, ns[m], ns[m], n, c, covered);
                     y = MathF.Max(y, ns[m + 1]);
+                    if (m != nTop)
+                        continue;
+                    onTop = true;
+                    if (k == topK)
+                    {
+                        // Two tops side by side: the wall is what this one stands over the other (nothing where they are one surface).
+                        Between(ref sink, ctx, p, q, ntp, ntq, tp, tq, n, c, false);
+                        done = true;
+                    }
                 }
-                if (y < hi)
-                    Wall(ref sink, ctx, p, q, y, y, hi, hi, n, c, covered);
+                if (done)
+                    continue;
+                if (k == topK)
+                {
+                    if (onTop || y < hi)
+                        Between(ref sink, ctx, p, q, onTop ? ntp : y, onTop ? ntq : y, tp, tq, n, c, false);
+                }
+                else if (y < hi)
+                    Between(ref sink, ctx, p, q, onTop ? ntp : y, onTop ? ntq : y, hi, hi, n, c, covered);
             }
             return;
         }
         // The next cell is untouched: solid up to its triangles along the shared edge.
-        var sp = BaseAlt(p.X, p.Y, p.Z);
-        var sq = BaseAlt(q.X, q.Y, q.Z);
         for (var k = 0; k < s.Length; k += 2)
         {
             float lo = MathF.Max(s[k], _inner), hi = MathF.Max(s[k + 1], _inner);
-            var covered = k + 2 < s.Length;
+            var covered = k < topK;
+            if (!covered && hi > lo && lo <= MathF.Min(sp, sq))
+            {
+                // The highest span: its sloping top against the ground as built, standing over it or dug under it.
+                Between(ref sink, ctx, p, q, sp, sq, tp, tq, n, c, false);
+                Between(ref sink, ctx, p, q, tp, tq, sp, sq, -n, c, MathF.Max(sp, sq) < top);
+                continue;
+            }
             var g1 = covered ? s[k + 2] : float.PositiveInfinity;
             Sloped(ref sink, ctx, p, q, sp, sq, lo, hi, true, n, c, covered);
             Sloped(ref sink, ctx, p, q, sp, sq, hi, g1, false, -n, c, covered || MathF.Max(sp, sq) < top);
         }
     }
 
+    /// <summary>
+    /// The wall along p..q between a lower line (<paramref name="loP"/>, <paramref name="loQ"/>) and an upper one, where the
+    /// upper really is above: all of it, the part to one side of where they cross, or nothing.
+    /// </summary>
+    private void Between<T>(ref T sink, in FaceCtx ctx, Dir3 p, Dir3 q, float loP, float loQ, float hiP, float hiQ, Vector3 n, int c, bool covered)
+        where T : struct, IDigFaceSink
+    {
+        const float eps = 0.001f;
+        float dp = hiP - loP, dq = hiQ - loQ;
+        if (dp <= eps && dq <= eps)
+            return;
+        if (dp >= -eps && dq >= -eps)
+        {
+            Wall(ref sink, ctx, p, q, loP, loQ, MathF.Max(hiP, loP), MathF.Max(hiQ, loQ), n, c, covered);
+            return;
+        }
+        var u = dp / (dp - dq);
+        var m = p.Lerp(q, u);
+        var h = loP + (loQ - loP) * u;
+        if (dp > 0)
+            Wall(ref sink, ctx, p, m, loP, h, hiP, h, n, c, covered);
+        else
+            Wall(ref sink, ctx, m, q, h, loQ, h, hiQ, n, c, covered);
+    }
+
+    /// <summary>The tops of a column on another face at the two ends of an edge it shares with this one: its corners nearest to them.</summary>
+    private void SeamTops(int face, int ci, int cj, int c, Dir3 p, Dir3 q, out float tp, out float tq)
+    {
+        EnsureTops(face, ci / Sub, cj / Sub);
+        var t = Tops(c);
+        tp = tq = t[0];
+        double bestP = double.MaxValue, bestQ = double.MaxValue;
+        for (var k = 0; k < 4; k++)
+        {
+            _p.DirOf(face, (double)(ci + (k & 1)) / Sub, (double)(cj + (k >> 1)) / Sub, out var x, out var y, out var z);
+            double dp = (x - p.X) * (x - p.X) + (y - p.Y) * (y - p.Y) + (z - p.Z) * (z - p.Z);
+            double dq = (x - q.X) * (x - q.X) + (y - q.Y) * (y - q.Y) + (z - q.Z) * (z - q.Z);
+            if (dp < bestP)
+                (bestP, tp) = (dp, t[k]);
+            if (dq < bestQ)
+                (bestQ, tq) = (dq, t[k]);
+        }
+    }
+
     /// <summary>The storage index of the column next to (ni, nj) on a face, which may be over the face's edge (-1: untouched).</summary>
-    private int Neighbour(int face, int ni, int nj)
+    private int Neighbour(int face, int ni, int nj) => Neighbour(face, ni, nj, out _, out _, out _);
+
+    /// <summary><see cref="Neighbour(int, int, int)"/>, and which column of which face it is.</summary>
+    private int Neighbour(int face, int ni, int nj, out int f, out int ci, out int cj)
     {
         if ((uint)ni < (uint)Cols && (uint)nj < (uint)Cols)
+        {
+            (f, ci, cj) = (face, ni, nj);
             return Col(face, ni, nj);
+        }
         _p.DirOf(face, (ni + 0.5) / Sub, (nj + 0.5) / Sub, out var x, out var y, out var z);
-        ColumnAt(x, y, z, out var f, out var ci, out var cj);
+        ColumnAt(x, y, z, out f, out ci, out cj);
         return Col(f, ci, cj);
     }
 

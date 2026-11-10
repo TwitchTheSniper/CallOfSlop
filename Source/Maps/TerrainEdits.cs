@@ -100,6 +100,16 @@ public interface IDigFaceSink
 {
     /// <summary>A quad a-b-c-d, wound counter-clockwise seen from the side <paramref name="n"/> points to.</summary>
     void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock);
+
+    /// <summary>
+    /// A column's sloping top (<see cref="GroundTops"/>): the two triangles a-b-c and a-c-d, wound counter-clockwise seen from
+    /// above, with a shading normal and a colour (rgb, rockiness in w) at each corner, both shared with the columns it makes
+    /// one surface with there.
+    /// </summary>
+    void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd);
+
+    /// <summary>Does this sink use colours and shading normals (drawing)? Collision doesn't, and isn't given them.</summary>
+    bool Shaded { get; }
 }
 
 /// <summary>

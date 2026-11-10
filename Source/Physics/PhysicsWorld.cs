@@ -1127,6 +1127,12 @@ public sealed class PhysicsWorld : IWorldQuery
         public Vector3 Min, Max;
         public int Cell, Sub;
 
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => false;
+
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             var lo = Vector3.Min(Vector3.Min(a, b), Vector3.Min(c, d));

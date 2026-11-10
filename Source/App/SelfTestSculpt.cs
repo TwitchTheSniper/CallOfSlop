@@ -133,6 +133,12 @@ public static partial class SelfTest
         public Vector3 Want, Got;
         public bool Found;
 
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => true;
+
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             if (n.Y > 0.5f && !Found && MathF.Abs((a.X + c.X) * 0.5f - Want.X) < 0.5f && MathF.Abs((a.Z + c.Z) * 0.5f - Want.Z) < 0.5f && a.Y > Want.Y)

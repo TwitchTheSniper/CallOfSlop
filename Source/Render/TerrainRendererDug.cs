@@ -171,6 +171,23 @@ public sealed unsafe partial class TerrainRenderer
         public List<Vertex> Verts;
         public List<uint> Idx;
 
+        public bool Shaded => true;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
+        {
+            var b0 = (uint)Verts.Count;
+            Verts.Add(new Vertex { Pos = a, Normal = na, Color = Pack(new Vector3(ca.X, ca.Y, ca.Z), ca.W) });
+            Verts.Add(new Vertex { Pos = b, Normal = nb, Color = Pack(new Vector3(cb.X, cb.Y, cb.Z), cb.W) });
+            Verts.Add(new Vertex { Pos = c, Normal = nc, Color = Pack(new Vector3(cc.X, cc.Y, cc.Z), cc.W) });
+            Verts.Add(new Vertex { Pos = d, Normal = nd, Color = Pack(new Vector3(cd.X, cd.Y, cd.Z), cd.W) });
+            Idx.Add(b0);
+            Idx.Add(b0 + 1);
+            Idx.Add(b0 + 2);
+            Idx.Add(b0);
+            Idx.Add(b0 + 2);
+            Idx.Add(b0 + 3);
+        }
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             var b0 = (uint)Verts.Count;

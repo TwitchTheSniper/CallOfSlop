@@ -355,6 +355,23 @@ public sealed unsafe partial class PlanetRenderer
         public List<DugVertex> Verts;
         public List<uint> Idx;
 
+        public bool Shaded => true;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
+        {
+            var b0 = (uint)Verts.Count;
+            Verts.Add(new DugVertex { Pos = a, Normal = na, Color = ca });
+            Verts.Add(new DugVertex { Pos = b, Normal = nb, Color = cb });
+            Verts.Add(new DugVertex { Pos = c, Normal = nc, Color = cc });
+            Verts.Add(new DugVertex { Pos = d, Normal = nd, Color = cd });
+            Idx.Add(b0);
+            Idx.Add(b0 + 1);
+            Idx.Add(b0 + 2);
+            Idx.Add(b0);
+            Idx.Add(b0 + 2);
+            Idx.Add(b0 + 3);
+        }
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             var b0 = (uint)Verts.Count;

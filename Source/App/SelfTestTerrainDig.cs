@@ -195,6 +195,12 @@ public static partial class SelfTest
         public int Faces, Wrong;
         public string First;
 
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => true;
+
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             Faces++;
@@ -226,6 +232,12 @@ public static partial class SelfTest
         public TerrainEdits E;
         public int Faces, Wrong, Slants;
         public string First;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => true;
+
 
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
@@ -332,6 +344,12 @@ public static partial class SelfTest
     private struct DigFaceCount : IDigFaceSink
     {
         public int N;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => true;
+
 
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock) => N++;
     }

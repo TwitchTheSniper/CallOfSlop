@@ -234,6 +234,8 @@ public static unsafe partial class Program
             return SelfTest.BenchCookOff(args); // an ordnance rack's cook-off chain and bombs set off in the air (Source/App/BenchCookOff.cs)
         if (args.Any(a => a.Equals("--bench-fuelblast", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchFuelBlast(args); // tanks with fuel in them going up: drums, a tanker, a chain, a fused hull (Source/App/BenchFuelBlast.cs)
+        if (args.Any(a => a.Equals("--bench-dig", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchDig(args); // what changing the ground costs: ops, a chunk's mesh, collision and rays over a dug site (Source/App/BenchDig.cs)
         if (args.Any(a => a.Equals("--bench-mega", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchMega(args); // what a massive blast costs: tick time, allocation, bytes sent, over a busy scene (Source/App/BenchMegaBlast.cs)
         if (args.Any(a => a.Equals("--bench-vehicle-guns", StringComparison.OrdinalIgnoreCase)))

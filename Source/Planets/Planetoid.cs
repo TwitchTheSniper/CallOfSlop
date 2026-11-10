@@ -570,11 +570,12 @@ public sealed class Planetoid
         var dir = rel / d;
         if (Crust > 0 && d - (float)Radius < Inner)
             return Inner - (d - (float)Radius); // in the cavity: how far from its walls, the inside of the crust (gravity holds things to them)
-        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
+        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans, out var top))
         {
-            // Dug ground: over the span the point is in (negative, inside it), else over the highest span below it.
+            // Dug ground: over the span the point is in (negative, inside it), else over the highest span below it (whose
+            // top slopes: GroundTops).
             var a = d - (float)Radius;
-            return a - TerrainEdits.GroundBelow(spans, a);
+            return a - GroundTops.GroundBelow(spans, a, top);
         }
         return d - SurfaceRadius(dir, out _);
     }
@@ -606,7 +607,7 @@ public sealed class Planetoid
         if (Crust > 0 && d - (float)Radius < Inner)
             return -dir; // the cavity's walls face the centre
         if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out _))
-            return dir; // (dug tops are level: "up" there)
+            return e.NormalAt(dir.X, dir.Y, dir.Z, d - (float)Radius); // (a dug column: its top's slope, or "up" on a ledge under it)
         SurfaceRadius(dir, out var n);
         return n;
     }
@@ -619,8 +620,8 @@ public sealed class Planetoid
         var dir = d > 1e-3f ? rel / d : Vector3.UnitY;
         if (Crust > 0 && d - (float)Radius < Inner)
             return Center + dir * (float)InnerRadius; // the cavity: its wall straight "under" (outwards)
-        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
-            return Center + dir * ((float)Radius + TerrainEdits.GroundBelow(spans, d - (float)Radius));
+        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans, out var top))
+            return Center + dir * ((float)Radius + GroundTops.GroundBelow(spans, d - (float)Radius, top));
         return Center + dir * SurfaceRadius(dir, out _);
     }
 
@@ -703,6 +704,12 @@ public sealed class Planetoid
         public List<ContactShape> Into;
         public Vector3 Min, Max;
         public int Cell, Sub;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => false;
+
 
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
