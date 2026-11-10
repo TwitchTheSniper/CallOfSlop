@@ -5,8 +5,8 @@ namespace CallOfSlop.VehicleKit.Generators;
 /// <summary>
 /// Fixed-wing prop planes (docs/vehiclekit/AIRCRAFT.md), on the Light Plane's wiring: a Flight Stabilizer on Plane keys, its <c>throttle</c> into the props, <c>pitch</c> into the
 /// elevator, <c>yaw</c> into the rudder, <c>left aileron</c> and <c>right aileron</c> into the ailerons and <c>flaps</c> into the flaps. From the seed: a single tractor engine
-/// (a Turbine with a three-blade prop or an Engine with a two-blade one), twin engines on the wings, or a pusher on a pylon; low, mid or high wings of two or three
-/// straight, narrow or fabric panels a side; a conventional tail or a T-tail on a boom; tricycle or tail-dragger gear.
+/// (a Turbine with a three-blade prop), a pusher on a pylon, or twin Light Turbojets under the wings (a construct drives shafts from one engine only, so twin props
+/// would turn one prop); low, mid or high wings of three or four straight, narrow or fabric panels a side; a conventional tail or a T-tail on a boom; tricycle or tail-dragger gear.
 /// The fuselage is a cockpit block and a beam spine. The wing goes where the balance wants it: the plane is built twice off to one side with the wing at two stations,
 /// its centre of mass and centre of lift (<see cref="Construct.LiftCentre"/>) measured, and the station that puts the centre of mass a margin ahead of the lift is the one built.
 /// </summary>
@@ -19,7 +19,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
     /// <summary>None ship as files: planes are made when they spawn (no style names the shape in its extras yet).</summary>
     public override IReadOnlyList<int> Seeds => [];
 
-    private enum Power { Tractor, Twin, Pusher }
+    private enum Power { Tractor, Jet, Pusher }
 
     private enum WingAt { Low, Mid, High }
 
@@ -28,6 +28,9 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
 
     /// <summary>How far the centre of mass goes ahead of the centre of lift (m): enough to be stable, little enough that the elevator can still lift the nose.</summary>
     private const float Margin = 0.2f;
+
+    /// <summary>How far behind the centre of mass a tricycle's mains stand (m), at least.</summary>
+    private const float MainsBehind = 0.25f;
 
     private const string Stab = "Flight Stabilizer", Spine = "Square Beam 2 m";
 
@@ -61,21 +64,20 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
     private Layout Plan(Dice d)
     {
         var rig = d.Fork("rig");
-        var power = rig.Pick((Power[])[Power.Tractor, Power.Tractor, Power.Twin, Power.Pusher]);
+        var power = rig.Pick((Power[])[Power.Tractor, Power.Tractor, Power.Jet, Power.Pusher]);
         var turbine = true; // (a Two-Blade Prop on an Engine pushes some 1,500 N: too little for a 600 kg plane at this game's gravity; AIRCRAFT.md)
         var wing = power switch
         {
             Power.Pusher => rig.Pick((WingAt[])[WingAt.Low, WingAt.Mid]), // (the pylon stands on the spine where a high wing's tank would be)
-            Power.Twin => rig.Pick((WingAt[])[WingAt.Low, WingAt.High]), // (a mid wing's root is in by the spine, and the props would cut the cockpit)
             _ => rig.Pick((WingAt[])[WingAt.Low, WingAt.Mid, WingAt.High]),
         };
         var wings = d.Fork("wings");
         var panel = wings.Pick((string[])["Wing Segment", "Wing Segment", "Narrow Wing Segment", "Fabric Wing Segment"]);
-        var panels = panel == "Narrow Wing Segment" || power == Power.Twin ? 4 : wings.Pick((int[])[3, 3, 4]); // (at this game's gravity a 700 kg plane wants 18 m2 or more to stall under 30 m/s; a narrow panel is 2 m2)
+        var panels = panel == "Narrow Wing Segment" || power == Power.Jet ? 4 : wings.Pick((int[])[3, 3, 4]); // (at this game's gravity a 700 kg plane wants 18 m2 or more to stall under 30 m/s; a narrow panel is 2 m2)
         var flaps = wings.Chance(0.5);
         var tail = d.Fork("tail");
         var tTail = tail.Chance(0.35);
-        var boom = tail.Pick((float[])[1f, 2f]);
+        var boom = power == Power.Pusher ? 2f : tail.Pick((float[])[1f, 2f]); // (a pusher's prop turns ahead of the fin)
         var tricycle = d.Fork("gear").Chance(0.5);
         var paint = d.Fork("paint");
         return new Layout(power, turbine, wing, panel, panels, flaps, tTail, boom, tricycle, Style.Colour(paint, "frame"), Style.Colour(paint, "body"), Style.Colour(paint, "frame"));
@@ -95,10 +97,9 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
     /// <summary>The plane with its wing at <paramref name="station"/>; a tricycle's mains half a metre behind <paramref name="com"/> (the centre of mass's z, 0 on a trial).</summary>
     private void Make(Vehicle v, Layout l, int station, float com)
     {
-        var twin = l.Power == Power.Twin;
         var engineName = l.Turbine ? "Turbine" : "Engine";
         var propName = l.Turbine ? "Three-Blade Prop" : "Two-Blade Prop";
-        v.Description = $"A {(twin ? "twin-engined" : l.Power == Power.Pusher ? "pusher" : "single-engined")} {(l.Wing == WingAt.High ? "high" : l.Wing == WingAt.Low ? "low" : "mid")}-wing plane " +
+        v.Description = $"A {(l.Power == Power.Jet ? "twin-jet" : l.Power == Power.Pusher ? "pusher" : "single-engined")} {(l.Wing == WingAt.High ? "high" : l.Wing == WingAt.Low ? "low" : "mid")}-wing plane " +
                         $"on {(l.Tricycle ? "tricycle gear" : "a tail wheel")}{(l.Panel == "Fabric Wing Segment" ? ", fabric wings" : "")}{(l.TTail ? ", T-tail" : "")}. " +
                         "Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.";
 
@@ -126,15 +127,15 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
             stab = Level(v, spine, $"+y{(l.Power != Power.Pusher ? station : station >= 2 ? station - 2 : station + 3)}", Stab, "-y", forward: true); // (a pusher's pylon stands at the station)
             v.Paint(v.Onto(tank, "-y", "Battery", "+y"), l.Trim);
         }
-        v.Config(stab, ("keys", "Plane"));
+        v.Config(stab, ("keys", "Plane"), ("strength", int.Parse(Environment.GetEnvironmentVariable("PLANE_S") ?? "100")), ("climbResponse", int.Parse(Environment.GetEnvironmentVariable("PLANE_C") ?? "100")), ("climbDamping", int.Parse(Environment.GetEnvironmentVariable("PLANE_D") ?? "100")));
         v.Link("data", seat, stab);
 
         // The wings, root to tip a side: ailerons on the outer panels, flaps on the inner ones when it has them.
         var (rootL, rootR) = l.Wing == WingAt.Mid ? (($"-x{station}", spine), ($"+x{station}", spine)) : (("-x", tank), ("+x", tank));
         var left = Panels(v, l, rootL.Item2, rootL.Item1, "+x", -1);
         var right = Panels(v, l, rootR.Item2, rootR.Item1, "-x", 1);
-        var aileronL = v.Onto(left[^1], "back", "Aileron", "hinge");
-        var aileronR = v.Onto(right[^1], "back", "Aileron", "hinge");
+        var aileronL = Level(v, left[^1], "back", "Aileron", "hinge", forward: true);
+        var aileronR = Level(v, right[^1], "back", "Aileron", "hinge", forward: true);
         v.Paint(aileronL, l.Body); // (control surfaces in their host's colour: their ends are flush with the host's)
         v.Paint(aileronR, l.Body);
         v.Link("data", stab, aileronL, "left aileron");
@@ -142,7 +143,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         if (l.Flaps)
             foreach (var w in (VPart[])[left[0], right[0]])
             {
-                var flap = v.Onto(w, "back", "Flap", "hinge");
+                var flap = Level(v, w, "back", "Flap", "hinge", forward: true);
                 v.Paint(flap, l.Body);
                 v.Link("data", stab, flap, "flaps");
             }
@@ -156,16 +157,23 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         }
         else
         {
-            tailPlane = v.Onto(boom, "+z", "Tail Plane", "front");
+            tailPlane = Level(v, boom, "+z", "Tail Plane", "front", forward: true);
             fin = Level(v, tailPlane, "+y", "Tail Fin", "-y", forward: true);
         }
-        v.Paint(tailPlane, l.Body);
+        // A tail plane a side as well, each with its elevator: a 6 m tail, so the elevator can lift the nose off the runway at take-off speed.
+        var tails = new List<VPart> { tailPlane };
+        foreach (var side in (string[])["-x", "+x"])
+            tails.Add(Level(v, tailPlane, side, "Tail Plane", side == "-x" ? "+x" : "-x", forward: true));
         v.Paint(fin, l.Body);
-        var elevator = v.Onto(tailPlane, "back", "Elevator", "hinge");
+        foreach (var t in tails)
+        {
+            v.Paint(t, l.Body);
+            var elevator = Level(v, t, "back", "Elevator", "hinge", forward: true);
+            v.Paint(elevator, l.Body);
+            v.Link("data", stab, elevator, "pitch");
+        }
         var rudder = v.Onto(fin, "back", "Rudder", "hinge");
-        v.Paint(elevator, l.Body);
         v.Paint(rudder, l.Body);
-        v.Link("data", stab, elevator, "pitch");
         v.Link("data", stab, rudder, "yaw");
 
         // The engines, each fed from the tank, each prop on the stabilizer's throttle.
@@ -174,19 +182,20 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         {
             case Power.Tractor:
             {
-                var engine = v.Onto(cockpit, "-z", engineName, "-z");
+                var stub = v.Onto(cockpit, "-z", "Square Beam 0.5 m", "+z", spin: SpinUp(v, cockpit, "-z", "Square Beam 0.5 m", "+z")); // (a neck: the Turbine's sides would be flush with the cockpit block's)
+                v.Paint(stub, l.Frame);
+                var engine = v.Onto(stub, "-z", engineName, "-z");
                 v.Paint(engine, l.Frame);
                 props.Add(v.Onto(engine, "+z", propName, "base"));
                 v.Link("pipe", tank, engine, "Fuel out", "Fuel in");
                 break;
             }
-            case Power.Twin:
-                foreach (var w in (VPart[])[left[0], right[0]])
+            case Power.Jet:
+                foreach (var w in (VPart[])[left[1], right[1]])
                 {
-                    var engine = v.Onto(w, "front", engineName, "-z"); // (its Drive out is its +z: that faces forward)
-                    v.Paint(engine, l.Frame);
-                    props.Add(v.Onto(engine, "+z", propName, "base"));
-                    v.Link("pipe", tank, engine, "Fuel out", "Fuel in");
+                    var jet = Level(v, w, "-y", "Light Turbojet", "+y", forward: true); // (under the second panels: the stabilizer finds a thruster by itself)
+                    v.Paint(jet, l.Frame);
+                    v.Link("pipe", tank, jet, "Fuel out", "Fuel in");
                 }
                 break;
             case Power.Pusher:
@@ -205,26 +214,32 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
             var pusher = l.Power == Power.Pusher;
             if (pusher)
                 v.Config(props[k], ("pusher", 1)); // (it faces back and pushes towards its engine)
-            else if (k % 2 == 1)
-                v.Config(props[k], ("hand", 1)); // (twins turn opposite ways, so their torques cancel)
             v.Link("data", stab, props[k], "throttle");
         }
 
         // The gear: a nose leg under the cockpit and mains behind the wing, or mains under the cockpit and a tail wheel under the boom.
         if (l.Tricycle)
         {
-            // A nose leg that stands the nose wheels level with the mains, which hang from the spine half a metre behind the centre of mass, clear of the tank: the elevator can lift the nose.
+            // A nose leg that stands the nose wheels level with the mains, which hang from the spine just behind the centre of mass, clear of the tank: the elevator can lift the nose.
             var nose = v.Onto(cockpit, "-y", "Square Beam 0.75 m", "+z");
             v.Paint(nose, l.Frame);
             var foot = v.Onto(nose, "-z", "Frame Block", "+y");
             v.Paint(foot, l.Frame);
             Wheels(v, foot);
-            var at = Math.Max((int)MathF.Ceiling((com + 0.5f - 0.375f) / 0.25f), 0); // (spine socket k sits at 0.375 + 0.25 k)
-            if (twin)
-                at = Math.Max(at, station - 1); // (behind the props' discs, which hang below the wing's front)
-            if (Math.Abs(at - station) < 2)
-                at = station + 2; // (the tank, or a high wing's battery, hangs under the spine there)
-            Mains(v, l, at < Stations ? spine : boom, $"-y{Math.Min(at < Stations ? at : at - Stations, tailEnd)}", "Square Beam 1 m");
+            // The first free socket under the spine or boom at least a quarter metre behind it: close behind, so the elevator's moment beats the nose's weight on the mains.
+            var at = Math.Max((int)MathF.Ceiling((com + MainsBehind - 0.375f) / 0.25f), 2); // (spine socket k sits at 0.375 + 0.25 k; the first two are over the nose leg's wheels)
+            for (; ; at++)
+            {
+                if (at > Stations + tailEnd)
+                    throw new VehicleKitException("no free socket for the mains under the spine or boom");
+                if (Math.Abs(at - station) < 2)
+                    continue; // (the tank, or a high wing's battery, hangs under the spine there)
+                var (on, socket) = at < Stations ? (spine, $"-y{at}") : (boom, $"-y{at - Stations}");
+                if (v.TurnOf(on, socket, "Square Beam 1 m", "+z", 0) == null)
+                    continue; // (taken, or in the way of something hung there: the next one back)
+                Mains(v, l, on, socket, "Square Beam 1 m");
+                break;
+            }
         }
         else
         {
@@ -234,13 +249,6 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
             var foot = v.Onto(strut, "-z", "Frame Block", "+y");
             v.Paint(foot, l.Frame);
             Wheels(v, foot);
-        }
-        if (Environment.GetEnvironmentVariable("PLANE_DEBUG") == "1")
-        {
-            v.Live.LiftCentre(out var lc, out _);
-            Console.WriteLine($"[plane-debug] station {station} com {v.Live.Com} lift {lc} mass {v.Live.Mass}");
-            foreach (var p in v.Parts.Where(p => p.Def.Name is "Wheel" or "Frame Block" or "Fuel Tank" or "Tail Plane" or "Seat"))
-                Console.WriteLine($"[plane-debug]   {p.Def.Name} at {v.CentreOf(p)}");
         }
     }
 
@@ -304,6 +312,7 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         for (var spin = 0; spin < 4; spin++)
             if (v.TurnOf(on, socket, part, by, spin) is { } t && Vector3.Dot(Rot24.Apply(t, Vector3.UnitZ), way) > 0.9f)
                 return v.Onto(on, socket, part, by, spin);
+        v.Onto(on, socket, part, by); // (to name what is in the way)
         throw new VehicleKitException($"{part} won't face {way} on {on.Name}'s {socket}");
     }
 }

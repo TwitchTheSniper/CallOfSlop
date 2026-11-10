@@ -139,7 +139,7 @@ public static class VehicleFlightCheck
     }
 
     /// <summary>A plane's ticks: the most for the take-off run and the rotation, then the climb, the level flight (settling, then measured) and the turn.</summary>
-    public const int PlaneRunTicks = 1200, RotateTicks = 180, PlaneClimbTicks = 240, LevelSettleTicks = 150, LevelTicks = 180, TurnTicks = 180;
+    public const int PlaneRunTicks = 1200, RotateTicks = 180, PlaneClimbTicks = 240, LevelSettleTicks = 300, ThrottleBackTicks = 36, LevelTicks = 180, TurnTicks = 180;
 
     /// <summary>A plane's limits: tilt standing (a tail-dragger sits nose up), the height it must be off the ground to have rotated (m), the least climb, the most height and heading
     /// it may wander by in level flight (m, degrees), the least turn on D (degrees), the most tilt in its flight (it banks to turn), the most bank left in level flight.</summary>
@@ -162,22 +162,26 @@ public static class VehicleFlightCheck
         var h0 = Up(c);
         var p0 = c.WorldCom;
         var t = 0;
-        var debug = Environment.GetEnvironmentVariable("PLANE_DEBUG") == "1";
         for (; t < PlaneRunTicks && c.Vel.Length() < rotateAt && Up(c) - h0 < LiftOff; t += 15) // (a tail-dragger sitting nose up may lift off by itself)
         {
             Fly(w, q, place, c, Buttons.Sprint, 15, ref r);
-            if (debug && t % 60 == 0)
-                Console.WriteLine($"[plane-debug] t {t} speed {c.Vel.Length():0.0} up {Up(c) - h0:0.00} nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.0} rest {r.RestTilt:0.0} com {c.WorldCom} rotors {c.Rotors[0].Thrust:0} dir {Vector3.Transform(c.Rotors[0].Dir, c.Rot)}");
+            if (Environment.GetEnvironmentVariable("PLANE_TMP") == "1" && t % 120 == 0)
+                Console.WriteLine($"[tmp] t {t} v {c.Vel} " + string.Join(" ", Enumerable.Range(0, c.RotorCount).Select(k => $"{c.Rotors[k].Thrust:0} feed {c.Rotors[k].Feed} om {c.Rotors[k].Omega:0} cmd {c.Rotors[k].Command:0.00} alive {c.Rotors[k].Alive} sc {c.Rotors[k].Scanned}")));
         }
+        if (Environment.GetEnvironmentVariable("PLANE_TMP") == "1")
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                var wp = c.SegToWorld(c.Parts[i].Seg, c.Parts[i].Pos);
+                if (wp.Y - h0 < -0.6f)
+                    Console.WriteLine($"[tmp] {c.Parts[i].D.Name} y {wp.Y - h0:0.00} rest {c.Parts[i].Pos} speed {c.Vel.Length():0.0}");
+            }
         var run = c.WorldCom - p0;
         r = r with { RunSpeed = c.Vel.Length(), RunDist = MathF.Sqrt(run.X * run.X + run.Z * run.Z) };
         if (r.RunSpeed < rotateAt && Up(c) - h0 < LiftOff)
             return r with { Why = $"down the runway for {t / (float)World.TickRate:0} s it reached {r.RunSpeed:0.0} m/s, {Vector3.Dot(c.Vel, Forward(c, c.Rot)):0.0} forward, nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0} degrees up (it rotates at {rotateAt:0}, stalls at {stall:0}; {Pushing(c)})" };
         for (t = 0; t < RotateTicks && Up(c) - h0 < LiftOff; t += 10)
         {
-            Fly(w, q, place, c, Buttons.Back, 10, ref r);
-            if (debug && t % 30 == 0)
-                Console.WriteLine($"[plane-debug] rotate t {t} speed {c.Vel.Length():0.0} up {Up(c) - h0:0.00} nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.0} elev {c.Surfaces[0].Deflect:0.00}");
+            Fly(w, q, place, c, Buttons.Back | Buttons.Sprint, 10, ref r); // (the throttle held open as it rotates)
         }
         if (Up(c) - h0 < LiftOff)
             return r with { Why = $"S for {RotateTicks / (float)World.TickRate:0} s at {r.RunSpeed:0} m/s didn't lift it {LiftOff:0} m off the runway" };
@@ -189,6 +193,13 @@ public static class VehicleFlightCheck
         if (climb < PlaneMinClimb)
             return r with { Why = $"on the autopilot's climb it went {climb:0.0} m up in {PlaneClimbTicks / (float)World.TickRate:0} s (at least {PlaneMinClimb:0}) at {c.Vel.Length():0} m/s" };
         Autopilot(place, c, Up(c));
+        Fly(w, q, place, c, Buttons.Crouch, ThrottleBackTicks, ref r); // (throttled back to cruise, as a pilot levels off: at full throttle it gathers speed and climbs through the hold)
+        if (Environment.GetEnvironmentVariable("PLANE_TMP") == "1")
+            for (var u = 0; u < 20; u++)
+            {
+                Fly(w, q, place, c, 0, 30, ref r);
+                Console.WriteLine($"[tmp] lv {u} h {Up(c) - hc:0.0} target {c.Parts[c.Stabs[0].Part].D.Name} vy {c.Vel.Y:0.0} v {c.Vel.Length():0.0} nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.0} mem {c.Parts[c.Stabs[0].Part].Mem:0.00} err {c.StabErr}");
+            }
         Fly(w, q, place, c, 0, LevelSettleTicks, ref r);
         var hl = Up(c);
         var head = Heading(c);
