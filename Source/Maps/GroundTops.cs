@@ -34,6 +34,29 @@ public static class GroundTops
     /// <summary>How much a column whose change differs by <paramref name="d"/> (metres, not negative) counts in another's corner height: 1 one surface, 0 a wall.</summary>
     public static float Weight(float d) => d <= Near ? 1f : d < Far ? (Far - d) / (Far - Near) : 0f;
 
+    /// <summary>Half the step a player walks up (<see cref="World.StepHeight"/>): a corner this far off its column's own height stands for such a step.</summary>
+    public const float HalfStep = 0.275f;
+
+    /// <summary>Past this (metres off its column's own height) a corner is left where the mean put it.</summary>
+    public const float EaseEnd = 0.45f;
+
+    /// <summary>
+    /// Keeps what was a walkable step walkable. A corner <paramref name="off"/> metres from its column's own height makes
+    /// a slope of that over half a column (<paramref name="size"/> metres wide); where that would be steeper than a
+    /// player walks (40 degrees here, the limit is 42) and the step it stands for was one they could walk up, the corner
+    /// stays at the walkable slope and the rest is a low riser between the two columns. Taller steps ease back to the plain
+    /// slope by <see cref="EaseEnd"/>, so nothing pops.
+    /// </summary>
+    public static float Ease(float off, float size)
+    {
+        var d = MathF.Abs(off);
+        var walk = size * 0.42f;
+        if (d <= walk || walk >= HalfStep || d >= EaseEnd)
+            return off;
+        var f = d <= HalfStep ? walk : walk + (d - HalfStep) * (EaseEnd - walk) / (EaseEnd - HalfStep);
+        return MathF.CopySign(f, off);
+    }
+
     /// <summary>A column at a corner: none there (the map's edge), the map's own untouched ground, or a dug column.</summary>
     public const byte None = 0, Untouched = 1, Dug = 2;
 
@@ -43,7 +66,7 @@ public static class GroundTops
     /// column's is 0 and its span isn't read). <paramref name="baseAt"/> is the ground as built at the corner. Writes
     /// <paramref name="height"/> for the dug ones.
     /// </summary>
-    public static void Corner(ReadOnlySpan<byte> kind, ReadOnlySpan<float> lo, ReadOnlySpan<float> top, ReadOnlySpan<float> delta, float baseAt, Span<float> height)
+    public static void Corner(ReadOnlySpan<byte> kind, ReadOnlySpan<float> lo, ReadOnlySpan<float> top, ReadOnlySpan<float> delta, float baseAt, float size, Span<float> height)
     {
         // The quick way out, and most corners: four dug columns nobody has changed, or all changed alike.
         if (kind[0] == Dug && kind[1] == Dug && kind[2] == Dug && kind[3] == Dug && delta[0] == delta[1] && delta[1] == delta[2] && delta[2] == delta[3])
@@ -78,6 +101,8 @@ public static class GroundTops
             }
             var h = baseAt + sum / weights;
             h += (baseAt - h) * pin;
+            var own = baseAt + delta[k];
+            h = own + Ease(h - own, size);
             height[k] = MathF.Max(h, lo[k] + TerrainEdits.MinSpan);
         }
     }

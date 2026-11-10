@@ -21,6 +21,18 @@ public sealed partial class TerrainEdits
 
     private int CellOrdinal(int first) => first / (Sub * Sub);
 
+    /// <summary>The tops' arrays follow the columns' (grown with them, so a query never allocates).</summary>
+    private void GrowTops()
+    {
+        var vs = Sub + 1;
+        var cells = _spans.Length / (Sub * Sub) + 1;
+        Array.Resize(ref _tops, _spans.Length * GroundTops.Stride);
+        Array.Resize(ref _topsMade, cells);
+        Array.Resize(ref _cornerBase, cells * vs * vs);
+        Array.Resize(ref _topColour, _spans.Length);
+        Array.Resize(ref _coloursMade, cells);
+    }
+
     /// <summary>Every cell's tops are stale (everything was filled in again).</summary>
     private void ForgetTops()
     {
@@ -65,13 +77,6 @@ public sealed partial class TerrainEdits
     private void MakeTops(int i, int j, int first, int ord)
     {
         var vs = Sub + 1;
-        if (_tops.Length < _spans.Length * GroundTops.Stride)
-        {
-            Array.Resize(ref _tops, _spans.Length * GroundTops.Stride);
-            var cells = _spans.Length / (Sub * Sub) + 1;
-            Array.Resize(ref _topsMade, cells);
-            Array.Resize(ref _cornerBase, cells * vs * vs);
-        }
         // Rim vertices of the cell and a ring round it: every corner of a column with one is level (the rim's own drawing).
         var ws = Sub + 3;
         Span<bool> rim = stackalloc bool[ws * ws];
@@ -116,7 +121,7 @@ public sealed partial class TerrainEdits
                 delta[k] = top[k] - _orig[c];
                 kind[k] = level || (_islands.Length > 0 && IslandColumn(c, ci, cj)) ? GroundTops.None : GroundTops.Dug;
             }
-            GroundTops.Corner(kind, lo, top, delta, at, h);
+            GroundTops.Corner(kind, lo, top, delta, at, Size, h);
             // The corner is (1,1) of the column before it both ways, (0,1) of the one before it in z, and so on.
             for (var k = 0; k < 4; k++)
             {
@@ -137,11 +142,6 @@ public sealed partial class TerrainEdits
         var ord = CellOrdinal(first);
         if (ord < _coloursMade.Length && _coloursMade[ord])
             return;
-        if (_topColour.Length < _spans.Length)
-        {
-            Array.Resize(ref _topColour, _spans.Length);
-            Array.Resize(ref _coloursMade, _spans.Length / (Sub * Sub) + 1);
-        }
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
         {

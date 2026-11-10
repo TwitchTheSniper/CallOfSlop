@@ -707,6 +707,7 @@ public sealed partial class TerrainEdits : IDigGround
             Array.Resize(ref _orig, size);
             Array.Resize(ref _fillKind, size);
             Array.Resize(ref _fillLo, size);
+            GrowTops();
         }
         var made = 0;
         _reserved = from;
@@ -740,6 +741,7 @@ public sealed partial class TerrainEdits : IDigGround
             Array.Resize(ref _orig, size);
             Array.Resize(ref _fillKind, size);
             Array.Resize(ref _fillLo, size);
+            GrowTops();
         }
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)

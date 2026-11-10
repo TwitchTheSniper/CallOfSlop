@@ -348,7 +348,8 @@ public sealed partial class TerrainEdits
         var c = Col(ci, cj);
         if (c < 0)
             return _t.SolidAt(x, z, y);
-        var own = Solid(Spans(c), y);
+        EnsureTops(ci / Sub, cj / Sub);
+        var own = GroundTops.Solid(Spans(c), y, GroundTops.At(Tops(c), fx - ci, fz - cj)); // (the top slopes: GroundTops)
         int vi = fx - ci >= 0.5f ? ci + 1 : ci, vj = fz - cj >= 0.5f ? cj + 1 : cj;
         if (!(Corner(vi - 1, vj - 1, out var c0) && Corner(vi, vj - 1, out var c1) && Corner(vi - 1, vj, out var c2) && Corner(vi, vj, out var c3)))
             return own;

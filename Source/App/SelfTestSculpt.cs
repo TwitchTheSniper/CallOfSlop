@@ -172,13 +172,13 @@ public static partial class SelfTest
         var sumBefore = 0f;
         for (var z = -2f; z < 2f; z += e.Size)
         for (var x = -2f; x < 2f; x += e.Size)
-            sumBefore += t.Sample(x, z);
+            sumBefore += t.Sample(x + e.Size * 0.5f, z + e.Size * 0.5f); // (at the columns' middles: a top is its span's there, GroundTops)
         if (e.Apply(fill) == 0)
             Fail("sculpting: a fill on undug ground changed nothing");
         var sumAfter = 0f;
         for (var z = -2f; z < 2f; z += e.Size)
         for (var x = -2f; x < 2f; x += e.Size)
-            sumAfter += t.Sample(x, z);
+            sumAfter += t.Sample(x + e.Size * 0.5f, z + e.Size * 0.5f);
         var built = (sumAfter - sumBefore) * e.Size * e.Size;
         var top = t.Sample(0.1f, 0.1f);
         var down = tc.Raycast(new Vector3(0.1f, h0 + 10, 0.1f), -Vector3.UnitY, 30);

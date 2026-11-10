@@ -19,6 +19,18 @@ public sealed partial class PlanetEdits
 
     private int CellOrdinal(int first) => first / (Sub * Sub);
 
+    /// <summary>The tops' arrays follow the columns' (grown with them, so a query never allocates).</summary>
+    private void GrowTops()
+    {
+        var vs = Sub + 1;
+        var cells = _spans.Length / (Sub * Sub) + 1;
+        Array.Resize(ref _tops, _spans.Length * GroundTops.Stride);
+        Array.Resize(ref _topsMade, cells);
+        Array.Resize(ref _cornerBase, cells * vs * vs);
+        Array.Resize(ref _topColour, _spans.Length);
+        Array.Resize(ref _coloursMade, cells);
+    }
+
     /// <summary>Every cell's tops are stale (everything was filled in again).</summary>
     private void ForgetTops()
     {
@@ -51,11 +63,6 @@ public sealed partial class PlanetEdits
         var ord = CellOrdinal(first);
         if (ord < _coloursMade.Length && _coloursMade[ord])
             return;
-        if (_topColour.Length < _spans.Length)
-        {
-            Array.Resize(ref _topColour, _spans.Length);
-            Array.Resize(ref _coloursMade, _spans.Length / (Sub * Sub) + 1);
-        }
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
         {
@@ -81,13 +88,6 @@ public sealed partial class PlanetEdits
     private void MakeTops(int face, int i, int j, int first, int ord)
     {
         var vs = Sub + 1;
-        if (_tops.Length < _spans.Length * GroundTops.Stride)
-        {
-            Array.Resize(ref _tops, _spans.Length * GroundTops.Stride);
-            var cells = _spans.Length / (Sub * Sub) + 1;
-            Array.Resize(ref _topsMade, cells);
-            Array.Resize(ref _cornerBase, cells * vs * vs);
-        }
         Span<byte> kind = stackalloc byte[4];
         Span<float> lo = stackalloc float[4];
         Span<float> top = stackalloc float[4];
@@ -123,7 +123,7 @@ public sealed partial class PlanetEdits
                 delta[k] = top[k] - _orig[c];
                 kind[k] = top[k] > lo[k] ? GroundTops.Dug : GroundTops.None; // (dug open to a hollow planetoid's cavity: nothing there)
             }
-            GroundTops.Corner(kind, lo, top, delta, at, h);
+            GroundTops.Corner(kind, lo, top, delta, at, (float)Size, h);
             // The corner is (1,1) of the column before it both ways, (0,1) of the one before it in j, and so on.
             for (var k = 0; k < 4; k++)
             {

@@ -309,7 +309,10 @@ public static partial class SelfTest
         {
             var scoops = Hole(s.X, s.Y);
             scoopsMost = Math.Max(scoopsMost, scoops);
-            var deep = t.BaseGroundTop(s.X, s.Y) - t.Sample(s.X, s.Y);
+            // (measured where the hole is dug, at its column's middle: a top slopes to its corners, GroundTops)
+            t.Edits.ColumnOf(s.X, s.Y, out var hi, out var hj);
+            float hx = t.OriginX + (hi + 0.5f) * t.Edits.Size, hz = t.OriginZ + (hj + 0.5f) * t.Edits.Size;
+            var deep = t.BaseGroundTop(hx, hz) - t.Sample(hx, hz);
             if (deep < DrillShaft.Depth || deep > DrillShaft.Depth + 0.5f || scoops > DrillShaft.Scoops)
                 Fail($"a drill's hole at ({s.X}, {s.Y}): {scoops} scoops, {deep:0.00} m deep");
             for (var z = s.Y - 2.5f; z <= s.Y + 2.5f; z += 0.25f)
