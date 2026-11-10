@@ -222,7 +222,10 @@ public static partial class ConstructPhysics
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
                     SpringFeet(c, query, _invI[i], dt);
                 if (c.LegCount > 0 && c.GrabbedBy == 255)
+                {
                     Walk(world, c, query, dt); // (the gait brain: ConstructWalk.cs)
+                    ConstructNet.NoteFeet(c); // (which feet moved, for the poses: protocol 229)
+                }
             }
             else if (EngineLive(c))
                 Powertrain(c, false, dt); // (board item cs03: an anchored base's engine runs its wheels and its power take-off too)

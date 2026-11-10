@@ -707,11 +707,12 @@ public sealed class Planetoid
         var dir = rel / d;
         if (Crust > 0 && d - (float)Radius < Inner)
             return Inner - (d - (float)Radius); // in the cavity: how far from its walls, the inside of the crust (gravity holds things to them)
-        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
+        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans, out var top))
         {
-            // Dug ground: over the span the point is in (negative, inside it), else over the highest span below it.
+            // Dug ground: over the span the point is in (negative, inside it), else over the highest span below it (whose
+            // top slopes: GroundTops).
             var a = d - (float)Radius;
-            return a - TerrainEdits.GroundBelow(spans, a);
+            return a - GroundTops.GroundBelow(spans, a, top);
         }
         return d - SurfaceRadius(dir, out _);
     }
@@ -743,7 +744,7 @@ public sealed class Planetoid
         if (Crust > 0 && d - (float)Radius < Inner)
             return -dir; // the cavity's walls face the centre
         if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out _))
-            return dir; // (dug tops are level: "up" there)
+            return e.NormalAt(dir.X, dir.Y, dir.Z, d - (float)Radius); // (a dug column: its top's slope, or "up" on a ledge under it)
         SurfaceRadius(dir, out var n);
         return n;
     }
@@ -756,8 +757,8 @@ public sealed class Planetoid
         var dir = d > 1e-3f ? rel / d : Vector3.UnitY;
         if (Crust > 0 && d - (float)Radius < Inner)
             return Center + dir * (float)InnerRadius; // the cavity: its wall straight "under" (outwards)
-        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
-            return Center + dir * ((float)Radius + TerrainEdits.GroundBelow(spans, d - (float)Radius));
+        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans, out var top))
+            return Center + dir * ((float)Radius + GroundTops.GroundBelow(spans, d - (float)Radius, top));
         return Center + dir * SurfaceRadius(dir, out _);
     }
 
@@ -841,6 +842,21 @@ public sealed class Planetoid
         public Vector3 Min, Max;
         public int Cell, Sub;
 
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, default, default, 0);
+
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc)
+        {
+            var lo = Vector3.Min(Vector3.Min(a, b), c);
+            var hi = Vector3.Max(Vector3.Max(a, b), c);
+            if (hi.X < Min.X || lo.X > Max.X || hi.Y < Min.Y || lo.Y > Max.Y || hi.Z < Min.Z || lo.Z > Max.Z)
+                return;
+            Into.Add(ContactShape.FromTriangle(a, b, c, new ShapeId(ShapeKind.Terrain, Cell, Sub++)));
+        }
+
+        public bool Shaded => false;
+
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             var lo = Vector3.Min(Vector3.Min(a, b), Vector3.Min(c, d));
@@ -908,7 +924,9 @@ public sealed class Planetoid
                 var q = o + d * t - Center;
                 if (dug.NearDug(q.X, q.Y, q.Z))
                 {
-                    step = MathF.Max(MathF.Min(alt, rough) * 0.5f, DugStep);
+                    // (the height over the ground as built bounds the step for the untouched ground about; what fills have
+                    // added is columns, which the look along the step finds whatever its length)
+                    step = MathF.Max(MathF.Min(alt, rough + dug.MaxRise) * 0.5f, DugStep);
                     byDug = true;
                 }
             }
@@ -938,8 +956,11 @@ public sealed class Planetoid
         return maxDist;
     }
 
-    /// <summary>The longest step a ray takes next to dug ground (thinner slivers than this can be stepped over).</summary>
-    public const float DugStep = 0.05f;
+    /// <summary>
+    /// The shortest step a ray takes next to dug ground: as short as its shortest anywhere. Dug columns are met exactly
+    /// along a step (PlanetEdits.SegmentHit), so only untouched ground's slivers thinner than this can be stepped over.
+    /// </summary>
+    public const float DugStep = 0.25f;
 
     private float Settle(Vector3 o, Vector3 d, float above, float below, out Vector3 normal)
     {

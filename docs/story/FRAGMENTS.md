@@ -35,6 +35,11 @@ where it was found, a `?` line with the hint for each one still missing, and the
 - **Where**: each `"sites"` entry is a blueprint the host stands on level ground `from` to `to` metres from the penal colony's
   yard, when it builds the colony (with the barracks and the Remote Works) or when a world from before the sites loads. The
   Opening section of the world file keeps each site's id and construct after the depot's (an older reader stops before it).
+- **On another world**: a site with a `map` belongs to that planetoid (docs/planets/WORLDS.md), at `lat`, `lon` (its data
+  site; `"inside": true` puts it on a hollow world's cavity wall, upright to the centre). The host builds it the first time a
+  game with the story plays that map (`Game.FragmentSitesHere`), 14 m east of the site's survey post, and the story's Thing
+  for the site is the note that it was built: one taken apart isn't built again. Nothing of it is in the Opening section; it
+  is found again each time by where it stands (a building with a terminal within 90 m of the site), so it survives landings.
 - **Found**: within 30 m of it a player gets a `Lead` on the site (its Thing, named by `name`) and the `arrive` notice.
 - **Power**: the Sealed Data Centre has no battery, so its terminal is dead. Fit a Battery (or any power plant) anywhere on the
   building's frame and the terminal's circuit is live (docs/sandbox/CONSTRUCTS.md "Power"); the `power` notice says so.
@@ -53,6 +58,7 @@ where it was found, a `?` line with the hint for each one still missing, and the
 | `id`, `name`, `blueprint`, `fragment` | its stable id, what players call it, the blueprint, the fragment it holds (one site a fragment) |
 | `lead` | a lead it answers ("Old Mine"): shown found once its fragment is held |
 | `from`, `to` | metres from the colony's yard |
+| `map`, `lat`, `lon`, `inside` | instead of `from`/`to`: the planetoid map it stands on, where, and whether in its cavity |
 | `multiply`, `add`, `locks`, `every` | the sum (whole numbers, multiply not 0), carriers in a row, seconds a carrier |
 | `source` | where the Logbook says it came from |
 | `arrive`, `power`, `decoded`, `copied` | the notices |

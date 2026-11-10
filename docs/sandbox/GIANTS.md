@@ -68,7 +68,7 @@ a Driving Module to any leg is the walker's drive seat (`ConstructModules.Build`
   the support polygon. A leg that was there keeps its foot.
 - **The gait** (`PlanGait`, again whenever the count of working legs changes): six or more legs, an even count, alternate
   round the body into two groups (a tripod for six); otherwise a wave, one leg at a time.
-- **The feet** (`WalkFeet`, server each tick; a client's renderer on the pose it draws): each foot's next foothold is its
+- **The feet** (`WalkFeet`, server each tick; a client hears them in the poses: "Walker feet on clients"): each foot's next foothold is its
   rest point led by the body's motion (half a gait cycle ahead), dropped onto the ground by a ray from a reach above.
   When no group is in the air, the next group that needs a step (8% of its reach off its foothold, or stretched past
   0.95 of its reach) lifts, but only if the feet left down hold the centre of mass inside them. A foot in the air moves
@@ -87,9 +87,8 @@ a Driving Module to any leg is the walker's drive seat (`ConstructModules.Build`
 
 Each leg is posed from its hip on the drawn body to its foot: a coxa for an insect, the last segment set by the kind, then
 two bones by the law of cosines with the knee towards a pole (forward for mech and digitigrade, up and out for an insect).
-Segments taper, knuckles and the pad are drawn in the joint colour, all in one batch. On the host the feet are the
-server's; on a client (`WalkStamp` older than a quarter second) the renderer runs `WalkFeet` itself on the drawn pose, so
-nothing about the feet is on the wire (no protocol change).
+Segments taper, knuckles and the pad are drawn in the joint colour, all in one batch. The feet are always the server's: the
+host's own, a client's from the poses (protocol 229, "Walker feet on clients"); the renderer never steps them.
 
 ### The test walker (`Constructs/Blueprints/TitanWalker.json`, from the same generator)
 
@@ -383,6 +382,38 @@ and pumps on power only); the fitted walker; a round world's gravity; drawing.
   100,000 t on the plant alone (the bare one draws 11.5 MW standing).
 - `TitanWalkerFitted.json` needs regenerating from the new `TitanWalker.json` (left to the coordinator).
 
+## Walker feet on clients (branch `feat/walker-net`, protocol 229)
+
+Before this a client's renderer ran `WalkFeet` itself on the pose it drew (its own gait clock, group, footholds on a
+different ray and swing time), while the server decided leg hits (`LegRay`) and pads (`FeetBlockPlayer`) on its own feet.
+
+- **On the wire** (`Source/Constructs/ConstructNetWalk.cs`): a pose's asleep byte gains bit 1 (`PoseWalker`) on a body with
+  legs, and after the rotors comes a walk block: flags (walking, a group in the air, feet put down), the problem as a number
+  (`ProblemNotRound` and the other constants in ConstructWalk.cs; "N working legs" carries N), top speed (cm/s) and leg
+  power (W), then feet: leg part (u16), flags (swinging, grounded, foothold) and the point in cm from the pose's position
+  (9 bytes). A foot goes when it moved (place or flags) in the last `HotWalkTicks` (12) ticks of the walk clock
+  (`WalkTicks`, `CLeg.NetMoved`, noted by `NoteFeet` after each gait tick), plus `FeetRefresh` (3) in turn on a cursor
+  (`PoseFeetAt`), at most `PoseFeet` (24) a pose; so a planted foot costs nothing after its last few poses, a joiner or a
+  lost packet is healed by the turn, and a body with more legs takes turns. A Titan Walker's block: 10 bytes plus 9 a foot
+  that moved (3 stepping feet and 3 in turn: 64 bytes).
+- **On a client**: each pose's feet are kept with the body's history (`NetHistFeet`, beside the joints' rows) and drawn at the
+  body's drawn tick (`SampleFeet`, after `SampleAt`): a line between the two poses either side (a planted foot is the same in
+  both, so it stays exactly still), a swinging foot carried on a little past late poses as the body is. `FeetSet` waits
+  until every foot has been heard (a leg first heard fills its column of the history). So the drawn feet, the legs' hit
+  boxes (`LegRay`), the pads a predicting player stands on and the footfall thumps (`GameWalkerFeel`) are the server's at
+  the drawn tick. `WalkProblem`, `WalkTop` and `LegWatts` on a client are the server's too (the HUD). The renderer's
+  `PoseFeet` and `WalkStamp` went.
+
+Tried (a throwaway probe, removed: host and client over RakNet in one process, 120 ms lag and 3% loss on the client, the
+bare Titan Walker on the Proving Ground, the client's feet at its drawn tick against the server's at that tick): standing,
+every foot within 8 mm (the centimetre grid); turning in place, the worst foot of a frame 2 cm off on average, p95 4 cm,
+worst 37 cm (late or lost poses while a foot swings at up to 9 m/s); one tick of offset either way doubles the error, so
+the ticks line up. The old client feet in the same run: about 1 m off standing, 4 m (median) to 36 m turning. A client
+teleported onto a planted pad was never corrected by more than 3 mm. Not tried: walking straight (in the probe the
+walker turned on A/D but didn't walk on W, with the throttle set straight on the body: to look at on a seated driver), a
+ramp, shooting a leg as a client, a big world's interest-banded poses (a far walker is sent every 8th pose tick, longer
+than `HotWalkTicks`: its feet arrive in turn), a walker with more than 24 legs, a window.
+
 ### Next phases
 
 1. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
@@ -394,7 +425,7 @@ and pumps on power only); the fitted walker; a round world's gravity; drawing.
    legs of several parts.
 5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
    signal as a throttle; shaft splitters for six shaft-fed legs.
-8. Walker fixes, rest: the feet synced to clients (each peer runs its own foothold search now); biped gaits (two legs, a
+8. Walker fixes, rest: biped gaits (two legs, a
    dynamic balance the static support polygon can't give); crushing what is underfoot; the power cap for shaft-fed legs and pumps
    on a shaft (the engine's torque); a walker that falls into a pit tried on a real map.
 6. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding

@@ -41,7 +41,7 @@ public enum CBodyKind : byte
 /// refreshed each time so a lost packet never leaves a body wrong for long. Positions of parts travel on their 1 cm grid
 /// (<see cref="ConstructWorld.Quantise"/>), so a client's copy is exactly the server's.
 /// </summary>
-public static class ConstructNet
+public static partial class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
@@ -1527,7 +1527,7 @@ public static class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir);
+    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c);
 
     /// <summary>Rotors and control surfaces a pose carries at most: a window that turns (protocol 120).</summary>
     public const int PoseAir = 24;
@@ -1597,7 +1597,7 @@ public static class ConstructNet
             .U16(S16(Mrad(c.AngVel.X))).U16(S16(Mrad(c.AngVel.Y))).U16(S16(Mrad(c.AngVel.Z))) // (protocol 102: riders leave with the deck's turning speed too; ConstructRide.cs)
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
-            .U8((byte)(c.Asleep ? 1 : 0))
+            .U8((byte)((c.Asleep ? PoseAsleep : 0) | (c.LegCount > 0 ? PoseWalker : 0))) // (protocol 229: a walk block follows the rotors)
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).F32(c.Fuel) // (protocol 83; 117: a float, a capital tank holds millions of litres)
             .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
             .U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 117)
@@ -1614,6 +1614,8 @@ public static class ConstructNet
         }
         c.PoseJointAt = (js + jn) % Math.Max(1, c.JointCount);
         WriteAir(w, c);
+        if (c.LegCount > 0)
+            WriteWalk(w, c); // (protocol 229: the gait and the feet: ConstructNetWalk.cs)
         // The signal parts' values, in part order (only with logic: the client knows which parts they are): the first
         // ordinal (u16) and how many (u16): all of them, or a window that turns (protocol 117).
         var at = w.Length;
@@ -1654,7 +1656,8 @@ public static class ConstructNet
             var ang = new Vector3(R16(r.U16()), R16(r.U16()), R16(r.U16())) / 1000f;
             var steer = (sbyte)r.U8() / 100f;
             var driver = r.U8();
-            var asleep = r.U8() != 0;
+            var sleepByte = r.U8();
+            var asleep = (sleepByte & PoseAsleep) != 0;
             var share = r.U8() / 255f;
             var power = r.U8();
             var gear = r.U8();
@@ -1705,6 +1708,8 @@ public static class ConstructNet
                 }
             }
             ReadAir(ref r, c != null && !stale ? c : null);
+            if ((sleepByte & PoseWalker) != 0)
+                ReadWalk(ref r, c != null && !stale ? c : null, pos);
             int signalFrom = r.U16();
             int signals = r.U16();
             var sigs = c != null && !stale ? Signals(c) : default;
@@ -1974,6 +1979,7 @@ public static class ConstructNet
                 SampleAt(c, rt);
                 Smooth(c, rt, dt);
                 SampleJoints(c, rt);
+                SampleFeet(c, rt);
             }
             else
             {
@@ -1982,6 +1988,7 @@ public static class ConstructNet
                 // A little past the last pose (at its velocity) so a moving body doesn't stop and start between packets.
                 c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);
                 c.Rot = t >= 1 ? c.NetRot : Quaternion.Slerp(c.NetFromRot, c.NetRot, t);
+                SampleFeet(c, double.NaN); // (as last heard)
             }
             var fwd = Vector3.Transform(c.DriveFwd, c.Rot);
             var anchoredDrive = c.Anchored && c.EngineRunning && c.HasPowertrain; // (cs03: an anchored base's wheels turn at the engine's speed, from the rpm in its pose)

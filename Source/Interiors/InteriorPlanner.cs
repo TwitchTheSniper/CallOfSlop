@@ -72,6 +72,12 @@ public static class InteriorPlanner
                         if (hi.X > x * rules.GridCell && lo.X < (x + 1) * rules.GridCell && hi.Z > z * rules.GridCell && lo.Z < (z + 1) * rules.GridCell)
                             p.Cells[k][x, z] = InteriorPlan.KeepOut;
             }
+        // (a deck over a keep-out has no slab there: the builder lays none on what can't hold one, so the cell is out on the decks above too)
+        for (var k = 1; k < p.Decks; k++)
+            for (var x = 0; x < p.W; x++)
+                for (var z = 0; z < p.D; z++)
+                    if (p.Cells[k - 1][x, z] == InteriorPlan.KeepOut)
+                        p.Cells[k][x, z] = InteriorPlan.KeepOut;
         // the spine, down the middle on every deck
         p.SpineZ0 = (p.D - rules.Corridor) / 2;
         p.SpineZ1 = p.SpineZ0 + rules.Corridor - 1;
@@ -373,8 +379,8 @@ public static class InteriorPlanner
                     continue;
                 }
                 var kind = band.Depth < 2 ? "dead" : run.W >= data.Rooms["spare"].MinW ? "spare" : k == 0 && run.W == 1 ? "fuel" : run.W >= 2 || k == 0 ? "storage" : "dead";
-                if (kind == "spare" && p.Class.Fill.Count > 0)
-                    Generate(p, data, k, run, band, rng);
+                if (kind is "spare" or "storage" && run.W >= 2 && p.Class.Fill.Count > 0) // (phase 8: a narrow run is a room of the mix too, when one fits; else storage as before)
+                    Generate(p, data, k, run, band, rng, kind);
                 else
                     Add(p, data.Rooms[kind], k, run, "leftover", band);
             }
@@ -387,50 +393,66 @@ public static class InteriorPlanner
     }
 
     /// <summary>
-    /// A big leftover (phase 3): a generated room from the class's fill list, the type chosen by what fits (its minimum size; a type holding fuel
-    /// stays on the lowest deck) and the neighbours (wanted and avoided rooms beside it, its deck and row, fewer of a type already generated),
-    /// with a small seeded jitter. A run big enough for two (twice the type's want and minimum width) is split in two, each chosen again.
-    /// Nothing fits: spare space.
+    /// A leftover run (phase 3, phase 8): a generated room from the class's weighted programme (<see cref="SizeClass.FillMix"/>), the type chosen by
+    /// what fits (its minimum size; a type holding fuel stays on the lowest deck), its place (deck, row) and neighbours (wanted and avoided rooms
+    /// beside it), how far its share of the generated rooms is under its weight's (and never over its cap), the crew's count (a mess or medical
+    /// bay per so many quarters), with a seeded jitter. A run big enough for two (twice the type's want and minimum width) is split in two, each
+    /// chosen again. Nothing fits: <paramref name="fallback"/> (spare space, or storage for a narrow run).
     /// </summary>
-    private static void Generate(InteriorPlan p, InteriorData data, int k, GridRect run, Band band, InteriorRng rng)
+    private static void Generate(InteriorPlan p, InteriorData data, int k, GridRect run, Band band, InteriorRng rng, string fallback = "spare")
     {
         RoomType? pick = null;
         var best = double.MinValue;
-        foreach (var id in p.Class.Fill.Distinct())
+        var mix = p.Class.FillMix.Count > 0 ? p.Class.FillMix : p.Class.Fill.Select(f => new FillEntry(f, 1, 1, "any", 0)).ToList();
+        mix = mix.Where(f => p.Sealed ? f.Where != "deck" : f.Where != "chassis").GroupBy(f => f.Room).Select(g => g.First()).ToList();
+        var weight = mix.Sum(f => f.Weight);
+        var made = p.Rooms.Count(o => o.Origin == "generated");
+        var quarters = p.Rooms.Count(o => o.Type == "quarters");
+        foreach (var capped in new[] { true, false }) // (every type over its cap: the best of them, rather than spare space)
         {
-            var t = data.Rooms[id];
-            if (run.W < t.MinW || run.D < t.MinD)
-                continue;
-            var fuel = t.Modules != null && data.Sets[t.Modules].Items.Any(i => i.Part == "Fuel Tank");
-            if (fuel && k != 0)
-                continue;
-            double s = (t.Deck, k == 0, k == p.Decks - 1) switch { (DeckWant.Lower, true, _) => 2, (DeckWant.Upper, _, true) => 2, (DeckWant.Any, _, _) => 0, _ => -4 };
-            s += (t.Row, band.Kind) switch { (RowWant.Inner, "inner") => 2, (RowWant.Outer, "outer") => 2, (RowWant.Inner, "outer") => -2, (RowWant.Outer, "inner") => -2, _ => 0 };
-            foreach (var o in p.Rooms.Where(o => o.Deck == k && !o.System && Touches(o.Rect, run)))
+            if (pick != null)
+                break;
+            foreach (var f in mix)
             {
-                if (t.Wants.Contains(o.Type) || data.Rooms[o.Type].Wants.Contains(t.Id))
-                    s += 4;
-                if (t.Avoids.Contains(o.Type) || data.Rooms[o.Type].Avoids.Contains(t.Id))
-                    s -= 6;
-            }
-            s -= 3 * p.Rooms.Count(o => o.Type == id && o.Origin == "generated" && o.Deck == k);
-            s += rng.Next();
-            if (s > best)
-            {
-                best = s;
-                pick = t;
-            }
+                var t = data.Rooms[f.Room];
+                if (run.W < t.MinW || run.D < t.MinD)
+                    continue;
+                var fuel = t.Modules != null && data.Sets[t.Modules].Items.Any(i => i.Part == "Fuel Tank");
+                if (fuel && k != 0 || t.Critical && (band.Kind == "inner" || p.Sealed)) // (a critical room keeps one door, so never in front of an outer band whose rooms may need a way through it, nor in a sealed hull, whose rooms have no outside doors)
+                    continue;
+                var have = p.Rooms.Count(o => o.Type == f.Room && o.Origin == "generated");
+                if (capped && made >= 4 && (have + 1.0) / (made + 1) > f.Cap)
+                    continue;
+                double s = (t.Deck, k == 0, k == p.Decks - 1) switch { (DeckWant.Lower, true, _) => 2, (DeckWant.Upper, _, true) => 2, (DeckWant.Any, _, _) => 0, _ => -4 };
+                s += (t.Row, band.Kind) switch { (RowWant.Inner, "inner") => 2, (RowWant.Outer, "outer") => 2, (RowWant.Inner, "outer") => -2, (RowWant.Outer, "inner") => -2, _ => 0 };
+                foreach (var o in p.Rooms.Where(o => o.Deck == k && !o.System && Touches(o.Rect, run)))
+                {
+                    if (t.Wants.Contains(o.Type) || data.Rooms[o.Type].Wants.Contains(t.Id))
+                        s += 4;
+                    if (t.Avoids.Contains(o.Type) || data.Rooms[o.Type].Avoids.Contains(t.Id))
+                        s -= 6;
+                }
+                s += 20 * (f.Weight / weight - (double)have / Math.Max(1, made)); // (under its share: wanted more)
+                if (f.PerQuarters > 0 && quarters / f.PerQuarters - p.Rooms.Count(o => o.Type == f.Room) is var short1 && short1 > 0)
+                    s += 3 * Math.Min(short1, 2);
+                s += 3 * rng.Next();
+                if (s > best)
+                {
+                    best = s;
+                    pick = t;
+                }
+        }
         }
         if (pick == null)
         {
-            Add(p, data.Rooms["spare"], k, run, "leftover", band);
+            Add(p, data.Rooms[fallback], k, run, "leftover", band);
             return;
         }
         if (run.Area >= 2 * pick.Want && run.W >= 2 * Math.Max(pick.MinW, 2) && !p.Sealed) // (a sealed hull keeps its rooms whole: fewer walls, CONSTRUCTS.md's link limit)
         {
             var half = run.W / 2;
-            Generate(p, data, k, new GridRect(run.X0, run.Z0, run.X0 + half - 1, run.Z1), band, rng);
-            Generate(p, data, k, new GridRect(run.X0 + half, run.Z0, run.X1, run.Z1), band, rng);
+            Generate(p, data, k, new GridRect(run.X0, run.Z0, run.X0 + half - 1, run.Z1), band, rng, fallback);
+            Generate(p, data, k, new GridRect(run.X0 + half, run.Z0, run.X1, run.Z1), band, rng, fallback);
             return;
         }
         Add(p, pick, k, run, "generated", band);

@@ -500,11 +500,13 @@ public sealed partial class Construct
                 NetHistRot[i - 1] = NetHistRot[i];
             }
             Array.Copy(NetHistAngle, JointCount, NetHistAngle, 0, (NetHistMax - 1) * JointCount);
+            ConstructNet.ShiftFeet(this);
             n--;
         }
         for (var j = 0; j < JointCount; j++)
             NetHistAngle[n * JointCount + j] = Joints[j].NetShown;
         NetJointsDone = JointCount == 0;
+        ConstructNet.KeepFeet(this, n); // (a walker's feet: ConstructNetWalk.cs)
         NetHistTick[n] = tick;
         NetHistPos[n] = pos;
         NetHistRot[n] = rot;
