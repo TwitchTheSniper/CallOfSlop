@@ -1094,6 +1094,7 @@ public static class ShapeGrammar
             if (roomSeg!.Len < 4.5f)
                 v.EndChest(room); // (a short room's walls go to seats, the door and the magazine: its loot takes the end wall first)
             v.Furnish(room, clearMiddle: true);
+            v.FurnishUpper(room); // (phase 7c: the storey over it)
             if (room.Containers.Count == 0 && !v.EndChest(room))
                 throw new VehicleKitException($"the {room.Tag}: no wall took a container"); // (seats and the door took the walls: plan again)
             var chance = p.Flank?.Name switch { "panniers" => 0.4, "loaded" => 0.85, _ => 0.0 };

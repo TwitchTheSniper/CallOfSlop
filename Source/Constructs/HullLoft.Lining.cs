@@ -101,8 +101,10 @@ public static partial class HullLoft
     public static string WithLining(string key, char kind, bool inset, char window = '\0')
     {
         var word = LiningWord(kind, inset, window);
-        if (word.Length == 0 || ShapeOf(key) is not { } sh || sh.Lining.Length > 0 || sh.Cage != '\0' || sh.Open)
+        if (word.Length == 0 || ShapeOf(key) is not { } sh || sh.Lining.Length > 0 || sh.Cage != '\0')
             return key;
+        if (sh.Open)
+            word = LiningWord(kind, false); // (phase 7c: an open deck's bulwark, followed, no glass)
         var lined = key[..^1] + " " + word + ")";
         if (lined.Length > ConstructParts.MaxRuntimeName && word.Length == 4)
             lined = key[..^1] + " " + word[..3] + ")"; // (no room for the window's letter: lined, unglazed)
@@ -133,7 +135,7 @@ public static partial class HullLoft
         var z1 = len - (sh.Back ? 0.026f : LineEnds);
         if (z1 - z0 < 0.2f)
             return null;
-        if (inset && Inset(p, sh, kind, look, z0, z1) is { } done)
+        if (inset && !sh.Open && Inset(p, sh, kind, look, z0, z1) is { } done)
             return done.Ceiling;
         Follow(p, sh, kind, look, z0, z1);
         return null;
@@ -219,8 +221,8 @@ public static partial class HullLoft
             {
                 if (sh.Door && side > 0 && a.P[k].Y < DoorTop + 0.05f)
                     continue; // (the doorway's side, and the cant over it)
-                if (k == last && flatRoof)
-                    continue; // (a flat roof is lined across: below)
+                if (k == last && (flatRoof || sh.Open))
+                    continue; // (a flat roof is lined across: below; phase 7c: an open top has no roof row)
                 var roofRow = MathF.Abs(a.P[k + 1].Y - a.P[k].Y) < MathF.Abs(a.P[k + 1].X - a.P[k].X);
                 if (roofRow && sh.Floor)
                     continue; // (an upper floor's underside: its hatch)
@@ -238,11 +240,85 @@ public static partial class HullLoft
                 }
                 RowLining(p, a, b, k, side, f0, f1, z0, z1, kind, look, roofRow, sh.Length);
             }
-        if (flatRoof && !sh.Floor)
+        if (flatRoof && !sh.Floor && !sh.Open)
             FlatCeiling(p, a, b, z0, z1, kind, look);
         if (kind == 'r')
             Ribs(p, sh, a, b, z0, z1, flatRoof);
-        FollowLamp(p, sh, kind, z0, z1, flatRoof);
+        if (!sh.Open)
+            FollowLamp(p, sh, kind, z0, z1, flatRoof);
+        if (kind != 'r' && !sh.Door)
+        {
+            if (sh.Front)
+                FollowEnd(p, sh, sh.A, kind, look, 0, 1);
+            if (sh.Back && !sh.BackDoor)
+                FollowEnd(p, sh, sh.B, kind, look, sh.Length, -1);
+        }
+    }
+
+    // ---- Closed ends (phase 7c) -----------------------------------------------------------------------------------
+
+    private const float EndIn = T / 2 + LineGap + 0.03f; // (an end's lining stands this far in from the skin's middle round its edge: inside the walls' lining, a padded one too)
+
+    /// <summary>
+    /// Phase 7c: a closed end's lining when the walls follow the rows: bands across the end (0.5 m, planks 0.15 m), each as wide as the section's inner outline
+    /// <see cref="EndIn"/> in from the skin, split where the outline turns, 6 mm seams, every other band 3 mm further in; it stands 6 mm in from the cap's inner face.
+    /// </summary>
+    private static void FollowEnd(Builder p, Shape sh, Section s, char kind, LineLook look, float z, float dir)
+    {
+        var n = s.P.Length - (sh.Open ? 1 : 0); // (an open top: up to the bulwark's top)
+        var q = new Vector2[n];
+        for (var k = 0; k < n; k++)
+        {
+            var nIn = k == 0 ? RowNormal(s.P[0], s.P[1]) : RowNormal(s.P[k - 1], s.P[k]);
+            var nOut = k + 1 < s.P.Length ? RowNormal(s.P[k], s.P[k + 1]) : s.P[k].X < 0.001f ? new Vector2(-nIn.X, nIn.Y) : nIn; // (the centreline: the roof's mirror)
+            q[k] = s.P[k] - Mitre(nIn, nOut) * EndIn;
+        }
+        q[0] = new Vector2(q[0].X, MathF.Max(q[0].Y, 0.03f));
+        var outline = new List<Vector2>(n) { q[0] };
+        for (var k = 1; k < n; k++)
+            if (q[k].Y > outline[^1].Y + 0.02f)
+                outline.Add(q[k] with { X = MathF.Max(0, q[k].X) }); // (a row too flat to stand on its own: the next one takes it in, as the cap's strips do)
+        EndBands(p, kind, look, z, dir, outline, false);
+    }
+
+    /// <summary>Bands across a closed end from the outline's first point to its last (half widths at heights, rising); <paramref name="flat"/>: an inset lining's upright edges.</summary>
+    private static void EndBands(Builder p, char kind, LineLook look, float z, float dir, List<Vector2> outline, bool flat)
+    {
+        if (outline.Count < 2 || outline[^1].Y - outline[0].Y < 0.2f)
+            return;
+        float Half(float y)
+        {
+            for (var k = 0; k + 1 < outline.Count; k++)
+                if (y <= outline[k + 1].Y + 1e-5f)
+                    return outline[k + 1].Y - outline[k].Y < 1e-5f ? MathF.Min(outline[k].X, outline[k + 1].X) : float.Lerp(outline[k].X, outline[k + 1].X, (y - outline[k].Y) / (outline[k + 1].Y - outline[k].Y));
+            return outline[^1].X;
+        }
+        var step = kind == 't' ? 0.15f : 0.5f;
+        var cuts = new List<float>();
+        for (var k = 0; k + 1 < outline.Count; k++)
+        {
+            var (y0, y1) = (outline[k].Y, outline[k + 1].Y);
+            if (y1 - y0 < 0.02f)
+                continue;
+            var m = Math.Max(1, (int)MathF.Ceiling((y1 - y0) / step - 1e-3f));
+            for (var i = 0; i < m; i++)
+                cuts.Add(y0 + (y1 - y0) * i / m);
+        }
+        cuts.Add(outline[^1].Y);
+        var cap = 0.025f + 0.006f; // (the cap's inner face, and 6 mm)
+        for (var i = 0; i + 1 < cuts.Count; i++)
+        {
+            var (y0, y1) = (cuts[i] + (i > 0 ? 0.003f : 0), cuts[i + 1] - (i + 2 < cuts.Count ? 0.003f : 0));
+            var (h0, h1) = (Half(y0 + 1e-4f), Half(y1 - 1e-4f));
+            if (y1 - y0 < 0.0105f || h0 < 0.05f && h1 < 0.05f)
+                continue;
+            (h0, h1) = (MathF.Max(h0, 0.02f), MathF.Max(h1, 0.02f)); // (a pitched roof's peak: a narrow top, not a point)
+            var y = (y0 + y1) / 2;
+            var colour = kind switch { 't' => i % 2 == 0 ? look.Low : look.High, 'u' => y < 1.0f ? look.Low : look.High, 's' => y < 1.05f ? look.Low : look.High, _ => y < 1.1f ? look.Low : look.High };
+            var thick = kind == 'u' && y < 1.0f ? 0.024f : look.Thick;
+            var zc = z + dir * (cap + (i % 2 == 1 ? 0.003f : 0) + thick / 2);
+            p.Facet([new(-h0, y0, zc), new(h0, y0, zc), new(h1, y1, zc), new(-h1, y1, zc)], Vector3.UnitZ, colour, thick, false);
+        }
     }
 
     /// <summary>One row's lining from f0 to f1: pieces at most 0.5 m along the row (0.15 m planks), 6 mm seams, every other one 3 mm shorter along the bay.</summary>
@@ -366,14 +442,14 @@ public static partial class HullLoft
                 {
                     if (sh.Door && side > 0 && sa.P[k].Y < DoorTop + 0.05f)
                         continue;
-                    if (k == last && flatRoof)
+                    if (k == last && (flatRoof || sh.Open))
                         continue;
                     var mirror = k == last && sa.P[^1].X == 0;
                     if (RowSpan(sa, k, T / 2 + LineGap + 0.06f, mirror) is not { } r1 || RowSpan(sb, k, T / 2 + LineGap + 0.06f, mirror) is not { } r2)
                         continue;
                     RowPiece(p, sa, sb, k, side, MathF.Max(r1.F0, r2.F0), MathF.Min(r1.F1, r2.F1), zc - 0.025f, zc + 0.025f, 0, 0.06f, "#3f3a35");
                 }
-            if (flatRoof && !sh.Floor)
+            if (flatRoof && !sh.Floor && !sh.Open)
             {
                 var w = MathF.Min(sa.P[^2].X, sb.P[^2].X) - 0.09f;
                 var y = MathF.Min(sa.P[^1].Y, sb.P[^1].Y) - T / 2 - LineGap;
@@ -536,6 +612,16 @@ public static partial class HullLoft
                 Cube(p, new Vector3(MathF.Min(s * (xi - 0.004f), s * (xi - 0.03f)), under - 0.06f, z0 + 0.01f), new Vector3(MathF.Max(s * (xi - 0.004f), s * (xi - 0.03f)), under - 0.03f, z1 - 0.01f), "#ff4fd8", false, true);
             if (kind == 'c') // (a kick strip)
                 Cube(p, new Vector3(MathF.Min(s * (xi - 0.003f), s * (xi - 0.017f)), 0.035f, z0 + 0.006f), new Vector3(MathF.Max(s * (xi - 0.003f), s * (xi - 0.017f)), 0.135f, z1 - 0.006f), "#5f6f7d", false);
+        }
+        // Phase 7c: the closed ends, upright between the walls' inner faces and under the ceiling (a door bay's aren't: the doorway's frame).
+        if (!sh.Door)
+        {
+            var hw = MathF.Min(wall[0], wall[1]) - t - 0.006f; // (6 mm in from the walls' inner faces; a little narrower on the wider side, both edges in from either wall)
+            var ends = new List<Vector2> { new(hw, 0.03f), new(hw, under - 0.006f) };
+            if (sh.Front)
+                EndBands(p, kind, look, 0, 1, ends, true);
+            if (sh.Back && !sh.BackDoor)
+                EndBands(p, kind, look, sh.Length, -1, ends, true);
         }
         // The ceiling (unless the roof is an upper floor, cut by its hatch), its edges 4 mm in from the walls' outer faces.
         if (!sh.Floor)
