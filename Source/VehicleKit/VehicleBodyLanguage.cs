@@ -316,6 +316,9 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     public double AsymPod { get; init; }
     public float AsymTrim { get; init; }
 
+    /// <summary>Phase 9a (docs/vehiclekit/BODY-STYLES.md, section 19): the faction's cab sub-styles, its cab family (<see cref="CabStyle"/>); empty: none.</summary>
+    public CabStyle[] CabStyles { get; init; } = [];
+
     /// <summary>The weight of a cab kind (0: the style never builds it).</summary>
     public double CabWeight(string kind)
     {
@@ -342,6 +345,16 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 6: a welded grating balcony now and then; lopsided most of all: welded boxes and the plates down one flank; caged rooms its signature, 0.6)
                 Balcony = 0.35, BalconyKind = 'w', Asym = 0.7, AsymAmount = 0.9f, AsymPod = 0.6, AsymTrim = 0.9f,
                 CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
+                // (phase 9a: the cab family: a chopped enclosed cab, a roll cage, a slab-armoured cab; upright screens, flat and grilled noses whatever the archetype)
+                CabStyles =
+                [
+                    CabStyle.Of("chop top", 2, r => r with { RakeMin = 0.02f, RakeMax = 0.05f, Noses = [('g', 2), ('f', 1)] }, r => r with { CabTallMin = 1.56f, CabTallMax = 1.6f, BeltMin = 1.08f, BeltMax = 1.12f },
+                        r => r with { Cabs = [("enclosed", 2), ("armoured", 0.6), ("crew", 0.5)], CabLanguage = BodyLanguage.Slab }),
+                    CabStyle.Of("roll cage", 2, r => r with { RakeMin = 0.04f, RakeMax = 0.1f, Noses = [('f', 2), ('g', 1)] }, r => r with { CabTallMin = 1.6f, CabTallMax = 1.7f, BeltMin = 1.04f, BeltMax = 1.08f },
+                        r => r with { Cabs = [("caged", 3), ("crew", 0.3), ("enclosed", 0.3)], CabLanguage = BodyLanguage.Ledge }),
+                    CabStyle.Of("scrap plate", 1, r => r with { RakeMin = 0.02f, RakeMax = 0.06f, Noses = [('f', 2), ('w', 1)] }, r => r with { CabTallMin = 1.56f, CabTallMax = 1.64f, BeltMin = 1.1f, BeltMax = 1.14f },
+                        r => r with { Cabs = [("armoured", 2), ("enclosed", 0.5)], CabLanguage = BodyLanguage.Slab }),
+                ],
             },
         // (low and wide, flat-faceted: little height, a glacis brow)
         ["Militia"] = new([(BodyLanguage.Armour, 1)])
@@ -350,14 +363,22 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (armoured slit cabs and crew cabs, the driver inside an armoured capsule now and then; wedge noses like a glacis)
                 Cabs = [("armoured", 2.5), ("crew", 1.2), ("merged", 1), ("caged", 0.4)], Noses = [('w', 2.5), ('f', 1)],
                 // (phase 4: slat armour and stowage bins down the sides, a basket on the cab)
-                Trims = [("s", 2), ("b", 1.5), ("sb", 1.5)], TrimShare = 0.9, Decos = [('B', 0.7)],
+                Trims = [("s", 3), ("sb", 1)], TrimShare = 1, Decos = [('B', 0.7)], // (phase 9a: slats on every side, bins among them now and then: bins alone and bare sides made Militia's rooms the most varied of any style's, nearest British)
                 // (phase 5: slatted frame rooms, an armoured fighting deck over the middle, armoured stowage pods)
-                Cage = 0.05, CageKind = 's', Uppers = [("none", 2.5), ("deck", 0.4)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
+                Cage = 0, CageKind = 's', Uppers = [("none", 2.5), ("deck", 0.4)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
                 // (phase 7a: orderly olive panels with a rack rail, inset; caged bulkhead lamps; racks, few loose things)
                 Lining = 'm', Window = 's', WindowChance = 0.6, LiningInset = 0.8, Clutter = 0.25f, Props = ["Ammo Crate", "Small Fuel Tank", "Cable Reel"], Fill = 0.6f, Gear = 2,
                 // (phase 6: slatted balconies are data, left at 0 (rooms read as Highland's with them); stowage loaded on one side; slatted rooms and decks retuned as signatures)
                 Balcony = 0, BalconyKind = 's', Asym = 0.35, AsymAmount = 0.6f, AsymPod = 0.6,
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
+                // (phase 9a: the cab family: a low wide slit cab under a steep glacis screen, or a crew carrier; wedge noses)
+                CabStyles =
+                [
+                    CabStyle.Of("slit", 2, r => r with { RakeMin = 0.22f, RakeMax = 0.24f, Noses = [('w', 1)] }, r => r with { CabTallMin = 1.56f, CabTallMax = 1.6f, BeltMin = 1.1f, BeltMax = 1.14f, CabHalfMin = 0.93f, CabHalfMax = 0.95f },
+                        r => r with { Cabs = [("armoured", 3), ("crew", 0.5)], CabLanguage = BodyLanguage.Armour }),
+                    CabStyle.Of("carrier", 1.5, r => r with { RakeMin = 0.22f, RakeMax = 0.24f, CapsuleRakeMin = 0.75f, CapsuleRakeMax = 0.85f, Noses = [('w', 3), ('f', 1)] }, r => r with { CabTallMin = 1.56f, CabTallMax = 1.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.93f, CabHalfMax = 0.95f },
+                        r => r with { Cabs = [("crew", 2), ("merged", 1.5), ("armoured", 0.5)] }),
+                ],
             },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
         ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12)
@@ -374,11 +395,19 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 6: faired balconies are data, left at 0; nearly always even)
                 Balcony = 0, BalconyKind = 'f', BalconyLenMin = 1.3f, Asym = 0.1, AsymAmount = 0.4f,
                 CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
+                // (phase 9a: the cab family: a glasshouse under a raked screen, or a pod capsule; rounded noses)
+                CabStyles =
+                [
+                    CabStyle.Of("glasshouse", 2, r => r with { RakeMin = 0.22f, RakeMax = 0.26f, Noses = [('r', 2), ('w', 1)] }, r => r with { CabTallMin = 1.7f, CabTallMax = 1.8f, BeltMin = 0.88f, BeltMax = 0.93f },
+                        r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Pod }),
+                    CabStyle.Of("pod", 1.5, r => r with { RakeMin = 0.22f, RakeMax = 0.26f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, Noses = [('r', 1)] }, r => r with { BeltMin = 0.9f, BeltMax = 0.94f },
+                        r => r with { Cabs = [("cab-over", 2), ("merged", 1), ("enclosed", 0.3)] }),
+                ],
             },
         // (a portacabin on a chassis: boxy, square ends, tall)
         ["Scam"] = new([(BodyLanguage.Cabin, 2), (BodyLanguage.Van, 1)])
             {
-                Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.95f, TallMax = 1.2f, FlareShare = 0.5f, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)],
+                Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.95f, TallMax = 1.2f, FlareShare = 0.5f, DoorRear = 0.35, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)],
                 // (boxy enclosed and crew cabs, upright screens, flat noses)
                 Cabs = [("enclosed", 2), ("crew", 1.2), ("cab-over", 0.8)], Noses = [('f', 2), ('g', 1)],
                 // (phase 4: signboards down the sides, one over the cab)
@@ -390,11 +419,19 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 6: a showy balcony with a sign band at every door it fits, deep; kiosks down one side when lopsided)
                 Balcony = 1, BalconyKind = 'g', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.1f, Asym = 0.4, AsymAmount = 0.7f, AsymPod = 0.7,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
+                // (phase 9a: the cab family: a tall upright box, or a flat-faced kiosk cab-over; flat noses)
+                CabStyles =
+                [
+                    CabStyle.Of("box", 2, r => r with { RakeMin = 0.02f, RakeMax = 0.05f, Noses = [('f', 1)] }, r => r with { CabTallMin = 1.86f, CabTallMax = 1.95f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.93f, CabHalfMax = 0.95f },
+                        r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Cabin }),
+                    CabStyle.Of("kiosk", 1, r => r with { RakeMin = 0.02f, RakeMax = 0.06f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.36f, Noses = [('f', 2), ('g', 1)] }, r => r with { CabTallMin = 1.84f, CabTallMax = 1.92f, CabHalfMin = 0.93f, CabHalfMax = 0.95f },
+                        r => r with { Cabs = [("cab-over", 2), ("enclosed", 0.5)], CabLanguage = BodyLanguage.Cabin }),
+                ],
             },
         // (long and low with a sheer line: boat-tail sterns, flared strakes)
         ["Highland"] = new([(BodyLanguage.Boat, 3), (BodyLanguage.Slab, 0.5)])
             {
-                Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.14f, FlareShare = 1f, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)],
+                Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.9f, TallMax = 1.14f, FlareShare = 1f, DoorRear = 0.35, Tails = [(1.25f, 1.5), (1f, 1), (0.75f, 0.5)],
                 // (long hoods with grilles, enclosed and caged cabs)
                 Cabs = [("enclosed", 2), ("crew", 1), ("caged", 0.5)], Noses = [('g', 2.5), ('r', 1)],
                 // (phase 4: clinker laps and a wooden strake, a chrome grille and a bonnet mascot)
@@ -406,11 +443,19 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 6: a timber veranda at every door it fits, deep, its signature in place of the deck and the stock wagon; lockers on one side now and then)
                 Balcony = 1, BalconyKind = 't', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.15f, Asym = 0.3, AsymAmount = 0.5f, AsymPod = 0.5,
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
+                // (phase 9a: the cab family: a coachbuilt cab behind a long grilled bonnet, or an open tourer's cage; near-upright screens)
+                CabStyles =
+                [
+                    CabStyle.Of("coachbuilt", 2, r => r with { RakeMin = 0.05f, RakeMax = 0.1f, Noses = [('g', 1)] }, r => r with { CabTallMin = 1.68f, CabTallMax = 1.76f, BeltMin = 0.98f, BeltMax = 1.04f, CabHalfMin = 0.84f, CabHalfMax = 0.88f },
+                        r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Boat }),
+                    CabStyle.Of("tourer", 1, r => r with { RakeMin = 0.06f, RakeMax = 0.12f, Noses = [('g', 2), ('r', 1)] }, r => r with { CabTallMin = 1.62f, CabTallMax = 1.7f, CabHalfMin = 0.84f, CabHalfMax = 0.88f },
+                        r => r with { Cabs = [("caged", 1.5), ("enclosed", 0.5)], CabLanguage = BodyLanguage.Boat }),
+                ],
             },
         // (tall, upright buses: the heavy class first, the door kerbside)
         ["British"] = new([(BodyLanguage.Bus, 2.5), (BodyLanguage.Coach, 1.5)], 8, 12)
             {
-                Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.28f, FlareShare = 0.7f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0,
+                Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.28f, FlareShare = 0.7f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0.35, // (phase 9a: a rear platform now and then, its balcony across the back)
                 // (the bus front: the cab inside the body; capsules; rounded and grilled noses on the rest)
                 Cabs = [("merged", 2), ("cab-over", 1.2), ("enclosed", 0.8), ("crew", 0.5)], Noses = [('r', 2), ('g', 1)],
                 // (phase 4: the two-tone livery band and its chrome strips, a lit destination board over a bus front)
@@ -422,6 +467,14 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 6: a wrought-rail platform at every door it fits; even)
                 Balcony = 1, BalconyKind = 'r', BalconyRailMin = 1.0f, BalconyRailMax = 1.1f, Asym = 0.05, AsymAmount = 0.3f,
                 CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,
+                // (phase 9a: the cab family: an upright bus front, or a town cab in the coach's lines; rounded noses)
+                CabStyles =
+                [
+                    CabStyle.Of("bus front", 2, r => r with { RakeMin = 0.1f, RakeMax = 0.14f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.3f, Noses = [('r', 1)] }, r => r with { CabTallMin = 1.76f, CabTallMax = 1.86f, BeltMin = 0.94f, BeltMax = 0.98f },
+                        r => r with { Cabs = [("merged", 2), ("cab-over", 1), ("enclosed", 0.3)] }),
+                    CabStyle.Of("town cab", 1, r => r with { RakeMin = 0.1f, RakeMax = 0.16f, Noses = [('r', 2), ('g', 1)] }, r => r with { CabTallMin = 1.74f, CabTallMax = 1.84f, BeltMin = 0.94f, BeltMax = 1.0f },
+                        r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Coach }),
+                ],
             },
     };
 
