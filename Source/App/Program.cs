@@ -184,6 +184,10 @@ public static unsafe partial class Program
         }
         if (args.Any(a => a.Equals("--no-armoury", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleArmoury.On = false; // the styles' own guns only, to measure what the vehicle armoury changes (VehicleArmoury.cs)
+        if (args.Any(a => a.Equals("--no-gunsmith", StringComparison.OrdinalIgnoreCase)))
+            VehicleKit.VehicleGunsmith.On = false; // the style's guns only, without the gunsmith's big guns made for each vehicle (VehicleGunsmith.cs)
+        if (args.Any(a => a.Equals("--gunsmith-report", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.VehicleGunsmith.Report(); // what the gunsmith offers vehicles of a range of masses at each tier
         if (args.Any(a => a.Equals("--check-armoury", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.VehicleArmouryCli.CheckArmoury(args); // every armoury recipe fitted on a test turret, round-tripped through a blueprint, with its numbers
         if (args.Any(a => a.Equals("--armoury-report", StringComparison.OrdinalIgnoreCase)))
