@@ -557,7 +557,7 @@ public static partial class SelfTest
             sp.Yaw = 0;
             Pump(server, [a], 0.3, ref now, clock);
             var known = w.Bodies.Select(b => b.Id).ToHashSet();
-            a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Assembly Bay"));
+            a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Assembly Bay"));
             Pump(server, [a], 1.0, ref now, clock);
             var bay = w.Bodies.FirstOrDefault(b => !known.Contains(b.Id) && b.HasAssembler);
             if (bay == null)

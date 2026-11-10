@@ -286,7 +286,7 @@ public static partial class SelfTest
         // The client's own gate; holding an engine, it takes the door off (aiming at it: its ghosts up, as in the game).
         StandAt(sp, 10, 0);
         Pump(server, [a], 0.3, ref now, clock);
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Gate"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Gate"));
         Pump(server, [a], 0.6, ref now, clock);
         var gate = server.Constructs.Bodies[^1];
         var door = PartOf(gate, PartRole.Door);
@@ -328,7 +328,7 @@ public static partial class SelfTest
         // The backpack free: a lamp off the client's lamp post goes into it, on both.
         StandAt(sp, -10, 0);
         Pump(server, [a], 0.3, ref now, clock);
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Lamp Post"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Lamp Post"));
         Pump(server, [a], 0.6, ref now, clock);
         var post = server.Constructs.Bodies[^1];
         var li = PartNamed(post, lamp);

@@ -80,16 +80,16 @@ public static partial class SelfTest
         Run(g, ref now, 0.2);
         var turret = IndexOfBlueprint("Turret");
         var before = g.Constructs.Bodies.Count;
-        g.SandboxSend(CActKind.Blueprint, part: (byte)turret);
+        g.SandboxSend(CActKind.Blueprint, part: (ushort)turret);
         var spawnWhy = g.SandboxNotice;
         var spawned = g.Constructs.Bodies.Count == before + 1 ? g.Constructs.Bodies[^1] : null;
         Run(g, ref now, 1.0);
         var ahead = spawned == null ? 0 : Vector3.Dot(spawned.WorldCom - me.Position, World.FlatForward(me.Yaw));
         var apart = spawned == null ? 0 : Vector2.Distance(new Vector2(spawned.WorldCom.X, spawned.WorldCom.Z), new Vector2(me.Position.X, me.Position.Z));
         var parts = spawned?.PartCount ?? 0;
-        g.SandboxSend(CActKind.Blueprint, part: 255); // (past every blueprint: the index is a byte, so 255 is never one)
+        g.SandboxSend(CActKind.Blueprint, part: ushort.MaxValue); // (past every blueprint: the index is two bytes, and there are never 65535)
         var badBp = g.SandboxNotice;
-        Line($"parts menu blueprint: the Turret spawned {(spawned != null ? $"as construct {spawned.Id} with {parts} parts, {ahead:0.0} m ahead and {apart:0.0} m away" : $"no (\"{spawnWhy}\")")}; index 255: \"{badBp}\"");
+        Line($"parts menu blueprint: the Turret spawned {(spawned != null ? $"as construct {spawned.Id} with {parts} parts, {ahead:0.0} m ahead and {apart:0.0} m away" : $"no (\"{spawnWhy}\")")}; index 65535: \"{badBp}\"");
         if (spawned == null || parts < 4 || ahead < 2 || apart > 25 || !badBp.Contains("no such blueprint"))
             Fail("parts menu: a blueprint didn't spawn in front of the player (or a bad index wasn't refused)");
 
@@ -467,7 +467,7 @@ public static partial class SelfTest
         Pump(server, [a], 0.4, ref now, clock);
         var refused = a.SandboxNotice;
         var before = server.Constructs.Bodies.Count;
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Gate"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Gate"));
         Pump(server, [a], 0.6, ref now, clock);
         var spawned = server.Constructs.Bodies.Count == before + 1;
         var copies = a.Constructs.Bodies.Count == server.Constructs.Bodies.Count;
