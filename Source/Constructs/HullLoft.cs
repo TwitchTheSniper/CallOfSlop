@@ -271,7 +271,10 @@ public static partial class HullLoft
                     have.Touched = Environment.TickCount64;
                 return have;
             }
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             var made = Make(name);
+            if (CallOfSlop.VehicleKit.KitProfile.On)
+                CallOfSlop.VehicleKit.KitProfile.Add(CallOfSlop.VehicleKit.KitProfile.S.LoftMake, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
             Interned[name] = made;
             return made;
         }
