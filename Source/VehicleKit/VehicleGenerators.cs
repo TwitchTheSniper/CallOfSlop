@@ -61,8 +61,14 @@ public static class VehicleRegistry
         s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: no style ships them yet)
     ];
 
+    /// <summary>Things every shipped style ships that are not vehicles a role or a convoy draws: the standalone turret (docs/sandbox/VEHICLE-WEAPONS.md, "Turrets").</summary>
+    public static readonly Func<FactionStyle, IVehicleGenerator>[] Everywhere =
+    [
+        s => new Generators.Turret(s),
+    ];
+
     internal static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>
-        Shapes.Select(f => f(st)).Concat(Extras.Select(f => f(st)).Where(g => all || g is VehicleShape v && st.Extra.Contains(v.Shape)));
+        Shapes.Select(f => f(st)).Concat(Extras.Select(f => f(st)).Where(g => all || g is VehicleShape v && st.Extra.Contains(v.Shape))).Concat(Everywhere.Select(f => f(st)));
 
     /// <summary>What ships: every shape in every shipped style.</summary>
     public static IReadOnlyList<IVehicleGenerator> All => _all ??= Styles.Shipped.SelectMany(st => For(st, false)).ToArray();
