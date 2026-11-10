@@ -16,6 +16,8 @@ public sealed partial class PlanetEdits
     // Per column: its open top's colour (rgb, rockiness), for drawing; per dug cell: are they made?
     private Vector4[] _topColour = [];
     private bool[] _coloursMade = [];
+    // Per column: the ground's own colour there as built (made with the top colours), which dug faces start from.
+    private Vector3[] _ownColour = [];
 
     private int CellOrdinal(int first) => first / (Sub * Sub);
 
@@ -28,6 +30,7 @@ public sealed partial class PlanetEdits
         Array.Resize(ref _topsMade, cells);
         Array.Resize(ref _cornerBase, cells * vs * vs);
         Array.Resize(ref _topColour, _spans.Length);
+        Array.Resize(ref _ownColour, _spans.Length);
         Array.Resize(ref _coloursMade, cells);
     }
 
@@ -71,6 +74,7 @@ public sealed partial class PlanetEdits
             var c = first + b * Sub + a;
             float u = (a + 0.5f) / Sub, v = (b + 0.5f) / Sub;
             var own = Vector4.Lerp(Vector4.Lerp(g00, g10, u), Vector4.Lerp(g01, g11, u), v);
+            _ownColour[c] = new Vector3(own.X, own.Y, own.Z);
             var (col, rock) = TopShade(c, own, _spans[c][_count[c] * 2 - 1]);
             _topColour[c] = new Vector4(col, Math.Clamp(rock, 0f, 1f));
         }

@@ -67,6 +67,11 @@ out from the spans, the same on every peer.
   round. A cut shallower than 0.6 m fades from the surface's own colour (`TerrainEdits.ShadeFade`), so a hole's edge
   has no hard line round it. Dug ground draws with the dirt texture for its rock layer too: the map's rock layer has
   slab lines, which ran across every crater. Colours are kept per dug cell and collision never asks for them.
+- **Dug ground is the world's colour** (`TerrainEdits.DugShade`, used by planetoids too). Each column remembers the
+  ground's own colour there as built (grass, snow, sand: whatever its top drew), and a dug face starts from it with a
+  fifth of the world's dirt colour, turning towards its rock (`DugRock` 0.4) and darker by `DugDeep` (4 m) down. So a
+  snowy world digs white to blue-grey and a green one green to grey-green, not the map's dirt and rock alone. Fills
+  still draw as what they were made of.
 - **Kept per dug cell** (five floats a column plus the as-built corners), made on first use and forgotten when the cell
   or one next to it changes (`Bump`). The arrays grow with the columns, so a query never allocates.
 - **Level still:** floating islands' columns and the columns along a smoothed rim on flat maps. On a planetoid a tall
