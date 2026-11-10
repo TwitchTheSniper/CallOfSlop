@@ -13,7 +13,7 @@ public static class Styles
     public static readonly FactionStyle Bandit = new()
     {
         Name = "Bandit",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Buggy", "Monster Truck", "Wagon", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "Bandit",
         Palette = new()
         {
@@ -83,6 +83,7 @@ public static class Styles
             new("stilt", "Heavy Pogo Strut", "Off-Road Wheel", "Heavy Pogo Strut", "Large Wheel"),
             new("dually", "Heavy Suspension", "Off-Road Wheel", "Leaf Spring", "Dually Wheel"),
             new("crawler", "Heavy Swing Arm", "Spiked Wheel", "Heavy Trailing Arm", "Spiked Wheel"),
+            new("monster", "Heavy Pogo Strut", "Monster Wheel", "Heavy Pogo Strut", "Monster Wheel"), // (phase 8b: the Monster Truck's only gear; ShapeGrammar.SpecialGears)
         ],
         // The weapon slot: guns by their parts, in the builder's text. A name twice is twice as likely.
         Weapons =
@@ -111,7 +112,7 @@ public static class Styles
     public static readonly FactionStyle It = new()
     {
         Name = "IT",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Buggy", "Concept", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "IT Department",
         Palette = new()
         {
@@ -178,7 +179,7 @@ public static class Styles
     public static readonly FactionStyle Scam = new()
     {
         Name = "Scam",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Buggy", "Concept"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "The Call Centre",
         Palette = new()
         {
@@ -232,7 +233,7 @@ public static class Styles
     public static readonly FactionStyle Highland = new()
     {
         Name = "Highland",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Monster Truck", "Wagon", "Concept", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "Clan MacSlop",
         Palette = new()
         {
@@ -340,7 +341,7 @@ public static class Styles
             new("Strongly Worded Letter", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
             new("Builder's Tea", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
         ],
-        Extra = ["Double Decker", "Car"],
+        Extra = ["Double Decker", "Car", "Wagon", "Concept"],
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
         {
