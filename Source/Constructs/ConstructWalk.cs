@@ -600,47 +600,9 @@ public static partial class ConstructPhysics
         }
         if (share < 0.05f && edge && (target.LengthSquared() > 1e-4f || yaw != 0))
             c.WalkProblem = ProblemNoFooting;
-        DbgShare = share; DbgEdge = edge; // PROBE-TMP
         return share;
     }
 
-    internal static string DbgContacts(Construct c) // PROBE-TMP
-    {
-        var sb = new System.Text.StringBuilder();
-        var n = 0;
-        for (var k = 0; k < _contactCount; k++)
-        {
-            ref var ct = ref _contacts[k];
-            n++;
-            if (n <= 12)
-            {
-                var local = Vector3.Transform(ct.Point - c.Pos, Quaternion.Inverse(c.Rot));
-                sb.Append($" [{ct.A},{ct.B} at ({local.X:0.0},{local.Y:0.0},{local.Z:0.0}) n ({ct.Normal.X:0.00},{ct.Normal.Y:0.00},{ct.Normal.Z:0.00}) gap {ct.Gap:0.00} jn {ct.Jn:0}]");
-            }
-        }
-        for (var k = 0; k < _contactCount; k++)
-        {
-            ref var ct = ref _contacts[k];
-            if (ct.Normal.Y > -0.5f)
-                continue;
-            sb.Append($" DOWN at world {ct.Point}");
-            if (World.Query.Raycast(ct.Point + Vector3.UnitY * 6, -Vector3.UnitY, 20, QueryFilter.All, out var h1))
-                sb.Append($" downray {h1.Distance:0.00} {h1.Kind} {h1.Shape} n {h1.Normal}");
-            if (World.Query.Raycast(ct.Point - Vector3.UnitY * 6, Vector3.UnitY, 20, QueryFilter.All, out var h2))
-                sb.Append($" upray {h2.Distance:0.00} {h2.Kind} {h2.Shape} n {h2.Normal}");
-            sb.Append($" terrain {ConstructWorld.Ground(World.Query, ct.Point.X, ct.Point.Z).Y:0.00}");
-            var list = new List<ContactShape>();
-            World.Query.Gather(ct.Point - new Vector3(1.5f, 3, 1.5f), ct.Point + new Vector3(1.5f, 3, 1.5f), new QueryFilter(QueryLayers.World & ~QueryLayers.Terrain), list);
-            foreach (var sh in list)
-            {
-                var nt = Vector3.Normalize(Vector3.Cross(sh.B - sh.A, sh.C - sh.A));
-                sb.Append($"\n      shape type {sh.Type} kind {sh.Id.Kind} one {sh.OneSided} A {sh.A} n ({nt.X:0.00},{nt.Y:0.00},{nt.Z:0.00}) box {sh.Box.Center} half {sh.Box.Half}");
-            }
-            break;
-        }
-        return $"{n} contacts:" + sb;
-    }
-    internal static float DbgShare, DbgTarget, DbgVy; internal static bool DbgEdge; internal static Vector3 DbgShift; // PROBE-TMP
     private static void WalkBody(Construct c, float reach, float dt)
     {
         var driven = c.Driver != 255;
@@ -711,7 +673,6 @@ public static partial class ConstructPhysics
             if (along > most)
                 share = MathF.Min(share, most / along);
         }
-        DbgTarget = target.Length(); DbgShift = shift; DbgVy = vy; // PROBE-TMP
         target = target * share + shift;
         yaw *= share;
         if (down >= 3)
