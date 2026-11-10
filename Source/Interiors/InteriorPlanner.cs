@@ -111,7 +111,7 @@ public static class InteriorPlanner
             if (!PlaceRoom(p, data, t, deck, bands[deck], rules, rng) && !(p.Decks > 1 && PlaceRoom(p, data, t, deck == 0 ? p.Decks - 1 : 0, bands[deck == 0 ? p.Decks - 1 : 0], rules, rng)))
                 p.Refused.Add($"no room for the {t.Name} ({t.MinW}x{t.MinD} cells at least) on any deck");
             else
-                deckArea[p.Rooms[^1].Deck] += p.Rooms[^1].Rect.Area;
+                deckArea[p.Rooms[^1].Deck] += p.Rooms[^1].Area;
         }
         for (var k = 0; k < p.Decks; k++)
             Leftovers(p, data, k, bands[k]);
@@ -218,7 +218,9 @@ public static class InteriorPlanner
         {
             if (band.Depth < t.MinD)
                 continue;
-            var target = Math.Max(t.MinW + grow, (int)Math.Ceiling(t.Want * (1 + 0.25 * rules.RoomGrow) / band.Depth));
+            // (a free room's rectangle takes about 60% of what it wants: its wing, beside it in the next band, the rest)
+            var share = t.Layout == RoomLayout.Free ? 0.6 : 1.0;
+            var target = Math.Max(t.MinW + grow, (int)Math.Ceiling(share * t.Want * (1 + 0.25 * rules.RoomGrow) / band.Depth));
             for (var w = Math.Min(target, rules.Section); w >= t.MinW; w--)
             {
                 for (var x0 = 0; x0 + w <= p.W; x0++)
@@ -240,8 +242,43 @@ public static class InteriorPlanner
         }
         if (pick is not { } at)
             return false;
-        Add(p, t, k, at, "programme", pickBand!);
+        var room = Add(p, t, k, at, "programme", pickBand!);
+        if (t.Layout == RoomLayout.Free)
+            Wing(p, t, room, bands, rules);
         return true;
+    }
+
+    /// <summary>
+    /// A free room's wing (phase 2): a rectangle in the other band of its strip (inner and outer), along the room's edge on that side, flush with
+    /// the room's bow or stern end (its end want; else whichever fits), at least 2 cells wide and narrower than the room, so the outline is an L
+    /// that follows the hull side rather than a bigger box. It takes what the rectangle left of the room's want (at least 2 cells wide).
+    /// </summary>
+    private static void Wing(InteriorPlan p, RoomType t, PlanRoom r, List<Band> bands, DeckRules rules)
+    {
+        var band = bands.FirstOrDefault(b => b.Kind != "full" && (b.Z0 == r.Rect.Z1 + 1 || b.Z1 == r.Rect.Z0 - 1));
+        if (band == null)
+        {
+            p.Notes.Add($"the {r.Name} is free but its band has no other band beside it: a rectangle");
+            return;
+        }
+        var want = t.Want * (1 + 0.25 * rules.RoomGrow) - r.Rect.Area;
+        var w = Math.Min(r.Rect.W - 1, Math.Max(2, (int)Math.Ceiling(want / band.Depth)));
+        var bowX = p.BowAtMinX ? 0 : p.W - 1;
+        var atMin = t.End switch { EndWant.Bow => bowX == 0, EndWant.Stern => bowX != 0, _ => true };
+        for (; w >= 2; w--)
+            foreach (var min in new[] { atMin, !atMin })
+            {
+                var x0 = min ? r.Rect.X0 : r.Rect.X1 - w + 1;
+                var g = new GridRect(x0, band.Z0, x0 + w - 1, band.Z1);
+                if (p.SectionOf(g.X0) != r.Section || p.SectionOf(g.X1) != r.Section || !FreeRect(p, r.Deck, g))
+                    continue;
+                r.Wings.Add(g);
+                for (var x = g.X0; x <= g.X1; x++)
+                    for (var z = g.Z0; z <= g.Z1; z++)
+                        p.Cells[r.Deck][x, z] = r.Id;
+                return;
+            }
+        p.Notes.Add($"the {r.Name} is free but no wing fits beside it: a rectangle");
     }
 
     private static double Score(InteriorPlan p, InteriorData data, RoomType t, int k, GridRect r, Band band, bool tight)
@@ -309,6 +346,22 @@ public static class InteriorPlanner
                 PlanRoom? Mergeable(int at) =>
                     at >= 0 && at < p.W && p.Cells[k][at, band.Z0] is var id && id >= 0 && p.Rooms[id] is { System: false, Critical: false } n &&
                     n.Rect.Z0 == band.Z0 && n.Rect.Z1 == band.Z1 && n.Section == p.SectionOf(a) && n.Rect.W + run.W <= p.Class.Deck.Section ? n : null;
+                // (a free room's wing in this band takes a narrow run beside it the same way: the outline stays an L or T)
+                (PlanRoom R, int Wing)? WingBeside(int at) =>
+                    at >= 0 && at < p.W && p.Cells[k][at, band.Z0] is var id && id >= 0 && p.Rooms[id] is { System: false, Critical: false } n &&
+                    n.Wings.FindIndex(w => w.Z0 == band.Z0 && w.Z1 == band.Z1 && (w.X1 + 1 == a || w.X0 - 1 == b)) is var wi && wi >= 0 &&
+                    n.Section == p.SectionOf(a) ? (n, wi) : null;
+                if (run.W <= 2 && (WingBeside(a - 1) ?? WingBeside(b + 1)) is { } hit)
+                {
+                    var (wr, wi2) = hit;
+                    var wg = wr.Wings[wi2];
+                    wr.Wings[wi2] = new GridRect(Math.Min(wg.X0, a), band.Z0, Math.Max(wg.X1, b), band.Z1);
+                    wr.Origin = "merged";
+                    for (var c = a; c <= b; c++)
+                        for (var z = band.Z0; z <= band.Z1; z++)
+                            p.Cells[k][c, z] = wr.Id;
+                    continue;
+                }
                 if (run.W <= 2 && (Mergeable(a - 1) ?? Mergeable(b + 1)) is { } into)
                 {
                     into.Rect = new GridRect(Math.Min(into.Rect.X0, a), band.Z0, Math.Max(into.Rect.X1, b), band.Z1);

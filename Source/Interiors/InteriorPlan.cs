@@ -17,8 +17,9 @@ public readonly record struct GridRect(int X0, int Z0, int X1, int Z1)
 public enum Side { North, East, South, West }
 
 /// <summary>
-/// A room on one deck. Phase 1 rooms are grid rectangles; a free room (phase 2) keeps its rectangle as the grid space it claims and adds an
-/// outline (metres in the deck's frame) that the walls follow, so the planner's bookkeeping is the same for both.
+/// A room on one deck. A grid room is its rectangle. A free room (phase 2) is its rectangle plus wings: rectangles of cells joined to it,
+/// so its outline is an L or a T that follows the hull side. Doors, sections and minimum sizes go by the rectangle; the walls follow the
+/// outline of all its cells (InteriorBuilder.Walls), and its things stand on all of them.
 /// </summary>
 public sealed class PlanRoom
 {
@@ -28,7 +29,18 @@ public sealed class PlanRoom
     public int Deck;
     public GridRect Rect;
     public RoomLayout Layout = RoomLayout.Grid;
-    public List<(float X, float Z)>? Outline; // (free rooms only: null on the grid)
+    public readonly List<GridRect> Wings = new(); // (free rooms only)
+
+    /// <summary>Every cell of the room: its rectangle's, then its wings'.</summary>
+    public IEnumerable<(int X, int Z)> Cells()
+    {
+        foreach (var g in Wings.Prepend(Rect))
+            for (var x = g.X0; x <= g.X1; x++)
+                for (var z = g.Z0; z <= g.Z1; z++)
+                    yield return (x, z);
+    }
+
+    public int Area => Rect.Area + Wings.Sum(w => w.Area);
     public int Section;
     public bool Critical, System, Inner, Outer;
     public string? Shaft; // "stairs" or "elevator": the same rectangle on every deck it joins
@@ -127,7 +139,7 @@ public sealed class InteriorPlan
         foreach (var r in Rooms)
         {
             var doors = DoorsOf(r.Id).Select(d => d.Other == PlanDoor.Corridor ? "corridor" : d.Other == PlanDoor.Outside ? (d.Wide ? "outside (ramp)" : "outside") : Rooms[d.Other == r.Id ? d.Room : d.Other].Name);
-            sb.Append($"  {r.Mark} {r.Name,-24} deck {r.Deck} {r.Rect,-14} section {r.Section}{(r.Critical ? " CRITICAL" : "")}{(r.Origin != "programme" ? $" ({r.Origin})" : "")} doors: {string.Join(", ", doors)}\n");
+            sb.Append($"  {r.Mark} {r.Name,-24} deck {r.Deck} {r.Rect + string.Concat(r.Wings.Select(w => $" + wing {w}")),-14} section {r.Section}{(r.Critical ? " CRITICAL" : "")}{(r.Origin != "programme" ? $" ({r.Origin})" : "")} doors: {string.Join(", ", doors)}\n");
         }
         if (ReservedRoute is { } lane)
             sb.Append($"Reserved logistics route: deck 0, {lane} (kept clear for the train track)\n");

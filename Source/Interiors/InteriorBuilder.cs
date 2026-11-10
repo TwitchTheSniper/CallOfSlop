@@ -434,7 +434,12 @@ public sealed class InteriorBuilder : BlueprintScript
 
     private static Side Opposite(Side s) => s switch { Side.North => Side.South, Side.South => Side.North, Side.East => Side.West, _ => Side.East };
 
-    /// <summary>A room's own walls: four corner pieces with 2 m legs and 4 m pieces between, doorways where the plan has doors (both rooms of a shared door open theirs, lined up).</summary>
+    /// <summary>
+    /// A room's own walls along the outline of its cells (a rectangle, or a free room's L or T): each straight run of edges gets 4 m pieces from
+    /// 2 m into a cell to 2 m into the next, a corner piece (2 m legs) at each convex corner and a 2 m piece at each end that meets an inner
+    /// corner. Doorways go where the plan has doors (both rooms of a shared door open theirs, lined up); a door's side and slot count along the
+    /// room's rectangle, so only runs on the rectangle's edges take doors.
+    /// </summary>
     private void Walls(InteriorPlan plan, PlanRoom r)
     {
         var k = r.Deck;
@@ -450,60 +455,98 @@ public sealed class InteriorBuilder : BlueprintScript
             doors[(Opposite(d.Side), startA + d.Slot - startB)] = (d, false);
         }
         var what = $"{r.Name} deck {k}";
-        // corners: NW leg A +x (the north side's door corner), NE +z (east), SE -x (south), SW -z (west)
-        var corners = new (Side S, int X, int Z, float Lx, float Lz, Vector3 A)[]
+        var mine = r.Cells().ToHashSet();
+        bool In(int x, int z) => mine.Contains((x, z));
+        // each side's outward step, its runs' direction (min to max), where its pieces stand in a cell, its corner piece's turn and spot
+        var sides = new (Side S, int Dx, int Dz, bool AlongX, float Lx, float Lz, Vector3 CornerA, float Cx, float Cz, bool CornerAtMin)[]
         {
-            (Side.North, g.X0, g.Z0, 0, 0, Vector3.UnitX), (Side.East, g.X1, g.Z0, 3.75f, 0, Vector3.UnitZ),
-            (Side.South, g.X1, g.Z1, 3.75f, 3.75f, -Vector3.UnitX), (Side.West, g.X0, g.Z1, 0, 3.75f, -Vector3.UnitZ),
+            (Side.North, 0, -1, true, 0, 0, Vector3.UnitX, 0, 0, true),
+            (Side.East, 1, 0, false, 3.75f, 0, Vector3.UnitZ, 3.75f, 0, true),
+            (Side.South, 0, 1, true, 0, 3.75f, -Vector3.UnitX, 3.75f, 3.75f, false),
+            (Side.West, -1, 0, false, 0, 0, -Vector3.UnitZ, 0, 3.75f, false),
         };
-        foreach (var c in corners)
-        {
-            var door = doors.TryGetValue((c.S, -1), out var dd) ? dd : default;
-            var blocks = new[] { (c.X, c.Z) };
-            var v = Place(door.D != null ? Shell("doorCorner") : Shell("corner"), At(k, c.X, c.Z, c.Lx, c.Lz), c.A, FloorsUnder(k, blocks), $"{what} corner");
-            if (v == null)
-                continue;
-            Remember(k, blocks, v);
-            if (door.D != null)
-                Hang(v, door, what);
-        }
-        // middle pieces: from 2 m into a block to 2 m into the next, +x along north and south, +z along west and east
-        void Side_(Side s, int n, Func<int, (int X, int Z, float Lx, float Lz)> at, Vector3 a, Func<int, (int, int)[]> blocksOf)
-        {
-            for (var i = 0; i < n - 1; i++)
+        var done = new HashSet<(Side, int, int)>();
+        foreach (var sd in sides)
+            foreach (var (cx, cz) in mine.OrderBy(c => c.X).ThenBy(c => c.Z))
             {
-                var (x, z, lx, lz) = at(i);
-                var blocks = blocksOf(i);
-                var o = At(k, x, z, lx, lz);
-                if (doors.TryGetValue((s, i), out var door))
+                if (In(cx + sd.Dx, cz + sd.Dz) || done.Contains((sd.S, cx, cz)))
+                    continue;
+                // the run of edges this cell's starts, along x (north, south) or z (east, west)
+                var (ux, uz) = sd.AlongX ? (1, 0) : (0, 1);
+                var cellsOf = new List<(int X, int Z)>();
+                for (var (x, z) = (cx, cz); In(x, z) && !In(x + sd.Dx, z + sd.Dz); x += ux, z += uz)
                 {
-                    if (door.D.Wide)
+                    cellsOf.Add((x, z));
+                    done.Add((sd.S, x, z));
+                }
+                var n = cellsOf.Count;
+                var onRect = sd.S switch { Side.North => cz == g.Z0, Side.South => cz == g.Z1, Side.West => cx == g.X0, _ => cx == g.X1 } &&
+                             (sd.AlongX ? cellsOf[0].X >= g.X0 && cellsOf[^1].X <= g.X1 : cellsOf[0].Z >= g.Z0 && cellsOf[^1].Z <= g.Z1);
+                var start = sd.AlongX ? g.X0 : g.Z0;
+                var first = sd.AlongX ? cellsOf[0].X : cellsOf[0].Z;
+                // an end is an inner corner when the cell beyond it along the run is the room's (the wall turns outward there)
+                bool Inner(bool atMin)
+                {
+                    var (ex, ez) = atMin ? cellsOf[0] : cellsOf[^1];
+                    var s = atMin ? -1 : 1;
+                    return In(ex + ux * s, ez + uz * s);
+                }
+                Vector3 a = sd.AlongX ? Vector3.UnitX : Vector3.UnitZ;
+                foreach (var atMin in new[] { true, false })
+                {
+                    var (ex, ez) = atMin ? cellsOf[0] : cellsOf[^1];
+                    if (Inner(atMin))
                     {
-                        if (Place(Shell("garageWall"), o, a, FloorsUnder(k, blocks), $"{what} {door.D.Why}") is { } gw)
-                            Remember(k, blocks, gw);
+                        // a 2 m piece over the half of the end cell at the inner corner
+                        var o = At(k, ex, ez, sd.AlongX ? (atMin ? 0 : 2) : sd.Lx, sd.AlongX ? sd.Lz : (atMin ? 0 : 2));
+                        if (Place(Shell("wall2"), o, a, FloorsUnder(k, [(ex, ez)]), $"{what} wall") is { } w2)
+                            Remember(k, [(ex, ez)], w2);
+                    }
+                    else if (atMin == sd.CornerAtMin)
+                    {
+                        // the convex corner this side starts at (walking the outline clockwise): the door corner of a one-cell side
+                        var door = onRect && doors.TryGetValue((sd.S, -1), out var dd) && first == (sd.CornerAtMin ? start : (sd.AlongX ? g.X1 : g.Z1)) - (sd.CornerAtMin ? 0 : n - 1) ? dd : default;
+                        var v = Place(door.D != null ? Shell("doorCorner") : Shell("corner"), At(k, ex, ez, sd.Cx, sd.Cz), sd.CornerA, FloorsUnder(k, [(ex, ez)]), $"{what} corner");
+                        if (v != null)
+                        {
+                            Remember(k, [(ex, ez)], v);
+                            if (door.D != null)
+                                Hang(v, door, what);
+                        }
+                    }
+                }
+                for (var i = 0; i < n - 1; i++)
+                {
+                    var (x, z) = cellsOf[i];
+                    var blocks = new[] { (x, z), cellsOf[i + 1] };
+                    var o = At(k, x, z, sd.AlongX ? 2 : sd.Lx, sd.AlongX ? sd.Lz : 2);
+                    var slot = first + i - start;
+                    if (onRect && doors.TryGetValue((sd.S, slot), out var door))
+                    {
+                        if (door.D.Wide)
+                        {
+                            if (Place(Shell("garageWall"), o, a, FloorsUnder(k, blocks), $"{what} {door.D.Why}") is { } gw)
+                                Remember(k, blocks, gw);
+                            continue;
+                        }
+                        if (Place(Shell("doorWall"), o, a, FloorsUnder(k, blocks), $"{what} door") is { } dw)
+                        {
+                            Remember(k, blocks, dw);
+                            _pieces[(r.Id, sd.S, slot)] = dw;
+                            Hang(dw, door, what);
+                        }
+                        if (Place(Shell("wall2"), o + a * 2, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
+                            Remember(k, blocks, w2);
                         continue;
                     }
-                    if (Place(Shell("doorWall"), o, a, FloorsUnder(k, blocks), $"{what} door") is { } dw)
+                    if (Place(Shell("wall4"), o, a, FloorsUnder(k, blocks), $"{what} wall") is { } w4)
                     {
-                        Remember(k, blocks, dw);
-                        _pieces[(r.Id, s, i)] = dw;
-                        Hang(dw, door, what);
+                        Remember(k, blocks, w4);
+                        if (onRect)
+                            _pieces[(r.Id, sd.S, slot)] = w4;
                     }
-                    if (Place(Shell("wall2"), o + a * 2, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
-                        Remember(k, blocks, w2);
-                    continue;
-                }
-                if (Place(Shell("wall4"), o, a, FloorsUnder(k, blocks), $"{what} wall") is { } w4)
-                {
-                    Remember(k, blocks, w4);
-                    _pieces[(r.Id, s, i)] = w4;
                 }
             }
-        }
-        Side_(Side.North, g.W, i => (g.X0 + i, g.Z0, 2, 0), Vector3.UnitX, i => [(g.X0 + i, g.Z0), (g.X0 + i + 1, g.Z0)]);
-        Side_(Side.South, g.W, i => (g.X0 + i, g.Z1, 2, 3.75f), Vector3.UnitX, i => [(g.X0 + i, g.Z1), (g.X0 + i + 1, g.Z1)]);
-        Side_(Side.West, g.D, i => (g.X0, g.Z0 + i, 0, 2), Vector3.UnitZ, i => [(g.X0, g.Z0 + i), (g.X0, g.Z0 + i + 1)]);
-        Side_(Side.East, g.D, i => (g.X1, g.Z0 + i, 3.75f, 2), Vector3.UnitZ, i => [(g.X1, g.Z0 + i), (g.X1, g.Z0 + i + 1)]);
     }
 
     /// <summary>A door leaf on its hinge in a doorway the plan gives this room (a shared doorway's leaf hangs in one room's half only).</summary>
@@ -602,8 +645,7 @@ public sealed class InteriorBuilder : BlueprintScript
         var set = _data.Sets[setId];
         var spots = new List<(float Order, VPart Floor, string Socket, Vector3 At)>();
         var (cx, cz) = r.Rect.Centre;
-        for (var x = r.Rect.X0; x <= r.Rect.X1; x++)
-            for (var z = r.Rect.Z0; z <= r.Rect.Z1; z++)
+        foreach (var (x, z) in r.Cells())
             {
                 if (!_floors.TryGetValue((r.Deck, x, z), out var f))
                     continue;
@@ -621,7 +663,7 @@ public sealed class InteriorBuilder : BlueprintScript
             }
         spots.Sort((a, b) => a.Order.CompareTo(b.Order));
         var table = _data.Rooms[r.Type].Loot is { } hook ? _data.LootHooks.GetValueOrDefault(hook) : null;
-        var cells = r.Rect.Area;
+        var cells = r.Area;
         VPart? helm = null, director = null, gunner = null;
         var lamps = new List<VPart>();
         foreach (var item in set.Items)
