@@ -8,7 +8,8 @@ convict through the important keys and first survival steps, one step at a time,
 ## The data: `Story/Tutorial/Induction.json`
 
 Format `call-of-slop-tutorial/1`: a `speaker` (the warden's name) and `steps`, each with `id`, `title`, `text`, `warden`
-(optional) and `cue`, plus `seconds` (wait), `amount` (look, move, sprint) or `tool` (tool). A bad file is refused with a
+(optional) and `cue`, plus `seconds` (wait), `amount` (look, move, sprint) or `tool` (tool), and optionally `target`, `hint`,
+`hintAfter` and `drops` (below). A bad file is refused with a
 reason (logged as `[tutorial] refused: ...`) and the game simply has no induction. Player text is ASCII.
 
 `{Action}` in `text` is a `GameAction` name (Keybinds.cs) and shows as the player's own key, `[Tab]`; an unknown name refuses
@@ -31,6 +32,21 @@ the file. The text is filled once per step and again only if a key it names is r
 | `assembler` | an Assembler's settings set, or F (Use, Bin) on one |
 | `configure` | any part's settings set |
 | `stow`, `draw` | a part put in the backpack (Stow), or taken out of it (Draw) |
+| `carry` | the physics gun took hold of something (a Grab carried out) |
+| `bunk` | they lie in a Bunk (the seat loop, beside the checkpoint: `TutorialSee`) |
+
+**About the person** (Karl, 2026-11-10). The induction teaches the person: moving, their hands, the backpack, their own tools
+(attach tool, ground drill, physics gun) and their bunk. Machines (power, the Assembler, smelting) are not in it: they are
+taught later, in stages, on Ministry of Slop duties. The power and Assembler steps were taken out on 2026-11-10, so a world
+saved part way through an older induction picks up at the step now at that number.
+
+**Markers, hints and drops** (2026-11-10). `"target": "loose"` or `"bunk"` puts an orange marker over the nearest loose single
+part (the step's `drops` first, within 60 m) or free Bunk (within 200 m), with a line saying how far it is; each peer finds it
+from the constructs it has, twice a second, nothing allocated (`Ui.TutorialLook`). `"hint"` (with `{Action}` keys) shows under
+the warden's line once the step has been up `hintAfter` seconds (default 35). `"drops"` (at most four part names) are set down
+in a row two metres in front of the person as the step starts, theirs like a part they dropped (`TutorialDrop`): the `hold` step
+drops two Frame Blocks and `weld` one more, so the build steps never lack a part. The penal colony has two Bunks down the yard's
+west side (the open-air dormitory, tools/constructs/building_parts.py) for the `bunk` step.
 
 **Tools are issued as the steps need them** (Karl, 2026-11-08). While the induction runs the player has no gun and no tool but
 bare hands: a step's `"gives": ["attach"]` (tool names as for `tool`) hands those over at that step and for every later one

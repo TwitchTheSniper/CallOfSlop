@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Penal Colony",
-  "description": "The Ministry of Slop's penal colony: a fenced yard, a cell block and the warden's office.",
+  "description": "The Ministry of Slop's penal colony: a fenced yard with bunks, a cell block and the warden's office.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"
@@ -230,6 +230,18 @@
       "on": 35,
       "socket": "leaf",
       "by": "hang"
+    },
+    {
+      "part": "Bunk",
+      "on": 0,
+      "socket": "t7_7",
+      "by": "bottom"
+    },
+    {
+      "part": "Bunk",
+      "on": 1,
+      "socket": "t7_0",
+      "by": "bottom"
     }
   ]
 }
