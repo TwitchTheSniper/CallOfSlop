@@ -16,7 +16,7 @@ public static class VehicleVariety
 
     public static Signature Of(int seed, Vehicle v)
     {
-        var wheels = v.Wheels.Select(w => v.WheelAt(w)).ToList();
+        var wheels = v.Wheels.Select(w => v.WheelAt(w)).DefaultIfEmpty().ToList(); // (an aircraft may have none: its wheelbase and track are 0)
         return new(seed, v.PartNames().GroupBy(Kind).ToDictionary(g => g.Key, g => Math.Min(g.Count(), MostOfAKind)), v.Size(),
             wheels.Max(p => p.Z) - wheels.Min(p => p.Z), wheels.Max(p => p.X) - wheels.Min(p => p.X), wheels.Select(p => MathF.Round(p.Z, 1)).Distinct().Count());
     }
@@ -43,7 +43,7 @@ public static class VehicleVariety
             either += Math.Max(x, y);
         }
         var d = Vector3.Abs(a.Size - b.Size) / Vector3.Max(a.Size, b.Size);
-        return 1 - both / MathF.Max(1, either) + d.X + d.Y + d.Z + MathF.Abs(a.Wheelbase - b.Wheelbase) / MathF.Max(a.Wheelbase, b.Wheelbase) + MathF.Abs(a.Track - b.Track) / MathF.Max(a.Track, b.Track) + 0.25f * Math.Abs(a.Axles - b.Axles);
+        return 1 - both / MathF.Max(1, either) + d.X + d.Y + d.Z + MathF.Abs(a.Wheelbase - b.Wheelbase) / MathF.Max(MathF.Max(a.Wheelbase, b.Wheelbase), 1e-3f) + MathF.Abs(a.Track - b.Track) / MathF.Max(MathF.Max(a.Track, b.Track), 1e-3f) + 0.25f * Math.Abs(a.Axles - b.Axles);
     }
 
     /// <summary>The closest pair: (distance, seed, seed), distance 9 for fewer than two.</summary>

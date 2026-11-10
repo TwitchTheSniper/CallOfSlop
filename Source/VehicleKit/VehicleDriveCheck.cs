@@ -134,7 +134,7 @@ public static class VehicleDriveCheck
     // ---- The check's own world ------------------------------------------------------------------------------------------
 
     /// <summary>A flat world with plain straight-down gravity at a strength: what the check's physics reads while it runs.</summary>
-    private sealed class CheckPlace(WorldContext ctx)
+    internal sealed class CheckPlace(WorldContext ctx)
     {
         public readonly WorldContext Ctx = ctx;
 
@@ -142,7 +142,7 @@ public static class VehicleDriveCheck
         public Scope In() => new(Ctx);
     }
 
-    private readonly struct Scope : IDisposable
+    internal readonly struct Scope : IDisposable
     {
         private readonly WorldContext _back;
 
@@ -157,7 +157,7 @@ public static class VehicleDriveCheck
 
     private static readonly Dictionary<float, CheckPlace> Places = new();
 
-    private static CheckPlace Place(float gravity)
+    internal static CheckPlace Place(float gravity)
     {
         var g = MathF.Round(Math.Clamp(gravity, 0.05f, 4f), 2);
         lock (Places)

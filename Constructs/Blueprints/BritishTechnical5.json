@@ -45,17 +45,18 @@
     {"part": "Seat", "on": 37, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 37, "socket": "+y0", "by": "base"},
     {"part": "Rifle Receiver", "on": 39, "socket": "leaf", "by": "bottom"},
-    {"part": "Gun Barrel", "on": 40, "socket": "front", "by": "back"},
-    {"part": "Extended Mag", "on": 40, "socket": "top", "by": "bottom"},
+    {"part": "Stub Barrel", "on": 40, "socket": "front", "by": "back"},
+    {"part": "Flash Hider", "on": 41, "socket": "front", "by": "back"},
+    {"part": "Box Magazine", "on": 40, "socket": "left", "by": "right"},
     {"part": "Full-Auto Sear", "on": 40, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 42, "socket": "left", "by": "right"},
+    {"part": "Ammo Box", "on": 43, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 38, "socket": "+x", "by": "-x"},
     {"part": "Bull Hood", "on": 21, "socket": "+y", "by": "engine", "paint": "#f2f0e8"},
-    {"part": "Slat Grille", "on": 46, "socket": "front", "by": "back", "paint": "#f2f0e8"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 47, "pos": [0.123, 0.539, -1.144], "rot": [-0.6998, 0.006, -0.0164, 0.7141]}, "paint": "#7d8186"},
-    {"part": "Teapot", "on": 46, "socket": "top", "by": "base"}
+    {"part": "Slat Grille", "on": 47, "socket": "front", "by": "back", "paint": "#f2f0e8"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 48, "pos": [0.123, 0.539, -1.144], "rot": [-0.6998, 0.006, -0.0164, 0.7141]}, "paint": "#7d8186"},
+    {"part": "Teapot", "on": 47, "socket": "top", "by": "base"}
   ],
-  "wires": [[26, 27], [27, 21], [38, 45], [45, 40]],
+  "wires": [[26, 27], [27, 21], [38, 46], [46, 40]],
   "links": [
     {"type": "shaft", "from": 22, "to": 5, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 34, "to": 21, "nodes": [[0.25, 0.32, 3.06], [0.25, 0.55, 3.06], [0.67, 0.55, 3.06], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
