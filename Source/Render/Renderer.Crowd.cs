@@ -153,6 +153,9 @@ public sealed unsafe partial class Renderer
         uniform vec3 uDbgB;
         out vec3 vWorld;
         out vec3 vNormal;
+        out vec3 vLocal;
+        out vec3 vLocalN;
+        flat out vec3 vSize;
         out vec4 vColorI;
         flat out float vModeI;
         flat out float vLayerI;
@@ -178,6 +181,11 @@ public sealed unsafe partial class Renderer
             vec3 w = vec3(local.x * c - local.z * s, local.y, local.x * s + local.z * c) + vec3(iXZ.x, iYPhase.x + uBaseY, iXZ.y);
             vWorld = w;
             vNormal = normalize(vec3(n.x * c - n.z * s, n.y, n.x * s + n.z * c));
+            // The box's own frame, for the shared materials' patterns (the box shader's inputs, as Renderer's instanced
+            // draw writes them): a crowd that leaves them out doesn't link, and nothing of it is drawn.
+            vSize = vec3(length(r0.xyz), length(r1.xyz), length(r2.xyz));
+            vLocal = aPos * vSize;
+            vLocalN = aNormal;
             float bright = iLook.y * 1.5;
             vec3 col = vec3(r0.w, r1.w, r2.w) * bright;
             vColorI = vec4(mix(col, (iLook.w > 0.5 ? uDbgB : uDbgA) * bright, iLook.z), 1.0);
@@ -203,7 +211,12 @@ public sealed unsafe partial class Renderer
             int linked;
             Native.glGetProgramiv(_crowdProgram, GL_LINK_STATUS, &linked);
             if (linked == 0)
-                throw new InvalidOperationException("crowd shader link failed");
+            {
+                var log = stackalloc byte[1024];
+                int len;
+                Native.glGetProgramInfoLog(_crowdProgram, 1024, &len, log);
+                throw new InvalidOperationException("crowd shader link failed: " + System.Text.Encoding.ASCII.GetString(log, Math.Clamp(len, 0, 1024)).Trim());
+            }
             vs.Dispose();
             fs.Dispose();
             Lighting.Upload(_crowdProgram);
