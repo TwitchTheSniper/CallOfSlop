@@ -284,7 +284,7 @@ public static partial class ConstructPhysics
         if (p.Broken || p.D.Leg is not { } d)
             return 0;
         var best = 0f;
-        if (d.Electric > 0 && c.HasBattery && p.Powered && (!live || c.PowerOn || world is { CreativeRecycling: true }))
+        if (d.Electric > 0 && c.HasBattery && p.Powered && (!live || c.PowerOn && c.Charge >= HoldKJ(c) || world is { CreativeRecycling: true }))
         {
             best = d.Electric;
             feed = FeedElectric;
@@ -357,6 +357,14 @@ public static partial class ConstructPhysics
         }
         return fed;
     }
+
+    /// <summary>
+    /// kJ a tick of holding the body up takes (<see cref="LegHoldRate"/>): an electric leg is fed only while the battery holds
+    /// that much. A flat battery comes back on at <see cref="ConstructPower.BackOnKJ"/>, so without this a 100 kW genset's
+    /// trickle switched the legs on every other tick and a 37,000 t walker walked on it at full speed (its draw clamped to the
+    /// little charge there was).
+    /// </summary>
+    public static float HoldKJ(Construct c) => c.Mass * 9.81f * World.GravityScale * LegHoldRate * World.TickDt / 1000f;
 
     public const float LegCarryCost = 0.03f; // the legs' work walking: this share of the weight times the speed (a cost of transport)
     public const float LegHoldRate = 0.01f; // ... and holding it up, as if lifting it this many m/s
