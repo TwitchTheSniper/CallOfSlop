@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Battery Bank",
-  "description": "Holds 200 GJ for the circuit it is on.",
+  "description": "Holds 10 GJ for the circuit it is on.",
   "group": "Large",
   "section": "Fuel and charge",
   "role": "battery",
@@ -14,7 +14,7 @@
   "color": "#23272c",
   "attachSeconds": 8.0,
   "battery": {
-    "capacity": 200000000.0
+    "capacity": 10000000.0
   },
   "ports": [
     {

@@ -45,7 +45,7 @@ public sealed partial class Construct
         _fuelDebt = Fuel - now;
     }
 
-    /// <summary>Takes <paramref name="kj"/> off the batteries, or puts it in when negative (as <see cref="UseFuel"/>: a capital bank holds 10 TJ).</summary>
+    /// <summary>Takes <paramref name="kj"/> off the batteries, or puts it in when negative (as <see cref="UseFuel"/>: a capital bank holds 30 GJ, past what a float takes a small tick's draw off).</summary>
     public void UseCharge(float kj)
     {
         _chargeDebt += kj;
