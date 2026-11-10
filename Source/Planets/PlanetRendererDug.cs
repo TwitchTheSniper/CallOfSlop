@@ -7,14 +7,14 @@ namespace CallOfSlop;
 /// <summary>
 /// Dug ground on the planetoid (PlanetEdits.cs) in its drawing: level-0 pages over dug cells get a mask (one byte a cell,
 /// with a ring of the next pages' cells) and the ground shader leaves those cells and the skirts under them out; the
-/// columns' faces go into a small mesh per drawing chunk (<see cref="PlanetEdits.ChunkCells"/> cells), positions relative
-/// to the chunk's own origin (worked out in doubles), drawn with the ground's fragment shader. At most a few chunks are
-/// rebuilt a frame, so a barrage never stalls one.
+/// columns' faces go into a small mesh per drawing block (<see cref="DigBlocks"/>), positions relative to the block's own
+/// origin (worked out in doubles), drawn with the ground's fragment shader. Only blocks that changed are made again, for
+/// at most <see cref="DugRebuildMs"/> a frame, so neither a drill on a worked site nor a barrage stalls one.
 /// </summary>
 public sealed unsafe partial class PlanetRenderer
 {
-    /// <summary>Most dug chunks rebuilt in one frame.</summary>
-    private const int DugRebuildsPerFrame = 3;
+    /// <summary>The time (ms) a frame may spend making changed blocks' meshes again; the rest wait for the next frames.</summary>
+    public const double DugRebuildMs = 2.0;
 
     private const int DugSide = PageCells + 2;
     private const int DugUnit = 8; // (0: the box texture array, 5-7 and 9: other renderers, 10-11: the pages, 12-14: the light grid)
@@ -92,7 +92,7 @@ public sealed unsafe partial class PlanetRenderer
         }
     }
 
-    /// <summary>Is every changed dug chunk rebuilt?</summary>
+    /// <summary>Is every changed dug block rebuilt?</summary>
     public bool DugSettled => !_dugLeft;
 
     private void ResetDug()
@@ -105,7 +105,7 @@ public sealed unsafe partial class PlanetRenderer
         _dugLeft = false;
     }
 
-    /// <summary>Each frame: masks for level-0 pages over dug cells, then a few changed chunks' blocks.</summary>
+    /// <summary>Each frame: masks for level-0 pages over dug cells, then the changed blocks' meshes.</summary>
     private void UpdateDug(Planetoid pl)
     {
         if (pl.EditsIfMade is not { } e)
@@ -125,19 +125,23 @@ public sealed unsafe partial class PlanetRenderer
         }
         if (e.Version == _dugVersion && !_dugLeft)
             return;
+        // The blocks whose ground changed, until the frame's time for it is spent (always one).
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var built = 0;
         _dugLeft = false;
-        foreach (var key in e.Chunks)
+        var keys = e.Blocks.Keys;
+        for (var k = 0; k < keys.Count; k++)
         {
-            var v = e.ChunkVersion(key);
+            var key = keys[k];
+            var v = e.Blocks.Version(key);
             if (_dugSeen.TryGetValue(key, out var seen) && seen == v)
                 continue;
-            if (built == DugRebuildsPerFrame)
+            if (built > 0 && System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= DugRebuildMs)
             {
                 _dugLeft = true;
                 break;
             }
-            RebuildDugChunk(pl, e, key);
+            RebuildDugBlock(pl, e, key);
             _dugSeen[key] = v;
             built++;
         }
@@ -190,18 +194,18 @@ public sealed unsafe partial class PlanetRenderer
         }
     }
 
-    private void RebuildDugChunk(Planetoid pl, PlanetEdits e, int key)
+    private void RebuildDugBlock(Planetoid pl, PlanetEdits e, int key)
     {
-        e.ChunkOf(key, out var face, out var i0, out var j0);
-        // The chunk's origin: its middle on the sphere (float exactly; every vertex is worked out relative to it in doubles).
-        pl.DirOf(face, i0 + ChunkCellsHalf, j0 + ChunkCellsHalf, out var x, out var y, out var z);
+        e.BlockOf(key, out var face, out var i0, out var j0);
+        // The block's origin: its middle on the sphere (float exactly; every vertex is worked out relative to it in doubles).
+        pl.DirOf(face, i0 + DigBlocks.Cells / 2.0, j0 + DigBlocks.Cells / 2.0, out var x, out var y, out var z);
         var origin = new Vector3((float)(pl.Cx + x * pl.Radius), (float)(pl.Cy + y * pl.Radius), (float)(pl.Cz + z * pl.Radius));
         _dugVerts.Clear();
         _dugIdx.Clear();
         var sink = new DugSink { Verts = _dugVerts, Idx = _dugIdx };
         var n = pl.N;
-        for (var j = j0; j < Math.Min(j0 + PlanetEdits.ChunkCells, n); j++)
-        for (var i = i0; i < Math.Min(i0 + PlanetEdits.ChunkCells, n); i++)
+        for (var j = j0; j < Math.Min(j0 + DigBlocks.Cells, n); j++)
+        for (var i = i0; i < Math.Min(i0 + DigBlocks.Cells, n); i++)
             e.CellFaces(face, i, j, origin.X, origin.Y, origin.Z, ref sink);
         if (_dug.Remove(key, out var old))
             FreeDugMesh(old);
@@ -235,8 +239,6 @@ public sealed unsafe partial class PlanetRenderer
             EnableVertexAttribArray(a);
         _vao.Bind();
     }
-
-    private const double ChunkCellsHalf = PlanetEdits.ChunkCells / 2.0;
 
     private void DrawDug(Renderer gfx, Planetoid pl, ReadOnlySpan<Vector4> planes, Vector3 texOrigin, Matrix3x3 toLocal)
     {

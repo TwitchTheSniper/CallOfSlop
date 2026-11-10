@@ -112,6 +112,22 @@ public sealed partial class PlanetEdits : IDigGround
     /// <summary>Chunks that have ever held dug cells this generation, in the order they were first touched (the drawing walks them).</summary>
     public IReadOnlyList<int> Chunks => _chunks;
 
+    /// <summary>The drawing blocks whose dug ground changed (key: (face x <see cref="BlocksPerSide"/> + row) x per side + column).</summary>
+    public readonly DigBlocks Blocks = new();
+
+    /// <summary>Drawing blocks along a face's side (<see cref="DigBlocks.Cells"/> cells each).</summary>
+    public int BlocksPerSide => (_n + DigBlocks.Cells - 1) / DigBlocks.Cells;
+
+    /// <summary>The face and first cell of a block key.</summary>
+    public void BlockOf(int key, out int face, out int i0, out int j0)
+    {
+        var per = BlocksPerSide;
+        face = key / (per * per);
+        var rest = key - face * per * per;
+        j0 = rest / per * DigBlocks.Cells;
+        i0 = rest % per * DigBlocks.Cells;
+    }
+
     /// <summary>A chunk's change count (0: never touched). Key: (face x per side + row) x per side + column.</summary>
     public int ChunkVersion(int key) => _chunkVersion.TryGetValue(key, out var v) ? v : 0;
 
@@ -537,6 +553,7 @@ public sealed partial class PlanetEdits : IDigGround
         _touchedCells.Clear();
         _chunkVersion.Clear();
         _chunks.Clear();
+        Blocks.Clear();
         _cols = 0;
         _reserved = 0; // (the span lists made stay: Reserve walks past them)
         Log.Clear();
@@ -557,6 +574,10 @@ public sealed partial class PlanetEdits : IDigGround
         for (var b = b0; b <= b1; b++)
         for (var a = a0; a <= a1; a++)
             BumpChunk((face * ChunksPerSide + b) * ChunksPerSide + a);
+        var per = BlocksPerSide;
+        for (var b = Math.Max(j0, 0) / DigBlocks.Cells; b <= Math.Min(j1, _n - 1) / DigBlocks.Cells; b++)
+        for (var a = Math.Max(i0, 0) / DigBlocks.Cells; a <= Math.Min(i1, _n - 1) / DigBlocks.Cells; a++)
+            Blocks.Bump((face * per + b) * per + a);
         if (i0 < 0 || j0 < 0 || i1 >= _n || j1 >= _n)
             BumpOverSeam(face, i0, j0, i1, j1);
         Version++;
@@ -590,7 +611,10 @@ public sealed partial class PlanetEdits : IDigGround
             int ni = Math.Clamp((int)Math.Floor(fi), 0, _n - 1), nj = Math.Clamp((int)Math.Floor(fj), 0, _n - 1);
             ForgetTops(f, ni, nj, ni, nj);
             if (Touched(f, ni, nj))
+            {
                 BumpChunk((f * ChunksPerSide + nj / ChunkCells) * ChunksPerSide + ni / ChunkCells);
+                Blocks.Bump((f * BlocksPerSide + nj / DigBlocks.Cells) * BlocksPerSide + ni / DigBlocks.Cells);
+            }
         }
     }
 

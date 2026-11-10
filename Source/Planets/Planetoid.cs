@@ -787,7 +787,9 @@ public sealed class Planetoid
                 var q = o + d * t - Center;
                 if (dug.NearDug(q.X, q.Y, q.Z))
                 {
-                    step = MathF.Max(MathF.Min(alt, rough) * 0.5f, DugStep);
+                    // (the height over the ground as built bounds the step for the untouched ground about; what fills have
+                    // added is columns, which the look along the step finds whatever its length)
+                    step = MathF.Max(MathF.Min(alt, rough + dug.MaxRise) * 0.5f, DugStep);
                     byDug = true;
                 }
             }
@@ -817,8 +819,11 @@ public sealed class Planetoid
         return maxDist;
     }
 
-    /// <summary>The longest step a ray takes next to dug ground (thinner slivers than this can be stepped over).</summary>
-    public const float DugStep = 0.05f;
+    /// <summary>
+    /// The shortest step a ray takes next to dug ground: as short as its shortest anywhere. Dug columns are met exactly
+    /// along a step (PlanetEdits.SegmentHit), so only untouched ground's slivers thinner than this can be stepped over.
+    /// </summary>
+    public const float DugStep = 0.25f;
 
     private float Settle(Vector3 o, Vector3 d, float above, float below, out Vector3 normal)
     {

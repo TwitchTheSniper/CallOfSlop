@@ -6,14 +6,13 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Dug ground (TerrainEdits.cs) in the terrain renderer: when a chunk's dug cells change, its surface indices are
-/// rewritten in place (dug cells become degenerate triangles) and its blocks (only the faces where ground meets air) go
-/// into a small mesh of their own, drawn with the terrain's shader. Untouched chunks cost nothing; a few chunks are
-/// rebuilt per frame at most, so a barrage never stalls a frame.
+/// rewritten in place (dug cells become degenerate triangles) and the columns' faces (only where ground meets air) go
+/// into a small mesh per drawing block (<see cref="DigBlocks"/>), drawn with the terrain's shader. Untouched ground costs
+/// nothing; only blocks that changed are made again, for at most <see cref="PlanetRenderer.DugRebuildMs"/> a frame, so
+/// neither a drill on a worked site nor a barrage stalls one.
 /// </summary>
 public sealed unsafe partial class TerrainRenderer
 {
-    /// <summary>Most dug chunks rebuilt in one frame (the rest wait for the next frames).</summary>
-    private const int DugRebuildsPerFrame = 3;
 
     private sealed class DugMesh
     {
@@ -25,6 +24,8 @@ public sealed unsafe partial class TerrainRenderer
 
     private readonly Dictionary<int, DugMesh> _dug = new();
     private int[] _dugSeen = [];
+    private readonly Dictionary<int, int> _dugBlockSeen = new();
+    private readonly HashSet<int> _dugWaiting = new();
     private int _dugVersion = -1;
     private readonly List<Vertex> _dugVerts = new();
     private readonly List<uint> _dugIdx = new();
@@ -47,6 +48,7 @@ public sealed unsafe partial class TerrainRenderer
         FreeDug();
         var e = t.EditsIfMade;
         _dugSeen = new int[e?.ChunkVersion.Length ?? 0];
+        _dugBlockSeen.Clear();
         _dugVersion = -1;
     }
 
@@ -56,48 +58,66 @@ public sealed unsafe partial class TerrainRenderer
             return;
         if (_dugSeen.Length != e.ChunkVersion.Length)
             _dugSeen = new int[e.ChunkVersion.Length];
+        // The blocks whose ground changed, until the frame's time for it is spent (always one).
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var built = 0;
         var left = false;
-        for (var c = 0; c < e.ChunkVersion.Length; c++)
+        _dugWaiting.Clear();
+        var keys = e.Blocks.Keys;
+        var per = e.BlocksX;
+        const int blocksAChunk = ChunkCells / DigBlocks.Cells;
+        for (var k = 0; k < keys.Count; k++)
         {
-            if (e.ChunkVersion[c] == _dugSeen[c])
+            var key = keys[k];
+            var v = e.Blocks.Version(key);
+            if (_dugBlockSeen.TryGetValue(key, out var seen) && seen == v)
                 continue;
-            if (built == DugRebuildsPerFrame)
+            if (left || built > 0 && System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= PlanetRenderer.DugRebuildMs)
             {
                 left = true;
-                break;
+                _dugWaiting.Add(key / per / blocksAChunk * e.ChunksX + key % per / blocksAChunk);
+                continue;
             }
-            RebuildDugChunk(t, e, c);
-            _dugSeen[c] = e.ChunkVersion[c];
+            RebuildDugBlock(t, e, key);
+            _dugBlockSeen[key] = v;
             built++;
+        }
+        // The surface under them: a chunk's dug cells are cut out once all its blocks are made (never a hole with nothing in it).
+        for (var c = 0; c < e.ChunkVersion.Length; c++)
+        {
+            if (e.ChunkVersion[c] == _dugSeen[c] || left && _dugWaiting.Contains(c))
+                continue;
+            CutDugChunk(t, c % e.ChunksX, c / e.ChunksX, c);
+            _dugSeen[c] = e.ChunkVersion[c];
         }
         if (!left)
             _dugVersion = e.Version;
     }
 
-    private void RebuildDugChunk(TerrainData t, TerrainEdits e, int c)
+    /// <summary>A chunk's surface index range rewritten in place (same length: dug cells are degenerate).</summary>
+    private void CutDugChunk(TerrainData t, int cx, int cz, int c)
     {
-        int cx = c % e.ChunksX, cz = c / e.ChunksX;
-        // The surface: this chunk's index range, rewritten in place (same length: dug cells are degenerate).
-        if (c < _chunks.Length && _chunks[c].IndexCount > 0)
-        {
-            var ch = _chunks[c];
-            if (_chunkScratch.Length < ChunkCells * ChunkCells * 6)
-                _chunkScratch = new uint[ChunkCells * ChunkCells * 6];
-            var n = ChunkIndices(t, cx, cz, _chunkScratch, out _, out _);
-            if (n == ch.IndexCount)
-            {
-                _vao.Bind();
-                Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo);
-                fixed (uint* p = _chunkScratch)
-                    Native.glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (nint)ch.FirstIndex * sizeof(uint), (nint)n * sizeof(uint), p);
-            }
-        }
-        // The blocks.
+        if (c >= _chunks.Length || _chunks[c].IndexCount == 0)
+            return;
+        var ch = _chunks[c];
+        if (_chunkScratch.Length < ChunkCells * ChunkCells * 6)
+            _chunkScratch = new uint[ChunkCells * ChunkCells * 6];
+        var n = ChunkIndices(t, cx, cz, _chunkScratch, out _, out _);
+        if (n != ch.IndexCount)
+            return;
+        _vao.Bind();
+        Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo);
+        fixed (uint* p = _chunkScratch)
+            Native.glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (nint)ch.FirstIndex * sizeof(uint), (nint)n * sizeof(uint), p);
+    }
+
+    private void RebuildDugBlock(TerrainData t, TerrainEdits e, int c)
+    {
+        var per = e.BlocksX;
         _dugVerts.Clear();
         _dugIdx.Clear();
         var sink = new DugVertices { Verts = _dugVerts, Idx = _dugIdx };
-        int i0 = cx * ChunkCells, i1 = Math.Min(i0 + ChunkCells, t.CountX - 1), j0 = cz * ChunkCells, j1 = Math.Min(j0 + ChunkCells, t.CountZ - 1);
+        int i0 = c % per * DigBlocks.Cells, i1 = Math.Min(i0 + DigBlocks.Cells, t.CountX - 1), j0 = c / per * DigBlocks.Cells, j1 = Math.Min(j0 + DigBlocks.Cells, t.CountZ - 1);
         for (var j = j0; j < j1; j++)
         for (var i = i0; i < i1; i++)
             e.CellFaces(i, j, ref sink, smooth: true);

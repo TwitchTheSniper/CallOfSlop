@@ -173,6 +173,12 @@ public sealed partial class TerrainEdits : IDigGround
     /// <summary>Bumped when a chunk's dug ground changes (the renderer rebuilds what it has seen change).</summary>
     public readonly int[] ChunkVersion;
 
+    /// <summary>The drawing blocks whose dug ground changed (key: row x <see cref="BlocksX"/> + column).</summary>
+    public readonly DigBlocks Blocks = new();
+
+    /// <summary>Drawing blocks across the terrain (<see cref="DigBlocks.Cells"/> cells each).</summary>
+    public int BlocksX => (_cellsX + DigBlocks.Cells - 1) / DigBlocks.Cells;
+
     /// <summary>Bumped on every change anywhere (one compare per frame for the renderer).</summary>
     public int Version { get; private set; }
 
@@ -667,6 +673,7 @@ public sealed partial class TerrainEdits : IDigGround
             ChunkVersion[j / ChunkCells * ChunksX + i / ChunkCells]++;
         }
         _touchedCells.Clear();
+        Blocks.BumpAll();
         _cols = 0;
         _reserved = 0; // (the span lists made stay: Reserve walks past them)
         Log.Clear();
@@ -690,6 +697,10 @@ public sealed partial class TerrainEdits : IDigGround
         for (var b = b0; b <= b1; b++)
         for (var a = a0; a <= a1; a++)
             ChunkVersion[b * ChunksX + a]++;
+        var per = BlocksX;
+        for (var b = Math.Max(j0, 0) / DigBlocks.Cells; b <= Math.Min(j1, _cellsZ - 1) / DigBlocks.Cells; b++)
+        for (var a = Math.Max(i0, 0) / DigBlocks.Cells; a <= Math.Min(i1, _cellsX - 1) / DigBlocks.Cells; a++)
+            Blocks.Bump(b * per + a);
         Version++;
     }
 

@@ -42,9 +42,16 @@ public static partial class SelfTest
             Tri(a, c, d, na, nc, nd, ca, cc, cd);
         }
 
-        // (a triangle as a quad with a doubled corner: its middle is on the triangle, its normal the triangle's)
-        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc) =>
-            Quad(a, b, c, c, Vector3.Normalize(Vector3.Cross(b - a, c - a)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc)
+        {
+            var b0 = (uint)Verts.Count;
+            Verts.Add(new Vector4(a, na.X + ca.X));
+            Verts.Add(new Vector4(b, nb.Y + cb.Y));
+            Verts.Add(new Vector4(c, nc.Z + cc.Z));
+            Idx.Add(b0);
+            Idx.Add(b0 + 1);
+            Idx.Add(b0 + 2);
+        }
 
         public bool Shaded => true;
 
@@ -177,6 +184,47 @@ public static partial class SelfTest
             meshWorst = Math.Max(meshWorst, ms);
         }
         Line("chunk mesh made again", $"{meshSum / Math.Max(chunks, 1),8:0.00} ms a chunk, worst {meshWorst,8:0.00}; {chunks} chunks, {tris} triangles, {cells} dug cells");
+        // The same in the blocks the renderers now keep (DigBlocks): what one scoop's change costs to draw again.
+        {
+            double sum = 0, worst = 0;
+            var blocks = 0;
+            for (var pass = 0; pass < 3; pass++)
+            {
+                sum = worst = 0;
+                blocks = 0;
+                var keys = pl != null ? pl.Edits.Blocks.Keys : t!.Edits.Blocks.Keys;
+                foreach (var key in keys)
+                {
+                    verts.Clear();
+                    idx.Clear();
+                    var t0 = Stopwatch.GetTimestamp();
+                    if (pl != null)
+                    {
+                        var e = pl.Edits;
+                        e.BlockOf(key, out var face, out var i0, out var j0);
+                        pl.DirOf(face, i0 + 4.0, j0 + 4.0, out var x, out var y, out var z);
+                        for (var j = j0; j < Math.Min(j0 + DigBlocks.Cells, pl.N); j++)
+                        for (var i = i0; i < Math.Min(i0 + DigBlocks.Cells, pl.N); i++)
+                            e.CellFaces(face, i, j, pl.Cx + x * pl.Radius, pl.Cy + y * pl.Radius, pl.Cz + z * pl.Radius, ref sink);
+                    }
+                    else
+                    {
+                        var e = t!.Edits;
+                        int i0 = key % e.BlocksX * DigBlocks.Cells, j0 = key / e.BlocksX * DigBlocks.Cells;
+                        for (var j = j0; j < Math.Min(j0 + DigBlocks.Cells, t.CountZ - 1); j++)
+                        for (var i = i0; i < Math.Min(i0 + DigBlocks.Cells, t.CountX - 1); i++)
+                            e.CellFaces(i, j, ref sink, smooth: true);
+                    }
+                    var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                    if (idx.Count == 0)
+                        continue;
+                    blocks++;
+                    sum += ms;
+                    worst = Math.Max(worst, ms);
+                }
+            }
+            Line("block mesh made again", $"{sum / Math.Max(blocks, 1),8:0.00} ms a block, worst {worst,8:0.00}; {blocks} blocks");
+        }
 
         // Collision shapes for a player and for a vehicle on the site, heights and rays over it.
         var shapes = new List<ContactShape>(4096);
@@ -218,6 +266,28 @@ public static partial class SelfTest
                 sum += phys.Raycast(p, Vector3.Normalize(-up + east * 0.8f), 30f, QueryFilter.All);
             }
             Line("ray down onto the site", $"{Stopwatch.GetElapsedTime(t0).TotalMicroseconds / rays,8:0.00} us   ({sum / rays:0.000} m mean)");
+        }
+        if (pl != null)
+        {   // TEMP parts
+            const int n = 20000;
+            double s1 = 0;
+            var e = pl.Edits;
+            Vector3 P(int k) => site + east * (k % 200 * 0.14f) + north * (k / 200 * 0.05f - 2f) + up * 0.6f;
+            var t0 = Stopwatch.GetTimestamp();
+            for (var k = 0; k < n; k++) s1 += pl.RoughAltitude(P(k));
+            Line("TEMP rough", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
+            t0 = Stopwatch.GetTimestamp();
+            for (var k = 0; k < n; k++) s1 += pl.Altitude(P(k));
+            Line("TEMP alt", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
+            t0 = Stopwatch.GetTimestamp();
+            for (var k = 0; k < n; k++) { var q = P(k) - pl.Center; s1 += e.NearDug(q.X, q.Y, q.Z) ? 1 : 0; }
+            Line("TEMP neardug", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
+            t0 = Stopwatch.GetTimestamp();
+            for (var k = 0; k < n; k++) { var q = P(k) - pl.Center; s1 += e.SegmentHit(q, q + Vector3.Normalize(-up + east * 0.8f) * 0.05f); }
+            Line("TEMP seg 5cm", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns");
+            t0 = Stopwatch.GetTimestamp();
+            for (var k = 0; k < n; k++) { var q = P(k) - pl.Center; s1 += e.SegmentHit(q, q + Vector3.Normalize(-up + east * 0.8f) * 0.5f); }
+            Line("TEMP seg 50cm", $"{Stopwatch.GetElapsedTime(t0).TotalNanoseconds / n:0} ns {s1}");
         }
         Line("log", $"{ground.Ops.Count} ops");
         ground.Clear();
