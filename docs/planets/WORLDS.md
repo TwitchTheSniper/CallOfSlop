@@ -29,6 +29,11 @@ data centre's site each have a 4 m survey post (yellow for the home, blue for th
 | Caledon | the pole, height 30 | 30, 150: the Glen's floor, 160 m | 60, 152: a shelf at 640 m under Ben Slop, 70 m |
 | Mille | the pole, height 9 | 55, 300: a terrace, 90 m | 70, 40: the Proving Bowl, where the crust is thinnest (about 150 m): the site itself is inside, under the bowl |
 
+The story's data centres stand on the data sites of Cinder, Glacier, Caledon and Mille (the first is by the penal colony
+on the Planetoid; Redrock's site is spare): `Story/Fragments/Fragments.json` names each world and the place, and the
+host builds the Sealed Data Centre there the first time a story game plays the world (docs/story/FRAGMENTS.md "On
+another world"). Mille's stands on the cavity's wall under the Proving Bowl.
+
 Cinder turns once an orbit, so its sun stays over latitude 0, longitude 220 (`--check-planetoid` prints it): the day
 side is centred there, the night side on longitude 40, and the twilight line runs through both poles and longitudes
 130 and 310. Change the body's rotation `"angle"` and those move.
