@@ -135,10 +135,50 @@ public sealed class InteriorBuilder : BlueprintScript
             }
         }
         foreach (var (f, t) in bp.Wires)
-            if ((steps.Contains(f) || steps.Contains(t)) && _byStep.ContainsKey(f) && _byStep.ContainsKey(t))
-                TryWire(_byStep[f], _byStep[t], $"{room}: the vehicle's {bp.Steps[f].Part} to its {bp.Steps[t].Part}");
+        {
+            if (!(steps.Contains(f) || steps.Contains(t)) || !_byStep.ContainsKey(f) || !_byStep.ContainsKey(t))
+                continue;
+            var what = $"{room}: the vehicle's {bp.Steps[f].Part} to its {bp.Steps[t].Part}";
+            if (steps.Contains(f) && steps.Contains(t))
+            {
+                TryWire(_byStep[f], _byStep[t], what);
+                continue;
+            }
+            // a wire out of the chain (the module into a leg): the bridge may stand far from the leg the blueprint chose, so the nearest
+            // base part of the same name takes it (a Driving Module into any leg drives the walker: GIANTS.md)
+            var (inner, outer) = steps.Contains(f) ? (_byStep[f], _byStep[t]) : (_byStep[t], _byStep[f]);
+            var wired = false;
+            foreach (var twin in Twins(outer, inner))
+                if (steps.Contains(f) ? TryWire(inner, twin, null) : TryWire(twin, inner, null))
+                {
+                    Notes.Add($"{what}{(twin == outer ? "" : $" (the one {Near(twin)}, nearest the bridge)")}: wired");
+                    wired = true;
+                    break;
+                }
+            if (!wired)
+                Notes.Add($"{what}: not wired (no {outer.Name} within a wire's 8 m of the bridge's helm chain)");
+        }
         Notes.Add($"{room}: the vehicle's helm is the bridge's, with its {string.Join(", ", steps.Where(j => j != h).Select(j => bp.Steps[j].Part))}");
         return true;
+    }
+
+    /// <summary>The base parts named as <paramref name="part"/> (itself first if no other is nearer), nearest <paramref name="to"/> first.</summary>
+    private List<VPart> Twins(VPart part, VPart to)
+    {
+        C.PartBounds(to.Index, out var tl, out var th);
+        var mid = (tl + th) * 0.5f;
+        float Dist(VPart p)
+        {
+            C.PartBounds(p.Index, out var lo, out var hi);
+            return Vector3.Distance(mid, Vector3.Clamp(mid, lo, hi));
+        }
+        return _base.Where(p => p.Name == part.Name).OrderBy(Dist).ThenBy(p => p == part ? 0 : 1).ToList();
+    }
+
+    private string Near(VPart p)
+    {
+        C.PartBounds(p.Index, out var lo, out var hi);
+        return $"at {(lo.X + hi.X) * 0.5f:0},{(lo.Z + hi.Z) * 0.5f:0}";
     }
 
     /// <summary>The class from the body's mass, the grid laid on the root's top sockets with a margin, keep-outs from every other part, the bow from the helm.</summary>
@@ -1420,10 +1460,12 @@ public sealed class InteriorBuilder : BlueprintScript
             // (the carried helm goes on the free spot nearest the base parts its chain is wired to, a leg's hip: a wire reaches 8 m)
             if (item.Role == "helm" && _carry is { } cy && def.Name == cy.Bp.Steps[cy.Helm].Part)
             {
+                // (any base part of the same name will do: a Driving Module into any leg drives the walker)
                 var ends = cy.Bp.Wires.SelectMany(w => new[] { (w.From, w.To), (w.To, w.From) }).Where(w => cy.Steps.Contains(w.Item1) && !cy.Steps.Contains(w.Item2) && _byStep.ContainsKey(w.Item2))
-                    .Select(w => { C.PartBounds(_byStep[w.Item2].Index, out var lo, out var hi); return (lo, hi); }).ToList();
+                    .Select(w => _base.Where(p => p.Name == _byStep[w.Item2].Name).Select(p => { C.PartBounds(p.Index, out var lo, out var hi); return (lo, hi); }).ToList()).ToList();
+                float Reach(Vector3 at) => ends.Sum(e => e.Min(b => Vector3.Distance(at, Vector3.Clamp(at, b.lo, b.hi))));
                 if (ends.Count > 0)
-                    spots.Sort((a, b) => ends.Sum(e => Vector3.Distance(a.At, Vector3.Clamp(a.At, e.lo, e.hi))).CompareTo(ends.Sum(e => Vector3.Distance(b.At, Vector3.Clamp(b.At, e.lo, e.hi)))));
+                    spots.Sort((a, b) => Reach(a.At).CompareTo(Reach(b.At)));
             }
             var dead = new HashSet<(int, string)>(); // (spots this item has failed on: things are only added, so they stay failed for its next copies)
             for (var i = 0; i < n; i++)
