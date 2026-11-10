@@ -114,7 +114,7 @@ public static class InteriorPlanner
                 deckArea[p.Rooms[^1].Deck] += p.Rooms[^1].Area;
         }
         for (var k = 0; k < p.Decks; k++)
-            Leftovers(p, data, k, bands[k]);
+            Leftovers(p, data, k, bands[k], rng);
         Doors(p, data, bands);
         Bulkheads(p, laneRow);
         Reach(p);
@@ -326,7 +326,7 @@ public static class InteriorPlanner
     /// What no room took: a run of free columns in a band joins a neighbour of the same band and section when it is narrow (merged), else
     /// becomes storage (fuel when one cell wide on the lowest deck), else void.
     /// </summary>
-    private static void Leftovers(InteriorPlan p, InteriorData data, int k, List<Band> bands)
+    private static void Leftovers(InteriorPlan p, InteriorData data, int k, List<Band> bands, InteriorRng rng)
     {
         foreach (var band in bands.Where(b => b.Kind != "full").Concat(bands.Where(b => b.Kind == "full")))
         {
@@ -372,7 +372,10 @@ public static class InteriorPlanner
                     continue;
                 }
                 var kind = band.Depth < 2 ? "dead" : run.W >= data.Rooms["spare"].MinW ? "spare" : k == 0 && run.W == 1 ? "fuel" : run.W >= 2 || k == 0 ? "storage" : "dead";
-                Add(p, data.Rooms[kind], k, run, "leftover", band);
+                if (kind == "spare" && p.Class.Fill.Count > 0)
+                    Generate(p, data, k, run, band, rng);
+                else
+                    Add(p, data.Rooms[kind], k, run, "leftover", band);
             }
         }
         // (anything else still free: void)
@@ -380,6 +383,56 @@ public static class InteriorPlanner
             for (var z = 0; z < p.D; z++)
                 if (p.Cells[k][x, z] == InteriorPlan.Free)
                     Add(p, data.Rooms["dead"], k, new GridRect(x, z, x, z), "leftover", new Band(z < p.SpineZ0 ? 0 : 1, "full", z, z));
+    }
+
+    /// <summary>
+    /// A big leftover (phase 3): a generated room from the class's fill list, the type chosen by what fits (its minimum size; a type holding fuel
+    /// stays on the lowest deck) and the neighbours (wanted and avoided rooms beside it, its deck and row, fewer of a type already generated),
+    /// with a small seeded jitter. A run big enough for two (twice the type's want and minimum width) is split in two, each chosen again.
+    /// Nothing fits: spare space.
+    /// </summary>
+    private static void Generate(InteriorPlan p, InteriorData data, int k, GridRect run, Band band, InteriorRng rng)
+    {
+        RoomType? pick = null;
+        var best = double.MinValue;
+        foreach (var id in p.Class.Fill.Distinct())
+        {
+            var t = data.Rooms[id];
+            if (run.W < t.MinW || run.D < t.MinD)
+                continue;
+            var fuel = t.Modules != null && data.Sets[t.Modules].Items.Any(i => i.Part == "Fuel Tank");
+            if (fuel && k != 0)
+                continue;
+            double s = (t.Deck, k == 0, k == p.Decks - 1) switch { (DeckWant.Lower, true, _) => 2, (DeckWant.Upper, _, true) => 2, (DeckWant.Any, _, _) => 0, _ => -4 };
+            s += (t.Row, band.Kind) switch { (RowWant.Inner, "inner") => 2, (RowWant.Outer, "outer") => 2, (RowWant.Inner, "outer") => -2, (RowWant.Outer, "inner") => -2, _ => 0 };
+            foreach (var o in p.Rooms.Where(o => o.Deck == k && !o.System && Touches(o.Rect, run)))
+            {
+                if (t.Wants.Contains(o.Type) || data.Rooms[o.Type].Wants.Contains(t.Id))
+                    s += 4;
+                if (t.Avoids.Contains(o.Type) || data.Rooms[o.Type].Avoids.Contains(t.Id))
+                    s -= 6;
+            }
+            s -= 3 * p.Rooms.Count(o => o.Type == id && o.Origin == "generated" && o.Deck == k);
+            s += rng.Next();
+            if (s > best)
+            {
+                best = s;
+                pick = t;
+            }
+        }
+        if (pick == null)
+        {
+            Add(p, data.Rooms["spare"], k, run, "leftover", band);
+            return;
+        }
+        if (run.Area >= 2 * pick.Want && run.W >= 2 * Math.Max(pick.MinW, 2))
+        {
+            var half = run.W / 2;
+            Generate(p, data, k, new GridRect(run.X0, run.Z0, run.X0 + half - 1, run.Z1), band, rng);
+            Generate(p, data, k, new GridRect(run.X0 + half, run.Z0, run.X1, run.Z1), band, rng);
+            return;
+        }
+        Add(p, pick, k, run, "generated", band);
     }
 
     private static bool ColumnFree(InteriorPlan p, int k, int x, Band band)

@@ -26,10 +26,10 @@ planner knows nothing of vehicles: its input is a hull volume and keep-outs, so 
 
 | File | What |
 | --- | --- |
-| `SizeClasses.json` | Each class's tonnage band (bands must meet), deck rules and programme (the rooms it asks for). **Provisional.** |
+| `SizeClasses.json` | Each class's tonnage band (bands must meet), deck rules, programme (the rooms it asks for), `fill` (what a big leftover may become) and `chassis` (the rooms planned inside a hollow chassis). **Provisional.** |
 | `RoomTypes.json` | Each room type's minimum size `[along the spine, deep]` in cells, `want` (cells of floor), `layout` (`grid`, or `free`: a rectangle plus a wing, phase 2; system rooms stay on the grid), `deck` (lower/upper/any), `row` (inner beside the spine, outer on the hull side), `end` (bow/stern), `wants`/`avoids`, `critical`, `exterior` (may open outside), `modules`, `loot`. System rooms (stairs, elevator, storage, fuel, spare, dead) are placed by the planner. |
 | `ModuleSets.json` | The `shell` parts (slab, stair slab, stair, walls, corners, door wall, door corner, garage wall, hinge, door leaf, adapter pad) and, for each set, the parts a room holds (`count`, `perCells`, `loot`, `role`) and `missing`: what it should hold that no part does yet. |
-| `LootHooks.json` | A room's loot id mapped to a `Constructs/Loot.json` table. **Provisional:** Loot.json has faction tables only, so every hook points at `trader`. |
+| `LootHooks.json` | A room's loot id mapped to a `Constructs/Loot.json` table: the interiors' own `room ...` tables (phase 3). |
 
 Provisional numbers (phase 1):
 
@@ -191,11 +191,87 @@ blueprints, a client.
 landing rather than on the shaft wall; a lift for three or more decks (a stack of rails and a counter instead of a Toggle);
 the lamps start off (a Switch per room) rather than on.
 
-### Next (phase 3 and on)
+## Phase 3 record (branch `feat/interiors-3`)
 
-**Spare space (user, 2026-11-10: both).** Each size class gets its own room list (bigger classes add rooms: extra quarters,
-storage, workshops), and what is left after that becomes generated rooms (storage, fuel, workshops) chosen by what fits and the
-neighbours. Not started in phase 2.
+User decisions (2026-11-10): fill big hulls both ways (a growing room list per class, then generated rooms); the chassis is the
+interior; real per-room loot, values listed here for the user to change.
 
-Also: per-room loot tables; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
+**Loot.** Nine tables in `Constructs/Loot.json` (hand-written; the hooks in `LootHooks.json`). Each has tier 3 and the rarities
+common, uncommon and rare. The loader refuses an item it doesn't take, with the reason, and `--gen-interior` prints those lines.
+
+| Hook / table | Rolls | Empty | Items (weight) |
+| --- | --- | --- | --- |
+| personal / `room personal` (quarters, locker room) | 1-2 | 25% | Lamp 4, Battery 2, Box Magazine 3, Stick Mag 3, Red Dot 2, Copper Coil 2, Wiring Loom 3, Text Sign 1, Key Switch 1, Peashooter Receiver 1 |
+| food / `room food` (mess) | 1-3 | 10% | Water Cooler 5, Filter 4, Lamp 3, Small Fuel Tank 3, Pipe Box 2, Battery 1 |
+| medical / `room medical` | 1-3 | 10% | Filter 5, Water Cooler 3, Lamp 4, Battery 4, Drone Battery 2, Proximity Sensor 2, Computer 1, Number Readout 2 |
+| stores / `room stores` (storage, hangar) | 2-4 | 5% | Gear Set 8, Bearing 6, Tyre Carcass 4, Wiring Loom 6, Copper Coil 5, Wire Stock 5, Piston Set 3, Lamp 4, Battery 3, Small Fuel Tank 3, Fuel Line 3 |
+| armoury / `room armoury` | 2-4 | 0% | receivers: Rifle 4, Courier Carbine 4, Farmhand Pump 4, Plinker 3; Gun Barrel 5, Long Gun Barrel 3, Sawn-Off 2, Stub 2; Suppressor 2, Muzzle Brake 3, Flash Hider 3, Red Dot 3, Holographic 2; Extended Mag 3, Box Magazine 5, Stick Mag 4; FMJ Rounds 6, AP Rounds 3 |
+| ammunition / `room ammunition` (magazine) | 2-4 | 0% | Ammo Box 8, Ammo Reel 4, Stick Mag 3, Extended Mag 2, FMJ Rounds 6, AP Rounds 4, Box Magazine 4, Impact Fuse 3, Delay Fuse 2, Timer Fuse 2, Napalm Gel 1 |
+| engineering / `room engineering` | 2-3 | 5% | Battery 5, Copper Coil 5, Field Coil 3, Wiring Loom 6, Circuit Board 3, Control Unit 2, Fuel Line 4, Small Fuel Tank 3, Piston Set 3, Bearing 4, Gear Set 4, Charge Gauge 2, Fuel Gauge 2 |
+| workshop / `room workshop` | 2-4 | 5% | Gear Set 6, Bearing 5, Piston Set 4, Wire Stock 5, Wiring Loom 4, Copper Coil 4, Circuit Board 2, Drill Bit Mk 2 2, Drill Bit Mk 3 1, Small Engine 2, Gun Barrel 2, Bead Rail 2 |
+| bridge / `room bridge` | 1-2 | 20% | Computer 3, Fax Machine 2, Radio Homer 2, Number Readout 3, Numpad 2, Code Lock 2, Server Rack 1, Box Magazine 3, Courier Carbine Receiver 1 |
+
+Counts are 1-2 or 1-3 for small things and 1 for receivers and machines. Left out because the tables refused them: Heavy Receiver,
+Gun Scope, HE Rounds, Incendiary Rounds and Belt Feed are epic (a tier-4 table with `epic` could take them, for the capital class),
+GPS Unit needs a tier 4 Assembler, and Cable Reel is physics-only. No medical or food items exist yet (no medkit, bandage or
+ration part), so the medical and food tables hold the nearest things. The bridge and hangar now have a loot Chest. The rooms'
+light Switches are built on (`startOn`).
+
+**Room lists by class** (`SizeClasses.json`, provisional):
+
+| Class | Programme | Fill |
+| --- | --- | --- |
+| Medium | bridge, quarters, storage, mess | storage |
+| Large | + production, armoury, medical, workshop | storage, workshop |
+| Extra large | bridge, 3 quarters, production, 2 storage, hangar, armoury, medical, mess, engineering, magazine, workshop, locker room | storage, workshop, fuel bunker |
+| Capital | bridge, 4 quarters, production, 3 storage, hangar, 2 armouries, medical, mess, engineering, magazine, 2 workshops, locker room | storage, workshop, fuel bunker, quarters |
+
+New room types: **Workshop** (2x2 min, want 9, lower deck; a Press, a Die Lathe, a Die Rack, Parts Shelf and Chest on loot,
+a lamp), **Fuel bunker** (2x2, want 6, lower deck, hull side; Fuel Tanks, one per 2 cells), **Locker room** (2x2, want 6, upper;
+Chests on loot, seats, a lamp).
+
+**Generated rooms** (`InteriorPlanner.Generate`). A leftover run at least as wide as the spare room's minimum (4 cells) becomes a
+fill room when the class has a fill list. It is chosen by score: deck preference +2 (wrong deck -4); row preference +2 (wrong row
+-2); each touching room it or that room wants +4, avoids -6; -3 for each of that type already generated on the deck; a seeded
+jitter up to 1. A type holding a Fuel Tank stays on the lowest deck. A run of at least twice the type's want and twice its
+minimum width is split in half and each half chosen again. A run that fits no type stays spare. Narrow leftovers still merge or
+become storage, fuel or void.
+
+**The chassis is the interior: the route.** The Titan Walker's root, the Capital Chassis Deck 128x64 m, is one part: two 1 m
+plates with a 14 m hollow between them, cut by 4 cross beams and 2 edge beams. It has no sockets inside, and its top plate has
+no opening, so nothing can be built in the hollow or reached from the deck. Phase 3 plans it (`InteriorBuilder.ChassisVoid`):
+the hollow inside the edge beams (125 x 14 x 61 m), its inner beams as keep-outs, 4 storeys, the class's `chassis` rooms
+(engineering, magazine, two storage, workshop, fuel bunker, production), filled from the class fill list less the crew rooms.
+`--gen-interior ... --plan` prints it as "PLANNED ONLY". On seed 1: 7 of 7 rooms placed; 178 of 181 rooms reached (3 storage
+rooms against the north edge of the upper void storeys have no door), with 4 stairwells and a lift shaft through all 4 storeys.
+
+To build it, these are still needed (not done):
+1. **A hollow chassis set** (a new generator, not `capital_parts.py`): the same deck with floor sockets on the bottom plate's top
+   on the small 0.25 m lattice (or capital sockets for the adapter pads), hatch openings in the top plate over the stair and lift
+   shafts, and doorways through the cross beams on the spine.
+2. The walker session swaps the Titan Walker's root to it (TitanWalker.json and its generator are theirs).
+3. The builder builds the void plan first (adapter pads on the inner sockets, 4 storeys), runs its stairs and lift up through
+   the hatches into the top interior, and moves engineering and the magazine down (they leave the top programme).
+4. A lift for more than two decks (a rail per storey or a long rail with several stops).
+
+**The run** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1`, in `TitanWalkerFitted.json`): 19 of 19 rooms and
+50 or so generated rooms on 2 decks; all minimum sizes met; 76 of 76 rooms reached; 3,089 parts placed, none refused or welded;
+98 door leaves; 187 loot containers; the file loads back as 3,100 parts from 3,100 steps; power: 138 electrical parts on the
+circuit, none off. Planning took 0.2 s and building 9 s.
+
+**Tried by hand (headless, after main's World start-up fix):** the fitted walker built on a flat test floor and ticked
+(a throwaway run, not kept). The lift spawns part-way up and settles at the low stop within 5 s. The car's button sends it up
+3.00 m, the lower landing's call brings it down 3.00 m, and the upper landing's call sends it up 3.00 m. All 46 lamps are
+powered and lit, and all 45 switches are on.
+
+**Not tried:** drawing anything; a player walking it, riding the lift or opening the loot (the loot rolls weren't checked in
+containers); the walker walking with the added mass (not measured this phase; the legs have a load limit); other seeds
+and blueprints; the smaller classes; a client.
+
+**Note for Assembling.json:** phase 3 added no recipes.
+
+### Next (phase 4 and on)
+
+Phase 3 did the spare space and the loot tables, and planned the chassis void. Next: the hollow chassis set and building the void
+(above); medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
 track; static bases from a plot; joining the vehicle kit; the missing parts listed by the run.
