@@ -11,6 +11,16 @@ namespace CallOfSlop.VehicleKit;
 /// </summary>
 public sealed record BodyArchetype(string Name, string Family, string Words, string[] Shapes, (string Style, double W)[] Factions, Func<BodyStyleRule, BodyStyleRule> Over)
 {
+    /// <summary>
+    /// Phase 9a (docs/vehiclekit/BODY-STYLES.md, section 19): the archetype's own body plans for the shapes it takes (null: the recipe's), so each faction's car has its
+    /// own outline: a Bandit muscle car cut down to a pickup, Highland's two-seat coupe under a long bonnet, IT's long tail deck, British's short hatch, Scam's long estate.
+    /// </summary>
+    public BodyPattern[]? Bodies { get; init; }
+
+    private static readonly BodySegment Row = ShapeGrammar.Row, GunBay = ShapeGrammar.GunBay;
+    private static BodySegment Boot(float a, float b) => ShapeGrammar.Boot(a, b);
+    private static BodySegment Bed(float a, float b) => ShapeGrammar.Bed(a, b);
+
     private static HullLoft.Section S(params float[] xy) => new(Enumerable.Range(0, xy.Length / 2).Select(i => new Vector2(xy[2 * i], xy[2 * i + 1])).ToArray());
 
     // ---- The languages: each keeps a walk-in room's limits (x 1.0 m or more below 1.6 m, over 2.1 m at its top), so any of them can loft a room as well as a cab.
@@ -113,21 +123,21 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 Languages = [(Fastback, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('g', 2), ('r', 1)], Ride = (2.5, 1, 0.2),
                 CabTallMin = 1.56f, CabTallMax = 1.62f, BeltMin = 0.92f, BeltMax = 0.98f, RakeMin = 0.2f, RakeMax = 0.24f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
                 HoodReach = 0.15f, HoodHalfMin = 0.6f, HoodHalfMax = 0.64f, HoodCrownMin = 0.17f, HoodCrownMax = 0.19f, CabBackMin = 0.6f, CabBackMax = 0.85f,
-            }),
+            }) { Bodies = [new(1, Boot(2.5f, 2.75f))] }, // (phase 9a: a two-seat coupe, the long bonnet the most of it)
         new("coke bottle", "muscle", "a late-sixties coke-bottle: a hip over the wheels, a pinched waist, a semi-fastback roof", Car, [("Bandit", 2)],
             r => r with
             {
                 Languages = [(Coke, 1)], Mix = 0, Cabs = [("enclosed", 2), ("caged", 0.5)], Noses = [('g', 1.5), ('f', 1)], Ride = (2, 1, 0.5),
                 CabTallMin = 1.58f, CabTallMax = 1.66f, BeltMin = 0.96f, BeltMax = 1.02f, RakeMin = 0.16f, RakeMax = 0.22f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
                 HoodReach = 0.1f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, HoodCrownMin = 0.18f, HoodCrownMax = 0.22f, CabBackMin = 0.3f, CabBackMax = 0.55f,
-            }),
+            }) { Bodies = [new(1.5, GunBay, Bed(1.5f, 2f)), new(1, Boot(2.25f, 2.75f))] }, // (phase 9a: cut down to a pickup more often than not: the gun behind the cab, an open bed, fuel in the open)
         new("seventies wedge", "muscle", "a seventies boxy wedge: slab sides, a flat formal roof, an upright grille", Car, [("Bandit", 1.5), ("Scam", 0.5)],
             r => r with
             {
                 Languages = [(Wedge, 1)], Mix = 0, FacetsMin = 0, FacetsMax = 0, Cabs = [("enclosed", 2), ("armoured", 0.5)], Noses = [('f', 2), ('w', 1)], Ride = (1.5, 1, 0.5),
                 CabTallMin = 1.6f, CabTallMax = 1.68f, BeltMin = 1.0f, BeltMax = 1.04f, RakeMin = 0.12f, RakeMax = 0.18f, CabHalfMin = 0.93f, CabHalfMax = 0.95f,
                 HoodReach = 0.12f, HoodHalfMin = 0.6f, HoodHalfMax = 0.64f, HoodCrownMin = 0.16f, HoodCrownMax = 0.18f, CabBackMin = 0.1f, CabBackMax = 0.25f,
-            }),
+            }) { Bodies = [new(1, Row, Boot(2.75f, 3f)), new(1, GunBay, Bed(1.5f, 2f))] }, // (phase 9a: a long formal four-door, or a pickup)
         // Supercars: low, wide, cab-forward wedges.
         new("supercar", "supercar", "a mid-engined supercar: a cab-forward wedge, very low and wide, a raked screen", Car, [("IT", 2)],
             r => r with
@@ -135,7 +145,7 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 Languages = [(SuperWedge, 1)], Mix = 0, Cabs = [("cab-over", 2), ("enclosed", 1)], Noses = [('w', 3)], Ride = (4, 1, 0),
                 CabTallMin = 1.55f, CabTallMax = 1.6f, BeltMin = 0.9f, BeltMax = 0.94f, RakeMin = 0.24f, RakeMax = 0.24f, CapsuleRakeMin = 0.75f, CapsuleRakeMax = 0.8f,
                 CabHalfMin = 0.94f, CabHalfMax = 0.95f, HoodHalfMin = 0.62f, HoodHalfMax = 0.64f, HoodCrownMin = 0.16f, HoodCrownMax = 0.17f, CabBackMin = 0.7f, CabBackMax = 0.9f,
-            }),
+            }) { Bodies = [new(1, Boot(2.5f, 3f))] }, // (phase 9a: a long tail deck behind two seats)
         // European car lines: a compact hatch and an estate.
         new("compact hatch", "european car", "a European compact hatch: a short bonnet, a tall glasshouse, an upright tail", Car, [("British", 2), ("Scam", 1)],
             r => r with
@@ -143,14 +153,14 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 Languages = [(Hatch, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('r', 1.5), ('f', 1)], Ride = (1, 1.5, 0.3),
                 CabTallMin = 1.72f, CabTallMax = 1.8f, BeltMin = 0.9f, BeltMax = 0.94f, RakeMin = 0.18f, RakeMax = 0.24f, CabHalfMin = 0.88f, CabHalfMax = 0.91f,
                 HoodReach = -0.08f, HoodHalfMin = 0.52f, HoodHalfMax = 0.56f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, CabBackMin = 0, CabBackMax = 0,
-            }),
+            }) { Bodies = [new(1, Boot(2.25f, 2.75f))] }, // (phase 9a: two seats, the recipe's boot (a fixed short one left no room for the gun and the tank clear of the axles on some plans))
         new("estate", "european car", "a European estate: square shoulders, a long level roof, upright at the back", Car, [("Scam", 1.5), ("British", 1)],
             r => r with
             {
                 Languages = [(Estate, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('f', 1.5), ('g', 1)], Ride = (1, 1.5, 0.3),
                 CabTallMin = 1.7f, CabTallMax = 1.78f, BeltMin = 0.94f, BeltMax = 0.98f, RakeMin = 0.14f, RakeMax = 0.2f, CabHalfMin = 0.9f, CabHalfMax = 0.93f,
                 HoodReach = 0, HoodHalfMin = 0.54f, HoodHalfMax = 0.58f, CabBackMin = 0, CabBackMax = 0,
-            }),
+            }) { Bodies = [new(1, Row, Boot(2.75f, 3f))] }, // (phase 9a: four doors and the longest roof)
         // A European minibus on the War Bus: a merged cab, upright and glazed.
         new("minibus", "european van", "a European minibus: a merged cab under one domed roof, upright and glazed", Bus, [("Scam", 1.5)],
             r => r with
@@ -283,12 +293,68 @@ public sealed partial class Vehicle
     /// <summary>The body rule this vehicle is made by: its style's (<see cref="BodyStyleRule.Of"/>), with its archetype laid over it.</summary>
     public BodyStyleRule Rule => _rule ??= BodyStyleRule.Of(Style);
 
-    /// <summary>Lays an archetype over the style's rule (before the look is rolled).</summary>
-    public void UseArchetype(BodyArchetype? a)
+    /// <summary>Phase 9a: this vehicle's cab sub-style, its faction's cab family (null: none rolled).</summary>
+    public CabStyle? CabStyle { get; private set; }
+
+    /// <summary>Lays an archetype over the style's rule (before the look is rolled), then the faction's cab sub-style over both (phase 9a, its own fork "cab style").</summary>
+    public void UseArchetype(BodyArchetype? a, string? shape = null)
     {
         Archetype = a;
         _rule = a == null ? BodyStyleRule.Of(Style) : BodyArchetype.RuleOf(a, Style);
         if (a != null)
             Modules.Add("archetype " + a.Name);
+        var own = BodyStyleRule.Of(Style).CabStyles;
+        if (own.Length == 0 || CabStyle.None || shape == null || CabStyle.Skip.Contains(shape))
+            return;
+        CabStyle = BodyStyleRule.Weighted(Dice.Fork("cab style"), own.Select(x => (x, x.W)).ToArray());
+        _rule = CabStyle.RuleOf(_rule, a == null ? CabStyle.Over.Own : CabStyle.CarLike.Contains(shape) ? CabStyle.Over.Car : CabStyle.Over.Archetype);
+        Modules.Add("cab style " + CabStyle.Name);
     }
+}
+
+/// <summary>
+/// Phase 9a (docs/vehiclekit/BODY-STYLES.md, section 19): one of a faction's two or three cab sub-styles, its cab family. Laid over the vehicle's rule after its
+/// archetype, so the faction's cab reads the same across its archetypes: on its own bodies a sub-style sets the cab's kinds, language and proportions; over a truck,
+/// bus or wagon archetype the proportions and noses (the archetype keeps its kinds and language); over a car-like one (a car, a concept: its cab is its
+/// silhouette) only the windscreen's rake and the noses. Data: <see cref="BodyStyleRule.CabStyles"/>.
+/// </summary>
+public sealed record CabStyle(string Name, double W, Func<BodyStyleRule, CabStyle.Over, BodyStyleRule> Apply)
+{
+    public enum Over { Own, Archetype, Car }
+
+    /// <summary>The shapes whose cab is their body's silhouette.</summary>
+    public static readonly string[] CarLike = ["Car", "Concept"];
+
+    /// <summary>Shapes that take no sub-style: a buggy's roll cage is its archetype (an upright screen on its tub put two cage bars on one face plane).</summary>
+    public static readonly string[] Skip = ["Buggy"];
+
+    /// <summary><c>--no-cab-styles</c>: the rules as before phase 9a, to measure against.</summary>
+    public static bool None;
+
+    private static readonly Dictionary<(BodyStyleRule, string, Over), BodyStyleRule> Cache = new();
+
+    /// <summary>The sub-style over a rule, made once (the identity's and the cab's reference caches are keyed by the rule).</summary>
+    public BodyStyleRule RuleOf(BodyStyleRule r, Over how)
+    {
+        lock (Cache)
+        {
+            if (!Cache.TryGetValue((r, Name, how), out var made))
+                Cache[(r, Name, how)] = made = Apply(r, how);
+            return made;
+        }
+    }
+
+    /// <summary>
+    /// A sub-style from its parts: <paramref name="own"/> what it sets on the faction's own bodies only (kinds, language), <paramref name="face"/> the proportions any
+    /// non-car body takes (belt, height, width), <paramref name="screen"/> the windscreen and noses every body takes.
+    /// </summary>
+    public static CabStyle Of(string name, double w, Func<BodyStyleRule, BodyStyleRule> screen, Func<BodyStyleRule, BodyStyleRule>? face = null, Func<BodyStyleRule, BodyStyleRule>? own = null) =>
+        new(name, w, (r, how) =>
+        {
+            if (how == Over.Own && own != null)
+                r = own(r);
+            if (how != Over.Car && face != null)
+                r = face(r);
+            return screen(r);
+        });
 }

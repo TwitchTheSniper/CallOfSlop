@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, wishbone/swing arm, wing 0.5, archetype bubble car, language bubble standard 2.34 m, flare 0.14, crowned 1.0, brow 0.65 1.25 m, tail 0.55 1 m, door left, 12 facets, cab bubble cab, 8 facets, nose wedge, fitting radome, wear age 0.37 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under stilts, layout boot 2.3 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, wishbone/swing arm, wing 0.5, archetype bubble car, cab style glasshouse, language bubble standard 2.34 m, flare 0.14, crowned 1.0, brow 0.65 1.25 m, tail 0.55 1 m, door left, 12 facets, cab bubble cab, 8 facets, nose wedge, fitting radome, wear age 0.37 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under stilts, layout boot 2.3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Concept 1",
   "group": "IT Department",
@@ -37,8 +37,8 @@
     {"part": "Seat", "on": 27, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 29, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 28, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXbYFWOVYWMW0W0Xa ~BG0BuQBuqBvEBfeAI07QK3wa02a ~BG0BuPBunBvABfYAHvAIC3wR02R ic)", "on": 1, "socket": "+y2", "by": "footL", "paint": "#8e9296"},
-    {"part": "Hull Loft (pane UfXeV5XNXeV5X0YCVJV0YCVJ)", "on": 32, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXbYFWNVYWMW0W0Xa ~BG0BuQBuqBvEBfeAI07QK3wa02a ~BG0BuPBunBvABfYAHvAIC3wR02R ic)", "on": 1, "socket": "+y2", "by": "footL", "paint": "#8e9296"},
+    {"part": "Hull Loft (pane UfXeV5XNXeV5X0YCVIV0YCVI)", "on": 32, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane W-XeWWV2XeWWVBYCWWWrYCWW)", "on": 32, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#8e9296"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#d8d0b8"},

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, swing arm/hydraulic, wing 0.75, language ledge heavy 2.52 m, flare 0.29, stepped 0.8, brow 0.83 1.25 m, tail 0.87 1.25 m, door left, space cage w, cab slab caged cab, nose flat, sections ledge+slab, lopsided right, wear age 0.67 (17 rusty, 11 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under tub, flank bare, sides rails, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, swing arm/hydraulic, wing 0.75, cab style roll cage, language ledge heavy 2.52 m, flare 0.29, stepped 0.8, brow 0.83 1.25 m, tail 0.87 1.25 m, door left, space cage w, cab ledge caged cab, nose flat, sections ledge+slab, lopsided right, wear age 0.67 (17 rusty, 11 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab caged, nose ram, rear bare, under tub, flank bare, sides rails, roof none, layout gun bed 2 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Box Truck 1",
   "group": "Bandit",
@@ -39,7 +39,7 @@
     {"part": "Square Beam 0.5 m", "on": 29, "socket": "+z", "by": "-z", "paint": "#3a3330"},
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (cabg V4V4WWXiYOW7VYWMW0W0Xa ~B80BQ98Ya02a = ir)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#8c5230"},
+    {"part": "Hull Loft (cabg V4V4WWXgYQW7VYWMW0W0Xa ~B80BHHBvNBwF9Ac02c = ir)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#8c5230"},
     {"part": "Sheet Steel 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#5e3320"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#7a4326"},
     {"part": "Sheet Steel 0.25 m", "on": 36, "socket": "+z0", "by": "-x", "paint": "#7a4326"},
@@ -129,7 +129,7 @@
     {"part": "Lever", "on": 92, "socket": "lever", "by": "-y"},
     {"part": "Scrap Workbench", "on": 72, "socket": "front22", "by": "foot00", "spin": 2},
     {"part": "Bed Rail 1 m", "on": 54, "socket": "+x", "by": "edge1", "paint": "#94603a"},
-    {"part": "Hull Loft (hoodf UdV2WyWjXWXWVd ~7007Gq5Oz00z)", "on": 27, "socket": "+y", "by": "engine", "paint": "#d8cdb0"},
+    {"part": "Hull Loft (hoodf UdV2WyWjXWXWVd ~70078U7mW7mr5mz00z)", "on": 27, "socket": "+y", "by": "engine", "paint": "#d8cdb0"},
     {"part": "Ram Plow", "on": 124, "socket": "front", "by": "back", "paint": "#d8cdb0"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 125, "pos": [0.113, 0.337, -1.244], "rot": [-0.6985, 0.0374, -0.0183, 0.7144]}, "paint": "#7a4326"},
     {"part": "Skull Trophy", "on": 124, "socket": "top", "by": "base"},

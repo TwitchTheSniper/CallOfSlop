@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, coil/swing arm, wing 0.75, archetype carriage, language carriage standard 2.34 m, flare 0.03, sheer 0.7, brow 0.68 1.5 m, tail 0.79 1.5 m, door right, 9 facets, cab carriage cab, 6 facets, nose grille, balcony r, trim livery on 5 bay sides, wear age 0.97 (3 rusty, 13 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab enclosed, nose long hood, rear porch, under stilts, flank panniers, sides rails, roof none, layout room(Brow T,Door,Tail T)+bed 1.5 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, coil/swing arm, wing 0.75, archetype carriage, cab style town cab, language carriage standard 2.34 m, flare 0.03, sheer 0.7, brow 0.68 1.5 m, tail 0.79 1.5 m, door right, 9 facets, cab carriage cab, 6 facets, nose grille, balcony r, trim livery on 5 bay sides, wear age 0.97 (3 rusty, 13 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab enclosed, nose long hood, rear porch, under stilts, flank panniers, sides rails, roof none, layout room(Brow T,Door,Tail T)+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Wagon 1",
   "group": "Ministry of Slop",
@@ -42,8 +42,8 @@
     {"part": "Square Beam 0.5 m", "on": 32, "socket": "+z", "by": "-z", "paint": "#2b2a28"},
     {"part": "Seat", "on": 33, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 35, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (cabe V4V4WWXcYcWFVYWMW0W0Xa ~Be0BuhBvMBw5Aga72o02r = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#e8dfc8"},
-    {"part": "Hull Loft (pane UeXfV5XOXfV5XFYZVGUnYZVG)", "on": 37, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXcYcWEVYWMW0W0Xa ~Be0BuhBvMBw4Aga72o02r = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#e8dfc8"},
+    {"part": "Hull Loft (pane UeXfV5XOXfV5XFYZVFUnYZVF)", "on": 37, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane X2XfWWU-XfWWV7YZWWWvYZWW)", "on": 37, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#b5121b"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#c8102e"},
@@ -124,10 +124,10 @@
     {"part": "Bed Rail 1 m", "on": 87, "socket": "+x", "by": "edge0", "paint": "#b5121b"},
     {"part": "Hull Loft (hoodg UdV2WyWjXYXYVd ~78080G80W7eo6W-4H3014)", "on": 30, "socket": "+y", "by": "engine", "paint": "#c8102e"},
     {"part": "Slat Grille", "on": 117, "socket": "front", "by": "back", "paint": "#1b1c1e"},
-    {"part": "Wide Arch Fender", "on": 117, "socket": "+x0", "by": "mount", "paint": "#c8102e"},
-    {"part": "Wide Arch Fender", "on": 117, "socket": "-x0", "by": "mount", "paint": "#c8102e"},
+    {"part": "Arch Fender", "on": 117, "socket": "+x0", "by": "mount", "paint": "#c8102e"},
+    {"part": "Arch Fender", "on": 117, "socket": "-x0", "by": "mount", "paint": "#c8102e"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 118, "pos": [0.126, 0.46, -1.105], "rot": [-0.714, -0.0008, 0.0164, 0.6999]}, "paint": "#be0f2a"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 120, "pos": [-0.926, 0.235, -0.372], "rot": [0.0053, 0.0089, 0.6977, 0.7163]}, "paint": "#c8102e"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 120, "pos": [-0.826, 0.263, -0.372], "rot": [0.0053, 0.0089, 0.6977, 0.7163]}, "paint": "#c8102e"},
     {"part": "Teapot", "on": 117, "socket": "top", "by": "base"},
     {"part": "Queue Post", "on": 89, "socket": "front", "by": "base"},
     {"part": "Queue Post", "on": 113, "socket": "front", "by": "base"},

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 3 axles, tag 1.25 m, front under the hood, inset 1.5 m, leaf/leaf/leaf, wing 0.75, language coach heavy 2.80 m, flare 0.26, tapered 1.0, brow 0.62 1.25 m, tail 0.75 1 m, door right, 8 facets, cab coach capsule, 6 facets, nose grille, fitting destination board, wear age 0.81 (2 rusty, 3 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bay+tank+bed, cab cab-over, nose flat, rear hitch, under stilts, sides rails, layout gun bay 2 m+tank 2 m+bed 1.5 m
+  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 3 axles, tag 1.25 m, front under the hood, inset 1.5 m, leaf/leaf/leaf, wing 0.75, cab style bus front, language coach heavy 2.80 m, flare 0.26, tapered 1.0, brow 0.62 1.25 m, tail 0.75 1 m, door right, 8 facets, cab coach capsule, 6 facets, nose rounded, fitting destination board, wear age 0.81 (2 rusty, 3 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bay+tank+bed, cab cab-over, nose flat, rear hitch, under stilts, sides rails, layout gun bay 2 m+tank 2 m+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Scrap Tanker 8",
   "group": "Ministry of Slop",
@@ -41,10 +41,10 @@
     {"part": "Square Beam 0.5 m", "on": 31, "socket": "+z", "by": "-z", "paint": "#1b1c1e"},
     {"part": "Seat", "on": 32, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 34, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (cabo SfUSWUXcYWWXVMWKW0W0XK ~Bu0C8eC9HC9vAYV5ot02t = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a32"},
-    {"part": "Hull Loft (pane UrXfSgXBXfSgX4YTT0UyYTT0)", "on": 36, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane XIXfSlXXXfVKXLYTVKXBYTT4)", "on": 36, "socket": "glass2", "by": "frame"},
-    {"part": "Hull Loft (pane UkXfSlUVXfVKUhYTVKUrYTT4)", "on": 36, "socket": "glass3", "by": "frame"},
+    {"part": "Hull Loft (cabo SfUSWUXcYYWRVMWKW0W0XK ~Bu0C8eC9HC9vAYW5ou02u = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a32"},
+    {"part": "Hull Loft (pane UrXfSgXBXfSgX3YVSyUzYVSy)", "on": 36, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane XIXfSlXXXfVKXKYVVKXAYVT1)", "on": 36, "socket": "glass2", "by": "frame"},
+    {"part": "Hull Loft (pane UkXfSlUVXfVKUiYVVKUsYVT1)", "on": 36, "socket": "glass3", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#c8102e"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#1f4a32"},
     {"part": "Plate Steel 0.25 m", "on": 41, "socket": "+z0", "by": "-x", "paint": "#c8102e"},
@@ -98,7 +98,7 @@
     {"part": "Tow Hitch", "on": 11, "socket": "+z", "by": "-z0"},
     {"part": "Bed Rail 1 m", "on": 60, "socket": "+x0", "by": "edge0", "paint": "#c8102e"},
     {"part": "Bed Rail 1 m", "on": 66, "socket": "+x", "by": "edge1", "paint": "#be0f2a"},
-    {"part": "Hull Loft (decoD WoWMUWVy)", "on": 36, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoD WoWMUTVy)", "on": 36, "socket": "top", "by": "base"},
     {"part": "Garden Gnome", "on": 69, "socket": "front", "by": "base"},
     {"part": "Queue Post", "on": 62, "socket": "front", "by": "base"},
     {"part": "Traffic Cone", "on": 64, "socket": "front", "by": "base"},
