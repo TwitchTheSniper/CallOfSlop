@@ -84,6 +84,8 @@ public sealed partial class ConstructWorld
     public bool HasRoom(int parts = 1) => Bodies.Count < BodyCap && PartTally + parts <= PartCap;
 
     public readonly List<Construct> Bodies = new(256);
+
+    public ConstructWorld() => RuntimeParts.Track(this); // (what its bodies and stores hold keeps a run-time part: RuntimeParts.cs)
     private readonly Dictionary<ushort, Construct> _byId = new(256);
     private ushort _nextId = 1;
 

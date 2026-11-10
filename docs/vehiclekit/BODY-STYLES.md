@@ -1409,6 +1409,82 @@ protocol stays 225.
 - The cab-over tractor with a semi-trailer, coaches, faction-specific car outlines (part 2's list); the whole-body ratio needs those per-faction outlines, not more shapes.
 - The gunsmith's big guns that don't point (above) and the 65535 part-shape table (a long session generating many lofted vehicles fills it).
 
+## 19. Phase 9a, as built (2026-11-10): body detail leftovers
+
+The brief: faction-specific outlines where it matters most (each faction's car its own plan; two or three cab sub-styles a faction, its cab family kept across its
+archetypes, to win back the cab separation the archetypes cost: 1.52 to 1.15), the unused contour parts and per-faction fenders, offset cabs and uneven roof clutter,
+balconies off upper storeys and at rear doors, Militia's separation. Code: `CabStyle` and `BodyArchetype.Bodies` (`VehicleArchetypes.cs`), the style rows'
+`CabStyles` (`BodyStyleRule`, VehicleBodyLanguage.cs), the grammar's body pick (`VehicleGrammar.cs`), the styles' `fender` slots (Styles.cs).
+
+### Cab sub-styles (the cab family)
+
+A vehicle rolls one of its faction's sub-styles on its own fork ("cab style"), laid over its rule after its archetype (`Vehicle.UseArchetype`). On the faction's own
+bodies a sub-style sets the cab's kinds and language and its proportions; over a truck, bus or wagon archetype only the proportions and noses (the archetype keeps its
+kinds and its cab language: a European cab-over stays one); over a car or a concept (whose cab is the silhouette) only the windscreen's rake and the noses. Buggies take
+none (their cage is the archetype: an upright screen on the tub put two cage bars on one face plane). A sub-style setting a cab language leaves merged kinds out of it (a
+merged cab's back is its room's brow). `--no-cab-styles` leaves them out.
+
+| Style | Sub-styles (weight): kinds, language | Shared by all: screen rake, noses | Proportions (height, belt, half width) |
+| --- | --- | --- | --- |
+| Bandit | chop top 2: enclosed, armoured, crew, slab; roll cage 2: caged, ledge; scrap plate 1: armoured, slab | 0.02-0.1, flat and grille (scrap plate wedge too) | 1.56-1.7, 1.04-1.14 |
+| Militia | slit 2: armoured, armour; carrier 1.5: crew, merged | 0.22-0.24, wedge (carrier flat too), capsule 0.75-0.85 | 1.56-1.62, 1.08-1.14, 0.93-0.95 |
+| IT | glasshouse 2: enclosed, crew, pod; pod 1.5: cab-over, merged | 0.22-0.26, rounded (glasshouse wedge too), capsule 0.65-0.8 | 1.7-1.8, 0.88-0.94 |
+| Scam | box 2: enclosed, crew, cabin; kiosk 1: cab-over, cabin | 0.02-0.06, flat (kiosk grille too), capsule 0.3-0.36 | 1.84-1.95, 1.0-1.04, 0.93-0.95 |
+| Highland | coachbuilt 2: enclosed, crew, boat; tourer 1: caged, boat | 0.05-0.12, grille (tourer rounded too) | 1.62-1.76, 0.98-1.04, 0.84-0.88 |
+| British | bus front 2: merged, cab-over; town cab 1: enclosed, crew, coach | 0.1-0.16, rounded (town cab grille too), capsule 0.2-0.3 | 1.74-1.86, 0.94-1.0 |
+
+A cab lower than 1.55 m has no room for its window band under the roof (`CabFor`'s clamp throws): the first rows' 1.5 m chop tops and slits were raised to 1.56. A
+screen raked past 0.24 is clamped there, so Militia's glacis is at the limit.
+
+### Faction car outlines
+
+An archetype may name its own body plans (`BodyArchetype.Bodies`, used when it takes the shape): coke bottle a pickup (gun bay and a 1.5-2 m open bed, the drum in it)
+1.5 or a boot 1; seventies wedge a long four-door (second row and a 2.75-3 m boot) or a pickup; early fastback a two-seat coupe (boot 2.5-2.75 m: the long bonnet is
+most of it); supercar a long tail deck (2.5-3 m); estate a long four-door (second row, 2.75-3 m); compact hatch two seats, the recipe's boot (a fixed short boot, 2.25
+then 2.5 m, left no room for the gun and the tank clear of the axles on two British seeds of eight). So Bandit's cars are pickups more often than not (its signature's
+fuel in the open, too), Highland's coupes, IT's long-tailed, British's short hatches, Scam's long estates.
+
+### Fenders, rear doors, Militia
+
+- **Fenders** by faction (the `fender` slot): Bandit wide arches or bare tyres, Militia always wide arches, IT and British slim arches, Highland wide arches, Scam either (as before).
+- **Rear doors**: British (0 before), Highland and Scam roll a rear door at 0.35. A rear door still needs the room last, 4.5 m long or more and a bare tail or a hitch
+  behind it; in 10 British War Bus seeds and 16 Highland and Scam Box Truck seeds none rolled one (their rears are mostly gun decks and porches), so no rear balcony
+  was seen. A stronger lean to a hitch (6 for 2.5) changed nothing in those seeds and was put back.
+- **Militia**: slats on every side, bins among them now and then (`Trims` slats 3, slats and bins 1, `TrimShare` 1; bins alone and bare sides gone), and no slatted
+  rooms (`Cage` 0): its rooms were the most varied of any style's (0.169 within) and nearest British; now its own.
+
+### Measured (2-core box, other runs alongside: times noisy)
+
+`--body-report all --seeds 4` on main 85c66474 and on the branch; `--diversity-style STYLE --seeds 4` (every shape's mean pair).
+
+| | before | after |
+| --- | --- | --- |
+| room exteriors ratio (within, between) | 1.49 (0.125, 0.187) | 1.60 (0.120, 0.192) |
+| ... nearest other over own: Bandit, IT, Highland, Scam, British, Militia | 1.60, 1.23, 1.24, 1.31, 1.25, 0.97 (British) | 1.60, 1.21, 1.25, 1.30, 1.22, 1.60 (Highland) |
+| cabs ratio (within, between) | 1.15 (0.065, 0.075) | 1.26 (0.060, 0.076) |
+| whole body ratio (within, between) | 1.02 (0.149, 0.152) | 1.02 (0.147, 0.151) |
+| diversity, every shape, mean pair (Bandit .. Militia) | 0.332, 0.338, 0.328, 0.329, 0.344, 0.327 | 0.332, 0.334, 0.326, 0.329, 0.339, 0.323 |
+| failures (`--body-report`), coplanar pairs | 3, 0 | 2 (Bandit Scrap Tanker 3's barrel, British Double Decker 2's gun, as main), 0 |
+| generation mean a style, Bandit .. Militia | 1326, 364, 268, 243, 301, 326 ms | 478, 341, 284, 254, 290, 395 ms (Bandit's worst 39 s to 5.4 s: its cars' fuel in the open) |
+| Car sweeps `--seeds 8` (full check) | 39 of 40 (phase 8a part 2) | 40 of 40 |
+
+What the numbers say: the cab family wins back cab separation (within-style cabs tighter: Bandit 0.059 to 0.045, Highland 0.048 to 0.043; between holds; Scam's stays the widest, 0.092: its cars, buggies, bubble cars and minibus keep their own cab languages), and Militia's
+room exteriors move from nearest British to well apart. The whole body barely moves: a car is one shape of six to nine a style, and the other shapes' outlines are the
+plan's. Diversity within a style holds (falls of 0.005 at most).
+
+**Committed vehicles**: 131 of 193 files made again (fenders, cab sub-styles, car plans); `--gen-vehicles` reports all identical, also with `--order reverse`;
+`--check-construct-parts` clean. Every changed file through the full check (`--check-vehicle`): all pass but the gunsmith's big guns 41 to 67 degrees off their gunners (Bandit Box Truck 4, War Bus 10; British Flatbed Fort 7; Highland Box Truck 3 and 7, Flatbed Fort 8; IT Box Truck 3, War Bus 10; Scam Flatbed Fort 1 and 6: phase 9b's; Bandit Box Truck 4 fails so on main too). Two found on the way: Bandit's scrap-plate cabs at the style's own bodies' first proportions (1.56-1.64 m, belt 1.1-1.14) left 8 of 14 driver's rays on the cab (Gun Wagon 8, Wagon 1): that sub-style now keeps the faction's proportions; Scam's fenders as IT's (slim arches only) made two kit-1 Technicals read as a box: Scam keeps both arches. Scam Technical 21 (identical to main) fails stability 0.69 there too. No part key or wire change: protocol stays 225.
+
+### Left
+
+- The seven contour parts (Armour Slope, Slant Sheet, Roof Slant, Skirt Sheet, Tube Bend) are still unused: none has a socket at its middle (pads every 0.5 m from an
+  end), so any of them hangs off centre on a hood or a cab; they want a centred socket in `tools/constructs/body_parts.py` (a part file change) and their places.
+- An offset cab (the cab's place feeds the driver's seat, the drive line and the view check) and uneven roof clutter (the roof fittings' keys have no sideways place:
+  one more number in `DecoShape` for 'R', 'B' and 'S', a key change and protocol bump).
+- Balconies off upper storeys (a door bay in the storey, a bulwark gap) and rear doors that show: a rear door wants a last long room with a bare tail, which the War
+  Bus and Box Truck rears seldom give; a rear platform that stands over a porch or a gun deck's front would show them.
+- The whole-body ratio: per-faction proportions of trucks and buses (lengths, cab placement), not only cars.
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1447,4 +1523,5 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --sweep-vehicle "Bandit Car" --seeds 8   # phase 8a part 2: the car body
 --sweep-vehicle "Bandit Monster Truck" --seeds 8   # phase 8b: a new shape (Buggy, Monster Truck, Wagon, Concept, Giant Truck)
 --body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows, phase 7c's ends, storeys, consoles and wheels)
+--body-report all --seeds 4 --no-cab-styles   # phase 9a: without the factions' cab sub-styles
 ```

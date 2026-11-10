@@ -38,7 +38,16 @@ public static partial class SelfTest
                     Fail($"centre sockets: {d.Name}: socket {i} ({plain.Sockets[i].Name}) moved or changed: old blueprints and saves would link to the wrong socket");
                     break;
                 }
-            var extra = d.Sockets.Skip(plain.Sockets.Length).ToList();
+            // A leg's segment weld sockets ("seg0".., ConstructParts.WithLegSockets) are added at load too, straight after the
+            // file's own and before any centre ones; they are the leg's, not centre sockets, so they are left out here.
+            var legSockets = 0;
+            if (d.Leg is { SegSocket: >= 0 } leg)
+            {
+                legSockets = leg.Segments.Length;
+                if (leg.SegSocket != plain.Sockets.Length || Enumerable.Range(0, legSockets).Any(k => d.Sockets[leg.SegSocket + k].Name != "seg" + k))
+                    Fail($"centre sockets: {d.Name}: its segment sockets aren't seg0.. straight after the file's own");
+            }
+            var extra = d.Sockets.Skip(plain.Sockets.Length + legSockets).ToList();
             var structural = d.Role is PartRole.Frame or PartRole.Panel or PartRole.Foundation;
             if (extra.Count > 0 && !structural)
                 Fail($"centre sockets: {d.Name} ({d.Role}) isn't structural but gained {extra.Count}");

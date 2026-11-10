@@ -278,6 +278,7 @@ public sealed partial class Game : IDisposable
         AllocProfile.Mark("frame: carts, throwables");
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
+        UpdateWalkerFeel(); // walkers' footfalls: their thump and the riders' shake (GameWalkerFeel.cs)
         AllocProfile.Mark("frame: tactical, streaks, advert");
         UpdateTacticalEffects(now, (float)frameDt); // decoy shots, sensor beeps, flash deafness (GameTactical.cs)
         UpdateStreakEffects(now, (float)frameDt);

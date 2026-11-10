@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 3 axles, pusher 1.25 m, front forward, inset 1.25 m, coil/leaf/leaf, wing 0.5, archetype giant hauler, language slab giant 2.61 m, flare 0.33, raked 0.8, brow 0.64 1 m, tail 0.75 1 m, door left, cab armour caged cab, nose grille, sections slab+ledge, lopsided left, wear age 1.2 (29 rusty, 24 dirty, 0 sooty, 0 patched, 1 rusted out), body room, cab caged, nose short hood, rear porch, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-N,Bay N-T,Door,Tail T)
+  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 3 axles, pusher 1.25 m, front forward, inset 1.25 m, coil/leaf/leaf, wing 0.5, archetype giant hauler, cab style roll cage, language slab giant 2.61 m, flare 0.33, raked 0.8, brow 0.64 1 m, tail 0.75 1 m, door left, cab armour caged cab, nose grille, sections slab+ledge, lopsided left, wear age 1.2 (29 rusty, 24 dirty, 0 sooty, 0 patched, 1 rusted out), body room, cab caged, nose short hood, rear porch, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-N,Bay N-T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Giant Truck 6",
   "group": "Bandit",
@@ -43,7 +43,7 @@
     {"part": "Seat", "on": 33, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 35, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 34, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabg V4V4WWXkYOWAVYWMW0W0Xa ~B80Buw9oP6If02f = ir)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#2f2c2a"},
+    {"part": "Hull Loft (cabg V4V4WWXhYQWAVYWMW0W0Xa ~B80Buw9oQ6If02f = ir)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#2f2c2a"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y4", "by": "back02", "spin": 2, "paint": "#3a3330"},
     {"part": "Sheet Steel 0.5 m", "on": 0, "socket": "+y4", "by": "back00", "spin": 2, "paint": "#7a4326"},
     {"part": "Plate Steel 0.25 m", "on": 40, "socket": "+z0", "by": "-x", "paint": "#46392f"},

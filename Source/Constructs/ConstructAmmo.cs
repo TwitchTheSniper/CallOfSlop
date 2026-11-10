@@ -76,6 +76,9 @@ public static class ConstructAmmo
 
     private static readonly Dictionary<(ushort Gun, ushort Mag), string?> GunTakesCache = new();
 
+    /// <summary>(RuntimeParts) Run-time ids may name other parts from now on.</summary>
+    internal static void ForgetRuntime() => GunTakesCache.Clear();
+
     /// <summary>Why a gun can't take this magazine by a socket (null: it can): the workbench's rule for the receiver's own feed socket, so a shell magazine stays out of a rifle however it is brought. Asked by a gun waiting for rounds, so the answer is kept.</summary>
     public static string? GunTakes(ConstructPartDef gun, ConstructPartDef mag)
     {

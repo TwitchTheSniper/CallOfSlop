@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, leaf/coil, wing 0.5, language cabin standard 2.42 m, flare 0.06, plain 0.7, brow 0.75 1 m, tail 0.81 1 m, door left, upper saloon over bays 3 to 5, cut 2.18 m, storey 2.18 m, stair right at 4.00 m back, cab cabin cab, nose flat, balcony g, space upper saloon, fitting roof sign, trim signboards on 11 bay sides, wear age 0.53 (5 rusty, 7 dirty, 5 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank loaded, roof none, layout room(Brow T,Door,Bay T-L,Bay L-T,Bay T,Bay T-L,Tail L), plan 3
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, leaf/coil, wing 0.5, cab style kiosk, language cabin standard 2.42 m, flare 0.06, plain 0.7, brow 0.75 1 m, tail 0.81 1 m, door left, upper saloon over bays 3 to 5, cut 2.18 m, storey 2.18 m, stair right at 4.00 m back, cab cabin cab, nose flat, balcony g, space upper saloon, fitting roof sign, trim signboards on 11 bay sides, wear age 0.53 (5 rusty, 7 dirty, 5 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank loaded, roof none, layout room(Brow T,Door,Bay T-L,Bay L-T,Bay T,Bay T-L,Tail L), plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam War Bus 1",
   "group": "The Call Centre",
@@ -52,9 +52,9 @@
     {"part": "Seat", "on": 42, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 44, "socket": "-x", "by": "+x"},
     {"part": "Seat", "on": 43, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXeYWW7VYWMW0W0Xa ~Bm0C2LCgP02x = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#b0b4b8"},
-    {"part": "Hull Loft (pane UdXhV4XPXhV4XJYTV8UjYTV8)", "on": 47, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X3XhWWUzXhWWV3YTWWWzYTWW)", "on": 47, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXeYWW5VYWMW0W0Xa ~Bm0C2LCgQ02y = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#b0b4b8"},
+    {"part": "Hull Loft (pane UdXhV4XPXhV4XMYTV7UgYTV7)", "on": 47, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X3XhWWUzXhWWV0YTWWX0YTWW)", "on": 47, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 6, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#9aa0a6"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#b0b4b8"},
     {"part": "Plate Steel 0.25 m", "on": 51, "socket": "+z0", "by": "-x", "paint": "#b0b4b8"},

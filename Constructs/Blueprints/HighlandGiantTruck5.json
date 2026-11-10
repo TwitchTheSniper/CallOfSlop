@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, tag 1.25 m, front under the hood, inset 2 m, leaf/leaf/leaf, wing 0.5, archetype giant hauler, language slab giant 2.40 m, flare 0.55, kick-up 0.8, brow 0.79 1 m, tail 0.78 1.25 m, door right, cab slab caged cab, nose rounded, fitting mascot, lopsided right, trim clinker on 7 bay sides, wear age 0.93 (14 rusty, 33 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab caged, nose short hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-T,Door,Bay T-N,Bay N,Bay N-L,Tail L)
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, tag 1.25 m, front under the hood, inset 2 m, leaf/leaf/leaf, wing 0.5, archetype giant hauler, cab style coachbuilt, language slab giant 2.40 m, flare 0.55, kick-up 0.8, brow 0.79 1 m, tail 0.78 1.25 m, door right, cab slab caged cab, nose grille, fitting mascot, lopsided right, trim clinker on 7 bay sides, wear age 0.93 (14 rusty, 33 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab caged, nose short hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-T,Door,Bay T-N,Bay N,Bay N-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Giant Truck 5",
   "group": "Clan MacSlop",
@@ -44,7 +44,7 @@
     {"part": "Seat", "on": 34, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 36, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 35, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabg V4V4WWXdYTW9VYWMW0W0Xa ~B80BYD8gf02f = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#8c2a2a"},
+    {"part": "Hull Loft (cabg V4V4WWXeYWW6VYWMW0W0Xa ~Au0BIG8Qi02i = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#8c2a2a"},
     {"part": "Tread Plate 0.5 m", "on": 5, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#1f4a2e"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#2a2622"},
     {"part": "Plate Steel 0.5 m", "on": 40, "socket": "-z0", "by": "-x0", "paint": "#33302b"},
@@ -219,10 +219,10 @@
     {"part": "Ammo Container", "on": 77, "socket": "front02", "by": "-y", "spin": 1},
     {"part": "Wee Keg", "on": 208, "socket": "+y.1.0", "by": "base"},
     {"part": "Thistle", "on": 75, "socket": "front07", "by": "base", "spin": 1},
-    {"part": "Hull Loft (hoodr UgV2WyWjXIXEVd ~6e06uu593013)", "on": 31, "socket": "+y", "by": "engine", "paint": "#33302b"},
+    {"part": "Hull Loft (hoodg UgV2WyWjXYXYVd ~6e06uu593013)", "on": 31, "socket": "+y", "by": "engine", "paint": "#33302b"},
     {"part": "Bull Bar", "on": 214, "socket": "front", "by": "back", "paint": "#f2c400"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 215, "pos": [0.129, 0.505, -1.175], "rot": [-0.7186, -0.0098, 0.0258, 0.6948]}, "paint": "#7b1e22"},
-    {"part": "Hull Loft (decoO UwVw)", "on": 214, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoO UwV_)", "on": 214, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 39, "socket": "top", "by": "base"},
     {"part": "Wee Keg", "on": 155, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimr1 XaW5 ~CO0CWyGwHDgj02j ~D80DGyKQtH3Q03Q)", "on": 111, "socket": "+x0", "by": "base", "paint": "#2b5a3a"},

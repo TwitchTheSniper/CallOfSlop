@@ -159,6 +159,7 @@ public static unsafe partial class Program
             VehicleKit.CabLook.Force = cabKind; // body styles phase 3: every lofted cab of one kind where the plan allows it (enclosed, crew, caged, armoured, cab-over, merged)
         if (args.SkipWhile(a => !a.Equals("--language", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } language)
             VehicleKit.BodyLook.Force = VehicleKit.BodyLanguage.All.Concat(VehicleKit.BodyArchetype.Languages).FirstOrDefault(l => l.Name.Equals(language, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"--language {language}: one of {string.Join(", ", VehicleKit.BodyLanguage.All.Select(l => l.Name))}"); // kit 5: every body in one language
+        VehicleKit.CabStyle.None = args.Any(a => a.Equals("--no-cab-styles", StringComparison.OrdinalIgnoreCase)); // body styles phase 9a: no cab sub-styles (to measure against)
         VehicleKit.BodyArchetype.None = args.Any(a => a.Equals("--no-archetypes", StringComparison.OrdinalIgnoreCase)); // body styles phase 8a: the styles' own bodies, without archetypes (to measure against)
         if (args.SkipWhile(a => !a.Equals("--archetype", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } archetype)
             VehicleKit.BodyArchetype.Force = VehicleKit.BodyArchetype.Find(archetype) ?? throw new ArgumentException($"--archetype {archetype}: one of {string.Join(", ", VehicleKit.BodyArchetype.All.Select(a => a.Name))}"); // body styles phase 8a: every vehicle of a shape it takes in that archetype
@@ -223,6 +224,8 @@ public static unsafe partial class Program
             return VehicleKit.BodyReportCli.Run(bodyStyle, args); // what a style's rooms are made of, and how their cross-sections differ (docs/vehiclekit/BODY-STYLES.md)
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
+        if (args.Any(a => a.Equals("--bench-parts", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchParts(args); // run-time parts and part shapes over many generated vehicles, offline and host + client (Source/App/BenchParts.cs)
         if (args.Any(a => a.Equals("--bench-material", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchMaterial(args); // the material painter: parts of other materials, round trips, a client's requests over RakNet (Source/App/BenchMaterial.cs)
         if (args.Any(a => a.Equals("--bench-cookoff", StringComparison.OrdinalIgnoreCase)))
@@ -761,6 +764,7 @@ public static unsafe partial class Program
             CrashLog.Phase = "voice, lists, audio";
             using (Perf.Measure(PerfArea.Audio))
                 UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
+            RuntimeParts.Tick(); // run-time parts nothing uses are freed when their tables fill, between ticks (RuntimeParts.cs)
             TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
             UpdateListing(now); // server lists and the invite code (Program.Listing.cs)
             UpdateSteamNet(); // pending lobby joins, the lobby's data, Rich Presence (Program.SteamNet.cs)

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 3 axles, tag 1.5 m, front under the hood, inset 2 m, hydraulic/coil/coil, wing 0.5, archetype giant hauler, language pod giant 2.40 m, flare 0.26, sloped 0.6, brow 0.68 1.5 m, tail 0.75 0.75 m, door right, 12 facets, cab pod capsule, 8 facets, nose rounded, trim fairing on 9 bay sides, wear age 0.79 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear gun deck, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow T,Bay T,Door,Bay T-L,Tail L), plan 2
+  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 3 axles, tag 1.5 m, front under the hood, inset 2 m, hydraulic/coil/coil, wing 0.5, archetype giant hauler, cab style glasshouse, language pod giant 2.40 m, flare 0.26, sloped 0.6, brow 0.68 1.5 m, tail 0.75 0.75 m, door right, 12 facets, cab pod capsule, 8 facets, nose rounded, trim fairing on 9 bay sides, wear age 0.79 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear gun deck, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow T,Bay T,Door,Bay T-L,Tail L), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Giant Truck 3",
   "group": "IT Department",
@@ -43,8 +43,8 @@
     {"part": "Seat", "on": 33, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 35, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 34, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabo SfUSWUXcYMX9VMWKW0W0XK ~Bu0C8SC8uC9LCXnBAC8QY4Qn02n = ic)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#a7abae"},
-    {"part": "Hull Loft (pane UpXfSiXDXfSiX3YJTLUzYJTL)", "on": 38, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabo SfUSWUXcYMX9VMWKW0W0XK ~Bu0C8SC8uC9LCXnBAC8QY4Qo02o = ic)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#a7abae"},
+    {"part": "Hull Loft (pane UpXfSiXDXfSiX3YJTKUzYJTK)", "on": 38, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane XKXfSmXZXfVKXIYJVKXAYJTP)", "on": 38, "socket": "glass2", "by": "frame"},
     {"part": "Hull Loft (pane UiXfSmUTXfVKUkYJVKUsYJTP)", "on": 38, "socket": "glass3", "by": "frame"},
     {"part": "Tread Plate 0.5 m", "on": 5, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#8e9296"},

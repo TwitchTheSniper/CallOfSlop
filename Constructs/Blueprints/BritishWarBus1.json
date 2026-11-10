@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.5 m, swing arm/trailing arm, wing 0.5, language coach heavy 2.48 m, flare 0.11, crowned 0.9, brow 0.70 1.5 m, tail 0.80 1 m, door right, 9 facets, upper saloon over bays 1 to 4, cut 2.18 m, storey 2.11 m, stair left at 2.50 m back, cab coach capsule, 6 facets, nose rounded, balcony r, space upper saloon, fitting destination board, lopsided right, trim livery on 11 bay sides, wear age 0.54 (7 rusty, 9 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear gun deck, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow N,Bay N-L,Bay L-T,Door,Bay T-L,Tail L), plan 2
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.5 m, swing arm/trailing arm, wing 0.5, cab style bus front, language coach heavy 2.48 m, flare 0.11, crowned 0.9, brow 0.70 1.5 m, tail 0.80 1 m, door right, 9 facets, upper saloon over bays 1 to 4, cut 2.18 m, storey 2.11 m, stair left at 2.50 m back, cab coach capsule, 6 facets, nose rounded, balcony r, space upper saloon, fitting destination board, lopsided right, trim livery on 11 bay sides, wear age 0.54 (7 rusty, 9 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear gun deck, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow N,Bay N-L,Bay L-T,Door,Bay T-L,Tail L), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British War Bus 1",
   "group": "Ministry of Slop",
@@ -44,10 +44,10 @@
     {"part": "Seat", "on": 34, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 36, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 35, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabo SfUSWUXcYWWWVMWKW0W0XK ~Bu0C8eC9GC9uAYU5os02s = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#b5121b"},
-    {"part": "Hull Loft (pane UrXfSgXBXfSgX3YTS_UzYTS_)", "on": 39, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane XIXfSlXXXfVKXKYTVKXAYTT3)", "on": 39, "socket": "glass2", "by": "frame"},
-    {"part": "Hull Loft (pane UkXfSlUVXfVKUiYTVKUsYTT3)", "on": 39, "socket": "glass3", "by": "frame"},
+    {"part": "Hull Loft (cabo SfUSWUXcYWWQVMWKW0W0XK ~Bu0C8eC9HC9vAYV5ot02t = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#b5121b"},
+    {"part": "Hull Loft (pane UrXfSgXBXfSgX3YTSxUzYTSx)", "on": 39, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane XIXfSkXXXfVKXLYTVKXAYTS_)", "on": 39, "socket": "glass2", "by": "frame"},
+    {"part": "Hull Loft (pane UkXfSkUVXfVKUhYTVKUsYTS_)", "on": 39, "socket": "glass3", "by": "frame"},
     {"part": "Tread Plate 0.5 m", "on": 6, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#c8102e"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#1f4a32"},
     {"part": "Tread Plate 0.5 m", "on": 43, "socket": "-z0", "by": "-x0", "paint": "#b5121b"},
@@ -173,7 +173,7 @@
     {"part": "Turret Module", "on": 153, "socket": "+x", "by": "-x"},
     {"part": "Scrap Bunk", "on": 68, "socket": "front16", "by": "foot00"},
     {"part": "Phone Box", "on": 59, "socket": "front23", "by": "foot00", "spin": 2},
-    {"part": "Hull Loft (decoD WoWMUVVy)", "on": 39, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoD WoWMUTVy)", "on": 39, "socket": "top", "by": "base"},
     {"part": "Traffic Cone", "on": 149, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml7 YMW5 ~AW0AmPB0oB0yB9BBHaB9kAvy9gK72Z3og02g ~Bu0C0KCGdCOyCnED9kD9qD2RCokCZ2BhQ03Q)", "on": 104, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml1 YMW5 ~Bu0C0KCGdCOyCnED9kD9qD2RCokCZ2BhQ03Q ~AW0AmPB0oB0yB9BBHaB9kAvy9gK72Z3og02g)", "on": 104, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},

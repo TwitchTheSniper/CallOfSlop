@@ -43,6 +43,71 @@ public static class PartShapes
     private static readonly List<float[]> Meshes = [null!]; // id 0 = the renderer's own unit cube
     private static readonly List<Matrix4x4[]> ProxyList = [[Matrix4x4.Identity]];
     private static readonly List<string> Kinds = ["box"];
+    private static readonly List<string?> KeyOfId = [null]; // (a freed slot's key is gone from Ids)
+    private static readonly List<int> Refs = [Pinned]; // run-time parts that hold the mesh, or Pinned: something that is never freed asked for it
+    private static readonly Queue<ushort> Free = new(); // freed slots, oldest first: taken again only once every slot has been used
+    private const int Pinned = -1;
+
+    /// <summary>The most shape ids there can be (they are ushorts on boxes, guns and scene nodes).</summary>
+    public const int Cap = ushort.MaxValue;
+
+    internal static int Limit = Cap; // (--bench-parts lowers it, so freed slots are taken again within a short run)
+
+    [ThreadStatic] private static List<ushort>? _collect;
+
+    /// <summary>Shapes in use: every slot made, less the freed ones waiting to be taken again.</summary>
+    public static int Live
+    {
+        get
+        {
+            lock (Gate)
+                return Meshes.Count - Free.Count;
+        }
+    }
+
+    /// <summary>
+    /// From here until <see cref="EndCollect"/> on this thread, the shapes <see cref="For"/> gives are counted for a part that may be
+    /// freed (<see cref="RuntimeParts"/>) and listed for it; outside, a shape is kept for good. Returns the outer collection, to restore.
+    /// </summary>
+    internal static List<ushort>? BeginCollect()
+    {
+        var outer = _collect;
+        _collect = new List<ushort>(8);
+        return outer;
+    }
+
+    /// <summary>Ends a collection: the shapes counted in it (one entry a <see cref="For"/> call; give each back with <see cref="Release"/>).</summary>
+    internal static ushort[] EndCollect(List<ushort>? outer)
+    {
+        var got = _collect is { Count: > 0 } c ? c.ToArray() : [];
+        _collect = outer;
+        return got;
+    }
+
+    /// <summary>Gives back shapes a freed run-time part held; a mesh nobody holds any more is dropped and its slot taken again later.</summary>
+    internal static void Release(ushort[]? ids)
+    {
+        if (ids == null || ids.Length == 0)
+            return;
+        lock (Gate)
+        {
+            foreach (var id in ids)
+            {
+                if (id == 0 || id >= Refs.Count || Refs[id] <= 0)
+                    continue; // (pinned, or already free)
+                if (--Refs[id] > 0)
+                    continue;
+                if (KeyOfId[id] is { } key)
+                    Ids.Remove(key);
+                KeyOfId[id] = null;
+                Meshes[id] = [];
+                ProxyList[id] = ProxyList[0];
+                Kinds[id] = "box";
+                Free.Enqueue(id);
+                Version++;
+            }
+        }
+    }
 
     /// <summary>Goes up whenever a new mesh is added (the renderer re-uploads its vertex buffer when it changes).</summary>
     public static int Version { get; private set; }
@@ -66,23 +131,53 @@ public static class PartShapes
         lock (Gate)
         {
             if (Ids.TryGetValue(key, out var id))
-                return id;
+                return Hold(id);
         }
         var (mesh, proxies) = Generate(b);
         lock (Gate)
         {
             if (Ids.TryGetValue(key, out var id))
-                return id;
-            if (Meshes.Count >= ushort.MaxValue)
-                throw new WeaponFileException("too many different part shapes (65535)");
-            id = (ushort)Meshes.Count;
-            Meshes.Add(mesh);
-            ProxyList.Add(proxies);
-            Kinds.Add(b.Shape);
+                return Hold(id);
+            if (Meshes.Count < Limit)
+            {
+                id = (ushort)Meshes.Count;
+                Meshes.Add(mesh);
+                ProxyList.Add(proxies);
+                Kinds.Add(b.Shape);
+                KeyOfId.Add(key);
+                Refs.Add(0);
+            }
+            else if (Free.TryDequeue(out id))
+            {
+                Meshes[id] = mesh;
+                ProxyList[id] = proxies;
+                Kinds[id] = b.Shape;
+                KeyOfId[id] = key;
+                Refs[id] = 0;
+            }
+            else
+                throw new WeaponFileException($"too many different part shapes ({Limit})");
             Ids[key] = id;
             Version++;
-            return id;
+            RuntimeParts.NoteFill(Meshes.Count - Free.Count, Limit, "part shapes");
+            return Hold(id);
         }
+    }
+
+    // (under Gate) One more holder: a run-time part being made (counted, listed), else something kept for good (pinned).
+    private static ushort Hold(ushort id)
+    {
+        if (_collect is { } c)
+        {
+            if (Refs[id] != Pinned)
+            {
+                Refs[id]++;
+                c.Add(id);
+            }
+        }
+        else
+            Refs[id] = Pinned;
+        return id;
     }
 
     /// <summary>The vertices (position, normal; unit-cube space) of shape <paramref name="id"/> (empty for the cube).</summary>

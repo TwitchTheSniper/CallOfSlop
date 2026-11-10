@@ -395,7 +395,23 @@ public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketK
 public sealed class ConstructPartDef
 {
     /// <summary>A copy sharing every array (the material painter's parts: PartMaterials.cs replaces what differs).</summary>
-    internal ConstructPartDef ShallowCopy() => (ConstructPartDef)MemberwiseClone();
+    internal ConstructPartDef ShallowCopy()
+    {
+        var c = (ConstructPartDef)MemberwiseClone();
+        c.OwnShapes = null; // (the shapes stay the original's to give back: RuntimeParts)
+        c.Touched = 0;
+        c.Reclaimed = false;
+        return c;
+    }
+
+    /// <summary>The part shapes its parse counted for it (<see cref="PartShapes.BeginCollect"/>): given back when a run-time part is freed (RuntimeParts.cs).</summary>
+    internal ushort[]? OwnShapes;
+
+    /// <summary>A run-time part: when it was last made or asked for by its key (Environment.TickCount64; RuntimeParts.cs keeps it a while after).</summary>
+    internal long Touched;
+
+    /// <summary>A run-time part RuntimeParts freed: out of its key table, its slot waiting to be taken again.</summary>
+    internal bool Reclaimed;
 
     public ushort Id; // index in ConstructParts.All (the wire id: two bytes since the routed links, 2026-10-30)
     public string Name = "";
@@ -720,6 +736,7 @@ public sealed class ConstructPartDef
     public SurfaceDef? Surface; // a lifting surface (ConstructAero.cs)
     public RotorDef? Rotor; // a propeller or a rotor (ConstructRotor.cs)
     public LegDef? Leg; // a walker leg (ConstructWalk.cs)
+    public float Steady; // kg of walker a stabiliser steadies (ConstructWalkFeel.cs)
     public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true } || Leg is { Shaft: > 0 }; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
@@ -1236,7 +1253,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1255,12 +1272,29 @@ public static partial class ConstructParts
     /// <summary>Parses one part file's text. Throws <see cref="ConstructPartException"/> with the reason for anything wrong.</summary>
     public static ConstructPartDef Parse(string json, string file)
     {
+        var outer = PartShapes.BeginCollect(); // (a run-time part gives its shapes back when it is freed: RuntimeParts.cs; a refused one's stay)
+        ConstructPartDef? d = null;
+        try
+        {
+            d = ParseBody(json, file);
+            return d;
+        }
+        finally
+        {
+            var shapes = PartShapes.EndCollect(outer);
+            if (d != null)
+                d.OwnShapes = shapes;
+        }
+    }
+
+    private static ConstructPartDef ParseBody(string json, string file)
+    {
         using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
         var root = doc.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: a part file is one JSON object");
         if (Opt(root, "modularRack") is { } rackShape)
-            return Parse(ModularRack.Expand(root, rackShape, file), file); // (a preset of the Ordnance Rack: its shape is made from its settings, ModularRack.cs)
+            return ParseBody(ModularRack.Expand(root, rackShape, file), file); // (a preset of the Ordnance Rack: its shape is made from its settings, ModularRack.cs)
         Known(root, TopKeys, file);
         if (Opt(root, "format") is { } fmt && fmt.GetString() != Format)
             throw new ConstructPartException($"{file}: \"format\" must be \"{Format}\"");
@@ -1747,6 +1781,7 @@ public static partial class ConstructParts
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
         ConstructSpeakers.Parse(d, root, file);
+        ConstructPhysics.ParseStabiliser(d, root, file); // (a walker stabiliser: ConstructWalkFeel.cs)
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))

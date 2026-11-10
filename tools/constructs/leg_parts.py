@@ -106,19 +106,26 @@ def leg(tier, kind):
 
 
 def blueprint():
-    """The test walker: a bare 128 x 64 m capital chassis on six titan mech legs, a helm on the first leg's hip, a Driving Module wired to that leg, and a battery that powers the legs."""
+    """The test walker: a bare 128 x 64 m hollow capital chassis on six titan mech legs, a helm on the deck at the bow, a Driving Module wired to the first leg, and a battery bank that powers the legs.
+
+    The root is the hollow chassis (Constructs/Parts/Interior, docs/sandbox/INTERIORS.md): the same footprint, mass, health, armour
+    and 44 outer sockets as the Capital Chassis Deck, with room for the interiors track's void storeys inside it. The helm stands on
+    the deck's top0.0 socket (the bow end, -x, beside the first leg) so an interior's bridge can take it over; its Driving Module sits
+    on the helm's -z side, within a wire's reach (8 m) of the first leg's hip (docs/sandbox/GIANTS.md, "For the interiors track").
+    """
     legs = [{"part": "Titan Mech Leg", "on": 0, "socket": f"{side}{i}", "by": "mount"} for side in ("-z", "+z") for i in (0, 4, 7)]  # (the deck's side sockets: cells 0, 4 and 7 along it)
-    steps = [{"part": "Capital Chassis Deck 128x64 m"}] + legs + [
-        {"part": "Adapter Capital to Small", "on": 1, "socket": "top", "by": "back"},  # (the helm rides the first leg's hip: its wire reaches the leg)
+    steps = [{"part": "Capital Hollow Chassis 128x64 m"}] + legs + [
+        {"part": "Adapter Capital to Small", "on": 0, "socket": "top0.0", "by": "back"},  # (the helm on the deck at the bow: its Driving Module's wire reaches the first leg's hip)
         {"part": "Bridge Helm", "on": 7, "socket": "front2.2", "by": "-y", "spin": 1},
         {"part": "Driving Module", "on": 8, "socket": "+x", "by": "-x"},
-        {"part": "Battery", "on": 9, "socket": "+x", "by": "-x"},  # (electric power: it reaches every leg through the hips and the deck)
+        {"part": "Battery", "on": 9, "socket": "+x", "by": "-x"},  # (the helm's own)
+        {"part": "Capital Battery Bank", "on": 0, "socket": "top5.1", "by": "-y"},  # (the legs draw their work from it: it reaches every leg through the deck and the hips)
     ]
     return {
         "format": "call-of-slop-construct-blueprint/1",
         "name": "Titan Walker",
         "group": "Walkers",
-        "description": "A bare 128 m walking chassis on six titan legs (docs/sandbox/GIANTS.md). The helm walks it: W/S, A/D turn, Q/E strafe, Sprint/Crouch height.",
+        "description": "A bare 128 m hollow walking chassis on six titan legs (docs/sandbox/GIANTS.md). The helm walks it: W/S, A/D turn, Q/E strafe, Sprint/Crouch height.",
         "steps": steps,
         "wires": [[8, 9], [9, 1]],
     }

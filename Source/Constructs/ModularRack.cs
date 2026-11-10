@@ -522,7 +522,10 @@ public static class ModularRack
             if (Presets.TryGetValue(s, out var preset))
                 return preset;
             if (Interned.TryGetValue(s, out var have))
+            {
+                have.Touched = Environment.TickCount64;
                 return have;
+            }
             var key = Key(s);
             ConstructPartDef def;
             try
@@ -540,6 +543,13 @@ public static class ModularRack
             Interned[s] = def;
             return def;
         }
+    }
+
+    /// <summary>(RuntimeParts) Drops the doomed racks from the key table.</summary>
+    internal static void Forget(Func<ConstructPartDef, bool> doomed)
+    {
+        lock (Interned)
+            RuntimeParts.Drop(Interned, doomed);
     }
 
     /// <summary>A rack's key (a blueprint's or a save's name) as its part.</summary>

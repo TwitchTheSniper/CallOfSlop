@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 2 axles, front set back, inset 1.75 m, leaf/leaf, wing 0.5, archetype bubble car, language bubble standard 2.54 m, flare 0.00, fastback 0.7, brow 0.63 1 m, tail 0.56 1 m, door right, cab bubble cab, nose rounded, fitting roof sign, wear age 0.44 (0 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under tub, layout boot 2.8 m
+  // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 2 axles, front set back, inset 1.75 m, leaf/leaf, wing 0.5, archetype bubble car, cab style box, language bubble standard 2.54 m, flare 0.00, fastback 0.7, brow 0.63 1 m, tail 0.56 1 m, door right, cab bubble cab, nose flat, fitting roof sign, wear age 0.44 (0 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under tub, layout boot 2.8 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Concept 8",
   "group": "The Call Centre",
@@ -40,8 +40,8 @@
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 31, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXcYFWOVYWMW0W0Xa ~BW0BuVBv5BviAIE4wX02c ~BW0BuTBv1BvcAI74wP02T is)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#9aa0a6"},
-    {"part": "Hull Loft (pane UeXfV5XOXfV5XDYCVIUpYCVI)", "on": 35, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXcYFW3VYWMW0W0Xa ~BW0BuVBv5BviAIE4wX02c ~BW0BuTBv1BvcAI74wP02T is)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#9aa0a6"},
+    {"part": "Hull Loft (pane UeXfV4XOXfV4XDYCV6UpYCV6)", "on": 35, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane X1XfWWU_XfWWVMYCWWWgYCWW)", "on": 35, "socket": "glass1", "by": "frame"},
     {"part": "Tread Plate 0.5 m", "on": 3, "socket": "+y0", "by": "back00", "spin": 2, "paint": "#9aa0a6"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y0", "by": "back00", "spin": 2, "paint": "#8a9096"},
@@ -51,7 +51,7 @@
     {"part": "Square Beam 0.75 m", "on": 1, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Square Beam 0.75 m", "on": 6, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Fuel Tank", "on": 44, "socket": "+x1", "by": "-y"},
-    {"part": "Hull Loft (hoodr UGUaXkWSXIXEW- ~B80Bu8BuJBeT8ud4ei00j)", "on": 45, "socket": "+y", "by": "engine", "spin": 3, "paint": "#b0b4b8"},
+    {"part": "Hull Loft (hoodf UGUaXkWSXWXQW- ~B80Bu8BuJBeT8ud4ei00j)", "on": 45, "socket": "+y", "by": "engine", "spin": 3, "paint": "#b0b4b8"},
     {"part": "Square Beam 1 m", "on": 43, "socket": "+x1", "by": "-z", "paint": "#2a2c30"},
     {"part": "Turntable", "on": 47, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 48, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
@@ -66,13 +66,13 @@
     {"part": "Pump Slide", "on": 52, "socket": "merged back", "by": "front"},
     {"part": "Ammo Box", "on": 57, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 50, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (hoodr UoV2WyWjXIXEVd ~7O080D80S7ei5ux392014)", "on": 27, "socket": "+y", "by": "engine", "paint": "#21c45a"},
+    {"part": "Hull Loft (hoodf UoV2WyWjXWXWVd ~7O080D80S7ei5ux392014)", "on": 27, "socket": "+y", "by": "engine", "paint": "#21c45a"},
     {"part": "Bar Grille", "on": 61, "socket": "front", "by": "back", "paint": "#21c45a"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 62, "pos": [0.122, 0.472, -1.745], "rot": [-0.7106, 0.0112, 0.007, 0.7035]}, "paint": "#7d8a92"},
     {"part": "Hull Loft (decoS XGWAWaW0)", "on": 35, "socket": "top", "by": "base", "paint": "#21c45a"},
     {"part": "Loudhailer", "on": 61, "socket": "top", "by": "base"},
-    {"part": "Square Beam 0.5 m", "on": 39, "socket": "front01", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Prize Wheel", "on": 66, "socket": "+z", "by": "base"}
+    {"part": "Square Beam 0.5 m", "on": 14, "socket": "+y0", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Call Headset", "on": 66, "socket": "+z", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [50, 60], [60, 52]],
   "links": [
