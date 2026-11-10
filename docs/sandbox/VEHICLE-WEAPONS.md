@@ -30,13 +30,29 @@ Measured with `--check-armoury` (41 recipes, damage a shot x rounds, rounds a mi
 - **Role and tier pick within it.** Tier 1 takes two steps under the ceiling, tier 2 one, tier 3 and 4 the ceiling. A combat role weighs the class up, others down.
 - **Classes in phase 1.** Heavy cannons (Field Gun, Howitzer: HE, siege or incendiary shells, big blasts and craters) and rapid heavy guns (Hammerfall autocannon,
   Ladder-splitter rotary cannon, Cross-splitter flak, Thumper chain gun: merged blocks). Each pick is seeded by the vehicle's dice.
+- **Only sizes that build.** Each design and size is fitted once a process on a test turret through the game's rules (as `--check-armoury` fits a recipe); a size that
+  won't build as one firing gun is left out with a `[vehicles] gunsmith:` line and the next smaller is offered. Found so far: the Bunker Buster won't merge 3x3.
+- **Share of the draws.** The gunsmith's guns together take about half a fighting role's draws, a quarter of another role's and 35 % of a vehicle with no role's; each class
+  takes an equal part of that, split among its designs. Shell guns sit behind a gun shield, rapid guns on a pintle (a shield on every turret filled a double-decker's side
+  box past the Silhouette rule).
 - **Off switch:** `--no-gunsmith` (the old lists, to measure what it changes), as `--no-armoury` does for the armoury.
-- `--gunsmith-report` prints what the gunsmith offers vehicles of a range of masses.
+- `--gunsmith-report` prints what the gunsmith offers vehicles of 0.8 to 24 t at each tier, with each gun's mass and recoil.
+
+Phase 1 measured: all 123 shipped seeds still generate (71 change; regenerate after merge); a 60-vehicle `--armoury-report --seeds 2` drew 13 gunsmith guns of 145. `--gunsmith-report`: an 800 kg buggy gets single autocannons and chain guns (a 2x2 at tier 3); a 3 t truck a single Field Gun or Howitzer (1500 N s, a
+512-damage shell with a 13 m blast) and up to a 4x4 autocannon; a 12 t truck a 2x2 Howitzer at tier 3 (2048 damage, a 23 m blast); 24 t a 3x3 (4608 damage, a 34 m blast,
+a 14 m crater).
+
+## Blasts (phase 1)
+
+`ConstructWorld.Blast` now gathers a body's parts in reach once, sorts them nearest first and walks the list (`BlastBody`), checking each part's identity before it hits it
+and looking a moved part up from where it was (Compact keeps the order). A blast over m parts of a body of n costs n plus a sort, not m x n. A blast set off inside a blast
+(none today) takes the old walk. Shove, damage and craters already go with a shell's filling (damage x k squared to 1 - distance / radius; push 2.4 x damage x k / mass
+m/s; blast 9 m x sqrt(damage / 320) to 45 m, crater 0.4 x blast to 14 m), so the gunsmith's bigger shells blast wider without a rule change.
 
 ## Next steps (queued)
 
-1. **Bigger blasts.** Scale shove by shell size (a shell's blast pushes by its filling, not by `maxDamage x 0.4`), widen part damage for big shells, and make the blast's walk
-   one sort per body instead of a scan per part. Report the caps (blast budget, `MaxShells` 1024, the 8 ms tick) as they scale; cook-offs of ammo and fuel chain through
+1. **Bigger blasts.** Tune shove and part damage for the biggest shells by trying them on real vehicles; lift the 45 m blast and 14 m crater caps for giant guns
+   (`WeaponParts.json`), measured against the 8 ms tick. Report the caps (blast budget, `MaxShells` 1024, the 8 ms tick) as they scale; cook-offs of ammo and fuel chain through
    the existing cook-off queue (fuel tanks already go up: commit 6530762a).
 2. **Missile batteries:** the modular ordnance (ConstructOrdnance, OrdnanceDesign, OrdnanceFlight, ModularRack) as a class, racks sized by the same ceiling.
 3. **Exotic:** railguns (Railspike Coil merged), mortars (Hand Mortar, Bucket Launcher merged), flamethrowers (Firebreather merged), bomb drops (ordnance released down).
