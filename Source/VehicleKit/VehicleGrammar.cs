@@ -106,6 +106,7 @@ public static class ShapeGrammar
 
     /// <summary>Phase 8b: gear recipes only a recipe naming them takes (a recipe with no gear list takes every other one of its style's).</summary>
     public static readonly string[] SpecialGears = ["monster"];
+    private static readonly string[] TechGears = ["leaf", "swing", "wishbone", "hydraulic", "dually"]; // (phase 9b: a technical rides low on two axles, as kit 1's did)
     private static readonly string[] TankGears = ["leaf", "hydraulic", "tandem", "dually", "six", "stilt"];
 
     private static BodySegment Room(int minBays, int maxBays) => new("room", 3.5f + minBays, 3.5f + maxBays);
@@ -149,6 +150,9 @@ public static class ShapeGrammar
         ["Giant Truck"] = new("Giant Truck", "hauler", "giant truck", [new(2, Room(2, 4)), new(1, Room(2, 3), GunBed(2f, 2.5f)), new(1, Gap, Room(2, 3))],
             [("porch", 2), ("gun deck", 2), ("porch hitch", 1), ("hitch", 1)], 2, 4, GiantGears),
         ["Concept"] = new("Concept", "car", "concept car", [new(1, Boot(2.25f, 3f))], [("bare", 2), ("hitch", 0.5)], 1, 1, CarGears),
+        // (phase 9b: kit 1's Technical as a recipe: a lofted cab and hood in the style's language, a gun behind the cab on its own sill and a short open bed (the drum
+        // in it) or the drum on a porch, as the kit-1 stepside, ute and sand rail were; low gear, never stilts. Its generator keeps its own checks)
+        ["Technical"] = new("Technical", "truck", "technical", [new(2, GunBay, Bed(1.5f, 2f)), new(1, GunBay)], [("porch", 1), ("bare", 2), ("hitch", 0.5)], 1, 1, TechGears),
         ["Scrap Tanker"] = new("Scrap Tanker", "crew", "scrap tanker",
             [new(3, GunBay, Tank(2f, 3f)), new(1, GunBay, Tank(2f, 2f), Bed(1.5f, 2f)), new(1, Room(0, 0), Tank(2f, 3f))],
             [("bare", 3), ("hitch", 1)], 1, 2, TankGears),
