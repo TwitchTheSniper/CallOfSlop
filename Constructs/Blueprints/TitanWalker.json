@@ -67,6 +67,12 @@
       "on": 9,
       "socket": "+x",
       "by": "-x"
+    },
+    {
+      "part": "Capital Battery Bank",
+      "on": 0,
+      "socket": "top5.1",
+      "by": "-y"
     }
   ],
   "wires": [

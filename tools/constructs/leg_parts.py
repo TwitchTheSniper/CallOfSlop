@@ -106,13 +106,14 @@ def leg(tier, kind):
 
 
 def blueprint():
-    """The test walker: a bare 128 x 64 m capital chassis on six titan mech legs, a helm on the first leg's hip, a Driving Module wired to that leg, and a battery that powers the legs."""
+    """The test walker: a bare 128 x 64 m capital chassis on six titan mech legs, a helm on the first leg's hip, a Driving Module wired to that leg, and a battery bank that powers the legs."""
     legs = [{"part": "Titan Mech Leg", "on": 0, "socket": f"{side}{i}", "by": "mount"} for side in ("-z", "+z") for i in (0, 4, 7)]  # (the deck's side sockets: cells 0, 4 and 7 along it)
     steps = [{"part": "Capital Chassis Deck 128x64 m"}] + legs + [
         {"part": "Adapter Capital to Small", "on": 1, "socket": "top", "by": "back"},  # (the helm rides the first leg's hip: its wire reaches the leg)
         {"part": "Bridge Helm", "on": 7, "socket": "front2.2", "by": "-y", "spin": 1},
         {"part": "Driving Module", "on": 8, "socket": "+x", "by": "-x"},
-        {"part": "Battery", "on": 9, "socket": "+x", "by": "-x"},  # (electric power: it reaches every leg through the hips and the deck)
+        {"part": "Battery", "on": 9, "socket": "+x", "by": "-x"},  # (the helm's own)
+        {"part": "Capital Battery Bank", "on": 0, "socket": "top5.1", "by": "-y"},  # (the legs draw their work from it: it reaches every leg through the deck and the hips)
     ]
     return {
         "format": "call-of-slop-construct-blueprint/1",

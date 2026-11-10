@@ -16,7 +16,7 @@ decisions (2026-11-10) are the design; this file is the code guide and the recor
   cuts support and speed; too few legs and it collapses to real physics.
 - **Control**: seat driving (move, turn, strafe, height), later an autopilot to a destination.
 - Speed comes from the build (leg size, power, mass). Terrain: steps over obstacles, slopes, wades, later crushes what is
-  underfoot. Ride feel from parts (thumps, shake; stabilisers) later. Size target 500 m and more; damage per part as today.
+  underfoot. Ride feel from parts (thumps, shake; stabilisers: phase 4). Size target 500 m and more; damage per part as today.
 
 ## Phase 1 (branch `feat/giant-walker`)
 
@@ -34,7 +34,7 @@ ConstructBroadphase, ConstructBuild), `Source/Render/ConstructRender*.cs`.
 | Joints | 255 a body (a segment is a byte) | Legs are one part each with their own pose, so they spend no joint | The same: the leg rig is not built of joints, by design |
 | Collider and solver | Every solid box in a tree per body; sequential impulses; a speed cap of 60 m/s; the broadphase grid is 8 m cells with a 1.2 m margin | A 128 m chassis is one body with a few boxes a part: cheap | A body's sphere (`Radius`) wakes everything in it: a 500 m walker keeps a town of neighbours awake. Wants a box broadphase test, not the sphere |
 | Wire reach | 8 m centre to centre (`ConstructBuild.WireReach`) | A capital part's centre is 8 m inside its own cell, so nothing could be wired to it. Fixed: a part bigger than the reach is wired to the nearest point of its bounds (`WireSpan`) | The same rule holds |
-| Riders and the ride frame | Riders stand on the body (`ConstructRideMove.cs`), seats pin sitters; the contraption space measures faces | Works as for any big body (carriers, decks) | The ride feel (thumps, shake) is a later phase |
+| Riders and the ride frame | Riders stand on the body (`ConstructRideMove.cs`), seats pin sitters; the contraption space measures faces | Works as for any big body (carriers, decks) | The ride feel (thumps, shake, stabilisers): phase 4 |
 | Network | Bodies are poses (`ConstructNet`), joints as angles; parts and links once | The feet need nothing on the wire: a client poses them itself (below) | The same |
 | Drawing and LOD | Merged meshes for static parts; a big body (`BatchMinParts`) is drawn whole out to 3 km, never as one box; joints and moving parts box by box | The legs are drawn as boxes each frame (about 20 a leg) | Many walkers: instance the leg boxes (they already go through one batch) |
 | Ground | `TerrainData` answers for dug and streamed ground; the world query's ray reads it | Footholds use the server's ground ray (decks of other bodies too) | The same |
@@ -185,16 +185,59 @@ foot for a 48 m reach, worth a look on flat ground); walking with a rider while 
 without a seated driver); a client over the network (its riders come from the links and its gait from the settings, as on
 the host); drawing (no window run); a blueprint round trip with a rider; a hydraulic or shaft-fed walker.
 
+## Phase 4 (branch `feat/giant-walker-4`)
+
+- **Body height**: tried on flat ground, it works (Basic profile: hips 28.4 m over the feet at 100%, 19.5 m at 70%, 37.4 m at
+  130%). Phase 3's "no drop" on the yard was the ground: feet planted far below the hips (41 to 54 m for a 48 m reach) with the
+  body resting on its own contacts, not the setting.
+- **Legs use what feeds them** (`LegWork`, `ConstructWalkLegs.cs`): each tick the legs' work is the weight times
+  `LegCarryCost` (0.03) of the speed along the ground, plus the climb, plus a holding share (`LegHoldRate`, as if lifting it
+  0.01 m/s), shared out by what each leg carries and taken from the feed that powers it (`CLeg.Feed`): an electric leg draws
+  the battery (`MotorWork`); an oiled leg asks its pump for flow at the pump's pressure (`CHydPump.LegUsed`, `LegNeed`, added
+  in `ConstructHydraulics.Solve`), and a pump asked for more than it gives weakens its legs down to a quarter; a pump on
+  power draws the battery for the work, one on a shaft loads the engine through the pump's torque; a shaft-fed leg loads the
+  engine at the crank (`Construct.LegLoad`, in `ConstructDrillDrive.Carry` with the drills', rails' and pumps' loads) and an
+  engine held down by it stalls like one held by pumps (`StepStall`). A flat battery, a stalled engine or a starved pump stops
+  the legs. Server only, no wire change. The Titan Walker carries a Capital Battery Bank (the legs draw 3 MW standing and about
+  45 MW walking; its 300 kJ Battery would be flat in a tick). `TitanWalkerFitted.json` still has only the small Battery: it
+  needs `--gen-interior` run again from the new `TitanWalker.json`.
+- **Ride feel** (`Source/Constructs/ConstructWalkFeel.cs`, `Source/Game/GameWalkerFeel.cs`): when a group of feet comes down
+  the server dips the body (`ThumpDip`, 0.35 m/s) and tips it towards those feet (`ThumpTip`), and throws loose bodies resting
+  on its deck (under 1% of its mass, over its plan) up and a little sideways (`CargoPop`, 1.6 m/s, a hash for the side, no
+  random numbers); with a group in the air the body leans towards its planted feet (`SwayLean`). The body's motion is real, so
+  riders feel it through the ride frame and cargo through its contacts. Each peer hears each footfall where it lands
+  (`Sfx.LandThud`, louder and deeper for bigger legs) and a player riding the walker (standing on it, seated or driving) gets
+  camera shake (`ThumpShake`); one near a foot gets a little.
+- **Stabilisers** (`tools/constructs/stabiliser_parts.py`, `Constructs/Parts/Stabilisers`, section Legs): a gyro housing a
+  class (Stabiliser 600 kg steadied, Medium 40 t, Large 1,500 t, Capital 6,000 t), a part file's `"stabiliser": {"steady":
+  kg}` block. `WalkRough` = 1 minus the kg steadied over the walker's mass, at least `MinRough` (0.12), found at a rebuild from
+  working stabilisers; it scales the dip, the tip, the sway, the cargo's throw, the thump's loudness and the shake.
+
+What was tried by hand (a throwaway probe, removed; flat ground, the Titan Walker driven forward 10 s): the body heights above;
+electric: 3 MW standing, about 45 MW walking at 3.5 m/s, and with the battery emptied the legs stop and it sits on its hips; a
+hydraulic walker (a Capital Hydraulic Pump on power, a hose to each leg, routed over the deck): all six legs on oil at full
+strength, 4.5 m/s, the pump asked 1,375 of its 1,400 L/s walking, the battery drawing for it; a shaft-fed leg (one shaft from
+a Capital Diesel Engine: an engine's output takes one shaft) runs at 1.2 strength and loads the crank 1.1 MN m at 114 rpm, and
+with the engine stalled that leg falls back to the battery. Ride feel, bare / 2 / 5 Capital Stabilisers: roughness 1 / 0.62 /
+0.12, worst tilt rate 0.109 / 0.067 / 0.013 rad/s, deepest dip 0.31 / 0.19 / 0.04 m/s, a Buggy on the deck hopped 0.40 /
+0.14 / 0.03 m. Worst tick 4 ms (8 ms once, on the busy 2-core box).
+
+Not tried: the sound and the camera shake (no window run, no client); a client over the network (its thumps come from its
+own feet); a walker on six shaft-fed legs (it needs a shaft splitter: an engine's output takes one link); a pump on a shaft
+feeding legs; an engine stalled by legs alone; real map terrain; seated riders' shake.
+
 ### Next phases
 
-1. Legs use what feeds them: draw on the battery, take load off the engine's shaft, flow from the pump; a valve's signal
-   as a throttle. Probe a hydraulic-fed and a shaft-fed walker (only electric has been tried).
-2. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding
-   (lights, guns: their systems would need the posed frame); tunable segment lengths and joint count as part settings.
-3. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
+1. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
    step-over measured on real maps.
-4. Ride feel: thumps, shake and tilt for riders and loose parts; stabiliser parts that reduce it.
-5. Autopilot to a destination.
-6. Crew stations, the hangar and production line on a walker.
-7. 500 m and more: the part reach cap (200 m), the broadphase sphere (a leg's reach now widens it), instanced leg drawing,
+2. Autopilot to a destination.
+3. Crew stations, the hangar and production line on a walker (the interiors track's `TitanWalkerFitted`; regenerate it
+   after this phase for the battery bank).
+4. 500 m and more: the part reach cap (200 m), the broadphase sphere (a leg's reach now widens it), instanced leg drawing,
    legs of several parts.
+5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
+   signal as a throttle; shaft splitters for six shaft-fed legs.
+6. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding
+   (lights, guns: their systems would need the posed frame); tunable segment lengths and joint count as part settings.
+7. Ride feel, rest: stabilisers with power (a gyro that draws charge), a thump that dents soft ground, a client and a
+   window check of the sound and shake.
