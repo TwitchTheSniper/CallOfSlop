@@ -385,6 +385,18 @@ public sealed class InteriorBuilder : BlueprintScript
             Furnish(p, r, rng);
         }
         _lv = 0;
+        if (OpenDoorways > 0)
+            Notes.Add($"budget: {OpenDoorways} doorways left open (a frame, no door): the class's door budget is {_budget.Doors} of {Construct.MaxDoors}; critical rooms and bulkheads first, then the deck's, then the void's");
+        if (Bare.Count > 0)
+            Notes.Add($"budget: {Bare.Count} generated rooms left bare (over the class's {_budget.Links} links or {_budget.Parts} parts): {string.Join(", ", Bare.Take(12))}{(Bare.Count > 12 ? ", ..." : "")}");
+        if (Lifts > 0)
+            Notes.Add($"freight lift: {Lifts} car(s) of {gaps.Count}, stacked a storey each (levels {string.Join(", ", gaps.Select(g => $"{g.Lo.Deck + g.LoLv}-{g.Hi.Deck + g.HiLv}"))}), calls from every landing and each car");
+        foreach (var p in voidPlan != null ? new[] { voidPlan, plan } : new[] { plan })
+            foreach (var t in p.Rooms.Select(r => _data.Rooms[r.Type].Modules).OfType<string>().Distinct())
+                foreach (var m in _data.Sets[t].Missing)
+                    Missing.Add($"{_data.Rooms.Values.First(r => r.Modules == t).Name}: {m}");
+        Seals();
+        // (the bulkhead seals take their wires first: then the feeds, then generated rooms' light switches, while links last)
         Feeds();
         foreach (var (lr, llv, lamps) in _laterLights)
         {
@@ -399,17 +411,6 @@ public sealed class InteriorBuilder : BlueprintScript
         _lv = 0;
         if (DarkRooms > 0)
             Notes.Add($"lights: {DarkRooms} generated rooms keep their lamps dark (no Switch): the construct's {Construct.MaxRoutes} links less the players' 64 went to the feeds and the other rooms' switches");
-        if (OpenDoorways > 0)
-            Notes.Add($"budget: {OpenDoorways} doorways left open (a frame, no door): the class's door budget is {_budget.Doors} of {Construct.MaxDoors}; critical rooms and bulkheads first, then the deck's, then the void's");
-        if (Bare.Count > 0)
-            Notes.Add($"budget: {Bare.Count} generated rooms left bare (over the class's {_budget.Links} links or {_budget.Parts} parts): {string.Join(", ", Bare.Take(12))}{(Bare.Count > 12 ? ", ..." : "")}");
-        if (Lifts > 0)
-            Notes.Add($"freight lift: {Lifts} car(s) of {gaps.Count}, stacked a storey each (levels {string.Join(", ", gaps.Select(g => $"{g.Lo.Deck + g.LoLv}-{g.Hi.Deck + g.HiLv}"))}), calls from every landing and each car");
-        foreach (var p in voidPlan != null ? new[] { voidPlan, plan } : new[] { plan })
-            foreach (var t in p.Rooms.Select(r => _data.Rooms[r.Type].Modules).OfType<string>().Distinct())
-                foreach (var m in _data.Sets[t].Missing)
-                    Missing.Add($"{_data.Rooms.Values.First(r => r.Modules == t).Name}: {m}");
-        Seals();
         if (_carry != null)
             Refused.Add($"the vehicle's {_carry.Value.Bp.Steps[_carry.Value.Helm].Part} had no bridge to go in: the fitted construct has no helm");
         Power();

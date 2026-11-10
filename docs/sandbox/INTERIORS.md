@@ -590,33 +590,40 @@ each block's ends. `Slabs` lays the biggest panel first on its own lattice, insi
 slab; a panel that finds nothing to stand on when the passes stop is broken into the next size down, at last 4x4 m slabs. Furniture takes
 only its block's sockets of a panel.
 
-**The runs** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed N`, seeds 1 to 3): every programme room placed, every room
-reached on deck and in the void, 0 refused; 39 to 40 feeds laid; power 0 electrical parts off, every plant fed.
+**The runs** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed N`, seeds 1 to 3, on main's walker after the merge): every
+programme room placed, every room reached on deck and in the void, 0 refused on seeds 1 and 2 (seed 3: one Repair Station with no room
+left); 38 to 39 feeds laid; 3 seal lines, 18 of 18 bulkhead doors wired; power 0 electrical parts off, every plant fed.
 
 | | Before (main, seed 1) | Seed 1 | Seed 2 | Seed 3 |
 | --- | --- | --- | --- | --- |
-| Parts | 6,322 | 4,372 | 4,282 | 4,258 |
-| Links | 23,485 | 16,026 | 15,716 | 15,650 |
-| Slabs | 2,760 parts, 13,814 links | 672, 5,990 | 672, 5,951 | 672, 5,956 |
-| Storage / Workshop / Production | 79 / 45 / 1 | 37 / 31 / 36 | 37 / 31 / 37 | 37 / 31 / 38 |
-| Engineering / Magazine / Gun station | 1 / 1 / 0 | 3 / 1 / 3 | 3 / 2 / 4 | 2 / 2 / 4 |
-| Medical / Mess / Quarters | 1 / 1 / 16 | 5 / 9 / 22 | 4 / 6 / 18 | 4 / 6 / 18 |
+| Parts | 6,322 | 4,248 | 4,171 | 4,219 |
+| Links | 23,485 | 16,020 | 15,769 | 16,074 |
+| Slabs | 2,760 parts, 13,814 links | 651, 5,932 | 651, 5,905 | 651, 5,962 |
+| Storage / Workshop / Production | 79 / 45 / 1 | 36 / 31 / 36 | 36 / 30 / 36 | 36 / 31 / 36 |
+| Engineering / Magazine / Gun station | 1 / 1 / 0 | 2 / 1 / 2 | 3 / 1 / 4 | 2 / 1 / 4 |
+| Medical / Mess / Quarters | 1 / 1 / 16 | 4 / 6 / 18 | 4 / 7 / 16 | 5 / 7 / 17 |
 
-Seeds differ in layout as well as counts: about 130 of the 186 lines of the deck maps differ between any two. A 500 m hull: slabs at
+A deck over a keep-out now loses those cells too (main's walker put crew quarters' walls over its battery bank, with no slab under
+them). Seeds differ in layout as well as counts: about 126 of the 186 lines of the deck maps differ between any two. A 500 m hull: slabs at
 a 16 m panel a 256 m2 square are about 6 links a panel, so a 500 x 60 m deck is roughly 120 panels a storey.
 
-**Build time.** 69 s before; about 30 s now (the box is shared, so runs vary). Furnishing tried 21,000 placements to fit 1,300 things
+**Build time.** 69 s before; 20 to 22 s now. Furnishing tried 21,000 placements to fit 1,300 things
 (each refusal costs about a millisecond: the build rules' overlap test and an exception); it now skips spots where a solid box of the
 room already stands and spots an item has already failed on. What is left is the kit's `C.Rebuild()` after every placed part
 (`BlueprintScript.Commit`), quadratic in parts: a runtime spawn of a fitted giant would want a batch mode (rebuild once at the end) in
 the kit, and the generation spread over ticks as `VehicleGenJob.Yield` already allows.
 
+**Walk-through** (`--interior-walk` on seed 1): every door opened, every doorway, corridor, stair flight and lift car passed; the seal
+switch shut and locked its line's 6 doors. (The first walk found the seals unwired: the feeds had spent the links first. The seals now
+go first.)
+
 **Not tried:** a player using the new furniture (sitting in a medical station, opening a locker), the chutes and pipes carrying in play,
 drawing anything (z-fighting between floor panels and the 4x4 m slabs beside them, the adapter pad face down on a slab), the smaller
 classes, a client.
 
-**Known gaps:** about 30 generated rooms per seed keep their lamps dark: the 254-link cap is spent on the lift, seals, feeds and the
-other rooms' switches (a lamp lights only from a wire). Lockers are many (130 on seed 1: two per quarters' cells).
+**Known gaps:** about 60 generated rooms per seed keep their lamps dark: the 254-link cap is spent on the lift, the seals, the feeds
+and the other rooms' switches, in that order (a lamp lights only from a wire). One magazine per seed: a critical room is generated only
+in an outer band of the open deck, and the magazine prefers the inner row. Lockers are many (130 on seed 1: two per quarters' cells).
 
 ### Next (phase 9 and on)
 
