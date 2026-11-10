@@ -59,6 +59,7 @@ public static class VehicleRegistry
         s => new Generators.DoubleDecker(s),
         s => new Generators.Car(s),
         s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: no style ships them yet)
+        s => new Generators.Plane(s),
     ];
 
     internal static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>

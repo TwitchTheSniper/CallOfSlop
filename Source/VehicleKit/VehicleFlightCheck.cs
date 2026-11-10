@@ -47,8 +47,22 @@ public static class VehicleFlightCheck
     {
         public bool Ok => Why.Length == 0;
 
+        /// <summary>A plane's check (<see cref="RunPlane"/>): its stall speed, the speed and ground run when it rotated, its centre of mass ahead of its lift (m),
+        /// the height and heading it wandered by in level flight on the autopilot, and how far it turned (degrees, right positive).</summary>
+        public bool Plane { get; init; }
+        public float Stall { get; init; }
+        public float RunSpeed { get; init; }
+        public float RunDist { get; init; }
+        public float Balance { get; init; }
+        public float LevelDrift { get; init; }
+        public float HeadingDrift { get; init; }
+        public float Turned { get; init; }
+
         /// <summary>One line of what it measured.</summary>
-        public string Line => $"flight: climbed {Climb:0.0} m in {ClimbTicks / (float)World.TickRate:0.#} s, hover drift {HoverDrift:0.00} m, hover tilt {HoverTilt:0.0} deg at {HoverSpeed:0.0} m/s, forward {Forward:0.0} m, worst tilt {WorstTilt:0}, lift {Lift:0.00}x its weight, {Ms:0} ms";
+        public string Line => Plane
+            ? $"flight (plane): stalls at {Stall:0} m/s, rotated at {RunSpeed:0} m/s after {RunDist:0} m, climbed {Climb:0.0} m in {PlaneClimbTicks / (float)World.TickRate:0.#} s, level drift {LevelDrift:0.0} m and {HeadingDrift:0.0} deg, " +
+              $"turned {Turned:0} deg, worst tilt {WorstTilt:0}, centre of mass {Balance:0.00} m ahead of the lift, {Ms:0} ms"
+            : $"flight: climbed {Climb:0.0} m in {ClimbTicks / (float)World.TickRate:0.#} s, hover drift {HoverDrift:0.00} m, hover tilt {HoverTilt:0.0} deg at {HoverSpeed:0.0} m/s, forward {Forward:0.0} m, worst tilt {WorstTilt:0}, lift {Lift:0.00}x its weight, {Ms:0} ms";
     }
 
     /// <summary>What the gate has done in this process, for the command line's last line.</summary>
@@ -80,8 +94,10 @@ public static class VehicleFlightCheck
         Fly(w, q, place, c, 0, SettleTicks, ref r);
         var rest = Tilt(c);
         r = r with { RestTilt = rest, WorstTilt = 0 };
-        if (rest > MaxRestTilt)
-            return Done(start, r with { Why = $"it stands {rest:0.0} degrees off level (at most {MaxRestTilt:0})" }, gate);
+        var plane = c.StabCount > 0 && ConstructFlight.KeysOf(c, c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D) == FlightPattern.Plane;
+        var restMost = plane ? MaxPlaneRestTilt : MaxRestTilt;
+        if (rest > restMost)
+            return Done(start, r with { Why = $"it stands {rest:0.0} degrees off level (at most {restMost:0})" }, gate);
         var seat = c.StabCount > 0 ? ConstructFlight.SeatFor(c, c.Stabs[0].Part) : -1;
         if (c.StabCount == 0)
             return Done(start, r with { Why = "no Flight Stabilizer flies it" }, gate);
@@ -89,6 +105,8 @@ public static class VehicleFlightCheck
             return Done(start, r with { Why = "no seat or Drone Receiver gives the stabilizer its orders" }, gate);
         c.Driver = 1;
         c.DriverSeat = seat;
+        if (plane)
+            return Done(start, RunPlane(w, q, place, c, r), gate);
         var weight = c.Mass * World.Gravity * place.Ctx.GravityScale;
         var h0 = Up(c);
         Fly(w, q, place, c, Buttons.Sprint, ClimbTicks, ref r);
@@ -119,6 +137,105 @@ public static class VehicleFlightCheck
             return Done(start, r with { Why = $"it tipped {r.WorstTilt:0} degrees in flight (at most {MaxFlightTilt:0})" }, gate);
         return Done(start, r, gate);
     }
+
+    /// <summary>A plane's ticks: the most for the take-off run and the rotation, then the climb, the level flight (settling, then measured) and the turn.</summary>
+    public const int PlaneRunTicks = 1200, RotateTicks = 180, PlaneClimbTicks = 240, LevelSettleTicks = 150, LevelTicks = 180, TurnTicks = 150;
+
+    /// <summary>A plane's limits: tilt standing (a tail-dragger sits nose up), the height it must be off the ground to have rotated (m), the least climb, the most height and heading
+    /// it may wander by in level flight (m, degrees), the least turn on D (degrees), the most tilt in its flight (it banks to turn), the most bank left in level flight.</summary>
+    public const float MaxPlaneRestTilt = 16, LiftOff = 2, PlaneMinClimb = 5, MaxLevelDrift = 8, MaxHeadingDrift = 8, MinTurn = 15, MaxPlaneTilt = 75, MaxLevelBank = 12;
+
+    /// <summary>
+    /// A plane's flight from its seat, as a pilot (or a bot through the autopilot) would fly it: Shift held down a runway (the floor) until it is past its stall speed by
+    /// a twentieth, S until it is off the ground, then the autopilot's altitude hold set 40 m up to climb, set to where it is to fly level (its height and heading are measured),
+    /// and D held to bank and turn right.
+    /// </summary>
+    private static Result RunPlane(ConstructWorld w, SelfTest.DriveWorld q, VehicleDriveCheck.CheckPlace place, Construct c, Result r)
+    {
+        float stall;
+        using (place.In())
+        {
+            stall = ConstructAero.StallSpeed(c);
+            r = r with { Plane = true, Stall = stall, Balance = c.LiftCentre(out var lift, out _) ? Vector3.Dot(c.Com - lift, Forward(c, Quaternion.Identity)) : 0 };
+        }
+        var rotateAt = MathF.Max(12, 1.05f * stall);
+        var h0 = Up(c);
+        var p0 = c.WorldCom;
+        var t = 0;
+        var debug = Environment.GetEnvironmentVariable("PLANE_DEBUG") == "1";
+        for (; t < PlaneRunTicks && c.Vel.Length() < rotateAt; t += 15)
+        {
+            Fly(w, q, place, c, Buttons.Sprint, 15, ref r);
+            if (debug && t % 60 == 0)
+                Console.WriteLine($"[plane-debug] t {t} speed {c.Vel.Length():0.0} up {Up(c) - h0:0.00} nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.0} rest {r.RestTilt:0.0} com {c.WorldCom} rotors {c.Rotors[0].Thrust:0} dir {Vector3.Transform(c.Rotors[0].Dir, c.Rot)}");
+        }
+        var run = c.WorldCom - p0;
+        r = r with { RunSpeed = c.Vel.Length(), RunDist = MathF.Sqrt(run.X * run.X + run.Z * run.Z) };
+        if (r.RunSpeed < rotateAt)
+            return r with { Why = $"down the runway for {t / (float)World.TickRate:0} s it reached {r.RunSpeed:0.0} m/s, {Vector3.Dot(c.Vel, Forward(c, c.Rot)):0.0} forward, nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0} degrees up (it rotates at {rotateAt:0}, stalls at {stall:0}; {Pushing(c)})" };
+        for (t = 0; t < RotateTicks && Up(c) - h0 < LiftOff; t += 10)
+            Fly(w, q, place, c, Buttons.Back, 10, ref r);
+        if (Up(c) - h0 < LiftOff)
+            return r with { Why = $"S for {RotateTicks / (float)World.TickRate:0} s at {r.RunSpeed:0} m/s didn't lift it {LiftOff:0} m off the runway" };
+        var hc = Up(c);
+        Autopilot(place, c, hc + 40);
+        Fly(w, q, place, c, 0, PlaneClimbTicks, ref r);
+        var climb = Up(c) - hc;
+        r = r with { Climb = climb };
+        if (climb < PlaneMinClimb)
+            return r with { Why = $"on the autopilot's climb it went {climb:0.0} m up in {PlaneClimbTicks / (float)World.TickRate:0} s (at least {PlaneMinClimb:0}) at {c.Vel.Length():0} m/s" };
+        Autopilot(place, c, Up(c));
+        Fly(w, q, place, c, 0, LevelSettleTicks, ref r);
+        var hl = Up(c);
+        var head = Heading(c);
+        var drift = 0f;
+        for (t = 0; t < LevelTicks; t += 10)
+        {
+            Fly(w, q, place, c, 0, 10, ref r);
+            drift = MathF.Max(drift, MathF.Abs(Up(c) - hl));
+        }
+        var wander = MathF.Abs(Wrap(Heading(c) - head));
+        r = r with { LevelDrift = drift, HeadingDrift = wander, HoverTilt = Tilt(c), HoverSpeed = c.Vel.Length() };
+        if (drift > MaxLevelDrift)
+            return r with { Why = $"in level flight on the autopilot its height wandered {drift:0.0} m in {LevelTicks / (float)World.TickRate:0} s (at most {MaxLevelDrift:0}; climbing {c.Vel.Y:0.0} m/s at {c.Vel.Length():0} m/s)" };
+        if (wander > MaxHeadingDrift)
+            return r with { Why = $"in level flight its heading wandered {wander:0.0} degrees in {LevelTicks / (float)World.TickRate:0} s (at most {MaxHeadingDrift:0})" };
+        if (r.HoverTilt > MaxLevelBank)
+            return r with { Why = $"in level flight it hangs {r.HoverTilt:0} degrees off level (at most {MaxLevelBank:0})" };
+        head = Heading(c);
+        Fly(w, q, place, c, Buttons.Right, TurnTicks, ref r);
+        var turned = Wrap(Heading(c) - head);
+        r = r with { Turned = turned };
+        if (turned < MinTurn)
+            return r with { Why = $"D for {TurnTicks / (float)World.TickRate:0.#} s turned it {turned:0} degrees (at least {MinTurn:0} to the right)" };
+        if (r.WorstTilt > MaxPlaneTilt)
+            return r with { Why = $"it tipped {r.WorstTilt:0} degrees in flight (at most {MaxPlaneTilt:0})" };
+        return r;
+    }
+
+    /// <summary>The autopilot's altitude hold on, at <paramref name="height"/>: a bot pilot's hook, set as its panel would set it.</summary>
+    private static void Autopilot(VehicleDriveCheck.CheckPlace place, Construct c, float height)
+    {
+        using (place.In())
+        {
+            ref var p = ref c.Parts[c.Stabs[0].Part];
+            ConstructConfig.Put(ref p, p.D, CfgKey.ApMode, (float)FlightMode.Altitude);
+            ConstructConfig.Put(ref p, p.D, CfgKey.TargetAlt, ConstructPhysics.HoldShown(MathF.Max(1, height)));
+            ConstructConfig.Put(ref p, p.D, CfgKey.Autopilot, 1);
+        }
+    }
+
+    /// <summary>The stabilizer's forward, turned by <paramref name="rot"/> (the body's rotation, or none for the rest frame).</summary>
+    private static Vector3 Forward(Construct c, Quaternion rot) => Vector3.Transform(-Vector3.UnitZ, Quaternion.Multiply(rot, Rot24.Quat(c.Parts[c.Stabs[0].Part].Rot)));
+
+    /// <summary>Its heading over the floor, degrees clockwise seen from above.</summary>
+    private static float Heading(Construct c)
+    {
+        var f = Forward(c, c.Rot);
+        return MathF.Atan2(f.X, -f.Z) * 180 / MathF.PI;
+    }
+
+    private static float Wrap(float deg) => ((deg % 360) + 540) % 360 - 180;
 
     /// <summary>Ticks of the world with the seat's keys held (0: none; then the stabilizer's hover hold).</summary>
     private static void Fly(ConstructWorld w, SelfTest.DriveWorld q, VehicleDriveCheck.CheckPlace place, Construct c, Buttons keys, int ticks, ref Result r)
