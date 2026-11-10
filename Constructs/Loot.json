@@ -521,6 +521,176 @@
         {"part": "Levite Core", "weight": 1, "count": [1, 1]},
         {"part": "Jetpack", "weight": 1, "count": [1, 1]}
       ]
+    },
+    "room personal": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [1, 2],
+      "empty": 0.25,
+      "items": [
+        {"part": "Lamp", "weight": 4, "count": [1, 1]},
+        {"part": "Battery", "weight": 2, "count": [1, 1]},
+        {"part": "Box Magazine", "weight": 3, "count": [1, 2]},
+        {"part": "Stick Mag", "weight": 3, "count": [1, 2]},
+        {"part": "Red Dot", "weight": 2, "count": [1, 1]},
+        {"part": "Copper Coil", "weight": 2, "count": [1, 2]},
+        {"part": "Wiring Loom", "weight": 3, "count": [1, 2]},
+        {"part": "Text Sign", "weight": 1, "count": [1, 1]},
+        {"part": "Key Switch", "weight": 1, "count": [1, 1]},
+        {"part": "Peashooter Receiver", "weight": 1, "count": [1, 1]}
+      ]
+    },
+    "room food": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [1, 3],
+      "empty": 0.1,
+      "items": [
+        {"part": "Water Cooler", "weight": 5, "count": [1, 1]},
+        {"part": "Filter", "weight": 4, "count": [1, 2]},
+        {"part": "Lamp", "weight": 3, "count": [1, 2]},
+        {"part": "Small Fuel Tank", "weight": 3, "count": [1, 1]},
+        {"part": "Pipe Box", "weight": 2, "count": [1, 1]},
+        {"part": "Battery", "weight": 1, "count": [1, 1]}
+      ]
+    },
+    "room medical": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [1, 3],
+      "empty": 0.1,
+      "items": [
+        {"part": "Filter", "weight": 5, "count": [1, 3]},
+        {"part": "Water Cooler", "weight": 3, "count": [1, 1]},
+        {"part": "Lamp", "weight": 4, "count": [1, 2]},
+        {"part": "Battery", "weight": 4, "count": [1, 1]},
+        {"part": "Drone Battery", "weight": 2, "count": [1, 1]},
+        {"part": "Proximity Sensor", "weight": 2, "count": [1, 1]},
+        {"part": "Computer", "weight": 1, "count": [1, 1]},
+        {"part": "Number Readout", "weight": 2, "count": [1, 1]}
+      ]
+    },
+    "room stores": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [2, 4],
+      "empty": 0.05,
+      "items": [
+        {"part": "Gear Set", "weight": 8, "count": [1, 4]},
+        {"part": "Bearing", "weight": 6, "count": [1, 3]},
+        {"part": "Tyre Carcass", "weight": 4, "count": [1, 2]},
+        {"part": "Wiring Loom", "weight": 6, "count": [1, 3]},
+        {"part": "Copper Coil", "weight": 5, "count": [1, 3]},
+        {"part": "Wire Stock", "weight": 5, "count": [1, 3]},
+        {"part": "Piston Set", "weight": 3, "count": [1, 2]},
+        {"part": "Lamp", "weight": 4, "count": [1, 3]},
+        {"part": "Battery", "weight": 3, "count": [1, 1]},
+        {"part": "Small Fuel Tank", "weight": 3, "count": [1, 1]},
+        {"part": "Fuel Line", "weight": 3, "count": [1, 3]}
+      ]
+    },
+    "room armoury": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [2, 4],
+      "empty": 0.0,
+      "items": [
+        {"part": "Rifle Receiver", "weight": 4, "count": [1, 1]},
+        {"part": "Courier Carbine Receiver", "weight": 4, "count": [1, 1]},
+        {"part": "Farmhand Pump Receiver", "weight": 4, "count": [1, 1]},
+        {"part": "Plinker Receiver", "weight": 3, "count": [1, 1]},
+        {"part": "Gun Barrel", "weight": 5, "count": [1, 2]},
+        {"part": "Long Gun Barrel", "weight": 3, "count": [1, 1]},
+        {"part": "Gun Suppressor", "weight": 2, "count": [1, 1]},
+        {"part": "Gun Muzzle Brake", "weight": 3, "count": [1, 1]},
+        {"part": "Red Dot", "weight": 3, "count": [1, 1]},
+        {"part": "Holographic", "weight": 2, "count": [1, 1]},
+        {"part": "Flash Hider", "weight": 3, "count": [1, 1]},
+        {"part": "Sawn-Off Barrel", "weight": 2, "count": [1, 1]},
+        {"part": "Stub Barrel", "weight": 2, "count": [1, 1]},
+        {"part": "Extended Mag", "weight": 3, "count": [1, 2]},
+        {"part": "Box Magazine", "weight": 5, "count": [1, 3]},
+        {"part": "Stick Mag", "weight": 4, "count": [1, 3]},
+        {"part": "FMJ Rounds", "weight": 6, "count": [1, 3]},
+        {"part": "AP Rounds", "weight": 3, "count": [1, 2]}
+      ]
+    },
+    "room ammunition": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [2, 4],
+      "empty": 0.0,
+      "items": [
+        {"part": "Ammo Box", "weight": 8, "count": [1, 3]},
+        {"part": "Ammo Reel", "weight": 4, "count": [1, 2]},
+        {"part": "Stick Mag", "weight": 3, "count": [1, 3]},
+        {"part": "Extended Mag", "weight": 2, "count": [1, 2]},
+        {"part": "FMJ Rounds", "weight": 6, "count": [1, 3]},
+        {"part": "AP Rounds", "weight": 4, "count": [1, 2]},
+        {"part": "Box Magazine", "weight": 4, "count": [1, 3]},
+        {"part": "Impact Fuse", "weight": 3, "count": [1, 2]},
+        {"part": "Delay Fuse", "weight": 2, "count": [1, 2]},
+        {"part": "Timer Fuse", "weight": 2, "count": [1, 2]},
+        {"part": "Napalm Gel", "weight": 1, "count": [1, 1]}
+      ]
+    },
+    "room engineering": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [2, 3],
+      "empty": 0.05,
+      "items": [
+        {"part": "Battery", "weight": 5, "count": [1, 2]},
+        {"part": "Copper Coil", "weight": 5, "count": [1, 3]},
+        {"part": "Field Coil", "weight": 3, "count": [1, 2]},
+        {"part": "Wiring Loom", "weight": 6, "count": [1, 3]},
+        {"part": "Circuit Board", "weight": 3, "count": [1, 2]},
+        {"part": "Control Unit", "weight": 2, "count": [1, 1]},
+        {"part": "Fuel Line", "weight": 4, "count": [1, 3]},
+        {"part": "Small Fuel Tank", "weight": 3, "count": [1, 1]},
+        {"part": "Piston Set", "weight": 3, "count": [1, 2]},
+        {"part": "Bearing", "weight": 4, "count": [1, 3]},
+        {"part": "Gear Set", "weight": 4, "count": [1, 3]},
+        {"part": "Charge Gauge", "weight": 2, "count": [1, 1]},
+        {"part": "Fuel Gauge", "weight": 2, "count": [1, 1]}
+      ]
+    },
+    "room workshop": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [2, 4],
+      "empty": 0.05,
+      "items": [
+        {"part": "Gear Set", "weight": 6, "count": [1, 4]},
+        {"part": "Bearing", "weight": 5, "count": [1, 3]},
+        {"part": "Piston Set", "weight": 4, "count": [1, 2]},
+        {"part": "Wire Stock", "weight": 5, "count": [1, 3]},
+        {"part": "Wiring Loom", "weight": 4, "count": [1, 2]},
+        {"part": "Copper Coil", "weight": 4, "count": [1, 2]},
+        {"part": "Circuit Board", "weight": 2, "count": [1, 1]},
+        {"part": "Drill Bit Mk 2", "weight": 2, "count": [1, 1]},
+        {"part": "Drill Bit Mk 3", "weight": 1, "count": [1, 1]},
+        {"part": "Small Engine", "weight": 2, "count": [1, 1]},
+        {"part": "Gun Barrel", "weight": 2, "count": [1, 1]},
+        {"part": "Bead Rail", "weight": 2, "count": [1, 2]}
+      ]
+    },
+    "room bridge": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon", "rare"],
+      "rolls": [1, 2],
+      "empty": 0.2,
+      "items": [
+        {"part": "Computer", "weight": 3, "count": [1, 1]},
+        {"part": "Fax Machine", "weight": 2, "count": [1, 1]},
+        {"part": "Radio Homer", "weight": 2, "count": [1, 1]},
+        {"part": "Number Readout", "weight": 3, "count": [1, 1]},
+        {"part": "Numpad", "weight": 2, "count": [1, 1]},
+        {"part": "Code Lock", "weight": 2, "count": [1, 1]},
+        {"part": "Server Rack", "weight": 1, "count": [1, 1]},
+        {"part": "Box Magazine", "weight": 3, "count": [1, 2]},
+        {"part": "Courier Carbine Receiver", "weight": 1, "count": [1, 1]}
+      ]
     }
   }
 }

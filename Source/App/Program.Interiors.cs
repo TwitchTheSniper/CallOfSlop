@@ -32,6 +32,13 @@ public static unsafe partial class Program
         }
         if (data.UnknownParts() is { Count: > 0 } unknown)
             Console.WriteLine($"note: parts the data names that this build lacks: {string.Join(", ", unknown)}");
+        foreach (var pr in ConstructLoot.Problems.Where(pr => pr.StartsWith("Loot.json: room ", StringComparison.Ordinal)))
+            Console.WriteLine($"note: a room loot table item left out: {pr}");
+        foreach (var hook in data.LootHooks.Values.OfType<string>().Distinct())
+            if (!ConstructLoot.Tables.TryGetValue(hook, out var lt))
+                Console.WriteLine($"note: loot hook table \"{hook}\" isn't in Loot.json");
+            else
+                Console.WriteLine($"loot table \"{hook}\": {lt.Items.Length} items, {lt.RollsMin}-{lt.RollsMax} rolls, {lt.Empty:0%} empty, tier {lt.MaxTier}");
         ConstructBuild.Blueprint bp;
         if (File.Exists(target))
             bp = ConstructBuild.ParseBlueprint(File.ReadAllText(target), Path.GetFileName(target));

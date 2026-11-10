@@ -744,6 +744,7 @@ public sealed class InteriorBuilder : BlueprintScript
                 try
                 {
                     sw = Onto(lamps[0], s, "Switch");
+                    Config(sw, ("startOn", true)); // (the lights are on when it is built)
                     Placed++;
                     break;
                 }
