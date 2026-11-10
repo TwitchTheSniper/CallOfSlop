@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-interiors/1",
+  "about": "Room types (docs/sandbox/INTERIORS.md). min: [width along the spine, depth] in grid cells; want: cells of floor it would like; layout: grid (phase 1) or free (later: rooms that follow lines and contours); deck: lower, upper or any; row: inner (beside the spine), outer (on the hull side, may open outside) or any; wants/avoids: room ids it likes to be near or away from; critical: a weak point (one door, defended); modules: a set in ModuleSets.json; loot: a hook in LootHooks.json; exterior: may have a door onto the open deck (an entry point); end: bow or stern, where along the spine it prefers to be.",
+  "rooms": [
+    { "id": "bridge", "name": "Bridge", "min": [2, 2], "want": 9, "layout": "grid", "deck": "upper", "row": "inner", "end": "bow", "critical": true, "wants": ["quarters"], "avoids": ["hangar"], "modules": "bridge", "loot": null },
+    { "id": "quarters", "name": "Crew quarters", "min": [2, 2], "want": 9, "layout": "grid", "deck": "upper", "row": "any", "wants": ["mess", "medical"], "avoids": ["engineering", "hangar"], "modules": "quarters", "loot": "personal" },
+    { "id": "mess", "name": "Mess", "min": [2, 2], "want": 6, "layout": "grid", "deck": "upper", "row": "inner", "wants": ["quarters"], "avoids": [], "modules": "mess", "loot": "food" },
+    { "id": "medical", "name": "Medical bay", "min": [2, 2], "want": 6, "layout": "grid", "deck": "any", "row": "inner", "wants": ["quarters", "hangar"], "avoids": ["magazine"], "modules": "medical", "loot": "medical" },
+    { "id": "production", "name": "Production", "min": [2, 3], "want": 12, "layout": "grid", "deck": "lower", "row": "any", "wants": ["storage"], "avoids": ["quarters"], "modules": "production", "loot": null },
+    { "id": "storage", "name": "Storage", "min": [1, 2], "want": 6, "layout": "grid", "deck": "lower", "row": "any", "exterior": true, "wants": ["production", "hangar"], "avoids": [], "modules": "storage", "loot": "stores" },
+    { "id": "hangar", "name": "Hangar", "min": [4, 3], "want": 24, "layout": "grid", "deck": "lower", "row": "outer", "end": "stern", "exterior": true, "wants": ["armoury"], "avoids": ["bridge", "quarters"], "modules": "hangar", "loot": null },
+    { "id": "armoury", "name": "Armoury", "min": [2, 2], "want": 6, "layout": "grid", "deck": "lower", "row": "any", "critical": false, "wants": ["hangar"], "avoids": ["magazine"], "modules": "armoury", "loot": "armoury" },
+    { "id": "engineering", "name": "Engineering", "min": [2, 3], "want": 9, "layout": "grid", "deck": "lower", "row": "inner", "critical": true, "wants": ["production"], "avoids": ["quarters", "magazine"], "modules": "engineering", "loot": "engineering" },
+    { "id": "magazine", "name": "Magazine", "min": [1, 2], "want": 4, "layout": "grid", "deck": "lower", "row": "inner", "critical": true, "wants": [], "avoids": ["engineering", "quarters", "medical"], "modules": "magazine", "loot": "ammunition" },
+
+    { "id": "stairs", "name": "Stairwell", "min": [1, 2], "want": 2, "layout": "grid", "deck": "any", "row": "inner", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
+    { "id": "elevator", "name": "Freight elevator shaft", "min": [1, 1], "want": 1, "layout": "grid", "deck": "any", "row": "inner", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
+    { "id": "fuel", "name": "Fuel store", "min": [1, 1], "want": 1, "layout": "grid", "deck": "lower", "row": "any", "system": true, "wants": [], "avoids": ["magazine"], "modules": "fuel", "loot": null },
+    { "id": "spare", "name": "Spare space", "min": [4, 2], "want": 8, "layout": "grid", "deck": "any", "row": "any", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null },
+    { "id": "dead", "name": "Void", "min": [1, 1], "want": 1, "layout": "grid", "deck": "any", "row": "any", "system": true, "wants": [], "avoids": [], "modules": null, "loot": null }
+  ]
+}
