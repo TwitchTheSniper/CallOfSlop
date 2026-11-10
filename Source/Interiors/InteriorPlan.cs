@@ -44,7 +44,7 @@ public sealed class PlanRoom
     public int Section;
     public bool Critical, System, Inner, Outer;
     public string? Shaft; // "stairs" or "elevator": the same rectangle on every deck it joins
-    public string Origin = "programme"; // programme, system, leftover, merged
+    public string Origin = "programme"; // programme, system, leftover, generated (a big leftover given a fill room), merged
     public char Mark;
     public override string ToString() => $"{Name} {Rect} deck {Deck}";
 }
@@ -79,6 +79,7 @@ public sealed class InteriorPlan
 
     public SizeClass Class = null!;
     public int Seed, W, D, Decks;
+    public bool Sealed; // no doors to the outside (a chassis void: InteriorPlanner.Plan)
     public bool BowAtMinX;
     public int SpineZ0, SpineZ1;
     public int[][,] Cells = []; // [deck][x, z]: a room id, or Corridor, Lane, KeepOut, Free

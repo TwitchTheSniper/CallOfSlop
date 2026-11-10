@@ -447,6 +447,8 @@ public static partial class ConstructRender
 
     private static int DrawPart(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
     {
+        if (c.Rides(i) && !_drawingRiders)
+            return 0; // (on a leg segment: drawn there, ConstructRenderLegs.cs)
         ref var p = ref c.Parts[i];
         var d = p.D;
         // A merged receiver (ConstructMerge.cs): its lead draws it N times bigger; the other members aren't drawn.
@@ -1197,9 +1199,11 @@ public static partial class ConstructRender
                 ref var g = ref Ghosts[k];
                 c.SocketAt(g.Part, g.Socket, out var at, out var dir);
                 c.SegPose(c.Parts[g.Part].Seg, out var q, out var t);
-                var seg = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
+                var seg = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t) * body;
+                if (ConstructPhysics.RideFrameOf(c, g.Part, g.Socket, c.Pos, c.Rot, out var lq, out var lt))
+                    seg = Matrix4x4.CreateFromQuaternion(lq) * Matrix4x4.CreateTranslation(lt); // (a weld socket on a walker leg's segment, or a part riding one: as the leg is posed)
                 var colour = k == GhostSelected ? new Vector3(0.3f, 1f, 0.45f) : new Vector3(0.35f, 0.75f, 1f);
-                gfx.Draw(Matrix4x4.CreateScale(0.14f) * Matrix4x4.CreateTranslation(at + ConstructParts.DirVector(dir) * 0.04f) * seg * body, colour, k == GhostSelected ? 0.9f : 0.55f, mode: 2);
+                gfx.Draw(Matrix4x4.CreateScale(0.14f) * Matrix4x4.CreateTranslation(at + ConstructParts.DirVector(dir) * 0.04f) * seg, colour, k == GhostSelected ? 0.9f : 0.55f, mode: 2);
                 if (k != GhostSelected)
                     continue;
                 // The whole part where it would go.
@@ -1210,9 +1214,9 @@ public static partial class ConstructRender
                         continue;
                     var gs = g.Scale > 1 ? g.Scale : 1f; // (a gun part going on a merged receiver: N times bigger)
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center * gs);
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f * gs) * box.Model(g.Rot, bc) * Matrix4x4.CreateTranslation(GhostEase) * seg * body, GhostBoxColour(in box, GhostValid), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f * gs) * box.Model(g.Rot, bc) * Matrix4x4.CreateTranslation(GhostEase) * seg, GhostBoxColour(in box, GhostValid), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
-                Gizmo(gfx, def, g.Pos, g.Rot, seg * body);
+                Gizmo(gfx, def, g.Pos, g.Rot, seg);
             }
         }
         if (SlotBody is { } sbody && SlotDef is { } sdef && SlotPart >= 0 && SlotPart < sbody.PartCount)

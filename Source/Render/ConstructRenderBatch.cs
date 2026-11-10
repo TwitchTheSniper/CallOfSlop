@@ -124,7 +124,7 @@ public static partial class ConstructRender
     private static int MergeBoxes(Construct c, int i)
     {
         ref var p = ref c.Parts[i];
-        if (p.Burn > 0 || p.Store != 0 || c.MergeOf[i] != 0 || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
+        if (p.Burn > 0 || p.Store != 0 || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return 0;
         return Math.Max(0, StaticBoxes(p.D));
     }
@@ -195,7 +195,7 @@ public static partial class ConstructRender
             if (nb == 0)
             {
                 _partEntry[i] = -1;
-                if (StaticBoxes(c.Parts[i].D) != 0 || c.Parts[i].Store != 0 || c.Parts[i].Burn > 0)
+                if ((StaticBoxes(c.Parts[i].D) != 0 || c.Parts[i].Store != 0 || c.Parts[i].Burn > 0) && !c.Rides(i)) // (a rider is drawn on its leg segment: ConstructRenderLegs.cs)
                     set.Walked[set.WalkedCount++] = i; // (a static part with no box drawn needs no walk unless it burns or holds parts)
                 continue;
             }

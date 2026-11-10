@@ -680,6 +680,8 @@ public static unsafe partial class Program
         var c = hit.Body;
         c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
         var near = Vector3.Transform(hit.Point - t, Quaternion.Conjugate(q));
+        if (ConstructPhysics.RestOfDrawn(c, hit.Part, hit.Point, out var legRest))
+            near = legRest; // (a walker leg or what rides it: its weld sockets are on its canonical rest pose, ConstructWalkRiders.cs)
         var n = SandboxSnapGhosts(c, held, near);
         ConstructRender.SetGhosts(c, n);
         // The one nearest the crosshair.
@@ -689,7 +691,9 @@ public static unsafe partial class Program
         {
             c.SocketAt(ConstructRender.Ghosts[k].Part, ConstructRender.Ghosts[k].Socket, out var at, out _);
             c.SegPose(c.Parts[ConstructRender.Ghosts[k].Part].Seg, out var sq, out var st);
-            var world = c.ToWorld(st + Vector3.Transform(at, sq));
+            var world = ConstructPhysics.RideFrameOf(c, ConstructRender.Ghosts[k].Part, ConstructRender.Ghosts[k].Socket, c.Pos, c.Rot, out var lq, out var lt)
+                ? lt + Vector3.Transform(at, lq) // (on a walker leg's segment, as drawn)
+                : c.ToWorld(st + Vector3.Transform(at, sq));
             var along = Vector3.Dot(world - eye, dir);
             var off = Vector3.Distance(world, eye + dir * along);
             if (along > 0 && off < bestD)

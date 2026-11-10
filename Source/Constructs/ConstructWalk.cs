@@ -19,6 +19,7 @@ public struct CLeg
     public Vector3 Foot, From, To; // world: the foot now, where its step started and where it goes
     public Vector3 Normal; // the ground's normal under the foot
     public float Power; // its strength from what feeds it (0: unfed, locked; ConstructWalkLegs.cs), a share of its own
+    public float Carry; // kg of parts riding its segments (ConstructWalkRiders.cs): it swings them, so it steps slower
 }
 
 public sealed partial class Construct
@@ -79,6 +80,7 @@ public sealed partial class Construct
                 Reach = reach,
                 Angle = MathF.Atan2(outward.Z, outward.X),
                 Normal = Vector3.UnitY,
+                Carry = SegRiderMass(i),
             };
         }
         // Round the centre of mass, so the support polygon is the planted feet in this order.
@@ -126,6 +128,7 @@ public static partial class ConstructPhysics
     private static void Walk(ConstructWorld world, Construct c, IWorldQuery query, float dt)
     {
         var fed = PowerLegs(world, c, true);
+        WalkTune(c); // (the gait profile: ConstructWalkProfile.cs)
         var live = 0;
         var load = 0f;
         var reach = 0f;
@@ -139,7 +142,7 @@ public static partial class ConstructPhysics
             var sound = LegSound(p) * MathF.Min(1.5f, c.Legs[k].Power); // (a damaged leg carries less and steps slower; so does a weaker feed)
             load += p.D.Leg!.Load * sound;
             reach += c.Legs[k].Reach;
-            stepTime += p.D.Leg.StepTime / sound;
+            stepTime += p.D.Leg.StepTime / sound * CarrySlows(c.Legs[k].Carry, p.D.Leg.Load) / LegPace(c, k);
         }
         c.WalkStamp = Stopwatch.GetTimestamp();
         if (live != c.WalkLive)
@@ -158,7 +161,7 @@ public static partial class ConstructPhysics
         stepTime /= live;
         var pace = Math.Clamp(1.25f - ratio * 0.5f, 0.25f, 1f); // (lightly loaded legs step quickly; at their load, slower)
         var swing = stepTime / pace;
-        c.WalkTop = 0.45f * reach / (c.LegGroups * swing) * MathF.Min(1, live / (float)Math.Max(1, c.LegCount) * 1.5f); // (a lost leg slows it)
+        c.WalkTop = 0.45f * c.WalkStride * reach / (c.LegGroups * swing) * MathF.Min(1, live / (float)Math.Max(1, c.LegCount) * 1.5f); // (a lost leg slows it)
         c.WalkProblem = "";
         c.Walking = true;
         WalkFeet(c, query, c.Pos, c.Rot, c.Vel, c.AngVel, swing, dt, true);
@@ -168,11 +171,19 @@ public static partial class ConstructPhysics
             c.Wake(); // (a foot in the air finishes its step)
     }
 
+    /// <summary>A leg swinging what rides its segments steps slower: a tenth of its load riding it, half as slow again (at most twice).</summary>
+    public static float CarrySlows(float carry, float load) => Math.Clamp(1 + 0.5f * carry / MathF.Max(1, 0.1f * load), 1, 2);
+
     /// <summary>The gait for <paramref name="live"/> working legs: a tripod (alternate legs round the body) or a wave.</summary>
-    private static void PlanGait(Construct c, int live)
+    internal static void PlanGait(Construct c, int live)
     {
         c.WalkLive = live;
-        var tripod = live >= 6 && live % 2 == 0;
+        var tripod = c.WalkGaitPick switch
+        {
+            GaitTripod => live >= 4, // (half the legs at a time; the feet left down must still hold it to lift)
+            GaitWave => false,
+            _ => live >= 6 && live % 2 == 0,
+        };
         var rank = 0;
         for (var k = 0; k < c.LegCount; k++)
         {
@@ -182,7 +193,8 @@ public static partial class ConstructPhysics
                 leg.Swinging = false;
                 continue;
             }
-            leg.Group = (byte)(tripod ? rank % 2 : rank);
+            var pick = tripod ? LegGroupPick(c, k) : 0; // (Advanced: a leg's own half)
+            leg.Group = (byte)(tripod ? pick > 0 ? pick - 1 : rank % 2 : rank);
             rank++;
         }
         c.LegGroups = (byte)Math.Max(1, tripod ? 2 : live);
@@ -223,7 +235,7 @@ public static partial class ConstructPhysics
     public static void WalkFeet(Construct c, IWorldQuery query, Vector3 pos, Quaternion rot, Vector3 vel, Vector3 angVel, float swing, float dt, bool server)
     {
         var com = pos + Vector3.Transform(c.Com, rot);
-        var lead = swing * c.LegGroups * 0.5f; // (seconds ahead a foot is put: half a cycle)
+        var lead = swing * c.LegGroups * 0.5f * c.WalkStride; // (seconds ahead a foot is put: half a cycle, by the stride)
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var leg = ref c.Legs[k];
@@ -234,7 +246,7 @@ public static partial class ConstructPhysics
                 leg.Swinging = false;
                 continue;
             }
-            var rest = pos + Vector3.Transform(leg.Rest, rot);
+            var rest = pos + Vector3.Transform(LegRest(c, k), rot);
             var v = vel + Vector3.Cross(angVel, rest - com);
             v.Y = 0;
             var aim = rest + v * lead;
@@ -253,7 +265,7 @@ public static partial class ConstructPhysics
                 ref var leg = ref c.Legs[k];
                 if (!leg.Swinging)
                     continue;
-                var h = c.Parts[leg.Part].D.Leg!.StepHeight * leg.Reach;
+                var h = c.Parts[leg.Part].D.Leg!.StepHeight * leg.Reach * c.WalkLift * LegLift(c, k);
                 var rise = MathF.Max(0, leg.To.Y - leg.From.Y); // (over a step up, the foot clears it)
                 leg.Foot = Vector3.Lerp(leg.From, leg.To, s * s * (3 - 2 * s)) + Vector3.UnitY * ((h + rise) * lift);
                 if (s >= 1)
@@ -298,7 +310,7 @@ public static partial class ConstructPhysics
                 continue;
             var d = leg.To - leg.Foot;
             d.Y *= 0.5f;
-            if (d.LengthSquared() > leg.Reach * leg.Reach * 0.0064f) // (8% of its reach)
+            if (d.LengthSquared() > leg.Reach * leg.Reach * 0.0064f * c.WalkStride * c.WalkStride) // (8% of its reach, by the stride)
                 return true;
             var hip = pos + Vector3.Transform(leg.Hip, rot);
             if (Vector3.DistanceSquared(hip, leg.Foot) > leg.Reach * leg.Reach * 0.9f) // (over-stretched: it must step)
@@ -370,7 +382,7 @@ public static partial class ConstructPhysics
         var stand = 0f;
         for (var k = 0; k < c.LegCount; k++)
             stand += c.Parts[c.Legs[k].Part].D.Leg!.Stand;
-        stand /= Math.Max(1, c.LegCount);
+        stand = MathF.Min(0.84f, stand / Math.Max(1, c.LegCount) * c.WalkStand); // (Basic: the body height)
         // Height: the hips over their feet, and how far the body can still rise before a planted leg is stretched past
         // MaxStretch of its reach (on a slope the uphill legs' hips stand lower over their feet than the others').
         var have = 0f;

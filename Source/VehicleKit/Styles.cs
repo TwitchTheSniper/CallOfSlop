@@ -13,7 +13,7 @@ public static class Styles
     public static readonly FactionStyle Bandit = new()
     {
         Name = "Bandit",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Buggy", "Monster Truck", "Wagon", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "Bandit",
         Palette = new()
         {
@@ -83,6 +83,7 @@ public static class Styles
             new("stilt", "Heavy Pogo Strut", "Off-Road Wheel", "Heavy Pogo Strut", "Large Wheel"),
             new("dually", "Heavy Suspension", "Off-Road Wheel", "Leaf Spring", "Dually Wheel"),
             new("crawler", "Heavy Swing Arm", "Spiked Wheel", "Heavy Trailing Arm", "Spiked Wheel"),
+            new("monster", "Heavy Pogo Strut", "Monster Wheel", "Heavy Pogo Strut", "Monster Wheel"), // (phase 8b: the Monster Truck's only gear; ShapeGrammar.SpecialGears)
         ],
         // The weapon slot: guns by their parts, in the builder's text. A name twice is twice as likely.
         Weapons =
@@ -95,7 +96,7 @@ public static class Styles
         ],
         Seeds = new() // (kit 5's, 2026-11-07, again after body styles phases 2 and 3: the most different passing seeds of a 10-seed sweep; the Technical, Tanker Rig and Fuel Trailer keep their generators')
         {
-            ["Car"] = [1, 7, 5], ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 8, 2], ["Scrap Tanker"] = [1, 10, 5],
+            ["Buggy"] = [1, 3, 4], ["Monster Truck"] = [1, 2, 8], ["Wagon"] = [1, 5, 6], ["Giant Truck"] = [1, 6, 2], ["Car"] = [1, 7, 5], ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 8, 2], ["Scrap Tanker"] = [1, 10, 5],
         },
         LootTable = "bandit",
         Limits = new() { ["crookedPlates"] = 4, ["tiltDegrees"] = 5, ["thirdSeat"] = 0.5, ["slits"] = 0.25 },
@@ -111,7 +112,7 @@ public static class Styles
     public static readonly FactionStyle It = new()
     {
         Name = "IT",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Buggy", "Concept", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "IT Department",
         Palette = new()
         {
@@ -161,7 +162,7 @@ public static class Styles
         // (the shapes' own seeds fail in this style's dice; these are --sweep-vehicle's most different passing seeds)
         Seeds = new()
         {
-            ["Technical"] = [2, 5, 6, 8, 11], ["Car"] = [1, 2, 8], ["Box Truck"] = [1, 5, 3], ["War Bus"] = [1, 5, 10], ["Flatbed Fort"] = [1, 2, 7],
+            ["Technical"] = [2, 5, 6, 8, 11], ["Buggy"] = [1, 3, 6], ["Concept"] = [1, 8, 3], ["Giant Truck"] = [3, 6, 7], ["Car"] = [1, 2, 8], ["Box Truck"] = [1, 5, 3], ["War Bus"] = [1, 5, 10], ["Flatbed Fort"] = [1, 2, 7],
             ["Gun Wagon"] = [1, 9, 7], ["Scrap Tanker"] = [1, 2, 5], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
         },
         LootTable = "it",
@@ -178,7 +179,7 @@ public static class Styles
     public static readonly FactionStyle Scam = new()
     {
         Name = "Scam",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Buggy", "Concept"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "The Call Centre",
         Palette = new()
         {
@@ -214,7 +215,7 @@ public static class Styles
         // (--sweep-vehicle's most different passing seeds)
         Seeds = new()
         {
-            ["Technical"] = [1, 13, 16, 17, 21], ["Car"] = [1, 4, 3], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 6], ["Flatbed Fort"] = [1, 9, 6],
+            ["Technical"] = [1, 13, 16, 17, 21], ["Buggy"] = [1, 5, 6], ["Concept"] = [1, 8, 6], ["Car"] = [1, 4, 3], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 6], ["Flatbed Fort"] = [1, 9, 6],
             ["Gun Wagon"] = [1, 6, 5], ["Scrap Tanker"] = [1, 6, 2], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
         },
         LootTable = "scam",
@@ -232,7 +233,7 @@ public static class Styles
     public static readonly FactionStyle Highland = new()
     {
         Name = "Highland",
-        Extra = ["Car"], // (phase 8a: its archetypes' cars)
+        Extra = ["Car", "Monster Truck", "Wagon", "Concept", "Giant Truck"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
         Group = "Clan MacSlop",
         Palette = new()
         {
@@ -276,7 +277,7 @@ public static class Styles
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
         {
-            ["Technical"] = [1, 14, 10, 11, 5], ["Car"] = [1, 2, 5], ["Box Truck"] = [1, 3, 7], ["War Bus"] = [1, 7, 6], ["Flatbed Fort"] = [1, 8, 9],
+            ["Technical"] = [1, 14, 10, 11, 5], ["Monster Truck"] = [1, 3, 2], ["Wagon"] = [2, 3, 7], ["Concept"] = [1, 2, 4], ["Giant Truck"] = [1, 8, 5], ["Car"] = [1, 2, 5], ["Box Truck"] = [1, 3, 7], ["War Bus"] = [1, 7, 6], ["Flatbed Fort"] = [1, 8, 9],
             ["Gun Wagon"] = [1, 6, 2], ["Scrap Tanker"] = [1, 2, 7], ["Tanker Rig"] = [1, 13], ["Fuel Trailer"] = [1, 2],
         },
         LootTable = "highland",
@@ -340,11 +341,11 @@ public static class Styles
             new("Strongly Worded Letter", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
             new("Builder's Tea", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
         ],
-        Extra = ["Double Decker", "Car"],
+        Extra = ["Double Decker", "Car", "Wagon", "Concept"],
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
         {
-            ["Technical"] = [2, 14, 4, 5, 18], ["Car"] = [2, 4, 3], ["Box Truck"] = [1, 9, 8], ["War Bus"] = [1, 3, 5], ["Flatbed Fort"] = [1, 5, 7],
+            ["Technical"] = [2, 14, 4, 5, 18], ["Wagon"] = [1, 2, 7], ["Concept"] = [1, 7, 8], ["Car"] = [2, 4, 3], ["Box Truck"] = [1, 9, 8], ["War Bus"] = [1, 3, 5], ["Flatbed Fort"] = [1, 5, 7],
             ["Gun Wagon"] = [1, 4, 5], ["Scrap Tanker"] = [1, 8, 2], ["Tanker Rig"] = [1, 19], ["Fuel Trailer"] = [1, 3], ["Double Decker"] = [1, 4, 9],
         },
         LootTable = "british",

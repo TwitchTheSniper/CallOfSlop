@@ -10,8 +10,27 @@ public sealed record DeckRules(
     float Storey, float GridCell, int Corridor, int RowDepth, int RoomGrow, int Section, int Margin, int Decks,
     (int W, int D) Stair, (int W, int D) Elevator, string Door, bool ReserveRoute);
 
-/// <summary>A size class by tonnage, like a ship class, with its deck rules and the rooms it asks for.</summary>
-public sealed record SizeClass(string Id, string Name, double MinTonnes, double MaxTonnes, DeckRules Deck, IReadOnlyList<string> Programme);
+/// <summary>
+/// A size class by tonnage, like a ship class, with its deck rules, the rooms it asks for and <paramref name="Fill"/>: the room types a big
+/// leftover may become (INTERIORS.md phase 3; empty: it stays spare space).
+/// </summary>
+public sealed record SizeClass(string Id, string Name, double MinTonnes, double MaxTonnes, DeckRules Deck, IReadOnlyList<string> Programme, IReadOnlyList<string> Fill)
+{
+    /// <summary>The rooms that go inside a hollow chassis, below the deck (phase 3: planned only; INTERIORS.md "The chassis is the interior").</summary>
+    public IReadOnlyList<string> Chassis { get; init; } = [];
+
+    /// <summary>What a fitted construct of this class may use in all (the vehicle and its interior), so players keep the rest (phase 5).</summary>
+    public Budget Budget { get; init; } = Budget.None;
+}
+
+/// <summary>
+/// A fitted construct's limits (INTERIORS.md "Phase 5"): the most parts, socket links and joints the vehicle and its interior use together,
+/// under the engine's caps (Construct.MaxParts, MaxLinks, MaxJoints); the difference is the players' reserve.
+/// </summary>
+public sealed record Budget(int Parts, int Links, int Joints)
+{
+    public static readonly Budget None = new(Construct.MaxParts, Construct.MaxLinks, Construct.MaxJoints);
+}
 
 public enum RoomLayout { Grid, Free }
 public enum DeckWant { Any, Lower, Upper }
@@ -41,6 +60,7 @@ public sealed class InteriorData
     public readonly Dictionary<string, ModuleSet> Sets = new(StringComparer.Ordinal);
     public readonly Dictionary<string, string> Shell = new(StringComparer.Ordinal);
     public readonly Dictionary<string, string?> LootHooks = new(StringComparer.Ordinal);
+    public readonly List<string> Panels = new(); // (the shell's long walls, longest first: phase 5; none: 4 m pieces)
     public bool ProvisionalClasses, ProvisionalLoot;
 
     public static readonly string[] ShellKeys = ["floor", "stairFloor", "stair", "wall4", "wall2", "doorWall", "corner", "doorCorner", "garageWall", "hinge", "door", "adapter"];
@@ -100,7 +120,14 @@ public sealed class InteriorData
             if (max <= min)
                 throw new InteriorDataException($"{where}: maxTonnes must be above minTonnes");
             var prog = Arr(c, "programme", where).Select(e => e.GetString() ?? "").ToList();
-            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog));
+            var budget = Budget.None;
+            if (c.TryGetProperty("budget", out _))
+            {
+                var bg = Obj(c, "budget", where);
+                budget = new Budget(Int(bg, "parts", where + " budget", 1, Construct.MaxParts), Int(bg, "links", where + " budget", 1, Construct.MaxLinks),
+                    Int(bg, "joints", where + " budget", 0, Construct.MaxJoints));
+            }
+            Classes.Add(new SizeClass(id, Str(c, "name", where), min, max, rules, prog, Names(c, "fill")) { Chassis = Names(c, "chassis"), Budget = budget });
         }
         Classes.Sort((a, b) => a.MinTonnes.CompareTo(b.MinTonnes));
         for (var i = 1; i < Classes.Count; i++)
@@ -134,6 +161,7 @@ public sealed class InteriorData
         var shell = Obj(f.Root, "shell", f.File);
         foreach (var k in ShellKeys)
             Shell[k] = Str(shell, k, $"{f.File} shell");
+        Panels.AddRange(Names(shell, "panels"));
         foreach (var s in Arr(f.Root, "sets", f.File))
         {
             var id = Str(s, "id", f.File);
@@ -160,6 +188,12 @@ public sealed class InteriorData
                     throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": programme names an unknown room \"{r}\"");
                 else if (t.System)
                     throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": \"{r}\" is a system room the planner places itself");
+        foreach (var c in Classes)
+            foreach (var r in c.Fill.Concat(c.Chassis))
+                if (!Rooms.TryGetValue(r, out var t))
+                    throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": fill or chassis names an unknown room \"{r}\"");
+                else if (t.System)
+                    throw new InteriorDataException($"SizeClasses.json class \"{c.Id}\": fill or chassis names \"{r}\", a system room (spare, void, fuel and shafts are the planner's own)");
         foreach (var t in Rooms.Values)
         {
             foreach (var w in t.Wants.Concat(t.Avoids))
@@ -177,7 +211,7 @@ public sealed class InteriorData
     /// <summary>Every part the data names that this build doesn't have (the shell's are needed; a module's is skipped with a note).</summary>
     public List<string> UnknownParts()
     {
-        var names = Shell.Values.Concat(Sets.Values.SelectMany(s => s.Items).Select(i => i.Part)).Distinct();
+        var names = Shell.Values.Concat(Panels).Concat(Sets.Values.SelectMany(s => s.Items).Select(i => i.Part)).Distinct();
         return names.Where(n => ConstructParts.Find(n) == null).ToList();
     }
 

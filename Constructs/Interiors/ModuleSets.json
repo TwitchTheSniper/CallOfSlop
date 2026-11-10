@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-interiors/1",
-  "about": "What fills each room type, from existing parts (docs/sandbox/INTERIORS.md). Items are placed one to a floor slab's free socket, inside first. count: how many; perCells: one more every N cells of floor; loot: true fills it from the room's loot hook; role: what it is for (helm, gunner, engineer...). missing: what the room should have that no part does yet (printed by the run, never invented). The shell (walls, floors, stairs, doors) is in 'shell'.",
+  "about": "What fills each room type, from existing parts (docs/sandbox/INTERIORS.md). Items are placed one to a floor slab's free socket, inside first. count: how many; perCells: one more every N cells of floor; loot: true fills it from the room's loot hook; role: what it is for (helm, gunner, engineer...). missing: what the room should have that no part does yet (printed by the run, never invented). The shell (walls, floors, stairs, doors) is in 'shell'; its 'panels' are long walls with few links, longest first, for straight runs of plain wall (phase 5).",
   "shell": {
     "floor": "Steel Floor 4x4 m",
     "stairFloor": "Steel Stair Floor 4x4 m",
@@ -13,7 +13,8 @@
     "garageWall": "Steel Garage Wall 4 m",
     "hinge": "Door Hinge",
     "door": "Steel Flush Door 1.5x2.25 m",
-    "adapter": "Adapter Capital to Small"
+    "adapter": "Adapter Capital to Small",
+    "panels": ["Steel Panel Wall 16 m", "Steel Panel Wall 12 m", "Steel Panel Wall 8 m", "Steel Panel Wall 4 m"]
   },
   "sets": [
     { "id": "bridge", "items": [
@@ -21,7 +22,8 @@
         { "part": "Crew Station", "count": 1, "role": "gunner" },
         { "part": "Fire Director", "count": 1, "role": "gunner" },
         { "part": "Crew Station", "count": 1, "role": "engineer" },
-        { "part": "Lamp", "count": 1 } ],
+        { "part": "Lamp", "count": 1 },
+        { "part": "Chest", "count": 1, "loot": true } ],
       "missing": ["engineer's panel (power and damage board)", "chart table"] },
     { "id": "quarters", "items": [
         { "part": "Bunk", "count": 2, "perCells": 2 },
@@ -50,7 +52,7 @@
       "missing": [] },
     { "id": "hangar", "items": [
         { "part": "Lamp", "count": 2 },
-        { "part": "Chest", "count": 1 } ],
+        { "part": "Chest", "count": 1, "loot": true } ],
       "missing": ["ramp on a motor hinge in the small class (Ramp Deck Medium 8x5 is medium class: it needs a medium floor)", "hangar bay for the small class (Hangar Bay Medium is medium class)"] },
     { "id": "armoury", "items": [
         { "part": "Gun Workbench", "count": 1, "role": "machine" },
@@ -65,6 +67,23 @@
     { "id": "magazine", "items": [
         { "part": "Chest", "count": 2, "loot": true } ],
       "missing": ["shell magazine for the small class (Shell Magazine Medium is medium class)"] },
+    { "id": "workshop", "items": [
+        { "part": "Press", "count": 1, "role": "machine" },
+        { "part": "Die Lathe", "count": 1, "role": "machine" },
+        { "part": "Die Rack", "count": 1 },
+        { "part": "Parts Shelf", "count": 1, "perCells": 6, "loot": true },
+        { "part": "Chest", "count": 1, "loot": true },
+        { "part": "Lamp", "count": 1 } ],
+      "missing": ["tool rack", "repair station (mends parts in place)"] },
+    { "id": "fuelbay", "items": [
+        { "part": "Fuel Tank", "count": 2, "perCells": 2 },
+        { "part": "Lamp", "count": 1 } ],
+      "missing": ["fuel pump and a line to engineering's plant (fuel reaches through the frame only where tanks touch: CONSTRUCTS.md)"] },
+    { "id": "lockers", "items": [
+        { "part": "Chest", "count": 2, "perCells": 2, "loot": true },
+        { "part": "Seat", "count": 2 },
+        { "part": "Lamp", "count": 1 } ],
+      "missing": ["locker", "gun rack"] },
     { "id": "fuel", "items": [
         { "part": "Fuel Tank", "count": 1 } ],
       "missing": [] }

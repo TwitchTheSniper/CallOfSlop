@@ -55,6 +55,117 @@
       "socket": "drive"
     }
   ],
+  "config": [
+    {
+      "key": "walkProfile",
+      "label": "Gait profile",
+      "group": "Gait",
+      "type": "choice",
+      "options": [
+        "Simple",
+        "Basic",
+        "Advanced"
+      ],
+      "default": 0,
+      "tooltip": "Simple: it just walks. Basic: the gait settings. Advanced: each leg's own tuning too. The walker follows its leg with the highest profile."
+    },
+    {
+      "key": "stride",
+      "label": "Stride",
+      "group": "Gait",
+      "unit": "%",
+      "min": 50,
+      "max": 150,
+      "step": 5,
+      "default": 100,
+      "tooltip": "How far each step reaches: longer strides walk faster. Basic and Advanced. The walker follows its leg with the highest profile."
+    },
+    {
+      "key": "stepLift",
+      "label": "Step height",
+      "group": "Gait",
+      "unit": "%",
+      "min": 50,
+      "max": 250,
+      "step": 5,
+      "default": 100,
+      "tooltip": "How high the feet lift: higher clears bigger obstacles. Basic and Advanced. The walker follows its leg with the highest profile."
+    },
+    {
+      "key": "bodyHeight",
+      "label": "Body height",
+      "group": "Gait",
+      "unit": "%",
+      "min": 60,
+      "max": 130,
+      "step": 5,
+      "default": 100,
+      "tooltip": "How high it stands (still no higher than the legs reach). Basic and Advanced. The walker follows its leg with the highest profile."
+    },
+    {
+      "key": "gait",
+      "label": "Gait",
+      "group": "Gait",
+      "type": "choice",
+      "options": [
+        "Auto",
+        "Tripod",
+        "Wave"
+      ],
+      "default": 0,
+      "tooltip": "Auto: a tripod with six or more legs in an even count, else a wave. Tripod: half the legs at a time. Wave: one leg at a time. The walker follows its leg with the highest profile."
+    },
+    {
+      "key": "legPace",
+      "label": "Leg pace",
+      "group": "This leg",
+      "unit": "%",
+      "min": 50,
+      "max": 150,
+      "step": 5,
+      "default": 100,
+      "advanced": true,
+      "tooltip": "This leg's step speed. Advanced profile only."
+    },
+    {
+      "key": "legLift",
+      "label": "Leg lift",
+      "group": "This leg",
+      "unit": "%",
+      "min": 50,
+      "max": 200,
+      "step": 5,
+      "default": 100,
+      "advanced": true,
+      "tooltip": "How high this leg lifts its foot, on top of the step height. Advanced profile only."
+    },
+    {
+      "key": "legSpread",
+      "label": "Leg spread",
+      "group": "This leg",
+      "unit": "%",
+      "min": 70,
+      "max": 130,
+      "step": 5,
+      "default": 100,
+      "advanced": true,
+      "tooltip": "How far out this leg puts its foot. Advanced profile only."
+    },
+    {
+      "key": "legGroup",
+      "label": "Gait group",
+      "group": "This leg",
+      "type": "choice",
+      "options": [
+        "Auto",
+        "First",
+        "Second"
+      ],
+      "default": 0,
+      "advanced": true,
+      "tooltip": "In a tripod, which half this leg steps with. Advanced profile only."
+    }
+  ],
   "mass": 19309.4,
   "health": 26833,
   "armour": 32,

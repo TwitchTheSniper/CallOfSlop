@@ -65,11 +65,44 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
         S(1.04f, 0, 1.06f, 1.5f, 1.0f, 2.0f, 0.84f, 2.26f, 0, 2.3f), 2.24f, 2.36f, 0.8f, 0.92f, 0.8f, 0.92f, 0.97f, 0.97f)
         { Lines = [(Roofline.Level, 1)], FlareBlend = 0.1f };
 
-    public static readonly BodyLanguage[] Languages = [Fastback, Coke, Wedge, SuperWedge, Hatch, Estate, Minibus, BoxBody, Curtain, CabOver];
+    // ---- Phase 8b (section 18): buggies, monster trucks, fantasy wagons, concept cars.
+
+    /// <summary>A sci-fi buggy's tub: a wide flat sill, the sides tucking hard in to a low canopy line (drawn on a caged cab).</summary>
+    public static readonly BodyLanguage Tub = new("tub", "a buggy's tub: a wide flat sill, the sides tucked hard in to a low canopy line",
+        S(1.12f, 0, 1.14f, 0.5f, 1.02f, 1.2f, 0.84f, 1.8f, 0.5f, 2.08f, 0, 2.12f), 2.1f, 2.2f, 0.55f, 0.7f, 0.6f, 0.75f, 0.9f, 0.88f)
+        { Lines = [(Roofline.Wedged, 1.5), (Roofline.Tapered, 1)], FlareBlend = 0.1f };
+
+    /// <summary>A pickup's cab, tall and upright: square shoulders, a flat glasshouse (the monster truck's cab, high over its wheels).</summary>
+    public static readonly BodyLanguage Pickup = new("pickup", "a pickup's cab: square shoulders, a tall upright glasshouse, a flat roof",
+        S(1.04f, 0, 1.07f, 1.0f, 1.03f, 1.55f, 0.84f, 2.06f, 0, 2.14f), 2.12f, 2.24f, 0.68f, 0.82f, 0.75f, 0.9f, 0.95f, 0.95f)
+        { Lines = [(Roofline.Plain, 1.5), (Roofline.Level, 1)], FlareBlend = 0.15f };
+
+    /// <summary>A war wagon's hooped top: low upright sides, a tall round canvas arch over them.</summary>
+    public static readonly BodyLanguage Hoop = new("hoop", "a war wagon: low upright sides under a tall round arch of hoops",
+        S(1.04f, 0, 1.06f, 1.15f, 1.02f, 1.6f, 0.84f, 2.0f, 0.48f, 2.3f, 0, 2.36f), 2.3f, 2.44f, 0.55f, 0.7f, 0.55f, 0.7f, 0.86f, 0.86f)
+        { Lines = [(Roofline.Crowned, 2), (Roofline.Sagged, 1)], FlareBlend = 0.4f };
+
+    /// <summary>An ornate carriage: a body bowed out at the waist, tucked in at the sill and the roof, a crowned top.</summary>
+    public static readonly BodyLanguage Carriage = new("carriage", "a carriage: a body bowed out at the waist, tucked under and in, a crowned top",
+        S(1.0f, 0, 1.12f, 0.55f, 1.16f, 1.1f, 1.08f, 1.7f, 0.92f, 2.1f, 0.6f, 2.28f, 0, 2.32f), 2.26f, 2.38f, 0.65f, 0.8f, 0.65f, 0.8f, 0.9f, 0.9f)
+        { Lines = [(Roofline.Crowned, 2), (Roofline.Sheer, 1)], FlareBlend = 0.6f };
+
+    /// <summary>A concept car's bubble: round from the sill to a dome canopy.</summary>
+    public static readonly BodyLanguage Bubble = new("bubble", "a bubble car: round from the sill to a dome canopy",
+        S(1.0f, 0, 1.12f, 0.4f, 1.14f, 0.9f, 1.04f, 1.4f, 0.8f, 1.85f, 0.42f, 2.1f, 0, 2.16f), 2.12f, 2.22f, 0.55f, 0.66f, 0.55f, 0.66f, 0.86f, 0.84f)
+        { Lines = [(Roofline.Crowned, 1.5), (Roofline.Fastback, 1)], FlareBlend = 0.6f };
+
+    /// <summary>A streamliner: a low teardrop, wide at the sills, a narrow single-seat canopy.</summary>
+    public static readonly BodyLanguage Streamliner = new("streamliner", "a streamliner: a low teardrop, wide at the sills, a narrow canopy",
+        S(1.0f, 0, 1.16f, 0.35f, 1.12f, 0.8f, 0.94f, 1.3f, 0.62f, 1.8f, 0.3f, 2.08f, 0, 2.12f), 2.1f, 2.18f, 0.5f, 0.6f, 0.5f, 0.6f, 0.86f, 0.84f)
+        { Lines = [(Roofline.Fastback, 2), (Roofline.Tapered, 1)], FlareBlend = 0.6f };
+
+    public static readonly BodyLanguage[] Languages = [Fastback, Coke, Wedge, SuperWedge, Hatch, Estate, Minibus, BoxBody, Curtain, CabOver, Tub, Pickup, Hoop, Carriage, Bubble, Streamliner];
 
     // ---- The archetypes (the user, 2026-11-07: muscle cars by era, supercars, European car lines, European trucks; real vehicles as inspiration only).
 
     private static readonly string[] Car = ["Car"], Rigid = ["Box Truck"], Bus = ["War Bus"];
+    private static readonly string[] Buggy = ["Buggy"], Monster = ["Monster Truck"], Wagon = ["Wagon"], GiantTruck = ["Giant Truck"], Concept = ["Concept"];
 
     public static readonly BodyArchetype[] All =
     [
@@ -140,10 +173,65 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 Brows = [(1f, 1)], Tails = [(0.75f, 1), (1f, 1)], Cabs = [("cab-over", 1)], CapsuleRakeMin = 0.12f, CapsuleRakeMax = 0.22f, Uppers = [("none", 1)], Cage = 0, Ride = (0.5, 2, 0.2),
                 CabTallMin = 1.8f, CabTallMax = 1.9f, DoorRear = 0.6, CabLanguage = CabOver,
             }),
+        // Phase 8b (section 18). Sci-fi open-top 4x4 gun buggies: a caged tub low between wheels on arms, the gun on a ring behind the cage.
+        new("gun buggy", "buggy", "a sci-fi open-top 4x4 gun buggy: a caged tub, chunky wheels thrown out on arms, a gun on a ring behind the cage", Buggy, [("IT", 2), ("Scam", 1)],
+            r => r with
+            {
+                Languages = [(Tub, 1)], Mix = 0, Cabs = [("caged", 1)], Noses = [('w', 2), ('r', 1)], Ride = (3, 1, 0),
+                CabTallMin = 1.58f, CabTallMax = 1.64f, BeltMin = 0.86f, BeltMax = 0.92f, RakeMin = 0.22f, RakeMax = 0.24f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
+                HoodReach = -0.05f, HoodHalfMin = 0.56f, HoodHalfMax = 0.6f, HoodCrownMin = 0.14f, HoodCrownMax = 0.16f,
+            }),
+        new("scrap buggy", "buggy", "a scrap-built dune buggy: a slab tub under a roll cage, a short flat bonnet, high on long travel", Buggy, [("Bandit", 2)],
+            r => r with
+            {
+                Languages = [(Tub, 1)], Mix = 0, FacetsMin = 0, FacetsMax = 0, Cabs = [("caged", 1)], Noses = [('f', 2), ('g', 1)], Ride = (1, 2, 0),
+                CabTallMin = 1.58f, CabTallMax = 1.66f, BeltMin = 0.9f, BeltMax = 0.96f, RakeMin = 0.14f, RakeMax = 0.2f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
+                HoodReach = -0.08f, HoodHalfMin = 0.54f, HoodHalfMax = 0.6f,
+            }),
+        // Monster trucks: a short tall pickup on stilts over huge wheels (the gear is the recipe's: ShapeGrammar's MonsterGears).
+        new("monster truck", "monster truck", "a monster truck: a short tall pickup cab and bed, high on stilts over four huge wheels", Monster, [("Bandit", 2), ("Highland", 1.5)],
+            r => r with
+            {
+                Languages = [(Pickup, 1)], Mix = 0, Cabs = [("enclosed", 2), ("caged", 0.5)], Noses = [('g', 1.5), ('f', 1)], Ride = (0, 0, 1),
+                CabTallMin = 1.66f, CabTallMax = 1.76f, BeltMin = 0.98f, BeltMax = 1.04f, RakeMin = 0.12f, RakeMax = 0.18f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
+                HoodReach = 0.05f, HoodHalfMin = 0.58f, HoodHalfMax = 0.64f,
+            }),
+        // Fantasy: a war wagon under a hooped top (its faction's plates and spikes on it), an ornate carriage with a bowed body.
+        new("war wagon", "fantasy", "a war wagon: a room under a tall hooped top on low sides, a hard short cab ahead", Wagon, [("Bandit", 2)],
+            r => r with
+            {
+                Languages = [(Hoop, 1)], Mix = 0, Scales = [(BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.08f, FlareShare = 0.3f,
+                Brows = [(1.25f, 1), (1f, 1)], Tails = [(1.25f, 1), (1f, 1)], Cabs = [("caged", 1), ("armoured", 1)], Uppers = [("none", 1)], Ride = (0.5, 2, 0.5),
+            }),
+        new("carriage", "fantasy", "an ornate carriage: a room bowed out at the waist under a crowned top, a coachman's cab ahead", Wagon, [("British", 2), ("Highland", 1)],
+            r => r with
+            {
+                Languages = [(Carriage, 1)], Mix = 0, Scales = [(BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.1f, FlareShare = 0.3f,
+                Brows = [(1.5f, 1), (1.25f, 1)], Tails = [(1.5f, 1), (1.25f, 1)], Cabs = [("enclosed", 1), ("caged", 0.5)], Uppers = [("none", 1)], Ride = (0.5, 2, 0.3), DoorRear = 0.5,
+            }),
+        // One-off concept vehicles: a bubble-canopy car, a single-seat streamliner.
+        new("bubble car", "concept", "a bubble-canopy concept car: round from sill to dome, a cab-forward capsule, a short tail", Concept, [("IT", 2), ("Scam", 1)],
+            r => r with
+            {
+                Languages = [(Bubble, 1)], Mix = 0, Cabs = [("cab-over", 2), ("enclosed", 1)], Noses = [('r', 2), ('w', 1)], Ride = (2, 1, 0),
+                CabTallMin = 1.58f, CabTallMax = 1.66f, BeltMin = 0.84f, BeltMax = 0.9f, RakeMin = 0.24f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.7f,
+                CabHalfMin = 0.9f, CabHalfMax = 0.94f, HoodHalfMin = 0.56f, HoodHalfMax = 0.6f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, CabBackMin = 0.5f, CabBackMax = 0.7f,
+            }),
+        new("streamliner", "concept", "a single-seat streamliner: a low teardrop, a long bonnet, the canopy running down into the tail", Concept, [("Highland", 1.5), ("British", 1.5)],
+            r => r with
+            {
+                Languages = [(Streamliner, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('r', 2), ('w', 1)], Ride = (3, 1, 0),
+                CabTallMin = 1.56f, CabTallMax = 1.6f, BeltMin = 0.86f, BeltMax = 0.9f, RakeMin = 0.24f, RakeMax = 0.24f, CabHalfMin = 0.88f, CabHalfMax = 0.92f,
+                HoodReach = 0.15f, HoodHalfMin = 0.56f, HoodHalfMax = 0.6f, HoodCrownMin = 0.16f, HoodCrownMax = 0.18f, CabBackMin = 0.8f, CabBackMax = 0.95f,
+            }),
+        // A giant truck: the giant scale class over the faction's own languages (the class does the work: wider, taller, longer).
+        new("giant hauler", "giant truck", "a giant truck: a land train's room at the giant scale class, a tall cab ahead", GiantTruck, [("Highland", 1), ("IT", 1), ("Bandit", 1)],
+            r => r with { Scales = [(BodyScale.Giant, 1)], Uppers = [("none", 1)], Balcony = 0, Ride = (0.2, 2, 0) }),
     ];
 
     /// <summary>The chance a vehicle of a shape takes one of its style's archetypes instead of the style's own body (a Car always does when its style has one).</summary>
-    public static readonly Dictionary<string, double> Share = new(StringComparer.Ordinal) { ["Car"] = 1, ["Box Truck"] = 0.4, ["War Bus"] = 0.3 };
+    public static readonly Dictionary<string, double> Share = new(StringComparer.Ordinal) { ["Car"] = 1, ["Box Truck"] = 0.4, ["War Bus"] = 0.3,
+        ["Buggy"] = 1, ["Monster Truck"] = 1, ["Wagon"] = 1, ["Giant Truck"] = 1, ["Concept"] = 1 }; // (phase 8b: its new shapes always take one)
 
     /// <summary>The archetypes a style builds for a shape, with their weights.</summary>
     public static (BodyArchetype A, double W)[] For(FactionStyle st, string shape) =>
