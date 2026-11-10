@@ -106,7 +106,7 @@ def leg(tier, kind):
 
 
 def blueprint():
-    """The test walker: a bare 128 x 64 m hollow capital chassis on six titan mech legs, a helm on the deck at the bow, a Driving Module wired to the first leg, and a battery bank that powers the legs.
+    """The test walker: a bare 128 x 64 m hollow capital chassis on six titan mech legs, a helm on the deck at the bow, a Driving Module wired to the first leg, a battery bank that powers the legs and a 40 MW genset plant that charges it.
 
     The root is the hollow chassis (Constructs/Parts/Interior, docs/sandbox/INTERIORS.md): the same footprint, mass, health, armour
     and 44 outer sockets as the Capital Chassis Deck, with room for the interiors track's void storeys inside it. The helm stands on
@@ -119,7 +119,13 @@ def blueprint():
         {"part": "Bridge Helm", "on": 7, "socket": "front2.2", "by": "-y", "spin": 1},
         {"part": "Driving Module", "on": 8, "socket": "+x", "by": "-x"},
         {"part": "Battery", "on": 9, "socket": "+x", "by": "-x"},  # (the helm's own)
-        {"part": "Capital Battery Bank", "on": 0, "socket": "top5.1", "by": "-y"},  # (the legs draw their work from it: it reaches every leg through the deck and the hips)
+        {"part": "Capital Battery Bank", "on": 0, "socket": "top7.0", "by": "-y"},  # (the legs draw their work from it: it reaches every leg through the deck and the hips; at the stern, off the chassis's hatches and the decks' spine)
+        # The plant (step 12 on): a Large Fuel Bunker on an adapter at the stern's other corner, a Large Genset on either end of it
+        # (touching the bunker, so fuel reaches them): 40 MW, so it stands on the plant and walks on the plant and the bank.
+        {"part": "Adapter Capital to Large", "on": 0, "socket": "top7.3", "by": "back"},
+        {"part": "Large Fuel Bunker", "on": 12, "socket": "front2.2", "by": "-y"},
+        {"part": "Large Genset", "on": 13, "socket": "+x", "by": "-x"},
+        {"part": "Large Genset", "on": 13, "socket": "-x", "by": "+x"},
     ]
     return {
         "format": "call-of-slop-construct-blueprint/1",

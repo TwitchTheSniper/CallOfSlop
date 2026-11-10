@@ -1,0 +1,276 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Mille",
+  "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. The Thousand Layers keep the Bakehouse here. The crust is thinnest under the Proving Bowl: dig there to get in.",
+  "author": "Call of Slop",
+  "order": 5,
+  "halfX": 5600,
+  "halfZ": 5600,
+  "maxPlayers": 8,
+  "skybox": {
+    "preset": "dusk",
+    "zenith": "#5e6f9a",
+    "horizon": "#f0c48a",
+    "ground": "#8a6a3c",
+    "sun": {
+      "color": "#ffd9a0",
+      "intensity": 1.0,
+      "size": 1.8,
+      "glow": 0.5
+    },
+    "haze": {
+      "color": "#e8b878",
+      "strength": 0.6
+    }
+  },
+  "planetoid": {
+    "radius": 3000,
+    "cell": 2,
+    "strength": 8,
+    "surface": {
+      "grass": "#c99a4e",
+      "dirt": "#a8733a",
+      "rock": "#7d4f28",
+      "sand": "#e8cf8f",
+      "dirtSlope": 16,
+      "rockSlope": 30,
+      "sandBelow": -22
+    },
+    "cavity": {
+      "crust": 220,
+      "glow": "#ffb347",
+      "core": 60
+    },
+    "landing": {
+      "tonnes": 40,
+      "why": "the crust is thin over the cavity"
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 42,
+        "scale": 900,
+        "octaves": 5,
+        "seed": 91
+      },
+      {
+        "type": "mountain",
+        "lat": 35,
+        "lon": 250,
+        "radius": 520,
+        "height": 110,
+        "seed": 51,
+        "ridges": 0.3,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "crater",
+        "lat": 70,
+        "lon": 40,
+        "radius": 80,
+        "depth": 70,
+        "rim": 14
+      },
+      {
+        "type": "crater",
+        "lat": -30,
+        "lon": 120,
+        "radius": 260,
+        "depth": 30
+      },
+      {
+        "type": "terrace",
+        "step": 9,
+        "sharp": 0.72
+      },
+      {
+        "type": "noise",
+        "amplitude": 2.5,
+        "scale": 70,
+        "octaves": 3,
+        "seed": 5
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": 55,
+        "lon": 300,
+        "radius": 90,
+        "height": 9,
+        "edge": 120
+      },
+      {
+        "type": "flatten",
+        "lat": 70,
+        "lon": 40,
+        "radius": 30,
+        "height": -66,
+        "edge": 30
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 70,
+        "height": 9,
+        "edge": 150
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "generate": false
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        3008.968,
+        -40
+      ],
+      [
+        6,
+        3008.968,
+        -40
+      ],
+      [
+        -12,
+        3009.001,
+        -36
+      ],
+      [
+        12,
+        3009.001,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        3008.968,
+        40
+      ],
+      [
+        6,
+        3008.968,
+        40
+      ],
+      [
+        -12,
+        3009.001,
+        36
+      ],
+      [
+        12,
+        3009.001,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 3008.701,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 3008.701,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      3009.163,
+      -45
+    ],
+    [
+      0,
+      3009.163,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73342,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 55,
+      "lon": 300,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#d9c14a",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 70,
+      "lon": 40,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#4ab0d9",
+      "material": "Concrete"
+    }
+  ]
+}

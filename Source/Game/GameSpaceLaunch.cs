@@ -75,6 +75,7 @@ public sealed partial class Game
         var pose = Space!.Bubble.PoseAt(f.Ships.Time);
         var dt = World.TickDt;
         var launched = 0;
+        var limited = World.Map.Planetoid is { LandingTonnes: > 0 };
         foreach (var c in Constructs.Bodies)
         {
             if (c.SpaceShip == 0)
@@ -98,7 +99,15 @@ public sealed partial class Game
             var at = pose.FromEcliptic(f.Ships.PositionOf(i));
             var vel = pose.VelocityFromEcliptic(f.Ships.PositionOf(i), f.Ships.VelocityOf(i));
             var p = at.ToVector3();
-            if (Vector3.DistanceSquared(p, centre) < (edge - SpaceEdgeHysteresis) * (edge - SpaceEdgeHysteresis))
+            if (limited && Vector3.DistanceSquared(p, centre) < edge * edge && LandOverLimit(c, out var tonnes))
+            {
+                // Too heavy for this world (GameSpaceLanding.cs): it waits at the sky's edge, and a shuttle goes down.
+                LandHoldOut(f, i, c, edge, tonnes);
+                at = pose.FromEcliptic(f.Ships.PositionOf(i));
+                vel = pose.VelocityFromEcliptic(f.Ships.PositionOf(i), f.Ships.VelocityOf(i));
+                p = at.ToVector3();
+            }
+            else if (Vector3.DistanceSquared(p, centre) < (edge - SpaceEdgeHysteresis) * (edge - SpaceEdgeHysteresis))
             {
                 SpaceEnter(c, f.Ships, i, pose);
                 continue;

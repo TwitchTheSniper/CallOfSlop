@@ -7,7 +7,9 @@ namespace CallOfSlop;
 /// Landing on another planetoid (docs/space/SPACE.md "Landing on another planetoid"; Karl, 2026-11-04: the group travels
 /// together). The game holds one planetoid at a time, so a landing moves the whole game: a ship in space that comes within
 /// the sky's edge of another body with a map (<c>"map"</c> in its system file) lands there when every player sits in it.
-/// Until then it is held at the edge and its riders are told who they wait for.
+/// Until then it is held at the edge and its riders are told who they wait for. A ship that has jumped to another star
+/// system lands on that system's worlds too: the bubble moves to that system, and every system's ships fly on
+/// (<see cref="MakeHostSpace"/>). A world may take ships only up to a mass (<see cref="LandOverLimit"/>).
 /// <para>
 /// The landing goes through the world save (it needs a saved world): the planetoid left behind is written to the world's
 /// <c>planets/&lt;map&gt;</c> folder without the ship and what it carries, the whole world (people, story, the ship) to its
@@ -36,8 +38,11 @@ public sealed partial class Game
     private (Construct Ship, Map To)? _landNext;
     private double _landSaidAt = -1;
 
-    /// <summary>The bodies a ship's bubble could land on (body index, its map), for the bubble they were worked out for.</summary>
-    private (int Body, Map Map, double Edge)[] _landable = [];
+    /// <summary>
+    /// The bodies a ship could land on, in every star system (galaxy index, body index, its map): another body of the
+    /// bubble's own system, or any world of a system a ship has jumped to. Worked out for one bubble.
+    /// </summary>
+    private (int Galaxy, int Body, Map Map, double Edge)[] _landable = [];
     private SpaceSession? _landableFor;
 
     /// <summary>The folder a planetoid left behind is kept in, inside a world's folder.</summary>
@@ -46,38 +51,41 @@ public sealed partial class Game
     /// <summary>Where a map's sky ends round its planetoid (m from the centre): as <see cref="SpaceEdge"/> works it out there.</summary>
     private static double LandEdge(Map m) => Math.Max(Math.Max(m.HalfX, m.HalfZ), m.Planetoid!.Radius + 500);
 
-    /// <summary>Host, after the ships step: a ship in space within another planetoid's sky lands, or is held at its edge.</summary>
+    /// <summary>
+    /// Host, after the ships step: a ship in space within another planetoid's sky lands, or is held at its edge. A ship
+    /// that has jumped to another star system lands on that system's worlds the same way (the whole group: free travel
+    /// stays inside the bubble's own system).
+    /// </summary>
     internal void SpaceLandingStep(SpaceSession s, SpaceFlight f)
     {
         if (_landing != null || _landNext != null || _travelNext != null || Host != null || !SandboxOn || SpaceLaunched == 0)
             return;
         if (!ReferenceEquals(_landableFor, s))
-        {
-            _landableFor = s;
-            var list = new List<(int, Map, double)>();
-            for (var b = 1; b < f.System.Count; b++)
-                if (b != s.Bubble.Body && f.System.Bodies[b].Map is { } name && Maps.Find(name) is { Planetoid: not null } m && m != World.Map)
-                    list.Add((b, m, LandEdge(m)));
-            _landable = list.ToArray();
-        }
+            LandableFor(s);
         if (_landable.Length == 0)
             return;
-        var t = f.Ships.Time;
         foreach (var c in Constructs.Bodies)
         {
-            if (c.SpaceShip == 0 || c.SpaceAway != 0 && c.SpaceAway - 1 != s.GalaxyIndex)
+            if (c.SpaceShip == 0)
                 continue;
-            var i = f.Ships.IndexOfId(c.SpaceShip);
+            var g = SystemOfConstruct(s, c);
+            if (g != s.GalaxyIndex && s.FlightOf(g) == null)
+                continue;
+            var sf = g == s.GalaxyIndex ? f : s.FlightOf(g)!;
+            var i = sf.Ships.IndexOfId(c.SpaceShip);
             if (i < 0)
                 continue;
-            var pos = f.Ships.PositionOf(i);
-            foreach (var (b, m, edge) in _landable)
+            var pos = sf.Ships.PositionOf(i);
+            var t = sf.Ships.Time;
+            foreach (var (lg, b, m, edge) in _landable)
             {
-                f.System.StateOf(b, t, out var bp, out var bv);
+                if (lg != g)
+                    continue;
+                sf.System.StateOf(b, t, out var bp, out var bv);
                 var r = pos - bp;
                 if (r.LengthSquared >= edge * edge)
                     continue;
-                if (TravelToPlace(c, m, b))
+                if (g == s.GalaxyIndex && TravelToPlace(c, m, b))
                     return; // (free travel: the planetoid runs beside this game and the riders join it, GameTravel.cs)
                 var why = PlaceOf(m.Name) != null ? $"others are on {m.Name}: a ship without the host aboard can land there" : LandProblem(c);
                 if (why == null)
@@ -87,11 +95,11 @@ public sealed partial class Game
                 }
                 // Held at the edge until it can land: no closer, and no speed inwards.
                 var n = r.Normalized();
-                var v = f.Ships.VelocityOf(i) - bv;
+                var v = sf.Ships.VelocityOf(i) - bv;
                 var vr = Vec3d.Dot(v, n);
                 if (vr < 0)
                     v -= n * vr;
-                f.Ships.SetState(i, b, n * edge, v);
+                sf.Ships.SetState(i, b, n * edge, v);
                 if (SandboxNow > _landSaidAt + 3)
                 {
                     _landSaidAt = SandboxNow;
@@ -102,6 +110,70 @@ public sealed partial class Game
                 break;
             }
         }
+    }
+
+    private void LandableFor(SpaceSession s)
+    {
+        _landableFor = s;
+        var list = new List<(int, int, Map, double)>();
+        for (var g = 0; g < Galaxy.Count; g++)
+        {
+            var sys = Galaxy.System(g);
+            for (var b = 1; b < sys.Count; b++)
+                if ((g != s.GalaxyIndex || b != s.Bubble.Body) && sys.Bodies[b].Map is { } name && Maps.Find(name) is { Planetoid: not null } m && m != World.Map)
+                    list.Add((g, b, m, LandEdge(m)));
+        }
+        if (s.GalaxyIndex < 0) // (a system outside the galaxy: its own bodies only, as before)
+            for (var b = 1; b < s.System.Count; b++)
+                if (b != s.Bubble.Body && s.System.Bodies[b].Map is { } name && Maps.Find(name) is { Planetoid: not null } m && m != World.Map)
+                    list.Add((-1, b, m, LandEdge(m)));
+        _landable = list.ToArray();
+    }
+
+    /// <summary>
+    /// Landing limits (docs/planets/WORLDS.md; Karl, 2026-11-10: some worlds won't take a capital ship, so a shuttle goes
+    /// down). A world can set the heaviest ship that may come down through its sky (<see cref="Planetoid.LandingTonnes"/>,
+    /// the ship with what it carries). The group still arrives: the bubble moves to the world, and the heavy ship is held
+    /// at the sky's edge as a ship in space, where a craft it carries can be let go and flown down. True: this ship is
+    /// over the limit here (its mass in <paramref name="tonnes"/>). No allocation.
+    /// </summary>
+    private bool LandOverLimit(Construct ship, out double tonnes)
+    {
+        tonnes = 0;
+        if (World.Map.Planetoid is not { LandingTonnes: > 0 } p)
+            return false;
+        foreach (var c in Constructs.Bodies)
+            if (Aboard(ship, c))
+                tonnes += c.Mass;
+        tonnes /= 1000;
+        return tonnes > p.LandingTonnes;
+    }
+
+    /// <summary>Host: a ship over this world's landing limit stays at the sky's edge (no closer, no speed inwards), and its riders hear why.</summary>
+    private void LandHoldOut(SpaceFlight f, int i, Construct c, double edge, double tonnes)
+    {
+        var body = Space!.Bubble.Body;
+        f.System.StateOf(body, f.Ships.Time, out var bp, out var bv);
+        var r = f.Ships.PositionOf(i) - bp;
+        var n = r.LengthSquared > 1 ? r.Normalized() : Vec3d.UnitZ;
+        var v = f.Ships.VelocityOf(i) - bv;
+        var vr = Vec3d.Dot(v, n);
+        if (vr < 0)
+            v -= n * vr;
+        f.Ships.SetState(i, body, n * edge, v);
+        if (SandboxNow > _landSaidAt + 4)
+            LandLimitSay(c, tonnes);
+    }
+
+    private void LandLimitSay(Construct c, double tonnes)
+    {
+        _landSaidAt = SandboxNow;
+        var p = World.Map.Planetoid!;
+        var line = FormattableString.Invariant($"{World.Map.Name} takes ships up to {p.LandingTonnes:0} t and this one is {tonnes:0} t")
+                   + (p.LandingWhy.Length > 0 ? $" ({p.LandingWhy})" : "") + ": leave it in orbit and take a shuttle down";
+        foreach (var pl in Players.Values)
+            if (SeatedIn(pl, c))
+                SandboxHands.Notices.Add((pl.Id, line));
     }
 
     private bool SeatedIn(Player p, Construct c)

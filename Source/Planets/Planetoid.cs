@@ -55,6 +55,14 @@ public sealed class Planetoid
     /// <summary>The radius of the glowing core at the centre (metres; 0: none). A light only: nothing touches it.</summary>
     public float CoreRadius;
 
+    /// <summary>
+    /// The heaviest ship that may land from space (tonnes, with what it carries; 0: no limit), and why, as its riders are
+    /// told (WORLDS.md "Landing limits": a capital ship waits in orbit and a shuttle goes down).
+    /// </summary>
+    public double LandingTonnes;
+
+    public string LandingWhy = "";
+
     /// <summary>Is there a cavity inside?</summary>
     public bool Hollow => Crust > 0;
 
@@ -104,10 +112,12 @@ public sealed class Planetoid
     /// <summary>Feature types and their keys (lat / lon in degrees; lat 90 is the +Y pole, lon 0 faces +Z, 90 faces +X).</summary>
     private static readonly Dictionary<string, (string[] Keys, string[] Required)> Schema = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["noise"] = (["amplitude", "scale", "octaves", "persistence", "lacunarity", "seed", "ridged"], ["amplitude", "scale"]),
+        ["noise"] = (["amplitude", "scale", "octaves", "persistence", "lacunarity", "seed", "ridged", "lat", "lon", "radius", "edge"], ["amplitude", "scale"]),
         ["mountain"] = (["lat", "lon", "radius", "height", "seed", "ridges", "erosion", "warp"], ["lat", "lon", "radius", "height"]),
         ["flatten"] = (["lat", "lon", "radius", "height", "edge"], ["lat", "lon", "radius"]),
         ["crater"] = (["lat", "lon", "radius", "depth", "rim"], ["lat", "lon", "radius", "depth"]),
+        ["rift"] = (["lat", "lon", "bearing", "length", "width", "depth", "floor", "wander", "seed"], ["lat", "lon", "length", "width", "depth"]),
+        ["terrace"] = (["step", "sharp", "lat", "lon", "radius", "edge"], ["step"]),
     };
 
     public static IEnumerable<string> FeatureTypes => Schema.Keys;
@@ -221,6 +231,15 @@ public sealed class Planetoid
         public double Ex, Ey, Ez, Nx, Ny, Nz; // east and north there
         public double CosReach = -2; // dot(dir, centre) above this: inside the feature's reach
         public TerrainGen.Mountain? Mountain;
+        public bool Local; // placed by lat / lon
+        // The feature's numbers, read once (HeightAt runs for every vertex: a lookup by name there cost more than the noise):
+        // noise: A amplitude, B scale, C persistence, D lacunarity, I octaves, J seed, Flag ridged, R radius, E edge (R 0: everywhere)
+        // flatten: R radius, E edge, A height; crater: R radius, A depth, B rim
+        // rift: A depth, B half length, C half width, D floor share, E wander, G wander's wavelength, Sin / Cos of the bearing, J seed
+        // terrace: A step, B the riser's share of a step, R radius, E edge (R 0: everywhere)
+        public double A, B, C, D, E, G, R, Sin, Cos;
+        public int I, J;
+        public bool Flag;
     }
 
     [NotBaked]
@@ -234,8 +253,32 @@ public sealed class Planetoid
         for (var k = 0; k < Features.Count; k++)
         {
             var f = Features[k];
-            var p = new Placed { F = f };
-            if (f.Has("lat"))
+            var p = new Placed { F = f, Local = f.Has("lat") };
+            switch (f.Type)
+            {
+                case "noise":
+                    p.A = f.Num("amplitude", 0); p.B = f.Num("scale", 100); p.C = f.Num("persistence", 0.5); p.D = f.Num("lacunarity", 2);
+                    p.I = (int)f.Num("octaves", 4); p.J = (int)f.Num("seed", 1); p.Flag = f.Get("ridged") is true;
+                    p.R = p.Local ? f.Num("radius", 1) : 0; p.E = Math.Max(f.Num("edge", p.R * 0.5), 0.01);
+                    break;
+                case "flatten":
+                    p.R = f.Num("radius", 1); p.E = Math.Max(f.Num("edge", 20), 0.01); p.A = f.Num("height", 0);
+                    break;
+                case "crater":
+                    p.R = f.Num("radius", 1); p.A = f.Num("depth", 1); p.B = f.Num("rim", p.A * 0.25);
+                    break;
+                case "rift":
+                    p.A = f.Num("depth", 1); p.B = f.Num("length", 1) * 0.5; p.C = f.Num("width", 1) * 0.5;
+                    p.D = Math.Clamp(f.Num("floor", 0.3), 0, 0.95); p.E = Math.Abs(f.Num("wander", 0)); p.G = Math.Max(p.C * 8, 1);
+                    p.Sin = Math.Sin(f.Num("bearing", 0) * Math.PI / 180); p.Cos = Math.Cos(f.Num("bearing", 0) * Math.PI / 180);
+                    p.J = (int)f.Num("seed", 1);
+                    break;
+                case "terrace":
+                    p.A = f.Num("step", 1); p.B = 1 - Math.Clamp(f.Num("sharp", 0.8), 0, 0.98);
+                    p.R = p.Local ? f.Num("radius", 1) : 0; p.E = Math.Max(f.Num("edge", p.R * 0.5), 0.01);
+                    break;
+            }
+            if (p.Local)
             {
                 double lat = f.Num("lat", 0) * Math.PI / 180, lon = f.Num("lon", 0) * Math.PI / 180;
                 p.Dx = Math.Cos(lat) * Math.Sin(lon);
@@ -256,13 +299,7 @@ public sealed class Planetoid
                 p.Nx = p.Dy * p.Ez - p.Dz * p.Ey;
                 p.Ny = p.Dz * p.Ex - p.Dx * p.Ez;
                 p.Nz = p.Dx * p.Ey - p.Dy * p.Ex;
-                var reach = f.Type switch
-                {
-                    "mountain" => f.Num("radius", 1) * (1 + f.Num("warp", 0.35) * 0.35) + 10,
-                    "flatten" => f.Num("radius", 1) + f.Num("edge", 20) + 2,
-                    "crater" => f.Num("radius", 1) * 2 + 2,
-                    _ => Radius * 4,
-                };
+                var reach = ReachOf(f);
                 p.CosReach = Math.Cos(Math.Min(reach / Radius, Math.PI));
                 if (f.Type == "mountain")
                     p.Mountain = new TerrainGen.Mountain(new TerrainFeature { Type = "mountain" }
@@ -281,96 +318,196 @@ public sealed class Planetoid
         foreach (var p in PlacedFeatures)
         {
             var f = p.F;
+            if (!p.Local)
+            {
+                if (f.Type == "noise")
+                    h += Noise(p, x, y, z);
+                else if (f.Type == "terrace")
+                    h = Terrace(p, h);
+                continue;
+            }
+            var c = x * p.Dx + y * p.Dy + z * p.Dz;
+            if (c <= p.CosReach)
+                continue;
+            // Local ground coordinates round the feature's centre (azimuthal equidistant: true distance along the
+            // ground from the centre, true bearing), metres.
+            double tx = x - c * p.Dx, ty = y - c * p.Dy, tz = z - c * p.Dz;
+            var s = Math.Sqrt(tx * tx + ty * ty + tz * tz);
+            var ang = Math.Atan2(s, c);
+            double lx = 0, lz = 0;
+            if (s > 1e-12)
+            {
+                var k = ang * Radius / s;
+                lx = (tx * p.Ex + ty * p.Ey + tz * p.Ez) * k;
+                lz = -(tx * p.Nx + ty * p.Ny + tz * p.Nz) * k;
+            }
+            var d = ang * Radius;
             switch (f.Type)
             {
-                case "noise":
-                {
-                    double px = x * Radius, py = y * Radius, pz = z * Radius;
-                    var n = Fbm3(px, py, pz, f.Num("scale", 100), (int)f.Num("octaves", 4), f.Num("persistence", 0.5), f.Num("lacunarity", 2), (int)f.Num("seed", 1));
-                    if (f.Get("ridged") is true)
-                        n = 1 - 2 * Math.Abs(n);
-                    h += f.Num("amplitude", 0) * n;
+                case "noise": // (a patch of noise: dunes in one basin, rough ground on one side)
+                    if (d < p.R + p.E)
+                        h += Noise(p, x, y, z) * (d <= p.R ? 1 : 1 - TerrainGen.Smoothstep((d - p.R) / p.E));
                     break;
-                }
+                case "terrace":
+                    if (d < p.R + p.E)
+                        h += (Terrace(p, h) - h) * (d <= p.R ? 1 : 1 - TerrainGen.Smoothstep((d - p.R) / p.E));
+                    break;
                 default:
-                {
-                    var c = x * p.Dx + y * p.Dy + z * p.Dz;
-                    if (c <= p.CosReach)
-                        break;
-                    // Local ground coordinates round the feature's centre (azimuthal equidistant: true distance along the
-                    // ground from the centre, true bearing), metres.
-                    double tx = x - c * p.Dx, ty = y - c * p.Dy, tz = z - c * p.Dz;
-                    var s = Math.Sqrt(tx * tx + ty * ty + tz * tz);
-                    var ang = Math.Atan2(s, c);
-                    double lx = 0, lz = 0;
-                    if (s > 1e-12)
-                    {
-                        var k = ang * Radius / s;
-                        lx = (tx * p.Ex + ty * p.Ey + tz * p.Ez) * k;
-                        lz = -(tx * p.Nx + ty * p.Ny + tz * p.Nz) * k;
-                    }
-                    var d = ang * Radius;
-                    h = Apply(p, f, h, lx, lz, d);
+                    h = Apply(p, h, lx, lz, d);
                     break;
-                }
             }
         }
         return Math.Round(h / Quantum) * Quantum;
     }
 
-    private static double Apply(Placed p, TerrainFeature f, double h, double lx, double lz, double d)
+    private double Noise(Placed p, double x, double y, double z)
     {
-        switch (f.Type)
+        var n = Fbm3(x * Radius, y * Radius, z * Radius, p.B, p.I, p.C, p.D, p.J);
+        if (p.Flag)
+            n = 1 - 2 * Math.Abs(n);
+        return p.A * n;
+    }
+
+    /// <summary>
+    /// The height stepped into terraces <c>step</c> high: flat treads with a riser over the last <c>1 - sharp</c> of each
+    /// step (mesas, benches, a layered crust). It never leaves the step the height was in.
+    /// </summary>
+    private static double Terrace(Placed p, double h)
+    {
+        var q = h / p.A;
+        var floor = Math.Floor(q);
+        var t = (q - floor - (1 - p.B)) / p.B;
+        return (floor + (t <= 0 ? 0 : TerrainGen.Smoothstep(t))) * p.A;
+    }
+
+    private static double Apply(Placed p, double h, double lx, double lz, double d)
+    {
+        switch (p.F.Type)
         {
             case "mountain":
                 return h + p.Mountain!.HeightAt(lx, lz);
             case "flatten":
             {
-                double r = f.Num("radius", 1), edge = Math.Max(f.Num("edge", 20), 0.01), target = f.Num("height", 0);
-                var t = d <= r ? 1 : 1 - TerrainGen.Smoothstep((d - r) / edge);
-                return h + (target - h) * t;
+                var t = d <= p.R ? 1 : 1 - TerrainGen.Smoothstep((d - p.R) / p.E);
+                return h + (p.A - h) * t;
             }
             case "crater":
             {
-                double r = f.Num("radius", 1), depth = f.Num("depth", 1), rim = f.Num("rim", depth * 0.25);
-                var t = d / r;
+                var t = d / p.R;
                 if (t < 1)
-                    return h - depth * (1 - t * t) + rim * TerrainGen.Smoothstep(t);
-                return t < 2 ? h + rim * (1 - TerrainGen.Smoothstep(t - 1)) : h;
+                    return h - p.A * (1 - t * t) + p.B * TerrainGen.Smoothstep(t);
+                return t < 2 ? h + p.B * (1 - TerrainGen.Smoothstep(t - 1)) : h;
+            }
+            case "rift":
+            {
+                // A trench along a bearing (0: north, 90: east): a flat floor, sides rising to the ground either side, ends
+                // that taper out over its width, and a line that wanders. A negative depth is a wall or a dyke.
+                double north = -lz, along = lx * p.Sin + north * p.Cos, across = lx * p.Cos - north * p.Sin;
+                var end = (p.B - Math.Abs(along)) / (p.C * 2);
+                if (end <= 0)
+                    return h;
+                if (p.E > 0)
+                    across += p.E * Noise3(along / p.G, 0.5, 0.5, p.J);
+                var t = Math.Abs(across) / p.C;
+                if (t >= 1)
+                    return h;
+                var side = t <= p.D ? 1 : 1 - TerrainGen.Smoothstep((t - p.D) / (1 - p.D));
+                return h - p.A * side * (end >= 1 ? 1 : TerrainGen.Smoothstep(end));
             }
             default:
                 return h;
         }
     }
 
-    /// <summary>Lowest and highest the features can make the ground, from their own limits (not a sampling: always safe).</summary>
+    /// <summary>How far along the ground from its centre a feature placed by lat / lon can change the height (metres).</summary>
+    private double ReachOf(TerrainFeature f) => f.Type switch
+    {
+        "mountain" => f.Num("radius", 1) * (1 + f.Num("warp", 0.35) * 0.35) + 10,
+        "flatten" => f.Num("radius", 1) + f.Num("edge", 20) + 2,
+        "crater" => f.Num("radius", 1) * 2 + 2,
+        "rift" => Math.Sqrt(f.Num("length", 1) * f.Num("length", 1) * 0.25 + Math.Pow(f.Num("width", 1) * 0.5 + Math.Abs(f.Num("wander", 0)), 2)) + 2,
+        "noise" or "terrace" => f.Num("radius", 1) + Math.Max(f.Num("edge", f.Num("radius", 1) * 0.5), 0.01) + 2,
+        _ => Radius * 4,
+    };
+
+    /// <summary>The most a feature can lower and raise the ground it reaches, from its own limits.</summary>
+    private static (double Down, double Up) Swing(TerrainFeature f)
+    {
+        switch (f.Type)
+        {
+            case "noise":
+                var a = Math.Abs(f.Num("amplitude", 0));
+                return (a, a);
+            case "mountain":
+                var mh = Math.Abs(f.Num("height", 0));
+                var ridges = f.Num("ridges", 0.6);
+                return (mh * (0.7 * ridges + 0.1), mh * (1 + 1.5 * ridges));
+            case "crater":
+                return (f.Num("depth", 0), Math.Abs(f.Num("rim", f.Num("depth", 0) * 0.25)));
+            case "rift":
+                return (Math.Max(f.Num("depth", 0), 0), Math.Max(-f.Num("depth", 0), 0));
+            case "terrace": // (a height stays within its own step: a step either way covers it)
+                var step = Math.Abs(f.Num("step", 0));
+                return (step, step);
+            default:
+                return (0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Lowest and highest the features can make the ground, from their own limits (not a sampling: always safe). Features
+    /// that are everywhere add up. Features placed by lat / lon add up only where they can meet: the bound is the worst
+    /// group of them that all reach one another (eight mountains spread round a world bound it as its worst cluster,
+    /// not as eight stacked: the far plane, the drawing's culling and every ray's shell come from these two numbers).
+    /// A flatten sets the ground to its height, give or take what comes after it.
+    /// </summary>
     public void WorkOutBounds()
     {
-        double lo = Base, hi = Base;
+        double everyDown = 0, everyUp = 0;
+        var local = new List<(double X, double Y, double Z, double Reach, double Down, double Up)>();
         foreach (var f in Features)
-            switch (f.Type)
+        {
+            if (f.Type == "flatten")
+                continue;
+            var (down, up) = Swing(f);
+            if (!f.Has("lat"))
             {
-                case "noise":
-                    var a = Math.Abs(f.Num("amplitude", 0));
-                    lo -= a;
-                    hi += a;
-                    break;
-                case "mountain":
-                    var mh = f.Num("height", 0);
-                    var ridges = f.Num("ridges", 0.6);
-                    lo -= Math.Abs(mh) * (0.7 * ridges + 0.1);
-                    hi += Math.Abs(mh) * (1 + 1.5 * ridges);
-                    break;
-                case "flatten":
-                    var t = f.Num("height", 0);
-                    lo = Math.Min(lo, t);
-                    hi = Math.Max(hi, t);
-                    break;
-                case "crater":
-                    lo -= f.Num("depth", 0);
-                    hi += Math.Abs(f.Num("rim", f.Num("depth", 0) * 0.25));
-                    break;
+                everyDown += down;
+                everyUp += up;
+                continue;
             }
+            double lat = f.Num("lat", 0) * Math.PI / 180, lon = f.Num("lon", 0) * Math.PI / 180;
+            local.Add((Math.Cos(lat) * Math.Sin(lon), Math.Sin(lat), Math.Cos(lat) * Math.Cos(lon), ReachOf(f), down, up));
+        }
+        double localDown = 0, localUp = 0;
+        foreach (var a in local)
+        {
+            double down = 0, up = 0;
+            foreach (var b in local) // (a itself too: its angle to itself is 0)
+                if (Math.Acos(Math.Clamp(a.X * b.X + a.Y * b.Y + a.Z * b.Z, -1, 1)) * Radius < a.Reach + b.Reach)
+                {
+                    down += b.Down;
+                    up += b.Up;
+                }
+            localDown = Math.Max(localDown, down);
+            localUp = Math.Max(localUp, up);
+        }
+        double lo = Base - everyDown - localDown, hi = Base + everyUp + localUp;
+        for (var k = 0; k < Features.Count; k++)
+        {
+            if (Features[k].Type != "flatten")
+                continue;
+            double afterDown = 0, afterUp = 0;
+            for (var j = k + 1; j < Features.Count; j++)
+            {
+                var (down, up) = Swing(Features[j]);
+                afterDown += down;
+                afterUp += up;
+            }
+            var t = Features[k].Num("height", 0);
+            lo = Math.Min(lo, t - afterDown);
+            hi = Math.Max(hi, t + afterUp);
+        }
         MinHeight = (float)Math.Floor(lo - 1);
         MaxHeight = (float)Math.Ceiling(hi + 1);
     }
@@ -850,6 +987,7 @@ public sealed class Planetoid
                 case "base": p.Base = Num(kv.Value, where, "base"); break;
                 case "surface": p.Surface = TerrainSpec.ParseSurface(kv.Value, where); break;
                 case "cavity": ParseCavity(p, kv.Value, where + ".cavity"); break;
+                case "landing": ParseLanding(p, kv.Value, where + ".landing"); break;
                 case "features":
                     if (kv.Value.ValueKind != JsonValueKind.Array)
                         throw new MapFileException($"{where}.features should be a list");
@@ -858,7 +996,7 @@ public sealed class Planetoid
                         p.Features.Add(ParseFeature(fe, $"{where}.features[{k++}]"));
                     break;
                 default:
-                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, cavity, features)");
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, cavity, landing, features)");
             }
         }
         var arc = p.Radius * Math.PI / 2;
@@ -884,6 +1022,29 @@ public sealed class Planetoid
 
     /// <summary>The thinnest a hollow planetoid's crust may be where its features dig deepest (metres).</summary>
     public const float MinCrust = 8;
+
+    /// <summary><c>"landing": { "tonnes": 40, "why": "the crust won't bear more" }</c>: the heaviest ship that may land from space.</summary>
+    private static void ParseLanding(Planetoid p, JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new MapFileException($"{where} should be an object like {{ \"tonnes\": 40 }}");
+        foreach (var kv in e.EnumerateObject())
+        {
+            switch (kv.Name.ToLowerInvariant())
+            {
+                case "tonnes": p.LandingTonnes = Range(Num(kv.Value, where, "tonnes"), 1, 100000, where, "tonnes"); break;
+                case "why":
+                    p.LandingWhy = kv.Value.ValueKind == JsonValueKind.String ? kv.Value.GetString()! : "";
+                    if (p.LandingWhy.Length is 0 or > 80 || p.LandingWhy.Any(ch => ch is < ' ' or > '~'))
+                        throw new MapFileException($"{where}.why should be a short line of plain text (up to 80 characters)");
+                    break;
+                default:
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: tonnes, why)");
+            }
+        }
+        if (p.LandingTonnes <= 0)
+            throw new MapFileException($"{where}: needs \"tonnes\"");
+    }
 
     /// <summary><c>"cavity": { "crust": 180, "glow": "#ff8c33", "core": 40 }</c>: a hollow planetoid (PLANETS.md "Hollow planetoids").</summary>
     private static void ParseCavity(Planetoid p, JsonElement e, string where)
@@ -940,6 +1101,12 @@ public sealed class Planetoid
             throw new MapFileException($"{where}: \"radius\" and \"scale\" are more than 0");
         if (f.Has("octaves") && f.Num("octaves", 1) is < 1 or > 10)
             throw new MapFileException($"{where}: \"octaves\" is 1 to 10");
+        if (f.Has("lat") != f.Has("lon") || type is "noise" or "terrace" && f.Has("lat") != f.Has("radius"))
+            throw new MapFileException($"{where}: a place is \"lat\", \"lon\" and \"radius\" together");
+        if (type == "terrace" && f.Num("step", 1) < 0.5)
+            throw new MapFileException($"{where}: \"step\" is at least 0.5");
+        if (type == "rift" && (f.Num("length", 1) <= 0 || f.Num("width", 1) < 4 || f.Num("width", 1) > f.Num("length", 1)))
+            throw new MapFileException($"{where}: \"width\" is 4 m to the \"length\"");
         return f;
     }
 

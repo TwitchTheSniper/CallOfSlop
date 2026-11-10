@@ -1,11 +1,11 @@
 {
   "name": "Frostreach",
-  "description": "A white star 6.6 light-years from the Dev System, 8.1 from Ember (phase 6, docs/space/GALAXY.md): the ice world Glacier with its moon Rime, and the small Shard far out. No maps yet.",
-  "galaxy": { "ly": [-4.4, 4.6, -1.7] },
+  "description": "A white star 6.6 light-years from the Dev System, 8.1 from Ember (phase 6, docs/space/GALAXY.md): the ice world Glacier with its moon Rime, and the small Shard far out. Glacier is a map (Maps/Planetoids/Glacier.json), the IT Department's world; the others are rails and sky.",
+  "galaxy": { "ly": [-4.4, 4.6, -1.7], "arrive": { "at": "Glacier", "km": 45 } },
   "bodies": [
     { "name": "Frostreach", "gm": 2.39e20, "radius": 1.2e9, "color": [0.8, 0.88, 1.0], "rotation": { "hours": 300, "tilt": 11 } },
     {
-      "name": "Glacier", "parent": "Frostreach", "radius": 8000, "gravity": 14, "color": [0.78, 0.84, 0.9],
+      "name": "Glacier", "parent": "Frostreach", "radius": 8000, "gravity": 14, "map": "Glacier", "color": [0.78, 0.84, 0.9],
       "orbit": { "au": 2.2, "e": 0.03, "i": 1.2, "lan": 70, "argp": 15, "m0": 300 },
       "rotation": { "hours": 19, "tilt": 31 }
     },

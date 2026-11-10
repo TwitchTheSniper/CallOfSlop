@@ -1,0 +1,435 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Cinder",
+  "description": "Cinder, a 5 km scorched rock close to the red dwarf Ember (Systems/Ember.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
+  "author": "Call of Slop",
+  "order": 2,
+  "halfX": 7600,
+  "halfZ": 7600,
+  "maxPlayers": 8,
+  "skybox": {
+    "preset": "dusk",
+    "zenith": "#1a0d10",
+    "horizon": "#6e2a1c",
+    "ground": "#1c1414",
+    "stars": 1.4,
+    "sun": {
+      "color": "#ff8a5a",
+      "intensity": 1.1,
+      "size": 5,
+      "glow": 0.9
+    },
+    "clouds": false,
+    "haze": {
+      "color": "#7a2f20",
+      "strength": 0.6
+    },
+    "ambient": 0.8
+  },
+  "planetoid": {
+    "radius": 5000,
+    "cell": 2,
+    "strength": 12,
+    "surface": {
+      "grass": "#3b3331",
+      "dirt": "#4d3a33",
+      "rock": "#221d1d",
+      "sand": "#a3472a",
+      "dirtSlope": 22,
+      "rockSlope": 34,
+      "sandBelow": -28
+    },
+    "landing": {
+      "tonnes": 60,
+      "why": "the ash flats swallow anything heavier"
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 75,
+        "scale": 2600,
+        "octaves": 5,
+        "seed": 61
+      },
+      {
+        "type": "noise",
+        "amplitude": 45,
+        "scale": 800,
+        "octaves": 4,
+        "seed": 14,
+        "ridged": true
+      },
+      {
+        "type": "mountain",
+        "lat": -35,
+        "lon": 20,
+        "radius": 1300,
+        "height": 620,
+        "seed": 21,
+        "ridges": 0.7,
+        "erosion": 0.4,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 25,
+        "lon": 250,
+        "radius": 1500,
+        "height": 520,
+        "seed": 22,
+        "ridges": 0.5,
+        "erosion": 0.3,
+        "warp": 0.35
+      },
+      {
+        "type": "noise",
+        "amplitude": 60,
+        "scale": 700,
+        "octaves": 4,
+        "seed": 33,
+        "ridged": true,
+        "lat": 0,
+        "lon": 220,
+        "radius": 3200,
+        "edge": 2200
+      },
+      {
+        "type": "crater",
+        "lat": 12,
+        "lon": 130,
+        "radius": 900,
+        "depth": 150,
+        "rim": 45
+      },
+      {
+        "type": "crater",
+        "lat": 55,
+        "lon": 200,
+        "radius": 620,
+        "depth": 110
+      },
+      {
+        "type": "crater",
+        "lat": -15,
+        "lon": 300,
+        "radius": 480,
+        "depth": 95
+      },
+      {
+        "type": "crater",
+        "lat": -55,
+        "lon": 150,
+        "radius": 760,
+        "depth": 130
+      },
+      {
+        "type": "crater",
+        "lat": 30,
+        "lon": 10,
+        "radius": 300,
+        "depth": 70
+      },
+      {
+        "type": "crater",
+        "lat": 70,
+        "lon": 320,
+        "radius": 380,
+        "depth": 80
+      },
+      {
+        "type": "crater",
+        "lat": -40,
+        "lon": 250,
+        "radius": 220,
+        "depth": 55
+      },
+      {
+        "type": "crater",
+        "lat": 5,
+        "lon": 170,
+        "radius": 180,
+        "depth": 45
+      },
+      {
+        "type": "crater",
+        "lat": -5,
+        "lon": 20,
+        "radius": 340,
+        "depth": 75
+      },
+      {
+        "type": "crater",
+        "lat": 40,
+        "lon": 60,
+        "radius": 520,
+        "depth": 100
+      },
+      {
+        "type": "crater",
+        "lat": -45,
+        "lon": 80,
+        "radius": 300,
+        "depth": 70
+      },
+      {
+        "type": "crater",
+        "lat": 20,
+        "lon": 350,
+        "radius": 200,
+        "depth": 50
+      },
+      {
+        "type": "crater",
+        "lat": -70,
+        "lon": 30,
+        "radius": 420,
+        "depth": 90
+      },
+      {
+        "type": "crater",
+        "lat": -10,
+        "lon": 50,
+        "radius": 260,
+        "depth": 120,
+        "rim": 30
+      },
+      {
+        "type": "crater",
+        "lat": 42,
+        "lon": 120,
+        "radius": 140,
+        "depth": 40
+      },
+      {
+        "type": "crater",
+        "lat": -25,
+        "lon": 110,
+        "radius": 160,
+        "depth": 42
+      },
+      {
+        "type": "rift",
+        "lat": 20,
+        "lon": 240,
+        "bearing": 35,
+        "length": 3600,
+        "width": 140,
+        "depth": 160,
+        "floor": 0.2,
+        "wander": 260,
+        "seed": 3
+      },
+      {
+        "type": "rift",
+        "lat": -35,
+        "lon": 330,
+        "bearing": 110,
+        "length": 2800,
+        "width": 120,
+        "depth": 140,
+        "floor": 0.2,
+        "wander": 220,
+        "seed": 7
+      },
+      {
+        "type": "rift",
+        "lat": 60,
+        "lon": 70,
+        "bearing": 80,
+        "length": 2200,
+        "width": 110,
+        "depth": 120,
+        "floor": 0.2,
+        "wander": 180,
+        "seed": 9
+      },
+      {
+        "type": "noise",
+        "amplitude": 4,
+        "scale": 110,
+        "octaves": 4,
+        "seed": 5
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": 12,
+        "lon": 130,
+        "radius": 420,
+        "height": -150,
+        "edge": 200
+      },
+      {
+        "type": "flatten",
+        "lat": -10,
+        "lon": 50,
+        "radius": 70,
+        "height": -128,
+        "edge": 60
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 70,
+        "height": 10,
+        "edge": 150
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "generate": false
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        5010.077,
+        -40
+      ],
+      [
+        6,
+        5010.077,
+        -40
+      ],
+      [
+        -12,
+        5010.096,
+        -36
+      ],
+      [
+        12,
+        5010.096,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        5010.077,
+        40
+      ],
+      [
+        6,
+        5010.077,
+        40
+      ],
+      [
+        -12,
+        5010.096,
+        36
+      ],
+      [
+        12,
+        5010.096,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 5009.82,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 5009.82,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      5010.298,
+      -45
+    ],
+    [
+      0,
+      5010.298,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.83989,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 12,
+      "lon": 130,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#d9c14a",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": -10,
+      "lon": 50,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#4ab0d9",
+      "material": "Concrete"
+    }
+  ]
+}
