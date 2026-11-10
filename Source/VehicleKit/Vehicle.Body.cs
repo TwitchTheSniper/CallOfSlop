@@ -347,6 +347,7 @@ public sealed partial class Vehicle
     /// <summary>How much of its bounding box the body fills from the side and from above, as the check's silhouette rule measures it (<see cref="VehiclePlan.Outline"/>).</summary>
     public (float Side, float Top) Fill()
     {
+        using var kitTime = KitProfile.Time(KitProfile.S.Fill);
         C.Rebuild();
         var (side, top, _) = VehiclePlan.Outline(C);
         return (side, top);

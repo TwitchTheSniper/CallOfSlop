@@ -320,6 +320,7 @@ public static class VehicleGunsmith
     /// </summary>
     public static void CheckBuilt(Vehicle v)
     {
+        using var kitTime = KitProfile.Time(KitProfile.S.Gunsmith);
         if (!On || v.PlanMass == null)
             return;
         var mass = v.BuiltMass;

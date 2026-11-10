@@ -286,7 +286,7 @@ public sealed class VehicleGenJob
         }
     }
 
-    private void Generate()
+    internal void Generate() // (on the kit's thread; the profile probe calls it straight)
     {
         var v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role, context: Context);
         Yield();
@@ -297,7 +297,9 @@ public sealed class VehicleGenJob
         (Kit, Modules, RoleNotes, _made) = (v.Kit, string.Join(", ", v.Modules), string.Join(", ", v.KitNotes), v.Name);
         (Front, Rear) = v.ExtentZ(); // (a convoy spaces its members by these)
         Yield();
-        var bp = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(Generator, Seed));
+        ConstructBuild.Blueprint bp;
+        using (KitProfile.Time(KitProfile.S.Parse))
+            bp = ConstructBuild.ParseBlueprint(text, VehicleRegistry.FileName(Generator, Seed));
         if (bp.Tow.Length > 0 && ConstructBuild.FindBlueprint(bp.Tow) == null)
         {
             // A tow that isn't a committed file (a style that ships nothing): made by its own generator, as the check does.
@@ -319,6 +321,7 @@ public sealed class VehicleGenJob
         try
         {
             Yield();
+            using var time = KitProfile.Time(KitProfile.S.Brief);
             return VehicleBriefMake.ForGenerated(v, text, VehicleSpawnKit.Names(Generator).Shape, bp);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -409,7 +412,12 @@ public sealed class VehicleGenJob
         var n = int.TryParse(Flag("--seeds"), out var sn) ? sn : 5;
         var first = int.TryParse(Flag("--first"), out var sf) ? sf : 1;
         var top = int.TryParse(Flag("--spans"), out var sk) ? sk : 12;
+        var profile = args.Any(a => a.Equals("--profile", StringComparison.OrdinalIgnoreCase));
+        var warm = Stopwatch.StartNew();
         Warm();
+        Console.WriteLine($"slice-vehicle: warm-up {warm.ElapsedMilliseconds} ms");
+        if (profile)
+            return ProfileReport(g, first, n);
         SpanTrace = new();
         var times = new List<double>();
         for (var seed = first; seed < first + n; seed++)
@@ -429,6 +437,48 @@ public sealed class VehicleGenJob
         foreach (var ((f0, l0, f1, l1), (cnt, total, max)) in SpanTrace.OrderByDescending(x => x.Value.Total).Take(top))
             Console.WriteLine($"  total {f0}:{l0} to {f1}:{l1}: {total:0} ms in all, {cnt} times, longest {max:0.00} ms");
         SpanTrace = null;
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>--slice-vehicle NAME --profile</c>: each seed made on this thread, straight through (no slices, so no hand-offs in the times), then where the time went by stage
+    /// (<see cref="KitProfile"/>), a generation's mean. The probe for "Generation time" in VEHICLEKIT.md.
+    /// </summary>
+    private static int ProfileReport(IVehicleGenerator g, int first, int n)
+    {
+        var (times, cpus) = (new List<double>(), new List<double>());
+        KitProfile.Reset();
+        KitProfile.On = true;
+        try
+        {
+            for (var seed = first; seed < first + n; seed++)
+            {
+                var clock = Stopwatch.StartNew();
+                var cpu0 = Process.GetCurrentProcess().TotalProcessorTime;
+                var job = new VehicleGenJob(g, seed);
+                string result;
+                try
+                {
+                    job.Generate();
+                    result = $"hash {job.Hash:x16}";
+                }
+                catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+                {
+                    result = "FAILED: " + ex.Message;
+                }
+                var ms = clock.Elapsed.TotalMilliseconds;
+                var cpu = (Process.GetCurrentProcess().TotalProcessorTime - cpu0).TotalMilliseconds;
+                times.Add(ms);
+                cpus.Add(cpu);
+                Console.WriteLine($"profile-vehicle {job.Name}: {result}, {ms:0} ms (process CPU {cpu:0} ms)");
+            }
+        }
+        finally
+        {
+            KitProfile.On = false;
+        }
+        Console.WriteLine($"profile-vehicle {g.Name}: {times.Average():0} ms a generation (median {times.Order().ElementAt(times.Count / 2):0}; process CPU median {cpus.Order().ElementAt(cpus.Count / 2):0}; {n} seeds from {first}); by stage, a generation's mean:");
+        Console.Write(KitProfile.Report(n));
         return 0;
     }
 
