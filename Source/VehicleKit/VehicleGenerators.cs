@@ -58,6 +58,7 @@ public static class VehicleRegistry
     [
         s => new Generators.DoubleDecker(s),
         s => new Generators.Car(s),
+        s => new Generators.Drone(s), // (aircraft, docs/vehiclekit/AIRCRAFT.md: no style ships them yet)
     ];
 
     internal static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>
@@ -109,6 +110,8 @@ public static class VehicleRegistry
 
     private static Vehicle MakeHere(IVehicleGenerator g, int seed, int? kit, VehicleLayers? layers, RoleAsk? role)
     {
+        if (g is IAircraftShape)
+            return AircraftKit.Make(g, seed); // (aircraft: their own path and their flight check, VehicleFlightCheck.cs)
         var lay = layers ?? VehicleLayers.Force ?? default;
         if (VehicleLayers.Vary is { } vary && layers == null)
             (lay, seed) = (lay.With(vary.Layer, seed), vary.Base);
