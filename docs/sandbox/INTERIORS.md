@@ -95,7 +95,8 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
      - the freight lift ("Phase 2 record");
      - the power report: every electrical part no working battery or plant reaches, and plants no fuel reaches.
   4. Refusals, notes and missing parts are listed.
-- **`Program.Interiors.cs`**: `--gen-interior <blueprint name or file> [--seed S] [--out DIR] [--plan]`. Writes `<Name> Fitted`
+- **`Program.Interiors.cs`**: `--gen-interior <blueprint name or file> [--seed S] [--out DIR] [--plan] [--chassis hollow|armoured]`
+  (`--chassis` swaps the blueprint's root for the hollow chassis or armoured hull in the written file only: "Phase 4 record"). Writes `<Name> Fitted`
   (default `Constructs/Blueprints`) and prints the check. It loads the file back through `ConstructBuild.BuildOnGround` and
   compares part counts. With `--seed` it also plans twice and compares. `--plan` prints the ASCII maps. Console output goes to
   `callofslop.log` next to the exe, as for every tool.
@@ -245,7 +246,7 @@ the hollow inside the edge beams (125 x 14 x 61 m), its inner beams as keep-outs
 `--gen-interior ... --plan` prints it as "PLANNED ONLY". On seed 1: 7 of 7 rooms placed; 178 of 181 rooms reached (3 storage
 rooms against the north edge of the upper void storeys have no door), with 4 stairwells and a lift shaft through all 4 storeys.
 
-To build it, these are still needed (not done):
+To build it, these were needed (all done in phase 4, below):
 1. **A hollow chassis set** (a new generator, not `capital_parts.py`): the same deck with floor sockets on the bottom plate's top
    on the small 0.25 m lattice (or capital sockets for the adapter pads), hatch openings in the top plate over the stair and lift
    shafts, and doorways through the cross beams on the spine.
@@ -270,8 +271,85 @@ and blueprints; the smaller classes; a client.
 
 **Note for Assembling.json:** phase 3 added no recipes.
 
-### Next (phase 4 and on)
+## Phase 4 record (branch `feat/interiors-4`)
 
-Phase 3 did the spare space and the loot tables, and planned the chassis void. Next: the hollow chassis set and building the void
-(above); medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
+User decision (2026-11-10): the chassis is the interior. The parts that make up a giant's chassis can be interior parts, and a
+heavily armoured walker gets an armoured hull with the interior inside it.
+
+**The hollow chassis set** (`tools/constructs/interior_parts.py`, `Constructs/Parts/Interior/Capital`). There are two parts.
+- **Capital Hollow Chassis 128x64 m**: the Capital Chassis Deck 128x64 m's outside. It has the same footprint and 16 m depth. Its
+  44 under, top and side sockets have the same names and places, so the legs' `-z0`... `+z7` mounts and the deck's `top` sockets
+  carry over. It also has the same mass (28,160 t), health and armour (80). The hollow is built for the interior.
+  - The end and edge beams stand just outside the interior's 4 m grid (the one `Measure` lays on the top sockets). The two inner
+    cross beams each fill one grid column (11 and 19), with a full-height portal where the 8 m corridor runs through.
+  - The top plate has hatches over the planner's two stairwells and the lift shaft (grid 7,3 and 22,3, 1x3; 16,3, 2x3). The
+    hatches are 5 cm larger than the cells.
+  - It has 12 capital `floor{storey}.{bay}` sockets, one per bay on each of the 4 storeys. Each is in the middle of a corridor
+    block. The upper ones sit on small brackets just under the slab, because a socket must sit on a solid face.
+- **Capital Armoured Hull 128x64 m**: the same frame with belt armour drawn on the long sides. It has 3.5x the plate (39,424 t)
+  and armour 160.
+
+Both are opted out of centre sockets. They have recipes in Assembling.json (added by hand). "Centre sockets" names neither: its 24
+failures are main's leg weld sockets.
+
+**Building the void.** A root with floor sockets inside its hollow gets the void built (`InteriorBuilder.VoidHull`):
+- The void is laid on the deck's own grid, with the same corner and size, so the shafts land under the hatches. Its storeys are
+  levels -5 to -2 (the deck's deck 0 is level 0).
+- The class's `chassis` rooms go below and leave the deck's programme. The void plan is **sealed**: it has no outside doors.
+  From the second pass, an unreached room gets a door through a bulkhead line. In a sealed plan it can also get one onto a shaft's
+  landing. Rooms are kept whole (no split, runs up to 3 cells merge) to keep the wall count down.
+- A **mezzanine** (level -1) is built only in the shafts that have the deck's shafts over them, up through the hatches.
+- Stair flights alternate between a stairwell's first two blocks, so no flight stands over the one below. The void's stairs run
+  through the mezzanine into the deck's stairwells.
+- The 3 doorless storage rooms of phase 3 are gone. The void's rooms are now 108 of 108 reached.
+
+**The lift for 3+ decks: stacked cars**, one car a storey. Every gap from level -5 to 1 has its own 4 m rail and car. The cars
+alternate between the shaft's middle block and its first block, and the slab is left out over each car. Each car has the phase 2
+calls: its own button, plus a lower and an upper landing button. Riders change cars at each landing. Corners over a car's block
+are fitted to the walls beside them.
+
+**Limits met.** A construct holds at most 255 joints and 48,000 socket links (`Construct.MaxJoints`, `MaxLinks` = 3x
+`MaxParts`).
+- **Joints:** in the void, only critical rooms and bulkheads get a door leaf first. The rest get one last, while 32 joints stay
+  free (9 stay open).
+- **Links:** the void has half the things per cell and no slab or wall in its dead space. **The fitted walker uses 46,883 of
+  48,000 links**, so players can add only about 200 parts.
+
+**The run** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1 --chassis hollow`, in `TitanWalkerFitted.json`;
+its root is the hollow chassis):
+- Rooms: the deck has 13 of 13 programme rooms and 77 of 77 reached. The void has 7 of 7 and 108 of 108 reached.
+- Parts: 7,350 placed, none refused or welded. There are 217 door leaves, 488 loot containers and 12 stair flights.
+- Lift: 6 of 6 cars.
+- Power: 304 electrical parts, none off.
+- The file loads back as 7,361 parts from 7,361 steps. Building took 37 s.
+
+**Tried by hand (headless, a throwaway run, not kept):**
+- **Build:** it loads as 7,361 parts, 223 joints and 46,883 links. It weighs 37,705 t, against 32,698 t for phase 3's fitted
+  walker and 29,289 t bare.
+- **Lift:** all 6 cars went up 2.98 m on their car buttons, down on the lower landings' calls, and up again on the upper
+  landings'.
+- **Power:** all 304 electrical parts are on, and 82 of 82 lamps are lit.
+- **Walk:** forward from rest for 6 s, with no wrecks. Over the last 3 s the bare walker made 0.23 m/s, phase 3's fitted walker
+  0.20 m/s and the hollow-fitted walker 0.09 m/s. All three crept and sank in this crude run (the bare one is also tilted 15
+  degrees), so read the numbers as relative.
+
+**Not tried:** a player walking the rooms, stairs, portals and mezzanine; riding and changing cars; drawing anything
+(z-fighting between the stair flights and the stair-floor openings, the hatch edges and the deck's shaft walls); other seeds;
+the armoured hull fitted; a client.
+
+**Known gaps:**
+- Landing buttons end up at the wall's foot on half the landings (Mount takes the nearest free socket). The phase 2 lift does
+  this too.
+- The car-to-car change is by hand: there is no single car through all storeys (a small rail is 4 m at most).
+- The gunner's station is now more than 8 m from its Fire Director.
+- The link limit leaves little room.
+
+**For the walker session:** to swap the base, change the Titan Walker's step 0 to `Capital Hollow Chassis 128x64 m` (or
+`Capital Armoured Hull 128x64 m`). The socket names, leg mounts and top sockets are unchanged, so nothing else moves. Then
+re-run `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1` (the `--chassis` flag is then not needed).
+
+### Next (phase 5 and on)
+
+A single lift car through all storeys (a medium or large rail through adapters); shared walls between neighbouring rooms, or a
+higher link limit (the main limit now); landing buttons at hand height; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
 track; static bases from a plot; joining the vehicle kit; the missing parts listed by the run.
