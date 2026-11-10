@@ -302,6 +302,11 @@ public sealed partial class Construct
                 break;
             }
         }
+        if (Engine < 0 && LegCount > 0)
+        {
+            DriveProblem = ""; // (a walker walks on its legs' own power: ConstructWalkLegs.cs, the HUD's walker line)
+            return;
+        }
         if (Engine < 0)
         {
             DriveProblem = !anyEngine && ConstructEngine.Problem(this) is { Length: > 0 } unbuilt ? unbuilt : !anyEngine ? "no engine" : CountRole(PartRole.Engine) == 0 ? "the engine is wrecked"
@@ -1091,6 +1096,13 @@ public static class ConstructDrive
         for (var k = 0; k < c.WheelCount; k++)
             if (c.Wheels[k].Driven)
                 driven++;
+        if (c.LegCount > 0)
+        {
+            // A walker (ConstructWalk.cs): its legs and what feeds them, not an engine and wheels.
+            var fed = ConstructPhysics.PowerLegs(null, c, false);
+            var problem = ConstructPhysics.WalkerProblem(c);
+            return $"{length:0.00} x {width:0.00} x {height:0.00} m, {c.Mass:0} kg, " + (problem.Length > 0 ? $"doesn't walk: {problem}" : $"walks on {c.LegCount} legs ({fed} with power){(c.DriveSeat >= 0 ? "" : " (no seat: wired)")}");
+        }
         return $"{length:0.00} x {width:0.00} x {height:0.00} m, {c.Mass:0} kg, " + (c.CanDrive ? $"drives {driven} of {c.WheelCount} wheel contacts{(c.DriveSeat >= 0 ? "" : c.CountRole(PartRole.Seat) > 0 ? " (no Driving Module: only its wires run it)" : " (no seat: wired)")}" : c.DriveSeat < 0 && c.Engine < 0 ? "no seat" : $"doesn't drive: {c.DriveProblem}");
     }
 

@@ -61,6 +61,12 @@
       "on": 8,
       "socket": "+x",
       "by": "-x"
+    },
+    {
+      "part": "Battery",
+      "on": 9,
+      "socket": "+x",
+      "by": "-x"
     }
   ],
   "wires": [

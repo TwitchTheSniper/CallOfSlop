@@ -1190,6 +1190,9 @@ public sealed partial class ConstructWorld
     private readonly List<Construct> _rayNear = new(256), _blockNear = new(256), _blastNear = new(256);
     private List<Construct>? _blasting;
 
+    /// <summary>Does any part of <paramref name="c"/> lie in a box of its rest frame (the part tree's answer)?</summary>
+    public bool AnyPartIn(Construct c, Vector3 min, Vector3 max) => c.PartsInBox(min, max, _partHits) > 0;
+
     /// <summary>Is the body still in the world (not removed since it was found)?</summary>
     public bool IsLive(Construct c) => _byId.TryGetValue(c.Id, out var live) && ReferenceEquals(live, c);
 
@@ -1342,6 +1345,20 @@ public sealed partial class ConstructWorld
                 hit.RouteSeg = (ushort)rseg;
                 hit.TrackPlus1 = 0;
             }
+            // Walker legs: each segment and foot pad as it is posed now (ConstructWalkLegs.cs); the leg part takes the hit.
+            if (c.LegCount > 0 && ConstructPhysics.LegRay(c, origin, dir, ref best, out _, out var legNormal) is var legPart and >= 0)
+            {
+                found = true;
+                hit.Body = c;
+                hit.Part = legPart;
+                hit.Distance = best;
+                hit.Point = origin + dir * best;
+                hit.Normal = legNormal;
+                hit.SlotPlus1 = 0;
+                hit.RoutePlus1 = hit.TrackPlus1 = 0;
+                hit.Glass = false;
+                blade = -1;
+            }
             // Tracks: hit like parts, the band as one.
             if (c.TrackCount > 0 && !noTracks && ConstructTracks.Ray(c, origin, dir, ref best, out var tp) is var track and >= 0)
             {
@@ -1471,6 +1488,8 @@ public sealed partial class ConstructWorld
             var reach = c.Radius + World.PlayerRadius + height;
             if (Vector3.DistanceSquared(s.Position, c.WorldCom) > reach * reach)
                 continue;
+            if (c.LegCount > 0)
+                ConstructPhysics.FeetBlockPlayer(c, ref s, height); // (a walker's foot pads, stood on as ground, not ridden: a planted foot stays put; ConstructWalkLegs.cs)
             var boardable = !c.Anchored && c != ride; // (boarding assists: a construct that isn't already carrying them)
             var lookedAt = c.ToLocal(s.Position);
             var pad = new Vector3(World.PlayerRadius + height + 3f); // (the tree is in the rest frame; a turned body's up may not be the world's: a generous box round the player)

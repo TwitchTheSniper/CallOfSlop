@@ -107,16 +107,60 @@ height limit should come from the stretch, not a share of the reach.
 Not tried: drawing (no window run), a client over the network, a player riding, real map terrain, the other leg kinds and
 tiers on a body, the welder fitting a leg by hand.
 
+## Phase 2 (branch `feat/giant-walker-2`)
+
+- **Height by stretch** (`WalkBody`): the body rises no higher than lets every planted leg reach its foot within
+  `MaxStretch` (0.94) of its reach, and the driver's raise stops there. On the 17 degree ramp, raised to the top and walking
+  up, the worst planted stretch is now 0.93 (it was 1.08).
+- **The leg's shape in the world** (`Source/Constructs/ConstructWalkLegs.cs`): the IK the renderer draws by (`LegPose`,
+  `Pose`) is shared with the server. `LegRay` meets each segment as the box drawn there (along the bone, tapering) and the
+  foot pad; `ConstructWorld.Raycast` reports the leg part, so rounds, blasts' rays and the look hit the segment that is
+  drawn, and the leg part takes the damage. A damaged leg carries less and steps slower (`LegSound`: down to a quarter just
+  before it breaks), and a broken one is out of the gait as before. The body's `Radius` (so the broadphase and the ray's
+  sphere test) reaches a leg's whole length from its hip (`Construct.JointReach`).
+- **Feet touch things**: `FeetBlockPlayer` (from `BlockPlayer`) stands a player on a foot pad met from above (as ground,
+  not the ride frame: a planted foot doesn't move with the body) and pushes them out of its side; `FeetPushBodies` (server,
+  each tick) pushes a loose body that a working pad overlaps up and away, moving with a stepping foot, if it is under a
+  quarter of the walker's mass (heavier ones meet the walker's own contacts only).
+- **Power** (`LegPower`, `PowerLegs`): a leg works only when fed: a hose into its "Oil in" port from a pump, or from a valve
+  on a pump (the pump pumping); the electric circuit (a working battery's links reach it, through the hip and the deck); or
+  a drive shaft into its "Drive in" port that the engine turns (`ConstructLinear.ShaftOf`, Turning). Its strength is the best
+  feed's share from the part's `power` block (hydraulic 1.0, electric 0.8, shaft 1.2 times the engine's share), and it scales
+  what the leg carries and how fast it steps. An unfed (or broken) leg is locked: out of the gait, carrying nothing, hanging
+  at its rest pose sagged a little towards its hip. No fed legs, or fewer than three: it collapses as physics on its hips.
+  A client works out the feed from the links alone (no pump flow or shaft rpm on its side).
+- **Checks and HUD**: a body with legs and no engine no longer says "no engine" (`DriveProblem` is empty); the blueprint
+  check says "walks on 6 legs (6 with power)" or "doesn't walk: ..." (`ConstructDrive.Describe`), and the drive seat's HUD
+  line is the walker's keys or "Won't walk: ..." (`ConstructPhysics.WalkerProblem`).
+- **Data**: leg parts gain a `drive` socket on the hip housing's -z face, an "Oil in" pipe port on its +z face and a
+  "Drive in" shaft port (`leg_parts.py`); a leg with `power.shaft` is a `ShaftIn` part. The Titan Walker carries a Battery
+  on its Driving Module, so it walks on electric power (3.6 m/s; 4.5 at full strength). Protocol 225.
+
+What was tried by hand (a throwaway probe, removed): the ramp raise above; six rays at the middle of each leg's second
+segment hit their own leg, rays 6 m beside the shins miss; leg 0 at 30% health cut the top speed from 4.5 to 3.8 m/s; a
+player walked into a pad's side is pushed out to its edge plus their radius, one coming down on it stands on its top; a
+38 kg chest in a planted pad is pushed out (2 m in a second); wrecking the battery stops the legs ("no power to the
+legs") and the body sits down on its hips; the part check's walker line; worst tick 0.7 ms on the flat after warm-up
+(18 ms once on a busy 2-core box during the hit probe, not repeated).
+
+Not tried: a hydraulic or shaft-fed leg (only the electric feed was probed); drawing (no window run); a client over the
+network (its feet and feed are its own); a player riding while shot at; the welder fitting a leg by hand.
+
 ### Next phases
 
-1. Leg hitboxes and contacts: each segment's box in the collider (posed per tick), foot contacts that push what they land
-   on; weld sockets on segments for decorations (mass and hit area only).
-2. Power: legs gated on a hydraulic circuit, electric power or a shaft, strength per source from `power`.
+1. Weld sockets on each segment: a part welded to a segment rides that segment's pose (drawn, hit and carried with it,
+   out of the body's collider) and adds its mass to the leg. The plan: generator sockets `seg0`.. at each segment's middle
+   on its outer face in a canonical rest pose (part frame: out along +x, knee towards -z), the rest pose taken from the
+   part's own +x; riders found from the links at the rebuild, kept as a transform in their segment's rest frame; their
+   boxes left out of `SolidCount`, the collider and the merged mesh, and drawn and ray-tested by the leg code.
+2. Legs use what feeds them: draw on the battery, take load off the engine's shaft, flow from the pump; a valve's signal
+   as a throttle.
 3. The Basic profile (stride, step height, body height, gait override) and the Advanced profile (per-leg tuning), on the
    configure tool; tunable segment lengths and joint count as part settings.
-4. Terrain: crushing trees, cars and small structures underfoot; wading; the obstacle step-over measured on real maps.
+4. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
+   step-over measured on real maps.
 5. Ride feel: thumps, shake and tilt for riders and loose parts; stabiliser parts that reduce it.
 6. Autopilot to a destination.
 7. Crew stations, the hangar and production line on a walker.
-8. 500 m and more: the part reach cap (200 m), the broadphase sphere, instanced leg drawing, legs of several parts.
-9. The HUD: a walker shows "no engine" in the blueprint check and the drive problem line; give walkers their own line.
+8. 500 m and more: the part reach cap (200 m), the broadphase sphere (a leg's reach now widens it), instanced leg drawing,
+   legs of several parts.
