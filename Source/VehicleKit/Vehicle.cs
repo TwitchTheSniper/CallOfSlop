@@ -357,7 +357,12 @@ public sealed partial class Vehicle : BlueprintScript
 
     public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null, bool aft = false, bool lift = false)
     {
-        Weapon = weapon ?? (Role is { } r ? r.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Arsenal) : VehicleArmoury.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Arsenal));
+        if (weapon == null)
+        {
+            weapon = Role is { } r ? r.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Arsenal) : VehicleArmoury.Pick(Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count), Arsenal);
+            SpendGun(weapon); // (the vehicle's gun budget: VehicleGunsmith.GunBudgetShare)
+        }
+        Weapon = weapon;
         aft &= Weapon.Name != "Whaler"; // (its magazine hangs where an aft gun's seat goes)
         if (lift || CentreOf(mount).Y < 1.5f && CentreOf(mount).Z - GunReach(Weapon) < CabBack) // (lift: a car's gun, over its cabin whichever way it turns) // (a long gun on a bed would poke through the cab: a pedestal lifts it over the cab's roof, as on a real technical)
         {
