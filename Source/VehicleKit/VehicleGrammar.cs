@@ -219,12 +219,19 @@ public static class ShapeGrammar
             VehicleGenJob.Yield();
             try
             {
-                var plan = Plan(v, recipe, attempt);
+                PlanData plan;
+                using (KitProfile.Time(KitProfile.S.Plan))
+                    plan = Plan(v, recipe, attempt);
                 VehicleGenJob.Yield();
-                Build(v, plan);
-                AfterBuild(v);
+                using (KitProfile.Time(KitProfile.S.Build))
+                    Build(v, plan);
+                using (KitProfile.Time(KitProfile.S.AfterBuild))
+                    AfterBuild(v);
                 v.DriveGate(VehicleRegistry.Towed(g)); // (built from its text, settled, level and moving on a throttle pulse, else the next plan: VehicleDriveCheck.cs)
-                if (VehicleIdentity.Gate(v, attempt, Attempts, ref kept) is { } done)
+                Vehicle? done;
+                using (KitProfile.Time(KitProfile.S.IdentityGate))
+                    done = VehicleIdentity.Gate(v, attempt, Attempts, ref kept);
+                if (done != null)
                     return done;
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException && attempt + 1 < Attempts)
@@ -261,10 +268,14 @@ public static class ShapeGrammar
                 VehicleGenJob.Yield();
                 try
                 {
-                    var plan = Plan(v, recipe, attempt);
+                    PlanData plan;
+                    using (KitProfile.Time(KitProfile.S.Plan))
+                        plan = Plan(v, recipe, attempt);
                     VehicleGenJob.Yield();
-                    Build(v, plan);
-                    AfterBuild(v);
+                    using (KitProfile.Time(KitProfile.S.Build))
+                        Build(v, plan);
+                    using (KitProfile.Time(KitProfile.S.AfterBuild))
+                        AfterBuild(v);
                     if (role.Family && v.Stability() is var stable && stable < (g.Checks ?? new VehicleCheckOptions()).MinStability + 0.02f)
                         throw new VehicleKitException($"stability {stable:0.00}: under the check's"); // (a family's mark isn't planned again for its role, so it is held to the check's stability as it builds: VehicleFamilies.cs)
                     v.DriveGate(VehicleRegistry.Towed(g));

@@ -193,10 +193,13 @@ public static class VehiclePlan
         var (nz, ny, nx) = ((int)((max.Z - min.Z) / cell) + 1, (int)((max.Y - min.Y) / cell) + 1, (int)((max.X - min.X) / cell) + 1);
         var sideCells = new bool[nz, ny];
         var topCells = new bool[nz, nx];
+        Func<Vector3, Vector2> toSide = p => new Vector2(p.Z - min.Z, p.Y - min.Y) / cell, toTop = p => new Vector2(p.Z - min.Z, p.X - min.X) / cell; // (made once, not twice a triangle)
         for (var k = 0; k + 2 < t.Length; k += 3)
         {
-            Fill(sideCells, t[k], t[k + 1], t[k + 2], p => new Vector2(p.Z - min.Z, p.Y - min.Y) / cell);
-            Fill(topCells, t[k], t[k + 1], t[k + 2], p => new Vector2(p.Z - min.Z, p.X - min.X) / cell);
+            if (k % 384 == 383)
+                VehicleGenJob.Yield(); // (every 128 triangles: a big body's two rasters ran 30 to 80 ms in one span)
+            Fill(sideCells, t[k], t[k + 1], t[k + 2], toSide);
+            Fill(topCells, t[k], t[k + 1], t[k + 2], toTop);
         }
         var columns = new int[bins];
         for (var z = 0; z < nz; z++)

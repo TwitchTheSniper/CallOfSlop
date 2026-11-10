@@ -210,6 +210,7 @@ public sealed partial class Vehicle
     /// </summary>
     public void DriveGate(bool towed = false)
     {
+        using var kitTime = KitProfile.Time(KitProfile.S.DriveGate);
         ContextKit(); // (the spawn context's last parts first: an electric drive's battery, VehicleContext.cs)
         if (!VehicleDriveCheck.GateOn || towed)
             return;
