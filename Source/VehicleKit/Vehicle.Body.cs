@@ -467,6 +467,8 @@ public sealed partial class Vehicle
         var panels = walls.Where(Panels.ContainsKey).SelectMany(t => Panels[t]).ToList();
         foreach (var w in d.Shuffled(panels).Take(d.Int(2, (int)Style.Limit("crookedPlates"))))
         {
+            if (w.Name.Contains("Ladder", StringComparison.Ordinal))
+                continue; // (phase 9b: a boarding ladder is listed with the walls it hangs from; a plate welded across its rails shared their end faces, IT Tanker Rig 3)
             var c = CentreOf(w);
             var face = MathF.Abs(c.X) > 0.6f ? new Vector3(MathF.Sign(c.X), 0, 0) : c.Z > 0 ? Vector3.UnitZ : -Vector3.UnitZ;
             Crooked("patches", Style.Part(d, "patch"), w, c + face * 0.06f + new Vector3(0, (float)d.Between(-0.08, 0.08), 0), face, d);

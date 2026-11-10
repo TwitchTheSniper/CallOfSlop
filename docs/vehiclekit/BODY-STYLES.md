@@ -1485,6 +1485,65 @@ plan's. Diversity within a style holds (falls of 0.005 at most).
   Bus and Box Truck rears seldom give; a rear platform that stands over a porch or a gun deck's front would show them.
 - The whole-body ratio: per-faction proportions of trucks and buses (lengths, cab placement), not only cars.
 
+## 20. Phase 9b, as built (2026-11-10): old shapes and failures
+
+The brief: the gunsmith's big guns that didn't point, the full check's other failures, and kit 1's Technical, Tanker Rig and Fuel Trailer onto the lofted body
+system. Code: `ConstructWeapons.LaidWay` and `Aim` (game code), `VehicleChecks.Aim`, the grammar's `"Technical"` and `"Tanker Rig"` recipes and `"tank"` segment
+(`VehicleGrammar.cs`), `VehicleShape.Begin`, `Vehicle.Trim` and the wear pass's patches.
+
+### The big guns that didn't point (a game fault, not only the check's)
+
+Two causes. **The check** judged a gun against the gunner's level look within 30 degrees and against its own copy of the lead; a Field Gun or Howitzer laid for range
+on a level look in an empty world climbs 41 to 44 degrees by design. It now judges the gun's bearing read level (30 degrees) and its line against
+`ConstructWeapons.LaidWay`, the call the gunner's seat makes each tick (12 degrees). **The game**: a heavy gun on the 45 deg/s Turntable takes about 4 s to slew round;
+the elevation hinge read the target's climb along the gun's own plane, so as the target passed across the plane the climb read near 90 degrees and the hinge stood
+the gun up; past the vertical it took its own way as level and stayed over the top at its stop for good (traced on Bandit Flatbed Fort 4's Hammerfall: 53 degrees
+off, then 2.6). `Aim` now reads level from the hinge's own zero (the gun's line with the joint's angle taken off) and the target's climb against the horizontal, so a
+slewing gun holds its elevation. Server-side aim only: no wire change.
+
+### The other failures
+
+- **Scrap Tanker 3 (Bandit, Highland)**: the barrel stood on its front foot's sill, which an axle or a station had taken away. The front steps back a row at a time (up
+  to 0.75 m) until every cradle goes in, else the barrel stands on the first cradle there is. IT Scrap Tanker 1 moved.
+- **Highland Technical 10, Scam Technical 21** (stability 0.72, 0.69) and **IT War Bus 1** (the gun along its roof): the Technicals are now the grammar's (below; all
+  pass), IT War Bus 1 passes with the aim fix.
+- **Patches across a ladder**: a boarding ladder is listed with the walls it hangs from, and a crooked or wear patch welded across its rails shared their end faces
+  (British Technical 14, IT Tanker Rig 3). Patches skip ladders; five committed vehicles of other shapes moved (British and Highland Flatbed Fort 1, Highland Giant Truck 8,
+  Highland Scrap Tanker 7, Scam Box Truck 9), all OK.
+
+### Kit 1's shapes on the lofted body
+
+- **Technical**: recipe `"Technical"`: a lofted cab and hood in the style's language (its archetype-free cab sub-styles), a gun bay behind the cab and a 1.5 to 2 m open
+  bed with the drum in it (weight 2) or the gun bay alone with the drum on a porch (1); a bare tail, a porch or a hitch; leaf, swing, wishbone, hydraulic or dually gear
+  (never stilts or a second axle). It keeps its generator's checks (stability 0.72). 78 to 94 parts. Sweeps `--seeds 8`: Bandit 8, IT 7, Scam 8, Highland 8, British 8,
+  Militia 8 (IT 7's patch on a ladder, fixed after).
+- **Tanker Rig**: recipe `"Tanker Rig"`: the same gun bay and short bed, always a hitch (or a porch over a hitch) for its Fuel Trailer; `VehicleShape.Begin` (new: what a
+  grammar shape sets before its plan) rolls the trailer from the style's shipped seeds on the same fork as before, so each rig still tows a committed trailer. Sweeps
+  `--seeds 6`: Bandit 5 (seed 4: the scrap-plate cab's driver's view, as Bandit Box Truck 3 on main), IT 5 (seed 3's ladder patch, fixed after), the rest 6.
+- **Fuel Trailer**: stays kit 1: a barrel on a sprung frame and a drawbar has no cab, room or hood to loft.
+
+### Measured (2-core box; times noisy)
+
+| | before (main c3b158fc) | after |
+| --- | --- | --- |
+| full check, `--armoury-report --seeds 6 --check` (6 styles x 5 recipe shapes x 6 seeds) | 157 of 180 (1 failed to generate; 21 big guns "off their gunner") | 179 of 180 (Bandit Box Truck 3's driver's view, as before) |
+| `--body-report all --seeds 4`: room exteriors ratio (within, between) | 1.60 (0.120, 0.192) | 1.61 (0.120, 0.193) |
+| cabs ratio | 1.26 (0.060, 0.076) | 1.37 (0.055, 0.076) |
+| whole body ratio | 1.02 (0.147, 0.151) | 1.02 (0.149, 0.152) |
+| failures, coplanar pairs | 2 (Bandit Scrap Tanker 3, British Double Decker 2), 0 | 1 (British Double Decker 2), 2 (inside Highland Tanker Rig 3's cab loft, 0.7 cm2) |
+| generation mean a style, Bandit .. Militia | 1496, 374, 261, 283, 292, 424 ms | 479, 279, 256, 238, 236, 302 ms |
+
+The body report now counts the Technical and the Tanker Rig (kit 5), whose cabs are their faction's family: the cab ratio rises. The whole-body ratio holds at 1.02.
+
+**Committed vehicles**: 41 files made again (the 25 Technicals and 10 Tanker Rigs, IT Scrap Tanker 1, the five patch moves), all OK through the full check;
+`--gen-vehicles` reports all identical, also with `--order reverse`; `--check-construct-parts` clean. No part key or wire change: protocol stays 225.
+
+### Left
+
+- Highland Tanker Rig 3's cab loft: two facets inside one lofted cab share a plane (0.35 mm apart), counted by `--body-report` only (the seed isn't shipped).
+- Bandit's scrap-plate cab still blinds the driver on some long-hood plans (Bandit Box Truck 3, Tanker Rig 4).
+- The whole-body ratio (per-faction truck and bus proportions) and the seven unused contour parts (a centred socket in `tools/constructs/body_parts.py`): not started.
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1524,4 +1583,6 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --sweep-vehicle "Bandit Monster Truck" --seeds 8   # phase 8b: a new shape (Buggy, Monster Truck, Wagon, Concept, Giant Truck)
 --body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows, phase 7c's ends, storeys, consoles and wheels)
 --body-report all --seeds 4 --no-cab-styles   # phase 9a: without the factions' cab sub-styles
+--armoury-report --seeds 6 --check   # phase 9b: the full check over the five recipe shapes in every style
+--sweep-vehicle "IT Technical" --seeds 8   # phase 9b: the Technical (and the Tanker Rig) on the grammar
 ```
