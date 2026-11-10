@@ -14,7 +14,7 @@ public static partial class SelfTest
     public static int BenchAircraft(string[] args)
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
-        var style = args.SkipWhile(a => !a.Equals("--bench-aircraft", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal)) ?? "Bandit";
+        var style = args.SkipWhile(a => !a.Equals("--bench-aircraft", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } first && !first.StartsWith("--", StringComparison.Ordinal) ? first : "Bandit";
         var seed = int.TryParse(Arg("--seed"), out var sd) ? sd : 7;
         var height = float.TryParse(Arg("--height"), out var h) ? h : 40;
         var seconds = float.TryParse(Arg("--seconds"), out var s) ? Math.Clamp(s, 2, 60) : 20;
@@ -26,7 +26,7 @@ public static partial class SelfTest
         var now = 0.0;
         Run(g, ref now, Game.CountdownSeconds + 0.5);
         Console.WriteLine($"[air bench] {map.Name}, phase {g.Phase}, server {g.IsServer}");
-        var at = map.Spawns.Count > 0 ? map.Spawns[0] : Vector3.Zero;
+        var at = Vector3.Zero; // (the middle of the map: the patrols stay over its ground)
         string[] shapes = ["Drone", "Plane", "Helicopter"];
 
         // 1. On the ground, through the real spawn path.
@@ -34,7 +34,7 @@ public static partial class SelfTest
         for (var k = 0; k < shapes.Length; k++)
         {
             var i = k;
-            var why = g.SandboxSpawnAircraft(style, shapes[k], seed, at + new Vector3(40 + 30 * k, 0, 60), 0, 0, done: (c, _, w) => { made[i] = c; if (c == null) Console.WriteLine($"[air bench] {shapes[i]} on the ground: not made: {w}"); });
+            var why = g.SandboxSpawnAircraft(style, shapes[k], seed, at + new Vector3(-30 + 30 * k, 0, 80), 0, 0, done: (c, _, w) => { made[i] = c; if (c == null) Console.WriteLine($"[air bench] {shapes[i]} on the ground: not made: {w}"); });
             if (why != null)
                 Console.WriteLine($"[air bench] {shapes[k]} refused: {why}");
         }
@@ -52,7 +52,7 @@ public static partial class SelfTest
         for (var k = 0; k < shapes.Length; k++)
         {
             var i = k;
-            var over = at + new Vector3(-150 + 150 * k, 0, -150);
+            var over = at + new Vector3(-110 + 110 * k, 0, -60);
             var why = g.SandboxSpawnAircraft(style, shapes[k], seed, over, height, 0, PilotOrder.Patrol, 40, (c, p, w) => { air[i] = (c, p); if (c == null) Console.WriteLine($"[air bench] {shapes[i]} in the air: not made: {w}"); });
             if (why != null)
                 Console.WriteLine($"[air bench] {shapes[k]} refused: {why}");
@@ -70,6 +70,10 @@ public static partial class SelfTest
             for (var n = 0; n < 2 * World.TickRate; n++)
             {
                 Run(g, ref now, 1.0 / World.TickRate);
+                if (t == 0 && n is 1 or 15 or 30 or 60 or 90)
+                    for (var k = 0; k < shapes.Length; k++)
+                        if (air[k].C is { } c)
+                            Console.WriteLine($"[air bench] launch {shapes[k]} tick {n}: {c.WorldCom.Y - start[k]:0.00} m, climbing {c.Vel.Y:0.0} m/s, {c.Vel.Length():0.0} m/s, tilt {AbTilt(c):0}, engine {(c.EngineRunning ? "on" : "off")} {c.Rpm:0} rpm, rotors {AbRotors(c)}");
                 for (var k = 0; k < shapes.Length; k++)
                     if (air[k].C is { } c)
                     {
@@ -99,6 +103,19 @@ public static partial class SelfTest
                     Console.WriteLine($"[air bench] {t + 2:0} s {shapes[k]} home: {p.Line(g.Constructs)}, {AbFlat(c.WorldCom - p.Home):0} m from home");
         }
         return 0;
+    }
+
+    private static string AbRotors(Construct c)
+    {
+        var most = 0f;
+        var least = float.MaxValue;
+        for (var k = 0; k < c.RotorCount; k++)
+            if (c.Parts[c.Rotors[k].Part].D.Rotor is { } d)
+            {
+                most = MathF.Max(most, c.Rotors[k].Omega / d.RatedOmega);
+                least = MathF.Min(least, c.Rotors[k].Omega / d.RatedOmega);
+            }
+        return c.RotorCount == 0 ? "none" : $"{c.RotorCount} at {least:P0} to {most:P0} of rated";
     }
 
     private static float AbFlat(Vector3 v) => MathF.Sqrt(v.X * v.X + v.Z * v.Z);

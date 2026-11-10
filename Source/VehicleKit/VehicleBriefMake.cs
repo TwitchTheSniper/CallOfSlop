@@ -103,6 +103,8 @@ public static class VehicleBriefMake
         Guns(c, b, g);
         WeakPoints(c, b, g, f);
         Cargo(c, b, g, f);
+        if (b.Role.Length == 0 && AircraftAutopilot.Stab(c) >= 0)
+            b.Role = AircraftAutopilot.RoleOf(c, b); // (an aircraft's role for the future AI: AircraftPilot.cs)
         return b;
     }
 

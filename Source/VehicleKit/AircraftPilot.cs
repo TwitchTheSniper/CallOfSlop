@@ -69,6 +69,20 @@ public static class AircraftAutopilot
     /// <summary>The stabilizer's forward in the world (its nose), and its heading in degrees clockwise from -Z (north on a flat map).</summary>
     public static Vector3 Nose(Construct c) => Stab(c) is var s and >= 0 ? Vector3.Transform(-Vector3.UnitZ, Quaternion.Multiply(c.Rot, Rot24.Quat(c.Parts[s].Rot))) : Vector3.Transform(-Vector3.UnitZ, c.Rot);
 
+    /// <summary>
+    /// An aircraft's role in its behaviour brief (docs/vehiclekit/AIRCRAFT.md, "Roles"), for the AI that will send it: a drone is a "scout drone" ("gun drone" armed), a
+    /// rotorcraft with guns a "gunship", with more than one seat a "transport", else a "light helicopter"; a plane with guns a "strike plane", else a "patrol plane".
+    /// </summary>
+    public static string RoleOf(Construct c, VehicleBrief b)
+    {
+        var armed = b.Guns.Length > 0;
+        if (IsPlane(c))
+            return armed ? "strike plane" : "patrol plane";
+        if (b.Shape.Equals("Drone", StringComparison.OrdinalIgnoreCase))
+            return armed ? "gun drone" : "scout drone";
+        return armed ? "gunship" : b.Seats.Length > 1 ? "transport" : "light helicopter";
+    }
+
     /// <summary>A plane's cruise throttle once level (the flight check levels off at it, as a pilot does).</summary>
     public const float CruiseThrottle = 0.7f;
 
@@ -90,8 +104,10 @@ public static class AircraftAutopilot
                 c.Rotors[k].Omega = rd.RatedOmega;
         if (c.Engine >= 0 && c.Engine < c.PartCount && c.HasFuel)
         {
-            c.EngineRunning = true;
+            c.EngineRunning = true; // (no starter wait: it was running)
             c.Rpm = MathF.Max(c.Rpm, c.EngineDef.MaxRpm * 0.95f);
+            c.Spool = 1; // (a turbine at full spool: from idle it takes seconds, and a helicopter sinks meanwhile)
+            c.RotorRuns |= c.RotorCount > 0; // (what the rotors' step sets once the stabilizer commands them: set now, or the first tick's power step stops the engine)
         }
         ref var p = ref c.Parts[s];
         p.State |= 1; // (armed: at work, as after a take-off)
@@ -146,6 +162,7 @@ public sealed class AircraftPilot
     public bool Landed; // the craft is down and let go: the pilot is done
     private int _tick;
     private float _landAlt = float.NaN;
+    private Vector3 _landAt;
 
     public AircraftPilot(Construct c, PilotOrder order, Vector3 centre, float radius, float height)
     {
@@ -156,6 +173,7 @@ public sealed class AircraftPilot
         Height = MathF.Max(5, height);
         Plane = AircraftAutopilot.IsPlane(c);
         Home = c.WorldCom;
+        _lastGround = c.WorldCom.Y - height; // (launched this far over the ground)
     }
 
     /// <summary>What it does now, for a log line.</summary>
@@ -193,13 +211,20 @@ public sealed class AircraftPilot
         return !Landed;
     }
 
-    /// <summary>The ground (terrain and static shapes, never a construct: the craft itself is one) under a point, by one ray from 50 m above it; flat maps only.</summary>
-    private static float Ground(Vector3 at)
+    /// <summary>
+    /// The ground under a point, by one ray from 50 m above it through the world's query (as the landing assist's: constructs aren't in it, so never the craft itself); flat
+    /// maps only. Off the map's ground (nothing under it) the last ground it found stands in, so a craft that strays past the edge keeps its height.
+    /// </summary>
+    private float Ground(Vector3 at)
     {
         const float above = 50, reach = 1000;
-        var d = World.Query.Raycast(at + Vector3.UnitY * above, -Vector3.UnitY, reach, QueryFilter.StaticOnly);
-        return d < reach ? at.Y + above - d : at.Y - reach;
+        var d = World.Query.Raycast(at + Vector3.UnitY * above, -Vector3.UnitY, reach, QueryFilter.All);
+        if (d < reach)
+            _lastGround = at.Y + above - d;
+        return _lastGround;
     }
+
+    private float _lastGround;
 
     /// <summary>The order turned into the autopilot's settings for the next <see cref="Every"/> ticks.</summary>
     private void Look(Construct c, ConstructWorld w)
@@ -234,7 +259,7 @@ public sealed class AircraftPilot
                 Point(c, w, corner);
                 break;
             case PilotOrder.Return:
-                if (Plane || Flat(Home - at) > Reach)
+                if (Plane || Flat(Home - at) > Reach || Flat(c.Vel) > 3)
                 {
                     if (Plane)
                         Circle(c, w, Home);
@@ -285,22 +310,35 @@ public sealed class AircraftPilot
     /// <summary>A rotorcraft down where it is: the held height stepped down at a walking pace with the landing assist on, then, on the ground and still, let go.</summary>
     private void Down(Construct c, ConstructWorld w, Vector3 at)
     {
-        var ground = Ground(at);
-        var gap = c.WorldCom.Y - ground - MathF.Max(0, c.Com.Y - c.LocalMin.Y); // (its lowest point over the ground, level: as the landing assist reads it)
         if (float.IsNaN(_landAlt))
         {
             _landAlt = ConstructPhysics.HoldHeight(at);
+            _landAt = at; // (where it was told to come down: held there, not wherever it drifts to)
+            ConstructConfig.Put(ref c.Parts[AircraftAutopilot.Stab(c)], c.Parts[AircraftAutopilot.Stab(c)].D, CfgKey.TargetAlt, ConstructPhysics.HoldShown(MathF.Max(1, _landAlt)));
             AircraftAutopilot.LandingAssist(c, 4);
         }
+        var ground = Ground(_landAt);
+        var gap = c.WorldCom.Y - ground - MathF.Max(0, c.Com.Y - c.LocalMin.Y); // (its lowest point over the ground, level: as the landing assist reads it)
         _landAlt = MathF.Max(ground - 1, _landAlt - 2.5f * Every / World.TickRate); // (2.5 m/s; it aims below the ground so the last metre isn't held off)
         var s = AircraftAutopilot.Stab(c);
-        ConstructConfig.Put(ref c.Parts[s], c.Parts[s].D, CfgKey.ApMode, (float)FlightMode.Hover);
-        ConstructConfig.Put(ref c.Parts[s], c.Parts[s].D, CfgKey.TargetAlt, ConstructPhysics.HoldShown(MathF.Max(1, _landAlt)));
-        ConstructConfig.Put(ref c.Parts[s], c.Parts[s].D, CfgKey.Autopilot, 1);
+        ref var p = ref c.Parts[s];
+        ConstructConfig.Put(ref p, p.D, CfgKey.ApMode, (float)FlightMode.Waypoint);
+        ConstructConfig.Put(ref p, p.D, CfgKey.WaypointX, _landAt.X);
+        ConstructConfig.Put(ref p, p.D, CfgKey.WaypointY, _landAt.Y);
+        ConstructConfig.Put(ref p, p.D, CfgKey.WaypointZ, _landAt.Z);
+        ConstructConfig.Put(ref p, p.D, CfgKey.Autopilot, 1);
+        if (c.StabCount > 0)
+        {
+            // The held height is stepped down on the stabilizer's own hold, not its setting: a setting of 0 or less reads as "where it is", so ground below y = 0 (a flat map's
+            // valleys) would be out of reach. The setting is left alone from here, and the stabilizer only takes a setting over its hold when the setting changes.
+            ref var st = ref c.Stabs[0];
+            st.HoldAlt = _landAlt;
+            st.AltHeld = true;
+        }
         if (gap < 0.6f && MathF.Abs(c.Vel.Y) < 0.3f && c.Vel.Length() < 1f)
         {
             AircraftAutopilot.Off(c, w);
-            c.Parts[s].State = (byte)(c.Parts[s].State & ~1); // (disarmed: idle, as a pilot lets go on the ground)
+            p.State = (byte)(p.State & ~1); // (disarmed: idle, as a pilot lets go on the ground)
             Landed = true;
         }
         w.StructureDirty.Add(c.Id);
