@@ -140,10 +140,14 @@ def hollow_chassis(armoured=False):
     for i in pick(NX, 3):
         p.sock(f"-z{i}", (i * c.cell, 0, z0), "-z")
         p.sock(f"+z{i}", (i * c.cell, 0, z1), "+z")
-    # each storey's floor sockets (an adapter pad's back), in the middle of a corridor block in each bay
+    # each storey's floor sockets (an adapter pad's back), in the middle of a corridor block in each bay; above the bottom plate each
+    # sits on a bracket (a socket stands on a solid face), just under the slab, so the corridor below keeps its headroom
     for k in range(STOREYS):
         for b, col in enumerate(FLOOR_BLOCKS):
-            p.sock(f"floor{k}.{b}", (g(col) + 2.125, lo + k * STOREY, g(SPINE[0]) + 2.125), "+y")
+            x, y, z = g(col) + 2.125, lo + k * STOREY, g(SPINE[0]) + 2.125
+            if k > 0:
+                p.add(box((x - 0.25, y - 0.15, z - 0.25), (x + 0.25, y, z + 0.25), beam))
+            p.sock(f"floor{k}.{b}", (x, y, z), "+y")
     area = w * l * 2 + 2 * (w + l) * c.cell
     if armoured:
         return p.stats(area * c.kg_m2 * 3.5, min(16_000_000, 40 + area * c.health_m2 * 3.5), c.armour * 4)
