@@ -133,15 +133,15 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         var right = Panels(v, l, rootR.Item2, rootR.Item1, "-x", 1);
         var aileronL = v.Onto(left[^1], "back", "Aileron", "hinge");
         var aileronR = v.Onto(right[^1], "back", "Aileron", "hinge");
-        v.Paint(aileronL, l.Trim);
-        v.Paint(aileronR, l.Trim);
+        v.Paint(aileronL, l.Body); // (control surfaces in their host's colour: their ends are flush with the host's)
+        v.Paint(aileronR, l.Body);
         v.Link("data", stab, aileronL, "left aileron");
         v.Link("data", stab, aileronR, "right aileron");
         if (l.Flaps)
             foreach (var w in (VPart[])[left[0], right[0]])
             {
                 var flap = v.Onto(w, "back", "Flap", "hinge");
-                v.Paint(flap, l.Trim);
+                v.Paint(flap, l.Body);
                 v.Link("data", stab, flap, "flaps");
             }
 
@@ -161,8 +161,8 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         v.Paint(fin, l.Body);
         var elevator = v.Onto(tailPlane, "back", "Elevator", "hinge");
         var rudder = v.Onto(fin, "back", "Rudder", "hinge");
-        v.Paint(elevator, l.Trim);
-        v.Paint(rudder, l.Trim);
+        v.Paint(elevator, l.Body);
+        v.Paint(rudder, l.Body);
         v.Link("data", stab, elevator, "pitch");
         v.Link("data", stab, rudder, "yaw");
 
@@ -212,13 +212,20 @@ public sealed class Plane(FactionStyle style) : VehicleShape(style), IAircraftSh
         var tall = l.Tricycle || twin;
         if (l.Tricycle)
         {
-            var nose = v.Onto(cockpit, "-y", "Square Beam 0.75 m", "+z"); // (the cockpit hangs lower than the spine: this leg puts the nose wheels level with the mains)
+            // Legs sized so the nose wheels stand level with the mains, which hang under the inner panels just behind the centre of mass: the elevator can lift the nose.
+            var (noseLeg, mainLeg) = l.Wing switch { WingAt.Low => ("Square Beam 0.75 m", "Square Beam 1 m"), WingAt.Mid => ("Square Beam 1 m", "Square Beam 1.5 m"), _ => ("Square Beam 1 m", Spine) };
+            var nose = v.Onto(cockpit, "-y", noseLeg, "+z");
             v.Paint(nose, l.Frame);
             var foot = v.Onto(nose, "-z", "Frame Block", "+y");
             v.Paint(foot, l.Frame);
             Wheels(v, foot);
-            var at = station + 2;
-            Mains(v, l, at < Stations ? spine : boom, $"-y{(at < Stations ? at : at - Stations)}", "Square Beam 1 m");
+            foreach (var (w, side) in (ReadOnlySpan<(VPart, float)>)[(left[0], -1f), (right[0], 1f)])
+            {
+                var post = v.Onto(w, "-y", mainLeg, "+z");
+                v.Paint(post, l.Frame);
+                var i = Array.FindIndex(post.Def.Sockets, s => s.Name is "-x0" or "+x0" && Rot24.Apply(v.TurnOf(post), s.At).X * side > 0.05f);
+                v.Onto(v.Onto(post, post.Def.Sockets[i].Name, "Suspension", "mount"), "axle", "Wheel", "axle");
+            }
         }
         else
         {

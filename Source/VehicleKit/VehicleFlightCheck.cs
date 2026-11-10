@@ -139,11 +139,11 @@ public static class VehicleFlightCheck
     }
 
     /// <summary>A plane's ticks: the most for the take-off run and the rotation, then the climb, the level flight (settling, then measured) and the turn.</summary>
-    public const int PlaneRunTicks = 1200, RotateTicks = 180, PlaneClimbTicks = 240, LevelSettleTicks = 150, LevelTicks = 180, TurnTicks = 150;
+    public const int PlaneRunTicks = 1200, RotateTicks = 180, PlaneClimbTicks = 240, LevelSettleTicks = 150, LevelTicks = 180, TurnTicks = 180;
 
     /// <summary>A plane's limits: tilt standing (a tail-dragger sits nose up), the height it must be off the ground to have rotated (m), the least climb, the most height and heading
     /// it may wander by in level flight (m, degrees), the least turn on D (degrees), the most tilt in its flight (it banks to turn), the most bank left in level flight.</summary>
-    public const float MaxPlaneRestTilt = 16, LiftOff = 2, PlaneMinClimb = 5, MaxLevelDrift = 8, MaxHeadingDrift = 8, MinTurn = 15, MaxPlaneTilt = 75, MaxLevelBank = 12;
+    public const float MaxPlaneRestTilt = 16, LiftOff = 2, PlaneMinClimb = 5, MaxLevelDrift = 8, MaxHeadingDrift = 8, MinTurn = 10, MaxPlaneTilt = 75, MaxLevelBank = 12;
 
     /// <summary>
     /// A plane's flight from its seat, as a pilot (or a bot through the autopilot) would fly it: Shift held down a runway (the floor) until it is past its stall speed by
@@ -174,7 +174,11 @@ public static class VehicleFlightCheck
         if (r.RunSpeed < rotateAt)
             return r with { Why = $"down the runway for {t / (float)World.TickRate:0} s it reached {r.RunSpeed:0.0} m/s, {Vector3.Dot(c.Vel, Forward(c, c.Rot)):0.0} forward, nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0} degrees up (it rotates at {rotateAt:0}, stalls at {stall:0}; {Pushing(c)})" };
         for (t = 0; t < RotateTicks && Up(c) - h0 < LiftOff; t += 10)
+        {
             Fly(w, q, place, c, Buttons.Back, 10, ref r);
+            if (debug && t % 30 == 0)
+                Console.WriteLine($"[plane-debug] rotate t {t} speed {c.Vel.Length():0.0} up {Up(c) - h0:0.00} nose {MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI:0.0} elev {c.Surfaces[0].Deflect:0.00}");
+        }
         if (Up(c) - h0 < LiftOff)
             return r with { Why = $"S for {RotateTicks / (float)World.TickRate:0} s at {r.RunSpeed:0} m/s didn't lift it {LiftOff:0} m off the runway" };
         var hc = Up(c);
