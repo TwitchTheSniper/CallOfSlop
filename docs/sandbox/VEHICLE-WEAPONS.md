@@ -76,14 +76,35 @@ its gun the gunsmith's for a mount rated as a 0.8 to 16 t vehicle's at tier 1 to
 Checked as a towed thing (its build, faces, how it stands); a 1 m base plate with an outrigger plate on each side (without them heavy guns tipped it 8 to 17 degrees).
 `--sweep-vehicle` Bandit and Highland Turret: 8 of 8 seeds pass each. Its blueprint files (10, seeds 1 and 2 of five styles) come with the next regeneration of `Constructs/Blueprints`.
 
+## Phase 3 (2026-11-10): landing ticks, missile launchers
+
+**Landing ticks.** Measured with `--bench-vehicle-guns --merge 4` and timers round each stage: a 4x4 salvo's cost was not the walk but what it set off. (1) Parts breaking off:
+320 broke in one tick (50 ms; 0.03 to 0.16 ms each: removal, split, a wreck). A broken part now costs `ShellBreakCost` (4) more of the walk's 400-part budget, and a tick's
+walks stop once `ShellWalkMs` (3 ms) has gone by after a break (`ConstructWorld.WalkBlast`). (2) The shove: an 8192-damage blast gave a 20 kg wreck 880 m/s; speed is
+clamped only after the contacts, so that tick's ground search reached 15 m round each piece (100 to 220 ms ticks). A plain blast now pushes at most `MegaShoveMax`
+(30 m/s) and never past `ConstructPhysics.MaxSpeed` or the speed a body had (`ConstructWorld.Shove`, shells and `ConstructWorld.Blast` alike). Measured with `--gap 100`
+(vehicles out of each other's blasts): warm 4x4 salvos on full trucks, worst tick 6.3 to 6.4 ms, medians 0.3 to 0.4 ms; the process's first salvo still reaches 12 to 25 ms
+(first breaks, first wreck contacts and first crater bands: JIT, by the second salvo they are gone). The gunsmith keeps 4x4. Small blasts push less than before (a wreck
+from a 512-damage shell went up to 61 m/s, now 30), which may move seeded digests.
+
+**Missile launchers.** A fourth class, `MissileBattery`: a spotting gun (the Chain Cannon) on the turret and an Ordnance Rack on the arm's side, hooks out and its front
+the gun's way, a radar-seeking missile (`Ordnance:M25:Radar Seeker+Impact Fuse+Warhead HE+Tail Fins+Solid Motor`) on each station, wired from the Turret Module so the
+gunner's fire lets them go (`Vehicle.MissileRack`; `WeaponOption.Rack` and `.Ordnance`). Its mass (gun, rack, missiles) is rated as a gun's; it has no recoil of its own.
+Offered from 1.5 t (130 kg). `--bench-vehicle-guns --battery N` puts the gunsmith's stand with one first in the row, held 3 m up; each rack's next vehicle is set 70 m ahead
+and the rack emptied: the Launch Rack's missile locked the truck, flew and wrecked it (114 parts to none; that tick 23 ms, not yet told apart from JIT).
+Where the body is in a station's way (cab-over tankers, a double-decker), the station stays empty and the gun still fights: no undo for the rack once on (4 of 193 seeds).
+The standalone Turret never takes one (0.5 m up its missile drops into the ground). `--gen-vehicles`: 36 of 193 committed vehicles differ, none fail.
+
 ## Next steps (queued)
 
-1. **Blast landing ticks.** 4x4 shells: split a landing's work (the first walk slice, the wrecks it makes) so no landing tick passes 8 ms, or cap the gunsmith at 3x3 until then.
-   Ammo and fuel cook-offs chain through the existing queue (not tried with big shells yet).
-2. **Missile batteries (not started):** an Ordnance Rack (`ModularRack`) of designed heat-seeking missiles on the turret's hinge leaf beside a spotting gun (a rack is not a gun: only a
-   gun aims a turret's joints; a rack fires on its input, wired from the Turret Module), stations and missile size from the same mass ceiling.
-3. **Turret loot (not done):** loot tables hold parts, not bodies: a survival turret needs a world spawn of the Turret blueprint (a site) or a kit item that builds one.
-   Turret seeds swept for two styles only; a 4x4 block didn't merge on a ground-level base (the base now starts at the gunsmith's test-stand height, 2 m, and is set down).
-4. **Exotic:** railguns (Railspike Coil merged), mortars (Hand Mortar, Bucket Launcher merged), flamethrowers (Firebreather merged), bomb drops (ordnance released down).
-5. **Giant moving bases (100-500 m):** merges to 6x6 and batteries of them (capital weapons are a separate catalogue: project doc capital-weapons.md).
-6. **Gunners and auto-targeting:** AI vehicles crewed by bots in gunner seats now; a full auto-targeting parts set after this.
+1. **Multi-station batteries.** 1x2, 2x2 and 3x2 grids (25 cm by 3 m) on a half-metre stand-off build, hold and fire (`--battery` sizes 2 to 4 before they were cut),
+   but in the bench only the first missiles locked and they met nothing; the rest got no lock and flew into the ground 15 m out. Find why (the radar lock with missiles
+   in the air ahead, launches a station apart), then put the larger racks back in the ladder (`Designs`, "Missile Battery"). A rack on the elevation hinge's leaf would
+   let the gunner lift it (only a gun aims a turret's joints today), and let ground turrets carry one.
+2. **Exotic (not started):** mortars (Hand Mortar, Bucket Launcher merged) for artillery roles, flamethrowers (Firebreather merged) for close ones, picked by role; then
+   railguns (Railspike Coil merged) and bomb drops (ordnance released down).
+3. **Gunners (not started):** AI vehicles crewed by bots in gunner seats that aim and fire at players (reuse the bot and turret aim code); then the auto-targeting parts set.
+4. **Turret loot (not done):** loot tables hold parts, not bodies: a survival turret needs a world spawn of the Turret blueprint (a site) or a kit item that builds one.
+   Turret seeds swept for two styles only.
+5. Ammo and fuel cook-offs chain through the existing queue (not tried with 4x4 shells). The first-salvo ticks (12 to 25 ms) are worth a warm-up pass if they show in play.
+6. **Giant moving bases (100-500 m):** merges to 6x6 and batteries of them (capital weapons are a separate catalogue: project doc capital-weapons.md).

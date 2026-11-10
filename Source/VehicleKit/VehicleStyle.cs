@@ -83,6 +83,12 @@ public sealed record WeaponOption(string Name, string Build, string? Box = "Ammo
 
     public string[] Tags { get; init; } = [];
 
+    /// <summary>A missile battery's (the gunsmith's, docs/sandbox/VEHICLE-WEAPONS.md): the Ordnance Rack fitted on the turret beside the gun, and the designed missile's key on each of its stations.
+    /// The gun spots and aims; the rack lets go on the Turret Module's fire. Null on every other gun.</summary>
+    public string? Rack { get; init; }
+
+    public string? Ordnance { get; init; }
+
     /// <summary>The build's receiver and its parts by socket; a value may carry its own braces.</summary>
     public static (string Part, Dictionary<string, string> Children) Parse(string text)
     {

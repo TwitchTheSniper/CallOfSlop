@@ -257,6 +257,9 @@ public sealed partial class ConstructWorld
     public const int ShellTestEvery = 3; // a shell looks for what it hit one tick in this many, over all of them (more with more in the air: ShellTestsPerTick)
     public const int ShellTestsPerTick = 22; // ...so that no tick tests many more than this
     public const int ShellPartsPerTick = 400; // parts of a blast walked a tick
+    public const int ShellBreakCost = 4; // ...a part that breaks off counts as this many more (removal, split, wreck: 0.03 to 0.16 ms each; 320 broke in one tick of a 4x4 salvo, 50 ms)
+    public const double ShellWalkMs = 3.0; // ...and a tick's walk stops after this long once a part has broken (a body's removals vary: a merged gun's cell re-merges, a plain one doesn't)
+    private static readonly long WalkTicksMax = (long)(ShellWalkMs * System.Diagnostics.Stopwatch.Frequency / 1000.0);
     public const int ShellMaxBodies = 256; // bodies one blast reaches (the nearest the broadphase gives)
     public const int BlastDebrisMin = 8, BlastDebrisMax = 32; // wrecks one blast leaves (parts broken off, pieces cut off): 8, and one more each 2 m of its radius, to 32; past that they are gone.
                                                                 // (4 Howitzer shells left 110 one-part wrecks of a 2.5 t truck: their first ticks of contacts took 30 to 89 ms)
@@ -437,6 +440,7 @@ public sealed partial class ConstructWorld
         }
         // The blasts: the one under way, then as many more as the tick's parts budget reaches (a cluster's bomblets go off together, a big blast takes ticks).
         var budget = ShellPartsPerTick;
+        _walkFrom = System.Diagnostics.Stopwatch.GetTimestamp();
         WalkBlast(ref budget);
         for (var round = 0; round < MaxBlastsPerTick && !_blast.Active && ShellBlastsWaiting > 0 && budget > 0; round++)
         {
@@ -455,6 +459,7 @@ public sealed partial class ConstructWorld
         OrdnanceFlight.DropStages(this);
     }
 
+    private long _walkFrom; // (when this tick's walks began: ShellWalkMs)
     private const int MaxBlastsPerTick = 12; // (each sends its own event and walks the broadphase once)
 
     /// <summary>A shell goes off in the air: in the blast's turn, and it digs nothing.</summary>
@@ -540,7 +545,12 @@ public sealed partial class ConstructWorld
                 if (b.Incendiary)
                     Ignite(c, b.Part);
                 BlastStored(c, b.Part, dmg);
-                DamagePart(c, b.Part, dmg, out _);
+                if (DamagePart(c, b.Part, dmg, out _))
+                {
+                    budget -= ShellBreakCost; // (a part that broke off: its removal, the split, perhaps a wreck)
+                    if (System.Diagnostics.Stopwatch.GetTimestamp() - _walkFrom > WalkTicksMax)
+                        budget = 0; // (the tick's walk has had its time: the rest on the next)
+                }
                 if (!IsLive(c))
                     break;
             }
@@ -582,7 +592,21 @@ public sealed partial class ConstructWorld
             return;
         var k = 1f - MathF.Min(1, dist / (radius + c.Radius * 0.5f));
         c.Wake();
-        c.Vel += (d / dist + new Vector3(0, 0.5f, 0)) * k * damage * 0.4f / MathF.Max(c.Mass, 20f) * 6f;
+        Shove(c, d / dist + new Vector3(0, 0.5f, 0), k * damage * 0.4f / MathF.Max(c.Mass, 20f) * 6f);
+    }
+
+    /// <summary>
+    /// A plain blast's push on a body: at most <see cref="MegaShoveMax"/> m/s a blast, and never past <see cref="ConstructPhysics.MaxSpeed"/> (or the speed it
+    /// had). A 4x4 Howitzer's 8192-damage shell gave a 20 kg wreck 880 m/s: the physics step clamps speed only after the contacts, so its first tick's
+    /// ground search reached 15 m round each such piece (100 to 200 ms ticks after a salvo).
+    /// </summary>
+    public static void Shove(Construct c, Vector3 way, float dv)
+    {
+        var before = c.Vel.Length();
+        c.Vel += way * MathF.Min(dv, MegaShoveMax);
+        var top = MathF.Max(ConstructPhysics.MaxSpeed, before);
+        if (c.Vel.LengthSquared() > top * top)
+            c.Vel *= top / c.Vel.Length();
     }
 
     private void ClearShells()
