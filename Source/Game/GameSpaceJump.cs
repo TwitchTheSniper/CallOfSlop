@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// drive seat's jump key, F on it, or a rising signal; again to stop), and once charged jumps to the system its
 /// <c>jumpTarget</c> names (the nth nearest other system, <see cref="Galaxy.Nearest"/>) if that is within the drive's
 /// range and the batteries hold the jump's energy (kJ a tonne a light-year). The ship arrives at the target's edge in
-/// orbit round its star (<see cref="Galaxy.Arrive"/>), keeping its ship id.
+/// orbit round its star, or round the world the system's file names (<see cref="Galaxy.Arrive"/>), keeping its ship id.
 /// <para>
 /// <b>Parked ships.</b> A ship in another system than the bubble's, or more than <see cref="SpaceFarDistance"/> from the
 /// World's origin in its own (floats there are metres apart: the World can't hold it), is <i>parked</i>
@@ -18,8 +18,8 @@ namespace CallOfSlop;
 /// that system, game +Y its ecliptic north) and none of the map. Another system's ships are stepped by that system's own
 /// flight on the same galaxy time (<see cref="SpaceSession.Away"/>). Its thrusters push the ship and A and D turn it as
 /// in the bubble; a parked ship that comes back within reach of the bubble is posed from its ship again, and can fly back
-/// down. One bubble only, so a ship can't land in another system yet (the leftovers: landing on other planetoids,
-/// floating origin).
+/// down. A parked ship that comes within the sky of a world of the system it is in lands there, the whole group with it
+/// (GameSpaceLanding.cs): the bubble moves to that system.
 /// </para>
 /// </summary>
 public sealed partial class Game
@@ -193,7 +193,7 @@ public sealed partial class Game
         var sys = Galaxy.System(to);
         StoryJump(c, sys.Name); // (GameStory.cs)
         Console.WriteLine(FormattableString.Invariant(
-            $"[space] construct {c.Id} (ship {id}) jumped {ly:0.00} ly from {Galaxy.System(from).Name} to {sys.Name}: {sys.Arrival / StarSystemFile.Au:0.00} AU from {sys.Bodies[0].Name}, {cost:0} kJ"));
+            $"[space] construct {c.Id} (ship {id}) jumped {ly:0.00} ly from {Galaxy.System(from).Name} to {sys.Name}: {Far(sys.Arrival)} from {sys.Bodies[sys.ArrivalBody].Name}, {cost:0} kJ"));
     }
 
     /// <summary>Host: a construct's ship is parked in galaxy system <paramref name="galaxy"/> (its picture moves to its park spot).</summary>

@@ -936,8 +936,8 @@ public static unsafe partial class Program
         if (d.GatherSaw)
             return d.Tier < field.WoodMinTier ? $" - trees need a tier {field.WoodMinTier} saw" : " - bring its blade to a forest";
         ConstructGatherer.WorkBox(hit.Body, hit.Part, out var at, out _, out _);
-        var hint = field.NearestUnderground(at.X, at.Z, d.Tier);
-        if (field.KindAt(at.X, at.Z, false) is not { } kind)
+        var hint = field.NearestUnderground(at, d.Tier);
+        if (field.KindAt(at, false) is not { } kind)
             return $" - nothing below; {hint}";
         return d.Tier < kind.MinTier ? $" - {kind.Name} needs a tier {kind.MinTier} drill; {hint}" : $" - over {kind.Name}: bring its bit to the ground";
     }

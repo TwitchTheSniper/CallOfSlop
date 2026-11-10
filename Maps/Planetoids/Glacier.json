@@ -1,0 +1,406 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Glacier",
+  "description": "Glacier, the 8 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 9 km long. The IT Department keeps its Server Farm here, for the cooling.",
+  "author": "Call of Slop",
+  "order": 3,
+  "halfX": 10600,
+  "halfZ": 10600,
+  "maxPlayers": 8,
+  "skybox": {
+    "preset": "alpine",
+    "zenith": "#6f9fd0",
+    "horizon": "#dbe8f2",
+    "ground": "#c9d6e0",
+    "sun": {
+      "color": "#f4f8ff",
+      "intensity": 1.05,
+      "size": 1.2
+    },
+    "haze": {
+      "color": "#e6eef5",
+      "strength": 0.55
+    },
+    "ambient": 1.25
+  },
+  "planetoid": {
+    "radius": 8000,
+    "cell": 2,
+    "strength": 14,
+    "surface": {
+      "grass": "#e4ecf3",
+      "dirt": "#c4d6e6",
+      "rock": "#7ba3c8",
+      "sand": "#a6c5de",
+      "dirtSlope": 18,
+      "rockSlope": 30,
+      "sandBelow": -18
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 80,
+        "scale": 4200,
+        "octaves": 5,
+        "seed": 71
+      },
+      {
+        "type": "noise",
+        "amplitude": 28,
+        "scale": 650,
+        "octaves": 4,
+        "seed": 19,
+        "ridged": true
+      },
+      {
+        "type": "mountain",
+        "lat": 35,
+        "lon": 80,
+        "radius": 2000,
+        "height": 950,
+        "seed": 31,
+        "ridges": 0.8,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": -50,
+        "lon": 230,
+        "radius": 1600,
+        "height": 760,
+        "seed": 37,
+        "ridges": 0.8,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 55,
+        "lon": 250,
+        "radius": 1200,
+        "height": 520,
+        "seed": 38,
+        "ridges": 0.8,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": -25,
+        "lon": 40,
+        "radius": 1400,
+        "height": 600,
+        "seed": 39,
+        "ridges": 0.8,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "noise",
+        "amplitude": 22,
+        "scale": 260,
+        "octaves": 3,
+        "seed": 27,
+        "ridged": true,
+        "lat": 0,
+        "lon": 100,
+        "radius": 3500,
+        "edge": 2500
+      },
+      {
+        "type": "terrace",
+        "step": 14,
+        "sharp": 0.9,
+        "lat": -45,
+        "lon": 320,
+        "radius": 2600,
+        "edge": 1500
+      },
+      {
+        "type": "crater",
+        "lat": -10,
+        "lon": 320,
+        "radius": 1100,
+        "depth": 60,
+        "rim": 20
+      },
+      {
+        "type": "rift",
+        "lat": 15,
+        "lon": 170,
+        "bearing": 60,
+        "length": 9000,
+        "width": 320,
+        "depth": 330,
+        "floor": 0.25,
+        "wander": 520,
+        "seed": 13
+      },
+      {
+        "type": "rift",
+        "lat": 40,
+        "lon": 200,
+        "bearing": 150,
+        "length": 2400,
+        "width": 70,
+        "depth": 85,
+        "floor": 0.15,
+        "wander": 120,
+        "seed": 2
+      },
+      {
+        "type": "rift",
+        "lat": -20,
+        "lon": 140,
+        "bearing": 20,
+        "length": 2000,
+        "width": 60,
+        "depth": 75,
+        "floor": 0.15,
+        "wander": 110,
+        "seed": 4
+      },
+      {
+        "type": "rift",
+        "lat": 60,
+        "lon": 300,
+        "bearing": 100,
+        "length": 2600,
+        "width": 80,
+        "depth": 90,
+        "floor": 0.15,
+        "wander": 140,
+        "seed": 6
+      },
+      {
+        "type": "rift",
+        "lat": -60,
+        "lon": 60,
+        "bearing": 40,
+        "length": 2200,
+        "width": 66,
+        "depth": 80,
+        "floor": 0.15,
+        "wander": 120,
+        "seed": 8
+      },
+      {
+        "type": "rift",
+        "lat": 5,
+        "lon": 20,
+        "bearing": 130,
+        "length": 1800,
+        "width": 56,
+        "depth": 70,
+        "floor": 0.15,
+        "wander": 100,
+        "seed": 10
+      },
+      {
+        "type": "rift",
+        "lat": 75,
+        "lon": 120,
+        "bearing": 10,
+        "length": 1600,
+        "width": 60,
+        "depth": 70,
+        "floor": 0.15,
+        "wander": 90,
+        "seed": 12
+      },
+      {
+        "type": "noise",
+        "amplitude": 3,
+        "scale": 90,
+        "octaves": 3,
+        "seed": 5
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": -10,
+        "lon": 320,
+        "radius": 700,
+        "height": -62,
+        "edge": 300
+      },
+      {
+        "type": "flatten",
+        "lat": 15,
+        "lon": 170,
+        "radius": 80,
+        "height": -318,
+        "edge": 70
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 70,
+        "height": 20,
+        "edge": 150
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "mix": {
+        "helium pocket": 2.5,
+        "copper vein": 1.5,
+        "sand bed": 0,
+        "iron vein": 0.7
+      }
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        8020.138,
+        -40
+      ],
+      [
+        6,
+        8020.138,
+        -40
+      ],
+      [
+        -12,
+        8020.15,
+        -36
+      ],
+      [
+        12,
+        8020.15,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        8020.138,
+        40
+      ],
+      [
+        6,
+        8020.138,
+        40
+      ],
+      [
+        -12,
+        8020.15,
+        36
+      ],
+      [
+        12,
+        8020.15,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 8019.888,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 8019.888,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      8020.374,
+      -45
+    ],
+    [
+      0,
+      8020.374,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.89998,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": -10,
+      "lon": 320,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#d9c14a",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 15,
+      "lon": 170,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#4ab0d9",
+      "material": "Concrete"
+    }
+  ]
+}

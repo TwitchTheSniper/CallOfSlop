@@ -113,7 +113,7 @@ public static partial class SelfTest
         else
             problems.Add("the client never joined");
         // A planetoid: no air, and a round follows the point gravity round it.
-        if (Maps.All.FirstOrDefault(m => m.Planetoid != null) is { Planetoid: { } planet } round)
+        if ((Maps.Find("Planetoid") ?? Maps.All.FirstOrDefault(m => m.Planetoid != null)) is { Planetoid: { } planet } round)
         {
             World.SetMap(round);
             var v = new ConstructWorld();

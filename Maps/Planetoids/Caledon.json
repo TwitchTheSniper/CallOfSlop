@@ -1,0 +1,434 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Caledon",
+  "description": "Caledon, the 6 km highland world of Glenmore (Systems/Glenmore.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
+  "author": "Call of Slop",
+  "order": 4,
+  "halfX": 8600,
+  "halfZ": 8600,
+  "maxPlayers": 8,
+  "skybox": {
+    "preset": "overcast",
+    "zenith": "#7d8a96",
+    "horizon": "#b9c2c8",
+    "ground": "#5b6a55",
+    "sun": {
+      "color": "#fff4dc",
+      "intensity": 0.85
+    },
+    "clouds": {
+      "coverage": 0.72,
+      "density": 0.6,
+      "altitude": 1600,
+      "speed": 14
+    },
+    "haze": {
+      "color": "#aab6bd",
+      "strength": 0.75
+    }
+  },
+  "planetoid": {
+    "radius": 6000,
+    "cell": 2,
+    "strength": 11,
+    "surface": {
+      "grass": "#56733f",
+      "dirt": "#75597a",
+      "rock": "#5d5f66",
+      "sand": "#4a4a33",
+      "snow": "#e8eef0",
+      "dirtSlope": 17,
+      "rockSlope": 36,
+      "sandBelow": -70,
+      "snowAbove": 520
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 120,
+        "scale": 2400,
+        "octaves": 6,
+        "seed": 81
+      },
+      {
+        "type": "noise",
+        "amplitude": 110,
+        "scale": 1300,
+        "octaves": 5,
+        "seed": 12,
+        "ridged": true
+      },
+      {
+        "type": "mountain",
+        "lat": 62,
+        "lon": 140,
+        "radius": 1700,
+        "height": 940,
+        "seed": 43,
+        "ridges": 0.8,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 40,
+        "lon": 100,
+        "radius": 1300,
+        "height": 700,
+        "seed": 44,
+        "ridges": 0.8,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 48,
+        "lon": 190,
+        "radius": 1200,
+        "height": 640,
+        "seed": 45,
+        "ridges": 0.7,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 10,
+        "lon": 300,
+        "radius": 1500,
+        "height": 780,
+        "seed": 46,
+        "ridges": 0.8,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": -25,
+        "lon": 30,
+        "radius": 1400,
+        "height": 720,
+        "seed": 47,
+        "ridges": 0.8,
+        "erosion": 0.7,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": -40,
+        "lon": 200,
+        "radius": 1600,
+        "height": 820,
+        "seed": 48,
+        "ridges": 0.8,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": -65,
+        "lon": 110,
+        "radius": 1100,
+        "height": 560,
+        "seed": 49,
+        "ridges": 0.7,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 20,
+        "lon": 240,
+        "radius": 1000,
+        "height": 520,
+        "seed": 50,
+        "ridges": 0.7,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 70,
+        "lon": 300,
+        "radius": 1200,
+        "height": 600,
+        "seed": 52,
+        "ridges": 0.8,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": -10,
+        "lon": 150,
+        "radius": 1100,
+        "height": 540,
+        "seed": 53,
+        "ridges": 0.7,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": -55,
+        "lon": 320,
+        "radius": 1300,
+        "height": 680,
+        "seed": 54,
+        "ridges": 0.8,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 35,
+        "lon": 20,
+        "radius": 1200,
+        "height": 620,
+        "seed": 55,
+        "ridges": 0.8,
+        "erosion": 0.8,
+        "warp": 0.35
+      },
+      {
+        "type": "rift",
+        "lat": 30,
+        "lon": 150,
+        "bearing": 55,
+        "length": 6200,
+        "width": 620,
+        "depth": 190,
+        "floor": 0.4,
+        "wander": 420,
+        "seed": 21
+      },
+      {
+        "type": "rift",
+        "lat": 52,
+        "lon": 160,
+        "bearing": 140,
+        "length": 2600,
+        "width": 420,
+        "depth": 150,
+        "floor": 0.35,
+        "wander": 260,
+        "seed": 22
+      },
+      {
+        "type": "rift",
+        "lat": -30,
+        "lon": 110,
+        "bearing": 100,
+        "length": 4400,
+        "width": 520,
+        "depth": 170,
+        "floor": 0.4,
+        "wander": 360,
+        "seed": 23
+      },
+      {
+        "type": "rift",
+        "lat": 0,
+        "lon": 270,
+        "bearing": 10,
+        "length": 3200,
+        "width": 460,
+        "depth": 160,
+        "floor": 0.35,
+        "wander": 300,
+        "seed": 24
+      },
+      {
+        "type": "noise",
+        "amplitude": 4,
+        "scale": 100,
+        "octaves": 4,
+        "seed": 5
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": 30,
+        "lon": 150,
+        "radius": 160,
+        "height": -100,
+        "edge": 220
+      },
+      {
+        "type": "flatten",
+        "lat": 60,
+        "lon": 152,
+        "radius": 70,
+        "height": 640,
+        "edge": 140
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 70,
+        "height": 30,
+        "edge": 150
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "mix": {
+        "stone seam": 2,
+        "iron vein": 1.5,
+        "sand bed": 0.5
+      }
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        6030.104,
+        -40
+      ],
+      [
+        6,
+        6030.104,
+        -40
+      ],
+      [
+        -12,
+        6030.121,
+        -36
+      ],
+      [
+        12,
+        6030.121,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        6030.104,
+        40
+      ],
+      [
+        6,
+        6030.104,
+        40
+      ],
+      [
+        -12,
+        6030.121,
+        36
+      ],
+      [
+        12,
+        6030.121,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 6029.851,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 6029.851,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      6030.332,
+      -45
+    ],
+    [
+      0,
+      6030.332,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.86697,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 30,
+      "lon": 150,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#d9c14a",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 60,
+      "lon": 152,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#4ab0d9",
+      "material": "Concrete"
+    }
+  ]
+}

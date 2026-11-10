@@ -251,8 +251,10 @@ or connectors to other bodies.
   where they sat. The ship keeps its place round the new body and is in its bubble at the edge; the driver flies it down.
 - Coming back works the same way: the builds left behind are where they were.
 
-Not yet: several bubbles (each person on the planetoid they choose, Karl's later option C); a landing between systems
-(only bodies in the bubble's system); standing riders count as not aboard.
+A ship that has jumped lands on the worlds of the system it is in the same way (docs/space/GALAXY.md "Landing in another
+system"), and a world can refuse ships over a mass, which wait at its sky's edge (docs/planets/WORLDS.md "Landing limits").
+
+Not yet: standing riders count as not aboard.
 
 Not yet: ships far from the bubble still live in the World's floats (drawn steady via the render origin, but their pose
 steps by 6 cm at 1,000 km, so very far out the whole ship moves in small jumps until the World's origin can move or the

@@ -140,6 +140,8 @@ public static class ConstructGatherer
         var d = c.Parts[part].D;
         if (st.Amount >= d.BulkCapacity)
             return false;
+        if (field.Planet is { } round)
+            return WorkRound(world, field, round, c, part, st, share);
         WorkBox(c, part, out var at, out var bottom, out var reach);
         var ground = field.Ground(at.X, at.Z);
         var units = 0;
@@ -177,6 +179,48 @@ public static class ConstructGatherer
             return false;
         world.Yield(CYieldKind.Gathered, c, material, world.Deposit(c, part, tapped, material));
         DrillShaft.Dig(world, field, c, st, at, tapped);
+        return true;
+    }
+
+    /// <summary>The work box's centre and its lowest point on a planetoid: lowest along "up" there, the way from the centre.</summary>
+    public static void WorkTip(Construct c, int part, Planetoid pl, out Vector3 centre, out Vector3 tip)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var a = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, d.WorkMin), q);
+        var b = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, d.WorkMax), q);
+        centre = (a + b) * 0.5f;
+        var rel = centre - pl.Center;
+        var up = rel.LengthSquared() > 1e-6f ? Vector3.Normalize(rel) : Vector3.UnitY;
+        tip = centre - up * (MathF.Abs(Vector3.Dot(b - a, up)) * 0.5f);
+    }
+
+    /// <summary>A drill's step on a planetoid (docs/planets/WORLDS.md "Ore"): as on a flat map, with down towards the centre. No trees there, so a saw finds nothing.</summary>
+    private static bool WorkRound(ConstructWorld world, ResourceField field, Planetoid pl, Construct c, int part, CStore st, float share)
+    {
+        var d = c.Parts[part].D;
+        if (d.GatherSaw)
+            return false;
+        WorkTip(c, part, pl, out var at, out var tip);
+        if (!DrillShaft.Touches(pl, tip) || field.TappableAt(at) is not { } kind || d.Tier < kind.MinTier)
+            return false;
+        var want = RecyclingTable.Current.IdOf(kind.Material);
+        if (st.Amount > 0 && st.Material != want)
+            return false;
+        var units = Math.Min(Accrue(st, d.GatherRate * share), d.BulkCapacity - st.Amount);
+        if (units == 0)
+            return true;
+        if (kind.Deep && !DrillShaft.Bored(world, pl, at))
+        {
+            DrillShaft.Dig(world, pl, c, st, at, units); // (the rock over a deep deposit: it gives nothing)
+            return true;
+        }
+        var tapped = field.Tap(at, units, out var material);
+        if (tapped == 0)
+            return false;
+        world.Yield(CYieldKind.Gathered, c, material, world.Deposit(c, part, tapped, material));
+        DrillShaft.Dig(world, pl, c, st, at, tapped);
         return true;
     }
 

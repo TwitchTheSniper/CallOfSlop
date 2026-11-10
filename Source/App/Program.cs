@@ -127,6 +127,8 @@ public static unsafe partial class Program
             return Space.SpaceCli.Run(args); // headless: a star system on rails, where every body is over some days (Source/Space)
         if (args.SkipWhile(a => !a.Equals("--check-system", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } systemFile)
             return Space.SpaceCli.Check(systemFile); // for system makers: does this star system file load?
+        if (args.Any(a => a.Equals("--check-planetoid", StringComparison.OrdinalIgnoreCase)))
+            return PlanetCli.Run(args); // for world makers: a planetoid map's heights, slopes, timing and a picture of its ground (docs/planets/PLANETS.md)
         if (args.Any(a => a.Equals("--map-ops", StringComparison.OrdinalIgnoreCase)))
             return Maps.PrintOps(); // for map makers: every op and its parameters
         if (args.SkipWhile(a => !a.Equals("--gen-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genName)

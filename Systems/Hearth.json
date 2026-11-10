@@ -1,0 +1,23 @@
+{
+  "name": "Hearth",
+  "description": "A small orange star 7.8 light-years from the Dev System (docs/planets/WORLDS.md): Mille, the hollow world of the Thousand Layers (Maps/Planetoids/Mille.json), with its moonlet Crumb, and Proof, a pale world further out.",
+  "galaxy": { "ly": [5.6, -5.2, -1.6], "arrive": { "at": "Mille", "km": 20 } },
+  "bodies": [
+    { "name": "Hearth", "gm": 8.6e19, "radius": 5.1e8, "color": [1.0, 0.76, 0.48], "rotation": { "hours": 700, "tilt": 2 } },
+    {
+      "name": "Mille", "parent": "Hearth", "radius": 3000, "gravity": 8, "map": "Mille", "color": [0.78, 0.6, 0.32],
+      "orbit": { "au": 0.55, "e": 0.015, "i": 0.3, "lan": 20, "argp": 100, "m0": 330 },
+      "rotation": { "hours": 14, "tilt": 5 }
+    },
+    {
+      "name": "Crumb", "parent": "Mille", "radius": 350, "gravity": 0.8, "color": [0.7, 0.58, 0.4],
+      "orbit": { "km": 30, "e": 0.02, "i": 3, "lan": 0, "argp": 0, "m0": 45 },
+      "rotation": { "locked": true }
+    },
+    {
+      "name": "Proof", "parent": "Hearth", "radius": 3500, "gravity": 7, "color": [0.86, 0.82, 0.74],
+      "orbit": { "au": 1.4, "e": 0.05, "i": 2.2, "lan": 210, "argp": 300, "m0": 160 },
+      "rotation": { "hours": 27, "tilt": 14 }
+    }
+  ]
+}
