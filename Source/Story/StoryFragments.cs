@@ -25,6 +25,15 @@ public sealed class FragmentScript
         public string Id = "", Name = "", Blueprint = "", Lead = "", Source = "";
         public int Fragment; // an index into Fragments
         public float From = 160, To = 320;
+
+        /// <summary>
+        /// A site on another world: the map it stands on (a planetoid; "": by the penal colony, <see cref="From"/> to
+        /// <see cref="To"/>), where (degrees: latitude 90 is the +Y pole, longitude 0 faces +Z), and whether it stands
+        /// inside a hollow world's cavity, on the wall under that point.
+        /// </summary>
+        public string Map = "";
+        public float Lat, Lon;
+        public bool Inside;
         public float Multiply = 3, Add = 4, Every = 6;
         public int Locks = 3;
         public string Arrive = "", Power = "", Decoded = "", Copied = "";
@@ -120,6 +129,10 @@ public sealed class FragmentScript
                         throw new StoryException($"{at}: two sites have this id");
                     if (sites.Exists(x => x.Fragment == s.Fragment))
                         throw new StoryException($"{at}: another site holds {t.Fragments[s.Fragment].Id} already");
+                    s.Map = Text(e, "map", where, false);
+                    s.Lat = Num(e, "lat", 0, -90, 90, at);
+                    s.Lon = Num(e, "lon", 0, -360, 360, at);
+                    s.Inside = e.TryGetProperty("inside", out var ins) && ins.ValueKind == JsonValueKind.True;
                     s.From = Num(e, "from", s.From, 30, 2000, at);
                     s.To = Num(e, "to", s.To, s.From + 10, 3000, at);
                     s.Multiply = Num(e, "multiply", s.Multiply, -9, 9, at);

@@ -5,6 +5,20 @@
   "name": "Clan MacSlop",
   "about": "a clan with pipes, plate and a long memory; the Ministry owes them a castle and they mean to collect",
   "home": "The Glen",
+  // The Glen on Caledon: the chief's hall, two houses, Morag's smithy, a lookout and the gate (docs/planets/WORLDS.md "Settlements").
+  "settlement": {
+    "map": "Caledon", "lat": 30, "lon": 150,
+    "buildings": [
+      { "blueprint": "Two-Storey House", "east": 0, "north": 28, "yaw": 180 },
+      { "blueprint": "Two-Storey House", "east": -24, "north": 8, "yaw": 90 },
+      { "blueprint": "Two-Storey House", "east": 24, "north": 8, "yaw": 270 },
+      { "blueprint": "Foundry Works", "east": -18, "north": -20, "yaw": 0 },
+      { "blueprint": "Watchtower", "east": 26, "north": -26, "yaw": 0 },
+      { "blueprint": "Gate", "east": 0, "north": -34, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": -7, "north": 10, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": 7, "north": 10, "yaw": 0 }
+    ]
+  },
   "claims": [ "Highland " ],
   "members": [
     { "name": "Hamish MacSlop", "about": "the chief; has never lost an argument, because he never stops having it",

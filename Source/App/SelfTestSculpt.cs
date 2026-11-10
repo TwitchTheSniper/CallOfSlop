@@ -133,6 +133,19 @@ public static partial class SelfTest
         public Vector3 Want, Got;
         public bool Found;
 
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
+        {
+            Tri(a, b, c, na, nb, nc, ca, cb, cc);
+            Tri(a, c, d, na, nc, nd, ca, cc, cd);
+        }
+
+        // (a triangle as a quad with a doubled corner: its middle is on the triangle, its normal the triangle's)
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc) =>
+            Quad(a, b, c, c, Vector3.Normalize(Vector3.Cross(b - a, c - a)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => true;
+
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             if (n.Y > 0.5f && !Found && MathF.Abs((a.X + c.X) * 0.5f - Want.X) < 0.5f && MathF.Abs((a.Z + c.Z) * 0.5f - Want.Z) < 0.5f && a.Y > Want.Y)
@@ -159,13 +172,13 @@ public static partial class SelfTest
         var sumBefore = 0f;
         for (var z = -2f; z < 2f; z += e.Size)
         for (var x = -2f; x < 2f; x += e.Size)
-            sumBefore += t.Sample(x, z);
+            sumBefore += t.Sample(x + e.Size * 0.5f, z + e.Size * 0.5f); // (at the columns' middles: a top is its span's there, GroundTops)
         if (e.Apply(fill) == 0)
             Fail("sculpting: a fill on undug ground changed nothing");
         var sumAfter = 0f;
         for (var z = -2f; z < 2f; z += e.Size)
         for (var x = -2f; x < 2f; x += e.Size)
-            sumAfter += t.Sample(x, z);
+            sumAfter += t.Sample(x + e.Size * 0.5f, z + e.Size * 0.5f);
         var built = (sumAfter - sumBefore) * e.Size * e.Size;
         var top = t.Sample(0.1f, 0.1f);
         var down = tc.Raycast(new Vector3(0.1f, h0 + 10, 0.1f), -Vector3.UnitY, 30);

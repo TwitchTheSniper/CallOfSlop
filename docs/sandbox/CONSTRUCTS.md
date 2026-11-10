@@ -890,7 +890,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `drive` | A transfer part (role `transfer`): `kind` (`shaft`, `ujoint`, `cvjoint`, `gearbox`, `chain`, `belt`, `clutch`, `transfercase`, `pto`, `hub`, `stub`), `ratio`, `efficiency`, `ports`, `maxAngle`, `maxTorque`, `front`, `setting`. |
 | `fuelTank` | `capacity` (litres; a tank comes full). |
 | `fluidTank` | `capacity` (litres; it comes empty) and `flow` (litres a second through its pipes at most): [Fluid tanks](#fluid-tanks). `envelope` makes a sized box a lift cell: [Air and lift](#air-and-lift). |
-| `seat` | `at`: where the sitter's feet go; `helm`: true, it drives before any other seat ([Large systems](#large-systems)). |
+| `seat` | `at`: where the sitter's feet go; `helm`: true, it drives before any other seat ([Large systems](#large-systems)); `heal`: health a second the sitter gets back while it works, 0 to 50 (the Medical Station: docs/sandbox/INTERIORS.md phase 8). |
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
 | `dock`, `launch`, `conveyor` | [Large systems](#large-systems): a docking clamp's or magnetic lock's block on a cargo logic part, a catapult's or arrestor's, a conveyor's. |

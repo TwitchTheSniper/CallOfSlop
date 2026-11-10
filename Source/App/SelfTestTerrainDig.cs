@@ -100,8 +100,8 @@ public static partial class SelfTest
             Fail($"dig lab: a ray down into the crater stopped at {h0 + 10 - down:0.00} m, the floor is at {floor:0.00} m");
         var across = tc.Raycast(new Vector3(0.1f, h0 - 1f, 0.1f), Vector3.UnitX, 10);
         var wallN = tc.HitNormal(new Vector3(0.1f + across, h0 - 1f, 0.1f), Vector3.UnitX);
-        if (across is < 1.7f or > 3.0f || wallN.X > -0.9f)
-            Fail($"dig lab: a ray across the crater met its wall {across:0.00} m out (want about 2.4) with normal {wallN}");
+        if (across is < 1.7f or > 3.0f || wallN.X > -0.3f) // (the bowl's side slopes: GroundTops)
+            Fail($"dig lab: a ray across the crater met its wall {across:0.00} m out (want about 2.4) with normal (want it facing back) {wallN}");
 
         // The tunnel: roofed, its floor and ceiling where they should be, the surface over it untouched.
         float tx = -10.1f, tz = 0.3f;
@@ -195,10 +195,23 @@ public static partial class SelfTest
         public int Faces, Wrong;
         public string First;
 
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
+        {
+            Tri(a, b, c, na, nb, nc, ca, cb, cc);
+            Tri(a, c, d, na, nc, nd, ca, cc, cd);
+        }
+
+        // (a triangle as a quad with a doubled corner: its middle is on the triangle, its normal the triangle's)
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc) =>
+            Quad(a, b, c, c, Vector3.Normalize(Vector3.Cross(b - a, c - a)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => true;
+
+
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             Faces++;
-            if ((Vector3.Cross(b - a, c - a) + Vector3.Cross(c - a, d - a)).LengthSquared() < 1e-8f)
+            if (Sliver(a, b, c, d))
                 return; // (a sliver: nothing to stand behind)
             var mid = (a + b + c + d) * 0.25f;
             if (n.Y == 0 && MathF.Max(MathF.Max(a.Y, b.Y), MathF.Max(c.Y, d.Y)) - MathF.Min(MathF.Min(a.Y, b.Y), MathF.Min(c.Y, d.Y)) < 0.1f)
@@ -220,19 +233,44 @@ public static partial class SelfTest
         }
     }
 
+    /// <summary>Is a face thinner than the checks' probes reach (under 5 cm across its narrow way)? Two sloping tops that cross along a column's edge leave such wedges between them.</summary>
+    internal static bool Sliver(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+    {
+        var area2 = (Vector3.Cross(b - a, c - a) + Vector3.Cross(c - a, d - a)).Length();
+        var longest = MathF.Max(MathF.Max((b - a).Length(), (c - b).Length()), MathF.Max(MathF.Max((d - c).Length(), (a - d).Length()), MathF.Max((c - a).Length(), (d - b).Length())));
+        return area2 < 0.05f * longest;
+    }
+
     /// <summary>Smoothed dug faces (CellFaces with smooth) against <see cref="TerrainEdits.DrawnSolid"/>: drawn ground just behind, air in front.</summary>
     internal struct DrawnFaceCheck : IDigFaceSink
     {
         public TerrainEdits E;
-        public int Faces, Wrong, Slants;
+        public int Faces, Wrong, Slants, Triangles;
         public string First;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
+        {
+            Tri(a, b, c, na, nb, nc, ca, cb, cc);
+            Tri(a, c, d, na, nc, nd, ca, cc, cd);
+        }
+
+        // (a triangle as a quad with a doubled corner: its middle is on the triangle, its normal the triangle's)
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc)
+        {
+            Triangles--;
+            Quad(a, b, c, c, Vector3.Normalize(Vector3.Cross(b - a, c - a)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+        }
+
+        public bool Shaded => true;
+
 
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
         {
             Faces++;
+            Triangles += 2;
             if (n.X != 0 && n.Z != 0)
                 Slants++;
-            if ((Vector3.Cross(b - a, c - a) + Vector3.Cross(c - a, d - a)).LengthSquared() < 1e-8f)
+            if (Sliver(a, b, c, d))
                 return;
             if (n.Y == 0 && MathF.Max(MathF.Max(a.Y, b.Y), MathF.Max(c.Y, d.Y)) - MathF.Min(MathF.Min(a.Y, b.Y), MathF.Min(c.Y, d.Y)) < 0.1f)
                 return; // (a seam sliver against sloping ground, as in DigFaceCheck)
@@ -332,6 +370,19 @@ public static partial class SelfTest
     private struct DigFaceCount : IDigFaceSink
     {
         public int N;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
+        {
+            Tri(a, b, c, na, nb, nc, ca, cb, cc);
+            Tri(a, c, d, na, nc, nd, ca, cc, cd);
+        }
+
+        // (a triangle as a quad with a doubled corner: its middle is on the triangle, its normal the triangle's)
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc) =>
+            Quad(a, b, c, c, Vector3.Normalize(Vector3.Cross(b - a, c - a)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+
+        public bool Shaded => true;
+
 
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock) => N++;
     }

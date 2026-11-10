@@ -12,6 +12,20 @@
   "name": "IT Department",
   "about": "the people who kept the servers running when everything else stopped; they still think they run the network",
   "home": "The Server Farm",
+  // The Server Farm on Glacier's Mirror: the office, the stores and a hut on the ice (docs/planets/WORLDS.md "Settlements").
+  "settlement": {
+    "map": "Glacier", "lat": -10, "lon": 320,
+    "buildings": [
+      { "blueprint": "Two-Storey House", "east": 0, "north": 24, "yaw": 180 },
+      { "blueprint": "Smart Depot", "east": -20, "north": 4, "yaw": 90 },
+      { "blueprint": "Beacon Depot", "east": 20, "north": 4, "yaw": 270 },
+      { "blueprint": "Small Outpost", "east": -24, "north": -22, "yaw": 0 },
+      { "blueprint": "Watchtower", "east": 28, "north": -26, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": -8, "north": 8, "yaw": 0 },
+      { "blueprint": "Lamp Post", "east": 8, "north": 8, "yaw": 0 },
+      { "blueprint": "Storage Corner", "east": 12, "north": -14, "yaw": 0 }
+    ]
+  },
   "claims": [ "IT " ],
   "members": [
     { "name": "Deborah Lyle", "about": "Head of IT Service Delivery, has never been seen outside a meeting",

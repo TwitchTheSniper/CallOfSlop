@@ -74,7 +74,7 @@ public static unsafe partial class Program
             {
                 // phase 4: the class's chassis rooms go below, in the hollow (sealed: its way in is the stairs and the lift), and leave the deck's programme
                 var decks = (int)MathF.Floor(hollow.Size.Y / top.Deck.Storey + 1e-4f);
-                var vcls = top with { Deck = top.Deck with { Decks = decks, ReserveRoute = false }, Programme = top.Chassis, Fill = top.Fill.Where(f => top.Chassis.Contains(f)).ToList() };
+                var vcls = top.ForChassis(decks); // (the fill entries that may go below the deck: InteriorData.FillMix)
                 vplan = InteriorPlanner.Plan(data, vcls, hollow, seed, @sealed: true);
                 var rest = top.Programme.ToList();
                 foreach (var room in top.Chassis)
@@ -103,7 +103,7 @@ public static unsafe partial class Program
             else
             {
                 var decks = (int)MathF.Floor(hollow.Size.Y / b.Class.Deck.Storey + 1e-4f);
-                var cls = b.Class with { Deck = b.Class.Deck with { Decks = decks, ReserveRoute = false }, Programme = b.Class.Chassis, Fill = b.Class.Fill.Where(f => b.Class.Chassis.Contains(f)).ToList() }; // (crew stay above: the void fills only with its own kinds)
+                var cls = b.Class.ForChassis(decks); // (crew stay above: the void fills only with what may go below)
                 var planned = InteriorPlanner.Plan(data, cls, hollow, seed);
                 Console.WriteLine($"chassis void: {hollow.Size.X:0}x{hollow.Size.Y:0.0}x{hollow.Size.Z:0} m, {decks} storeys, {hollow.KeepOuts.Count} beams as keep-outs, {inner} floor sockets inside: PLANNED ONLY, not built");
                 Console.Write(planned.Ascii());
