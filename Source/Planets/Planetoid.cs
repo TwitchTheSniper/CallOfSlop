@@ -706,7 +706,16 @@ public sealed class Planetoid
         public int Cell, Sub;
 
         public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
-            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+            Quad(a, b, c, d, default, default, 0);
+
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc)
+        {
+            var lo = Vector3.Min(Vector3.Min(a, b), c);
+            var hi = Vector3.Max(Vector3.Max(a, b), c);
+            if (hi.X < Min.X || lo.X > Max.X || hi.Y < Min.Y || lo.Y > Max.Y || hi.Z < Min.Z || lo.Z > Max.Z)
+                return;
+            Into.Add(ContactShape.FromTriangle(a, b, c, new ShapeId(ShapeKind.Terrain, Cell, Sub++)));
+        }
 
         public bool Shaded => false;
 

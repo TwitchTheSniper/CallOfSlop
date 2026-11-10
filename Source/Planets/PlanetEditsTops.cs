@@ -81,9 +81,9 @@ public sealed partial class PlanetEdits
     private void MakeTops(int face, int i, int j, int first, int ord)
     {
         var vs = Sub + 1;
-        if (_tops.Length < _spans.Length * 4)
+        if (_tops.Length < _spans.Length * GroundTops.Stride)
         {
-            Array.Resize(ref _tops, _spans.Length * 4);
+            Array.Resize(ref _tops, _spans.Length * GroundTops.Stride);
             var cells = _spans.Length / (Sub * Sub) + 1;
             Array.Resize(ref _topsMade, cells);
             Array.Resize(ref _cornerBase, cells * vs * vs);
@@ -131,14 +131,15 @@ public sealed partial class PlanetEdits
                 if ((uint)ca >= (uint)Sub || (uint)cb >= (uint)Sub)
                     continue;
                 var c = first + cb * Sub + ca;
-                _tops[c * 4 + 3 - k] = kind[k] == GroundTops.Dug ? h[k] : _spans[c][_count[c] * 2 - 1];
+                _tops[c * GroundTops.Stride + 3 - k] = kind[k] == GroundTops.Dug ? h[k] : _spans[c][_count[c] * 2 - 1];
+                _tops[c * GroundTops.Stride + 4] = _spans[c][_count[c] * 2 - 1];
             }
         }
         _topsMade[ord] = true;
     }
 
     /// <summary>The four corner altitudes of dug column <paramref name="c"/>'s top (its cell's tops are made).</summary>
-    private ReadOnlySpan<float> Tops(int c) => new(_tops, c * 4, 4);
+    private ReadOnlySpan<float> Tops(int c) => new(_tops, c * GroundTops.Stride, GroundTops.Stride);
 
     /// <summary>
     /// The solid spans of the dug column in unit direction (x, y, z) and its top's altitude right there (the highest span ends
@@ -176,28 +177,16 @@ public sealed partial class PlanetEdits
     /// <summary>The normal of a dug column's top at (u, v) across it: of the triangle there, facing out.</summary>
     private Vector3 TopNormal(int face, int ci, int cj, int c, float u, float v)
     {
-        var t = Tops(c);
-        // Differences worked out in doubles (the corners are half a metre apart, kilometres from the centre).
+        GroundTops.Slope(Tops(c), u, v, out var di, out var dj);
+        // The column's own edges along i and along j (differences worked out in doubles: half a metre, kilometres from the centre).
         _p.DirOf(face, (double)ci / Sub, (double)cj / Sub, out var ax, out var ay, out var az);
-        _p.DirOf(face, (ci + 1.0) / Sub, (cj + 1.0) / Sub, out var ex, out var ey, out var ez);
-        double bx, by, bz;
-        float tb;
-        if (u >= v)
-        {
-            _p.DirOf(face, (ci + 1.0) / Sub, (double)cj / Sub, out bx, out by, out bz);
-            tb = t[1];
-        }
-        else
-        {
-            _p.DirOf(face, (double)ci / Sub, (cj + 1.0) / Sub, out bx, out by, out bz);
-            tb = t[2];
-        }
-        double ra = _r + t[0], re = _r + t[3], rb = _r + tb;
-        var e = new Vector3((float)(ex * re - ax * ra), (float)(ey * re - ay * ra), (float)(ez * re - az * ra));
-        var b = new Vector3((float)(bx * rb - ax * ra), (float)(by * rb - ay * ra), (float)(bz * rb - az * ra));
-        var n = Vector3.Cross(e, b);
+        _p.DirOf(face, (ci + 1.0) / Sub, (double)cj / Sub, out var bx, out var by, out var bz);
+        _p.DirOf(face, (double)ci / Sub, (cj + 1.0) / Sub, out var ex, out var ey, out var ez);
+        var along = new Vector3((float)((bx - ax) * _r), (float)((by - ay) * _r), (float)((bz - az) * _r));
+        var across = new Vector3((float)((ex - ax) * _r), (float)((ey - ay) * _r), (float)((ez - az) * _r));
+        var up = Vector3.Normalize(new Vector3((float)(bx + ex), (float)(by + ey), (float)(bz + ez)));
+        var n = Vector3.Cross(across + up * dj, along + up * di);
         var len = n.Length();
-        var up = Vector3.Normalize(new Vector3((float)(ax + ex), (float)(ay + ey), (float)(az + ez)));
         if (len < 1e-12f)
             return up;
         n /= len;

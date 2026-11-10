@@ -777,15 +777,25 @@ public sealed partial class PlanetEdits : IDigGround
             }
             if (s[^1] > topLo && aa >= topLo)
             {
-                // The highest span's top: two triangles, so the height over it along the piece is two straight runs at
-                // most. Over it at the start (it wasn't solid there); look for where it first isn't, by the middle too.
-                var m = Vector3.Lerp(a, b, 0.5f);
-                var am = (float)(m.Length() - _r);
-                var tm = GroundTops.At(tops, (ua + ub) * 0.5f, (va + vb) * 0.5f);
-                float ha = aa - ta, hm = am - tm, hb = ab - tb;
-                var hit = hm <= 0 ? 0.5f * ha / (ha - hm) : hb <= 0 ? 0.5f + 0.5f * hm / (hm - hb) : float.MaxValue;
-                if (hit <= 1 && aa + (ab - aa) * hit >= topLo - 1e-3f)
-                    best = MathF.Min(best, hit);
+                // The highest span's top: a few triangles (GroundTops), so the height over it along the piece is a few
+                // straight runs. Over it at the start (it wasn't solid there); look for where it first isn't, a quarter of
+                // the piece at a time.
+                const int runs = 4;
+                var over = aa - ta;
+                for (var q = 1; q <= runs; q++)
+                {
+                    var f = q / (float)runs;
+                    var m = Vector3.Lerp(a, b, f);
+                    var next = q == runs ? ab - tb : (float)(m.Length() - _r) - GroundTops.At(tops, ua + (ub - ua) * f, va + (vb - va) * f);
+                    if (next <= 0)
+                    {
+                        var hit = (q - 1 + over / (over - next)) / runs;
+                        if (aa + (ab - aa) * hit >= topLo - 1e-3f)
+                            best = MathF.Min(best, hit);
+                        break;
+                    }
+                    over = next;
+                }
             }
             return best <= 1 ? u0 + (u1 - u0) * Math.Clamp(best, 0f, 1f) : -1;
         }
@@ -894,7 +904,7 @@ public sealed partial class PlanetEdits : IDigGround
         // face's edge), for the sides against the next column and for the shading across columns.
         var rs = Sub + 2;
         var shaded = sink.Shaded;
-        Span<float> ring = stackalloc float[rs * rs * 4];
+        Span<float> ring = stackalloc float[rs * rs * GroundTops.Stride];
         Span<int> ringCol = stackalloc int[rs * rs];
         if (shaded)
             EnsureColours(face, i, j, first);
@@ -907,7 +917,7 @@ public sealed partial class PlanetEdits : IDigGround
             ringCol[k] = c;
             if (c < 0)
             {
-                ring.Slice(k * 4, 4).Fill(float.NaN);
+                ring.Slice(k * GroundTops.Stride, GroundTops.Stride).Fill(float.NaN);
                 continue;
             }
             if ((uint)a >= (uint)Sub || (uint)b >= (uint)Sub)
@@ -916,7 +926,7 @@ public sealed partial class PlanetEdits : IDigGround
                 if (shaded)
                     EnsureColours(face, ci / Sub, cj / Sub, other);
             }
-            Tops(c).CopyTo(ring.Slice(k * 4, 4));
+            Tops(c).CopyTo(ring.Slice(k * GroundTops.Stride, GroundTops.Stride));
         }
         // The cell's own axes for shading: one column along i and along j (not square to each other near a cube's corner).
         var o00 = D(corner, 0);
@@ -937,7 +947,7 @@ public sealed partial class PlanetEdits : IDigGround
             ColDir(face, ci, cj, out var ux, out var uy, out var uz);
             var up = new Vector3((float)ux, (float)uy, (float)uz);
             var rk = (b + 1) * rs + a + 1;
-            var t = ring.Slice(rk * 4, 4);
+            var t = ring.Slice(rk * GroundTops.Stride, GroundTops.Stride);
             for (var k = 0; k < s.Length; k += 2)
             {
                 float lo = MathF.Max(s[k], _inner), hi = s[k + 1];
@@ -949,16 +959,37 @@ public sealed partial class PlanetEdits : IDigGround
                     var (col, rock) = shaded ? TopShade(c, ux, uy, uz, hi, covered) : default;
                     Emit(ref sink, ctx.P(d00, hi), ctx.P(d01, hi), ctx.P(d11, hi), ctx.P(d10, hi), up, col, rock);
                 }
-                else if (shaded)
-                {
-                    TopVertex(ring, ringCol, rs, a, b, 0, up, along, across, out var n00, out var c00);
-                    TopVertex(ring, ringCol, rs, a, b, 1, up, along, across, out var n10, out var c10);
-                    TopVertex(ring, ringCol, rs, a, b, 2, up, along, across, out var n01, out var c01);
-                    TopVertex(ring, ringCol, rs, a, b, 3, up, along, across, out var n11, out var c11);
-                    sink.Smooth(ctx.P(d00, t[0]), ctx.P(d01, t[2]), ctx.P(d11, t[3]), ctx.P(d10, t[1]), n00, n01, n11, n10, c00, c01, c11, c10);
-                }
                 else
-                    sink.Smooth(ctx.P(d00, t[0]), ctx.P(d01, t[2]), ctx.P(d11, t[3]), ctx.P(d10, t[1]), up, up, up, up, default, default, default, default);
+                {
+                    // Its sloping top (GroundTops): two triangles, or a fan round its middle.
+                    Vector3 p00 = ctx.P(d00, t[0]), p10 = ctx.P(d10, t[1]), p01 = ctx.P(d01, t[2]), p11 = ctx.P(d11, t[3]);
+                    Vector3 n00 = up, n10 = up, n01 = up, n11 = up, nm = up;
+                    Vector4 c00 = default, c10 = default, c01 = default, c11 = default, cm = default;
+                    if (shaded)
+                    {
+                        TopVertex(ring, ringCol, rs, a, b, 0, up, along, across, out n00, out c00);
+                        TopVertex(ring, ringCol, rs, a, b, 1, up, along, across, out n10, out c10);
+                        TopVertex(ring, ringCol, rs, a, b, 2, up, along, across, out n01, out c01);
+                        TopVertex(ring, ringCol, rs, a, b, 3, up, along, across, out n11, out c11);
+                    }
+                    if (!GroundTops.Fans(t))
+                        sink.Smooth(p00, p01, p11, p10, n00, n01, n11, n10, c00, c01, c11, c10);
+                    else
+                    {
+                        var pm = ctx.P(new Dir3(ux, uy, uz), t[4]);
+                        if (shaded)
+                        {
+                            cm = _topColour[c];
+                            nm = Vector3.Normalize(Vector3.Cross(across + up * ((t[2] + t[3] - t[0] - t[1]) * 0.5f), along + up * ((t[1] + t[3] - t[0] - t[2]) * 0.5f)));
+                            if (Vector3.Dot(nm, up) < 0)
+                                nm = -nm;
+                        }
+                        sink.Tri(pm, p00, p01, nm, n00, n01, cm, c00, c01);
+                        sink.Tri(pm, p01, p11, nm, n01, n11, cm, c01, c11);
+                        sink.Tri(pm, p11, p10, nm, n11, n10, cm, c11, c10);
+                        sink.Tri(pm, p10, p00, nm, n10, n00, cm, c10, c00);
+                    }
+                }
                 if (k > 0 || float.IsFinite(lo)) // (and a hollow planetoid's cavity roof under a dug cell: the cavity's own drawing leaves dug cells out)
                 {
                     var (bc, br) = Shade(c, lo, true);
@@ -967,10 +998,10 @@ public sealed partial class PlanetEdits : IDigGround
             }
             var top = s[^1];
             // Each side: the edge p..q, this column's top at its ends, the next column's (ring) and its corners there.
-            Side(ref sink, ctx, s, c, top, face, ci - 1, cj, d00, d01, up, t[0], t[2], ringCol[rk - 1], ring.Slice((rk - 1) * 4, 4), 1, 3, cornerBase[b * vs + a], cornerBase[(b + 1) * vs + a]);
-            Side(ref sink, ctx, s, c, top, face, ci + 1, cj, d11, d10, up, t[3], t[1], ringCol[rk + 1], ring.Slice((rk + 1) * 4, 4), 2, 0, cornerBase[(b + 1) * vs + a + 1], cornerBase[b * vs + a + 1]);
-            Side(ref sink, ctx, s, c, top, face, ci, cj - 1, d10, d00, up, t[1], t[0], ringCol[rk - rs], ring.Slice((rk - rs) * 4, 4), 3, 2, cornerBase[b * vs + a + 1], cornerBase[b * vs + a]);
-            Side(ref sink, ctx, s, c, top, face, ci, cj + 1, d01, d11, up, t[2], t[3], ringCol[rk + rs], ring.Slice((rk + rs) * 4, 4), 0, 1, cornerBase[(b + 1) * vs + a], cornerBase[(b + 1) * vs + a + 1]);
+            Side(ref sink, ctx, s, c, top, face, ci - 1, cj, d00, d01, up, t[0], t[2], ringCol[rk - 1], ring.Slice((rk - 1) * GroundTops.Stride, GroundTops.Stride), 1, 3, cornerBase[b * vs + a], cornerBase[(b + 1) * vs + a]);
+            Side(ref sink, ctx, s, c, top, face, ci + 1, cj, d11, d10, up, t[3], t[1], ringCol[rk + 1], ring.Slice((rk + 1) * GroundTops.Stride, GroundTops.Stride), 2, 0, cornerBase[(b + 1) * vs + a + 1], cornerBase[b * vs + a + 1]);
+            Side(ref sink, ctx, s, c, top, face, ci, cj - 1, d10, d00, up, t[1], t[0], ringCol[rk - rs], ring.Slice((rk - rs) * GroundTops.Stride, GroundTops.Stride), 3, 2, cornerBase[b * vs + a + 1], cornerBase[b * vs + a]);
+            Side(ref sink, ctx, s, c, top, face, ci, cj + 1, d01, d11, up, t[2], t[3], ringCol[rk + rs], ring.Slice((rk + rs) * GroundTops.Stride, GroundTops.Stride), 0, 1, cornerBase[(b + 1) * vs + a], cornerBase[(b + 1) * vs + a + 1]);
         }
 
         static Dir3 D(Span<double> v, int k) => new(v[k], v[k + 1], v[k + 2]);
@@ -984,7 +1015,7 @@ public sealed partial class PlanetEdits : IDigGround
     /// </summary>
     private void TopVertex(ReadOnlySpan<float> ring, ReadOnlySpan<int> ringCol, int rs, int a, int b, int q, Vector3 up, Vector3 along, Vector3 across, out Vector3 normal, out Vector4 colour)
     {
-        var mine = ring[((b + 1) * rs + a + 1) * 4 + q];
+        var mine = ring[((b + 1) * rs + a + 1) * GroundTops.Stride + q];
         // The corner in ring coordinates, and the four columns round it.
         int va = a + 1 + (q & 1), vb = b + 1 + (q >> 1);
         float di = 0, dj = 0;
@@ -993,7 +1024,7 @@ public sealed partial class PlanetEdits : IDigGround
         for (var k = 0; k < 4; k++)
         {
             int ma = va - 1 + (k & 1), mb = vb - 1 + (k >> 1);
-            var t = ring.Slice((mb * rs + ma) * 4, 4);
+            var t = ring.Slice((mb * rs + ma) * GroundTops.Stride, GroundTops.Stride);
             if (!(MathF.Abs(t[3 - k] - mine) < 0.03f))
                 continue; // (not dug, over the face's edge, or a top of its own there)
             di += (t[1] + t[3] - t[0] - t[2]) * 0.5f;

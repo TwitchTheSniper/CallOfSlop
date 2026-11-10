@@ -82,12 +82,42 @@ public static class GroundTops
         }
     }
 
+    /// <summary>Floats a column's top takes: its four corner heights (0,0), (1,0), (0,1), (1,1), then its middle's (the top of its highest span).</summary>
+    public const int Stride = 5;
+
     /// <summary>
-    /// A column's top at (u, v) across it (0..1 each way) from its four corner heights (0,0), (1,0), (0,1), (1,1): two
-    /// triangles split along (0,0)-(1,1), the way the map's own cells are split.
+    /// Is a column's top a fan of four triangles round its middle? Its middle is always the top of its span, so the ground
+    /// is where the spans say at every column's middle, and a lone heap or pit keeps its height. Where the middle already
+    /// lies on the line between corners (0,0) and (1,1) (within a centimetre: ground as built, a level pad, an even slope)
+    /// two triangles split along that line do, the way the map's own cells are split.
     /// </summary>
-    public static float At(ReadOnlySpan<float> t, float u, float v) =>
-        u >= v ? t[0] + u * (t[1] - t[0]) + v * (t[3] - t[1]) : t[0] + v * (t[2] - t[0]) + u * (t[3] - t[2]);
+    public static bool Fans(ReadOnlySpan<float> t) => MathF.Abs(t[4] - (t[0] + t[3]) * 0.5f) > 0.01f;
+
+    /// <summary>A column's top at (u, v) across it (0..1 each way), from its corner heights and its middle (<see cref="Stride"/> floats).</summary>
+    public static float At(ReadOnlySpan<float> t, float u, float v)
+    {
+        if (!Fans(t))
+            return u >= v ? t[0] + u * (t[1] - t[0]) + v * (t[3] - t[1]) : t[0] + v * (t[2] - t[0]) + u * (t[3] - t[2]);
+        float a = MathF.Abs(u - 0.5f), b = MathF.Abs(v - 0.5f);
+        if (b >= a)
+            return v <= 0.5f ? 2 * v * t[4] + t[0] * (1 - v - u) + t[1] * (u - v) : 2 * (1 - v) * t[4] + t[2] * (v - u) + t[3] * (u + v - 1);
+        return u <= 0.5f ? 2 * u * t[4] + t[0] * (1 - u - v) + t[2] * (v - u) : 2 * (1 - u) * t[4] + t[1] * (u - v) + t[3] * (u + v - 1);
+    }
+
+    /// <summary>How a column's top rises across it at (u, v): the height gained over the whole column along u and along v, on the triangle there.</summary>
+    public static void Slope(ReadOnlySpan<float> t, float u, float v, out float du, out float dv)
+    {
+        if (!Fans(t))
+        {
+            (du, dv) = u >= v ? (t[1] - t[0], t[3] - t[1]) : (t[3] - t[2], t[2] - t[0]);
+            return;
+        }
+        float a = MathF.Abs(u - 0.5f), b = MathF.Abs(v - 0.5f);
+        if (b >= a)
+            (du, dv) = v <= 0.5f ? (t[1] - t[0], 2 * t[4] - t[0] - t[1]) : (t[3] - t[2], t[2] + t[3] - 2 * t[4]);
+        else
+            (du, dv) = u <= 0.5f ? (2 * t[4] - t[0] - t[2], t[2] - t[0]) : (t[1] + t[3] - 2 * t[4], t[3] - t[1]);
+    }
 
     /// <summary>The ground under a point at height <paramref name="y"/> in a column whose top is <paramref name="top"/> there (as <see cref="TerrainEdits.GroundBelow(ReadOnlySpan{float}, float)"/>).</summary>
     public static float GroundBelow(ReadOnlySpan<float> s, float y, float top) => s.Length <= 2 || y >= s[^2] ? top : TerrainEdits.GroundBelow(s[..^2], y);

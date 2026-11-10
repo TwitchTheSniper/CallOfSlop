@@ -357,6 +357,17 @@ public sealed unsafe partial class PlanetRenderer
 
         public bool Shaded => true;
 
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc)
+        {
+            var b0 = (uint)Verts.Count;
+            Verts.Add(new DugVertex { Pos = a, Normal = na, Color = ca });
+            Verts.Add(new DugVertex { Pos = b, Normal = nb, Color = cb });
+            Verts.Add(new DugVertex { Pos = c, Normal = nc, Color = cc });
+            Idx.Add(b0);
+            Idx.Add(b0 + 1);
+            Idx.Add(b0 + 2);
+        }
+
         public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
         {
             var b0 = (uint)Verts.Count;

@@ -133,8 +133,15 @@ public static partial class SelfTest
         public Vector3 Want, Got;
         public bool Found;
 
-        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
-            Quad(a, b, c, d, Vector3.Normalize(Vector3.Cross(c - a, d - b)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd)
+        {
+            Tri(a, b, c, na, nb, nc, ca, cb, cc);
+            Tri(a, c, d, na, nc, nd, ca, cc, cd);
+        }
+
+        // (a triangle as a quad with a doubled corner: its middle is on the triangle, its normal the triangle's)
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc) =>
+            Quad(a, b, c, c, Vector3.Normalize(Vector3.Cross(b - a, c - a)), new Vector3(ca.X, ca.Y, ca.Z), ca.W);
 
         public bool Shaded => true;
 
