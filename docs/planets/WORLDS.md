@@ -61,12 +61,35 @@ let go there and flown down, since it is inside the sky's edge the moment it is 
 arrival's: a ship over it that was built on the world and flown out can't come back down either. In
 `tools/planets/make_worlds.py` it is a world's `"limit": (tonnes, why)`; `--check-planetoid` prints it.
 
+## Ore
+
+Every planetoid has ore now (the three Dev ones too). A round world has no (x, z), so its deposits lie on the six faces of
+the cube round it (`Source/Constructs/ResourceSphere.cs`): a point's direction from the centre picks the face and two
+angles across it, in metres along the ground, and each face is a field generated like a flat map's. Deposits stop at a
+face's edge. A Drill Module taps what is under its bit and digs its hole with down towards the centre
+(`ConstructGatherer.WorkRound`, `DrillShaft`'s planetoid half); a deposit shows as a streak of rocks on the ground within
+400 m, and looking at a drill names the nearest deposit and the way to it (north is towards the +Y pole).
+
+Each world has its own mix: `"sandbox": { "resources": { "mix": { "gold vein": 2, "sand bed": 0 } } }` multiplies a
+kind's chance from `Constructs/Resources.json` (0 to 4; a kind not named keeps its own). In `make_worlds.py` it is a
+world's `"ore"`. `--check-planetoid` prints the count of each kind and the share of ground over a deposit.
+
+| World | Commoner | Rarer or none |
+| --- | --- | --- |
+| Redrock | iron, sand | gold, helium |
+| Cinder | copper, gold, stone | sand; no helium |
+| Glacier | helium, copper | iron; no sand |
+| Caledon | stone, iron | sand |
+| Mille | levite, gold, sand | iron |
+
+Not on a planetoid yet: forests (trees stand along +Y), deposits a map places by hand, and a hole dug from inside a hollow
+world's cavity (a drill on the cavity's wall taps but digs nothing).
+
 ## Not yet
 
 - **Free travel between systems.** A ship that has jumped lands with the whole group; a planetoid running beside the
   host's game (docs/space/FREE-TRAVEL.md) is opened only for worlds of the bubble's own system.
 - **Docking in orbit** hasn't been tried with a shuttle coming back up to a ship held at the edge.
-- **Ore.** Deposits are generated on flat maps only (`"resources": { "generate": false }` on every planetoid).
 - **Settlements.** The homes are bare ground: each faction's place is a blueprint still to be made and put there.
 - The moons and small bodies (Moonlet, Ashfall, Soot, Rime, Shard, Cairn, Skerry, Crumb, Proof) are rails and sky.
 - Colours are one set of rules per world (height and slope), so Cinder's day side is not a different colour from its night.

@@ -126,7 +126,12 @@
   },
   "sandbox": {
     "resources": {
-      "generate": false
+      "mix": {
+        "levite seam": 3,
+        "gold vein": 2,
+        "sand bed": 1.5,
+        "iron vein": 0.5
+      }
     }
   },
   "teamSpawns": [

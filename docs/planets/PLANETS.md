@@ -207,7 +207,7 @@ walk south for day and night.
 
 
 - Constructs (step 2): loose bodies fall and rest (above), but vehicles, wheels, suspension, thrusters, the physics gun,
-  build ghosts and joints still assume Y is up, and construct drills don't dig a planetoid yet.
+  build ghosts and joints still assume Y is up. (Drill Modules do tap ore and dig their hole on a planetoid: WORLDS.md "Ore".)
 - Map boxes more than 500 m below Y 0 count as "parked" (switched off) in `PhysicsWorld`: harmless on the Dev map (its
   blocks are at the pole) but a trap for anything placed in the southern half. (Rockets leave a planetoid map below
   its ground or past its sky's edge.)

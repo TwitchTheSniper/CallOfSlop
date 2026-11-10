@@ -280,7 +280,11 @@
   },
   "sandbox": {
     "resources": {
-      "generate": false
+      "mix": {
+        "stone seam": 2,
+        "iron vein": 1.5,
+        "sand bed": 0.5
+      }
     }
   },
   "teamSpawns": [

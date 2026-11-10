@@ -93,4 +93,70 @@ public static class DrillShaft
         world.ScoopsThisStep++;
         dig(op);
     }
+
+    // ---- On a planetoid (docs/planets/WORLDS.md "Ore"): the same hole, with down towards the centre -----------------------
+
+    /// <summary>Does a bit's lowest point reach a planetoid's ground? Within the slack of it, or over a hole: not above the ground as built, the floor within <see cref="Reach"/>.</summary>
+    public static bool Touches(Planetoid pl, Vector3 tip)
+    {
+        const float slack = ConstructGatherer.GroundSlack;
+        var alt = pl.Altitude(tip);
+        if (alt <= slack)
+            return true;
+        var rel = tip - pl.Center;
+        var d = rel.Length();
+        if (d < 1 || alt > Reach)
+            return false;
+        var dir = rel / d;
+        return d - pl.Radius - pl.HeightAt(dir.X, dir.Y, dir.Z) <= slack;
+    }
+
+    /// <summary>The next scoop of the hole under a point on a planetoid, on a half-metre lattice (a body's small moves ask for the same scoop); false when it's deep enough.</summary>
+    public static bool Next(Planetoid pl, Vector3 at, out DigOp op)
+    {
+        op = default;
+        var rel = at - pl.Center;
+        if (rel.LengthSquared() < 1)
+            return false;
+        var dir = Vector3.Normalize(rel);
+        var g = dir * (float)(pl.Radius + pl.HeightAt(dir.X, dir.Y, dir.Z));
+        g = new Vector3(MathF.Round(g.X * 2) / 2, MathF.Round(g.Y * 2) / 2, MathF.Round(g.Z * 2) / 2);
+        dir = Vector3.Normalize(g);
+        var surface = (float)(pl.Radius + pl.HeightAt(dir.X, dir.Y, dir.Z));
+        var floor = (pl.GroundUnder(pl.Center + dir * (surface + 0.01f)) - pl.Center).Length();
+        if (floor <= surface - Depth + 0.01f)
+            return false;
+        for (var k = 0; k < Scoops; k++)
+        {
+            Scoop(k, out var lift, out var r);
+            if (surface + lift - r < floor - 0.05f)
+            {
+                op = new DigOp(DigKind.Scoop, pl.Center + dir * (surface + lift), r).Quantised;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Server: is the hole under a point on a planetoid bored as deep as a hole goes, or can it never be?</summary>
+    public static bool Bored(ConstructWorld world, Planetoid pl, Vector3 at) =>
+        world.DrillDig == null || InCavity(pl, at) || (pl.EditsIfMade?.Log.Count ?? 0) >= MaxLog || !Next(pl, at, out _);
+
+    /// <summary>Is a point inside a hollow planetoid's cavity? A drill on its walls taps what the crust holds but digs nothing (a hole is measured from the ground outside).</summary>
+    private static bool InCavity(Planetoid pl, Vector3 at) => pl.Hollow && (at - pl.Center).Length() < pl.InnerRadius + 1;
+
+    /// <summary>Server: a drill on a planetoid tapped <paramref name="units"/>: every <see cref="UnitsPerScoop"/> of them dig the next scoop.</summary>
+    public static void Dig(ConstructWorld world, Planetoid pl, Construct c, CStore st, Vector3 at, int units)
+    {
+        if (world.DrillDig is not { } dig || c.Vel.LengthSquared() > StillSpeed * StillSpeed || InCavity(pl, at))
+            return;
+        st.JobAmount = Math.Min(st.JobAmount + units, UnitsPerScoop);
+        if (st.JobAmount < UnitsPerScoop || world.ScoopsThisStep >= MaxScoopsPerStep || (pl.EditsIfMade?.Log.Count ?? 0) >= MaxLog)
+            return;
+        st.JobAmount = 0;
+        if (!Next(pl, at, out var op))
+            return;
+        world.ScoopsThisStep++;
+        dig(op);
+    }
 }
