@@ -120,6 +120,60 @@ public sealed partial class Construct
         return _treeLastEnd(_treeStart[node]);
     }
 
+    /// <summary>
+    /// Part <paramref name="part"/> moved (an event door settling: Construct.Doors.cs): its bounds are now
+    /// <paramref name="min"/>..<paramref name="max"/>, and the nodes over it, found by its old bounds, are refitted. The tree keeps
+    /// its shape. A part handed back loose needs nothing. False when it wasn't found where it was (build the tree again).
+    /// </summary>
+    internal bool TreeMove(int part, Vector3 oldMin, Vector3 oldMax, Vector3 min, Vector3 max)
+    {
+        if (_treeParts < 0 || part >= _treeParts || _treeNodes == 0)
+            return true; // (no tree yet, or the part came after it: handed back loose)
+        for (var k = 0; k < _treeLooseCount; k++)
+            if (_treeLoose[k] == part)
+                return true;
+        _partMin[part] = min;
+        _partMax[part] = max;
+        return TreeRefit(0, part, oldMin, oldMax);
+    }
+
+    private bool TreeRefit(int node, int part, Vector3 qMin, Vector3 qMax)
+    {
+        var a = _treeMin[node];
+        var b = _treeMax[node];
+        if (a.X > qMax.X || b.X < qMin.X || a.Y > qMax.Y || b.Y < qMin.Y || a.Z > qMax.Z || b.Z < qMin.Z)
+            return false;
+        Vector3 mn, mx;
+        if (_treeLeft[node] >= 0)
+        {
+            int left = _treeLeft[node], right = _treeStart[node];
+            if (!TreeRefit(left, part, qMin, qMax) && !TreeRefit(right, part, qMin, qMax))
+                return false;
+            mn = Vector3.Min(_treeMin[left], _treeMin[right]);
+            mx = Vector3.Max(_treeMax[left], _treeMax[right]);
+        }
+        else
+        {
+            var found = false;
+            mn = new Vector3(float.MaxValue);
+            mx = new Vector3(float.MinValue);
+            for (int k = _treeStart[node], e = k + _treeCount[node]; k < e; k++)
+            {
+                var i = _treeOrder[k];
+                if (i < 0)
+                    continue;
+                found |= i == part;
+                mn = Vector3.Min(mn, _partMin[i]);
+                mx = Vector3.Max(mx, _partMax[i]);
+            }
+            if (!found)
+                return false;
+        }
+        _treeMin[node] = mn; // (exact: the node's box from its children as they are now)
+        _treeMax[node] = mx;
+        return true;
+    }
+
     private float TreeKey(int part, int axis) => _partMin[part][axis] + _partMax[part][axis];
 
     private void TreeSelect(int lo, int hi, int nth, int axis)

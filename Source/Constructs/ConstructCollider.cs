@@ -686,6 +686,78 @@ internal sealed partial class ConstructCollider
         return found / 2;
     }
 
+    /// <summary>
+    /// An event door's part on the body's own segment settled (Construct.DoorPartMoved): its leaves, found under its old bounds
+    /// <paramref name="oldMin"/>..<paramref name="oldMax"/>, are turned by <paramref name="r"/> about its old place and put at
+    /// its new one, and the nodes over them refitted from their children (the tree keeps its shape). Costs the tree's depth, not
+    /// its size. <paramref name="leaves"/>: how many it has (the walk stops when all are found). False when that isn't safe (not all
+    /// found, a hull, a turned or wheel leaf): build it again then.
+    /// </summary>
+    public bool MovePart(int part, int leaves, Vector3 oldMin, Vector3 oldMax, Vector3 oldPos, Vector3 newPos, byte r)
+    {
+        var qc = (oldMin + oldMax) * 0.5f;
+        var qh = (oldMax - oldMin) * 0.5f + new Vector3(0.002f);
+        _moveBad = false;
+        _moveLeft = leaves;
+        for (var g = 0; g < GroupCount && _moveLeft > 0; g++)
+            if (Groups[g].Seg == 0)
+                MoveIn(Groups[g].Root, part, qc, qh, oldPos, newPos, r);
+        return _moveLeft == 0 && !_moveBad;
+    }
+
+    private bool _moveBad;
+    private int _moveLeft;
+
+    private int MoveIn(int node, int part, Vector3 qc, Vector3 qh, Vector3 oldPos, Vector3 newPos, byte r)
+    {
+        var n = Nodes[node];
+        var d = Vector3.Abs(n.Centre - qc) - n.Half - qh;
+        if (_moveLeft <= 0 || d.X > 0 || d.Y > 0 || d.Z > 0)
+            return 0;
+        var moved = 0;
+        Vector3 lo, hi;
+        if (n.Count > 0)
+        {
+            lo = new Vector3(float.MaxValue);
+            hi = new Vector3(float.MinValue);
+            for (var i = n.Start; i < n.Start + n.Count; i++)
+            {
+                ref var l = ref Leaves[i];
+                if (l.Part == part && !l.Dead)
+                {
+                    if (l.Turned || l.Hull >= 0 || l.WheelIx >= 0)
+                        _moveBad = true;
+                    else
+                    {
+                        l.Centre = newPos + Rot24.Apply(r, l.Centre - oldPos);
+                        l.Half = Rot24.ApplyHalf(r, l.Half);
+                        moved++;
+                        _moveLeft--;
+                    }
+                }
+                var e = Extent(l);
+                lo = Vector3.Min(lo, l.Centre - e);
+                hi = Vector3.Max(hi, l.Centre + e);
+            }
+        }
+        else
+        {
+            moved = MoveIn(n.Start, part, qc, qh, oldPos, newPos, r) + MoveIn(n.Start + 1, part, qc, qh, oldPos, newPos, r);
+            if (moved == 0)
+                return 0;
+            ref var a = ref Nodes[n.Start];
+            ref var b = ref Nodes[n.Start + 1];
+            lo = Vector3.Min(a.Centre - a.Half, b.Centre - b.Half);
+            hi = Vector3.Max(a.Centre + a.Half, b.Centre + b.Half);
+        }
+        if (moved == 0)
+            return 0;
+        ref var m = ref Nodes[node];
+        m.Centre = (lo + hi) * 0.5f;
+        m.Half = (hi - lo) * 0.5f;
+        return moved;
+    }
+
     /// <summary>Leaf <paramref name="k"/> in the world, its group's frame being <paramref name="f"/>.</summary>
     public void World(int k, in CFrame f, out WBox w)
     {
