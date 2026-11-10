@@ -34,11 +34,16 @@ The shipped galaxy:
 
 | System | File | Where (ly) | What |
 | --- | --- | --- | --- |
-| Dev System | `Systems/Dev.json` | 0, 0, 0 | the Planetoid (the map), Moonlet, Bluestone, Redrock |
+| Dev System | `Systems/Dev.json` | 0, 0, 0 | the Planetoid (the map), Moonlet, Bluestone and Redrock (maps too) |
 | Ember | `Systems/Ember.json` | 3.1, 2.8, 0.9 (4.27 from Dev) | a red dwarf: Cinder, Ashfall and its moonlet Soot |
 | Frostreach | `Systems/Frostreach.json` | -4.4, 4.6, -1.7 (6.59 from Dev, 8.14 from Ember) | a white star: Glacier and its moon Rime, Shard |
 
-Ember and Frostreach have no maps yet: their worlds are rails and sky (a body lands only with a map: SPACE.md "Landing on another planetoid").
+| Glenmore | `Systems/Glenmore.json` | -4.6, -5.6, 1.4 (7.38 from Dev) | a yellow star: Caledon (a map) and its moon Cairn, Skerry |
+| Hearth | `Systems/Hearth.json` | 5.6, -5.2, -1.6 (7.81 from Dev) | an orange star: Mille (a map, hollow) and its moonlet Crumb, Proof |
+
+Cinder, Glacier, Caledon and Mille have maps (docs/planets/WORLDS.md), but a ship that has jumped can't land yet (below):
+they are played by starting on them. From Dev every system is in the Jump Drive's 9 ly; Ember also reaches Frostreach
+and Hearth; Glenmore is reached only from Dev.
 
 **In the sky.** Every system's sky shows the galaxy's other stars as steady points of their colour (the star's `color`, or
 a white from its mass), brighter for a heavier, nearer star (`Galaxy.ApparentBrightness`): `SpaceSkyView.Stars`, drawn by

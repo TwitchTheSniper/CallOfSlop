@@ -41,7 +41,7 @@ public static partial class SelfTest
         Galaxy.Nearest(dev, 1, out var n1, out _);
         Galaxy.Nearest(dev, 2, out var n2, out _);
         Galaxy.Nearest(ember, 1, out var e1, out _);
-        Want(Math.Abs(de - 4.2732) < 0.001 && n1 == ember && n2 == frost && !Galaxy.Nearest(dev, 3, out _, out _) && e1 == dev,
+        Want(Math.Abs(de - 4.2732) < 0.001 && n1 == ember && n2 == frost && Galaxy.Nearest(dev, Galaxy.Count - 1, out _, out _) && !Galaxy.Nearest(dev, Galaxy.Count, out _, out _) && e1 == dev,
             $"distances and the nearest order (Dev-Ember {de:0.0000} ly; Dev's 1st {n1}, 2nd {n2}; Ember's 1st {e1})");
         // The jump arrives at the edge, on the side it came from, in a circular orbit round the star.
         var t0 = SpaceTime.FromSeconds(1e6);

@@ -1,0 +1,352 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Redrock",
+  "description": "Redrock, a 4 km red desert in the home system (Systems/Dev.json): stepped mesas in the north, the Gash (a canyon 5 km long) across the middle and a dune sea in the south. A Ministry mining concession, and a practice landing before the first jump.",
+  "author": "Call of Slop",
+  "order": 1,
+  "halfX": 6600,
+  "halfZ": 6600,
+  "maxPlayers": 8,
+  "skybox": {
+    "preset": "desert",
+    "zenith": "#b98a5e",
+    "horizon": "#e2b98a",
+    "ground": "#8a5a3c",
+    "sun": {
+      "color": "#fff0d8",
+      "intensity": 1.0
+    },
+    "clouds": false,
+    "haze": {
+      "color": "#d9a878",
+      "strength": 0.7
+    }
+  },
+  "planetoid": {
+    "radius": 4000,
+    "cell": 2,
+    "strength": 9,
+    "surface": {
+      "grass": "#b5653a",
+      "dirt": "#9c4f2e",
+      "rock": "#7a3b26",
+      "sand": "#d9a066",
+      "dirtSlope": 20,
+      "rockSlope": 32,
+      "sandBelow": -30
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 85,
+        "scale": 1800,
+        "octaves": 5,
+        "seed": 41
+      },
+      {
+        "type": "noise",
+        "amplitude": 30,
+        "scale": 520,
+        "octaves": 4,
+        "seed": 3,
+        "ridged": true
+      },
+      {
+        "type": "mountain",
+        "lat": 48,
+        "lon": 250,
+        "radius": 900,
+        "height": 420,
+        "seed": 17,
+        "ridges": 0.4,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "crater",
+        "lat": -20,
+        "lon": 95,
+        "radius": 520,
+        "depth": 85
+      },
+      {
+        "type": "crater",
+        "lat": 35,
+        "lon": 330,
+        "radius": 240,
+        "depth": 50
+      },
+      {
+        "type": "crater",
+        "lat": -62,
+        "lon": 210,
+        "radius": 330,
+        "depth": 60
+      },
+      {
+        "type": "mountain",
+        "lat": -30,
+        "lon": 20,
+        "radius": 1100,
+        "height": 380,
+        "seed": 18,
+        "ridges": 0.3,
+        "erosion": 0.4,
+        "warp": 0.35
+      },
+      {
+        "type": "terrace",
+        "step": 34,
+        "sharp": 0.9,
+        "lat": -25,
+        "lon": 30,
+        "radius": 1500,
+        "edge": 700
+      },
+      {
+        "type": "terrace",
+        "step": 26,
+        "sharp": 0.86,
+        "lat": 55,
+        "lon": 60,
+        "radius": 2600,
+        "edge": 1400
+      },
+      {
+        "type": "rift",
+        "lat": 8,
+        "lon": 190,
+        "bearing": 72,
+        "length": 5200,
+        "width": 460,
+        "depth": 250,
+        "floor": 0.35,
+        "wander": 320,
+        "seed": 5
+      },
+      {
+        "type": "rift",
+        "lat": 20,
+        "lon": 215,
+        "bearing": 20,
+        "length": 1700,
+        "width": 240,
+        "depth": 150,
+        "floor": 0.25,
+        "wander": 160,
+        "seed": 8
+      },
+      {
+        "type": "rift",
+        "lat": -8,
+        "lon": 160,
+        "bearing": 150,
+        "length": 1500,
+        "width": 200,
+        "depth": 120,
+        "floor": 0.25,
+        "wander": 140,
+        "seed": 11
+      },
+      {
+        "type": "noise",
+        "amplitude": 7,
+        "scale": 55,
+        "octaves": 2,
+        "seed": 23,
+        "ridged": true,
+        "lat": -45,
+        "lon": 300,
+        "radius": 1900,
+        "edge": 900
+      },
+      {
+        "type": "noise",
+        "amplitude": 5,
+        "scale": 140,
+        "octaves": 4,
+        "seed": 7
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": 55,
+        "lon": 60,
+        "radius": 90,
+        "height": 26,
+        "edge": 160
+      },
+      {
+        "type": "flatten",
+        "lat": 8,
+        "lon": 190,
+        "radius": 70,
+        "height": -236,
+        "edge": 90
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 70,
+        "height": 14,
+        "edge": 150
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "generate": false
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        4014.036,
+        -40
+      ],
+      [
+        6,
+        4014.036,
+        -40
+      ],
+      [
+        -12,
+        4014.061,
+        -36
+      ],
+      [
+        12,
+        4014.061,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        4014.036,
+        40
+      ],
+      [
+        6,
+        4014.036,
+        40
+      ],
+      [
+        -12,
+        4014.061,
+        36
+      ],
+      [
+        12,
+        4014.061,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 4013.776,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 4013.776,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      4014.248,
+      -45
+    ],
+    [
+      0,
+      4014.248,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.80016,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 55,
+      "lon": 60,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#d9c14a",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 8,
+      "lon": 190,
+      "w": 0.8,
+      "h": 4,
+      "d": 0.8,
+      "color": "#4ab0d9",
+      "material": "Concrete"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Glenmore",
+  "description": "A yellow star 7.4 light-years from the Dev System (docs/planets/WORLDS.md): Caledon, the highland world of Clan MacSlop (Maps/Planetoids/Caledon.json), with its moon Cairn, and the small Skerry far out.",
+  "galaxy": { "ly": [-4.6, -5.6, 1.4] },
+  "bodies": [
+    { "name": "Glenmore", "gm": 1.1e20, "radius": 6.2e8, "color": [1.0, 0.92, 0.72], "rotation": { "hours": 520, "tilt": 5 } },
+    {
+      "name": "Caledon", "parent": "Glenmore", "radius": 6000, "gravity": 11, "map": "Caledon", "color": [0.36, 0.46, 0.3],
+      "orbit": { "au": 0.85, "e": 0.02, "i": 0.8, "lan": 140, "argp": 60, "m0": 210 },
+      "rotation": { "hours": 21, "tilt": 18 }
+    },
+    {
+      "name": "Cairn", "parent": "Caledon", "radius": 900, "gravity": 2, "color": [0.52, 0.5, 0.5],
+      "orbit": { "km": 70, "e": 0.03, "i": 7, "lan": 15, "argp": 0, "m0": 120 },
+      "rotation": { "locked": true }
+    },
+    {
+      "name": "Skerry", "parent": "Glenmore", "radius": 1800, "gravity": 4, "color": [0.4, 0.44, 0.5],
+      "orbit": { "au": 2.6, "e": 0.11, "i": 4, "lan": 300, "argp": 20, "m0": 75 },
+      "rotation": { "hours": 8, "tilt": 40 }
+    }
+  ]
+}
