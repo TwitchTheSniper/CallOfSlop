@@ -95,8 +95,11 @@ public static unsafe partial class Program
         var selfTestOnly = args.SkipWhile(a => !a.Equals("--selftest-only", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         if (selfTestOnly?.StartsWith("--") == true || selfTestOnly == null && args.Any(a => a.Equals("--selftest-only", StringComparison.OrdinalIgnoreCase)))
             selfTestOnly = ""; // given without names: an error that lists the valid ones, never a silent full run
-        if (selfTestOnly != null || args.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)))
-            return SelfTest.Run(selfTestOnly); // headless checks (all, or only the named sections), see SelfTest.cs
+        var selfTestShard = args.SkipWhile(a => !a.Equals("--selftest-shard", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(); // "K/N": part K of the full suite cut in N (CI's side-by-side jobs)
+        if (selfTestShard == null && args.Any(a => a.Equals("--selftest-shard", StringComparison.OrdinalIgnoreCase)))
+            selfTestShard = ""; // given without K/N: an error, never a silent full run
+        if (selfTestOnly != null || selfTestShard != null || args.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.Run(selfTestOnly, selfTestOnly == null ? selfTestShard : null); // headless checks (all, or only the named sections), see SelfTest.cs
         if (args.Any(a => a.Equals("--bot-bench", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BotBench(args); // headless: a Sandbox fight of hundreds of spawned bots, the server tick's cost (SelfTestBotBench.cs)
         if (args.Any(a => a.Equals("--zombie-probe", StringComparison.OrdinalIgnoreCase)))

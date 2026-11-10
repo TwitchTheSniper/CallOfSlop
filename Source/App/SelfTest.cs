@@ -63,7 +63,11 @@ public static partial class SelfTest
     /// <summary>Runs the self-test: every section, or only those <paramref name="only"/> names (--selftest-only).</summary>
     /// <param name="only">Comma-separated section names (case-insensitive; exact name, else every section starting with
     /// it), or null for the full suite.</param>
-    public static int Run(string? only = null)
+    /// <param name="shard">"K/N" (--selftest-shard): the full suite cut into N parts for N machines running side by side,
+    /// this run being part K (1 to N). Every N-th section of the suite's order from the K-th (so slow neighbours spread
+    /// over the parts), with the sections those need. The N parts together are the full suite, so a part isn't a FILTERED
+    /// run. Null: one run does it all.</param>
+    public static int Run(string? only = null, string? shard = null)
     {
         var path = AppFolders.LogPath("selftest.log");
         Game.TutorialAutoStart = false; // (the induction holds the gun and tools while it runs: survival sections aren't about it, GameTutorial.cs)
@@ -74,6 +78,11 @@ public static partial class SelfTest
         if (only != null)
         {
             (picked, filterError) = ResolveFilter(only, _names, _needs);
+            _plan = picked.ToHashSet(StringComparer.Ordinal);
+        }
+        else if (shard != null)
+        {
+            (picked, filterError) = ResolveShard(shard, _names, _needs, Archived);
             _plan = picked.ToHashSet(StringComparer.Ordinal);
         }
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
@@ -91,12 +100,16 @@ public static partial class SelfTest
             {
                 Fail(filterError);
                 Line("");
-                Line($"DONE in 0.0 s with {_failures} failure(s). FILTERED run (--selftest-only \"{only}\"): nothing ran.");
+                Line(only != null
+                    ? $"DONE in 0.0 s with {_failures} failure(s). FILTERED run (--selftest-only \"{only}\"): nothing ran."
+                    : $"DONE in 0.0 s with {_failures} failure(s). Bad --selftest-shard \"{shard}\": nothing ran.");
             }
             else
             {
                 if (only != null)
                     Line($"FILTERED run (--selftest-only \"{only}\"): {picked.Length} of {_names.Count} sections: {string.Join(", ", picked)}");
+                else if (shard != null)
+                    Line($"SHARD {shard} of the full suite (--selftest-shard): {picked.Length} of {_names.Count(n => !Archived.Contains(n))} sections: {string.Join(", ", picked)}");
                 foreach (var dup in _names.GroupBy(n => n, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1))
                     Fail($"section name \"{dup.Key}\" is used {dup.Count()} times (each name must pick one section for --selftest-only)");
                 foreach (var (name, before) in _needs)
@@ -109,17 +122,19 @@ public static partial class SelfTest
                         Fail($"section \"{name}\" needs \"{b}\", which the full suite skips as archived");
                 _archivedSkipped = 0;
                 Sections();
-                if (only == null)
+                if (only == null && shard == null)
                     Line($"ARCHIVED: {_archivedSkipped} section(s) skipped (SelfTest.Archived; --selftest-only runs one by name)");
                 Line("");
                 // Every stuck spell of the run's bot matches (the stuck-spot report, StuckSpots.cs), beside this log: CI uploads it,
                 // and --stuck-report pools it with other runs and testers' reports.
                 var spotsFile = AppFolders.LogPath("stuck-spots.json"); // the log folder: never inside a Mac app bundle (its seal)
-                StuckSpots.Session.Write(spotsFile, only == null ? "self-test (full suite)" : $"self-test (--selftest-only \"{only}\")");
+                StuckSpots.Session.Write(spotsFile, only != null ? $"self-test (--selftest-only \"{only}\")" : shard != null ? $"self-test (full suite, shard {shard})" : "self-test (full suite)");
                 Line($"STUCK SPOTS: {StuckSpots.Session.Count} spot(s) on {StuckSpots.Session.Maps.Count()} map(s) in the run's bot matches (stuck-spots.json)");
                 var slowest = _times.OrderByDescending(t => t.Seconds).Take(10).Select(t => $"{t.Name} {t.Seconds:0.0} s");
                 Line("SLOWEST: " + string.Join(", ", slowest));
-                Line(only == null
+                Line(only == null && shard != null
+                    ? $"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s). Full suite, shard {shard}: {_times.Count} sections."
+                    : only == null
                     ? $"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s). Full suite: {_times.Count} sections."
                     : $"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s). FILTERED run (--selftest-only \"{only}\"): {_times.Count} of {_names.Count} sections ran: {string.Join(", ", _times.Select(t => t.Name))}");
             }
@@ -176,6 +191,31 @@ public static partial class SelfTest
                         grew |= picked.Add(b);
         }
         return (names.Where(picked.Contains).ToArray(), null); // suite order, whatever order the terms came in
+    }
+
+    /// <summary>
+    /// Part K of N of the full suite (--selftest-shard "K/N", CI's side-by-side jobs): of the sections the full suite runs
+    /// (not the <paramref name="archived"/> ones), in suite order, every N-th from the K-th, plus the sections those need.
+    /// Every section is in exactly one part by its place, so the N parts together run the whole suite.
+    /// </summary>
+    internal static (string[] Picked, string? Error) ResolveShard(string shard, IReadOnlyList<string> names, IReadOnlyDictionary<string, string[]> needs, IReadOnlySet<string> archived)
+    {
+        var kn = shard.Split('/');
+        if (kn.Length != 2 || !int.TryParse(kn[0], out var k) || !int.TryParse(kn[1], out var n) || n < 1 || n > 64 || k < 1 || k > n)
+            return ([], $"--selftest-shard: \"{shard}\" isn't K/N with 1 <= K <= N <= 64 (e.g. 2/4)");
+        var suite = names.Where(s => !archived.Contains(s)).ToArray();
+        var picked = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = k - 1; i < suite.Length; i += n)
+            picked.Add(suite[i]);
+        for (var grew = true; grew;)
+        {
+            grew = false;
+            foreach (var s in picked.ToArray())
+                if (needs.TryGetValue(s, out var before))
+                    foreach (var b in before)
+                        grew |= picked.Add(b);
+        }
+        return (names.Where(picked.Contains).ToArray(), null);
     }
 
     /// <summary>
