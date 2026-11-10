@@ -81,6 +81,15 @@ public static partial class SelfTest
             Console.WriteLine($"doesn't build: {why}");
             return 1;
         }
+        if (args.Contains("--hull"))
+        {
+            var low = float.MaxValue;
+            for (var k = 0; k < c.LegCount; k++)
+                low = MathF.Min(low, c.Legs[k].Rest.Y);
+            c.Pos -= Vector3.UnitY * (c.LocalMin.Y - low);
+            c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
+            c.NetHistReset();
+        }
         c.Wake();
         var id = server.LocalId;
         var helm = c.DriveSeat;
@@ -130,6 +139,11 @@ public static partial class SelfTest
             if (only != null && name != "settle" && !only.Split(',').Contains(name))
                 continue;
             var secs = name == "settle" ? settle : phase;
+            if (name != "settle" && args.Contains("--sit"))
+            {
+                c.Charge = c.ChargeCapacity; c.Fuel = c.FuelCapacity();
+                c.Wake();
+            }
             server.SandboxSend(CActKind.SeatKeys, part: (byte)keys);
             p0 = c.Pos;
             var start = c.Pos;
@@ -138,6 +152,8 @@ public static partial class SelfTest
             for (var t = 0; t < ticks; t += 3)
             {
                 server.HeldButtons = b;
+                if (name == "settle" && args.Contains("--sit"))
+                { c.Charge = 0; c.Fuel = 0; c.Wake(); }
                 var sw = Stopwatch.StartNew();
                 if (client)
                 {
