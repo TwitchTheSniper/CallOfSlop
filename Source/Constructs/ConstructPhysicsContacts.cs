@@ -324,23 +324,173 @@ public static partial class ConstructPhysics
         }
     }
 
-    /// <summary>A big construct over fine ground: each leaf's own patch of it, so the cells under the whole of it are never walked.</summary>
+    /// <summary>
+    /// A big construct over fine ground: its pieces that can reach the ground, each against its own patch of it, so the cells
+    /// under the whole of it are never walked. Bounded whatever the body's size (a capital hull lying in the heather, a fitted
+    /// Titan's thousands of pieces): only the <see cref="MaxGroundLeaves"/> lowest pieces (<see cref="PickGroundLeaves"/>) are
+    /// asked, and they share <see cref="MaxGroundTris"/> triangles, spread over each one's patch.
+    /// </summary>
     private static int GroundLeafByLeaf(Construct c, ConstructCollider col, int g, in CFrame f, Vector3 mid, Vector3 v, Vector3 w, IWorldQuery query, float margin, float dt, int n)
     {
-        var d = query.Terrain!.Data;
-        ref var gr = ref col.Groups[g];
-        for (var k = gr.First; k < gr.First + gr.Count && n < MaxCand - 64; k++)
+        PickGroundLeaves(col, g, f, margin, query.Terrain!.Data, null);
+        return GroundPicked(c, col, g, f, mid, v, w, query, margin, dt, n);
+    }
+
+    /// <summary>Pieces of one group asked about the ground in one tick, at most (<see cref="GroundLeafByLeaf"/>, <see cref="PlanetGround"/>).</summary>
+    private const int MaxGroundLeaves = 32;
+
+    /// <summary>Ground triangles those pieces are tested against in one tick, shared out between them.</summary>
+    private const int MaxGroundTris = 512;
+
+    /// <summary>Pieces this close to each other's height over the ground count as level: among them the kept ones are spread.</summary>
+    private const float GroundTie = 0.25f;
+
+    private static readonly int[] _pickLeaf = new int[MaxGroundLeaves];
+    private static readonly float[] _pickScore = new float[MaxGroundLeaves];
+    private static int _picked;
+
+    /// <summary>
+    /// The pieces of group <paramref name="g"/> nearest the ground, lowest first, at most <see cref="MaxGroundLeaves"/> of them,
+    /// for a fixed number of ground queries a tick whatever the body's size: the ones it found last tick, looked at again, and
+    /// the next <see cref="GroundSlice"/> of the rest in turn (<see cref="GroundFirstLook"/> at the first look after the
+    /// collider is built). A big body turns slowly, so a piece coming down to the ground is in the slice within a few tenths
+    /// of a second; a fitted Titan built again settles a centimetre or two before its first looks have been round it.
+    /// One of <paramref name="terrain"/> (a height map) or <paramref name="planet"/>.
+    /// </summary>
+    private static void PickGroundLeaves(ConstructCollider col, int g, in CFrame f, float margin, TerrainData? terrain, Planetoid? planet)
+    {
+        if (col.GroundPicked.Length < col.GroupCount)
         {
-            if (col.Leaves[k].Wheel || col.Leaves[k].Dead)
+            // (a body's first big group on the ground: its memory, once)
+            col.GroundPicks = new int[col.GroupCount * MaxGroundLeaves];
+            col.GroundPicked = new int[col.GroupCount];
+            col.GroundCursor = new int[col.GroupCount];
+            Array.Fill(col.GroundPicked, -1);
+        }
+        ref var gr = ref col.Groups[g];
+        var mine = col.GroundPicks.AsSpan(g * MaxGroundLeaves, MaxGroundLeaves);
+        var had = col.GroundPicked[g];
+        _picked = 0;
+        // Last tick's lowest, as they are now...
+        for (var i = 0; i < had; i++)
+        {
+            var k = mine[i];
+            if (k >= gr.First && k < gr.First + gr.Count)
+                ScoreGroundLeaf(col, k, f, margin, terrain, planet);
+        }
+        // ...and the next slice of the rest (a bigger one at the first look).
+        var count = Math.Min(gr.Count, had < 0 ? GroundFirstLook : GroundSlice);
+        var at = col.GroundCursor[g];
+        for (var n = 0; n < count; n++)
+        {
+            if (at >= gr.Count)
+                at = 0;
+            var k = gr.First + at++;
+            if (had > 0 && mine[..had].Contains(k))
                 continue;
+            ScoreGroundLeaf(col, k, f, margin, terrain, planet);
+        }
+        col.GroundCursor[g] = at;
+        for (var i = 0; i < _picked; i++)
+            mine[i] = _pickLeaf[i];
+        col.GroundPicked[g] = _picked;
+    }
+
+    /// <summary>Pieces of a big group looked at afresh each tick, besides those it last found lowest (<see cref="PickGroundLeaves"/>).</summary>
+    private const int GroundSlice = 256;
+
+    /// <summary>Pieces looked at in a group's first tick on the ground after its collider is built (no lowest kept yet).</summary>
+    private const int GroundFirstLook = 2048;
+
+    /// <summary>
+    /// Scores one piece for <see cref="PickGroundLeaves"/>: how far its lowest point is over the ground under its centre, less
+    /// its width (a long slab over a slope reaches down at its far end), with a little of a hash of its index so that among
+    /// pieces level with each other (within <see cref="GroundTie"/>) the ones kept are spread over the underside, not the first
+    /// found. Pieces the ground can't reach, or deep under it, are passed over.
+    /// </summary>
+    private static void ScoreGroundLeaf(ConstructCollider col, int k, in CFrame f, float margin, TerrainData? terrain, Planetoid? planet)
+    {
+        ref var lf = ref col.Leaves[k];
+        if (lf.Wheel || lf.Dead)
+            return;
+        col.World(k, f, out var box);
+        Vector3 up;
+        float over;
+        if (terrain != null)
+        {
+            if (box.C.Y - box.H.Length() > terrain.HighestGround + 1)
+                return;
+            up = Vector3.UnitY;
+            over = box.C.Y - terrain.GroundBelow(box.C.X, box.C.Z, box.C.Y + box.H.Length());
+        }
+        else
+        {
+            up = Vector3.Normalize(box.C - planet!.Center);
+            over = planet.Altitude(box.C);
+        }
+        var down = MathF.Abs(Vector3.Dot(box.X, up)) * box.H.X + MathF.Abs(Vector3.Dot(box.Y, up)) * box.H.Y + MathF.Abs(Vector3.Dot(box.Z, up)) * box.H.Z;
+        var wide = MathF.Sqrt(MathF.Max(0, box.H.LengthSquared() - down * down));
+        var clear = over - down; // (its lowest point over the ground under its centre)
+        if (clear > margin + 1 + 2 * wide || over + down < -(margin + 1 + MaxGroundDepth + 2 * wide))
+            return; // (the ground can't rise to it within its width; or it is deep under the ground, past where a sheet of it holds anything)
+        var spread = (uint)k * 2654435761u >> 8; // (Knuth's multiplicative hash: neighbours far apart in it)
+        PickLeaf(k, clear - wide + GroundTie * (spread / (float)(1 << 24)));
+    }
+
+    /// <summary>Keeps the <see cref="MaxGroundLeaves"/> lowest-scoring leaves, in score order (ties: the first found).</summary>
+    private static void PickLeaf(int k, float score)
+    {
+        var at = _picked;
+        if (at == MaxGroundLeaves)
+        {
+            if (score >= _pickScore[at - 1])
+                return;
+            at--;
+        }
+        else
+            _picked++;
+        while (at > 0 && _pickScore[at - 1] > score)
+        {
+            _pickLeaf[at] = _pickLeaf[at - 1];
+            _pickScore[at] = _pickScore[at - 1];
+            at--;
+        }
+        _pickLeaf[at] = k;
+        _pickScore[at] = score;
+    }
+
+    /// <summary>The picked leaves (<see cref="PickGroundLeaves"/>) against their own patches of ground, sharing <see cref="MaxGroundTris"/> triangles.</summary>
+    private static int GroundPicked(Construct c, ConstructCollider col, int g, in CFrame f, Vector3 mid, Vector3 v, Vector3 w, IWorldQuery query, float margin, float dt, int n)
+    {
+        if (_picked == 0)
+            return n;
+        var cap = MaxGroundTris / _picked;
+        for (var i = 0; i < _picked && n < MaxCand - 64; i++)
+        {
+            var k = _pickLeaf[i];
             col.World(k, f, out var box);
             var e = CFrame.Abs(new CFrame { X = box.X, Y = box.Y, Z = box.Z }, box.H) + new Vector3(margin);
-            if (box.C.Y - e.Y > d.HighestGround + 1 || box.C.Y + e.Y < d.LowestGround)
-                continue;
             query.Gather(box.C - e, box.C + e, GroundFilter, _gather);
+            if (_gather.Count == 0)
+                continue;
+            ThinShapes(_gather, cap);
             n = ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n, k);
         }
         return n;
+    }
+
+    /// <summary>At most <paramref name="cap"/> of the shapes, spread evenly through the list (a big slab's patch of ground: every few cells).</summary>
+    private static void ThinShapes(List<ContactShape> list, int cap)
+    {
+        var count = list.Count;
+        if (count <= cap)
+            return;
+        var span = CollectionsMarshal.AsSpan(list);
+        var step = (count + cap - 1) / cap;
+        var kept = 0;
+        for (var i = 0; i < count; i += step)
+            span[kept++] = span[i];
+        list.RemoveRange(kept, count - kept);
     }
 
     /// <summary>
@@ -358,18 +508,8 @@ public static partial class ConstructPhysics
             query.Gather(mid - reach, mid + reach, GroundFilter, _gather); // (PhysicsWorld.Gather: the planet's triangles)
             return ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n);
         }
-        ref var gr = ref col.Groups[g];
-        for (var k = gr.First; k < gr.First + gr.Count && n < MaxCand - 64; k++)
-        {
-            if (col.Leaves[k].Wheel || col.Leaves[k].Dead)
-                continue;
-            col.World(k, f, out var box);
-            var e = CFrame.Abs(new CFrame { X = box.X, Y = box.Y, Z = box.Z }, box.H) + new Vector3(margin);
-            query.Gather(box.C - e, box.C + e, GroundFilter, _gather);
-            if (_gather.Count > 0)
-                n = ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n, k);
-        }
-        return n;
+        PickGroundLeaves(col, g, f, margin, null, planet);
+        return GroundPicked(c, col, g, f, mid, v, w, query, margin, dt, n);
     }
 
     /// <summary>The shapes gathered against group <paramref name="g"/>'s pieces (or the one leaf <paramref name="only"/>).</summary>

@@ -76,6 +76,12 @@ internal sealed partial class ConstructCollider
     private float[] _keys = [];
     private int[] _wheelOf = [];
 
+    // The pieces of each group last found lowest over the ground, and how far its sweep through the rest has got
+    // (ConstructPhysics.PickGroundLeaves): kept from tick to tick, forgotten when the collider is built again.
+    public int[] GroundPicks = [];
+    public int[] GroundPicked = []; // per group: how many; -1: none yet (the first look goes through every piece)
+    public int[] GroundCursor = [];
+
     /// <summary>The boxes of the construct as it is now (rest pose; the joints' frames carry them after that).</summary>
     /// <summary>Colliders built (every body, every thread, roughly: a harness's count).</summary>
     internal static int Builds;
@@ -85,6 +91,7 @@ internal sealed partial class ConstructCollider
         Builds++;
         _dead = 0;
         _mainLeaves = _mainNodes = 0;
+        Array.Fill(GroundPicked, -1);
         _extraGroup = -1;
         if (c.FuseFitDue)
             c.FuseFitNow(); // (fused units' rough shapes: fitted here, so only a body that collides pays for it; ConstructFuseFit.cs)
