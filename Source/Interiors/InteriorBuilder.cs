@@ -498,7 +498,7 @@ public sealed class InteriorBuilder : BlueprintScript
     /// A hall's galleries (phase 9): on each storey over a hall's floor, a gallery's floor is laid only where it is needed: under the walls the
     /// gallery builds itself (its hull side, its corridor side, an end it doesn't share) and down one end column, where its stairs climb from the
     /// storey below (a flight a storey, two blocks apart, each coming up through a Stair Floor onto the column). Everything else is open: the hall
-    /// is one volume through its storeys. The column is the end the gallery walls anyway, else a seeded end.
+    /// is one volume through its storeys. The column is the hall's west end.
     /// </summary>
     private void HallFloors(InteriorPlan plan, InteriorRng rng)
     {
@@ -508,8 +508,9 @@ public sealed class InteriorBuilder : BlueprintScript
             if (ups.Count == 0)
                 continue;
             var f = floor.Rect;
-            bool Walled(PlanRoom g, int x) => Enumerable.Range(f.Z0, f.D).All(z => Needs(plan, g, x, z));
-            var col = Walled(ups[0], f.X1) ? f.X1 : Walled(ups[0], f.X0) ? f.X0 : rng.Next() < 0.5 ? f.X0 : f.X1;
+            // (the west end: a flight stands in its block's west metre, so the railing on the column's open side, its east side, is clear of it;
+            // at the east end the railing stood at the flight's foot and the walk-through couldn't step on)
+            var col = f.X0;
             for (var j = 0; j < ups.Count; j++)
             {
                 var g = ups[j];
