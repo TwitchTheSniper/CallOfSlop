@@ -71,8 +71,32 @@
     {
       "part": "Capital Battery Bank",
       "on": 0,
-      "socket": "top5.1",
+      "socket": "top7.0",
       "by": "-y"
+    },
+    {
+      "part": "Adapter Capital to Large",
+      "on": 0,
+      "socket": "top7.3",
+      "by": "back"
+    },
+    {
+      "part": "Large Fuel Bunker",
+      "on": 12,
+      "socket": "front2.2",
+      "by": "-y"
+    },
+    {
+      "part": "Large Genset",
+      "on": 13,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Large Genset",
+      "on": 13,
+      "socket": "-x",
+      "by": "+x"
     }
   ],
   "wires": [

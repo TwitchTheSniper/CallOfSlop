@@ -322,6 +322,67 @@ What was not tried: a client (the walker drawn and its riders' views), a player 
 probe's players stand), the seal switches by aim while walking, the production room working while walking (an Assembler fed
 from storage), other seeds, real map terrain, more than one fitted walker in a world.
 
+## Walker fixes (branch `feat/walker-fixes`, from a code review)
+
+- **Gravity.** The legs' work and the holding gate (`HoldKJ`, `LegWork`) used 9.81 m/s2; they now use `WalkGravity`: the game's
+  `ConstructPhysics.GravityAccel` (18), or the body's own where a round world or a gravity generator applies (`ConstructGravity.GravityFor`,
+  as the physics weighs it), less Anti-Grav's share. The height loop also had a lag of g / 6 under it (the velocity it eased towards
+  was taken after gravity), so the body stood about 3 m/s short of its aim and, once the rise was capped by power (below), couldn't
+  rise at all: the legs now take this tick's gravity back before easing (`WalkBody`).
+- **Real power.** The Capital Battery Bank held 10,000 GJ (about 62 hours of walking): now 30 GJ (`big_drive_parts.py`
+  `BATTERIES`; the Large Battery Bank 200 GJ to 10 GJ, so it stays below the capital one; no shipped blueprint uses it). The Titan Walker
+  gets a plant (`blueprint()` steps 12 to 15): a `Large Fuel Bunker` (1,000,000 l) on an `Adapter Capital to Large` on the deck's
+  `top7.3`, with a `Large Genset` (20 MW, 7 l/s at full) on each end of it, touching it so the fuel reaches them: 40 MW. The legs
+  walk no faster and rise no faster than the circuit feeds (`PowerLift`: the plants, alternators and the bank's charge spent over
+  `BankSeconds` (20 s), times `PowerMargin` (0.8), less the holding work; a rise takes it first, the walk the rest at
+  `LegCarryCost` a metre a second). So a running-down bank slows the walk smoothly to what the plant keeps up, and a flat bank on a
+  plant no longer flickers the legs on and off. Bare Titan Walker (32,159 t), measured: standing 9 MW of leg work (11.5 MW drawn),
+  so it stands indefinitely on the plant; walking 3.3 m/s at 80 to 110 MW drawn (about 60 MW net from the bank: some 8 minutes of
+  walking from a full bank, 4 after a stand-up; about 45 minutes standing on the bank alone); on the plant alone it walks at 0.7
+  m/s. Climbing is the weight times the rise: standing up from its hips (about 22 m) costs about 15 GJ and takes 25 s at full
+  bank, and a 17 degree ramp draws 230 to 470 MW. Fuel: the gensets burn 14 l/s at full (while the bank charges or the legs walk)
+  and about 4 l/s standing on a full bank, so the bunker lasts about 20 hours of hard use; refuelling is the limit.
+- **Footholds** (`Foothold`): a foothold is ground the ray finds within `FootReach` (0.98) of the leg's reach from its hip and no
+  steeper than `FootSteep` (normal 0.55 up, about 57 degrees). Failing the aim it tries a third and two thirds of the way in towards
+  the hip and a quarter reach to either side (`FootTries`, 5 rays at most, only when the first fails). A leg with none (`CLeg.Hold`
+  false) doesn't step: a planted foot stays down where it is; a foot over nothing (`CLeg.Grounded` false) hangs, reaching down, and
+  carries nothing until it finds ground and steps onto it. Only feet on ground count for support (`Supports`, `HeldWithout`). If the
+  feet as found don't stand round the centre of mass (none on ground, or it is already over the edge), it collapses that tick and
+  falls as physics ("no ground under its feet").
+- **The body follows the gait** (`GaitShare`): a planted leg the motion stretches slows the body from `StretchSlow` (0.95 of its
+  reach) and stops it at `StretchStop` (0.99); a foot with no foothold ahead lets the body go on only until the foot is `EdgeLag`
+  (0.3 reach) behind its rest point, so at a cliff it stops with the front feet at the edge ("no footing ahead: the legs find no
+  ground in reach"; backing off works). A group that needs a step but can't lift (`WalkWait`) holds the body to a crawl (15%) while
+  it shifts its centre of mass towards the middle of the feet that stay down; a group lifts only with the centre of mass
+  `LiftMargin` (4% of reach) inside them.
+- **Feet push**: a planted pad only eases a light body it overlaps out (`PadEase`, 0.5 m/s up and away, nothing once clear); a
+  stepping pad adds its own motion.
+
+What was tried by hand (a throwaway probe, removed: the blueprint on the flat part of the Proving Ground, the ground for the feet's
+rays replaced by a plane, a cliff 70 m ahead, a 17 degree ramp 50 m ahead, or a void 20 m behind the start): it stands up from its hips
+in about 25 s and walks at 3.3 m/s; with the bank emptied it walks at 0.7 m/s on the gensets; at the cliff it stops with its front
+feet 0.1 m short of the edge and backs off on S; spawned with its front half over the void it doesn't stand ("no ground under its
+feet") and lies on its hips; up the ramp at 2.9 m/s; one middle leg wrecked 1.3 m/s, one each side 1.2 m/s, a four-legged walker
+(the middle legs taken out, wave gait) 1.2 m/s, none collapsing on the flat; a Chest in a planted pad eased out at 0.5 m/s. Worst
+ticks 0.1 to 4 ms walking, once 12 ms at the cliff (the box at a load of 7 to 20 from other builds).
+
+Not tried: a client (its feet run the same foothold search on its own ray; nothing new is on the wire, protocol unchanged); real
+map cliffs and pits (the probe's ground was a plane under the rays, the body's contacts the real map); a body that falls into a pit
+(the void case lay on the real ground under it); a hydraulic or shaft-fed walker with the new power cap (it applies to electric legs
+and pumps on power only); the fitted walker; a round world's gravity; drawing.
+
+### For the interiors track (walker fixes)
+
+- **Moved**: the Capital Battery Bank is step 11 on `top7.0` (the stern, -z corner: x 104 to 120, z -8 to 8 in the root's frame,
+  y 8 to 24), off the stair hatch at grid 22,3 and the decks' spine.
+- **New**: step 12 `Adapter Capital to Large` on `top7.3` (the stern, +z corner), step 13 `Large Fuel Bunker` on its `front2.2`
+  (centre about (112, 14, 48), 12 m cube), steps 14 and 15 `Large Genset` on the bunker's +x and -x faces (centres about (124, 14, 48)
+  and (100, 14, 48), 12 m cubes; the +x one hangs 10 m over the stern). Keep the rooms off grid columns 25 to 31 at rows 0 to 3
+  and 12 to 15 on the top deck (the 4 m grid from x -8, z -8). Steps 0 to 11 keep their indices.
+- **Power**: a fitted walker heavier than the bare one draws more in proportion to its mass; 40 MW stands a walker of about
+  100,000 t on the plant alone (the bare one draws 11.5 MW standing).
+- `TitanWalkerFitted.json` needs regenerating from the new `TitanWalker.json` (left to the coordinator).
+
 ### Next phases
 
 1. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
@@ -333,6 +394,9 @@ from storage), other seeds, real map terrain, more than one fitted walker in a w
    legs of several parts.
 5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
    signal as a throttle; shaft splitters for six shaft-fed legs.
+8. Walker fixes, rest: the feet synced to clients (each peer runs its own foothold search now); biped gaits (two legs, a
+   dynamic balance the static support polygon can't give); crushing what is underfoot; the power cap for shaft-fed legs and pumps
+   on a shaft (the engine's torque); a walker that falls into a pit tried on a real map.
 6. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding
    (lights, guns: their systems would need the posed frame); tunable segment lengths and joint count as part settings.
 7. Ride feel, rest: stabilisers with power (a gyro that draws charge), a thump that dents soft ground, a client and a
