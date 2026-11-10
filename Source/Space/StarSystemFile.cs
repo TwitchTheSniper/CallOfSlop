@@ -19,7 +19,7 @@ public static class StarSystemFile
 
     private static readonly string[] SystemKeys = ["name", "bodies", "description", "start", "galaxy"];
     private static readonly string[] GalaxyKeys = ["ly", "arrive"];
-    private static readonly string[] ArriveKeys = ["a", "km", "au"];
+    private static readonly string[] ArriveKeys = ["a", "km", "au", "at"];
     private static readonly string[] StartKeys = ["seconds", "hours", "days"];
     private static readonly string[] BodyKeys = ["name", "parent", "gm", "gravity", "radius", "map", "orbit", "rotation", "description", "color", "lumps"];
     private static readonly string[] OrbitKeys = ["a", "km", "au", "e", "i", "lan", "argp", "m0"];
@@ -101,7 +101,9 @@ public static class StarSystemFile
     /// <summary>
     /// The optional <c>"galaxy"</c> block (phase 6, docs/space/GALAXY.md): where the system sits in the galaxy
     /// (<c>"ly": [x, y, z]</c>, light-years along the ecliptic's axes, which every system shares) and how far from its star
-    /// a jump arrives (<c>"arrive": { "au": N }</c>, or "km", "a"; default <see cref="Galaxy.DefaultArrival"/>).
+    /// a jump arrives (<c>"arrive": { "au": N }</c>, or "km", "a"; default <see cref="Galaxy.DefaultArrival"/>), or how far
+    /// from one of its bodies (<c>"arrive": { "at": "Cinder", "km": 100 }</c>: in orbit round a world, so a landing is a
+    /// short flight away).
     /// </summary>
     private static void ReadGalaxy(JsonElement root, StarSystem sys, string file)
     {
@@ -128,10 +130,18 @@ public static class StarSystemFile
             var km = Num(ar, "km", where);
             var au = Num(ar, "au", where);
             if ((am != null ? 1 : 0) + (km != null ? 1 : 0) + (au != null ? 1 : 0) != 1)
-                throw new StarSystemException($"{where} arrive: give the distance from the star once, as \"a\" (m), \"km\" or \"au\"");
+                throw new StarSystemException($"{where} arrive: give the distance once, as \"a\" (m), \"km\" or \"au\"");
             var d = am ?? (km != null ? km.Value * 1000 : au!.Value * Au);
-            if (!(d > sys.Bodies[0].Radius * 2) || d > SpacePos.SafeReach * 0.5)
-                throw new StarSystemException($"{where} arrive: should be past twice the star's radius ({Km(sys.Bodies[0].Radius * 2)}) and within {SpacePos.SafeReach * 0.5 / Au:0} AU");
+            var at = 0;
+            if (ar.TryGetProperty("at", out var atName))
+            {
+                at = atName.ValueKind == JsonValueKind.String ? sys.IndexOf(atName.GetString()!) : -1;
+                if (at < 0)
+                    throw new StarSystemException($"{where} arrive: \"at\" should name one of the system's bodies");
+            }
+            if (!(d > sys.Bodies[at].Radius * 2) || d > SpacePos.SafeReach * 0.5)
+                throw new StarSystemException($"{where} arrive: should be past twice {sys.Bodies[at].Name}'s radius ({Km(sys.Bodies[at].Radius * 2)}) and within {SpacePos.SafeReach * 0.5 / Au:0} AU");
+            sys.ArrivalBody = at;
             sys.Arrival = d;
         }
     }

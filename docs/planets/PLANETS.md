@@ -162,6 +162,9 @@ latitude 78, longitude 35), a 1,020 m cavity and a glowing core 45 m across at t
 "cavity": { "crust": 180, "glow": "#ff8a3a", "core": 45 }
 ```
 
+A world may also set the heaviest ship that can land from space, `"landing": { "tonnes": 40, "why": "..." }`
+(docs/planets/WORLDS.md "Landing limits").
+
 `crust` (10 to 2000 m, at most 80% of the radius) is the thickness under the base height: the cavity's roof is the
 sphere at `radius + base - crust`. `glow` colours the cavity's seams, haze and core; `core` is the core's radius (0: none;
 it's a light, nothing touches it). A map is refused if its features can bring the ground within 8 m of the roof

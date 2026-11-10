@@ -33,12 +33,39 @@ Cinder turns once an orbit, so its sun stays over latitude 0, longitude 220 (`--
 side is centred there, the night side on longitude 40, and the twilight line runs through both poles and longitudes
 130 and 310. Change the body's rotation `"angle"` and those move.
 
+## Getting there
+
+A jump arrives in orbit round the system's main world (`"arrive": { "at": "Cinder", "km": 30 }` in its system file,
+docs/space/GALAXY.md): 40 km from the Planetoid, 30 from Cinder, 45 from Glacier, 35 from Caledon, 20 from Mille. Fly
+down into the world's sky and the whole group lands there, with everyone seated aboard (docs/space/SPACE.md "Landing
+on another planetoid"): the bubble moves to that system, the world left behind is kept, and every system's ships fly on.
+Redrock is 1.5 AU from the home star's Planetoid, a long flight with no time warp: it is easier played by starting on it.
+
+## Landing limits
+
+Some worlds won't take a capital ship (Karl, 2026-11-10): it waits in orbit and a shuttle goes down. A world's map sets
+the heaviest ship that may come down through its sky, counted with what it carries:
+
+```json
+"planetoid": { "landing": { "tonnes": 40, "why": "the crust is thin over the cavity" } }
+```
+
+| World | Limit | Why |
+| --- | --- | --- |
+| Cinder | 60 t | the ash flats swallow anything heavier |
+| Mille | 40 t | the crust is thin over the cavity |
+
+The group still arrives: the bubble moves to the world, and the heavy ship is held at the sky's edge as a ship in space
+(`Game.LandOverLimit`, `LandHoldOut`), its riders told why every few seconds. A craft it carries in a cargo volume can be
+let go there and flown down, since it is inside the sky's edge the moment it is free. The limit is the sky's rule, not the
+arrival's: a ship over it that was built on the world and flown out can't come back down either. In
+`tools/planets/make_worlds.py` it is a world's `"limit": (tonnes, why)`; `--check-planetoid` prints it.
+
 ## Not yet
 
-- **Landing after a jump.** A ship lands only on bodies of the system the game started in (docs/space/SPACE.md), so
-  from the home system only Redrock and Bluestone are reached by ship; the other four are played by starting on them.
-- **A landing limit** (Karl, 2026-11-10): some worlds won't take a capital ship, which waits in orbit while a shuttle
-  goes down. Planned with the landing work, as a limit on a ship's mass in the world's map.
+- **Free travel between systems.** A ship that has jumped lands with the whole group; a planetoid running beside the
+  host's game (docs/space/FREE-TRAVEL.md) is opened only for worlds of the bubble's own system.
+- **Docking in orbit** hasn't been tried with a shuttle coming back up to a ship held at the edge.
 - **Ore.** Deposits are generated on flat maps only (`"resources": { "generate": false }` on every planetoid).
 - **Settlements.** The homes are bare ground: each faction's place is a blueprint still to be made and put there.
 - The moons and small bodies (Moonlet, Ashfall, Soot, Rime, Shard, Cairn, Skerry, Crumb, Proof) are rails and sky.

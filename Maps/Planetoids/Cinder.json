@@ -39,6 +39,10 @@
       "rockSlope": 34,
       "sandBelow": -28
     },
+    "landing": {
+      "tonnes": 60,
+      "why": "the ash flats swallow anything heavier"
+    },
     "features": [
       {
         "type": "noise",

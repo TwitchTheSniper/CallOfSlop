@@ -74,6 +74,7 @@ WORLDS = [
     },
     {
         "name": "Cinder", "order": 2, "radius": 5000, "strength": 12,
+        "limit": (60, "the ash flats swallow anything heavier"),
         "description": "Cinder, a 5 km scorched rock close to the red dwarf Ember (Systems/Ember.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
         "surface": {"grass": "#3b3331", "dirt": "#4d3a33", "rock": "#221d1d", "sand": "#a3472a", "dirtSlope": 22, "rockSlope": 34, "sandBelow": -28},
         "skybox": {"preset": "dusk", "zenith": "#1a0d10", "horizon": "#6e2a1c", "ground": "#1c1414", "stars": 1.4,
@@ -170,6 +171,7 @@ WORLDS = [
     },
     {
         "name": "Mille", "order": 5, "radius": 3000, "strength": 8,
+        "limit": (40, "the crust is thin over the cavity"),
         "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. The Thousand Layers keep the Bakehouse here. The crust is thinnest under the Proving Bowl: dig there to get in.",
         "surface": {"grass": "#c99a4e", "dirt": "#a8733a", "rock": "#7d4f28", "sand": "#e8cf8f", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -22},
         "skybox": {"preset": "dusk", "zenith": "#5e6f9a", "horizon": "#f0c48a", "ground": "#8a6a3c",
@@ -204,6 +206,8 @@ def build(w):
     planetoid = {"radius": r, "cell": 2, "strength": w["strength"], "surface": w["surface"]}
     if "cavity" in w:
         planetoid["cavity"] = w["cavity"]
+    if "limit" in w:  # the heaviest ship that may come down (WORLDS.md "Landing limits")
+        planetoid["landing"] = {"tonnes": w["limit"][0], "why": w["limit"][1]}
     planetoid["features"] = features
 
     def y(x, z, lift=0.0):
