@@ -119,7 +119,12 @@ public sealed record Roofline(string Name, string Words, float Crown = 0, float 
     public static readonly Roofline Tapered = new("tapered", "narrowing toward both ends in plan, a little crown", Crown: 0.06f, Taper: 0.2f, Steps: 0.5f);
     public static readonly Roofline Sheer = new("sheer", "a boat's sheer: high at the bow, dipping amidships, a little rise at the stern", Crown: -0.08f, Rise: -0.08f, Taper: 0.1f, Steps: 0.4f);
 
-    public static readonly Roofline[] All = [Plain, Stepped, Crowned, Sagged, Raked, Sloped, Kicked, Tapered, Sheer];
+    // (phase 8a, the archetypes': a fastback's roof running down into the tail, a wedge's rising to it, a box body's one height end to end)
+    public static readonly Roofline Fastback = new("fastback", "a fastback: highest over the front, running down into the tail", Rise: -0.16f, Taper: 0.06f, Steps: 0.3f);
+    public static readonly Roofline Wedged = new("wedge", "a wedge: low at the nose, rising in a straight line to the tail", Rise: 0.14f, Steps: 0.4f);
+    public static readonly Roofline Level = new("level", "one height end to end, the plan's steps barely kept", Steps: 0.2f);
+
+    public static readonly Roofline[] All = [Plain, Stepped, Crowned, Sagged, Raked, Sloped, Kicked, Tapered, Sheer, Fastback, Wedged, Level];
 
     /// <summary>The height and width factors at <paramref name="u"/> along the room (0 its front, 1 its back), the line drawn at <paramref name="amount"/> of its size.</summary>
     public (float H, float W) At(float u, float amount)
@@ -230,6 +235,13 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
     /// <summary>How much further forward than the plan's hood part a hood reaches (a Highland's long bonnet), metres (the nose rails end 0.875 m ahead of the engine; a hood may run to 1.05 m).</summary>
     public float HoodReach { get; init; } = 0;
     public float CapsuleRakeMax { get; init; } = 0.7f;
+
+    /// <summary>Phase 8a: how far a cab's roof runs down to its back (0 square; 1 as far as the window band allows: a fastback), rolled between the two.</summary>
+    public float CabBackMin { get; init; }
+
+    /// <summary>Phase 8a: the language a cab is drawn in when it isn't the room's (a European truck's flat-faced cab-over ahead of its box body); null: the room's.</summary>
+    public BodyLanguage? CabLanguage { get; init; }
+    public float CabBackMax { get; init; }
 
     /// <summary>A hood's half width and its crown over the engine's top (the engines' rocker covers stand 12 cm up: it clears them by 4 cm or more).</summary>
     public float HoodHalfMin { get; init; } = 0.5f;
@@ -609,7 +621,7 @@ public sealed class BodyLook
     public static BodyLook Roll(Vehicle v)
     {
         var d = v.Dice.Fork("language");
-        var rule = BodyStyleRule.Of(v.Style);
+        var rule = v.Rule;
         if (Force is { } forced)
             rule = rule with { Languages = [(forced, 1.0)], Mix = 0 };
         if (ForceScale is { } scale)
@@ -1003,7 +1015,7 @@ public sealed partial class Vehicle
     public List<List<VPart>> PaintRuns(Room room, Dice d)
     {
         var runs = new List<List<VPart>>();
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         var want = d.Int(rule.RunMin, rule.RunMax);
         for (var k = 0; k < room.Bays.Count; k++)
         {
@@ -1024,7 +1036,7 @@ public sealed partial class Vehicle
     /// </summary>
     public void PaintRooms(Dice d, string role, Func<Dice, string, string>? pick = null)
     {
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         foreach (var room in Rooms)
         {
             if (room.Bays.Count == 0 || Look == null)
