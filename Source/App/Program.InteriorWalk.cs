@@ -10,7 +10,7 @@ public static unsafe partial class Program
     /// <c>--interior-walk [fitted blueprint file] [--of base blueprint] [--seed S] [--damage] [--walk S]</c>: a scripted player walk-through of a fitted
     /// construct (docs/sandbox/INTERIORS.md "Phase 6"). The construct is built frozen in the air over the Proving Ground; a player
     /// (the server's own movement, World.Simulate and ConstructWorld.BlockPlayer, with the ride frame) walks every corridor end to
-    /// end, through every doorway both ways (leaves opened with the Use path first; one closed leaf must stop them), up and down every
+    /// end, through every doorway both ways (event doors opened with the Use path first; one shut door, and a bulkhead line sealed from the bridge, must stop them), up and down every
     /// stair flight, and rides every lift car on its button and walks off at the landing. Every place they stick, fall, don't fit or are
     /// pushed aside is printed, and furniture standing in front of a doorway. --damage shoots long panels and a slab until they break and
     /// sets off blasts on panels, walls and a slab, printing what came off and in which bulkhead sections. With --walk S the construct is then set on the ground, its bank charged, and driven forward S seconds
@@ -152,40 +152,47 @@ public static unsafe partial class Program
         string Fmt(Vector3 l) => $"({l.X:0.0}, {l.Y:0.0}, {l.Z:0.0}; L{Level(l.Y)} block {MathF.Floor((l.X - f0.X + 2) / 4):0},{MathF.Floor((l.Z - f0.Z + 2) / 4):0} +{((l.X - f0.X + 2) % 4 + 4) % 4:0.0},{((l.Z - f0.Z + 2) % 4 + 4) % 4:0.0})";
         int Level(float localY) => (int)MathF.Round((localY - Floor(0, 0, 0).Y) / 3f);
 
-        // ---- doors: every leaf opened through the Use path (eye in reach), the joints settled
-        var leaves = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Role == PartRole.Door && ConstructDoor.Swings(c, i)).ToList();
+        // ---- doors: every event door opened through the Use path (eye in reach) and settled (phase 7: no joints); a double door's
+        // second leaf opens with the first, so only doors not already heading open are used
+        var leaves = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Door != null).ToList();
         var e = new ConstructEdits { Query = q, InfiniteParts = true };
         string? UseFrom(int part, Vector3 eye) => e.Use(w, 0, eye, c.Id, part);
+        Vector3 MidOf(int part)
+        {
+            c.RestBounds(part, out var lo, out var hi);
+            return (lo + hi) * 0.5f;
+        }
         var refusedUse = 0;
+        c.EnsureDoors();
         foreach (var i in leaves)
         {
-            c.PartBounds(i, out var lo, out var hi);
-            var mid = (lo + hi) * 0.5f;
+            if (ConstructDoors.TargetOpen(c, i))
+                continue;
+            var mid = MidOf(i);
             if (UseFrom(i, c.ToWorld(mid + new Vector3(0, 0.3f, 0))) is { } r && refusedUse++ < 3)
-                problems.Add($"door: Use refused on the leaf at {Fmt(mid)}: {r}");
+                problems.Add($"door: Use refused on the door at {Fmt(mid)}: {r}");
         }
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        for (var t = 0; t < 90; t++)
+        var worstAll = 0.0;
+        for (var t = 0; t < 120; t++)
+        {
+            var t0 = clock.Elapsed.TotalMilliseconds;
             w.Step(q, World.TickDt);
-        Console.WriteLine($"walk: {leaves.Count} leaves, {leaves.Count(i => ConstructDoor.IsOpen(c, i))} open after Use; 90 ticks frozen took {clock.ElapsedMilliseconds} ms");
+            worstAll = Math.Max(worstAll, clock.Elapsed.TotalMilliseconds - t0);
+        }
+        c.EnsureDoors();
+        var openNow = leaves.Count(i => ConstructDoors.SettledOpen(c, i));
+        Console.WriteLine($"walk: {leaves.Count} door parts ({c.DoorCount} listed: {leaves.Count(i => c.DefOf(i).Door!.Slide)} sliding), {openNow} open after Use; 120 ticks frozen took {clock.ElapsedMilliseconds} ms (worst {worstAll:0} ms, every door settling at once)");
+        Tally("doors open on Use", openNow == leaves.Count, $"{leaves.Count - openNow} of {leaves.Count} not open");
 
         var doorways = new List<(Vector3 Mid, Vector3 N)>();
         {
             var flat = 0;
             foreach (var i in leaves)
             {
-                c.RestBounds(i, out var a0, out var b0);
-                var lo = new Vector3(float.MaxValue);
-                var hi = new Vector3(float.MinValue);
-                for (var k = 0; k < 8; k++)
-                {
-                    var p = c.ToLocal(c.SegToWorld(c.Parts[i].Seg, new Vector3((k & 1) != 0 ? b0.X : a0.X, (k & 2) != 0 ? b0.Y : a0.Y, (k & 4) != 0 ? b0.Z : a0.Z)));
-                    lo = Vector3.Min(lo, p);
-                    hi = Vector3.Max(hi, p);
-                }
-                var jt = c.Joints[c.Parts[i].Seg - 1];
+                c.RestBounds(i, out var lo, out var hi);
                 if (hi.Y - lo.Y < 1f && flat++ < 6)
-                    problems.Add($"door: the leaf at {Fmt(lo)}..{Fmt(hi)} lies flat open (hinge {c.DefOf(jt.Hinge).Name})");
+                    problems.Add($"door: the door at {Fmt(lo)}..{Fmt(hi)} lies flat open");
             }
             Tally("door leaves upright", flat == 0, null);
         }
@@ -312,22 +319,66 @@ public static unsafe partial class Program
             Tally(kind, r.Ok && MathF.Abs(r.Dy + 3f) < 0.45f, $"from {Fmt(head)}: {(r.Ok ? $"fell {-r.Dy:0.00} m, at {Fmt(c.ToLocal(s.Position))} near {Near(c.ToLocal(s.Position))}" : r.Why)}");
         }
 
-        // ---- one closed leaf stops a player: the first bulkhead door shut again and walked into
-        if (leaves.Count > 0)
+        // ---- one shut door stops a player: the first unwired swing door shut again and walked into; then a bulkhead line sealed from
+        // the bridge (its Switch on: the doors shut and lock), walked into, F refused, and unsealed again
+        bool Blocks(int i, string kind)
         {
-            var i = leaves[0];
-            c.PartBounds(i, out var lo, out var hi);
+            c.RestBounds(i, out var lo, out var hi);
             var mid = (lo + hi) * 0.5f;
-            UseFrom(i, c.ToWorld(mid + new Vector3(0, 0.3f, 0)));
-            for (var t = 0; t < 90; t++)
-                w.Step(q, World.TickDt);
-            var shut = !ConstructDoor.IsOpen(c, i);
-            c.PartBounds(i, out lo, out hi);
             var thin = (hi - lo).X < (hi - lo).Z ? Vector3.UnitX : Vector3.UnitZ;
             var s = Drop(new Vector3(mid.X, lo.Y + 0.05f, mid.Z) + thin * 1.5f);
             var r = WalkTo(ref s, new Vector3(mid.X, lo.Y + 0.05f, mid.Z) - thin * 1.5f, 3f);
-            Tally("door shut stops", shut && !r.Ok, $"shut {shut}, walked through {r.Ok}");
-            UseFrom(i, c.ToWorld(mid + new Vector3(0, 0.3f, 0)));
+            return !r.Ok;
+        }
+        double worstDoorTick = 0;
+        void Settle(int ticks)
+        {
+            var sw = new System.Diagnostics.Stopwatch();
+            for (var t = 0; t < ticks; t++)
+            {
+                sw.Restart();
+                w.Step(q, World.TickDt);
+                worstDoorTick = Math.Max(worstDoorTick, sw.Elapsed.TotalMilliseconds);
+            }
+            c.EnsureDoors();
+        }
+        bool WiredInto(int door) => Enumerable.Range(0, c.WireCount).Any(k => c.Wires[k].To == door);
+        if (leaves.FirstOrDefault(i => !c.DefOf(i).Door!.Slide && !WiredInto(i) && c.DefOf(i).Name.Contains("Swing", StringComparison.Ordinal)) is var sw0 and > 0)
+        {
+            UseFrom(sw0, c.ToWorld(MidOf(sw0) + new Vector3(0, 0.3f, 0)));
+            Settle(90);
+            Console.WriteLine($"walk: one door shut: worst tick {worstDoorTick:0.0} ms");
+            worstDoorTick = 0;
+            var shut = !ConstructDoors.SettledOpen(c, sw0);
+            var stops = Blocks(sw0, "swing");
+            Tally("door shut stops", shut && stops, $"shut {shut}, walked through {!stops}");
+            UseFrom(sw0, c.ToWorld(MidOf(sw0) + new Vector3(0, 0.3f, 0)));
+            Settle(90);
+        }
+        {
+            var lineDoors = leaves.Where(WiredInto).ToList();
+            var seal = lineDoors.Count == 0 ? -1 : Enumerable.Range(0, c.WireCount).Where(k => c.Wires[k].To == lineDoors[0] && c.DefOf(c.Wires[k].From).Name == "Switch").Select(k => (int)c.Wires[k].From).DefaultIfEmpty(-1).First();
+            if (seal < 0)
+                Tally("bulkhead sealed stops", false, "no bulkhead door wired from a Switch");
+            else
+            {
+                var line = Enumerable.Range(0, c.WireCount).Where(k => c.Wires[k].From == seal && c.DefOf(c.Wires[k].To).Door != null).Select(k => (int)c.Wires[k].To).ToList();
+                worstDoorTick = 0;
+                var flip = UseFrom(seal, c.ToWorld(MidOf(seal) + new Vector3(0, 0.3f, 0)));
+                Settle(120);
+                var shut = line.Count(i => !ConstructDoors.SettledOpen(c, i));
+                var locked = line.Count(i => ConstructDoors.Locked(c, i));
+                var refused = UseFrom(line[0], c.ToWorld(MidOf(line[0]) + new Vector3(0, 0.3f, 0)));
+                Settle(90);
+                var stops = Blocks(line[0], "bulkhead");
+                Console.WriteLine($"walk: seal switch at {Fmt(MidOf(seal))} ({(flip == null ? "worked" : flip)}): {shut} of {line.Count} bulkhead doors shut, {locked} locked; F on one: {(refused ?? "worked")}; walked through {!stops}; worst tick while doors moved {worstDoorTick:0.0} ms");
+                Tally("bulkhead sealed stops", shut == line.Count && locked == line.Count && refused is { Length: > 0 } && stops && !ConstructDoors.SettledOpen(c, line[0]),
+                    $"{shut} of {line.Count} shut, {locked} locked, F: {refused ?? "worked"}, walked through {!stops}");
+                UseFrom(seal, c.ToWorld(MidOf(seal) + new Vector3(0, 0.3f, 0)));
+                Settle(120);
+                var reopened = line.Count(i => ConstructDoors.SettledOpen(c, i) && !ConstructDoors.Locked(c, i));
+                Tally("bulkhead unsealed opens", reopened == line.Count, $"{reopened} of {line.Count} open and unlocked again");
+            }
         }
 
         // ---- lifts: each car ridden up on its own button, then walked off at the landing; then called down from the lower landing

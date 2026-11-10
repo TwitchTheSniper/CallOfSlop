@@ -232,6 +232,7 @@ public static class ConstructDoors
             }
         if (c.DoorMovingCount == 0)
             return;
+        var moved = false;
         for (var k = 0; k < c.DoorCount; k++)
         {
             ref var p = ref c.Parts[c.Doors[k].Part];
@@ -248,16 +249,20 @@ public static class ConstructDoors
                 Command(world, c, k, true); // (a player in the doorway: it opens again)
                 continue;
             }
-            Settle(c, k, open);
+            moved |= Settle(c, k, open, refresh: false);
             world.DoorEvents.Add((c.Id, c.Doors[k].Part, (byte)((open ? 1 : 0) | 2)));
         }
+        if (moved)
+            Refresh(c);
     }
 
     /// <summary>
     /// Door <paramref name="k"/> comes to rest open or shut (server, and a client on the server's word): its leaf's parts are
     /// put at the new pose (whole quarter turns or a slide, so they stay on the grid), and the body's shape is refreshed once.
+    /// <paramref name="refresh"/> false: the caller refreshes once after several settle in a tick (<see cref="Refresh"/>; phase 7 of the
+    /// interiors: six bulkhead doors sealing together on the 6,300-part Titan Walker took a 16 ms tick, 224 doors 435 ms). True when it moved.
     /// </summary>
-    public static void Settle(Construct c, int k, bool open)
+    public static bool Settle(Construct c, int k, bool open, bool refresh = true)
     {
         ref var dr = ref c.Doors[k];
         var part = dr.Part;
@@ -278,12 +283,17 @@ public static class ConstructDoors
         dr.StartF = open ? 1 : 0;
         dr.StartAt = ConstructRender.Now;
         c.DoorEpoch++;
-        if (moved)
-        {
-            c.TreeStale();
-            c.RefreshShape();
-            c.Wake();
-        }
+        if (moved && refresh)
+            Refresh(c);
+        return moved;
+    }
+
+    /// <summary>The body's shape after its doors settled: once, however many did.</summary>
+    public static void Refresh(Construct c)
+    {
+        c.TreeStale();
+        c.RefreshShape();
+        c.Wake();
     }
 
     /// <summary>From the settled pose to the other one: a quarter-turn turn about a pivot, or a shift (rest frame).</summary>
@@ -367,6 +377,7 @@ public static class ConstructDoors
     public static void Read(ref PacketReader r, ConstructWorld world)
     {
         int n = r.U8();
+        Construct? stale = null; // (a body whose doors settled: refreshed once, when the next event is another body's or at the end)
         for (var j = 0; j < n; j++)
         {
             var id = r.U16();
@@ -375,10 +386,20 @@ public static class ConstructDoors
             if (world.Get(id) is not { } c || c.DoorOf(part) is not (var k and >= 0) || c.Doors[k].Part != part)
                 continue; // (not this PC's copy of the door: its next Full puts it right)
             var open = (flags & 1) != 0;
+            if (stale != null && stale != c)
+            {
+                Refresh(stale);
+                stale = null;
+            }
             if ((flags & 2) != 0)
-                Settle(c, k, open);
+            {
+                if (Settle(c, k, open, refresh: false))
+                    stale = c;
+            }
             else if (TargetOpen(c, part) != open)
                 Start(c, k, open, OpenFraction(c, k, byTicks: false));
         }
+        if (stale != null)
+            Refresh(stale);
     }
 }
