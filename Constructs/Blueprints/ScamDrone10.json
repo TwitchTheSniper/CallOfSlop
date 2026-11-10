@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Scam Drone 10",
+  "group": "The Call Centre",
+  "description": "A remote multirotor, 4 ducted fans on a hub. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
+  "steps": [
+    {"part": "6-Way Hub", "paint": "#2a2c30"},
+    {"part": "Square Beam 1.5 m", "on": 0, "socket": "mz110", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Square Beam 1.5 m", "on": 0, "socket": "pz112", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Square Beam 1.5 m", "on": 0, "socket": "mx011", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Square Beam 1.5 m", "on": 0, "socket": "px211", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Ducted Fan", "on": 1, "socket": "+y5", "by": "base", "config": {"hand": 1}},
+    {"part": "Ducted Fan", "on": 2, "socket": "+y5", "by": "base", "config": {"hand": 1}},
+    {"part": "Ducted Fan", "on": 3, "socket": "+y5", "by": "base", "config": {"hand": 0}},
+    {"part": "Ducted Fan", "on": 4, "socket": "+y5", "by": "base", "config": {"hand": 0}},
+    {"part": "Battery Pack", "on": 0, "socket": "my101", "by": "+y", "paint": "#1a8c8c"},
+    {"part": "Square Beam 0.75 m", "on": 1, "socket": "-y1", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Square Beam 0.75 m", "on": 2, "socket": "-y1", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Square Beam 0.75 m", "on": 3, "socket": "-y1", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Square Beam 0.75 m", "on": 4, "socket": "-y1", "by": "-z", "paint": "#2a2c30"},
+    {"part": "Flight Stabilizer", "on": 0, "socket": "py121", "by": "-y", "config": {"keys": "Rotorcraft", "maxTilt": 25}},
+    {"part": "Drone Receiver", "on": 2, "socket": "+y0", "by": "bottom"}
+  ]
+}

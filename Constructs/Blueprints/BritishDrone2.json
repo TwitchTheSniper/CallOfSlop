@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "British Drone 2",
+  "group": "Ministry of Slop",
+  "description": "A remote multirotor, 4 ducted fans on a hub. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
+  "steps": [
+    {"part": "6-Way Hub", "paint": "#2b2a28"},
+    {"part": "Square Beam 1 m", "on": 0, "socket": "mz110", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 1 m", "on": 0, "socket": "pz112", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 1 m", "on": 0, "socket": "mx011", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 1 m", "on": 0, "socket": "px211", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Ducted Fan", "on": 1, "socket": "+y3", "by": "base", "config": {"hand": 1}},
+    {"part": "Ducted Fan", "on": 2, "socket": "+y3", "by": "base", "config": {"hand": 1}},
+    {"part": "Ducted Fan", "on": 3, "socket": "+y3", "by": "base", "config": {"hand": 0}},
+    {"part": "Ducted Fan", "on": 4, "socket": "+y3", "by": "base", "config": {"hand": 0}},
+    {"part": "Battery Pack", "on": 0, "socket": "my101", "by": "+y", "paint": "#004225"},
+    {"part": "Square Beam 0.75 m", "on": 1, "socket": "-y1", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 0.75 m", "on": 2, "socket": "-y1", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 0.75 m", "on": 3, "socket": "-y1", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Square Beam 0.75 m", "on": 4, "socket": "-y1", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Flight Stabilizer", "on": 0, "socket": "py121", "by": "-y", "config": {"keys": "Rotorcraft", "maxTilt": 30}},
+    {"part": "Drone Receiver", "on": 2, "socket": "+y0", "by": "bottom"},
+    {"part": "Camera", "on": 1, "socket": "-y0", "by": "+y"}
+  ]
+}

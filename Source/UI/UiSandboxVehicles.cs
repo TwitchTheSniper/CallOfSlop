@@ -24,6 +24,12 @@ public sealed partial class Ui
 
     private static readonly string[] _byNames = ["its shape", "by role", "a convoy"];
 
+    /// <summary>What an aircraft's tile makes with "New seed" on (docs/vehiclekit/AIRCRAFT.md, "In the game"): 0 one on the ground in front of you, 1 one of its shape already
+    /// flying with a bot pilot, 2 one for the air role here through the faction hook, flying with a pilot. <see cref="SandboxAirRole"/>: 0 any, else <see cref="AircraftRoles.Names"/>' index plus one.</summary>
+    public int SandboxAirMode, SandboxAirRole;
+
+    private static readonly string[] _airNames = ["on the ground", "flying, piloted", "faction air role"];
+
     private void SbDrawVehicleSeeds(Game game)
     {
         ImGui.AlignTextToFramePadding();
@@ -52,6 +58,7 @@ public sealed partial class Ui
         }
         if (!SandboxVehicleNewSeed)
             return;
+        SbDrawAirSeeds();
         ImGui.AlignTextToFramePadding();
         ImGui.Text("A faction tile makes"u8);
         ImGui.SameLine();
@@ -97,6 +104,37 @@ public sealed partial class Ui
             ImGui.SetTooltip("The threat ladder within the faction: 1 a scrappy crew's, 4 a warlord's (more guns and armour, better loot)."u8);
     }
 
+    private void SbDrawAirSeeds()
+    {
+        ImGui.AlignTextToFramePadding();
+        ImGui.Text("An aircraft tile makes one"u8);
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(140 * _scale);
+        if (ImGui.BeginCombo("##sbvair"u8, _airNames[Math.Clamp(SandboxAirMode, 0, 2)]))
+        {
+            for (var k = 0; k < _airNames.Length; k++)
+                if (ImGui.Selectable(_airNames[k], k == SandboxAirMode))
+                    SandboxAirMode = k;
+            ImGui.EndCombo();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Drones, planes and helicopters. On the ground: in front of you, to fly yourself. Flying, piloted: already in the air ahead of you with a bot pilot on patrol; take its seat to fly it. Faction air role: the style picks the aircraft for the role, as its AI would."u8);
+        if (SandboxAirMode != 2)
+            return;
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(110 * _scale);
+        var roles = AircraftRoles.Names;
+        if (ImGui.BeginCombo("Air role##sbvairrole"u8, SandboxAirRole <= 0 || SandboxAirRole > roles.Length ? "any" : roles[SandboxAirRole - 1]))
+        {
+            if (ImGui.Selectable("any"u8, SandboxAirRole == 0))
+                SandboxAirRole = 0;
+            for (var k = 0; k < roles.Length; k++)
+                if (ImGui.Selectable(roles[k], SandboxAirRole == k + 1))
+                    SandboxAirRole = k + 1;
+            ImGui.EndCombo();
+        }
+    }
+
     /// <summary>A blueprint tile: a faction vehicle's makes a new one when "New seed" is on, anything else spawns as it is (the window stays open).</summary>
     private void SbSpawnBlueprintTile(Game game, int index)
     {
@@ -105,6 +143,19 @@ public sealed partial class Ui
         {
             var (style, shape) = VehicleSpawnKit.Names(g);
             SbSpawned(game, all[index].Name); // (the window stays open for the next)
+            if (g is IAircraftShape && SandboxAirMode > 0)
+            {
+                if (SandboxAirMode == 1)
+                    game.SandboxSpawnAirborne(AirAsk.Flying, style, shape, SandboxVehicleSeed);
+                else
+                    game.SandboxSpawnAirborne(AirAsk.Faction, style, SandboxAirRole > 0 && SandboxAirRole <= AircraftRoles.Names.Length ? AircraftRoles.Names[SandboxAirRole - 1] : "", SandboxVehicleSeed);
+                return;
+            }
+            if (g is IAircraftShape)
+            {
+                game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed); // (on the ground: by role and convoys are ground vehicles)
+                return;
+            }
             if (SandboxVehicleBy == 0 || !game.VehicleSpawn.RolesAndConvoys && game.IsServer)
                 game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed);
             else
