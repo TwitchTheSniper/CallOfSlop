@@ -169,8 +169,8 @@ public sealed class InteriorData
                 throw new InteriorDataException($"RoomTypes.json room \"{t.Id}\": no module set \"{t.Modules}\" in ModuleSets.json");
             if (t.Loot != null && !LootHooks.ContainsKey(t.Loot))
                 throw new InteriorDataException($"RoomTypes.json room \"{t.Id}\": no loot hook \"{t.Loot}\" in LootHooks.json");
-            if (t.Layout == RoomLayout.Free)
-                throw new InteriorDataException($"RoomTypes.json room \"{t.Id}\": free layouts come in phase 2 (use grid)");
+            if (t.Layout == RoomLayout.Free && t.System)
+                throw new InteriorDataException($"RoomTypes.json room \"{t.Id}\": a system room is placed by the planner on the grid (free layouts are for programme rooms)");
         }
     }
 

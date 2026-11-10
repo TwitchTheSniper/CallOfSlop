@@ -1020,8 +1020,10 @@ public sealed partial class ConstructWorld
         outward = outward.LengthSquared() > 1e-4f ? Vector3.Normalize(outward) * 2.5f : Vector3.Zero;
         var spin = c.AngVel;
         RemovePart(c, part);
-        if (HasRoom() && Create(t, q) is { } piece)
+        if (MegaDebrisLeft != 0 && HasRoom() && Create(t, q) is { } piece) // (a blast past its wrecks: the part is gone)
         {
+            if (MegaDebrisLeft > 0)
+                MegaDebrisLeft--;
             piece.Parts[0] = debris;
             piece.PartCount = 1;
             piece.Wreck = true;
@@ -1036,6 +1038,22 @@ public sealed partial class ConstructWorld
 
     /// <summary>A blast: every part within the radius takes damage falling off with distance (to its nearest point).</summary>
     public int Blast(Vector3 centre, float radius, float maxDamage)
+    {
+        var ownDebris = MegaDebrisLeft < 0; // (a blast inside another's walk shares its count)
+        if (ownDebris)
+            MegaDebrisLeft = BlastDebris(radius);
+        try
+        {
+            return BlastOnce(centre, radius, maxDamage);
+        }
+        finally
+        {
+            if (ownDebris)
+                MegaDebrisLeft = -1;
+        }
+    }
+
+    private int BlastOnce(Vector3 centre, float radius, float maxDamage)
     {
         var hits = 0;
         BlastShells(centre, radius, maxDamage); // (ordnance in the air near it: ConstructCookOffs.cs)

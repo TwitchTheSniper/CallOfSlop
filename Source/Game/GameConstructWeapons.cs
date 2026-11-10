@@ -204,9 +204,14 @@ public sealed partial class Game : IConstructTargets
         return true;
     }
 
+    /// <summary>A shell's crater this wide (m) or wider is dug in bands (<see cref="IConstructTargets.MegaGround"/>), not in one tick.</summary>
+    public const float BandedCrater = 8f;
+
     void IConstructTargets.ShellBlast(Vector3 at, float radius, float damage, float crater, bool burns, Construct? by, int gunPart)
     {
-        if (crater > 0)
+        if (crater >= BandedCrater)
+            ((IConstructTargets)this).MegaGround(at, crater); // (a big gun's: dug in bands over a few ticks, as a massive blast's is; at once, an 18 m crater took 50 to 1000 ms)
+        else if (crater > 0)
             BlastCraterSized(at, crater); // (a shell digs through the same path as a bomb: GameTerrainDig.cs)
         var credit = ConstructCredit(by, gunPart);
         BlastBodies(at, radius, damage, credit);

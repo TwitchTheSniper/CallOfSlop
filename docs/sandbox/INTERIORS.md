@@ -27,7 +27,7 @@ planner knows nothing of vehicles: its input is a hull volume and keep-outs, so 
 | File | What |
 | --- | --- |
 | `SizeClasses.json` | Each class's tonnage band (bands must meet), deck rules and programme (the rooms it asks for). **Provisional.** |
-| `RoomTypes.json` | Each room type's minimum size `[along the spine, deep]` in cells, `want` (cells of floor), `layout` (`grid`; `free` is refused until phase 2), `deck` (lower/upper/any), `row` (inner beside the spine, outer on the hull side), `end` (bow/stern), `wants`/`avoids`, `critical`, `exterior` (may open outside), `modules`, `loot`. System rooms (stairs, elevator, storage, fuel, spare, dead) are placed by the planner. |
+| `RoomTypes.json` | Each room type's minimum size `[along the spine, deep]` in cells, `want` (cells of floor), `layout` (`grid`, or `free`: a rectangle plus a wing, phase 2; system rooms stay on the grid), `deck` (lower/upper/any), `row` (inner beside the spine, outer on the hull side), `end` (bow/stern), `wants`/`avoids`, `critical`, `exterior` (may open outside), `modules`, `loot`. System rooms (stairs, elevator, storage, fuel, spare, dead) are placed by the planner. |
 | `ModuleSets.json` | The `shell` parts (slab, stair slab, stair, walls, corners, door wall, door corner, garage wall, hinge, door leaf, adapter pad) and, for each set, the parts a room holds (`count`, `perCells`, `loot`, `role`) and `missing`: what it should hold that no part does yet. |
 | `LootHooks.json` | A room's loot id mapped to a `Constructs/Loot.json` table. **Provisional:** Loot.json has faction tables only, so every hook points at `trader`. |
 
@@ -47,8 +47,8 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
 
 - **`InteriorData.cs`**: the loader and its checks: types, ranges, bands that meet, programme and adjacency names, module sets and loot
   hooks that exist. `UnknownParts()` lists the part names this build lacks.
-- **`InteriorPlan.cs`**: the plan: `GridRect` (cells, inclusive), `PlanRoom` (a rectangle on a deck; a free room will add an
-  `Outline` while keeping its rectangle as the space it claims), `PlanDoor` (a side and a slot: -1 for the side's door corner,
+- **`InteriorPlan.cs`**: the plan: `GridRect` (cells, inclusive), `PlanRoom` (a rectangle on a deck; a free room adds `Wings`,
+  and `Cells()` and `Area` count them), `PlanDoor` (a side and a slot: -1 for the side's door corner,
   otherwise the 4 m middle piece, which lines up with the neighbour's across a shared edge), `PlanBulkhead`, `PlanEntry`, the
   reserved route, and `Ascii()` (deck maps and the room list).
 - **`InteriorPlanner.cs`** (`HullVolume`, `InteriorRng` SplitMix64, `InteriorPlanner.Plan` and `Check`):
@@ -70,7 +70,7 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
      lowest deck.
   8. Bulkheads cross the corridor at each section edge. Entry points are the lowest deck's spine ends, the ramp and the
      outside doors.
-  9. `Check`: rooms placed, minimum sizes, reachability from outside (doors, stairs between decks; elevators don't count yet),
+  9. `Check`: rooms placed, minimum sizes, reachability from outside (doors, stairs and the freight lift between decks),
      doors on critical rooms.
 - **`InteriorBuilder.cs`** (`InteriorBuilder : BlueprintScript`):
   1. `From` replays a blueprint's socket steps and wires through the build rules. It refuses welds, links, hoses, connectors and tracks.
@@ -80,8 +80,9 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
   3. `Build` places, in this order:
      - adapter pads (`Adapter Capital to Small`) on the root's capital sockets under the grid;
      - slabs, in passes from the pads and from neighbours;
-     - each deck's room walls (every room is closed by its own four corners and 4 m pieces, so neighbours stand wall to wall,
-       a 0.5 m bulkhead, and shared doorways line up);
+     - each deck's room walls along the outline of its cells (every room is closed by its own corner pieces and 4 m pieces, so
+       neighbours stand wall to wall, a 0.5 m bulkhead, and shared doorways line up; a free room's inner corner gets a 2 m piece
+       at each wall that meets it);
      - door walls and door corners with a Door Hinge and a Steel Flush Door (one leaf per shared doorway);
      - bulkheads (a door in the spine, a Garage Wall opening over the lane);
      - closed spine ends on upper decks;
@@ -89,7 +90,10 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
        rules refuse it, it is welded on and counted.
      - the next level's slabs, on the walls below;
      - each room's things from its module set, one to a free slab socket (block middles first), with the loot hook on
-       containers marked `loot`, and the helm and gunner wired where the rules allow.
+       containers marked `loot`, and the helm and gunner wired where the rules allow; a fuel plant (`role: plant`) gets a Fuel
+       Tank fitted to it, and a room's lamps a Switch on the first lamp, wired to each;
+     - the freight lift ("Phase 2 record");
+     - the power report: every electrical part no working battery or plant reaches, and plants no fuel reaches.
   4. Refusals, notes and missing parts are listed.
 - **`Program.Interiors.cs`**: `--gen-interior <blueprint name or file> [--seed S] [--out DIR] [--plan]`. Writes `<Name> Fitted`
   (default `Constructs/Blueprints`) and prints the check. It loads the file back through `ConstructBuild.BuildOnGround` and
@@ -124,23 +128,74 @@ walker. Two neighbours' walls stand back to back, so their touching faces are co
 Known gaps:
 - The bridge's helm can't be wired to the walker's Driving Module, because a module takes one input and the hip helm has it.
 - The gunner's station is placed more than 8 m from its Fire Director.
-- Power isn't linked.
-- The elevator is a reserved shaft with closed slabs.
+- Power isn't linked (phase 2: it is, through the frame).
+- The elevator is a reserved shaft with closed slabs (phase 2 builds the lift).
 - The hangar has a 3 m opening, not a ramp.
 - Most of the hull is spare space, because the programme is small for a 128 m deck.
 - The interior stands on the chassis deck's top. The 14 m void inside the chassis grillage has no sockets to build on.
 
 Missing parts (listed by the run, not invented):
-- a small-class freight lift;
-- a reactor or generator and a power board;
+- a small-class freight lift (phase 2: the Freight Lift Car on a Linear Actuator);
+- a reactor or generator and a power board (phase 2: the Small Genset; a power board is still missing);
 - an engineer's panel and a chart table;
 - a small-class shell magazine, hangar bay and ramp;
 - a conveyor or chute;
 - a locker, a gun rack and a medical station;
 - a medicine cabinet, a mess table and a galley stove.
 
-### Next (phase 2 and on)
+## Phase 2 record (branch `feat/interiors-2`)
 
-Free rooms that follow the hull's lines; filling spare space (more programme or generated rooms); power links from
-engineering; a lift part and running elevators; per-room loot tables; damage and fire kept within bulkhead sections
-(game code); the train lane joined to the logistics track; static bases from a plot; joining the vehicle kit.
+**The freight lift.** `tools/constructs/interior_parts.py` writes `Constructs/Parts/Interior/FreightLiftCar.json` (the
+Freight Lift Car: a 3.2 x 3.5 m tread-plate floor, a yoke with a `mount` socket, side rails at 1 m, a `button` socket and nine
+floor sockets, 568 kg, `walk: floor`). Everything else is existing parts. In a shaft at least 3 cells deep through two decks
+the builder:
+- leaves out the upper deck's slab over the shaft's middle block on its west side (the car's block);
+- stands a **Linear Actuator 3x3 4 m** on end on the shaft's west wall (its `base.4` on the wall's face socket at 1.25 m, so its
+  foot is on the floor), carriage facing into the shaft, and sets it: low stop 12%, high stop 87% (0.48 m and 3.48 m: a storey
+  of 3 m apart), speed 1 m/s; its rating is 60 kN, so car and load up to about 5.5 t;
+- hangs the car on the carriage, its floor 2 cm over each deck's floor at the stops;
+- wires the calls: a Toggle into the rail's `Set` (Position: 0 down, 1 up); the car's Button into the Toggle; the lower
+  landing's Button through an AND with the Toggle (it calls the car down only while it is up), the upper's through an AND with
+  a NOT of the Toggle. The gates sit low on the shaft's west wall, the landing buttons at hand height by the landing block.
+
+Riders and loose things ride the car as they ride any deck on a joint (CONSTRUCTS.md "Linear joints"). Other shafts (one
+deck, more than two decks, or shallower than 3 cells) are noted and stay closed.
+
+**Power.** The circuit is the frame (CONSTRUCTS.md "Power"): the interior stands on the walker's deck, so the walker's own
+Battery, Engineering's three Batteries and its new **Small Genset** (100 kW, with a Fuel Tank fitted to it as its day tank)
+reach everything. Doors are passive hinges and need none. Each room with lamps gets a Switch. The run lists what has no power
+path: on the Titan Walker, nothing (24 electrical parts on the circuit, 1,700 kJ held, the genset fed).
+
+**Free rooms.** `layout: free` is on for the Bridge and the Mess. A free room's rectangle is placed as a grid room's, sized
+for about 60% of its want; its wing is a rectangle in the other band of its strip (inner and outer), along its edge on that
+side, flush with its bow or stern end, at least 2 cells wide and narrower than the room, so the outline is an L (a T once a
+wing grows past it). Narrow leftovers beside a wing merge into the wing. Doors, sections and minimum sizes go by the
+rectangle; walls follow the whole outline; the room's things stand on every cell. Angled walls aren't possible with the
+Building pieces (they stand on the 0.25 m socket lattice), so "following the hull" is a stepped outline.
+
+**The run** (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1`, written to `TitanWalkerFitted.json`): the
+Bridge is 3x3 at 0,8 plus a 2x3 wing at 0,11 (an L at the bow), the Mess 3x3 at 4,3 plus a 4x3 wing at 4,0 (an L, after a
+2-cell leftover merged); 12 of 12 rooms, all minimum sizes met, 45 of 45 rooms reached, 2,299 parts placed, none refused or
+welded, 51 door leaves; the file loads back as 2,310 parts from 2,310 steps.
+
+**Tried by hand:** the runs above (the build rules took every lift, gate, switch, plant and wall part); the power report on
+the built construct (`ConstructPower.Rebuild`); the ASCII maps for the L-shaped rooms.
+
+**Not tried:** the lift moving. A throwaway headless run (the fitted walker built on a flat test floor, ticked, buttons
+pressed) hung in `World`'s static constructor on its first tick, which is main's known static-init problem; nothing of the
+lift's motion, its load, the call logic in play, riders, or the genset running was seen. Also not tried: drawing it (z-fighting
+between the car and the shaft walls, the rail stub 1 m above the upper floor), a player walking the L rooms, other seeds and
+blueprints, a client.
+
+**Open questions:** whether a 60 kN rail is enough freight (a Medium rail needs medium sockets); call buttons inside the
+landing rather than on the shaft wall; a lift for three or more decks (a stack of rails and a counter instead of a Toggle);
+the lamps start off (a Switch per room) rather than on.
+
+### Next (phase 3 and on)
+
+**Spare space (user, 2026-11-10: both).** Each size class gets its own room list (bigger classes add rooms: extra quarters,
+storage, workshops), and what is left after that becomes generated rooms (storage, fuel, workshops) chosen by what fits and the
+neighbours. Not started in phase 2.
+
+Also: per-room loot tables; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
+track; static bases from a plot; joining the vehicle kit; the missing parts listed by the run.
