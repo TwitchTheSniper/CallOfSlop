@@ -372,7 +372,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 226: event doors (ConstructDoors.cs, docs/sandbox/CONSTRUCTS.md "Event doors"): CBodyKind.Door ((u16 body, u16 part, u8 flags) each) at the end of CBodyKind, CfgKey.DoorOpen and DoorLocked at the end of CfgKey, and a door part's three data ports.
     // 227: CActKind.Blueprint's index is two bytes (281 shipped blueprints: those past 255 spawned the wrong one or none)
     // 228: story fragments (docs/story/FRAGMENTS.md): Msg.Fragments at the end of Msg, CLogic.Cipher at the end of CLogic (the Data Centre Terminal, a new part file in Constructs/Parts/Office, so part ids after it shift).
-    public const byte ProtocolVersion = 228;
+    // 229: walker feet on the wire (ConstructNetWalk.cs, docs/sandbox/GIANTS.md "Walker feet on clients"): a pose's asleep byte gains bit 1, and a walker's pose carries its gait state and the feet that moved (plus a few in turn) after the rotors; a client no longer finds its own footholds.
+    public const byte ProtocolVersion = 229;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
