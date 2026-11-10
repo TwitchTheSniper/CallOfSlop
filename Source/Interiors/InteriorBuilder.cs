@@ -1377,6 +1377,21 @@ public sealed class InteriorBuilder : BlueprintScript
                 }
             }
         spots.Sort((a, b) => a.Order.CompareTo(b.Order));
+        // the solid boxes standing in or round the room (rest frame), so a thing that would stand in one is skipped before the build rules are
+        // asked (phase 8: a refused try costs a millisecond, and a big room's things made tens of thousands of them)
+        var near = new List<(Vector3 Lo, Vector3 Hi)>();
+        {
+            var rc = r.Cells().ToList();
+            var rlo = Slab(r.Deck, rc.Min(c => c.X), rc.Min(c => c.Z)) - new Vector3(1f, 0.5f, 1f);
+            var rhi = Slab(r.Deck, rc.Max(c => c.X) + 1, rc.Max(c => c.Z) + 1) + new Vector3(1f, 3.2f, 1f);
+            for (var i = 0; i < C.PartCount; i++)
+            {
+                C.PartBounds(i, out var plo, out var phi);
+                if (phi.X < rlo.X || plo.X > rhi.X || phi.Y < rlo.Y || plo.Y > rhi.Y || phi.Z < rlo.Z || plo.Z > rhi.Z)
+                    continue;
+                AddSolids(near, i);
+            }
+        }
         var table = _data.Rooms[r.Type].Loot is { } hook ? _data.LootHooks.GetValueOrDefault(hook) : null;
         var cells = r.Area;
         VPart? helm = null, director = null, gunner = null;
@@ -1409,6 +1424,7 @@ public sealed class InteriorBuilder : BlueprintScript
                 if (ends.Count > 0)
                     spots.Sort((a, b) => ends.Sum(e => Vector3.Distance(a.At, Vector3.Clamp(a.At, e.lo, e.hi))).CompareTo(ends.Sum(e => Vector3.Distance(b.At, Vector3.Clamp(b.At, e.lo, e.hi)))));
             }
+            var dead = new HashSet<(int, string)>(); // (spots this item has failed on: things are only added, so they stay failed for its next copies)
             for (var i = 0; i < n; i++)
             {
                 VPart? got = null;
@@ -1416,6 +1432,8 @@ public sealed class InteriorBuilder : BlueprintScript
                 for (var j = 0; j < spots.Count && got == null; j++)
                 {
                     var spot = spots[j];
+                    if (dead.Contains((spot.Floor.Index, spot.Socket)))
+                        continue;
                     if (C.SocketUsed(spot.Floor.Index, Array.FindIndex(C.DefOf(spot.Floor.Index).Sockets, s => s.Name == spot.Socket)))
                     {
                         spots.RemoveAt(j--);
@@ -1426,6 +1444,11 @@ public sealed class InteriorBuilder : BlueprintScript
                         continue;
                     foreach (var a in takeOver ? new[] { _helmAxis } : new[] { Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitX, -Vector3.UnitZ })
                     {
+                        if (adapter == null && Crowded(near, def, foot, spot.At, new Orient(Vector3.UnitX, a, Vector3.UnitY, Vector3.UnitY)))
+                        {
+                            why = "a solid box of the room is in the way";
+                            continue;
+                        }
                         try
                         {
                             got = adapter != null ? StandBig(def, adapter, foot, spot.At, a, spot.Floor) : Stand(def.Name, spot.At, new Orient(Vector3.UnitX, a, Vector3.UnitY, Vector3.UnitY), spot.Floor, foot);
@@ -1437,12 +1460,15 @@ public sealed class InteriorBuilder : BlueprintScript
                             why = e.Message;
                         }
                     }
+                    if (got == null)
+                        dead.Add((spot.Floor.Index, spot.Socket));
                 }
                 if (got == null)
                 {
                     Refused.Add($"{r.Name} deck {r.Deck}: {def.Name}: {why}");
                     break;
                 }
+                AddSolids(near, got.Index);
                 if (item.Loot && table != null)
                 {
                     try
@@ -1621,6 +1647,30 @@ public sealed class InteriorBuilder : BlueprintScript
             Notes.Add($"an {adapter} stands bare: {e.Message}");
             throw;
         }
+    }
+
+    private void AddSolids(List<(Vector3 Lo, Vector3 Hi)> into, int i)
+    {
+        for (var b = 0; b < C.SolidCount(i); b++)
+        {
+            C.SolidBox(i, b, out var c, out var h);
+            into.Add((c - h, c + h));
+        }
+    }
+
+    /// <summary>Would a <paramref name="def"/> stood by <paramref name="foot"/> at <paramref name="at"/>, turned <paramref name="o"/>, overlap one of <paramref name="near"/> (its bounds, 2 cm in)?</summary>
+    private static bool Crowded(List<(Vector3 Lo, Vector3 Hi)> near, ConstructPartDef def, string foot, Vector3 at, Orient o)
+    {
+        var turn = FirstTurn(o);
+        var f = def.Sockets.First(s => s.Name == foot).At;
+        var (tlo, thi) = TurnedBounds(def, turn);
+        var pos = at - Rot24.Apply(turn, f);
+        var lo = pos + tlo + new Vector3(0.02f);
+        var hi = pos + thi - new Vector3(0.02f);
+        foreach (var (blo, bhi) in near)
+            if (lo.X < bhi.X && hi.X > blo.X && lo.Y < bhi.Y && hi.Y > blo.Y && lo.Z < bhi.Z && hi.Z > blo.Z)
+                return true;
+        return false;
     }
 
     private readonly List<Vector3> _openings = new(); // the doorways' middles on their floor (door walls, door corners, garage walls), rest frame
