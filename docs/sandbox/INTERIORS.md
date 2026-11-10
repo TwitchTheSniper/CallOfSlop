@@ -85,6 +85,11 @@ a 2 m and 4 m module: docs/sandbox/CONSTRUCTS.md "Building pieces"). The loader 
        before a doorway, shafts 4 m pieces; corners, and a 2 m piece at each end that meets an inner corner or a shared edge;
      - door walls and door corners; a Door Hinge and a Steel Flush Door at once on critical rooms and bulkheads, the other leaves
        last (the deck's, then the void's) while the class's joint budget lasts;
+       **Event doors (2026-11-10, for this builder to switch to):** a `Steel Swing Door 1.25x2.35 m` (or 1.5x2.25 m) goes straight
+       on the door wall's `hinge` socket by its `hang` socket, with no Door Hinge and no joint, so every doorway can have one; a
+       `Bulkhead Door` for the spine, a `Steel Double Door L`/`R` pair for wide openings. Wire a room's switch into a door's
+       Open, Toggle or Lock port if wanted. API: `ConstructDoors.Command(world, c, c.DoorOf(part), open)`; docs/sandbox/CONSTRUCTS.md
+       "Event doors".
      - bulkheads (a door in the spine, a Garage Wall opening over the lane);
      - closed spine ends on upper decks;
      - stairs: a Steel Straight Stair a cell in from the stairwell's west wall, rising +z under a Stair Floor's opening. If the

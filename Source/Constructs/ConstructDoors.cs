@@ -218,9 +218,7 @@ public static class ConstructDoors
                 {
                     dr.Seen = true;
                     dr.LastOpen = openIn;
-                    dr.LastToggle = toggleIn;
-                    if (p.InCount > 0 && openIn != TargetOpen(c, dr.Part))
-                        Command(world, c, k, openIn); // (a door wired to a high signal starts the way the signal says)
+                    dr.LastToggle = toggleIn; // (only a change moves it: a door opened by F, saved and loaded stays open on a low wire)
                     continue;
                 }
                 if (p.InCount > 0 && openIn != dr.LastOpen)
