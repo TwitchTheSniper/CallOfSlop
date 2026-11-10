@@ -408,8 +408,12 @@ public sealed class InteriorBuilder : BlueprintScript
         _lv = 0;
         Decks(plan, rng, flights, null);
         _jointReserve = 0;
-        foreach (var g in gaps)
-            Lift(g.Lo, g.LoLv, g.Hi, g.HiLv);
+        Time("lift", () =>
+        {
+            foreach (var g in gaps)
+                Lift(g.Lo, g.LoLv, g.Hi, g.HiLv);
+        });
+        var tLater = System.Diagnostics.Stopwatch.GetTimestamp();
         // (in the budget's order: the deck's other doorways' leaves, then the void's, then the generated rooms' things; what doesn't fit is left out and reported)
         foreach (var (frame, door, what, lv, kind, beside) in _laterLeaves.OrderByDescending(l => l.Lv))
         {
@@ -428,6 +432,7 @@ public sealed class InteriorBuilder : BlueprintScript
             Furnish(p, r, rng);
         }
         _lv = 0;
+        StageMs["later rooms and doors"] = (long)System.Diagnostics.Stopwatch.GetElapsedTime(tLater).TotalMilliseconds;
         if (OpenDoorways > 0)
             Notes.Add($"budget: {OpenDoorways} doorways left open (a frame, no door): the class's door budget is {_budget.Doors} of {Construct.MaxDoors}; critical rooms and bulkheads first, then the deck's, then the void's");
         if (Bare.Count > 0)
@@ -438,9 +443,9 @@ public sealed class InteriorBuilder : BlueprintScript
             foreach (var (t, name) in p.Rooms.Where(r => SetOf(r) != null).Select(r => (SetOf(r)!, r.Hall == r.Id ? $"{r.Name} hall" : r.Name)).DistinctBy(v => v.Item1))
                 foreach (var m in _data.Sets[t].Missing)
                     Missing.Add($"{name}: {m}");
-        Seals();
+        Time("seals", Seals);
         // (the bulkhead seals take their wires first: then the feeds, then generated rooms' light switches, while links last)
-        Feeds();
+        Time("feeds", Feeds);
         foreach (var (lr, llv, lamps) in _laterLights)
         {
             if (C.RouteCount + lamps.Count > Construct.MaxRoutes - 64)
@@ -456,28 +461,35 @@ public sealed class InteriorBuilder : BlueprintScript
             Notes.Add($"lights: {DarkRooms} generated rooms keep their lamps dark (no Switch): the construct's {Construct.MaxRoutes} links less the players' 64 went to the feeds and the other rooms' switches");
         if (_carry != null)
             Refused.Add($"the vehicle's {_carry.Value.Bp.Steps[_carry.Value.Helm].Part} had no bridge to go in: the fitted construct has no helm");
-        Power();
+        Time("welds", WeldLater);
+        Time("power", Power);
     }
 
     /// <summary>One plan's decks, bottom up (the level base <see cref="_lv"/> set): slabs, walls, bulkheads, stairs, the next slabs, the rooms' things; then the mezzanine over its shafts, if any.</summary>
     private void Decks(InteriorPlan plan, InteriorRng rng, List<(PlanRoom Room, int Lv)> flights, List<PlanRoom>? mezz)
     {
-        HallFloors(plan, rng);
-        Slabs(plan, 0);
+        Time("halls", () => HallFloors(plan, rng));
+        Time("slabs", () => Slabs(plan, 0));
         for (var k = 0; k < plan.Decks; k++)
         {
-            foreach (var r in plan.Rooms.Where(r => r.Deck == k && !(_lv < 0 && r.Type == "dead"))) // (the void's dead space: neither slab nor walls)
-                Walls(plan, r);
-            Railings(plan, k);
-            Bulkheads(plan, k);
-            Stairs(plan, k, flights);
+            Time("walls", () =>
+            {
+                foreach (var r in plan.Rooms.Where(r => r.Deck == k && !(_lv < 0 && r.Type == "dead"))) // (the void's dead space: neither slab nor walls)
+                    Walls(plan, r);
+            });
+            Time("bulkheads", () => Bulkheads(plan, k));
+            Time("stairs", () => Stairs(plan, k, flights));
+            Time("railings", () => Railings(plan, k)); // (after the stairs: phase 10, a railing keeps off their feet and heads)
             if (k + 1 < plan.Decks || mezz == null)
-                Slabs(plan, k + 1);
-            foreach (var r in plan.Rooms.Where(r => r.Deck == k))
-                if (r.Origin == "generated")
-                    _laterRooms.Add((plan, r, _lv));
-                else
-                    Furnish(plan, r, rng);
+                Time("slabs", () => Slabs(plan, k + 1));
+            Time("furnish", () =>
+            {
+                foreach (var r in plan.Rooms.Where(r => r.Deck == k))
+                    if (r.Origin == "generated")
+                        _laterRooms.Add((plan, r, _lv));
+                    else
+                        Furnish(plan, r, rng);
+            });
         }
         if (mezz == null || mezz.Count == 0)
             return;
@@ -486,6 +498,16 @@ public sealed class InteriorBuilder : BlueprintScript
         foreach (var m in mezz)
             Walls(plan, m);
         Stairs(plan, plan.Decks, flights);
+    }
+
+    /// <summary>(phase 10) Milliseconds spent per build stage, for the report.</summary>
+    public readonly Dictionary<string, long> StageMs = new();
+
+    private void Time(string stage, Action act)
+    {
+        var t = System.Diagnostics.Stopwatch.GetTimestamp();
+        act();
+        StageMs[stage] = StageMs.GetValueOrDefault(stage) + (long)System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
     }
 
     private readonly HashSet<(int L, int X, int Z)> _open = new(); // (phase 9) a hall's cells with no floor on a gallery storey, by level
@@ -558,7 +580,9 @@ public sealed class InteriorBuilder : BlueprintScript
                 var (lx, lz, a) = (dx, dz) switch { (0, -1) => (0f, 3.75f, Vector3.UnitX), (0, 1) => (0f, 0f, Vector3.UnitX), (-1, 0) => (3.75f, 0f, Vector3.UnitZ), _ => (0f, 0f, Vector3.UnitZ) };
                 var o = At(k, rx, rz, lx, lz);
                 var on = FloorsUnder(k, [(rx, rz)]).ToList();
-                if (Try(rail, o, a, on, out _) != null)
+                // (phase 10: never at a stair's foot or head: a 2 m piece on the half that is clear, or none)
+                var blocked = NearClear(o, o + a * 4, 1.3f) || InReserved(o, o + a * 4);
+                if (!blocked && Try(rail, o, a, on, out _) != null)
                 {
                     Railed++;
                     Placed++;
@@ -566,7 +590,7 @@ public sealed class InteriorBuilder : BlueprintScript
                 }
                 var got = 0;
                 foreach (var at in new[] { o, o + a * 2 })
-                    if (Try(half, at, a, on, out _) != null)
+                    if (!NearClear(at, at + a * 2, 1.3f) && !InReserved(at, at + a * 2) && Try(half, at, a, on, out _) != null)
                     {
                         got++;
                         Placed++;
@@ -1460,41 +1484,101 @@ public sealed class InteriorBuilder : BlueprintScript
                      .Concat(_hallFlights.Where(f => f.Lv == _lv && f.K == k).Select(f => (f.X, f.Z))))
         {
             if (_hallFlights.Contains((_lv, k, x, z)))
-            {
                 HallStairs++;
-                _clear.Add(Slab(k, x, z) + new Vector3(1.875f, 0.25f, 0.5f)); // (its foot)
-                _clear.Add(Slab(k + 1, x, z) + new Vector3(1.875f, 0.25f, 4.5f)); // (its head, on the block beyond)
-            }
             var on = FloorsUnder(k, [(x, z)]).Concat(_walls.GetValueOrDefault((k + _lv, x, z)) ?? new List<VPart>()).ToList();
             var origin = Slab(k, x, z) + new Vector3(0.25f, 0.25f, 1.0f);
-            if (Try(Shell("stair"), origin, Vector3.UnitX, on, out var why) != null)
+            if (Try(Shell("stair"), origin, Vector3.UnitX, on, out var why) is { } st)
+            {
+                KeepClear(st);
                 continue;
+            }
             // (a hall's flight: against the column's east wall instead, or its west one built by the neighbour; the side sockets meet a wall's face)
             if (_hallFlights.Contains((_lv, k, x, z)))
             {
                 var near = on.Concat(Around.SelectMany(d => _walls.GetValueOrDefault((k + _lv, x + d.Dx, z + d.Dz)) ?? new List<VPart>())).ToList();
-                if (Try(Shell("stair"), Slab(k, x, z) + new Vector3(2.75f, 0.25f, 1.0f), Vector3.UnitX, near, out _) != null ||
-                    Try(Shell("stair"), origin, Vector3.UnitX, near, out _) != null)
+                if ((Try(Shell("stair"), Slab(k, x, z) + new Vector3(2.75f, 0.25f, 1.0f), Vector3.UnitX, near, out _) ??
+                    Try(Shell("stair"), origin, Vector3.UnitX, near, out _)) is { } hs)
+                {
+                    KeepClear(hs);
                     continue;
+                }
             }
             if (on.Count == 0)
             {
                 Refused.Add($"stair level {k + _lv} at {x},{z}: {why}");
                 continue;
             }
+            // (phase 10: welded last, after every other part: a construct with freeform welds rebuilds about four times slower, and the kit rebuilds
+            // after each part, so welding here made the build 40 s instead of 10. Its box is kept from furniture and railings meanwhile.)
+            var sdef = ConstructParts.Find(Shell("stair"))!;
+            var centre = origin + (sdef.BoundsMin + sdef.BoundsMax) * 0.5f;
+            var (blo, bhi) = (origin + sdef.BoundsMin, origin + sdef.BoundsMax);
+            _laterWelds.Add((on[0], centre, $"stair level {k + _lv} at {x},{z}", why));
+            _reserved.Add((blo, bhi));
+            var cx = (blo.X + bhi.X) * 0.5f;
+            _clear.Add(new Vector3(cx, blo.Y, blo.Z - 0.5f));
+            _clear.Add(new Vector3(cx, bhi.Y, bhi.Z + 0.5f));
+        }
+    }
+
+    private readonly List<(VPart On, Vector3 Centre, string What, string Why)> _laterWelds = new(); // (phase 10) stair flights to weld on at the end
+    private readonly List<(Vector3 Lo, Vector3 Hi)> _reserved = new(); // (phase 10) boxes kept for what is welded on last, rest frame
+
+    /// <summary>(phase 10) The flights no socket took, welded on after everything else (see <see cref="Stairs"/>).</summary>
+    private void WeldLater()
+    {
+        foreach (var (on, centre, what, why) in _laterWelds)
             try
             {
-                var def = ConstructParts.Find(Shell("stair"))!;
-                _welded.Add(Weld(Shell("stair"), on[0], origin + (def.BoundsMin + def.BoundsMax) * 0.5f, new Orient(Vector3.UnitX, Vector3.UnitX, Vector3.UnitY, Vector3.UnitY), 0, 0, 0).Index);
+                var w = Weld(Shell("stair"), on, centre, new Orient(Vector3.UnitX, Vector3.UnitX, Vector3.UnitY, Vector3.UnitY), 0, 0, 0);
+                _welded.Add(w.Index);
                 Welded++;
                 Placed++;
-                Notes.Add($"stair level {k + _lv} at {x},{z} welded on (the rules found no socket: {why})");
+                Notes.Add($"{what} welded on (the rules found no socket: {why})");
             }
             catch (VehicleKitException e)
             {
-                Refused.Add($"stair level {k + _lv} at {x},{z}: {why}; welding it: {e.Message}");
+                Refused.Add($"{what}: {why}; welding it: {e.Message}");
             }
+    }
+
+    /// <summary>
+    /// (phase 10) A flight's foot and head as built (its bounds: it rises +z), kept clear of railings, decoration and furniture: a metre beyond
+    /// either end, at the floor it meets.
+    /// </summary>
+    private void KeepClear(VPart flight)
+    {
+        C.PartBounds(flight.Index, out var lo, out var hi);
+        var cx = (lo.X + hi.X) * 0.5f;
+        _clear.Add(new Vector3(cx, lo.Y, lo.Z - 0.5f));
+        _clear.Add(new Vector3(cx, hi.Y, hi.Z + 0.5f));
+    }
+
+    /// <summary>Whether a waist-high run from <paramref name="a"/> to <paramref name="b"/> (a quarter metre thick) meets a box kept for a later weld.</summary>
+    private bool InReserved(Vector3 a, Vector3 b)
+    {
+        var lo = Vector3.Min(a, b) - new Vector3(0.3f, 0f, 0.3f);
+        var hi = Vector3.Max(a, b) + new Vector3(0.3f, 1.1f, 0.3f);
+        foreach (var (rl, rh) in _reserved)
+            if (!(rh.X < lo.X || rl.X > hi.X || rh.Y < lo.Y || rl.Y > hi.Y || rh.Z < lo.Z || rl.Z > hi.Z))
+                return true;
+        return false;
+    }
+
+    /// <summary>Whether a run from <paramref name="a"/> to <paramref name="b"/> on a floor passes within <paramref name="r"/> m of a stair's foot or head on that floor.</summary>
+    private bool NearClear(Vector3 a, Vector3 b, float r)
+    {
+        foreach (var c in _clear)
+        {
+            if (MathF.Abs(c.Y - a.Y) > 1.2f)
+                continue;
+            var ab = new Vector2(b.X - a.X, b.Z - a.Z);
+            var ac = new Vector2(c.X - a.X, c.Z - a.Z);
+            var t = ab.LengthSquared() > 1e-6f ? Math.Clamp(Vector2.Dot(ac, ab) / ab.LengthSquared(), 0f, 1f) : 0f;
+            if (Vector2.Distance(ac, ab * t) < r)
+                return true;
         }
+        return false;
     }
 
     /// <summary>A room's things from its module set, one to a free slab socket (block middles first, nearest the room's middle), with the room's loot hook.</summary>
@@ -1539,6 +1623,9 @@ public sealed class InteriorBuilder : BlueprintScript
                     continue;
                 AddSolids(near, i);
             }
+            foreach (var (lo, hi) in _reserved)
+                if (!(hi.X < rlo.X || lo.X > rhi.X || hi.Y < rlo.Y || lo.Y > rhi.Y || hi.Z < rlo.Z || lo.Z > rhi.Z))
+                    near.Add((lo, hi));
         }
         var table = _data.Rooms[r.Type].Loot is { } hook ? _data.LootHooks.GetValueOrDefault(hook) : null;
         var cells = r.Area;

@@ -299,6 +299,12 @@ public static unsafe partial class Program
             var o = c.Parts[i].Pos;
             var foot = o + Rot24.Apply(rot, new Vector3(0.375f, -0.1f, -0.55f));
             var head = o + Rot24.Apply(rot, new Vector3(0.375f, 2.9f, 3.5f));
+            if (c.Parts[i].Seg != 0)
+            {
+                // (phase 10: a welded flight's place is in its weld's frame; the walk took it as the body's and tried every one at the origin)
+                foot = c.ToLocal(c.SegToWorld(c.Parts[i].Seg, foot));
+                head = c.ToLocal(c.SegToWorld(c.Parts[i].Seg, head));
+            }
             var kind = $"stairs L{Level(foot.Y)} up";
             var s = Drop(foot);
             if (Vector3.Distance(c.ToLocal(s.Position), foot) > 0.4f)
