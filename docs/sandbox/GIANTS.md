@@ -94,7 +94,8 @@ nothing about the feet is on the wire (no protocol change).
 ### The test walker (`Constructs/Blueprints/TitanWalker.json`, from the same generator)
 
 A bare Capital Chassis Deck 128x64 m on six Titan Mech Legs (three a side at cells 0, 4 and 7), about 29,300 t; a Bridge
-Helm on an adapter on the first leg's hip, with a Driving Module wired to that leg. It walks at 4.5 m/s with its hips
+Helm on an adapter on the first leg's hip, with a Driving Module wired to that leg (phase 5: the hollow chassis, the helm on
+the deck). It walks at 4.5 m/s with its hips
 about 28 m up.
 
 What was tried by hand (a throwaway probe, removed: a flat floor, a floor with 3 m bumps under the feet, and a 17 degree
@@ -226,13 +227,61 @@ Not tried: the sound and the camera shake (no window run, no client); a client o
 own feet); a walker on six shaft-fed legs (it needs a shaft splitter: an engine's output takes one link); a pump on a shaft
 feeding legs; an engine stalled by legs alone; real map terrain; seated riders' shake.
 
+## Phase 5 (branch `feat/giant-walker-5`)
+
+- **Centre sockets check**: since phase 3 the "Centre sockets" self-test failed on every leg part ("isn't structural but
+  gained N"), because it took every socket added at load for a centre socket. The check now leaves out a leg's segment weld
+  sockets (`seg0`.., from `LegDef.SegSocket`) and checks they sit straight after the file's own. The check was changed, not
+  the sockets: they are meant to be added at load (from the leg block, so a changed segment list moves them with it), their
+  indices come after the file's own as the centre sockets' do, and marking them otherwise would need a new socket field for
+  no gain.
+- **The Titan Walker** (`tools/constructs/leg_parts.py`, `blueprint()`): its root is the `Capital Hollow Chassis 128x64 m`
+  (the interiors track's, `Constructs/Parts/Interior/Capital`): the same footprint, mass (28,160 t), health, armour and 44
+  outer sockets as the Capital Chassis Deck, so the leg mounts carry over, with the void storeys inside. Hollow, not the
+  Armoured Hull: the armoured one is 11,264 t heavier (39,424 t), which slows the legs further under an interior's mass; an
+  armoured walker can be a variant later. The helm's adapter moved from the first leg's hip to the deck's `top0.0` socket.
+- **Legs on a flat battery**: an electric leg is fed only while the battery holds a tick of the holding work (`HoldKJ`: the
+  weight times `LegHoldRate`, 60 kJ a tick for 37,000 t). A flat battery comes back on at 0.2 kJ, so a genset's trickle (the
+  fitted walker's 100 kW Small Genset) switched the legs on every other tick, and the walker walked on it at full speed while
+  its draw was clamped to the little charge there was.
+- **Walk speed under load**: as intended. With ample power the fitted walker (6,587 parts, 36,557 t, from main's
+  `TitanWalkerFitted.json`) stands at 28.4 m on 3.6 MW and walks at 3.35 m/s, against 3.52 m/s bare (31,089 t): the load share
+  (mass over what the legs carry: 0.63 against 0.54 at the electric feed's 0.8 strength) slows the pace by 5%. The interiors
+  run's 0.09 m/s came from power, not load: the fitted file has no Capital Battery Bank, so its legs flickered on the genset (and
+  now it sits down on its hips, "no power to the legs").
+
+What was tried by hand (a throwaway probe, removed: the blueprint built in a world of its own on a flat floor, settled 4 s,
+driven 10 s forward and 5 s turning right): bare, it stands with its hips 28.4 m over its feet on 3 MW, walks at 3.52 m/s
+(50 MW at most), turns right on D, worst tick 0.8 to 2.8 ms; the fitted walker as above, with the bank's charge given by the
+probe; without it, it sits down. Its worst tick was 19 to 30 ms (6,587 parts and 191 joints, on the 2-core box at a load of 2;
+the bare walker's under 3 ms): worth measuring alone.
+
+Not tried: a player sitting in the moved helm (the probe drives the seat directly); the interior regenerated on the new
+blueprint; drawing; a client.
+
+### For the interiors track
+
+- **The helm**: step 8 (`Bridge Helm`), on step 7 (`Adapter Capital to Small` on the root's `top0.0`), centre about
+  (0, 8.6, 0) in the root's frame, facing -x (so the bow stays at the x-min end), on the deck top at the bow beside the first
+  leg (-z side). Its Driving Module is step 9, on the helm's -z side (about (0, 8.16, -0.65)), wired from the helm and into
+  leg step 1 (`-z0`: its hip housing spans x -8..8, z -24..-8, so the module stays within the 8 m wire of it); step 10 is the
+  helm's small Battery, step 11 the Capital Battery Bank (on `top5.1`). Step indices are unchanged from phase 4.
+- **Taking the helm over**: a Driving Module takes one input and the walker's helm has it. Build the bridge round this helm
+  (its bounds are a keep-out, about 1 m square at x 0, z 0 of the root), or, if the bridge goes elsewhere, the bridge's helm needs a Driving Module
+  of its own within 8 m of a leg's hip housing (the legs sit on the deck's long sides at x 0, 64 and 112).
+- **The chassis**: `Capital Hollow Chassis 128x64 m` is step 0 now, so `--chassis hollow` is no longer needed.
+- **Power**: the legs draw about 3 MW standing (3.6 MW fitted) and 45 to 50 MW walking, and are fed only while the battery
+  holds 60 kJ a tick. Keep the Capital Battery Bank (step 11): the interior's batteries and 100 kW genset can't hold it up.
+- **Regenerate** `TitanWalkerFitted.json` with `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1` (left to the
+  interiors session: the file is theirs). The fitted body's tick (19 to 30 ms here) is over the 8 ms budget on a busy box.
+
 ### Next phases
 
 1. Terrain: crushing trees, cars and small structures underfoot (the pads' push is the start); wading; the obstacle
    step-over measured on real maps.
 2. Autopilot to a destination.
 3. Crew stations, the hangar and production line on a walker (the interiors track's `TitanWalkerFitted`; regenerate it
-   after this phase for the battery bank).
+   from phase 5's blueprint: hollow chassis, helm on the deck, battery bank).
 4. 500 m and more: the part reach cap (200 m), the broadphase sphere (a leg's reach now widens it), instanced leg drawing,
    legs of several parts.
 5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
