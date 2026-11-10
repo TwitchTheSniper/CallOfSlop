@@ -11,6 +11,7 @@ public enum TalkAsk : byte
     News, // any news? the best news they have that this player hasn't had from them
     Trade, // a trader takes the part in the player's hands and gives one of theirs for it
     Bye, // the panel closed: they go back to what they were doing
+    Choose = 8, // + the choice's index (below Game.TalkChoicesMax): an answer a storylet offers (GameStoryStorylets.cs)
 }
 
 /// <summary>
@@ -113,6 +114,8 @@ public sealed partial class Game
                 break;
             case TalkAsk.Trade:
                 return StoryTrade(s, a, p, who);
+            case >= TalkAsk.Choose and < TalkAsk.Choose + TalkChoicesMax:
+                return StoryletChoose(s, p, bodyPlayer, ask - TalkAsk.Choose);
         }
         return null;
     }

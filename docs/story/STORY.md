@@ -53,6 +53,10 @@ everyone the story has known ("Roster"). The plan, with the phases and the reaso
   - **Roster**: everyone the story has known, people and players, the living and the dead, by renown: how they are now
     (where, or who killed them where and when), what they did, the stories they are in, and their line. Hover a name for
     all their deeds and stories; click one for their page on the People tab.
+  - **Storylets**: for a player, every storylet and why it isn't playing now, clause by clause; the one under way, its
+    cast and the ends it waits for (with *End* buttons); what ended lately; their storylet qualities (with - and +) and
+    facts. *Start* plays one now if it can be cast, its needs aside; *Forget what they had* lets them all come again
+    ("Storylets" below).
   - **Chronicle**: every event kept, newest first (filter by verb, or stories only), and what the sifter did.
   - **Data**: the scenarios (Play puts one into the live world), the patterns, the line rules by occasion (hover one
     for its lines), the verbs, relations and qualities loaded.
@@ -68,7 +72,11 @@ everyone the story has known ("Roster"). The plan, with the phases and the reaso
   and prints each pattern's stories both ways. `--strength=X` sets how hard it nudges (0.6 by default); `--pacing=off`
   nudges at full strength all the time and brings no strangers ("Pacing" below).
 - **`--check-story [DIR]`**: loads the story data and every scenario and says what is refused and why, and lists the
-  place states and the plays.
+  place states, the plays and the storylets, with the storylets' warnings ("Storylets" below).
+- **`--storylet-sim [CAST] [--set Q=N,...] [--minutes N] [--choose END] [--jobs]`**: a player in a cast's world (Penal
+  Colony by default) with those qualities, the storylets on the story's clock, headless: what begins and ends, then
+  why each storylet isn't playing. `--choose` answers a choice with that end (else the first), `--jobs` does a job a
+  storylet hands out a minute later. Exit code: the storylets that never played.
 
 ## How it flows
 
@@ -396,8 +404,9 @@ drawn at random. A rule:
 - **chance** (said this often when it wins: it still wins, so it doesn't fall back to a vaguer rule), **every** (one
   speaker says it at most this often), **once** (once per speaker and listener this session).
 
-A speaker's own words come at least 8 s apart (replies, what they saw, being hurt and the radio aside). Words change
-nothing in the story: they only show it. They aren't saved.
+A speaker's own words come at least 8 s apart (replies, what they saw, being hurt and the radio aside). A response
+rule's words change nothing in the story: they only show it, and aren't saved. Words that change things are a
+storylet's: its ends set facts and leads, and a player's answer in the talk panel is one of its ends ("Storylets").
 
 **In the world** (host, Sandbox, four times a second with the bodies): a step's line is said when the body reaches whoever
 it is with (or its spot; a trip as it sets off, never as it arrives); a player coming within 5 m of a body gets a
@@ -580,6 +589,81 @@ Measured with `--drama=compare --runs=12` on Frontier: 367 stories with pacing a
 and 354 without the drama manager. It trades some squabbles (Bad blood 71 against 84) for the big stories (Word gets
 around and Fled the killing 24 each, against 17 without pacing: strangers bring word of the killing), with about an hour
 and a half of each run quiet and about three strangers a run.
+
+## Storylets
+
+Authored beats that wait for the world to be ready, the CK3 recipe: a beat isn't step 4 of 10, it needs things to be
+so ("Morrow alive, a friend of yours, the colony not in lockdown"), casts whoever fits, and changes qualities that
+the rest of the story reads (`Source/Story/StoryStorylets.cs` the engine, `StoryletChecks.cs` the warnings,
+`Source/Game/GameStoryStorylets.cs` the game's side, `Source/UI/UiStoryStorylets.cs` the tab; data
+`Story/Storylets/*.json`, format `call-of-slop-storylets/1`). The storylet builder (https://claude.ai/artifact/9CmjXTzyB9wZoLZsjTe1yX) writes the same files;
+the game is the source of truth, and `--check-story` decides what is valid.
+
+```json
+{ "format": "call-of-slop-storylets/1",
+  "qualities": [ { "name": "Suspicion", "kind": "menace", "max": 10, "decay": "-1 per 30m" } ],
+  "spots": [ { "name": "Kettle", "near": "Officer Crumb", "reach": 5 } ],
+  "storylets": [ {
+    "id": "shakedown", "title": "Shakedown", "bucket": "urgent", "again": "1h",
+    "needs": "?me Suspicion >= 3",
+    "cast": "?g MemberOf 'Ministry of Slop', ?g is Person", "prefer": "?g Likes ?me",
+    "beats": [ { "by": "?g", "to": "?me", "say": [ "Hands where I can see them, {me.first}." ] } ],
+    "ends": [
+      { "id": "covered", "after": "8s", "if": "?me Contraband, ?g Likes ?me >= 40", "then": [ "?me Contraband =0" ], "say": [ "Put that away." ] },
+      { "id": "caught", "after": "8s", "if": "?me Contraband", "hook": "lockdown", "then": [ "?me Suspicion +2" ] },
+      { "id": "clean", "after": "8s", "then": [ "?me Suspicion -2" ] } ] } ] }
+```
+
+- **The file**: `"qualities"` declares storylet qualities (progress or menace, `min`/`max`, an optional `"decay"`: taken
+  off each interval it didn't rise, so a player can cool off). They are story qualities like any other, so patterns,
+  lines and goals can read them too. `"spots"` are places the game counts visits to: coming within `reach` m of the
+  `near` person's body adds 1 to `?me Visited 'Kettle'` (walk out of twice the reach for the next).
+- **A storylet**: `id` (letters, digits, `-`, `_`), `title`, `about`; `bucket` A (the main plot), B (the side plot) or
+  `urgent`; once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"scope": "group"`
+  makes its ends change every player in the starter's group; `"final"` marks an end of the road (the checks don't call
+  it a dead end).
+- **needs**: a query over `?me`, the player, or a list of them (any one holds): `"?me Rank >= 2, not ?me Course ?r"`.
+- **cast**: a query whose variables after `?me` are its roles. The **first leads**: a living person, free (in no play,
+  no other player's storylet, idle or at a step with nobody else), where the player is; `"prefer"` casts the strongest
+  first (`"?g Likes ?me"`, or a quality: `"?c Gossipy"`). If the guard is dead, someone else who fits plays the part;
+  if nobody fits it waits.
+- **beats**: a play's beats over the cast (`?me` among them; "Plays"), acted out as a play is, with bodies meeting.
+  A play broken off gives the storylet up (it may come again after a minute).
+- **job**: `"Ministry of Slop: Breaking Rocks"` hands the player that faction job ("Jobs"). **hook**: something the game
+  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo: with a
+  storylet that hooks the depot, the depot no longer follows the induction by itself).
+- **ends**: the first that happens wins, each one of: `"when"` an event (a verb and roles, a variable of the storylet's
+  or a name: `{"verb": "Job", "actor": "?me", "item": "Breaking Rocks"}`, with an optional `"within"`), `"after"` a time
+  (from when its beats ended; a paused storylet's clock stands still) or `"choice"` (an answer the player picks in the
+  talk panel of the one who asks, `"by"`, the lead if not said). `"if"` is checked when it would happen, so an end can
+  depend on how things are then. It changes things (`"then"`, effects that may name things in quotes: `"?me Course
+  'Trustee'"`, the Thing made if nobody has the name), `"learn"`s a fact `"from"` someone (a Lead, and a Learn event, so
+  the chronicle keeps where the player heard it), says one of its `"say"` lines (by `"by"`; a storylet with no cast sends
+  it to the player as a notice), starts a `"hook"`, and `"next"` names the storylet it leads to (for the builder and the
+  checks: the next one still needs its needs).
+- **The runner**: per player, once a second: an urgent storylet that can play pauses the one under way (its events still
+  count, its times stand still) and plays first; with none under way a paused one goes on, else the A and B plots take
+  turns, with a rest of 2 minutes after each. What is under way and what was had are relations (OnStorylet, StoryletAt,
+  Played: `Story/Relations/Storylets.json`), so they save with the world; one under way when the world was saved waits for
+  its ends again after a load, cast afresh (its time ends start again).
+- **Facts**: `Course` (exclusive: the road chosen), `Lead` (what a player learnt of), `Visited` (spots), the qualities
+  `Inducted` (an Induct when the induction ends or is skipped) and `Contraband` (a Pilfer sets it). Verbs:
+  `Story/Verbs/Storylets.json` (Storylet, Learn, Choose, Induct, Pilfer).
+- **Answers** (protocol 222): while a player's talk panel is open on someone a storylet waits for an answer from, the
+  host sends them its choices (`Msg.TalkChoices`, when they change); the button sends `TalkAsk.Choose + n`, and the
+  storylet ends, recorded as a Choose.
+- **Warnings** (`--check-story`; the builder shows the same): a storylet that can never play (nothing sets what it needs
+  among the storylets' own facts, or more than a quality's max), something it sets that no storylet reads, a dead end
+  (nothing it changes opens another and it isn't final), roles nobody in any cast can fill (a clause on how someone
+  stands to the player passes: that comes with play), a `"next"` that names no storylet, choices with no end by time,
+  and a job no end waits for. They are warnings: the storylet still loads.
+
+Shipped: `Storylets/Colony.json`, the penal colony after the induction, as drafted in the storyline talk (2026-11-09):
+*Work detail* (A, a guard's job and inspection: Rank, or Suspicion), *Tea with Crumb* (B, two visits to the kettle: the
+lead "Old Mine"), *Bellweather's test* (A, a crate left unwatched), *Shakedown* (urgent, at Suspicion 3), *The Warden's
+offer* (A, the choice of Trustee or Escapee) and the first beat of each road (*First posting*: the depot; *The old
+mine*). Not yet: the Pilfer event from a marked crate (Bellweather's test ends "left" until it is), the old mine as a
+place.
 
 ## Scenarios
 

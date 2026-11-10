@@ -1,0 +1,17 @@
+{
+  // The storylets' own (docs/story/STORY.md "Storylets"). A storylet is a Thing ("storylet:ID"); a player holds
+  // OnStorylet towards it while it is under way (1, or 2 paused for an urgent one), StoryletAt (the story second it
+  // began, then ended) and Played (how many times it ended for them). All saved with the story, like any relation. A storylet spot
+  // ("Kettle") counts a player's visits in the Visited relation (Relations.json).
+  "relations": [
+    { "name": "OnStorylet", "about": "a player and a storylet under way for them (1, 2: paused)" },
+    { "name": "StoryletAt", "about": "a player and a storylet: the story second it began, or last ended" },
+    { "name": "Played", "about": "a player and a storylet: how many times it ended for them" },
+    { "name": "Lead", "about": "a player and a fact or a place they learnt of (\"the old mine\")" },
+    { "name": "Course", "about": "a player and the course they chose (Trustee, Escapee)", "exclusive": true }
+  ],
+  "qualities": [
+    { "name": "Inducted", "about": "a player who finished (or skipped) the warden's induction" },
+    { "name": "Contraband", "about": "a player holding something the Ministry would take off them" }
+  ]
+}

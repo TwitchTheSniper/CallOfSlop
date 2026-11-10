@@ -156,6 +156,11 @@ public sealed partial class Ui
             DrawStoryChronicle(s);
             ImGui.EndTabItem();
         }
+        if (ImGui.BeginTabItem("Storylets"u8))
+        {
+            DrawStoryStorylets(s); // (UiStoryStorylets.cs)
+            ImGui.EndTabItem();
+        }
         if (ImGui.BeginTabItem("Factions"u8))
         {
             DrawStoryFactions(s); // (UiStoryFactions.cs)

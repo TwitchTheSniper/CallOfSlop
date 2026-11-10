@@ -13,6 +13,110 @@ public static class StoryCli
 
     public static int Check(string[] args) => Tee(() => CheckBody(args));
 
+    public static int StoryletSim(string[] args) => Tee(() => StoryletSimBody(args));
+
+    private static string? Arg(string[] args, string key) =>
+        args.SkipWhile(a => !a.Equals(key, StringComparison.OrdinalIgnoreCase)).Skip(1).Take(1).FirstOrDefault(a => !a.StartsWith("--"));
+
+    /// <summary>
+    /// <c>--storylet-sim [CAST] [--set Q=N,...] [--minutes N] [--choose END] [--jobs]</c>: a player in a cast's world
+    /// (Penal Colony by default) with the qualities set, the storylets run on the story's own clock (no bodies), printing
+    /// what begins and ends; a choice offered is answered with END (else the first), and with --jobs a job handed out is
+    /// done a minute later. Then why each storylet isn't playing. Exit code: storylets that never played.
+    /// </summary>
+    private static int StoryletSimBody(string[] args)
+    {
+        var rules = StoryRules.LoadFolder();
+        Console.WriteLine(Summary(rules));
+        foreach (var err in rules.Errors)
+            Console.WriteLine($"  refused: {err}");
+        var castName = Arg(args, "--storylet-sim") ?? "Penal Colony";
+        if (rules.People.Cast(castName) is not { } cast)
+        {
+            Console.WriteLine($"No cast {castName}: {string.Join(", ", rules.People.Casts.Select(c => c.Name))}");
+            return 1;
+        }
+        var sr = rules.Storylets;
+        var e = new StoryEngine(rules);
+        var world = e.World.Create(StoryKind.Place, cast.Places.FirstOrDefault(p => p.World)?.Name ?? "World", 1, 0);
+        e.Agents.AddCast(cast, world, scripted: false);
+        e.Factions.Ensure();
+        var me = e.World.Create(StoryKind.Player, "Tester", 2, 0);
+        if (sr.In >= 0)
+            e.World.Set(me, sr.In, world, 1);
+        foreach (var kv in (Arg(args, "--set") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = kv.Split('=');
+            if (eq.Length == 2 && rules.Quality(eq[0].Trim()) is { } q && int.TryParse(eq[1], out var v))
+                e.World.SetQuality(me, q.Id, v);
+            else
+                Console.WriteLine($"  --set: \"{kv}\" isn't Quality=number");
+        }
+        var minutes = int.TryParse(Arg(args, "--minutes"), out var m) ? m : 30;
+        var choose = Arg(args, "--choose");
+        var jobs = args.Any(a => a.Equals("--jobs", StringComparison.OrdinalIgnoreCase));
+        e.Storylets.Note = n => Console.WriteLine($"  {StoryRules.Clock(e.Time)}  {n}");
+        e.Plays.Note = n => Console.WriteLine($"  {StoryRules.Clock(e.Time)}    {n}");
+        e.Storylets.Hook = (p, h, _) => Console.WriteLine($"  {StoryRules.Clock(e.Time)}    hook {h} for {e.World.NameOf(p)}");
+        e.Storylets.Notice = (p, t) => Console.WriteLine($"  {StoryRules.Clock(e.Time)}    to {e.World.NameOf(p)}: {t}");
+        void Table()
+        {
+            foreach (var d in sr.Storylets)
+                Console.WriteLine($"    {d.Id,-22} [{d.Bucket}] {e.Storylets.WhyNot(me, d.Index, e.Time) ?? "ready"}");
+        }
+        Console.WriteLine($"Storylets for Tester in {e.World.NameOf(world)} ({cast.Name}), {minutes} minutes:");
+        Table();
+        var jobAt = double.MaxValue;
+        Span<(int Serial, int End)> offers = stackalloc (int, int)[8];
+        for (var t = 0; t < minutes * 60; t++)
+        {
+            e.Advance(1);
+            // A choice offered by anyone: answered.
+            foreach (var r in e.Storylets.Runs.ToArray())
+            {
+                if (r.Player != me || r.Phase != StoryletPhase.Waiting)
+                    continue;
+                var d = sr.Storylets[r.Def];
+                for (var v = 1; v < d.CastVars; v++)
+                {
+                    var n = e.Storylets.ChoicesFor(me, r.Binds[v], offers);
+                    if (n == 0)
+                        continue;
+                    var pick = 0;
+                    for (var i = 0; i < n; i++)
+                        if (d.Ends[offers[i].End].Id == choose)
+                            pick = i;
+                    Console.WriteLine($"  {StoryRules.Clock(e.Time)}    Tester chooses \"{e.Storylets.ChoiceText(offers[pick].Serial, offers[pick].End)}\"");
+                    e.Storylets.Choose(me, offers[pick].Serial, offers[pick].End, e.Time);
+                    break;
+                }
+                if (jobs && d.Job >= 0 && jobAt == double.MaxValue)
+                    jobAt = e.Time + 60;
+            }
+            if (e.Time >= jobAt)
+            {
+                jobAt = double.MaxValue;
+                if (rules.Factions.Job >= 0)
+                    foreach (var r in e.Storylets.Runs)
+                        if (r.Player == me && sr.Storylets[r.Def] is { Job: >= 0 } d)
+                        {
+                            var f = rules.Factions.Factions[d.JobFaction];
+                            var thing = e.World.Find(f.Jobs[d.Job].Name);
+                            Console.WriteLine($"  {StoryRules.Clock(e.Time)}    Tester does the job {d.JobText}");
+                            e.Record(rules.Factions.Job, me, e.World.Find(f.Name), item: thing);
+                            break;
+                        }
+            }
+        }
+        Console.WriteLine("At the end:");
+        foreach (var q in rules.Qualities)
+            if (e.World.Quality(me, q.Id) is var qv and not 0)
+                Console.Write($" {q.Name} {qv}");
+        Console.WriteLine();
+        Table();
+        return sr.Storylets.Count(d => e.Storylets.PlayedCount(me, d.Index) == 0);
+    }
+
     /// <summary>Prints to the terminal and to callofslop.log (where Console goes in the game).</summary>
     private static int Tee(Func<int> body)
     {
@@ -459,6 +563,23 @@ public static class StoryCli
                 + (f.Teaches.Length > 0 ? $"; teaches {string.Join(", ", f.Teaches.Select(t => $"{t.Name} at {f.Tiers[t.Tier].Name} ({t.Parts.Length} parts)"))}" : "")
                 + (f.Jobs.Length > 0 ? $"; jobs {string.Join(", ", f.Jobs.Select(j => j.Name + (j.Tier >= 0 ? $" (from {f.Tiers[j.Tier].Name})" : "")))}" : "")
                 + (f.Rivals.Length > 0 ? $"; rivals {string.Join(", ", f.Rivals.Select(r => $"{r.Name} {r.Percent}%"))}" : ""));
+        var sl = rules.Storylets;
+        foreach (var q in sl.Qualities)
+            Console.WriteLine($"  storylet quality {q.Name} ({q.File}): {(q.Menace ? "menace" : "progress")} {q.Min} to {q.Max}{(q.Decay > 0 ? $", -{q.Decay} per {StoryRules.Span(q.DecayEvery)}" : "")}: {q.About}");
+        foreach (var sp in sl.Spots)
+            Console.WriteLine($"  storylet spot {sp.Name}: within {sp.Reach:0.#} m of {sp.Near}");
+        foreach (var d in sl.Storylets)
+            Console.WriteLine($"  storylet {d.Id} ({d.File}) [{d.Bucket}{(d.Group ? ", group" : "")}{(d.Again > 0 ? $", again {StoryRules.Span(d.Again)}" : "")}{(d.Final ? ", final" : "")}]: {d.Title}"
+                + (d.Needs.Length > 0 ? $"; needs {string.Join(" OR ", d.Needs.Select(n => n.Text))}" : "")
+                + (d.Cast != null ? $"; cast {d.Cast.Text}{(d.PreferText.Length > 0 ? $" (prefer {d.PreferText})" : "")}" : "")
+                + (d.Play >= 0 ? $"; {rules.Plays.Plays[d.Play].Beats.Length} beats" : "")
+                + (d.JobText.Length > 0 ? $"; job {d.JobText}" : "") + (d.Hook.Length > 0 ? $"; hook {d.Hook}" : "")
+                + $"; ends {string.Join(", ", d.Ends.Select(e => $"{e.Id} ({e.Text})"))}");
+        var storyletWarnings = StoryletChecks.Check(rules);
+        foreach (var w in storyletWarnings)
+            Console.WriteLine($"  warning: {w}");
+        if (storyletWarnings.Count > 0)
+            Console.WriteLine($"  {storyletWarnings.Count} storylet warnings (they still load)");
         var errors = new List<string>(rules.Errors);
         var scenarios = StoryScenario.LoadFolder(rules, Path.Combine(folder, StoryScenario.FolderName), errors);
         foreach (var s in scenarios)

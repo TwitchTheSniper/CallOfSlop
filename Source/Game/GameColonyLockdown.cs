@@ -128,8 +128,27 @@ public sealed partial class Game
         var script = OpeningScript.Current;
         OpeningSay(by, warden is { Alive: true } ? warden : null, script.Warden.Length > 0 ? script.Warden : "The Warden",
             warden == victim ? "Assaulting the warden! Induction terminated. Guards! GUARDS!" : "Assault on a Ministry officer! Induction terminated. Sound the alarm!", now);
-        ServerSystemChat($"[MINISTRY MEMO] LOCKDOWN at the Penal Colony: {by.Name} assaulted {victim.Name}. The barracks is turning out.", now);
         Log($"[lockdown] {by.Name} hurt {victim.Name}: wanted");
+        LockdownGo($"[MINISTRY MEMO] LOCKDOWN at the Penal Colony: {by.Name} assaulted {victim.Name}. The barracks is turning out.", now);
+    }
+
+    /// <summary>
+    /// Server: a storylet's "lockdown" hook (GameStoryStorylets.cs): <paramref name="p"/> is wanted and the lockdown
+    /// starts (or carries on), as for an assault, with <paramref name="memo"/> for everyone.
+    /// </summary>
+    private void LockdownStart(Player p, string memo, double now)
+    {
+        if (!IsServer || !_opOn || p.Bot != null || !p.Alive || p.Id >= MaxPlayers)
+            return;
+        var wanted = _ldWanted[p.Id] == p && _ldOn && !_ldStandDown;
+        _ldWanted[p.Id] = p;
+        if (!wanted)
+            LockdownGo(memo, now);
+    }
+
+    private void LockdownGo(string memo, double now)
+    {
+        ServerSystemChat(memo, now);
         if (!_ldOn)
         {
             _ldOn = true;

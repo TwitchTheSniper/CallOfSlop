@@ -42,6 +42,7 @@ public sealed class StoryQuery
     public readonly record struct Clause(ClauseKind Kind, bool Not, Term A, ushort What, Term B, Cmp Op, int N);
 
     public Clause[] Clauses = [];
+    public string[] ClauseTexts = []; // each clause as written, in the order solved (why-not)
     public string Text = "";
     public int VarCount;
 
@@ -54,12 +55,14 @@ public sealed class StoryQuery
         var bound = vars.Count;
         var q = new StoryQuery { Text = text };
         var list = new List<Clause>();
+        var texts = new List<string>();
         var generated = new HashSet<int>();
         foreach (var raw in SplitClauses(text))
         {
             var t = Tokens(raw);
             if (t.Count == 0)
                 continue;
+            texts.Add(raw.Trim());
             var not = t[0] == "not";
             if (not)
                 t.RemoveAt(0);
@@ -140,8 +143,10 @@ public sealed class StoryQuery
                     if (term.Var >= bound && !generated.Contains(term.Var))
                         throw new StoryException($"?{vars[term.Var]} is only compared: say what it is first (\"?{vars[term.Var]} is Player\")");
         // Generators first (in the order written), then the tests that need their variables.
-        q.Clauses = list.Where(c => !c.Not && c.Kind is ClauseKind.Relation or ClauseKind.Quality or ClauseKind.Kind)
-            .Concat(list.Where(c => c.Not || c.Kind is ClauseKind.Same or ClauseKind.Different)).ToArray();
+        static bool Generates(Clause c) => !c.Not && c.Kind is ClauseKind.Relation or ClauseKind.Quality or ClauseKind.Kind;
+        var order = Enumerable.Range(0, list.Count).Where(i => Generates(list[i])).Concat(Enumerable.Range(0, list.Count).Where(i => !Generates(list[i]))).ToArray();
+        q.Clauses = order.Select(i => list[i]).ToArray();
+        q.ClauseTexts = order.Select(i => texts[i]).ToArray();
         q.VarCount = vars.Count;
         return q;
     }
@@ -228,6 +233,33 @@ public sealed class StoryQuery
     /// </summary>
     public bool Any(StoryWorld w, Span<int> binds) => Solve(0, w, binds, null, 1);
 
+    private int _limit = -1; // solve only this many clauses (FirstFailing), -1 all
+
+    /// <summary>
+    /// Why not (the Storylets tab): the first clause, in the order solved, after which the clauses so far have no
+    /// solution together; -1 when the whole query holds. <paramref name="binds"/> is left as it was.
+    /// </summary>
+    public int FirstFailing(StoryWorld w, ReadOnlySpan<int> binds)
+    {
+        Span<int> b = stackalloc int[Math.Max(VarCount, Math.Max(1, binds.Length))];
+        for (var k = 1; k <= Clauses.Length; k++)
+        {
+            b.Fill(-1);
+            binds.CopyTo(b);
+            _limit = k;
+            try
+            {
+                if (!Solve(0, w, b, null, 1))
+                    return k - 1;
+            }
+            finally
+            {
+                _limit = -1;
+            }
+        }
+        return -1;
+    }
+
     private int[]? _into;
     private int _intoCount, _intoVar;
 
@@ -276,7 +308,7 @@ public sealed class StoryQuery
     /// <summary>True: stop (a solution found, or the results are full).</summary>
     private bool Solve(int ci, StoryWorld w, Span<int> b, List<int[]>? sink, int max)
     {
-        if (ci == Clauses.Length)
+        if (ci == (_limit >= 0 ? _limit : Clauses.Length))
         {
             if (_into != null)
             {
