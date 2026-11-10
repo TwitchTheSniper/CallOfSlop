@@ -44,8 +44,8 @@ public sealed class FactionWant
 public readonly record struct FactionTier(string Name, int Below);
 
 /// <summary>
-/// A verse of a faction's scripture (docs/story/STORY.md "The Order of the Fold"): what its believers say, the story fragment
-/// it is a retelling of (<see cref="Fragment"/>: threat, fold, instruments, undone, machine), and, for the writers, how the
+/// A verse of a faction's scripture (docs/story/STORY.md "The Thousand Layers"): what its believers say, the story fragment
+/// it is a retelling of (<see cref="Fragment"/>: frag.threat, frag.fold, frag.reading, frag.silence, frag.switch), and, for the writers, how the
 /// retelling bends that fragment (<see cref="Bends"/>; never shown to players).
 /// </summary>
 public readonly record struct FactionVerse(string Name, string Fragment, string Text, string Bends);
@@ -90,7 +90,7 @@ public sealed class FactionDef
 public sealed partial class FactionRules
 {
     public const int MaxFactions = 32, MaxDeeds = 64, MaxMembers = 64, MaxWants = 8, MaxTiers = 8, MaxStanding = 100;
-    public const int MaxVerses = 16, MaxVerseLength = 240;
+    public const int MaxVerses = 16, MaxVerseLength = 320;
     public const int MaxTeaches = 8, MaxTechParts = 32, MaxRivals = 8; // (8: a faction's learnt technologies are a byte on the wire)
     public const string Format = "call-of-slop-faction/1";
 
