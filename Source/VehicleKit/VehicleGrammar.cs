@@ -109,12 +109,13 @@ public static class ShapeGrammar
     private static readonly string[] TankGears = ["leaf", "hydraulic", "tandem", "dually", "six", "stilt"];
 
     private static BodySegment Room(int minBays, int maxBays) => new("room", 3.5f + minBays, 3.5f + maxBays);
-    private static BodySegment Bed(float min, float max) => new("bed", min, max);
+    internal static BodySegment Bed(float min, float max) => new("bed", min, max);
     private static BodySegment GunBed(float min, float max) => new("gun bed", min, max);
-    private static readonly BodySegment Hutch = new("hutch", 4f, 4f), GunBay = new("gun bay", 2f, 2f), Gap = new("gap", 0.5f, 1f);
+    private static readonly BodySegment Hutch = new("hutch", 4f, 4f), Gap = new("gap", 0.5f, 1f);
+    internal static readonly BodySegment GunBay = new("gun bay", 2f, 2f);
     private static BodySegment Tank(float min, float max) => new("tank", min, max);
-    private static BodySegment Boot(float min, float max) => new("boot", min, max);
-    private static readonly BodySegment Row = new("gap", 1f, 1f); // (phase 8a part 2: a car's second row of seats, under its crew cabin)
+    internal static BodySegment Boot(float min, float max) => new("boot", min, max);
+    internal static readonly BodySegment Row = new("gap", 1f, 1f); // (phase 8a part 2: a car's second row of seats, under its crew cabin)
 
     /// <summary>The recipes, by shape name: kit 1's shapes as module families. A shape not here (the Technical, the trailers) is made by its generator.</summary>
     public static readonly Dictionary<string, ShapeRecipe> Recipes = new(StringComparer.Ordinal)
@@ -323,7 +324,7 @@ public static class ShapeGrammar
         if (kit >= VehicleKitVersion.Lofted)
         {
             if (g is VehicleShape shape)
-                v.UseArchetype(BodyArchetype.Roll(v, shape.Shape)); // (phase 8a: an archetype laid over the style's body rule, on a fork of its own)
+                v.UseArchetype(BodyArchetype.Roll(v, shape.Shape), shape.Shape); // (phase 8a: an archetype laid over the style's body rule, on a fork of its own)
             v.Look = BodyLook.Roll(v); // (kit 5: the body layer's "language" fork, so nothing else of a seed moves)
             v.Modules.Add("language " + v.Look.Label);
             if (!Vehicle.FixedCabs)
@@ -437,7 +438,8 @@ public static class ShapeGrammar
                 : Choose(dd, st, family, tags, also, m => (weight?.Invoke(m) ?? 1) * (role?.Module(family, m.Name) ?? 1) * VehicleContext.Module(family, m.Name)); // (a role's and a spawn context's leans: the same one roll)
 
         // The body: a pattern, weighted by the style's liking for each kind of segment, then lengths.
-        var pattern = Weighted(D(VehicleLayer.Body, "body"), r.Bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)) * (role?.Body(b) ?? 1) * CarRows(v, r, b))).ToList());
+        var bodies = v.Archetype?.Bodies is { Length: > 0 } own && v.Archetype.Shapes.Contains(r.Shape) ? own : r.Bodies; // (phase 9a: an archetype's own body plans, a faction's car outline)
+        var pattern = Weighted(D(VehicleLayer.Body, "body"), bodies.Select(b => (b, b.Weight * b.Segments.Aggregate(1.0, (w, s) => w * st.ModuleWeight("body", s.Kind, 1)) * (role?.Body(b) ?? 1) * CarRows(v, r, b))).ToList());
         var z = Front;
         var ld = D(VehicleLayer.Body, "lengths");
         foreach (var s in pattern.Segments)

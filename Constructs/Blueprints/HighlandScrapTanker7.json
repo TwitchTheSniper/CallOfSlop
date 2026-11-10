@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, strut/strut, wing 0.75, language boat standard 2.16 m, flare 0.12, sheer 0.8, brow 0.80 1.5 m, tail 0.61 1 m, door right, cab boat cab, nose rounded, fitting mascot, wear age 1.06 (1 rusty, 8 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+tank+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+tank 2 m+bed 2 m, plan 2
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, strut/strut, wing 0.75, cab style coachbuilt, language boat standard 2.16 m, flare 0.12, sheer 0.8, brow 0.80 1.5 m, tail 0.61 1 m, door right, cab boat cab, nose grille, fitting mascot, wear age 1.06 (1 rusty, 10 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+tank+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+tank 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 7",
   "group": "Clan MacSlop",
@@ -47,9 +47,9 @@
     {"part": "Seat", "on": 37, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 39, "socket": "-x", "by": "+x"},
     {"part": "Seat", "on": 38, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXcYKWEVYWMW0W0Xa ~B80BurBvkA2J62e02h = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#33302b"},
-    {"part": "Hull Loft (pane UeXfV5XOXfV5XBYHVDUrYHVD)", "on": 42, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X2XfWWU-XfWWVCYHWWWqYHWW)", "on": 42, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXcYMW9VYWMW0W0Xa ~Au0BusBfm9wM5wh02k = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#33302b"},
+    {"part": "Hull Loft (pane UfXfV4XNXfV4XAYJV9UsYJV9)", "on": 42, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X1XfWWU_XfWWVCYJWWWqYJWW)", "on": 42, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#2b5a3a"},
     {"part": "Wood Planks 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#23395d"},
     {"part": "Plate Steel 0.25 m", "on": 46, "socket": "+z0", "by": "-x", "paint": "#7b1e22"},
@@ -99,18 +99,21 @@
     {"part": "Sheet Steel 0.5 m", "on": 65, "socket": "+x", "by": "back00", "spin": 1, "paint": "#2a2622"},
     {"part": "Sheet Steel 0.5 m", "on": 91, "socket": "+x0", "by": "-x0", "spin": 2, "paint": "#7b1e22"},
     {"part": "Scrap Ladder", "on": 88, "socket": "front01", "by": "back", "paint": "#33302b"},
-    {"part": "Hull Loft (hoodr UNV2WyWjXIXEVd ~6806mL6Wi5Wx3H3014)", "on": 33, "socket": "+y", "by": "engine", "paint": "#f2c400"},
+    {"part": "Hull Loft (hoodg UNV2WyWjXYXYVd ~6806mL6Wi5Wx3H3014)", "on": 33, "socket": "+y", "by": "engine", "paint": "#005eb8"},
     {"part": "Bull Bar", "on": 94, "socket": "front", "by": "back", "paint": "#2a2622"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 89, "pos": [-1.062, 0.677, 6.752], "rot": [0.0016, 0.0061, 0.7042, 0.7099]}, "paint": "#23395d"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 90, "pos": [-1.048, 0.694, 7.247], "rot": [0.0206, -0.008, 0.7039, 0.71]}, "paint": "#1f4a2e"},
-    {"part": "Hull Loft (decoO UZVq)", "on": 94, "socket": "top", "by": "base"},
+    {"part": "Wide Arch Fender", "on": 94, "socket": "+x0", "by": "mount", "paint": "#33302b"},
+    {"part": "Wide Arch Fender", "on": 94, "socket": "-x0", "by": "mount", "paint": "#2a2622"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 91, "pos": [1.539, 0.899, 6.748], "rot": [-0.0065, 0.0009, -0.6935, 0.7204]}, "paint": "#23395d"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 89, "pos": [-1.046, 0.653, 6.747], "rot": [-0.016, -0.0097, 0.7185, 0.6953]}, "paint": "#1f4a2e"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 90, "pos": [-1.063, 0.556, 7.259], "rot": [-0.0066, 0.0249, 0.6917, 0.7218]}, "paint": "#23395d"},
+    {"part": "Hull Loft (decoO UZV-)", "on": 94, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 42, "socket": "top", "by": "base"},
     {"part": "Wee Caber", "on": 88, "socket": "front11", "by": "base"},
     {"part": "Wee Caber", "on": 90, "socket": "front00", "by": "base"},
     {"part": "Wee Caber", "on": 91, "socket": "front11", "by": "base"},
     {"part": "Wee Keg", "on": 59, "socket": "front11", "by": "base"},
     {"part": "Coo Heid", "on": 63, "socket": "front13", "by": "base"},
-    {"part": "Tread Plate 0.5 m", "weld": {"on": 92, "pos": [1.557, 0.861, 7.25], "rot": [0.0001, 0.0143, -0.721, 0.6927]}, "paint": "#8c2a2a"}
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 93, "pos": [-1.114, 0.138, 6.371], "rot": [0.0127, -0.0108, 0.7105, 0.7035]}, "paint": "#5b4a2f"}
   ],
   "wires": [[39, 40], [40, 33], [72, 86], [86, 74], [86, 75]],
   "links": [

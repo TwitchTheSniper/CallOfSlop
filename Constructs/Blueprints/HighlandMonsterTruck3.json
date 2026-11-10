@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 1.5 m, strut/strut, wing 0.5, archetype monster truck, language pickup standard 2.09 m, flare 0.04, level 0.6, brow 0.75 1.5 m, tail 0.83 1.25 m, door left, cab pickup caged cab, nose flat, fitting mascot, wear age 0.85 (3 rusty, 7 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+bed, cab caged, nose ram, rear bare, under tub, sides open, layout gun bay 2 m+bed 2 m, plan 2
+  // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 1.5 m, strut/strut, wing 0.5, archetype monster truck, cab style coachbuilt, language pickup standard 2.09 m, flare 0.04, level 0.6, brow 0.75 1.5 m, tail 0.83 1.25 m, door left, cab pickup caged cab, nose grille, fitting mascot, wear age 0.85 (3 rusty, 8 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+bed, cab caged, nose ram, rear bare, under tub, sides open, layout gun bay 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Monster Truck 3",
   "group": "Clan MacSlop",
@@ -38,7 +38,7 @@
     {"part": "Square Beam 0.5 m", "on": 28, "socket": "+z", "by": "-z", "paint": "#33302b"},
     {"part": "Seat", "on": 29, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 31, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (cabg V4V4WWXcYOWHVYWMW0W0Xa ~BO0BfEBHv9AX02d = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#23395d"},
+    {"part": "Hull Loft (cabg V4V4WWXcYQW9VYWMW0W0Xa ~Ae0AvFAXw8YZ02f = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#23395d"},
     {"part": "Plate Steel 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#1f4a2e"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#1f4a2e"},
     {"part": "Plate Steel 0.25 m", "on": 35, "socket": "+z0", "by": "-x", "paint": "#1f4a2e"},
@@ -83,14 +83,18 @@
     {"part": "Full-Auto Sear", "on": 68, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 74, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 66, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (hoodf URV2WyWjXWXWVd ~7G07WW78n5v1014)", "on": 26, "socket": "+y", "by": "engine", "paint": "#c8102e"},
-    {"part": "Bull Bar", "on": 78, "socket": "front", "by": "back", "paint": "#c8102e"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 79, "pos": [0.124, 0.498, -1.319], "rot": [-0.7013, 0, -0.0251, 0.7124]}, "paint": "#1f4a2e"},
-    {"part": "Hull Loft (decoO UfVz)", "on": 78, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (hoodg URV2WyWjXYXYVd ~7G07WW78n5v1014)", "on": 26, "socket": "+y", "by": "engine", "paint": "#e8e4d8"},
+    {"part": "Bull Bar", "on": 78, "socket": "front", "by": "back", "paint": "#e8e4d8"},
+    {"part": "Wide Arch Fender", "on": 78, "socket": "+x0", "by": "mount", "paint": "#0b4f9c"},
+    {"part": "Wide Arch Fender", "on": 78, "socket": "-x0", "by": "mount", "paint": "#33302b"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 80, "pos": [1.378, 0.444, -0.376], "rot": [-0.0029, -0.0221, -0.7214, 0.6922]}, "paint": "#8c2a2a"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 81, "pos": [-0.885, 0.185, -0.371], "rot": [-0.0063, 0.0121, 0.6951, 0.7187]}, "paint": "#2b5a3a"},
+    {"part": "Hull Loft (decoO UfV-)", "on": 78, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 58, "socket": "front", "by": "base"},
     {"part": "Wee Keg", "on": 43, "socket": "front00", "by": "base"},
     {"part": "Wee Keg", "on": 52, "socket": "front00", "by": "base"},
-    {"part": "Wee Keg", "on": 48, "socket": "front", "by": "base"}
+    {"part": "Wee Keg", "on": 48, "socket": "front", "by": "base"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 79, "pos": [0.124, 0.479, -1.322], "rot": [-0.7224, -0, -0.026, 0.691]}, "paint": "#2b5a3a"}
   ],
   "wires": [[31, 32], [32, 26], [66, 77], [77, 68]],
   "links": [

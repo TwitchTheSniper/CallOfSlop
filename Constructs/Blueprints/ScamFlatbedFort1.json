@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.5, language cabin heavy 2.48 m, flare 0.13, plain 0.7, brow 0.81 1 m, tail 0.81 0.75 m, door right, cab cabin cab, nose flat, fitting roof sign, lopsided right, trim signboards on 5 bay sides, wear age 0.8 (12 rusty, 13 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under tub, flank loaded, sides rails, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.5, cab style box, language cabin heavy 2.48 m, flare 0.13, plain 0.7, brow 0.81 1 m, tail 0.81 0.75 m, door right, cab cabin cab, nose flat, fitting roof sign, lopsided right, trim signboards on 5 bay sides, wear age 0.8 (12 rusty, 13 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under tub, flank loaded, sides rails, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Flatbed Fort 1",
   "group": "The Call Centre",
@@ -39,9 +39,9 @@
     {"part": "Seat", "on": 29, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 31, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 30, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXeYSW5VYWMW0W0Xa ~BW0BoICQN02u = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2a2c30"},
-    {"part": "Hull Loft (pane UfXhV4XNXhV4XNYPV7UfYPV7)", "on": 34, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X1XhWWU_XhWWU_YPWWX1YPWW)", "on": 34, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXeYWW3VYWMW0W0Xa ~Be0BwLCYQ02y = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2a2c30"},
+    {"part": "Hull Loft (pane UeXhV4XOXhV4XLYTV6UhYTV6)", "on": 34, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X2XhWWU-XhWWV1YTWWW_YTWW)", "on": 34, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#7d8a92"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#2a2c30"},
     {"part": "Plate Steel 0.25 m", "on": 38, "socket": "+z1", "by": "-x", "paint": "#9aa0a6"},
@@ -160,7 +160,7 @@
     {"part": "Arch Fender", "on": 150, "socket": "-x0", "by": "mount", "paint": "#2a2c30"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 152, "pos": [-0.713, 0.31, -0.369], "rot": [-0.0036, 0.0177, 0.7044, 0.7096]}, "paint": "#8a9096"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 151, "pos": [1.224, 0.56, -0.371], "rot": [0.0126, 0.0066, -0.7016, 0.7125]}, "paint": "#9aa0a6"},
-    {"part": "Hull Loft (decoS XGWAWiW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
+    {"part": "Hull Loft (decoS XHWAWiW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
     {"part": "Loudhailer", "on": 150, "socket": "top", "by": "base"},
     {"part": "Gift Card Sign", "on": 49, "socket": "front", "by": "base"},
     {"part": "Prize Wheel", "on": 72, "socket": "front", "by": "base"},

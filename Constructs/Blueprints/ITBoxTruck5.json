@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, tag 1.25 m, front under the hood, inset 2.25 m, leaf/leaf/leaf, wing 0.5, language pod heavy 2.59 m, flare 0.30, tapered 0.6, brow 0.65 1.5 m, tail 0.74 1.25 m, door left, 12 facets, cab pod cab, 8 facets, nose rounded, fitting radome, pods podb on 1 bay sides, trim fairing on 6 bay sides, wear age 0.71 (1 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab enclosed, nose short hood, rear porch, under skirted, flank panniers, sides walls, roof none, layout room(Brow T,Door,Bay T-L,Tail L)+bed 2 m
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, tag 1.25 m, front under the hood, inset 2.25 m, leaf/leaf/leaf, wing 0.5, cab style glasshouse, language pod heavy 2.59 m, flare 0.30, tapered 0.6, brow 0.65 1.5 m, tail 0.74 1.25 m, door left, 12 facets, cab pod cab, 8 facets, nose rounded, fitting radome, pods podb on 1 bay sides, trim fairing on 6 bay sides, wear age 0.71 (1 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab enclosed, nose short hood, rear porch, under skirted, flank panniers, sides walls, roof none, layout room(Brow T,Door,Bay T-L,Tail L)+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Box Truck 5",
   "group": "IT Department",
@@ -44,9 +44,9 @@
     {"part": "Seat", "on": 34, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 36, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 35, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXaYGWLVYWMW0W0Xa ~B80BuSBuuBvKBfmAQB7wX4Am02m = ic)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#d8d0b8"},
-    {"part": "Hull Loft (pane UfXdV5XNXdV5XBYDVGUrYDVG)", "on": 39, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X1XdWWU_XdWWVBYDWWWrYDWW)", "on": 39, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXaYGWNVYWMW0W0Xa ~B80BuSBuuBvLBfnAQC7wY4An02n = ic)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#d8d0b8"},
+    {"part": "Hull Loft (pane UfXdV5XNXdV5XCYDVGUqYDVG)", "on": 39, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X1XdWWU_XdWWVAYDWWWsYDWW)", "on": 39, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#a7abae"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#d8d0b8"},
     {"part": "Plate Steel 0.25 m", "on": 43, "socket": "+z0", "by": "-x", "paint": "#a7abae"},
@@ -155,8 +155,10 @@
     {"part": "Sheet Steel 0.5 m", "on": 114, "socket": "+x", "by": "back00", "spin": 1, "paint": "#a7abae"},
     {"part": "Hull Loft (hoodr UrV2WyWjXIXEVd ~6e078A7OM7GX70h6Gs4m-2X4014)", "on": 31, "socket": "+y", "by": "engine", "paint": "#0f7bd8"},
     {"part": "Slat Grille", "on": 148, "socket": "front", "by": "back", "paint": "#0f7bd8"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 144, "pos": [-1.06, 0.682, 7.75], "rot": [0.0001, -0.0004, 0.7061, 0.7081]}, "paint": "#d8d0b8"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 147, "pos": [1.548, 0.924, 7.75], "rot": [0.0013, -0.0092, -0.7107, 0.7034]}, "paint": "#d8d0b8"},
+    {"part": "Arch Fender", "on": 148, "socket": "+x0", "by": "mount", "paint": "#1f4e8c"},
+    {"part": "Arch Fender", "on": 148, "socket": "-x0", "by": "mount", "paint": "#0f7bd8"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 144, "pos": [-1.044, 0.626, 7.751], "rot": [-0.0001, 0.002, 0.7107, 0.7035]}, "paint": "#cfc6aa"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 151, "pos": [-0.773, 0.215, -0.375], "rot": [-0.0063, 0.001, 0.709, 0.7052]}, "paint": "#a7abae"},
     {"part": "Hull Loft (decoR WUWK)", "on": 39, "socket": "top", "by": "base"},
     {"part": "Satellite Dish", "on": 144, "socket": "front10", "by": "base"},
     {"part": "Wi-Fi Mast", "on": 142, "socket": "front13", "by": "base"},

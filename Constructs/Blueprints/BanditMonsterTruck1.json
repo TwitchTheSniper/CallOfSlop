@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front forward, inset 1 m, strut/strut, wing 0.5, archetype monster truck, language pickup standard 2.26 m, flare 0.03, plain 0.9, brow 0.79 1.25 m, tail 0.78 0.75 m, door left, cab pickup cab, nose grille, lopsided right, wear age 0.97 (8 rusty, 4 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay, cab enclosed, nose short hood, rear porch, under tub, layout gun bay 2 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front forward, inset 1 m, strut/strut, wing 0.5, archetype monster truck, cab style chop top, language pickup standard 2.26 m, flare 0.03, plain 0.9, brow 0.79 1.25 m, tail 0.78 0.75 m, door left, cab pickup cab, nose grille, lopsided right, wear age 0.97 (8 rusty, 4 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay, cab enclosed, nose short hood, rear porch, under tub, layout gun bay 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Monster Truck 1",
   "group": "Bandit",
@@ -36,16 +36,16 @@
     {"part": "Seat", "on": 26, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 28, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 27, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXbYWWDVYWMW0W0Xa ~BO0BfIBH_9Af02m = ir)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#3a3330"},
-    {"part": "Hull Loft (pane UhXeV5XLXeV5X7YTVEUvYTVE)", "on": 31, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane W_XeWWV1XeWWVFYTWWWnYTWW)", "on": 31, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXkYIW3VYWMW0W0Xa ~BO0BfBBHq9AQ02W = ir)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#3a3330"},
+    {"part": "Hull Loft (pane UiXnV4XKXnV4X7YFV6UvYFV6)", "on": 31, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane W-XnWWV2XnWWVFYFWWWnYFWW)", "on": 31, "socket": "glass1", "by": "frame"},
     {"part": "Sheet Steel 0.5x1 m", "on": 3, "socket": "+y4", "by": "back02", "spin": 2, "paint": "#6b3a22"},
     {"part": "Sheet Steel 0.5 m", "on": 0, "socket": "+y4", "by": "back00", "spin": 2, "paint": "#94603a"},
     {"part": "Plate Steel 0.25 m", "on": 35, "socket": "+z0", "by": "-x", "paint": "#3a3330"},
     {"part": "Sheet Steel 0.25 m", "on": 35, "socket": "+z1", "by": "-x", "paint": "#8c5230"},
     {"part": "Square Beam 0.75 m", "on": 1, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2f2c2a"},
     {"part": "Square Beam 0.75 m", "on": 38, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2f2c2a"},
-    {"part": "Square Beam 0.75 m", "on": 39, "socket": "+x1", "by": "-z", "paint": "#2f2c2a"},
+    {"part": "Square Beam 0.5 m", "on": 39, "socket": "+x1", "by": "-z", "paint": "#2f2c2a"},
     {"part": "Turntable 2x2 Medium", "on": 40, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 41, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Seat", "on": 42, "socket": "+y3", "by": "bottom"},

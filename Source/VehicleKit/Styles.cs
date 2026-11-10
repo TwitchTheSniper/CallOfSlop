@@ -40,7 +40,7 @@ public static class Styles
             ["floor"] = ["Bolt Deck"],
             ["hood"] = ["Long Hood", "Snub Hood", "Slab Nose", "Bull Hood", "plates"],
             ["nose"] = ["Bar Grille", "Slat Grille", "Ram Plow", "Bull Bar", "none"],
-            ["fender"] = ["Arch Fender", "Wide Arch Fender", "none"],
+            ["fender"] = ["Wide Arch Fender", "none"], // (phase 9a: wide welded arches or bare tyres)
             ["heavyCab"] = ["Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Mesh Guard Cage", "Slit Cab", "Cab Over Shell"],
             ["cab"] = ["Roll Bar", "Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Mesh Guard Cage", "Slit Cab", "Windscreen Frame"],
             ["bunk"] = ["Scrap Bunk"],
@@ -131,7 +131,7 @@ public static class Styles
             ["patch"] = ["Sheet Steel 0.5 m", "Plate Steel 0.5 m"],
             ["hood"] = ["Snub Hood", "Slab Nose", "Long Hood"],
             ["nose"] = ["Slat Grille", "Bar Grille", "none"],
-            ["fender"] = ["Arch Fender", "Wide Arch Fender"],
+            ["fender"] = ["Arch Fender"], // (phase 9a: slim arches, the skirt fairing does the rest)
             ["cab"] = ["Windscreen Frame", "Chop Top Cab", "Roll Cage", "Roll Bar"],
             ["heavyCab"] = ["Cab Over Shell", "Tin Roof Cab", "Chop Top Cab"],
             ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, tools/constructs/office_parts.py)
@@ -192,6 +192,7 @@ public static class Styles
         {
             ["engine"] = ["Engine", "V8 Engine", "Engine"],
             ["hood"] = ["Snub Hood", "Long Hood", "Slab Nose"],
+            ["fender"] = ["Arch Fender", "Wide Arch Fender"], // (phase 9a: as before: slim arches alone made two committed Technicals read as a box from above)
             ["spike"] = ["Loudhailer", "Loudhailer", "Phone Mast"],                                       // (Constructs/Parts/CallCentre)
             ["trophy"] = ["Office Phone", "Call Headset", "Gift Card Sign", "Prize Wheel", "Office Phone", "Gift Card Sign", "Call Headset", "Loudhailer"],
             ["mast"] = ["Phone Mast", "Phone Mast", "Loudhailer", "Gift Card Sign"],                     // (on the roofs: Vehicle.Kit)
@@ -250,6 +251,7 @@ public static class Styles
             ["bed"] = ["Wood Planks", "Plate Steel", "Tread Plate"],
             ["hood"] = ["Long Hood", "Bull Hood", "Snub Hood", "Long Hood"],
             ["nose"] = ["Bull Bar", "Bar Grille", "Ram Plow", "none"],
+            ["fender"] = ["Wide Arch Fender"], // (phase 9a: a long bonnet's broad flowing wings)
             ["cab"] = ["Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Windscreen Frame", "Roll Bar"],
             ["spike"] = ["Wee Caber", "Wee Caber", "Iron Spike"],                                        // (Constructs/Parts/Highland, tools/constructs/highland_parts.py)
             ["trophy"] = ["Thistle", "Coo Heid", "Haggis on a Post", "Thistle", "Wee Keg", "Coo Heid"],
@@ -314,7 +316,7 @@ public static class Styles
             ["patch"] = ["Sheet Steel 0.5 m", "Plate Steel 0.5 m"],
             ["hood"] = ["Long Hood", "Snub Hood", "Long Hood", "Bull Hood"],
             ["nose"] = ["Slat Grille", "Bar Grille", "Slat Grille", "none"],
-            ["fender"] = ["Arch Fender", "Wide Arch Fender"],
+            ["fender"] = ["Arch Fender"], // (phase 9a: a bus's slim wheel arches)
             ["cab"] = ["Windscreen Frame", "Tin Roof Cab", "Chop Top Cab", "Roll Bar"],
             ["heavyCab"] = ["Tin Roof Cab", "Cab Over Shell", "Chop Top Cab"],
             ["spike"] = ["Furled Brolly", "Furled Brolly", "Belisha Beacon"],                                  // (Constructs/Parts/British, tools/constructs/british_parts.py)
@@ -373,6 +375,7 @@ public static class Styles
             ["sheet"] = ["Plate Steel"],
             ["wall"] = ["Plate Steel"],
             ["spike"] = ["none"], // (body styles phase 4: nothing hung down the sides, where bandits hang spikes)
+            ["fender"] = ["Wide Arch Fender"], // (phase 9a: always armoured over the wheels, never bare)
             ["trophy"] = [HullLoft.JerryCan], // (jerry cans where bandits hang skulls and hubcaps: HullLoft.Trim.cs)
         },
         LightGear = Bandit.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)

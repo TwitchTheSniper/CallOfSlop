@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 2 m, swing arm/trailing arm, wing 0.5, language coach heavy 2.32 m, flare 0.13, raked 0.6, brow 0.66 1.25 m, tail 0.85 1 m, door right, 12 facets, cab coach capsule, 8 facets, nose rounded, fitting destination board, trim livery on 5 bay sides, wear age 0.54 (2 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear porch, under tub, flank panniers, roof none, layout gap 0.5 m+room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 2 m, swing arm/trailing arm, wing 0.5, cab style bus front, language coach heavy 2.32 m, flare 0.13, raked 0.6, brow 0.66 1.25 m, tail 0.85 1 m, door right, 12 facets, cab coach capsule, 8 facets, nose rounded, fitting destination board, trim livery on 5 bay sides, wear age 0.54 (2 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear porch, under tub, flank panniers, roof none, layout gap 0.5 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Box Truck 9",
   "group": "Ministry of Slop",
@@ -40,10 +40,10 @@
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 31, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabo SfUSWUXcYWWUVMWKW0W0XK ~Bu0C8VC8zC9SC9wBAO8Ql4Iw02w = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
-    {"part": "Hull Loft (pane UrXfSgXBXfSgX3YTSzUzYTSz)", "on": 35, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane XIXfSlXXXfVKXKYTVKXAYTT1)", "on": 35, "socket": "glass2", "by": "frame"},
-    {"part": "Hull Loft (pane UkXfSlUVXfVKUiYTVKUsYTT1)", "on": 35, "socket": "glass3", "by": "frame"},
+    {"part": "Hull Loft (cabo SfUSWUXcYWWPVMWKW0W0XK ~Bu0C8VC8zC9SC9wBAO8Ql4Iw02w = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
+    {"part": "Hull Loft (pane UrXfSgXBXfSgX2YTSwU-YTSw)", "on": 35, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane XIXfSkXXXfVKXKYTVKX9YTS-)", "on": 35, "socket": "glass2", "by": "frame"},
+    {"part": "Hull Loft (pane UkXfSkUVXfVKUiYTVKUtYTS-)", "on": 35, "socket": "glass3", "by": "frame"},
     {"part": "Tread Plate 0.5 m", "on": 4, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#be0f2a"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#c8102e"},
     {"part": "Plate Steel 0.5 m", "on": 39, "socket": "-z0", "by": "-x0", "paint": "#1f4a32"},
@@ -105,7 +105,7 @@
     {"part": "Plate Steel 0.25 m", "on": 53, "socket": "+x3", "by": "-x", "paint": "#c8102e"},
     {"part": "Plate Steel 0.25 m", "on": 96, "socket": "-z1", "by": "-x", "paint": "#7d8186"},
     {"part": "Fuel Drum", "on": 94, "socket": "front30", "by": "-y"},
-    {"part": "Hull Loft (decoD WoWMUUVy)", "on": 35, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoD WoWMUSVy)", "on": 35, "socket": "top", "by": "base"},
     {"part": "Queue Post", "on": 95, "socket": "front03", "by": "base"},
     {"part": "Hull Loft (triml9 XaW5 ~BG0BWGBeVBmlBm-C1ECHUC1jAvx9267o86QB52C3oE02E ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l)", "on": 71, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml0 XaW5 ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l ~BG0BWGBeVBmlBm-C1ECHUC1jAvx9267o86QB52C3oE02E)", "on": 71, "socket": "-x0", "by": "base", "paint": "#004225"},

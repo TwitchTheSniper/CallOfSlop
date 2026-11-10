@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.75 m, leaf/leaf, wing 0.75, language boat standard 2.19 m, flare 0.05, sheer 0.8, brow 0.81 1.25 m, tail 0.78 0.75 m, door left, cab boat cab, nose grille, wear age 0.68 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose long hood, rear hitch, under stilts, layout gun bay 2 m+tank 3 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.75 m, leaf/leaf, wing 0.75, cab style tourer, language boat standard 2.19 m, flare 0.05, sheer 0.8, brow 0.81 1.25 m, tail 0.78 0.75 m, door left, cab boat cab, nose grille, wear age 0.68 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose long hood, rear hitch, under stilts, layout gun bay 2 m+tank 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 1",
   "group": "Clan MacSlop",
@@ -46,8 +46,8 @@
     {"part": "Seat", "on": 36, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 38, "socket": "-x", "by": "+x"},
     {"part": "Seat", "on": 37, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXdYIWDVYWMW0W0Xa ~BG0BuqBvjAAI62c02f = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2a2622"},
-    {"part": "Hull Loft (pane UeXgV5XOXgV5XCYFVCUqYFVC)", "on": 41, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXdYIWAVYWMW0W0Xa ~B00BuqBnhAIG5wa02d = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2a2622"},
+    {"part": "Hull Loft (pane UeXgV4XOXgV4XCYFVAUqYFVA)", "on": 41, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane X2XgWWU-XgWWVAYFWWWsYFWW)", "on": 41, "socket": "glass1", "by": "frame"},
     {"part": "Tread Plate 0.5 m", "on": 4, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#2a2622"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#23395d"},
@@ -76,10 +76,10 @@
     {"part": "Tow Hitch", "on": 11, "socket": "+z", "by": "-z0"},
     {"part": "Hull Loft (hoodg USV2WyWjXYXYVd ~6806mL6Wh5Ww3H2013)", "on": 32, "socket": "+y", "by": "engine", "paint": "#33302b"},
     {"part": "Ram Plow", "on": 69, "socket": "front", "by": "back", "paint": "#005eb8"},
-    {"part": "Arch Fender", "on": 69, "socket": "+x0", "by": "mount", "paint": "#e8e4d8"},
-    {"part": "Arch Fender", "on": 69, "socket": "-x0", "by": "mount", "paint": "#e8e4d8"},
+    {"part": "Wide Arch Fender", "on": 69, "socket": "+x0", "by": "mount", "paint": "#e8e4d8"},
+    {"part": "Wide Arch Fender", "on": 69, "socket": "-x0", "by": "mount", "paint": "#e8e4d8"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 70, "pos": [0.135, 0.421, -1.368], "rot": [-0.698, -0.0298, -0.0013, 0.7155]}, "paint": "#1f4a2e"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 71, "pos": [1.216, 0.61, -0.37], "rot": [0.0169, 0.001, -0.716, 0.6978]}, "paint": "#23395d"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 71, "pos": [1.316, 0.582, -0.37], "rot": [0.0169, 0.001, -0.716, 0.6978]}, "paint": "#23395d"},
     {"part": "Pipe Box", "on": 69, "socket": "top", "by": "base"},
     {"part": "Thistle", "on": 41, "socket": "top", "by": "base"}
   ],

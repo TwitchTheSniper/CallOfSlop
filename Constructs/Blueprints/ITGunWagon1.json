@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.75 m, coil/trailing arm, wing 0.5, language pod standard 2.36 m, flare 0.06, tapered 0.9, brow 0.73 1 m, tail 0.75 1 m, door left, 10 facets, cab pod cab, 7 facets, nose rounded, wear age 0.65 (0 rusty, 4 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab enclosed, nose long hood, rear bare, under tub, layout hutch 4 m
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.75 m, coil/trailing arm, wing 0.5, cab style pod, language pod standard 2.36 m, flare 0.06, tapered 0.9, brow 0.73 1 m, tail 0.75 1 m, door left, 10 facets, cab pod cab, 7 facets, nose rounded, wear age 0.65 (0 rusty, 4 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab enclosed, nose long hood, rear bare, under tub, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Gun Wagon 1",
   "group": "IT Department",
@@ -40,7 +40,7 @@
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 31, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXbYGWNVYWMW0W0Xa ~BW0BuVBu_BvVBX-92Q4wk02k = ic)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#8e9296"},
+    {"part": "Hull Loft (cabe V4V4WWXbYGWOVYWMW0W0Xa ~BW0BuVBu_BvVBX-92Q4wk02k = ic)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#8e9296"},
     {"part": "Hull Loft (pane UeXeV5XOXeV5XBYDVHUrYDVH)", "on": 35, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane X2XeWWU-XeWWVBYDWWWrYDWW)", "on": 35, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 3, "socket": "+y0", "by": "back02", "spin": 2, "paint": "#3b3f44"},

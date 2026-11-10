@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 1.75 m, hydraulic/leaf, wing 0.5, archetype carriage, language carriage standard 2.46 m, flare 0.03, crowned 0.7, brow 0.75 1.5 m, tail 0.68 1.25 m, door right, cab carriage cab, nose grille, fitting mascot, lopsided left, pods podl on 1 bay sides, trim clinker on 6 bay sides, wear age 0.84 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose ram, rear porch, under stilts, flank panniers, roof none, layout room(Brow T,Bay T,Door,Tail T)
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 1.75 m, hydraulic/leaf, wing 0.5, archetype carriage, cab style coachbuilt, language carriage standard 2.46 m, flare 0.03, crowned 0.7, brow 0.75 1.5 m, tail 0.68 1.25 m, door right, cab carriage cab, nose grille, fitting mascot, lopsided left, pods podl on 1 bay sides, trim clinker on 6 bay sides, wear age 0.84 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose ram, rear porch, under stilts, flank panniers, roof none, layout room(Brow T,Bay T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Wagon 2",
   "group": "Clan MacSlop",
@@ -41,9 +41,9 @@
     {"part": "Seat", "on": 31, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 33, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 32, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXfYMWEVYWMW0W0Xa ~B80BudBvFBvwAIM6gZ02c = it)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#5b4a2f"},
-    {"part": "Hull Loft (pane UeXiV5XOXiV5XDYJVEUpYJVE)", "on": 36, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X2XiWWU-XiWWV9YJWWWtYJWW)", "on": 36, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXfYQW9VYWMW0W0Xa ~Au0BueBvHBnzA2Q6Ye02h = it)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#5b4a2f"},
+    {"part": "Hull Loft (pane UeXiV4XOXiV4XBYNVAUrYNVA)", "on": 36, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X2XiWWU-XiWWVBYNWWWrYNWW)", "on": 36, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y4", "by": "back02", "spin": 2, "paint": "#33302b"},
     {"part": "Wood Planks 0.5 m", "on": 0, "socket": "+y4", "by": "back00", "spin": 2, "paint": "#1f4a2e"},
     {"part": "Plate Steel 0.25 m", "on": 40, "socket": "+z1", "by": "-x", "paint": "#2b5a3a"},

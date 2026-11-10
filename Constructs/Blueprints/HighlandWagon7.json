@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, pusher 1.5 m, front under the hood, inset 1 m, hydraulic/coil/coil, wing 0.5, archetype carriage, language carriage standard 2.52 m, flare 0.00, crowned 0.7, brow 0.77 1.5 m, tail 0.67 1.25 m, door left, cab carriage caged cab, nose grille, trim clinker on 5 bay sides, wear age 0.95 (6 rusty, 10 dirty, 0 sooty, 0 patched, 1 rusted out), body room+bed, cab caged, nose long hood, rear bare, under skirted, flank panniers, sides open, roof none, layout room(Brow T,Door,Tail T)+bed 2 m
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, pusher 1.5 m, front under the hood, inset 1 m, hydraulic/coil/coil, wing 0.5, archetype carriage, cab style coachbuilt, language carriage standard 2.52 m, flare 0.00, crowned 0.7, brow 0.77 1.5 m, tail 0.67 1.25 m, door left, cab carriage caged cab, nose grille, trim clinker on 5 bay sides, wear age 0.95 (6 rusty, 9 dirty, 0 sooty, 0 patched, 1 rusted out), body room+bed, cab caged, nose long hood, rear bare, under skirted, flank panniers, sides open, roof none, layout room(Brow T,Door,Tail T)+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Wagon 7",
   "group": "Clan MacSlop",
@@ -39,7 +39,7 @@
     {"part": "Seat", "on": 29, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 31, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 30, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabg V4V4WWXcYQWGVYWMW0W0Xa ~BG0BueBvHBvzAIQ6od02g = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#7b1e22"},
+    {"part": "Hull Loft (cabg V4V4WWXcYUWAVYWMW0W0Xa ~B00BufBvIBv_AAT6gg02j = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#7b1e22"},
     {"part": "Tread Plate 0.5 m", "on": 5, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#5b4a2f"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#33302b"},
     {"part": "Tread Plate 0.5 m", "on": 35, "socket": "-z0", "by": "-x0", "paint": "#1f4a2e"},
@@ -131,18 +131,15 @@
     {"part": "Wee Keg", "on": 122, "socket": "+y.1.0", "by": "base"},
     {"part": "Hull Loft (hoodg UTV2WyWjXYXYVd ~6806uG78W6eo5e-3f3014)", "on": 26, "socket": "+y", "by": "engine", "paint": "#2a2622"},
     {"part": "Bull Bar", "on": 124, "socket": "front", "by": "back", "paint": "#e8e4d8"},
-    {"part": "Arch Fender", "on": 124, "socket": "+x0", "by": "mount", "paint": "#c8102e"},
-    {"part": "Arch Fender", "on": 124, "socket": "-x0", "by": "mount", "paint": "#2a2622"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 125, "pos": [0.12, 0.439, -1.281], "rot": [-0.7235, 0.0174, 0.0148, 0.6899]}, "paint": "#23395d"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 126, "pos": [1.246, 0.54, -0.371], "rot": [0.0122, -0.0116, -0.6974, 0.7164]}, "paint": "#23395d"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 125, "pos": [0.123, 0.472, -1.308], "rot": [-0.7012, 0.0054, -0.0279, 0.7124]}, "paint": "#23395d"},
     {"part": "Pipe Box", "on": 124, "socket": "top", "by": "base"},
     {"part": "Thistle", "on": 34, "socket": "top", "by": "base"},
     {"part": "Saltire Flag", "on": 101, "socket": "front", "by": "base"},
     {"part": "Coo Heid", "on": 98, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimr5 XaW5 ~Au0CGkCfSBoFA2m6Z0033 ~CW0Dn1EI1DJ8BJt7SC04H)", "on": 77, "socket": "+x0", "by": "base", "paint": "#7b1e22"},
-    {"part": "Hull Loft (trimr8 XaW5 ~CW0Dn1EI1DJ8BJt7SC04H ~Au0CGkCfSBoFA2m6Z0033)", "on": 77, "socket": "-x0", "by": "base", "paint": "#8c2a2a"},
+    {"part": "Hull Loft (trimr8 XaW5 ~CW0Dn1EI1DJ8BJt7SC04H ~Au0CGkCfSBoFA2m6Z0033)", "on": 77, "socket": "-x0", "by": "base", "paint": "#7b1e22"},
     {"part": "Hull Loft (trimr4 YMW5 ~CW0Dn1EI1DJ8BJt7SC04H =)", "on": 78, "socket": "-x0", "by": "base", "paint": "#5b4a2f"},
-    {"part": "Hull Loft (trimr0 XaW5 ~CW0Dn1EI1DJ8BJt7SC04H ~Am0C0eCXGBfx9wO6Yb02e)", "on": 81, "socket": "+x0", "by": "base", "paint": "#5b4a2f"},
+    {"part": "Hull Loft (trimr0 XaW5 ~CW0Dn1EI1DJ8BJt7SC04H ~Am0C0eCXGBfx9wO6Yb02e)", "on": 81, "socket": "+x0", "by": "base", "paint": "#1f4a2e"},
     {"part": "Hull Loft (trimr3 XaW5 ~Am0C0eCXGBfx9wO6Yb02e ~CW0Dn1EI1DJ8BJt7SC04H)", "on": 81, "socket": "-x0", "by": "base", "paint": "#5b4a2f"}
   ],
   "wires": [[31, 32], [32, 26], [89, 113], [113, 107], [120, 117]],

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 1.25 m, leaf/swing arm, wing 0.5, archetype streamliner, language streamliner standard 2.43 m, flare 0.10, fastback 0.8, brow 0.56 1 m, tail 0.53 1.25 m, door left, cab streamliner cab, nose rounded, fitting mascot, wear age 0.85 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose ram, rear bare, under stilts, layout boot 2.3 m
+  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 1.25 m, leaf/swing arm, wing 0.5, archetype streamliner, cab style coachbuilt, language streamliner standard 2.43 m, flare 0.10, fastback 0.8, brow 0.56 1 m, tail 0.53 1.25 m, door left, cab streamliner cab, nose grille, fitting mascot, wear age 0.85 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose ram, rear bare, under stilts, layout boot 2.3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Concept 4",
   "group": "Clan MacSlop",
@@ -37,8 +37,8 @@
     {"part": "Seat", "on": 27, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 29, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 28, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXWYFWOVYWMW0W0Xa ~B00BuQBuyAPYAI73IS02V ~B00BuPBuvAPSAH_3IJ02M it)", "on": 1, "socket": "+y2", "by": "footL", "paint": "#33302b"},
-    {"part": "Hull Loft (pane UqXZV5XCXZV5W-YCVLV2YCVL)", "on": 32, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXWYFW7VYWMW0W0Xa ~B00BuQBuyAPYAI73IS02V ~B00BuPBuvAPSAH_3IJ02M it)", "on": 1, "socket": "+y2", "by": "footL", "paint": "#33302b"},
+    {"part": "Hull Loft (pane UqXZV4XCXZV4W-YCV9V2YCV9)", "on": 32, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane WsXZWWVAXZWWVlYCWWWHYCWW)", "on": 32, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#2b5a3a"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#23395d"},
@@ -47,7 +47,7 @@
     {"part": "Square Beam 0.75 m", "on": 2, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2a2622"},
     {"part": "Square Beam 0.75 m", "on": 7, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2a2622"},
     {"part": "Fuel Tank", "on": 40, "socket": "+x1", "by": "-y"},
-    {"part": "Hull Loft (hoodr V2VMXkWSXIXEW- ~Ae0Bu7BuHA0S6ec3Gi00j)", "on": 41, "socket": "+y", "by": "engine", "spin": 3, "paint": "#5b4a2f"},
+    {"part": "Hull Loft (hoodf V2VMXkWSXWXQW- ~Ae0Bu7BuHA0S6ec3Gi00j)", "on": 41, "socket": "+y", "by": "engine", "spin": 3, "paint": "#5b4a2f"},
     {"part": "Square Beam 0.75 m", "on": 39, "socket": "+x1", "by": "-z", "paint": "#2a2622"},
     {"part": "Turntable 2x2 Medium", "on": 43, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 44, "socket": "top", "by": "-y1", "paint": "#2a2622"},
@@ -63,10 +63,10 @@
     {"part": "Buzzsaw Sear", "on": 48, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 54, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 46, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (hoodr UNV2WyWjXIXEVd ~80080A80S7eg4uz2f5016)", "on": 24, "socket": "+y", "by": "engine", "paint": "#2a2622"},
+    {"part": "Hull Loft (hoodg UNV2WyWjXYXYVd ~80080A80S7eg4uz2f5016)", "on": 24, "socket": "+y", "by": "engine", "paint": "#2a2622"},
     {"part": "Bull Bar", "on": 58, "socket": "front", "by": "back", "paint": "#1b1714"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 59, "pos": [0.125, 0.554, -1.36], "rot": [-0.7234, -0.0002, -0.0172, 0.6902]}, "paint": "#2b5a3a"},
-    {"part": "Hull Loft (decoO UcVr)", "on": 58, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoO UcV-)", "on": 58, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 32, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 42, "socket": "top", "by": "-z", "paint": "#2a2622"},
     {"part": "Coo Heid", "on": 63, "socket": "+z", "by": "base"}

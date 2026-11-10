@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, pusher 1.25 m, front under the hood, inset 1.75 m, hydraulic/hydraulic/hydraulic, wing 0.5, language bus heavy 2.95 m, flare 0.26, crowned 0.8, brow 0.72 1.5 m, tail 0.76 0.75 m, door right, 10 facets, cab bus capsule, 7 facets, nose rounded, fitting destination board, wear age 0.53 (2 rusty, 2 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab cab-over, nose flat, rear hitch, under stilts, layout hutch 4 m
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, pusher 1.25 m, front under the hood, inset 1.75 m, hydraulic/hydraulic/hydraulic, wing 0.5, cab style bus front, language bus heavy 2.95 m, flare 0.26, crowned 0.8, brow 0.72 1.5 m, tail 0.76 0.75 m, door right, 10 facets, cab bus capsule, 7 facets, nose rounded, fitting destination board, wear age 0.53 (2 rusty, 2 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab cab-over, nose flat, rear hitch, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Gun Wagon 5",
   "group": "Ministry of Slop",
@@ -40,10 +40,10 @@
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 31, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabo SfUSWUXcYaWWVMWKW0W0XK ~Bu0C0YC93C9bC26A2a5Ao02o = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1b1c1e"},
-    {"part": "Hull Loft (pane UrXfSgXBXfSgX1YXT2U_YXT2)", "on": 35, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane XIXfSlXXXfVKXIYXVKX8YXT7)", "on": 35, "socket": "glass2", "by": "frame"},
-    {"part": "Hull Loft (pane UkXfSlUVXfVKUkYXVKUuYXT7)", "on": 35, "socket": "glass3", "by": "frame"},
+    {"part": "Hull Loft (cabo SfUSWUXcYcWRVMWKW0W0XK ~Bu0C0YC94C9cC28A2d5Aq02q = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1b1c1e"},
+    {"part": "Hull Loft (pane UrXfSgXBXfSgX1YZS-U_YZS-)", "on": 35, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane XIXfSlXXXfVKXIYZVKX8YZT2)", "on": 35, "socket": "glass2", "by": "frame"},
+    {"part": "Hull Loft (pane UkXfSlUVXfVKUkYZVKUuYZT2)", "on": 35, "socket": "glass3", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#c8102e"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#c8102e"},
     {"part": "Plate Steel 0.25 m", "on": 40, "socket": "+z1", "by": "-x", "paint": "#2b2a28"},
@@ -112,7 +112,7 @@
     {"part": "Ammo Socket", "on": 91, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 99, "socket": "top", "by": "-y"},
     {"part": "Tow Hitch", "on": 9, "socket": "+z", "by": "-z0"},
-    {"part": "Hull Loft (decoD WoWMUWVy)", "on": 35, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoD WoWMUTVy)", "on": 35, "socket": "top", "by": "base"},
     {"part": "Queue Post", "on": 70, "socket": "front00", "by": "base"},
     {"part": "Furled Brolly", "on": 79, "socket": "front00", "by": "base"}
   ],
