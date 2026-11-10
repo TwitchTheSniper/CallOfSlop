@@ -136,19 +136,20 @@
     {"part": "Plate Steel 0.25 m", "on": 112, "socket": "-z", "by": "-x", "paint": "#a7abae"},
     {"part": "Plate Steel 0.25 m", "on": 71, "socket": "+x3", "by": "-x", "paint": "#cfc6aa"},
     {"part": "Fuel Drum", "on": 120, "socket": "front30", "by": "-y"},
-    {"part": "Turntable", "on": 110, "socket": "+x1", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 110, "socket": "+x1", "by": "base"},
     {"part": "Square Beam 1 m", "on": 131, "socket": "top", "by": "-y1", "spin": 3, "paint": "#3b3f44"},
     {"part": "Seat", "on": 132, "socket": "+y3", "by": "bottom", "spin": 3},
     {"part": "Motor Hinge", "on": 132, "socket": "+y0", "by": "base", "spin": 3},
-    {"part": "Reaper Battle Rifle Receiver", "on": 134, "socket": "leaf", "by": "bottom", "spin": 3},
-    {"part": "Reaper Battle Rifle Receiver", "on": 135, "socket": "right", "by": "left"},
-    {"part": "Reaper Battle Rifle Receiver", "on": 135, "socket": "top", "by": "bottom", "spin": 3},
-    {"part": "Reaper Battle Rifle Receiver", "on": 136, "socket": "top", "by": "bottom", "spin": 3},
-    {"part": "Long Gun Barrel", "on": 135, "socket": "merged front", "by": "back"},
-    {"part": "Gun Muzzle Brake", "on": 139, "socket": "front", "by": "back"},
-    {"part": "Extended Mag", "on": 135, "socket": "merged left", "by": "right"},
-    {"part": "Semi-Auto Trigger", "on": 135, "socket": "merged back", "by": "front"},
-    {"part": "Ammo Box", "on": 141, "socket": "left", "by": "right"},
+    {"part": "Bastille LMG Receiver", "on": 134, "socket": "leaf", "by": "bottom", "spin": 3},
+    {"part": "Bastille LMG Receiver", "on": 135, "socket": "right", "by": "left"},
+    {"part": "Heatsink Barrel", "on": 135, "socket": "front", "by": "back"},
+    {"part": "Drum Mag", "on": 135, "socket": "left", "by": "right"},
+    {"part": "Full-Auto Sear", "on": 135, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 138, "socket": "left", "by": "right"},
+    {"part": "Heatsink Barrel", "on": 136, "socket": "front", "by": "back"},
+    {"part": "Drum Mag", "on": 136, "socket": "right", "by": "left"},
+    {"part": "Full-Auto Sear", "on": 136, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 142, "socket": "top", "by": "bottom"},
     {"part": "Turret Module", "on": 133, "socket": "+x", "by": "-x"},
     {"part": "Crew Bench", "on": 68, "socket": "centre +y", "by": "foot01"},
     {"part": "Fax Machine", "on": 72, "socket": "front13", "by": "foot00", "spin": 2},
@@ -163,13 +164,12 @@
     {"part": "Hull Loft (trimf1 XaW5 ~CW0DGMDejDmyDv3FPQGnmGnuGY7FgSEInCB19RC6RK03K ~CW0DGQDepDeyEPDGXeGvuGw2GYSFgrEJCCBV9Ri6Rq03q)", "on": 103, "socket": "-x0", "by": "base", "paint": "#e6e2d6"},
     {"part": "Hull Loft (trimf0 XaW5 ~CW0DGMDejDmyDv3FPQGnmGnuGY7FgSEInCB19RC6RK03K ~B80BeGC0WCGnCGyCH1CfID9YCvoCXuBo09wC7QK4oQ02Q)", "on": 104, "socket": "+x0", "by": "base", "paint": "#e6e2d6"},
     {"part": "Hull Loft (trimf3 XaW5 ~B80BeGC0WCGnCGyCH1CfID9YCvoCXuBo09wC7QK4oQ02Q ~CW0DGMDejDmyDv3FPQGnmGnuGY7FgSEInCB19RC6RK03K)", "on": 104, "socket": "-x0", "by": "base", "paint": "#e6e2d6"},
-    {"part": "Square Beam 0.5 m", "on": 98, "socket": "top", "by": "-z", "paint": "#3b3f44"},
-    {"part": "Satellite Dish", "on": 158, "socket": "+z", "by": "base"}
+    {"part": "Satellite Dish", "on": 116, "socket": "front11", "by": "base"}
   ],
-  "wires": [[35, 36], [36, 30], [133, 144], [144, 135]],
+  "wires": [[35, 36], [36, 30], [133, 145], [145, 135], [145, 136]],
   "links": [
     {"type": "shaft", "from": 31, "to": 8, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 130, "to": 30, "nodes": [[1.5, 0.82, 8.05], [1.5, 0.55, 8.05], [0.67, 0.55, 8.05], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 145, "table": "it"}]
+  "loot": [{"step": 146, "table": "it"}]
 }

@@ -114,17 +114,18 @@
     {"part": "Square Beam 1 m", "on": 105, "socket": "top", "by": "-y1", "spin": 3, "paint": "#3b3f44"},
     {"part": "Seat", "on": 106, "socket": "+y3", "by": "bottom", "spin": 3},
     {"part": "Motor Hinge", "on": 106, "socket": "+y0", "by": "base", "spin": 3},
-    {"part": "Longbow DMR Receiver", "on": 108, "socket": "leaf", "by": "bottom", "spin": 3},
-    {"part": "Marksman Barrel", "on": 109, "socket": "front", "by": "back"},
-    {"part": "Velocity Booster", "on": 110, "socket": "front", "by": "back"},
-    {"part": "Extended Mag", "on": 109, "socket": "top", "by": "bottom"},
-    {"part": "Marksman Trigger", "on": 109, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 112, "socket": "left", "by": "right"},
+    {"part": "Heavy Receiver", "on": 108, "socket": "leaf", "by": "bottom", "spin": 3},
+    {"part": "Big Iron Barrel", "on": 109, "socket": "front", "by": "back"},
+    {"part": "Belt Feed", "on": 109, "socket": "left", "by": "right"},
+    {"part": "Chain Drive Motor", "on": 109, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 111, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 107, "socket": "+x", "by": "-x"},
+    {"part": "Launch Rack", "on": 106, "socket": "+x1", "by": "top", "spin": 3},
+    {"part": "Ordnance:M25:Radar Seeker+Impact Fuse+Warhead HE+Tail Fins+Solid Motor", "on": 115, "socket": "lug0", "by": "lug"},
     {"part": "Ammo Crate", "on": 43, "socket": "front22", "by": "bottom", "config": {"ammoType": 0}},
     {"part": "Ammo Crate", "on": 43, "socket": "front02", "by": "bottom", "config": {"ammoType": 3}},
-    {"part": "Ammo Switch 2", "on": 116, "socket": "front", "by": "bottom"},
-    {"part": "Ammo Reel", "on": 116, "socket": "top", "by": "-y"},
+    {"part": "Ammo Switch 2", "on": 117, "socket": "front", "by": "bottom"},
+    {"part": "Ammo Reel", "on": 117, "socket": "top", "by": "-y"},
     {"part": "Ammo Socket", "on": 101, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 65, "socket": "lever", "by": "-y"},
     {"part": "Chest", "on": 49, "socket": "front00", "by": "bottom", "spin": 3},
@@ -141,14 +142,14 @@
     {"part": "Hull Loft (trimf3 XaW5 ~Be0C0bC8yCP9CfaCfkCYJC2t93G4pR03R ~CW0D0iD0yDXODfaDo3DglD3R9pu5K5045)", "on": 70, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
     {"part": "Wi-Fi Mast", "on": 83, "socket": "front01", "by": "base"}
   ],
-  "wires": [[30, 31], [31, 25], [71, 104], [104, 101], [107, 115], [115, 109], [121, 118]],
-  "hoses": [[119, 120]],
+  "wires": [[30, 31], [31, 25], [71, 104], [104, 101], [107, 114], [114, 109], [114, 115], [122, 119]],
+  "hoses": [[120, 121]],
   "links": [
     {"type": "shaft", "from": 26, "to": 7, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 97, "to": 25, "nodes": [[1.5, 0.82, 5.8], [1.5, 0.55, 5.8], [0.67, 0.55, 5.8], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true},
-    {"type": "feed", "from": 116, "to": 118, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
-    {"type": "feed", "from": 117, "to": 118, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
-    {"type": "feed", "from": 118, "to": 119, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
+    {"type": "feed", "from": 117, "to": 119, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
+    {"type": "feed", "from": 118, "to": 119, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
+    {"type": "feed", "from": 119, "to": 120, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
   ],
-  "loot": [{"step": 122, "table": "it"}, {"step": 123, "table": "it"}]
+  "loot": [{"step": 123, "table": "it"}, {"step": 124, "table": "it"}]
 }

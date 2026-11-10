@@ -45,7 +45,7 @@
     {"part": "Square Beam 0.75 m", "on": 1, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2f2c2a"},
     {"part": "Square Beam 0.75 m", "on": 37, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2f2c2a"},
     {"part": "Square Beam 0.75 m", "on": 38, "socket": "+x1", "by": "-z", "paint": "#2f2c2a"},
-    {"part": "Turntable", "on": 39, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 39, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 40, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Seat", "on": 41, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 41, "socket": "+y0", "by": "base"},
@@ -55,22 +55,23 @@
     {"part": "Chain Drive Motor", "on": 44, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 46, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 42, "socket": "+x", "by": "-x"},
+    {"part": "Launch Rack", "on": 41, "socket": "+x2", "by": "top"},
     {"part": "Square Beam 0.75 m", "on": 6, "socket": "+y6", "by": "-x0", "spin": 1, "paint": "#2f2c2a"},
-    {"part": "Plate Steel 1 m", "on": 50, "socket": "+x2", "by": "back02", "paint": "#7a4326"},
-    {"part": "Tread Plate 0.5 m", "on": 51, "socket": "-x0", "by": "-x0", "paint": "#3a3330"},
-    {"part": "Plate Steel 0.5x1 m", "on": 50, "socket": "+x0", "by": "back02", "spin": 1, "paint": "#46392f"},
-    {"part": "Plate Steel 0.25 m", "on": 52, "socket": "+x0", "by": "-x", "paint": "#6b3a22"},
-    {"part": "Plate Steel 0.5 m", "on": 53, "socket": "+x0", "by": "-x1", "paint": "#7a4326"},
-    {"part": "Fuel Drum", "on": 51, "socket": "front30", "by": "-y"},
+    {"part": "Plate Steel 1 m", "on": 51, "socket": "+x2", "by": "back02", "paint": "#7a4326"},
+    {"part": "Tread Plate 0.5 m", "on": 52, "socket": "-x0", "by": "-x0", "paint": "#3a3330"},
+    {"part": "Plate Steel 0.5x1 m", "on": 51, "socket": "+x0", "by": "back02", "spin": 1, "paint": "#46392f"},
+    {"part": "Plate Steel 0.25 m", "on": 53, "socket": "+x0", "by": "-x", "paint": "#6b3a22"},
+    {"part": "Plate Steel 0.5 m", "on": 54, "socket": "+x0", "by": "-x1", "paint": "#7a4326"},
+    {"part": "Fuel Drum", "on": 52, "socket": "front30", "by": "-y"},
     {"part": "Tow Hitch", "on": 6, "socket": "+z", "by": "-z0"},
     {"part": "Hull Loft (hoodg UsV2WyWjXYXYVd ~7807Os5X0010)", "on": 23, "socket": "+y", "by": "engine", "paint": "#a81c14"},
-    {"part": "Hubcap Plate", "on": 58, "socket": "top", "by": "base"},
+    {"part": "Hubcap Plate", "on": 59, "socket": "top", "by": "base"},
     {"part": "Horned Skull", "on": 30, "socket": "top", "by": "base"}
   ],
-  "wires": [[28, 29], [29, 23], [42, 49], [49, 44]],
+  "wires": [[28, 29], [29, 23], [42, 49], [49, 44], [49, 50]],
   "links": [
     {"type": "shaft", "from": 24, "to": 5, "fromPort": "Output shaft", "toPort": "Input shaft"},
-    {"type": "pipe", "from": 56, "to": 23, "nodes": [[1.25, 0.56, 3.81], [1.25, 0.55, 3.81], [0.67, 0.55, 3.81], [0.67, 0.55, 2.375], [0.67, 0.05, 2.375], [0.67, 0.05, 0.755], [0.67, 0.25, 0.755], [-0.17, 0.25, 0.755], [-0.17, 0.62, 0.755], [-0.17, 0.62, 0.25]], "laid": true}
+    {"type": "pipe", "from": 57, "to": 23, "nodes": [[1.25, 0.56, 3.81], [1.25, 0.55, 3.81], [0.67, 0.55, 3.81], [0.67, 0.55, 2.375], [0.67, 0.05, 2.375], [0.67, 0.05, 0.755], [0.67, 0.25, 0.755], [-0.17, 0.25, 0.755], [-0.17, 0.62, 0.755], [-0.17, 0.62, 0.25]], "laid": true}
   ],
   "tow": "Bandit Fuel Trailer 1"
 }

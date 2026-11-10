@@ -76,7 +76,7 @@
     {"part": "Plate Steel 0.25 m", "on": 41, "socket": "+x2", "by": "-x", "paint": "#5e3320"},
     {"part": "Fuel Drum", "on": 56, "socket": "front30", "by": "-y"},
     {"part": "Square Beam 0.75 m", "on": 38, "socket": "+x1", "by": "-z", "paint": "#2f2c2a"},
-    {"part": "Turntable", "on": 70, "socket": "+z", "by": "base"},
+    {"part": "Turntable 2x2 Medium", "on": 70, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 71, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Seat", "on": 72, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 72, "socket": "+y0", "by": "base"},
@@ -86,13 +86,14 @@
     {"part": "Chain Drive Motor", "on": 75, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 77, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 73, "socket": "+x", "by": "-x"},
+    {"part": "Launch Rack", "on": 72, "socket": "+x2", "by": "top"},
     {"part": "Hull Loft (hoodf UhV2WyWjXWXWVd ~7m080Q7um6O-00_)", "on": 24, "socket": "+y", "by": "engine", "paint": "#3a3330"},
-    {"part": "Bull Bar", "on": 81, "socket": "front", "by": "back", "paint": "#46392f"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 82, "pos": [0.134, 0.457, -1.155], "rot": [-0.7263, -0.031, -0.0251, 0.6862]}, "paint": "#94603a"},
-    {"part": "Hubcap Plate", "on": 81, "socket": "top", "by": "base"},
+    {"part": "Bull Bar", "on": 82, "socket": "front", "by": "back", "paint": "#46392f"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 83, "pos": [0.134, 0.457, -1.155], "rot": [-0.7263, -0.031, -0.0251, 0.6862]}, "paint": "#94603a"},
+    {"part": "Hubcap Plate", "on": 82, "socket": "top", "by": "base"},
     {"part": "Hubcap Plate", "on": 32, "socket": "top", "by": "base"}
   ],
-  "wires": [[29, 30], [30, 24], [73, 80], [80, 75]],
+  "wires": [[29, 30], [30, 24], [73, 80], [80, 75], [80, 81]],
   "links": [
     {"type": "shaft", "from": 25, "to": 6, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 69, "to": 24, "nodes": [[1.5, 0.82, 4.31], [1.5, 0.55, 4.31], [0.67, 0.55, 4.31], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}

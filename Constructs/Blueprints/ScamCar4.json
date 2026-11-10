@@ -53,18 +53,19 @@
     {"part": "Square Beam 1 m", "on": 44, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
     {"part": "Seat", "on": 45, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 45, "socket": "+y0", "by": "base"},
-    {"part": "Kingpin Revolver Receiver", "on": 47, "socket": "leaf", "by": "bottom"},
-    {"part": "Cannon Sleeve", "on": 48, "socket": "front", "by": "back"},
-    {"part": "Heavy Box", "on": 48, "socket": "left", "by": "right"},
-    {"part": "Revolver Hammer", "on": 48, "socket": "back", "by": "front"},
+    {"part": "Heavy Receiver", "on": 47, "socket": "leaf", "by": "bottom"},
+    {"part": "Big Iron Barrel", "on": 48, "socket": "front", "by": "back"},
+    {"part": "Belt Feed", "on": 48, "socket": "left", "by": "right"},
+    {"part": "Chain Drive Motor", "on": 48, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 50, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 46, "socket": "+x", "by": "-x"},
+    {"part": "Launch Rack", "on": 45, "socket": "+x2", "by": "top"},
     {"part": "Hull Loft (hoodf UwV2WyWjXWXWVd ~7m080L80k6uy3n0011)", "on": 23, "socket": "+y", "by": "engine", "paint": "#2a2c30"},
-    {"part": "Office Phone", "on": 54, "socket": "top", "by": "base"},
+    {"part": "Office Phone", "on": 55, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 42, "socket": "top", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Phone Mast", "on": 56, "socket": "+z", "by": "base"}
+    {"part": "Phone Mast", "on": 57, "socket": "+z", "by": "base"}
   ],
-  "wires": [[28, 29], [29, 23], [46, 53], [53, 48]],
+  "wires": [[28, 29], [29, 23], [46, 53], [53, 48], [53, 54]],
   "links": [
     {"type": "shaft", "from": 24, "to": 5, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 41, "to": 23, "laid": true}

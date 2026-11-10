@@ -50,13 +50,13 @@
     {"part": "Square Beam 1 m", "on": 41, "socket": "top", "by": "-y1", "paint": "#2f2c2a"},
     {"part": "Seat", "on": 42, "socket": "+y3", "by": "bottom"},
     {"part": "Motor Hinge", "on": 42, "socket": "+y0", "by": "base"},
-    {"part": "Bastille LMG Receiver", "on": 44, "socket": "leaf", "by": "bottom"},
-    {"part": "Bloat Barrel", "on": 45, "socket": "front", "by": "back"},
-    {"part": "Gun Muzzle Brake", "on": 46, "socket": "front", "by": "back"},
-    {"part": "Drum Mag", "on": 45, "socket": "left", "by": "right"},
-    {"part": "Full-Auto Sear", "on": 45, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 48, "socket": "left", "by": "right"},
+    {"part": "Heavy Receiver", "on": 44, "socket": "leaf", "by": "bottom"},
+    {"part": "Big Iron Barrel", "on": 45, "socket": "front", "by": "back"},
+    {"part": "Belt Feed", "on": 45, "socket": "left", "by": "right"},
+    {"part": "Chain Drive Motor", "on": 45, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 47, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 43, "socket": "+x", "by": "-x"},
+    {"part": "Launch Rack", "on": 42, "socket": "+x2", "by": "top"},
     {"part": "Square Beam 0.75 m", "on": 6, "socket": "+y6", "by": "-x0", "spin": 1, "paint": "#2f2c2a"},
     {"part": "Square Beam 0.75 m", "on": 52, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2f2c2a"},
     {"part": "Plate Steel 1 m", "on": 53, "socket": "+x0", "by": "back01", "spin": 3, "paint": "#8c5230"},
@@ -75,7 +75,7 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 66, "pos": [0.129, 0.381, -0.832], "rot": [-0.6942, -0.0107, -0.0025, 0.7197]}, "paint": "#7a4326"},
     {"part": "Horned Skull", "on": 65, "socket": "top", "by": "base"}
   ],
-  "wires": [[28, 29], [29, 23], [43, 51], [51, 45]],
+  "wires": [[28, 29], [29, 23], [43, 50], [50, 45], [50, 51]],
   "links": [
     {"type": "shaft", "from": 24, "to": 5, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 64, "to": 23, "nodes": [[-0.75, 0.82, 3.81], [-0.75, 0.55, 3.81], [-0.17, 0.55, 3.81], [-0.17, 0.55, 2.375], [-0.17, 0.05, 2.375], [-0.17, 0.05, 0.755], [-0.17, 0.62, 0.755], [-0.17, 0.62, 0.25]], "laid": true}
