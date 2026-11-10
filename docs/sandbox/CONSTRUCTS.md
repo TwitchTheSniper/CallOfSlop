@@ -1427,13 +1427,20 @@ body frame as an ordinary part, shut or open, and changes only when a player or 
   after the logic step: a body with no moving and no wired door costs one compare, a wired door its port readings, and only a
   moving door counts down. 1,000 idle doors on 1,000 bodies: 10 us a tick, nothing allocated.
 - **Settling.** At the end its parts are put at the new pose (whole quarter turns and centimetres, so they stay on the grid),
-  `Construct.RefreshShape` refreshes the mass, bounds and collider once (once for all the doors that settle in a tick: interiors phase 7), and the part tree is rebuilt when next asked: no
-  rebuild, no joint, no segment. While it moves the leaf stays solid where it was: an opening door blocks until it is open, a
-  shutting one lets a player through until it is shut. A door due to shut on a living player (`PlayerSpots`) opens again.
-  Constructs in the doorway are not checked.
-- **Drawing.** A moving leaf leaves the merged meshes (`DoorEpoch` makes them plan again), is walked at
-  `ConstructDoors.DrawPose` (the turn or slide from its settled pose, on `ConstructRender.Now`), and rejoins its chunk when it
-  settles.
+  and only what the leaf touches changes (`Construct.DoorPartMoved`): its boxes move in the collider (`ConstructCollider.MovePart`)
+  and its bounds in the part tree (`Construct.TreeMove`), each found under the part's old bounds, the nodes over them refitted
+  from their children; the trees keep their shape. No rebuild, no `RefreshShape`, no joint, no segment. The body's mass and
+  inertia stay as built (a big body's mass sums follow the part, so a later edit or full refresh sees it where it is), and its
+  bounds only grow. A door part the collider holds in another form (a hull, fused, merged) has the collider built again when
+  next asked for, as before. Cost on the 6,322-part fitted Titan Walker: 0.03 ms a door (0.5 ms the first time, JIT), 224
+  doors settling in one tick 1 to 2 ms all told; nothing allocated (before: 8 to 15 ms a door, a 29 ms tick for 198 at once).
+  While it moves the leaf stays solid where it was: an opening door blocks until it is open, a shutting one lets a player
+  through until it is shut. A door due to shut on a living player (`PlayerSpots`) opens again. Constructs in the doorway are
+  not checked.
+- **Drawing.** A door's parts are never in the merged meshes (`ConstructRenderBatch.MergeBoxes`): they are walked every frame,
+  a moving leaf at `ConstructDoors.DrawPose` (the turn or slide from its settled pose, on `ConstructRender.Now`), so neither a
+  start nor a settle re-plans or rebuilds a chunk. `DoorEpoch` goes up only when the door list is built again (after a rebuild).
+  `Construct.DoorOf` and `MovingDoorOf` are one array read (`DoorOfListed`).
 - **The wire** (protocol 226). `CBodyKind.Door` carries `(u16 body, u16 part, u8 flags)` each: bit 0 heading open, bit 1
   settled. A client draws a start from where it has the door and puts the parts where the server did on the settle; both go
   before the body digest, so a client has settled before it compares hashes. A joiner gets the settled pose in the Full.

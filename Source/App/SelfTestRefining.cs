@@ -469,7 +469,7 @@ public static partial class SelfTest
             sp.Yaw = 0;
             Pump(server, [a], 0.3, ref now, clock);
             var known = w.Bodies.Select(b => b.Id).ToHashSet();
-            a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Smelting Station"));
+            a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Smelting Station"));
             Pump(server, [a], 1.0, ref now, clock);
             var station = w.Bodies.FirstOrDefault(b => !known.Contains(b.Id) && b.HasRefiner);
             if (station == null)

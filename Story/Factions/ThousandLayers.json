@@ -1,0 +1,120 @@
+{
+  // The Thousand Layers (docs/story/STORY.md "The Thousand Layers"): the faith that grew out of the story of the fold
+  // (the storyline: the builders folded the five systems away from a threat, and the fold rolled out to infinity). Over
+  // the generations the story was retold until it became scripture: each verse below bends one of the five fragments the
+  // player can find (frag.threat, frag.fold, frag.reading, frag.silence, frag.switch; "bends" says how, for writers
+  // only). Verses from the draft "Fragments and scripture" (https://claude.ai/artifact/N8XemUxW1d9rseLeDyTHxZ). Its people
+  // are sincere and kind, its ritual is baking and its priests are Bakers: the joke is only ever in the pastry, the belief
+  // is played straight. Most hold to the Covered Bowl (leave it alone); the Unrollers read the Two Hands as a promise and
+  // wait for someone with keys. Its people in the world are the penal colony's Baker and laundress
+  // (Story/Casts/PenalColony.json); its storylets are Story/Storylets/ThousandLayers.json.
+  "format": "call-of-slop-faction/1",
+  "name": "The Thousand Layers",
+  "about": "the faith of the Rolling: the Five Bakers rolled the world from the middle out, and the Hunger is folded under still",
+  "home": "The Bakehouse",
+  "staff": [ "Baker Marlow", "Sister Wren" ],
+  "members": [
+    { "name": "Eldest Baker Agathe", "about": "head of the faith; has kneaded the same dough every morning for sixty years and calls it one loaf",
+      "qualities": { "Sociable": 55, "Honest": 70, "Brave": 45, "Vengeful": 35, "Gossipy": 20, "Greedy": 15 } },
+    { "name": "Baker Hollis", "about": "keeper of the Bakehouse ovens; believes every word, and has read none of the old records",
+      "qualities": { "Sociable": 45, "Honest": 80, "Brave": 60, "Vengeful": 55, "Gossipy": 30, "Greedy": 20 } },
+    { "name": "Baker Anselm", "about": "copies the scripture by hand and keeps finding the old copies say something else",
+      "qualities": { "Sociable": 30, "Honest": 90, "Brave": 25, "Vengeful": 15, "Gossipy": 40, "Greedy": 10 } },
+    { "name": "Coyle the Unroller", "about": "leads the Unrollers, who read the Two Hands as a promise; waits for someone with keys",
+      "qualities": { "Sociable": 40, "Honest": 75, "Brave": 80, "Vengeful": 50, "Gossipy": 35, "Greedy": 10, "Unroller": 1 } }
+  ],
+  "wants": [
+    { "name": "Devotion", "about": "faction want: how full the Bakehouse is on a rolling day, from 0 (empty) to 100", "start": 60, "perHour": -1 },
+    { "name": "Stillness", "about": "faction want: how undisturbed the fold feels to the faith, from 0 (the Hunger stirs) to 100 (the dough rests)", "start": 80 }
+  ],
+  "tiers": [
+    { "name": "Burnt Offering", "below": -50 },
+    { "name": "Unleavened", "below": -15 },
+    { "name": "Seeker", "below": 15 },
+    { "name": "Proved", "below": 40 },
+    { "name": "Laminated", "below": 70 },
+    { "name": "Baker" }
+  ],
+  "deeds": [
+    { "name": "Killed the faithful", "verb": "Kill", "remember": "KilledOurs", "standing": -40, "wants": { "Stillness": -20 } },
+    { "name": "Struck the faithful", "verb": "Attack", "remember": "Grudge", "standing": -15, "every": "1m", "wants": { "Stillness": -5 } },
+    { "name": "Mocked the faithful", "verb": "Insult", "standing": -4, "every": "5m" },
+    { "name": "Blessed be the centre", "verb": "Greet", "standing": 2,
+      "about": "a greeting to the Baker or the laundress: the faith counts every hand that waves as a hand that might knead" },
+    { "name": "Sat with the faithful", "verb": "Chat", "standing": 1, "every": "10m", "wants": { "Devotion": 1 },
+      "about": "a word with one of the faith's people, once in ten minutes" },
+    { "name": "Broke bread", "verb": "Trade", "standing": 3, "every": "10m" },
+    { "name": "Brought an offering", "verb": "Give", "standing": 4, "every": "10m", "wants": { "Devotion": 2 },
+      "about": "something given to one of the faith's people: it goes to the Bakehouse, and the faith remembers who brought it" }
+  ],
+  "teaches": [
+    { "name": "The Weight of the Centre", "tier": "Proved",
+      "about": "the faith's teaching that all things are drawn to the centre the dough was rolled from: gravity, made by hand",
+      "parts": [ "Gravity Generator", "Gravity Well" ] },
+    { "name": "The Lesser Fold", "tier": "Laminated",
+      "about": "a small fold of the dough, held for a moment: the Jump Drive. The Bakers teach it as a prayer, and will not say where it learnt it",
+      "parts": [ "Jump Drive" ] },
+    { "name": "The Rising", "tier": "Baker",
+      "about": "dough that rests will rise: the Bakers' anti-gravity, taught only to those who will never unroll it",
+      "parts": [ "Anti-Grav Generator", "Medium Anti-Grav Generator", "Large Anti-Grav Generator", "Capital Anti-Grav Generator" ] }
+  ],
+  "rivals": { "Ministry of Slop": 20 },
+  "voice": "THE THOUSAND LAYERS",
+  "courier": "Two novices in floured aprons carry the crate away between them, humming the Covered Bowl under their breath.",
+  "scripture": [
+    { "name": "The Hunger", "fragment": "frag.threat",
+      "text": "Before the first layer there was the Hunger, and it had no face. It ate the dark and was not filled. Five houses heard it at the door, and each house held one thing the others lacked.",
+      "bends": "the edge, a thing nobody could measure moving towards the five systems, has become a beast with an appetite" },
+    { "name": "The Rolling", "fragment": "frag.fold",
+      "text": "So the Five Bakers brought flour and fat and water and salt and patience, and they rolled the world from the middle out. And the Hunger was at the edge of the dough, and they rolled it in, and it was folded under, layer upon layer, and it is under still.",
+      "bends": "the engineers of five systems have become five Bakers, and the design a recipe" },
+    { "name": "The Long Night", "fragment": "frag.reading",
+      "text": "On the first night the Bakers looked up and the sky had been cleared for them like a table. Do not grieve the empty sky. A clean table is a gift to those with work to do.",
+      "bends": "the observatory found no reference stars: the roll never stopped and took everything else; the verse makes the missing stars a blessing, not a loss" },
+    { "name": "The Covered Bowl", "fragment": "frag.silence",
+      "text": "The dough is resting. Do not lift the cloth to look. Whoever lifts the cloth lets the cold in, and the rising is undone, and that one must answer to all who were hungry.",
+      "bends": "the councils agreed it could be reversed, refused a vote and withdrew the records; the cover-up has become a holy rule: do not lift the cloth" },
+    { "name": "The Two Hands", "fragment": "frag.switch",
+      "text": "At the last there will come two hands to the oven door. One book says they come to open it, and all that was folded will be unrolled and made whole. The other says they come to hold it shut. The Bakers do not agree, and have agreed not to ask.",
+      "bends": "the release takes two keys turned together (and a timer was never fitted); the release has become a prophecy, and the faithful disagree about it" }
+  ],
+  "jobs": [
+    { "name": "The Daily Laminate",
+      "about": "Novice work: the Bakers roll a laminate every morning, a layer for each world kept. Steel plate stands in for dough.",
+      "supply": [{"piece": "plate", "material": "steel", "length": 0.5, "count": 24}],
+      "standing": 5,
+      "again": "1h",
+      "taken": "The morning laminate wants layers. Twenty-four steel Plates off an Extruder, half a metre or longer, in a Requisition Crate. A thousand is the ideal. Twenty-four will do for a novice.",
+      "done": "The laminate is rolled. Twenty-four layers, and a world kept safe in every one. Blessed be the centre." },
+    { "name": "Cloth for the Board",
+      "about": "The rolling board is dressed in cloth, floured, and never left bare.",
+      "supply": [{"material": "cloth", "kg": 40}],
+      "standing": 4,
+      "again": "1h",
+      "taken": "The board must be dressed before it is floured. 40 kg of cloth in a Requisition Crate, if you would be so kind.",
+      "done": "The board is dressed. The Eldest Baker ran a hand along it and said nothing, which is her highest praise." },
+    { "name": "A Wayside Shrine",
+      "about": "A place to sit and watch the sky beyond the five: a lamp for each world, and a bench for the watcher.",
+      "build": [{"part": "Lamp", "count": 5}, {"part": "Seat", "count": 2}],
+      "standing": 6,
+      "again": "2h",
+      "taken": "Build us a wayside shrine: five Lamps, one for each world, and two Seats for those who watch, on one construct. A Baker will come to bless it.",
+      "done": "The shrine is blessed. Somebody has already sat in it and looked up at the empty sky, and felt better, which is what it is for." },
+    { "name": "A Pin for the Chapel",
+      "tier": "Proved",
+      "about": "For the Proved: the chapel's rolling pin, turned from one piece of wood. The Laminated are taught the Lesser Fold.",
+      "supply": [{"piece": "round", "material": "wood", "length": 2.5, "across": 0.3, "count": 1}],
+      "standing": 10,
+      "again": "2h",
+      "taken": "The chapel's pin is worn thin. One wooden Round off an Extruder or a lathe, two and a half metres long and thirty centimetres across, in a Requisition Crate. Handle it gently: it is only wood, but it is the shape of the Pin.",
+      "done": "The new pin is on the chapel board. Nobody may roll with it. That is the point of it." },
+    { "name": "Stone for the Oven",
+      "tier": "Laminated",
+      "about": "For the Laminated: the Bakehouse oven, where the Baker went and was not seen again, needs relining.",
+      "supply": [{"material": "stone", "tonnes": 6}, {"material": "wood", "kg": 400}],
+      "standing": 12,
+      "again": "3h",
+      "taken": "The great oven is cracking. Six tonnes of stone to reline it and 400 kg of wood to fire it, in a Requisition Crate. Bakers are taught the Rising.",
+      "done": "The oven is relined and lit. Baker Hollis says he heard something in the fire. He says that every time." }
+  ]
+}

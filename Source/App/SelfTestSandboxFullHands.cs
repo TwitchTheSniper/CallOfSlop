@@ -42,7 +42,11 @@ public static partial class SelfTest
         int cases = 0, uncheckedThrows = 0, checkedThrows = 0, stale = 0;
         string? first = null;
         foreach (var bp in ConstructBuild.Blueprints)
-            for (var i = 0; i < Construct.MaxParts; i++)
+        {
+            // (each case builds the whole blueprint again: a giant one, the 6587-part Titan Walker, gets a few dozen evenly spread take-offs, not every part)
+            var n = ConstructBuild.Build(new ConstructWorld(), bp, Vector3.Zero, Quaternion.Identity, out _)?.PartCount ?? 0;
+            var stride = Math.Max(1, n * n / 200_000);
+            for (var i = 0; i < n; i += stride)
             {
                 var w = new ConstructWorld();
                 if (ConstructBuild.Build(w, bp, Vector3.Zero, Quaternion.Identity, out _) is not { } c || i >= c.PartCount)
@@ -85,6 +89,7 @@ public static partial class SelfTest
                     checkedThrows++;
                 }
             }
+        }
         ConstructRender.ClearAim();
         Line($"full hands: stale ghosts: {cases} take-offs over {ConstructBuild.Blueprints.Count} blueprints; the unchecked draw threw on {uncheckedThrows} (first: {first ?? "none"}), the checked draw on {checkedThrows}, {stale} stale ghosts skipped");
         // (Before the receiver merge, SocketAt indexed the sockets unchecked and the unchecked loop threw on about half the
@@ -286,7 +291,7 @@ public static partial class SelfTest
         // The client's own gate; holding an engine, it takes the door off (aiming at it: its ghosts up, as in the game).
         StandAt(sp, 10, 0);
         Pump(server, [a], 0.3, ref now, clock);
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Gate"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Gate"));
         Pump(server, [a], 0.6, ref now, clock);
         var gate = server.Constructs.Bodies[^1];
         var door = PartOf(gate, PartRole.Door);
@@ -328,7 +333,7 @@ public static partial class SelfTest
         // The backpack free: a lamp off the client's lamp post goes into it, on both.
         StandAt(sp, -10, 0);
         Pump(server, [a], 0.3, ref now, clock);
-        a.SandboxSend(CActKind.Blueprint, part: (byte)IndexOfBlueprint("Lamp Post"));
+        a.SandboxSend(CActKind.Blueprint, part: (ushort)IndexOfBlueprint("Lamp Post"));
         Pump(server, [a], 0.6, ref now, clock);
         var post = server.Constructs.Bodies[^1];
         var li = PartNamed(post, lamp);

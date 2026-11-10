@@ -216,16 +216,11 @@ public static class VehicleFlightCheck
         return r;
     }
 
-    /// <summary>The autopilot's altitude hold on, at <paramref name="height"/>: a bot pilot's hook, set as its panel would set it.</summary>
+    /// <summary>The autopilot's altitude hold on, at <paramref name="height"/>, as its panel would set it (<see cref="AircraftAutopilot.Set"/>, the bot pilot's hook too).</summary>
     private static void Autopilot(VehicleDriveCheck.CheckPlace place, Construct c, float height)
     {
         using (place.In())
-        {
-            ref var p = ref c.Parts[c.Stabs[0].Part];
-            ConstructConfig.Put(ref p, p.D, CfgKey.ApMode, (float)FlightMode.Altitude);
-            ConstructConfig.Put(ref p, p.D, CfgKey.TargetAlt, ConstructPhysics.HoldShown(MathF.Max(1, height)));
-            ConstructConfig.Put(ref p, p.D, CfgKey.Autopilot, 1);
-        }
+            AircraftAutopilot.Set(c, FlightMode.Altitude, height);
     }
 
     /// <summary>The stabilizer's forward, turned by <paramref name="rot"/> (the body's rotation, or none for the rest frame).</summary>

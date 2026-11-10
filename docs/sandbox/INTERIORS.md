@@ -538,7 +538,7 @@ F on one was refused ("it's locked") and the player was stopped. Switched off, a
 **For other owners (not fixed here):**
 - **Event doors (`ConstructDoors.cs`):** one door settling on the fitted walker still makes an 8 to 10 ms tick, over the 8 ms rule. A body
   refresh costs 2 ms, and the next tick's rebuild of the part tree costs the rest. Every door opening at once costs 65 to 81 ms, about 0.3
-  ms a door beyond the one refresh. A cheaper settle, one that moves the leaf's boxes in the tree rather than rebuilding it, would fix both.
+  ms a door beyond the one refresh. A cheaper settle, one that moves the leaf's boxes in the tree rather than rebuilding it, would fix both. (Fixed on `fix/door-settle-cost`: CONSTRUCTS.md "Event doors", "Settling".)
 - **Walker:** the battery bank on `top5.1` still covers a chassis stair hatch (phase 6).
 
 **Not tried:** a client (drawing a moving leaf, the wire events); a swing door's leaf against furniture when open (the leaf is not checked

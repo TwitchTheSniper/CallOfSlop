@@ -154,6 +154,7 @@ public sealed partial class Game
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
+        _pilots.Clear(); // (no bot pilots: GameSandboxAircraft.cs)
         OpeningReset(); // (no beats, no colony yet: GameSandboxOpening.cs)
         ShellResetAll(); // (nobody wears a robot shell: GameRobotShell.cs)
         if (!IsServer)
@@ -377,6 +378,7 @@ public sealed partial class Game
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
+        SandboxPilotsTick(); // bot pilots of AI aircraft (GameSandboxAircraft.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();
@@ -1050,7 +1052,7 @@ public sealed partial class Game
                 return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position, Constructs, eye, p.Yaw) : hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, (ushort)(pick - 1), Constructs, eye, p.Yaw);
             }
             case CActKind.Blueprint:
-                return SandboxSpawnBlueprint(p, r.U8());
+                return SandboxSpawnBlueprint(p, r.U16()); // (protocol 227: two bytes, past 255 blueprints)
             case CActKind.Drop:
                 if (Constructs.HoseLetGo(p.Id))
                     return null; // (the hose's receiver first: it reels back)
@@ -1234,9 +1236,11 @@ public sealed partial class Game
                 w.U16(body).U16(part).U8((byte)socket); // (socket: the weld)
                 break;
             case CActKind.SeatKeys:
-            case CActKind.Blueprint:
             case CActKind.BeaconMaterial:
                 w.U8((byte)part);
+                break;
+            case CActKind.Blueprint:
+                w.U16(part);
                 break;
             case CActKind.Rack:
                 w.U16(body); // (the pick: 0 the rack's next kind, n part id n - 1)
