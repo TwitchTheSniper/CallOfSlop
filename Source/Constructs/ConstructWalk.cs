@@ -19,6 +19,7 @@ public struct CLeg
     public Vector3 Foot, From, To; // world: the foot now, where its step started and where it goes
     public Vector3 Normal; // the ground's normal under the foot
     public float Power; // its strength from what feeds it (0: unfed, locked; ConstructWalkLegs.cs), a share of its own
+    public float Carry; // kg of parts riding its segments (ConstructWalkRiders.cs): it swings them, so it steps slower
 }
 
 public sealed partial class Construct
@@ -79,6 +80,7 @@ public sealed partial class Construct
                 Reach = reach,
                 Angle = MathF.Atan2(outward.Z, outward.X),
                 Normal = Vector3.UnitY,
+                Carry = SegRiderMass(i),
             };
         }
         // Round the centre of mass, so the support polygon is the planted feet in this order.
@@ -139,7 +141,7 @@ public static partial class ConstructPhysics
             var sound = LegSound(p) * MathF.Min(1.5f, c.Legs[k].Power); // (a damaged leg carries less and steps slower; so does a weaker feed)
             load += p.D.Leg!.Load * sound;
             reach += c.Legs[k].Reach;
-            stepTime += p.D.Leg.StepTime / sound;
+            stepTime += p.D.Leg.StepTime / sound * CarrySlows(c.Legs[k].Carry, p.D.Leg.Load);
         }
         c.WalkStamp = Stopwatch.GetTimestamp();
         if (live != c.WalkLive)
@@ -167,6 +169,9 @@ public static partial class ConstructPhysics
         if (c.WalkStepping)
             c.Wake(); // (a foot in the air finishes its step)
     }
+
+    /// <summary>A leg swinging what rides its segments steps slower: a tenth of its load riding it, half as slow again (at most twice).</summary>
+    public static float CarrySlows(float carry, float load) => Math.Clamp(1 + 0.5f * carry / MathF.Max(1, 0.1f * load), 1, 2);
 
     /// <summary>The gait for <paramref name="live"/> working legs: a tripod (alternate legs round the body) or a wave.</summary>
     private static void PlanGait(Construct c, int live)

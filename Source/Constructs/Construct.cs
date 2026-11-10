@@ -1117,6 +1117,7 @@ public sealed partial class Construct
         BuildSpecials(); // (again: a link it dropped or moved no longer makes its parts special)
         ConstructModules.Build(this); // (which seat drives and which turrets it has: before the wheels, which take forward from it)
         ConstructTracks.Rebuild(this); // (before the colliders: a track's wheels are raycast wheels, sprung or not)
+        BuildRiders(); // (parts riding walker leg segments: out of the collider, ConstructWalkRiders.cs)
         ColliderChanged();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
         BuildWheels();

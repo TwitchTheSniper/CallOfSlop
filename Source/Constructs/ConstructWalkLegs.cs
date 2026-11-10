@@ -95,7 +95,8 @@ public static partial class ConstructPhysics
 
     /// <summary>
     /// The nearest leg segment or foot pad of <paramref name="c"/> along a ray, nearer than <paramref name="best"/> (which it
-    /// shortens). Returns the leg part hit (-1: none) and which segment (the last segment for its foot pad).
+    /// shortens). Returns the leg part hit, or a part riding one of its segments (-1: none), and which segment (the last
+    /// segment for its foot pad; -1 for a rider).
     /// </summary>
     public static int LegRay(Construct c, Vector3 origin, Vector3 dir, ref float best, out int segment, out Vector3 normal)
     {
@@ -138,6 +139,12 @@ public static partial class ConstructPhysics
                     segment = Math.Min(s, n - 1);
                     normal = Vector3.Transform(Geometry.BoxEntryNormal(-half, half, lo, ld, hit), q);
                 }
+            }
+            if (c.RiderCount > 0 && RiderRay(c, k, origin, dir, ref best, out var rn) is var rider and >= 0)
+            {
+                part = rider; // (a part welded to a segment: ConstructWalkRiders.cs)
+                segment = -1;
+                normal = rn;
             }
         }
         return part;

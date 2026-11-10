@@ -53,10 +53,47 @@ public static partial class ConstructRender
                 var foot = LegPts[count];
                 gfx.Draw(Matrix4x4.CreateScale(d.Foot * 2, d.Foot * 0.35f, d.Foot * 2) * Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(foot + up * (d.Foot * 0.175f) - origin), d.JointColour);
                 n++;
+                if (c.RiderCount > 0)
+                    n += DrawRiders(gfx, world, c, k, count, pos, rot, origin, alpha);
             }
         }
         gfx.Relative = false;
         gfx.EndBatch();
+        return n;
+    }
+
+    private static bool _drawingRiders;
+
+    /// <summary>The parts riding leg <paramref name="k"/>'s segments (ConstructWalkRiders.cs), each segment's in its frame as drawn.</summary>
+    private static int DrawRiders(Renderer gfx, ConstructWorld world, Construct c, int k, int segs, Vector3 pos, Quaternion rot, Vector3 origin, float alpha)
+    {
+        var n = 0;
+        var leg = c.Legs[k].Part + 1;
+        _drawingRiders = true;
+        try
+        {
+            for (var s = 0; s < segs; s++)
+            {
+                var framed = false;
+                var frame = Matrix4x4.Identity;
+                for (var i = 0; i < c.PartCount; i++)
+                {
+                    if (c.RideOf[i] != leg || c.RideSeg[i] != s)
+                        continue;
+                    if (!framed)
+                    {
+                        ConstructPhysics.RideFrame(c, k, s, pos, rot, out var q, out var t);
+                        frame = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t - origin);
+                        framed = true;
+                    }
+                    n += DrawPart(gfx, world, c, i, frame, alpha, 1f);
+                }
+            }
+        }
+        finally
+        {
+            _drawingRiders = false;
+        }
         return n;
     }
 

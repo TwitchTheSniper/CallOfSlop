@@ -1235,6 +1235,8 @@ public sealed partial class ConstructWorld
             for (var ci = 0; ci < candidates; ci++)
             {
                 var i = _partHits[ci];
+                if (c.Rides(i))
+                    continue; // (on a leg segment: LegRay below)
                 ref var p = ref c.Parts[i];
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
