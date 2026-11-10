@@ -2,8 +2,9 @@ namespace CallOfSlop.VehicleKit.Generators;
 
 /// <summary>
 /// Body styles phase 8a (docs/vehiclekit/BODY-STYLES.md, section 16): a car in one of its style's archetypes (an early fastback, a coke-bottle, a seventies wedge, a
-/// supercar, a compact hatch, an estate): a lofted cab in the archetype's language, its hood, and a short gun bed behind. Made by the shape grammar only (its
-/// recipe, "Car"); an extra shape, shipped by the styles that name it.
+/// supercar, a compact hatch, an estate): a lofted cabin in the archetype's language (two seats, or a crew cabin over a second row), its hood, and a boot behind
+/// (part 2, section 17): a lofted tail deck over its tank, the gun on a pedestal between cabin and boot. Made by the shape grammar only (its recipe, "Car"); an
+/// extra shape, shipped by the styles that name it.
 /// </summary>
 public sealed class Car(FactionStyle style) : VehicleShape(style)
 {

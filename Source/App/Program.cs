@@ -197,6 +197,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleArmouryCli.Report(args); // distinct guns per style and shape over seeds, and the full check with --check
         if (args.Any(a => a.Equals("--no-identity-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleIdentity.GateOn = false; // kit 2 without its identity re-plan, to measure what the check changes
+        if (args.SkipWhile(a => !a.Equals("--gen-interior", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } interiorOf)
+            return GenInterior(interiorOf, args); // the interior planner and builder (Source/Interiors, docs/sandbox/INTERIORS.md)
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
@@ -229,6 +231,8 @@ public static unsafe partial class Program
             return SelfTest.BenchFuelBlast(args); // tanks with fuel in them going up: drums, a tanker, a chain, a fused hull (Source/App/BenchFuelBlast.cs)
         if (args.Any(a => a.Equals("--bench-mega", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchMega(args); // what a massive blast costs: tick time, allocation, bytes sent, over a busy scene (Source/App/BenchMegaBlast.cs)
+        if (args.Any(a => a.Equals("--bench-vehicle-guns", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchVehicleGuns(args); // the gunsmith's guns by hand: fire each, land salvoes of each shell on the next vehicle, tick CPU (Source/App/BenchVehicleGuns.cs)
         if (args.Any(a => a.Equals("--bench-fuse-net", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchFuseNet(args); // the fuse tool's requests and units between a host and a client over RakNet (Source/App/BenchFuse.cs)
         if (args.Any(a => a.Equals("--bench-fuse", StringComparison.OrdinalIgnoreCase)))

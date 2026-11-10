@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Highland Turret 1",
+  "group": "Clan MacSlop",
+  "description": "A Highland turret: a Flak Block on a turntable, its gunner's seat on the arm. Sit in it to aim and fire; weld or bolt its base to anything.",
+  "steps": [
+    {"part": "Plate Steel 1 m", "paint": "#0b4f9c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "-x1", "by": "+x1", "paint": "#0b4f9c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "+x1", "by": "-x1", "paint": "#0b4f9c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "-z1", "by": "+z1", "paint": "#0b4f9c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "+z1", "by": "-z1", "paint": "#0b4f9c"},
+    {"part": "Turntable", "on": 0, "socket": "front00", "by": "base"},
+    {"part": "Square Beam 1 m", "on": 5, "socket": "top", "by": "-y1"},
+    {"part": "Seat", "on": 6, "socket": "+y3", "by": "bottom"},
+    {"part": "Motor Hinge", "on": 6, "socket": "+y0", "by": "base"},
+    {"part": "Heavy Receiver", "on": 8, "socket": "leaf", "by": "bottom"},
+    {"part": "Cross Splitter", "on": 9, "socket": "front", "by": "back"},
+    {"part": "Gun Barrel", "on": 10, "socket": "front-1", "by": "back"},
+    {"part": "Gun Barrel", "on": 10, "socket": "front-2", "by": "back"},
+    {"part": "Gun Barrel", "on": 10, "socket": "front-3", "by": "back"},
+    {"part": "Gun Barrel", "on": 10, "socket": "front-4", "by": "back"},
+    {"part": "Belt Feed", "on": 9, "socket": "left", "by": "right"},
+    {"part": "Chain Drive Motor", "on": 9, "socket": "back", "by": "front"},
+    {"part": "Ammo Box", "on": 15, "socket": "left", "by": "right"},
+    {"part": "Turret Module", "on": 7, "socket": "+x", "by": "-x"}
+  ],
+  "wires": [[7, 18], [18, 9]]
+}

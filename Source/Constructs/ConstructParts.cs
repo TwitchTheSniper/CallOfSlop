@@ -720,7 +720,7 @@ public sealed class ConstructPartDef
     public SurfaceDef? Surface; // a lifting surface (ConstructAero.cs)
     public RotorDef? Rotor; // a propeller or a rotor (ConstructRotor.cs)
     public LegDef? Leg; // a walker leg (ConstructWalk.cs)
-    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true }; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
+    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true } || Leg is { Shaft: > 0 }; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)

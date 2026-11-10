@@ -63,6 +63,7 @@ Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, peo
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
 Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC.md), Synth*
 Source/Perf/         the F9 profiler
+Source/Interiors/    interiors for big vehicles and bases (docs/sandbox/INTERIORS.md): InteriorData (Constructs/Interiors), InteriorPlanner (hull volume to decks, rooms, doors, bulkheads), InteriorBuilder (on the kit's BlueprintScript); --gen-interior
 Source/VehicleKit/   the vehicle kit (docs/vehiclekit/VEHICLEKIT.md): BlueprintScript (steps through the game's own build rules), Vehicle* (the fluent layer), FactionStyle/Styles, Dice,
                      IVehicleGenerator + Generators/<Vehicle>.cs, VehicleChecks (the real game's report), VehiclePlan
 Source/ also:        Maps/ MapKit/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/ Platform/Steam/ DevTools/
@@ -86,7 +87,7 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 - **Data first.** Parts, maps, weapons, attachments, props, buildings and decals are JSON files loaded at start-up. Prefer adding data over code. Bad files are refused with a reason.
 - **Generators, not outputs.** A generated file is fixed in its generator (`tools/constructs/`, `tools/space/`, ...), never by editing the output. A generator caps every amount by the file's limits (one recipe over `MaxUnits` makes the whole Assembling table refuse).
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.SandboxCargo.cs`, `GameSandboxSnap.cs`, ...). Follow that pattern.
-- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **224**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
+- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **225**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
 - **Saves.** Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points. Every save file is listed in `SavePaths.SaveFiles` (a folder: `SaveFolders`), written atomically, and keeps a `.bak`. A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.
 - **Performance is a top priority.** Sandbox scale (many constructs, parts and links, big worlds) is what these limits protect. No server tick may do more than 8 ms of CPU work (one-off JIT excluded). Avoid per-frame and per-tick allocations; the self-tests measure allocations. Music CPU must stay ≤1.5x the baseline.
 - **Text.** Player-visible text is ASCII. Docs and comments use British spelling, as the existing code does.
@@ -221,3 +222,4 @@ Folded by theme on 2026-11-03 and 2026-11-09; the dated stories are in `git show
 
 **Added after the fold**
 - 2026-11-09: after fix/zombie-lod a Sandbox client still drew a far horde the host didn't have, which no shot could hurt: the zombies' sends stopped with the last zombie (no empty cells went out) and a full Msg.ZCrowd always restarted at cell 0, starving the last rows of a big crowd. A delta stream sends its final empty state and resumes where a full message stopped; measure what the client holds against the server's counts (`--zrange-host`, `CrowdStale`).
+- 2026-11-10: after the gunsmith merge every headless run failed or hung in `World`'s static initializer: a shell gun built while the blueprints loaded read `World.GravityScale`, the initializer loaded the maps, a sandbox map looked up a blueprint and re-entered the blueprints' Lazy. A static initializer never loads data that can lead back to its caller: take it on first use (`World.Map`).

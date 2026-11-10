@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "IT Turret 2",
+  "group": "IT Department",
+  "description": "A IT turret: a Heavy Bunker Buster on a turntable, its gunner's seat on the arm. Sit in it to aim and fire; weld or bolt its base to anything.",
+  "steps": [
+    {"part": "Plate Steel 1 m", "paint": "#1f4e8c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "-x1", "by": "+x1", "paint": "#1f4e8c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "+x1", "by": "-x1", "paint": "#1f4e8c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "-z1", "by": "+z1", "paint": "#1f4e8c"},
+    {"part": "Plate Steel 1 m", "on": 0, "socket": "+z1", "by": "-z1", "paint": "#1f4e8c"},
+    {"part": "Turntable", "on": 0, "socket": "front00", "by": "base"},
+    {"part": "Square Beam 1 m", "on": 5, "socket": "top", "by": "-y1"},
+    {"part": "Seat", "on": 6, "socket": "+y3", "by": "bottom"},
+    {"part": "Motor Hinge", "on": 6, "socket": "+y0", "by": "base"},
+    {"part": "Bunker Buster Receiver", "on": 8, "socket": "leaf", "by": "bottom"},
+    {"part": "Bunker Buster Receiver", "on": 9, "socket": "right", "by": "left"},
+    {"part": "Bunker Buster Receiver", "on": 9, "socket": "top", "by": "bottom"},
+    {"part": "Bunker Buster Receiver", "on": 10, "socket": "top", "by": "bottom"},
+    {"part": "Cannon Sleeve", "on": 9, "socket": "merged front", "by": "back"},
+    {"part": "Heavy Box", "on": 9, "socket": "merged left", "by": "right"},
+    {"part": "Autocannon Drive", "on": 9, "socket": "merged back", "by": "front"},
+    {"part": "Ammo Box", "on": 14, "socket": "left", "by": "right"},
+    {"part": "Turret Module", "on": 7, "socket": "+x", "by": "-x"}
+  ],
+  "wires": [[7, 17], [17, 9]]
+}
