@@ -5,7 +5,9 @@ namespace CallOfSlop;
 /// <summary>
 /// One event door of a construct (docs/sandbox/CONSTRUCTS.md, "Event doors"): a door part on the body's own segment with a
 /// <c>"door"</c> block, and the small parts hung on it alone (a handle, a sign). Not a joint and not a segment: its leaf sits
-/// in the body frame at its settled pose (shut or open), and only a door that is moving does anything a tick.
+/// in the body frame at its settled pose (shut or open), and only a door that is moving does anything a tick. Its parts are
+/// never in the merged meshes (they are drawn on their own), and settling moves their boxes in the collider and the part tree
+/// alone (<see cref="Construct.DoorPartMoved"/>): no rebuild, no refresh, the body's mass as built.
 /// Derived from the parts at each rebuild (<see cref="Construct.EnsureDoors"/>); what lasts is in the door part itself:
 /// where it settled in its hidden <see cref="CfgKey.DoorOpen"/> setting (saves, blueprints, CBody), and while it moves
 /// <see cref="CPart.State"/> (<see cref="ConstructDoors.Moving"/>, <see cref="ConstructDoors.Target"/>) and on the server
@@ -36,9 +38,11 @@ public sealed partial class Construct
     public ushort[] DoorLeaves = [];
     public int DoorLeafCount;
     public int DoorMovingCount, DoorWiredCount; // (the server's step looks at a body only while one is above 0)
-    public int DoorEpoch; // goes up whenever a door starts or stops moving (the merged meshes plan again: ConstructRenderBatch.cs)
+    public int DoorEpoch; // goes up whenever the door list is built again (the merged meshes plan again, leaving door parts out: ConstructRenderBatch.cs)
     private int _doorStamp = -1;
     private int[] _doorAt = [], _doorLinks = [];
+    private int[] _doorOfPart = []; // part -> its door (the door part or a leaf part), -1: none (for PartCount parts as of the build)
+    private int _doorOfCount;
     private CDoor[] _doorOld = [];
 
     /// <summary>The door list as the parts are now (built again after a rebuild). False while the body waits for a rebuild.</summary>
@@ -73,6 +77,7 @@ public sealed partial class Construct
                 Array.Resize(ref Doors, Math.Min(MaxDoors, Math.Max(8, DoorCount * 2)));
             Doors[DoorCount++] = new CDoor { Part = (ushort)i };
         }
+        _doorOfCount = 0;
         if (DoorCount == 0)
         {
             if (oldCount > 0)
@@ -83,6 +88,7 @@ public sealed partial class Construct
         {
             _doorAt = new int[Parts.Length];
             _doorLinks = new int[Parts.Length];
+            _doorOfPart = new int[Parts.Length];
         }
         Array.Fill(_doorAt, -1, 0, PartCount);
         for (var k = 0; k < oldCount; k++)
@@ -143,6 +149,15 @@ public sealed partial class Construct
                     Doors[m].LeafFirst++;
             }
         }
+        Array.Fill(_doorOfPart, -1, 0, PartCount);
+        for (var k = 0; k < DoorCount; k++)
+        {
+            ref var dr = ref Doors[k];
+            _doorOfPart[dr.Part] = k;
+            for (var m = 0; m < dr.LeafCount; m++)
+                _doorOfPart[DoorLeaves[dr.LeafFirst + m]] = k;
+        }
+        _doorOfCount = PartCount;
         for (var w = 0; w < WireCount; w++)
             if (Wires[w].To < PartCount && _doorAt[Wires[w].To] is var k and >= 0)
                 Doors[k].Wired = true;
@@ -161,37 +176,67 @@ public sealed partial class Construct
     {
         if (!EnsureDoors() || (uint)part >= (uint)PartCount)
             return -1;
-        for (var k = 0; k < DoorCount; k++)
-        {
-            ref var dr = ref Doors[k];
-            if (dr.Part == part)
-                return k;
-            for (var m = 0; m < dr.LeafCount; m++)
-                if (DoorLeaves[dr.LeafFirst + m] == part)
-                    return k;
-        }
-        return -1;
+        return DoorOfListed(part);
     }
 
+    /// <summary>As <see cref="DoorOf"/>, from the list as last built (never builds it: drawing). -1 while the list waits for a rebuild.</summary>
+    public int DoorOfListed(int part) => DoorCount > 0 && _doorStamp == RebuildStamp && !Dirty && (uint)part < (uint)_doorOfCount ? _doorOfPart[part] : -1;
+
     /// <summary>
-    /// Drawing: the moving door part <paramref name="part"/> rides, or -1 (no door moves: one compare). A moving leaf is drawn
-    /// on its own (ConstructRender.DrawPart) at <see cref="ConstructDoors.DrawPose"/>, out of the merged meshes.
+    /// Drawing: the moving door part <paramref name="part"/> rides, or -1 (no door moves: one compare). A door's parts are
+    /// always drawn on their own (ConstructRender.DrawPart), a moving one at <see cref="ConstructDoors.DrawPose"/>.
     /// </summary>
     public int MovingDoorOf(int part)
     {
-        if (DoorMovingCount == 0 || _doorStamp != RebuildStamp || Dirty)
+        if (DoorMovingCount == 0 || DoorOfListed(part) is not (var k and >= 0))
             return -1;
-        for (var k = 0; k < DoorCount; k++)
-        {
-            ref var dr = ref Doors[k];
-            if ((Parts[dr.Part].State & ConstructDoors.Moving) == 0)
-                continue;
-            if (dr.Part == part)
-                return k;
-            for (var m = 0; m < dr.LeafCount; m++)
-                if (DoorLeaves[dr.LeafFirst + m] == part)
-                    return k;
-        }
-        return -1;
+        return (Parts[Doors[k].Part].State & ConstructDoors.Moving) != 0 ? k : -1;
     }
+
+    // ---- Settling: only what the leaf touches (ConstructDoors.Settle) --------------------------------------------
+
+    /// <summary>Door part <paramref name="part"/> is about to move: its share of a big body's mass sums is taken off (put back at its new place by <see cref="DoorPartMoved"/>).</summary>
+    internal void DoorPartMoving(int part)
+    {
+        if (DoorSums(part))
+            AddPartSums(part, -1);
+    }
+
+    private bool DoorSums(int part) => _sumsValid && !Dirty && !FuseMassHeld(part);
+
+    /// <summary>
+    /// Door part <paramref name="part"/> (on segment 0) was just put at its new pose, turned by <paramref name="r"/> from
+    /// <paramref name="oldPos"/>, its bounds before being <paramref name="oldMin"/>..<paramref name="oldMax"/>. Its boxes are moved
+    /// in the collider and its bounds in the part tree, the nodes over them refitted; the body's bounds grow to hold it. The
+    /// rest stays as built: the mass and inertia (a leaf moving a metre on a big body changes nothing that matters; a big body's
+    /// sums follow it, so an edit's journal takes off what is there, and the next full refresh of the mass sees it), the merged
+    /// meshes (door parts aren't in them), the tree's shape. Costs the depth of the trees, not the part count; allocates nothing.
+    /// A part the collider has in another form (a hull, fused, merged) has it built again when next asked for, as before.
+    /// </summary>
+    internal void DoorPartMoved(int part, Vector3 oldMin, Vector3 oldMax, Vector3 oldPos, byte r)
+    {
+        if (DoorSums(part))
+        {
+            AddPartSums(part, 1);
+            StructBounds(part, out var smn, out var smx);
+            GrowBounds(smn, smx); // (the face it left stays out: loose, never short)
+        }
+        RestBounds(part, out var mn, out var mx);
+        ref var p = ref Parts[part];
+        if (_collider != null && !_colliderStale)
+        {
+            if (FuseRough(part) || MergeOf[part] != 0 || p.D.IsEnvelope || Rides(part) || ConstructHulls.Of(p.D).Length > 0
+                || !_collider.MovePart(part, Math.Max(1, SolidCount(part)), oldMin, oldMax, oldPos, p.Pos, r))
+                ColliderChanged();
+        }
+        if (_treeParts >= 0 && !TreeMove(part, oldMin, oldMax, mn, mx))
+            TreeStale();
+        if (mn.X < LocalMin.X || mn.Y < LocalMin.Y || mn.Z < LocalMin.Z || mx.X > LocalMax.X || mx.Y > LocalMax.Y || mx.Z > LocalMax.Z)
+        {
+            LocalMin = Vector3.Min(LocalMin, mn);
+            LocalMax = Vector3.Max(LocalMax, mx);
+            Radius = MathF.Max(Radius, MathF.Max(Vector3.Distance(Com, LocalMin), Vector3.Distance(Com, LocalMax)) + 0.5f);
+        }
+    }
+
 }

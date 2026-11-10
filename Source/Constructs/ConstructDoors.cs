@@ -30,13 +30,13 @@ public sealed partial class ConstructWorld
 
 /// <summary>
 /// Event doors (docs/sandbox/CONSTRUCTS.md, "Event doors"): a door part with a <c>"door"</c> block on a construct's own
-/// segment needs no hinge and spends no joint. It sits shut or open as an ordinary part of the body (the collider, rays,
-/// players and the merged meshes see its settled pose), and changes only on an event: F (<see cref="Use"/>) or an edge on
-/// one of its wired ports. Then it moves for a moment: the server counts its ticks, every peer draws it turning
-/// (<see cref="DrawPose"/>), and at the end its parts are put at the new pose once (<see cref="Settle"/>, a
-/// <see cref="Construct.RefreshShape"/>, not a rebuild). While it moves its leaf stays solid where it was: an opening door
-/// blocks until it is open, a shutting one lets a player through until it is shut, and it doesn't shut on a player (it
-/// opens again). An idle door costs nothing a tick. Joint doors (a panel on a hinge, ConstructDoor.cs) work as before.
+/// segment needs no hinge and spends no joint. It sits shut or open as an ordinary part of the body (the collider, rays
+/// and players see its settled pose; it is drawn on its own, never in the merged meshes), and changes only on an event: F
+/// (<see cref="Use"/>) or an edge on one of its wired ports. Then it moves for a moment: the server counts its ticks, every
+/// peer draws it turning (<see cref="DrawPose"/>), and at the end its parts are put at the new pose once (<see cref="Settle"/>:
+/// their boxes move in the collider and the part tree, nothing else; no rebuild, no refresh). While it moves its leaf stays
+/// solid where it was: an opening door blocks until it is open, a shutting one lets a player through until it is shut, and
+/// it doesn't shut on a player (it opens again). An idle door costs nothing a tick. Joint doors (a panel on a hinge, ConstructDoor.cs) work as before.
 /// </summary>
 public static class ConstructDoors
 {
@@ -184,7 +184,6 @@ public static class ConstructDoors
         p.State = (byte)(Moving | (open ? Target : 0));
         dr.StartF = from;
         dr.StartAt = ConstructRender.Now;
-        c.DoorEpoch++;
     }
 
     /// <summary>
@@ -228,11 +227,10 @@ public static class ConstructDoors
                 dr.LastOpen = openIn;
                 dr.LastToggle = toggleIn;
                 if (c.Dirty)
-                    return; // (a settle below may refresh the body: the list is built again next tick)
+                    return; // (the body waits for a rebuild: the list is built again next tick)
             }
         if (c.DoorMovingCount == 0)
             return;
-        var moved = false;
         for (var k = 0; k < c.DoorCount; k++)
         {
             ref var p = ref c.Parts[c.Doors[k].Part];
@@ -249,20 +247,19 @@ public static class ConstructDoors
                 Command(world, c, k, true); // (a player in the doorway: it opens again)
                 continue;
             }
-            moved |= Settle(c, k, open, refresh: false);
+            Settle(c, k, open);
             world.DoorEvents.Add((c.Id, c.Doors[k].Part, (byte)((open ? 1 : 0) | 2)));
         }
-        if (moved)
-            Refresh(c);
     }
 
     /// <summary>
     /// Door <paramref name="k"/> comes to rest open or shut (server, and a client on the server's word): its leaf's parts are
-    /// put at the new pose (whole quarter turns or a slide, so they stay on the grid), and the body's shape is refreshed once.
-    /// <paramref name="refresh"/> false: the caller refreshes once after several settle in a tick (<see cref="Refresh"/>; phase 7 of the
-    /// interiors: six bulkhead doors sealing together on the 6,300-part Titan Walker took a 16 ms tick, 224 doors 435 ms). True when it moved.
+    /// put at the new pose (whole quarter turns or a slide, so they stay on the grid), and only their boxes move in the collider
+    /// and the part tree (<see cref="Construct.DoorPartMoved"/>): tens of microseconds whatever the body's size, nothing allocated.
+    /// The body's mass, inertia and merged meshes stay as built (interiors phase 7 measured a whole-body refresh here: 8 to 10 ms
+    /// a door on the 6,300-part Titan Walker). True when it moved.
     /// </summary>
-    public static bool Settle(Construct c, int k, bool open, bool refresh = true)
+    public static bool Settle(Construct c, int k, bool open)
     {
         ref var dr = ref c.Doors[k];
         var part = dr.Part;
@@ -282,18 +279,7 @@ public static class ConstructDoors
         p.Count = 0;
         dr.StartF = open ? 1 : 0;
         dr.StartAt = ConstructRender.Now;
-        c.DoorEpoch++;
-        if (moved && refresh)
-            Refresh(c);
         return moved;
-    }
-
-    /// <summary>The body's shape after its doors settled: once, however many did.</summary>
-    public static void Refresh(Construct c)
-    {
-        c.TreeStale();
-        c.RefreshShape();
-        c.Wake();
     }
 
     /// <summary>From the settled pose to the other one: a quarter-turn turn about a pivot, or a shift (rest frame).</summary>
@@ -313,9 +299,13 @@ public static class ConstructDoors
 
     private static void Place(Construct c, int part, byte r, Vector3 pivot, Vector3 shift)
     {
+        c.RestBounds(part, out var oldMin, out var oldMax);
+        c.DoorPartMoving(part);
         ref var q = ref c.Parts[part];
+        var oldPos = q.Pos;
         q.Pos = ConstructWorld.Quantise(pivot + Rot24.Apply(r, q.Pos - pivot) + shift);
         q.Rot = Rot24.Compose(r, q.Rot);
+        c.DoorPartMoved(part, oldMin, oldMax, oldPos, r);
     }
 
     /// <summary>Would door <paramref name="k"/>'s part, shut, stand in a living player (their column from the feet up)?</summary>
@@ -377,7 +367,6 @@ public static class ConstructDoors
     public static void Read(ref PacketReader r, ConstructWorld world)
     {
         int n = r.U8();
-        Construct? stale = null; // (a body whose doors settled: refreshed once, when the next event is another body's or at the end)
         for (var j = 0; j < n; j++)
         {
             var id = r.U16();
@@ -386,20 +375,10 @@ public static class ConstructDoors
             if (world.Get(id) is not { } c || c.DoorOf(part) is not (var k and >= 0) || c.Doors[k].Part != part)
                 continue; // (not this PC's copy of the door: its next Full puts it right)
             var open = (flags & 1) != 0;
-            if (stale != null && stale != c)
-            {
-                Refresh(stale);
-                stale = null;
-            }
             if ((flags & 2) != 0)
-            {
-                if (Settle(c, k, open, refresh: false))
-                    stale = c;
-            }
+                Settle(c, k, open);
             else if (TargetOpen(c, part) != open)
                 Start(c, k, open, OpenFraction(c, k, byTicks: false));
         }
-        if (stale != null)
-            Refresh(stale);
     }
 }
