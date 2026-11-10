@@ -352,7 +352,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                         r => r with { Cabs = [("enclosed", 2), ("armoured", 0.6), ("crew", 0.5)], CabLanguage = BodyLanguage.Slab }),
                     CabStyle.Of("roll cage", 2, r => r with { RakeMin = 0.04f, RakeMax = 0.1f, Noses = [('f', 2), ('g', 1)] }, r => r with { CabTallMin = 1.6f, CabTallMax = 1.7f, BeltMin = 1.04f, BeltMax = 1.08f },
                         r => r with { Cabs = [("caged", 3), ("crew", 0.3), ("enclosed", 0.3)], CabLanguage = BodyLanguage.Ledge }),
-                    CabStyle.Of("scrap plate", 1, r => r with { RakeMin = 0.02f, RakeMax = 0.06f, Noses = [('f', 2), ('w', 1)] }, r => r with { CabTallMin = 1.56f, CabTallMax = 1.64f, BeltMin = 1.1f, BeltMax = 1.14f },
+                    CabStyle.Of("scrap plate", 1, r => r with { RakeMin = 0.02f, RakeMax = 0.06f, Noses = [('f', 2), ('w', 1)] }, null, // (the faction's own proportions: a 1.56-1.64 m slab cab with its belt at 1.1-1.14 m left 8 of 14 of the driver's rays on the cab)
                         r => r with { Cabs = [("armoured", 2), ("enclosed", 0.5)], CabLanguage = BodyLanguage.Slab }),
                 ],
             },

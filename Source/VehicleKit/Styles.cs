@@ -192,6 +192,7 @@ public static class Styles
         {
             ["engine"] = ["Engine", "V8 Engine", "Engine"],
             ["hood"] = ["Snub Hood", "Long Hood", "Slab Nose"],
+            ["fender"] = ["Arch Fender", "Wide Arch Fender"], // (phase 9a: as before: slim arches alone made two committed Technicals read as a box from above)
             ["spike"] = ["Loudhailer", "Loudhailer", "Phone Mast"],                                       // (Constructs/Parts/CallCentre)
             ["trophy"] = ["Office Phone", "Call Headset", "Gift Card Sign", "Prize Wheel", "Office Phone", "Gift Card Sign", "Call Headset", "Loudhailer"],
             ["mast"] = ["Phone Mast", "Phone Mast", "Loudhailer", "Gift Card Sign"],                     // (on the roofs: Vehicle.Kit)

@@ -1446,7 +1446,7 @@ fuel in the open, too), Highland's coupes, IT's long-tailed, British's short hat
 
 ### Fenders, rear doors, Militia
 
-- **Fenders** by faction (the `fender` slot): Bandit wide arches or bare tyres, Militia always wide arches, IT, Scam and British slim arches, Highland wide arches.
+- **Fenders** by faction (the `fender` slot): Bandit wide arches or bare tyres, Militia always wide arches, IT and British slim arches, Highland wide arches, Scam either (as before).
 - **Rear doors**: British (0 before), Highland and Scam roll a rear door at 0.35. A rear door still needs the room last, 4.5 m long or more and a bare tail or a hitch
   behind it; in 10 British War Bus seeds and 16 Highland and Scam Box Truck seeds none rolled one (their rears are mostly gun decks and porches), so no rear balcony
   was seen. A stronger lean to a hitch (6 for 2.5) changed nothing in those seeds and was put back.
@@ -1459,21 +1459,21 @@ fuel in the open, too), Highland's coupes, IT's long-tailed, British's short hat
 
 | | before | after |
 | --- | --- | --- |
-| room exteriors ratio (within, between) | 1.49 (0.125, 0.187) | ROOMS |
-| ... nearest other over own: Bandit, IT, Highland, Scam, British, Militia | 1.60, 1.23, 1.24, 1.31, 1.25, 0.97 (British) | NEAREST |
-| cabs ratio (within, between) | 1.15 (0.065, 0.075) | CABS |
-| whole body ratio (within, between) | 1.02 (0.149, 0.152) | WHOLE |
+| room exteriors ratio (within, between) | 1.49 (0.125, 0.187) | 1.60 (0.120, 0.192) |
+| ... nearest other over own: Bandit, IT, Highland, Scam, British, Militia | 1.60, 1.23, 1.24, 1.31, 1.25, 0.97 (British) | 1.60, 1.21, 1.25, 1.30, 1.22, 1.60 (Highland) |
+| cabs ratio (within, between) | 1.15 (0.065, 0.075) | 1.26 (0.060, 0.076) |
+| whole body ratio (within, between) | 1.02 (0.149, 0.152) | 1.02 (0.147, 0.151) |
 | diversity, every shape, mean pair (Bandit .. Militia) | 0.332, 0.338, 0.328, 0.329, 0.344, 0.327 | 0.332, 0.334, 0.326, 0.329, 0.339, 0.323 |
-| failures (`--body-report`), coplanar pairs | 3, 0 | FAILS |
-| generation mean a style, Bandit .. Militia | 1326, 364, 268, 243, 301, 326 ms | GEN |
+| failures (`--body-report`), coplanar pairs | 3, 0 | 2 (Bandit Scrap Tanker 3's barrel, British Double Decker 2's gun, as main), 0 |
+| generation mean a style, Bandit .. Militia | 1326, 364, 268, 243, 301, 326 ms | 478, 341, 284, 254, 290, 395 ms (Bandit's worst 39 s to 5.4 s: its cars' fuel in the open) |
 | Car sweeps `--seeds 8` (full check) | 39 of 40 (phase 8a part 2) | 40 of 40 |
 
-What the numbers say: the cab family wins back cab separation (within-style cabs tighter: Bandit 0.059 to 0.045, Militia 0.016 to 0.014; between holds), and Militia's
+What the numbers say: the cab family wins back cab separation (within-style cabs tighter: Bandit 0.059 to 0.045, Highland 0.048 to 0.043; between holds; Scam's stays the widest, 0.092: its cars, buggies, bubble cars and minibus keep their own cab languages), and Militia's
 room exteriors move from nearest British to well apart. The whole body barely moves: a car is one shape of six to nine a style, and the other shapes' outlines are the
 plan's. Diversity within a style holds (falls of 0.005 at most).
 
-**Committed vehicles**: 137 of 193 files made again (fenders, cab sub-styles, car plans); `--gen-vehicles` reports all identical, also with `--order reverse`;
-`--check-construct-parts` clean. The changed files through the full check: CHECKED. No part key or wire change: protocol stays 225.
+**Committed vehicles**: 135 of 193 files made again (fenders, cab sub-styles, car plans); `--gen-vehicles` reports all identical, also with `--order reverse`;
+`--check-construct-parts` clean. Every changed file through the full check (`--check-vehicle`): all pass but the gunsmith's big guns 41 to 67 degrees off their gunners (Bandit Box Truck 4, War Bus 10; British Flatbed Fort 7; Highland Box Truck 3 and 7, Flatbed Fort 8; IT Box Truck 3, War Bus 10; Scam Flatbed Fort 1 and 6: phase 9b's; Bandit Box Truck 4 fails so on main too). Two found on the way: Bandit's scrap-plate cabs at the style's own bodies' first proportions (1.56-1.64 m, belt 1.1-1.14) left 8 of 14 driver's rays on the cab (Gun Wagon 8, Wagon 1): that sub-style now keeps the faction's proportions; Scam's fenders as IT's (slim arches only) made two kit-1 Technicals read as a box: Scam keeps both arches. Scam Technical 21 (identical to main) fails stability 0.69 there too. No part key or wire change: protocol stays 225.
 
 ### Left
 

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, leaf/coil, wing 0.5, cab style kiosk, language cabin standard 2.42 m, flare 0.06, plain 0.7, brow 0.75 1 m, tail 0.81 1 m, door left, upper saloon over bays 3 to 5, cut 2.18 m, storey 2.18 m, stair right at 4.00 m back, cab cabin cab, nose flat, balcony g, space upper saloon, fitting roof sign, trim signboards on 11 bay sides, wear age 0.53 (5 rusty, 7 dirty, 6 sooty, 1 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank loaded, roof none, layout room(Brow T,Door,Bay T-L,Bay L-T,Bay T,Bay T-L,Tail L), plan 3
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, leaf/coil, wing 0.5, cab style kiosk, language cabin standard 2.42 m, flare 0.06, plain 0.7, brow 0.75 1 m, tail 0.81 1 m, door left, upper saloon over bays 3 to 5, cut 2.18 m, storey 2.18 m, stair right at 4.00 m back, cab cabin cab, nose flat, balcony g, space upper saloon, fitting roof sign, trim signboards on 11 bay sides, wear age 0.53 (5 rusty, 7 dirty, 5 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank loaded, roof none, layout room(Brow T,Door,Bay T-L,Bay L-T,Bay T,Bay T-L,Tail L), plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam War Bus 1",
   "group": "The Call Centre",
@@ -181,11 +181,8 @@
     {"part": "Cubicle Desk", "on": 76, "socket": "centre +y", "by": "foot10", "spin": 1},
     {"part": "Loudhailer", "on": 75, "socket": "front00", "by": "base", "spin": 3},
     {"part": "Hull Loft (hoodf UZV2WyWjXWXWVd ~6e06mt015)", "on": 38, "socket": "+y", "by": "engine", "paint": "#2a2c30"},
-    {"part": "Slat Grille", "on": 175, "socket": "front", "by": "back", "paint": "#b0b4b8"},
-    {"part": "Arch Fender", "on": 175, "socket": "+x0", "by": "mount", "paint": "#2a2c30"},
-    {"part": "Arch Fender", "on": 175, "socket": "-x0", "by": "mount", "paint": "#2a2c30"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 178, "pos": [-0.727, 0.245, -0.372], "rot": [0.0003, 0.01, 0.7076, 0.7065]}, "paint": "#7d8a92"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 177, "pos": [1.226, 0.48, -0.372], "rot": [0.0097, 0.0021, -0.707, 0.7071]}, "paint": "#7d8a92"},
+    {"part": "Slat Grille", "on": 175, "socket": "front", "by": "back", "paint": "#2a2c30"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 176, "pos": [0.125, 0.407, -1.15], "rot": [-0.7116, -0.001, -0.0107, 0.7025]}, "paint": "#7d8a92"},
     {"part": "Hull Loft (decoS XIWAWcW0)", "on": 47, "socket": "top", "by": "base", "paint": "#ff3d8b"},
     {"part": "Gift Card Sign", "on": 175, "socket": "top", "by": "base"},
     {"part": "Office Phone", "on": 150, "socket": "front", "by": "base"},
@@ -199,8 +196,7 @@
     {"part": "Hull Loft (trimg1 XaW5 ~D80DGyEB0Ex6BZQ03Q =)", "on": 122, "socket": "-x0", "by": "base", "paint": "#ffd400"},
     {"part": "Hull Loft (trimg6 XaW5 ~D80DGyEB0Ex6BZQ03Q ~D80DGyEApEwvBZQ03Q)", "on": 123, "socket": "+x0", "by": "base", "paint": "#ffd400"},
     {"part": "Hull Loft (trimg1 XaW5 ~D80DGyEApEwvBZQ03Q ~CO0CWyCnZDAADwE02j)", "on": 124, "socket": "+x0", "by": "base", "paint": "#ffd400"},
-    {"part": "Hull Loft (trimg4 XaW5 ~CO0CWyCnZDAADwE02j ~D80DGyEApEwvBZQ03Q)", "on": 124, "socket": "-x0", "by": "base", "paint": "#ffd400"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 176, "pos": [0.13, 0.517, -1.156], "rot": [-0.6976, -0.0169, -0.001, 0.7163]}, "paint": "#b0b4b8"}
+    {"part": "Hull Loft (trimg4 XaW5 ~CO0CWyCnZDAADwE02j ~D80DGyEApEwvBZQ03Q)", "on": 124, "socket": "-x0", "by": "base", "paint": "#ffd400"}
   ],
   "wires": [[44, 45], [45, 38], [157, 167], [167, 159]],
   "links": [

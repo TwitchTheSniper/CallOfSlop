@@ -36,7 +36,7 @@
     {"part": "Square Beam 0.5 m", "on": 26, "socket": "+z", "by": "-z", "paint": "#3a3330"},
     {"part": "Seat", "on": 27, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 29, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (caba V4V4WWXlYDW4VYWMW0W0Xa ~Au0BI68QW02W = ir)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#94603a"},
+    {"part": "Hull Loft (caba V4V4WWXfYDW4VYWMW0W0Xa ~Au0BI98Qa02a = ir)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#94603a"},
     {"part": "Plate Steel 0.5x1 m", "on": 3, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#5e3320"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#8c5230"},
     {"part": "Sheet Steel 0.25 m", "on": 33, "socket": "+z0", "by": "-x", "paint": "#8c5230"},
