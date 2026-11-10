@@ -1,0 +1,76 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Titan Walker",
+  "group": "Walkers",
+  "description": "A bare 128 m walking chassis on six titan legs (docs/sandbox/GIANTS.md). The helm walks it: W/S, A/D turn, Q/E strafe, Sprint/Crouch height.",
+  "steps": [
+    {
+      "part": "Capital Chassis Deck 128x64 m"
+    },
+    {
+      "part": "Titan Mech Leg",
+      "on": 0,
+      "socket": "-z0",
+      "by": "mount"
+    },
+    {
+      "part": "Titan Mech Leg",
+      "on": 0,
+      "socket": "-z4",
+      "by": "mount"
+    },
+    {
+      "part": "Titan Mech Leg",
+      "on": 0,
+      "socket": "-z7",
+      "by": "mount"
+    },
+    {
+      "part": "Titan Mech Leg",
+      "on": 0,
+      "socket": "+z0",
+      "by": "mount"
+    },
+    {
+      "part": "Titan Mech Leg",
+      "on": 0,
+      "socket": "+z4",
+      "by": "mount"
+    },
+    {
+      "part": "Titan Mech Leg",
+      "on": 0,
+      "socket": "+z7",
+      "by": "mount"
+    },
+    {
+      "part": "Adapter Capital to Small",
+      "on": 1,
+      "socket": "top",
+      "by": "back"
+    },
+    {
+      "part": "Bridge Helm",
+      "on": 7,
+      "socket": "front2.2",
+      "by": "-y",
+      "spin": 1
+    },
+    {
+      "part": "Driving Module",
+      "on": 8,
+      "socket": "+x",
+      "by": "-x"
+    }
+  ],
+  "wires": [
+    [
+      8,
+      9
+    ],
+    [
+      9,
+      1
+    ]
+  ]
+}

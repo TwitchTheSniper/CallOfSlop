@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Mech Leg",
+  "description": "A mech walker leg: hip, segments, knees, foot and actuators in one part. The gait brain walks it.",
+  "group": "Walkers",
+  "section": "Legs",
+  "role": "leg",
+  "tool": "welder",
+  "leg": {
+    "type": "mech",
+    "tier": "small",
+    "segments": [
+      0.672,
+      0.672,
+      0.256
+    ],
+    "width": 0.12,
+    "foot": 0.108,
+    "hip": [
+      0,
+      0,
+      0
+    ],
+    "load": 400,
+    "stepTime": 0.35,
+    "stepHeight": 0.15,
+    "stand": 0.62,
+    "spread": 0.3,
+    "power": {
+      "hydraulic": 1.0,
+      "electric": 0.8,
+      "shaft": 1.2
+    },
+    "jointColor": "#2a2d31"
+  },
+  "mass": 27.2,
+  "health": 607,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5d6670",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        0.129,
+        -0.0688,
+        -0.0688
+      ],
+      "max": [
+        0.1625,
+        0.0688,
+        0.0688
+      ],
+      "color": "#2a2d31",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.125,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

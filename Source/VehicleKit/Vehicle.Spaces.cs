@@ -22,7 +22,7 @@ public sealed partial class Vehicle
     {
         var lk = Look!;
         var up = lk.Upper!;
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         var plan = room.Plan.ToArray();
         var lengths = lk.Lengths(plan);
         var names = lk.UpperNames(plan, rule.UpperNarrow);
@@ -127,7 +127,7 @@ public sealed partial class Vehicle
     /// </summary>
     private void FactionPods()
     {
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         if (NoTrim || BodyLook.NoSpaces || BodyLook.NoPods || Look == null || Rooms.Count == 0 || rule.Pods.Length == 0)
             return;
         var d = Dice.Fork("side pods");

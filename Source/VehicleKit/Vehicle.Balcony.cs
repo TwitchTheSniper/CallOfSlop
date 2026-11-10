@@ -13,7 +13,7 @@ public sealed partial class Vehicle
     /// <summary>The balcony a room's door would open onto (null: none), as the style rolls it; the room's look must be skinned (a caged room's bars are its rail).</summary>
     private HullLoft.BalconyShape? BalconyPlan(string tag, bool rear)
     {
-        var rule = BodyStyleRule.Of(Style);
+        var rule = Rule;
         if (BodyLook.NoBalconies || rule.Balcony <= 0 || Look == null || Look.Cage != '\0')
             return null;
         var d = Dice.Fork("balcony " + tag);
@@ -138,7 +138,7 @@ public sealed partial class Vehicle
         {
             if (_lean != int.MinValue)
                 return _lean;
-            var rule = BodyStyleRule.Of(Style);
+            var rule = Rule;
             var d = Dice.Fork("lopsided");
             _lean = 0;
             if (!BodyLook.NoAsym && Look != null && rule.Asym > 0 && d.Chance(rule.Asym))

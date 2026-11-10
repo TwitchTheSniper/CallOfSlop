@@ -99,6 +99,7 @@ public static class ShapeGrammar
 
     private static readonly string[] FortGears = ["leaf", "hydraulic", "tandem", "six", "stilt"];
     private static readonly string[] BusGears = ["leaf", "hydraulic", "swing", "wishbone", "tandem", "six", "dually", "crawler"]; // (no stilts: a long tall hull on them rolls)
+    private static readonly string[] CarGears = ["swing", "wishbone", "leaf", "hydraulic"]; // (phase 8a: a car rides low, on two axles)
     private static readonly string[] TankGears = ["leaf", "hydraulic", "tandem", "dually", "six", "stilt"];
 
     private static BodySegment Room(int minBays, int maxBays) => new("room", 3.5f + minBays, 3.5f + maxBays);
@@ -127,6 +128,8 @@ public static class ShapeGrammar
         ["Double Decker"] = new("Double Decker", "bus", "double-decker bus",
             [new(1, Room(3, 4))],
             [("gun deck", 3), ("porch", 1.5), ("porch hitch", 0.5)], 2, 3, BusGears) { Upper = "deck", UpperShare = (0.45f, 0.75f) },
+        // (phase 8a: a car, the archetypes' muscle cars, supercars and European cars: a lofted cab in the archetype's language and a short gun bed behind it, a turret seat facing the gun)
+        ["Car"] = new("Car", "car", "car", [new(1, GunBed(2.5f, 3f))], [("bare", 2), ("hitch", 1)], 1, 1, CarGears),
         ["Scrap Tanker"] = new("Scrap Tanker", "crew", "scrap tanker",
             [new(3, GunBay, Tank(2f, 3f)), new(1, GunBay, Tank(2f, 2f), Bed(1.5f, 2f)), new(1, Room(0, 0), Tank(2f, 3f))],
             [("bare", 3), ("hitch", 1)], 1, 2, TankGears),
@@ -300,6 +303,8 @@ public static class ShapeGrammar
         v.StartWear(LayerTables.WearOf(g.Style));
         if (kit >= VehicleKitVersion.Lofted)
         {
+            if (g is VehicleShape shape)
+                v.UseArchetype(BodyArchetype.Roll(v, shape.Shape)); // (phase 8a: an archetype laid over the style's body rule, on a fork of its own)
             v.Look = BodyLook.Roll(v); // (kit 5: the body layer's "language" fork, so nothing else of a seed moves)
             v.Modules.Add("language " + v.Look.Label);
             if (!Vehicle.FixedCabs)
@@ -470,7 +475,7 @@ public static class ShapeGrammar
                 tags.Add("gap first");
             if (p.Segs[0].Kind == "room")
                 tags.Add("room first");
-            var rule = BodyStyleRule.Of(st);
+            var rule = v.Rule;
             var fits = Catalogue.Where(m => m.Family == "cab" && m.Needs.All(tags.Contains) && !m.Excludes.Any(tags.Contains))
                 .Select(m => (M: m, W: (CabLook.Force is { } only ? (m.Name == only ? 1 : 0) : rule.CabWeight(m.Name)) * (role?.Module("cab", m.Name) ?? 1) * VehicleContext.Module("cab", m.Name))).Where(x => x.W > 0).ToList();
             p.Cab = fits.Count > 0 ? Weighted(D(VehicleLayer.Body, "cab"), fits) : Module("cab", "enclosed");
@@ -580,7 +585,7 @@ public static class ShapeGrammar
     /// </summary>
     private static void Spaces(Vehicle v, PlanData p, BodyLook lk, Dice d)
     {
-        var rule = BodyStyleRule.Of(v.Style);
+        var rule = v.Rule;
         var room = p.Segs.FirstOrDefault(s => s.Kind == "room");
         if (room == null)
             return;
@@ -607,7 +612,7 @@ public static class ShapeGrammar
     /// </summary>
     private static void PlanUpper(Vehicle v, PlanData p, Seg room, BodyLook lk)
     {
-        var rule = BodyStyleRule.Of(v.Style);
+        var rule = v.Rule;
         var d = p.UpperDice!;
         var n = room.Bays.Length;
         if (n < 4)
@@ -662,7 +667,7 @@ public static class ShapeGrammar
         foreach (var way in new[] { 1f, -1f })
             foreach (var side in new[] { -lk.DoorSide, lk.DoorSide })
             {
-                var x = side * (BodyLook.UnderHalf * BodyStyleRule.Of(v.Style).UpperNarrow >= 0.92f ? 0.5f : 0.25f); // (on the floor's quarter grid, by the wall; nearer the middle under a storey set in)
+                var x = side * (BodyLook.UnderHalf * v.Rule.UpperNarrow >= 0.92f ? 0.5f : 0.25f); // (on the floor's quarter grid, by the wall; nearer the middle under a storey set in)
                 for (var foot = 0.5f; foot <= len - 0.25f; foot += 0.25f)
                 {
                     // The stair's foot (where its first tread starts) and its top, along the room; the hatch over it, from just before the first tread to the top.

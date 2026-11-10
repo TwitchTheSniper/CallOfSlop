@@ -11,7 +11,7 @@ public sealed class CabLook
 {
     public BodyLanguage Language { get; }
     public int Facets { get; }
-    public float Width, Height, Belt, Rake, CapsuleRake, HoodHalf, HoodCrown, Reach;
+    public float Width, Height, Belt, Rake, CapsuleRake, HoodHalf, HoodCrown, Reach, Back;
     public char Nose;
 
     /// <summary>The engine's top over a hood's section foot: the hood's sides come down 0.45 m past it (the fixed hoods' 0.56 m less the fenders' room).</summary>
@@ -25,9 +25,11 @@ public sealed class CabLook
 
     public CabLook(Vehicle v, BodyLook look)
     {
-        var rule = BodyStyleRule.Of(v.Style);
+        var rule = v.Rule;
         var d = v.Dice.Fork("cab loft");
         Language = rule.Mix > 0 && d.Fork("language").Chance(rule.Mix) ? rule.Pick(d.Fork("which")) : look.At(0); // (a mixing style's cab may come off another wreck)
+        if (rule.CabLanguage is { } own)
+            Language = own; // (phase 8a: an archetype's own cab, a European cab-over ahead of a box body)
         if (BodyLook.Force is { } forced)
             Language = forced;
         Facets = look.Facets > 0 ? Math.Min(MaxFacets, Math.Max(6, look.Facets - 3)) : 0; // (a cab is smaller than a room: a few facets fewer reads as smooth)
@@ -40,6 +42,7 @@ public sealed class CabLook
         HoodHalf = (float)d.Fork("hood width").Between(rule.HoodHalfMin, rule.HoodHalfMax);
         HoodCrown = (float)d.Fork("hood crown").Between(rule.HoodCrownMin, rule.HoodCrownMax);
         Nose = BodyStyleRule.Weighted(d.Fork("nose"), rule.Noses);
+        Back = rule.CabBackMax > 0 ? (float)d.Fork("back").Between(rule.CabBackMin, rule.CabBackMax) : 0; // (phase 8a: a fastback's roof)
     }
 
     public string Label(char kind) => $"{Language.Name} {KindName(kind)}{(Facets > 0 ? $", {Facets} facets" : "")}, nose {NoseName(Nose)}";
@@ -231,7 +234,11 @@ public sealed partial class Vehicle
         var yt = kind == 'a' ? 1.41f : Math.Clamp(CabLook.RoofStart(t) - 0.02f, 1.43f, t.Top - 0.12f);
         var (zb, d2, d3) = kind == 'w' ? (1.125f, 0.42f, 0.98f) : (0.325f, 0f, 0f);
         var rake = MathF.Min(l.Rake, 0.24f);
-        return new HullLoft.CabShape(kind, -0.6f, -0.6f, zb, MathF.Min(belt, yt - 0.3f), yt, rake, -0.3f, 0.22f, d2, d3, 1f, t, t);
+        // Phase 8a: a fastback's back section comes down toward the window band's top (it keeps 6 cm over it, the part's own limit being 4).
+        var back = l.Back > 0 && kind is 'e' or 'g' ? CabLook.Clamped(t.Scaled(1f, (t.Top - l.Back * (t.Top - yt - 0.06f)) / t.Top), 0.82f, 0.95f, 1.45f) : t;
+        if (back.Top <= yt + 0.05f)
+            back = t;
+        return new HullLoft.CabShape(kind, -0.6f, -0.6f, zb, MathF.Min(belt, yt - 0.3f), yt, rake, -0.3f, 0.22f, d2, d3, 1f, t, back);
     }
 
     /// <summary>A lofted hood for the fixed hood part a plan chose (its length class: a Long Hood or a Bull Hood is long, a Snub Hood or a Slab Nose short; a Slab Nose wide).</summary>

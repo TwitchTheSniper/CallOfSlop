@@ -39,6 +39,7 @@ public enum PartRole : byte
     AmmoSwitch, // several ammo feeds in, one out, a data input picking which (ConstructAmmo.cs)
     Burner, // a balloon's burner: fuel to heat in the lift cell up its flame (ConstructLift.cs)
     Rotor, // a propeller, rotor or ducted fan on a shaft or its own motor (ConstructRotor.cs)
+    Leg, // a walker leg: hip, segments, knees, foot and actuators in one part, posed by the gait brain (ConstructWalk.cs, docs/sandbox/GIANTS.md)
 }
 
 /// <summary>A lift cell's envelope (a fluid tank's <c>"envelope"</c>; ConstructLift.cs).</summary>
@@ -718,6 +719,7 @@ public sealed class ConstructPartDef
     public bool ToolOnly; // "toolOnly": never in the inventory or the Assemblers: a tool makes it (a cylinder's head)
     public SurfaceDef? Surface; // a lifting surface (ConstructAero.cs)
     public RotorDef? Rotor; // a propeller or a rotor (ConstructRotor.cs)
+    public LegDef? Leg; // a walker leg (ConstructWalk.cs)
     public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true }; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
@@ -771,6 +773,7 @@ public sealed class ConstructPartDef
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.AmmoSwitch => 1, // which feed goes on
+        PartRole.Leg => 2, // a Driving Module's drive link: the seat walks it (ConstructWalk.cs)
         PartRole.Hitch => IsCargoWinch ? 3 : IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
@@ -1232,7 +1235,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1504,7 +1507,7 @@ public static partial class ConstructParts
         d.IsRequisition = Opt(root, "requisition") is { ValueKind: JsonValueKind.True };
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster", "burner", "fluidTank", "rotor"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster", "burner", "fluidTank", "rotor", "leg"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -1532,6 +1535,7 @@ public static partial class ConstructParts
             PartRole.Thruster => "thruster",
             PartRole.Burner => "burner",
             PartRole.Rotor => "rotor",
+            PartRole.Leg => "leg",
             _ => "",
         };
         foreach (var key in roleKeys)
@@ -1712,6 +1716,10 @@ public static partial class ConstructParts
                 break;
             case PartRole.Rotor:
                 ParseRotor(d, block!.Value, file, bw);
+                break;
+            case PartRole.Leg:
+                ParseLeg(d, block!.Value, file, bw);
+                d.DataIn = ["height", ConstructModules.Bus]; // (a Driving Module's drive output ends at its drive port: the seat walks it; "height" is for the next phase's wired height)
                 break;
             case PartRole.AmmoBox:
                 Known(block!.Value, ["rounds", "cookOff"], bw);

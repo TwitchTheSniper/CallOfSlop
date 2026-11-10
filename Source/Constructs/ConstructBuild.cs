@@ -331,6 +331,31 @@ public static class ConstructBuild
     public const float WireReach = 8f; // the longest wire (between the two parts' centres)
 
     /// <summary>
+    /// How long a wire between two parts is: centre to centre, except that a part bigger than the reach (a large or capital
+    /// walker leg, a hull section) is reached at the nearest point of its bounds, so a big part can be wired at all.
+    /// </summary>
+    private static float WireSpan(Vector3 a0, Vector3 a1, Quaternion qa, Vector3 ta, Vector3 b0, Vector3 b1, Quaternion qb, Vector3 tb)
+    {
+        var ca = ta + Vector3.Transform((a0 + a1) * 0.5f, qa);
+        var cb = tb + Vector3.Transform((b0 + b1) * 0.5f, qb);
+        if (MathF.Max(MaxSide(a1 - a0), MaxSide(b1 - b0)) <= WireReach)
+            return Vector3.Distance(ca, cb);
+        var pa = Nearest(a0, a1, qa, ta, cb);
+        return Vector3.Distance(pa, Nearest(b0, b1, qb, tb, pa));
+    }
+
+    private static float MaxSide(Vector3 v) => MathF.Max(v.X, MathF.Max(v.Y, v.Z));
+
+    /// <summary>The point of a part's bounds (its segment's pose) nearest <paramref name="world"/>; a small part's own centre.</summary>
+    private static Vector3 Nearest(Vector3 lo, Vector3 hi, Quaternion q, Vector3 t, Vector3 world)
+    {
+        if (MaxSide(hi - lo) <= WireReach)
+            return t + Vector3.Transform((lo + hi) * 0.5f, q);
+        var local = Vector3.Transform(world - t, Quaternion.Conjugate(q));
+        return t + Vector3.Transform(Vector3.Clamp(local, lo, hi), q);
+    }
+
+    /// <summary>
     /// Can part <paramref name="from"/>'s output be wired into part <paramref name="to"/>? Null when it can, else the reason
     /// (the linking tool shows it): wires join an output (a seat, a control, a sensor, a gate) to an input (a joint, the
     /// engine, a gate, a lamp...) of the same construct; a part can be wired to itself only if it is logic (a NOT on
@@ -363,7 +388,7 @@ public static class ConstructBuild
         c.PartBounds(to, out var b0, out var b1);
         c.SegPose(c.Parts[from].Seg, out var qa, out var ta);
         c.SegPose(c.Parts[to].Seg, out var qb, out var tb);
-        if (Vector3.Distance(ta + Vector3.Transform((a0 + a1) * 0.5f, qa), tb + Vector3.Transform((b0 + b1) * 0.5f, qb)) > WireReach)
+        if (WireSpan(a0, a1, qa, ta, b0, b1, qb, tb) > WireReach)
             return $"a wire reaches at most {WireReach:0} m";
         if (c.RouteCount >= Construct.MaxRoutes)
             return $"at most {Construct.MaxRoutes} wires a construct";

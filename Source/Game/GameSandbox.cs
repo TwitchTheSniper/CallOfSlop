@@ -342,6 +342,8 @@ public sealed partial class Game
                 c.DriverSeat = seat;
                 ConstructEdits.DriveInput(c, b, World.TickDt);
                 c.RollInput = ConstructEdits.RollOf(h.SeatKeys);
+                if (c.RollInput != 0 && c.LegCount > 0)
+                    c.Wake(); // (a walker strafes on the roll keys: ConstructWalk.cs)
             }
             else if (c.Driver == p.Id)
                 SandboxHands.StopDriving(c); // (the link from their seat to the drivetrain went)
