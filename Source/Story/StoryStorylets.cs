@@ -53,6 +53,7 @@ public sealed class StoryletEnd
     public int By = -1; // the variable who says it (and asks the choice), -1 the lead
     public string Hook = "";
     public int Learn = -1, LearnFrom = -1; // a fact the player learns (a variable, usually a named one) and from whom (-1 nobody)
+    public string[] World = []; // the author's plain words for what physically happens (the story map shows them; the game does nothing with them)
     public string Next = ""; // a storylet this one leads to (only for the builder and the checks: the next one still needs its needs)
 }
 
@@ -97,6 +98,7 @@ public sealed class StoryletRules
     public StoryletQuality[] Qualities = [];
     public StoryletSpot[] Spots = [];
     public int OnStorylet = -1, StoryletAt = -1, Played = -1, Lead = -1, Visited = -1, In = -1; // relations
+    public int Ended = -1, EndedWith = -1; // relations: which ends a player has had (a bit each), and who led it last (entity + 1): the Logbook's Paths
     public int VerbStorylet = -1, VerbLearn = -1, VerbChoose = -1; // verbs
 
     public StoryletDef? Find(string id) => Array.Find(Storylets, s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
@@ -105,7 +107,7 @@ public sealed class StoryletRules
     private static readonly string[] QualityKeys = ["name", "about", "kind", "min", "max", "decay"];
     private static readonly string[] SpotKeys = ["name", "near", "reach"];
     private static readonly string[] StoryletKeys = ["id", "title", "about", "bucket", "scope", "again", "priority", "needs", "cast", "prefer", "beats", "job", "hook", "ends", "final"];
-    private static readonly string[] EndKeys = ["id", "when", "within", "after", "choice", "if", "then", "say", "by", "hook", "learn", "from", "next"];
+    private static readonly string[] EndKeys = ["id", "when", "within", "after", "choice", "if", "then", "say", "by", "hook", "learn", "from", "next", "world"];
     private static readonly string[] WhenKeys = ["verb", "actor", "target", "owner", "place", "item"];
 
     /// <summary>
@@ -183,6 +185,7 @@ public sealed class StoryletRules
         var sr = new StoryletRules { Qualities = qualities.ToArray() };
         int Rel(string n) => rules.Relation(n)?.Id ?? -1;
         (sr.OnStorylet, sr.StoryletAt, sr.Played, sr.Lead, sr.Visited, sr.In) = (Rel("OnStorylet"), Rel("StoryletAt"), Rel("Played"), Rel("Lead"), Rel("Visited"), Rel("In"));
+        (sr.Ended, sr.EndedWith) = (Rel("Ended"), Rel("EndedWith"));
         (sr.VerbStorylet, sr.VerbLearn, sr.VerbChoose) = (rules.VerbId("Storylet"), rules.VerbId("Learn"), rules.VerbId("Choose"));
         var files = StoryRules.Files(Path.Combine(folder, "Storylets"));
         if (files.Length == 0)
@@ -443,6 +446,7 @@ public sealed class StoryletRules
             else if (x.TryGetProperty("from", out _))
                 throw new StoryException($"{at}: \"from\" goes with \"learn\"");
             end.Next = StoryRules.Str(x, "next", at);
+            end.World = StoryRules.List(x, "world", at).Select(v => v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : throw new StoryException($"{at}: each of \"world\" is a sentence")).ToArray();
             end.Text = end.When != null ? $"when {end.When.Text}{(end.Within > 0 ? $" within {StoryRules.Span(end.Within)}" : "")}"
                 : end.After > 0 ? $"after {StoryRules.Span(end.After)}" : $"choice \"{end.Choice}\"";
             if (cond.Length > 0)
@@ -1093,6 +1097,10 @@ public sealed class StoryStorylets
             W.Set(player, R.OnStorylet, t, 0);
             W.Set(player, R.Played, t, 0);
             W.Set(player, R.StoryletAt, t, 0);
+            if (R.Ended >= 0)
+                W.Set(player, R.Ended, t, 0);
+            if (R.EndedWith >= 0)
+                W.Set(player, R.EndedWith, t, 0);
         }
         _player.Remove(player);
     }
@@ -1142,6 +1150,10 @@ public sealed class StoryStorylets
             W.Set(group[m], R.OnStorylet, t, 0);
             W.Add(group[m], R.Played, t, 1);
             W.Set(group[m], R.StoryletAt, t, (int)now);
+            if (end != null && R.Ended >= 0)
+                W.Set(group[m], R.Ended, t, W.Get(group[m], R.Ended, t) | 1 << end.Index);
+            if (R.EndedWith >= 0)
+                W.Set(group[m], R.EndedWith, t, d.CastVars > 1 && r.Binds[1] >= 0 ? r.Binds[1] + 1 : 0);
         }
         if (end != null && chose && R.VerbChoose >= 0)
             _e.Record(R.VerbChoose, r.Player, end.By >= 0 ? r.Binds[end.By] : -1, -1, PlaceOf(r.Player), t, end.Index + 1);

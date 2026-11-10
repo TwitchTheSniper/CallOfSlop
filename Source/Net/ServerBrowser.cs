@@ -375,8 +375,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 229: walker feet on the wire (ConstructNetWalk.cs, docs/sandbox/GIANTS.md "Walker feet on clients"): a pose's asleep byte gains bit 1, and a walker's pose carries its gait state and the feet that moved (plus a few in turn) after the rotors; a client no longer finds its own footholds.
     // 230: CActKind.Aircraft at the end of CActKind (docs/vehiclekit/AIRCRAFT.md "In the game"): a creative aircraft spawned flying with a bot pilot, by shape or by air role.
     // 231: dug ground's shape from the same ops (docs/sandbox/TERRAIN-DIGGING.md "Smooth tops"): a crater is open upwards and thin roofs fall in (TerrainEdits.CraterTop), a dug border column makes the cells beside it dug cells, and tops slope over steps up to 4 m (GroundTops.Near/Far, Middle). No message changed.
-    // 232: STAND-IN: Msg.StandIn at the end of Msg (Source/StandIns: the story's placeholder craft, until the vehicle and ship redo).
-    public const byte ProtocolVersion = 232;
+    // 232: the Logbook's Paths (docs/story/STORY.md "Paths"): Msg.StoryPaths at the end of Msg. Joining a talk (docs/story/STORY.md "Talking to people"): Msg.TalkInvite after it, TalkAsk.Join.
+    // 233: STAND-IN: Msg.StandIn at the end of Msg (Source/StandIns: the story's placeholder craft, until the vehicle and ship redo).
+    public const byte ProtocolVersion = 233;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -84,6 +84,7 @@ public enum GameAction
     SeatHook, // binds version 23: in a seat, hook to a launch rail, launch, undock (ConstructCarrier.cs)
     SeatEject, // ...and an ejection seat's handle (PilotGear.cs)
     Logbook, // binds version 25: Sandbox, the Logbook (the old records' fragments you hold, and your open leads; Source/UI/UiLogbook.cs) on F1
+    JoinTalk, // binds version 26: Sandbox, join the talk another player is having with one of the story's people, while its notice shows (Program.StoryTalk.cs) on Backspace
     COUNT,
 }
 
@@ -410,6 +411,7 @@ public static class Keybinds
         Key(GlfwKey.G), // Hook, launch, undock, in a seat: binds version 23
         Key(GlfwKey.L), // Eject, in an ejection seat
         Key(GlfwKey.F1), // Logbook (Sandbox): binds version 25
+        Key(GlfwKey.Backspace), // Join another player's talk (Sandbox): binds version 26
     ];
 
     /// <summary>
@@ -443,8 +445,9 @@ public static class Keybinds
     /// 24: several bindings per action (<see cref="Slots"/>; <c>bind2_X</c> and <c>bind3_X</c> lines); the tool wheel's second
     /// binding on the grave accent key added (same rule: left unbound when the player uses that key for something live beside it).
     /// 25: the Logbook (Sandbox) on F1 added (same rule).
+    /// 26: Join another player's talk (Sandbox) on Backspace added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 25;
+    public const int DefaultsVersion = 26;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -505,6 +508,7 @@ public static class Keybinds
         (23, (int)GameAction.SeatEject, Unbound, Key(GlfwKey.L)),
         (24, At(GameAction.ToolWheel, 1), Unbound, Key(GlfwKey.GraveAccent)), // (a second binding: the laptop's way to the wheel)
         (25, (int)GameAction.Logbook, Unbound, Key(GlfwKey.F1)),
+        (26, (int)GameAction.JoinTalk, Unbound, Key(GlfwKey.Backspace)),
     ];
 
     /// <summary>
@@ -673,6 +677,7 @@ public static class Keybinds
             GameAction.SeatHook => "Hook, launch or undock (in a seat)",
             GameAction.SeatEject => "Eject (in an ejection seat)",
             GameAction.Logbook => "Logbook (Sandbox: the old records you have found, and your leads)",
+            GameAction.JoinTalk => "Join a chat (Sandbox: when another player talks to someone, while the notice shows)",
             _ => a.ToString(),
         };
 

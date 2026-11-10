@@ -599,7 +599,10 @@ public static partial class SelfTest
         }
         var sw = new Stopwatch();
         double sum = 0, worst = 0;
-        long bytes = 0;
+        // Allocation as the least of three equal runs of ticks (HANDOFF.md, "How to write a new allocation probe"): a real
+        // per-tick allocation shows in every run, a one-off on this thread (JIT tier-up, a lazily made runtime structure)
+        // in one at most. Summed over all the ticks, one such 7.7 KB jump failed the 16000-part hull at random on CI.
+        Span<long> runBytes = stackalloc long[3];
         var contacts = 0;
         var sim = 0;
         for (var t = 0; t < ticks; t++)
@@ -609,12 +612,13 @@ public static partial class SelfTest
             sw.Restart();
             w.Step(q, World.TickDt);
             var ms = sw.Elapsed.TotalMilliseconds;
-            bytes += GC.GetAllocatedBytesForCurrentThread() - b0;
+            runBytes[t * 3 / ticks] += GC.GetAllocatedBytesForCurrentThread() - b0;
             sum += ms;
             worst = Math.Max(worst, ms);
             contacts = Math.Max(contacts, ConstructPhysics.LastContacts);
             sim = Math.Max(sim, ConstructPhysics.LastSimulated);
         }
+        var bytes = Math.Min(runBytes[0], Math.Min(runBytes[1], runBytes[2]));
         Line($"collision cost, {name}: {sum / ticks:0.000} ms a tick (worst {worst:0.000}), up to {contacts} contacts, {sim} simulated, {w.Bodies.Count(b => !b.Asleep)} awake, {bytes} bytes in {ticks} ticks");
         if (bytes > 0)
             Fail($"compound collision: {name} allocated {bytes} bytes in {ticks} ticks");

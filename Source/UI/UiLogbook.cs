@@ -6,6 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The Logbook (F1 in Sandbox by default; docs/story/FRAGMENTS.md): the old records' fragments this player holds, each with where it
 /// came from, a "?" for each one still out there, and the leads they have heard of, a "?" until what the lead points to is found.
+/// Its second page, Paths, is UiLogbookPaths.cs.
 /// It reads what the host sent (Game.FragmentsHeld, Game.FragmentLeads) and the texts every peer has (Story/Fragments). Closed, it
 /// costs one bool check.
 /// </summary>
@@ -17,14 +18,26 @@ public sealed partial class Ui
     {
         if (!LogbookOpen)
             return;
-        ImGui.SetNextWindowSize(new float2(560 * _scale, 600 * _scale), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(new float2(760 * _scale, 640 * _scale), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowBgAlpha(0.96f);
         if (ImGui.Begin("Logbook###logbook"u8, ref LogbookOpen))
         {
             if (game is not { SandboxOn: true })
                 ImGuiSafe.TextWrapped("The Logbook is a Sandbox thing: start or join a Sandbox game.");
-            else
-                DrawLogbookBody(game);
+            else if (ImGui.BeginTabBar("##logbooktabs"u8))
+            {
+                if (ImGui.BeginTabItem("Records"u8))
+                {
+                    DrawLogbookBody(game);
+                    ImGui.EndTabItem();
+                }
+                if (ImGui.BeginTabItem("Paths"u8))
+                {
+                    DrawLogbookPaths(game); // (what they did and chose, and where they stand: UiLogbookPaths.cs)
+                    ImGui.EndTabItem();
+                }
+                ImGui.EndTabBar();
+            }
             ImGui.Separator();
             ImGuiSafe.TextColored(Dim, $"{Keybinds.Name(bind)} or Esc closes this window.");
         }
