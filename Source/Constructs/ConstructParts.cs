@@ -773,6 +773,7 @@ public sealed class ConstructPartDef
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.AmmoSwitch => 1, // which feed goes on
+        PartRole.Leg => 2, // a Driving Module's drive link: the seat walks it (ConstructWalk.cs)
         PartRole.Hitch => IsCargoWinch ? 3 : IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
@@ -1718,7 +1719,7 @@ public static partial class ConstructParts
                 break;
             case PartRole.Leg:
                 ParseLeg(d, block!.Value, file, bw);
-                d.DataIn = [ConstructModules.Bus]; // (a Driving Module's drive output ends here: the seat walks it)
+                d.DataIn = ["height", ConstructModules.Bus]; // (a Driving Module's drive output ends at its drive port: the seat walks it; "height" is for the next phase's wired height)
                 break;
             case PartRole.AmmoBox:
                 Known(block!.Value, ["rounds", "cookOff"], bw);

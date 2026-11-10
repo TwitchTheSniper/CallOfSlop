@@ -1,0 +1,92 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Insect Leg",
+  "description": "A insect walker leg: hip, segments, knees, foot and actuators in one part. The gait brain walks it.",
+  "group": "Medium",
+  "section": "Legs",
+  "role": "leg",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "leg": {
+    "type": "insect",
+    "tier": "medium",
+    "segments": [
+      0.84,
+      2.04,
+      2.28,
+      0.84
+    ],
+    "width": 0.5,
+    "foot": 0.45,
+    "hip": [
+      0,
+      0,
+      0
+    ],
+    "load": 8000,
+    "stepTime": 0.7,
+    "stepHeight": 0.15,
+    "stand": 0.45,
+    "spread": 0.6,
+    "power": {
+      "hydraulic": 1.0,
+      "electric": 0.8,
+      "shaft": 1.2
+    },
+    "jointColor": "#252a22"
+  },
+  "mass": 843.9,
+  "health": 4409,
+  "armour": 24,
+  "material": "steel",
+  "color": "#4f5d48",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        0.516,
+        -0.275,
+        -0.275
+      ],
+      "max": [
+        0.65,
+        0.275,
+        0.275
+      ],
+      "color": "#252a22",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}
