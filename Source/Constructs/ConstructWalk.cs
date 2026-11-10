@@ -24,6 +24,13 @@ public struct CLeg
     public short Pump; // the pump whose oil it takes (FeedOil)
     public bool Hold; // its next foothold has ground under it (within reach, not too steep); else it doesn't step
     public bool Grounded; // its foot is on ground (or stepping onto it); a foot hanging over nothing carries nothing
+    // The wire (protocol 229, ConstructNet.WriteWalk): the server's foot as last noted and the walk tick it last moved at (a
+    // foot that moved lately goes in every pose; a planted one only in its turn); a client's foot as last heard, its flags
+    // (ConstructNet.FootSwinging and the rest) and whether it has been heard at all.
+    public Vector3 NetFoot;
+    public uint NetMoved;
+    public byte NetFlags;
+    public bool NetHeard;
 }
 
 public sealed partial class Construct
@@ -42,8 +49,12 @@ public sealed partial class Construct
     public bool FeetSet; // the feet have been put down once
     public float WalkTop; // m/s the build walks at, at best (its legs, their load)
     public string WalkProblem = ""; // why it doesn't stand (the HUD)
-    public long WalkStamp; // when the server last stepped the feet (the renderer poses them itself when it doesn't)
-    public long WalkDrawStamp; // the renderer's last pose of them (its own clock)
+    public uint WalkTicks; // server: ticks the gait brain has run (the feet's NetMoved is on this clock)
+    internal int PoseFeetAt; // server: where the next pose's feet in turn start (ConstructNet.WriteWalk)
+    public bool NetFeetSet; // client: the server has put the feet down (its FeetSet), as last heard
+    public byte NetProblem, NetProblemArg; // client: the walk problem as last heard (its string is made only when it changes)
+    public Vector3[] NetHistFeet = []; // client: each pose's feet (NetHistMax rows of LegCount), drawn at the body's tick (ConstructNet.SampleFeet)
+    public byte[] NetHistFootFlags = [];
     public float LegLoad; // N m at the crank that shaft-fed legs take (server; ConstructWalkLegs.cs, LegWork)
     public float LegWatts; // W the legs did last tick (server; the HUD and the checks)
     public float WalkPowerLift = float.PositiveInfinity; // m/s of lifting the body the circuit can feed the legs at (server; ConstructWalkLegs.cs, PowerLift)
@@ -57,9 +68,11 @@ public sealed partial class Construct
         Span<ushort> was = stackalloc ushort[MaxLegs];
         Span<Vector3> foot = stackalloc Vector3[MaxLegs];
         Span<bool> grounded = stackalloc bool[MaxLegs];
+        Span<CLeg> net = stackalloc CLeg[MaxLegs]; // (the wire's state of each foot: kept with its leg)
         var old = Math.Min(LegCount, MaxLegs);
         for (var k = 0; k < old; k++)
         {
+            net[k] = Legs[k];
             was[k] = Legs[k].Part;
             foot[k] = Legs[k].Foot;
             grounded[k] = Legs[k].Grounded;
@@ -112,6 +125,10 @@ public sealed partial class Construct
                 {
                     Legs[k].Foot = Legs[k].From = Legs[k].To = foot[m];
                     Legs[k].Grounded = Legs[k].Hold = grounded[m];
+                    Legs[k].NetFoot = net[m].NetFoot;
+                    Legs[k].NetMoved = net[m].NetMoved;
+                    Legs[k].NetFlags = net[m].NetFlags;
+                    Legs[k].NetHeard = net[m].NetHeard;
                     kept++;
                     break;
                 }
@@ -137,6 +154,19 @@ public static partial class ConstructPhysics
     public const float MaxWalkLoad = 1.5f; // the body's mass over what its legs carry: past it, it collapses
     public const float MaxStretch = 0.94f; // a planted leg's hip to foot, a share of its reach: the body rises no higher
 
+    // What stops a walker (the HUD; on the wire by number: ConstructNet.WriteWalk).
+    public const string ProblemNotRound = "its legs don't stand round its weight", ProblemTooHeavy = "the legs can't carry its weight",
+        ProblemNoGround = "no ground under its feet", ProblemNoFooting = "no footing ahead: the legs find no ground in reach";
+
+    private static readonly string[] _problemLegs = new string[MinWalkLegs];
+
+    /// <summary>"N working legs with power": made once for each N below the least (nothing allocates per tick).</summary>
+    public static string ProblemLegs(int live)
+    {
+        var n = Math.Clamp(live, 0, MinWalkLegs - 1);
+        return _problemLegs[n] ??= $"{n} working legs with power: it needs {MinWalkLegs}";
+    }
+
     /// <summary>Server, each tick of a free awake body with legs: the feet, then the body.</summary>
     private static void Walk(ConstructWorld world, Construct c, IWorldQuery query, float dt)
     {
@@ -159,14 +189,14 @@ public static partial class ConstructPhysics
             reach += c.Legs[k].Reach;
             stepTime += p.D.Leg.StepTime / sound * CarrySlows(c.Legs[k].Carry, p.D.Leg.Load) / LegPace(c, k);
         }
-        c.WalkStamp = Stopwatch.GetTimestamp();
+        c.WalkTicks++;
         if (live != c.WalkLive)
             PlanGait(c, live);
         var ratio = load > 0 ? c.Mass / load : float.PositiveInfinity;
         var over = live >= MinWalkLegs && c.FeetSet && !HeldWithout(c, c.WorldCom, 255); // (every working foot down, and still the centre of mass is outside them)
         if (live < MinWalkLegs || ratio > MaxWalkLoad || over)
         {
-            c.WalkProblem = fed == 0 ? NoLegPower : live < MinWalkLegs ? $"{live} working legs with power: it needs {MinWalkLegs}" : over ? "its legs don't stand round its weight" : "the legs can't carry its weight";
+            c.WalkProblem = fed == 0 ? NoLegPower : live < MinWalkLegs ? ProblemLegs(live) : over ? ProblemNotRound : ProblemTooHeavy;
             c.Walking = false;
             c.WalkTop = 0;
             HangFeet(c);
@@ -186,7 +216,7 @@ public static partial class ConstructPhysics
         if (!HeldWithout(c, c.WorldCom, 255))
         {
             // (the feet as found this tick don't stand round it: none on ground, or it is already over the edge; it falls as physics)
-            c.WalkProblem = Grounded(c) < MinWalkLegs ? "no ground under its feet" : "its legs don't stand round its weight";
+            c.WalkProblem = Grounded(c) < MinWalkLegs ? ProblemNoGround : ProblemNotRound;
             c.Walking = false;
             c.WalkTop = 0;
             HangFeet(c);
@@ -270,8 +300,8 @@ public static partial class ConstructPhysics
     /// <summary>
     /// The feet for a body at pose <paramref name="pos"/>, <paramref name="rot"/> moving at <paramref name="vel"/> and
     /// <paramref name="angVel"/>: each foot's next foothold (its rest point, led by the motion, dropped onto the ground) and
-    /// the group in the air. The server runs it on the body; a client's renderer runs it on the pose it draws, so the feet
-    /// need nothing on the wire. Allocates nothing.
+    /// the group in the air. The server runs it on the body; a client hears the feet in the poses (protocol 229,
+    /// ConstructNetWalk.cs). Allocates nothing.
     /// </summary>
     public static void WalkFeet(Construct c, IWorldQuery query, Vector3 pos, Quaternion rot, Vector3 vel, Vector3 angVel, float swing, float dt, bool server)
     {
@@ -569,7 +599,7 @@ public static partial class ConstructPhysics
             }
         }
         if (share < 0.05f && edge && (target.LengthSquared() > 1e-4f || yaw != 0))
-            c.WalkProblem = "no footing ahead: the legs find no ground in reach";
+            c.WalkProblem = ProblemNoFooting;
         return share;
     }
 
