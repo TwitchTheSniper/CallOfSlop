@@ -571,6 +571,9 @@ public static class InteriorPlanner
             return null;
         if (hi - lo + 1 < 2)
             return null;
+        // (never through a hall's west wall: its stairs climb that column, and a doorway there opened onto a flight: phase 9's walk-through)
+        if (a.Hall >= 0 && side == Side.West || b.Hall >= 0 && side == Side.East)
+            return null;
         return new PlanDoor { Deck = a.Deck, Room = a.Id, Other = b.Id, Side = side, Slot = lo - start + (hi - lo - 1) / 2, Why = why };
     }
 

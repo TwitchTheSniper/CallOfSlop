@@ -625,7 +625,143 @@ classes, a client.
 and the other rooms' switches, in that order (a lamp lights only from a wire). One magazine per seed: a critical room is generated only
 in an outer band of the open deck, and the magazine prefers the inner row. Lockers are many (130 on seed 1: two per quarters' cells).
 
-### Next (phase 9 and on)
+## Phase 9 record (branch `feat/interior-halls`)
+
+User feedback (2026-11-10): the rooms were all small and people-sized; big hulls want hangars and industrial spaces (a carrier's
+hangar deck, a cargo ship's engine room), decoration in every room, and layouts that are not mirrored.
+
+**Step 0, the drive seat (regression).** After the walker's plant and bank moved (feat/walker-fixes) and phase 8's programme, the bridge
+stood far from the one leg the blueprint's Driving Module was wired to, and the module went unwired: the fitted walker had no drive seat.
+A Driving Module into any leg drives the walker, so the carried helm now stands on the bridge's spot nearest any base part of the wired
+name and wires the nearest (`InteriorBuilder.Twins`). `--gen-interior` builds the base and the written file and fails loudly
+(`drive: FAIL ...`, a non-zero exit) when the base has a drive seat and the fitted one has none; it did fail once in development, when the
+halls pushed the bridge amidships. The halls now keep off the bow section on the open deck (the crew's: the bridge stays by the legs).
+
+**Halls** (`SizeClasses.json` `halls`, `InteriorPlanner.Halls`, `InteriorBuilder.HallFloors`, `Railings`):
+- A hall is a room through several storeys: `{"room", "storeys", "share" (of the hull's length), "minW", "where" (deck, chassis, any)}`.
+  They are planned first, after the shafts: the longest that fits up to the share (at most two bulkhead sections), across a whole strip
+  from the hull side to the spine (or the strip's outer band where the shafts stand), each on the side with less hall so far. A hall of a
+  programme room takes its place in the programme. Its floor room is on the lowest storey (module set `<room>Hall` when there is one);
+  each storey above is a **gallery** room over the same cells, out to the spine on that deck.
+- A gallery's floor is laid only under the walls it builds itself (its hull side, its corridor side, an end it doesn't share) and down
+  the hall's west column; the rest is open, so the hall is one volume (6 m, 9 m or 12 m). Its edge over the hall is a waist-high
+  railing (`shell.railing`: Steel Half Wall 4 m, 2 m pieces at inner corners). A flight of stairs a storey climbs the west column, two
+  blocks apart, each through a Stair Floor (welded: no socket of a slab or a panel wall meets a flight away from a stairwell's 4 m walls).
+- A hall's corridor door is an open bay (a Garage Wall opening, no leaf), except a critical one's. Rooms behind a hall may open off it.
+- Capital: on the deck a hangar (30%), a production hall (25%), a store hall (20%) and a workshop hall (20%), 2 storeys; in the hollow
+  chassis an engine hall (engineering, 3 storeys), a cargo hold (storage, 4 storeys, 12 m), a second hold (3), a production hall,
+  a workshop hall and a fuel hall. Extra large: a hangar and a production hall. `smallShare` is the target most of the room floor small
+  rooms may take (0.5 for extra large and capital), reported per plan.
+- New module sets: `hangarHall` (Hangar Bay Medium, repair station, tool racks, crate stacks), `engineeringHall` (Medium Genset or Small,
+  batteries, power board, hydraulic pump, fluid tanks; fed by a pipe), `storageHall`, `productionHall` (two Assemblers fed by chutes, press,
+  die lathe), `gallery` (crates, a locker, a tool rack, a lamp).
+
+**Asymmetry.** Halls go on the side with less hall floor, at different lengths each side, so port and starboard differ. The report has a
+symmetry score: the share of room cells whose mirror cell across the centreline holds a room of the same kind.
+
+**Seed 1, deck 1 (the upper deck of the open interior), before (`--no-halls`) and after** (capital letters on deck 1 are galleries over
+deck 0's halls; `#` the walker's plant and bank):
+
+```
+Deck 1:
+                                                               
+   ttt uuu LLLLLLL vvvvvvv+www+yyy zzz+000+111+222 33333 ##### 
+   t t u u L L L L v v v v w w y y z z 0 0 1 1 2 2 3 3 3 # # # 
+   ttt uuu LLLLLLL vvvvvvv www yyy zzz 000 111 222 33333 ##### 
+   t t u u L L L L v v v v w w y y z z 0 0 1 1 2 2 3 3 3 # # # 
+   ttt uuu LLLLLLL vvvvvvv www yyy zzz 000 111 222 33333 ##### 
+   +   +   L L L   +                   +   +       +     # # # 
+   FFFFFFF+LLLLL S mmm+nnn+ooo+ppp EEE qqq+rrr S x sssss ##### 
+   F F F F L L L S m m n n o o p p E E q q r r S x s s s       
+   FFFFFFF LLLLL S mmm nnn ooo ppp EEE qqq rrr S x sssss x x x 
+   F F F F L L L S m m n n o o p p E E q q r r S x s s s       
+   FFFFFFF LLLLL S mmm nnn ooo ppp EEE qqq rrr S x sssss x x x 
+     +     +     + +   +   +   +   +   +   +   +   +           
+   ...............|...............|...............|........... 
+   . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+   ...............|...............|...............|........... 
+   +       +         +       +       +     +   +   +           
+   AAAAA CCCCCCCCC GGGGGGG+MMMMMMM 4444444+555 666 777 x x x x 
+   A A A C C C C C G G G G M M M M 4 4 4 4 5 5 6 6 7 7         
+   AAAAA CCCCCCCCC GGGGGGG MMMMMMM 4444444 555 666 777 x x x x 
+   A A A C C C C C G G G G M M M M 4 4 4 4 5 5 6 6 7 7         
+   AAAAA CCCCCCCCC GGGGGGG MMMMMMM 4444444 555 666 777 ####### 
+   A A     +       +   +     +     +   +   +   +       # # # # 
+   AAA DDDDDDDDDDD 888 999+AAAAAAA BBB CCC+DDDDDDD ########### 
+   A A D D D D D D 8 8 9 9 A A A A B B C C D D D D # # # # # # 
+   AAA DDDDDDDDDDD 888 999 AAAAAAA BBB CCC DDDDDDD ########### 
+   A A D D D D D D 8 8 9 9 A A A A B B C C D D D D # # # # # # 
+   AAA DDDDDDDDDDD 888 999 AAAAAAA BBB CCC DDDDDDD ########### 
+                                                               
+
+Deck 0:
+```
+
+```
+Deck 1:
+                                                               
+   NNNNNNN RRRRRRR BBBBBBBBBBBBBBB kkk+IIIIIIIIIII lllll ##### 
+   N N N N R R R R B B B B B B B B k k I I I I I I l l l # # # 
+   NNNNNNN RRRRRRR BBBBBBBBBBBBBBB kkk IIIIIIIIIII lllll ##### 
+   N N N N R R R R B B B B B B B B k k I I I I I I l l l # # # 
+   NNNNNNN RRRRRRR BBBBBBBBBBBBBBB kkk IIIIIIIIIII lllll ##### 
+     +     R R R   B B B B B B B B                 +     # # # 
+   MMMMMMM+RRRRR S BBBBBBBBBBBBBBB EEE TTTTTTT S x jjjjj ##### 
+   M M M M R R R S B B B B B B B B E E T T T T S x j j j       
+   MMMMMMM RRRRR S BBBBBBBBBBBBBBB EEE TTTTTTT S x jjjjj x x x 
+   M M M M R R R S B B B B B B B B E E T T T T S x j j j       
+   MMMMMMM RRRRR S BBBBBBBBBBBBBBB EEE TTTTTTT S x jjjjj x x x 
+     +     +     +       +         +     +     +   +           
+   ...............|...............|...............|........... 
+   . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+   ...............|...............|...............|........... 
+   +       +           +             +         +   +           
+   JJJJJ KKKKKKKKK GGGGGGGGGGG DDDDDDDDDDDDDDD mmm nnn x x x x 
+   J J J K K K K K G G G G G G D D D D D D D D m m n n         
+   JJJJJ KKKKKKKKK GGGGGGGGGGG DDDDDDDDDDDDDDD mmm nnn x x x x 
+   J J J K K K K K G G G G G G D D D D D D D D m m n n         
+   JJJJJ KKKKKKKKK GGGGGGGGGGG DDDDDDDDDDDDDDD mmm nnn ####### 
+   J J     +       G G G G G G D D D D D D D D +       # # # # 
+   JJJ LLLLLLLLLLL GGGGGGGGGGG DDDDDDDDDDDDDDD ooo ########### 
+   J J L L L L L L G G G G G G D D D D D D D D o o # # # # # # 
+   JJJ LLLLLLLLLLL GGGGGGGGGGG DDDDDDDDDDDDDDD ooo ########### 
+   J J L L L L L L G G G G G G D D D D D D D D o o # # # # # # 
+   JJJ LLLLLLLLLLL GGGGGGGGGGG DDDDDDDDDDDDDDD ooo ########### 
+                                                               
+
+Deck 0:
+```
+
+| Seed 1 | Before | After |
+| --- | --- | --- |
+| Halls (deck) | none | Hangar 32x24x6 m, Production 32x20x6 m, Store 24x20x6 m, Workshop 24x12x6 m |
+| Halls (chassis) | none | Engine hall 32x24x9 m, Cargo hold 28x24x12 m, hold 28x24x9 m, Production 32x24x6 m, Workshop 24x24x6 m, Fuel 16x24x6 m |
+| Small-room share of the floor (deck / chassis) | 100% / 100% | 49% / 48% (seeds 2, 3: 49/48, 47/47) |
+| Symmetry (deck / chassis) | 9% / 25% | 6% / 15% (seeds 2, 3: 7/14, 10/18) |
+| Rooms (deck / chassis) | 68 / 108 | 44 / 87 |
+| Parts / links / joints / wires | 4,247 / 16,019 / 6 / 152 | 3,935 / 15,833 / 20 / 162 |
+| Slabs / walls (parts) | 651 / 1,581 | 907 / 1,269 |
+| Doors | 220 doorways | 148 |
+| Plan / build | 0.3 s / 14 s | 0.3 s / 44 to 52 s |
+
+Joints: 14 are the welded hall flights. Build time tripled: the halls' big floors give the furnishing many more spots to try; not chased.
+
+**Tried by hand:** `--gen-interior` on seeds 1 to 3: every room reached on deck and in the chassis, 0 refused, the drive seat the bridge's
+helm; `--interior-walk --walk 4` on seed 1 (before the stair column moved west): every door opened, every doorway, corridor, lift car and
+stairwell passed, and the walker walked 11.6 m in 4 s (2.9 m/s) from the bridge's helm. That run found one hall flight whose foot the
+railing blocked (its column was then the east end); the column is now the west end, not walked again.
+
+**Not tried:** a player climbing the hall stairs (the walk-through knows stairwells and finds hall flights only by part), drawing anything
+(railings, galleries, the open volumes), `--check-construct-parts`, the extra-large class on a real build, a client.
+
+**Not done (step 2 and 3 of the brief):** an off-centre spine, an off-centre lift, free-form L/T/notched rooms beyond the bridge's and
+mess's; decoration (pipes, ducts, cable trays, ribs, signs, hoists) and the dark lamps (26 to 42 generated rooms a seed: the 254-wire cap).
+Columns under the wide spans aren't built (the Steel Column is a storey high).
+
+**For the coordinator:** regenerate `Constructs/Blueprints/TitanWalkerFitted.json` after merging
+(`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1`).
+
+### Next (phase 10 and on)
 
 Lamps that need no wire (or a higher link cap); the kit's batch rebuild; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
 track; static bases from a plot; joining the vehicle kit; the missing parts listed by the run.
