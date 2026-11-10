@@ -42,7 +42,11 @@ public static partial class SelfTest
         int cases = 0, uncheckedThrows = 0, checkedThrows = 0, stale = 0;
         string? first = null;
         foreach (var bp in ConstructBuild.Blueprints)
-            for (var i = 0; i < Construct.MaxParts; i++)
+        {
+            // (each case builds the whole blueprint again: a giant one, the 6587-part Titan Walker, gets a few dozen evenly spread take-offs, not every part)
+            var n = ConstructBuild.Build(new ConstructWorld(), bp, Vector3.Zero, Quaternion.Identity, out _)?.PartCount ?? 0;
+            var stride = Math.Max(1, n * n / 200_000);
+            for (var i = 0; i < n; i += stride)
             {
                 var w = new ConstructWorld();
                 if (ConstructBuild.Build(w, bp, Vector3.Zero, Quaternion.Identity, out _) is not { } c || i >= c.PartCount)
@@ -85,6 +89,7 @@ public static partial class SelfTest
                     checkedThrows++;
                 }
             }
+        }
         ConstructRender.ClearAim();
         Line($"full hands: stale ghosts: {cases} take-offs over {ConstructBuild.Blueprints.Count} blueprints; the unchecked draw threw on {uncheckedThrows} (first: {first ?? "none"}), the checked draw on {checkedThrows}, {stale} stale ghosts skipped");
         // (Before the receiver merge, SocketAt indexed the sockets unchecked and the unchecked loop threw on about half the
