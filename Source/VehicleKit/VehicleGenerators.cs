@@ -204,7 +204,6 @@ public static class VehicleKitCli
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
             {
                 Console.WriteLine($"{g.Name} {seed}: FAIL {ex.Message}");
-                Console.WriteLine("DIAG " + ex); // DIAG
                 failed++;
             }
         }
