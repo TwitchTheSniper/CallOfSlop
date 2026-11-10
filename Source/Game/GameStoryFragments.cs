@@ -54,6 +54,7 @@ public sealed partial class Game
         Array.Clear(_fgLocks);
         Array.Clear(_fgPowered);
         Array.Clear(_fgSentTo);
+        _fgHere = false;
         FragmentsHeld.Clear();
         FragmentLeads.Clear();
         _fgFor = null;
@@ -75,8 +76,8 @@ public sealed partial class Game
         for (var k = 0; k < script.Sites.Length; k++)
         {
             var site = script.Sites[k];
-            if (Constructs.Get(FragmentScript.SiteBodies[k]) != null)
-                continue;
+            if (site.Map.Length > 0 || Constructs.Get(FragmentScript.SiteBodies[k]) != null)
+                continue; // (a site on another world stands when the group first comes there: FragmentSitesHere)
             if (SandboxKitPiece(site.Blueprint, _opMiddle, site.From, site.To, level: 1.2f) is not { } c)
             {
                 Log($"[fragments] no level ground for the {site.Name} ({site.Blueprint}) {site.From:0} to {site.To:0} m from the colony");
@@ -89,18 +90,98 @@ public sealed partial class Game
         }
     }
 
+    private bool _fgHere;
+
+    /// <summary>How near a world's site a building with a terminal counts as that site's (m).</summary>
+    public const float FragmentSiteReach = 90f;
+
+    /// <summary>How far east of a world's survey post its site's building stands (m).</summary>
+    public const float FragmentSiteAside = 14f;
+
+    /// <summary>
+    /// Server, once a match when the world is in: the sites of the planetoid being played (a site's <c>"map"</c>,
+    /// docs/planets/WORLDS.md). A site's building is found again by where it stands (a construct with a terminal within
+    /// <see cref="FragmentSiteReach"/> of the site: nothing of it is saved, so it survives landings and leaving); the first
+    /// time the story comes to this world it is built, upright on the ground there, and the story notes the site (its
+    /// Thing), so one taken apart since isn't built again.
+    /// </summary>
+    private void FragmentSitesHere(StoryEngine s)
+    {
+        var script = FragmentScript.Current;
+        if (script.Problem.Length > 0 || World.Map.Planetoid is not { } pl)
+            return;
+        var mine = false; // (does a site name this map? Then a terminal here is that site's, not the colony's)
+        foreach (var site in script.Sites)
+            mine |= site.Map.Equals(World.Map.Name, StringComparison.OrdinalIgnoreCase);
+        for (var k = 0; k < script.Sites.Length; k++)
+        {
+            var site = script.Sites[k];
+            if (site.Map.Length == 0)
+            {
+                // The colony's own site, back from a trip (the landing brings the colony's builds back, not which is which).
+                if (!mine && Constructs.Get(FragmentScript.SiteBodies[k]) == null)
+                    foreach (var c in Constructs.Bodies)
+                        if (c.Anchored | c.Frozen && FragmentTerminal(k, c) >= 0)
+                        {
+                            FragmentScript.SiteBodies[k] = c.Id;
+                            break;
+                        }
+                continue;
+            }
+            if (!site.Map.Equals(World.Map.Name, StringComparison.OrdinalIgnoreCase))
+                continue;
+            double lat = site.Lat * Math.PI / 180, lon = site.Lon * Math.PI / 180;
+            var dir = new Vector3((float)(Math.Cos(lat) * Math.Sin(lon)), (float)Math.Sin(lat), (float)(Math.Cos(lat) * Math.Cos(lon)));
+            var hollow = site.Inside && pl.Hollow;
+            var ground = pl.GroundUnder(pl.Center + dir * (hollow ? (float)pl.InnerRadius - 2f : (float)(pl.Radius + pl.MaxHeight + 50)));
+            if (hollow)
+                ground -= dir * 0.05f; // (just clear of the wall, where up is to the centre)
+            else
+            {
+                // Beside the site's survey post, not on it (east of it; the level ground is wider than this).
+                var east = Vector3.Cross(Vector3.UnitY, dir);
+                if (east.LengthSquared() > 1e-6f)
+                    ground = pl.GroundUnder(ground + Vector3.Normalize(east) * FragmentSiteAside + dir * 50f);
+            }
+            Construct? found = null;
+            foreach (var c in Constructs.Bodies)
+                if (Vector3.DistanceSquared(c.WorldCom, ground) < FragmentSiteReach * FragmentSiteReach && FragmentTerminal(k, c) >= 0)
+                    found = c;
+            _fgTerm[k] = -1;
+            var key = StoryNameKey("site:" + site.Id);
+            if (found == null && s.World.Find(StoryKind.Thing, key) < 0 && ConstructBuild.FindBlueprint(site.Blueprint) is { } bp)
+            {
+                found = ConstructBuild.BuildOnGround(Constructs, bp, ground, 0, out var why);
+                if (found == null)
+                {
+                    Log($"[fragments] the {site.Name} ({site.Blueprint}) wasn't built on {World.Map.Name}: {why}");
+                    continue;
+                }
+                if (!found.Anchored)
+                {
+                    found.Frozen = true;
+                    found.Rebuild();
+                }
+                FragmentSiteThing(s, site);
+                Constructs.Events.Add($"fragments: the {site.Name} as construct {found.Id}");
+                Log($"[fragments] the {site.Name} is construct {found.Id} on {World.Map.Name} at latitude {site.Lat:0.#}, longitude {site.Lon:0.#}{(hollow ? ", inside" : "")}");
+            }
+            FragmentScript.SiteBodies[k] = found?.Id ?? 0;
+        }
+    }
+
     /// <summary>Server, a save: each site's id and construct.</summary>
     private (string Site, ushort Body)[] FragmentSitesCapture()
     {
         var sites = FragmentScript.Current.Sites;
         var n = 0;
         for (var k = 0; k < sites.Length; k++)
-            if (FragmentScript.SiteBodies[k] != 0)
+            if (FragmentScript.SiteBodies[k] != 0 && sites[k].Map.Length == 0)
                 n++;
         var o = new (string, ushort)[n];
         n = 0;
         for (var k = 0; k < sites.Length; k++)
-            if (FragmentScript.SiteBodies[k] != 0)
+            if (FragmentScript.SiteBodies[k] != 0 && sites[k].Map.Length == 0)
                 o[n++] = (sites[k].Id, FragmentScript.SiteBodies[k]);
         return o;
     }
@@ -111,7 +192,7 @@ public sealed partial class Game
         var sites = FragmentScript.Current.Sites;
         foreach (var (id, body) in saved)
             for (var k = 0; k < sites.Length; k++)
-                if (sites[k].Id == id && Constructs.Get(body) != null)
+                if (sites[k].Id == id && sites[k].Map.Length == 0 && Constructs.Get(body) != null)
                     FragmentScript.SiteBodies[k] = body;
         if (_opColony != 0)
             FragmentSitesBuild();
@@ -147,6 +228,11 @@ public sealed partial class Game
             _fgRelLead = s.Rules.Relation("Lead")?.Id ?? -1;
             _vRecover = s.Rules.VerbId("Recover");
             _vDecode = s.Rules.VerbId("Decode");
+        }
+        if (!_fgHere && Phase == MatchPhase.Playing && _landing == null && WorldSession is null or { Applied: true })
+        {
+            _fgHere = true;
+            FragmentSitesHere(s); // (its own method: the search and the build are once a match)
         }
         for (var k = 0; k < script.Sites.Length; k++)
             FragmentTerminalTick(s, k, script.Sites[k], now);
