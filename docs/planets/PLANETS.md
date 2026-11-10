@@ -53,10 +53,28 @@ Features (lat/lon in degrees: latitude 90 is the +Y pole, longitude 0 faces +Z a
 | `mountain` | lat, lon, radius, height, seed, ridges, erosion, warp | The flat terrain's eroded mountain, laid on the ground round its centre. |
 | `flatten` | lat, lon, radius, height, edge = 20 | Flat at `height` within `radius`, blending back over `edge`. Pick a height near the natural ground there, or the edge is a cliff. |
 | `crater` | lat, lon, radius, depth, rim = depth / 4 | A bowl with a raised rim out to twice the radius. |
+| `rift` | lat, lon, length, width, depth, bearing = 0, floor = 0.3, wander = 0, seed = 1 | A trench `length` long through its centre along `bearing` (0 north, 90 east): a flat floor `floor` of its width across, sides rising to the ground either side, ends that taper out, and a line that wanders up to `wander` metres. Canyons, glens, crevasses; a negative depth is a wall. |
+| `terrace` | step, sharp = 0.8, and optionally lat, lon, radius, edge | Steps the height so far into flat treads `step` high with a riser over the last `1 - sharp` of each: mesas, benches, a layered crust. Everywhere, or within `radius` of a place, fading over `edge`. Put it after the big shapes and before the fine noise. |
+
+A `noise` may also take `lat`, `lon`, `radius` and `edge` (half the radius if not said): the noise is laid only round
+that place and fades out over the edge (a dune sea, one side's broken ground).
 
 Features placed by lat/lon work in their own local ground coordinates (azimuthal equidistant: true distance and bearing
 from the centre), so a mountain looks the same wherever it is. `Planetoid.WorkOutBounds` gives the lowest and highest the
-features can make the ground (from their own limits, never a sampling), which rays and the drawing rely on.
+features can make the ground (from their own limits, never a sampling), which rays, the far plane and the drawing's
+culling rely on. Features that are everywhere add up; features placed by lat / lon add up only where they can meet
+(the worst group that all reach one another), so mountains spread round a world don't stack: the Planetoid's bound
+fell from 5,651 m to 3,550 m (its ground tops out at 2,355 m). The features' numbers are read once
+(`Planetoid.Placed`), not by name for every vertex.
+
+## Making a world
+
+`--check-planetoid FILE [--png OUT.png] [--at LAT,LON]...` loads a planetoid map and prints its bounds, the heights and
+slopes a sampling of 259,200 points finds, how much is cliff, slope and low ground, the time a height takes, a digest
+of the heights (the same on every machine: a change that shouldn't move old ground keeps it) and, in a star system,
+where the sun stands overhead through a turn. `--at` tells whether a place is level (the ground within 40 m) and how
+it sits in the country round it (the ground 300 m out); `--png` draws the whole world unrolled, coloured and shaded as
+the game colours it. The story's worlds are in docs/planets/WORLDS.md.
 
 ## Collision
 
@@ -108,7 +126,7 @@ masked program (dug ground) is used only while a dug page is in view. Far constr
   and drops the sky's horizon to the planet's limb (`PlanetRenderer.HorizonDip`): from 700 m up the limb is 21 degrees
   below level. The ground shader corrects the ambient light (sky above "up", not world +Y) and colours its haze with the
   same local sky. The sun stays where the map puts it in the world, so the far side of the planet is in night.
-- Far plane: to the horizon from the highest ground and on to ground as high behind it (`Map.PlanetoidFarPlane`, 26 km
+- Far plane: to the horizon from the highest ground and on to ground as high behind it (`Map.PlanetoidFarPlane`, 20 km
   on the Dev map); fog runs from 300 m to 90% of it.
 
 ## Digging

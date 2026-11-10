@@ -19,7 +19,7 @@ public static partial class SelfTest
         var previous = World.Map;
         try
         {
-            var map = Maps.All.FirstOrDefault(m => m.Planetoid != null);
+            var map = Maps.Find("Planetoid") is { Planetoid: not null } dev ? dev : Maps.All.FirstOrDefault(m => m.Planetoid != null); // (the Dev map these checks were made on, not the first world of the Planetoids pack)
             if (map?.Planetoid is not { } pl)
             {
                 Fail("planetoid digging: no map with a planetoid (Maps/Dev/Planetoid.json)");

@@ -21,7 +21,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 | Self-test, only when the rule below allows it | `--selftest`, or `--selftest-only "Save folder, Mods"` (comma-separated, any case, prefix match); `--selftest-list` prints the names. It prints nothing: read `selftest.log` next to the DLL. The exit code is the failure count |
 | Try it in the real window | `--smoketest` (~30 s, `[smoke]` log lines, a throwaway save copy). In the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` |
 | Host or join | `host [port]`, `join <ip> [port]`, `--lag=ms --loss=%`, `--no-upnp`, `--save-dir <path>` |
-| Data checks | `--check-construct-parts`, `--check-part FILE`, `--check-parts [DIR]`, `--watch-parts` (hot reload), `--check-mods [DIR]` (docs/mods/MODS.md), `--check-system FILE`, `--check-story [DIR]`, `--story-sim [FILE] [--trace[=NAME]] [--drama=off\|compare] [--pacing=off]` |
+| Data checks | `--check-construct-parts`, `--check-part FILE`, `--check-parts [DIR]`, `--watch-parts` (hot reload), `--check-mods [DIR]` (docs/mods/MODS.md), `--check-system FILE`, `--check-planetoid FILE [--png OUT] [--at LAT,LON]` (a world's ground: docs/planets/WORLDS.md), `--check-story [DIR]`, `--story-sim [FILE] [--trace[=NAME]] [--drama=off\|compare] [--pacing=off]` |
 | Space, weather | `--space-sim [FILE] [--days N] [--every H]`, `--space-ships [FILE] [--hours H] [--warp W]`; `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]` |
 | Music | No render command: docs/audio/MUSIC.md has a throwaway probe. Read it before making or changing music |
 | Vehicle kit | `--gen-vehicle NAME [--seed S] [--out DIR] [--plan]` runs a vehicle generator (Source/VehicleKit), writes its blueprints and prints the check; `--gen-vehicles [--out DIR]` compares every shipped seed with its committed file; `--check-vehicle FILE` checks any blueprint; `--sweep-vehicle NAME [--seeds N]` builds and checks many seeds, writing nothing; `--vehicle-shots "Name Seed"...` writes shaded pictures under xvfb (docs/vehiclekit/VEHICLEKIT.md, which holds the silhouette rules every faction follows); quality tools: `--diversity NAME`, `--diversity-style STYLE`, `--kit-report`, `--vehicle-sheet NAME` (xvfb), `--grade-vehicle "NAME SEED" 1-5 "note"`, `--grade-report` (VEHICLEKIT.md, "Quality tools") |
@@ -57,7 +57,7 @@ Source/App/          Program.cs (entry, main loop) + Program.*.cs per feature (P
 Source/UI/           Ui*.cs per screen; UiSandbox*.cs, Sandbox*Wheel.cs, SandboxCatalogue.cs
 Source/Render/       Renderer.cs, ConstructRender*.cs, Terrain/Foliage/Prop/Building renderers, Sky/, Mesh/
 Source/Space/        docs/space/SPACE.md, GALAXY.md: SpacePos, StarSystem, SpaceShips, SpaceFlight, SpaceBubble, Galaxy
-Source/Planets/      planetoids (docs/planets/PLANETS.md); Source/Physics/ also holds gravity (docs/space/GRAVITY.md)
+Source/Planets/      planetoids (docs/planets/PLANETS.md; the story's worlds are Maps/Planetoids, made by tools/planets/make_worlds.py: docs/planets/WORLDS.md); Source/Physics/ also holds gravity (docs/space/GRAVITY.md)
 Source/Weather/      docs/weather/WEATHER.md; the window is UI/UiWeather.cs (F11)
 Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/), drama (StoryDrama), lines and radio (StoryLines, StoryTalk; data in Story/Lines), plays (StoryPlays; Story/Plays), place states (StoryPlaces; Story/Places), the roster (StoryRoster), factions (StoryFactions; Story/Factions, the game's side Game/GameStoryFactions.cs); the appraiser is Game/GameStory.cs, the people's bodies Game/GameStoryBodies.cs, their moods in a fight (StoryMoods; Story/Moods, Game/GameStoryMoods.cs), their words in the world Game/GameStoryTalk.cs, the window UI/UiStory*.cs (F4)
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
@@ -72,7 +72,7 @@ Constructs/Parts/, Blueprints/, Tools/   parts, build scripts, the tools' held m
 Constructs/*.json    Resources, Recycling, Refining, Assembling, Extrusion, Beacons, SurvivalStart, ModularEngine, WeaponParts, Loot ...
 tools/constructs/    part generators (one per family, scale.py and zfight.py shared). Many files in Constructs/Parts and
                      Assembling.json, ModularEngine.json are their output: change the generator
-Systems/*.json       star systems (at most ten)
+Systems/*.json       star systems (at most ten; five now, one faction home each)
 Parts/<Category>/    the weapon builder's parts, which Sandbox uses too; Parts/Builds, Parts/Tables, _Registry.json, _Bases, _Fragments
 Maps/ Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/ Weapons/ Attachments/   data next to the exe
 docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/, perf/, weather/, net/, steam/, vehiclekit/
