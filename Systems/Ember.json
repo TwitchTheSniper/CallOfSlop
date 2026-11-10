@@ -1,7 +1,7 @@
 {
   "name": "Ember",
   "description": "A red dwarf 4.3 light-years from the Dev System (phase 6, docs/space/GALAXY.md): Cinder, a hot rock close in, and Ashfall with its moonlet Soot further out. Cinder is a map (Maps/Planetoids/Cinder.json), the Call Centre's world; the others are rails and sky.",
-  "galaxy": { "ly": [3.1, 2.8, 0.9] },
+  "galaxy": { "ly": [3.1, 2.8, 0.9], "arrive": { "at": "Cinder", "km": 30 } },
   "bodies": [
     { "name": "Ember", "gm": 1.6e19, "radius": 1.0e8, "color": [1.0, 0.58, 0.36], "rotation": { "hours": 1100, "tilt": 3 } },
     {

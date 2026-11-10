@@ -94,8 +94,8 @@ public static class Galaxy
 
     /// <summary>
     /// Where a jump from <paramref name="from"/> arrives in <paramref name="to"/> at a time: <see cref="StarSystem.Arrival"/>
-    /// from its star, on the side facing the system it came from (flattened onto the ecliptic), in a circular orbit round
-    /// the star going east (so it neither falls in nor drifts off while its crew gets their bearings). Ecliptic, the
+    /// from its star (or from the world its file names: <see cref="StarSystem.ArrivalBody"/>), on the side facing the system it came from (flattened onto the ecliptic), in a circular orbit round
+    /// it going east (so it neither falls in nor drifts off while its crew gets their bearings). Ecliptic, the
     /// arrival system's.
     /// </summary>
     public static void Arrive(int from, int to, SpaceTime t, out SpacePos pos, out Vec3d vel)
@@ -105,9 +105,10 @@ public static class Galaxy
         dir = new Vec3d(dir.X, dir.Y, 0);
         dir = dir.Length > 1e-9 ? dir.Normalized() : Vec3d.UnitX;
         var r = sys.Arrival;
-        sys.StateOf(0, t, out var star, out var starVel);
-        pos = star + dir * r;
-        vel = starVel + Vec3d.Cross(Vec3d.UnitZ, dir) * Math.Sqrt(sys.Bodies[0].Mu / r);
+        var b = sys.ArrivalBody;
+        sys.StateOf(b, t, out var centre, out var centreVel);
+        pos = centre + dir * r;
+        vel = centreVel + Vec3d.Cross(Vec3d.UnitZ, dir) * Math.Sqrt(sys.Bodies[b].Mu / r);
     }
 
     /// <summary>

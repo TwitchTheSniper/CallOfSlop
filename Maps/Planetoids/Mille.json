@@ -41,6 +41,10 @@
       "glow": "#ffb347",
       "core": 60
     },
+    "landing": {
+      "tonnes": 40,
+      "why": "the crust is thin over the cavity"
+    },
     "features": [
       {
         "type": "noise",

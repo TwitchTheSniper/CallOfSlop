@@ -56,7 +56,8 @@ public static class PlanetCli
         var cell = p.Radius * Math.PI / 2 / p.N;
         Console.WriteLine($"OK: '{m.Name}': radius {p.Radius:0} m, {p.N} cells a face ({cell:0.00} m), gravity {p.Strength:0.#}, {p.Features.Count} features, "
                           + $"bounds {p.MinHeight:0} to {p.MaxHeight:0} m" + (p.Crust > 0 ? $", hollow (crust {p.Crust:0} m)" : "")
-                          + $", sky edge {Math.Max(m.HalfX, m.HalfZ):0} m, {m.Spawns.Count} spawns");
+                          + $", sky edge {Math.Max(m.HalfX, m.HalfZ):0} m, {m.Spawns.Count} spawns"
+                          + (p.LandingTonnes > 0 ? $", ships land up to {p.LandingTonnes:0} t ({p.LandingWhy})" : ""));
 
         // A sampling: W x W/2 points, evenly over the sphere's area down each column (sin of the latitude uniform).
         const int w = 720, hgt = 360;

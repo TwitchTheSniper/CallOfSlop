@@ -99,7 +99,12 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Host: the bubble for the map now loaded (the space time carries on when the new map is in the same system).</summary>
+    /// <summary>
+    /// Host: the bubble for the map now loaded. The galaxy's time and every system's ships carry on: in the same system
+    /// the flight is kept; in another one (the group landed on a world of a system it jumped to: GameSpaceLanding.cs) that
+    /// system's flight becomes the bubble's and the one left behind flies on beside it. A saved world's clock and ships
+    /// replace them all (GameWorldSave.cs).
+    /// </summary>
     private void MakeHostSpace()
     {
         _spaceMap = World.Map;
@@ -109,12 +114,25 @@ public sealed partial class Game
         Space = null;
         if (!StarSystems.ForMap(World.Map.Name, out var e, out var body))
             return;
-        var sameSystem = old?.Flight is { } of && ReferenceEquals(of.System, e.System);
-        var start = sameSystem ? old!.Now : e.System.Start;
-        var flight = WorldSpaceFlight(e.System) ?? (sameSystem ? old!.Flight! : new SpaceFlight(e.System, SpaceShipCapacity, start)); // (a saved world's clock: GameWorldSave.cs)
+        var g = Galaxy.IndexOf(e.System);
+        var saved = WorldSpaceFlight(e.System);
+        var was = saved == null ? old?.Flight : null; // (the flights to carry on, when no save says otherwise)
+        var sameSystem = was != null && ReferenceEquals(was.System, e.System);
+        var kept = sameSystem ? was : was != null && g >= 0 && old!.GalaxyIndex >= 0 ? old.Away[g] : null;
+        var start = was != null && (sameSystem || g >= 0 && old!.GalaxyIndex >= 0) ? old!.Now : e.System.Start;
+        var flight = saved ?? kept ?? new SpaceFlight(e.System, SpaceShipCapacity, start);
         Space = new SpaceSession(new SpaceBubble(e.System, body), e.Hash, World.Map.Name, flight);
-        if (sameSystem)
-            Array.Copy(old!.Away, Space.Away, Space.Away.Length); // (ships in other systems carry on too)
+        if (was != null && (sameSystem || g >= 0 && old!.GalaxyIndex >= 0))
+        {
+            for (var k = 0; k < old!.Away.Length; k++)
+                if (k != g && old.Away[k] is { } af)
+                    Space.Adopt(k, af); // (ships in other systems carry on too)
+            if (!sameSystem)
+            {
+                Space.Adopt(old.GalaxyIndex, was);
+                flight.RequestWarp(was.RequestedWarp, fromHost: true);
+            }
+        }
         WorldSpaceShips();
         Console.WriteLine($"[space] {World.Map.Name} is {e.System.Bodies[body].Name} in {e.System.Name} ({e.System.File}), space time {flight.Clock.Now}");
     }
@@ -351,6 +369,15 @@ public sealed class SpaceSession
         f.Ships.IdTaken = id => Taken(id, galaxy);
         Away[galaxy] = f;
         return f;
+    }
+
+    /// <summary>Host: a flight from the bubble before this one (the map changed) flies on here as another system's.</summary>
+    public void Adopt(int galaxy, SpaceFlight f)
+    {
+        if ((uint)galaxy >= (uint)Away.Length || galaxy == GalaxyIndex)
+            return;
+        f.Ships.IdTaken = id => Taken(id, galaxy);
+        Away[galaxy] = f;
     }
 
     /// <summary>Is a ship id in use in any system but <paramref name="except"/>'s (ids are shared across the galaxy)?</summary>

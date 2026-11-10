@@ -55,6 +55,14 @@ public sealed class Planetoid
     /// <summary>The radius of the glowing core at the centre (metres; 0: none). A light only: nothing touches it.</summary>
     public float CoreRadius;
 
+    /// <summary>
+    /// The heaviest ship that may land from space (tonnes, with what it carries; 0: no limit), and why, as its riders are
+    /// told (WORLDS.md "Landing limits": a capital ship waits in orbit and a shuttle goes down).
+    /// </summary>
+    public double LandingTonnes;
+
+    public string LandingWhy = "";
+
     /// <summary>Is there a cavity inside?</summary>
     public bool Hollow => Crust > 0;
 
@@ -979,6 +987,7 @@ public sealed class Planetoid
                 case "base": p.Base = Num(kv.Value, where, "base"); break;
                 case "surface": p.Surface = TerrainSpec.ParseSurface(kv.Value, where); break;
                 case "cavity": ParseCavity(p, kv.Value, where + ".cavity"); break;
+                case "landing": ParseLanding(p, kv.Value, where + ".landing"); break;
                 case "features":
                     if (kv.Value.ValueKind != JsonValueKind.Array)
                         throw new MapFileException($"{where}.features should be a list");
@@ -987,7 +996,7 @@ public sealed class Planetoid
                         p.Features.Add(ParseFeature(fe, $"{where}.features[{k++}]"));
                     break;
                 default:
-                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, cavity, features)");
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, cavity, landing, features)");
             }
         }
         var arc = p.Radius * Math.PI / 2;
@@ -1013,6 +1022,29 @@ public sealed class Planetoid
 
     /// <summary>The thinnest a hollow planetoid's crust may be where its features dig deepest (metres).</summary>
     public const float MinCrust = 8;
+
+    /// <summary><c>"landing": { "tonnes": 40, "why": "the crust won't bear more" }</c>: the heaviest ship that may land from space.</summary>
+    private static void ParseLanding(Planetoid p, JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new MapFileException($"{where} should be an object like {{ \"tonnes\": 40 }}");
+        foreach (var kv in e.EnumerateObject())
+        {
+            switch (kv.Name.ToLowerInvariant())
+            {
+                case "tonnes": p.LandingTonnes = Range(Num(kv.Value, where, "tonnes"), 1, 100000, where, "tonnes"); break;
+                case "why":
+                    p.LandingWhy = kv.Value.ValueKind == JsonValueKind.String ? kv.Value.GetString()! : "";
+                    if (p.LandingWhy.Length is 0 or > 80 || p.LandingWhy.Any(ch => ch is < ' ' or > '~'))
+                        throw new MapFileException($"{where}.why should be a short line of plain text (up to 80 characters)");
+                    break;
+                default:
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: tonnes, why)");
+            }
+        }
+        if (p.LandingTonnes <= 0)
+            throw new MapFileException($"{where}: needs \"tonnes\"");
+    }
 
     /// <summary><c>"cavity": { "crust": 180, "glow": "#ff8c33", "core": 40 }</c>: a hollow planetoid (PLANETS.md "Hollow planetoids").</summary>
     private static void ParseCavity(Planetoid p, JsonElement e, string where)
