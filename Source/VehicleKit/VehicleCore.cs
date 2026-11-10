@@ -251,9 +251,10 @@ public class BlueprintScript
             if (Vector3.Distance(C.Parts[i].Pos, want) > near + SocketRadius(td) * C.ScaleOf(i) && !C.MergeLead(i))
                 continue;
             VehicleGenJob.Yield();
+            var used = UsedSockets(i);
             for (var s = 0; s < C.SocketCount(i); s++)
             {
-                if (C.SocketUsed(i, s) || s >= td.Sockets.Length)
+                if (s >= td.Sockets.Length || used[s])
                     continue;
                 C.SocketAt(i, s, out var at, out var dir);
                 if (Vector3.Distance(at, want) > near)
@@ -312,6 +313,28 @@ public class BlueprintScript
         VehicleGenJob.Yield();
         ConstructBuild.Place(C, best.I, best.S, def, best.Own, best.Spin, out var g);
         return Commit(best.I, _parts.First(p => p.Index == best.I).Step, best.S, def, best.Own, best.Spin, g);
+    }
+
+    private bool[] _used = new bool[64];
+
+    /// <summary>
+    /// Which of part <paramref name="i"/>'s sockets are taken (as <see cref="Construct.SocketUsed"/> says, socket by socket), from one walk of its links: a lofted bay has
+    /// hundreds of sockets and links, and asking socket by socket walked every link for every socket on every <see cref="Put"/>. Valid till the next call.
+    /// </summary>
+    private ReadOnlySpan<bool> UsedSockets(int i)
+    {
+        var n = C.SocketCount(i);
+        if (_used.Length < n)
+            _used = new bool[Math.Max(n, _used.Length * 2)];
+        Array.Clear(_used, 0, n);
+        for (var e = C.FirstLink(i); e >= 0; e = C.NextLink(e))
+        {
+            ref var l = ref C.Links[e >> 1];
+            var (part, sock) = (e & 1) == 0 ? (l.A, l.SA) : (l.B, l.SB);
+            if (part == i && (uint)sock < (uint)n)
+                _used[sock] = true;
+        }
+        return _used.AsSpan(0, n);
     }
 
     private static readonly ConditionalWeakTable<ConstructPartDef, StrongBox<float>> SocketRadii = new();
