@@ -1133,6 +1133,71 @@ clean.
 wheel; props on shelves; wired stations (a radio, a powered workbench, lamps on a switch: a Lamp logic part already lights when on); the `all` run's Bandit Box
 Truck 1 time; a network round trip of a glazed bay; nothing was tried in the game window with a kit vehicle near (the lights' look is unseen).
 
+## 15. Phase 7c, as built (2026-11-10): finishing interiors
+
+The brief: phase 7b's left-overs, in order: upper storeys', side pods', cages' and balconies' insides; closed end walls' lining; a dash in capsule and merged cabs and
+a steering wheel in every driver cab; props on shelves and racks rather than only the floor; then, if there was time, wired stations. The first four were done; wired
+stations were not.
+
+Code: `HullLoft.Lining.cs` (`FollowEnd`, `EndBands`, the inset ends; open tops), `HullLoft.cs` (`ShapeOf`: an open top's lining word), `HullLoft.Cabs.cs` (`Dash`,
+`SteeringWheel`; a capsule's and a merged cab's key take the lining word), `VehicleBodyLanguage.cs` (`UpperNames` lines the storey), `Vehicle.Spaces.cs`
+(`FurnishUpper`, the storey's panes), `Vehicle.Rooms.cs` (`OnFurniture`), `VehicleGrammar.cs`, `VehicleChecks.cs` (the balcony walk). Protocol 223: an open top's key
+with a lining word, and the same keys now making end linings, consoles and wheels, so a 222 peer makes other parts.
+
+### What each space got
+
+| Space | lining | furnishing | lamps | windows |
+| --- | --- | --- | --- | --- |
+| Upper saloon | the room's (kind, inset or following, as the vehicle rolled), its closed ends too | `Furnish` down its side walls (gear, layout, props, a chest if nothing else holds loot), the hatch and a metre of landing past it kept clear, and the centreline (0.3 m either side, padded 0.2 m: a player's width and 10 cm) the whole way | the lining's, where the roof is 2 m up (most saloons are 2.0 to 2.1 m: few) | the room's kind, glazed (`roomglass`) |
+| Open deck | its bulwark's rows followed (an open top is never inset; no roof row, no ceiling, no lamp), its ends' bulwark too | as a saloon | none | none |
+| Caged room | none (bars) | as before (it was furnished already) | none: nothing to hang one from | none |
+| Side pod | none: a pod is a closed locker standing off the skin, with no way in, so nothing inside it is seen | none | none | none |
+| Balcony | none (a deck and a rail outside) | none: the walk out onto it and its rail are what the check holds, and a prop there would stand in a ladder's way | none | none |
+
+### Closed ends
+
+A front cap (`f`) and a back cap (`r`, not a back doorway's) are lined unless the bay is a door bay (its doorway's frame) or the lining is a bare hull (Bandit's
+ribs and beads are the look). **Following**: the section offset inward by `EndIn` (the skin's half, the gap and 3 cm, so the end stands inside the walls' lining, a
+padded one too), mitred at each point (a pitched roof's peak by its mirror), up to the bulwark's top on an open deck. **Inset**: upright between the walls' inner
+faces less 6 mm, from 3 cm up to 6 mm under the walls' top. Both are bands across the end, 0.5 m tall (planks 0.15 m), split where the outline turns so each
+band's edges are on one row's line, 6 mm seams, every other band 3 mm further in; the first stands 6 mm in from the cap's inner face. Colours as the walls' (below
+and above the rail height, moquette padded).
+
+### Cabs
+
+Every lined cab (the key's `i` word: enclosed, crew, armoured, caged, and now capsule and merged) draws a dash and a steering wheel. A capsule's and a merged cab's
+front is over the engine, 1.5 m ahead of the seats, so theirs is a **console** standing where a conventional cab's front is (0.6 m ahead of the driver's seat,
+the cab frame's z -0.6), from 0.82 m up to 3 cm under the belt. The **steering wheel** stands in front of the driver's seat (x -0.5 m, the cab frame's z 0:
+`Vehicle.Driver`), its centre 2 cm under the belt and 7 cm behind the dash, its top leaning 25 degrees forward: a rim of eight pieces (each running 3 degrees into
+the next, alternately 3 mm thinner, no shared planes), two spokes, a chrome boss and a column down into the dash. Its top is about 1.15 m up, 15 cm under the
+seated eye: the driver's view rays are as they were. Drawn only. A merged cab whose key has no room for the word stays bare.
+
+### Props on furniture
+
+A faction prop that finds no floor on the walls (Bandit's 0.9 a metre fills the walls first) is stood on a furniture piece's free top socket instead
+(`OnFurniture`): the room's furniture in a shuffled order, not seats, its top under 2 m and 0.3 m under the ceiling, the piece 0.3 m tall and more. Containers
+among them roll loot as on the floor.
+
+### Fixed on the way
+
+- **Bandit Box Truck 3's balcony** (a full-check failure since the turret-seat merge): the walk out from the doorway toward the deck's middle ran 90 ticks, so a
+  player who reached the deck walked on along the rail and off its open end (its ladder's way) and was judged from the ground. The walk now stops once the player
+  stands on the deck 0.3 m past the door (`BuildingWalk`'s new `until`). The vehicle was right; the check was wrong.
+- **Upper storeys furnished**: the first try put a shelf and a bunk across the storey's middle, where the check stands a player (British War Bus 2 and 3); the
+  centreline is kept.
+- **A merged cab with a lining word** was refused by the key's reader (7a's rule: no dash in a capsule); the reader takes it now.
+
+### Measured (2-core box shared with other agents: times are noisy; before is main at 861c3bde5)
+
+MEASURED
+
+**Committed seeds**: unchanged; 49 files written again (lined ends and storeys, consoles and wheels, props on tops); `--gen-vehicles` reports all 123 identical, and
+with `--order reverse`; `--check-construct-parts` clean.
+
+**Not done** (7d): wired stations (a radio, a powered workbench, lamps on a switch: a Lamp logic part already lights when on); Highland Technical 10's stability
+(0.69 under 0.72; not looked at); lamps in low saloons (under 2 m, the rule keeps them out of a player's way) and in cages; anything in pods (they would need a way
+in) or on balconies; a network round trip of a lined storey between two peers; nothing was tried in the game window with a kit vehicle near.
+
 ## Pictures
 
 Phase 4: `/home/claude/vk-body4-sheets/` (agent box, not committed): `before_` (main, 030d3d97) and `after_` `--vehicle-sheet` of every style's War Bus and Box
@@ -1166,5 +1231,5 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
 --sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
 --body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
---body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows)
+--body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows, phase 7c's ends, storeys, consoles and wheels)
 ```

@@ -123,7 +123,7 @@
     {"part": "Lever", "on": 78, "socket": "lever", "by": "-y"},
     {"part": "Chest", "on": 63, "socket": "front13", "by": "bottom", "spin": 3},
     {"part": "Ammo Container", "on": 60, "socket": "front13", "by": "-y", "spin": 2},
-    {"part": "Thistle", "on": 116, "socket": "lid", "by": "base"},
+    {"part": "Thistle", "on": 117, "socket": "+y", "by": "base"},
     {"part": "Square Beam 0.75 m", "on": 12, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#33302b"},
     {"part": "Square Beam 0.75 m", "on": 119, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#33302b"},
     {"part": "Plate Steel 1 m", "on": 120, "socket": "+x0", "by": "back01", "spin": 3, "paint": "#33302b"},

@@ -198,9 +198,22 @@ public sealed partial class Vehicle
             if (top + size.Y > MathF.Min(room.FloorTop + 2.0f, room.Ceiling - 0.3f) || top - room.FloorTop < 0.3f)
                 continue;
             var c = (lo + hi) * 0.5f;
+            // (only a top that is flat where it stands: a free socket facing up at the piece's drawn top, and room on it for the prop and a centimetre all
+            // round. A socket under a lid's rim sank a Union Flag's foot into an Ammo Container's lid, their tops in one plane: British Box Truck 2)
+            if (MathF.Max(size.X, size.Z) > MathF.Min(MathF.Abs(hi.X - lo.X), MathF.Abs(hi.Z - lo.Z)) - 0.02f)
+                continue;
+            var flat = false;
+            var def = C.DefOf(f.Index);
+            for (var k = 0; k < def.Sockets.Length && !flat; k++)
+            {
+                C.SocketAt(f.Index, k, out var at, out var dir);
+                flat = !C.SocketUsed(f.Index, k) && ConstructParts.DirVector(dir).Y > 0.9f && FromRest(at).Y >= top - 0.003f;
+            }
+            if (!flat)
+                continue;
             try
             {
-                return Put(part, new Vector3(c.X, top + size.Y / 2, c.Z), Orient.Upright, 0.4f, f, onTop: true);
+                return Put(part, new Vector3(c.X, top + size.Y / 2, c.Z), Orient.Upright, 0.25f, f, onTop: true);
             }
             catch (VehicleKitException)
             {
