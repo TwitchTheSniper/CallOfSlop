@@ -1,0 +1,9 @@
+{
+  // The fragments' events (docs/story/FRAGMENTS.md).
+  "verbs": [
+    { "name": "Recover", "players": true, "sentence": "{actor} recovered {item} from {target}", "effects": [ "actor Fragments +1" ],
+      "about": "a player found a fragment of the old records (item: the fragment, target: where or whom it came from)" },
+    { "name": "Decode", "players": true, "sentence": "{actor} decoded the terminal at {target}",
+      "about": "a player's circuit broke a data centre terminal's cipher (target: the site)" }
+  ]
+}

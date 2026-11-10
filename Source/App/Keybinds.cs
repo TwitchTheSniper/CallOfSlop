@@ -83,6 +83,7 @@ public enum GameAction
     SeatRollRight,
     SeatHook, // binds version 23: in a seat, hook to a launch rail, launch, undock (ConstructCarrier.cs)
     SeatEject, // ...and an ejection seat's handle (PilotGear.cs)
+    Logbook, // binds version 25: Sandbox, the Logbook (the old records' fragments you hold, and your open leads; Source/UI/UiLogbook.cs) on F1
     COUNT,
 }
 
@@ -203,7 +204,7 @@ public static class Keybinds
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
-                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow => BindContext.Sandbox,
+                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow or GameAction.Logbook => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject => BindContext.Seat,
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
@@ -408,6 +409,7 @@ public static class Keybinds
         Key(GlfwKey.E), // Roll right, in a seat (shares Equipment's E)
         Key(GlfwKey.G), // Hook, launch, undock, in a seat: binds version 23
         Key(GlfwKey.L), // Eject, in an ejection seat
+        Key(GlfwKey.F1), // Logbook (Sandbox): binds version 25
     ];
 
     /// <summary>
@@ -440,8 +442,9 @@ public static class Keybinds
     /// 23: Hook / launch / undock G and Eject L in a seat added (same rule).
     /// 24: several bindings per action (<see cref="Slots"/>; <c>bind2_X</c> and <c>bind3_X</c> lines); the tool wheel's second
     /// binding on the grave accent key added (same rule: left unbound when the player uses that key for something live beside it).
+    /// 25: the Logbook (Sandbox) on F1 added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 24;
+    public const int DefaultsVersion = 25;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -501,6 +504,7 @@ public static class Keybinds
         (23, (int)GameAction.SeatHook, Unbound, Key(GlfwKey.G)),
         (23, (int)GameAction.SeatEject, Unbound, Key(GlfwKey.L)),
         (24, At(GameAction.ToolWheel, 1), Unbound, Key(GlfwKey.GraveAccent)), // (a second binding: the laptop's way to the wheel)
+        (25, (int)GameAction.Logbook, Unbound, Key(GlfwKey.F1)),
     ];
 
     /// <summary>
@@ -668,6 +672,7 @@ public static class Keybinds
             GameAction.SeatRollRight => "Roll right (in a seat)",
             GameAction.SeatHook => "Hook, launch or undock (in a seat)",
             GameAction.SeatEject => "Eject (in an ejection seat)",
+            GameAction.Logbook => "Logbook (Sandbox: the old records you have found, and your leads)",
             _ => a.ToString(),
         };
 

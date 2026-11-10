@@ -104,6 +104,7 @@ public sealed partial class Game
         _opColony = 0;
         LockdownReset(); // (and its barracks: GameColonyLockdown.cs)
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
+        FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         OpeningLocal = OpeningStage.None;
         OpeningCaption = OpeningSubtitle = "";
         _storyMiddleOf = null; // (the people's middle is the colony's when there is one)
@@ -134,6 +135,7 @@ public sealed partial class Game
         OpeningSpots(colony);
         LockdownBuildBarracks(); // (the guards' barracks beside it: GameColonyLockdown.cs)
         DepotBuild(); // (the Remote Works beside it and the Orbital Depot over that: GameDepot.cs)
+        FragmentSitesBuild(); // (the sealed data centres out past it: GameStoryFragments.cs)
         var wreck = SandboxKitPiece(script.Wreck, _opMiddle, script.CrashFrom, script.CrashTo) ?? SandboxKitPiece(script.Wreck, _opMiddle, 25, script.CrashTo);
         if (wreck != null)
         {
@@ -559,6 +561,7 @@ public sealed partial class Game
     private OpeningSave? OpeningCapture() => _opOn ? new OpeningSave
     {
         Map = World.Map.Name, Colony = _opColony, Crash = _opCrash, Barracks = _opBarracks, Works = _dpWorks, Depot = _dpDepot,
+        Sites = FragmentSitesCapture(),
     } : null;
 
     /// <summary>Server, loading a world: its opening, when it was saved on this map (another planetoid's has none here).</summary>
@@ -578,6 +581,7 @@ public sealed partial class Game
         }
         LockdownLoadBarracks(o.Barracks); // (GameColonyLockdown.cs)
         DepotLoad(o.Works, o.Depot); // (GameDepot.cs)
+        FragmentSitesLoad(o.Sites); // (the data centres, or built now for a world from before them: GameStoryFragments.cs)
         _storyMiddleOf = null;
     }
 }
@@ -590,6 +594,7 @@ public sealed class OpeningSave
     public Vector3 Crash;
     public ushort Barracks; // the Colony Barracks construct (0: none; after the players in the section, so an older reader stops before it)
     public ushort Works, Depot; // the Remote Works and the Orbital Depot (GameDepot.cs; after the barracks, so an older reader stops before them)
+    public (string Site, ushort Body)[] Sites = []; // the sealed data centres (GameStoryFragments.cs; after the depot, likewise)
 }
 
 /// <summary>Story/Opening/Opening.json (docs/story/OPENING.md): the opening's names, times and lines. A bad file is refused with a reason and there is no opening.</summary>

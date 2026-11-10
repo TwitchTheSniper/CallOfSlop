@@ -1594,6 +1594,23 @@ def blueprints(defs):
         bp.put("Shell Control Chair", [1.75, 0.375, z], R0)
     out.append(bp)
 
+    # Sealed Data Centre: the first of the five data centres (docs/story/FRAGMENTS.md, Game/GameStoryFragments.cs), past the
+    # old mine near the penal colony. A 4 by 8 m concrete block with blank walls and a flat roof, its doorway at the front (z 0),
+    # two server racks down the middle and the Data Centre Terminal at the back facing the door. It has no battery: the
+    # player brings power. The game finds the terminal by its part, not by its place.
+    bp = Blueprint("Sealed Data Centre", "A sealed data centre from before the records: server racks and a dead terminal.", defs)
+    bp.first("Concrete Foundation 4x4 m")
+    bp.put("Concrete Foundation 4x4 m", cell(0, 0, 16), R0)
+    room_corners(bp, "Concrete", 0, 2, 0, 16, 32, door=1)
+    bp.put("Concrete Wall 4 m", cell(0, 2, 23), RY90)
+    bp.put("Concrete Wall 4 m", cell(15, 2, 8), RY270)
+    bp.put("Concrete Floor 4x4 m", cell(0, 2 + WALL_H, 0), R0)
+    bp.put("Concrete Floor 4x4 m", cell(0, 2 + WALL_H, 16), R0)
+    for z in (1.875, 4.125):  # (two racks down the middle, on the pads' quarter sockets)
+        bp.put("Server Rack", [1.875, 0.375, z], R0)
+    bp.put("Data Centre Terminal", [2.0, 0.375, 6.0], RY180)
+    out.append(bp)
+
     # Orbital Depot: the Ministry's station high over the Remote Works, where a new inmate first wakes in a robot shell. A 16 by
     # 12 m deck: the shell bay (a corrugated hut, its door to the deck) at the back left, the stores tower at the back right
     # (a watchtower's frame and platform, climbed by a ship ladder: the Driving Module waits on top) and the open hangar deck

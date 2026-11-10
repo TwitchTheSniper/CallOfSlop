@@ -21,6 +21,10 @@ public static class LogicBlocks
             case CLogic.MathBlock:
                 d.DataIn = ["a", "b"];
                 break;
+            case CLogic.Cipher: // (a data centre's terminal: GameStoryFragments.cs)
+                d.DataIn = ["key"];
+                d.DataOut = ["carrier"];
+                break;
             case CLogic.Latch:
                 d.DataIn = ["set", "reset"];
                 break;

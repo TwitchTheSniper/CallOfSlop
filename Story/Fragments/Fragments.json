@@ -1,0 +1,72 @@
+{
+  // The story's fragments (docs/story/FRAGMENTS.md; Game/GameStoryFragments.cs): the five records of what happened when the
+  // systems were folded, one in each sealed data centre. A player can find them in any order; each one found is recorded in
+  // the story world (a Thing named by its id, the relation Fragment towards it, its value the source) and shows in their
+  // Logbook (F1). The words are the first draft from the storyline talk ("Fragments and scripture (draft)",
+  // https://claude.ai/artifact/N8XemUxW1d9rseLeDyTHxZ): change them freely, but keep the ids, which the Thousand Layers'
+  // scripture (Story/Factions) and storylets name. Text is ASCII; "text" is a list of paragraphs.
+  "format": "call-of-slop-fragments/1",
+  "fragments": [
+    { "id": "frag.threat", "title": "The Threat",
+      "kind": "Survey log, outer array. Found in the first data centre.",
+      "text": [
+        "Third pass confirms the second. It is not a storm and it is not a body. It is an edge, and behind the edge there is nothing we can measure, and the edge is moving towards us.",
+        "At the present rate the outer system is inside it in eleven years. The inner four follow within the decade.",
+        "I have sent this to all five councils with one line added: nobody solves this alone. We each hold a piece. Bring yours."
+      ],
+      "hint": "What were the five systems afraid of?" },
+    { "id": "frag.fold", "title": "The Fold",
+      "kind": "Design note, attached to a drawing nobody can open any more.",
+      "text": [
+        "You cannot outrun it and you cannot stop it, so we stopped asking how. The answer is to move the room and leave the fire where it is.",
+        "Take the space around the five systems and turn it over on itself from the centre outward, the way you roll dough. Whatever sits at the edge of the roll, the threat included, ends up wrapped on the inside, and we end up outside it.",
+        "The roll needs room to turn into. The models say it borrows a little empty space beyond the outermost orbit, and stops. Nobody lives out there."
+      ],
+      "hint": "What did the builders do about it?" },
+    { "id": "frag.reading", "title": "What the Instruments Showed",
+      "kind": "Observatory record, first night after.",
+      "text": [
+        "It worked. The edge is gone. I want that written down first, because of what comes next.",
+        "We pointed the long array at the reference stars to check our position. There are no reference stars. I assumed a fault and woke the others. It is not a fault.",
+        "The roll did not stop at the outermost orbit. It did not stop anywhere. It kept turning until there was nothing left to turn into.",
+        "Requesting guidance on what to tell the councils. Requesting guidance on what to tell anyone."
+      ],
+      "hint": "What happened on the first night after?" },
+    { "id": "frag.silence", "title": "Why Nobody Undid It",
+      "kind": "Minutes of a closed session. Most names removed by hand.",
+      "text": [
+        "Item one. The machine can be reversed. This is agreed by all five delegations and is not in dispute.",
+        "Item two. Reversal returns everything, including the edge. Our worlds would have the years they had before, less the ones spent since.",
+        "Item three. A vote was proposed among the populations. It was not seconded.",
+        "Item four. It is resolved that no one should have to carry this who did not choose to. Records to be withdrawn. The observatories to be given other work.",
+        "One delegate asked that her objection be minuted. It is minuted."
+      ],
+      "hint": "Why was it never put back?" },
+    { "id": "frag.switch", "title": "How to Work the Machine",
+      "kind": "Maintenance sheet, laminated, bolted to a wall.",
+      "text": [
+        "RELEASE PROCEDURE. Two keys, turned together. Release is immediate and cannot be interrupted.",
+        "Note for whoever is reading. We were asked to build it without a release and we would not. A thing like this should be able to be put back.",
+        "There is a spare mounting on the left of the housing. It was meant for a timer, so that whoever turned the keys would have a little while afterwards. It was never fitted. The drawings are in the drawer.",
+        "If you are here to turn it, we are sorry it fell to you. If you are here to leave it, we understand that too."
+      ],
+      "hint": "Can it be undone?" }
+  ],
+  "sites": [
+    {
+      "id": "datacentre-1", "name": "Sealed Data Centre", "blueprint": "Sealed Data Centre", "fragment": "frag.threat",
+      // A lead it answers (Story/Storylets/Colony.json: Crumb's "Old Mine"): the Logbook shows it found once the fragment is held.
+      "lead": "Old Mine",
+      // Where it stands: on level ground this far (m) from the penal colony's yard.
+      "from": 160, "to": 320,
+      // The decode: the terminal puts out a carrier (a whole number from 1 to 9, a new one every "every" seconds) and wants
+      // carrier x multiply + add back on its key input, for "locks" carriers in a row. A Math Block or two does it.
+      "multiply": 3, "add": 4, "locks": 3, "every": 6,
+      "source": "the sealed data centre past the old mine",
+      "arrive": "A sealed building, older than the colony. Its door gives; the terminal inside is dead.",
+      "power": "The terminal hums awake. Its screen asks for an answer to its carrier.",
+      "decoded": "The cipher gives. The terminal's screen fills with text: stand at it to copy what it holds.",
+      "copied": "You copy the terminal's record into your Logbook (F1 by default)."
+    }
+  ]
+}
