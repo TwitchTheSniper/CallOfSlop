@@ -74,13 +74,14 @@ public static partial class ConstructRender
         {
             var tripod = c.LegCount >= 6 && c.LegCount % 2 == 0;
             for (var k = 0; k < c.LegCount; k++)
-                c.Legs[k].Group = (byte)(tripod ? k % 2 : k);
+                c.Legs[k].Group = (byte)(tripod ? k % 2 : k); // (unfed legs aren't left out here: the server's plan isn't known)
             c.LegGroups = (byte)(tripod ? 2 : Math.Max(1, c.LegCount));
         }
         var swing = 0f;
         for (var k = 0; k < c.LegCount; k++)
             swing += c.Parts[c.Legs[k].Part].D.Leg!.StepTime;
         swing /= Math.Max(1, c.LegCount);
+        ConstructPhysics.PowerLegs(null, c, false); // (what feeds each leg, from its links: a client has no pump flow or shaft rpm of its own)
         if (dt > 0 || !c.FeetSet)
             ConstructPhysics.WalkFeet(c, World.Query, pos, rot, vel, angVel, swing, dt, false);
     }

@@ -34,6 +34,26 @@
     },
     "jointColor": "#2e2a25"
   },
+  "ports": [
+    {
+      "type": "pipe",
+      "fluid": "oil",
+      "name": "Oil in",
+      "dir": "in",
+      "at": [
+        0,
+        -1.0,
+        2.0
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "drive"
+    }
+  ],
   "mass": 19309.4,
   "health": 26833,
   "armour": 32,
@@ -86,6 +106,15 @@
         0.0
       ],
       "dir": "+y"
+    },
+    {
+      "name": "drive",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
     }
   ]
 }

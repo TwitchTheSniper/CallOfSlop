@@ -2246,6 +2246,14 @@ public sealed partial class Game
                 lines.Add(new HudLine(car.Electrical ? SandboxKeys.Drive : "Won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
             else if (car.ThrusterCount > 0 || car.RotorCount > 0)
                 lines.Add(new HudLine(SandboxKeys.Fly, dim));
+            else if (car.LegCount > 0)
+            {
+                // A walker (docs/sandbox/GIANTS.md): what stops it, else its keys.
+                var why = ConstructPhysics.WalkerProblem(car);
+                if (why.Length > 0 && _sbProblem.Stale(why.GetHashCode()))
+                    _sbProblem.Text = $"Won't walk: {why}";
+                lines.Add(why.Length > 0 ? new HudLine(_sbProblem.Text, red) : new HudLine("Walk: move keys, turn; roll keys strafe; Sprint and Crouch raise and lower", dim));
+            }
             else
             {
                 if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))

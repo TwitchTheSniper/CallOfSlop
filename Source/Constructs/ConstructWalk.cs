@@ -18,6 +18,7 @@ public struct CLeg
     public bool Swinging;
     public Vector3 Foot, From, To; // world: the foot now, where its step started and where it goes
     public Vector3 Normal; // the ground's normal under the foot
+    public float Power; // its strength from what feeds it (0: unfed, locked; ConstructWalkLegs.cs), a share of its own
 }
 
 public sealed partial class Construct
@@ -124,6 +125,7 @@ public static partial class ConstructPhysics
     /// <summary>Server, each tick of a free awake body with legs: the feet, then the body.</summary>
     private static void Walk(ConstructWorld world, Construct c, IWorldQuery query, float dt)
     {
+        var fed = PowerLegs(world, c, true);
         var live = 0;
         var load = 0f;
         var reach = 0f;
@@ -131,10 +133,10 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var p = ref c.Parts[c.Legs[k].Part];
-            if (!p.Working)
+            if (!LegLive(c, k))
                 continue;
             live++;
-            var sound = LegSound(p); // (a damaged leg carries less and steps slower)
+            var sound = LegSound(p) * MathF.Min(1.5f, c.Legs[k].Power); // (a damaged leg carries less and steps slower; so does a weaker feed)
             load += p.D.Leg!.Load * sound;
             reach += c.Legs[k].Reach;
             stepTime += p.D.Leg.StepTime / sound;
@@ -146,7 +148,7 @@ public static partial class ConstructPhysics
         var over = live >= MinWalkLegs && c.FeetSet && !HeldWithout(c, c.WorldCom, 255); // (every working foot down, and still the centre of mass is outside them)
         if (live < MinWalkLegs || ratio > MaxWalkLoad || over)
         {
-            c.WalkProblem = live < MinWalkLegs ? $"{live} working legs: it needs {MinWalkLegs}" : over ? "its legs don't stand round its weight" : "the legs can't carry its weight";
+            c.WalkProblem = fed == 0 ? NoLegPower : live < MinWalkLegs ? $"{live} working legs with power: it needs {MinWalkLegs}" : over ? "its legs don't stand round its weight" : "the legs can't carry its weight";
             c.Walking = false;
             c.WalkTop = 0;
             HangFeet(c);
@@ -175,7 +177,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var leg = ref c.Legs[k];
-            if (!c.Parts[leg.Part].Working)
+            if (!LegLive(c, k))
             {
                 leg.Swinging = false;
                 continue;
@@ -225,8 +227,13 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var leg = ref c.Legs[k];
-            if (!c.Parts[leg.Part].Working)
+            if (!LegLive(c, k))
+            {
+                // Unfed or wrecked: locked at its rest pose, sagging a little towards the hip, carried along (it takes no weight).
+                leg.Foot = leg.From = leg.To = pos + Vector3.Transform(leg.Hip + (leg.Rest - leg.Hip) * 0.92f, rot);
+                leg.Swinging = false;
                 continue;
+            }
             var rest = pos + Vector3.Transform(leg.Rest, rot);
             var v = vel + Vector3.Cross(angVel, rest - com);
             v.Y = 0;
@@ -271,7 +278,7 @@ public static partial class ConstructPhysics
             for (var k = 0; k < c.LegCount; k++)
             {
                 ref var leg = ref c.Legs[k];
-                if (leg.Group == g && c.Parts[leg.Part].Working)
+                if (leg.Group == g && LegLive(c, k))
                 {
                     leg.Swinging = true;
                     leg.From = leg.Foot;
@@ -287,7 +294,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var leg = ref c.Legs[k];
-            if (leg.Group != g || !c.Parts[leg.Part].Working)
+            if (leg.Group != g || !LegLive(c, k))
                 continue;
             var d = leg.To - leg.Foot;
             d.Y *= 0.5f;
@@ -309,7 +316,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var leg = ref c.Legs[k];
-            if (leg.Group == g || !c.Parts[leg.Part].Working)
+            if (leg.Group == g || !LegLive(c, k))
                 continue;
             down++;
             if (prev >= 0 && !LeftOf(c.Legs[prev].Foot, leg.Foot, com))
@@ -376,7 +383,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.LegCount; k++)
         {
             ref var leg = ref c.Legs[k];
-            if (!c.Parts[leg.Part].Working)
+            if (!LegLive(c, k))
                 continue;
             var hip = c.ToWorld(leg.Hip);
             have += hip.Y - (leg.Swinging ? leg.To.Y : leg.Foot.Y);
@@ -412,7 +419,7 @@ public static partial class ConstructPhysics
             int first = -1, prev = -1;
             for (var k = 0; k < c.LegCount && inside; k++)
             {
-                if (c.Legs[k].Swinging || !c.Parts[c.Legs[k].Part].Working)
+                if (c.Legs[k].Swinging || !LegLive(c, k))
                     continue;
                 if (prev >= 0)
                     inside = LeftOf(c.Legs[prev].Foot, c.Legs[k].Foot, com);

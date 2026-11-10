@@ -252,3 +252,94 @@ public static partial class ConstructPhysics
         return world.AnyPartIn(o, local - pad, local + pad);
     }
 }
+
+/// <summary>
+/// Leg power (docs/sandbox/GIANTS.md, phase 2): a leg works only when it is fed, by a hose from a running pump (straight, or
+/// through a valve), by the electric circuit (a working battery's links reach it), or by a drive shaft the engine turns.
+/// Its strength is the best of what feeds it, a share of its own from the part's <c>power</c> block: what it carries and
+/// how fast it steps. An unfed leg is locked: it carries nothing, takes no step and hangs at its rest pose.
+/// </summary>
+public static partial class ConstructPhysics
+{
+    /// <summary>
+    /// Leg part <paramref name="part"/>'s strength from what feeds it (0: nothing). <paramref name="live"/> (the server, each
+    /// tick) asks for a pump that is pumping and a shaft that is turning; otherwise (a client, the checks) only that they
+    /// are fitted, as their links stand.
+    /// </summary>
+    public static float LegPower(ConstructWorld? world, Construct c, int part, bool live)
+    {
+        ref var p = ref c.Parts[part];
+        if (p.Broken || p.D.Leg is not { } d)
+            return 0;
+        var best = 0f;
+        if (d.Electric > 0 && c.HasBattery && p.Powered && (!live || c.PowerOn || world is { CreativeRecycling: true }))
+            best = d.Electric;
+        if (d.Hydraulic > best && OilFed(c, part, live))
+            best = d.Hydraulic;
+        if (d.Shaft > best && d.Shaft > 0)
+        {
+            var state = ConstructLinear.ShaftOf(c, part, out _, out _);
+            if (state == ShaftState.Turning || !live && state is ShaftState.EngineOff or ShaftState.ClutchOut)
+                best = d.Shaft * (live ? Math.Clamp(c.ShaftShare, 0.25f, 1f) : 1f);
+        }
+        return best;
+    }
+
+    /// <summary>Does a hose reach the leg's oil port from a pump, or from a valve on a pump (pumping, when <paramref name="live"/>)?</summary>
+    private static bool OilFed(Construct c, int part, bool live)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type != RouteType.Pipe || r.To != part || !r.FedEnd || r.Source >= c.PartCount)
+                continue;
+            int src = r.Source;
+            if (c.Parts[src].D.Hyd == HydKind.Valve)
+            {
+                if (c.Parts[src].Broken)
+                    continue;
+                for (var v = 0; v < c.HydValveCount; v++)
+                {
+                    ref var hv = ref c.HydValves![v];
+                    if (hv.Part == src && hv.Pump >= 0 && hv.Route >= 0 && c.Routes[hv.Route].FedEnd && PumpLive(c, hv.Pump, live))
+                        return true;
+                }
+                continue;
+            }
+            for (var u = 0; u < c.HydPumpCount; u++)
+                if (c.HydPumps![u].Part == src && PumpLive(c, u, live))
+                    return true;
+        }
+        return false;
+    }
+
+    private static bool PumpLive(Construct c, int pump, bool live) => !c.Parts[c.HydPumps![pump].Part].Broken && (!live || c.HydPumps[pump].Flow > 0);
+
+    /// <summary>Sets each leg's strength (<see cref="CLeg.Power"/>); returns how many working legs are fed.</summary>
+    public static int PowerLegs(ConstructWorld? world, Construct c, bool live)
+    {
+        var fed = 0;
+        for (var k = 0; k < c.LegCount; k++)
+        {
+            c.Legs[k].Power = LegPower(world, c, c.Legs[k].Part, live);
+            if (c.Legs[k].Power > 0)
+                fed++;
+        }
+        return fed;
+    }
+
+    /// <summary>Does leg <paramref name="k"/> walk (its part works and something feeds it)?</summary>
+    public static bool LegLive(Construct c, int k) => c.Parts[c.Legs[k].Part].Working && c.Legs[k].Power > 0;
+
+    public const string NoLegPower = "no power to the legs: a hose from a pump, a battery's circuit or a drive shaft";
+
+    /// <summary>What stops a walker, for the HUD and the checks, the same on every peer: unfed legs (from their links), else what the server said.</summary>
+    public static string WalkerProblem(Construct c)
+    {
+        var fed = 0;
+        for (var k = 0; k < c.LegCount; k++)
+            if (LegPower(null, c, c.Legs[k].Part, false) > 0)
+                fed++;
+        return fed == 0 ? NoLegPower : fed < MinWalkLegs ? $"{fed} legs have power: it needs {MinWalkLegs}" : c.WalkProblem;
+    }
+}

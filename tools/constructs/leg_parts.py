@@ -53,6 +53,7 @@ def leg(tier, kind):
     p.add(box((h + 0.004 * c.x, -a, -a), (h + h * 0.3, a, a), joint, detail=True))  # the hip actuator's cap, proud of the outer face
     p.sock("mount", (-h, 0, 0), "-x")
     p.sock("top", (0, h, 0), "+y")
+    p.sock("drive", (0, 0, -h), "-z")  # (a drive shaft's port: the leg walks on the engine)
     p.set(leg={
         "type": key,
         "tier": tname.lower(),
@@ -68,17 +69,24 @@ def leg(tier, kind):
         "power": POWER,
         "jointColor": joint,
     })
+    # Power (docs/sandbox/GIANTS.md, phase 2): a hose from a valve or a pump, a drive shaft, or the electric circuit
+    # through the leg's mount (no port: power runs through the parts it is fitted to).
+    p.set(ports=[
+        {"type": "pipe", "fluid": "oil", "name": "Oil in", "dir": "in", "at": [0, r(-h * 0.5), r(h)], "face": "+z"},
+        {"name": "Drive in", "type": "shaft", "dir": "in", "socket": "drive"},
+    ])
     mass = 8 * reach ** 2.6
     return p.stats(mass, 300 * reach ** 1.5, c.armour)
 
 
 def blueprint():
-    """The test walker: a bare 128 x 64 m capital chassis on six titan mech legs, a helm on the first leg's hip and a Driving Module wired to that leg."""
+    """The test walker: a bare 128 x 64 m capital chassis on six titan mech legs, a helm on the first leg's hip, a Driving Module wired to that leg, and a battery that powers the legs."""
     legs = [{"part": "Titan Mech Leg", "on": 0, "socket": f"{side}{i}", "by": "mount"} for side in ("-z", "+z") for i in (0, 4, 7)]  # (the deck's side sockets: cells 0, 4 and 7 along it)
     steps = [{"part": "Capital Chassis Deck 128x64 m"}] + legs + [
         {"part": "Adapter Capital to Small", "on": 1, "socket": "top", "by": "back"},  # (the helm rides the first leg's hip: its wire reaches the leg)
         {"part": "Bridge Helm", "on": 7, "socket": "front2.2", "by": "-y", "spin": 1},
         {"part": "Driving Module", "on": 8, "socket": "+x", "by": "-x"},
+        {"part": "Battery", "on": 9, "socket": "+x", "by": "-x"},  # (electric power: it reaches every leg through the hips and the deck)
     ]
     return {
         "format": "call-of-slop-construct-blueprint/1",
