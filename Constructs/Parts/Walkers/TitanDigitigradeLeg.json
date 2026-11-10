@@ -1,0 +1,91 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Titan Digitigrade Leg",
+  "description": "A digitigrade walker leg: hip, segments, knees, foot and actuators in one part. The gait brain walks it.",
+  "group": "Capital",
+  "section": "Legs",
+  "role": "leg",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "leg": {
+    "type": "digitigrade",
+    "tier": "titan",
+    "segments": [
+      17.28,
+      18.24,
+      12.48
+    ],
+    "width": 4.5,
+    "foot": 4.05,
+    "hip": [
+      0,
+      0,
+      0
+    ],
+    "load": 12000000,
+    "stepTime": 2.4,
+    "stepHeight": 0.15,
+    "stand": 0.6,
+    "spread": 0.3,
+    "power": {
+      "hydraulic": 1.0,
+      "electric": 0.8,
+      "shaft": 1.2
+    },
+    "jointColor": "#2e2a25"
+  },
+  "mass": 188069.0,
+  "health": 99766,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6b5f4f",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        8.256,
+        -4.4,
+        -4.4
+      ],
+      "max": [
+        10.4,
+        4.4,
+        4.4
+      ],
+      "color": "#2e2a25",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

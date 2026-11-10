@@ -1266,7 +1266,7 @@ public sealed partial class ConstructEdits
         var target = steer * max;
         var rate = 2.5f * dt;
         c.Steer += Math.Clamp(target - c.Steer, -rate, rate);
-        if (throttle != 0 || steer != 0 || c.LiftInput != 0 && (c.ThrusterCount > 0 || c.RotorCount > 0))
+        if (throttle != 0 || steer != 0 || c.LiftInput != 0 && (c.ThrusterCount > 0 || c.RotorCount > 0 || c.LegCount > 0))
             c.Wake();
     }
 }
