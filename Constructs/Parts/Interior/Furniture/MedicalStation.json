@@ -1,0 +1,124 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medical Station",
+  "description": "A treatment couch with its monitor: whoever sits in it heals, 4 health a second.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "seat",
+  "tool": "wrench",
+  "mass": 120.0,
+  "health": 240,
+  "armour": 3,
+  "material": "steel",
+  "color": "#d8dcd8",
+  "attachSeconds": 3.0,
+  "seat": {
+    "at": [
+      0,
+      0.15,
+      0.2
+    ],
+    "heal": 4
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -1.0
+      ],
+      "max": [
+        0.4,
+        0.5,
+        1.0
+      ],
+      "color": "#d8dcd8"
+    },
+    {
+      "min": [
+        -0.35,
+        0.5,
+        -0.95
+      ],
+      "max": [
+        0.35,
+        0.58,
+        0.95
+      ],
+      "color": "#5a8fa0"
+    },
+    {
+      "min": [
+        -0.06,
+        0.58,
+        -0.95
+      ],
+      "max": [
+        0.06,
+        1.6,
+        -0.83
+      ],
+      "color": "#6a737b"
+    },
+    {
+      "min": [
+        -0.25,
+        1.25,
+        -0.83
+      ],
+      "max": [
+        0.25,
+        1.6,
+        -0.78
+      ],
+      "color": "#3a3f45"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.6,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.8,
+        -1.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.4,
+        0.8,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.4,
+        0.8,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

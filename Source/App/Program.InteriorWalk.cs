@@ -33,7 +33,7 @@ public static unsafe partial class Program
         if (top.Chassis.Count > 0 && b.VoidHull(out _) is { } hollow)
         {
             var decks = (int)MathF.Floor(hollow.Size.Y / top.Deck.Storey + 1e-4f);
-            var vcls = top with { Deck = top.Deck with { Decks = decks, ReserveRoute = false }, Programme = top.Chassis, Fill = top.Fill.Where(f => top.Chassis.Contains(f)).ToList() };
+            var vcls = top.ForChassis(decks);
             vplan = InteriorPlanner.Plan(data, vcls, hollow, seed, @sealed: true);
             var rest = top.Programme.ToList();
             foreach (var room in top.Chassis)

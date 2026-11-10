@@ -143,6 +143,25 @@ public sealed partial class Game
         SandboxFateSend(p);
     }
 
+    private readonly float[] _sbHeal = new float[256]; // health a medical seat has given and not yet paid out (whole points go to the sitter)
+
+    /// <summary>Server, the seat loop: <paramref name="p"/> sits in a working medical seat that heals <paramref name="rate"/> health a second (INTERIORS.md, the medical bay).</summary>
+    private void SandboxSeatHeal(Player p, float rate)
+    {
+        ref var acc = ref _sbHeal[p.Id];
+        if (p.Health >= World.MaxHealth)
+        {
+            acc = 0;
+            return;
+        }
+        acc += rate * World.TickDt;
+        if (acc < 1f)
+            return;
+        var whole = (int)acc;
+        acc -= whole;
+        p.Health = Math.Min(World.MaxHealth, p.Health + whole);
+    }
+
     /// <summary>Server, the seat loop: <paramref name="p"/> lies in bunk <paramref name="seat"/> of <paramref name="c"/>. Their checkpoint from now on.</summary>
     private void SandboxBunkSeen(Player p, Construct c, int seat)
     {
