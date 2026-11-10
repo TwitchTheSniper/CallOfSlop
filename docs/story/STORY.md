@@ -689,6 +689,17 @@ Trusted from 60).
 - `--storylet-sim` prints the same path at its end ("The path"). The builder's Flowchart view draws a file the same
   way while writing it, with the test player's path lit.
 
+### The ending
+
+`Storylets/Ending.json` (DRAFT words; Karl's premise of 2026-11-10): *The five records* (all five fragments held, the
+quality `Fragments`: the lead "The Machine"), then *The machine*, whose three ends wait for what the player does there:
+`SwitchOff` (the fold is undone: *The sky returns*), `Delay` (*The last round*: an hour to go round and see people,
+with *A goodbye* from anyone who likes the player, who may be told or not; then it stops) or `KeepFold` (*The oven
+door stays shut*: one of the Thousand Layers asks if it is enough). What was done is the exclusive relation `Ending`
+(Last Round, Unrolled, Kept; `Story/Relations/Ending.json`, verbs `Story/Verbs/Ending.json`). Nobody speaks at the
+machine. Not built: the machine as a place, and what stopping does to the world, so nothing records the three events
+in play yet (the F4 Storylets tab's End buttons stand in).
+
 ## Fragments
 
 The old records the main storyline is told through, found in any order, and the sealed data centres that hold them: [FRAGMENTS.md](FRAGMENTS.md). A fragment is a Thing named by its id (`frag.threat`), held through the `Fragment` relation; the Logbook (F1) shows them.
