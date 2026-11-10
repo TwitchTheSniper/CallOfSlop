@@ -1050,7 +1050,7 @@ public sealed partial class Game
                 return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position, Constructs, eye, p.Yaw) : hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, (ushort)(pick - 1), Constructs, eye, p.Yaw);
             }
             case CActKind.Blueprint:
-                return SandboxSpawnBlueprint(p, r.U16()); // (protocol 226: two bytes, past 255 blueprints)
+                return SandboxSpawnBlueprint(p, r.U16()); // (protocol 227: two bytes, past 255 blueprints)
             case CActKind.Drop:
                 if (Constructs.HoseLetGo(p.Id))
                     return null; // (the hose's receiver first: it reels back)
