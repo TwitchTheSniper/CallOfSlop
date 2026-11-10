@@ -98,6 +98,54 @@ public sealed class InteriorBuilder : BlueprintScript
         Hull = new HullVolume(new Vector3(_w * cell, rules.Decks * rules.Storey, _d * cell), keep, bowAtMin);
     }
 
+    /// <summary>
+    /// The root's own hollow (phase 3, INTERIORS.md "The chassis is the interior"): the space between its lowest full-span plate and its highest
+    /// one, as a hull volume whose keep-outs are the root's other solid boxes (its beams), on the same bow. Null (with the reason) when the root
+    /// has no such hollow at least a storey high. Planned only: nothing is built in it until the chassis has sockets inside (see the doc).
+    /// </summary>
+    public HullVolume? ChassisVoid(out string why, out int innerSockets)
+    {
+        var def = C.DefOf(0);
+        var size = def.BoundsMax - def.BoundsMin;
+        var solid = def.Boxes.Take(def.SolidBoxes).ToList();
+        bool Spans(CPartBox b) => b.Half.X * 2 >= size.X * 0.9f && b.Half.Z * 2 >= size.Z * 0.9f && b.Half.Y * 2 < size.Y * 0.5f;
+        var plates = solid.Where(Spans).OrderBy(b => b.Center.Y).ToList();
+        innerSockets = 0;
+        if (plates.Count < 2)
+        {
+            why = $"the {def.Name} has no top and bottom plates with a hollow between them";
+            return null;
+        }
+        var floorY = plates[0].Center.Y + plates[0].Half.Y;
+        var roofY = plates[^1].Center.Y - plates[^1].Half.Y;
+        var storey = Class!.Deck.Storey;
+        if (roofY - floorY < storey)
+        {
+            why = $"the {def.Name}'s hollow is {roofY - floorY:0.0} m high, under a storey";
+            return null;
+        }
+        innerSockets = def.Sockets.Count(s => s.At.Y > floorY - 0.01f && s.At.Y < roofY + 0.01f && ConstructParts.DirVector(s.Dir).Y > 0.9f);
+        // the walls round its edge (beams along a whole side) bound the hollow; the beams inside are keep-outs
+        var inside = solid.Where(b => !plates.Contains(b) && b.Center.Y + b.Half.Y > floorY && b.Center.Y - b.Half.Y < roofY).ToList();
+        float x0 = def.BoundsMin.X, x1 = def.BoundsMax.X, z0 = def.BoundsMin.Z, z1 = def.BoundsMax.Z;
+        foreach (var b in inside.ToList())
+        {
+            var (lo, hi) = (b.Center - b.Half, b.Center + b.Half);
+            var alongZ = hi.Z - lo.Z >= size.Z * 0.9f;
+            var alongX = hi.X - lo.X >= size.X * 0.9f;
+            if (alongZ && lo.X <= def.BoundsMin.X + 0.01f) x0 = MathF.Max(x0, hi.X);
+            else if (alongZ && hi.X >= def.BoundsMax.X - 0.01f) x1 = MathF.Min(x1, lo.X);
+            else if (alongX && lo.Z <= def.BoundsMin.Z + 0.05f) z0 = MathF.Max(z0, hi.Z);
+            else if (alongX && hi.Z >= def.BoundsMax.Z - 0.05f) z1 = MathF.Min(z1, lo.Z);
+            else continue;
+            inside.Remove(b);
+        }
+        var corner = new Vector3(x0, floorY, z0);
+        var keep = inside.Select(b => (b.Center - b.Half - corner, b.Center + b.Half - corner)).ToList();
+        why = "";
+        return new HullVolume(new Vector3(x1 - x0, roofY - floorY, z1 - z0), keep, Hull!.BowAtMinX);
+    }
+
     /// <summary>A slab origin (cell 0's centre) of block <paramref name="x"/>, <paramref name="z"/> at level <paramref name="level"/> (0: deck 0's floor).</summary>
     private Vector3 Slab(int level, int x, int z) => new(_corner.X + 0.125f + x * 4, _floorY + level * 3, _corner.Z + 0.125f + z * 4);
 
@@ -744,6 +792,7 @@ public sealed class InteriorBuilder : BlueprintScript
                 try
                 {
                     sw = Onto(lamps[0], s, "Switch");
+                    Config(sw, ("startOn", true)); // (the lights are on when it is built)
                     Placed++;
                     break;
                 }
