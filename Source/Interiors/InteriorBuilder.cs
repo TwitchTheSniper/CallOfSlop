@@ -12,12 +12,14 @@ namespace CallOfSlop.Interiors;
 public sealed class InteriorBuilder : BlueprintScript
 {
     public readonly List<string> Refused = new(), Notes = new(), Missing = new();
-    public int Placed, Welded, Doors, LootSpotsSet;
+    public int Placed, Welded, Doors, LootSpotsSet, Lifts, Wired;
     private readonly InteriorData _data;
     private readonly List<VPart> _base = new();
     private readonly Dictionary<(int L, int X, int Z), VPart> _floors = new();
     private readonly Dictionary<(int L, int X, int Z), VPart> _adapters = new();
     private readonly Dictionary<(int L, int X, int Z), List<VPart>> _walls = new();
+    private readonly Dictionary<(int Room, Side S, int I), VPart> _pieces = new(); // each room's 4 m middle pieces and door walls, by side and number
+    private (int X, int Z)? _liftHole; // the block the freight lift's car runs through (no slab over it between the lowest and top deck)
     private Vector3 _corner; // the grid's (0, 0) corner on the deck's top, rest frame
     private float _floorY; // deck 0's slab origin height
     private int _w, _d;
@@ -199,6 +201,9 @@ public sealed class InteriorBuilder : BlueprintScript
             Refused.Add("no adapter pad: the grid doesn't meet the deck's sockets");
             return;
         }
+        // the freight lift's car runs through the shaft's middle block on its west side (a middle wall piece holds the rail)
+        if (plan.Rooms.FirstOrDefault(r => r.Shaft == "elevator" && r.Deck == 0) is { } shaft && plan.Decks == 2 && shaft.Rect.D >= 3)
+            _liftHole = (shaft.Rect.X0, shaft.Rect.Z0 + shaft.Rect.D / 2);
         Slabs(plan, 0);
         for (var k = 0; k < plan.Decks; k++)
         {
@@ -210,15 +215,175 @@ public sealed class InteriorBuilder : BlueprintScript
             foreach (var r in plan.Rooms.Where(r => r.Deck == k))
                 Furnish(plan, r, rng);
         }
-        foreach (var e in plan.Rooms.Where(r => r.Shaft == "elevator" && r.Deck == 0))
-            Notes.Add($"freight elevator shaft {e.Rect} reserved through {plan.Decks} decks (slabs closed over it): no small-class lift part yet");
-        if (plan.Rooms.Any(r => r.Shaft == "elevator"))
-            Missing.Add("a powered freight lift in the small class (Lift Platform Medium 5x5 on a Piston Medium is medium class, so it won't take a Building slab's sockets)");
+        Lift(plan);
         foreach (var t in plan.Rooms.Select(r => _data.Rooms[r.Type].Modules).OfType<string>().Distinct())
             foreach (var m in _data.Sets[t].Missing)
                 Missing.Add($"{_data.Rooms.Values.First(r => r.Modules == t).Name}: {m}");
-        Notes.Add("power: machines and lamps are placed but not linked to the batteries (phase 2)");
+        Power();
     }
+
+    public const string LiftRail = "Linear Actuator 3x3 4 m", LiftCar = "Freight Lift Car";
+    public const int LiftStopLow = 12, LiftStopHigh = 87; // % of the 4 m rail: 0.48 m and 3.48 m, a storey (3 m) apart
+
+    /// <summary>
+    /// The freight lift (INTERIORS.md "Phase 2"): a Linear Actuator 3x3 4 m stood on end on the shaft's west wall, its carriage carrying a
+    /// Freight Lift Car whose floor is 2 cm over the lower deck's floor at the low stop and the upper deck's at the high stop; the slab
+    /// over its block is left out. Calls: a Toggle drives the rail's Set (0 down, 1 up); the car's button flips it, the lower landing's
+    /// button flips it only while it says up (AND with the Toggle), the upper's only while it says down (AND with a NOT).
+    /// </summary>
+    private void Lift(InteriorPlan plan)
+    {
+        if (plan.Rooms.FirstOrDefault(r => r.Shaft == "elevator" && r.Deck == 0) is not { } lo)
+            return;
+        if (_liftHole is not { } hole)
+        {
+            Notes.Add($"freight elevator shaft {lo.Rect}: no lift built (one rail runs two decks through a shaft 3 cells deep; this is {plan.Decks} decks, {lo.Rect.D} deep)");
+            return;
+        }
+        var hi = plan.Rooms.First(r => r.Shaft == "elevator" && r.Deck == 1 && r.Rect == lo.Rect);
+        var piece = hole.Z - lo.Rect.Z0;
+        if (!_pieces.TryGetValue((lo.Id, Side.West, piece), out var wall))
+        {
+            Refused.Add($"freight lift: the shaft's west wall piece {piece} on deck 0 isn't there to hold the rail");
+            return;
+        }
+        var floorTop = Slab(0, hole.X, hole.Z).Y + 0.125f;
+        var (bx, bz) = (_corner.X + hole.X * 4, _corner.Z + hole.Z * 4);
+        var def = ConstructParts.Find(LiftRail)!;
+        var o = new Orient(Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY, Vector3.UnitX); // the rail's length up, its carriage facing into the shaft (+x)
+        var origin = new Vector3(bx + 0.25f + 0.1875f, floorTop + 2f, bz + 2.125f); // its back on the wall's face, its bottom on the floor
+        VPart rail;
+        try
+        {
+            rail = Put(LiftRail, origin + Rot24.Apply(FirstTurn(o), (def.BoundsMin + def.BoundsMax) * 0.5f), o, 0.05f, wall, "base.4");
+            Placed++;
+        }
+        catch (VehicleKitException e)
+        {
+            Refused.Add($"freight lift rail: {e.Message}");
+            return;
+        }
+        Config(rail, ("stopLow", LiftStopLow), ("stopHigh", LiftStopHigh), ("speed", 1.0));
+        VPart? car = null;
+        var why = "no turn keeps it upright";
+        for (var sp = 0; sp < 4 && car == null; sp++)
+            if (TurnOf(rail, "top", LiftCar, "mount", sp) is { } t && Rot24.Apply(t, Vector3.UnitY).Y > 0.9f)
+                try
+                {
+                    car = Onto(rail, "top", LiftCar, "mount", sp);
+                    Placed++;
+                }
+                catch (VehicleKitException e)
+                {
+                    why = e.Message;
+                }
+        if (car == null)
+        {
+            Refused.Add($"freight lift car: {why}");
+            return;
+        }
+        // the calls, on the shaft's west wall facing in: logic low down by the rail, buttons at hand height by the landing (the block south of the car)
+        var inward = Vector3.UnitX;
+        var low = new List<VPart> { wall };
+        if (_pieces.TryGetValue((lo.Id, Side.West, piece - 1), out var w0))
+            low.Add(w0);
+        var up = _pieces.TryGetValue((hi.Id, Side.West, piece), out var w1) ? new List<VPart> { w1 } : new List<VPart>();
+        var landing = new Vector3(bx + 0.4f, floorTop + 1.4f, bz + 4.1f);
+        var toggle = Mount("Toggle", low, inward, new Vector3(bx, floorTop, bz + 1), "freight lift");
+        var and1 = Mount("AND Gate", low, inward, new Vector3(bx, floorTop, bz + 1), "freight lift");
+        var and2 = Mount("AND Gate", low, inward, new Vector3(bx, floorTop, bz + 1), "freight lift");
+        var not = Mount("NOT Gate", low, inward, new Vector3(bx, floorTop, bz + 1), "freight lift");
+        var callLow = Mount("Button", low, inward, landing, "freight lift lower landing");
+        var callHigh = Mount("Button", up, inward, landing + new Vector3(0, 3, 0), "freight lift upper landing");
+        VPart? send = null;
+        try
+        {
+            send = Onto(car, "button", "Button");
+            Placed++;
+        }
+        catch (VehicleKitException e)
+        {
+            Refused.Add($"freight lift car's button: {e.Message}");
+        }
+        if (toggle == null || and1 == null || and2 == null || not == null || callLow == null || callHigh == null || send == null)
+            return;
+        foreach (var (a, b) in new[] { (callLow, and1), (toggle, and1), (callHigh, and2), (toggle, not), (not, and2), (and1, toggle), (and2, toggle), (send, toggle), (toggle, rail) })
+            if (!TryWire(a, b, null))
+            {
+                Refused.Add($"freight lift: a wire {a.Name} -> {b.Name} won't go");
+                return;
+            }
+        Lifts++;
+        Notes.Add($"freight lift in the shaft {lo.Rect}: car in block {hole.X},{hole.Z}, a {LiftRail} on the west wall, stops {LiftStopLow}% and {LiftStopHigh}% (3 m), 1 m/s; calls from both landings and the car");
+    }
+
+    /// <summary>A part on the first free socket of <paramref name="on"/> that faces <paramref name="face"/>, nearest <paramref name="near"/> first.</summary>
+    private VPart? Mount(string part, IEnumerable<VPart> on, Vector3 face, Vector3 near, string what)
+    {
+        var spots = new List<(float D, VPart P, string S)>();
+        foreach (var p in on)
+        {
+            var def = C.DefOf(p.Index);
+            for (var s = 0; s < C.SocketCount(p.Index) && s < def.Sockets.Length; s++)
+            {
+                if (C.SocketUsed(p.Index, s))
+                    continue;
+                C.SocketAt(p.Index, s, out var at, out var dir);
+                if (Vector3.Dot(ConstructParts.DirVector(dir), face) > 0.9f)
+                    spots.Add((Vector3.Distance(at, near), p, def.Sockets[s].Name));
+            }
+        }
+        var why = "no free socket facing the right way";
+        foreach (var (_, p, s) in spots.OrderBy(x => x.D))
+            try
+            {
+                var v = Onto(p, s, part);
+                Placed++;
+                return v;
+            }
+            catch (VehicleKitException e)
+            {
+                why = e.Message;
+            }
+        Refused.Add($"{what}: a {part}: {why}");
+        return null;
+    }
+
+    /// <summary>
+    /// Power (INTERIORS.md "Phase 2"): the circuit is the frame (ConstructPower), so what is fitted to the interior is on the circuit of the
+    /// batteries and plants it touches. Lists the electrical parts no working battery or plant reaches, and plants no fuel reaches.
+    /// </summary>
+    private void Power()
+    {
+        ConstructPower.Rebuild(C);
+        if (!C.HasBattery)
+        {
+            Notes.Add("power: no battery or plant, so the construct isn't electrical: nothing needs power");
+            return;
+        }
+        int on = 0, off = 0;
+        var dead = new Dictionary<string, int>();
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            var d = C.DefOf(i);
+            if (!d.Electric)
+                continue;
+            if (C.Parts[i].Powered)
+                on++;
+            else
+            {
+                off++;
+                dead[d.Name] = dead.GetValueOrDefault(d.Name) + 1;
+            }
+        }
+        var plants = Enumerable.Range(0, C.PartCount).Where(i => C.DefOf(i).Role == PartRole.Generator).ToList();
+        var dry = plants.Count(i => C.DefOf(i).PlantFuel == EngineFuel.Fuel && !C.ReachesFuel(i));
+        Notes.Add($"power: {on} electrical parts on the circuit, {off} not{(off > 0 ? $" ({string.Join(", ", dead.Select(kv => $"{kv.Value} {kv.Key}"))})" : "")}; " +
+                  $"{C.ChargeCapacity:0} kJ held; {plants.Count} plant(s), {dry} with no fuel reaching it");
+        PowerOff = off;
+    }
+
+    public int PowerOff;
 
     /// <summary>Every block's slab at <paramref name="level"/> (the top level is the roof), on the walls below or a neighbour, in passes until none is added.</summary>
     private void Slabs(InteriorPlan plan, int level)
@@ -228,7 +393,7 @@ public sealed class InteriorBuilder : BlueprintScript
             for (var z = 0; z < plan.D; z++)
             {
                 var below = level == 0 ? plan.Cells[0][x, z] : plan.Cells[level - 1][x, z];
-                if (below != InteriorPlan.KeepOut)
+                if (below != InteriorPlan.KeepOut && !(level > 0 && level < plan.Decks && _liftHole == (x, z)))
                     todo.Add((x, z));
             }
         var why = new Dictionary<(int, int), string>();
@@ -269,7 +434,12 @@ public sealed class InteriorBuilder : BlueprintScript
 
     private static Side Opposite(Side s) => s switch { Side.North => Side.South, Side.South => Side.North, Side.East => Side.West, _ => Side.East };
 
-    /// <summary>A room's own walls: four corner pieces with 2 m legs and 4 m pieces between, doorways where the plan has doors (both rooms of a shared door open theirs, lined up).</summary>
+    /// <summary>
+    /// A room's own walls along the outline of its cells (a rectangle, or a free room's L or T): each straight run of edges gets 4 m pieces from
+    /// 2 m into a cell to 2 m into the next, a corner piece (2 m legs) at each convex corner and a 2 m piece at each end that meets an inner
+    /// corner. Doorways go where the plan has doors (both rooms of a shared door open theirs, lined up); a door's side and slot count along the
+    /// room's rectangle, so only runs on the rectangle's edges take doors.
+    /// </summary>
     private void Walls(InteriorPlan plan, PlanRoom r)
     {
         var k = r.Deck;
@@ -285,56 +455,98 @@ public sealed class InteriorBuilder : BlueprintScript
             doors[(Opposite(d.Side), startA + d.Slot - startB)] = (d, false);
         }
         var what = $"{r.Name} deck {k}";
-        // corners: NW leg A +x (the north side's door corner), NE +z (east), SE -x (south), SW -z (west)
-        var corners = new (Side S, int X, int Z, float Lx, float Lz, Vector3 A)[]
+        var mine = r.Cells().ToHashSet();
+        bool In(int x, int z) => mine.Contains((x, z));
+        // each side's outward step, its runs' direction (min to max), where its pieces stand in a cell, its corner piece's turn and spot
+        var sides = new (Side S, int Dx, int Dz, bool AlongX, float Lx, float Lz, Vector3 CornerA, float Cx, float Cz, bool CornerAtMin)[]
         {
-            (Side.North, g.X0, g.Z0, 0, 0, Vector3.UnitX), (Side.East, g.X1, g.Z0, 3.75f, 0, Vector3.UnitZ),
-            (Side.South, g.X1, g.Z1, 3.75f, 3.75f, -Vector3.UnitX), (Side.West, g.X0, g.Z1, 0, 3.75f, -Vector3.UnitZ),
+            (Side.North, 0, -1, true, 0, 0, Vector3.UnitX, 0, 0, true),
+            (Side.East, 1, 0, false, 3.75f, 0, Vector3.UnitZ, 3.75f, 0, true),
+            (Side.South, 0, 1, true, 0, 3.75f, -Vector3.UnitX, 3.75f, 3.75f, false),
+            (Side.West, -1, 0, false, 0, 0, -Vector3.UnitZ, 0, 3.75f, false),
         };
-        foreach (var c in corners)
-        {
-            var door = doors.TryGetValue((c.S, -1), out var dd) ? dd : default;
-            var blocks = new[] { (c.X, c.Z) };
-            var v = Place(door.D != null ? Shell("doorCorner") : Shell("corner"), At(k, c.X, c.Z, c.Lx, c.Lz), c.A, FloorsUnder(k, blocks), $"{what} corner");
-            if (v == null)
-                continue;
-            Remember(k, blocks, v);
-            if (door.D != null)
-                Hang(v, door, what);
-        }
-        // middle pieces: from 2 m into a block to 2 m into the next, +x along north and south, +z along west and east
-        void Side_(Side s, int n, Func<int, (int X, int Z, float Lx, float Lz)> at, Vector3 a, Func<int, (int, int)[]> blocksOf)
-        {
-            for (var i = 0; i < n - 1; i++)
+        var done = new HashSet<(Side, int, int)>();
+        foreach (var sd in sides)
+            foreach (var (cx, cz) in mine.OrderBy(c => c.X).ThenBy(c => c.Z))
             {
-                var (x, z, lx, lz) = at(i);
-                var blocks = blocksOf(i);
-                var o = At(k, x, z, lx, lz);
-                if (doors.TryGetValue((s, i), out var door))
+                if (In(cx + sd.Dx, cz + sd.Dz) || done.Contains((sd.S, cx, cz)))
+                    continue;
+                // the run of edges this cell's starts, along x (north, south) or z (east, west)
+                var (ux, uz) = sd.AlongX ? (1, 0) : (0, 1);
+                var cellsOf = new List<(int X, int Z)>();
+                for (var (x, z) = (cx, cz); In(x, z) && !In(x + sd.Dx, z + sd.Dz); x += ux, z += uz)
                 {
-                    if (door.D.Wide)
+                    cellsOf.Add((x, z));
+                    done.Add((sd.S, x, z));
+                }
+                var n = cellsOf.Count;
+                var onRect = sd.S switch { Side.North => cz == g.Z0, Side.South => cz == g.Z1, Side.West => cx == g.X0, _ => cx == g.X1 } &&
+                             (sd.AlongX ? cellsOf[0].X >= g.X0 && cellsOf[^1].X <= g.X1 : cellsOf[0].Z >= g.Z0 && cellsOf[^1].Z <= g.Z1);
+                var start = sd.AlongX ? g.X0 : g.Z0;
+                var first = sd.AlongX ? cellsOf[0].X : cellsOf[0].Z;
+                // an end is an inner corner when the cell beyond it along the run is the room's (the wall turns outward there)
+                bool Inner(bool atMin)
+                {
+                    var (ex, ez) = atMin ? cellsOf[0] : cellsOf[^1];
+                    var s = atMin ? -1 : 1;
+                    return In(ex + ux * s, ez + uz * s);
+                }
+                Vector3 a = sd.AlongX ? Vector3.UnitX : Vector3.UnitZ;
+                foreach (var atMin in new[] { true, false })
+                {
+                    var (ex, ez) = atMin ? cellsOf[0] : cellsOf[^1];
+                    if (Inner(atMin))
                     {
-                        if (Place(Shell("garageWall"), o, a, FloorsUnder(k, blocks), $"{what} {door.D.Why}") is { } gw)
-                            Remember(k, blocks, gw);
+                        // a 2 m piece over the half of the end cell at the inner corner
+                        var o = At(k, ex, ez, sd.AlongX ? (atMin ? 0 : 2) : sd.Lx, sd.AlongX ? sd.Lz : (atMin ? 0 : 2));
+                        if (Place(Shell("wall2"), o, a, FloorsUnder(k, [(ex, ez)]), $"{what} wall") is { } w2)
+                            Remember(k, [(ex, ez)], w2);
+                    }
+                    else if (atMin == sd.CornerAtMin)
+                    {
+                        // the convex corner this side starts at (walking the outline clockwise): the door corner of a one-cell side
+                        var door = onRect && doors.TryGetValue((sd.S, -1), out var dd) && first == (sd.CornerAtMin ? start : (sd.AlongX ? g.X1 : g.Z1)) - (sd.CornerAtMin ? 0 : n - 1) ? dd : default;
+                        var v = Place(door.D != null ? Shell("doorCorner") : Shell("corner"), At(k, ex, ez, sd.Cx, sd.Cz), sd.CornerA, FloorsUnder(k, [(ex, ez)]), $"{what} corner");
+                        if (v != null)
+                        {
+                            Remember(k, [(ex, ez)], v);
+                            if (door.D != null)
+                                Hang(v, door, what);
+                        }
+                    }
+                }
+                for (var i = 0; i < n - 1; i++)
+                {
+                    var (x, z) = cellsOf[i];
+                    var blocks = new[] { (x, z), cellsOf[i + 1] };
+                    var o = At(k, x, z, sd.AlongX ? 2 : sd.Lx, sd.AlongX ? sd.Lz : 2);
+                    var slot = first + i - start;
+                    if (onRect && doors.TryGetValue((sd.S, slot), out var door))
+                    {
+                        if (door.D.Wide)
+                        {
+                            if (Place(Shell("garageWall"), o, a, FloorsUnder(k, blocks), $"{what} {door.D.Why}") is { } gw)
+                                Remember(k, blocks, gw);
+                            continue;
+                        }
+                        if (Place(Shell("doorWall"), o, a, FloorsUnder(k, blocks), $"{what} door") is { } dw)
+                        {
+                            Remember(k, blocks, dw);
+                            _pieces[(r.Id, sd.S, slot)] = dw;
+                            Hang(dw, door, what);
+                        }
+                        if (Place(Shell("wall2"), o + a * 2, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
+                            Remember(k, blocks, w2);
                         continue;
                     }
-                    if (Place(Shell("doorWall"), o, a, FloorsUnder(k, blocks), $"{what} door") is { } dw)
+                    if (Place(Shell("wall4"), o, a, FloorsUnder(k, blocks), $"{what} wall") is { } w4)
                     {
-                        Remember(k, blocks, dw);
-                        Hang(dw, door, what);
+                        Remember(k, blocks, w4);
+                        if (onRect)
+                            _pieces[(r.Id, sd.S, slot)] = w4;
                     }
-                    if (Place(Shell("wall2"), o + a * 2, a, FloorsUnder(k, blocks), $"{what} wall") is { } w2)
-                        Remember(k, blocks, w2);
-                    continue;
                 }
-                if (Place(Shell("wall4"), o, a, FloorsUnder(k, blocks), $"{what} wall") is { } w4)
-                    Remember(k, blocks, w4);
             }
-        }
-        Side_(Side.North, g.W, i => (g.X0 + i, g.Z0, 2, 0), Vector3.UnitX, i => [(g.X0 + i, g.Z0), (g.X0 + i + 1, g.Z0)]);
-        Side_(Side.South, g.W, i => (g.X0 + i, g.Z1, 2, 3.75f), Vector3.UnitX, i => [(g.X0 + i, g.Z1), (g.X0 + i + 1, g.Z1)]);
-        Side_(Side.West, g.D, i => (g.X0, g.Z0 + i, 0, 2), Vector3.UnitZ, i => [(g.X0, g.Z0 + i), (g.X0, g.Z0 + i + 1)]);
-        Side_(Side.East, g.D, i => (g.X1, g.Z0 + i, 3.75f, 2), Vector3.UnitZ, i => [(g.X1, g.Z0 + i), (g.X1, g.Z0 + i + 1)]);
     }
 
     /// <summary>A door leaf on its hinge in a doorway the plan gives this room (a shared doorway's leaf hangs in one room's half only).</summary>
@@ -433,8 +645,7 @@ public sealed class InteriorBuilder : BlueprintScript
         var set = _data.Sets[setId];
         var spots = new List<(float Order, VPart Floor, string Socket, Vector3 At)>();
         var (cx, cz) = r.Rect.Centre;
-        for (var x = r.Rect.X0; x <= r.Rect.X1; x++)
-            for (var z = r.Rect.Z0; z <= r.Rect.Z1; z++)
+        foreach (var (x, z) in r.Cells())
             {
                 if (!_floors.TryGetValue((r.Deck, x, z), out var f))
                     continue;
@@ -452,8 +663,9 @@ public sealed class InteriorBuilder : BlueprintScript
             }
         spots.Sort((a, b) => a.Order.CompareTo(b.Order));
         var table = _data.Rooms[r.Type].Loot is { } hook ? _data.LootHooks.GetValueOrDefault(hook) : null;
-        var cells = r.Rect.Area;
+        var cells = r.Area;
         VPart? helm = null, director = null, gunner = null;
+        var lamps = new List<VPart>();
         foreach (var item in set.Items)
         {
             var def = ConstructParts.Find(item.Part);
@@ -512,6 +724,10 @@ public sealed class InteriorBuilder : BlueprintScript
                         Notes.Add($"{r.Name}: loot hook \"{_data.Rooms[r.Type].Loot}\": {e.Message}");
                     }
                 }
+                if (def.Logic == CLogic.Lamp)
+                    lamps.Add(got);
+                if (item.Role == "plant" && def.PlantFuel == EngineFuel.Fuel)
+                    Fuel(got, r);
                 if (item.Role == "helm")
                     helm = got;
                 else if (item.Role == "gunner" && def.Role == PartRole.Seat)
@@ -520,22 +736,64 @@ public sealed class InteriorBuilder : BlueprintScript
                     director = got;
             }
         }
+        // the room's lights: a Switch on the first lamp, wired to every lamp (a lamp lights while its input is on)
+        if (lamps.Count > 0)
+        {
+            VPart? sw = null;
+            foreach (var s in new[] { "+x", "-x", "+z", "-z", "+y" })
+                try
+                {
+                    sw = Onto(lamps[0], s, "Switch");
+                    Placed++;
+                    break;
+                }
+                catch (VehicleKitException)
+                {
+                }
+            if (sw == null)
+                Refused.Add($"{r.Name} deck {r.Deck}: no place for the lights' Switch on its lamp");
+            else
+                foreach (var l in lamps)
+                    if (!TryWire(sw, l, null))
+                        Notes.Add($"{r.Name} deck {r.Deck}: a lamp out of the switch's reach stays dark");
+        }
         if (helm != null && _base.FirstOrDefault(p => p.Name == "Driving Module") is { } drive)
             TryWire(helm, drive, $"{r.Name}: helm to the Driving Module");
         if (gunner != null && director != null)
             TryWire(gunner, director, $"{r.Name}: gunner's station to the Fire Director");
     }
 
-    private void TryWire(VPart a, VPart b, string what)
+    /// <summary>A fuel plant's day tank: a Fuel Tank fitted to it, so fuel reaches it as it reaches an engine (Construct.FuelReaches).</summary>
+    private void Fuel(VPart plant, PlanRoom r)
+    {
+        foreach (var s in new[] { "+y", "+y+", "+y-", "+x", "-x", "+z", "-z" })
+            try
+            {
+                Onto(plant, s, "Fuel Tank");
+                Placed++;
+                return;
+            }
+            catch (VehicleKitException)
+            {
+            }
+        Refused.Add($"{r.Name} deck {r.Deck}: no place for the {plant.Name}'s Fuel Tank");
+    }
+
+    private bool TryWire(VPart a, VPart b, string? what)
     {
         try
         {
             Wire(a, b);
-            Notes.Add($"{what}: wired");
+            Wired++;
+            if (what != null)
+                Notes.Add($"{what}: wired");
+            return true;
         }
         catch (VehicleKitException e)
         {
-            Notes.Add($"{what}: not wired ({e.Message})");
+            if (what != null)
+                Notes.Add($"{what}: not wired ({e.Message})");
+            return false;
         }
     }
 }
