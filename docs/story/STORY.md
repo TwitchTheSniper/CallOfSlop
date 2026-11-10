@@ -453,7 +453,7 @@ Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, 
   someone faces them for 4 s (and stands still for a player within 6 m); a body beside whoever its step is with faces
   them. The face is the bot's glance (BotMove.cs) held on them, so nothing in the bot code changed.
 
-- **Joining a talk** (co-op; `Source/Game/GameStoryTalkJoin.cs`, protocol 231): when a player begins talking to someone,
+- **Joining a talk** (co-op; `Source/Game/GameStoryTalkJoin.cs`, protocol 232): when a player begins talking to someone,
   every other player gets a notice at the top right for 12 s ("Karl is talking to Officer Crumb. Backspace: join the
   chat"), offered again for the same talk after 20 s at the soonest. It can be ignored. The join key (`GameAction.JoinTalk`,
   Backspace, rebindable) opens the same panel wherever the joiner is: they hear what the person says while the talk lasts
@@ -688,7 +688,7 @@ Trusted from 60).
 - **Kept** as relations, so it saves with the world: `Ended` (a player and a storylet: a bit per end it has had for
   them) and `EndedWith` (who led it last, their entity + 1), set when a storylet ends, cleared by "Forget what they
   had". A world saved before them shows such storylets with every end locked.
-- **Sent** (protocol 231): once a second the host works out each player's page and sends `Msg.StoryPaths` when it
+- **Sent** (protocol 232): once a second the host works out each player's page and sends `Msg.StoryPaths` when it
   changed (u8 n, (u16 storylet, u8 state, u8 ends, u8 times, u32 story second, str who led) each; the qualities; the
   standings). Every peer has the storylets' texts, so only numbers and names travel. A player sees their own page only.
 - **The story map** (https://claude.ai/artifact/JJLq8Be3fd21fRvtdS22EF) is a read-only page of every storylet as a
