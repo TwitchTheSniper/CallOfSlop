@@ -1316,16 +1316,14 @@ public sealed partial class PlanetEdits : IDigGround
         sink.Quad(a, b, c, d, n, col, rock);
     }
 
-    /// <summary>How a column looks at an altitude on a dug face: a fill's own colour, else freshly dug ground by its depth.</summary>
+    /// <summary>How a column looks at an altitude on a dug face: a fill's own colour, else freshly dug ground by its depth, in the world's colours (<see cref="TerrainEdits.DugShade"/>).</summary>
     private (Vector3 Color, float Rock) Shade(int c, float y, bool covered)
     {
         var sf = _p.Surface;
         if (_fillKind[c] == 0 || y < _fillLo[c] - 0.01f)
         {
-            var depth = _orig[c] - y;
-            var f = Math.Clamp(depth / 4f, 0f, 1f);
-            var dug = Vector3.Lerp(sf.Dirt * 0.85f, sf.Rock * 0.8f, f) * (covered ? 0.6f : 1f);
-            return (dug, Math.Clamp(0.25f + depth / 3f, 0.25f, 1f));
+            var own = c < _ownColour.Length ? _ownColour[c] : sf.Grass; // (made with the cell's top colours: EnsureColours)
+            return TerrainEdits.DugShade(sf, own, _orig[c] - y, covered);
         }
         var (col, rock) = (GroundKind)(_fillKind[c] - 1) switch
         {
