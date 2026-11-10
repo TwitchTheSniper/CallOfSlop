@@ -547,7 +547,8 @@ public sealed class BodyLook
             var sh = Built(lower[k], turned)!.Value;
             var (ua, ub) = Match(UpperSection(At(k), sh.A.P[^2].X, narrow), UpperSection(At(k + 1), sh.B.P[^2].X, narrow));
             // (over a left door bay, which stands turned round, the storey's bay is turned with it: its key back to front, so the two frames' sockets meet)
-            names.Add(turned ? HullLoft.Key(lengths[k], false, k == up.To, k == up.From, ub, ua, false, up.Open ? "o" : "") : HullLoft.Key(lengths[k], false, k == up.From, k == up.To, ua, ub, false, up.Open ? "o" : ""));
+            var key = turned ? HullLoft.Key(lengths[k], false, k == up.To, k == up.From, ub, ua, false, up.Open ? "o" : "") : HullLoft.Key(lengths[k], false, k == up.From, k == up.To, ua, ub, false, up.Open ? "o" : "");
+            names.Add(Lining != '\0' ? HullLoft.WithLining(key, Lining, LiningInset, Window) : key); // (phase 7c: a saloon lined as the room below, an open deck's bulwark followed)
         }
         return names.ToArray();
     }
