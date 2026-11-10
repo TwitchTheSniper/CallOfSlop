@@ -34,7 +34,6 @@ public static partial class ConstructRender
             if (!serverFeet)
                 PoseFeet(c, pos, rot, now);
             c.WalkDrawStamp = now;
-            var fwd = Vector3.Transform(c.SeatForward(), rot);
             var up = Vector3.Transform(Vector3.UnitY, rot);
             for (var k = 0; k < c.LegCount; k++)
             {
@@ -42,15 +41,11 @@ public static partial class ConstructRender
                 ref var p = ref c.Parts[leg.Part];
                 if (p.D.Leg is not { } d)
                     continue;
-                var hip = pos + Vector3.Transform(leg.Hip, rot);
-                var outward = Vector3.Transform(leg.Rest - leg.Hip, rot);
-                outward -= up * Vector3.Dot(outward, up);
-                outward = outward.LengthSquared() > 1e-6f ? Vector3.Normalize(outward) : Vector3.UnitX;
-                var count = Pose(d, hip, c.FeetSet ? leg.Foot : pos + Vector3.Transform(leg.Rest, rot), up, fwd, outward);
+                var count = ConstructPhysics.LegPose(c, k, pos, rot, LegPts, out var outward);
                 var colour = d.Colour;
                 for (var s = 0; s < count; s++)
                 {
-                    var w = d.Width * (1 - 0.14f * s);
+                    var w = ConstructPhysics.LegWidth(d, s);
                     n += Bone(gfx, LegPts[s], LegPts[s + 1], w, outward, origin, colour);
                     n += Knuckle(gfx, LegPts[s], w * 1.18f, rot, origin, d.JointColour);
                 }
@@ -88,54 +83,6 @@ public static partial class ConstructRender
         swing /= Math.Max(1, c.LegCount);
         if (dt > 0 || !c.FeetSet)
             ConstructPhysics.WalkFeet(c, World.Query, pos, rot, vel, angVel, swing, dt, false);
-    }
-
-    /// <summary>The leg's points, hip to foot, into <see cref="LegPts"/>; returns its segment count.</summary>
-    private static int Pose(LegDef d, Vector3 hip, Vector3 foot, Vector3 up, Vector3 fwd, Vector3 outward)
-    {
-        var segs = d.Segments;
-        var n = segs.Length;
-        var i = 0;
-        LegPts[0] = hip;
-        var root = hip;
-        if (d.Kind == LegKind.Insect && n >= 3)
-        {
-            // The coxa: out from the hip towards the foot, level.
-            var across = foot - hip;
-            across -= up * Vector3.Dot(across, up);
-            var dir = across.LengthSquared() > 1e-6f ? Vector3.Normalize(across) : outward;
-            root = hip + dir * MathF.Min(segs[0], across.Length() * 0.8f);
-            LegPts[1] = root;
-            i = 1;
-        }
-        var end = foot;
-        if (n - i == 3)
-        {
-            // The last segment: straight down to the foot, or swept back on its toes.
-            var last = segs[n - 1];
-            var lean = d.Kind == LegKind.Digitigrade ? Vector3.Normalize(up * 0.75f - fwd * 0.66f) : up;
-            end = foot + lean * last;
-        }
-        var pole = d.Kind == LegKind.Insect ? Vector3.Normalize(up + outward * 0.3f) : fwd;
-        var knee = Knee(root, end, segs[i], segs[i + 1], pole);
-        LegPts[i + 1] = knee;
-        LegPts[i + 2] = end;
-        if (n - i == 3)
-            LegPts[i + 3] = foot;
-        return n;
-    }
-
-    /// <summary>Two bones of <paramref name="a"/> and <paramref name="b"/> from <paramref name="root"/> towards <paramref name="target"/>, bending towards <paramref name="pole"/>.</summary>
-    private static Vector3 Knee(Vector3 root, Vector3 target, float a, float b, Vector3 pole)
-    {
-        var to = target - root;
-        var d = to.Length();
-        var dir = d > 1e-5f ? to / d : -Vector3.UnitY;
-        d = Math.Clamp(d, MathF.Abs(a - b) + 1e-3f, a + b - 1e-3f);
-        var cos = Math.Clamp((a * a + d * d - b * b) / (2 * a * d), -1, 1);
-        var side = pole - dir * Vector3.Dot(pole, dir);
-        side = side.LengthSquared() > 1e-6f ? Vector3.Normalize(side) : Vector3.Normalize(Vector3.Cross(dir, Vector3.UnitX + Vector3.UnitZ * 0.3f));
-        return root + dir * (a * cos) + side * (a * MathF.Sqrt(1 - cos * cos));
     }
 
     private static int Bone(Renderer gfx, Vector3 a, Vector3 b, float width, Vector3 across, Vector3 origin, Vector3 colour)

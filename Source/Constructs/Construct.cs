@@ -1773,6 +1773,12 @@ public sealed partial class Construct
         for (var i = 0; i < PartCount; i++)
         {
             int seg = Parts[i].Seg;
+            if (seg == 0 && Parts[i].D.Leg is { } leg)
+            {
+                // A walker leg reaches its whole length from its hip (ConstructWalk.cs): rays, contacts and the broadphase see its feet.
+                reach = MathF.Max(reach, Vector3.Distance(Parts[i].Pos + Rot24.Apply(Parts[i].Rot, leg.Hip), Com) + leg.Reach + leg.Foot);
+                continue;
+            }
             if (seg == 0 || MoveSeg(seg) == 0)
                 continue;
             ShapeBounds(i, out var mn, out var mx);

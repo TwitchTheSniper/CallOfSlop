@@ -122,7 +122,7 @@ public static partial class ConstructPhysics
     public const float MaxStretch = 0.94f; // a planted leg's hip to foot, a share of its reach: the body rises no higher
 
     /// <summary>Server, each tick of a free awake body with legs: the feet, then the body.</summary>
-    private static void Walk(Construct c, IWorldQuery query, float dt)
+    private static void Walk(ConstructWorld world, Construct c, IWorldQuery query, float dt)
     {
         var live = 0;
         var load = 0f;
@@ -134,9 +134,10 @@ public static partial class ConstructPhysics
             if (!p.Working)
                 continue;
             live++;
-            load += p.D.Leg!.Load;
+            var sound = LegSound(p); // (a damaged leg carries less and steps slower)
+            load += p.D.Leg!.Load * sound;
             reach += c.Legs[k].Reach;
-            stepTime += p.D.Leg.StepTime;
+            stepTime += p.D.Leg.StepTime / sound;
         }
         c.WalkStamp = Stopwatch.GetTimestamp();
         if (live != c.WalkLive)
@@ -160,6 +161,7 @@ public static partial class ConstructPhysics
         c.Walking = true;
         WalkFeet(c, query, c.Pos, c.Rot, c.Vel, c.AngVel, swing, dt, true);
         WalkBody(c, reach, dt);
+        FeetPushBodies(world, c);
         if (c.WalkStepping)
             c.Wake(); // (a foot in the air finishes its step)
     }
