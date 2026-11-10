@@ -3,9 +3,9 @@ using System.Numerics;
 namespace CallOfSlop.VehicleKit.Generators;
 
 /// <summary>
-/// Multirotor drones (docs/vehiclekit/AIRCRAFT.md): a Flight Stabilizer flies whatever lifts it, so the shape is free. Two families by the seed:
-/// a scout on a Drone Frame (four Drone Rotors, maybe pushers and a camera), and a multirotor on a hub of square beams: four, six or eight electric props or
-/// ducted fans on plain arms or on T ends, a Battery Pack or two slung under the hub, legs, and a Drone Receiver or, on a big one, a seat.
+/// Multirotor drones (docs/vehiclekit/AIRCRAFT.md): a Flight Stabilizer flies whatever lifts it, so the shape is free. Three families by the seed:
+/// a scout on a Drone Frame (four Drone Rotors, maybe pushers and a camera), a home-made octo of Drone Rotors on tubes round a Battery, and a multirotor on a hub of square beams: four, six or eight ducted fans
+/// on plain arms or on T ends, a Battery Pack or two slung under the hub, legs, and a Drone Receiver or, on a big one, a seat.
 /// Rotor hands alternate round the hub, so their torques cancel and the stabilizer yaws by them. No weapons yet.
 /// </summary>
 public sealed class Drone(FactionStyle style) : VehicleShape(style), IAircraftShape
@@ -59,7 +59,7 @@ public sealed class Drone(FactionStyle style) : VehicleShape(style), IAircraftSh
                 v.Onto(frame, s, "Drone Pusher", "front");
         var stab = Level(v, frame, "top", Stab, "-y", forward: true);
         Config(v, stab, d);
-        v.Paint(v.Onto(frame, "topB", d.Fork("battery").Chance(0.6) ? "Drone Battery" : "Battery", "-y"), Style.Colour(paint, "body")); // (a Battery: heavier, a little longer in the air)
+        v.Paint(v.Onto(frame, "topB", "Drone Battery", "-y"), Style.Colour(paint, "body"));
         v.Onto(frame, "topF", "Drone Receiver", "bottom");
         if (d.Fork("camera").Chance(0.7))
             v.Onto(frame, "nose", "Camera", "back");
@@ -67,26 +67,28 @@ public sealed class Drone(FactionStyle style) : VehicleShape(style), IAircraftSh
 
     // ---- The tube quad -------------------------------------------------------------------------------------------
 
-    /// <summary>A home-made scout: a Battery for a hub, steel tube arms, Drone Rotors hung under their ends, the stabilizer on top.</summary>
+    /// <summary>A home-made scout: a Battery for a hub, steel tube arms, two Drone Rotors hung under each, the stabilizer on the back arm.</summary>
     private void TubeQuad(Vehicle v, Dice d)
     {
-        v.Description = "A home-made drone: four rotors on tube arms round a battery. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.";
+        v.Description = "A home-made drone: eight small rotors on four tube arms round a battery. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.";
         var paint = d.Fork("paint");
         var hub = v.Root("Battery", new Vector3(0, 0.4f, 0), Orient.Forward);
         v.Paint(hub, Style.Colour(paint, "body"));
-        var arm = d.Fork("rig").Pick((string[])["Steel Tube 0.5 m", "Steel Tube 1 m"]);
-        var last = arm == "Steel Tube 1 m" ? 3 : 1;
+        const string arm = "Steel Tube 1 m";
+        var inner = d.Fork("rig").Chance(0.5) ? 1 : 2; // (where the inner rotor of each pair hangs)
         var tubes = new List<(VPart Tube, Vector3 Out)>();
         foreach (var (socket, way) in (ReadOnlySpan<(string, Vector3)>)[("-z", -Vector3.UnitZ), ("+z", Vector3.UnitZ), ("-x", -Vector3.UnitX), ("+x", Vector3.UnitX)])
         {
             var tube = Along(v, hub, socket, arm, "end-", way);
             v.Paint(tube, Style.Colour(paint, "frame"));
-            v.Onto(tube, $"-y{last}", "Drone Rotor", "front");
+            v.Onto(tube, "-y3", "Drone Rotor", "front");
+            v.Onto(tube, $"-y{inner}", "Drone Rotor", "front"); // (two a tube: the Battery hub is heavy for four at this game's gravity)
             tubes.Add((tube, way));
         }
-        var stab = Level(v, hub, "+y", Stab, "-y", forward: true);
+        var back = tubes.First(t => t.Out.Z > 0).Tube;
+        var stab = Level(v, back, "+y1", Stab, "-y", forward: true); // (not on the Battery: the two are as wide, and their sides would share a plane)
         Config(v, stab, d);
-        v.Onto(tubes.First(t => t.Out.Z > 0).Tube, "+y1", "Drone Receiver", "bottom");
+        v.Onto(back, "+y3", "Drone Receiver", "bottom");
         if (d.Fork("camera").Chance(0.6))
             Level(v, tubes.First(t => t.Out.Z < 0).Tube, "-y0", "Camera", "+y", forward: true);
     }
@@ -100,15 +102,12 @@ public sealed class Drone(FactionStyle style) : VehicleShape(style), IAircraftSh
     {
         var rig = d.Fork("rig");
         var layout = rig.Pick((Layout[])[Layout.Plus, Layout.Plus, Layout.Hex, Layout.Octo, Layout.H]);
-        var heavy = rig.Chance(0.5);
-        var fan = heavy ? (rig.Chance(0.7) ? "Ducted Fan" : "Electric Prop") : "Electric Prop";
-        if (fan == "Electric Prop" && layout is Layout.Plus or Layout.H)
-            layout = rig.Chance(0.5) ? Layout.Hex : Layout.Octo; // (four electric props barely lift the pack: six or eight)
+        const string fan = "Ducted Fan"; // (the one small lifter strong enough for a Battery Pack: an Electric Prop lifts 40 kg at this game's gravity, and is for planes)
         var arm = layout != Layout.Plus ? rig.Pick((float[])[1.5f, 2f]) : rig.Pick((float[])[1f, 1.5f, 2f]);
-        var packs = heavy && fan == "Ducted Fan" && rig.Chance(0.5) ? 2 : 1;
-        var manned = heavy && fan == "Ducted Fan" && arm >= 2 && rig.Chance(0.4);
+        var packs = layout is Layout.Hex or Layout.Octo && rig.Chance(0.5) ? 2 : 1; // (a second pack only where six or eight fans carry it)
+        var manned = arm >= 2 && rig.Chance(0.4);
         var count = layout switch { Layout.Plus => 4, Layout.H => 4, Layout.Hex => 6, _ => 8 };
-        v.Description = $"A {(manned ? "crewed" : "remote")} multirotor, {count} {(fan == "Ducted Fan" ? "ducted fans" : "electric props")} on a hub. " +
+        v.Description = $"A {(manned ? "crewed" : "remote")} multirotor, {count} ducted fans on a hub{(packs == 2 ? ", two battery packs" : "")}. " +
                         (manned ? "Shift climbs, Ctrl sinks, W A S D move and turn it." : "Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.");
 
         var paint = d.Fork("paint");

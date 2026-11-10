@@ -89,7 +89,7 @@ public static class VehicleFlightCheck
             return Done(start, r with { Why = "no seat or Drone Receiver gives the stabilizer its orders" }, gate);
         c.Driver = 1;
         c.DriverSeat = seat;
-        var weight = c.Mass * 9.81f * place.Ctx.GravityScale;
+        var weight = c.Mass * World.Gravity * place.Ctx.GravityScale;
         var h0 = Up(c);
         Fly(w, q, place, c, Buttons.Sprint, ClimbTicks, ref r);
         r = r with { Lift = weight > 0 ? c.Stabs[0].UpForce / weight : 0 };
@@ -166,7 +166,7 @@ public static class VehicleFlightCheck
         var level = 0f;
         for (var k = 0; k < c.ThrusterCount; k++)
             level += c.Thrusters[k].Level;
-        return $"{c.RotorCount} rotors pushing {rotors:0} N, {c.ThrusterCount} thrusters at {(c.ThrusterCount > 0 ? level / c.ThrusterCount : 0):P0}, weight {c.Mass * 9.81f:0} N, charge {c.Charge:0} of {c.ChargeCapacity:0} kJ{(c.Electrical ? "" : ", no circuit")}";
+        return $"{c.RotorCount} rotors pushing {rotors:0} N, {c.ThrusterCount} thrusters at {(c.ThrusterCount > 0 ? level / c.ThrusterCount : 0):P0}, weight {c.Mass * World.Gravity:0} N at standard gravity, charge {c.Charge:0} of {c.ChargeCapacity:0} kJ{(c.Electrical ? "" : ", no circuit")}";
     }
 
     private static float Up(Construct c) => c.WorldCom.Y;
