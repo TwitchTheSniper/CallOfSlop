@@ -860,9 +860,7 @@ public static class ConstructWeapons
             if (seated && g.AimJoints > 0)
             {
                 // At what the gunner looks at (the guns converge on it: no parallax from the gun sitting off the eye).
-                MuzzleWorld(c, k, out var muzzle, out _);
-                var point = g.Sight == SightKind.Lead ? ConstructOrdnance.SightPoint(world, c, ref g, g.Seat, muzzle, query, g.MaxRange) : GunnerPoint(world, c, g.Seat, query, g.MaxRange);
-                Aim(c, k, AimWay(c, k, muzzle, point), force: true);
+                Aim(c, k, LaidWay(world, c, k, query), force: true);
             }
             else if (g.Director >= 0 && g.AimJoints > 0 && g.Director < c.PartCount && c.Parts[g.Director].Count is var manned and > 0 && manned <= c.PartCount)
             {
@@ -969,6 +967,18 @@ public static class ConstructWeapons
         if (want > 0 && (g.Effects & GunEffect.Flame) != 0)
             p.Rounds += (ushort)ConstructHarpoon.TakeFuel(c, want);
         world.NoteAmmo(c, g.Part);
+    }
+
+    /// <summary>
+    /// Which way gun <paramref name="k"/>'s gunner lays it this tick: at the point the gunner looks at (the guns converge on it: no parallax from the gun
+    /// sitting off the eye), or the lead sight's point, along the arc that lands there. The vehicle kit's aim check judges a gun by this (VehicleChecks.Aim).
+    /// </summary>
+    public static Vector3 LaidWay(ConstructWorld world, Construct c, int k, IWorldQuery query)
+    {
+        ref var g = ref c.Guns[k];
+        MuzzleWorld(c, k, out var muzzle, out _);
+        var point = g.Sight == SightKind.Lead ? ConstructOrdnance.SightPoint(world, c, ref g, g.Seat, muzzle, query, g.MaxRange) : GunnerPoint(world, c, g.Seat, query, g.MaxRange);
+        return AimWay(c, k, muzzle, point);
     }
 
     /// <summary>Which way to point gun <paramref name="k"/> at a point: straight at it, or along the arc that lands there for a shell gun. Holding the seat's aim key takes the high arc.</summary>
