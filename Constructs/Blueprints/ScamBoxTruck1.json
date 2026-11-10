@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, leaf/leaf, wing 0.5, archetype rigid box, language box body standard 2.61 m, flare 0.01, level 0.6, brow 0.85 1 m, tail 0.91 1 m, door left, cab cab-over capsule, nose flat, fitting roof sign, trim signboards on 3 bay sides, wear age 0.96 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab cab-over, nose flat, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, leaf/leaf, wing 0.5, archetype rigid box, cab style box, language box body standard 2.61 m, flare 0.01, level 0.6, brow 0.85 1 m, tail 0.91 1 m, door left, cab cab-over capsule, nose flat, fitting roof sign, trim signboards on 3 bay sides, wear age 0.96 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab cab-over, nose flat, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Box Truck 1",
   "group": "The Call Centre",
@@ -39,10 +39,10 @@
     {"part": "Seat", "on": 29, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 31, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 30, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabo SfUSWUXcYkWHVMWKW0W0XK ~Bu0C9vBQX9gs02w = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2a2c30"},
-    {"part": "Hull Loft (pane UrXfSgXBXfSgX2YhStU-YhSt)", "on": 34, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane XIXfSkXXXfVKXKYhVKX9YhSy)", "on": 34, "socket": "glass2", "by": "frame"},
-    {"part": "Hull Loft (pane UkXfSkUVXfVKUiYhVKUtYhSy)", "on": 34, "socket": "glass3", "by": "frame"},
+    {"part": "Hull Loft (cabo SfUSWUXcYpWHVMWKW0W0XK ~Bu0C9zBQc9gy02_ = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#2a2c30"},
+    {"part": "Hull Loft (pane UrXfSgXBXfSgX2YmSuU-YmSu)", "on": 34, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane XIXfSkXXXfVKXLYmVKX9YmSy)", "on": 34, "socket": "glass2", "by": "frame"},
+    {"part": "Hull Loft (pane UkXfSkUVXfVKUhYmVKUtYmSy)", "on": 34, "socket": "glass3", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#9aa0a6"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#b0b4b8"},
     {"part": "Plate Steel 0.25 m", "on": 39, "socket": "+z1", "by": "-x", "paint": "#8a9096"},
@@ -130,7 +130,7 @@
     {"part": "Cubicle Desk", "on": 49, "socket": "front03", "by": "foot00", "spin": 2},
     {"part": "Water Cooler", "on": 49, "socket": "front33", "by": "foot00", "spin": 2},
     {"part": "Gift Card Sign", "on": 62, "socket": "front00", "by": "base", "spin": 2},
-    {"part": "Hull Loft (decoS XHWAWcW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
+    {"part": "Hull Loft (decoS XIWAWcW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
     {"part": "Office Phone", "on": 94, "socket": "front", "by": "base"},
     {"part": "Loudhailer", "on": 87, "socket": "front01", "by": "base"},
     {"part": "Hull Loft (trimg7 XaW5 ~DW0DWyDpwD43045 ~D80D9hDJLCZT03V)", "on": 70, "socket": "-x0", "by": "base", "paint": "#ff3d8b"},

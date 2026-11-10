@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front forward, inset 1 m, swing arm/swing arm, wing 0.5, archetype war wagon, language hoop standard 2.48 m, flare 0.02, sagged 0.9, brow 0.67 1 m, tail 0.67 1.25 m, door right, space cage w, cab hoop caged cab, nose grille, lopsided right, wear age 1.14 (27 rusty, 16 dirty, 0 sooty, 0 patched, 4 rusted out), body room, cab caged, nose plated hood, rear porch hitch, under stilts, flank bare, roof none, layout room(Brow T,Door,Bay T-L,Tail L)
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front forward, inset 1 m, swing arm/swing arm, wing 0.5, archetype war wagon, cab style scrap plate, language hoop standard 2.48 m, flare 0.02, sagged 0.9, brow 0.67 1 m, tail 0.67 1.25 m, door right, space cage w, cab hoop caged cab, nose wedge, lopsided right, wear age 1.14 (27 rusty, 16 dirty, 0 sooty, 0 patched, 4 rusted out), body room, cab caged, nose plated hood, rear porch hitch, under stilts, flank bare, roof none, layout room(Brow T,Door,Bay T-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Wagon 5",
   "group": "Bandit",
@@ -38,7 +38,7 @@
     {"part": "Square Beam 0.5 m", "on": 28, "socket": "+z", "by": "-z", "paint": "#46392f"},
     {"part": "Seat", "on": 29, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 31, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (cabg V4V4WWXhYFW3VYWMW0W0Xa ~B00B9DAnhAI652Q02U = ir)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#46392f"},
+    {"part": "Hull Loft (cabg V4V4WWXmYFW2VYWMW0W0Xa ~B00B9DAnhAI552P02T = ir)", "on": 0, "socket": "+y7", "by": "footL", "paint": "#46392f"},
     {"part": "Plate Steel 0.5x1 m", "on": 4, "socket": "+y4", "by": "back02", "spin": 2, "paint": "#2f2c2a"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y4", "by": "back00", "spin": 2, "paint": "#7a4326"},
     {"part": "Plate Steel 0.25 m", "on": 35, "socket": "+z0", "by": "-x", "paint": "#3a3330"},

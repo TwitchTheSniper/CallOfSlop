@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.5 m, strut/strut, wing 0.75, archetype monster truck, language pickup standard 2.43 m, flare 0.00, level 1.0, brow 0.75 1 m, tail 0.84 1 m, door left, cab pickup cab, nose grille, fitting chrome grille, fitting mascot, lopsided right, wear age 0.86 (3 rusty, 16 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+bed, cab enclosed, nose long hood, rear bare, under tub, sides open, layout gun bay 2 m+bed 2 m, plan 3
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.5 m, strut/strut, wing 0.75, archetype monster truck, cab style coachbuilt, language pickup standard 2.43 m, flare 0.00, level 1.0, brow 0.75 1 m, tail 0.84 1 m, door left, cab pickup cab, nose grille, fitting chrome grille, fitting mascot, lopsided right, wear age 0.86 (3 rusty, 17 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+bed, cab enclosed, nose long hood, rear bare, under tub, sides open, layout gun bay 2 m+bed 2 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Monster Truck 1",
   "group": "Clan MacSlop",
@@ -39,9 +39,9 @@
     {"part": "Seat", "on": 29, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 31, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 30, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXdYWWHVYWMW0W0Xa ~Bm0BvGBfy9Yb02i = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#8c2a2a"},
-    {"part": "Hull Loft (pane UfXgV5XNXgV5X9YTVIUtYTVI)", "on": 34, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X1XgWWU_XgWWVDYTWWWpYTWW)", "on": 34, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXdYUW9VYWMW0W0Xa ~B00BHHAvz8wc02j = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#8c2a2a"},
+    {"part": "Hull Loft (pane UkXgV4XIXgV4X5YRVBUxYRVB)", "on": 34, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane WyXgWWV4XgWWVHYRWWWlYRWW)", "on": 34, "socket": "glass1", "by": "frame"},
     {"part": "Wood Planks 0.5x1 m", "on": 4, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#2a2622"},
     {"part": "Wood Planks 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#33302b"},
     {"part": "Square Beam 0.75 m", "on": 1, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#2a2622"},
@@ -90,6 +90,10 @@
     {"part": "Turret Module", "on": 74, "socket": "+x", "by": "-x"},
     {"part": "Hull Loft (hoodg UOV2WyWjXYXYVd ~7W07mW7Wo692015)", "on": 26, "socket": "+y", "by": "engine", "paint": "#8c2a2a"},
     {"part": "Hull Loft (decoG WkVvWh)", "on": 83, "socket": "front", "by": "base"},
+    {"part": "Wide Arch Fender", "on": 83, "socket": "+x0", "by": "mount", "paint": "#33302b"},
+    {"part": "Wide Arch Fender", "on": 83, "socket": "-x0", "by": "mount", "paint": "#e8e4d8"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 86, "pos": [-0.892, 0.327, -0.376], "rot": [-0.0187, -0.006, 0.6895, 0.724]}, "paint": "#1f4a2e"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 85, "pos": [1.395, 0.547, -0.378], "rot": [-0.01, -0.0046, -0.723, 0.6907]}, "paint": "#1f4a2e"},
     {"part": "Hull Loft (decoO UaV-)", "on": 83, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 34, "socket": "top", "by": "base"},
     {"part": "Coo Heid", "on": 60, "socket": "front", "by": "base"},

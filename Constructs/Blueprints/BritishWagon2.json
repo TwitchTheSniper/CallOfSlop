@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.5 m, swing arm/trailing arm, wing 0.5, archetype carriage, language carriage standard 2.43 m, flare 0.04, crowned 0.7, brow 0.71 1.5 m, tail 0.69 1.5 m, door right, 11 facets, cab carriage caged cab, 8 facets, nose rounded, balcony r, trim livery on 7 bay sides, wear age 0.71 (2 rusty, 7 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab caged, nose long hood, rear porch hitch, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-T,Door,Tail T)
+  // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.5 m, swing arm/trailing arm, wing 0.5, archetype carriage, cab style town cab, language carriage standard 2.43 m, flare 0.04, crowned 0.7, brow 0.71 1.5 m, tail 0.69 1.5 m, door right, 11 facets, cab carriage caged cab, 8 facets, nose rounded, balcony r, trim livery on 7 bay sides, wear age 0.71 (2 rusty, 7 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab caged, nose long hood, rear porch hitch, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Wagon 2",
   "group": "Ministry of Slop",
@@ -42,7 +42,7 @@
     {"part": "Seat", "on": 32, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 34, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 33, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabg V4V4WWXZYUWFVYWMW0W0Xa ~B00BuTBuxBvPBvtB2K8Qh4Ir02r = iu)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#1f4a32"},
+    {"part": "Hull Loft (cabg V4V4WWXZYUWEVYWMW0W0Xa ~B00BuTBuxBvPBvtB2K8Qg4Iq02q = iu)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#1f4a32"},
     {"part": "Tread Plate 0.5 m", "on": 4, "socket": "+y0", "by": "back00", "spin": 2, "paint": "#b5121b"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y0", "by": "back00", "spin": 2, "paint": "#2b2a28"},
     {"part": "Tread Plate 0.5 m", "on": 38, "socket": "-z0", "by": "-x0", "paint": "#be0f2a"},

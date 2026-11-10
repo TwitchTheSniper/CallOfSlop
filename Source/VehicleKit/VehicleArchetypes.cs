@@ -153,7 +153,7 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 Languages = [(Hatch, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('r', 1.5), ('f', 1)], Ride = (1, 1.5, 0.3),
                 CabTallMin = 1.72f, CabTallMax = 1.8f, BeltMin = 0.9f, BeltMax = 0.94f, RakeMin = 0.18f, RakeMax = 0.24f, CabHalfMin = 0.88f, CabHalfMax = 0.91f,
                 HoodReach = -0.08f, HoodHalfMin = 0.52f, HoodHalfMax = 0.56f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, CabBackMin = 0, CabBackMax = 0,
-            }) { Bodies = [new(1, Boot(2.5f, 2.5f))] }, // (phase 9a: a short tail (2.25 m left no room for the gun and the tank clear of the axles on some plans))
+            }) { Bodies = [new(1, Boot(2.25f, 2.75f))] }, // (phase 9a: two seats, the recipe's boot (a fixed short one left no room for the gun and the tank clear of the axles on some plans))
         new("estate", "european car", "a European estate: square shoulders, a long level roof, upright at the back", Car, [("Scam", 1.5), ("British", 1)],
             r => r with
             {

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tag 1.25 m, front set back, inset 1.5 m, coil/leaf/leaf, wing 0.5, archetype carriage, language carriage standard 2.48 m, flare 0.04, sheer 0.7, brow 0.67 1.25 m, tail 0.80 1.25 m, door right, 11 facets, cab carriage cab, 8 facets, nose rounded, balcony r, trim livery on 6 bay sides, wear age 0.36 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear porch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Bay T,Tail T)
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tag 1.25 m, front set back, inset 1.5 m, coil/leaf/leaf, wing 0.5, archetype carriage, cab style bus front, language carriage standard 2.48 m, flare 0.04, sheer 0.7, brow 0.67 1.25 m, tail 0.80 1.25 m, door right, 11 facets, cab carriage cab, 8 facets, nose rounded, balcony r, trim livery on 6 bay sides, wear age 0.36 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear porch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Bay T,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Wagon 7",
   "group": "Ministry of Slop",
@@ -42,9 +42,9 @@
     {"part": "Seat", "on": 32, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 34, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 33, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXYYWWDVYWMW0W0Xa ~Be0BuTBuxBvOBvsBYI8of4Yp02p = iu)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#b5121b"},
-    {"part": "Hull Loft (pane UeXbV4XOXbV4XBYTVEUrYTVE)", "on": 37, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X2XbWWU-XbWWVBYTWWWrYTWW)", "on": 37, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXYYYWCVYWMW0W0Xa ~Be0BuTBuxBvPBvtBYK8oh4Yr02r = iu)", "on": 0, "socket": "+y3", "by": "footL", "paint": "#b5121b"},
+    {"part": "Hull Loft (pane UeXbV4XOXbV4XBYVVDUrYVVD)", "on": 37, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X2XbWWU-XbWWVBYVWWWrYVWW)", "on": 37, "socket": "glass1", "by": "frame"},
     {"part": "Tread Plate 0.5 m", "on": 4, "socket": "+y0", "by": "back00", "spin": 2, "paint": "#b5121b"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y0", "by": "back00", "spin": 2, "paint": "#c8102e"},
     {"part": "Tread Plate 0.5 m", "on": 40, "socket": "-z0", "by": "-x0", "paint": "#2b2a28"},

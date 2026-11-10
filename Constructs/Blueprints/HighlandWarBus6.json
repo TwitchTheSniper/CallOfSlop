@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1 m, swing arm/leaf, wing 0.5, language boat standard 2.26 m, flare 0.17, sheer 0.6, brow 0.69 1 m, tail 0.65 1.25 m, door right, cab boat cab, nose grille, balcony t, fitting mascot, trim clinker on 9 bay sides, wear age 0.66 (6 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose short hood, rear porch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Bay T,Bay T-N,Tail N), plan 4
+  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1 m, swing arm/leaf, wing 0.5, cab style coachbuilt, language boat standard 2.26 m, flare 0.17, sheer 0.6, brow 0.69 1 m, tail 0.65 1.25 m, door right, cab boat cab, nose grille, balcony t, fitting mascot, trim clinker on 9 bay sides, wear age 0.66 (6 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose short hood, rear porch, under skirted, flank panniers, roof none, layout room(Brow T,Door,Bay T,Bay T-N,Tail N), plan 4
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland War Bus 6",
   "group": "Clan MacSlop",
@@ -39,9 +39,9 @@
     {"part": "Seat", "on": 29, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 31, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 30, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXcYIWEVYWMW0W0Xa ~BG0BuqBvhAIG62a02d = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a2e"},
-    {"part": "Hull Loft (pane UeXfV5XOXfV5XCYFVDUqYFVD)", "on": 34, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X2XfWWU-XfWWVAYFWWWsYFWW)", "on": 34, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXcYKW9VYWMW0W0Xa ~B00BurBnk9wK5we02h = it)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a2e"},
+    {"part": "Hull Loft (pane UeXfV4XOXfV4XAYHVAUsYHVA)", "on": 34, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X2XfWWU-XfWWVCYHWWWqYHWW)", "on": 34, "socket": "glass1", "by": "frame"},
     {"part": "Wood Planks 0.5x1 m", "on": 5, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#23395d"},
     {"part": "Wood Planks 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#2b5a3a"},
     {"part": "Plate Steel 0.25 m", "on": 38, "socket": "+z0", "by": "-x", "paint": "#5b4a2f"},
@@ -139,7 +139,10 @@
     {"part": "Fuel Drum", "on": 127, "socket": "front30", "by": "-y"},
     {"part": "Hull Loft (hoodg UjV2WyWjXYXYVd ~6m07WL7Gi68x3f3014)", "on": 26, "socket": "+y", "by": "engine", "paint": "#1b1714"},
     {"part": "Ram Plow", "on": 132, "socket": "front", "by": "back", "paint": "#1b1714"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 133, "pos": [0.125, 0.382, -1.191], "rot": [-0.6889, 0.0003, -0.002, 0.7248]}, "paint": "#8c2a2a"},
+    {"part": "Wide Arch Fender", "on": 132, "socket": "+x0", "by": "mount", "paint": "#005eb8"},
+    {"part": "Wide Arch Fender", "on": 132, "socket": "-x0", "by": "mount", "paint": "#1b1714"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 134, "pos": [1.369, 0.508, -0.38], "rot": [-0.0163, 0.0146, -0.6905, 0.723]}, "paint": "#23395d"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 133, "pos": [0.135, 0.4, -1.178], "rot": [-0.7242, -0.0303, 0.0051, 0.6889]}, "paint": "#7b1e22"},
     {"part": "Hull Loft (decoO UvV_)", "on": 132, "socket": "top", "by": "base"},
     {"part": "Pipe Box", "on": 34, "socket": "top", "by": "base"},
     {"part": "Wee Keg", "on": 128, "socket": "front30", "by": "base"},

@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 2 m, hydraulic/leaf, wing 0.5, language coach heavy 2.75 m, flare 0.19, plain 0.7, brow 0.64 1.25 m, tail 0.74 1.25 m, door right, 12 facets, cab coach merged cab, 8 facets, nose grille, fitting destination board, trim livery on 5 bay sides, wear age 0.3 (3 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body room+gun bed, cab merged, nose flat, rear porch, under stilts, flank panniers, sides open, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
+  // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 2 m, hydraulic/leaf, wing 0.5, cab style bus front, language coach heavy 2.75 m, flare 0.19, plain 0.7, brow 0.64 1.25 m, tail 0.74 1.25 m, door right, 12 facets, cab coach merged cab, 8 facets, nose rounded, fitting destination board, trim livery on 5 bay sides, wear age 0.3 (3 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body room+gun bed, cab merged, nose flat, rear porch, under stilts, flank panniers, sides open, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Flatbed Fort 5",
   "group": "Ministry of Slop",
@@ -81,10 +81,10 @@
     {"part": "Hull Loft (100r ~D00DGUDWyFHRG1kG1vFwNFgrFBJDxlBi38iC5aJ04J ~Bm0C0MCGjCOyCX3DHQDfmDQ7CwTBon9p07374JC03C iuit)", "on": 52, "socket": "front22", "by": "footL0", "paint": "#7d8186"},
     {"part": "Scrap Ladder", "on": 61, "socket": "+x0", "by": "back", "paint": "#1b1c1e"},
     {"part": "Seat", "on": 51, "socket": "front21", "by": "bottom"},
-    {"part": "Hull Loft (cabm SfUSWcXcZmWbVMWKW0W0XL ~BG0BWuBnIBviBvqCQ6DYWDYcDQwDBKChjBa59aN6yV4Cb04b = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
-    {"part": "Hull Loft (pane UsXfSgXAXfSgXJZjT3UjZjT3)", "on": 76, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane XHXfSkXVXfVKXbZjVKXQZjT8)", "on": 76, "socket": "glass2", "by": "frame"},
-    {"part": "Hull Loft (pane UlXfSkUXXfVKURZjVKUcZjT8)", "on": 76, "socket": "glass3", "by": "frame"},
+    {"part": "Hull Loft (cabm SfUSWcXcZmWUVMWKW0W0XL ~BG0BWuBnIBviBvqCQ6DYWDYcDQwDBKChjBa59aN6yV4Cb04b = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
+    {"part": "Hull Loft (pane UsXfSfXAXfSfXIZjS-UkZjS-)", "on": 76, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane XHXfSkXVXfVKXbZjVKXPZjT2)", "on": 76, "socket": "glass2", "by": "frame"},
+    {"part": "Hull Loft (pane UlXfSkUXXfVKURZjVKUdZjT2)", "on": 76, "socket": "glass3", "by": "frame"},
     {"part": "Square Beam 0.75 m", "on": 3, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Square Beam 0.75 m", "on": 80, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Square Beam 0.75 m", "on": 9, "socket": "+y3", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
@@ -152,7 +152,7 @@
     {"part": "Plate Steel 0.25 m", "on": 142, "socket": "+z2", "by": "-x", "paint": "#c8102e"},
     {"part": "Plate Steel 0.25 m", "on": 142, "socket": "+z3", "by": "-x", "paint": "#1f4a32"},
     {"part": "Fuel Drum", "on": 141, "socket": "front30", "by": "-y"},
-    {"part": "Hull Loft (decoD WoWMUUVy)", "on": 76, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoD WoWMUQVy)", "on": 76, "socket": "top", "by": "base"},
     {"part": "Traffic Cone", "on": 109, "socket": "front", "by": "base"},
     {"part": "Garden Gnome", "on": 141, "socket": "front03", "by": "base"},
     {"part": "Queue Post", "on": 93, "socket": "front12", "by": "base"},

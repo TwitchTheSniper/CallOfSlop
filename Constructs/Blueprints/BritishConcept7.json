@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front under the hood, inset 1.25 m, wishbone/swing arm, wing 0.5, archetype streamliner, language streamliner heavy 2.50 m, flare 0.14, fastback 0.7, brow 0.52 1 m, tail 0.52 1 m, door right, 10 facets, cab streamliner cab, 7 facets, nose wedge, wear age 0.77 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose long hood, rear bare, under stilts, layout boot 2.8 m
+  // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front under the hood, inset 1.25 m, wishbone/swing arm, wing 0.5, archetype streamliner, cab style bus front, language streamliner heavy 2.50 m, flare 0.14, fastback 0.7, brow 0.52 1 m, tail 0.52 1 m, door right, 10 facets, cab streamliner cab, 7 facets, nose rounded, wear age 0.77 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose long hood, rear bare, under stilts, layout boot 2.8 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Concept 7",
   "group": "Ministry of Slop",
@@ -35,8 +35,8 @@
     {"part": "Square Beam 0.5 m", "on": 25, "socket": "+z", "by": "-z", "paint": "#1b1c1e"},
     {"part": "Seat", "on": 26, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 28, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (cabe V4V4WWXWYFWOVYWMW0W0Xa ~B80BuQButBPIAHhAI342U02U ~B80BuPBuqBPEAHbAHy42M02M iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a32"},
-    {"part": "Hull Loft (pane UoXZV5XEXZV5WxYCVLV5YCVL)", "on": 30, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXWYFWAVYWMW0W0Xa ~B80BuQButBPIAHhAI342U02U ~B80BuPBuqBPEAHbAHy42M02M iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#1f4a32"},
+    {"part": "Hull Loft (pane UoXZV4XEXZV4WxYCVBV5YCVB)", "on": 30, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane WsXZWWVAXZWWVfYCWWWNYCWW)", "on": 30, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 3, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#e8dfc8"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#c8102e"},
@@ -44,7 +44,7 @@
     {"part": "Square Beam 0.75 m", "on": 1, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Square Beam 0.75 m", "on": 6, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Fuel Tank", "on": 37, "socket": "+x1", "by": "-y"},
-    {"part": "Hull Loft (hoodw V2VMYWWSXSX6W- ~Am0Bu8BuGB0N98V6ub3uj00j)", "on": 38, "socket": "+y", "by": "engine", "spin": 3, "paint": "#b5121b"},
+    {"part": "Hull Loft (hoodr V2VMYWWSXIXEW- ~Am0Bu8BuGB0N98V6ub3uj00j)", "on": 38, "socket": "+y", "by": "engine", "spin": 3, "paint": "#b5121b"},
     {"part": "Square Beam 0.75 m", "on": 36, "socket": "+x1", "by": "-z", "paint": "#1b1c1e"},
     {"part": "Turntable", "on": 40, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 41, "socket": "top", "by": "-y1", "paint": "#1b1c1e"},
@@ -56,7 +56,7 @@
     {"part": "Turn Bolt", "on": 45, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 47, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 43, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (hoodw UNV2WyWjXSWtVd ~80080A80P80a70k58x396016)", "on": 23, "socket": "+y", "by": "engine", "paint": "#c8102e"},
+    {"part": "Hull Loft (hoodr UNV2WyWjXIXEVd ~80080A80P80a70k58x396016)", "on": 23, "socket": "+y", "by": "engine", "paint": "#c8102e"},
     {"part": "Traffic Cone", "on": 51, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 27, "socket": "+y1", "by": "-z", "paint": "#1b1c1e"},
     {"part": "Belisha Beacon", "on": 53, "socket": "+z", "by": "base"}

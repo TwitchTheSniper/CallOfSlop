@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, leaf/hydraulic, wing 0.5, archetype war wagon, language hoop standard 2.46 m, flare 0.05, crowned 1.2, brow 0.61 1.25 m, tail 0.67 1 m, door left, space cage w, cab hoop armoured cab, nose grille, lopsided left, wear age 1.11 (26 rusty, 23 dirty, 0 sooty, 0 patched, 2 rusted out), body room, cab armoured, nose ram, rear porch, under tub, flank loaded, roof none, layout room(Brow L,Bay L-T,Door,Tail T)
+  // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, leaf/hydraulic, wing 0.5, archetype war wagon, cab style scrap plate, language hoop standard 2.46 m, flare 0.05, crowned 1.2, brow 0.61 1.25 m, tail 0.67 1 m, door left, space cage w, cab hoop armoured cab, nose wedge, lopsided left, wear age 1.11 (26 rusty, 23 dirty, 0 sooty, 0 patched, 2 rusted out), body room, cab armoured, nose ram, rear porch, under tub, flank loaded, roof none, layout room(Brow L,Bay L-T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bandit Wagon 1",
   "group": "Bandit",
@@ -40,7 +40,7 @@
     {"part": "Seat", "on": 30, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 32, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 31, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (caba V4V4WWXiYDW6VYWMW0W0Xa ~Au0B1EAfiAI752R02V = ir)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#3a3330"},
+    {"part": "Hull Loft (caba V4V4WWXlYDW4VYWMW0W0Xa ~Au0B1DAfhAI652Q02U = ir)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#3a3330"},
     {"part": "Plate Steel 0.5x1 m", "on": 3, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#2f2c2a"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#6b3a22"},
     {"part": "Plate Steel 0.25 m", "on": 37, "socket": "+z0", "by": "-x", "paint": "#5e3320"},
@@ -118,7 +118,7 @@
     {"part": "Plate Steel 0.25 m", "on": 49, "socket": "+x3", "by": "-x", "paint": "#94603a"},
     {"part": "Sheet Steel 0.25 m", "on": 98, "socket": "+x0", "by": "back", "paint": "#94603a"},
     {"part": "Fuel Drum", "on": 99, "socket": "front30", "by": "-y"},
-    {"part": "Hull Loft (hoodg UmV2WyWjXYXYVd ~80080W7ui6Wu3n0012)", "on": 27, "socket": "+y", "by": "engine", "paint": "#3a3330"},
+    {"part": "Hull Loft (hoodw UmV2WyWjXSWtVd ~80080W7ui6Wu3n0012)", "on": 27, "socket": "+y", "by": "engine", "paint": "#3a3330"},
     {"part": "Bull Bar", "on": 113, "socket": "front", "by": "back", "paint": "#17181a"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 114, "pos": [0.124, 0.509, -1.135], "rot": [-0.6795, 0.0025, 0.0062, 0.7337]}, "paint": "#8c5230"},
     {"part": "Hubcap Plate", "on": 113, "socket": "top", "by": "base"}

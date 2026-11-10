@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 1.25 m, coil/hydraulic, wing 0.5, archetype compact hatch, language hatch standard 2.34 m, flare 0.05, crowned 1.0, brow 0.65 1.25 m, tail 0.90 1 m, door right, cab hatch cab, nose rounded, wear age 0.93 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under stilts, layout boot 2.8 m, plan 4
+  // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 1.25 m, coil/hydraulic, wing 0.5, archetype compact hatch, cab style box, language hatch standard 2.34 m, flare 0.05, crowned 1.0, brow 0.65 1.25 m, tail 0.90 1 m, door right, cab hatch cab, nose flat, wear age 0.93 (2 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under stilts, layout boot 2.8 m, plan 4
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Car 4",
   "group": "The Call Centre",
@@ -36,8 +36,8 @@
     {"part": "Seat", "on": 26, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 28, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 27, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXZYUWJVYWMW0W0Xa ~BG0BuuBfx9wV5Yh02j = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#9aa0a6"},
-    {"part": "Hull Loft (pane UfXcV5XNXcV5XAYRVIUsYRVI)", "on": 31, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXZYUW2VYWMW0W0Xa ~BG0BuuBfx9wV5Yh02j = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#9aa0a6"},
+    {"part": "Hull Loft (pane UfXcV4XNXcV4XAYRV6UsYRV6)", "on": 31, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane X1XcWWU_XcWWVCYRWWWqYRWW)", "on": 31, "socket": "glass1", "by": "frame"},
     {"part": "Tread Plate 0.5 m", "on": 3, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#b0b4b8"},
     {"part": "Plate Steel 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#2a2c30"},
@@ -47,7 +47,7 @@
     {"part": "Square Beam 0.75 m", "on": 1, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Square Beam 0.75 m", "on": 6, "socket": "+y1", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Fuel Tank", "on": 40, "socket": "+x1", "by": "-y"},
-    {"part": "Hull Loft (hoodr V2VMYWWSXIXEW- ~Au0BWFB8W9ef5Oi00j)", "on": 41, "socket": "+y", "by": "engine", "spin": 3, "paint": "#b0b4b8"},
+    {"part": "Hull Loft (hoodf V2VMYWWSXWXQW- ~Au0BWFB8W9ef5Oi00j)", "on": 41, "socket": "+y", "by": "engine", "spin": 3, "paint": "#b0b4b8"},
     {"part": "Square Beam 1 m", "on": 39, "socket": "+x1", "by": "-z", "paint": "#2a2c30"},
     {"part": "Turntable 2x2 Medium", "on": 43, "socket": "+z", "by": "base"},
     {"part": "Square Beam 1 m", "on": 44, "socket": "top", "by": "-y1", "paint": "#2a2c30"},
@@ -59,10 +59,14 @@
     {"part": "Revolver Hammer", "on": 48, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 50, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 46, "socket": "+x", "by": "-x"},
-    {"part": "Hull Loft (hoodr UwV2WyWjXIXEVd ~7m080L80k6uy3n0011)", "on": 23, "socket": "+y", "by": "engine", "paint": "#2a2c30"},
+    {"part": "Hull Loft (hoodf UwV2WyWjXWXWVd ~7m080L80k6uy3n0011)", "on": 23, "socket": "+y", "by": "engine", "paint": "#f2f2ee"},
+    {"part": "Arch Fender", "on": 54, "socket": "+x0", "by": "mount", "paint": "#2a2c30"},
+    {"part": "Arch Fender", "on": 54, "socket": "-x0", "by": "mount", "paint": "#8a9096"},
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 55, "pos": [1.325, 0.521, -0.37], "rot": [0.0155, 0.0092, -0.718, 0.6958]}, "paint": "#9aa0a6"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 56, "pos": [-0.835, 0.324, -0.38], "rot": [0.0068, -0.0159, 0.7023, 0.7117]}, "paint": "#8a9096"},
     {"part": "Office Phone", "on": 54, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 42, "socket": "top", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Phone Mast", "on": 56, "socket": "+z", "by": "base"}
+    {"part": "Phone Mast", "on": 60, "socket": "+z", "by": "base"}
   ],
   "wires": [[28, 29], [29, 23], [46, 53], [53, 48]],
   "links": [

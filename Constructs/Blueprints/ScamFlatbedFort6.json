@@ -1,5 +1,5 @@
 {
-  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 2.25 m, strut/strut, wing 0.75, language cabin standard 2.48 m, flare 0.04, plain 1.0, brow 0.87 1 m, tail 0.78 1 m, door right, cab cabin cab, nose grille, balcony g, fitting roof sign, lopsided right, trim signboards on 5 bay sides, wear age 0.4 (3 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under stilts, flank loaded, sides walls, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T), plan 2
+  // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 2.25 m, strut/strut, wing 0.75, cab style box, language cabin standard 2.48 m, flare 0.04, plain 1.0, brow 0.87 1 m, tail 0.78 1 m, door right, cab cabin cab, nose flat, balcony g, fitting roof sign, lopsided right, trim signboards on 5 bay sides, wear age 0.4 (3 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear hitch, under stilts, flank loaded, sides walls, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Flatbed Fort 6",
   "group": "The Call Centre",
@@ -44,9 +44,9 @@
     {"part": "Seat", "on": 34, "socket": "+y1", "by": "bottom"},
     {"part": "Driving Module", "on": 36, "socket": "+x", "by": "-x"},
     {"part": "Seat", "on": 35, "socket": "+y0", "by": "bottom"},
-    {"part": "Hull Loft (cabe V4V4WWXeYaW5VYWMW0W0Xa ~Be0BoPCYU031 = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#7d8a92"},
-    {"part": "Hull Loft (pane UfXhV4XNXhV4XLYXV7UhYXV7)", "on": 39, "socket": "glass0", "by": "frame"},
-    {"part": "Hull Loft (pane X1XhWWU_XhWWV1YXWWW_YXWW)", "on": 39, "socket": "glass1", "by": "frame"},
+    {"part": "Hull Loft (cabe V4V4WWXeYaW3VYWMW0W0Xa ~Be0BwQCgU032 = is)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#7d8a92"},
+    {"part": "Hull Loft (pane UeXhV4XOXhV4XMYXV6UgYXV6)", "on": 39, "socket": "glass0", "by": "frame"},
+    {"part": "Hull Loft (pane X2XhWWU-XhWWV0YXWWX0YXWW)", "on": 39, "socket": "glass1", "by": "frame"},
     {"part": "Plate Steel 0.5x1 m", "on": 5, "socket": "+y3", "by": "back02", "spin": 2, "paint": "#b0b4b8"},
     {"part": "Tread Plate 0.5 m", "on": 0, "socket": "+y3", "by": "back00", "spin": 2, "paint": "#7d8a92"},
     {"part": "Plate Steel 0.25 m", "on": 43, "socket": "+z0", "by": "-x", "paint": "#7d8a92"},
@@ -174,7 +174,7 @@
     {"part": "Plate Steel 0.5x1 m", "on": 77, "socket": "+x", "by": "back03", "spin": 3, "paint": "#7d8a92"},
     {"part": "Sheet Steel 0.5 m", "on": 67, "socket": "+x0", "by": "back00", "spin": 1, "paint": "#9aa0a6"},
     {"part": "Scrap Ladder", "on": 165, "socket": "front00", "by": "back", "paint": "#8a9096"},
-    {"part": "Hull Loft (hoodg UcV2WyWjXYXYVd ~7807Gu015)", "on": 31, "socket": "+y", "by": "engine", "paint": "#21c45a"},
+    {"part": "Hull Loft (hoodf UcV2WyWjXWXWVd ~7807Gu015)", "on": 31, "socket": "+y", "by": "engine", "paint": "#21c45a"},
     {"part": "Bar Grille", "on": 169, "socket": "front", "by": "back", "paint": "#1a8c8c"},
     {"part": "Arch Fender", "on": 169, "socket": "+x0", "by": "mount", "paint": "#14706f"},
     {"part": "Arch Fender", "on": 169, "socket": "-x0", "by": "mount", "paint": "#21c45a"},
