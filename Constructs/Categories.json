@@ -98,6 +98,9 @@
     { "name": "Shelf Bay", "to": ["Storage and Logistics", "Shelves"] },
     { "name": ["Chest Lid", "Lid Hinge", "Material Bundle"], "to": ["Storage and Logistics", "Chests and cargo"] },
     { "group": "Storage", "to": ["Storage and Logistics", "Chests and cargo"] },
+    { "group": "Interior", "section": "Furniture", "role": "storage", "to": ["Storage and Logistics", "Chests and cargo"] },
+    { "group": "Interior", "section": "Furniture", "role": "seat", "to": ["Seats and Logic", "Seats and helms"] },
+    { "group": "Interior", "section": "Furniture", "role": "logic", "to": ["Seats and Logic", "Gauges"] },
 
     { "section": "Power plants", "to": ["Power and Fuel", "Power plants"] },
     { "section": "Stacks", "to": ["Lights and Details", "Chimneys and stacks"] },

@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-interiors/1",
-  "about": "Interior size classes by tonnage, like ship classes, and each class's deck rules (docs/sandbox/INTERIORS.md). PROVISIONAL: the tonnage bands, corridor widths and programmes are first guesses for the user to set; bigger classes ask for more rooms. fill: the room types the planner may turn a big leftover into, chosen by what fits and the neighbours (INTERIORS.md phase 3); a class without one leaves big leftovers as spare space. chassis: the rooms planned inside a hollow chassis below the deck (engineering, magazine, storage; crew stay above): planned only until the chassis has sockets inside. budget: the most parts, socket links, joints and event doors the fitted construct (the vehicle and its interior together) may use, so players keep the rest of the engine's 16,000 parts, 48,000 links, 255 joints and 1,024 doors (phase 5; phase 7: the doors are event doors, no joint, so joints are left for the lifts and the players, and doors have their own budget); the builder leaves generated rooms bare, then doorways open, to stay in it. Lengths are in grid cells (gridCell metres each); a storey is 3 m because the Building pieces are (2.75 m walls on 0.25 m slabs).",
+  "about": "Interior size classes by tonnage, like ship classes, and each class's deck rules (docs/sandbox/INTERIORS.md). PROVISIONAL: the tonnage bands, corridor widths and programmes are first guesses for the user to set; bigger classes ask for more rooms. fill: the weighted programme leftovers become rooms from (INTERIORS.md phase 8): each entry's weight against the others sets its target share of the generated rooms, cap the most of that share it may take, where deck, chassis (inside a hollow chassis only) or any, perQuarters one wanted for every that many crew quarters; a plain name is weight 1, no cap; a class without a fill leaves big leftovers as spare space. partClass: the biggest part size class its rooms may hold (a module item lists its parts biggest first; the builder takes the biggest that fits the room, on an adapter pad). chassis: the rooms planned inside a hollow chassis below the deck (engineering, magazine, storage; crew stay above): planned only until the chassis has sockets inside. budget: the most parts, socket links, joints and event doors the fitted construct (the vehicle and its interior together) may use, so players keep the rest of the engine's 16,000 parts, 48,000 links, 255 joints and 1,024 doors (phase 5; phase 7: the doors are event doors, no joint, so joints are left for the lifts and the players, and doors have their own budget); the builder leaves generated rooms bare, then doorways open, to stay in it. Lengths are in grid cells (gridCell metres each); a storey is 3 m because the Building pieces are (2.75 m walls on 0.25 m slabs).",
   "provisional": true,
   "classes": [
     {
@@ -11,6 +11,7 @@
       "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 1, "rowDepth": 2, "roomGrow": 0, "section": 4, "margin": 0, "decks": 1, "stair": [1, 2], "elevator": [1, 1], "door": "1.5x2.25", "reserveRoute": false },
       "programme": ["bridge", "quarters", "storage", "mess"],
       "fill": ["storage"],
+      "partClass": "small",
       "budget": { "parts": 2000, "links": 6000, "joints": 8, "doors": 96 }
     },
     {
@@ -20,7 +21,15 @@
       "maxTonnes": 5000,
       "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 1, "rowDepth": 2, "roomGrow": 0, "section": 6, "margin": 1, "decks": 2, "stair": [1, 2], "elevator": [1, 1], "door": "1.5x2.25", "reserveRoute": false },
       "programme": ["bridge", "quarters", "production", "storage", "armoury", "medical", "mess", "workshop"],
-      "fill": ["storage", "workshop"],
+      "fill": [
+        {"room": "storage", "weight": 2, "cap": 0.3},
+        {"room": "workshop", "weight": 1, "cap": 0.2},
+        {"room": "production", "weight": 1.5},
+        {"room": "quarters", "weight": 1.5, "where": "deck"},
+        {"room": "mess", "weight": 0.5, "where": "deck", "perQuarters": 3},
+        {"room": "medical", "weight": 0.5, "where": "deck", "perQuarters": 3}
+      ],
+      "partClass": "small",
       "budget": { "parts": 4000, "links": 12000, "joints": 16, "doors": 192 }
     },
     {
@@ -30,7 +39,20 @@
       "maxTonnes": 20000,
       "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 1, "rowDepth": 3, "roomGrow": 1, "section": 8, "margin": 1, "decks": 2, "stair": [1, 2], "elevator": [1, 2], "door": "1.5x2.25", "reserveRoute": true },
       "programme": ["bridge", "quarters", "quarters", "quarters", "production", "storage", "storage", "hangar", "armoury", "medical", "mess", "engineering", "magazine", "workshop", "lockers"],
-      "fill": ["storage", "workshop", "fuelbay"],
+      "fill": [
+        {"room": "production", "weight": 2.5},
+        {"room": "storage", "weight": 2, "cap": 0.22},
+        {"room": "workshop", "weight": 1.2, "cap": 0.15},
+        {"room": "engineering", "weight": 1},
+        {"room": "fuelbay", "weight": 0.8, "cap": 0.12},
+        {"room": "magazine", "weight": 0.8, "cap": 0.12},
+        {"room": "gunnery", "weight": 1.5, "where": "deck"},
+        {"room": "quarters", "weight": 1.5, "where": "deck"},
+        {"room": "mess", "weight": 0.6, "where": "deck", "perQuarters": 4},
+        {"room": "medical", "weight": 0.6, "where": "deck", "perQuarters": 4},
+        {"room": "armoury", "weight": 0.6, "where": "deck"}
+      ],
+      "partClass": "medium",
       "budget": { "parts": 8000, "links": 24000, "joints": 24, "doors": 384 }
     },
     {
@@ -40,7 +62,21 @@
       "maxTonnes": 1000000,
       "deck": { "storey": 3.0, "gridCell": 4.0, "corridor": 2, "rowDepth": 3, "roomGrow": 1, "section": 8, "margin": 1, "decks": 2, "stair": [1, 2], "elevator": [2, 2], "door": "1.5x2.25", "reserveRoute": true },
       "programme": ["bridge", "quarters", "quarters", "quarters", "quarters", "production", "storage", "storage", "storage", "hangar", "armoury", "armoury", "medical", "mess", "engineering", "magazine", "workshop", "workshop", "lockers"],
-      "fill": ["storage", "workshop", "fuelbay", "quarters"],
+      "fill": [
+        {"room": "production", "weight": 2},
+        {"room": "storage", "weight": 2, "cap": 0.2},
+        {"room": "workshop", "weight": 1.5, "cap": 0.15},
+        {"room": "engineering", "weight": 1},
+        {"room": "fuelbay", "weight": 1, "cap": 0.12},
+        {"room": "magazine", "weight": 1, "cap": 0.12},
+        {"room": "gunnery", "weight": 2.5, "where": "deck"},
+        {"room": "quarters", "weight": 2, "where": "deck"},
+        {"room": "mess", "weight": 0.8, "where": "deck", "perQuarters": 4},
+        {"room": "medical", "weight": 0.8, "where": "deck", "perQuarters": 4},
+        {"room": "armoury", "weight": 0.8, "where": "deck"},
+        {"room": "lockers", "weight": 0.5, "where": "deck"}
+      ],
+      "partClass": "medium",
       "budget": { "parts": 9600, "links": 28800, "joints": 32, "doors": 512 },
       "chassis": ["engineering", "magazine", "storage", "storage", "workshop", "fuelbay", "production"]
     }

@@ -325,6 +325,8 @@ public sealed partial class Game
             h.SeatPart = (ushort)seat; // (parts are renumbered when others come off)
             if (c.Parts[seat].D.Bunk)
                 SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
+            if (c.Parts[seat].D.SeatHeal > 0)
+                SandboxSeatHeal(p, c.Parts[seat].D.SeatHeal); // (a medical station: GameSandboxDeath.cs)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
             var keysWere = c.Parts[seat].Keys;
             c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)

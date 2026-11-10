@@ -1,0 +1,89 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Power Board",
+  "description": "The plant room's breaker board: its dial reads the circuit's charge, 0 to 1.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 60.0,
+  "health": 180,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3a3f45",
+  "attachSeconds": 2.0,
+  "dial": {
+    "at": [
+      0,
+      1.55,
+      0.16
+    ],
+    "face": "+z",
+    "max": 1
+  },
+  "logic": {
+    "kind": "chargegauge"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        0.0,
+        -0.15
+      ],
+      "max": [
+        0.6,
+        1.8,
+        0.15
+      ],
+      "color": "#3a3f45"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.8,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.9,
+        -0.15
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.6,
+        0.9,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.6,
+        0.9,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

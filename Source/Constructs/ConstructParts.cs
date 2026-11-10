@@ -699,6 +699,7 @@ public sealed partial class ConstructPartDef
     public bool IsCargoWinch; // a winch a pilot works from a seat: a signal into grab takes the nearest eye in reach, or lets go ("winch"."grab": ConstructLinks.cs)
     public bool Helm; // a helm seat ("seat"."helm"): the construct's driver sits here before any other seat
     public bool Bunk; // a bunk ("seat"."bunk"): lying in it makes it the sitter's checkpoint in survival (GameSandboxDeath.cs)
+    public float SeatHeal; // a medical seat ("seat"."heal", health a second): the sitter heals while it works (GameSandbox.cs, SandboxSeatHeal)
 
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
 
@@ -1631,11 +1632,13 @@ public static partial class ConstructParts
                 }
                 break;
             case PartRole.Seat:
-                Known(block!.Value, ["at", "helm", "eject", "bunk"], bw);
+                Known(block!.Value, ["at", "helm", "eject", "bunk", "heal"], bw);
                 d.SeatAt = Vec(Need(block.Value, "at", bw), file, "seat.at");
                 d.Helm = Opt(block.Value, "helm") is { ValueKind: JsonValueKind.True };
                 d.SeatEject = Opt(block.Value, "eject") is { ValueKind: JsonValueKind.True };
                 d.Bunk = Opt(block.Value, "bunk") is { ValueKind: JsonValueKind.True };
+                d.SeatHeal = Opt(block.Value, "heal") is { } heal ? Num(heal, file, "seat.heal") : 0;
+                Range(d.SeatHeal, 0, 50, file, "seat.heal");
                 if (d.SeatEject)
                     d.DataIn = ["eject"];
                 break;

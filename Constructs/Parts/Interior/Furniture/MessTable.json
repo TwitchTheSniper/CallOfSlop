@@ -1,0 +1,172 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Mess Table",
+  "description": "A crew table: what is set on it stays on it.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 60.0,
+  "health": 180,
+  "armour": 2,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.78,
+          0.16,
+          -0.33
+        ],
+        "max": [
+          -0.01,
+          0.69,
+          0.33
+        ],
+        "label": "shelf"
+      },
+      {
+        "min": [
+          0.01,
+          0.16,
+          -0.33
+        ],
+        "max": [
+          0.78,
+          0.69,
+          0.33
+        ],
+        "label": "shelf"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.9,
+        0.7,
+        -0.45
+      ],
+      "max": [
+        0.9,
+        0.75,
+        0.45
+      ],
+      "color": "#8a8f94"
+    },
+    {
+      "min": [
+        -0.85,
+        0.0,
+        -0.4
+      ],
+      "max": [
+        -0.79,
+        0.7,
+        -0.34
+      ],
+      "color": "#3a3f45"
+    },
+    {
+      "min": [
+        -0.85,
+        0.0,
+        0.34
+      ],
+      "max": [
+        -0.79,
+        0.7,
+        0.4
+      ],
+      "color": "#3a3f45"
+    },
+    {
+      "min": [
+        0.79,
+        0.0,
+        -0.4
+      ],
+      "max": [
+        0.85,
+        0.7,
+        -0.34
+      ],
+      "color": "#3a3f45"
+    },
+    {
+      "min": [
+        0.79,
+        0.0,
+        0.34
+      ],
+      "max": [
+        0.85,
+        0.7,
+        0.4
+      ],
+      "color": "#3a3f45"
+    },
+    {
+      "min": [
+        -0.79,
+        0.12,
+        -0.34
+      ],
+      "max": [
+        0.79,
+        0.15,
+        0.34
+      ],
+      "color": "#3a3f45"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.75,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.375,
+        -0.45
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.9,
+        0.375,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.9,
+        0.375,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

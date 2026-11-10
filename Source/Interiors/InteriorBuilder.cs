@@ -385,6 +385,20 @@ public sealed class InteriorBuilder : BlueprintScript
             Furnish(p, r, rng);
         }
         _lv = 0;
+        Feeds();
+        foreach (var (lr, llv, lamps) in _laterLights)
+        {
+            if (C.RouteCount + lamps.Count > Construct.MaxRoutes - 64)
+            {
+                DarkRooms++;
+                continue;
+            }
+            _lv = llv;
+            Lights(lr, lamps);
+        }
+        _lv = 0;
+        if (DarkRooms > 0)
+            Notes.Add($"lights: {DarkRooms} generated rooms keep their lamps dark (no Switch): the construct's {Construct.MaxRoutes} links less the players' 64 went to the feeds and the other rooms' switches");
         if (OpenDoorways > 0)
             Notes.Add($"budget: {OpenDoorways} doorways left open (a frame, no door): the class's door budget is {_budget.Doors} of {Construct.MaxDoors}; critical rooms and bulkheads first, then the deck's, then the void's");
         if (Bare.Count > 0)
@@ -729,10 +743,15 @@ public sealed class InteriorBuilder : BlueprintScript
         return (items, items * 2 + 1);
     }
 
-    /// <summary>Every block's slab at <paramref name="level"/> (the top level is the roof), on the walls below or a neighbour, in passes until none is added. <paramref name="only"/>: just these blocks.</summary>
+    /// <summary>
+    /// Every block's slab at <paramref name="level"/> (the top level is the roof), on the walls below, a pad or a neighbour, in passes until none
+    /// is added. <paramref name="only"/>: just these blocks. Phase 8: the shell's floor panels first, biggest first, each on its own lattice
+    /// (an 8 m panel at even blocks, a 16 m one at every fourth), inside one bulkhead section, over blocks that all want a plain slab; a panel
+    /// that finds nothing to stand on when the passes stop is broken into the next size down (at last 4x4 m slabs) and the passes go on.
+    /// </summary>
     private void Slabs(InteriorPlan plan, int level, HashSet<(int X, int Z)>? only = null)
     {
-        var todo = new List<(int X, int Z)>();
+        var todo = new HashSet<(int X, int Z)>();
         for (var x = 0; x < plan.W; x++)
             for (var z = 0; z < plan.D; z++)
             {
@@ -740,40 +759,94 @@ public sealed class InteriorBuilder : BlueprintScript
                 if (below != InteriorPlan.KeepOut && !_holes.Contains((level + _lv, x, z)) && (only == null || only.Contains((x, z))) && !(_lv < 0 && DeadAt(plan, level, x, z)))
                     todo.Add((x, z));
             }
+        // the units: (origin block, blocks a side, the panel's size index: -1 a 4x4 m slab)
+        var units = new List<(int X, int Z, int N, int Size)>();
+        var taken = new HashSet<(int X, int Z)>();
+        var sizes = _data.FloorPanels.Select(n => (Name: n, N: ConstructParts.Find(n) is { } d ? (int)MathF.Round((d.BoundsMax.X - d.BoundsMin.X) / 4) : 0)).Where(v => v.N >= 2).ToList();
+        for (var si = 0; si < sizes.Count; si++)
+        {
+            var n = sizes[si].N;
+            for (var x0 = 0; x0 + n <= plan.W; x0 += n)
+                for (var z0 = 0; z0 + n <= plan.D; z0 += n)
+                {
+                    if (plan.SectionOf(x0) != plan.SectionOf(x0 + n - 1))
+                        continue;
+                    var ok = true;
+                    for (var x = x0; x < x0 + n && ok; x++)
+                        for (var z = z0; z < z0 + n && ok; z++)
+                            ok = todo.Contains((x, z)) && !taken.Contains((x, z)) && !_stairTops.Contains((level + _lv, x, z));
+                    if (!ok)
+                        continue;
+                    units.Add((x0, z0, n, si));
+                    for (var x = x0; x < x0 + n; x++)
+                        for (var z = z0; z < z0 + n; z++)
+                            taken.Add((x, z));
+                }
+        }
+        foreach (var b in todo.Where(b => !taken.Contains(b)).OrderBy(b => b.X).ThenBy(b => b.Z))
+            units.Add((b.X, b.Z, 1, -1));
         var why = new Dictionary<(int, int), string>();
-        for (var pass = 0; pass < 64 && todo.Count > 0; pass++)
+        for (var pass = 0; pass < 256 && units.Count > 0; pass++)
         {
             var added = 0;
-            for (var i = 0; i < todo.Count; i++)
+            for (var i = 0; i < units.Count; i++)
             {
-                var (x, z) = todo[i];
+                var (ux, uz, n, si) = units[i];
                 var on = new List<VPart>();
-                if (_adapters.TryGetValue((level + _lv, x, z), out var pad))
-                    on.Add(pad);
-                if (_walls.TryGetValue((level - 1 + _lv, x, z), out var walls))
-                    on.AddRange(walls);
-                foreach (var (dx, dz) in new[] { (-1, 0), (1, 0), (0, -1), (0, 1) })
-                    if (_floors.TryGetValue((level + _lv, x + dx, z + dz), out var n))
-                        on.Add(n);
+                for (var x = ux; x < ux + n; x++)
+                    for (var z = uz; z < uz + n; z++)
+                    {
+                        if (_adapters.TryGetValue((level + _lv, x, z), out var pad))
+                            on.Add(pad);
+                        if (_walls.TryGetValue((level - 1 + _lv, x, z), out var walls))
+                            on.AddRange(walls);
+                        foreach (var (dx, dz) in Around)
+                            if ((x + dx < ux || x + dx >= ux + n || z + dz < uz || z + dz >= uz + n) && _floors.TryGetValue((level + _lv, x + dx, z + dz), out var nb))
+                                on.Add(nb);
+                    }
                 if (on.Count == 0)
                     continue;
-                var part = _stairTops.Contains((level + _lv, x, z)) ? Shell("stairFloor") : Shell("floor");
-                var v = Try(part, Slab(level, x, z), Vector3.UnitX, on, out var w);
+                var part = si >= 0 ? sizes[si].Name : _stairTops.Contains((level + _lv, ux, uz)) ? Shell("stairFloor") : Shell("floor");
+                var v = Try(part, Slab(level, ux, uz), Vector3.UnitX, on, out var w);
                 if (v == null)
                 {
-                    why[(x, z)] = w;
+                    why[(ux, uz)] = w;
                     continue;
                 }
-                _floors[(level + _lv, x, z)] = v;
-                todo.RemoveAt(i--);
+                for (var x = ux; x < ux + n; x++)
+                    for (var z = uz; z < uz + n; z++)
+                        _floors[(level + _lv, x, z)] = v;
+                if (si >= 0)
+                    FloorPanelsPlaced++;
+                units.RemoveAt(i--);
                 added++;
             }
-            if (added == 0)
+            if (added > 0)
+                continue;
+            // (stuck: break the panels left into the next size down, or into slabs)
+            var split = false;
+            for (var i = units.Count - 1; i >= 0; i--)
+            {
+                var (ux, uz, n, si) = units[i];
+                if (si < 0)
+                    continue;
+                units.RemoveAt(i);
+                split = true;
+                var next = si + 1 < sizes.Count && n % sizes[si + 1].N == 0 ? si + 1 : -1;
+                var step = next >= 0 ? sizes[next].N : 1;
+                for (var x = ux; x < ux + n; x += step)
+                    for (var z = uz; z < uz + n; z += step)
+                        units.Add((x, z, step, next));
+            }
+            if (!split)
                 break;
         }
-        foreach (var b in todo)
-            Refused.Add($"slab level {level + _lv} at {b.X},{b.Z}: {why.GetValueOrDefault(b, "no neighbour or wall to stand on")}");
+        foreach (var (ux, uz, _, _) in units)
+            Refused.Add($"slab level {level + _lv} at {ux},{uz}: {why.GetValueOrDefault((ux, uz), "no neighbour or wall to stand on")}");
     }
+
+    private static readonly (int Dx, int Dz)[] Around = [(-1, 0), (1, 0), (0, -1), (0, 1)];
+    public int FloorPanelsPlaced; // big floor panels (phase 8)
 
     /// <summary>A void (dead) room's cell on the deck under <paramref name="level"/> and over it, or none: the chassis void builds no slab there.</summary>
     private static bool DeadAt(InteriorPlan plan, int level, int x, int z)
@@ -1289,13 +1362,16 @@ public sealed class InteriorBuilder : BlueprintScript
                 if (!_floors.TryGetValue((r.Deck + _lv, x, z), out var f))
                     continue;
                 var def = C.DefOf(f.Index);
+                var block = Slab(r.Deck, x, z);
                 for (var s = 0; s < C.SocketCount(f.Index) && s < def.Sockets.Length; s++)
                 {
                     var name = def.Sockets[s].Name;
                     if (C.SocketUsed(f.Index, s) || name[0] != 't')
                         continue;
                     C.SocketAt(f.Index, s, out var at, out _);
-                    var local = def.Sockets[s].At;
+                    var local = at - block; // (a floor panel covers many blocks: only this block's sockets)
+                    if (local.X is < -0.2f or > 3.9f || local.Z is < -0.2f or > 3.9f)
+                        continue;
                     var middle = local.X is > 1.5f and < 2.1f && local.Z is > 1.5f and < 2.1f;
                     spots.Add(((middle ? 0 : 100) + MathF.Abs(x - cx) + MathF.Abs(z - cz) + (float)rng.Next() * 0.3f, f, name, at));
                 }
@@ -1307,12 +1383,10 @@ public sealed class InteriorBuilder : BlueprintScript
         var lamps = new List<VPart>();
         foreach (var item in set.Items)
         {
-            var def = ConstructParts.Find(item.Part);
+            var def = PickPart(item, r);
             if (def == null)
-            {
-                Refused.Add($"{r.Name}: no part \"{item.Part}\"");
                 continue;
-            }
+            var adapter = def.Class > ConstructParts.Small ? _data.Adapters[def.Class] : null;
             var foot = def.Sockets.Where(s => ConstructParts.DirVector(s.Dir).Y < -0.9f).OrderBy(s => s.At.Y).Select(s => s.Name).FirstOrDefault();
             if (foot == null)
             {
@@ -1354,7 +1428,7 @@ public sealed class InteriorBuilder : BlueprintScript
                     {
                         try
                         {
-                            got = Stand(def.Name, spot.At, new Orient(Vector3.UnitX, a, Vector3.UnitY, Vector3.UnitY), spot.Floor, foot);
+                            got = adapter != null ? StandBig(def, adapter, foot, spot.At, a, spot.Floor) : Stand(def.Name, spot.At, new Orient(Vector3.UnitX, a, Vector3.UnitY, Vector3.UnitY), spot.Floor, foot);
                             Placed++;
                             break;
                         }
@@ -1383,6 +1457,8 @@ public sealed class InteriorBuilder : BlueprintScript
                 }
                 if (def.Logic == CLogic.Lamp)
                     lamps.Add(got);
+                if (item.Role != null)
+                    _roleParts.Add((r, _lv, item.Role, got));
                 if (item.Role == "plant" && def.PlantFuel == EngineFuel.Fuel)
                     Fuel(got, r);
                 if (item.Role == "helm" && _carry != null && def.Name == _carry.Value.Bp.Steps[_carry.Value.Helm].Part)
@@ -1395,34 +1471,156 @@ public sealed class InteriorBuilder : BlueprintScript
                     director = got;
             }
         }
-        // the room's lights: a Switch on the first lamp, wired to every lamp (a lamp lights while its input is on)
-        if (lamps.Count > 0)
-        {
-            VPart? sw = null;
-            foreach (var s in new[] { "+x", "-x", "+z", "-z", "+y" })
-                try
-                {
-                    sw = Onto(lamps[0], s, "Switch");
-                    Config(sw, ("startOn", true)); // (the lights are on when it is built)
-                    Placed++;
-                    break;
-                }
-                catch (VehicleKitException)
-                {
-                }
-            if (sw != null && r.Type == "bridge")
-                _bridgeSwitch ??= sw;
-            if (sw == null)
-                Refused.Add($"{r.Name} deck {r.Deck}: no place for the lights' Switch on its lamp");
-            else
-                foreach (var l in lamps)
-                    if (!TryWire(sw, l, null))
-                        Notes.Add($"{r.Name} deck {r.Deck}: a lamp out of the switch's reach stays dark");
-        }
+        // the room's lights: a Switch on the first lamp, wired to every lamp (a generated room's after the feeds, while the links last: phase 8)
+        if (lamps.Count > 0 && r.Origin == "generated")
+            _laterLights.Add((r, _lv, lamps));
+        else if (lamps.Count > 0)
+            Lights(r, lamps);
         if (helm != null && _base.FirstOrDefault(p => p.Name == "Driving Module") is { } drive)
             TryWire(helm, drive, $"{r.Name}: helm to the Driving Module");
         if (gunner != null && director != null)
             TryWire(gunner, director, $"{r.Name}: gunner's station to the Fire Director");
+    }
+
+    private readonly List<(PlanRoom Room, int Lv, string Role, VPart Part)> _roleParts = new(); // the rooms' things with a role, for the feeds (phase 8)
+    private readonly HashSet<string> _noFit = new(); // (module items no part fits for this class: listed once)
+
+    private readonly List<(PlanRoom Room, int Lv, List<VPart> Lamps)> _laterLights = new(); // generated rooms' lamps, switched after the feeds (phase 8)
+    public int DarkRooms; // generated rooms whose lamps had no link left for a switch (the construct's 254, less the players' 64)
+
+    /// <summary>A room's lights: a Switch on the first lamp, wired to every lamp (a lamp lights while its input is on).</summary>
+    private void Lights(PlanRoom r, List<VPart> lamps)
+    {
+        VPart? sw = null;
+        foreach (var s in new[] { "+x", "-x", "+z", "-z", "+y" })
+            try
+            {
+                sw = Onto(lamps[0], s, "Switch");
+                Config(sw, ("startOn", true)); // (the lights are on when it is built)
+                Placed++;
+                break;
+            }
+            catch (VehicleKitException)
+            {
+            }
+        if (sw != null && r.Type == "bridge")
+            _bridgeSwitch ??= sw;
+        if (sw == null)
+            Refused.Add($"{r.Name} deck {r.Deck}: no place for the lights' Switch on its lamp");
+        else
+            foreach (var l in lamps)
+                if (!TryWire(sw, l, null))
+                    Notes.Add($"{r.Name} deck {r.Deck}: a lamp out of the switch's reach stays dark");
+    }
+
+    public int FeedsLaid; // chutes and pipes laid between rooms (phase 8)
+
+    /// <summary>
+    /// The rooms' feeds (phase 8, ModuleSets.json "feeds"): for each part a feed goes to (a production room's Assembler, an engineering room's plant),
+    /// a chute or pipe from the nearest part of the feed's role in a room of its source types (a storage room's Materials Bin, a fuel bunker's tank),
+    /// within its reach. Laid at ceiling height (through walls and slabs, as a laid blueprint link may be), straight runs with a node at most every
+    /// 7.5 m, along x then z, then down to the target. Leaves the players at least 64 of the construct's links (routes).
+    /// </summary>
+    private void Feeds()
+    {
+        foreach (var (room, lv, role, part) in _roleParts.ToList())
+        {
+            if (_data.Rooms[room.Type].Modules is not { } setId)
+                continue;
+            foreach (var f in _data.Sets[setId].Feeds.Where(f => f.ToRole == role))
+            {
+                var what = $"{room.Name} (level {room.Deck + lv}): a {f.Link} into its {part.Name}";
+                if (C.RouteCount >= Construct.MaxRoutes - 64)
+                {
+                    Notes.Add($"{what}: not laid, the players keep 64 links");
+                    continue;
+                }
+                C.PartBounds(part.Index, out var tlo, out var thi);
+                var to = (tlo + thi) * 0.5f;
+                var from = _roleParts.Where(s => s.Role == f.FromRole && f.From.Contains(s.Room.Type)).Select(s => { C.PartBounds(s.Part.Index, out var lo, out var hi); return (s, At: (lo + hi) * 0.5f); })
+                    .Where(s => Vector3.Distance(s.At, to) <= f.Reach).OrderBy(s => Vector3.Distance(s.At, to)).ToList();
+                var laid = false;
+                var why = $"no {f.FromRole} in a {string.Join(" or ", f.From)} within {f.Reach:0} m";
+                foreach (var (src, at) in from.Take(3))
+                {
+                    try
+                    {
+                        Link(f.Link, src.Part, part, f.FromPort, f.ToPort, laid: true, nodes: FeedPath(at, src.Room.Deck + src.Lv, to, room.Deck + lv));
+                        FeedsLaid++;
+                        laid = true;
+                        Notes.Add($"{what}: from the {src.Part.Name} in the {src.Room.Name} (level {src.Room.Deck + src.Lv}), {Vector3.Distance(at, to):0} m");
+                        break;
+                    }
+                    catch (VehicleKitException e)
+                    {
+                        why = e.Message;
+                    }
+                }
+                if (!laid)
+                    Notes.Add($"{what}: not laid ({why})");
+            }
+        }
+    }
+
+    /// <summary>A feed's nodes (vehicle coordinates): up to the source's ceiling, along x, along z, down or up to the target's ceiling, a node every 7.5 m at most, on the link grid.</summary>
+    private Vector3[] FeedPath(Vector3 from, int fromLevel, Vector3 to, int toLevel)
+    {
+        float Ceil(int level) => Slab(level - _lv, 0, 0).Y + 0.125f + 2.4f;
+        var y0 = Ceil(fromLevel);
+        var y1 = Ceil(toLevel);
+        var corners = new[] { new Vector3(from.X, y0, from.Z), new Vector3(to.X, y0, from.Z), new Vector3(to.X, y0, to.Z), new Vector3(to.X, y1, to.Z) };
+        var pts = new List<Vector3> { corners[0] };
+        for (var i = 1; i < corners.Length; i++)
+        {
+            var a = pts[^1];
+            var d = Vector3.Distance(a, corners[i]);
+            if (d < 0.1f)
+                continue;
+            var n = (int)MathF.Ceiling(d / 7.5f);
+            for (var k = 1; k <= n; k++)
+                pts.Add(Vector3.Lerp(a, corners[i], (float)k / n));
+        }
+        return pts.Select(v => FromRest(new Vector3(MathF.Round(ToRest(v).X * 20) / 20, MathF.Round(ToRest(v).Y * 20) / 20, MathF.Round(ToRest(v).Z * 20) / 20))).ToArray();
+    }
+
+    /// <summary>
+    /// The class lookup (phase 8): the first of a module item's parts (biggest size class first) that this class may hold (SizeClasses.json
+    /// partClass), that has an adapter pad to stand on a slab if it is bigger than small, and that fits a block (2.5 m high, 3.6 m across).
+    /// None: listed as missing, once per room type and item.
+    /// </summary>
+    private ConstructPartDef? PickPart(ModuleItem item, PlanRoom r)
+    {
+        var most = Class?.PartClass ?? ConstructParts.Small;
+        foreach (var n in item.Parts)
+        {
+            if (ConstructParts.Find(n) is not { } d || d.Class > most || d.Class > ConstructParts.Small && !_data.Adapters.ContainsKey(d.Class))
+                continue;
+            var size = d.BoundsMax - d.BoundsMin;
+            if (size.Y <= 2.5f && MathF.Max(size.X, size.Z) <= 3.6f)
+                return d;
+        }
+        if (_noFit.Add($"{r.Type}/{item.Part}"))
+            Missing.Add(item.Parts.Any(n => ConstructParts.Find(n) != null)
+                ? $"{r.Name}: no part fits the {Class?.Name ?? "?"} class's rooms of {string.Join(", ", item.Parts)} (its parts go up to the {ConstructParts.ClassNames[most]} class, on an adapter pad, 2.5 m high and 3.6 m across)"
+                : $"{r.Name}: no part \"{string.Join("\" or \"", item.Parts)}\" in this build");
+        return null;
+    }
+
+    /// <summary>A part bigger than the small class on a slab (phase 8): its class's adapter pad stands face down on the slab's socket, the part on the pad's back.</summary>
+    private VPart StandBig(ConstructPartDef def, string adapter, string foot, Vector3 at, Vector3 a, VPart floor)
+    {
+        var mid = ConstructParts.Find(adapter)!.Sockets.Where(s => ConstructParts.DirVector(s.Dir).Y > 0.9f).OrderBy(s => s.At.LengthSquared()).First().Name;
+        var pad = Stand(adapter, at, new Orient(Vector3.UnitY, -Vector3.UnitY, Vector3.UnitX, a), floor, mid);
+        Placed++; // (the pad; the caller counts the part. A part the pad then refuses leaves the pad: the kit takes nothing back, so it is listed)
+        try
+        {
+            return Onto(pad, "back", def.Name, foot);
+        }
+        catch (VehicleKitException e)
+        {
+            Notes.Add($"an {adapter} stands bare: {e.Message}");
+            throw;
+        }
     }
 
     private readonly List<Vector3> _openings = new(); // the doorways' middles on their floor (door walls, door corners, garage walls), rest frame
@@ -1477,7 +1675,7 @@ public sealed class InteriorBuilder : BlueprintScript
         if (i < _base.Count || _carried.Contains(i))
             return "vehicle";
         var n = C.DefOf(i).Name;
-        if (n == Shell("floor") || n == Shell("stairFloor"))
+        if (n == Shell("floor") || n == Shell("stairFloor") || _data.FloorPanels.Contains(n))
             return "slabs";
         if (n == Shell("wall4") || n == Shell("wall2") || n == Shell("corner") || _panels.Any(p => p.Part == n))
             return "walls";
