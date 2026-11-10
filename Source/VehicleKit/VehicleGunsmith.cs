@@ -4,8 +4,8 @@ namespace CallOfSlop.VehicleKit;
 /// The gunsmith (docs/sandbox/VEHICLE-WEAPONS.md): big guns made for one vehicle, as weapon-builder text the kit fits through the game's own rules (<see cref="Vehicle.FitGun"/>).
 /// The vehicle's mass sets the ceiling: a gun's mass (its parts' masses times N squared, as a merged receiver's are) at most <see cref="GunMassShare"/> of the vehicle's, and its
 /// recoil impulse at most <see cref="KickPerKg"/> times the vehicle's mass, so a shot moves it at most that many m/s. The biggest merge N that passes both is the ceiling;
-/// the role's tier picks within it (tier 1 two steps under, tier 2 one, tier 3 and 4 at it). Phase 1 classes: heavy cannons (artillery receivers, shells with big blasts
-/// and craters) and rapid heavy guns (autocannons, rotary and flak blocks, chain guns). The guns join the style's list for that vehicle (<see cref="Vehicle.Arsenal"/>),
+/// the role's tier picks within it (tier 1 two steps under, tier 2 one, tier 3 and 4 at it). Classes: heavy cannons (artillery receivers, shells with big blasts
+/// and craters), rapid heavy guns (autocannons, rotary and flak blocks, chain guns) and missile launchers (an Ordnance Rack of radar missiles beside a spotting gun). The guns join the style's list for that vehicle (<see cref="Vehicle.Arsenal"/>),
 /// so every existing recipe and style gun can still be drawn.
 /// </summary>
 public static class VehicleGunsmith

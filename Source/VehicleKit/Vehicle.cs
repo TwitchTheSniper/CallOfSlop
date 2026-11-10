@@ -429,7 +429,15 @@ public sealed partial class Vehicle : BlueprintScript
                     continue;
                 }
                 for (var k = 0; k < Rack.Def.Rack.Stations; k++)
-                    Onto(Rack, $"lug{k}", missile, "lug", 0);
+                    try
+                    {
+                        Onto(Rack, $"lug{k}", missile, "lug", 0);
+                    }
+                    catch (VehicleKitException ex)
+                    {
+                        // (no undo for the rack once it is on: a station whose missile meets the body stays empty, and the gun still fights; seen on cab-over tankers)
+                        Console.WriteLine($"[vehicles] gunsmith: {Name}: station {k} of its {rack} stays empty: {ex.Message}");
+                    }
                 Wire(module, Rack);
                 return;
             }
