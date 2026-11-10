@@ -149,6 +149,7 @@ public static partial class ConstructPhysics
             if (bodies[i].Dirty)
                 bodies[i].Rebuild(); // (before the joints are laid out: a rebuild can change them)
         LayOutJoints(bodies, n);
+        ProbeT.Mark(30, "LayOut"); // PROBE
         _contactCount = 0;
         _chainCount = 0;
         _activeCount = 0;
@@ -223,6 +224,7 @@ public static partial class ConstructPhysics
                     SpringFeet(c, query, _invI[i], dt);
                 if (c.LegCount > 0 && c.GrabbedBy == 255)
                     Walk(world, c, query, dt); // (the gait brain: ConstructWalk.cs)
+        ProbeT.Mark(31, "P.Walk"); // PROBE
             }
             else if (EngineLive(c))
                 Powertrain(c, false, dt); // (board item cs03: an anchored base's engine runs its wheels and its power take-off too)
@@ -232,10 +234,13 @@ public static partial class ConstructPhysics
                 ConstructRotor.Step(c, _invI[i], false, dt); // (anchored: it turns, and pushes nothing)
             if (_jact[i])
                 JointPrep(c, i, dt);
+        ProbeT.Mark(32, "P.JointPrep"); // PROBE
             if (_dyn[i] && _jact[i] && c.GrabbedBy == 255) // (a held body is the beam's: it carries the arm's weight)
                 ArmWeight(c, i, weight, dt); // (ConstructFreeChain.cs)
+        ProbeT.Mark(33, "P.ArmWeight"); // PROBE
             if (_dyn[i] || _jact[i])
                 WorldCompound(c, (short)i, query, dt);
+        ProbeT.Mark(34, "P.WorldCompound"); // PROBE
             if ((_dyn[i] || _jact[i]) && world.Resources is { } forest)
                 TrunkContacts(c, (short)i, forest, dt); // (after JointPrep: the chains of the parts beyond a joint)
             if (c.RecoilCount > 0)
@@ -245,15 +250,18 @@ public static partial class ConstructPhysics
         ApplyDeckPushes(n, dt);
         CouplingExclusions(world, n);
         BodyContacts(world, n, dt);
+        ProbeT.Mark(35, "P.BodyContacts"); // PROBE
         CouplingRows(world, n, dt);
         ConnectorRows(world, n); // (ropes and springs: ConstructConnectors.cs)
         if (world.BeamCount > 0)
             BeamRows(world, n, dt); // (a physics gun on a piece of a mechanism: ConstructFreeChain.cs)
         PinRows(n);
         Solve(dt);
+        ProbeT.Mark(36, "P.Solve"); // PROBE
         ConnectorLoads(world, dt);
         WarmStore();
         SleepTogether();
+        ProbeT.Mark(37, "P.Warm+Sleep"); // PROBE
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];

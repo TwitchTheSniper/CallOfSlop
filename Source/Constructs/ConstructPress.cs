@@ -78,13 +78,11 @@ public static class ConstructPress
     /// <summary>The part on a socket of this machine, or -1.</summary>
     public static int OnSocket(Construct c, int part, int socket)
     {
-        for (var k = 0; k < c.LinkCount; k++)
+        for (var e = c.FirstLink(part); e >= 0; e = c.NextLink(e)) // (the part's own links: a scan of every link cost 3 to 6 ms a step over a fitted walker's 90 machines)
         {
-            ref var l = ref c.Links[k];
-            if (l.A == part && l.SA == socket && l.B < c.PartCount)
-                return l.B;
-            if (l.B == part && l.SB == socket && l.A < c.PartCount)
-                return l.A;
+            ref var l = ref c.Links[e >> 1];
+            if ((e & 1) == 0 ? l.SA == socket && l.B < c.PartCount : l.SB == socket && l.A < c.PartCount)
+                return c.OtherEnd(e);
         }
         return -1;
     }
@@ -126,13 +124,13 @@ public static class ConstructPress
     {
         if ((uint)i >= (uint)c.PartCount || c.Parts[i].D is not ({ IsExtrusion: true } or { IsPressDie: true }))
             return -1;
-        for (var k = 0; k < c.LinkCount; k++)
+        for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
         {
-            ref var l = ref c.Links[k];
-            int other = l.A == i ? l.B : l.B == i ? l.A : -1;
-            if (other < 0 || other >= c.PartCount)
+            ref var l = ref c.Links[e >> 1];
+            var other = c.OtherEnd(e);
+            if (other >= c.PartCount)
                 continue;
-            var socket = l.A == i ? l.SB : l.SA;
+            var socket = (e & 1) == 0 ? l.SB : l.SA;
             var d = c.DefOf(other);
             if (IsBay(d, socket) || d.IsPress && socket == d.PressDieSocket || d.IsExtruder && socket == d.ExtDieSocket)
                 return other;
