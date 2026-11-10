@@ -366,7 +366,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 220: body styles phase 7a (docs/vehiclekit/BODY-STYLES.md, section 13): lofted bays' keys may carry a lining word (a faction's interior lining, HullLoft.Lining.cs); both ends must make the same part, so a 219 peer makes stand-ins of lined bays.
     // 221: body styles phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): a lined bay's lining word may carry a window letter (its walls cut, panes on "win" sockets; HullLoft.Lining.cs), so a 220 peer makes stand-ins of glazed bays.
     // 222: storylets (docs/story/STORY.md "Storylets"): Msg.TalkChoices at the end of Msg (a storylet's answers in a player's talk panel), and TalkAsk.Choose + n in CActKind.Talk's byte (the answer picked).
-    public const byte ProtocolVersion = 222;
+    // 223: body styles phase 7c (docs/vehiclekit/BODY-STYLES.md, section 15): upper storeys' and open decks' bays take a lining word (an open top's followed), closed ends are lined, and lined cabs of every kind draw a dash or console and a steering wheel, so a 222 peer makes other parts from the same keys.
+    public const byte ProtocolVersion = 223;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

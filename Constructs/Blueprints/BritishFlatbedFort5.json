@@ -81,7 +81,7 @@
     {"part": "Hull Loft (100r ~D00DGUDWyFHRG1kG1vFwNFgrFBJDxlBi38iC5aJ04J ~Bm0C0MCGjCOyCX3DHQDfmDQ7CwTBon9p07374JC03C iuit)", "on": 52, "socket": "front22", "by": "footL0", "paint": "#7d8186"},
     {"part": "Scrap Ladder", "on": 61, "socket": "+x0", "by": "back", "paint": "#1b1c1e"},
     {"part": "Seat", "on": 51, "socket": "front21", "by": "bottom"},
-    {"part": "Hull Loft (cabm SfUSWcXcZmWbVMWKW0W0XL ~BG0BWuBnIBviBvqCQ6DYWDYcDQwDBKChjBa59aN6yV4Cb04b =)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
+    {"part": "Hull Loft (cabm SfUSWcXcZmWbVMWKW0W0XL ~BG0BWuBnIBviBvqCQ6DYWDYcDQwDBKChjBa59aN6yV4Cb04b = iu)", "on": 0, "socket": "+y6", "by": "footL", "paint": "#c8102e"},
     {"part": "Hull Loft (pane UsXfSgXAXfSgXJZjT3UjZjT3)", "on": 76, "socket": "glass0", "by": "frame"},
     {"part": "Hull Loft (pane XHXfSkXVXfVKXbZjVKXQZjT8)", "on": 76, "socket": "glass2", "by": "frame"},
     {"part": "Hull Loft (pane UlXfSkUXXfVKURZjVKUcZjT8)", "on": 76, "socket": "glass3", "by": "frame"},
