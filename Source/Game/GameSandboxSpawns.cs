@@ -314,6 +314,8 @@ public sealed partial class Game
                 note = $"only {room:N0} more zombies fit under the cap ({SandboxZombieCap:N0})";
                 count = room;
             }
+            if (count > SpawnIndividualsMax && !HordeCrowd.Covers(World.Map, ZRules.Crowd, feet.X, feet.Z))
+                note = "the far crowd doesn't reach this spot yet: these come as full zombies, up to their cap";
             if (by.Id != LocalId)
             {
                 SbTally();
@@ -358,7 +360,9 @@ public sealed partial class Game
             At = feet,
             Radius = kind == SbSpawnKind.Zombies ? MathF.Max(2f, MathF.Sqrt(count) * 0.45f) : 1.5f + MathF.Sqrt(count),
             Owner = by.Id,
-            Crowded = kind == SbSpawnKind.Zombies && count > SpawnIndividualsMax,
+            // (A big group goes into the crowd tiers where the crowd's grid reaches; elsewhere, on a round world or past
+            // the grid on a big map, it comes as individuals up to their cap: MASS-HORDE.md, "On Sandbox maps".)
+            Crowded = kind == SbSpawnKind.Zombies && count > SpawnIndividualsMax && HordeCrowd.Covers(World.Map, ZRules.Crowd, feet.X, feet.Z),
         });
         return note;
     }

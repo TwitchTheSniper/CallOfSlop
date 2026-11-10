@@ -131,7 +131,7 @@ public sealed partial class Game
         if (text.Length == 0)
             return;
         var heard = false;
-        if (Local is { Bot: null } me && Vector3.DistanceSquared(me.Position, speaker.Position) <= StoryHearing * StoryHearing)
+        if (Local is { Bot: null } me && (Vector3.DistanceSquared(me.Position, speaker.Position) <= StoryHearing * StoryHearing || _talkJoined[me.Id] == speaker.Id + 1))
         {
             AddChat(speaker.Id, speaker.Name, text, now, ChatFlags.Say);
             heard = true;
@@ -140,7 +140,7 @@ public sealed partial class Game
         {
             _w.Begin(Msg.ChatLine).U8(speaker.Id).Str(text).U8((byte)ChatFlags.Say).U8(NoTeam);
             foreach (var c in _clients.Values)
-                if (Players.TryGetValue(c.Id, out var to) && to.Bot == null && Vector3.DistanceSquared(to.Position, speaker.Position) <= StoryHearing * StoryHearing)
+                if (Players.TryGetValue(c.Id, out var to) && to.Bot == null && (Vector3.DistanceSquared(to.Position, speaker.Position) <= StoryHearing * StoryHearing || _talkJoined[to.Id] == speaker.Id + 1)) // (or listening in from afar: GameStoryTalkJoin.cs)
                 {
                     Net.SendTo(c.Guid, _w.Span, Brutal.RakNetApi.PacketReliability.ReliableOrdered);
                     heard = true;

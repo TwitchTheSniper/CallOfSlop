@@ -7,6 +7,8 @@
     { "name": "OnStorylet", "about": "a player and a storylet under way for them (1, 2: paused)" },
     { "name": "StoryletAt", "about": "a player and a storylet: the story second it began, or last ended" },
     { "name": "Played", "about": "a player and a storylet: how many times it ended for them" },
+    { "name": "Ended", "about": "a player and a storylet: the ends it has had for them (a bit per end; the Logbook's Paths)" },
+    { "name": "EndedWith", "about": "a player and a storylet: who led it when it last ended (their entity + 1)" },
     { "name": "Lead", "about": "a player and a fact or a place they learnt of (\"the old mine\")" },
     { "name": "Course", "about": "a player and the course they chose (Trustee, Escapee)", "exclusive": true }
   ],

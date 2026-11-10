@@ -293,6 +293,9 @@ starts (`SandboxZombiesFlush`), so the empty cells reach the client.
 `--zrange-host` / `--zrange-client` (Program.ZombieRange.cs) measure it in the real window, one process each: the crowd
 each peer draws at 50/100/200/400 m on Proving Ground, the hits the server credits to each, and how far the client's
 picture is from the server's counts.
+`--zrange-host --zombies` / `--zrange-client --zombies [--map NAME]` do the same in the Zombies mode's own crowd round (Mass
+Horde Test by default; Horde Stress too): each peer looks at the middle of the crowd it knows, logs its counts and draws, and
+writes two pictures (`smoke_zrange_host_1.bmp` ...). Give the client its own copy of the program folder, or both write one log.
 `--zombie-probe [--seated] [--map NAME] [--cap N] [--lag MS] [--loss PCT]` measures it over the real transport
 (SelfTestZombieProbe.cs): zombies appearing or vanishing in view, ghosts, a turret firing into the crowd.
 
@@ -319,6 +322,11 @@ picture is from the server's counts.
   path each level's buffer is orphaned and the stripes written with `glBufferSubData`; on the 4.6 path with the
   `persistent` experiment they are copied into a persistently mapped ring (`Renderer.crowdRing`) and drawn with a base
   instance. The crowd's draws count in the F9 window's draw calls, triangles and instances.
+- **The box shader's inputs.** The fragment shader is the box shader's own, so the crowd's vertex shader writes every input
+  it reads (`vLocal`, `vLocalN`, `vSize` for the shared materials' patterns, as the instanced and merged draws do). From
+  the shared materials (2026-11-06) to 2026-11-10 it didn't: the program failed to link, `[render] crowd drawing off`
+  went to the log once, and no crowd zombie was drawn on any peer (only the individuals), while the F9 counters still
+  showed the instances prepared. A change to the box shader's inputs updates `Renderer.Crowd.cs` with them.
 - **Readability.** Crowd zombies use the individuals' palette and gait, so the front and the mass read as one horde;
   the dev map's `--crowd-tiers` tint (yellow crowd, orange held, darker mass) is a debug view, off by default.
 
@@ -420,6 +428,36 @@ distance squared) each get a looping roar at the cluster's centre of mass, as lo
 still there and eases to its spot and loudness, so the roar never jumps. The loop is 4 s of 28 low throats groaning
 over each other at random over a rumble (two variants, so two clusters never sound in step), on the zombie voices
 row. Individuals keep their own voices (`ZombieSounds`, 8 vocal and 8 step voices).
+
+## On Sandbox maps
+
+The user wants the mass horde in the Sandbox (2026-11-10). What works now: a Sandbox zombie group bigger than
+`SpawnIndividualsMax` (64) goes into the crowd tiers (`SandboxCrowdAdd`, GameSandboxSpawns.cs; the tiers are set up for the
+map with the first such group), on any flat map the crowd's grid covers: Proving Ground draws and hits a 3,000 group at
+150 m on host and client (`--zrange-host`). The crowd is not tied to `"crowd": N`; that key only starts the Zombies
+mode's rounds. What stops it elsewhere, and the plan:
+
+- **Big maps.** `HordeCrowd.Setup` lays its grids from the map's west and north edges, at most 1,024 flow cells (2 m) a
+  side: about 2 km. The planetoid worlds are 11-25 km across, so most of the map is past the grid. Now (2026-11-10) a
+  group spawned where the grid doesn't reach (`HordeCrowd.Covers`) comes as individuals up to their cap, with a note,
+  instead of particles off the grid. Plan: a crowd window, a grid of a fixed size (1-2 km) centred where the groups and
+  players are, moved (rebuilt over several ticks, the mass carried across) when they leave it; the net cells, the
+  client's picture and the horizon go by the window's origin, sent in `Msg.ZCrowd`'s keyframe (a protocol bump).
+- **Set-up cost.** `Setup` probes every flow cell once (`World.Blocked` and the ground): about a million probes for a 2 km
+  grid, a hitch at the first big group. The window above would build its cells in slices over ticks, as the flow
+  field already is.
+- **Round worlds.** The crowd's ground is a plane (`Y`, `GroundAt`, the flow field on x/z): planetoids and point gravity
+  are refused by `Covers`. A crowd there needs a local tangent frame per window (the window above, flattened round its
+  centre, refused where the ground curves more than a few metres across it).
+- **Streamed terrain.** Ground reads go through `TerrainData.Sample` (tiles made on demand), but a whole-grid `Setup`
+  makes every tile under the window at once: keep the window small or build it in slices. `CrowdHorizon` samples the
+  ground out to the map's size: bound it to the window and the fog.
+- **Constructs.** The flow field's walls come from the map at set-up (`World.Blocked`); constructs (bases, walls, parked
+  vehicles) are not in it, so the crowd walks through them, and individuals collide with them only once woken. Plan:
+  stamp each frozen or still construct's footprint into the walkable mask when it settles (and clear it when it moves),
+  the flow field rebuilding as it already does every 30 ticks.
+- **Fog and culling.** The fog's end on Sandbox terrain (`Map.FogEnd`) can be far (0 on small maps: no fog), so cells are
+  culled by the frustum, the horizon and `drawFarTo` only; with a window that is bounded by the window.
 
 ## Mass Horde Test
 

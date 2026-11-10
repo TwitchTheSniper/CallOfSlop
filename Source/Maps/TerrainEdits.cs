@@ -145,6 +145,22 @@ public sealed partial class TerrainEdits : IDigGround
     public const float CraterDepth = 0.55f;
 
     /// <summary>
+    /// A crater is open upwards. Over its flattened ball the ground up to a radius above the blast goes too, and a roof
+    /// left over that which is thinner than the radius falls in with it: the top <paramref name="hi"/> of what a crater of
+    /// radius <paramref name="r"/> cuts from a column of spans <paramref name="s"/>. So a blast on the floor of an earlier
+    /// crater, or at the foot of its side, leaves no lip of ground hanging over the new hole (blocks and spikes stood
+    /// round every crater made by several blasts). A thicker roof still stands, and a drill's scoop is a plain ball:
+    /// tunnels and overhangs are dug with it.
+    /// </summary>
+    public static float CraterTop(ReadOnlySpan<float> s, float hi, float r)
+    {
+        for (var k = 0; k + 1 < s.Length; k += 2)
+            if (s[k] < hi && s[k + 1] > hi && s[k + 1] - hi < r)
+                return s[k + 1];
+        return hi;
+    }
+
+    /// <summary>
     /// Most ops a match keeps (joiners replay them); past this the ground stops changing. 65,536 ops are about 980 KB to a
     /// joiner: the log stays smaller than a state of columns would be (a column is about 8 bytes, a dug cell up to 64 columns).
     /// </summary>
@@ -446,7 +462,9 @@ public sealed partial class TerrainEdits : IDigGround
             var h = MathF.Sqrt(r2 - d2) * vs;
             var lo = MathF.Max(c.Y - h, Bedrock);
             var hi = c.Y + h;
-            if (hi - lo < MinSpan)
+            if (op.Kind == DigKind.Crater)
+                hi = c.Y + r; // (a blast throws out what is over it too: CraterTop)
+            else if (hi - lo < MinSpan)
                 continue; // the rim of the ball: too thin to dig (no air slivers)
             // Only touch a cell the dig really reaches (its column has solid ground in the interval).
             var col = Col(ci, cj);
@@ -457,8 +475,13 @@ public sealed partial class TerrainEdits : IDigGround
                     continue;
                 col = Touch(ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
             }
+            if (op.Kind == DigKind.Crater)
+                hi = CraterTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, r);
             if (Subtract(col, lo, hi))
+            {
                 changed++;
+                TouchBeside(ci, cj);
+            }
         }
         if (changed > 0)
             Log.Add(op); // (only ops that changed something: what clients and joiners replay)
@@ -581,7 +604,9 @@ public sealed partial class TerrainEdits : IDigGround
             var h = MathF.Sqrt(r2 - d2) * vs;
             lo = MathF.Max(c.Y - h, Bedrock);
             hi = c.Y + h;
-            if (hi - lo < MinSpan)
+            if (op.Kind == DigKind.Crater)
+                hi = c.Y + op.Radius;
+            else if (hi - lo < MinSpan)
                 continue;
             total += CutVolume(ci, cj, lo, hi, surfaceGives, stoneDepth, byKind, s);
         }
@@ -732,6 +757,23 @@ public sealed partial class TerrainEdits : IDigGround
             _reserved++;
         }
         return want - _reserved;
+    }
+
+    /// <summary>
+    /// A column on its cell's border was dug: the cells it borders become dug cells too (still the ground as built), so
+    /// the hole's side can run out across the border as a slope (<see cref="GroundTops"/>) and isn't held to a cell's
+    /// straight edge.
+    /// </summary>
+    private void TouchBeside(int ci, int cj)
+    {
+        int a = ci % Sub, b = cj % Sub;
+        int di = a == 0 ? -1 : a == Sub - 1 ? 1 : 0, dj = b == 0 ? -1 : b == Sub - 1 ? 1 : 0;
+        if (di != 0 && (uint)(ci + di) < (uint)ColsX)
+            Touch((ci + di) / Sub, cj / Sub);
+        if (dj != 0 && (uint)(cj + dj) < (uint)ColsZ)
+            Touch(ci / Sub, (cj + dj) / Sub);
+        if (di != 0 && dj != 0 && (uint)(ci + di) < (uint)ColsX && (uint)(cj + dj) < (uint)ColsZ)
+            Touch((ci + di) / Sub, (cj + dj) / Sub);
     }
 
     private int _reserved; // (Reserve's cursor: every span list below it is made)
@@ -1255,13 +1297,13 @@ public sealed partial class TerrainEdits : IDigGround
 
     /// <summary>
     /// How column <paramref name="c"/> looks at height <paramref name="y"/> on a dug face: what a fill laid there is made of
-    /// (the map's own dirt, rock or sand colour), else freshly dug ground by its depth.
+    /// (the map's own dirt, rock or sand colour), else freshly dug ground by its depth, in the world's own colours (<see cref="DugShade"/>).
     /// </summary>
     private (Vector3 Color, float Rock) Shade(int c, float y, bool covered)
     {
         var sf = _t.Surface;
         if (_fillKind[c] == 0 || y < _fillLo[c] - 0.01f)
-            return Dug(sf, _orig[c] - y, covered);
+            return DugShade(sf, OwnColour(c), _orig[c] - y, covered);
         var (col, rock) = (GroundKind)(_fillKind[c] - 1) switch
         {
             GroundKind.Stone => (sf.Rock, 1f),
@@ -1271,17 +1313,45 @@ public sealed partial class TerrainEdits : IDigGround
         return (col * (covered ? 0.6f : 1f), rock);
     }
 
-    /// <summary><see cref="Shade"/> for a span's top: open ground as built keeps the surface's own colour.</summary>
-    private (Vector3 Color, float Rock) TopShade(int c, int ci, int cj, float y, bool covered) =>
-        !covered && MathF.Abs(y - _orig[c]) < 0.01f && _fillKind[c] == 0 ? SurfaceColour(ci, cj, IslandColumn(c, ci, cj) ? _orig[c] : float.NaN) : Shade(c, y, covered);
+    /// <summary>A cut shallower than this (metres) still shows some of the surface's own colour, so a crater's edge fades into the ground round it.</summary>
+    public const float ShadeFade = 0.6f;
 
-    /// <summary>Freshly dug ground: dirt, then rock deeper down; darker under cover.</summary>
-    private static (Vector3 Color, float Rock) Dug(TerrainSurface sf, float depth, bool covered)
+    /// <summary><see cref="Shade"/> for a span's top: open ground as built keeps the surface's own colour, and a shallow cut fades from it (<see cref="ShadeFade"/>).</summary>
+    private (Vector3 Color, float Rock) TopShade(int c, int ci, int cj, float y, bool covered)
     {
-        var f = Math.Clamp(depth / 4f, 0f, 1f);
-        var col = Vector3.Lerp(sf.Dirt * 0.85f, sf.Rock * 0.8f, f) * (covered ? 0.6f : 1f);
+        var depth = _orig[c] - y;
+        if (covered || _fillKind[c] != 0 || depth >= ShadeFade || depth <= -0.01f)
+            return Shade(c, y, covered);
+        var own = SurfaceColour(ci, cj, IslandColumn(c, ci, cj) ? _orig[c] : float.NaN);
+        if (depth < 0.01f)
+            return own;
+        var (col, rock) = Shade(c, y, false);
+        var f = depth / ShadeFade;
+        return (Vector3.Lerp(own.Item1, col, f), own.Item2 + (rock - own.Item2) * f);
+    }
+
+    /// <summary>
+    /// Freshly dug ground, in the world's own colours: just under the surface it is the ground's top colour there
+    /// (<paramref name="own"/>: a snowy world digs white, a red one red) with a touch of its dirt, and deeper down it
+    /// turns towards its rock and darkens; darker still under cover. Shared with <see cref="PlanetEdits"/>.
+    /// </summary>
+    public static (Vector3 Color, float Rock) DugShade(TerrainSurface sf, Vector3 own, float depth, bool covered)
+    {
+        var f = Math.Clamp(depth / DugDeep, 0f, 1f);
+        var near = Vector3.Lerp(own, sf.Dirt, DugDirt) * 0.92f;
+        var deep = Vector3.Lerp(own, sf.Rock, DugRock) * 0.78f;
+        var col = Vector3.Lerp(near, deep, f) * (covered ? 0.6f : 1f);
         return (col, Math.Clamp(0.25f + depth / 3f, 0.25f, 1f));
     }
+
+    /// <summary>How much of the world's dirt colour shows just under the surface, and of its rock at <see cref="DugDeep"/> metres down.</summary>
+    public const float DugDirt = 0.2f, DugRock = 0.4f;
+
+    /// <summary>Depth (metres) at which dug ground has turned fully to its deep colour.</summary>
+    public const float DugDeep = 4f;
+
+    /// <summary>Column <paramref name="c"/>'s ground colour as built (made with its cell's top colours, <see cref="EnsureColours"/>).</summary>
+    private Vector3 OwnColour(int c) => c < _ownColour.Length ? _ownColour[c] : _t.Surface.Grass;
 
     /// <summary>The surface's own colour at a column (its nearest terrain sample), for the undug tops of a dug cell; an island's top (<paramref name="top"/> finite) by the surface rules at its height.</summary>
     private (Vector3, float) SurfaceColour(int ci, int cj, float top)

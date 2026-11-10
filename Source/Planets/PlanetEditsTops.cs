@@ -16,6 +16,8 @@ public sealed partial class PlanetEdits
     // Per column: its open top's colour (rgb, rockiness), for drawing; per dug cell: are they made?
     private Vector4[] _topColour = [];
     private bool[] _coloursMade = [];
+    // Per column: the ground's own colour there as built (made with the top colours), which dug faces start from.
+    private Vector3[] _ownColour = [];
 
     private int CellOrdinal(int first) => first / (Sub * Sub);
 
@@ -28,6 +30,7 @@ public sealed partial class PlanetEdits
         Array.Resize(ref _topsMade, cells);
         Array.Resize(ref _cornerBase, cells * vs * vs);
         Array.Resize(ref _topColour, _spans.Length);
+        Array.Resize(ref _ownColour, _spans.Length);
         Array.Resize(ref _coloursMade, cells);
     }
 
@@ -63,12 +66,16 @@ public sealed partial class PlanetEdits
         var ord = CellOrdinal(first);
         if (ord < _coloursMade.Length && _coloursMade[ord])
             return;
+        // The ground's own colour at the cell's corners, as the planetoid draws it, and across the cell between them.
+        Vector4 g00 = GroundColour(face, i, j), g10 = GroundColour(face, i + 1, j), g01 = GroundColour(face, i, j + 1), g11 = GroundColour(face, i + 1, j + 1);
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
         {
             var c = first + b * Sub + a;
-            ColDir(face, i * Sub + a, j * Sub + b, out var x, out var y, out var z);
-            var (col, rock) = TopShade(c, x, y, z, _spans[c][_count[c] * 2 - 1], false);
+            float u = (a + 0.5f) / Sub, v = (b + 0.5f) / Sub;
+            var own = Vector4.Lerp(Vector4.Lerp(g00, g10, u), Vector4.Lerp(g01, g11, u), v);
+            _ownColour[c] = new Vector3(own.X, own.Y, own.Z);
+            var (col, rock) = TopShade(c, own, _spans[c][_count[c] * 2 - 1]);
             _topColour[c] = new Vector4(col, Math.Clamp(rock, 0f, 1f));
         }
         _coloursMade[ord] = true;
@@ -134,6 +141,14 @@ public sealed partial class PlanetEdits
                 _tops[c * GroundTops.Stride + 3 - k] = kind[k] == GroundTops.Dug ? h[k] : _spans[c][_count[c] * 2 - 1];
                 _tops[c * GroundTops.Stride + 4] = _spans[c][_count[c] * 2 - 1];
             }
+        }
+        for (var c = first; c < first + Sub * Sub; c++)
+        {
+            var t = new Span<float>(_tops, c * GroundTops.Stride, GroundTops.Stride);
+            var own = _spans[c][_count[c] * 2 - 1];
+            var floor = MathF.Max(_spans[c][_count[c] * 2 - 2], _inner);
+            if (own > floor)
+                t[4] = GroundTops.Middle(t, own, MathF.Min(floor + TerrainEdits.MinSpan, own));
         }
         _topsMade[ord] = true;
     }

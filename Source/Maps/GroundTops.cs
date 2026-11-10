@@ -26,11 +26,15 @@ namespace CallOfSlop;
 /// </summary>
 public static class GroundTops
 {
-    /// <summary>Columns whose changes differ by no more than this (metres) share one height at their corner: one sloping surface.</summary>
-    public const float Near = 1f;
+    /// <summary>
+    /// Columns whose changes differ by no more than this (metres) share one height at their corner: one sloping surface.
+    /// It takes in the steepest step a blast leaves (a crater's side after several blasts in one place, the rim of a very
+    /// big one): at 1 m those sides were bars and blocks.
+    /// </summary>
+    public const float Near = 4f;
 
-    /// <summary>Columns whose changes differ by this (metres) or more don't lean towards each other at all: a shaft, a trench's side, a cut bank.</summary>
-    public const float Far = 2f;
+    /// <summary>Columns whose changes differ by this (metres) or more don't lean towards each other at all: a deep shaft, a cutting's side.</summary>
+    public const float Far = 8f;
 
     /// <summary>How much a column whose change differs by <paramref name="d"/> (metres, not negative) counts in another's corner height: 1 one surface, 0 a wall.</summary>
     public static float Weight(float d) => d <= Near ? 1f : d < Far ? (Far - d) / (Far - Near) : 0f;
@@ -110,12 +114,27 @@ public static class GroundTops
         }
     }
 
+    /// <summary>How far (metres) a column's middle may stand over or under the mean of its corners: half a column, a 45 degree point at most.</summary>
+    public const float MiddleSlack = 0.25f;
+
+    /// <summary>
+    /// A column's middle, given its corners (the first four of <paramref name="t"/>), its span's top and the lowest its top
+    /// may go: the span's top, but no more than <see cref="MiddleSlack"/> from the mean of its corners. So one column left
+    /// standing in a crater (or one bored down alone) is a low bump or a dimple and not a spike, and a column on a steep
+    /// side is a plain ramp and not a tooth.
+    /// </summary>
+    public static float Middle(ReadOnlySpan<float> t, float top, float floor)
+    {
+        var mean = (t[0] + t[1] + t[2] + t[3]) * 0.25f;
+        return MathF.Max(Math.Clamp(top, mean - MiddleSlack, mean + MiddleSlack), floor);
+    }
+
     /// <summary>Floats a column's top takes: its four corner heights (0,0), (1,0), (0,1), (1,1), then its middle's (the top of its highest span).</summary>
     public const int Stride = 5;
 
     /// <summary>
-    /// Is a column's top a fan of four triangles round its middle? Its middle is always the top of its span, so the ground
-    /// is where the spans say at every column's middle, and a lone heap or pit keeps its height. Where the middle already
+    /// Is a column's top a fan of four triangles round its middle (<see cref="Middle"/>: the top of its span wherever
+    /// that is no spike)? Where the middle already
     /// lies on the line between corners (0,0) and (1,1) (within a centimetre: ground as built, a level pad, an even slope)
     /// two triangles split along that line do, the way the map's own cells are split.
     /// </summary>

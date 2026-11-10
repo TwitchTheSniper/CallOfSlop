@@ -45,19 +45,33 @@ out from the spans, the same on every peer.
 
 - **Corner heights.** At every corner where four columns meet, each dug column's top gets a height: the ground as built
   at the corner plus a weighted mean of how far the columns there have been dug or filled (top now less top as built).
-  A column whose change is within `Near` (1 m) of this one's weighs fully, so they share the height: one sloping
-  surface. At `Far` (2 m) apart it weighs nothing: a wall, as before. In between the wall shrinks. Only columns whose
+  A column whose change is within `Near` (4 m) of this one's weighs fully, so they share the height: one sloping
+  surface. At `Far` (8 m) apart it weighs nothing: a wall (a deep shaft, a cutting's side). In between the wall
+  shrinks. `Near` takes in the steepest step a blast leaves (the side of a crater made by several blasts, the rim of a
+  very big one): at 1 m and 2 m those sides were bars and blocks. Only columns whose
   top spans stand side by side count (not a ledge over another's floor). Untouched ground at the corner pulls the top
   to its own surface, so a dug cell meets the map's ground with no wall and ground nobody changed is exactly the map's.
 - **A column's top** is two triangles between its four corners where its middle lies on their diagonal (ground as
-  built, a level pad, an even slope), else a fan of four round its middle, which stays at the span's top. So the
-  ground is where the spans say at every column's middle: a drill's hole is as deep and a heap as big as before.
+  built, a level pad, an even slope), else a fan of four round its middle. The middle is the span's top, held within
+  25 cm of the mean of its corners (`GroundTops.Middle`): the ground is where the spans say at a column's middle, so a
+  drill's hole is as deep and a heap as big as before, but one column left standing in a crater (or bored down alone)
+  is a low bump and not a spike, and a column on a steep side is a plain ramp and not a tooth.
+- **A dug border makes its neighbours dug cells.** When a dig takes ground from a column on its cell's border, the
+  cells beside it become dug cells too, still the ground as built (`TouchBeside`). The hole's side then runs out across
+  the border as a slope; held to the untouched cell's edge it drew every hole's outline in 2 m squares.
 - **Walls** between columns are drawn from the two tops' edges, whatever is left between them.
 - **Filled ground stays walkable.** Where a fill's step was one a player could walk up (0.55 m), its top slopes at
   most 40 degrees and the rest is a riser of at most 13 cm (`GroundTops.Ease`). Dug slopes are left unbroken, so a
   bowl's side reads as one surface; a side too steep to walk slides a player, as steep terrain does.
 - **Shading.** Corners that share a height share a normal and a colour (grass blends into dirt), so a bowl shades
-  round. Colours are kept per dug cell and collision never asks for them.
+  round. A cut shallower than 0.6 m fades from the surface's own colour (`TerrainEdits.ShadeFade`), so a hole's edge
+  has no hard line round it. Dug ground draws with the dirt texture for its rock layer too: the map's rock layer has
+  slab lines, which ran across every crater. Colours are kept per dug cell and collision never asks for them.
+- **Dug ground is the world's colour** (`TerrainEdits.DugShade`, used by planetoids too). Each column remembers the
+  ground's own colour there as built (grass, snow, sand: whatever its top drew), and a dug face starts from it with a
+  fifth of the world's dirt colour, turning towards its rock (`DugRock` 0.4) and darker by `DugDeep` (4 m) down. So a
+  snowy world digs white to blue-grey and a green one green to grey-green, not the map's dirt and rock alone. Fills
+  still draw as what they were made of.
 - **Kept per dug cell** (five floats a column plus the as-built corners), made on first use and forgotten when the cell
   or one next to it changes (`Bump`). The arrays grow with the columns, so a query never allocates.
 - **Level still:** floating islands' columns and the columns along a smoothed rim on flat maps. On a planetoid a tall
@@ -120,8 +134,11 @@ A planetoid digs too, with radial columns instead of vertical ones (`Source/Plan
   gets the match's whole log. The ops use no trigonometry, so every peer ends with the same ground. Only ops that
   changed something are logged, up to `MaxOps` (65,536).
 - **Restore.** `Map.RestoreProps` (every match) fills the ground in again.
-- **Overhangs stay.** A second blast lower in a crater cuts under the first one's rim and leaves a lip; digging through
-  is the point, so it stays. A gap too low to stand in is a wall for a standing player (crouch to go in): the classic
+- **Craters are open upwards; a drill's overhangs stay.** A crater takes its flattened ball and everything up to a
+  radius over the blast, and a roof left over that which is thinner than the radius falls in with it
+  (`TerrainEdits.CraterTop`). So a second blast lower in a crater leaves no lip hanging over the new hole (those lips
+  were the blocks and spikes round a crater made by several blasts); a roof thicker than the blast's radius stands. A
+  drill's scoop is a plain ball: tunnels and overhangs are dug with it, and they stay. A gap too low to stand in is a wall for a standing player (crouch to go in): the classic
   mover checks the head over the whole footprint (`TerrainHeadroom.Over`) when walking, jumping and climbing, and
   `PhysicsWorld.OverlapBody` (room to stand, mantle targets) does too. Two blasts in one spot can leave a pit with walls
   taller than a mantle (1.7 m). "Terrain digging" (`DigCraterEscape`) checks no head ever goes into the ground with

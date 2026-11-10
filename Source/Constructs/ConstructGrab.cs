@@ -379,6 +379,36 @@ public static class ConstructGrab
         return q;
     }
 
+    /// <summary>The snap uses a construct within <see cref="SnapNear"/> instead of the world (off: the user's default, 2026-11-10).</summary>
+    public static bool SnapToNearby;
+
+    /// <summary>
+    /// The world's axes as gravity has them at <paramref name="at"/>: identity where up is +Y; inside a gravity generator's
+    /// box or on a round world, the map's axes turned the short way so that Y is up there (a snapped piece sits level on
+    /// the local ground).
+    /// </summary>
+    public static Quaternion GravityFrame(Vector3 at)
+    {
+        Vector3 up;
+        if (GravityFrames.VolumeGravity(at, out var g) && g.LengthSquared() > 1e-6f)
+            up = -Vector3.Normalize(g);
+        else if (GravityFrames.PlainUpAt(at))
+            return Quaternion.Identity;
+        else
+        {
+            var x = GravityFrames.ToWorld(at, Vector3.UnitX);
+            var y = GravityFrames.ToWorld(at, Vector3.UnitY);
+            var z = GravityFrames.ToWorld(at, Vector3.UnitZ);
+            return Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+        }
+        var d = Vector3.Dot(Vector3.UnitY, up);
+        if (d > 0.99999f)
+            return Quaternion.Identity;
+        if (d < -0.99999f)
+            return Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI);
+        return Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.Normalize(Vector3.Cross(Vector3.UnitY, up)), MathF.Acos(d)));
+    }
+
     /// <summary>
     /// pw01: how close another construct must be (m between their bounds) for the snap to use its axes instead of the world's.
     /// The nearest other (not loose) construct to <paramref name="held"/> within that, or null (the world's axes).

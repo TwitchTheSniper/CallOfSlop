@@ -123,7 +123,7 @@ public sealed partial class Game
             b.Leaving = leaving;
             var gone = !on || a.Dead || !(ag.Where(a.Entity) == place || StoryArriving(s, a, place, clock) || leaving);
             if (!gone && leaving && Flat2(p.Position - StoryRoadEnd(s, ref b, a.Doing.Place)) < 3f * 3f)
-                gone = true; // (at the road's end: off they go)
+                gone = StandInMayBoard(a.Entity); // (at the road's end: off they go; STAND-IN: once their craft has landed, Source/StandIns)
             if (gone)
             {
                 Console.WriteLine($"[story] {p.Name}: the body goes ({(a.Dead ? "dead" : !on ? "bodies off" : leaving ? "off by the road" : "no longer here")})");

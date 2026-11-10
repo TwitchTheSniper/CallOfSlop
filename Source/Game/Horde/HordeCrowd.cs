@@ -333,6 +333,22 @@ public sealed partial class HordeCrowd
 
     public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 1 + 4 + 8 + 4 + 8 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
 
+    /// <summary>
+    /// Can a crowd on <paramref name="map"/> hold zombies at (x, z)? Not on a round world (a planetoid or point gravity: the
+    /// crowd's ground is a plane), and only inside the grid <see cref="Setup"/> lays from the map's west and north edges
+    /// (at most 1,024 flow cells a side, about 2 km: a bigger map's middle is past it). docs/zombies/MASS-HORDE.md, "On
+    /// Sandbox maps".
+    /// </summary>
+    public static bool Covers(Map map, CrowdTuning tuning, float x, float z)
+    {
+        if (map.Planetoid != null || map.PointGravity != null)
+            return false;
+        var cell = MathF.Max(0.5f, tuning.FlowCell);
+        var w = Math.Clamp((int)MathF.Ceiling(map.HalfX * 2 / cell), 1, 1024) * cell;
+        var h = Math.Clamp((int)MathF.Ceiling(map.HalfZ * 2 / cell), 1, 1024) * cell;
+        return x >= -map.HalfX && z >= -map.HalfZ && x < -map.HalfX + w && z < -map.HalfZ + h;
+    }
+
     /// <summary>Sizes everything for the map (once per map: the walkable cells, by probing the floor) and for <paramref name="capacity"/> particles.</summary>
     public void Setup(Map map, float floorY, int capacity)
     {

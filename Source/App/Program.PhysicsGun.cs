@@ -55,7 +55,7 @@ public static partial class Program
 
     /// <summary>
     /// Shift + F + mouse (pw01): the piece's WORLD turn (the look's yaw times its turn relative to it) snaps to 45 degree
-    /// steps about the world's axes (or those of a construct within 2 m: "snap: name"), and a whole step of mouse movement
+    /// steps about the world's axes (the player's gravity frame: PhysGunSnapSetup), and a whole step of mouse movement
     /// turns it one step about the frame's up (left/right) or the frame's horizontal axis nearest the look's right (up/down).
     /// </summary>
     private static void PhysGunSnapTurn(Game g, float dyaw, float dpitch)
@@ -87,20 +87,31 @@ public static partial class Program
         _pgRel = ConstructGrab.RelOf(yaw, _pgSnapWorld);
     }
 
-    /// <summary>The frame to snap in: the nearest other construct within 2 m, else the world (and the hint line says which).</summary>
+    /// <summary>
+    /// The frame to snap in (user, 2026-11-10: the world by default, so two pieces snapped apart line up with each other).
+    /// "The world" is the player's current gravity frame: the construct they ride (its deck is their floor), else a gravity
+    /// generator's or the planet's up where the piece is, else the map's own axes. A construct within 2 m is used only with
+    /// <see cref="ConstructGrab.SnapToNearby"/> on. The hint line says which.
+    /// </summary>
     private static void PhysGunSnapSetup(Game g)
     {
-        var held = g.SandboxHands.Hand(g.LocalId).GrabBody;
+        var hand = g.SandboxHands.Hand(g.LocalId);
+        var held = hand.GrabBody;
         var c = held != 0 ? g.Constructs.Get(held) : null;
-        var reference = c != null ? ConstructGrab.SnapReference(g.Constructs, c) : null;
+        var ride = hand.RideBody != 0 ? g.Constructs.Get(hand.RideBody) : null;
+        var reference = ride ?? (c != null && ConstructGrab.SnapToNearby ? ConstructGrab.SnapReference(g.Constructs, c) : null);
         if (_pgSnapLock && reference != _pgSnapRef)
             reference = _pgSnapRef; // (the frame stays what it was while the lock holds, so the turn doesn't jump)
-        if (reference != _pgSnapRef || g.SandboxSnapLabel == null)
+        var fresh = reference != _pgSnapRef || g.SandboxSnapLabel == null;
+        if (fresh)
         {
             _pgSnapRef = reference;
-            g.SandboxSnapLabel = reference == null ? "snap: world" : $"snap: construct {reference.Id}";
+            g.SandboxSnapLabel = reference == null ? "snap: world" : reference == ride ? "snap: deck" : $"snap: construct {reference.Id}";
         }
-        _pgSnapFrame = reference?.Rot ?? Quaternion.Identity;
+        if (reference != null)
+            _pgSnapFrame = reference.Rot; // (a ridden or nearby construct turns: its axes are followed)
+        else if (fresh || !_pgSnapLock)
+            _pgSnapFrame = ConstructGrab.GravityFrame(c?.WorldCom ?? (g.Players.TryGetValue(g.LocalId, out var me) ? me.Position : Vector3.Zero));
     }
 
     /// <summary>Every frame while holding: Shift still down after a snapped turn keeps the piece's world turn as the view turns.</summary>

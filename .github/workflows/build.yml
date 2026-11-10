@@ -14,6 +14,12 @@ name: Build and self-test
 # them, any case, a prefix picks every section starting with it). A manual run takes the same list in its "tests" input.
 # main (pushes and manual runs) and release.yml ALWAYS run the full suite and ignore the tag, so a filtered run can never
 # make main look green; a main run whose log says FILTERED fails.
+#
+# Shards: a full suite runs as SHARDS jobs side by side on each system ("linux (2)" is part 2), each running its part of
+# the suite (CallOfSlop --selftest-shard K/N: the long sections dealt out by cost, then every N-th section from the K-th,
+# plus the sections those need), so a run takes about as long as its slowest part instead of the sum. The suite passed
+# when every part did. A filtered run is one job, "linux (0)".
+# To change the number of parts, change SHARDS in the "plan" job: nothing else names it.
 on:
   push:
     paths-ignore:
@@ -29,15 +35,57 @@ on:
 
 concurrency:
   # Branch pushes cancel the previous run of the same branch (only the newest matters). On main every run completes:
-  # a merge must not cancel the full suite of the merge before it, or main never shows a green result during a burst
-  # of merges. Manual runs get their own group so they never cancel or get cancelled by a push.
-  group: build-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'push' }}
+  # a merge must not cancel the full suite of the merge before it, or nobody can tell which merge broke main. So a main
+  # run gets a group of its own, like a manual run: with one shared group and cancel-in-progress off, GitHub still keeps
+  # only ONE waiting run per group and cancels the older waiting ones, which threw away most of main's runs during a
+  # burst of merges (27 of 40 on 2026-11-10). Runs on main now go side by side instead of queueing.
+  group: build-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || 'push' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  # What this run runs: the self-test filter (if any) and the shard list both systems' jobs fan out over.
+  plan:
+    runs-on: ubuntu-latest
+    env:
+      SHARDS: 4 # parts a full suite is cut into, per system
+    outputs:
+      only: ${{ steps.pick.outputs.only }}
+      shards: ${{ steps.pick.outputs.shards }}
+      of: ${{ steps.pick.outputs.of }}
+    steps:
+      - name: Pick self-test sections
+        id: pick
+        shell: bash
+        env:
+          HEAD_MSG: ${{ github.event.head_commit.message }}
+          INPUT_TESTS: ${{ inputs.tests }}
+        run: |
+          # The [tests: ...] tag (branch pushes) or the "tests" input (manual runs); main always gets the full suite.
+          tag=$(printf '%s' "$HEAD_MSG" | grep -oiE '\[tests:[^]]*\]' | head -1 || true)
+          only=""
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            if [ -n "$tag$INPUT_TESTS" ]; then echo "::notice title=Self-test filter::main always runs the full suite (tests tag/input ignored)"; fi
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            only="$INPUT_TESTS"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [[ "$GITHUB_REF" == refs/heads/* ]]; then
+            only=$(printf '%s' "$tag" | sed -E 's/^\[[Tt][Ee][Ss][Tt][Ss]:[[:space:]]*//; s/[[:space:]]*\]$//')
+          fi
+          only=$(printf '%s' "$only" | tr -d '\r\n"')
+          if [ -n "$only" ]; then echo "::notice title=Self-test filter::FILTERED run, sections: $only (main still runs the full suite)"; fi
+          echo "only=$only" >> "$GITHUB_OUTPUT"
+          # A full suite fans out over SHARDS jobs; a filtered run is one job (shard 0 = not sharded).
+          if [ -n "$only" ]; then shards="[0]"; else shards="[$(seq -s, 1 "$SHARDS")]"; fi
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+          echo "of=$SHARDS" >> "$GITHUB_OUTPUT"
+
   # Linux: every push to main, every branch push without [windows ci], and manual runs. Same build and self-test as Windows.
   linux:
+    needs: plan
     if: ${{ github.ref == 'refs/heads/main' || !contains(github.event.head_commit.message, '[windows ci]') }}
+    strategy:
+      fail-fast: false # every part reports: one part's failure says nothing about the others
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -62,6 +110,7 @@ jobs:
       # (plain Python, no libraries). Skipped when no map changed. Well under 30 s: a plan takes about 0.1 s.
       - name: Map plans
         id: plans
+        if: matrix.shard <= 1 # once a run, not once a part
         shell: bash
         env:
           BEFORE: ${{ github.event.before }}
@@ -102,36 +151,18 @@ jobs:
           path: map-plans/*.png
           if-no-files-found: ignore
 
-      - name: Pick self-test sections
-        id: pick
-        shell: bash
-        env:
-          HEAD_MSG: ${{ github.event.head_commit.message }}
-          INPUT_TESTS: ${{ inputs.tests }}
-        run: |
-          # The [tests: ...] tag (branch pushes) or the "tests" input (manual runs); main always gets the full suite.
-          tag=$(printf '%s' "$HEAD_MSG" | grep -oiE '\[tests:[^]]*\]' | head -1 || true)
-          only=""
-          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            if [ -n "$tag$INPUT_TESTS" ]; then echo "::notice title=Self-test filter::main always runs the full suite (tests tag/input ignored)"; fi
-          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            only="$INPUT_TESTS"
-          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [[ "$GITHUB_REF" == refs/heads/* ]]; then
-            only=$(printf '%s' "$tag" | sed -E 's/^\[[Tt][Ee][Ss][Tt][Ss]:[[:space:]]*//; s/[[:space:]]*\]$//')
-          fi
-          only=$(printf '%s' "$only" | tr -d '\r\n"')
-          if [ -n "$only" ]; then echo "::notice title=Self-test filter::FILTERED run, sections: $only (main still runs the full suite)"; fi
-          echo "only=$only" >> "$GITHUB_OUTPUT"
-
       - name: Self-test
         shell: bash
         env:
-          ONLY: ${{ steps.pick.outputs.only }}
+          ONLY: ${{ needs.plan.outputs.only }}
+          SHARD: ${{ matrix.shard != 0 && format('{0}/{1}', matrix.shard, needs.plan.outputs.of) || '' }}
         run: |
           dir=bin/Release/net10.0
           set +e
           if [ -n "$ONLY" ]; then
             timeout 1800 dotnet "$dir/CallOfSlop.dll" --selftest-only "$ONLY"
+          elif [ -n "$SHARD" ]; then
+            timeout 1800 dotnet "$dir/CallOfSlop.dll" --selftest-shard "$SHARD"
           else
             timeout 1800 dotnet "$dir/CallOfSlop.dll" --selftest
           fi
@@ -170,7 +201,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: selftest-logs-linux
+          name: selftest-logs-linux${{ matrix.shard != 0 && format('-{0}', matrix.shard) || '' }}
           path: |
             bin/Release/net10.0/selftest.log
             bin/Release/net10.0/callofslop.log
@@ -179,7 +210,12 @@ jobs:
 
   # Windows: every push to main, a branch commit message with the tag (windows ci in brackets), or a manual run.
   windows:
+    needs: plan
     if: ${{ github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[windows ci]') || github.event_name == 'workflow_dispatch' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -199,35 +235,15 @@ jobs:
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo
 
-      - name: Pick self-test sections
-        id: pick
-        shell: bash
-        env:
-          HEAD_MSG: ${{ github.event.head_commit.message }}
-          INPUT_TESTS: ${{ inputs.tests }}
-        run: |
-          # The [tests: ...] tag (branch pushes) or the "tests" input (manual runs); main always gets the full suite.
-          tag=$(printf '%s' "$HEAD_MSG" | grep -oiE '\[tests:[^]]*\]' | head -1 || true)
-          only=""
-          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            if [ -n "$tag$INPUT_TESTS" ]; then echo "::notice title=Self-test filter::main always runs the full suite (tests tag/input ignored)"; fi
-          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            only="$INPUT_TESTS"
-          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [[ "$GITHUB_REF" == refs/heads/* ]]; then
-            only=$(printf '%s' "$tag" | sed -E 's/^\[[Tt][Ee][Ss][Tt][Ss]:[[:space:]]*//; s/[[:space:]]*\]$//')
-          fi
-          only=$(printf '%s' "$only" | tr -d '\r\n"')
-          if [ -n "$only" ]; then echo "::notice title=Self-test filter::FILTERED run, sections: $only (main still runs the full suite)"; fi
-          echo "only=$only" >> "$GITHUB_OUTPUT"
-
       - name: Self-test
         shell: pwsh
         env:
-          ONLY: ${{ steps.pick.outputs.only }}
+          ONLY: ${{ needs.plan.outputs.only }}
+          SHARD: ${{ matrix.shard != 0 && format('{0}/{1}', matrix.shard, needs.plan.outputs.of) || '' }}
         run: |
           # CallOfSlop.exe is a windowed app, so wait for it explicitly and read its exit code (= failure count).
           $dir = "bin/Release/net10.0"
-          $argv = if ("$env:ONLY" -ne "") { "--selftest-only `"$env:ONLY`"" } else { "--selftest" }
+          $argv = if ("$env:ONLY" -ne "") { "--selftest-only `"$env:ONLY`"" } elseif ("$env:SHARD" -ne "") { "--selftest-shard $env:SHARD" } else { "--selftest" }
           $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList $argv -Wait -PassThru -NoNewWindow
           $code = $p.ExitCode
           $log = "$dir/selftest.log"
@@ -258,7 +274,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: selftest-logs
+          name: selftest-logs${{ matrix.shard != 0 && format('-{0}', matrix.shard) || '' }}
           path: |
             bin/Release/net10.0/selftest.log
             bin/Release/net10.0/callofslop.log
