@@ -13,6 +13,10 @@
     "garageWall": "Steel Garage Wall 4 m",
     "hinge": "Door Hinge",
     "door": "Steel Flush Door 1.5x2.25 m",
+    "swingDoor": "Steel Swing Door 1.5x2.25 m",
+    "bulkheadDoor": "Bulkhead Door 1.5x2.25 m",
+    "doubleDoorL": "Steel Double Door L 1.5x2.25 m",
+    "doubleDoorR": "Steel Double Door R 1.5x2.25 m",
     "adapter": "Adapter Capital to Small",
     "panels": ["Steel Panel Wall 16 m", "Steel Panel Wall 12 m", "Steel Panel Wall 8 m", "Steel Panel Wall 4 m"]
   },
