@@ -36,6 +36,8 @@ public static partial class SelfTest
         };
 
     private static float CfgMax(ConstructPartDef d, CfgKey k) => d.CfgSlot[(int)k] is var s and >= 0 ? d.Config[s].Max : float.NaN;
+    /// <summary>A rotary joint's rated speed when its speed runs from stopped to twice rated (the panel's -100%..+100%), else 0.</summary>
+    private static float CfgRated(ConstructPartDef d) => d.CfgSlot[(int)CfgKey.Speed] is var s and >= 0 ? d.Config[s].Rated : 0;
     private static float CfgMin(ConstructPartDef d, CfgKey k) => d.CfgSlot[(int)k] is var s and >= 0 ? d.Config[s].Min : float.NaN;
 
     /// <summary>Every family has its nine sizes; width raises the rating, length the stroke (pistons) or speed; mass, health and power grow with size.</summary>
@@ -57,7 +59,7 @@ public static partial class SelfTest
                     n++;
                     if (d.Role != PartRole.Joint || d.OverloadDamage != 0 || !(d.JointGive > 0))
                         bad.Add($"{d.Name}: not a joint, overload damage on, or no give");
-                    if (!(CfgMin(d, CfgKey.Strength) > 0) || !(CfgMin(d, CfgKey.Speed) > 0) || d.MotorStrength > CfgMax(d, CfgKey.Strength) || d.MotorSpeed * (d.JointType == JointType.Piston ? 1 : 180 / MathF.PI) > CfgMax(d, CfgKey.Speed) + 0.01f)
+                    if (!(CfgMin(d, CfgKey.Strength) > 0) || !(CfgMin(d, CfgKey.Speed) > 0 || CfgMin(d, CfgKey.Speed) == 0 && CfgRated(d) > 0) || d.MotorStrength > CfgMax(d, CfgKey.Strength) || d.MotorSpeed * (d.JointType == JointType.Piston ? 1 : 180 / MathF.PI) > CfgMax(d, CfgKey.Speed) + 0.01f)
                         bad.Add($"{d.Name}: its default strength or speed is outside its configure range");
                     if (w > 1 && ActuatorSize(family, w - 1, l) is { } thin)
                     {

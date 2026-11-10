@@ -133,7 +133,7 @@ public sealed partial class Ui
             var shrink = wide > room && room > 0;
             if (shrink)
                 ImGui.PushFont(default, ImGui.GetStyle().FontSizeBase * MathF.Max(room / wide * 0.9f, 0.5f)); // (0.9: a pixel font's advances round up at small sizes)
-            ImGui.TextColored(Dim, Credits);
+            ImGuiSafe.TextColored(Dim, Credits);
             if (shrink)
                 ImGui.PopFont();
         }
@@ -683,7 +683,7 @@ public sealed partial class Ui
             if (Keybinds.ClashAt(s.Binds, i) >= 0)
                 clashes++;
         if (clashes > 0)
-            ImGui.TextColored(Red, $"{clashes} binding(s) share a key with another action live at the same time (in red): both act on that key.");
+            ImGuiSafe.TextColored(Red, $"{clashes} binding(s) share a key with another action live at the same time (in red): both act on that key.");
         if (ImGui.BeginTable("##binds"u8, 1 + Keybinds.Slots, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
         {
             ImGui.TableSetupColumn("Action"u8, ImGuiTableColumnFlags.WidthStretch);
