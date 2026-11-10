@@ -423,7 +423,7 @@ public static class InteriorPlanner
         p.Entries.Insert(1, new PlanEntry(0, p.W - 1, p.SpineZ0, "spine end"));
     }
 
-    /// <summary>Rooms a walker reaches from outside: the lowest deck's spine ends are open, doors join rooms, stairs join decks (elevators are only reserved in phase 1).</summary>
+    /// <summary>Rooms a walker reaches from outside: the lowest deck's spine ends are open, doors join rooms, stairs and the freight lift join decks.</summary>
     private static HashSet<int> Reached(InteriorPlan p)
     {
         var seen = new HashSet<int>();
@@ -457,8 +457,8 @@ public static class InteriorPlanner
                 else if (other >= 0 && seen.Add(other))
                     q.Enqueue(other);
             }
-            if (r.Shaft == "stairs")
-                foreach (var o in p.Rooms.Where(o => o.Shaft == "stairs" && o.Rect == r.Rect && Math.Abs(o.Deck - r.Deck) == 1))
+            if (r.Shaft != null) // (stairs, and the freight lift: the builder runs one between two decks)
+                foreach (var o in p.Rooms.Where(o => o.Shaft == r.Shaft && o.Rect == r.Rect && Math.Abs(o.Deck - r.Deck) == 1))
                     if (seen.Add(o.Id))
                         q.Enqueue(o.Id);
         }
