@@ -183,7 +183,7 @@ public static class EngineKit
     }
 
     /// <summary>
-    /// A plan's size as built, from the pieces' shapes (engine_parts.py): the crank 0.5 m a section along z and 0.5 square, a cylinder 0.75 m out from its 0.25 m
+    /// A plan's size as built, from the pieces' shapes (the part kit's EngineParts): the crank 0.5 m a section along z and 0.5 square, a cylinder 0.75 m out from its 0.25 m
     /// socket, a fuel system or outlet 0.25 m on the head and a booster 0.25 m on that, the flywheel 0.9 m across and 0.4 m past the crank's end, a starter
     /// 0.32 m out on a free side; all times the size's scale. The kit measures the built one again.
     /// </summary>

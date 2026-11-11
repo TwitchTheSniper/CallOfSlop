@@ -205,7 +205,5 @@ and a bigger tank. That is the next step for the fast shapes; no shipped part wa
 4. **Gearing for fast vehicles.** The Automatic Gearbox's top gear (1.7) with a 4.1-4.6 final drive allows 39-54 m/s; enough for
    35 m/s cars. Its upshift waits for 90% of the limiter, past the petrol peak: a kit car could set its own.
 5. **Faction flavour.** Only `Paint` today; a style could prefer layouts (a Bandit's exposed V, a Highland inline) by scoring.
-6. **Retiring engine_parts.py.** The Python still writes the 40 plain pieces and `ModularEngine.json`. Port its ten models and the
-   `SIZES` table into `EngineKitParts` (boxes, sockets, the z-fight resolve: a C# port of `zfight.resolve` is the larger part), then
-   compare every output byte for byte with `--check` before deleting it. The tier cylinders read the plain cylinder's file, so they
-   follow it until then.
+6. **engine_parts.py is retired.** The part kit's `--gen-parts engine_parts` (`Source/PartKit/Generators/EngineParts.cs`) writes the 40 plain
+   pieces and `ModularEngine.json`, byte for byte as the Python did. The tier cylinders read the plain cylinder's file, so they follow it.

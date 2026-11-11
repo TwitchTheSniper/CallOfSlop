@@ -32,7 +32,7 @@ public static class EngineKitParts
 
     public static readonly string[] Sizes = ["Small", "Medium", "Large", "Capital"];
 
-    /// <summary>The colour of the plain cylinder's head (engine_parts.py's RUST), the box recoloured.</summary>
+    /// <summary>The colour of the plain cylinder's head (the part kit's EngineParts.Rust), the box recoloured.</summary>
     private const string PlainHead = "#7c4a2e";
 
     /// <summary>The part's name for a size and grade ("Small Racing Cylinder"); the plain one for grade null.</summary>
@@ -97,7 +97,7 @@ public static class EngineKitParts
                 heads++;
             }
         if (heads != 1)
-            throw new InvalidOperationException($"{plain}: expected one head box of {PlainHead}, found {heads} (engine_parts.py changed: update EngineKitParts.PlainHead)");
+            throw new InvalidOperationException($"{plain}: expected one head box of {PlainHead}, found {heads} (EngineParts changed: update EngineKitParts.PlainHead)");
         o["boxes"] = boxes;
         o["sockets"] = root["sockets"]!.DeepClone();
         if (root["sizeClass"] is { } sc)
