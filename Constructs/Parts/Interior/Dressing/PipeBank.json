@@ -6,6 +6,7 @@
   "section": "Dressing",
   "role": "frame",
   "tool": "wrench",
+  "finish": "steel",
   "mass": 60.0,
   "health": 200,
   "armour": 3,
@@ -102,7 +103,8 @@
         -0.06,
         0.2
       ],
-      "color": "#7d6b4f"
+      "color": "#c4bda8",
+      "finish": "lagging"
     },
     {
       "min": [
@@ -115,7 +117,8 @@
         -0.04,
         0.218
       ],
-      "color": "#7d6b4f"
+      "color": "#6a737b",
+      "finish": "steel"
     },
     {
       "min": [
@@ -128,7 +131,8 @@
         -0.04,
         0.218
       ],
-      "color": "#7d6b4f"
+      "color": "#6a737b",
+      "finish": "steel"
     },
     {
       "min": [
@@ -141,7 +145,8 @@
         -0.21,
         0.2
       ],
-      "color": "#5f7d6a"
+      "color": "#5f7d6a",
+      "finish": "painted steel"
     },
     {
       "min": [
@@ -154,7 +159,8 @@
         -0.19,
         0.22
       ],
-      "color": "#5f7d6a"
+      "color": "#5f7d6a",
+      "finish": "painted steel"
     },
     {
       "min": [
@@ -167,7 +173,8 @@
         -0.19,
         0.22
       ],
-      "color": "#5f7d6a"
+      "color": "#5f7d6a",
+      "finish": "painted steel"
     },
     {
       "min": [
@@ -180,7 +187,8 @@
         -0.36,
         0.2
       ],
-      "color": "#6a737b"
+      "color": "#6a737b",
+      "finish": "steel"
     },
     {
       "min": [
@@ -193,7 +201,8 @@
         -0.34,
         0.218
       ],
-      "color": "#6a737b"
+      "color": "#6a737b",
+      "finish": "steel"
     },
     {
       "min": [
@@ -206,7 +215,8 @@
         -0.34,
         0.218
       ],
-      "color": "#6a737b"
+      "color": "#6a737b",
+      "finish": "steel"
     }
   ],
   "sockets": [

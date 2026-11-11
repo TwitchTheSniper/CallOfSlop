@@ -6,6 +6,7 @@
   "section": "Dressing",
   "role": "frame",
   "tool": "wrench",
+  "finish": "dirty steel",
   "mass": 40.0,
   "health": 200,
   "armour": 4,

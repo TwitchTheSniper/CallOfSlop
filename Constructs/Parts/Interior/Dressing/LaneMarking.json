@@ -1,0 +1,55 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lane Marking",
+  "description": "Painted walkway lines 3.6 m long, with the scuffed lane between them. Trim.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "hazard paint",
+  "mass": 3.0,
+  "health": 30,
+  "armour": 1,
+  "material": "steel",
+  "color": "#d9b23a",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -1.8,
+        0.004,
+        -0.68
+      ],
+      "max": [
+        1.8,
+        0.014,
+        -0.6
+      ],
+      "color": "#d9b23a"
+    },
+    {
+      "min": [
+        -1.8,
+        0.004,
+        0.6
+      ],
+      "max": [
+        1.8,
+        0.014,
+        0.68
+      ],
+      "color": "#d9b23a"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

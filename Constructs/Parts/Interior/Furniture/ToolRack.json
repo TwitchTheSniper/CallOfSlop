@@ -6,6 +6,7 @@
   "section": "Furniture",
   "role": "storage",
   "tool": "wrench",
+  "finish": "painted steel",
   "mass": 55.0,
   "health": 240,
   "armour": 4,
@@ -109,7 +110,8 @@
         1.8,
         -0.16
       ],
-      "color": "#8a6a40"
+      "color": "#8a6a40",
+      "finish": "wood"
     },
     {
       "min": [
