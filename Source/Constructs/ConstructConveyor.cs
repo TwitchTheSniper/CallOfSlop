@@ -67,7 +67,7 @@ public sealed partial class ConstructWorld
     /// <summary>A piece into a Piece Rack, if it takes it. Server.</summary>
     public bool RackPut(Construct c, int part, ConstructPartDef d)
     {
-        if (StoreOf(c, part) is not { } st || ConstructConveyor.RackRefusal(c, part, st, d) != null)
+        if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d) != 0)
             return false;
         st.AddKind(d.Id, 1);
         LoadChanged = true;
@@ -140,22 +140,22 @@ public static class ConstructConveyor
 
     // ---- The rack ------------------------------------------------------------------------------------------------
 
-    /// <summary>Why a Piece Rack won't take <paramref name="d"/>, or null.</summary>
-    public static string? RackRefusal(Construct c, int part, CStore st, ConstructPartDef d)
+    /// <summary>Whether a Piece Rack takes <paramref name="d"/>: 0, or 1 not a rack, 2 not a piece, 3 too big, 4 full (no text: the step asks every time the lead piece waits).</summary>
+    public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d)
     {
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
-            return "that isn't a Piece Rack";
+            return 1;
         if (!d.IsExtrusion)
-            return $"a {rd.Name} holds pieces off an Extruder or a Former";
+            return 2;
         Size(d, out var across, out var up, out var along);
         var big = MathF.Max(across, up);
         var small = MathF.Min(across, up);
         if (big > MathF.Max(rd.RackSection.X, rd.RackSection.Y) + 0.005f || small > MathF.Min(rd.RackSection.X, rd.RackSection.Y) + 0.005f || along > rd.RackLength + 0.005f)
-            return $"the {rd.Name} holds pieces up to {rd.RackSection.X:0.##} x {rd.RackSection.Y:0.##} x {rd.RackLength:0.##} m";
+            return 3;
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)
-            return $"the {rd.Name} is full ({rd.RackCount} pieces)";
-        return null;
+            return 4;
+        return 0;
     }
 
     /// <summary>A Piece Rack's look line: how many it holds of how many, the last in, and F. Either side, from the store as heard.</summary>
