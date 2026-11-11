@@ -451,7 +451,8 @@ public static class WorkOrders
             line += used;
             shown++;
         }
-        card.ScrollMax = first + shown < q.Count ? Math.Max(first + 1, q.Count - shown) : first;
+        // More below: at least one further; at the end, back up while the rows left over would hold more (an order takes at most two).
+        card.ScrollMax = first + shown < q.Count ? Math.Max(first + 1, q.Count - (end - top)) : Math.Max(0, first - (end - line) / 2);
         return shown;
     }
 
