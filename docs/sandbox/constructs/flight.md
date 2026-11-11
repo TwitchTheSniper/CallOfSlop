@@ -14,7 +14,7 @@ Protocol 176: the recipient's gear in its snapshot (flag 8), the others' canopy 
 
 ## Air and lift
 
-Stage 1 of flight (the design is the project doc `claude/flight.md`). Code: `Source/Constructs/ConstructAir.cs` (the air, the one place flight reads it), `ConstructLift.cs` (cells, gas, burners, lift); numbers: `Constructs/Air.json`; parts: `Constructs/Parts/Air`, the demos `Hot Air Balloon`, `Scout Airship` and `Armoured Airship`, all from `tools/constructs/air_parts.py`.
+Stage 1 of flight (the design is the project doc `claude/flight.md`). Code: `Source/Constructs/ConstructAir.cs` (the air, the one place flight reads it), `ConstructLift.cs` (cells, gas, burners, lift); numbers: `Constructs/Air.json`; parts: `Constructs/Parts/Air`, the demos `Hot Air Balloon`, `Scout Airship` and `Armoured Airship`, all from `Source/PartKit/Generators/AirParts.cs`.
 
 **The air.** `ConstructAir.Density(p)` is 1 at sea level and falls by e every `scaleHeight` (1,200 m). On a planetoid it is 1 at the radius and falls the same way above it; in open space, curved gravity with no planetoid, it is 0 (`HasAir`) and nothing floats. `Wind(p)` is the weather's wind at the player, the low wind turning into the cloud-level wind by `windAloftAt`; with no weather on the map it is zero. `GroundEffect` and `Turbulence` are the hooks for later parts; turbulence already shakes cells near a player in a wind. Rounds' vacuum test goes through `HasAir`. The arcade flight drag keeps its old thinning (`DragShare`), since a planetoid's sky has drag but no lift: the climb out of the bubble flies as it did.
 
@@ -51,7 +51,7 @@ A cell has to lift itself: a soft cube needs about 3.3 m a side, an armoured one
 
 ## Flight control
 
-Code: `Source/Constructs/ConstructFlight.cs` (the loops and the mix, in the logic step), `ConstructEffectors.cs` (what a stabilizer can command), `ConstructFlightPanel.cs` (the panels, the balance sums), `Source/App/Program.SandboxFlight.cs` (a pilot's finger, the markers), `PanelRender.FlightPlot`; parts: `tools/constructs/flight_parts.py`.
+Code: `Source/Constructs/ConstructFlight.cs` (the loops and the mix, in the logic step), `ConstructEffectors.cs` (what a stabilizer can command), `ConstructFlightPanel.cs` (the panels, the balance sums), `Source/App/Program.SandboxFlight.cs` (a pilot's finger, the markers), `PanelRender.FlightPlot`; parts: `Source/PartKit/Generators/FlightParts.cs`.
 
 **A Flight Stabilizer** (small, medium, large, capital) is a logic part with built-in sensors and no need of power. Fit one, level with its arrow forward, and it flies what it finds. **No wiring and no setup:** when the structure changes it looks over its construct for everything it can command and works out, from where each sits and which way it points, the force and torque a unit of command gives. Thrusters, jets, nozzles' gimbals, repulsors, props and rotors with a helicopter's cyclic, control surfaces and its own gyro are commanded; burners and vents are worked by a slow height trim. Each tick it turns the seat's wishes into a demand of three forces and three torques and shares it among them all by least squares, then a few rounds putting back what limits took off, attitude first. Four jets in any spacing, six, a lopsided three, a rotor and a tail rotor, a centre of mass behind the mast: all fly on the same part. A dead or empty effector leaves the mix within half a second. A row nothing can answer is left out and named; a craft leans along any way it has no two-way push for. A rotor on a joint is left to its wires.
 
@@ -85,7 +85,7 @@ Invert pitch swaps W and S. **Settings:** keys, strength, stabilise level (off: 
 
 ## Jets, rockets and repulsors
 
-Code: `Source/Constructs/ConstructBoost.cs`; parts and demos (Jet Hover Platform, Two-Stage Rocket, Hover Car, Anti-Grav Barge): `tools/constructs/boost_parts.py`. All but Anti-Grav and the decoupler are thrusters with a `kind`.
+Code: `Source/Constructs/ConstructBoost.cs`; parts and demos (Jet Hover Platform, Two-Stage Rocket, Hover Car, Anti-Grav Barge): `Source/PartKit/Generators/BoostParts.cs`. All but Anti-Grav and the decoupler are thrusters with a `kind`.
 
 **Turbojets** (`"kind": "air"`): thrust by the air's density, a little more with speed, none below 3% of sea level or in vacuum, nothing out of the bubble. Fuel as any thruster. The old Light, Small, Medium, Large and Capital Jets stay as they are, working anywhere, since the Orbiter and Jumper climb out on them.
 
