@@ -99,7 +99,10 @@ public class BlueprintScript
         public string? Weld, Config;
         public uint Paint;
         public string? Finish; // (a material's name, Materials/Surfaces.json: the texture paint tool's; the interior builder's look, INTERIORS.md phase 12)
+        public string[]? Text; // (a sign's messages, "text")
     }
+
+    private readonly List<string> _bill = new();
 
     public BlueprintScript(string name)
     {
@@ -457,7 +460,11 @@ public class BlueprintScript
     }
 
     /// <summary>A routed link: "pipe", "shaft", "power" or "data", through the linking tool's rules. <paramref name="nodes"/>: the way it goes (vehicle coordinates); none: straight. <paramref name="laid"/>: only its ends and lengths are checked, so it may pass through plates.</summary>
-    public void Link(string type, VPart from, VPart to, string? fromPort = null, string? toPort = null, string? paint = null, bool laid = false, params Vector3[] nodes)
+    public void Link(string type, VPart from, VPart to, string? fromPort = null, string? toPort = null, string? paint = null, bool laid = false, params Vector3[] nodes) =>
+        Link(type, from, to, fromPort, toPort, paint, laid, null, nodes);
+
+    /// <summary>A routed link as above; <paramref name="size"/>: a conveyor's width and height in metres (null: as wide as both ends take).</summary>
+    public void Link(string type, VPart from, VPart to, string? fromPort, string? toPort, string? paint, bool laid, Vector2? size, params Vector3[] nodes)
     {
         using var link = KitProfile.Time(KitProfile.S.Link);
         var text = new StringBuilder($"{{\"type\": \"{type}\", \"from\": {from.Step}, \"to\": {to.Step}");
@@ -469,6 +476,8 @@ public class BlueprintScript
             text.Append(", \"nodes\": [").Append(string.Join(", ", nodes.Select(n => { var r = ToRest(n); return $"[{N(r.X)}, {N(r.Y)}, {N(r.Z)}]"; }))).Append(']');
         if (laid)
             text.Append(", \"laid\": true");
+        if (size is { } sz)
+            text.Append($", \"size\": [{N(sz.X)}, {N(sz.Y)}]");
         if (paint != null)
             text.Append($", \"paint\": \"{paint}\"");
         text.Append('}');
@@ -505,6 +514,28 @@ public class BlueprintScript
             throw new VehicleKitException($"\"{material}\" isn't a material the texture paint tool offers (Materials/Surfaces.json)");
         _steps[p.Step].Finish = material;
         C.Parts[p.Index].Finish = row;
+    }
+
+    /// <summary>A sign's messages (a Text Sign's "text": ASCII, up to 60 characters each).</summary>
+    public void Text(VPart p, params string[] messages)
+    {
+        if (messages.Any(m => m.Length > LogicText.MaxChars || m.Any(ch => ch < 32 || ch > 126)))
+            throw new VehicleKitException($"a sign's message is plain ASCII, up to {LogicText.MaxChars} characters: \"{messages.First(m => m.Length > LogicText.MaxChars || m.Any(ch => ch < 32 || ch > 126))}\"");
+        _steps[p.Step].Text = messages;
+        for (var k = 0; k < messages.Length && k < p.Def.TextSlots; k++)
+            LogicText.Set(ref C.Parts[p.Index], k, messages[k]);
+    }
+
+    /// <summary>A line on a Line Console's bill as it is built (the blueprint's "bill": an order, never material): a piece by its name and how many.</summary>
+    public void Bill(VPart console, string piece, int count)
+    {
+        if (!ProductionLines.IsConsole(console.Def))
+            throw new VehicleKitException($"a bill goes on a Line Console, and a {console.Name} isn't one");
+        if (Extrusion.ParseKey(piece) is not { Growing: false } key)
+            throw new VehicleKitException($"\"{piece}\" isn't a piece's name");
+        if (WorkOrders.AddToBill(World, C, console.Index, new WorkOrder { Key = key, Part = ConstructParts.None, Count = (ushort)count }) is { } why)
+            throw new VehicleKitException($"the bill: {why}");
+        _bill.Add($"{{\"step\": {console.Step}, \"piece\": {Quote(piece)}, \"count\": {count}}}");
     }
 
     /// <summary>A step's settings by key (the configure tool's): the values are written as JSON.</summary>
@@ -641,6 +672,8 @@ public class BlueprintScript
                 sb.Append(", \"paint\": ").Append(Quote(ConstructPaint.ToHex(s.Paint)));
             if (s.Finish != null)
                 sb.Append(", \"finish\": ").Append(Quote(s.Finish));
+            if (s.Text != null)
+                sb.Append(", \"text\": [").Append(string.Join(", ", s.Text.Select(Quote))).Append(']');
             sb.Append(k + 1 < _steps.Count ? "},\n" : "}\n");
         }
         sb.Append("  ]");
@@ -658,6 +691,8 @@ public class BlueprintScript
             sb.Append(",\n  \"loot\": [").Append(string.Join(", ", _loot.Select(l => $"{{\"step\": {l.Step}, \"table\": {Quote(l.Table)}}}"))).Append(']');
         if (_stored.Count > 0)
             sb.Append(",\n  \"stored\": [\n    ").Append(string.Join(",\n    ", _stored.Select(x => $"{{\"step\": {x.Step}, \"slot\": {x.Slot}, \"part\": {Quote(x.Part)}, \"count\": {x.Count}}}"))).Append("\n  ]");
+        if (_bill.Count > 0)
+            sb.Append(",\n  \"bill\": [\n    ").Append(string.Join(",\n    ", _bill)).Append("\n  ]");
         sb.Append("\n}\n");
         return sb.ToString();
     }

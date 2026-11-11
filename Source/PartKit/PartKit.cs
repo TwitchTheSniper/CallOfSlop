@@ -96,6 +96,7 @@ public static class PartKit
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
         new Generators.Assembling(),
+        new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
     ];
 
     public static IPartGenerator? Find(string name) =>

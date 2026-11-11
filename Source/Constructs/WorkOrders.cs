@@ -650,6 +650,39 @@ public static class ConstructBill
         return null;
     }
 
+    /// <summary>
+    /// A blueprint's <c>"bill"</c> line: <c>{"step": n, "piece": "Extrusion l-angle 20x20x150 metal", "count": 3}</c>, a line on the bill of the
+    /// Line Console that step builds (the Production Showcase's). Orders only: a bill holds no material, so survival gets nothing free from it.
+    /// </summary>
+    public static (int Step, ExtrusionKey Key, int Count) ParseLine(System.Text.Json.JsonElement e, string file, int k)
+    {
+        if (e.ValueKind != System.Text.Json.JsonValueKind.Object)
+            throw new ConstructPartException($"{file}: bill[{k}] is {{\"step\", \"piece\", \"count\"}}");
+        int step = -1, count = 1;
+        var piece = "";
+        foreach (var f in e.EnumerateObject())
+            switch (f.Name)
+            {
+                case "step": step = f.Value.GetInt32(); break;
+                case "piece": piece = f.Value.GetString() ?? ""; break;
+                case "count": count = f.Value.GetInt32(); break;
+                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, count)");
+            }
+        if (Extrusion.ParseKey(piece) is not { Growing: false } key || key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe or ExShape.Wheel))
+            throw new ConstructPartException($"{file}: bill[{k}]: \"{piece}\" isn't a piece an Extruder or a Wheel Former makes, like \"Extrusion i-beam 25x25x400 metal\"");
+        if (step < 0 || count < 1 || count > WorkOrders.MaxCount)
+            throw new ConstructPartException($"{file}: bill[{k}]: a step and a count 1 to {WorkOrders.MaxCount}");
+        return (step, key, count);
+    }
+
+    /// <summary>A blueprint's bill line onto the console its step built (<see cref="ConstructBuild.FinishBuild"/>). Null, or why not.</summary>
+    public static string? FromLine(ConstructWorld world, Construct c, (int Step, ExtrusionKey Key, int Count) line, ReadOnlySpan<int> partOf)
+    {
+        if (line.Step >= partOf.Length || partOf[line.Step] < 0 || !ProductionLines.IsConsole(c.DefOf(partOf[line.Step])))
+            return $"step {line.Step} isn't a Line Console";
+        return WorkOrders.AddToBill(world, c, partOf[line.Step], new WorkOrder { Key = line.Key, Part = ConstructParts.None, Count = (ushort)line.Count });
+    }
+
     /// <summary><c>--bill NAME</c>: a blueprint's bill as text.</summary>
     public static int Cli(string name)
     {
