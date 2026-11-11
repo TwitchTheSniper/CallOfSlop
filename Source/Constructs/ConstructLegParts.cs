@@ -27,6 +27,7 @@ public sealed class LegDef
     public Vector3 Hip; // the hip's pivot, the part's frame
     public float Load; // kg the leg carries at full pace
     public float StepTime; // seconds a step takes in the air, unloaded
+    public float Stride = 0.5f; // how far the body goes while a foot is planted, a share of the reach (the stroke it sweeps, centred on its rest point)
     public float StepHeight = 0.15f; // how high a foot lifts, a share of the reach
     public float Stand = 0.6f; // the hip's height over the ground, a share of the reach
     public float Spread = 0.45f; // the foot's resting distance out from the hip, a share of the reach
@@ -82,7 +83,7 @@ public static partial class ConstructParts
 
     private static void ParseLeg(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["type", "tier", "segments", "width", "foot", "hip", "load", "stepTime", "stepHeight", "stand", "spread", "power", "jointColor"], bw);
+        Known(b, ["type", "tier", "segments", "width", "foot", "hip", "load", "stepTime", "stride", "stepHeight", "stand", "spread", "power", "jointColor"], bw);
         var leg = new LegDef
         {
             Kind = EnumOf<LegKind>(Str(Need(b, "type", bw), file, "leg.type"), file, "leg.type"),
@@ -107,6 +108,9 @@ public static partial class ConstructParts
         Range(leg.Load, 1, 1e9f, file, "leg.load");
         leg.StepTime = Num(Need(b, "stepTime", bw), file, "leg.stepTime");
         Range(leg.StepTime, 0.1f, 20, file, "leg.stepTime");
+        if (Opt(b, "stride") is { } sd)
+            leg.Stride = Num(sd, file, "leg.stride");
+        Range(leg.Stride, 0.1f, 1.2f, file, "leg.stride");
         if (Opt(b, "stepHeight") is { } sh)
             leg.StepHeight = Num(sh, file, "leg.stepHeight");
         Range(leg.StepHeight, 0.02f, 0.6f, file, "leg.stepHeight");

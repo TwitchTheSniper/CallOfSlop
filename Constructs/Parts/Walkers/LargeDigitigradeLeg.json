@@ -23,7 +23,8 @@
       0
     ],
     "load": 600000,
-    "stepTime": 1.4,
+    "stepTime": 1.086,
+    "stride": 0.95,
     "stepHeight": 0.15,
     "stand": 0.6,
     "spread": 0.3,
@@ -67,6 +68,17 @@
       ],
       "default": 0,
       "tooltip": "Simple: it just walks. Basic: the gait settings. Advanced: each leg's own tuning too. The walker follows its leg with the highest profile."
+    },
+    {
+      "key": "walkSpeed",
+      "label": "Walk speed",
+      "group": "Gait",
+      "unit": "%",
+      "min": 0,
+      "max": 200,
+      "step": 5,
+      "default": 100,
+      "tooltip": "The top speed at full throttle, a share of what the legs walk at: 200 is twice as fast, with quicker steps, twice the power and a rougher ride. Every profile, Simple too. The walker follows its lead leg's, else any leg's changed one."
     },
     {
       "key": "stride",

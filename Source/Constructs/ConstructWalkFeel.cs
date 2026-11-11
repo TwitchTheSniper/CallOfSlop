@@ -39,6 +39,9 @@ public static partial class ConstructPhysics
     public const float SwayLean = 0.035f; // how far it leans towards its planted feet while a group is in the air (tan of the angle), bare
     public const float CargoPop = 1.6f; // m/s a loose body on the deck is thrown up at a footfall, bare (and a third of it sideways)
 
+    /// <summary>How hard a footfall lands at walk speed setting <paramref name="speed"/> (1: the legs' own): quicker steps land harder (0.6 standing still, 1.4 at twice the speed).</summary>
+    public static float StepFeel(float speed) => 0.6f + 0.4f * Math.Clamp(speed, 0, MaxWalkSpeed);
+
     /// <summary>A part file's <c>"stabiliser"</c> block: <c>steady</c>, kg of walker it steadies.</summary>
     public static void ParseStabiliser(ConstructPartDef d, JsonElement root, string file)
     {
@@ -58,7 +61,7 @@ public static partial class ConstructPhysics
     /// </summary>
     private static void Thump(ConstructWorld world, Construct c)
     {
-        var rough = c.WalkRough;
+        var rough = c.WalkRough * StepFeel(c.WalkSpeed);
         var at = Vector3.Zero;
         var n = 0;
         for (var k = 0; k < c.LegCount; k++)

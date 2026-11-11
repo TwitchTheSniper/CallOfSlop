@@ -2188,7 +2188,7 @@ public sealed partial class Game
         }
     }
 
-    private SbText _sbFlight, _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
+    private SbText _sbFlight, _sbDrive, _sbWalk, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
     /// <summary>The tool or part in this player's hands ("Attach tool", "Attach tool + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
@@ -2286,7 +2286,17 @@ public sealed partial class Game
                 var why = ConstructPhysics.WalkerProblem(car);
                 if (why.Length > 0 && _sbProblem.Stale(why.GetHashCode()))
                     _sbProblem.Text = $"Won't walk: {why}";
-                lines.Add(why.Length > 0 ? new HudLine(_sbProblem.Text, red) : new HudLine("Walk: move keys, turn; roll keys strafe; Sprint and Crouch raise and lower", dim));
+                if (why.Length > 0)
+                    lines.Add(new HudLine(_sbProblem.Text, red));
+                else
+                {
+                    // (the speed setting and what it walks at: ConstructWalkProfile.cs; held below it by the power, in orange)
+                    var pct = (int)MathF.Round(ConstructPhysics.WalkSpeedOf(car) * 100);
+                    var top = (int)MathF.Round(car.WalkTop * 10);
+                    if (_sbWalk.Stale(pct * 10_000_000L + top * 2L + (car.WalkPowerHeld ? 1 : 0)))
+                        _sbWalk.Text = $"Walk {pct}%: {top / 10f:0.0} m/s top{(car.WalkPowerHeld ? ", all the power can feed" : "")}. Move keys, turn; roll keys strafe; Sprint and Crouch raise and lower";
+                    lines.Add(new HudLine(_sbWalk.Text, car.WalkPowerHeld ? orange : dim));
+                }
             }
             else
             {

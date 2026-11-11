@@ -20,7 +20,7 @@ public static partial class ConstructNet
     public const int PoseFeet = 24; // feet a pose carries at most (a body with more legs takes turns)
     private const int WalkHeadBytes = 1 + 1 + 1 + 2 + 4 + 1, FootBytes = 2 + 1 + 6;
     private const byte PoseAsleep = 1, PoseWalker = 2; // the pose's asleep byte: bit 1 says a walk block follows (protocol 229)
-    private const byte WalkingBit = 1, SteppingBit = 2, FeetSetBit = 4;
+    private const byte WalkingBit = 1, SteppingBit = 2, FeetSetBit = 4, PowerHeldBit = 8; // (8: protocol 241)
 
     // The walk problems the server sets (ConstructWalk.cs), by number on the wire; 1 + their count: "N working legs".
     private static readonly string[] Problems =
@@ -67,7 +67,7 @@ public static partial class ConstructNet
     private static void WriteWalk(PacketWriter w, Construct c)
     {
         var code = ProblemCode(c, out var arg);
-        w.U8((byte)((c.Walking ? WalkingBit : 0) | (c.WalkStepping ? SteppingBit : 0) | (c.FeetSet ? FeetSetBit : 0)))
+        w.U8((byte)((c.Walking ? WalkingBit : 0) | (c.WalkStepping ? SteppingBit : 0) | (c.FeetSet ? FeetSetBit : 0) | (c.WalkPowerHeld ? PowerHeldBit : 0)))
             .U8(code).U8(arg)
             .U16((ushort)Math.Clamp(MathF.Round(c.WalkTop * 100), 0, 65535))
             .F32(c.LegWatts);
@@ -110,6 +110,7 @@ public static partial class ConstructNet
             c.Walking = (flags & WalkingBit) != 0;
             c.WalkStepping = (flags & SteppingBit) != 0;
             c.NetFeetSet = (flags & FeetSetBit) != 0;
+            c.WalkPowerHeld = (flags & PowerHeldBit) != 0;
             c.WalkTop = top;
             c.LegWatts = float.IsFinite(watts) ? watts : 0;
             if (code != c.NetProblem || arg != c.NetProblemArg || code == 0 && c.WalkProblem.Length > 0)

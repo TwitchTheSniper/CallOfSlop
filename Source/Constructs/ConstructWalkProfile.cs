@@ -15,6 +15,7 @@ public sealed partial class Construct
     public float WalkStride = 1, WalkLift = 1, WalkStand = 1; // Basic: shares of the build's own
     public byte WalkGaitPick; // Basic: 0 Auto, 1 Tripod, 2 Wave
     public int WalkGaitKey = -1; // the gait settings when the gait was last planned (a change re-plans it)
+    public float WalkSpeed = 1; // every profile: the top speed at full throttle, a share of the legs' own (0 to 2; WalkSpeedOf)
 }
 
 public static partial class ConstructPhysics
@@ -37,6 +38,7 @@ public static partial class ConstructPhysics
             }
         }
         c.WalkProfile = (byte)Math.Clamp(best, 0, 2);
+        c.WalkSpeed = WalkSpeedOf(c, lead);
         if (lead < 0 || c.WalkProfile == 0)
         {
             c.WalkStride = c.WalkLift = c.WalkStand = 1;
@@ -59,6 +61,41 @@ public static partial class ConstructPhysics
             c.WalkGaitKey = key;
             c.WalkLive = -1; // (planned again with these settings)
         }
+    }
+
+    public const float MaxWalkSpeed = 2; // the speed setting's top: twice the legs' own
+
+    /// <summary>
+    /// The walk speed setting (every profile, Simple too), a share of the legs' own top speed: the lead leg's
+    /// (<paramref name="lead"/>; -1: found here, as WalkTune does), else the first leg whose setting was changed, else 1.
+    /// Any peer (a client's HUD and footfalls read it from the legs' settings, which ride the wire as any setting).
+    /// </summary>
+    public static float WalkSpeedOf(Construct c, int lead = -1)
+    {
+        if (c.LegCount == 0)
+            return 1;
+        if (lead < 0)
+        {
+            var best = -1f;
+            for (var k = 0; k < c.LegCount; k++)
+            {
+                ref var q = ref c.Parts[c.Legs[k].Part];
+                var v = ConstructConfig.Get(q, q.D, CfgKey.WalkProfile, 0);
+                if (v > best)
+                {
+                    best = v;
+                    lead = k;
+                }
+            }
+        }
+        ref var p = ref c.Parts[c.Legs[lead].Part];
+        var set = ConstructConfig.Get(p, p.D, CfgKey.WalkSpeed, 100);
+        for (var k = 0; k < c.LegCount && set == 100; k++)
+        {
+            ref var q = ref c.Parts[c.Legs[k].Part];
+            set = ConstructConfig.Get(q, q.D, CfgKey.WalkSpeed, 100);
+        }
+        return Math.Clamp(set * 0.01f, 0, MaxWalkSpeed);
     }
 
     /// <summary>Leg <paramref name="k"/>'s own share of a setting (Advanced only; else 1).</summary>

@@ -50,8 +50,8 @@ public sealed partial class Game
             return;
         at /= n;
         var size = Math.Clamp(reach / 48f, 0.05f, 1.5f); // (a titan leg is 1)
-        var rough = c.WalkRough;
-        Audio.Effect3DPitched(Sfx.LandThud, at, Math.Clamp(0.35f + 0.65f * size, 0.2f, 1f) * (0.5f + 0.5f * rough), Math.Clamp(1.1f - 0.6f * MathF.Min(1, size), 0.45f, 1.1f));
+        var rough = c.WalkRough * ConstructPhysics.StepFeel(ConstructPhysics.WalkSpeedOf(c)); // (quicker steps land harder)
+        Audio.Effect3DPitched(Sfx.LandThud, at, Math.Clamp(0.35f + 0.65f * size, 0.2f, 1f) * (0.5f + 0.5f * MathF.Min(1, rough)), Math.Clamp(1.1f - 0.6f * MathF.Min(1, size), 0.45f, 1.1f));
         if (Local is not { } me)
             return;
         var felt = 0f;
