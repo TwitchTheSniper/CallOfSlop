@@ -367,7 +367,6 @@ public static unsafe partial class Program
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _freeTravel = args.Any(a => a.Equals("--free-travel", StringComparison.OrdinalIgnoreCase)); // (dev, free travel step 2: GameTravel.cs)
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        _recipeShots = args.Any(a => a.Equals("--recipe-shots", StringComparison.OrdinalIgnoreCase)); // THROWAWAY
         _frameCapOff = _smoke || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
@@ -1451,7 +1450,6 @@ public static unsafe partial class Program
             _slotDown[i] = !blocked && binds[i] != Keybinds.Unbound && Keybinds.IsDown(_window, binds[i]);
         Keybinds.Resolve(binds, _session != null && _game is { SandboxOn: true }, _slotDown, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
         Keybinds.Collapse(_slotDown, _down); // (an action is down while any of its bindings is: pressed with the first, released with the last)
-        if (_rsFire) _down[(int)GameAction.Fire] = true; // THROWAWAY
     }
 
     private static void UpdateLocalPlayer(double now)

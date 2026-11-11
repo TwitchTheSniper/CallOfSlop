@@ -505,7 +505,8 @@ the part kit's `control_parts` (the console).
   wouldn't fit beside it the state goes under the name), and a dimmer detail line: why it waits (Starved, Blocked, Fault), its recipe or its
   pieces and orders to go; every machine gets one when the rows allow, else the pick. A name too long slides along on the picked row and
   ends in ".." on the others. Its buttons are **Start/Stop** (flips the switch), **Next** (picks the next machine; the pick is the hidden
-  `linePick` setting, and a new pick scrolls into view), **Recipe** (steps the picked machine's recipe), and **Up** and **Down** (below). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
+  `linePick` setting, and a new pick scrolls into view), **Recipe** (opens the recipe picker on the picked refiner, below; on an
+  Extruder or Former it says there is none), and **Up** and **Down** (below). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
   held until Start. On a flat battery it puts nothing out, and its machines say No power.
 - **Text size and long lists** (2026-11-11, the user: "scroll on long lists", "smaller text"). Every part that shows text has a **Text size**
   setting (Display group, 50 to 150 %, default 100; `CfgKey.TextSize`, protocol 248): the screen is laid out in more rows and longer lines at a
@@ -513,6 +514,24 @@ the part kit's `control_parts` (the console).
   the mouse wheel scrolls while the crosshair is on the screen with empty hands. The place in the list is the viewer's own (`PanelRender`'s
   slot, never on the wire), with "3-8 of 14" at the right of the title. An order too long for a line takes two (its length and material
   under it); every other line too long ends in "..". A client is sent the first 32 orders of each list (`WorkOrders.Sent`).
+- **The recipe picker** (2026-11-11, the user: "nice icons similar to the creative spawn menu"; `Source/UI/UiRecipePicker.cs`,
+  `Program.SandboxRecipe.cs`). The console's Recipe button, and a refiner's or an Assembler's recipe row in the configure panel, open a
+  window of tiles like the inventory's: the output's picture, its name and count, the inputs as small icons with their amounts, and the
+  time a batch takes on this machine (its speed counted). Auto (a refiner) or None (an Assembler) comes first; the current recipe is
+  outlined and marked "set"; a recipe the machine's tier can't make is dim, its reason on hover, and can't be picked. Past 12 tiles it
+  has a search box, and an Assembler's list the inventory's category tabs (by the output part's category). A click sets it and closes;
+  Esc or Close leaves it. From the console a tick box sets every machine of that kind on the line. The pick from the console is
+  `CActKind.LineRecipe` (protocol 249: body, console, machine, the recipe setting's value in two bytes, a flag for all), checked as a
+  finger on the console's button (reach to the console, its power, who may) and against the line (the machine wired to it, a value
+  its recipe setting has, an Assembler's tier); from the configure panel it is the configure tool's own request. The tiles' texts are
+  made once per machine kind; drawing it allocates nothing of its own.
+- **Resource icons** (`Source/Render/ResourceIcons.cs`). Every loose material has an icon: a small 3D stack of its family's shape in
+  its colour, drawn from boxes and part shapes into the inventory's tile atlas (`SandboxTiles`, slots of `Kind.Resource`, made first
+  and in a few frames; no image files). The family is `Recycling.json`'s `"shapes"` (ore, ingot, plank, log, heap, drum, gas, block,
+  sheet, roll, board, crate, coil, beam, crystal; else ore for a name ending in ore, a heap otherwise); a dark material is lifted to a
+  dim grey of its hue so its shape reads. They show in the recipe picker, the material painter's list and a beacon's Materials tab. A
+  window that shows only a few tiles (`SandboxTiles.WantFew`, `Prefer`) has the resources and its own tiles drawn first, not the whole
+  atlas.
 - **The mains** (2026-11-11, proposed). A Battery takes one wire, its isolator. When every working battery on a body has one and every one
   says off (`Construct.MainsOff`, `ConstructPower.Mains`, on the wire in the gear byte's top bit since protocol 247), the circuit gives
   machines nothing: `ConstructRecycler.Powered` is false for every production machine, recycler, gatherer and beacon it reaches, in creative
