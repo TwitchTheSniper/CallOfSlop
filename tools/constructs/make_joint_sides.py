@@ -127,7 +127,7 @@ def main():
         txt = open(f).read()
         d = json.loads(txt)
         if d.get("role") not in ("joint", "hinge") or d.get("sizeClass") or "rail" in d.get("joint", {}) or d.get("joint", {}).get("type") == "swivel":
-            continue  # (a size class's joints, rails and free rotation parts draw their sides in their own generator: big_drive_parts.py, large_systems.py, and the part kit's free_parts and linear_parts: Source/PartKit/Generators/FreeParts.cs, LinearParts.cs)
+            continue  # (a size class's joints, rails and free rotation parts draw their sides in their own generator: large_systems.py, and the part kit's big_drive_parts, free_parts and linear_parts: Source/PartKit/Generators/BigDriveParts.cs, FreeParts.cs, LinearParts.cs)
         boxes = build(d)
         i = txt.index('"boxes"')
         j = txt.index("[", i)
