@@ -97,13 +97,17 @@ public sealed class BodyParts : IRenderable
     public readonly Renderable[] Draws = new Renderable[Capacity];
     public readonly bool[] Detail = new bool[Capacity];
     public readonly BodyPaint[] Paint = new BodyPaint[Capacity];
+    public readonly bool[] OnJaw = new bool[Capacity]; // moves down with the jaw as they talk (the jaw, a beard)
     public int Count;
     public bool ShowDetail = true;
 
+    /// <summary>How far the jaw is down this frame (m, in this frame's units; 0 shut): set from <see cref="TalkMouth"/> before drawing.</summary>
+    public float Jaw;
+
     public void Clear() => Count = 0;
 
-    /// <summary>Appends <paramref name="part"/> scaled per axis by <paramref name="scale"/> (centre and size).</summary>
-    public void Add(in BodyPart part, Vector3 scale, in BodyColors colors)
+    /// <summary>Appends <paramref name="part"/> scaled per axis by <paramref name="scale"/> (centre and size); <paramref name="onJaw"/>: it drops with the jaw.</summary>
+    public void Add(in BodyPart part, Vector3 scale, in BodyColors colors, bool onJaw = false)
     {
         if (Count == Capacity)
             return;
@@ -111,7 +115,18 @@ public sealed class BodyParts : IRenderable
         Draws[Count] = Renderable.Box(colors.Of(part.Paint));
         Detail[Count] = part.Detail;
         Paint[Count] = part.Paint;
+        OnJaw[Count] = onJaw;
         Count++;
+    }
+
+    /// <summary>A part's matrix in the node's frame this frame (a jaw part lowered by <see cref="Jaw"/>).</summary>
+    private Matrix4x4 LocalNow(int i)
+    {
+        if (!OnJaw[i] || Jaw == 0)
+            return Local[i];
+        var m = Local[i];
+        m.M42 -= Jaw;
+        return m;
     }
 
     /// <summary>How many parts draw right now (detail parts only up close).</summary>
@@ -132,7 +147,7 @@ public sealed class BodyParts : IRenderable
         ref readonly var w = ref node.World;
         for (var i = 0; i < Count; i++)
             if (ShowDetail || !Detail[i])
-                list.Add(Local[i] * w, Draws[i]);
+                list.Add(LocalNow(i) * w, Draws[i]);
     }
 
     /// <summary>Immediate mode: the same draws as <see cref="Emit"/> under <paramref name="frame"/> (the node's world matrix).</summary>
@@ -142,7 +157,7 @@ public sealed class BodyParts : IRenderable
             if (ShowDetail || !Detail[i])
             {
                 ref readonly var r = ref Draws[i];
-                g.Draw(Local[i] * frame, r.Color, r.Alpha, r.Mode, r.Material);
+                g.Draw(LocalNow(i) * frame, r.Color, r.Alpha, r.Mode, r.Material);
             }
     }
 }
@@ -214,7 +229,11 @@ public static class BodyModel
         new(new(0.065f, 0.1f, 0.07f), new(0, -0.04f, -0.235f), BodyPaint.SkinShade), // nose
         new(new(0.25f, 0.035f, 0.012f), new(0, 0.004f, -0.217f), BodyPaint.Eyes, true), // eyes
         new(new(0.5f, 0.085f, 0.075f), new(0, -0.02f, 0.03f), BodyPaint.SkinShade, true), // ears
+        new(new(0.14f, 0.064f, 0.095f), new(0, -0.068f, -0.1475f), BodyPaint.Eyes, true), // the mouth: inside the jaw, seen only when it drops (talking)
     ];
+
+    /// <summary>The jaw in <see cref="HeadParts"/>: it drops as they talk (<see cref="TalkMouth"/>), and a beard with it.</summary>
+    public const int JawPart = 1;
 
     private static readonly BodyPart HairTop = new(new(0.452f, 0.05f, 0.456f), new(0, 0.19f, 0.012f), BodyPaint.Hair);
     private static readonly BodyPart HairBack = new(new(0.452f, 0.16f, 0.05f), new(0, 0.07f, 0.215f), BodyPaint.Hair);
@@ -362,15 +381,33 @@ public static class BodyModel
             torso.Add(p, ts, c);
         var hs = s.HeadScale;
         head.Clear();
-        foreach (var p in HeadParts)
-            head.Add(p, hs, c);
+        for (var i = 0; i < HeadParts.Length; i++)
+            head.Add(HeadParts[i], hs, c, onJaw: i == JawPart);
         if (!hat)
             foreach (var p in HeadwearParts[(int)v.Headwear])
                 head.Add(p, hs, c);
         else if (v.Headwear == Headwear.Hair)
             head.Add(HairBack, hs, c);
         if (v.Beard)
-            head.Add(Beard, hs, c);
+            head.Add(Beard, hs, c, onJaw: true);
+    }
+
+    /// <summary>
+    /// The head's pose as they talk (<see cref="TalkMouth"/>): the jaw drop for <paramref name="head"/> and the head node's
+    /// matrix (a small nod with the words) for a stance. Shut and still: just the stance's place.
+    /// </summary>
+    public static Matrix4x4 TalkPose(BodyParts head, int stance, byte id)
+    {
+        head.Jaw = TalkMouth.Open[id] * TalkMouth.JawDrop * Stances[stance].HeadScale.Y;
+        return TalkHead(stance, id);
+    }
+
+    /// <summary>The head node's matrix for a stance as they talk (the hat goes on it).</summary>
+    public static Matrix4x4 TalkHead(int stance, byte id)
+    {
+        var at = Matrix4x4.CreateTranslation(Stances[stance].HeadAt);
+        var open = TalkMouth.Open[id];
+        return open > 0 ? Matrix4x4.CreateRotationX(open * TalkMouth.Nod) * at : at;
     }
 
     /// <summary>How many headwear parts <see cref="Build"/> adds for a variant, with or without a prestige hat (the hat's own boxes not counted).</summary>
@@ -394,7 +431,7 @@ public static class BodyModel
         ScratchTorso.ShowDetail = ScratchHead.ShowDetail = detail ?? WantsDetail(p.RenderPosition);
         var s = Stances[stance];
         ScratchTorso.DrawImmediate(g, s.TorsoFrame * up);
-        ScratchHead.DrawImmediate(g, Matrix4x4.CreateTranslation(s.HeadAt) * up);
+        ScratchHead.DrawImmediate(g, TalkPose(ScratchHead, stance, p.Id) * up);
     }
 
     // ---- Zombies ----

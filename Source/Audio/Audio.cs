@@ -94,6 +94,7 @@ public enum Sfx
     BuildGrab, // the physics gun takes hold
     BuildDrop, // the physics gun lets go
     ColonyAlarm, // the penal colony's lockdown siren (SynthAlarm.cs, played by Game.ColonyAlarmSounds): one wail, up and down
+    Babble, // one murmured syllable of a story person's talk (SynthBabble.cs, played by Game.StoryBabbleSounds): "ma", "ga", "na"...
     COUNT,
 }
 
@@ -538,6 +539,22 @@ public sealed partial class Audio : IDisposable
             return;
         var b = bus == MixBus.Auto ? BusFor(sfx, true) : bus;
         Play(Pick(sfx), position, gain, Jitter(0.07f), Falloff.Small, b, Mix.Gain(b));
+    }
+
+    private static readonly Falloff BabbleFalloff = new(2.5f, 1.2f, 40f);
+
+    /// <summary>
+    /// One murmured syllable of a story person's line (<see cref="Sfx.Babble"/>, variant <paramref name="syllable"/>) at
+    /// <paramref name="position"/> (their mouth), at their <paramref name="pitch"/>; skipped beyond <paramref name="range"/>.
+    /// </summary>
+    public void Babble(int syllable, Vector3 position, float gain, float pitch, float range)
+    {
+        if (!Enabled || Vector3.DistanceSquared(position, _listener) > range * range)
+            return;
+        var v = _sfx[(int)Sfx.Babble];
+        if (v.Length == 0)
+            return;
+        Play(v[(int)((uint)syllable % (uint)v.Length)], position, gain, Math.Clamp(pitch, 0.4f, 2.5f), BabbleFalloff, MixBus.Speech, Mix.Gain(MixBus.Speech));
     }
 
     // ---- Footsteps ----------------------------------------------------------
@@ -1010,6 +1027,8 @@ public static partial class Synth
             return build; // SynthBuild.cs
         if (AlarmFoley(sfx) is { } alarm)
             return alarm; // SynthAlarm.cs
+        if (BabbleFoley(sfx, variant) is { } babble)
+            return babble; // SynthBabble.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)
