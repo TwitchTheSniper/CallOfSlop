@@ -151,7 +151,7 @@ hold fire on unwired joints' aim. The blueprints carry no wires or small control
 
 ## Carrier work
 
-Fun first, forgiving, close to a carrier only in concept. The parts are in "Launch and docking"; generators `tools/constructs/large_systems.py` and `tools/constructs/pilot_parts.py`; code `ConstructCarrier.cs`, `ConstructLauncher.cs`. The demos: **Carrier Deck** (a flying deck: arrestor and catapult in line, clamp, bay, mast; keep the runway clear, things stand at its edges) and **Deck Plane** (a Light Plane with an Ejection Seat).
+Fun first, forgiving, close to a carrier only in concept. The parts are in "Launch and docking"; generators `tools/constructs/large_systems.py` and `Source/PartKit/Generators/PilotParts.cs`; code `ConstructCarrier.cs`, `ConstructLauncher.cs`. The demos: **Carrier Deck** (a flying deck: arrestor and catapult in line, clamp, bay, mast; keep the runway clear, things stand at its edges) and **Deck Plane** (a Light Plane with an Ejection Seat).
 
 **The pilot's key** (`GameAction.SeatHook`, G; `ConstructParts.KeyHook`): on a rail it hooks, then fires; held by a clamp or bay it lets go; with a clamp reaching for you it says no for 5 s. The seat's line says which.
 

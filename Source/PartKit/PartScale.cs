@@ -146,6 +146,9 @@ public static class PartKitMath
 
     public static double[] V(params double[] v) => v;
 
+    /// <summary>Keyword arguments as a dict, in the order given (a box's **shape, a part's set(**keys) value).</summary>
+    public static PyDict Kw(params (string Key, object? Value)[] kv) => new PyDict().Update(kv);
+
     /// <summary>A length for a part's name: 16, 0.5 (f"{v:g}").</summary>
     public static string Fmt(double v) => Py.G(v);
 
