@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Mille",
-  "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. The Thousand Layers keep the Bakehouse here. The crust is thinnest under the Proving Bowl: dig there to get in.",
+  "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
   "author": "Call of Slop",
   "order": 5,
   "halfX": 5600,
