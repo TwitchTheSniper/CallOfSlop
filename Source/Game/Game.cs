@@ -1458,6 +1458,11 @@ public sealed partial class Game : IDisposable
             p.Equipment = p.WantEquipment;
             p.GrenadesLeft = Throwables.Get(p.Grenade).PerLife;
             p.EquipmentLeft = Throwables.Get(p.Equipment).PerLife;
+            if (!ModeGivesThrowables)
+            {
+                p.Grenade = ThrowableKind.None; // (survival Sandbox: none mid-life either)
+                p.GrenadesLeft = 0;
+            }
             if (!Module.UsesEquipment)
             {
                 p.Equipment = ThrowableKind.None;
