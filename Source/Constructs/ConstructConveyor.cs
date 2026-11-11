@@ -26,6 +26,9 @@ public sealed partial class Construct
     public int ConveyedCount;
     public double ConveyedStamp; // when the riders' fronts were last set (ConstructConveyor.Clock): a frame draws them moved on from there
 
+    public ushort[] PieceRacks = []; // its Piece Racks (made with the caches: ConstructConveyor.BuildRacks), for drawing what they hold
+    public int PieceRackCount;
+
     public void ReserveConveyed(int n)
     {
         if (n > Conveyed.Length)
@@ -45,10 +48,18 @@ public sealed partial class ConstructWorld
             RidersDirty.Add(c.Id);
     }
 
-    /// <summary>The last piece put in a Piece Rack comes off as a loose body beside it, its middle over the rack's top. Server; null when empty.</summary>
-    public ConstructPartDef? RackTake(Construct c, int part)
+    /// <summary>
+    /// A piece off a Piece Rack, a loose body beside it, its middle over the rack's top: the one drawn where the player looks
+    /// (<paramref name="eye"/> along <paramref name="look"/>), else the last put in. Server; null when empty.
+    /// </summary>
+    public ConstructPartDef? RackTake(Construct c, int part, Vector3 eye = default, Vector3 look = default)
     {
-        if (StoreOf(c, part) is not { KindN: > 0 } st || ConstructParts.Get(st.KindDef![st.KindN - 1]) is not { } d)
+        if (StoreOf(c, part) is not { KindN: > 0 } st)
+            return null;
+        var def = st.KindDef![st.KindN - 1];
+        if (look != Vector3.Zero && ConstructConveyor.RackAimed(c, part, st, eye, look) is var aimed and > 0)
+            def = (ushort)aimed;
+        if (ConstructParts.Get(def) is not { } d)
             return null;
         c.PartBounds(part, out var mn, out var mx);
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
@@ -158,12 +169,110 @@ public static class ConstructConveyor
         return 0;
     }
 
-    /// <summary>A Piece Rack's look line: how many it holds of how many, the last in, and F. Either side, from the store as heard.</summary>
+    /// <summary>A Piece Rack's look line: how many it holds of how many, each kind and its count (the first few), and F. Either side, from the store as heard.</summary>
     public static string Look(ConstructPartDef d, CStore st, bool near)
     {
-        var last = st.KindN > 0 && ConstructParts.Get(st.KindDef![st.KindN - 1]) is { } top ? $", last in: {top.Name}" : "";
-        var kinds = st.KindN > 1 ? $" of {st.KindN} kinds" : "";
-        return $"{d.Name}: {st.ItemCount}/{d.RackCount} pieces{kinds}{last}" + (st.KindN > 0 && near ? $" - {SandboxKeys.Use}: take one off" : "");
+        var sb = new System.Text.StringBuilder($"{d.Name}: {st.ItemCount}/{d.RackCount} pieces");
+        const int listed = 4;
+        for (var k = 0; k < st.KindN && k < listed; k++)
+            if (ConstructParts.Get(st.KindDef![k]) is { } kd)
+                sb.Append(k == 0 ? ": " : ", ").Append(st.KindCount![k]).Append(" x ").Append(kd.Name);
+        if (st.KindN > listed)
+            sb.Append($" and {st.KindN - listed} more kinds");
+        if (st.KindN > 0 && near)
+            sb.Append($" - {SandboxKeys.Use}: take the one you look at off");
+        return sb.ToString();
+    }
+
+    // ---- What a rack holds, drawn (RouteRender.DrawRacks) and aimed at (F) ------------------------------------------------
+
+    public const int RackDrawn = 24; // the most pieces a rack draws (the rest are counted in its look line)
+    private const float RackSide = 0.115f, RackBed = 0.133f, RackEnd = 0.074f, RackGap = 0.02f, RackLayer = 0.005f; // (inside its posts, over its slats, past its sill: PieceRackParts.cs)
+
+    /// <summary>One piece as a rack shows it: its def and where its own origin sits in the rack part's frame (unturned).</summary>
+    public struct RackSlot
+    {
+        public ushort Def;
+        public Vector3 Origin;
+    }
+
+    /// <summary>With the caches: a body's Piece Racks (they are special parts: they have stores).</summary>
+    public static void BuildRacks(Construct c)
+    {
+        c.PieceRackCount = 0;
+        foreach (var i in c.Specials)
+        {
+            if (!c.Parts[i].D.IsPieceRack)
+                continue;
+            if (c.PieceRacks.Length == c.PieceRackCount)
+                Array.Resize(ref c.PieceRacks, Math.Max(4, c.PieceRackCount * 2));
+            c.PieceRacks[c.PieceRackCount++] = (ushort)i;
+        }
+    }
+
+    /// <summary>
+    /// Where a rack's pieces lie, in store order: side by side across its bed from the -z end, 2 cm apart, a layer on the
+    /// tallest of the one below (5 mm over it) while a layer starts below the rack's top; at most <paramref name="slots"/>'s
+    /// length. Both sides lay it out the same from the store, so F picks what the player sees. Returns how many.
+    /// </summary>
+    public static int RackLayout(ConstructPartDef rd, CStore st, Span<RackSlot> slots)
+    {
+        float left = rd.BoundsMin.X + RackSide, right = rd.BoundsMax.X - RackSide, end = rd.BoundsMin.Z + RackEnd;
+        var x = left;
+        var y = rd.BoundsMin.Y + RackBed;
+        var top = y;
+        var n = 0;
+        for (var k = 0; k < st.KindN; k++)
+        {
+            if (ConstructParts.Get(st.KindDef![k]) is not { } d)
+                continue;
+            Size(d, out var across, out var up, out _);
+            for (var j = 0; j < st.KindCount![k]; j++)
+            {
+                if (n >= slots.Length)
+                    return n;
+                if (x > left && x + across > right + 1e-3f)
+                {
+                    x = left;
+                    y = top + RackLayer;
+                    if (y >= rd.BoundsMax.Y)
+                        return n;
+                }
+                slots[n++] = new RackSlot { Def = d.Id, Origin = new Vector3(x, y, end) - d.BoundsMin };
+                x += across + RackGap;
+                top = MathF.Max(top, y + up);
+            }
+        }
+        return n;
+    }
+
+    /// <summary>The def of the drawn piece a ray from <paramref name="eye"/> along <paramref name="look"/> meets first, or -1.</summary>
+    public static int RackAimed(Construct c, int part, CStore st, Vector3 eye, Vector3 look)
+    {
+        Span<RackSlot> slots = stackalloc RackSlot[RackDrawn];
+        var rd = c.DefOf(part);
+        var n = RackLayout(rd, st, slots);
+        if (n == 0)
+            return -1;
+        // Into the rack part's own frame (unturned), where the slots are boxes.
+        ref var p = ref c.Parts[part];
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var turn = q * Rot24.Quat(p.Rot);
+        var inv = Quaternion.Conjugate(turn);
+        var o = Vector3.Transform(eye - (t + Vector3.Transform(p.Pos, q)), inv);
+        var dir = Vector3.Transform(look, inv);
+        var best = -1;
+        var near = 6f;
+        for (var i = 0; i < n; i++)
+        {
+            var d = ConstructParts.Def(slots[i].Def);
+            if (Geometry.RayAabb(slots[i].Origin + d.BoundsMin, slots[i].Origin + d.BoundsMax, o, dir, near) is { } hit && hit < near)
+            {
+                near = hit;
+                best = slots[i].Def;
+            }
+        }
+        return best;
     }
 
     // ---- The link ------------------------------------------------------------------------------------------------

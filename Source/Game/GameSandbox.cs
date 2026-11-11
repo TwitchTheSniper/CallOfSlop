@@ -1154,7 +1154,7 @@ public sealed partial class Game
             case CActKind.Bin:
             {
                 var body = r.U16();
-                return hands.UseBin(Constructs, p.Id, eye, body, r.U16());
+                return hands.UseBin(Constructs, p.Id, eye, body, r.U16(), GravityFrames.Forward(p.Position, p.Yaw, p.Pitch));
             }
             case CActKind.Route:
             {

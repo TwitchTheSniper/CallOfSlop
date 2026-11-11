@@ -5,7 +5,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The Piece Rack: Constructs/Parts/PieceRacks (docs/sandbox/constructs/production.md, "Conveyors"). A low steel cradle on two
 /// runners, posts and an amber top rail down each side, that takes whole pieces off a conveyor at its Piece in (its -z end) and
-/// holds them by kind (<c>storage.pieces</c>: the largest section and length and how many). Nothing is drawn of what it holds yet.
+/// holds them by kind (<c>storage.pieces</c>: the largest section and length and how many). What it holds is drawn lying on its
+/// slats inside its posts (ConstructConveyor.RackLayout: keep its margins in step with the runners, posts, slats and sill here).
 /// </summary>
 public sealed class PieceRackParts : IPartGenerator
 {

@@ -851,7 +851,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>A bin: tip in the materials the player carries (as much as fits); with none to tip, take out a load. Null, or why not.</summary>
-    public string? UseBin(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
+    public string? UseBin(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, Vector3 look = default)
     {
         if (world.Get(body) is { } holder && ConstructPress.MachineOf(holder, part) is var machine and >= 0)
             return TakeFromMachine(world, player, eye, holder, machine, part, out _);
@@ -864,8 +864,8 @@ public sealed partial class ConstructEdits
             return UsePress(world, player, eye, c, part);
         if (d.IsPieceRack)
         {
-            // A Piece Rack: the last piece in comes off whole, a loose body beside its rack (a piece is physics-only: no hands carry it).
-            if (world.RackTake(c, part) is not { } piece)
+            // A Piece Rack: the piece looked at (else the last in) comes off whole, a loose body beside its rack (a piece is physics-only: no hands carry it).
+            if (world.RackTake(c, part, eye, look) is not { } piece)
                 return "the rack is empty";
             Done.Add($"player {player}: took {piece.Name} off the {d.Name} (construct {c.Id})");
             return null;

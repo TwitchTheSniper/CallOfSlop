@@ -49,9 +49,11 @@ public static class RouteRender
         gfx.BeginBatch();
         foreach (var c in world.Bodies)
         {
-            if (c.RouteCount == 0)
+            if (c.RouteCount == 0 && c.PieceRackCount == 0)
                 continue;
             Frames(c, alpha, blendTicks);
+            if (c.PieceRackCount > 0)
+                DrawRacks(gfx, world, c);
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref var r = ref c.Routes[k];
@@ -202,6 +204,35 @@ public static class RouteRender
                 if (box.Hidden)
                     continue;
                 gfx.Draw(box.Model(0, box.Center) * m, r.Paint != 0 && box.Paintable ? paint : box.Color, shape: box.Shape);
+            }
+        }
+    }
+
+    /// <summary>
+    /// What a body's Piece Racks hold: each piece at true size where <see cref="ConstructConveyor.RackLayout"/> lays it, at most
+    /// <see cref="ConstructConveyor.RackDrawn"/> a rack, from the store as heard. Allocates nothing; an empty rack costs a look at its store.
+    /// </summary>
+    private static void DrawRacks(Renderer gfx, ConstructWorld world, Construct c)
+    {
+        Span<ConstructConveyor.RackSlot> slots = stackalloc ConstructConveyor.RackSlot[ConstructConveyor.RackDrawn];
+        for (var k = 0; k < c.PieceRackCount; k++)
+        {
+            int part = c.PieceRacks[k];
+            if (part >= c.PartCount || world.StoreOf(c, part) is not { KindN: > 0 } st)
+                continue;
+            var n = ConstructConveyor.RackLayout(c.DefOf(part), st, slots);
+            ref var p = ref c.Parts[part];
+            var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];
+            for (var i = 0; i < n; i++)
+            {
+                var d = ConstructParts.Def(slots[i].Def);
+                var m = Matrix4x4.CreateTranslation(slots[i].Origin) * frame;
+                for (var bx = 0; bx < d.Boxes.Length; bx++)
+                {
+                    ref readonly var box = ref d.Boxes[bx];
+                    if (!box.Hidden)
+                        gfx.Draw(box.Model(0, box.Center) * m, box.Color, shape: box.Shape);
+                }
             }
         }
     }
