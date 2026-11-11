@@ -609,7 +609,8 @@ Authored beats that wait for the world to be ready, the CK3 recipe: a beat isn't
 so ("Morrow alive, a friend of yours, the colony not in lockdown"), casts whoever fits, and changes qualities that
 the rest of the story reads (`Source/Story/StoryStorylets.cs` the engine, `StoryletChecks.cs` the warnings,
 `Source/Game/GameStoryStorylets.cs` the game's side, `Source/UI/UiStoryStorylets.cs` the tab; data
-`Story/Storylets/*.json`, format `call-of-slop-storylets/1`). The storylet builder (https://claude.ai/artifact/9CmjXTzyB9wZoLZsjTe1yX) writes the same files;
+`Story/Storylets/*.json`, format `call-of-slop-storylets/1`). The files are edited by hand (the
+storylet builder page was retired on 2026-11-11; the read-only story map below shows what is in them);
 the game is the source of truth, and `--check-story` decides what is valid.
 
 ```json
@@ -652,7 +653,7 @@ the game is the source of truth, and `--check-story` decides what is valid.
   depend on how things are then. It changes things (`"then"`, effects that may name things in quotes: `"?me Course
   'Trustee'"`, the Thing made if nobody has the name), `"learn"`s a fact `"from"` someone (a Lead, and a Learn event, so
   the chronicle keeps where the player heard it), says one of its `"say"` lines (by `"by"`; a storylet with no cast sends
-  it to the player as a notice), starts a `"hook"`, and `"next"` names the storylet it leads to (for the builder and the
+  it to the player as a notice), starts a `"hook"`, and `"next"` names the storylet it leads to (for the story map and the
   checks: the next one still needs its needs). `"world"` is a list of plain sentences saying what physically happens (the story map shows
   them when an outcome is pressed; the game does nothing with them: they are the brief for whoever builds it).
 - **The runner**: per player, once a second: an urgent storylet that can play pauses the one under way (its events still
@@ -666,7 +667,7 @@ the game is the source of truth, and `--check-story` decides what is valid.
 - **Answers** (protocol 222): while a player's talk panel is open on someone a storylet waits for an answer from, the
   host sends them its choices (`Msg.TalkChoices`, when they change); the button sends `TalkAsk.Choose + n`, and the
   storylet ends, recorded as a Choose.
-- **Warnings** (`--check-story`; the builder shows the same): a storylet that can never play (nothing sets what it needs
+- **Warnings** (`--check-story`): a storylet that can never play (nothing sets what it needs
   among the storylets' own facts, or more than a quality's max), something it sets that no storylet reads, a dead end
   (nothing it changes opens another and it isn't final), roles nobody in any cast can fill (a clause on how someone
   stands to the player passes: that comes with play), a `"next"` that names no storylet, choices with no end by time,
@@ -700,8 +701,7 @@ Trusted from 60).
 - **The story map** (https://claude.ai/artifact/JJLq8Be3fd21fRvtdS22EF) is a read-only page of every storylet as a
   flowchart with each beat spelt out, for reading what is in the game and saying what should change:
   `python3 tools/story/story_map.py OUT.html` makes it from `Story/Storylets`; publish it again after they change.
-- `--storylet-sim` prints the same path at its end ("The path"). The builder's Flowchart view draws a file the same
-  way while writing it, with the test player's path lit.
+- `--storylet-sim` prints the same path at its end ("The path").
 
 ### The ending
 
