@@ -667,6 +667,22 @@ are unchanged. A sprung wheel already meets the world as a cylinder ("Wheels: th
 contact. Wheel Former wheels and the Dually Wheel were already round (the Dually's tyres now 24-sided). Phase 2: the BigDrive tyres
 and drive wheels (`--gen-parts big_drive_parts`) draw a cylinder of 24, 32 or 48 sides (Medium, Large, Capital) over their hidden boxes.
 
-**Next.** A bigger tank for kit engines (a 960 kW engine burns 0.35 l/s: 15 minutes, proposed, is 315 l against the 60 l drum; the
-tank's place depends on each shape's layout); the kit choosing a Wheel Former wheel by its key (diameter, width, material) instead of a
-named wheel, which needs an off-road `wheels` row; room for the Gun Wagon's all-wheel-drive tandem.
+Phase 3 (feat/wheels-3, 2026-11-11):
+
+- **Fuel for kit engines** (`Vehicle.KitTanks`, docs/vehiclekit/ENGINEKIT.md "In a vehicle"): tanks for `EngineWish.EnduranceMinutes` at full power
+  (15, proposed: `EngineWish.DefaultEnduranceMinutes`; `--endurance MIN`). Stock vehicles keep their tanks.
+- **Formed wheels** (`Vehicle.FormedWheels`, `Vehicle.FormedWheelWish`, `--gen-vehicle NAME --formed-wheels`; off by default): each catalogue wheel
+  is replaced by a Wheel Former wheel named by its key (`Extrusion wheel 35x90x0 rubber`). The blueprint step holds that name, never the run-time id,
+  and `ConstructParts.Find` makes the piece from it. Sizing: the diameter is the catalogue wheel's, to 5 cm (the arch the body is built round). The
+  width is the load on each wheel over `FormedLoadPerM2` (1600 kg per metre of width per metre of diameter, proposed; 0.2 to 1 m). A width that
+  won't go in falls back to the catalogue wheel's width. Rubber, or steel for a wheel that can't go flat. The vehicle is weighed first with its
+  catalogue wheels. Named "... [formed wheels]". Off-road tyres are rubber too: Extrusion.json has no off-road `wheels` row yet.
+  Measured (`--speed-test`, 25 s, stock V8; catalogue then formed): Bandit Technical 1 23.9 / 24.3 m/s, 0-20 m/s 4.9 / 4.6 s (25x90 rubber
+  front, 30x85 steel rear); Bandit War Bus 1 17.5 / 17.5 (35x110, 40x90 rubber); Highland Giant Truck 8 17.1 / 17.0 (35x110 rubber, 45x85 steel).
+  All six passed the drive check.
+- **All-wheel drive on the Gun Wagon.** The refusal was not the T Gearbox. `Vehicle.RailZ` counted rows from `FrontAxleZ`, which all-wheel drive
+  moves an eighth ahead of the rails, so every bed sill was asked for between two sockets. It now counts from `Vehicle.RailGrid`, the rails' own
+  rows (the same as before without all-wheel drive). Gun Wagon seeds 1-13 now build with `--awd`. A tag axle (the War Bus, Gun Wagon 8) stays
+  undriven: driving it needs a third differential and shaft, more than a placement change.
+
+**Next.** An off-road `wheels` row in Extrusion.json, so formed off-road tyres grip as the Off-Road Wheel does; a driven tag axle.
