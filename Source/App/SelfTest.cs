@@ -122,6 +122,10 @@ public static partial class SelfTest
                 foreach (var (name, before) in _needs.Where(n => !Archived.Contains(n.Key)))
                     foreach (var b in before.Where(Archived.Contains))
                         Fail($"section \"{name}\" needs \"{b}\", which the full suite skips as archived");
+                // The suite's size is the users' call (Karl, 2026-11-11: it grew by itself until a run was a thousand lines a part).
+                var live = _names.Count(n => !Archived.Contains(n));
+                if (only == null && live > MaxSections)
+                    Fail($"the full suite has {live} sections, over SelfTest.MaxSections ({MaxSections}): a new section goes into SelfTest.Archived or takes the place of one that has passed for a while; only Karl or TwitchTheSniper raise the number");
                 _archivedSkipped = 0;
                 Sections();
                 if (only == null && shard == null)
@@ -198,10 +202,19 @@ public static partial class SelfTest
     /// <summary>The suite's long sections and about what each takes on CI's Linux runner, in seconds (a run's SLOWEST
     /// lines): <see cref="ResolveShard"/> spreads these over the parts by cost. Only the balance depends on it: a section
     /// that isn't here, or a stale number, still runs once. Add a section when a part's SLOWEST line shows it over ~30 s.</summary>
+    /// <summary>The most sections the full suite may hold (Karl, 2026-11-11). An agent never raises it: a new section is
+    /// archived (run by name with <c>--selftest-only</c>) or replaces one. Only Karl or TwitchTheSniper change the number.</summary>
+    internal const int MaxSections = 136;
+
+    /// <summary>The longest a section may take, in seconds, before the run fails (Karl, 2026-11-11). The slowest now is
+    /// "Interaction sweep" at about 120 s; a section that loops over every part or blueprint grows with the data
+    /// ("Sandbox full hands" reached six minutes), so it samples. Shortened, never raised, by an agent.</summary>
+    internal const double MaxSectionSeconds = 180;
+
     internal static readonly (string Name, double Seconds)[] ShardHeavy =
     [
-        ("Sandbox full hands", 192), ("Interaction sweep", 113), ("Music", 80), ("Decals", 48), ("Joint chain network", 39),
-        ("Map packs", 23), ("Gathering network", 23), ("Maps", 22), ("Link tool online", 21), ("Wheel orders", 21),
+        ("Interaction sweep", 120), ("Sandbox full hands", 45), ("Joint chain network", 39), ("Ride frame", 37), ("Magazine sockets", 35),
+        ("Gathering network", 23), ("Link tool online", 21), ("Wheel orders", 21),
     ];
 
     /// <summary>
@@ -262,6 +275,18 @@ public static partial class SelfTest
         "Zombies category slots", "Zombies more perks", "Zombie hordes", "Zombies cathedral", "Mass horde", "Horde stress", "Co-op",
         // the older map packs and every-map sweeps of them
         "High Ground pack", "Cluttered pack", "Military props", "Map contract", "Map horizons", "Stairs", "Decal surfaces", "Pack decals",
+        // Karl, 2026-11-11 (cut down what GitHub runs): the arena maps and their content, the arena guns and combat feel,
+        // audio, and the platform plumbing nobody is changing. Sandbox, constructs, space, planetoids, digging, saves and
+        // the allocation and source checks stay.
+        "Maps", "Map files", "Map reload", "Map packs", "Big maps", "Box batches", "Pack assets", "Foliage", "Foliage no-go",
+        "Mantling", "Slopes", "Terrain holes", "Terrain sculpting", "Terrain sculpting network", "Movers", "Map logic",
+        "Mode switch reset", "Props", "Destruction", "Animated props", "Map shapes", "Baked lighting", "Light flicker",
+        "Light leaks", "Map bake", "Nav bake", "Map kit", "Decals", "Scene graph",
+        "Melee", "Recoil", "Gun models", "Gun mix", "Launchers", "Bullet penetration", "Ragdolls and knockback", "Blast push",
+        "Weapon files",
+        "Music", "Sound", "Audio mixer",
+        "Server browser", "Invite codes", "STUN", "Server lists", "Automatic server list", "Steam platform", "Steam transport",
+        "Updates", "Update cleanup", "Frame cap", "Perf window", "UI frame spikes", "HUD layout",
     };
 
     private static int _archivedSkipped;
@@ -569,6 +594,8 @@ public static partial class SelfTest
         }
         var secs = Stopwatch.GetElapsedTime(t0).TotalSeconds;
         _times.Add((name, secs));
+        if (secs > MaxSectionSeconds)
+            Fail($"section \"{name}\" took {secs:0} s, over SelfTest.MaxSectionSeconds ({MaxSectionSeconds:0}): it has grown with the data, so make it sample or cut it; don't raise the limit");
         Line($"-- {name}: {secs:0.00} s");
     }
 

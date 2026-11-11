@@ -71,7 +71,7 @@ public static partial class SelfTest
         var nodes = 0;
         var depth = 0;
         double buildMs = 0;
-        foreach (var m in Maps.All.Where(m => m.SolidMeshes.Count == 0)) // (solid meshes, a planet: not in the box brute force below; "Planet gravity" checks them)
+        foreach (var m in Maps.All.Where(m => m.SolidMeshes.Count == 0 && m.Pack?.Folder is "Sandbox" or "Planetoids")) // (Karl, 2026-11-11: the Sandbox worlds only, not every arena and dev map) // (solid meshes, a planet: not in the box brute force below; "Planet gravity" checks them)
         {
             World.SetMap(m);
             var phys = World.Physics;

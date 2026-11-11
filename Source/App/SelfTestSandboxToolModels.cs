@@ -207,7 +207,16 @@ public static partial class SelfTest
             Fail($"tool models: no live local player and bot in the Sandbox game ({why})");
             return;
         }
-        var bot = g.Players.Values.First(p => p.Bot != null && p.Alive);
+        // (the bot can die in the 0.2 s SpawnLocalSafely runs on after it sees one: wait for it to be back, with a deadline)
+        Player? bot = null;
+        for (var waited = 0.0; waited < 8.0 && (bot = g.Players.Values.FirstOrDefault(p => p.Bot != null && p.Alive)) == null; waited += 0.1)
+            Run(g, ref now, 0.1);
+        if (bot == null)
+        {
+            Fail("tool models: the Sandbox game's bot didn't come back within 8 s of dying");
+            return;
+        }
+        bot.ImmuneUntil = now + 1e6;
         var me = g.Local!;
         var welder = ToolRender.ModelFor(ConstructTool.Welder);
         var body = welder.Boxes[1].Color; // (the welder's orange body)
