@@ -45,7 +45,9 @@ part (the step's `drops` first, within 60 m) or free Bunk (within 200 m), with a
 from the constructs it has, twice a second, nothing allocated (`Ui.TutorialLook`). `"hint"` (with `{Action}` keys) shows under
 the warden's line once the step has been up `hintAfter` seconds (default 35). `"drops"` (at most four part names) are set down
 in a row two metres in front of the person as the step starts, theirs like a part they dropped (`TutorialDrop`): the `hold` step
-drops two Frame Blocks and `weld` one more, so the build steps never lack a part. The penal colony has two Bunks down the yard's
+drops two Lamps and `weld` one more, so the build steps never lack a part, and `carry` drops a Frame Block for the physics gun.
+A part the hands steps drop must be an item (not physics-only: welder-fitted, over 40 kg or bulky, which F can't pick up) and
+fit a backpack slot (the `backpack` step stows it); a Frame Block is structural, so it only suits the physics gun. The penal colony has two Bunks down the yard's
 west side (the open-air dormitory, tools/constructs/building_parts.py) for the `bunk` step.
 
 **Tools are issued as the steps need them** (Karl, 2026-11-08). While the induction runs the player has no gun and no tool but
