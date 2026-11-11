@@ -173,7 +173,9 @@ public static class RouteEndsProbe
                 var (from, fb, to, tb) = pairs[k];
                 s.Asked++;
                 var ask = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = 255, Nodes = nodes, Count = 0, To = to, ToPort = tb };
+                RouteSearch.RouteDebug = Environment.GetEnvironmentVariable("ROUTE_DEBUG") == "3" && c.DefOf(to).Name == "Piece Rack" && c.DefOf(from).Name == "Conveyor Splitter";
                 var r = Run(ask, ref s);
+                RouteSearch.RouteDebug = false;
                 if (r.State != RouteSearchState.Found && Environment.GetEnvironmentVariable("ROUTE_DEBUG") == "1")
                 {
                     RouteSearch.RouteDebug = true;

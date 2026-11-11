@@ -384,7 +384,7 @@ public sealed class RouteSearch
         var c = _ask.C;
         var margin = _flat ? FlatStages[_stage].Margin : ShaftStages[_stage].Margin;
         _clear = _flat ? FlatStages[_stage].Clear * _radius : _radius + 0.01f;
-        _hFactor = c.RouteCount > 0 || c.TrayCount > 0 ? 0.82f : 0.92f;
+        _hFactor = c.RouteCount > 0 || c.TrayCount > 0 ? BesideFactor : HugFactor;
         _min = ConstructWorld.Quantise(Vector3.Min(_s, _g) - new Vector3(margin)); // (on the 1 cm grid: so are the planes)
         _max = ConstructWorld.Quantise(Vector3.Max(_s, _g) + new Vector3(margin));
         _partAt = 0;
@@ -1691,6 +1691,16 @@ public sealed class RouteSearch
             var ad = Vector3.Abs(d) / len;
             if (i > from && MathF.Max(ad.X, MathF.Max(ad.Y, ad.Z)) < square)
                 return false; // (a new leg runs along an axis, or slopes a little off one)
+            if (i > from)
+            {
+                // (and is long enough for the turns at its ends: between two, the run a turn needs; from a port to one, its stub)
+                var before = i >= 2 ? Angle(p[i - 1] - p[i - 2], d) > ConstructRoutes.ConveyorBendDeg : din0 != Vector3.Zero && !port0 && Angle(din0, d) > ConstructRoutes.ConveyorBendDeg;
+                var after = i + 1 < n && Angle(d, p[i + 1] - p[i]) > ConstructRoutes.ConveyorBendDeg;
+                var portEnd = i == n - 1 && into != Vector3.Zero || i == 1 && port0;
+                var need = before && after ? _minRun : portEnd && (before || after) ? _endStub : before || after ? _minRun * 0.5f : 0f;
+                if (len < need - 0.005f)
+                    return false;
+            }
             if (i + 1 < n)
             {
                 var deg = Angle(d, p[i + 1] - p[i]);
