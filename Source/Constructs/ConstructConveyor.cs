@@ -314,13 +314,22 @@ public static class ConstructConveyor
         Vector3 z, mid;
         if (s < 0 && via >= 0 && LeadIn(c, route, via, out var inEnd, out var centre, out var outStart) is var lead and > 0)
         {
-            // Still in the junction it came through: on its lead-in, from the input's end through the junction's middle to here.
-            var back = MathF.Min(-s, lead);
-            var second = Vector3.Distance(centre, outStart);
-            (a, b, var t) = back <= second ? (centre, outStart, second - back) : (inEnd, centre, lead - back);
-            segLen = Vector3.Distance(a, b);
-            z = segLen > 1e-4f ? (b - a) / segLen : Vector3.UnitZ;
-            mid = a + z * MathF.Max(0, t);
+            if (-s > lead)
+            {
+                // Its middle is still on the conveyor it came off: as it was there.
+                Pose(c, via, Length(c, via) + s + lead, d, out origin, out rot, out seg);
+                return;
+            }
+            // In the junction: along its lead-in, from the input's end through the junction's middle to here, turning from the
+            // way it came to the way it goes as it crosses (a turntable's turn, not a snap at the middle).
+            var first = Vector3.Distance(inEnd, centre);
+            var u = lead + s; // (how far its middle is in)
+            mid = u <= first ? Vector3.Lerp(inEnd, centre, first > 1e-4f ? u / first : 1) : Vector3.Lerp(centre, outStart, (u - first) / MathF.Max(1e-4f, lead - first));
+            var zin = first > 1e-4f ? Vector3.Normalize(centre - inEnd) : Vector3.UnitZ;
+            var zout = lead - first > 1e-4f ? Vector3.Normalize(outStart - centre) : zin;
+            var blend = Vector3.Lerp(zin, zout, Math.Clamp(u / lead, 0, 1));
+            z = blend.LengthSquared() > 1e-6f ? Vector3.Normalize(blend) : zout;
+            seg = c.Parts[c.Routes[route].From].Seg;
         }
         else
         {
