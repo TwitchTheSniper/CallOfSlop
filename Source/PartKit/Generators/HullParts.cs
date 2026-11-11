@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// body's front, Tails its back, the Door Bay holds a side door.
 ///
 /// Facets are "hull" shapes (drawn only, any angle); hidden boxes stand for them to the build rules, the physics and a player's feet.
-/// The inside is hollow to all of them. Recipes come from tools/constructs/assembling.py; run it after this one.
+/// The inside is hollow to all of them. Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// </summary>
 public sealed class HullParts : IPartGenerator
 {

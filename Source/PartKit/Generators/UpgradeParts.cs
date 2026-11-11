@@ -2,8 +2,7 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The tool upgrades: Constructs/ToolUpgrades.json and the module parts in Constructs/Parts/Upgrades (docs/sandbox/TOOL-UPGRADES.md). Was
-/// tools/constructs/upgrade_parts.py, which stays while tools/constructs/assembling.py imports its RECIPES; until assembling is ported,
-/// a change to a module or its recipe goes in both, and <c>--gen-parts upgrade_parts --check</c> shows whether they agree.
+/// tools/constructs/upgrade_parts.py. <see cref="Assembling"/> takes the modules' recipes from <see cref="Recipes"/>: run it after this.
 ///
 /// Each stat (ToolStat in Source/Constructs/ToolUpgrades.cs, in that order) has a base value, what every survivor starts with, and levels,
 /// each made by fitting one module part (F on it lying loose). An Assembler builds the modules (<see cref="Recipes"/>). Some are taught by
@@ -14,7 +13,7 @@ public sealed class UpgradeParts : IPartGenerator
     public string Name => "upgrade_parts";
 
     private const string Format = "call-of-slop-tool-upgrades/1";
-    private const string About = "Tool upgrades (docs/sandbox/TOOL-UPGRADES.md). Written by tools/constructs/upgrade_parts.py: fix it, not this file. "
+    private const string About = "Tool upgrades (docs/sandbox/TOOL-UPGRADES.md). Written by the part kit (--gen-parts upgrade_parts): fix it, not this file. "
         + "Each stat: 'base' is where every survivor starts, 'creative' what creative gives, 'levels' each made by fitting its "
         + "module 'part' (F on it, lying loose), in order of value; a higher Mk may be fitted over a lower. A function is base 0 "
         + "and one level of 1. The stats' order is ToolStat's (Source/Constructs/ToolUpgrades.cs).";
@@ -38,7 +37,7 @@ public sealed class UpgradeParts : IPartGenerator
             [("Kinetic Coil", "KineticCoil", 1, 4)]),
     ];
 
-    /// <summary>What an Assembler takes for each module (assembling.py's rec(): output, seconds, tier, materials, parts).</summary>
+    /// <summary>What an Assembler takes for each module (Assembling.Rec: output, seconds, tier, materials, parts).</summary>
     public static readonly (string Output, int Seconds, int Tier, (string, int)[] Materials, (string, int)[]? Parts)[] Recipes =
     [
         ("Lift Coil Mk 2", 20, 2, [("copper", 6), ("steel", 4)], [("Copper Coil", 1)]),

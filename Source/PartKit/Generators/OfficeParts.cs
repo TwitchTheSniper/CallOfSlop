@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// (docs/story/STORY.md, "The IT Department's fax"). Furniture stands on feet on the floor's quarter grid and faces its own +z, into
 /// the room, as BodyParts' does. Each trophy stands on one "base" socket and points up its own +y, so the kit turns
 /// it outward, as the bandit parts do (BanditParts.cs). Leaves and soil aren't paintable; the rest takes the style's paint. Faces that
-/// meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces"). Recipes come from tools/constructs/assembling.py; run it after this one.
+/// meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces"). Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// </summary>
 public sealed class OfficeParts : IPartGenerator
 {

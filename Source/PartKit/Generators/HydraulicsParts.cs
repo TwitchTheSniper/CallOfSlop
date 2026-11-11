@@ -10,7 +10,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// is a logic part whose signal, -1 to 1, is how far open it is and which way: a Lever Valve is the Analog Lever's handle, sprung to the
 /// middle, and a Digital Valve Block takes a data signal. A head is the part a cylinder's tool leaves at its first point ("toolOnly"): it
 /// carries the ports, and the attach tool's Cylinder mode names it by its size. Force is the pump's pressure over the head's area, speed
-/// the pump's flow over the area. Recipes come from tools/constructs/assembling.py.
+/// the pump's flow over the area. Recipes come from the part kit's assembling (--gen-parts assembling).
 /// </summary>
 public sealed class HydraulicsParts : IPartGenerator
 {

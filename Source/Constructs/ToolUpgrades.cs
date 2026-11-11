@@ -20,7 +20,7 @@ public enum ToolStat : byte
 
 /// <summary>
 /// Per-player tool upgrades (docs/sandbox/TOOL-UPGRADES.md; data: Constructs/ToolUpgrades.json, written by
-/// tools/constructs/upgrade_parts.py with the module parts and their recipes). Each <see cref="ToolStat"/> has a base value
+/// the part kit's upgrade_parts with the module parts and their recipes). Each <see cref="ToolStat"/> has a base value
 /// (what every survivor starts with) and levels, each made by fitting one module part (F on it): an Assembler builds the
 /// modules, some only once a faction has taught them. Creative gives every stat its <c>creative</c> value. A file that is
 /// refused leaves the built-in table below (the same numbers) and says why in <see cref="Problem"/>.

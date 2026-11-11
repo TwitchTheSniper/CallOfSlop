@@ -7,7 +7,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The lift parts: Constructs/Parts/Air and the demo airships (docs/sandbox/CONSTRUCTS.md, "Air and lift"). Was tools/constructs/air_parts.py.
 /// Lift cells are Tank Volumes whose box is a solid envelope, soft or armoured, in four sizes, and two rigid Vacuum Cells. Burners heat the
-/// cell up their flame. Recipes come from tools/constructs/assembling.py. Airship is shared with FlightParts.
+/// cell up their flame. Recipes come from the part kit's assembling (--gen-parts assembling). Airship is shared with FlightParts.
 /// </summary>
 public sealed class AirParts : IPartGenerator
 {

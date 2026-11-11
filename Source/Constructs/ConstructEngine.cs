@@ -34,7 +34,7 @@ public enum EngineFault : byte
 }
 
 /// <summary>
-/// The rules (Constructs/ModularEngine.json, written by tools/constructs/engine_parts.py): each size's power a cylinder and
+/// The rules (Constructs/ModularEngine.json, written by the part kit's engine_parts): each size's power a cylinder and
 /// its rpm, and the simple sums' numbers. The defaults match the file.
 /// </summary>
 public sealed class EngineRules

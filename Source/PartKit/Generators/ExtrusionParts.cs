@@ -9,7 +9,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// An Extruder pushes bulk material through a die; a Wheel Former builds a wheel up on its hub, wider or bigger; a Fan Former a whole prop,
 /// an Airframe Former a wing. Each comes in the four size classes: the small Extruder widens its die with Die Frames, the bigger ones are
 /// their die. The sizes are part data (storage.extrude, storage.wheel), so a new line of machines is a row here. Run
-/// tools/constructs/assembling.py after it for the recipes.
+/// the part kit's assembling (--gen-parts assembling) after it for the recipes.
 /// </summary>
 public sealed class ExtrusionParts : IPartGenerator
 {

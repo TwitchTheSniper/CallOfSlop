@@ -118,7 +118,7 @@ differs from every box it touches, so no coplanar pair appears), `"tier"`, more 
 `thirst`: a cylinder may now carry them (`ConstructDriveParts.ParseEnginePiece`), and `ConstructEngine.Build` multiplies its kW and
 burn by them (1 for every older cylinder, so nothing shipped changes).
 
-**Survival.** Each has an Assembling recipe by rule (`tools/constructs/assembling.py`, `long_tail`): the plain cylinder's steel and
+**Survival.** Each has an Assembling recipe by rule (the part kit's `--gen-parts assembling`, `long_tail`): the plain cylinder's steel and
 Piston Sets, plus bronze and Bearings (Bored, tier 3 Assembler), then copper and a Circuit Board (Performance, tier 4), or gold and a
 Control Unit (Racing, tier 5); Large and Capital ones need at least the size class's Assembler as every part does.
 

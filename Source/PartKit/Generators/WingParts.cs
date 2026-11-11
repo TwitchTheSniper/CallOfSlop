@@ -7,7 +7,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// docs/sandbox/CONSTRUCTS.md, "Wings" and "Propellers and rotors". Was tools/constructs/wing_parts.py.
 ///
 /// A wing is a frame with a "surface" block, a control surface one with a "control" inside it, a rotor a part of role "rotor": what they
-/// do in the air is in their numbers, so a new one is a row here. Each family comes in the size classes. Run tools/constructs/assembling.py
+/// do in the air is in their numbers, so a new one is a row here. Each family comes in the size classes. Run the part kit's assembling (--gen-parts assembling)
 /// after it for their recipes.
 /// </summary>
 public sealed class WingParts : IPartGenerator

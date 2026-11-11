@@ -5,7 +5,7 @@ namespace CallOfSlop.PartKit.Generators;
 ///
 /// A station is an Inventory Beacon with an aid (storage.beacon names it): it is welded on, wants power and a chute to a store, and the
 /// last box of each model is the lamp that lights while it works. Numbers (mass, health, power) are here; ranges are in
-/// Constructs/Beacons.json; recipes in tools/constructs/assembling.py. Boxes go through zfight (CLAUDE.md, "No coplanar faces").
+/// Constructs/Beacons.json; recipes in the part kit's assembling (--gen-parts assembling). Boxes go through zfight (CLAUDE.md, "No coplanar faces").
 /// It writes its own files, not through PartKitMath.WriteParts: corners are kept as given (an int stays an int), and the folder isn't owned.
 /// </summary>
 public sealed class StationParts : IPartGenerator

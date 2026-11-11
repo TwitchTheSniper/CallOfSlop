@@ -9,7 +9,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// A press stamps parts out of extruded pieces. It has 2 or 3 bays and a die slot; the die sets the family, the material the tier, a
 /// piece's size across or its length the size or the count. Presses, lathes and dies come in the four size classes, and a die fits a press
 /// of its own class. All sizes are in cells of the class, so a new class or a new die family is a row here. The table is flat on purpose:
-/// one row per family, material and size band, so the coverage of the Assembler's list can be counted. Run tools/constructs/assembling.py
+/// one row per family, material and size band, so the coverage of the Assembler's list can be counted. Run the part kit's assembling (--gen-parts assembling)
 /// after it for the machines' recipes.
 /// </summary>
 public sealed class PressParts : IPartGenerator

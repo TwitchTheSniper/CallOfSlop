@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 ///
 /// A slope is a "wedge" shape with its front end sheared (shift), which the game turns into a real convex collider; hidden boxes in steps
 /// under it are what the build rules and a player's feet see. A big shell is hollow to the build rules: only its skin is solid, so an
-/// engine or a seat fits inside it. Recipes come from tools/constructs/assembling.py; run it after this one.
+/// engine or a seat fits inside it. Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// </summary>
 public sealed class BodyParts : IPartGenerator
 {

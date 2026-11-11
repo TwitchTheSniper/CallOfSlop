@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Sandbox's free rotation parts (Constructs/Parts/Free): joints that turn with no motor, spring or power
 /// (docs/sandbox/CONSTRUCTS.md, "Free rotation"; Source/Constructs/ConstructLinear.cs). A Free Swivel turns about the line through
 /// its leaf socket (a lazy Susan), a Free Pivot about an axis across it (a pendulum). A Lock signal holds it; limits are a setting,
-/// off to begin with. Was tools/constructs/free_parts.py. Run tools/constructs/assembling.py after it for the recipes.
+/// off to begin with. Was tools/constructs/free_parts.py. Run the part kit's assembling (--gen-parts assembling) after it for the recipes.
 /// </summary>
 public sealed class FreeParts : IPartGenerator
 {

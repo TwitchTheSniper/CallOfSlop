@@ -8,7 +8,7 @@ namespace CallOfSlop.EngineKit;
 /// their size, in each of the modular engine's four sizes (Constructs/Parts/EngineKit). <c>--gen-engine-parts [--check]</c> writes them, or with --check only
 /// says which are out of date. Run it from the repo root.
 /// <para>
-/// A tier's cylinder is the plain cylinder (Constructs/Parts/ModularEngine, tools/constructs/engine_parts.py) with the same boxes and sockets, so the same
+/// A tier's cylinder is the plain cylinder (Constructs/Parts/ModularEngine, the part kit's engine_parts) with the same boxes and sockets, so the same
 /// geometry the z-fight corrector already settled, a head of the tier's colour (the head already differs in colour from every box it meets, so recolouring
 /// it adds no coplanar pair), its own power and thirst (<c>enginePiece.power</c>, <c>thirst</c>: <see cref="ConstructEngine"/> multiplies a cylinder's kW by
 /// them), a little more mass and toughness, and its <c>tier</c>.

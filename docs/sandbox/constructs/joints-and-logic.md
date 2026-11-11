@@ -44,7 +44,7 @@ The user: "a wireless seat connection. I want the player to be able to control d
 
 Karl's idea (2026-11-08): a body you can risk. Code: `Source/Constructs/ConstructShell.cs` (the part keys, which shell a chair
 reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the save); parts made by the part kit's `--gen-parts shell_parts`
-(`Constructs/Parts/Shells`), recipes in `tools/constructs/assembling.py`. The story's first use of them is the Orbital Depot
+(`Constructs/Parts/Shells`), recipes in the part kit's `--gen-parts assembling`. The story's first use of them is the Orbital Depot
 (docs/story/DEPOT.md).
 
 - **Robot Shell**: a standing robot, its own construct of one part (`"shell": {"body": true}`), with a channel. A shell fitted

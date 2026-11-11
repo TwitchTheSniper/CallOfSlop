@@ -7,7 +7,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// and what bandits bolt on for show: spikes, skulls and a hubcap. A spike and a trophy stand on one "base" socket and point up
 /// their own +y, so the kit turns them outward. A drum and a spike are round: a hidden solid box for the collider and the build
 /// rules, a cylinder drawn over it, as Steel Tube does. Bone isn't paintable; the rest takes war paint.
-/// Was tools/constructs/bandit_parts.py. Recipes come from tools/constructs/assembling.py; run it after this one.
+/// Was tools/constructs/bandit_parts.py. Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// </summary>
 public sealed class BanditParts : IPartGenerator
 {

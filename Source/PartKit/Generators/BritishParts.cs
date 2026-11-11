@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// pillar box and a red telephone box (loot in each) round a tea urn. Dressing stands on one "base" socket and points up its own +y, so
 /// the kit turns it outward, as the bandit parts do (BanditParts.cs); furniture stands on feet on the floor's quarter grid, as
 /// OfficeParts.cs's Server Rack does. Faces that meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces").
-/// Recipes come from tools/constructs/assembling.py; run it after this one.
+/// Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// </summary>
 public sealed class BritishParts : IPartGenerator
 {

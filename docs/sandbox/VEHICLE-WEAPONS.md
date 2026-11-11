@@ -98,7 +98,7 @@ The standalone Turret never takes one (0.5 m up its missile drops into the groun
 ## Phase 4 (2026-11-10): multi-station batteries, a flame projector
 
 **Multi-station batteries.** The gunsmith's ladder is back to four sizes: Launch Rack (1), Twin Launch Rack (1 x 2), Launch Rack 2x2 (rows fore and aft) and Launch Rack 1x6, all 25 cm
-by 3 m presets from `tools/constructs/air_weapons_parts.py`; a six-station rack stands out on a 1 m beam, the others on half a metre. The misses were never in the flight: on
+by 3 m presets from the part kit's `air_weapons_parts`; a six-station rack stands out on a 1 m beam, the others on half a metre. The misses were never in the flight: on
 `--bench-vehicle-guns --battery N` (now printing each missile's lock and where it ended) every missile of the 2-, 4- and 6-station racks locked the truck 70 m ahead and
 burst within 3 m of it (one of six went off on the first missile's wreckage 15 m short). What failed was the loading: stations were refused by a centimetre's rounding.
 A designed missile's hidden lug box poked 1 cm past its lug into the rack's face, and its body box was exactly the station pitch wide; a part's place rounds to the

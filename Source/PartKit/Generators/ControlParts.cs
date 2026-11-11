@@ -8,7 +8,7 @@ namespace CallOfSlop.PartKit.Generators;
 ///
 /// An Analog Lever is a housing with a slot along its top and a handle that tilts in the slot with the part's value (a "lever" rig, the
 /// drawing's moving-box path), a block at each end of the slot for its end stops. The handle is a detail, so a hidden box stands where it
-/// swings: the crosshair finds the part there. Recipes come from tools/constructs/assembling.py; run it after this one.
+/// swings: the crosshair finds the part there. Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// <see cref="Lever"/> and <see cref="Config"/> are shared with <see cref="HydraulicsParts"/>.
 /// </summary>
 public sealed class ControlParts : IPartGenerator
