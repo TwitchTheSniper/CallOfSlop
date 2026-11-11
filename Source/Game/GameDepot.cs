@@ -134,7 +134,7 @@ public sealed partial class Game
             ref var run = ref _dp[p.Id];
             if (run.State == DepotNone)
             {
-                if (_tutState[p.Id] is TutorialState.Finished or TutorialState.Skipped && !OpeningHas(p.Id) && !DepotByStorylet) // (else a storylet's "depot" hook: DepotOffer)
+                if (_tutState[p.Id] is TutorialState.Finished or TutorialState.Skipped && !OpeningHas(p.Id) && !DepotByStorylet && QuarryLetsDepot(p.Id)) // (else a storylet's "depot" hook: DepotOffer)
                     DepotSet(p, DepotReport, now, DepotScript.Current.Memo.Replace("{name}", p.Name));
                 continue;
             }

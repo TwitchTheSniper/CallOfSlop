@@ -114,6 +114,7 @@ public enum Msg : byte
     StoryPaths, // server -> one client, Sandbox story: their storylets for the Logbook's Paths (u8 n, (u16 storylet, u8 state, u8 ends had, u8 times, u32 story second, str who led) each; u8 tracks, (u8 quality, i16 value) each; u8 people, (str name, i8 standing) each) when it changes (reliable ordered; GameStoryPaths.cs, protocol 232)
     TalkInvite, // server -> one client, Sandbox story: another player began talking to one of the story's people and this one may join (u8 1, u8 the talker, u8 the body's player), or the talk they joined is over (u8 0, u8 0, u8 the body) (reliable ordered; GameStoryTalkJoin.cs, protocol 232)
     StandIn, // STAND-IN: server -> all, Sandbox story: a placeholder craft's script (u16 id, u8 kind, u8 flags, u32 start tick, u16 in, u16 wait, u16 out ticks, vec land, vec way) when it changes (reliable ordered), and every craft again every 3 s (unreliable) for anyone who joined (Source/StandIns/GameStandIns.cs, protocol 233)
+    Quarry, // server -> one client, Sandbox story: their place on the first Ministry duty (u8 state, u8 has a target, vec target, u32 the tick they boarded the crew bus (0: not riding), u16 bus leaving, u16 bus arriving) when it changes (reliable ordered; GameQuarry.cs, protocol 236)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

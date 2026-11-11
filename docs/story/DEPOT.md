@@ -7,6 +7,10 @@ Depot**, a Ministry station 1.5 km overhead. There they fetch a Driving Module, 
 lander down to the apron in front of the Remote Works, where their real body is waiting. The lander is theirs to keep:
 their first spacecraft.
 
+Since 2026-11-10 the depot comes after the first Ministry duty, the quarry (docs/story/DUTIES.md): a player starts it once that
+duty is done or skipped (`QuarryLetsDepot`), or straight after the induction in a world with no quarry. The panel stays hidden
+while the quarry duty runs.
+
 The shell itself (parts, waking, leaving, a lethal hit only losing the shell) is docs/sandbox/CONSTRUCTS.md, "Robot shells".
 The depot's side is `Source/Game/GameDepot.cs`, its words `Story/Depot/Depot.json`, the panel `Source/UI/UiDepot.cs`.
 

@@ -45,6 +45,8 @@ Delete this folder, then every line marked `STAND-IN` (`git grep -n "STAND-IN"`)
 - `Source/App/Program.cs`: `StandInRender.Draw`
 - `Source/UI/UiStoryPeople.cs`: the "Craft" switch and the "Call craft" button
 - `docs/story/STORY.md`: the "Stand-in craft" paragraph
+- `Source/Game/GameQuarry.cs`: the quarry duty's crew bus (`StandInFor.Duty`, the ride steps) and `Source/App/Program.Quarry.cs`
+  (the ride's camera): a real crew bus that carries players replaces both (docs/story/DUTIES.md "The crew bus")
 
 When the real ships and vehicles can carry people, the hooks above are where they plug in: the same moments (a body
 about to appear at a road's end, a body walking out, a crate sealed) want a real craft instead.

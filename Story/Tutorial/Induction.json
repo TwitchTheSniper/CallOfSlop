@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-tutorial/1",
- "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun, no tools but bare hands and no backpack while it runs: \"gives\" names the tools a step hands over (kept for every later step; \"backpack\" hands over the backpack), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings), stow (a part put in the backpack), draw (a part taken out of it), carry (the physics gun took hold of something), bunk (lay in a Bunk). Optional per step: \"target\" (loose: a loose single part, the step's drops first; bunk) shows an orange marker on the nearest one and how far it is; \"hint\" shows after \"hintAfter\" seconds on the step (default 35); \"drops\" (part names, at most 4) are set down in front of the player as the step starts. The induction is about the person (Karl, 2026-11-10): the machines are taught later, on Ministry duties.",
+ "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun, no tools but bare hands and no backpack while it runs: \"gives\" names the tools a step hands over (kept for every later step; \"backpack\" hands over the backpack), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings), stow (a part put in the backpack), draw (a part taken out of it), carry (the physics gun took hold of something), bunk (lay in a Bunk). Optional per step: \"target\" (loose: a loose single part, the step's drops first; bunk) shows an orange marker on the nearest one and how far it is; \"hint\" shows after \"hintAfter\" seconds on the step (default 35); \"drops\" (part names, at most 4) are set down in front of the player as the step starts. The induction is about the person (Karl, 2026-11-10): the machines are taught later, on Ministry duties. No inventory step: the induction runs in survival, where the Tab parts menu is off away from a beacon (SandboxInventoryAllowed).",
  "speaker": "Warden Pettigrew",
  "steps": [
   {
@@ -50,14 +50,6 @@
    "cue": "crouch"
   },
   {
-   "id": "inventory",
-   "title": "Your inventory",
-   "text": "Press {SandboxInventory} to open your inventory: parts, materials and tools you carry. {SandboxInventory} or Esc closes it.",
-   "warden": "Your personal effects have been confiscated, catalogued and lost. That's what's left.",
-   "cue": "inventory",
-   "hint": "One press of {SandboxInventory}. It opens, you look, it shuts."
-  },
-  {
    "id": "toolwheel",
    "title": "The tool wheel",
    "text": "Hold {ToolWheel} for the tool wheel. Flick the mouse to a tool and let go to take it out; let go in the middle to cancel. Tools are issued as this induction needs them; your gun comes back at the end.",
@@ -76,7 +68,7 @@
     "Frame Block",
     "Frame Block"
    ],
-   "hint": "Walk up close to a Frame Block, aim the crosshair at it and press {Interact}. Lost them? Your inventory ({SandboxInventory}) may hold a part too."
+   "hint": "Walk up close to a Frame Block, aim the crosshair at it and press {Interact}. Lost them? The orange marker shows the nearest one."
   },
   {
    "id": "backpack",
