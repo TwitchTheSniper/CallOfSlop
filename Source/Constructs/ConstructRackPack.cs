@@ -305,7 +305,7 @@ public static class ConstructRackPack
         for (var s = 0; s < st.SlabN; s++)
         {
             ref var sl = ref st.Slabs![s];
-            var key = ConstructParts.Get(sl.Def) is { IsExtrusion: true } ex ? (ulong)ex.ExKey.GetHashCode() : sl.Def; // (an extrusion's id is this machine's own)
+            var key = ConstructParts.Get(sl.Def) is { IsExtrusion: true } ex ? ex.ExKey.Stable() : sl.Def; // (an extrusion's id is this machine's own)
             h = (h ^ key ^ (ulong)sl.Z0Mm << 20 ^ (ulong)sl.Lanes << 40) * 1099511628211UL;
             for (var l = 0; l < sl.Lanes; l++)
                 h = (h ^ st.SlabLanes![s * MaxLanes + l]) * 1099511628211UL;
