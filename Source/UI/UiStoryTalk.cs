@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The talk panel (Program.StoryTalk.cs; docs/story/STORY.md "Talking to people"): opened with the use key on one of the
 /// story's people, at the right of the screen over the world (it goes on, and so do they). It shows what they said to
-/// you lately and four asks: hello, any news, trade what you hold (a trader takes it and gives you something of theirs),
+/// you lately and asks: hello, any news, what's this place, what do you do, any advice, trade what you hold (a trader takes it and gives you something of theirs),
 /// goodbye. The host decides everything; their answers come back as their own words. Esc, Goodbye or walking off
 /// closes it. Every line is ASCII; nothing allocates in a steady frame.
 /// </summary>
@@ -86,6 +86,12 @@ public sealed partial class Ui
                 asked = TalkAsk.Greet;
             if (ImGui.Button("Any news?##talknews"u8, w))
                 asked = TalkAsk.News;
+            if (ImGui.Button("What's this place?##talkplace"u8, w))
+                asked = TalkAsk.Place;
+            if (ImGui.Button("What do you do here?##talkself"u8, w))
+                asked = TalkAsk.Self;
+            if (ImGui.Button("Any advice?##talkadvice"u8, w))
+                asked = TalkAsk.Advice;
             ImGui.BeginDisabled(held == ConstructParts.None || joined != null); // (a trade wants you there)
             if (ImGui.Button(_talkTradeLabel, w))
                 asked = TalkAsk.Trade;

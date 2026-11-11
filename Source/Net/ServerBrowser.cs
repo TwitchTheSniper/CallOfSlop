@@ -380,7 +380,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 234: Msg.Shot carries a kinds byte after the end count (Game.ShotKindBuildOnly): a hit on a build only gets its own hit-marker colour.
     // 235: mains lamps (logic "mains", docs/sandbox/INTERIORS.md phase 11) are left out of a pose's signals: every peer lights them from the circuit (ConstructLamps.Lit).
     // 236: the first Ministry duty (docs/story/DUTIES.md): Msg.Quarry at the end of Msg, CActKind.QuarrySkip at the end of CActKind; stand-in craft gain a Duty purpose (host only).
-    public const byte ProtocolVersion = 236;
+    // 237: the talk panel's topics: TalkAsk.Place, Self and Advice (6-8) and TalkAsk.Choose moves up to 9.
+    public const byte ProtocolVersion = 237;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
