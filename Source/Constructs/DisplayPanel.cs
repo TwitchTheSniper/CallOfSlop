@@ -185,6 +185,41 @@ public sealed class PanelCard
         return this;
     }
 
+    /// <summary>Line <paramref name="from"/>'s text on the end of <paramref name="line"/>, and <paramref name="from"/> emptied.</summary>
+    public PanelCard Join(int line, int from)
+    {
+        if (from is < 0 or >= MaxLines || line == from)
+            return this;
+        for (var k = 0; k < _len[from]; k++)
+            Add(line, _text[from * MaxChars + k]);
+        return ClearLine(from);
+    }
+
+    public PanelCard ClearLine(int line)
+    {
+        if (line is >= 0 and < MaxLines)
+        {
+            _len[line] = 0;
+            _tintTo[line] = 0;
+            _dim[line] = false;
+        }
+        return this;
+    }
+
+    /// <summary>A line moved <paramref name="n"/> characters to the right.</summary>
+    public PanelCard Indent(int line, int n)
+    {
+        if (line is < 0 or >= MaxLines || n <= 0)
+            return this;
+        var len = Math.Min(_len[line] + n, MaxChars);
+        for (var k = len - 1; k >= n; k--)
+            _text[line * MaxChars + k] = _text[line * MaxChars + k - n];
+        for (var k = 0; k < n && k < len; k++)
+            _text[line * MaxChars + k] = ' ';
+        _len[line] = len;
+        return this;
+    }
+
     /// <summary>Spaces up to column <paramref name="col"/>.</summary>
     public PanelCard PadTo(int line, int col)
     {
@@ -226,14 +261,17 @@ public sealed class PanelCard
     /// <summary>The scroll mark at the right of a line: "3-8 of 14".</summary>
     public PanelCard ScrollMark(int line, int first, int shown, int total, int cols)
     {
-        if (shown >= total || total <= 0)
+        if (shown >= total || total <= 0 || shown <= 0)
             return this;
         var width = 5 + Digits(first + 1) + Digits(first + shown) + Digits(total);
+        var brief = _len[line] + 1 + width > cols; // (short of room: "3-8/14")
+        if (brief)
+            width -= 3;
         if (_len[line] + 1 + width > cols)
             Clip(line, Math.Max(3, cols - width - 1));
         PadTo(line, cols - width);
         var from = _len[line];
-        Add(line, first + 1).Add(line, '-').Add(line, first + shown).Add(line, " of ").Add(line, total);
+        Add(line, first + 1).Add(line, '-').Add(line, first + shown).Add(line, brief ? "/" : " of ").Add(line, total);
         return Tint(line, from, _len[line], new Vector3(0.62f, 0.7f, 0.78f));
     }
 

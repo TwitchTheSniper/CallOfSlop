@@ -170,14 +170,16 @@ public static class MachineScreens
         {
             // Work orders (WorkOrders.cs): stock, the piece so far, then the queue: its totals and the next three (the buttons under them).
             Amount(card, 1, "Stock ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+            var from = 2;
             if (ConstructExtruder.ProductOf(c, part) is var piece and >= 0 && c.Parts[piece].D is { IsExtrusion: true } od)
             {
+                from = 3;
                 if (wheel)
                     card.Add(2, "Wheel ").AddFixed(2, od.ExKey.W / 100f, 2).Add(2, " x ").AddFixed(2, od.ExKey.H / 100f, 2).Add(2, " m");
                 else
                     card.Add(2, "Piece ").AddFixed(2, od.ExKey.L / 100f, 2).Add(2, " m");
             }
-            WorkOrders.FillQueue(p, card, 3);
+            WorkOrders.FillQueue(p, card, from); // (the queue straight under the stock when nothing is on the die)
             card.Bar = -1;
             return;
         }

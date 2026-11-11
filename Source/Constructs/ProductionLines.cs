@@ -243,10 +243,12 @@ public static class ProductionLines
             stateW = Math.Max(stateW, Word(s).Length);
         }
         card.State = !on ? PanelState.Idle : worst;
-        card.Add(0, on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
         // The name's column: what the state's leaves; on a narrow screen (a big Text size) the state goes on the detail line.
         var nameW = cols - 2 - stateW;
-        var stateBelow = nameW < 6;
+        var longest = 0;
+        for (var k = 0; k < n; k++)
+            longest = Math.Max(longest, NameOf(c, list[..n], k).Length);
+        var stateBelow = nameW < longest && nameW < cols - 1; // (a name that wouldn't fit beside its state: the state goes under it, every name whole)
         if (stateBelow)
             nameW = cols - 1;
         var room = Math.Max(1, rows - 1);
@@ -265,6 +267,8 @@ public static class ProductionLines
         }
         first = card.Scroll = Math.Clamp(first, 0, card.ScrollMax);
         var shown = Math.Min(fit, n - first);
+        var brief = shown < n && cols < 24; // (the scroll mark needs the room: "Running 2/3")
+        card.Add(0, brief ? on ? "Running " : "Stopped " : on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
         card.ScrollMark(0, first, shown, n, cols).Clip(0, cols);
         var line = 1;
         for (var k = first; k < first + shown && line < rows; k++)
@@ -312,13 +316,10 @@ public static class ProductionLines
                 card.Add(line, StallWord((ExtrudeStall)st.Refused)).Add(line, ", ");
             if (mp.Orders is { } q)
             {
-                if (q.Count == 0)
+                if (q.Total == 0)
                     card.Add(line, "no orders");
                 else
-                {
-                    card.Add(line, q.PiecesLeft).Add(line, " to go: ");
-                    WorkOrders.Row(card, line, '\0', q.Items[0]);
-                }
+                    card.Add(line, q.PiecesLeft).Add(line, " to go, ").Add(line, q.Total).Add(line, q.Total == 1 ? " order" : " orders");
             }
             else
                 card.Add(line, "own settings");
@@ -341,8 +342,10 @@ public static class ProductionLines
             if (state == RefineState.Short && r != null)
                 card.Add(line, " (").Add(line, r.UnitsIn).Add(line, ' ').Add(line, r.InputName).Add(line, ')');
             card.Add(line, ", ");
+            card.Add(line, set != null ? "makes " : "auto").Add(line, set?.OutputName ?? "");
+            return;
         }
-        card.Add(line, set != null ? "set: " : "recipe ").Add(line, set?.OutputName ?? "auto");
+        card.Add(line, set != null ? "makes " : "auto recipe").Add(line, set?.OutputName ?? "");
     }
 
     /// <summary>Why an Extruder or a Former waits, in a few words.</summary>

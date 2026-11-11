@@ -500,10 +500,19 @@ the part kit's `control_parts` (the console).
   load. The look line says "set to metal", and a refused chute "chute refused sand: set to metal".
 - **The Line Console** (`Constructs/Parts/Controls/LineConsole.json`): a desk with a screen, logically a Switch. Wire its output to each
   machine's Run: those wires are the line (`ProductionLines.Machines` walks the construct's data routes from it). Its screen (panel source
-  `line`, 7 rows) shows "Line running 2/3" and a row a machine: kind and tier, state, recipe, a marker on the picked one; its buttons are
-  **Start/Stop** (flips the switch), **Next** (picks the next machine; the pick is the hidden `linePick` setting) and **Recipe** (steps the
-  picked machine's recipe). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
+  `line`, 10 rows) shows "Line running 2/3" and a row a machine: a marker on the picked one, its name in full ("Extruder 2" when the line has
+  two of a kind, numbered in wire order), its state as a whole word in the lamp's colour (in a column as wide as the longest; when a name
+  wouldn't fit beside it the state goes under the name), and a dimmer detail line: why it waits (Starved, Blocked, Fault), its recipe or its
+  pieces and orders to go; every machine gets one when the rows allow, else the pick. A name too long slides along on the picked row and
+  ends in ".." on the others. Its buttons are **Start/Stop** (flips the switch), **Next** (picks the next machine; the pick is the hidden
+  `linePick` setting, and a new pick scrolls into view), **Recipe** (steps the picked machine's recipe), and **Up** and **Down** (below). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
   held until Start. On a flat battery it puts nothing out, and its machines say No power.
+- **Text size and long lists** (2026-11-11, the user: "scroll on long lists", "smaller text"). Every part that shows text has a **Text size**
+  setting (Display group, 50 to 150 %, default 100; `CfgKey.TextSize`, protocol 248): the screen is laid out in more rows and longer lines at a
+  smaller size. The console's line page, its bill page and a machine's queue scroll: **Up** and **Down** on the screen page by its rows, and
+  the mouse wheel scrolls while the crosshair is on the screen with empty hands. The place in the list is the viewer's own (`PanelRender`'s
+  slot, never on the wire), with "3-8 of 14" at the right of the title. An order too long for a line takes two (its length and material
+  under it); every other line too long ends in "..". A client is sent the first 32 orders of each list (`WorkOrders.Sent`).
 - **The mains** (2026-11-11, proposed). A Battery takes one wire, its isolator. When every working battery on a body has one and every one
   says off (`Construct.MainsOff`, `ConstructPower.Mains`, on the wire in the gear byte's top bit since protocol 247), the circuit gives
   machines nothing: `ConstructRecycler.Powered` is false for every production machine, recycler, gatherer and beacon it reaches, in creative
@@ -616,7 +625,7 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
   counts, and its catalogue parts; `ToConsole` puts the pieces on a console's bill (the building station will call these).
   `--bill NAME` prints one. Of the shipped blueprints only Fabric Flyer and Sky Crane need pieces, and those are fans and wings.
 - **Network (protocol 246).** `CBodyKind.Orders`, per body when a queue or bill changes, after a Full and to a joiner: each list's
-  part, totals, note and its first three orders (22 fixed bytes each). A client holds only those: all a screen shows.
+  part, totals, note and its first 32 orders (22 fixed bytes each; three before protocol 248). A client holds only those: all a screen shows.
 - **Saves.** After a body's conveyors block (an empty one when it has none), its lists in full: materials and parts by the save's names.
   An older save ends before them. A blueprint carries no machine queues (a blueprint is a design, not a job); a Line Console's bill may ride
   in it: `"bill": [{"step": n, "piece": "Extrusion l-angle 20x20x75 metal", "count": 2}]`, put on that console as it is built

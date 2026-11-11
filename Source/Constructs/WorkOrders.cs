@@ -372,18 +372,22 @@ public static class WorkOrders
 
     // ---- Screens (either peer, allocating nothing) ---------------------------------------------------------------------------
 
-    /// <summary>A line of the screen: "3/7 I-beam 0.25x0.25 4m metal", a marker first.</summary>
-    public static void Row(PanelCard card, int line, char marker, in WorkOrder o)
+    /// <summary>
+    /// An order on the screen: "3/7 I-beam 0.25x0.25 4.00m metal", a marker first. On one line when it fits <paramref name="cols"/>,
+    /// else the length and material go on the next line, indented and dimmer, so nothing is cut off. Returns the lines it took.
+    /// </summary>
+    public static int Row(PanelCard card, int line, char marker, in WorkOrder o, int cols = PanelCard.MaxChars)
     {
         if (marker != '\0')
             card.Add(line, marker);
         card.Add(line, o.Made).Add(line, '/').Add(line, o.Count).Add(line, ' ');
         if (!o.IsPiece)
         {
-            card.Add(line, ConstructParts.Def(o.Part).Name);
-            return;
+            card.Add(line, ConstructParts.Def(o.Part).Name).Clip(line, cols);
+            return 1;
         }
         var k = o.Key;
+        var tail = line + 1;
         switch (k.Shape)
         {
             case ExShape.Wheel:
@@ -391,51 +395,69 @@ public static class WorkOrders
                 break;
             case ExShape.Round:
             case ExShape.Pipe:
-                card.Add(line, k.Shape == ExShape.Round ? "Round " : "Pipe ").AddFixed(line, k.W / 100f, 2).Add(line, ' ').AddFixed(line, k.L / 100f, 2).Add(line, 'm');
+                card.Add(line, k.Shape == ExShape.Round ? "Round " : "Pipe ").AddFixed(line, k.W / 100f, 2);
+                card.AddFixed(tail, k.L / 100f, 2).Add(tail, "m ");
                 break;
             default:
-                card.Add(line, Extrusion.ProfileLabel(k.Mask)).Add(line, ' ').AddFixed(line, k.W / 100f, 2).Add(line, 'x').AddFixed(line, k.H / 100f, 2).Add(line, ' ').AddFixed(line, k.L / 100f, 2).Add(line, 'm');
+                card.Add(line, Extrusion.ProfileLabel(k.Mask)).Add(line, ' ').AddFixed(line, k.W / 100f, 2).Add(line, 'x').AddFixed(line, k.H / 100f, 2);
+                card.AddFixed(tail, k.L / 100f, 2).Add(tail, "m ");
                 break;
         }
-        card.Add(line, ' ').Add(line, RecyclingTable.Current.NameOf(k.Material));
+        card.Add(tail, RecyclingTable.Current.NameOf(k.Material));
+        if (tail >= PanelCard.MaxLines || card.Length(line) + 1 + card.Length(tail) <= cols)
+        {
+            card.Add(line, ' ').Join(line, tail).Clip(line, cols);
+            return 1;
+        }
+        card.Clip(line, cols).Indent(tail, 4).Clip(tail, cols).Dim(tail);
+        return 2;
     }
 
     /// <summary>
     /// A machine's queue on its screen, from line <paramref name="from"/>: the totals with the scroll mark, then as many orders as the screen's
-    /// rows hold, from the viewer's scroll (<see cref="PanelCard.Scroll"/>), each cut with ".." to the screen's width.
+    /// rows hold, from the viewer's scroll (<see cref="PanelCard.Scroll"/>); an order too long for a line takes two (<see cref="Row"/>).
     /// </summary>
     public static void FillQueue(in CPart p, PanelCard card, int from)
     {
         if (p.Orders is not { } q)
             return;
         var cols = card.Cols;
+        if (from >= card.TextRows)
+            return; // (no row left above the buttons at this Text size)
         if (q.Total == 0)
         {
             card.Add(from, "Orders: none, waiting").Clip(from, cols);
             return;
         }
-        card.Add(from, "Orders ").Add(from, q.Total).Add(from, ", ").Add(from, q.PiecesLeft).Add(from, " to make");
-        var fit = Math.Max(1, card.TextRows - from - 1);
-        var first = List(card, q.Count, fit);
-        var shown = Math.Min(fit, q.Count - first);
-        card.ScrollMark(from, first, shown, q.Total, cols).Clip(from, cols);
-        for (var k = 0; k < shown; k++)
-        {
-            var line = from + 1 + k;
-            Row(card, line, first + k == 0 ? '>' : ' ', q.Items[first + k]);
-            card.Clip(line, cols);
-        }
+        card.Add(from, q.Total).Add(from, q.Total == 1 ? " order, " : " orders, ").Add(from, q.PiecesLeft).Add(from, " to make");
+        var shown = List(card, q, from + 1, card.TextRows, cols, k => k == 0 ? '>' : ' ');
+        card.ScrollMark(from, card.Scroll, shown, q.Total, cols).Clip(from, cols);
     }
 
-    /// <summary>A list of <paramref name="count"/> entries on <paramref name="fit"/> rows: where it starts, from the viewer's scroll, clamped; sets how far it scrolls.</summary>
-    private static int List(PanelCard card, int count, int fit)
+    /// <summary>A list's orders on lines <paramref name="top"/> up to <paramref name="end"/>, from the viewer's scroll, clamped; sets how far it scrolls. Returns how many show.</summary>
+    private static int List(PanelCard card, OrderList q, int top, int end, int cols, Func<int, char> marker)
     {
-        card.ScrollMax = Math.Max(0, count - fit);
-        card.Scroll = Math.Clamp(card.Scroll, 0, card.ScrollMax);
-        return card.Scroll;
+        var first = card.Scroll = Math.Clamp(card.Scroll, 0, Math.Max(0, q.Count - 1));
+        var line = top;
+        var shown = 0;
+        for (var k = first; k < q.Count && line < end; k++)
+        {
+            var used = Row(card, line, marker(k), q.Items[k], cols);
+            if (line + used > end)
+            {
+                card.ClearLine(line).ClearLine(line + 1); // (an order that takes two lines doesn't show by half)
+                break;
+            }
+            line += used;
+            shown++;
+        }
+        card.ScrollMax = first + shown < q.Count ? Math.Max(first + 1, q.Count - shown) : first;
+        return shown;
     }
 
-    /// <summary>A Line Console's bill page: the totals and the scroll mark, the line Add would put on, the bill's lines from the viewer's scroll, and the note under them.</summary>
+    private static readonly Func<int, char> NoMarker = _ => ' ';
+
+    /// <summary>A Line Console's bill page: the pieces, the scroll mark, the line Add would put on, the bill's lines from the viewer's scroll, and the note under them.</summary>
     public static void FillBill(Construct c, int part, PanelCard card)
     {
         ref var p = ref c.Parts[part];
@@ -448,23 +470,19 @@ public static class WorkOrders
         var q = p.Orders;
         var total = q?.Total ?? 0;
         card.State = total == 0 ? PanelState.Idle : q!.Note.Length > 0 ? PanelState.Wants : PanelState.Ok;
-        card.Add(0, "Bill: ").Add(0, total).Add(0, " lines, ").Add(0, q?.PiecesLeft ?? 0).Add(0, " pieces");
+        card.Add(0, "Bill: ").Add(0, q?.PiecesLeft ?? 0).Add(0, " pieces");
+        var line = 1;
         if (FromSettings(c, part, out var next) is null)
         {
-            Row(card, 1, '+', next);
-            card.Clip(1, cols).Dim(1);
+            var used = Row(card, 1, '+', next, cols);
+            card.Dim(1);
+            line += used;
         }
         var noteRows = q is { Note.Length: > 0 } ? Math.Min(2, Math.Max(1, rows - 4)) : 0;
-        var fit = Math.Max(1, rows - 2 - noteRows);
-        var count = q?.Count ?? 0;
-        var first = List(card, count, fit);
-        var shown = Math.Min(fit, count - first);
-        card.ScrollMark(0, first, shown, total, cols).Clip(0, cols);
-        for (var k = 0; k < shown; k++)
-        {
-            Row(card, 2 + k, ' ', q!.Items[first + k]);
-            card.Clip(2 + k, cols);
-        }
+        var shown = q != null ? List(card, q, line, rows - noteRows, cols, NoMarker) : 0;
+        if (q == null)
+            card.Scroll = card.ScrollMax = 0;
+        card.ScrollMark(0, card.Scroll, shown, total, cols).Clip(0, cols);
         if (noteRows > 0)
         {
             int at = 0, column = 0;
