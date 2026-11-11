@@ -188,4 +188,29 @@ public sealed partial class ConstructEdits
         Done.Add($"player {player}: recipe {value} on part {machine} of construct {c.Id}{(all ? " and its kind on the line" : "")}");
         return null;
     }
+
+    /// <summary>
+    /// Server: an order at a Crafting Terminal (<paramref name="cancel"/> 0), or the cancelling of one (its id), under the rule of a finger on
+    /// a console: reach to the terminal, its power, who may (CActKind.CraftOrder, CraftCancel; ConstructCrafting.cs).
+    /// </summary>
+    public string? CraftOrder(ConstructWorld world, byte player, Vector3 eye, ushort body, ushort terminal, in WorkOrder what, ushort cancel, string? refusal)
+    {
+        if (world.Get(body) is not { } c || terminal >= c.PartCount)
+            return "that terminal is gone";
+        var d = c.DefOf(terminal);
+        if (!d.IsCraftTerminal)
+            return $"a {d.Name} takes no such orders";
+        if (Contested(c, player) is { } defended)
+            return defended;
+        if (refusal != null)
+            return refusal;
+        if (Vector3.Distance(eye, ReachPoint(c, terminal, eye)) > ConstructConfig.Reach)
+            return "too far away";
+        if (!ConstructRecycler.Powered(world, c, terminal))
+            return $"the {d.Name} has no power";
+        if ((cancel != 0 ? ConstructCrafting.Cancel(world, c, terminal, cancel) : ConstructCrafting.Place(world, c, terminal, what)) is { } why)
+            return why;
+        Done.Add(cancel != 0 ? $"player {player}: cancelled order {cancel} at part {terminal} of construct {c.Id}" : $"player {player}: ordered {what.Count} {ConstructCrafting.NameOf(what)} at part {terminal} of construct {c.Id}");
+        return null;
+    }
 }

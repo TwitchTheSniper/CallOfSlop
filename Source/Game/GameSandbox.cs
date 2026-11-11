@@ -89,6 +89,8 @@ public enum CActKind : byte
     RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 249; ConstructEditsRack.cs)
     Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 249; ConstructEditsRack.cs)
     LineRecipe, // u16 body, u16 console, u16 machine, u16 recipe value, u8 flags (1: every machine of its kind on the line): the recipe picker (protocol 250; ProductionLines.SetRecipe)
+    CraftOrder, // u16 body, u16 terminal, the order (u8 shape, u64 mask, u16 w, h, l, wall, u8 material, u16 part, u16 count): a Crafting Terminal's order (protocol 252; ConstructCrafting.Place)
+    CraftCancel, // u16 body, u16 terminal, u16 order id: cancels it (protocol 252; ConstructCrafting.Cancel)
 }
 
 /// <summary>
@@ -470,6 +472,11 @@ public sealed partial class Game
             WorkOrders.Write(w, c); // (after its structure: a Full leaves the parts without them)
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        if (ConstructCrafting.Any(Constructs, c))
+        {
+            ConstructCrafting.Write(w, Constructs, c);
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
     }
 
     private void SandboxFlush()
@@ -496,6 +503,8 @@ public sealed partial class Game
                     Constructs.RidersChanged(c); // (its links may have been renumbered)
                 if (WorkOrders.Any(c))
                     Constructs.OrdersChanged(c); // (its parts may have been renumbered; a Full leaves a client's parts without them)
+                if (ConstructCrafting.Any(Constructs, c))
+                    Constructs.CraftChanged(c); // (the same: its terminals' parts may have been renumbered)
             }
         Constructs.StructureDirty.Clear();
         foreach (var id in Constructs.RidersDirty)
@@ -512,6 +521,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.OrdersDirty.Clear();
+        foreach (var id in Constructs.CraftDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                ConstructCrafting.Write(w, Constructs, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.CraftDirty.Clear();
         foreach (var id in _sbLater)
             Constructs.StructureDirty.Add(id);
         _sbLater.Clear();
@@ -1069,6 +1085,31 @@ public sealed partial class Game
                 var flags = r.U8();
                 return hands.LineRecipe(Constructs, p.Id, eye, body, console, machine, value, (flags & 1) != 0, Constructs.Get(body) is { } lc ? SandboxConfigRefusal(lc, p.Id) : null);
             }
+            case CActKind.CraftOrder:
+            {
+                var body = r.U16();
+                var term = r.U16();
+                var shape = r.U8();
+                var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
+                var kw = r.U16();
+                var kh = r.U16();
+                var kl = r.U16();
+                var wall = r.U16();
+                var mat = r.U8();
+                var part = r.U16();
+                var count = r.U16();
+                if (shape > (byte)ExShape.Wing || mat > RecyclingTable.Current.Materials.Length)
+                    return "a bad order";
+                var what = new WorkOrder { Key = new ExtrusionKey(mask, kw, kh, kl, mat, false, (ExShape)shape, wall), Part = part, Count = count };
+                return hands.CraftOrder(Constructs, p.Id, eye, body, term, what, 0, Constructs.Get(body) is { } cc ? SandboxConfigRefusal(cc, p.Id) : null);
+            }
+            case CActKind.CraftCancel:
+            {
+                var body = r.U16();
+                var term = r.U16();
+                var oid = r.U16();
+                return hands.CraftOrder(Constructs, p.Id, eye, body, term, default, oid, Constructs.Get(body) is { } cc2 ? SandboxConfigRefusal(cc2, p.Id) : null);
+            }
             case CActKind.WebState:
             {
                 var body = r.U16();
@@ -1472,6 +1513,39 @@ public sealed partial class Game
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.LineRecipe).U16(body).U16((ushort)console).U16((ushort)machine).U16((ushort)Math.Clamp(value, 0, ushort.MaxValue)).U8((byte)(all ? 1 : 0));
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxActGuarded(me, ref r) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>Client (or the host itself): an order at a Crafting Terminal (ConstructCrafting.cs). The server checks reach, power and the network, and says why not.</summary>
+    public void SandboxCraftOrder(ushort body, int terminal, in WorkOrder what)
+    {
+        var w = SbW;
+        var k = what.Key;
+        w.Begin(Msg.CAct).U8((byte)CActKind.CraftOrder).U16(body).U16((ushort)terminal);
+        w.U8((byte)k.Shape).U32((uint)k.Mask).U32((uint)(k.Mask >> 32)).U16(k.W).U16(k.H).U16(k.L).U16(k.Wall).U8(k.Material).U16(what.Part).U16(what.Count);
+        SandboxCraftSend(w);
+    }
+
+    /// <summary>Client (or the host itself): cancels one of a Crafting Terminal's orders.</summary>
+    public void SandboxCraftCancel(ushort body, int terminal, ushort id)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.CraftCancel).U16(body).U16((ushort)terminal).U16(id);
+        SandboxCraftSend(w);
+    }
+
+    private void SandboxCraftSend(PacketWriter w)
+    {
         if (IsServer)
         {
             if (Local is { } me)

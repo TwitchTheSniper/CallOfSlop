@@ -361,6 +361,8 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
         else if (Pressed(GameAction.Interact) && !magFill && aimed && hit.RiderPlus1 > 0 && hit.RiderPlus1 <= hit.Body.ConveyedCount && hit.Distance <= ConstructBuild.UseReach && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Rider, body: hit.Body.Id, part: (ushort)(hit.RoutePlus1 - 1), socket: (ushort)Math.Clamp((int)MathF.Round(hit.Body.Conveyed[hit.RiderPlus1 - 1].At * 100), 0, ushort.MaxValue)); // (a piece off a conveyor, into the hands: ConstructEditsRack.cs)
+        else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && hit.Body.DefOf(hit.Part).IsCraftTerminal && hit.RackPlus1 == 0 && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
+            OpenCraftingTerminal(hit.Body, hit.Part); // (a Crafting Terminal's desk: its panel; a stack in its tray is taken as from a rack, below)
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && hit.Body.DefOf(hit.Part).IsPieceRack && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(ShiftHeld ? CActKind.RackDrop : CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (a Piece Rack: the piece looked at into the hands; Shift: that kind loose over the rack)
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
@@ -978,6 +980,8 @@ public static unsafe partial class Program
             key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
         if (hit.Body.DefOf(hit.Part).IsPieceRack)
             key ^= ((long)hit.RackPlus1 << 8 | hit.RackLane) * 2654435761L; // (which stack is looked at: its kind names the piece F takes)
+        if (hit.Body.DefOf(hit.Part).IsCraftTerminal)
+            key ^= (long)((hit.Body.Parts[hit.Part].Craft?.Count ?? 0) + 1 + hit.Body.RouteCount * 64) * 40503L; // (its orders and the body's links: what its line says)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
             key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
         if (key == _sbStoreKey)
@@ -990,6 +994,8 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructTerminals.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
         if (cd.IsVolumeStore)
             return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
+        if (cd.IsCraftTerminal && hit.RackPlus1 == 0 && _game is { } cg)
+            return _sbStoreText = ConstructCrafting.Look(cg.Constructs, hit.Body, hit.Part, st, near);
         if (cd.IsPieceRack)
             return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null);
         if (cd.IsRefiner)

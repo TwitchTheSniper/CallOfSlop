@@ -466,6 +466,7 @@ public static class PanelSources
         ["terminal"] = ConstructTerminals.FillPanel,
         ["machine"] = MachineScreens.Fill,
         ["line"] = ProductionLines.Fill,
+        ["craft"] = ConstructCrafting.FillPanel,
         ["logic.readout"] = LogicDisplays.Readout,
         ["logic.bar"] = LogicDisplays.BarH,
         ["logic.barv"] = LogicDisplays.BarV,

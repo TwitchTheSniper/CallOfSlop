@@ -55,6 +55,7 @@ public struct CPart
     public ushort Watch; // a Level or Damage Sensor: the part its watch link ends at, plus one (rebuilt with the links)
     public string? Text, Text2; // a sign's messages, a lamp bank's labels (LogicText.cs)
     public OrderList? Orders; // an Extruder's or a Wheel Former's queue of work orders, a Line Console's bill (WorkOrders.cs; null: none)
+    public CraftList? Craft; // a Crafting Terminal's open requests (ConstructCrafting.cs; null: none)
     public CMedia? Media; // a Video Screen's or Music Player's list and what it plays (ConstructMedia.cs)
     public System.Text.StringBuilder? MediaLoad; // a world file's list as its chunks come in (ConstructMedia.LoadChunk)
     public float[]? Trace; // a Graph Screen's last 30 s on this peer, oldest at TraceAt (LogicDisplays.cs)
