@@ -63,6 +63,7 @@ public static class PartKit
         new Generators.ShelfParts(),
         new Generators.LinearParts(),
         new Generators.ScoopParts(),
+        new Generators.BigDriveParts(),
     ];
 
     public static IPartGenerator? Find(string name) =>
