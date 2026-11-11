@@ -18,7 +18,7 @@ public enum RefineState : byte
 /// output; what is in the input picks the recipe (Constructs/Refining.json). The input is used when a batch is done, so a
 /// batch in hand loses nothing if the power goes or the machine breaks. It needs the electrical system in survival, like the
 /// Recycler (<see cref="ConstructRecycler.Powered"/>), and draws power only while it works; in creative (infinite parts on)
-/// it refines what it holds in one step, unpowered. A wire into Run holds it off (<see cref="ConstructGatherer.HeldOff"/>).
+/// it refines a whole load as one job at <see cref="CreativeSpeed"/> times the speed, at least 1.5 s, unpowered. A wire into Run holds it off (<see cref="ConstructGatherer.HeldOff"/>).
 /// Server, at 10 Hz, looking only at constructs that have a machine; nothing allocates.
 /// </summary>
 public static class ConstructRefining
@@ -70,8 +70,7 @@ public static class ConstructRefining
         }
         if (world.CreativeRecycling)
         {
-            ConstructGatherer.SetBusy(world, st, false);
-            Make(world, c, part, st, recipe!, Batches(d, st, recipe!));
+            Creative(world, d, c, part, st, recipe!);
             return;
         }
         ConstructGatherer.SetBusy(world, st, true);
@@ -84,6 +83,34 @@ public static class ConstructRefining
         if (done > fits)
             st.JobTicks = 0; // (nothing carries over a batch it couldn't make)
         Make(world, c, part, st, recipe, Math.Min(done, fits));
+    }
+
+    /// <summary>Creative refining runs this many times survival's speed (proposed).</summary>
+    public const int CreativeSpeed = 8;
+
+    /// <summary>A creative load takes at least this long (steps; 1.5 s), so its lamp shows Running and a Start is seen (proposed).</summary>
+    public const int CreativeMinSteps = 15;
+
+    /// <summary>
+    /// Creative: the whole load that fits is one job, worked at <see cref="CreativeSpeed"/> times the survival rate and never in under
+    /// <see cref="CreativeMinSteps"/> steps, then made at once. Unpowered (creative needs no power); Busy while it works.
+    /// </summary>
+    private static void Creative(ConstructWorld world, ConstructPartDef d, Construct c, int part, CStore st, RefineRecipe recipe)
+    {
+        var fits = Batches(d, st, recipe);
+        if (fits <= 0)
+        {
+            st.JobTicks = 0;
+            ConstructGatherer.SetBusy(world, st, false);
+            return;
+        }
+        ConstructGatherer.SetBusy(world, st, true);
+        st.JobTicks += d.RefineWork;
+        var need = Math.Max((long)fits * recipe.Ticks * Milli / CreativeSpeed, (long)CreativeMinSteps * d.RefineWork);
+        if (st.JobTicks < need)
+            return;
+        st.JobTicks = 0;
+        Make(world, c, part, st, recipe, fits);
     }
 
     private static void Make(ConstructWorld world, Construct c, int part, CStore st, RefineRecipe recipe, int batches)
