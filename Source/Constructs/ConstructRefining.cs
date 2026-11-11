@@ -107,14 +107,46 @@ public static class ConstructRefining
         return n;
     }
 
-    /// <summary>Does a mixed machine take this material, alongside what it holds? Some recipe of its tier must use it and all of what is there. Allocates nothing.</summary>
-    public static bool MixTakes(RefiningTable table, ConstructPartDef d, CStore st, byte material)
+    /// <summary>Does a mixed machine take this material, alongside what it holds? Some recipe of its tier must use it and all of what is there; with a set recipe, that one. Allocates nothing.</summary>
+    public static bool MixTakes(RefiningTable table, ConstructPartDef d, CStore st, byte material, RefineRecipe? set = null)
     {
+        if (set != null)
+            return set.Uses(material) && UsesAll(set, st);
         foreach (var r in table.MixesOf(d.RefineMachine))
             if (r.MinTier <= d.Tier && r.Uses(material) && UsesAll(r, st))
                 return true;
         return false;
     }
+
+    /// <summary>
+    /// A machine's set recipe (its "recipe" setting, docs/sandbox/constructs/production.md "Production lines"), or null: Auto, what is in the
+    /// input picks it. A set recipe only filters what goes in (a chute or F): what is already in the input is worked as ever, so changing it never
+    /// strands a load the player can't take back out.
+    /// </summary>
+    public static RefineRecipe? SetOf(in CPart p, ConstructPartDef d)
+    {
+        if (d.RefineChoices.Length == 0)
+            return null;
+        var v = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0);
+        return v >= 1 && v <= d.RefineChoices.Length ? d.RefineChoices[v - 1] : null;
+    }
+
+    /// <summary>As the parts load: each machine with a "recipe" setting gets its tier's recipes as the choices (Auto first).</summary>
+    public static ConstructPartDef[] Attach(ConstructPartDef[] parts)
+    {
+        var table = RefiningTable.Current;
+        foreach (var d in parts)
+        {
+            if (!d.IsRefiner || d.CfgSlot[(int)CfgKey.Recipe] < 0)
+                continue;
+            d.RefineChoices = table.Recipes.Where(r => r.Machine == d.RefineMachine && r.MinTier <= d.Tier).ToArray();
+            d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options = ["Auto", .. d.RefineChoices.Select(Label)];
+        }
+        return parts;
+    }
+
+    /// <summary>A recipe as a choice: "iron ore to metal", "steel (2 metal + 1 stone)".</summary>
+    private static string Label(RefineRecipe r) => r.Mix.Length > 0 ? $"{r.OutputName} ({r.Batch})" : $"{r.InputName} to {r.OutputName}";
 
     private static bool UsesAll(RefineRecipe r, CStore st)
     {
@@ -179,19 +211,21 @@ public static class ConstructRefining
     }
 
     /// <summary>The material a player would tip into this machine's input: what it holds already, else the first one they carry that it takes (0: none, or it is full).</summary>
-    public static byte TipMaterial(SandboxInventory inv, ConstructPartDef d, CStore st)
+    public static byte TipMaterial(SandboxInventory inv, ConstructPartDef d, CStore st, RefineRecipe? set = null)
     {
         if (d.RefineMix)
         {
             for (byte m = 1; m < SandboxInventory.MaxMaterials; m++)
-                if (inv.Materials[m] > 0 && st.MixOf(m) < d.InCapacity && MixTakes(RefiningTable.Current, d, st, m))
+                if (inv.Materials[m] > 0 && st.MixOf(m) < d.InCapacity && MixTakes(RefiningTable.Current, d, st, m, set))
                     return m;
             return 0;
         }
         if (st.InAmount >= d.InCapacity)
             return 0;
         if (st.InAmount > 0) // (Feed's rule keeps a material the machine's tier can't work out of the input)
-            return inv.Materials[st.InMaterial] > 0 ? st.InMaterial : (byte)0;
+            return inv.Materials[st.InMaterial] > 0 && (set == null || set.Input == st.InMaterial) ? st.InMaterial : (byte)0;
+        if (set != null)
+            return inv.Materials[set.Input] > 0 ? set.Input : (byte)0;
         for (byte m = 1; m < SandboxInventory.MaxMaterials; m++)
             if (inv.Materials[m] > 0 && RefiningTable.Current.Find(d.RefineMachine, m) is { } r && r.MinTier <= d.Tier)
                 return m;
@@ -199,7 +233,7 @@ public static class ConstructRefining
     }
 
     /// <summary>What the machine is doing, or why not. Read by the look line on either side.</summary>
-    public static string Status(ConstructPartDef d, CStore st)
+    public static string Status(ConstructPartDef d, CStore st, RefineRecipe? set = null)
     {
         var names = RecyclingTable.Current;
         var table = RefiningTable.Current;
@@ -216,8 +250,12 @@ public static class ConstructRefining
                 RefineState.OutputFull => " - output full",
                 _ => " - no power: needs a charged battery",
             };
+        if (set != null)
+            doing += $" - set to {set.OutputName}";
         if (st.Refused == 0)
             return doing;
+        if (set != null && !set.Uses(st.Refused))
+            return $"{doing} - chute refused {names.NameOf(st.Refused)}: set to {set.OutputName}";
         if (d.RefineMix)
             return $"{doing} - chute refused {names.NameOf(st.Refused)}: {MixRefusal(table, d, st)}";
         var refused = table.Find(d.RefineMachine, st.Refused);
@@ -255,18 +293,18 @@ public static class ConstructRefining
     }
 
     /// <summary>The whole look line: both bins, what it is doing, what F would do.</summary>
-    public static string Look(ConstructPartDef d, CStore st, bool near, SandboxInventory inv)
+    public static string Look(ConstructPartDef d, CStore st, bool near, SandboxInventory inv, RefineRecipe? set = null)
     {
         var names = RecyclingTable.Current;
-        var tip = TipMaterial(inv, d, st);
+        var tip = TipMaterial(inv, d, st, set);
         var act = !near ? ""
             : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min((int)inv.Materials[tip], d.InCapacity - (d.RefineMix ? st.MixOf(tip) : st.InAmount))} {names.NameOf(tip)}"
             : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}"
             : "";
         var output = st.Amount > 0 ? " " + names.NameOf(st.Material) : "";
         if (d.RefineMix)
-            return $"{d.Name}: in {(st.MixN == 0 ? $"0/{d.InCapacity}" : $"{MixHolds(st)} (of {d.InCapacity} each)")}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st)}{act}";
+            return $"{d.Name}: in {(st.MixN == 0 ? $"0/{d.InCapacity}" : $"{MixHolds(st)} (of {d.InCapacity} each)")}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st, set)}{act}";
         var input = st.InAmount > 0 ? " " + names.NameOf(st.InMaterial) : "";
-        return $"{d.Name}: in {st.InAmount}/{d.InCapacity}{input}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st)}{act}";
+        return $"{d.Name}: in {st.InAmount}/{d.InCapacity}{input}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st, set)}{act}";
     }
 }

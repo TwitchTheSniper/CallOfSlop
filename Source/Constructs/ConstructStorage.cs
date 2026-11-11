@@ -53,6 +53,8 @@ public sealed class CStore
     public int Amount; // a bin: how much bulk material
     public byte Material; // a bin: which one (RecyclingTable id; 0: none yet, the first deposit sets it)
     public bool Busy; // a Recycler or gathering module: working (on the wire; the look text and the lamp)
+    public LineState LineRaw, LineShown; // a production machine's line state as this peer last worked it out, and as its lamp shows it (never sent: ProductionLines.Of)
+    public double LineSince; // ...when the raw state last changed (ConstructRender.Now)
     public bool Held; // a Recycler or gathering module: its Run wire is off (on the wire; the look text)
     public ShaftState Drive; // a drill with a drive shaft linked: how the shaft stands (on the wire; the look text); None: it runs on electric power
     public ushort DriveRpm; // ...the shaft's speed at the drill (rounded a little, on the wire)
@@ -1120,7 +1122,8 @@ public sealed partial class ConstructWorld
         var d = c.DefOf(part);
         if (d.RefineMix)
             return FeedMix(c, part, st, d, amount, material);
-        if (RefiningTable.Current.Find(d.RefineMachine, material) is not { } recipe || recipe.MinTier > d.Tier || st.InAmount > 0 && st.InMaterial != material)
+        if (RefiningTable.Current.Find(d.RefineMachine, material) is not { } recipe || recipe.MinTier > d.Tier || st.InAmount > 0 && st.InMaterial != material
+            || ConstructRefining.SetOf(c.Parts[part], d) is { } set && set.Input != material) // (a set recipe takes only its own input: ConstructRefining.SetOf)
         {
             st.RefusedAge = 0;
             if (st.Refused != material)
@@ -1143,7 +1146,7 @@ public sealed partial class ConstructWorld
     /// <summary>Server: into a mixed input: a material some recipe takes alongside what it holds, up to its capacity of that material.</summary>
     private int FeedMix(Construct c, int part, CStore st, ConstructPartDef d, int amount, byte material)
     {
-        if (!ConstructRefining.MixTakes(RefiningTable.Current, d, st, material))
+        if (!ConstructRefining.MixTakes(RefiningTable.Current, d, st, material, ConstructRefining.SetOf(c.Parts[part], d)))
         {
             NoteRefused(st, material);
             return 0;

@@ -616,6 +616,11 @@ public static partial class ConstructRender
                 drawn += DrawBlades(gfx, c, i, d, in box, centre, seg * body, shade, opacity);
                 continue;
             }
+            if (b == d.StatusBox && !p.Broken && world.StoreOf(c, i) is { } lineStore)
+            {
+                drawn += ProductionLines.DrawLamp(gfx, d, lineStore, p.Rot, in box, centre, seg * body, opacity, Now); // (a machine's status lamp: its line state's colour, a band running along it while it works)
+                continue;
+            }
             Matrix4x4 model;
             if (isWheel)
             {

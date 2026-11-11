@@ -42,7 +42,8 @@
     {"min": [-2, 1.68, -2.08], "max": [2, 1.88, -1.96], "color": "#9a7442", "detail": true},
     {"min": [-2.08, 3.92, -1.84], "max": [-1.6, 4.08, -1.28], "color": "#514438", "detail": true},
     {"min": [1.6, 3.36, -1.28], "max": [2.08, 3.52, -0.72], "color": "#8b857a", "detail": true},
-    {"min": [-2.0168, 1.2995, -1.928], "max": [-1.7376, 1.9275, -0.28], "color": "#14181c", "detail": true}
+    {"min": [-2.0168, 1.1013, -1.928], "max": [-1.7376, 1.8973, -0.28], "color": "#14181c", "detail": true},
+    {"min": [-2.0448, 1.7293, -1.894], "max": [-2.0084, 1.8633, -0.314], "color": "#2b3036", "detail": true, "paintable": false, "status": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -54,8 +55,9 @@
     {"name": "Chute in", "type": "chute", "dir": "in", "at": [2, 1.6, -1], "face": "+x"},
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.52, 0.48, 1.52], "face": "+x"}
   ],
-  "panels": [{"source": "machine", "at": [-2.0208, 1.6135, -1.104], "size": [1.58, 0.56], "face": "-x", "up": "+y", "rows": 4, "range": 30}],
+  "panels": [{"source": "machine", "at": [-2.0208, 1.4153, -1.104], "size": [1.58, 0.56], "face": "-x", "up": "+y", "rows": 4, "range": 30}],
   "config": [
+    {"key": "recipe", "type": "choice", "label": "Recipe", "group": "Production", "tooltip": "Auto: what is in the input picks it. Set: only its input goes in."},
     {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
   ],
   "storage": {

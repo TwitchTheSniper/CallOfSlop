@@ -52,6 +52,9 @@ def box(mn, mx, role="body"):
     return {"min": list(mn), "max": list(mx), "role": role}
 
 
+# A production machine's recipe (docs/sandbox/constructs/production.md "Production lines"): Auto, or one its tier makes (the game fills the choices).
+RECIPE = {"key": "recipe", "type": "choice", "label": "Recipe", "group": "Production", "tooltip": "Auto: what is in the input picks it. Set: only its input goes in."}
+
 INK = {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
 
 MODULE_SOCKETS = [
@@ -294,8 +297,14 @@ def part(line, tier):
         keep_clear = [(s["at"], s["dir"]) for s in sockets] + [(scaled_point(p["at"], size), p["face"]) for p in line.get("ports", [])]
         if "assemble" in line:
             keep_clear.append((scaled_point(line["assemble"]["outAt"], size), line["assemble"]["outDir"]))
-        plate, panel = screens.mount(boxes, keep_clear)
+        lamp = None
+        if "refine" in line:  # (a refiner is a machine of a production line: a status lamp over its screen)
+            plate, panel, lamp = screens.mount(boxes, keep_clear, lamp=True)
+        else:
+            plate, panel = screens.mount(boxes, keep_clear)
         screens.fit(boxes, plate)
+        if lamp:
+            boxes.append(lamp)
     zfight.resolve(boxes, sockets)
     boxes = [{**b, "min": vec(b["min"]), "max": vec(b["max"])} for b in boxes]
     head = f"{TIERS[tier]}, tier {tier} of 5. "
@@ -325,7 +334,7 @@ def part(line, tier):
         out["ports"] = [dict(p, at=vec(scaled_point(p["at"], size))) for p in line["ports"]]
     if panel:
         out["panels"] = [panel]
-        out["config"] = line.get("config", []) + [INK]
+        out["config"] = line.get("config", []) + ([RECIPE] if "refine" in line else []) + [INK]
     elif "config" in line:
         out["config"] = line["config"]
 
@@ -403,7 +412,7 @@ def main():
                 print(f"thinner than 1 cm in {p['name']}: {thin}")
                 bad += 1
             os.makedirs(os.path.dirname(path(line, tier)), exist_ok=True)
-            if len(p["boxes"]) > 32:
+            if len(p["boxes"]) > 33:  # (32 and a refiner's status lamp: the game takes 256 since parts are merged meshes)
                 print(f"too many boxes: {p['name']}")
                 bad += 1
             text, file = dump(p), path(line, tier)

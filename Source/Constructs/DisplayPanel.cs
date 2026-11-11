@@ -304,6 +304,7 @@ public static class PanelSources
         ["media"] = MediaDirector.Fill,
         ["terminal"] = ConstructTerminals.FillPanel,
         ["machine"] = MachineScreens.Fill,
+        ["line"] = ProductionLines.Fill,
         ["logic.readout"] = LogicDisplays.Readout,
         ["logic.bar"] = LogicDisplays.BarH,
         ["logic.barv"] = LogicDisplays.BarV,

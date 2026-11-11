@@ -1,0 +1,156 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Line Console",
+  "description": "Runs a production line: wire its output to each machine's Run. Start, stop and pick recipes on its screen.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "welder",
+  "mass": 40.0,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 3.0,
+  "logic": {
+    "kind": "switch"
+  },
+  "config": [
+    {
+      "key": "startOn",
+      "label": "Starts running",
+      "group": "General",
+      "default": false,
+      "tooltip": "The line runs as soon as it is built."
+    },
+    {
+      "key": "linePick",
+      "label": "Machine",
+      "group": "General",
+      "min": 0,
+      "max": 31,
+      "step": 1,
+      "default": 0,
+      "hidden": true,
+      "tooltip": "Which machine its buttons work on."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
+    }
+  ],
+  "panels": [
+    {
+      "source": "line",
+      "at": [
+        0,
+        1.31,
+        -0.097
+      ],
+      "size": [
+        0.82,
+        0.56
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 7,
+      "range": 12,
+      "touch": [
+        {
+          "action": "line.run",
+          "at": [
+            0.02,
+            0.02,
+            0.32,
+            0.13
+          ],
+          "label": "Start"
+        },
+        {
+          "action": "line.next",
+          "at": [
+            0.35,
+            0.02,
+            0.65,
+            0.13
+          ],
+          "label": "Next"
+        },
+        {
+          "action": "line.recipe",
+          "at": [
+            0.68,
+            0.02,
+            0.98,
+            0.13
+          ],
+          "label": "Recipe"
+        }
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.45,
+        1.0,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.43,
+        0.99,
+        -0.24
+      ],
+      "max": [
+        0.43,
+        1.62,
+        -0.1
+      ]
+    },
+    {
+      "min": [
+        -0.41,
+        1.0,
+        0.0
+      ],
+      "max": [
+        0.41,
+        1.012,
+        0.21
+      ],
+      "color": "#2f3a44",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.75,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -4,10 +4,14 @@ docs/sandbox/CONSTRUCTS.md, "Machine screens". Tiers and sizes have different mo
 by a table: mount() takes the drawn boxes as seen from each side, slides a screen-sized window over them, and picks the spot that is
 flattest, near the height a player reads at, and clear of every socket, port and die on that side. The plate fills what lies under the
 window and stands a little proud of the highest thing there, so it never cuts into a detail and shares no face with it.
+
+With lamp=True (a machine of a production line: docs/sandbox/constructs/production.md "Production lines") the plate grows a band on
+top and a status lamp stands in it, the screen's width, proud of the plate: the game draws it in the line state's colour ("status").
 """
 
 FACES = {"-z": (2, -1), "+z": (2, 1), "+x": (0, 1), "-x": (0, -1)}
 PLATE = "#14181c"
+LAMP = "#2b3036"  # (the status lamp unlit: the game colours it by the machine's state)
 ASPECT = 2.8  # width over height: four rows of 18 characters
 STEPS_U, STEPS_Y = 13, 7  # sample points across the window
 
@@ -37,8 +41,8 @@ def window(boxes, axis, sign, cu, cy, w, h):
     return lo, hi
 
 
-def mount(boxes, keep_clear, faces=("-z", "-x", "+x", "+z"), rows=4, range_m=30, width=None):
-    """Returns (plate box, panel). keep_clear: [(at, face)] of sockets, ports and dies; a window on that side stays off them."""
+def mount(boxes, keep_clear, faces=("-z", "-x", "+x", "+z"), rows=4, range_m=30, width=None, lamp=False):
+    """Returns (plate box, panel), and the status lamp's box with lamp=True. keep_clear: [(at, face)] of sockets, ports and dies; a window on that side stays off them."""
     drawn = [b for b in boxes if not b.get("hidden")]
     lo = [min(b["min"][a] for b in drawn) for a in range(3)]
     hi = [max(b["max"][a] for b in drawn) for a in range(3)]
@@ -46,7 +50,9 @@ def mount(boxes, keep_clear, faces=("-z", "-x", "+x", "+z"), rows=4, range_m=30,
     w = width or round(min(across * 0.38, 3.6), 2)
     h = round(w / ASPECT, 2)
     border = round(h * 0.06, 3)
-    pw, ph = w + 2 * border, h + 2 * border  # (the plate)
+    lamp_h = round(max(0.1, h * 0.24), 3) if lamp else 0  # (from 20 m a 0.1 m bar is a few pixels high: enough to read a colour and a blink)
+    band = lamp_h + border if lamp else 0  # (the lamp's band over the screen, a border below it)
+    pw, ph = w + 2 * border, h + 2 * border + band  # (the plate)
     target = min(max(1.6, (hi[1] - lo[1]) * 0.36), 3)  # (on a capital machine too, it is read from the ground)
     best = None
     for order, face in enumerate(faces):
@@ -79,9 +85,18 @@ def mount(boxes, keep_clear, faces=("-z", "-x", "+x", "+z"), rows=4, range_m=30,
     mn[axis], mx[axis] = (inner, outer) if sign > 0 else (-outer, -inner)
     plate = {"min": [round(v, 4) for v in mn], "max": [round(v, 4) for v in mx], "color": PLATE, "detail": True}
     at = [0, 0, 0]
-    at[other], at[1] = round(cu, 4), round(cy, 4)
+    at[other], at[1] = round(cu, 4), round(cy - band / 2, 4)
     at[axis] = round(sign * (outer + 0.004), 4)
-    return plate, {"source": "machine", "at": at, "size": [round(w, 3), round(h, 3)], "face": face, "up": "+y", "rows": rows, "range": range_m}
+    panel = {"source": "machine", "at": at, "size": [round(w, 3), round(h, 3)], "face": face, "up": "+y", "rows": rows, "range": range_m}
+    if not lamp:
+        return plate, panel
+    deep = max(0.02, h * 0.05)  # (it stands this far proud of the plate; its back is inside the plate, so no face is shared)
+    lo_, hi_ = [0, 0, 0], [0, 0, 0]
+    lo_[other], hi_[other] = cu - w / 2, cu + w / 2
+    lo_[1], hi_[1] = cy + ph / 2 - border - lamp_h, cy + ph / 2 - border
+    lo_[axis], hi_[axis] = (outer - proud / 2, outer + deep) if sign > 0 else (-outer - deep, -outer + proud / 2)
+    status = {"min": [round(v, 4) for v in lo_], "max": [round(v, 4) for v in hi_], "color": LAMP, "detail": True, "paintable": False, "status": True}
+    return plate, panel, status
 
 
 def fit(boxes, plate, most=32):

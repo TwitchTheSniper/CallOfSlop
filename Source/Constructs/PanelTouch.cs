@@ -40,6 +40,9 @@ public static class PanelTouch
         ["flight.altitude"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "altitude"),
         ["flight.heading"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "heading"),
         ["office.advert"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 0),
+        ["line.run"] = (w, c, part, player, tick) => ProductionLines.Run(c, part),
+        ["line.next"] = (w, c, part, player, tick) => ProductionLines.Next(c, part),
+        ["line.recipe"] = (w, c, part, player, tick) => ProductionLines.Recipe(c, part),
         ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
     };
 
