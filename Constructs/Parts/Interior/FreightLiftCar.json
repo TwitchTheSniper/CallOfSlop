@@ -25,7 +25,8 @@
         -0.46,
         1.75
       ],
-      "color": "#5d6670"
+      "color": "#5d6670",
+      "finish": "deck plate"
     },
     {
       "min": [
@@ -77,7 +78,8 @@
         0.54,
         -1.69
       ],
-      "color": "#c9a21c"
+      "color": "#c9a21c",
+      "finish": "hazard paint"
     },
     {
       "min": [
@@ -129,7 +131,8 @@
         0.54,
         1.75
       ],
-      "color": "#c9a21c"
+      "color": "#c9a21c",
+      "finish": "hazard paint"
     },
     {
       "min": [

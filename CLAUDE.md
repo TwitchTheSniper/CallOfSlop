@@ -8,7 +8,7 @@ Call of Slop is a C#/.NET 10 multiplayer survival sandbox: players build, gather
 
 - All new work goes to Sandbox. Design for an open, persistent world with a small group of friends. When a choice favours Sandbox or anything else, Sandbox wins.
 - **Arena modes and Zombies are archived.** Free-for-all, Team Deathmatch and the rest, Zombies and Co-op stay in the game and get a fix only if the user asks; agents don't work on them. Deleting one is a user decision. Their self-test sections (and the older map packs') are skipped by the full suite: `SelfTest.Archived` in `Source/App/SelfTest.cs` (Karl, 2026-11-05: test only what Sandbox builds on; 2026-11-11: the arena maps and their content, arena gun feel, audio, Steam, server lists and the updater went the same way, 54 sections); `--selftest-only "Name"` still runs one, so they aren't guarded: run the ones that cover what you change by name. CI's page shows one line per section and the failures; the whole `selftest.log` is in the run's artifact.
-- Older text in the docs that treats matches, loadouts, kills or bots as the core of the game is history. `README.md` is the maintainer's guide (44 KB): read "How it works" and "Testing without playing" before big changes. The player manual is `docs/MANUAL.md` (300 KB, mostly the archived arena modes): search it, never read it whole. The same goes for `docs/sandbox/CONSTRUCTS.md` (770 KB): `grep -n '^## '` it and read the section you need.
+- Older text in the docs that treats matches, loadouts, kills or bots as the core of the game is history. `README.md` is the maintainer's guide (44 KB): read "How it works" and "Testing without playing" before big changes. The player manual is `docs/MANUAL.md` (213 KB, archived modes in docs/archive): search it, never read it whole. `docs/sandbox/CONSTRUCTS.md` is an index: read it, then only the one file under `docs/sandbox/constructs/` you need.
 
 ## Build, run, test
 
@@ -24,7 +24,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 | Data checks | `--check-construct-parts` (writes to `callofslop.log` next to the DLL, not the terminal; about 13 s, since it builds every blueprint), `--check-part FILE`, `--check-parts [DIR]`, `--watch-parts` (hot reload), `--check-mods [DIR]` (docs/mods/MODS.md), `--check-system FILE`, `--check-planetoid FILE [--png OUT] [--at LAT,LON]` (a world's ground: docs/planets/WORLDS.md), `--check-story [DIR]`, `--talk-sim [CAST]` (what each person talks about, docs/story/STORY.md "Topics"), `--traffic-check [SECONDS]` (the story world's ambient traffic, a host and a client: Source/StandIns/README.md), `--story-sim [FILE] [--trace[=NAME]] [--drama=off\|compare] [--pacing=off]` |
 | Space, weather | `--space-sim [FILE] [--days N] [--every H]`, `--space-ships [FILE] [--hours H] [--warp W]`; `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]` |
 | Music | No render command: docs/audio/MUSIC.md has a throwaway probe. Read it before making or changing music |
-| Vehicle kit | `--gen-vehicle NAME [--seed S] [--out DIR] [--plan]` runs a vehicle generator (Source/VehicleKit), writes its blueprints and prints the check; `--gen-vehicles [--out DIR]` compares every shipped seed with its committed file; `--check-vehicle FILE` checks any blueprint; `--sweep-vehicle NAME [--seeds N]` builds and checks many seeds, writing nothing; `--vehicle-shots "Name Seed"...` writes shaded pictures under xvfb (docs/vehiclekit/VEHICLEKIT.md, which holds the silhouette rules every faction follows); quality tools: `--diversity NAME`, `--diversity-style STYLE`, `--kit-report`, `--vehicle-sheet NAME` (xvfb), `--grade-vehicle "NAME SEED" 1-5 "note"`, `--grade-report` (VEHICLEKIT.md, "Quality tools") |
+| Vehicle kit | `--gen-vehicle NAME [--seed S] [--out DIR] [--plan] [--engine-tier N [--top-speed V]]` runs a vehicle generator (Source/VehicleKit), writes its blueprints and prints the check (with an Engine Kit engine); `--gen-vehicles [--out DIR]` compares every shipped seed with its committed file; `--check-vehicle FILE` checks any blueprint; `--sweep-vehicle NAME [--seeds N]` builds and checks many seeds, writing nothing; `--vehicle-shots "Name Seed"...` writes shaded pictures under xvfb (docs/vehiclekit/VEHICLEKIT.md, which holds the silhouette rules every faction follows); quality tools: `--diversity NAME`, `--diversity-style STYLE`, `--kit-report`, `--vehicle-sheet NAME` (xvfb), `--grade-vehicle "NAME SEED" 1-5 "note"`, `--grade-report` (QUALITY-TOOLS.md); the Engine Kit (docs/vehiclekit/ENGINEKIT.md): `--gen-engine [--preset small\|medium\|large\|huge] [--power KW] [--tier 1-5] ...`, `--gen-engine-parts [--check]`, `--speed-test FILE... [--seconds N]` |
 | Start-up cost | A headless run takes 15-20 s before its own work: about 7 s reading data, then every map is built (9 s). A dev build skips the build check of blueprints that passed it unchanged (`Cache/blueprints-checked.txt` next to the DLL, `BlueprintCheckCache.cs`; 6 s saved from the second run; delete the file to check all again). CI and releases check every blueprint |
 | Windows | `Start.bat` builds and plays; `tools\BuildCheck.bat` builds; `tools\Package.bat` makes a tester zip; `--verify-update <update.json> <zip>` |
 
@@ -43,7 +43,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 Sandbox first:
 
 ```
-Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md): ConstructParts (part files, Rot24), Construct (a body), LogicBlocks/LogicInputs/LogicDisplays/LogicText/ConstructRadio (logic parts, from tools/constructs/control_parts.py),
+Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md, an index): ConstructParts (part files, Rot24), Construct (a body), LogicBlocks/LogicInputs/LogicDisplays/LogicText/ConstructRadio (logic parts, from tools/constructs/control_parts.py),
                      ConstructPhysics, ConstructCollider/Narrow/PhysicsContacts (compound collision), ConstructWorld (wrecks,
                      damage, players), ConstructBuild (sockets, ghosts, blueprints), ConstructEdits* (tools, timed edits),
                      ConstructNet (CBody/CPose), ConstructScoops (buckets that dig and pour), ConstructDrive/Engine/Power/Logic/Links/Routes, Recycling/Refining/Assembling/
@@ -79,7 +79,7 @@ Maps/ Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/ W
 docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/, perf/, weather/, net/, steam/, vehiclekit/
 ```
 
-**Archived:** `Source/Zombies/` holds the weapon builder (PartDef/PartLibrary, WeaponBuild, BuildRules, BuildStats, BuildModel), which Sandbox guns use, so it is live code; the Zombies rules, RunTables and PushCart beside it are not. Also archived: `Game/Zombies*`, `Game/Pve/`, `Game/Frenzy/`, `Game/Bots*` and `BotNav*`, Perks, KillStreaks, Loadouts, Progression, `Game/Modes/` other than Sandbox; docs/zombies, docs/pve. Rules that outlive them: a mode's id goes at the END of `enum GameMode` and is never renumbered (ids are wire bytes; `Source/Game/Modes/README.md`). **Frenzy buffs stay strong** (the arena modes' rule; it says nothing about Sandbox balance).
+**Archived:** `Source/Zombies/` holds the weapon builder (PartDef/PartLibrary, WeaponBuild, BuildRules, BuildStats, BuildModel), which Sandbox guns use, so it is live code; the Zombies rules, RunTables and PushCart beside it are not. Also archived: `Game/Zombies*`, `Game/Pve/`, `Game/Frenzy/`, `Game/Bots*` and `BotNav*`, Perks, KillStreaks, Loadouts, Progression, `Game/Modes/` other than Sandbox; their docs are in `docs/archive/` (never read unless the user asks). The weapon builder's guide is `docs/sandbox/WEAPON-BUILDER.md`, the crowd's `docs/sandbox/MASS-HORDE.md`. Rules that outlive them: a mode's id goes at the END of `enum GameMode` and is never renumbered (ids are wire bytes; `Source/Game/Modes/README.md`). **Frenzy buffs stay strong** (the arena modes' rule; it says nothing about Sandbox balance).
 
 **Maps** belong to another developer (see "Who owns what"). For map work read `Maps/README.md` and `docs/mapkit/MAPKIT.md`.
 
@@ -87,6 +87,7 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 
 - **Data first.** Parts, maps, weapons, attachments, props, buildings and decals are JSON files loaded at start-up. Prefer adding data over code. Bad files are refused with a reason.
 - **Generators, not outputs.** A generated file is fixed in its generator (`tools/constructs/`, `tools/space/`, ...), never by editing the output. A generator caps every amount by the file's limits (one recipe over `MaxUnits` makes the whole Assembling table refuse).
+- **Helper scripts are C# (user, 2026-11-11).** Every new helper script or generator for Sandbox is written in C# and runs from the game itself (a `--gen-...` or `--check-...` command), never as a new Python file. The Python generators in `tools/constructs/` are being ported (project doc `claude/part-generators-csharp.md`): a port is accepted when its output is byte-identical to the committed files, and the Python file is deleted in the same change. Until a script is ported, fix it where it is.
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.SandboxCargo.cs`, `GameSandboxSnap.cs`, ...). Follow that pattern.
 - **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
 - **Saves.** Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points. Every save file is listed in `SavePaths.SaveFiles` (a folder: `SaveFolders`), written atomically, and keeps a `.bak`. A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.
@@ -107,12 +108,12 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 - **Use Opus when available (2026-11-02).** This replaces the 2026-10-30 rule that preferred lighter models: launch agents on Opus whenever it is available.
 - **Who owns what (2026-11-02).** Map development and destructible terrain are handed off to another developer. This repo's coordinator sessions focus on the building system: resources and the mechanics that connect and use them.
 - **No agent board (TwitchTheSniper, 2026-11-06).** TwitchTheSniper's coordinator sessions no longer read or write the agent board (https://claude.ai/artifact/XSgZ4hqropCVuf91yXp95T), to save tokens. This replaces the 2026-11-01 reporting rule for those sessions. Before launching an agent that edits code, check other developers' recent work another way: `git log` on the paths and their open branches.
-- **Record lessons (2026-10-29).** When you fix something that was already marked done on the board, or a test or CI run fails for a reason seen before, add a one-line entry to **Lessons** at the end of this file: what went wrong, why, and the rule that prevents it. The coordinator reviews Lessons now and then and folds repeated lessons into Gotchas, removing the entries it folded.
+- **Record lessons (2026-10-29).** When you fix something that was already marked done on the board, or a test or CI run fails for a reason seen before, add a one-line entry at the end of `docs/LESSONS.md`: what went wrong, why, and the rule that prevents it. The coordinator reviews that file now and then and folds repeated lessons into Gotchas, removing the entries it folded.
 
 ## Gotchas
 
 - **No coplanar faces (z-fighting, user 2026-10-30).** Boxes that touch or overlap must never share a face plane that both draw: two parts lined up exactly flicker through each other. When parts meet flush, make one of them a little different in size or position so one face is clearly in front: 2 to 5 mm, 10 mm on patches up to 8 m, 1/800 of the patch above that (at most 50 mm); the depth buffer (24 bit, near 0.05 m) resolves 2 mm to 41 m and 10 mm to 92 m. Move the less seen face, keep sockets and silhouettes; faces of one plain colour need nothing (the check knows, except in a prop's baked ground shade below 0.45 m). Applies to props, prefabs, models, buildings, construct parts and weapon-builder parts, and to generator scripts (fix the script, not only its output). `tools/constructs/zfight.py` is the corrector (`resolve`, `settle_props`, called by the generators), `tools/props/zfight_props.py FILE...` runs it on prop files, `tools/props/zfight_moves.py OLD_REV` measures how far boxes moved. "No z-fighting" checks shipped data.
-- **Extrusions** (docs/sandbox/CONSTRUCTS.md "Extrusion"). A piece an Extruder or a Wheel Former makes is a `ConstructPartDef` made at run time, one per key (shape, section, size, length, material): its id (from `Extrusion.RuntimeBase`) is this machine's own and isn't in `ConstructParts.All`, so read a part's def through `CPart.D`, `DefOf` or `ConstructParts.Def`, never `All[id]`, and on the wire or in a hash use its `ExKey`, never its id.
+- **Extrusions** (docs/sandbox/constructs/production.md "Extrusion"). A piece an Extruder or a Wheel Former makes is a `ConstructPartDef` made at run time, one per key (shape, section, size, length, material): its id (from `Extrusion.RuntimeBase`) is this machine's own and isn't in `ConstructParts.All`, so read a part's def through `CPart.D`, `DefOf` or `ConstructParts.Def`, never `All[id]`, and on the wire or in a hash use its `ExKey`, never its id.
 - **Dug ground** (docs/sandbox/TERRAIN-DIGGING.md). Blasts dig craters (`TerrainEdits.cs`, runtime only, cleared by `RestoreProps`). Every terrain query goes through `TerrainData`, which answers from the dug columns first: code that reads `Heights` or `Voids` directly doesn't see digging. Overhangs are allowed, so movement checks headroom over the whole footprint (`TerrainHeadroom.Over`).
 - **Streamed terrain** (docs/perf/STREAMING.md section 8). A terrain with `"stream": true` has empty `Heights`/`MaterialIds`: tiles are made on demand (`TerrainStream.cs`). Read ground through `TerrainData.Height`, `Material` and `CellCorners`, never the arrays, and never loop over the whole grid. Bots get no nav graph on it yet.
 - **Shared materials** (docs/render/MATERIALS.md). A part box holds a look (`BoxLooks`: colour, tone, material) and a material is a row
@@ -130,111 +131,6 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 
 ## Lessons
 
-Folded by theme on 2026-11-03 and 2026-11-09; the dated stories are in `git show 4a567bec:CLAUDE.md` and `git show c6b159b26:CLAUDE.md`. Add new entries at the end, one line each: date, what went wrong, why, the rule.
+The lessons are in `docs/LESSONS.md` (moved 2026-11-11). Read only the themes that touch your task; `grep -n '^\*\*' docs/LESSONS.md` lists them. Add new entries at the end of that file, one line each: date, what went wrong, why, the rule.
 
-**Frame state and crashes**
-- Per-frame state holding indices into a construct is stamped when taken and checked against the construct as it is when used (`ConstructRender.GhostLive`, `Program.LinkStamp`, `LinkStateCheck`, `LinkHitUsable`): a tick, a packet or the other peer can shift parts between input and draw, and a hit may name no part.
-- ImGui is called only between NewFrame and Render. Input stores what to draw and the ImGui pass draws it; `Hud.CanDraw` skips and counts anything else (a native crash otherwise, with no exception).
-- Clamp bounds worked out at run time go through `SafeMath.Clamp`. Host actions, Sandbox input and its ImGui pass stay behind their guards (`Game.SandboxActGuarded`, `Program.SandboxInputGuarded`, `DrawSandboxUiGuarded`).
-- After a crash, read the `[crash]` block in callofslop.log, crash.txt and breadcrumb.txt before guessing.
-- A part given to a player goes through `ConstructEdits.Give` (hands, backpack, drop).
-
-**Tools and input**
-- Hold-to-repeat inputs never act on what the same stroke created (`SnapStroke`); try a stationary press, not only a sweep.
-- Tool-mode state changes on transitions (taken out, put away), not per frame. A pick made before its tool arrives is kept for a bounded wait. A ring's marker reads the mode, and a tool's default option sits in the middle of its arc.
-- The held-part ghost path is `Program.SandboxHeldOnConstruct`: a single-purpose part falls back to the crosshair's pick, then `SnapBuild.Nearest`. A refused aim always says why.
-- Try a part-onto-part feature through the player's whole chain (menu, PlaceNew, loose / frozen / mounted, the client's ghost, the Attach message, the server's result) for hand-made AND generated parts. Sweep a "won't attach" report over every receiver and category, not one pair.
-- A "don't move into X" check refuses only moves that make a NEW overlap and skips what the body is joined to. Try held bodies off centre, on the floor and coupled.
-- `Keybinds.Migrate` unbinds every later-added action on its default before stepping versions.
-
-**Parts, welds and drive**
-- Several contact rays of one part are one wheel to the drive line: counting a Track part's rays as wheels on an open differential passed a tenth of the torque whenever one ray lost the ground, so a crawler crept at 2 m/s over rough ground (`TrackUnitsShare`). Try a drive change over bumps, not only on the flat.
-- A drawn thing with thickness is in the contact height: a track's links hung a pad's thickness below the wheel's radius, so they sat in the ground and their inner face fought it (`CWheel.Band`). A hand check of ride height reads a settled, simulated body, not a spawned one.
-- A contact the rim has refused is a wall, level: the cylinder's top edge threw a buggy up and onto a block just past the 0.6 R limit (`Rides`). Test the band just above a limit, not only well past it.
-- A visual change of a part's size also changes its collider, player blocking, ray hit, outline and ghost checks: solid shape goes through `Construct.SolidCount/SolidBox/ShapeBounds`.
-- Scaled sockets apply recursively to every part fitted on a scaled part, so try merges with a part that has its own sockets (a splitter), not only a barrel.
-- A fixed-pose (freeform) segment is rigid with its parent for every system: ask `Construct.MoveSeg/Rigid/FrameOf`, never `Seg != 0`. Compare link points in the rest frame (`ToRest`); sockets meeting across a seam are `SeamLinks`.
-- Welder and wrench share the leaf code (`ConstructBuild.OnLeaf/LeafRefusal/HangOnLeaf`). Try a weld path with every role whose behaviour depends on its links (wheels, suspensions, joints, drive line), driven, not only posed.
-- A part's behaviour is gated on its own inputs and links, never on the construct being a vehicle (a seat, free, awake). An optimisation that skips idle bodies wakes them on an input or power change (`ConstructPhysics.EngineLive`).
-
-**Network and merges**
-- Prove networking fixes with separate peers over the real transport, with lag and loss.
-- Anything written into a fixed budget in a fixed order takes turns (a cursor) and keeps room for its refresh; drive it past one packet (`ConstructNet.WritePoses`).
-- A network-fed list with a cap starts at its full size (`new(Max + 1)`), or it allocates in a steady frame after a hitch.
-- Bodies are drawn on the server's tick stamps (`ConstructNet.SampleAt`, `ConstructWorld.NetRenderTick`); the holder draws the aim plus a smoothed correction. Judge held and driven bodies by smoothness (second difference, back-steps), not final position. A buffer of past states covers the largest delay plus a sample either side, and a jump when new data arrives is eased (`ConstructNet.Smooth`).
-- At a merge, read every flags byte and every `(byte)` cast by hand: a bit clash or a narrowing cast shows no text conflict.
-- Per-match Player fields are marked `[MatchState]` and reset in `Player.ResetForMatch`; per-player state outside the Player is cleared in the mode module's `OnPlayerReset`, both via `Game.ResetPlayersForMatch`.
-
-**Physics and data passes**
-- For a solver instability, print each body's position, tilt and speed by tick before changing a number, change one thing at a time, and read anything a contact needs from the tick's velocities before the first impulse.
-- When a physics change breaks a scene, first check whether the new result is what the shape should do; a scene puts a body where a real shape would move or fall.
-- Stack blasts when trying digging. A nav graph finished over dug ground is flagged and dropped when the ground goes back (`NavGraph.BuiltOnDugGround`, `ForgetDug`).
-- Measure a data-wide correction against the old shape before merging (`tools/props/zfight_moves.py`). Steps never grow with passes, the amount comes from the shared patch, and rotated boxes are not axis-aligned ones.
-
-**When a test is asked for**
-- An offline scene with bots spawns the local player through `SpawnLocalSafely`. A wall-clock loopback check waits for the state it needs with a deadline (`WaitFor`, `MatchWithin`), and frame loops never burst after a stall.
-- An unknown part id in a test is `ConstructParts.All.Count`, never a fixed number. A scripted-clock fire test resets `NextFireTime` after giving a gun.
-- A section that changes a shared map restores it in its `finally`. A check that passes filtered but fails in the full suite is reproduced with a manual full run (`gh workflow run build.yml --ref BRANCH`) plus a DIAG line, not by guessing at neighbours.
-
-**Vehicles, wheels and joints** (folded 2026-11-09; dated stories in `git show c6b159b26:CLAUDE.md`)
-- A wheel's forward sense comes from `Construct.DriveFwd` (`RollSign`, `RollAxis`), never `CWheel.Axle`. Try a turn's direction against the key, and a straight run's yaw after any tyre-force change (`HoldHeading`).
-- A joint's motor gives back its gained motion through the whole body's inertia, never a holding force; per-joint maths over a chain is posed through it (`PoseCarried`), and chain tests compare against a hand moment.
-- A part made for what goes on it is turned for that part (`SmartRotation.AxleUp`); try a feature from the ghost's own default on every face.
-- Every generated vehicle has corners that hang alike (`VehicleChassis.Level`) and passes the spawn drive check (`VehicleDriveCheck`).
-
-**Blueprints and bodies**
-- A save records what is: steps' `"at"`, links' `"laid"`/`"hosts"`, `"exactLinks"`, a step's `"also"`, points relative to step 0. Round trips compare parts, joints, links and bodies, on selections of real vehicles too.
-- Carrying parts across bodies remaps every joint index (`Hinge`, `Child`) and moves only what sits in the body frame (`FrameOf(seg) == 0`); try a join with a turned welded piece and read it back as a client.
-- Points on a part go through `SegToWorld`; reach is one helper per action shared by client and server (`AttachReach`, `WeldReach`, `ReachPoint`).
-
-**Riding, views and flight**
-- Every way of leaving a moving thing is a ride-frame path (`ConstructRide.End`, or off with its surface velocity); state that decides how a replay runs arrives in the same message as the move.
-- A world-side check on a construct is judged as the frame's mover would (any face up, a capsule on an edge); entry tests drop onto edges, beams and turned hulls, size tests use the biggest builds (`RideTall`).
-- "What is under the crosshair" on a moving thing uses the picture just drawn (`PanelRender.DrawnSpot`).
-- A view that replaces another has its own remembered mode and is tried with the other modes on.
-- In flight, along the ground is `Along(v, up)` and up is `BodyUp`; try flight changes away from the world's +Y side.
-
-**Input and UI**
-- A wait for a key to come up reads the real key (`Keybinds.IsDown`); a press that opens a menu with a text box is spent until the key comes up (`_sbMenuKeyEaten`).
-- Before taking a bit out of the input, find what reads it; a body's state is held at the body (`SandboxPlayer`).
-- An ImGui button only notes its action; lists change after the drawing (`Ui.TwApply`), and an index is checked again after a change.
-- Anything a machine holds is taken out through the player's own aim (`ConstructPress.MachineOf`).
-
-**Performance and network**
-- A per-tick method keeps its rare path and any lambda in a method of its own: C# makes the closure when the local's scope opens, before early returns (`AllocProfile.Top` finds them). An allocation measure's warm-up runs every stage the measured loop runs.
-- A per-body history is checked against the body's structure before it is touched; network tests edit a body while it moves; a growing `[net] dropped` count is the first thing to read in a user's log.
-- Everything drawn together is sampled at one tick; when something looks wrong on a client, check the host alone first.
-
-**Checks and CI (when a test is asked for)**
-- A wall-clock check waits for the state it needs with a deadline, judges medians, leaves out what the peer has no poses for, subtracts what a frame's time explains, and scales limits to speed; a wait's condition is false until the thing has happened; a client's player is moved through the server (`PwMoveClient`).
-- Game code stamps tracers on `ConstructRender.Now`; a check picks its own events by what they are and measures a flight by its own ticks (`Age`). Pool slots past the count are stale.
-- A check measures what the game does (e.g. `ConstructWeapons.AimWay`), not a proxy; a classifier is tried on a case for each class; a test's message says what it measured.
-- A catch for an expected miss names what it expects; look a part up outside the try.
-- When "SLOWEST" or DONE nears the workflow's limit (now 1800 s), raise it or trim sections.
-
-**Helpers and libraries**
-- A second program (the Browser helper) is rebuilt when its source changes; compare the built file's date with the commit before believing a fix failed. A probe runs through the shipped wrapper and settings (CefSharp starts with `--mute-audio`); anything crossing a process gets a throttled log line per hop.
-
-**Generated geometry (hulls, lofted parts, vehicle dressing)**
-- Hull faces keep only convex corners; a face is a repeat only when every point lies on the other's plane; facets meeting at a point share a mitred offset (`HullLoft.Mitres`); a new shape kind joins `ZFight.Boxes` when it is added.
-- A part's place rounds to the centimetre and `Put` moves a part up to its reach (0.2 m) onto a socket: socket offsets are whole centimetres, floors in a row sit on a half-metre lattice (`Deck(..., aligned: true)`), stand-offs keep half a centimetre extra (`HullLoft.TrimGap`), and keep-clear tests take the placing call's reach as margin.
-- A generated part keeps its own faces apart by construction: drawn feet a few mm above the rails' plane, helper boxes a few mm off drawn faces, pieces meeting at a shared point stop short of it, scaled sections drop rows too thin for their facets (`CabLook.Clamped`), thick pieces over a bend are flat with seams. `--body-report` counts coplanar pairs inside every lofted part.
-- Dressing goes on with `Onto(..., clear: true)`; turret and gear spots come from the bays as built (`BaySpots`); a refusal names its blocker in the rest frame (`Vehicle.Blocker`); judge shapes on real meshes (`--plan`, `--vehicle-shots`) and `VehicleChecks.Gaps`.
-
-**Added after the fold**
-- 2026-11-09: after fix/zombie-lod a Sandbox client still drew a far horde the host didn't have, which no shot could hurt: the zombies' sends stopped with the last zombie (no empty cells went out) and a full Msg.ZCrowd always restarted at cell 0, starving the last rows of a big crowd. A delta stream sends its final empty state and resumes where a full message stopped; measure what the client holds against the server's counts (`--zrange-host`, `CrowdStale`).
-- 2026-11-10: after the gunsmith merge every headless run failed or hung in `World`'s static initializer: a shell gun built while the blueprints loaded read `World.GravityScale`, the initializer loaded the maps, a sandbox map looked up a blueprint and re-entered the blueprints' Lazy. A static initializer never loads data that can lead back to its caller: take it on first use (`World.Map`).
-- 2026-11-10: from the Ordnance Bench's merge (65580f2a) Nudge online, Point weld, Press stock and Custom bins failed in the full suite only: the Interaction sweep opened the bench, and neither `SandboxLocalReset` nor Esc closed it, so `MenusOpen` ate every later click. A new panel that holds the mouse joins `SandboxLocalReset` and the Esc chain in the same change.
-- 2026-11-10: after the ordnance cook-offs (b3da5279) Terrain streaming saw a broken bomb never go off: it now goes off as a landed shell, and the check counted prop blasts only. A change that moves an effect to a new path updates the checks that count the old one (`ShellsLanded`).
-- 2026-11-10: fix/turret-seat ran the rotary joints' speed from stopped (min 0) and Construct actuators still wanted a minimum above zero; a range change in a part generator is followed by the checks that read that range.
-- 2026-11-10: two `ImGui.TextColored` calls in Lobby.cs failed the source scan for printf text; text that isn't a plain u8 literal goes through `ImGuiSafe`.
-- 2026-11-10: with 281 shipped blueprints the parts menu, Construct configure and Refining network spawned the wrong blueprint or none: `CActKind.Blueprint` sent its index in one byte. An index into a list that grows with data goes on the wire in two bytes, and a test's "bad index" is past the wire range, not a fixed 255.
-- 2026-11-10: the 6587-part TitanWalkerFitted blueprint made Sandbox full hands rebuild it once per part (43 million part builds) and the full suite hit the CI timeout. A check that loops over every blueprint costs by its size: sample the giant ones (`n * n` capped).
-- 2026-11-10: event doors (plain "hang" socket, role door) had no usable snap point, since SnapBuild made every door single-purpose by its hinge leaf; Sandbox snap build caught it on main. A part family with a new way to attach is classified in `SnapBuild.Build` in the same change (an event door goes on by its hang only).
-- 2026-11-10: a Titan Walker lying on Caledon made Sandbox ticks 15 ms (F9 "Player moves", which times the whole `Constructs.Step`): `PlanetGround` asked every leaf of a big group for its own patch of ground, so a 128x64 m slab tested 736 triangles and a fitted Titan made 5,300 ground queries a tick. Per-tick work against the world is bounded per body whatever its size: the lowest pieces kept from tick to tick plus a slice of the rest, a shared triangle budget (`PickGroundLeaves`, `MaxGroundTris`); measure with the biggest blueprint lying on a slope, not standing on the flat.
-- 2026-11-10: the smooth tops (PR #91) were judged on single craters and drill holes; in play, blasts on the floor of earlier craters left overhanging lips (blocks and spikes round the rim), sides steeper than 2 m a column stayed bars, and a hole's side stopped square at the untouched cell beside it. The "stack blasts when trying digging" lesson covers looks too: judge dug ground on a dozen blasts in one place and on a very big crater with small ones inside, from the ground and from above (`TerrainEdits.CraterTop`, `TouchBeside`, `GroundTops.Near`).
-- 2026-11-10: with the suite cut into four parts, Ragdolls and knockback ran straight after Nav bake, which ended on Pocket Planet: its gravity threw the thin-wall body over the wall. The rule above again (a section that changes the shared map puts it back in its `finally`); a section that fails in its part but passes alone is bisected with `--selftest-only "Earlier, Failing"` pairs.
-- 2026-11-10: from the shared materials (a3872067) to fix/zombie-far-horde no crowd zombie was drawn (only the 300 individuals): the box FragmentSrc gained `vLocal`/`vLocalN`/`vSize` inputs, `Renderer.Crowd.cs` reuses it without writing them, the link failed once into the log and the F9 counters still counted the prepared instances. A shader that reuses another's fragment code is updated with its inputs in the same change (grep `FragmentSrc.Replace`), and a link failure logs the info log.
-- 2026-11-11: after the survival physics gun went to 5,000 kg (7a10c317) "physics gun feel" failed on main: its 450 kg "heavy" piece was no longer limited by the beam, so it moved as fast as the 100 kg one. A check that reads a limit takes its amounts from the constant (`SurvivalMaxMass * 0.3f`), not a number picked against the old value.
-- 2026-11-11: the induction's "Pick up a part" step dropped Frame Blocks, which are physics-only (welder-fitted, decision 21), so F refused them and the tutorial stalled at step 8. A part a tutorial or duty hands to the player is checked against the rule that uses it (`PhysicsOnly`, the backpack's slots) through the real call (`ConstructEdits.PickUp`, `Stow`), not by its look.
-- 2026-11-11: after PR #96 a hole dug with the hand drill was still blocks and dark faces: a player drills at an angle from beside the hole, so every scoop undercuts the far side, and the checks dug straight down. Try a tool the way a player holds it (from an eye beside the hole, aiming into it), not with ops placed from above (`TerrainEdits.MinRoof`).
+Themes: Frame state and crashes; Tools and input; Parts, welds and drive; Network and merges; Physics and data passes; When a test is asked for; Vehicles, wheels and joints; Blueprints and bodies; Riding, views and flight; Input and UI; Performance and network; Checks and CI (when a test is asked for); Helpers and libraries; Generated geometry (hulls, lofted parts, vehicle dressing); Added after the fold.

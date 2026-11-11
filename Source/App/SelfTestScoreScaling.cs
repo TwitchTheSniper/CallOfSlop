@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// Score scaling (ScoreLimits.cs): the formula per mode, the match's limit (set from the players present, only raised
 /// mid-match, Fixed keeps the classic limits), its replication, the setting in settings.txt, and a measured check
 /// from bot matches that a 16-player match takes about as long to reach its limit as an 8-player one.
-/// <see cref="ScoreSweep"/> turns on the full measurement behind docs/SCORE-SCALING.md (several minutes).
+/// <see cref="ScoreSweep"/> turns on the full measurement behind docs/archive/SCORE-SCALING.md (several minutes).
 /// </summary>
 public static partial class SelfTest
 {

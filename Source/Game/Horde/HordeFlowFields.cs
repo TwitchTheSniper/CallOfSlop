@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Shared routes for a horde (docs/zombies/ZOMBIES-MODE.md, "Horde controller"): a flow field per goal node of the
+/// Shared routes for a horde (docs/archive/ZOMBIES-MODE.md, "Horde controller"): a flow field per goal node of the
 /// bots' nav graph (<see cref="NavGraph"/>), the cost of the way to the goal from every node and the next node on it,
 /// worked out once with a Dijkstra over the reversed edges and read by every member heading there (one lookup instead
 /// of an A* search per member). A small cache (least recently used goes), at most <see cref="BuildsPerTick"/> new

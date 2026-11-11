@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes Maps/Zombies/Props/Cathedral/*.json: the Zombies pack's gothic props for Ashgrave Cathedral (2026-10-27; the map
-is written by the C# map kit, Source/MapKit/Generators/AshgraveCathedral.cs; docs/zombies/ZOMBIES-MODE.md, "Ashgrave
+is written by the C# map kit, Source/MapKit/Generators/AshgraveCathedral.cs; docs/archive/ZOMBIES-MODE.md, "Ashgrave
 Cathedral").
 
 Run from the repository root:  python3 -I tools/zombies/make_cathedral_props.py

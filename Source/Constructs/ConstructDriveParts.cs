@@ -123,8 +123,8 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"enginePiece.kind\" is crank, cylinder, fuel, boost, starter, exhaust or stack (the output is an \"engine\" part: \"modular\")");
         d.PieceSize = EngineSizeOf(Need(b, "size", bw), file, "enginePiece.size");
         var feeds = d.Piece is EnginePiece.Fuel or EnginePiece.Boost;
-        if (!feeds && (Opt(b, "power") != null || Opt(b, "thirst") != null))
-            throw new ConstructPartException($"{file}: only a fuel system or a booster has \"power\" and \"thirst\"");
+        if (!feeds && d.Piece != EnginePiece.Cylinder && (Opt(b, "power") != null || Opt(b, "thirst") != null))
+            throw new ConstructPartException($"{file}: only a cylinder, a fuel system or a booster has \"power\" and \"thirst\""); // (a cylinder's: a higher tier's more for its size, the Engine Kit's: docs/vehiclekit/ENGINEKIT.md)
         d.PiecePower = Opt(b, "power") is { } pw ? Num(pw, file, "enginePiece.power") : 1f;
         Range(d.PiecePower, 0.1f, 10f, file, "enginePiece.power");
         d.PieceThirst = Opt(b, "thirst") is { } th ? Num(th, file, "enginePiece.thirst") : 1f;

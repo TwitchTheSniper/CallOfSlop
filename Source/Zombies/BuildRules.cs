@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// A weapon as a tree of parts: a grip at the root (the part you hold), one or more receivers in its receiver sockets,
 /// each with its own barrels, splitters, feed and ammo; stock, optic, foregrip and utility parts go on the grip
-/// (Zombies weapon builder; see docs/zombies/WEAPON-BUILDER.md). Saved as one line of text:
+/// (Zombies weapon builder; see docs/sandbox/WEAPON-BUILDER.md). Saved as one line of text:
 /// <c>Name|style|Grip{socket:Part{...},socket:Part}</c>.
 /// </summary>
 public sealed class WeaponBuild
@@ -337,7 +337,7 @@ public sealed class WeaponBuild
 public readonly record struct BuildProblem(bool Incomplete, string Message);
 
 /// <summary>
-/// The assembly rules (see docs/zombies/WEAPON-BUILDER.md, "Graph rules"): a build starts from a root grip whose
+/// The assembly rules (see docs/sandbox/WEAPON-BUILDER.md, "Graph rules"): a build starts from a root grip whose
 /// receiver sockets are its receiver capacity; sockets take parts of their type and listed categories; feeds must
 /// match the calibre class of the receiver they hang off (ammo fits any); some feeds need particular actions; splitters
 /// stack at most two deep; and there are limits on parts, barrels, projectiles per trigger pull and weight. Every
@@ -392,7 +392,7 @@ public static class BuildRules
     /// Categories that must match their receiver's bore: only the feed (a magazine is sized for its rounds). Barrels,
     /// splitters and muzzle devices fit every receiver (the receiver adapts the barrel: <see cref="BarrelScale"/>,
     /// <see cref="BarrelClass"/>), and so does ammo: the receiver sets the calibre, the ammo part only picks the round
-    /// type and its effect on top (docs/zombies/WEAPON-BUILDER.md, "Universal ammo").
+    /// type and its effect on top (docs/sandbox/WEAPON-BUILDER.md, "Universal ammo").
     /// </summary>
     public static bool BoreBound(PartCategory c) => c is PartCategory.Feed;
 

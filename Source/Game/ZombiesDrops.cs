@@ -5,7 +5,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// A built weapon lying on the floor in Zombies (docs/zombies/ZOMBIES-MODE.md, "Dropped builds"): left where a player
+/// A built weapon lying on the floor in Zombies (docs/archive/ZOMBIES-MODE.md, "Dropped builds"): left where a player
 /// bled out, or swapped out by someone picking one up. Anyone on the team can pick it up (hold the interact key) until it
 /// despawns. Server-owned; clients get it in <see cref="Msg.ZPickup"/>.
 /// </summary>

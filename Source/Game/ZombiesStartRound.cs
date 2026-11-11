@@ -2,7 +2,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Zombies testing shortcuts (developer request, 2026-10-27: "Getting a high round in zombies takes a lot of time";
-/// docs/zombies/ZOMBIES-MODE.md, "Start round, test kit and skipping rounds"):
+/// docs/archive/ZOMBIES-MODE.md, "Start round, test kit and skipping rounds"):
 ///   - <see cref="ZStartRound"/>: the lobby's "Start round" (Settings "zombie_start_round", <c>--zombies-round N</c>): the
 ///     run's first round is N, with the economy of a run that got there: points (<see cref="StartPointsFor"/>), the
 ///     team's power-up schedule moved on by what was earned (<see cref="AdvancePowerScheduleBy"/>); the round itself

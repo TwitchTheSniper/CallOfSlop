@@ -5,7 +5,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The casino table panel in a Zombies run (Source/Game/ZombiesCasino.cs; docs/zombies/ZOMBIES-MODE.md, "Casino
+/// The casino table panel in a Zombies run (Source/Game/ZombiesCasino.cs; docs/archive/ZOMBIES-MODE.md, "Casino
 /// tables"): opened with the interact key at a table, over the match (the world goes on: zombies keep coming, and the
 /// HUD stays up). The bet chooser (within the table's limits and your points), then the game's own steps: blackjack's
 /// hit / stand / double, roulette's betting board (numbers, splits, colours, odd / even, halves, dozens, columns), high-

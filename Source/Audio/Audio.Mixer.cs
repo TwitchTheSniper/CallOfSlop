@@ -77,6 +77,7 @@ public sealed partial class Audio
         Sfx.ZombieShuffle or Sfx.ZombieRun or Sfx.ZombieSprint => MixBus.ZombieSteps, // (ZombieSounds plays these on top of the Zombies row)
         >= Sfx.ZombieGroan and <= Sfx.ZombieHeadDeath or Sfx.CrowdRoar => MixBus.ZombieVoices,
         >= Sfx.BuildSnap and <= Sfx.BuildDrop => MixBus.Building,
+        Sfx.Babble => MixBus.Speech,
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
 

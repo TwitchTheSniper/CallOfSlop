@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace CallOfSlop;
 
 /// <summary>
-/// The far crowd's persistent visual zombies (docs/zombies/MASS-HORDE.md, "Rendering: persistent crowd agents"). The
+/// The far crowd's persistent visual zombies (docs/sandbox/MASS-HORDE.md, "Rendering: persistent crowd agents"). The
 /// crowd's far zombies are only counts per 4 m cell (a client's <see cref="CrowdPicture"/>, the host's mass tier); this
 /// keeps a pool of visual zombies ("agents") standing in for them, each with its own position, heading, walk phase and
 /// look kept from frame to frame, so nothing pops or teleports:
@@ -393,7 +393,7 @@ public sealed class CrowdAgents
     }
 
     /// <summary>
-    /// The seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"): a zombie of another tier takes over the agent
+    /// The seamless tier change (docs/sandbox/MASS-HORDE.md, "Wake waves"): a zombie of another tier takes over the agent
     /// nearest (x, z) within <paramref name="within"/> m (one in gait <paramref name="gait"/> first, so its stride doesn't
     /// change; -1: any), carrying on from <paramref name="pose"/> (where it was last drawn, its yaw, walk and look); the
     /// agent stops drawing at once, no fade. <paramref name="counted"/>: the cell's count still holds the zombie (a

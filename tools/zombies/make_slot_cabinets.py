@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes Props/Zombies/SlotMachines/*.json: one slot cabinet per weapon-builder part category (Zombies slot machines,
-2026-10-26; own body shapes 2026-10-27; docs/zombies/ZOMBIES-MODE.md, "Slot machines").
+2026-10-26; own body shapes 2026-10-27; docs/archive/ZOMBIES-MODE.md, "Slot machines").
 
 Run from the repository root:  python3 -I tools/zombies/make_slot_cabinets.py
 

@@ -1,4 +1,5 @@
 using System.Numerics;
+using CallOfSlop.EngineKit;
 
 namespace CallOfSlop.VehicleKit;
 
@@ -284,7 +285,7 @@ public sealed partial class Vehicle : BlueprintScript
         var en = engine ?? Style.Part(d, Slot("engine"));
         var gb = gearbox ?? Style.Part(d, Slot("gearbox"));
         var sill = Sill(z);
-        Engine = Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y");
+        Engine = engine == null && EngineWish.Current is { } wish ? KitFlywheel(wish, sill, z) : Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y"); // (a kit engine only when one is asked for: Vehicle.KitEngine.cs)
         HoodOn = Engine;
         if (engine == null && Def(en).FuelKind == EngineFuel.Electric && Def(en).BoundsMax.Y - Def(en).BoundsMin.Y < 0.45f)
             HoodOn = Onto(Engine, "+y", "Drone Battery", "-y", 0); // (a spawn context off world: the Electric Motor is 10 cm lower than an engine, so a hood stands on a Drone Battery on its top, within 2 cm of where it always does)

@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace CallOfSlop;
 
 /// <summary>
-/// One kind of zombie (the rules file's "types" section: Parts/Tables/ZombiesRules.json; docs/zombies/ZOMBIES-MODE.md,
+/// One kind of zombie (the rules file's "types" section: Parts/Tables/ZombiesRules.json; docs/archive/ZOMBIES-MODE.md,
 /// "Zombie types"). Everything about a type is data: its health (a multiplier on the round's health, or a fixed
 /// number), gait and speed, damage, reach and swing, size (the drawn body, the hit box and the body players are held off
 /// scale with it), colours and voice, points, limb rules, the round it first appears, its spawn weight by round, how many

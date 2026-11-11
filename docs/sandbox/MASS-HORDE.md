@@ -533,7 +533,7 @@ pack). x runs across the valley:
 
 ### A round
 
-The zombies section's `"stress"` (Maps/README.md, docs/zombies/ZOMBIES-MODE.md "Map format"):
+The zombies section's `"stress"` (Maps/README.md, docs/archive/ZOMBIES-MODE.md "Map format"):
 
 1. **Staging.** The round's crowd (the host's **Horde size**, else the map's `"crowd"`, 2,500) is seeded in the mass
    tier, split evenly between the pads: each a round blob of cells packed to the mass capacity (40 a 4 m cell), so

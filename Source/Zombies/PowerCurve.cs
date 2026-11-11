@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// The rarity power curve (docs/zombies/WEAPON-BUILDER.md, "The power curve"): one number per part that says how strong
+/// The rarity power curve (docs/sandbox/WEAPON-BUILDER.md, "The power curve"): one number per part that says how strong
 /// it is next to the other parts of its category, measured with the real stat pipeline, so a rarer part's ceiling can be
 /// checked against the commoner ones. Every gun part is fitted to a reference gun (a Workhorse on the Rifle Grip, standard
 /// barrel, box mag, FMJ, full-auto sear) and scored by how much it changes the gun's <see cref="GunPower"/>; receivers by

@@ -3,7 +3,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Zombies: taking a whole build apart at the workbench (docs/zombies/ZOMBIES-MODE.md, "Disassembling a build"). Every
+/// Zombies: taking a whole build apart at the workbench (docs/archive/ZOMBIES-MODE.md, "Disassembling a build"). Every
 /// part of the slot's build, the grip or hilt included, goes to the player's loose parts and the slot is left empty.
 /// Server-authoritative: a client asks with <see cref="Msg.ZBench"/> (kind <see cref="BenchDisassemble"/>), the server
 /// checks it, moves the parts, and sends <see cref="Msg.ZRun"/> (the parts) and a <see cref="Msg.ZBuild"/> with

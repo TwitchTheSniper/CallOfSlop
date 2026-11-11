@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>The crowd tier's numbers (docs/zombies/MASS-HORDE.md). Code defaults for the spike; a rules section later.</summary>
+/// <summary>The crowd tier's numbers (docs/sandbox/MASS-HORDE.md). Code defaults for the spike; a rules section later.</summary>
 public sealed class CrowdTuning
 {
     /// <summary>A particle thinks (reads the flow field for its heading) every this many ticks, spread per particle.</summary>
@@ -17,7 +17,7 @@ public sealed class CrowdTuning
     public float PromoteRange = 22f, DemoteRange = 34f, DemoteSeconds = 2f;
 
     /// <summary>
-    /// Waking and sleeping by sight (docs/zombies/MASS-HORDE.md, "Waking and sleeping"): a zombie a player can see (inside
+    /// Waking and sleeping by sight (docs/sandbox/MASS-HORDE.md, "Waking and sleeping"): a zombie a player can see (inside
     /// the view of <see cref="SightHalfAngle"/> degrees either side and <see cref="SightHalfAngleV"/> up and down of
     /// their look, and not behind the ground) counts at its distance; one nobody sees counts <see cref="UnseenWeight"/>
     /// times as far, so the promote and demote ranges apply to it that much nearer. With the individual tier full and a
@@ -47,7 +47,7 @@ public sealed class CrowdTuning
     public float Speed = 1.5f, SpeedSpread = 0.35f;
 
     /// <summary>
-    /// Pace by round (<see cref="CrowdPace"/>; docs/zombies/MASS-HORDE.md, "Pace by round"): on, the crowd and the mass
+    /// Pace by round (<see cref="CrowdPace"/>; docs/sandbox/MASS-HORDE.md, "Pace by round"): on, the crowd and the mass
     /// move at the round's speed mix (each crowd zombie a walker, runner or sprinter as an individual would be, at its
     /// class's speed +- <see cref="PaceSpread"/>), and <see cref="Speed"/> / <see cref="SpeedSpread"/> are unused; off, the
     /// fixed speed.
@@ -57,7 +57,7 @@ public sealed class CrowdTuning
     public float PaceSpread = 0.08f;
 
     /// <summary>
-    /// Strays rejoin (docs/zombies/MASS-HORDE.md, "Strays rejoin"): a hurt or limb-lost individual counting past the
+    /// Strays rejoin (docs/sandbox/MASS-HORDE.md, "Strays rejoin"): a hurt or limb-lost individual counting past the
     /// demote range for <see cref="DemoteSeconds"/> goes back to the crowd with its wounds, so it frees its slot for
     /// zombies nearer the players (off: only healthy ones go back, as before).
     /// </summary>
@@ -98,7 +98,7 @@ public sealed class CrowdTuning
     public int MassPerTick = 40, MassCapacity = 40, DrawCap = 28;
 
     /// <summary>
-    /// The soft wake edge (docs/zombies/MASS-HORDE.md, "Wake waves"): on; each mass cell wakes within its own radius,
+    /// The soft wake edge (docs/sandbox/MASS-HORDE.md, "Wake waves"): on; each mass cell wakes within its own radius,
     /// <see cref="MassRange"/> +- half of <see cref="MassBand"/> (fixed per cell, so the edge is ragged, not a circle), and
     /// merges back past that plus <see cref="MassHysteresis"/>. The cells nearest a player go first, those whose cell
     /// towards the player still holds mass (the inside of a blob) only once they count <see cref="MassInterior"/> m nearer;
@@ -139,7 +139,7 @@ public sealed class CrowdTuning
 }
 
 /// <summary>
-/// The crowd tier of the mass horde (docs/zombies/MASS-HORDE.md, the spike): thousands of zombies as particles with only
+/// The crowd tier of the mass horde (docs/sandbox/MASS-HORDE.md, the spike): thousands of zombies as particles with only
 /// a position and a velocity, in flat arrays (no object per zombie). One flow field over the map's floor plan (a grid
 /// of <see cref="CrowdTuning.FlowCell"/> m cells, a Dijkstra from every player's cell at once) gives every particle its
 /// heading; each reads it every 8-16 ticks and walks it every tick, pushed apart from its neighbours (and from the
@@ -196,7 +196,7 @@ public sealed partial class HordeCrowd
     public long[] Born = [];
 
     /// <summary>
-    /// Visual only, the seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"; written by the drawing, never read
+    /// Visual only, the seamless tier change (docs/sandbox/MASS-HORDE.md, "Wake waves"; written by the drawing, never read
     /// by the game): the look it is drawn with (its <see cref="Look"/>, or the look of the mass agent it took over), the
     /// metres walked (its walk cycle's phase, carried across tier changes), and the hand-off: the offset (m) from where it
     /// is to where the agent it took over stood, eased out over <see cref="HandDur"/> s (<see cref="HandLeft"/> s left; -1:
@@ -336,7 +336,7 @@ public sealed partial class HordeCrowd
     /// <summary>
     /// Can a crowd on <paramref name="map"/> hold zombies at (x, z)? Not on a round world (a planetoid or point gravity: the
     /// crowd's ground is a plane), and only inside the grid <see cref="Setup"/> lays from the map's west and north edges
-    /// (at most 1,024 flow cells a side, about 2 km: a bigger map's middle is past it). docs/zombies/MASS-HORDE.md, "On
+    /// (at most 1,024 flow cells a side, about 2 km: a bigger map's middle is past it). docs/sandbox/MASS-HORDE.md, "On
     /// Sandbox maps".
     /// </summary>
     public static bool Covers(Map map, CrowdTuning tuning, float x, float z)

@@ -4,7 +4,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Loose parts a player dropped on purpose (docs/zombies/ZOMBIES-MODE.md, "Dropping things"): a small labelled pickup
+/// Loose parts a player dropped on purpose (docs/archive/ZOMBIES-MODE.md, "Dropping things"): a small labelled pickup
 /// with its rarity glow. Anyone on the team picks it up with the interact key (into their loose parts). Server-owned;
 /// clients get it in <see cref="Msg.ZPartDrop"/>.
 /// </summary>

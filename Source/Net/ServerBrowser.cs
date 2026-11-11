@@ -69,9 +69,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     fingerprints include their chunks (MapDestruction.Map.cs).
     // 36: in-match text chat and voice chat (LobbyChat.cs, GameVoice.cs): ChatSay gains a flags byte (team), ChatLine gains
     //     flags (team / dead / system) and the sender's team; Msg.VoiceUp / VoiceDown / VoiceCtl / VoiceInfo at the end of Msg.
-    // 37: the Co-op mode (Source/Game/Pve, docs/pve/DESIGN.md): game mode 7, Msg.PEnts / PEvent at the end of Msg (enemy
+    // 37: the Co-op mode (Source/Game/Pve, docs/archive/PVE-DESIGN.md): game mode 7, Msg.PEnts / PEvent at the end of Msg (enemy
     //     soldiers and co-op events), the Co-op module's mode-state tail (the objective panel), kill id 253 (killed by an enemy).
-    // 38: the weapon workbench's barrels and Chain fire (docs/zombies/WEAPON-BUILDER.md): barrels fit every receiver (the
+    // 38: the weapon workbench's barrels and Chain fire (docs/sandbox/WEAPON-BUILDER.md): barrels fit every receiver (the
     //     receiver sizes them), and a build text's style field is honoured again (volley / rotate = the Chain fire box).
     //     The text format is unchanged, but servers and clients must agree on what a build fires like and what fits.
     // 39: the Test Range mode (Source/Game/Modes/TestRange): game mode 8, free-for-all that never ends (an older build would
@@ -84,7 +84,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 43: zombie animations (ZombieAnimNet.cs): in Msg.ZEnts a tearing or climbing zombie's yaw byte carries its animation
     //     byte (the board cycle / the climb's progress; it faces its window anyway), still 12 bytes a zombie.
     //     (42 is another feature's number.)
-    // 44: the weapon workbench's Action parts (docs/zombies/WEAPON-BUILDER.md, "Actions: the fire type is a part"): a new
+    // 44: the weapon workbench's Action parts (docs/sandbox/WEAPON-BUILDER.md, "Actions: the fire type is a part"): a new
     //     part category (network part ids of the older categories are unchanged; actions sort last), every receiver has
     //     an "action" socket and its fire type and rate come from the action in it. Build texts carry the actions; the
     //     server takes them as sent (no stock actions added), so both ends must agree on the part set and the rules.
@@ -150,7 +150,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 70: Zombies drop items (Source/Game/ZombiesDropItems.cs): Msg.ZDropItem (client -> server: drop the gun in hand or
     //     loose parts) and Msg.ZPartDrop (server -> all: loose-part pickups) at the end of Msg; Msg.ZPickup's appear
     //     message ends with the round the dropped build lasts to (u16, 0 = time only).
-    // 71: The mass horde's crowd (docs/zombies/MASS-HORDE.md, Source/Game/ZombiesCrowdNet.cs): Msg.ZCrowd at the end of Msg
+    // 71: The mass horde's crowd (docs/sandbox/MASS-HORDE.md, Source/Game/ZombiesCrowdNet.cs): Msg.ZCrowd at the end of Msg
     //     (per-cell crowd counts and headings, changes or a keyframe), sent only on maps with a "crowd".
     // 72: The Zombies trader (Source/Game/ZombiesTrader.cs): Msg.ZTrader (the trader and his shelf, server -> all) and
     //     Msg.ZTraderBuy (a purchase: item, visit, count; no purchase limit, client -> server) at the end of Msg.

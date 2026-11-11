@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Drawing the Zombies mode (docs/zombies/ZOMBIES-MODE.md): the zombies (the player rig's proportions with green skin,
+/// Drawing the Zombies mode (docs/archive/ZOMBIES-MODE.md): the zombies (the player rig's proportions with green skin,
 /// arms out in front, glowing eyes), doors and debris (they sink into the floor when bought), boarded windows, chalk
 /// outlines of the wall buys, the mystery box (its gun spin, the teddy bear), perk machines, the slot upgrade, the power
 /// switch, workbenches, salvage piles and parts on the floor; the workbench in a run; and a small smoke step.
@@ -320,7 +320,7 @@ public static unsafe partial class Program
     private static readonly Vector3 IndividualRed = new(0.95f, 0.12f, 0.1f);
 
     /// <summary>
-    /// The mass horde's crowd (docs/zombies/MASS-HORDE.md): the host draws its particles as they are and its mass cells
+    /// The mass horde's crowd (docs/sandbox/MASS-HORDE.md): the host draws its particles as they are and its mass cells
     /// as persistent agents; a client draws its picture of the cells (Msg.ZCrowd) as persistent agents. Culled by the
     /// view, the fog and the terrain's horizon, three levels of detail by distance, one instanced draw each.
     /// </summary>

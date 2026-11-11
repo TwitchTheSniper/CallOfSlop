@@ -54,6 +54,7 @@ public enum MixBus : byte
     Frenzy5,
     Frenzy6,
     Media,
+    Speech, // the story people's murmured talk (Sfx.Babble)
     COUNT,
 
     /// <summary>"Work it out from the sound" (<see cref="Audio.BusFor"/>): the default for the Effect calls.</summary>
@@ -168,6 +169,7 @@ public static class AudioMixDefaults
         L("frenzy.5", "Music", "Kill frenzy level 5 (FRENZY)", "As loud as the menu music."),
         L("frenzy.6", "Music", "Kill frenzy level 6 (MAX FRENZY)", "As loud as the gunfire (then the music limiter)."),
         L("media", "Music", "Video Screens and Music Players", "What they play, on top of each part's Volume and Settings > Audio > Screens volume."),
+        L("speech", "People", "People talking (murmur)", "The murmured syllables the story's people make as they say a line (on top of Settings > Audio > Effects volume)."),
 
         // ---- Shape (MixParam order) ----
         P("dist.reference_m", "Gunshot reference distance", 5f, 1f, 20f, "%.1f m", "Other players' shots start fading from here (inverse distance)."),

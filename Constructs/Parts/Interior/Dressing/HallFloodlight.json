@@ -61,7 +61,8 @@
         0.08,
         0.04
       ],
-      "color": "#3a3f45"
+      "color": "#3a3f45",
+      "finish": "matte paint"
     },
     {
       "min": [
@@ -74,7 +75,8 @@
         0.0,
         0.42
       ],
-      "color": "#6a737b"
+      "color": "#6a737b",
+      "finish": "steel"
     },
     {
       "min": [
@@ -87,7 +89,8 @@
         -0.1,
         0.62
       ],
-      "color": "#3a3f45"
+      "color": "#3a3f45",
+      "finish": "matte paint"
     },
     {
       "min": [

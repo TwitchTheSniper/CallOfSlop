@@ -70,7 +70,7 @@ public sealed class ZTrader
 }
 
 /// <summary>
-/// The trader (board item dev-zombies-trader-tr01, 2026-10-28; docs/zombies/ZOMBIES-MODE.md, "The trader"): a wandering
+/// The trader (board item dev-zombies-trader-tr01, 2026-10-28; docs/archive/ZOMBIES-MODE.md, "The trader"): a wandering
 /// parts dealer who sets up his stall at the start of every <see cref="ZombiesRules.TraderEveryRounds"/>th round at one
 /// of the map's trader spots (a box spot or workbench on maps without any), announced to everyone (a feed line, a sound, a
 /// banner and a waypoint label through the walls), stays <see cref="ZombiesRules.TraderStayRounds"/> rounds and their

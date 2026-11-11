@@ -23,7 +23,7 @@ public enum PveEventKind : byte
 }
 
 /// <summary>
-/// Co-op networking (protocol 37; docs/pve/DESIGN.md "Network and performance budget"): the enemies near each client in
+/// Co-op networking (protocol 37; docs/archive/PVE-DESIGN.md "Network and performance budget"): the enemies near each client in
 /// <see cref="Msg.PEnts"/> (20 Hz, interest-managed: the nearest within 150 m, the far half every other packet, 13 bytes
 /// each, one datagram), events in <see cref="Msg.PEvent"/>. The objective state rides in the mode-state tail
 /// (CoopModule). Clients interpolate enemies between their last two updates and drop one not heard of for 1.2 s.

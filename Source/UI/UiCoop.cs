@@ -3,7 +3,7 @@ using Brutal.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>The co-op HUD extras (docs/pve/DESIGN.md): the big centre banner. The objective panel itself is the module's HUD lines (CoopModule.HudLines).</summary>
+/// <summary>The co-op HUD extras (docs/archive/PVE-DESIGN.md): the big centre banner. The objective panel itself is the module's HUD lines (CoopModule.HudLines).</summary>
 public sealed partial class Ui
 {
     /// <summary>OBJECTIVE 2/4: ..., SQUAD WIPED - REGROUPING, MISSION COMPLETE: across the upper middle for a few seconds.</summary>

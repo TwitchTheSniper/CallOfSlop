@@ -58,7 +58,7 @@ public sealed class HordeTuning
 }
 
 /// <summary>
-/// The horde controller (docs/zombies/ZOMBIES-MODE.md, "Horde controller"): owns large groups of NPCs as groups that
+/// The horde controller (docs/archive/ZOMBIES-MODE.md, "Horde controller"): owns large groups of NPCs as groups that
 /// decide together, so a few hundred agents cost about what a few dozen did. Generic over the agent
 /// (<see cref="IHordeAgent"/>): Zombies wires its zombies in (ZombieHorde.cs); the co-op enemies could later.
 /// <para>

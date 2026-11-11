@@ -41,7 +41,7 @@ public sealed class ZBotShop
 }
 
 /// <summary>
-/// Co-op bots spend their own points (developer answer, 2026-10-26; docs/zombies/ZOMBIES-MODE.md, "Co-op bots"): they
+/// Co-op bots spend their own points (developer answer, 2026-10-26; docs/archive/ZOMBIES-MODE.md, "Co-op bots"): they
 /// walk to and buy the power switch, perks (in the rules' order, saving up for the next one they can reach; the same
 /// prices as players, the doubling past the 4th included), a wall gun better than the one in hand, the slot upgrade, the
 /// mystery box (taking the offer only when it beats the gun in hand), doors (between rounds, one a break for the whole

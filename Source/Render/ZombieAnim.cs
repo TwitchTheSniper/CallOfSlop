@@ -158,7 +158,7 @@ public struct ZombiePose
 }
 
 /// <summary>
-/// Procedural zombie animation (docs/zombies/ZOMBIES-MODE.md, "Animation"): no skeletal assets, just the blocky body
+/// Procedural zombie animation (docs/archive/ZOMBIES-MODE.md, "Animation"): no skeletal assets, just the blocky body
 /// driven by a handful of targets and an analytic two-bone IK per limb. Tearing boards (hands on the top remaining board,
 /// a tug, then a jerk back with the board as it comes off), vaulting through the window (hands on the sill, tilt, legs
 /// tucked, a landing and a stagger), rising out of the ground (arms first), a shamble / jog / sprint keyed to the speed,

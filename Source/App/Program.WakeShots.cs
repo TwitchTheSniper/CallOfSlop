@@ -6,7 +6,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// <c>--stress-shots wake [size] [--wake-old] [--wake-round N] [--fixed-pace]</c>: pictures of the mass horde waking and sleeping by sight
-/// (docs/zombies/MASS-HORDE.md, "Waking and sleeping"), written next to the log as smoke_wake_&lt;view&gt;_&lt;s&gt;s.bmp.
+/// (docs/sandbox/MASS-HORDE.md, "Waking and sleeping"), written next to the log as smoke_wake_&lt;view&gt;_&lt;s&gt;s.bmp.
 /// An offline Zombies game on Horde Stress with <c>size</c> zombies (20,000 by default) seeded all round the player on
 /// the valley floor (particles out to 45 m, the mass beyond), the player looking down the valley and shooting the
 /// individual nearest the middle of their view every 0.2 s (unhurt). Every 2 s the log gets the tiers ("[wakeshots]":

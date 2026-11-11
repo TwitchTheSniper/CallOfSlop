@@ -151,7 +151,7 @@ public sealed class ZSpot
 }
 
 /// <summary>
-/// A map's "zombies" section (docs/zombies/ZOMBIES-MODE.md, "Map format"): the areas (with the start area), the doors
+/// A map's "zombies" section (docs/archive/ZOMBIES-MODE.md, "Map format"): the areas (with the start area), the doors
 /// and debris between them, windows with boards, zombie spawners, wall buys, mystery box spots, workbenches, perk
 /// machines, the weapon-slot upgrade, the power switch and salvage piles. A map with this section can be played in
 /// the Zombies mode. Doors and window openings become boxes in <see cref="Map.Solid"/> (drawn by the Zombies renderer,
@@ -203,7 +203,7 @@ public sealed class ZombiesMap
     /// <summary>
     /// "crowd": N (a mass-horde test map: Dev/MassHordeTest.json; 0, the default: off). Each round is N zombies, nearly all
     /// of them crowd particles (Source/Game/Horde/HordeCrowd.cs) that become full zombies near the players and go back to
-    /// the crowd far from them. The spike of the mass horde (docs/zombies/MASS-HORDE.md).
+    /// the crowd far from them. The spike of the mass horde (docs/sandbox/MASS-HORDE.md).
     /// </summary>
     public int Crowd;
 
@@ -213,7 +213,7 @@ public sealed class ZombiesMap
     /// <summary>
     /// "stress": { ... } (with "crowd"; Dev/HordeStress.json): a horde stress map. Each round's crowd waits on the
     /// staging areas, then descends to the rally point, merges there and advances on the players; the host picks the
-    /// size in the lobby (Source/Game/ZombiesCrowdStress.cs, docs/zombies/MASS-HORDE.md "Horde Stress"). Null: off.
+    /// size in the lobby (Source/Game/ZombiesCrowdStress.cs, docs/sandbox/MASS-HORDE.md "Horde Stress"). Null: off.
     /// </summary>
     public ZombiesStress? Stress;
 

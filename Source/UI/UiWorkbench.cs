@@ -13,7 +13,7 @@ public sealed record WorkbenchLaunch(WeaponDef Primary, WeaponDef Secondary, Wea
     bool ExtraSlots = false, int Dummies = 0);
 
 /// <summary>
-/// The Weapon Workbench (docs/zombies/WEAPON-BUILDER.md, "The workbench"). A new weapon starts with step 1, the grip
+/// The Weapon Workbench (docs/sandbox/WEAPON-BUILDER.md, "The workbench"). A new weapon starts with step 1, the grip
 /// picker (cards with a 3D picture, receiver slots, fire style, carry weight and how many you own). Step 2 is the
 /// assembly screen: your parts on the left (grouped, counted, searchable, with 3D icons; parts that fit nowhere on the
 /// build are dimmed), the gun large in the middle (drag to turn it, wheel to zoom) with its sockets marked, and the build

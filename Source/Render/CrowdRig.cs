@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// A baked crowd zombie for the GPU (docs/zombies/MASS-HORDE.md, "Rendering"): the walk cycle of the box zombie
+/// A baked crowd zombie for the GPU (docs/sandbox/MASS-HORDE.md, "Rendering"): the walk cycle of the box zombie
 /// (<see cref="ZombieAnim"/>) recorded once at <see cref="Frames"/> phases, each frame every box's transform and colour.
 /// The crowd's vertex shader reads a box's frame from a float texture (<see cref="Texels"/>: a row per frame, four
 /// texels per box: the transform's three axis rows with the colour's red, green and blue in w, then its translation with

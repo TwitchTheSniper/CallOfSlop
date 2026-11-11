@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Zombie hordes" (docs/zombies/ZOMBIES-MODE.md, "Hordes" and "Horde controller"): the alive curve
+/// Self-test section "Zombie hordes" (docs/archive/ZOMBIES-MODE.md, "Hordes" and "Horde controller"): the alive curve
 /// and the host's cap; scripted hordes of 24, 100 and 300 zombies on Blackmoor Asylum (server tick cost, allocations,
 /// snapshot bytes per client per second, the client's update and drawing cost); round 30 filling to its cap of 300; the
 /// horde controller's group decisions (spreading over the players, a long window queue splitting to the other windows,

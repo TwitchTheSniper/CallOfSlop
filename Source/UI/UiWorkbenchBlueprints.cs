@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The workbench's blueprint library (docs/zombies/WEAPON-BUILDER.md, "Blueprints"; <see cref="BlueprintStore"/>): a
+/// The workbench's blueprint library (docs/sandbox/WEAPON-BUILDER.md, "Blueprints"; <see cref="BlueprintStore"/>): a
 /// scrollable list of the saved blueprints of the kind being built (guns, melee or grenades), with Save as blueprint,
 /// Load, Save over, Rename, Duplicate and Delete (Save over and Delete ask for a second click). In the sandbox Load opens
 /// the whole build; in a Zombies run it fills only the parts you own (<see cref="BlueprintFit"/>) and the rest are red

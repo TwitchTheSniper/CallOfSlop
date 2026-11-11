@@ -6,7 +6,7 @@ using System.Text;
 namespace CallOfSlop;
 
 /// <summary>
-/// A horde stress map (docs/zombies/MASS-HORDE.md, "Horde Stress"; the Zombies section's <c>"stress"</c>,
+/// A horde stress map (docs/sandbox/MASS-HORDE.md, "Horde Stress"; the Zombies section's <c>"stress"</c>,
 /// Dev/HordeStress.json). Each round's crowd, of the size the host picks in the lobby (<see cref="StressSize"/>), is
 /// seeded in the mass tier on the map's staging areas, split evenly. It waits there for the countdown
 /// (<see cref="StressPhase.Staging"/>: the crowd is held), then descends with the flow field leading to the rally point

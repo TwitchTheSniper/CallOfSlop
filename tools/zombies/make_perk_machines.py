@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes Props/Zombies/PerkMachines/*.json: a machine of its own shape for every Zombies perk, and the Power Switch Box
-(2026-10-27; docs/zombies/ZOMBIES-MODE.md, "Perks" and "Machine props").
+(2026-10-27; docs/archive/ZOMBIES-MODE.md, "Perks" and "Machine props").
 
 Run from the repository root:  python3 -I tools/zombies/make_perk_machines.py
 

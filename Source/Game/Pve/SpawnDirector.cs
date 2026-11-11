@@ -1,6 +1,6 @@
 namespace CallOfSlop;
 
-/// <summary>The director's pacing phase (docs/pve/DESIGN.md "Spawn director").</summary>
+/// <summary>The director's pacing phase (docs/archive/PVE-DESIGN.md "Spawn director").</summary>
 public enum DirectorPhase : byte
 {
     /// <summary>The spawn rate ramps up and the alive target climbs from 40% to 100% of the budget.</summary>

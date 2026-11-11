@@ -654,7 +654,7 @@ public sealed partial class Game
         if (target != null && !lured && z.Door < 0 && ai.Queued(z, target.Position))
         {
             // A crowd map: queued behind the front rank, it stands and presses, facing the target (it doesn't slide round
-            // the front to the player's back: ZombiesCrowd.cs, docs/zombies/MASS-HORDE.md "Waking and sleeping").
+            // the front to the player's back: ZombiesCrowd.cs, docs/sandbox/MASS-HORDE.md "Waking and sleeping").
             var tq = target.Position - z.Position;
             MoveZombie(z, MathF.Atan2(tq.X, -tq.Z), false, false);
             z.StuckAt = now;

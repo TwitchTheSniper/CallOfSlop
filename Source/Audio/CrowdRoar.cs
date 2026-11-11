@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The mass horde's crowd roar (docs/zombies/MASS-HORDE.md, "Audio"): the crowd's cells (the same counts the crowd
+/// The mass horde's crowd roar (docs/sandbox/MASS-HORDE.md, "Audio"): the crowd's cells (the same counts the crowd
 /// surface reads: the server's own, a client's picture) grouped into clusters of <see cref="Group"/> x <see cref="Group"/>
 /// cells, and the <see cref="Voices"/> clusters that matter most to the listener (zombies over distance squared) each
 /// get a looping roar (<see cref="Audio.CrowdRoarAt"/>) at the cluster's centre of mass, as loud as its density: a few

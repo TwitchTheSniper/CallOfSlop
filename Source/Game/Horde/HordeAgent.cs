@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// An NPC the horde controller (<see cref="HordeController{T}"/>) can steer as part of a group: Zombies' zombies today,
-/// the co-op enemies (Source/Game/Pve/) could implement it later (docs/pve/DESIGN.md, "Horde controller"). The agent
+/// the co-op enemies (Source/Game/Pve/) could implement it later (docs/archive/PVE-DESIGN.md, "Horde controller"). The agent
 /// keeps its own state machine and body; the controller only owns its <see cref="Member"/> record (group, think
 /// schedule, flow-field route, queue spot, reactions) and answers steering questions.
 /// </summary>

@@ -6,6 +6,7 @@
   "section": "Dressing",
   "role": "frame",
   "tool": "wrench",
+  "finish": "hazard paint",
   "mass": 4.0,
   "health": 40,
   "armour": 1,

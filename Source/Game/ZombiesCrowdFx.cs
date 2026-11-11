@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// What players see of their shots into the far crowd (docs/zombies/MASS-HORDE.md, "Combat"): blood where a round
+/// What players see of their shots into the far crowd (docs/sandbox/MASS-HORDE.md, "Combat"): blood where a round
 /// that hit ends in the crowd, the shooter's own shots predicted against the crowd as drawn (the tracer stops on the
 /// zombie, the hit marker shows at once), and a kill sinks the drawn zombie nearest the hit. Visual only, on both
 /// sides: the server's hits are its own (ZombiesCrowd.cs), and nothing here goes on the network.

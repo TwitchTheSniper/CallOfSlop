@@ -1,5 +1,7 @@
 # Game modes: how to add one
 
+The archived modes' part of this guide: docs/archive/MODES-README.md.
+
 Every game mode is a **module**: one class deriving from `GameModeModule` (`GameModeModule.cs`), registered in one place
 (`GameModeRegistry.cs`). The game, the bots, the network, the lobby, the server browser, the map vote, the HUD and the
 self-test all go through the module's hooks, so a new mode is a new folder here and one line in the registry. Nothing
@@ -78,59 +80,6 @@ What the module can use on `Game`: `Players`, `Local` / `LocalId`, `NameOf`, `Te
 `Phase`, `Objectives` (team spawns, hills, flags), `Standings()`, `SoloMatch`, `ModeEvent(text, sound)` (a kill-feed
 line for everyone), `EndMatch(winner, text, now, winnerCode)`, `SyncLocalSlots`, and anything public. `game.Module` is
 the active module; `game.ModuleOf<T>()` another mode's instance.
-
-## A minimal module
-
-```csharp
-public sealed class InfectedModule : GameModeModule
-{
-    public override GameMode Id => GameMode.Infected;      // 1. a new enum value
-    public override string Name => "Infected";
-    public override string Short => "INF";
-    public override string Rules(int limit = 0) => "One player starts infected. Infected kill to spread; the last survivor wins.";
-    public override bool DevOnly => true;                  // until it's ready
-
-    private readonly HashSet<byte> _infected = new();     // the mode's own state
-
-    public override void OnReset(Game game) => _infected.Clear();
-
-    public override void OnKill(Game game, Player attacker, Player victim, byte killId, double now)
-    {
-        if (_infected.Contains(attacker.Id) && _infected.Add(victim.Id))
-            game.ModeEvent($"{victim.Name} is infected!", Sfx.HitTick);
-    }
-
-    public override void ServerTickPlaying(Game game, double now)
-    {
-        if (_infected.Count == 0 && game.Players.Count > 1)
-            _infected.Add(game.Players.Values.OrderBy(p => p.Id).First().Id);
-        var survivors = game.Players.Values.Where(p => !_infected.Contains(p.Id)).ToList();
-        if (survivors.Count == 1 && game.Players.Count > 1)
-            game.EndMatch(survivors[0], $"{game.NameOf(survivors[0].Id)} survived", now);
-        else if (game.TimeLeft <= 0)
-            game.EndMatch(null, $"Time! {survivors.Count} survived", now);
-    }
-
-    public override void WriteState(Game game, PacketWriter w)
-    {
-        w.U8((byte)_infected.Count);
-        foreach (var id in _infected) w.U8(id);
-    }
-
-    public override void ReadState(Game game, ref PacketReader r)
-    {
-        _infected.Clear();
-        int n = r.U8();
-        for (var i = 0; i < n && r.Has(1); i++) _infected.Add(r.U8());
-    }
-
-    public override void HudLines(Game game, Player me, List<HudLine> lines, ref Vector3? pointAt) =>
-        lines.Add(new HudLine(_infected.Contains(me.Id) ? "INFECTED - spread it" : $"{game.Players.Count - _infected.Count} survivors left", HudOrange));
-}
-```
-
-Then `() => new InfectedModule()` in `GameModeRegistry.Factories`, and it plays: the lobby lists it (on dev-pack maps
-while `DevOnly`), bots fight in it, clients see its HUD line, the self-test plays a bot match in it.
 
 ## Rules of the road
 

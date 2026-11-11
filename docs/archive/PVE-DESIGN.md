@@ -179,7 +179,7 @@ and a gunshot for each new shot in the counter (direction from yaw and pitch, th
 
 ### Horde controller (reuse, 2026-10-27)
 
-Zombies now steers its hordes through a generic **horde controller** (`Source/Game/Horde/`, docs/zombies/ZOMBIES-MODE.md
+Zombies now steers its hordes through a generic **horde controller** (`Source/Game/Horde/`, docs/archive/ZOMBIES-MODE.md
 "Horde controller"): groups that decide together (targets spread over the players by pressure, portals with queues
 that split, regrouping when blocked), stimuli (gunfire, blasts, downs, power-ups, hurt neighbours, lures), a think
 level of detail by distance, shared flow fields over the nav graph and a spatial grid for separation. It is generic

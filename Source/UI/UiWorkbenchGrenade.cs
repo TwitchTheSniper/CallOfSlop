@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 
 namespace CallOfSlop;
 
-/// <summary>The workbench's grenade slot (docs/zombies/WEAPON-BUILDER.md, "Modular grenades"): the stat bars and the part lines.</summary>
+/// <summary>The workbench's grenade slot (docs/sandbox/WEAPON-BUILDER.md, "Modular grenades"): the stat bars and the part lines.</summary>
 public sealed partial class Ui
 {
     /// <summary>The grenade's numbers with the change a hovered or dragged part would make.</summary>

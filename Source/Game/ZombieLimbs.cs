@@ -19,7 +19,7 @@ public struct ZLimbHealth
     private float _e;
 }
 
-/// <summary>Dismemberment (docs/zombies/ZOMBIES-MODE.md, "Dismemberment"): what each zombie has left.</summary>
+/// <summary>Dismemberment (docs/archive/ZOMBIES-MODE.md, "Dismemberment"): what each zombie has left.</summary>
 public sealed partial class Zombie
 {
     /// <summary>Limbs it has lost (bit <c>1 &lt;&lt; (int)ZLimb</c>; both sides: the server's, and on clients from <see cref="Msg.ZEnts"/>, protocol 65).</summary>

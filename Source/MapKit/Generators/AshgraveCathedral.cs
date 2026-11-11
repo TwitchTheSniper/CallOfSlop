@@ -2,7 +2,7 @@ namespace CallOfSlop.MapKit.Generators;
 
 /// <summary>
 /// Maps/Zombies/02-AshgraveCathedral.json: "Ashgrave Cathedral", the Zombies pack's second map (developer-approved board
-/// item dev-zombies-cathedral-zc01, 2026-10-27; docs/zombies/ZOMBIES-MODE.md, "Ashgrave Cathedral"). An original gothic
+/// item dev-zombies-cathedral-zc01, 2026-10-27; docs/archive/ZOMBIES-MODE.md, "Ashgrave Cathedral"). An original gothic
 /// cathedral at night inside its walled precinct, on six levels:
 /// <list type="bullet">
 /// <item>Grounds (y 0): the Close (the forecourt and yew walk), the Cloister, the Graveyard, and the outbuildings: the
@@ -271,7 +271,7 @@ public sealed partial class AshgraveCathedral : IMapGenerator
         _doors.Add(o);
     }
 
-    // Machine footprints (x by z before the yaw) and their kinds (docs/zombies/ZOMBIES-MODE.md, "Map format").
+    // Machine footprints (x by z before the yaw) and their kinds (docs/archive/ZOMBIES-MODE.md, "Map format").
     static readonly Dictionary<string, (double W, double D)> Size = new()
     {
         ["box"] = (1.3, 0.66), ["bench"] = (1.6, 0.8), ["perk"] = (0.9, 0.7), ["locker"] = (1.0, 0.6), ["power"] = (0.7, 0.3), ["slots"] = (0.9, 0.7),

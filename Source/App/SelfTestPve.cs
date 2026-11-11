@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Co-op" (docs/pve/DESIGN.md): the mission files and their loader, the spawn director's maths (the
+/// Self-test section "Co-op" (docs/archive/PVE-DESIGN.md): the mission files and their loader, the spawn director's maths (the
 /// alive budget, pacing, totals), Silo Breach's points on the nav graph, spawns only out of sight and on the walkable
 /// area, recycling far enemies, 80 enemies' AI cost (10 s) and allocations, their replication round trip and bandwidth,
 /// enemy fire with spread and its damage, every objective type completing and failing, checkpoint restarts on a wipe,

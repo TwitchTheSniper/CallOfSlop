@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The mass tier (docs/zombies/MASS-HORDE.md, "Mass"): far from every player the crowd needs no particles at all. Per
+/// The mass tier (docs/sandbox/MASS-HORDE.md, "Mass"): far from every player the crowd needs no particles at all. Per
 /// cell of <see cref="CrowdTuning.NetCell"/> m (the network's grid) only a count of zombies and their mean velocity,
 /// moved along the flow field like a fluid (a share of each cell's count flows to the neighbour downstream every tick,
 /// held back where the next cell is full). Particles further than <see cref="CrowdTuning.MassRange"/> +
@@ -388,7 +388,7 @@ public sealed partial class HordeCrowd
     }
 
     /// <summary>
-    /// The soft wake's release (docs/zombies/MASS-HORDE.md, "Wake waves"). Every mass cell inside its own wake radius
+    /// The soft wake's release (docs/sandbox/MASS-HORDE.md, "Wake waves"). Every mass cell inside its own wake radius
     /// (<see cref="WakeRadius"/>) of a player is a candidate, keyed by its distance to the nearest player, plus
     /// <see cref="CrowdTuning.MassInterior"/> if the cell one step towards that player still holds mass (the inside of a
     /// blob, hidden behind its edge), plus up to 2 m of jitter a tick (so neighbouring cells take turns). The

@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Zombies casino tables in the world and their panel (Source/Game/ZombiesCasino.cs, Source/UI/UiCasino.cs;
-/// docs/zombies/ZOMBIES-MODE.md, "Casino tables"). On each table prop (felt top at <see cref="FeltY"/>, players on its
+/// docs/archive/ZOMBIES-MODE.md, "Casino tables"). On each table prop (felt top at <see cref="FeltY"/>, players on its
 /// -Z side, the dealer behind): blackjack's cards (face down until turned) and bet stacks, roulette's wheel turning with
 /// the ball landing in the rolled pocket and everyone's chips on the board, high-low's run of cards and Bone Dice's dice
 /// tumbling to a stop with the point puck. Everyone sees the same table. Client-side only and allocation-free.

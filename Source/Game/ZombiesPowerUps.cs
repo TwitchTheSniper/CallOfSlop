@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>The World at War power-ups (docs/zombies/ZOMBIES-MODE.md, "Power-ups"). The order is the rules file's "weights" order.</summary>
+/// <summary>The World at War power-ups (docs/archive/ZOMBIES-MODE.md, "Power-ups"). The order is the rules file's "weights" order.</summary>
 public enum ZPowerKind : byte
 {
     /// <summary>Every player's guns get a full reserve.</summary>

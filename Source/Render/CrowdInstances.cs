@@ -22,7 +22,7 @@ public struct CrowdInstance
 }
 
 /// <summary>
-/// This frame's crowd instances for <see cref="Renderer.DrawCrowd"/> (docs/zombies/MASS-HORDE.md, "Rendering"): every
+/// This frame's crowd instances for <see cref="Renderer.DrawCrowd"/> (docs/sandbox/MASS-HORDE.md, "Rendering"): every
 /// crowd zombie the camera can see, sorted into three levels of detail (<see cref="CrowdRig"/>: near, mid, far), packed
 /// at 16 bytes (<see cref="CrowdInstance"/>). Written in parallel stripes (<see cref="CrowdJobs"/>): each stripe has
 /// its own arrays per level, which the renderer uploads one after another. The host's particles are written here
@@ -265,7 +265,7 @@ public sealed class CrowdInstances
     }
 
     /// <summary>
-    /// The soft wake's particles (docs/zombies/MASS-HORDE.md, "Wake waves"): each drawn where <see cref="HordeCrowd.DrawnAt"/>
+    /// The soft wake's particles (docs/sandbox/MASS-HORDE.md, "Wake waves"): each drawn where <see cref="HordeCrowd.DrawnAt"/>
     /// says (eased out of the place of the agent it took over), facing <see cref="HordeCrowd.DrawnYaw"/>, at its own point
     /// in the walk (<see cref="HordeCrowd.Walk"/>, metres walked, carried across tier changes) and with its drawn look;
     /// standing on the ground there (none rises out of it). Advances each one's walk and hand-off by the frame's time.
