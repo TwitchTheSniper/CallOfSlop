@@ -62,9 +62,10 @@ from a **Foundry**, which mixes two first tier ones.
 - **Power and Run.** As the Recycler (`ConstructRecycler.Powered`): in survival it needs a working battery whose links reach it,
   with charge, and draws only while it works. A wire into **Run** holds it off (`ConstructGatherer.HeldOff`): it waits, keeping the
   batch's progress, and draws nothing. The machine reads its own input and power, so it works on an anchored base with no seat.
-- **Creative** (`CreativeRecycling`, infinite parts on), as the Recycler: no power, and instant: each step refines all it can (as
-  many batches as the input holds and the output has room for), never busy. The Run wire still holds it, and a recipe's input still
-  counts: a wrong material is refused as ever. A logic part wired to Run has no power on a flat battery either, so it holds the machine off.
+- **Creative** (`CreativeRecycling`, infinite parts on): no power, and fast but not instant (2026-11-11, proposed): the whole load that
+  fits (as many batches as the input holds and the output has room for) is one job, worked at `ConstructRefining.CreativeSpeed` (8) times
+  the survival rate and never in under `CreativeMinSteps` (1.5 s), busy meanwhile, so its lamp shows Running; then made at once. The
+  Run wire still holds it, the mains still cut it ([Production lines](#production-lines)), and a recipe's input still counts: a wrong material is refused as ever. A logic part wired to Run has no power on a flat battery either, so it holds the machine off.
 - **Mass.** Both bins count (`Construct.LoadOf`: one load per part, the two weights added at their shared centre, in a box round
   both), by the usual `LoadChanged` path. `LoadKey` also follows where a load sits, so a batch that keeps its weight still moves
   the centre of mass.
@@ -201,7 +202,7 @@ An [Extruder](#extrusion) with a hub for a die: it builds a wheel up on the hub,
   | Capital Wheel Former | 20 m | 48 m | 2 x 8 m | 0.8 m/s | 32,000 | 57.6 kW |
 
   Each hub stands high enough for its biggest wheel over the machine's own floor. A wheel that meets the ground, something fixed or its own construct stops with "blocked"; a free body is pushed out from the hub.
-- **What it makes** is a run-time part as an extrusion is: key `Shape = Wheel`, `W` its width, `H` its diameter, `L` 0, in 5 cm steps. It is one def per size, at any material in `wheels`: rubber (grip 1.0, flat when broken, like a road tyre), metal, steel, wood, planks, stone, concrete. Mass is the cylinder's volume at the row's `unitsPerM3` (mostly air and rim: a rubber wheel 0.3 x 1 m is 39 kg), and the cost is what went in. A wheel's origin is on its axle face, so width grows away from the hub's plate and only the def changes. Off the machine it has an `axle` socket (the size class's by diameter: under 2 m small, under 7 m medium, under 24 m large), and all a wheel's numbers: `CWheel` reads its radius and width from the def and bounds, its cylinder collider follows, and it has the Tyre settings of every wheel. Loose, it collides as three hidden boxes (as every wheel does). It is physics-only: the socket weld puts it on a suspension's axle.
+- **What it makes** is a run-time part as an extrusion is: key `Shape = Wheel`, `W` its width, `H` its diameter, `L` 0, in 5 cm steps. It is one def per size, at any material in `wheels`: rubber (grip 1.0, flat when broken, like a road tyre), metal, steel, wood, planks, stone, concrete. Mass is the cylinder's volume at the row's `unitsPerM3` (mostly air and rim: a rubber wheel 0.3 x 1 m is 39 kg), and the cost is what went in. A wheel's origin is on its axle face, so width grows away from the hub's plate and only the def changes. Off the machine it has an `axle` socket (the size class's by diameter: under 2 m small, under 7 m medium, under 24 m large), and all a wheel's numbers: `CWheel` reads its radius and width from the def and bounds, its cylinder collider follows, and it has the Tyre settings of every wheel. Loose, it collides as three hidden boxes (as every wheel does). **Growing**, it is the hidden boxes too (`ColliderBoxes`): a growing wheel is a new def every 5 cm, and a cylinder's convex hull made for each cost 6 ms and 60 KB inside the body's collider rebuild (2026-11-11). It is physics-only: the socket weld puts it on a suspension's axle.
 
 Choices made (the developer may change them): depth as the diameter; the `wheels` rows; the limits above; the machines' size; a wheel as one solid material (no rim and tyre of two); no Interact to cut (a Button wired to Cut does it).
 
@@ -222,9 +223,9 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 - **Fed by hand.** Let a loose piece go with an end in a bay's mouth (`bays[].min/max`, checked at 10 Hz) and it is drawn in. A die: F with it in your hands, in the same way the attach tool would fit it to the slot (the die in there comes back to your hands), or a physics-only die (Large, Capital) let go in the front of the machine. F empty-handed takes out what is nearest: a piece slides out of its mouth, and isn't taken in again for 3 s. Look line: `Press: Button Die - bay 1: wrong material, wants laminate plate - F: take the die out`.
 - **Stock always comes out.** What a press, a Die Lathe, an Extruder or a Wheel Former holds comes out in every state: too short, the wrong die or none, no power, held off, a stroke under way. Aim at it (the crosshair lands on the piece, not the machine: `ConstructPress.MachineOf`) and press F, or take it with the physics gun, which draws it out and holds it; on an anchored machine too. F on the machine takes the nearest. It comes back whole, at its length with its health and paint; a stroke takes length only when it ends, so one under way just stops and uses nothing. A piece shorter than a stroke is refused at the mouth ("too short") and stays out; the stub a run leaves stays in its bay until taken. A piece taken out isn't drawn back in until it has left the mouth or been picked up (`Construct.TakenFrom`).
 - **Fed by chute.** A chute from an Extruder to a press takes each finished piece whole: at Cut, or at Cut every, the piece waits on the die (`ExtrudeStall.ChuteWaits`) until a chute move finds a bay that will have it, then moves. A chute from a shelf or a Die Rack brings a die of the press's size to an empty slot. A chute of bulk is refused. The press doesn't name its ports: it picks the first free bay that takes the piece. What a stroke makes goes out of the tray by chute as any slots do.
-- **Pressing.json.** `rows` is flat: one row per die, material and size band. A row names `die`, `output`, `count`, `seconds` and its `bays`, each with `label`, `sections` (Extrusion presets, `round`, `pipe`), `materials`, `minAcross` and `maxAcross` (the piece's smaller side), and what a stroke takes: `use` (m), for parts of a fixed size, or `useAcross` (times its size across). The first row whose bays are all satisfied runs. Rows of a die stand together; a die has no list of its own, so 15 dies times materials times sizes is only more rows. `lathe` rows are chosen as a setting.
+- **Pressing.json.** `rows` is flat: one row per die, material and size band. A row names `die`, `output`, `count`, `seconds` and its `bays`, each with `label`, `sections` (Extrusion presets, `round`, `pipe`), `materials`, `minAcross` and `maxAcross` (the piece's smaller side), and what a stroke takes: `use` (m), for parts of a fixed size, or `useAcross` (times its size across). The first row whose bays are all satisfied runs. A row of several bays names them in order; a **one-bay row** (Bracket, Housing) is every bay's: each bay takes such pieces, and a stroke works the first whose piece is ready (`ConstructPress.BayOf`, 2026-11-11). Rows of a die stand together; a die has no list of its own, so 15 dies times materials times sizes is only more rows. `lathe` rows are chosen as a setting.
 - **What the die, the material and the piece do.** The die sets the family; choosing a recipe is swapping it. One die covers every material of its family. Fixed-size parts take their count from length: at `use` 0.1 a 2 m strip is 20 strokes, and a piece with less left than a stroke stops with "too short". Parts with no fixed size follow the section: the rows' bands pick the output, so a 0.15 m bar in a Housing Die makes Housing 0.25 m and a 0.3 m bar Housing 0.5 m.
-- **Stroke.** A row's `seconds` at the machine's speed. Power, Run wire and creative as a [production machine](#refining-decision-14); a body that can't leave waits with the pieces untouched. Output in the tray, 12 a slot, or as a body at the front (physics-only, or too big: brackets, housings, dies).
+- **Stroke.** A row's `seconds` at the machine's speed. Power, Run wire and creative as a [production machine](#refining-decision-14); a body that can't leave waits with the pieces untouched. Output in the tray, 12 a slot; what no tray holds (physics-only, or too big: brackets, housings, dies) rides out on a conveyor from its **Piece out** to a Piece Rack, whole strokes only (it waits with "Output conveyor full", "Too big for its conveyor" or "Output conveyor cut"), and drops as a body at the front only when nothing is linked there.
 - **The first set** (33 rows):
 
   | Die | Bays | Makes | By |
@@ -503,6 +504,11 @@ the part kit's `control_parts` (the console).
   **Start/Stop** (flips the switch), **Next** (picks the next machine; the pick is the hidden `linePick` setting) and **Recipe** (steps the
   picked machine's recipe). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
   held until Start. On a flat battery it puts nothing out, and its machines say No power.
+- **The mains** (2026-11-11, proposed). A Battery takes one wire, its isolator. When every working battery on a body has one and every one
+  says off (`Construct.MainsOff`, `ConstructPower.Mains`, on the wire in the gear byte's top bit since protocol 247), the circuit gives
+  machines nothing: `ConstructRecycler.Powered` is false for every production machine, recycler, gatherer and beacon it reaches, in creative
+  too, so their lamps show No power. Logic, lamps and motors stay on the batteries, so the switch that opened it can close it. An unwired
+  battery keeps the mains on, so builds from before have no change (creative machines still need no power at all).
 - **Cost.** A stopped line costs what a held machine did (one store lookup a step); the console's list is walked only when its screen
   fills (4 Hz, in view) or a button is pressed; nothing allocates.
 
@@ -525,6 +531,9 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   **Piece in** at each bay's socket ("Piece in", "Piece in 2"...; the line 11 cm under it, opening its largest piece across): a piece
   that arrives goes into the bay by the rules a loose piece left in its mouth meets (`ConstructPress.TakeFromConveyor`), and waits on
   the conveyor while the bay is full or refuses it (the press's look line says why).
+  A Press or Die Lathe also has a **Piece out** after its bays (at its `outAt`, facing `outDir`, the machine's width across, up to 4 m):
+  what it stamps that no tray holds goes on that conveyor (`ConstructConveyor.PutMade`). So a rider and a rack's kind are any part, a
+  piece by its key or a stamped part by its id (`ConstructStorage.WriteDef`, protocol 247); a stamped part riding into a press waits.
 - **Junctions** (the part kit's `conveyor_junction_parts`): the **Conveyor Splitter** (Piece in at -z; Piece out, 2, 3 at +z, +x,
   -x) sends each piece to its linked outputs in turn, past one that is cut, too small for the piece or has no room at its start;
   the **Conveyor Join** (Piece in, 2, 3 at -z, +x, -x; Piece out at +z) takes its inputs each in its turn. Large ones pass 2 x 2 m.
@@ -644,18 +653,18 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
   under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.
 - **The bill** rides in the blueprint's `"bill"` ([Work orders](#work-orders), "Saves").
-- **The signs** (one a test): MAIN SWITCH (off stops the genset and the station lamps); STOCK; press Start on the refining console;
+- **The signs** (one a test): MAIN SWITCH (off = machines No power, genset and lamps off); STOCK; press Start on the refining console;
   Bill, then Send, then Line and Start on the orders console; cut line A's first conveyor to see pieces drop; take a piece off the long
   rack with F; the press stamps brackets from line A's angles; line B meets line A at the join; the spur's conveyor is too small on
   purpose; set the wheel line's conveyor too small with the mouse wheel to see a refusal.
-- **What to expect.** In a creative world machines need no power, so the main switch darkens the station lamps and stops the genset
-  (its smoke), and the battery then carries the consoles; the machines' No power state shows only in survival. Refiners in creative
-  finish a whole load at once (as Recyclers do), so their lamps go from Stopped to Starved without a lasting Running. The Press drops its
-  brackets behind it as loose bodies; take them away now and then, or the heap reaches the bay's mouth ("no room for it").
-- **Measured** (`--probe-showcase`, removed: host and client over RakNet on the Proving Ground, spawned through the parts menu's call,
-  the refining console started and the bill sent): every rack held the same pieces by key on both peers, the Press took line A's angles and
-  plates, the spur's Extruder stopped with "refused: the piece is too big for its conveyor (0.10 x 0.10 m)". The host's ticks with
-  everything running, the second time round (the same sizes again): p99 2.2 to 2.4 ms, worst 6.4 and 12.4 ms in two runs. The first time
-  each piece size is grown, ticks of 8 to 24 ms recur twice a second for about 15 s (billed to Player moves, and gone when the same
-  sizes are made again), with one generation-1 collection of 75 to 100 ms; a 228-part truck spawned the same way shows none. Not
-  chased further: the first use of a new piece def looks to be the cost.
+- **What to expect.** The main switch is wired to the genset and to the battery, whose wire is the [mains](#production-lines): off, every
+  machine shows No power (creative too) while the consoles stay lit, and the genset stops. Creative refiners take a load in a few seconds,
+  so their lamps show Running. The Press puts its brackets on a conveyor out of its Piece out to a Piece Rack behind it (40 parts: a full
+  rack backs the press up, "Output conveyor full"); either bay takes line A's angles.
+- **Measured** (a throwaway probe, removed: host and client over RakNet on the Proving Ground, spawned through the parts menu's call,
+  the refining console started and the bill sent, a cold process; 2026-11-11 after fix/showcase-bugs): racks equal by key on both peers;
+  the refiners reached Running; the switch off gave No power on all seven machines on both peers and on gave them back; 40 brackets in the
+  rack, none loose; bay 2 takes an L-angle. Host ticks over the whole bill: worst 15.9 to 20.7 ms (a few one-offs in its first 6 s, the
+  JIT), p99 0.8 to 1.3 ms, 58 MB allocated (both peers), no generation-1 collection; the bill again, warm: worst 4.8 to 6.6 ms, p99
+  0.9 to 1.9 ms, no collection. Before the fix the Wheel Former's growing wheel made a convex hull for each 5 cm (see [Wheel Former](#the-wheel-former)):
+  ticks of 8 to 83 ms twice a second, 199 MB and a generation-1 collection.
