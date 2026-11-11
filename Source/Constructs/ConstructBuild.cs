@@ -456,6 +456,7 @@ public static class ConstructBuild
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "bandit"}]; ConstructLoot.cs)
         public List<(int Step, int Slot, string Part, int Count)> Stored = new(); // parts set in a container's slot when it is spawned, before its loot ("stored": [{"step": n, "slot": k, "part": "Box Mag", "count": 2}]; ConstructLoot.Stow)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
+        public List<(int Step, ExtrusionKey Key, int Count)> Bill = new(); // lines on a Line Console's bill as it is built ("bill": [{"step": n, "piece": "Extrusion l-angle 20x20x150 metal", "count": 3}]; WorkOrders.cs): an order list, never material
     }
 
     private static readonly List<string> _refusedBlueprints = new();
@@ -669,8 +670,14 @@ public static class ConstructBuild
                     foreach (var cg in p.Value.EnumerateArray())
                         bp.Cargo.Add(ConstructCargo.ParseSpec(cg, file, bp.Cargo.Count));
                     break;
+                case "bill":
+                    if (p.Value.ValueKind != JsonValueKind.Array)
+                        throw new ConstructPartException($"{file}: \"bill\" is [{{\"step\", \"piece\", \"count\"}}]");
+                    foreach (var bl in p.Value.EnumerateArray())
+                        bp.Bill.Add(ConstructBill.ParseLine(bl, file, bp.Bill.Count));
+                    break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, exactLinks, steps, wires, links, connectors, cargo, loot, stored)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, exactLinks, steps, wires, links, connectors, cargo, loot, stored, bill)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -986,6 +993,13 @@ public static class ConstructBuild
             if (bp.Stored[k].Step < 0 || bp.Stored[k].Step >= bp.Steps.Count || bp.Stored[k].Slot >= c.DefOf(partOf[bp.Stored[k].Step]).Slots.Length)
             {
                 run.Why = $"stored[{k}]: step {bp.Stored[k].Step} has no slot {bp.Stored[k].Slot}";
+                world.Remove(c);
+                return;
+            }
+        for (var k = 0; k < bp.Bill.Count; k++)
+            if (ConstructBill.FromLine(world, c, bp.Bill[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
+            {
+                run.Why = $"bill[{k}]: {bad}";
                 world.Remove(c);
                 return;
             }

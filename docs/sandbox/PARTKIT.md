@@ -66,7 +66,9 @@ Generators (`--gen-parts` lists them): `free_parts`, `bandit_parts`, `media_part
 `air_cargo`, `air_weapons_parts`, `ordnance_parts`, `hull_parts`, `body_parts`, `wing_parts`, `actuator_parts`, `make_joint_sides`,
 `control_parts`, `hydraulics_parts`, `press_parts`, `extrusion_parts`, `structure_parts`, `capital_parts`, `large_systems`,
 `stabiliser_parts`, `leg_parts`, `upgrade_parts`, `engine_parts`, `building_parts` (the Building pieces and nine example blueprints),
-`interior_parts`, `make_rv` (RV.json), `machine_tiers` (with `TierStyle.cs`), `assembling`. Helpers: `PartScale.cs` (the size classes,
+`interior_parts`, `make_rv` (RV.json), `machine_tiers` (with `TierStyle.cs`), `assembling`, `production_showcase` (the Production Showcase
+blueprint, built step by step through the game's rules on the vehicle kit's `BlueprintScript`: it reads the part files as the game loads them, so
+it runs last). Helpers: `PartScale.cs` (the size classes,
 `Part`, `Box`, `BlockSockets`, `WriteParts`), `PartZFight.cs` (zfight), `PartScreens.cs` (machine screens), `JointSides.cs`, `PyJson.cs`.
 Shared pieces: `BigDriveParts` keeps the drive helpers public for the generators on it, `AirParts.Airship` is shared with `FlightParts`,
 `ControlParts.Lever`/`Config` with `HydraulicsParts`, `Assembling` reads `UpgradeParts.Recipes` and `AirWeaponsParts.OrdnanceRacks`,
