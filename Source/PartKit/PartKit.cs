@@ -69,6 +69,8 @@ public static class PartKit
         new Generators.BoostParts(),
         new Generators.SuspensionParts(),
         new Generators.FlightParts(),
+        new Generators.DroneParts(),
+        new Generators.AirCargo(),
     ];
 
     public static IPartGenerator? Find(string name) =>
