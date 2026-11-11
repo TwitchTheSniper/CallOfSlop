@@ -350,11 +350,15 @@ public sealed class BigDriveParts : IPartGenerator
         return o;
     }
 
-    private static void WheelShape(Part p, double r, double w, string tyre, string rim)
+    /// <summary>A big wheel drawn round: a lathed cylinder (more sides the bigger the class) over the three hidden solid boxes
+    /// that players, bullets and loose wheels still meet (the sprung wheel's contact is its own prism, from radius and width).</summary>
+    private static void WheelShape(Part p, Cls c, double r, double w, string tyre, string rim)
     {
-        p.Add(Box([-w * 0.99, -r, -r * 0.42], [w * 0.99, r, r * 0.42], tyre));
-        p.Add(Box([-w * 0.98, -r * 0.42, -r], [w * 0.98, r * 0.42, r], tyre));
-        p.Add(Box([-w * 1.0, -r * 0.85, -r * 0.85], [w * 1.0, r * 0.85, r * 0.85], tyre));
+        p.Add(Box([-w * 0.99, -r, -r * 0.42], [w * 0.99, r, r * 0.42], hidden: true));
+        p.Add(Box([-w * 0.98, -r * 0.42, -r], [w * 0.98, r * 0.42, r], hidden: true));
+        p.Add(Box([-w * 1.0, -r * 0.85, -r * 0.85], [w * 1.0, r * 0.85, r * 0.85], hidden: true));
+        var sides = c == Medium ? 24 : c == Large ? 32 : 48;
+        p.Add(Box([-w, -r, -r], [w, r, r], tyre, detail: true, shape: Kw(("shape", "cylinder"), ("segments", sides), ("front", "+x"))));
         p.Add(Box([-w * 1.05, -r * 0.3, -r * 0.3], [w * 1.05, r * 0.3, r * 0.3], rim, detail: true));
         p.Add(Box([-w * 1.03, -r * 0.7, -r * 0.08], [w * 1.03, r * 0.7, r * 0.08], rim, detail: true));
         p.Add(Box([-w * 1.03, -r * 0.08, -r * 0.7], [w * 1.03, r * 0.08, r * 0.7], rim, detail: true));
@@ -375,7 +379,7 @@ public sealed class BigDriveParts : IPartGenerator
             })
             {
                 var p = new Part($"{c.Name} {word}", c, "Wheels", $"{desc} {Py.G(2 * r)} m across.", role: "wheel", tool: "wrench", material: mat, color: tyre);
-                WheelShape(p, r, w, tyre, rim);
+                WheelShape(p, c, r, w, tyre, rim);
                 p.Sock("axle", [-w, 0, 0], "-x", kind: "axle");
                 p.Stats(t * m * 1000, hp * m, c.Armour, c.Seconds);
                 var blk = Kw(("radius", r), ("grip", grip), ("offroad", off), ("roll", roll));

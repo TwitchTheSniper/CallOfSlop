@@ -31,7 +31,7 @@
         24.0,
         10.08
       ],
-      "color": "#3a3633"
+      "hidden": true
     },
     {
       "min": [
@@ -44,7 +44,7 @@
         10.08,
         24.0
       ],
-      "color": "#3a3633"
+      "hidden": true
     },
     {
       "min": [
@@ -57,7 +57,24 @@
         20.4,
         20.4
       ],
-      "color": "#3a3633"
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -24.0,
+        -24.0
+      ],
+      "max": [
+        8.0,
+        24.0,
+        24.0
+      ],
+      "color": "#3a3633",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 48,
+      "front": "+x"
     },
     {
       "min": [
