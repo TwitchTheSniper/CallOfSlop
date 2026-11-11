@@ -286,6 +286,12 @@ there for a craft to land before going; a long road (5 minutes or more) is a shu
 hauler. A sealed Requisition Crate gets the faction's courier flyer. They are pictures only, sent once per craft
 (`Msg.StandIn`); the Story window's People tab turns them off ("Craft") or calls one of each near you ("Call craft").
 
+**Traffic** (STAND-IN too: `Source/StandIns/README.md` "Traffic", data `Story/Traffic/Traffic.json`): the survival story
+world's ambient life round the colony. Placeholder stations stand where places will be; haulers and a courier go round
+them for ever (the ore run, the ration round, the fence patrol...), faction ships land to trade and jump away, and ships
+pass overhead; a ship from another world warps in with a flash, shock rings and a late boom. Every run has a reason, in
+the People tab's "Traffic" tooltip and now and then on the radio. Nothing is traded yet. `--traffic-check` tries it.
+
 ### Sight
 
 What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70
