@@ -245,6 +245,7 @@ public static class ConstructExtruder
                 {
                     if (forOrder)
                         WorkOrders.Made(world, c, queue);
+                    ProductionLines.Made(world, c, part, 1); // (its console's Made count)
                     return true;
                 }
                 if (asked)
@@ -265,6 +266,7 @@ public static class ConstructExtruder
             {
                 if (forOrder)
                     WorkOrders.Made(world, c, queue);
+                ProductionLines.Made(world, c, part, 1);
                 return true;
             }
         }

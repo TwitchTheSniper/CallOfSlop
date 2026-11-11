@@ -28,9 +28,9 @@ public enum LineState : byte
 /// </list>
 /// Nothing here allocates; a console's list is walked from the construct's routes when its panel fills (4 Hz, in view) or a button is pressed.
 /// </summary>
-public static class ProductionLines
+public static partial class ProductionLines
 {
-    private const int MaxListed = 32; // machines a console's buttons step through
+    internal const int MaxListed = 32; // machines a console's buttons step through
     private const double Hold = 0.3; // seconds a new state must last before the lamp and console show it (a store's bytes and its Busy can come a packet apart)
 
     /// <summary>A machine's raw state, or null for a part that isn't a production machine of a line yet. Its power is the construct's (on the wire with its pose).</summary>
@@ -171,14 +171,14 @@ public static class ProductionLines
         return false;
     }
 
-    /// <summary>The machines a console's output reaches by intact wires, in the order the wires were laid, each once. Allocates nothing.</summary>
+    /// <summary>The machines a console's Run output (port 0: its other outputs are Data out, Alarm, Running, Made) reaches by intact wires, in the order the wires were laid, each once. Allocates nothing.</summary>
     public static int Machines(Construct c, int console, Span<int> into)
     {
         var n = 0;
         for (var k = 0; k < c.RouteCount && n < into.Length; k++)
         {
             ref readonly var r = ref c.Routes[k];
-            if (r.Type != RouteType.Data || r.Source != console || !r.FedEnd || r.To >= c.PartCount || NotMachine(c, r.To))
+            if (r.Type != RouteType.Data || r.Source != console || r.SourcePort != 255 || !r.FedEnd || r.To >= c.PartCount || NotMachine(c, r.To))
                 continue;
             if (!into[..n].Contains(r.To))
                 into[n++] = r.To;
@@ -303,10 +303,10 @@ public static class ProductionLines
         }
     }
 
-    private static readonly Vector3 NoPowerGrey = new(0.5f, 0.5f, 0.52f);
+    internal static readonly Vector3 NoPowerGrey = new(0.5f, 0.5f, 0.52f);
 
     /// <summary>The detail under a machine's row: why it waits (when Starved, Blocked or at Fault), then its recipe or its orders.</summary>
-    private static void Detail(ConstructWorld world, Construct c, int m, ConstructPartDef md, LineState s, PanelCard card, int line)
+    internal static void Detail(ConstructWorld world, Construct c, int m, ConstructPartDef md, LineState s, PanelCard card, int line)
     {
         ref var mp = ref c.Parts[m];
         var why = s is LineState.Starved or LineState.Blocked or LineState.Fault;
@@ -372,7 +372,7 @@ public static class ProductionLines
     private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
 
     /// <summary>A machine's name on its console: its kind, and its number among those of its kind on this line in wire order ("Extruder 2") when there are two or more. Cached per def.</summary>
-    private static string NameOf(Construct c, ReadOnlySpan<int> list, int k)
+    internal static string NameOf(Construct c, ReadOnlySpan<int> list, int k)
     {
         var kind = KindName(c.DefOf(list[k]));
         int number = 0, same = 0;

@@ -50,6 +50,8 @@ public struct CPart
     public CfgValues Cfg;
     public byte SealedFaces; // a Tank or Storage Volume: bit f, face f of its box is closed by the construct's solids (ConstructSeal.cs; worked out, not saved)
     public float FluidOwed; // a Fluid Tank: litres its percentage can't register yet (ConstructFluid.cs)
+    public int LineMade; // a Line Console: pieces its line made since Start (the server's; clients hear it with the orders, ProductionLines.Monitors.cs)
+    public byte LineBits; // a Line Console: its Alarm and Running outputs and whether it ran last step (server; ProductionLines.Monitors.cs)
     public float Reading, ReadingSent; // a display's number, a Numpad's entry (the server's; clients hear it exactly: LogicDisplays.cs), and what clients last heard
     public float Mem; // what a logic block keeps from tick to tick (never saved: a Code Lock's entry, a Damage Sensor's last health)
     public ushort Watch; // a Level or Damage Sensor: the part its watch link ends at, plus one (rebuilt with the links)
@@ -359,6 +361,7 @@ public sealed partial class Construct
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
     public bool HasAssembler; // an Assembler: the assembling step looks at it (ConstructAssembling.cs)
     public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
+    public bool HasLineConsole; // a Line Console: the line step works out its Alarm and Running outputs (ProductionLines.Monitors.cs)
     public bool HasPress; // a Press or Die Lathe: its step looks at this body (ConstructPress.cs)
     public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
     public ushort[] CameraParts = []; // cameras (ConstructRemote.cs)
@@ -1503,6 +1506,7 @@ public sealed partial class Construct
         HasAssembler = false;
         HasExtruder = false;
         HasPress = false;
+        HasLineConsole = false;
         var panels = 0;
         var cameras = 0;
         Receiver = -1;
@@ -1527,6 +1531,8 @@ public sealed partial class Construct
                 HasExtruder = true;
             if (d.IsPress)
                 HasPress = true;
+            if (d.Monitor == MonitorKind.Console)
+                HasLineConsole = true;
             if (d.Panels.Length > 0)
                 panels++;
             if (d.IsCamera)
