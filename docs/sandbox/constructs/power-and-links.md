@@ -264,8 +264,9 @@ stands in the usual form: `Pipe to Engine: route found, 5 nodes, 6.2 m - LMB: co
   shapes with at most two turns into the port (straight, sloped up to 3 degrees, an L, a Z, each axis in turn), legs square or barely
   sloped and long enough for their turns, and keeps the one that leaves fewest turns and short legs and passes `Check`. Small offsets are
   taken up by sloping or moving a long leg. `--route-ends [BLUEPRINT]` measures it (`RouteEndsProbe.cs`): on the Production Showcase,
-  routes with a short leg or more than two turns within 2 m of an end went from 77% to 31% (conveyors 95% to 26%), and from a waypoint
-  in front of a port 90% to 38%, 2.7 turns to 0.9.
+  routes with a short leg (under 0.5 m) or more than two turns within 2 m of an end went from 77% to 29% (conveyors 95% to
+  19%), mean turns 4.0 to 2.8; from a waypoint in front of a port 90% to 35%, 2.7 turns to 1.2. A conveyor search takes longer (58 ms
+  mean over its frames, at most 0.4 s, at 2 ms a frame).
 - **A conveyor's turns** (`ConstructRoutesEnds.cs`): a bed can't turn in less room than its width, so a new conveyor opens to what both
   ends take and its turns leave room for (`ConveyorMax`: between two bends its width, from a port to a bend half of it), and the wheel
   can't widen it past that. One whose turns leave room for no conveyor (10 cm) is refused, in `Check` and in the preview alike. The 12 m

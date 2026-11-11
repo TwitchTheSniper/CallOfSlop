@@ -121,7 +121,6 @@ public sealed class RouteSearch
     private int _bestState = -1, _bestTarget = -1;
     private float _bestCost;
     private string? _lastWhy;
-    public static bool RouteDebug;
     private float _width; // a conveyor: the bed it opens to (m); else 0
     private float _bed, _minRun, _endStub, _bend; // this stage: the shortest run between bends, the shortest stub out of a port, a bend's cost
     private Vector3[] _alt = [], _best = [], _fwd = [], _roomPts = [];
@@ -615,7 +614,6 @@ public sealed class RouteSearch
     {
         // (a box round the whole construct already: a wider one holds nothing new)
         var c = _ask.C;
-        if (RouteDebug) Console.WriteLine($"[route-debug] stage {_stage} done: best {_bestState} tgt {_tgtN} expanded {_expanded} longWay {_longWay} gaveUp {_gaveUp} why {_lastWhy} width {_width} minRun {_minRun} endStub {_endStub} phase {_phase}");
         var pad = new Vector3(1f);
         if (_flat && _stage < FlatStages.Length - 2 && Vector3.Min(_min, c.LocalMin - pad) == _min && Vector3.Max(_max, c.LocalMax + pad) == _max)
             _stage = FlatStages.Length - 2;
@@ -1582,12 +1580,8 @@ public sealed class RouteSearch
                 // (the server's rule, in the link's own order)
                 for (var i = 0; i < t; i++)
                     _fwd[i] = atStart ? _alt[t - 1 - i] : _alt[i];
-                if (Build(_fwd, t, out _, out _) is { } bad)
-                {
-                    if (RouteDebug)
-                        Console.WriteLine($"[route-debug] tidy {(atStart ? "start" : "end")} k {k} shape {shape}: {bad}");
+                if (Build(_fwd, t, out _, out _) != null)
                     continue;
-                }
                 bestScore = score;
                 bestN = t;
                 Array.Copy(_alt, _best, t);

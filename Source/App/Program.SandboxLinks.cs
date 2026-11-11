@@ -471,7 +471,7 @@ public static partial class Program
         var n = 0;
         RouteRender.PreviewBody = c;
         RouteRender.PreviewType = _lkType;
-        RouteRender.PreviewWidth = _lkType == RouteType.Conveyor && _lkParent == 255 ? ConstructRoutes.ConveyorWidth(c, _lkFrom, _lkFromPort) : 0f; // (a conveyor's ghost: the bed it opens to)
+        RouteRender.PreviewWidth = 0f; // (a conveyor's ghost is drawn as its bed once its input is known: LinkGhostEnd, LinkAutoInput)
         RouteRender.PreviewPts[n] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(c, _lkFrom, _lkFromPort, _lkType);
         RouteRender.PreviewSeg[n++] = (byte)(_lkParent != 255 ? c.Parts[Math.Min(ConstructRoutes.HostOf(c, _lkParent, _lkParentSeg), c.PartCount - 1)].Seg : c.Parts[_lkFrom].Seg);
         for (var i = 0; i < _lkCount; i++)
@@ -1177,7 +1177,7 @@ public static partial class Program
         RouteRender.SizeBody = c;
         RouteRender.SizeRoute = k;
         RouteRender.SizeW = _lkConvW / 100f;
-        var key = _lkConvW | (long)mw << 16 | (long)SandboxKeys.Stamp << 32;
+        var key = (long)(uint)_lkConvW | (long)mw << 16 | (long)SandboxKeys.Stamp << 32;
         if (key != _lkConvHudKey)
         {
             _lkConvHudKey = key;

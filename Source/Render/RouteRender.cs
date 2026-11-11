@@ -170,11 +170,21 @@ public static class RouteRender
     /// <summary>A conveyor's bend: a turn plate under both beds, its top just under the rails'.</summary>
     private static void ConveyorElbow(Renderer gfx, Vector3 at, Vector3 from, Vector3 to, float width, uint paint)
     {
-        var mid = Vector3.Normalize(from + to);
-        var basis = Basis(mid.LengthSquared() > 1e-6f ? mid : from);
+        // A corner: the under-plate square with the way in, and the two outer rails closing it (route-ends: no diamond over the turn).
+        var rail = paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail;
+        var basis = Basis(from);
         var y = new Vector3(basis.M21, basis.M22, basis.M23);
-        var size = width + 0.13f;
-        gfx.Draw(Matrix4x4.CreateScale(size, 0.11f, size) * basis * Matrix4x4.CreateTranslation(at - y * 0.01f), (paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail) * 0.85f);
+        var side = width * 0.5f + 0.03f;
+        gfx.Draw(Matrix4x4.CreateScale(width + 0.06f, 0.03f, width + 0.06f) * basis * Matrix4x4.CreateTranslation(at - y * 0.075f), ConvPlate);
+        if (Vector3.Dot(from, to) > 0.7f)
+            return; // (a slight bend: the beds meet)
+        var across = to - from * Vector3.Dot(to, from);
+        if (across.LengthSquared() < 1e-6f)
+            return;
+        across = Vector3.Normalize(across);
+        var outer = Matrix4x4.CreateScale(0.06f, 0.14f, width + 0.12f);
+        gfx.Draw(outer * Basis(across) * Matrix4x4.CreateTranslation(at + from * side - y * 0.02f), rail); // (ahead of the way in)
+        gfx.Draw(outer * basis * Matrix4x4.CreateTranslation(at - across * side - y * 0.02f), rail); // (behind the way out)
     }
 
     /// <summary>
