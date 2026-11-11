@@ -21,6 +21,19 @@ public sealed record EngineWish
     /// <summary>Drive every axle (<see cref="Vehicle.AllWheelDrive"/>): past about 1.7 times a V8 two driven tyres limit the speed, not the engine.</summary>
     public bool AllWheels { get; init; }
 
+    /// <summary>Two-wheel drive whatever the power (<c>--2wd</c>): the kit doesn't ask for all wheels by itself (<see cref="GripLimited"/>).</summary>
+    public bool TwoWheels { get; init; }
+
+    /// <summary>
+    /// Proposed (2026-11-11): the power a tonne above which two driven tyres limit the speed, not the engine (kW a tonne). Measured with <c>--speed-test</c>:
+    /// 136 kW/t (the stock Technical) and 124 (a tier 3 War Bus at 22 m/s) reached the kit's speed; 192 (a War Bus at 30 m/s) and 243 (a Technical at 30)
+    /// stopped at 26-27 m/s on grip. With no acceleration asked it is a top speed of about 28 m/s: tiers 1 and 2 stay two-wheel drive, 3 to 5 drive all.
+    /// </summary>
+    public const float GripLimitKwPerTonne = 200f;
+
+    /// <summary>Whether the power this wish needs for <paramref name="mass"/> kg would be grip-limited on two driven wheels (<see cref="GripLimitKwPerTonne"/>).</summary>
+    public bool GripLimited(float mass) => mass > 0 && PowerFor(mass, Top, Accel) * 1000f / mass > GripLimitKwPerTonne;
+
     /// <summary>The top speeds a tier's vehicles aim at when none is given (m/s; the slow-cars table's suggestion for a 1.5 t car).</summary>
     public static readonly float[] TierTop = [0, 25, 27, 30, 33, 36];
 

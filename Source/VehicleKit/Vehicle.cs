@@ -269,7 +269,8 @@ public sealed partial class Vehicle : BlueprintScript
     /// </summary>
     public bool AllWheelDrive;
 
-    private bool AllWheels => AllWheelDrive || EngineWish.Current?.AllWheels == true;
+    private bool AllWheels => AllWheelDrive || EngineWish.Current?.AllWheels == true
+        || Style.AllWheelDriveTier == 1 || Style.AllWheelDriveTier > 1 && EngineWish.Current is { } w && w.Tier >= Style.AllWheelDriveTier;
 
     /// <summary>
     /// A cross beam on top of the rails at <paramref name="z"/>, with <paramref name="wing"/> metres of beam out past it on each side. <paramref name="layers"/>: beams stacked, each 0.25 m;
