@@ -654,6 +654,8 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   brackets behind it as loose bodies; take them away now and then, or the heap reaches the bay's mouth ("no room for it").
 - **Measured** (`--probe-showcase`, removed: host and client over RakNet on the Proving Ground, spawned through the parts menu's call,
   the refining console started and the bill sent): every rack held the same pieces by key on both peers, the Press took line A's angles and
-  plates, the spur's Extruder stopped with "refused: the piece is too big for its conveyor (0.10 x 0.10 m)". The host's worst tick with
-  everything running, warm: 6.4 ms (p99 2.2 ms); in the first 25 s after the spawn, before the JIT has optimised the code, ticks
-  reach 21 ms.
+  plates, the spur's Extruder stopped with "refused: the piece is too big for its conveyor (0.10 x 0.10 m)". The host's ticks with
+  everything running, the second time round (the same sizes again): p99 2.2 to 2.4 ms, worst 6.4 and 12.4 ms in two runs. The first time
+  each piece size is grown, ticks of 8 to 24 ms recur twice a second for about 15 s (billed to Player moves, and gone when the same
+  sizes are made again), with one generation-1 collection of 75 to 100 ms; a 228-part truck spawned the same way shows none. Not
+  chased further: the first use of a new piece def looks to be the cost.
