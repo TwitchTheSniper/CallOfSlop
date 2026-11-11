@@ -1,6 +1,6 @@
 {
   "name": "Hearth",
-  "description": "A small orange star 7.8 light-years from the Dev System (docs/planets/WORLDS.md): Mille, the hollow world of the Thousand Layers (Maps/Planetoids/Mille.json), with its moonlet Crumb, and Proof, a pale world further out.",
+  "description": "A small orange star 7.8 light-years from the Dev System (docs/planets/WORLDS.md): Mille, a hollow world (Maps/Planetoids/Mille.json), with its moonlet Crumb, and Proof, a pale world further out.",
   "galaxy": { "ly": [5.6, -5.2, -1.6], "arrive": { "at": "Mille", "km": 20 } },
   "bodies": [
     { "name": "Hearth", "gm": 8.6e19, "radius": 5.1e8, "color": [1.0, 0.76, 0.48], "rotation": { "hours": 700, "tilt": 2 } },

@@ -177,7 +177,7 @@ WORLDS = [
         "name": "Mille", "order": 5, "radius": 3000, "strength": 8,
         "ore": {"levite seam": 3, "gold vein": 2, "sand bed": 1.5, "iron vein": 0.5},
         "limit": (40, "the crust is thin over the cavity"),
-        "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. The Thousand Layers keep the Bakehouse here. The crust is thinnest under the Proving Bowl: dig there to get in.",
+        "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
         "surface": {"grass": "#c99a4e", "dirt": "#a8733a", "rock": "#7d4f28", "sand": "#e8cf8f", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -22},
         "skybox": {"preset": "dusk", "zenith": "#5e6f9a", "horizon": "#f0c48a", "ground": "#8a6a3c",
                    "sun": {"color": "#ffd9a0", "intensity": 1.0, "size": 1.8, "glow": 0.5}, "haze": {"color": "#e8b878", "strength": 0.6}},
