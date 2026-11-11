@@ -87,6 +87,7 @@ public static class PartKit
         new Generators.LargeSystems(),
         new Generators.StabiliserParts(),
         new Generators.LegParts(),
+        new Generators.UpgradeParts(),
     ];
 
     public static IPartGenerator? Find(string name) =>
