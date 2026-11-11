@@ -1610,6 +1610,8 @@ public static unsafe partial class Program
 
         if (OpeningInput(now))
             return; // the survival opening: lying there, only the skip key (Program.Opening.cs)
+        if (QuarryRideInput(now))
+            return; // the quarry duty's crew bus: a passenger (Program.Quarry.cs)
         ThirdPersonAim(); // Sandbox third person: shots and tools aim from the crosshair (Program.ThirdPerson.cs)
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
@@ -1927,6 +1929,7 @@ public static unsafe partial class Program
             _game.Audio.SetListener(eye, fwd);
         }
         var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: lying at the crash site, waking in the colony; Program.Opening.cs)
+        openingView |= local != null && QuarryRideCamera(ref eye, ref fwd, ref camUp); // (the quarry duty's crew bus: Program.Quarry.cs)
         if (openingView)
             _game.Audio.SetListener(eye, fwd);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);

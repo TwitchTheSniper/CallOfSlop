@@ -379,7 +379,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 233: STAND-IN: Msg.StandIn at the end of Msg (Source/StandIns: the story's placeholder craft, until the vehicle and ship redo).
     // 234: Msg.Shot carries a kinds byte after the end count (Game.ShotKindBuildOnly): a hit on a build only gets its own hit-marker colour.
     // 235: mains lamps (logic "mains", docs/sandbox/INTERIORS.md phase 11) are left out of a pose's signals: every peer lights them from the circuit (ConstructLamps.Lit).
-    public const byte ProtocolVersion = 235;
+    // 236: the first Ministry duty (docs/story/DUTIES.md): Msg.Quarry at the end of Msg, CActKind.QuarrySkip at the end of CActKind; stand-in craft gain a Duty purpose (host only).
+    public const byte ProtocolVersion = 236;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -2310,6 +2310,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.StoryPaths when !IsServer:
                 ReadStoryPaths(ref r); // the Logbook's Paths (GameStoryPaths.cs)
                 break;
+            case (byte)Msg.Quarry when !IsServer && r.Has(22):
+                ReadQuarry(ref r); // the first Ministry duty (GameQuarry.cs)
+                break;
             case (byte)Msg.Depot when !IsServer && r.Has(14):
                 ReadDepot(ref r); // the Orbital Depot's steps (GameDepot.cs)
                 break;

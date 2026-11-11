@@ -22,7 +22,7 @@ the file. The text is filled once per step and again only if a key it names is r
 | `move` | they walk `amount` metres (default 6; a teleport or a ride doesn't count) |
 | `sprint` | `amount` seconds sprinting while moving (default 1) |
 | `jump`, `crouch` | the key in their input, or rising / a lower stance |
-| `inventory`, `toolwheel` | the client reports the window opened (the only cues a client sends; the server takes them only for the current step) |
+| `inventory`, `toolwheel` | the client reports the window opened (the only cues a client sends; the server takes them only for the current step). The shipped induction has no `inventory` step: it runs in survival, where the Tab parts menu is off away from a beacon |
 | `hold` | a part in their hands |
 | `tool` | that tool out (`attach`, `linker`, `configure`, `grounddrill`, `physicsgun`, `hands`, ...) |
 | `place` | an Attach or PlaceNew the server carried out |
@@ -37,7 +37,7 @@ the file. The text is filled once per step and again only if a key it names is r
 
 **About the person** (Karl, 2026-11-10). The induction teaches the person: moving, their hands, the backpack, their own tools
 (attach tool, ground drill, physics gun) and their bunk. Machines (power, the Assembler, smelting) are not in it: they are
-taught later, in stages, on Ministry of Slop duties. The power and Assembler steps were taken out on 2026-11-10, so a world
+taught later, in stages, on Ministry of Slop duties (the first is the quarry: docs/story/DUTIES.md). The power and Assembler steps were taken out on 2026-11-10, so a world
 saved part way through an older induction picks up at the step now at that number.
 
 **Markers, hints and drops** (2026-11-10). `"target": "loose"` or `"bunk"` puts an orange marker over the nearest loose single
