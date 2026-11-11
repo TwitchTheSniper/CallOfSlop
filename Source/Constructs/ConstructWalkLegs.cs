@@ -235,7 +235,7 @@ public static partial class ConstructPhysics
                 away.Y = 0;
                 away = away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : Vector3.UnitX;
                 var swinging = c.Legs[k].Swinging;
-                var foot = swinging ? (c.Legs[k].To - c.Legs[k].From) / MathF.Max(0.2f, c.Parts[c.Legs[k].Part].D.Leg!.StepTime) : Vector3.Zero;
+                var foot = swinging ? (c.Legs[k].To - c.Legs[k].From) / MathF.Max(0.1f, c.WalkSwing) : Vector3.Zero; // (the step as it is now: the speed setting quickens it)
                 var push = PadEase + (swinging ? MathF.Max(0, Vector3.Dot(foot, away)) : 0);
                 var vel = o.Vel;
                 if (Vector3.Dot(vel, away) < push)

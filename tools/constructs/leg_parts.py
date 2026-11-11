@@ -24,13 +24,20 @@ OUT = os.path.join(ROOT, "Constructs", "Parts", "Walkers")
 BLUEPRINT = os.path.join(ROOT, "Constructs", "Blueprints", "TitanWalker.json")
 SECTION = "Legs"  # (Constructs/Categories.json: Wheels and Suspension, Legs)
 
-# Size tiers: class, reach (m, hip to foot), the thickest segment (m), kg a leg carries, seconds a step takes in the air.
+# Size tiers: class, reach (m, hip to foot), the thickest segment (m), kg a leg carries, and the top speed (m/s) a six-legged
+# walker on electric legs walks at on the default setting (docs/sandbox/GIANTS.md, "Leg speeds"): bigger legs are faster,
+# their strides are longer. The step time is worked out from it (step_time).
 TIERS = [
-    ("Small", SMALL, 1.6, 0.12, 400, 0.35),
-    ("Medium", MEDIUM, 6.0, 0.5, 8_000, 0.7),
-    ("Large", LARGE, 20.0, 2.0, 600_000, 1.4),
-    ("Titan", CAPITAL, 48.0, 4.5, 12_000_000, 2.4),
+    ("Small", SMALL, 1.6, 0.12, 400, 10.0),
+    ("Medium", MEDIUM, 6.0, 0.5, 8_000, 12.0),
+    ("Large", LARGE, 20.0, 2.0, 600_000, 14.0),
+    ("Titan", CAPITAL, 48.0, 4.5, 12_000_000, 16.0),
 ]
+
+# How far the body goes while a foot is planted, a share of the reach (the stroke the foot sweeps under its hip, centred on its
+# rest point: half of it ahead, half behind). 0.95 keeps a mech leg's planted foot within 0.84 of its reach, an insect's 0.89
+# (the gait slows the body past 0.95: ConstructWalk.cs, StretchSlow).
+STRIDE = 0.95
 
 # Kinds: segment shares of the reach (hip first), the hip's standing height and the foot's spread (shares of the reach), colours.
 KINDS = [
@@ -41,6 +48,12 @@ KINDS = [
 
 POWER = {"hydraulic": 1.0, "electric": 0.8, "shaft": 1.2}  # strength on each source (phase 2 gates the legs on them)
 
+
+def step_time(reach, speed):
+    """Seconds a step takes in the air (unloaded, full strength) for a tripod on electric legs to walk at speed: the body
+    goes the stride while the other half of the legs is in the air (ConstructWalk.cs: top = stride x reach / swing)."""
+    return round(STRIDE * reach * POWER["electric"] / speed, 3)
+
 # The gait profiles on the configure tool (docs/sandbox/GIANTS.md, phase 3). Simple: no settings, it just walks. Basic: the
 # walker's stride, step height, body height and gait, read from its lead leg (the one with the highest profile). Advanced:
 # each leg's own pace, lift, spread and gait group too.
@@ -48,6 +61,9 @@ WHOLE = "The walker follows its leg with the highest profile."
 CONFIG = [
     {"key": "walkProfile", "label": "Gait profile", "group": "Gait", "type": "choice", "options": ["Simple", "Basic", "Advanced"], "default": 0,
      "tooltip": "Simple: it just walks. Basic: the gait settings. Advanced: each leg's own tuning too. " + WHOLE},
+    {"key": "walkSpeed", "label": "Walk speed", "group": "Gait", "unit": "%", "min": 0, "max": 200, "step": 5, "default": 100,
+     "tooltip": "Top speed at full throttle, a share of the legs' own: 200 is twice as fast, with quicker steps, more power and a "
+                "rougher ride. Every profile, Simple too."},
     {"key": "stride", "label": "Stride", "group": "Gait", "unit": "%", "min": 50, "max": 150, "step": 5, "default": 100,
      "tooltip": "How far each step reaches: longer strides walk faster. Basic and Advanced. " + WHOLE},
     {"key": "stepLift", "label": "Step height", "group": "Gait", "unit": "%", "min": 50, "max": 250, "step": 5, "default": 100,
@@ -55,7 +71,7 @@ CONFIG = [
     {"key": "bodyHeight", "label": "Body height", "group": "Gait", "unit": "%", "min": 60, "max": 130, "step": 5, "default": 100,
      "tooltip": "How high it stands (still no higher than the legs reach). Basic and Advanced. " + WHOLE},
     {"key": "gait", "label": "Gait", "group": "Gait", "type": "choice", "options": ["Auto", "Tripod", "Wave"], "default": 0,
-     "tooltip": "Auto: a tripod with six or more legs in an even count, else a wave. Tripod: half the legs at a time. Wave: one leg at a time. " + WHOLE},
+     "tooltip": "Auto: a tripod with six or more legs in an even count, a trot with four, else a wave. Tripod: half the legs at a time. Wave: one at a time. " + WHOLE},
     {"key": "legPace", "label": "Leg pace", "group": "This leg", "unit": "%", "min": 50, "max": 150, "step": 5, "default": 100, "advanced": True,
      "tooltip": "This leg's step speed. Advanced profile only."},
     {"key": "legLift", "label": "Leg lift", "group": "This leg", "unit": "%", "min": 50, "max": 200, "step": 5, "default": 100, "advanced": True,
@@ -68,7 +84,7 @@ CONFIG = [
 
 
 def leg(tier, kind):
-    tname, c, reach, width, load, step = tier
+    tname, c, reach, width, load, speed = tier
     kname, key, shares, stand, spread, colour, joint = kind
     h = c.half
     p = Part(f"{tname} {kname} Leg", c, SECTION, f"A {kname.lower()} walker leg: hip, segments, knees, foot and actuators in one part. "
@@ -87,7 +103,8 @@ def leg(tier, kind):
         "foot": r(width * 0.9),
         "hip": [0, 0, 0],
         "load": load,
-        "stepTime": step,
+        "stepTime": step_time(reach, speed),
+        "stride": STRIDE,
         "stepHeight": 0.15,
         "stand": stand,
         "spread": spread,

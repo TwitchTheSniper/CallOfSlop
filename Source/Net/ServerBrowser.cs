@@ -384,7 +384,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 238: dug ground's shape from the same ops again: a roof thinner than 6 m falls in with a scoop or a crater (TerrainEdits.MinRoof), and side-by-side tops always share their corner height (GroundTops). No message changed.
     // 239: talk topics per person (docs/story/STORY.md "Topics"): Msg.TalkTopics at the end of Msg, TalkAsk.Topic (13) in CActKind.Talk followed by a u16 (the topic's index).
     // 240: STAND-IN: Msg.StandIn gains a vec from and a 3-byte tint (the ambient traffic's legs, ships and stations: Source/StandIns/GameTraffic.cs).
-    public const byte ProtocolVersion = 240;
+    // 241: a walker's pose block's flags byte gains bit 8, the plant and the bank hold it below its set speed (Construct.WalkPowerHeld; ConstructNetWalk.cs).
+    public const byte ProtocolVersion = 241;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

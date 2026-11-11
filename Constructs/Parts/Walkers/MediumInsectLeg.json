@@ -24,7 +24,8 @@
       0
     ],
     "load": 8000,
-    "stepTime": 0.7,
+    "stepTime": 0.38,
+    "stride": 0.95,
     "stepHeight": 0.15,
     "stand": 0.45,
     "spread": 0.6,
@@ -70,6 +71,17 @@
       "tooltip": "Simple: it just walks. Basic: the gait settings. Advanced: each leg's own tuning too. The walker follows its leg with the highest profile."
     },
     {
+      "key": "walkSpeed",
+      "label": "Walk speed",
+      "group": "Gait",
+      "unit": "%",
+      "min": 0,
+      "max": 200,
+      "step": 5,
+      "default": 100,
+      "tooltip": "Top speed at full throttle, a share of the legs' own: 200 is twice as fast, with quicker steps, more power and a rougher ride. Every profile, Simple too."
+    },
+    {
       "key": "stride",
       "label": "Stride",
       "group": "Gait",
@@ -113,7 +125,7 @@
         "Wave"
       ],
       "default": 0,
-      "tooltip": "Auto: a tripod with six or more legs in an even count, else a wave. Tripod: half the legs at a time. Wave: one leg at a time. The walker follows its leg with the highest profile."
+      "tooltip": "Auto: a tripod with six or more legs in an even count, a trot with four, else a wave. Tripod: half the legs at a time. Wave: one at a time. The walker follows its leg with the highest profile."
     },
     {
       "key": "legPace",

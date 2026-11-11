@@ -371,7 +371,7 @@ a walker that falls into a pit, drawing (no window run).
    legs of several parts.
 5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
    signal as a throttle; shaft splitters for six shaft-fed legs.
-8. Walker fixes, rest: biped gaits and a trot for four legs (a dynamic balance the static support polygon can't give:
+8. Walker fixes, rest: biped gaits (a dynamic balance the static support polygon can't give:
    the capture point, wider feet and a lower stance at rest, a fall past recovery; for the mech suit); crushing what is underfoot; the power cap for shaft-fed legs and pumps
    on a shaft (the engine's torque); a walker that falls into a pit tried on a real map.
 6. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding

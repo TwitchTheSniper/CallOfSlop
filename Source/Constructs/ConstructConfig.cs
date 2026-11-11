@@ -190,6 +190,7 @@ public enum CfgKey : byte
     LegGroup, // walker leg, Advanced: which half of a tripod it steps with (Auto, First, Second)
     DoorOpen, // event door: where it last settled, open or shut (not on the panel; ConstructDoors.cs)
     DoorLocked, // event door: F can't work it (a wire into its Lock port locks it too)
+    WalkSpeed, // walker leg, every profile: the top speed at full throttle, % of the legs' own (ConstructWalkProfile.cs)
     COUNT,
 }
 
@@ -860,7 +861,7 @@ public static class ConstructConfig
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 CfgKey.RackLayout or CfgKey.RackRows or CfgKey.RackColumns or CfgKey.RackLength or CfgKey.RackDiameter => d.IsModularRack,
                 CfgKey.FireOrder or CfgKey.RackInterval => d.Logic == CLogic.BombRack && !d.RackRail,
-                CfgKey.WalkProfile or CfgKey.Stride or CfgKey.StepLift or CfgKey.BodyHeight or CfgKey.Gait
+                CfgKey.WalkProfile or CfgKey.WalkSpeed or CfgKey.Stride or CfgKey.StepLift or CfgKey.BodyHeight or CfgKey.Gait
                     or CfgKey.LegPace or CfgKey.LegLift or CfgKey.LegSpread or CfgKey.LegGroup => d.Role == PartRole.Leg, // (the gait profiles: ConstructWalkProfile.cs)
                 _ => false,
             };
