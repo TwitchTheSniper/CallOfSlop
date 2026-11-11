@@ -195,7 +195,9 @@ and a bigger tank. That is the next step for the fast shapes; no shipped part wa
 
 ## Next steps
 
-1. **Fast shapes.** All-wheel drive is an option now (`--awd`, `EngineWish.AllWheels`: drivetrain-and-engines.md "All-wheel drive and round wheels"; 34-35 m/s at tier 5). A tier 3+ shape (or the wish) drives every axle and carries a bigger tank (above: grip is the limit past 1.7x the
+1. **Fast shapes.** All-wheel drive: the kit asks for it by itself over 200 kW a tonne (proposed; tiers 3-5 with no acceleration asked),
+   keeping two-wheel drive where the layout refuses; `--awd` forces it, `--2wd` stops it (drivetrain-and-engines.md "All-wheel drive and
+   round wheels": 26.7-34.2 m/s at tier 5 against 23-26.8). Still to do: the bigger tank. A tier 3+ shape (or the wish) drives every axle and carries a bigger tank (above: grip is the limit past 1.7x the
    V8); a game caller passes a wish (a faction's tier, a role's) to `VehicleGenJob`.
 2. **Player action, more.** Done for creative (above). Next: an option to come with a fuel tank and gearbox fitted, so it runs at
    once; survival gets nothing yet (its engines come from Assembled pieces).

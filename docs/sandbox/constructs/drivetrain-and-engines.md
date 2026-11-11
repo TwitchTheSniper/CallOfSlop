@@ -642,20 +642,31 @@ is made as before (`--gen-vehicles`: 238 identical). A generator sets `Vehicle.A
 - The differential's input port (its `-z0` socket) faces forward and stays free, so only the right nose rail is fitted (at least 0.5 m),
   and a bumper goes on that one.
 - A T Gearbox behind the gearbox splits the drive; its branch is a laid shaft under the rails, past the front differential and back into it.
-- Not yet: a tandem (it stays two driven axles), a front wing other than 0 or 0.5 m (refused, the spawner rerolls).
+- Phase 2: any front wing (`AwdHalfAxle`): the differential, up to two U Joints (0.1 m each) and the CV Joint, so the steering pivot
+  stands within 6 cm of where the wing's end was (0.75 m: the Wide Differential and two U Joints, 0.5 cm in; 0.25 m: the plain one).
+  A tandem drives every axle: a second T Gearbox behind the first, whose branch feeds the front differential. The Gun Wagon's tandem
+  refuses it (the second T Gearbox stands where the bed's sill goes); the kit then keeps two-wheel drive (below).
+- Who gets it: `FactionStyle.AllWheelDriveTier` (style data: 0, every shipped style, leaves it to the vehicle and the kit; 1 always;
+  2-5 when an engine wish of that tier or more is current), and the Engine Kit by itself when the wish's power is over 200 kW a tonne
+  (`EngineWish.GripLimitKwPerTonne`, proposed: about 28 m/s, so tiers 3-5), falling back to two-wheel drive when the layout refuses.
+  `--2wd` keeps two. `--gen-vehicles`: 238 identical.
 
 Measured (`--speed-test`, tier 5 kit engine asking 36 m/s, Bandit Technical seeds 1, 6, 13): two-wheel drive 25.5, 29.2, 30.2 m/s, all
 grip-limited; all-wheel drive 34.2, 35.2, 32.5 m/s, limited by power against drag; 0-20 m/s in 2.6, 1.8, 1.8 s (was 6.7, 4.2, 4.0).
 Each passed the spawn drive check. Seed 6's tyres set by blueprint to a dry grip of 0.4 g and 1.6 g (two-wheel drive): 15.7 and 37.3 m/s.
+
+Phase 2 (tier 5 asking 36 m/s; top m/s, 0-20 m/s s, two-wheel drive then all-wheel drive): Bandit Technical 1 25.5 / 6.7 then
+34.2 / 2.6; Technical 23 (0.75 m wing) 23.0 / 8.9 then 26.8 / 5.2; Bandit War Bus 1 26.8 / 5.2 then 29.2 / 2.2; Highland Giant Truck 8
+(tandem, 6 of 6 driven) 25.5 / 6.6 then 26.7 / 3.0. Every two-wheel twin is grip-limited, every all-wheel one power against drag.
 
 **Tyre settings** were already there ("The tyre's settings" above): dry, dirt and side grip, rolling drag and bounciness.
 
 **Round wheels.** The hand-made wheels (`Constructs/Parts/Wheel.json`, `Drivetrain/Wheel*.json`) draw a 24-sided cylinder over their
 three solid boxes, which are hidden and still collide as before (players, bullets, the physics gun, a loose wheel); sockets, ids and size
 are unchanged. A sprung wheel already meets the world as a cylinder ("Wheels: the rim and the cylinder"), so the drawing now matches the
-contact. Wheel Former wheels and the Dually Wheel were already round; the BigDrive tyres and drive wheels come from
-`tools/constructs/big_drive_parts.py` and are still three boxes.
+contact. Wheel Former wheels and the Dually Wheel were already round (the Dually's tyres now 24-sided). Phase 2: the BigDrive tyres
+and drive wheels (`--gen-parts big_drive_parts`) draw a cylinder of 24, 32 or 48 sides (Medium, Large, Capital) over their hidden boxes.
 
-**Next (phase 2).** Round BigDrive wheels in their generator (or its C# port); all-wheel drive on a tandem and on other front wings
-(drive shafts between the differential and the CV joints); a faction or tier choosing it; the kit choosing a Wheel Former wheel by its key
-(diameter, width, material) instead of a named wheel, which needs an off-road `wheels` row.
+**Next.** A bigger tank for kit engines (a 960 kW engine burns 0.35 l/s: 15 minutes, proposed, is 315 l against the 60 l drum; the
+tank's place depends on each shape's layout); the kit choosing a Wheel Former wheel by its key (diameter, width, material) instead of a
+named wheel, which needs an off-road `wheels` row; room for the Gun Wagon's all-wheel-drive tandem.
