@@ -483,8 +483,12 @@ public sealed class Assembling : IPartGenerator
         var byName = new Dictionary<string, PyDict>();
         foreach (var (p, _) in known)
             byName[(string)p["name"]!] = p;
+        var builder = BuilderNames(o.Root);
         foreach (var r in recipes)
         {
+            var output = (string)r["output"]!;
+            if (!byName.ContainsKey(output) && !builder.Contains(output))
+                throw new InvalidOperationException($"assembling: recipe for {output}: no part named {output} (in Constructs/Parts or the weapon builder's Parts)");
             var n = (r.Get("materials") as PyDict)?.Count ?? 0;
             var parts = r.Get("parts") as PyDict;
             if (n + (parts?.Count ?? 0) > 6)
@@ -494,5 +498,28 @@ public sealed class Assembling : IPartGenerator
                     throw new InvalidOperationException($"assembling: {r["output"]}: {q} isn't an item part");
         }
         o.File("Constructs/Assembling.json", Layout(recipes));
+    }
+
+    /// <summary>The weapon builder's parts (Parts/*/*.json outside _*, Builds and Tables): made into Sandbox items at load, so a hand
+    /// recipe may name one with no file in Constructs/Parts.</summary>
+    private static HashSet<string> BuilderNames(string root)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        var dir = Path.Combine(root, "Parts");
+        if (!Directory.Exists(dir))
+            return names;
+        foreach (var sub in Directory.GetDirectories(dir))
+        {
+            var leaf = Path.GetFileName(sub);
+            if (leaf.StartsWith('_') || leaf.StartsWith("Builds", StringComparison.Ordinal) || leaf.StartsWith("Tables", StringComparison.Ordinal))
+                continue;
+            foreach (var f in Directory.GetFiles(sub, "*.json"))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(System.IO.File.ReadAllText(f), "\"name\"\\s*:\\s*\"([^\"]+)\"");
+                if (m.Success)
+                    names.Add(m.Groups[1].Value);
+            }
+        }
+        return names;
     }
 }
