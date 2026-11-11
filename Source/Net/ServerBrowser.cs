@@ -395,7 +395,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      kind ids may be Extrusion.WireMark and a run-time piece's key; ExtrudeStall gains ConveyorSmall, ConveyorFull and ConveyorCut.
     // 245: conveyors, phase 2: a rider in CBodyKind.Riders sends its front as an f32 (below 0 while it crosses a junction) and a u8 after its paint (the link
     //      it came through, plus one); the CActKind.Bin act is unchanged (the server takes the aim from the player's look).
-    public const ushort ProtocolVersion = 245;
+    // 246: work orders (WorkOrders.cs): CBodyKind.Orders (at the end) carries a body's queues and bills (u16 part, u8 flags, u16 orders, u32 pieces
+    //      left, a note, u8 head count, then up to three 22-byte orders); ExtrudeStall gains NoOrders and OrderMaterial.
+    public const ushort ProtocolVersion = 246;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

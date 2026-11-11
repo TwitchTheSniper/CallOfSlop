@@ -570,3 +570,52 @@ Proposed (the user's to confirm): the wheel on the linking tool for the size (li
 gap; junctions as parts rather than branches of a link; three ways at a junction; the rack storing pieces by kind rather than as
 fitted parts, drawing at most 24; F dropping the piece loose by the rack; riders passing through players (not reached: a piece as
 a solid box against a player near it is the next step); a piece longer than its whole link refused.
+
+## Work orders
+
+The first step of automated vehicle building (the user, 2026-11-11: "every exact part to be built", a machine working through a queue
+of sizes, another material another line). An Extruder or a Wheel Former takes **orders**, each setting its own section, size and length
+and how many to make; a Line Console holds a **bill** and deals it to the machines it runs. Code: `Source/Constructs/WorkOrders.cs`
+(`WorkOrders`, `ConstructBill`); the machine's side in `ConstructExtruder.Work`; the parts from the part kit's `extrusion_parts` and
+`control_parts`.
+
+- **An order** (`WorkOrder`) is a piece's whole key (shape, section, width, height, pipe wall, length, material; a wheel's length 0) and
+  a count, 1 to 999; or a catalogue part and a count (no machine takes those yet: the Assembler is next).
+- **The queue** is the machine's own (`CPart.Orders`), at most 255 orders, so it moves with the part. A machine with a queue, even an
+  empty one, works its orders and nothing else: idle with "waiting for orders" when it runs out, so a finished bill spills nothing.
+  **Clear** drops the queue and the machine is back on its own settings. The head order replaces the settings: an Extruder grows its
+  section and cuts at its length; a Wheel Former grows the width, then the diameter, and cuts. Each cut piece that is the head's counts;
+  at its count the head goes and the next begins with the next piece. A piece on the die that isn't the head's (the head was
+  cancelled) is cut off as it is. Pieces leave by the Piece out conveyor, or drop as before. Run held (the console stopped) holds the
+  queue.
+- **Accepting.** `WorkOrders.Refusal` gives one reason and a refused order is never queued: the wrong family (an Extruder takes
+  sections, rounds and pipes; a Wheel Former wheels; Fan and Airframe Formers take no orders yet), a size past the die as it stands
+  (Die Frames counted) or the machine, a length off the 5 cm step or past `maxLength`, a wheel smaller than the machine's first, a
+  section that can't be meshed, a material its table hasn't, a full queue, and **another material**: a machine fed metal refuses an
+  order in wood ("the Extruder is fed metal: an order in wood is another line"). An empty bin takes any; it then waits Starved with
+  "needs metal for its order" until its chute brings it.
+- **At the machine.** Every Extruder and Wheel Former has a status lamp over its screen (the line's colours) and three buttons under
+  it: **Queue** (one order of its settings as they stand and its **Order count**: an Extruder's section and Cut every, a Wheel Former's
+  Order width and Order diameter; the material its bin holds), **Cancel** (the head) and **Clear**. The screen shows stock, the piece so
+  far, the orders and pieces to go and the next three, the head marked.
+- **The bill** is the Line Console's. Its fourth button, **Bill**, turns the screen to the bill page, where the buttons are **Add** (one
+  line of its Bill line settings: Kind, Profile, Width, Height, Pipe wall, Length, Material, Count), **Send**, **Clear** and **Line**.
+  Send deals each line whole, in order, to the console's machines (its wires into their Run) that accept it, round robin on from the
+  last that took one; a line none takes stays with the first refusal on the screen (on every peer). The line page lists Extruders and
+  Formers with their pieces to go ("own": on their settings).
+- **A blueprint's bill.** `ConstructBill.FromBlueprint` lists every extruded or formed piece a blueprint needs, grouped by key with
+  counts, and its catalogue parts; `ToConsole` puts the pieces on a console's bill (the building station will call these).
+  `--bill NAME` prints one. Of the shipped blueprints only Fabric Flyer and Sky Crane need pieces, and those are fans and wings.
+- **Network (protocol 246).** `CBodyKind.Orders`, per body when a queue or bill changes, after a Full and to a joiner: each list's
+  part, totals, note and its first three orders (22 fixed bytes each). A client holds only those: all a screen shows.
+- **Saves.** After a body's conveyors block (an empty one when it has none), its lists in full: materials and parts by the save's names.
+  An older save ends before them. Blueprints carry no orders (a blueprint is a design, not a job).
+- **Cost.** An idle machine or an empty queue costs a null check (measured: the Extruder step 0.0005 ms, 0 bytes); a 200-order queue on
+  two machines 0.03 ms median, 0.4 ms max a step on the 2-core box. A step allocates only what a working Extruder always did: a new
+  piece def the first time a key is grown (about 2.5 KB) and the body or rider it cuts. The console's machines are walked only on Send.
+
+Proposed (the user's to confirm): the Line Console holding the bill rather than a new desk part; its wires into Run as the order links;
+a machine with a queue working orders only, Clear going back to its settings; an empty bin accepting any material; whole lines dealt
+round robin rather than counts split across machines; the queue and bill bounds (255 orders, 999 a line); a cancelled head's piece cut
+off as it is; blueprints carrying no orders. Next: the Assembler taking catalogue-part orders, the Fan and Airframe Formers, and the
+building station issuing a blueprint's bill.

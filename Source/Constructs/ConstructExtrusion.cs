@@ -918,7 +918,10 @@ public static class Extrusion
     private const string RoundWord = "round", PipeWord = "pipe", WheelWord = "wheel", FanWord = "fan", BladeWord = "blade-", WingWord = "wing-";
 
     /// <summary>The piece a name gives (<see cref="Name"/>), or null when it isn't one.</summary>
-    public static ConstructPartDef? Parse(string name)
+    public static ConstructPartDef? Parse(string name) => ParseKey(name) is { } key ? Def(key) : null;
+
+    /// <summary>The key a name gives (<see cref="Name"/>), making no part (a bill reads a blueprint's pieces: WorkOrders.cs), or null.</summary>
+    public static ExtrusionKey? ParseKey(string name)
     {
         if (!name.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
             return null;
@@ -985,7 +988,7 @@ public static class Extrusion
         var growing = material.EndsWith(GrowingSuffix, StringComparison.OrdinalIgnoreCase);
         if (growing)
             material = material[..^GrowingSuffix.Length];
-        return RecyclingTable.Current.IdOf(material) is var id and not 0 ? Def(new ExtrusionKey(mask, w, h, l, id, growing, shape, wall)) : null;
+        return RecyclingTable.Current.IdOf(material) is var id and not 0 ? new ExtrusionKey(mask, w, h, l, id, growing, shape, wall) : null;
     }
 
     // ---- The wire ----------------------------------------------------------------------------------------------------------

@@ -462,6 +462,11 @@ public sealed partial class Game
             ConstructConveyor.Write(w, c); // (after its structure: the riders name its links)
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        if (WorkOrders.Any(c))
+        {
+            WorkOrders.Write(w, c); // (after its structure: a Full leaves the parts without them)
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
     }
 
     private void SandboxFlush()
@@ -486,6 +491,8 @@ public sealed partial class Game
                 SandboxBroadcastBody(c);
                 if (c.ConveyedCount > 0)
                     Constructs.RidersChanged(c); // (its links may have been renumbered)
+                if (WorkOrders.Any(c))
+                    Constructs.OrdersChanged(c); // (its parts may have been renumbered; a Full leaves a client's parts without them)
             }
         Constructs.StructureDirty.Clear();
         foreach (var id in Constructs.RidersDirty)
@@ -495,6 +502,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.RidersDirty.Clear();
+        foreach (var id in Constructs.OrdersDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                WorkOrders.Write(w, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.OrdersDirty.Clear();
         foreach (var id in _sbLater)
             Constructs.StructureDirty.Add(id);
         _sbLater.Clear();

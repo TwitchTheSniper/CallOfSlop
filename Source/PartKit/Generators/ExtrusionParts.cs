@@ -20,7 +20,7 @@ public sealed class ExtrusionParts : IPartGenerator
     private const string Section = "Extrusion";
     private const string BodyC = "#55606b", Trim = "#3f4750", Dark = "#23272c", Gold = "#c8a13a";
 
-    private static List<object?> Profiles() => Py.L("Solid bar", "Plate", "Wall", "Hollow box", "I-beam", "C-channel", "L-angle", "T-bar", "Cross", "Custom", "Round", "Pipe", "Airfoil", "Symmetric foil", "Thin foil");
+    internal static List<object?> Profiles() => Py.L("Solid bar", "Plate", "Wall", "Hollow box", "I-beam", "C-channel", "L-angle", "T-bar", "Cross", "Custom", "Round", "Pipe", "Airfoil", "Symmetric foil", "Thin foil");
     private static List<object?> BladeStyles() => Py.L("Straight", "Scimitar", "Broad paddle", "Swept", "Narrow"); // (Air.json's "bladeStyles", in order)
     private static List<object?> FanKinds() => Py.L("Propeller", "Electric prop", "Helicopter rotor", "Ducted fan", "Tail rotor"); // (Extrusion.json's "fanKinds", in order)
     private static List<object?> Airframes() => Py.L("Wing", "Tail plane", "Fin", "Swept wing, left", "Swept wing, right", "Aileron", "Elevator", "Rudder", "Flap"); // (Extrusion.json's "airframes")
@@ -69,15 +69,29 @@ public sealed class ExtrusionParts : IPartGenerator
 
     private static readonly PyDict Ink = Kw(("key", "ink"), ("type", "colour"), ("label", "Screen colour"), ("group", "Display"), ("default", "#000000"), ("tooltip", "The colour of what its screen shows. Black: its own colours."));
 
+    private static readonly PyDict OrderCount = Kw(("key", "orderCount"), ("label", "Order count"), ("group", "Orders"), ("min", 1), ("max", 999), ("step", 1), ("default", 1),
+        ("tooltip", "Pieces the Queue button on its screen asks for: one order of its settings as they stand."));
+
     private static double At(PyDict s, int k) => Py.D(((List<object?>)s["at"]!)[k]);
 
     /// <summary>The part's screen: a side of its block (PartScreens), never the die's.</summary>
-    private static Part WithScreen(Part p)
+    private static Part WithScreen(Part p, bool orders = false)
     {
         var keepClear = p.Sockets.Select(s => (new[] { At(s, 0), At(s, 1), At(s, 2) }, (string)s["dir"]!)).ToList();
-        var (plate, panel, _) = PartScreens.Mount(p.Boxes, keepClear, faces: ["-x", "+x", "-z"]);
+        // A machine that takes work orders (WorkOrders.cs) is a machine of a production line: a status lamp over its screen, its queue on
+        // eight rows and three buttons under it.
+        var (plate, panel, lamp) = PartScreens.Mount(p.Boxes, keepClear, faces: ["-x", "+x", "-z"], rows: orders ? 8 : 4, lamp: orders);
         PartScreens.Fit(p.Boxes, plate);
+        if (lamp is not null)
+            p.Boxes.Add(lamp);
+        if (orders)
+            panel["touch"] = Py.L(
+                Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.32, 0.12)), ("label", "Queue")),
+                Kw(("action", "orders.cancel"), ("at", Py.L(0.35, 0.02, 0.65, 0.12)), ("label", "Cancel")),
+                Kw(("action", "orders.clear"), ("at", Py.L(0.68, 0.02, 0.98, 0.12)), ("label", "Clear")));
         var config = p.D.Get("config") is List<object?> cfg ? new List<object?>(cfg) : [];
+        if (orders)
+            config.Add(OrderCount);
         config.Add(Ink);
         p.Set(("panels", Py.L(panel)), ("config", config));
         return p;
@@ -104,9 +118,13 @@ public sealed class ExtrusionParts : IPartGenerator
                 ("tooltip", "Cuts the piece off at the die by itself when it is this long. 0: only when a signal comes into Cut.")));
     }
 
-    private static List<object?> FormerConfig() => Py.L(
+    private static List<object?> FormerConfig(object across, object width, object d0, object w0) => Py.L(
         Kw(("key", "runMode"), ("label", "Run mode"), ("group", "Run"), ("options", Py.L("Width", "Depth")), ("default", 0),
-            ("tooltip", "What it builds up: Width along the axle, Depth (the diameter) out from the hub. A wire into Mode decides instead: on is Depth.")));
+            ("tooltip", "What it builds up: Width along the axle, Depth (the diameter) out from the hub. A wire into Mode decides instead: on is Depth.")),
+        Kw(("key", "width"), ("label", "Order width"), ("group", "Orders"), ("unit", "m"), ("min", w0), ("max", width), ("step", 0.05), ("default", w0),
+            ("tooltip", "The wheel's width when Queue on its screen orders one.")),
+        Kw(("key", "height"), ("label", "Order diameter"), ("group", "Orders"), ("unit", "m"), ("min", d0), ("max", across), ("step", 0.05), ("default", d0),
+            ("tooltip", "The wheel's diameter when Queue on its screen orders one.")));
 
     private static Part ExtruderSmall()
     {
@@ -130,7 +148,7 @@ public sealed class ExtrusionParts : IPartGenerator
                 ("bulk", Kw(("material", "any"), ("capacity", 400), ("min", Py.L(-0.455, 0.855, -0.705)), ("max", Py.L(0.455, 0.995, -0.055)))),
                 ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(6, 6)), ("maxLength", 48), ("pushForce", 6000))))),
             ("config", ExtruderConfig(0.5, 6, 48)));
-        return WithScreen(p);
+        return WithScreen(p, orders: true);
     }
 
     private sealed record Head(double X0, double X1, double Y, double Y1, double Z0, double Z, double Z1, double T);
@@ -180,7 +198,7 @@ public sealed class ExtrusionParts : IPartGenerator
                 ("bulk", BinOf(units, hd)),
                 ("extrude", Kw(("speed", speed), ("die", Py.L(die, die)), ("at", Py.L(cx, cy, hd.Z1)), ("maxSection", Py.L(die, die)), ("maxLength", length), ("pushForce", push))))),
             ("config", ExtruderConfig(die, die, length)));
-        return WithScreen(p);
+        return WithScreen(p, orders: true);
     }
 
     private static List<object?> FanConfig(object across, object start) => Py.L(
@@ -271,9 +289,9 @@ public sealed class ExtrusionParts : IPartGenerator
         if (air)
             wheel["airframe"] = true;
         p.Set(("power", power), ("storage", Kw(("bulk", bulk), ("wheel", wheel))),
-            ("config", air ? AirframeConfig(across, width, d0, w0) : fan ? FanConfig(across, d0) : FormerConfig()),
+            ("config", air ? AirframeConfig(across, width, d0, w0) : fan ? FanConfig(across, d0) : FormerConfig(across, width, d0, w0)),
             ("collider", "boxes")); // (the hub is a look: its cylinder must never become a hull)
-        return WithScreen(p);
+        return WithScreen(p, orders: !fan && !air);
     }
 
     private static Part DieFrame(string name, double halfX, double halfY, string desc, int mass, int health, int armour, int seconds, double gold)

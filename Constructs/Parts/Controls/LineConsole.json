@@ -35,6 +35,127 @@
       "tooltip": "Which machine its buttons work on."
     },
     {
+      "key": "linePage",
+      "label": "Page",
+      "group": "General",
+      "options": [
+        "Line",
+        "Bill"
+      ],
+      "default": 0,
+      "hidden": true,
+      "tooltip": "The line or the bill on its screen."
+    },
+    {
+      "key": "orderKind",
+      "label": "Kind",
+      "group": "Bill line",
+      "options": [
+        "Piece",
+        "Wheel"
+      ],
+      "default": 0,
+      "tooltip": "What Add puts on the bill: an Extruder's piece or a Wheel Former's wheel."
+    },
+    {
+      "key": "profile",
+      "label": "Profile",
+      "group": "Bill line",
+      "options": [
+        "Solid bar",
+        "Plate",
+        "Wall",
+        "Hollow box",
+        "I-beam",
+        "C-channel",
+        "L-angle",
+        "T-bar",
+        "Cross",
+        "Custom",
+        "Round",
+        "Pipe",
+        "Airfoil",
+        "Symmetric foil",
+        "Thin foil"
+      ],
+      "default": 4,
+      "tooltip": "A piece's section. Round and Pipe take their diameter from Width; Custom needs a machine's cell grid."
+    },
+    {
+      "key": "width",
+      "label": "Width",
+      "group": "Bill line",
+      "unit": "m",
+      "min": 0.1,
+      "max": 32,
+      "step": 0.05,
+      "default": 0.25,
+      "tooltip": "Across a piece's section, or a wheel's width."
+    },
+    {
+      "key": "height",
+      "label": "Height",
+      "group": "Bill line",
+      "unit": "m",
+      "min": 0.1,
+      "max": 48,
+      "step": 0.05,
+      "default": 0.25,
+      "tooltip": "Up a piece's section, or a wheel's diameter."
+    },
+    {
+      "key": "wall",
+      "label": "Pipe wall",
+      "group": "Bill line",
+      "unit": "m",
+      "min": 0.01,
+      "max": 2,
+      "step": 0.01,
+      "default": 0.03,
+      "tooltip": "A Pipe's wall."
+    },
+    {
+      "key": "cutLength",
+      "label": "Length",
+      "group": "Bill line",
+      "unit": "m",
+      "min": 0.05,
+      "max": 192,
+      "step": 0.05,
+      "default": 1,
+      "tooltip": "A piece's length."
+    },
+    {
+      "key": "orderMaterial",
+      "label": "Material",
+      "group": "Bill line",
+      "options": [
+        "Metal",
+        "Steel",
+        "Bronze",
+        "Laminate",
+        "Copper",
+        "Wood",
+        "Planks",
+        "Stone",
+        "Concrete",
+        "Glass",
+        "Rubber"
+      ],
+      "default": 0,
+      "tooltip": "What it is made of. A machine takes an order only in the material it is fed: another material is another line."
+    },
+    {
+      "key": "orderCount",
+      "label": "Count",
+      "group": "Bill line",
+      "min": 1,
+      "max": 999,
+      "step": 1,
+      "default": 1,
+      "tooltip": "How many of it."
+    },
+    {
       "key": "ink",
       "type": "colour",
       "label": "Colour",
@@ -65,7 +186,7 @@
           "at": [
             0.02,
             0.02,
-            0.32,
+            0.24,
             0.13
           ],
           "label": "Start"
@@ -73,9 +194,9 @@
         {
           "action": "line.next",
           "at": [
-            0.35,
+            0.26,
             0.02,
-            0.65,
+            0.48,
             0.13
           ],
           "label": "Next"
@@ -83,12 +204,22 @@
         {
           "action": "line.recipe",
           "at": [
-            0.68,
+            0.52,
+            0.02,
+            0.74,
+            0.13
+          ],
+          "label": "Recipe"
+        },
+        {
+          "action": "line.page",
+          "at": [
+            0.76,
             0.02,
             0.98,
             0.13
           ],
-          "label": "Recipe"
+          "label": "Bill"
         }
       ]
     }

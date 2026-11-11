@@ -157,6 +157,7 @@ public sealed partial class ConstructWorld
             b.SpaceShip = c.SpaceShip;
             b.Brief = c.Brief;
             b.Conveyed = c.ConveyedCount > 0 ? c.Conveyed.AsSpan(0, c.ConveyedCount).ToArray() : null; // (a save is rare: a copy is fine)
+            b.Orders = WorkOrders.Snapshot(c);
             b.Parts = s.PartCount;
             b.PartCount = c.PartCount;
             b.Links = s.LinkCount;
@@ -395,8 +396,11 @@ public sealed partial class ConstructWorld
         var conveyors = b.Conveyed != null;
         foreach (ref readonly var r in routes)
             conveyors |= r.Type == RouteType.Conveyor;
-        if (conveyors)
-            ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names);
+        if (conveyors || b.Orders != null)
+            ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names); // (an empty one before the work orders: they follow it)
+        // Work orders (WorkOrders.cs), after the conveyors: a body without any writes nothing.
+        if (b.Orders != null)
+            WorkOrders.WriteSave(w, b.Orders, names);
     }
 
     public static void WriteStore(SaveWriter w, CStore s, WorldNames names)
@@ -713,6 +717,7 @@ public sealed partial class ConstructWorld
                 briefBytes = r.Bytes(len);
         }
         var conveyors = ConstructConveyor.ReadSave(r, bodyEnd, names); // (after the brief: an older save ends before it)
+        var orders = conveyors != null ? WorkOrders.ReadSave(r, bodyEnd, names) : null; // (after the conveyors, the same way)
         var c = Create(pos, rot, freshId ? (ushort)0 : id) ?? throw new WorldFileException($"no room for construct {id}");
         id = c.Id;
         _partTally = -1;
@@ -733,6 +738,8 @@ public sealed partial class ConstructWorld
         c.RouteNodeCount = nodeList.Count;
         if (conveyors != null)
             ConstructConveyor.Apply(c, conveyors);
+        if (orders != null)
+            WorkOrders.Apply(c, orders);
         c.Wreck = (flags & 1) != 0;
         c.Damaged = (flags & 4) != 0;
         c.Pinned = (flags & 8) != 0;

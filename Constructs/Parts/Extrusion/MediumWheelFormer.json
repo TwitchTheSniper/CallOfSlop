@@ -56,6 +56,38 @@
       "tooltip": "What it builds up: Width along the axle, Depth (the diameter) out from the hub. A wire into Mode decides instead: on is Depth."
     },
     {
+      "key": "width",
+      "label": "Order width",
+      "group": "Orders",
+      "unit": "m",
+      "min": 0.5,
+      "max": 6,
+      "step": 0.05,
+      "default": 0.5,
+      "tooltip": "The wheel's width when Queue on its screen orders one."
+    },
+    {
+      "key": "height",
+      "label": "Order diameter",
+      "group": "Orders",
+      "unit": "m",
+      "min": 2,
+      "max": 12,
+      "step": 0.05,
+      "default": 2,
+      "tooltip": "The wheel's diameter when Queue on its screen orders one."
+    },
+    {
+      "key": "orderCount",
+      "label": "Order count",
+      "group": "Orders",
+      "min": 1,
+      "max": 999,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Pieces the Queue button on its screen asks for: one order of its settings as they stand."
+    },
+    {
       "key": "ink",
       "type": "colour",
       "label": "Screen colour",
@@ -70,7 +102,7 @@
       "source": "machine",
       "at": [
         -0.5447,
-        3.203,
+        3.1513,
         1.51
       ],
       "size": [
@@ -79,8 +111,40 @@
       ],
       "face": "-x",
       "up": "+y",
-      "rows": 4,
-      "range": 30
+      "rows": 8,
+      "range": 30,
+      "touch": [
+        {
+          "action": "orders.queue",
+          "at": [
+            0.02,
+            0.02,
+            0.32,
+            0.12
+          ],
+          "label": "Queue"
+        },
+        {
+          "action": "orders.cancel",
+          "at": [
+            0.35,
+            0.02,
+            0.65,
+            0.12
+          ],
+          "label": "Cancel"
+        },
+        {
+          "action": "orders.clear",
+          "at": [
+            0.68,
+            0.02,
+            0.98,
+            0.12
+          ],
+          "label": "Clear"
+        }
+      ]
     }
   ],
   "boxes": [
@@ -194,16 +258,32 @@
     {
       "min": [
         -0.5407,
-        2.817,
+        2.7653,
         0.509
       ],
       "max": [
         -0.4924,
-        3.589,
+        3.7443,
         2.511
       ],
       "color": "#14181c",
       "detail": true
+    },
+    {
+      "min": [
+        -0.5752,
+        3.5373,
+        0.55
+      ],
+      "max": [
+        -0.5303,
+        3.7033,
+        2.47
+      ],
+      "color": "#2b3036",
+      "detail": true,
+      "paintable": false,
+      "status": true
     }
   ],
   "sockets": [

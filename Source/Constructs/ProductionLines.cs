@@ -38,6 +38,8 @@ public static class ProductionLines
     public static LineState? Raw(ConstructWorld world, Construct c, int part, CStore st)
     {
         var d = c.DefOf(part);
+        if (d.IsExtruder)
+            return ExtruderRaw(world, c, part, st);
         if (!d.IsRefiner)
             return null;
         if (!ConstructRecycler.Powered(world, c, part))
@@ -52,6 +54,25 @@ public static class ProductionLines
             RefineState.OutputFull or RefineState.OutputMixed => LineState.Blocked,
             RefineState.NoRecipe or RefineState.TierLow => LineState.Fault,
             _ => LineState.Running, // (ready and powered: it starts at its next step)
+        };
+    }
+
+    /// <summary>An Extruder's or a Former's state, from its stall byte (ConstructExtruder.cs): a queue waiting for orders is Stopped.</summary>
+    private static LineState ExtruderRaw(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        if (!ConstructRecycler.Powered(world, c, part))
+            return LineState.NoPower;
+        if (st.Held)
+            return LineState.Idle;
+        if (st.Busy)
+            return LineState.Running;
+        return (ExtrudeStall)st.Refused switch
+        {
+            ExtrudeStall.NoMaterial or ExtrudeStall.OrderMaterial or ExtrudeStall.Mixed => LineState.Starved,
+            ExtrudeStall.BadMaterial or ExtrudeStall.BadShape or ExtrudeStall.ConveyorSmall => LineState.Fault,
+            ExtrudeStall.NoPower => LineState.NoPower,
+            ExtrudeStall.None or ExtrudeStall.NoOrders => LineState.Idle,
+            _ => LineState.Blocked, // (at its cap, blocked, too heavy to push, a chute or a conveyor waiting)
         };
     }
 
@@ -166,7 +187,9 @@ public static class ProductionLines
         return n;
     }
 
-    private static bool NotMachine(Construct c, int part) => !c.DefOf(part).IsRefiner; // (refiners are the lines' machines so far)
+    private static bool NotMachine(Construct c, int part) => c.DefOf(part) is { IsRefiner: false, IsExtruder: false }; // (refiners, Extruders and Formers are the lines' machines so far)
+
+    private static bool OnBill(in CPart p, ConstructPartDef d) => ConstructConfig.Get(p, d, CfgKey.LinePage, 0) >= 0.5f;
 
     private static int Pick(in CPart p, ConstructPartDef d, int count) => count == 0 ? 0 : Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.LinePick, 0), 0, count - 1);
 
@@ -176,10 +199,18 @@ public static class ProductionLines
         ref var p = ref c.Parts[part];
         var d = p.D;
         LogicDisplays.Ink(p, d, card);
+        if (OnBill(p, d))
+        {
+            WorkOrders.FillBill(c, part, card); // (the bill page: WorkOrders.cs)
+            return;
+        }
         Span<int> list = stackalloc int[MaxListed];
         var n = Machines(c, part, list);
         var on = p.Out >= 0.5f;
         card.TouchLabels[0] = on ? "Stop" : "Start";
+        card.TouchLabels[1] = "Next";
+        card.TouchLabels[2] = "Recipe";
+        card.TouchLabels[3] = "Bill";
         if (n == 0)
         {
             card.State = PanelState.Idle;
@@ -210,7 +241,10 @@ public static class ProductionLines
             card.Add(line, ' ');
             Pad(card, line, Word(s), 8);
             card.Add(line, ' ');
-            Pad(card, line, ConstructRefining.SetOf(c.Parts[list[k]], md)?.OutputName ?? "auto", 11);
+            if (md.IsExtruder)
+                QueueWord(card, line, c.Parts[list[k]]);
+            else
+                Pad(card, line, ConstructRefining.SetOf(c.Parts[list[k]], md)?.OutputName ?? "auto", 11);
         }
         card.State = !on ? PanelState.Idle : worst;
         card.Add(0, on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
@@ -218,8 +252,19 @@ public static class ProductionLines
             card.Add(5, "Machine ").Add(5, pick + 1).Add(5, " of ").Add(5, n);
     }
 
+    /// <summary>An Extruder's column: its queue's pieces still to make, or "own" (its own settings).</summary>
+    private static void QueueWord(PanelCard card, int line, in CPart p)
+    {
+        if (p.Orders is { } q)
+            card.Add(line, q.PiecesLeft).Add(line, " to go");
+        else
+            card.Add(line, "own");
+    }
+
     /// <summary>"Industrial Smelter" -> "Smelter T3": the line's machines are told apart by kind and tier.</summary>
-    private static string ShortName(ConstructPartDef d) => d.LineName ??= d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
+    private static string ShortName(ConstructPartDef d) => d.LineName ??= d.IsExtruder ? Short(d.Name) : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
+
+    private static string Short(string name) => name.Replace("Capital ", "Cap ").Replace("Medium ", "Med ").Replace("Large ", "Lg ").Replace("Wheel Former", "Wheel F");
 
     private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
@@ -227,6 +272,25 @@ public static class ProductionLines
     {
         for (var k = 0; k < width; k++)
             card.Add(line, k < s.Length ? s[k] : ' ');
+    }
+
+    /// <summary>Server: the first button: Start / Stop, or on the bill page Add.</summary>
+    public static string? Button1(ConstructWorld world, Construct c, int part) => OnBill(c.Parts[part], c.DefOf(part)) ? WorkOrders.BillAdd(world, c, part) : Run(c, part);
+
+    /// <summary>Server: the second button: Next, or Send.</summary>
+    public static string? Button2(ConstructWorld world, Construct c, int part) => OnBill(c.Parts[part], c.DefOf(part)) ? WorkOrders.BillSend(world, c, part) : Next(c, part);
+
+    /// <summary>Server: the third button: Recipe, or Clear the bill.</summary>
+    public static string? Button3(ConstructWorld world, Construct c, int part) => OnBill(c.Parts[part], c.DefOf(part)) ? WorkOrders.BillClear(world, c, part) : Recipe(c, part);
+
+    /// <summary>Server: the fourth button: the line page or the bill page.</summary>
+    public static string? Page(Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        if (!ConstructConfig.Has(p.D, CfgKey.LinePage))
+            return "this console has no bill";
+        ConstructConfig.Put(ref p, p.D, CfgKey.LinePage, OnBill(p, p.D) ? 0 : 1);
+        return null;
     }
 
     /// <summary>Server: Start / Stop. The console is a Switch: its output is every wired machine's Run.</summary>
