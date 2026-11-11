@@ -1,0 +1,122 @@
+{
+  // The story world's ambient traffic (Source/StandIns/GameTraffic.cs, README.md "Traffic"): who goes where round the
+  // Ministry's colony, in what, and why. Everything that moves is a stand-in craft (a picture on a scripted path), and
+  // every station but the colony's gate and the quarry is a placeholder pad standing where a real place will be.
+  // Nothing is traded yet (no money, no stock): each run has a reason, which the Story window lists and the radio now
+  // and then says. A bad file is refused with a reason and there is no traffic.
+  //
+  //   stations  "bearing" (degrees from north) and "distance" (m, 60 to 2000) from the colony's gate; "real": "colony"
+  //             or "quarry" uses that place's own stop instead (the quarry falls back to its bearing when it isn't built)
+  //   rounds    a craft ("hauler" along the ground; "courier" or "shuttle" in hops) that goes round its "stops" for
+  //             ever at "speed" m/s, standing "stand" s at each
+  //   visits    a ship ("shuttle", "courier", "freighter") "from" a faction's home that lands "at" a station about
+  //             "every" s, stands "stand" s and jumps away
+  //   flyovers  a ship that crosses the sky over a player about "every" s, "height" m up, never landing
+  //   radio     lines for the traffic channel ({from} and {to} are the leg's stations), one about every "radioEvery" s
+  //             in all (0: never); at most 100 characters each, ASCII
+  "format": "call-of-slop-traffic/1",
+  "radioEvery": 420,
+  "liveries": {
+    "Ministry of Slop": [ 0.14, 0.2, 0.45 ],
+    "Clan MacSlop": [ 0.12, 0.42, 0.2 ],
+    "IT Department": [ 0.1, 0.55, 0.6 ],
+    "The Call Centre": [ 0.6, 0.18, 0.55 ],
+    "Free hauliers": [ 0.75, 0.35, 0.1 ]
+  },
+  "stations": [
+    { "name": "Colony Gate", "real": "colony", "about": "the penal colony's own gate: everything the Ministry sends ends up here" },
+    { "name": "Pithead Nine", "real": "quarry", "bearing": 200, "distance": 260, "faction": "Ministry of Slop",
+      "about": "the Ministry's quarry, where the convicts dig" },
+    { "name": "Slag Heap Halt", "bearing": 70, "distance": 340, "faction": "Ministry of Slop",
+      "about": "placeholder for the crusher and smelter the quarry's rock goes to" },
+    { "name": "Stores Siding", "bearing": 320, "distance": 170, "faction": "Ministry of Slop",
+      "about": "placeholder for the Ministry's stores: rations, boots, forms" },
+    { "name": "Pump House", "bearing": 250, "distance": 230, "faction": "Ministry of Slop",
+      "about": "placeholder for the waterworks" },
+    { "name": "Customs Shed", "bearing": 130, "distance": 210, "faction": "Ministry of Slop",
+      "about": "placeholder for the customs post: nothing lands without a stamp" },
+    { "name": "Landing Field", "bearing": 15, "distance": 290,
+      "about": "placeholder for the port the other factions' ships use" },
+    { "name": "Signal Mast", "bearing": 175, "distance": 420, "faction": "Ministry of Slop",
+      "about": "placeholder for the relay that carries the colony's radio" }
+  ],
+  "rounds": [
+    { "name": "Ore run", "faction": "Ministry of Slop", "craft": "hauler", "speed": 10, "stand": 30,
+      "stops": [ "Pithead Nine", "Slag Heap Halt" ],
+      "why": "Hauls the convicts' rock from the quarry to the crusher and comes back for more.",
+      "radio": [
+        "Ore run leaving {from} for {to}. Forty tonnes of grey rock, weighed twice.",
+        "Ore run, {from} to {to}. Driver reports the rock is still rock."
+      ] },
+    { "name": "Ration round", "faction": "Ministry of Slop", "craft": "hauler", "speed": 9, "stand": 35,
+      "stops": [ "Stores Siding", "Colony Gate", "Pithead Nine" ],
+      "why": "Takes rations, tea urns and boots from the stores to the colony and the quarry crews.",
+      "radio": [
+        "Ration round, {from} to {to}. Gruel is on time. Tea is under review.",
+        "Ration round leaving {from}. One urn, sealed. Biscuits by application only."
+      ] },
+    { "name": "Water bowser", "faction": "Ministry of Slop", "craft": "hauler", "speed": 8, "stand": 40,
+      "stops": [ "Pump House", "Colony Gate", "Pump House", "Slag Heap Halt" ],
+      "why": "Carries water from the pump house to the colony's tanks and the crusher's sprays.",
+      "radio": [
+        "Water bowser, {from} to {to}. Contents: water, mostly."
+      ] },
+    { "name": "Fence patrol", "faction": "Ministry of Slop", "craft": "hauler", "speed": 13, "stand": 15,
+      "stops": [ "Colony Gate", "Customs Shed", "Signal Mast", "Pump House" ],
+      "why": "Guards drive the perimeter, count the convicts and check nobody has moved the fence.",
+      "radio": [
+        "Fence patrol at {from}, proceeding to {to}. Convict count agrees with itself.",
+        "Fence patrol leaving {from}. The fence remains where it was left."
+      ] },
+    { "name": "Paperwork flight", "faction": "Ministry of Slop", "craft": "courier", "speed": 22, "stand": 20,
+      "stops": [ "Customs Shed", "Colony Gate", "Signal Mast", "Landing Field" ],
+      "why": "Flies forms between the offices, in triplicate; the forms outnumber the staff.",
+      "radio": [
+        "Paperwork flight, {from} to {to}. Three copies, one of them legible."
+      ] }
+  ],
+  "visits": [
+    { "name": "Clan trader", "faction": "Clan MacSlop", "craft": "freighter", "from": "The Glen", "at": "Landing Field",
+      "every": 420, "stand": 50,
+      "why": "The clan swaps girders and whisky for the quarry's ore; the Ministry calls it a levy.",
+      "radio": [
+        "Clan trader down from {from} at {to}. Girders declared. Whisky not declared.",
+        "A MacSlop ship is in at {to}. Pipes will be confiscated on landing."
+      ] },
+    { "name": "Service call", "faction": "IT Department", "craft": "shuttle", "from": "The Server Farm", "at": "Signal Mast",
+      "every": 520, "stand": 40,
+      "why": "The IT Department comes to mend the relay and takes the scrap copper as its fee.",
+      "radio": [
+        "IT Department shuttle at {to}. They ask if we tried turning the colony off and on."
+      ] },
+    { "name": "Warranty rep", "faction": "The Call Centre", "craft": "courier", "from": "The Call Floor", "at": "Customs Shed",
+      "every": 610, "stand": 30,
+      "why": "A Call Centre rep arrives to sell the Ministry an extended warranty on the fence.",
+      "radio": [
+        "Call Centre flyer at {to}. Do not sign anything. Do not say the word yes."
+      ] },
+    { "name": "Prison transport", "faction": "Ministry of Slop", "craft": "shuttle", "from": "The Ministry", "at": "Landing Field",
+      "every": 700, "stand": 45,
+      "why": "Brings new convicts and their files from the Ministry; the files travel first class.",
+      "radio": [
+        "Prison transport in from {from}. New arrivals to queue quietly at {to}."
+      ] }
+  ],
+  "flyovers": [
+    { "name": "Depot tender", "faction": "Ministry of Slop", "craft": "freighter", "every": 260, "height": 420, "speed": 60,
+      "why": "A Ministry freighter on the long way round to the Orbital Depot with stores and spares.",
+      "radio": [
+        "Depot tender passing overhead. Do not wave. Waving is not on the form."
+      ] },
+    { "name": "Ore barge", "faction": "Free hauliers", "craft": "freighter", "every": 380, "height": 520, "speed": 45, "length": 3000,
+      "why": "A free haulier carrying somebody else's ore somewhere else, and in no hurry about it.",
+      "radio": [
+        "Unregistered barge overhead. Customs has written it a strongly worded letter."
+      ] },
+    { "name": "Clan runner", "faction": "Clan MacSlop", "craft": "shuttle", "every": 330, "height": 300, "speed": 90,
+      "why": "A MacSlop shuttle cutting across Ministry sky because the long way round costs fuel.",
+      "radio": [
+        "Clan shuttle crossing low and fast. It says it is lost. It is not lost."
+      ] }
+  ]
+}
