@@ -406,6 +406,8 @@ public sealed partial class Construct
     public float Charge; // kJ in its working batteries (burners and draws go through UseCharge: ConstructPlant.cs)
     public float ChargeCapacity; // kJ they hold
     public bool PowerOn = true; // the batteries have charge (or it isn't electrical)
+    public bool MainsOff; // every battery is wired and its wire says off: machines get nothing from the circuit, controls stay live (ConstructPower.Mains; on the wire in the gear byte's top bit)
+    public bool MainsWired; // some battery has a wire in (with the caches): only then is MainsOff looked at
     public bool EngineRunning; // the engine runs (an electrical construct's engine needs the starter first)
     public bool StarterFailed; // it was asked to start and the battery couldn't turn the starter (the HUD)
     public float AlternatorRate; // kW its working alternators touching the engine put in while it runs

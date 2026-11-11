@@ -93,14 +93,14 @@ public sealed class ProductionShowcase : IPartGenerator
             var tank2 = Onto(tank, "-z", "Fuel Tank", "+z");
             Paint(tank2, Power);
             var battery = On("Battery", 3.75f, Row1, Front, "-y", Power);
-            var mainPost = Sign(1.25f, Posts1, Power, "MAIN SWITCH: off stops the genset and the station lamps");
+            var mainPost = Sign(1.25f, Posts1, Power, "MAIN SWITCH: off cuts the machines (lamps show No power), the genset and the station lamps");
             _switch = Onto(mainPost, "y+2", "Switch", "-z");
             Config(_switch, ("startOn", true));
             Paint(_switch, Control);
             var gauge = Onto(mainPost, "y+1", "Charge Gauge", "back");
             Paint(gauge, Board);
             Wire(_switch, genset);
-            _ = battery;
+            Wire(_switch, battery); // (a wire into the only battery is the mains: off, every machine has No power, creative too; ConstructPower.Mains)
 
             // ---- 2. Stock: Storage Volumes the creative world fills as the blueprint builds (their Material and Fill are creative-only). --
             Sign(5.25f, Posts1, Stock, "STOCK: creative fills these bins; survival builds them empty");
