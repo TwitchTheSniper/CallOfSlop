@@ -361,7 +361,7 @@ public static partial class SelfTest
         var e = t.Edits;
         var h0 = t.Sample(0, 0);
         const float r = 0.8f;
-        // A bank across the way (x = 0), a trench (x = 6), a fill stair down into the trench's far side, a roofed stretch (x = 12).
+        // A bank across the way (x = 0), a trench (x = 6), a fill stair down into the trench's far side, a deep cut (x = 12; its thin roof falls in, TerrainEdits.MinRoof) with fill lips hanging in it.
         for (var z = -6f; z <= 6f; z += 0.8f)
         {
             e.Apply(new DigOp(DigKind.FillDirt, new Vector3(0, h0, z), r).Quantised);
@@ -378,13 +378,23 @@ public static partial class SelfTest
         var overBank = 0;
         var reached = 0;
         var runs = 0;
+        var under = false;
         void Wedge(in MoveState s)
         {
             var feet = s.Position;
             var head = feet.Y + World.HeightOf(s.Stance);
             var ceiling = t.CeilingAbove(feet.X, feet.Z, feet.Y + 0.05f);
             if (head <= ceiling + 0.05f)
+            {
+                under = false;
                 return;
+            }
+            // (one tick a centimetre past a hanging lip's edge, pushed straight back out, is no wedge: two in a row are)
+            if (!under)
+            {
+                under = true;
+                return;
+            }
             wedged++;
             if (first.Length == 0)
                 first = $"head in the ground at ({feet.X:0.00}, {feet.Y:0.00}, {feet.Z:0.00}), {s.Stance}, ceiling {ceiling:0.00}";

@@ -310,8 +310,8 @@ public sealed partial class PlanetEdits : IDigGround
                         continue; // (only touch a cell the dig really reaches)
                     col = Touch(f, ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
                 }
-                if (op.Kind == DigKind.Crater)
-                    hi = TerrainEdits.CraterTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, op.Radius);
+                hi = op.Kind == DigKind.Crater ? TerrainEdits.CraterTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, op.Radius)
+                    : TerrainEdits.RoofTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, TerrainEdits.MinRoof);
                 if (Subtract(col, lo, hi))
                 {
                     changed++;
