@@ -14,6 +14,7 @@ public struct CRider
     public float At; // its front, metres along the link from where it starts
     public byte Health; // its health share (255: whole)
     public uint Paint;
+    public byte ViaPlus1; // the conveyor it came off through a junction, plus one, while its back is still in the junction (0: none): its pose there follows the junction's lead-in
     public Vector3 LastPos; // server: its centre and turn in the world at the last step (where it drops if its link goes)
     public Quaternion LastRot;
 }
@@ -304,32 +305,46 @@ public static class ConstructConveyor
     /// Where a piece whose middle is <paramref name="s"/> metres along the link sits, in the rest frame of the segment
     /// <paramref name="seg"/> its span starts in: its origin and turn (x across, y up, z along the link).
     /// </summary>
-    public static void Pose(Construct c, int route, float s, ConstructPartDef d, out Vector3 origin, out Quaternion rot, out int seg)
+    public static void Pose(Construct c, int route, float s, ConstructPartDef d, out Vector3 origin, out Quaternion rot, out int seg, int via = -1)
     {
         var a = ConstructRoutes.Point(c, route, -1, out seg);
         var b = a;
         var count = c.Routes[route].Count;
         var segLen = 0f;
-        var i = 0;
-        for (; i <= count; i++)
+        Vector3 z, mid;
+        if (s < 0 && via >= 0 && LeadIn(c, route, via, out var inEnd, out var centre, out var outStart) is var lead and > 0)
         {
-            b = ConstructRoutes.Point(c, route, i, out var sb);
+            // Still in the junction it came through: on its lead-in, from the input's end through the junction's middle to here.
+            var back = MathF.Min(-s, lead);
+            var second = Vector3.Distance(centre, outStart);
+            (a, b, var t) = back <= second ? (centre, outStart, second - back) : (inEnd, centre, lead - back);
             segLen = Vector3.Distance(a, b);
-            if (s <= segLen || i == count)
-                break;
-            s -= segLen;
-            a = b;
-            seg = sb;
+            z = segLen > 1e-4f ? (b - a) / segLen : Vector3.UnitZ;
+            mid = a + z * MathF.Max(0, t);
         }
-        var z = segLen > 1e-4f ? (b - a) / segLen : Vector3.UnitZ;
-        var mid = a + z * Math.Clamp(s, 0, segLen);
+        else
+        {
+            var i = 0;
+            for (; i <= count; i++)
+            {
+                b = ConstructRoutes.Point(c, route, i, out var sb);
+                segLen = Vector3.Distance(a, b);
+                if (s <= segLen || i == count)
+                    break;
+                s -= segLen;
+                a = b;
+                seg = sb;
+            }
+            z = segLen > 1e-4f ? (b - a) / segLen : Vector3.UnitZ;
+            mid = a + z * MathF.Min(s, segLen); // (before its start: on, back along its first segment)
+        }
         var up = Vector3.UnitY - z * z.Y;
         up = up.LengthSquared() > 1e-4f ? Vector3.Normalize(up) : Vector3.UnitX;
         var x = Vector3.Cross(up, z);
         rot = Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, up.X, up.Y, up.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1));
         // The piece's middle across and along on the line, its underside on the rollers.
-        var centre = (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var local = new Vector3(centre.X, d.BoundsMin.Y - BedTop, centre.Z);
+        var middle = (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var local = new Vector3(middle.X, d.BoundsMin.Y - BedTop, middle.Z);
         origin = mid - Vector3.Transform(local, rot);
     }
 
@@ -337,7 +352,7 @@ public static class ConstructConveyor
     private static void WorldPose(Construct c, int route, in CRider r, ConstructPartDef d, out Vector3 centre, out Quaternion rot)
     {
         Size(d, out _, out _, out var along);
-        Pose(c, route, r.At - along * 0.5f, d, out var origin, out var lr, out var seg);
+        Pose(c, route, r.At - along * 0.5f, d, out var origin, out var lr, out var seg, r.ViaPlus1 - 1);
         c.WorldFrame(seg, out var q, out var t);
         rot = q * lr;
         centre = t + Vector3.Transform(origin, q) + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, rot);
@@ -390,7 +405,6 @@ public static class ConstructConveyor
             why = ExtrudeStall.ConveyorFull;
             return false;
         }
-        c.ReserveConveyed(c.ConveyedCount + 1);
         var rider = new CRider
         {
             Def = piece.Id,
@@ -400,16 +414,143 @@ public static class ConstructConveyor
             Paint = pp.Paint,
         };
         WorldPose(c, route, rider, piece, out rider.LastPos, out rider.LastRot);
-        c.Conveyed[c.ConveyedCount++] = rider;
+        Insert(c, rider);
         world.RemovePart(c, product);
         c.Wake();
         world.RidersChanged(c);
         return true;
     }
 
+    // ---- Junctions: splitters and joins ------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The lead-in through a junction from conveyor <paramref name="via"/>'s end to conveyor <paramref name="route"/>'s start:
+    /// the input's end, the junction's middle (at the input's height) and the output's start (rest frame of the junction's
+    /// segment). Its length, or 0 when they don't meet at one junction.
+    /// </summary>
+    public static float LeadIn(Construct c, int route, int via, out Vector3 inEnd, out Vector3 centre, out Vector3 outStart)
+    {
+        inEnd = centre = outStart = default;
+        if (via >= c.RouteCount || route >= c.RouteCount || c.Routes[via].Type != RouteType.Conveyor)
+            return 0;
+        int j = c.Routes[route].From;
+        if (c.Routes[route].Parent != 255 || c.Routes[via].To != j || j >= c.PartCount)
+            return 0;
+        inEnd = ConstructRoutes.Point(c, via, c.Routes[via].Count, out _);
+        outStart = ConstructRoutes.Point(c, route, -1, out _);
+        ref var p = ref c.Parts[j];
+        var d = c.DefOf(j);
+        var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var port = ConstructRoutes.PortOf(d, RouteType.Conveyor, c.Routes[via].ToPort);
+        centre = p.Pos + Rot24.Apply(p.Rot, new Vector3(mid.X, port?.At.Y ?? mid.Y, mid.Z));
+        return Vector3.Distance(inEnd, centre) + Vector3.Distance(centre, outStart);
+    }
+
+    /// <summary>
+    /// How far back into each conveyor's end a piece that went on through its junction still lies (metres, by link): the
+    /// lead piece behind it stops that much short. One walk over the riders; only those still in a junction cost a look.
+    /// </summary>
+    public static void Tails(Construct c, Span<float> tail)
+    {
+        tail.Clear();
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref var r = ref c.Conveyed[i];
+            if (r.ViaPlus1 == 0 || r.At >= MaxPieceAlong || ConstructParts.Get(r.Def) is not { } d)
+                continue;
+            Size(d, out _, out _, out var along);
+            var via = r.ViaPlus1 - 1;
+            if (r.At - along >= 0 || via >= tail.Length)
+                continue;
+            var into = along - r.At - LeadIn(c, r.Route, via, out _, out _, out _);
+            if (into > tail[via])
+                tail[via] = into;
+        }
+    }
+
+    private const float MaxPieceAlong = 200f; // (longer than any piece: a rider this far on has left its junction)
+
+    /// <summary>A rider onto its link behind the others on it (a body's riders stay grouped by link, front first: the step and the drawing read them so).</summary>
+    private static void Insert(Construct c, CRider r)
+    {
+        c.ReserveConveyed(c.ConveyedCount + 1);
+        var at = c.ConveyedCount;
+        for (var i = c.ConveyedCount - 1; i >= 0; i--)
+            if (c.Conveyed[i].Route == r.Route)
+            {
+                at = i + 1;
+                break;
+            }
+        if (at < c.ConveyedCount)
+            Array.Copy(c.Conveyed, at, c.Conveyed, at + 1, c.ConveyedCount - at);
+        c.Conveyed[at] = r;
+        c.ConveyedCount++;
+    }
+
+    /// <summary>The last rider on a link, or -1.</summary>
+    private static int LastOn(Construct c, int route)
+    {
+        for (var i = c.ConveyedCount - 1; i >= 0; i--)
+            if (c.Conveyed[i].Route == route)
+                return i;
+        return -1;
+    }
+
+    /// <summary>Whether conveyor <paramref name="o"/> takes piece <paramref name="d"/> at its start now (whole, fits its size, room behind the last on it).</summary>
+    private static bool Takes(Construct c, int o, ConstructPartDef d, float startAt)
+    {
+        ref var r = ref c.Routes[o];
+        if (r.FirstCut <= r.Count)
+            return false;
+        Size(d, out var across, out var up, out var along);
+        if (across > r.ConvW / 100f + 0.005f || up > r.ConvH / 100f + 0.005f || along > Length(c, o) + 0.01f)
+            return false;
+        if (LastOn(c, o) is var last and >= 0)
+        {
+            Size(ConstructParts.Def(c.Conveyed[last].Def), out _, out _, out var lastAlong);
+            if (c.Conveyed[last].At - lastAlong - Gap < startAt)
+                return false;
+        }
+        return c.ConveyedCount < Construct.MaxConveyed;
+    }
+
+    /// <summary>
+    /// The lead piece of conveyor <paramref name="k"/> through the junction it ends at onto one of its outputs: round robin
+    /// from where the last went (the input's <see cref="CRoute.Cursor"/>), past any that is cut, too small or full. True when it went.
+    /// </summary>
+    private static bool Pass(Construct c, int k, int lead)
+    {
+        int j = c.Routes[k].To;
+        var d = ConstructParts.Def(c.Conveyed[lead].Def);
+        Span<byte> outs = stackalloc byte[8];
+        var n = 0;
+        for (var o = 0; o < c.RouteCount && n < outs.Length; o++)
+            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j)
+                outs[n++] = (byte)o;
+        for (var t = 0; t < n; t++)
+        {
+            var pick = (c.Routes[k].Cursor + t) % n;
+            int o = outs[pick];
+            var lead0 = LeadIn(c, o, k, out _, out _, out _);
+            if (!Takes(c, o, d, -lead0))
+                continue;
+            var r = c.Conveyed[lead];
+            Remove(c, lead);
+            r.Route = (byte)o;
+            r.At = -lead0;
+            r.ViaPlus1 = (byte)(k + 1);
+            Insert(c, r);
+            c.Routes[k].Cursor = (byte)((pick + 1) % n);
+            for (var u = 0; u < n; u++)
+                c.Routes[outs[u]].Timer = k + 1; // (a join: the input served last waits behind the others)
+            return true;
+        }
+        return false;
+    }
+
     // ---- Each step (server) ----------------------------------------------------------------------------------------
 
-    public static void Step(ConstructWorld world)
+    public static void Step(ConstructWorld world, IWorldQuery query)
     {
         if (++world.ConveyorTicks < Every)
             return;
@@ -424,17 +565,39 @@ public static class ConstructConveyor
                 continue;
             if (c.Dirty)
                 c.Rebuild();
-            if (StepBody(world, c, dt))
+            if (StepBody(world, query, c, dt, server: true))
                 world.RidersChanged(c);
             c.ConveyedStamp = now;
         }
     }
 
-    /// <summary>Moves a body's riders on; true when one arrived or dropped (the clients are told).</summary>
-    private static bool StepBody(ConstructWorld world, Construct c, float dt)
+    /// <summary>
+    /// A client's riders between the server's messages, by the same rule (no arrival, no junction: those are the server's
+    /// word). Every frame; steps a body at most ten times a second.
+    /// </summary>
+    public static void ClientStep(ConstructWorld world)
+    {
+        var now = Clock;
+        var bodies = world.Bodies;
+        for (var ci = 0; ci < bodies.Count; ci++)
+        {
+            var c = bodies[ci];
+            if (c.ConveyedCount == 0 || now - c.ConveyedStamp < Every / (double)World.TickRate || c.Dirty)
+                continue;
+            StepBody(world, null, c, (float)Math.Min(now - c.ConveyedStamp, 1.0), server: false);
+            c.ConveyedStamp = now;
+        }
+    }
+
+    /// <summary>Moves a body's riders on; true when one arrived, passed a junction or dropped (the clients are told).</summary>
+    private static bool StepBody(ConstructWorld world, IWorldQuery? query, Construct c, float dt, bool server)
     {
         Span<float> lengths = stackalloc float[Construct.MaxRoutes];
+        Span<float> tail = stackalloc float[Construct.MaxRoutes];
+        Span<byte> waiting = stackalloc byte[16]; // conveyors whose lead waits at a junction this step
         lengths.Clear();
+        Tails(c, tail);
+        var nWaiting = 0;
         var changed = false;
         var prevRoute = -1;
         var prevBack = 0f;
@@ -446,6 +609,11 @@ public static class ConstructConveyor
             var k = r.Route;
             if (d == null || k >= c.RouteCount || c.Routes[k].Type != RouteType.Conveyor || c.Routes[k].FirstCut <= c.Routes[k].Count)
             {
+                if (!server)
+                {
+                    i++;
+                    continue; // (the server drops it and says so)
+                }
                 Drop(world, c, i, d, k < c.RouteCount && c.Routes[k].Type == RouteType.Conveyor ? k : -1);
                 changed = true;
                 continue; // (the next one moved down into i)
@@ -454,31 +622,77 @@ public static class ConstructConveyor
             if (lengths[k] <= 0)
                 lengths[k] = MathF.Max(1e-3f, Length(c, k));
             var first = k != prevRoute;
-            var limit = first ? lengths[k] : prevBack - Gap;
+            var end = lengths[k] - (tail[k] > 0 ? tail[k] + Gap : 0);
+            var limit = first ? end : prevBack - Gap;
             var at = MathF.Min(r.At + Speed * dt, limit);
             if (at > r.At)
                 r.At = at;
-            if (first && r.At >= lengths[k] - 1e-3f && Deliver(world, c, k, d))
+            if (r.ViaPlus1 != 0 && r.At - along >= 0)
+                r.ViaPlus1 = 0; // (its back has left the junction)
+            if (server && first && r.At >= lengths[k] - 1e-3f)
             {
-                Remove(c, i);
-                changed = true;
-                prevRoute = k;
-                prevBack = lengths[k] + Gap; // (the next one may close up to the end)
-                continue;
+                var to = c.Routes[k].To;
+                if (to < c.PartCount && c.DefOf(to).IsConveyorJunction)
+                {
+                    if (nWaiting < waiting.Length)
+                        waiting[nWaiting++] = k;
+                }
+                else if (Deliver(world, query!, c, k, r, d))
+                {
+                    Remove(c, i);
+                    changed = true;
+                    prevRoute = k;
+                    prevBack = lengths[k] + Gap; // (the next one may close up to the end)
+                    continue;
+                }
             }
-            WorldPose(c, k, r, d, out r.LastPos, out r.LastRot);
+            if (server)
+                WorldPose(c, k, r, d, out r.LastPos, out r.LastRot);
             prevRoute = k;
             prevBack = r.At - along;
             i++;
         }
+        // Leads at junctions go on, the one that waited longest first (a join takes its inputs in turn: Timer is the last served, plus one).
+        for (var a = 0; a < nWaiting; a++)
+            for (var b = a + 1; b < nWaiting; b++)
+                if (Turn(c, waiting[b]) < Turn(c, waiting[a]))
+                    (waiting[a], waiting[b]) = (waiting[b], waiting[a]);
+        for (var w = 0; w < nWaiting; w++)
+            for (var lead = 0; lead < c.ConveyedCount; lead++)
+                if (c.Conveyed[lead].Route == waiting[w])
+                {
+                    if (Pass(c, waiting[w], lead))
+                        changed = true;
+                    break;
+                }
         return changed;
     }
 
-    /// <summary>The lead piece into what the link ends at (a Piece Rack): true when it went in.</summary>
-    private static bool Deliver(ConstructWorld world, Construct c, int route, ConstructPartDef d)
+    /// <summary>A waiting input's place in its junction's turn: how far after the input it served last (0: next).</summary>
+    private static int Turn(Construct c, int k)
+    {
+        int j = c.Routes[k].To;
+        for (var o = 0; o < c.RouteCount; o++)
+            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j)
+                return j * 256 + ((k - (int)c.Routes[o].Timer + 256) & 255);
+        return j * 256;
+    }
+
+    /// <summary>The lead piece into what the link ends at (a Piece Rack, or a Press's bay): true when it went in.</summary>
+    private static bool Deliver(ConstructWorld world, IWorldQuery query, Construct c, int route, in CRider r, ConstructPartDef d)
     {
         var to = c.Routes[route].To;
-        return to < c.PartCount && c.DefOf(to).IsPieceRack && world.RackPut(c, to, d);
+        if (to >= c.PartCount)
+            return false;
+        var td = c.DefOf(to);
+        if (td.IsPieceRack)
+            return world.RackPut(c, to, d);
+        if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
+        {
+            var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)
+            return ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint);
+        }
+        return false;
     }
 
     private static void Remove(Construct c, int i)
@@ -532,6 +746,8 @@ public static class ConstructConveyor
         {
             ref var r = ref c.Conveyed[i];
             r.Route = r.Route < oldCount && map[r.Route] >= 0 ? (byte)map[r.Route] : (byte)255;
+            var via = r.ViaPlus1 - 1;
+            r.ViaPlus1 = via >= 0 && via < oldCount && map[via] >= 0 ? (byte)(map[via] + 1) : (byte)0;
         }
     }
 
@@ -545,6 +761,8 @@ public static class ConstructConveyor
             if (r.Route < map.Length && map[r.Route] >= 0 && dst.ConveyedCount < Construct.MaxConveyed)
             {
                 r.Route = (byte)map[r.Route];
+                var via = r.ViaPlus1 - 1;
+                r.ViaPlus1 = via >= 0 && via < map.Length && map[via] >= 0 ? (byte)(map[via] + 1) : (byte)0;
                 dst.ReserveConveyed(dst.ConveyedCount + 1);
                 dst.Conveyed[dst.ConveyedCount++] = r;
                 Remove(src, i);
@@ -561,6 +779,7 @@ public static class ConstructConveyor
         {
             var r = b.Conveyed[i];
             r.Route = baseRoute + r.Route < Construct.MaxRoutes ? (byte)(baseRoute + r.Route) : (byte)255;
+            r.ViaPlus1 = r.ViaPlus1 != 0 && baseRoute + r.ViaPlus1 <= Construct.MaxRoutes ? (byte)(baseRoute + r.ViaPlus1) : (byte)0;
             a.ReserveConveyed(a.ConveyedCount + 1);
             a.Conveyed[a.ConveyedCount++] = r;
         }
@@ -569,14 +788,14 @@ public static class ConstructConveyor
 
     // ---- The wire (protocol 244: CBodyKind.Riders) -------------------------------------------------------------------
 
-    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u8 link, u16 front (cm), u8 health, u32 paint, then the piece's key.</summary>
+    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u8 link, f32 front (m: before a junction's output starts, below 0), u8 health, u32 paint, u8 the link it came through plus one, then the piece's key (protocol 245).</summary>
     public static void Write(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Riders).U16(c.Id).U16((ushort)c.ConveyedCount);
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref var r = ref c.Conveyed[i];
-            w.U8(r.Route).U16((ushort)Math.Clamp((int)MathF.Round(r.At * 100), 0, ushort.MaxValue)).U8(r.Health).U32(r.Paint);
+            w.U8(r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U8(r.ViaPlus1);
             Extrusion.Write(w, ConstructParts.Def(r.Def));
         }
     }
@@ -589,19 +808,27 @@ public static class ConstructConveyor
             throw new MalformedPacketException($"a body of {n} riders");
         var c = world.Get(id);
         c?.ReserveConveyed(n);
+        var had = c?.ConveyedCount ?? 0;
         if (c != null)
             c.ConveyedCount = 0;
         for (var i = 0; i < n; i++)
         {
             var route = r.U8();
-            var at = r.U16() / 100f;
+            var at = r.F32();
             var hp = r.U8();
             var paint = r.U32();
+            var via = r.U8();
+            if (!float.IsFinite(at))
+                throw new MalformedPacketException("a rider nowhere");
             if (r.U16() != Extrusion.WireMark)
                 throw new MalformedPacketException("a rider that isn't a piece");
             var def = Extrusion.Read(ref r);
-            if (c != null)
-                c.Conveyed[c.ConveyedCount++] = new CRider { Def = def, Route = route, At = at, Health = hp, Paint = paint };
+            if (c == null)
+                continue;
+            // The same piece this copy has moved on a little past the server's word (which is a lag old): kept where it is, no step back.
+            if (i < had && c.Conveyed[i].Route == route && c.Conveyed[i].Def == def && c.Conveyed[i].At > at && c.Conveyed[i].At - at < 0.5f)
+                at = c.Conveyed[i].At;
+            c.Conveyed[c.ConveyedCount++] = new CRider { Def = def, Route = route, At = at, Health = hp, Paint = paint, ViaPlus1 = via };
         }
         if (c != null)
             c.ConveyedStamp = Clock;

@@ -387,6 +387,32 @@ public static class ConstructPress
         return false;
     }
 
+    /// <summary>
+    /// A piece off a conveyor into bay <paramref name="bay"/> (its implicit Piece in: ConstructPorts.cs), by the same rules as a
+    /// loose piece left in its mouth: true when it went in (fitted to the bay, a part of the machine's construct). Server.
+    /// </summary>
+    public static bool TakeFromConveyor(ConstructWorld world, IWorldQuery query, Construct c, int part, int bay, ConstructPartDef pd, float health, uint paint)
+    {
+        var d = c.Parts[part].D;
+        if (!d.IsPress || bay >= d.PressBays.Length || c.Parts[part].Broken || PieceIn(c, part, bay) >= 0 || world.StoreOf(c, part) is not { } st)
+            return false;
+        if (pd.ExKey.Shape == ExShape.Wheel)
+            return false;
+        var why = Refusal(PressTable.Current, c, part, bay, pd.ExKey);
+        if (why == BayRefuse.None && !Room(world, query, c, part, bay, pd, null))
+            why = BayRefuse.Room;
+        if (why != BayRefuse.None)
+        {
+            if (st.Blocked == 0)
+                SetRefusal(world, st, bay, why);
+            return false;
+        }
+        if (!FitPiece(world, c, part, bay, pd.ExKey, health, paint))
+            return false;
+        SetRefusal(world, st, 0, BayRefuse.None);
+        return true;
+    }
+
     /// <summary>Why a bay won't take this piece, or None.</summary>
     public static BayRefuse Refusal(PressTable table, Construct c, int part, int bay, in ExtrusionKey key)
     {

@@ -132,6 +132,17 @@ public static partial class ConstructParts
             var y = d.IsWheelFormer ? d.BoundsMin.Y + 0.1f : MathF.Max(d.BoundsMin.Y + 0.05f, d.ExtDieAt.Y - d.ExtDie.Y * 0.5f);
             list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = new Vector3(d.ExtDieAt.X, y, d.BoundsMax.Z), Face = 4, Opening = die, Implicit = true });
         }
+        // A Press or Die Lathe takes pieces off a conveyor into its bays: a Piece in at each bay's socket (by its name: "Piece in", "Piece in 2"...),
+        // the line 11 cm under the socket, facing the way a piece leaves the bay (ConstructPress.TakeFromConveyor).
+        if (d.IsPress && d.PressBays.Length > 0 && !list.Any(x => x.Type == RouteType.Conveyor))
+            for (var b = 0; b < d.PressBays.Length; b++)
+            {
+                var s = d.Sockets[d.PressBays[b].Socket];
+                var open = Math.Max(0.1f, d.PressMaxCm / 100f);
+                list.Add(new NamedPort { Name = b == 0 ? "Piece in" : $"Piece in {b + 1}", Type = RouteType.Conveyor, In = true, At = s.At - new Vector3(0, 0.11f, 0), Face = s.Dir, Opening = new Vector2(open, open), Implicit = true });
+            }
+        // A part with conveyor ports both ways passes pieces on: a splitter or a join (ConstructConveyor.cs, "Junctions").
+        d.IsConveyorJunction = !d.IsExtruder && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];
         foreach (var np in list)

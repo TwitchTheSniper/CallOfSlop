@@ -1981,6 +1981,7 @@ public sealed partial class Game
             ConstructNet.Blend(Constructs, now, dt);
             ConstructSeal.Step(Constructs, null, ref Constructs._sealTicks, server: false);
             Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
+            ConstructConveyor.ClientStep(Constructs); // (pieces ride on between the server's word: ConstructConveyor.cs)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
             ConstructRender.FitWheels(Constructs, World.Query, Local?.RenderPosition ?? Vector3.Zero, now);
             if (AnyGravityParts() || ConstructGravity.Wells + ConstructGravity.Generators > 0)

@@ -178,7 +178,9 @@ public static class RouteRender
     /// </summary>
     private static void DrawRiders(Renderer gfx, Construct c)
     {
-        var elapsed = (float)Math.Clamp(ConstructConveyor.Clock - c.ConveyedStamp, 0, 1);
+        var elapsed = (float)Math.Clamp(ConstructConveyor.Clock - c.ConveyedStamp, 0, 0.25);
+        Span<float> tail = stackalloc float[Construct.MaxRoutes];
+        ConstructConveyor.Tails(c, tail);
         var prevRoute = -1;
         var prevBack = 0f;
         var routeLen = 0f;
@@ -191,11 +193,11 @@ public static class RouteRender
             if (k != prevRoute)
                 routeLen = ConstructConveyor.Length(c, k);
             ConstructConveyor.Size(d, out _, out _, out var along);
-            var limit = k != prevRoute ? routeLen : prevBack - ConstructConveyor.Gap;
+            var limit = k != prevRoute ? routeLen - (tail[k] > 0 ? tail[k] + ConstructConveyor.Gap : 0) : prevBack - ConstructConveyor.Gap;
             var front = MathF.Max(r.At, MathF.Min(r.At + ConstructConveyor.Speed * elapsed, limit));
             prevRoute = k;
             prevBack = front - along;
-            ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg);
+            ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg, r.ViaPlus1 - 1);
             var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin) * SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0];
             var paint = r.Paint != 0 ? ConstructPaint.ToVector(r.Paint) : Vector3.Zero;
             for (var bx = 0; bx < d.Boxes.Length; bx++)
