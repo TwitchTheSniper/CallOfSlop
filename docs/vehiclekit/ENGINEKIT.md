@@ -116,7 +116,11 @@ each size, `Constructs/Parts/EngineKit/{Size}{Bored,Performance,Racing}Cylinder.
 file with the same boxes and sockets (so the geometry the z-fight corrector settled), a head of the tier's colour (the head already
 differs from every box it touches, so no coplanar pair appears), `"tier"`, more mass and health, and `enginePiece.power` and
 `thirst`: a cylinder may now carry them (`ConstructDriveParts.ParseEnginePiece`), and `ConstructEngine.Build` multiplies its kW and
-burn by them (1 for every older cylinder, so nothing shipped changes). They have no Assembling recipes yet: creative only.
+burn by them (1 for every older cylinder, so nothing shipped changes).
+
+**Survival.** Each has an Assembling recipe by rule (`tools/constructs/assembling.py`, `long_tail`): the plain cylinder's steel and
+Piston Sets, plus bronze and Bearings (Bored, tier 3 Assembler), then copper and a Circuit Board (Performance, tier 4), or gold and a
+Control Unit (Racing, tier 5); Large and Capital ones need at least the size class's Assembler as every part does.
 
 ## Callers
 
@@ -129,7 +133,17 @@ burn by them (1 for every older cylinder, so nothing shipped changes). They have
 - **The vehicle kit / dynamic spawn**: an `EngineWish` (below, "In a vehicle"): `--gen-vehicle NAME --engine-tier N [--top-speed V]
   [--accel A]`, `--slice-vehicle NAME --engine-tier N [--top-speed V]` (as the game's spawn makes it, in slices), and
   `new VehicleGenJob(..., engine: wish)` in the game. Nothing in the game passes one yet.
-- **The player**: not wired yet (next step).
+- **The player** (creative): the inventory's **Engine** tab (`UI/UiSandboxEngine.cs`): power (presets 120 / 300 / 800 / 3000 kW), tech
+  tier, layout, booster, size, an optional bay (length, width, height; "Car bay" is `EngineKitVehicle.Bay`) and a seed; MAKE ENGINE sends
+  `CActKind.MakeEngine` (protocol 241; fixed fields: u16 kW, u8 tier, layout, boost, size, 3 x u16 bay in cm, u32 seed). The host
+  (`Game/GameSandboxEngines.cs`) refuses with a reason anything out of range (1 to 50,000 kW, tier 1-5, a bay side 0 or 0.3-100 m),
+  outside creative or in a seat, and queues the request on the vehicle spawner (`VehicleSpawner.RequestEngine`): the kit runs in the
+  generation's slices (`VehicleGenJob(EngineRequest)`, 1-8 ms over 1-3 ticks warm) and the engine is set down in front of the player
+  as their construct, never rerolled. The player's notice gives its name, kW, mass and size, "it needs a fuel tank and a gearbox", and
+  the kit's note. Clients never run the kit: the engine arrives as bodies. Tried 2026-11-11 with a host and a client over the real
+  transport (80 ms, 2% loss): a 120 kW tier 1 inline in the car bay, 300 kW tier 3, 2000 kW tier 5 V turbo and 20 MW tier 2 (a Medium
+  W21, set down in slices), each the same parts and hash on both ends, the engine complete but for its tank; the first big set-down
+  in a process joined in 56-120 ms (compiling), the next in 0.4 ms.
 
 ## In a vehicle
 
@@ -183,8 +197,8 @@ and a bigger tank. That is the next step for the fast shapes; no shipped part wa
 
 1. **Fast shapes.** A tier 3+ shape (or the wish) drives every axle and carries a bigger tank (above: grip is the limit past 1.7x the
    V8); a game caller passes a wish (a faction's tier, a role's) to `VehicleGenJob`.
-2. **Player action.** A creative "Make an engine" entry (preset, tier, layout, fuel) that sends a request to the host, which builds
-   the result as a free construct in front of the player through the blueprint spawn path (a new `CActKind`, a protocol bump).
+2. **Player action, more.** Done for creative (above). Next: an option to come with a fuel tank and gearbox fitted, so it runs at
+   once; survival gets nothing yet (its engines come from Assembled pieces).
 3. **Bigger engines for mediums and giants.** Medium pieces are 4x linear, so a Medium engine is 3 to 16 m long and 6 to 10 m wide:
    right for giants, too big for a 6 to 10 m truck. A tier 4-5 Small engine (up to 4.3 MW as a radial of 8 cranks) covers the gap;
    if mediums need more in less room, add a "Small x2" size (scale 2, about 300 kW a cylinder) to the rules and the kit.
