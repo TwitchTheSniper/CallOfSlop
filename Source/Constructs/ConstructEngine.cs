@@ -352,9 +352,9 @@ public static class ConstructEngine
                 e.Misfiring++;
             if (fuelMul[at] <= 0)
                 continue;
-            var kw = rules.Kw[e.Size] * share * fuelMul[at] * boostMul[at];
+            var kw = rules.Kw[e.Size] * d.PiecePower * share * fuelMul[at] * boostMul[at]; // (a cylinder's own power: 1, more for a higher tier's)
             e.Kw += kw;
-            e.Burn += kw * fuelThirst[at] * boostThirst[at] * rules.BurnPerKw;
+            e.Burn += kw * d.PieceThirst * fuelThirst[at] * boostThirst[at] * rules.BurnPerKw;
         }
         for (var k = 0; k < c.ModCount; k++)
         {
