@@ -15,7 +15,7 @@ public enum OfficeKind : byte
 }
 
 /// <summary>
-/// The Fax Machine and the Computer as parts (tools/constructs/office_parts.py): the part file's key, "plugged in", and their panels.
+/// The Fax Machine and the Computer as parts (Source/PartKit/Generators/OfficeParts.cs): the part file's key, "plugged in", and their panels.
 /// The server side (what is printed, when, and who hears it) is Game/GameSandboxOffice.cs.
 /// </summary>
 public static class OfficeParts

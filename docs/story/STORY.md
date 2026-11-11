@@ -802,7 +802,7 @@ O(n^2) over the entities shown (at most 400).
 ## The IT Department's fax
 
 The IT Department (a faction: its vehicles are the vehicle kit's IT style) is reached one way only: a **Fax Machine** and a
-**Computer** (Constructs/Parts/Office, from `tools/constructs/office_parts.py`; IT vehicles carry them and its loot drops them).
+**Computer** (Constructs/Parts/Office, from `Source/PartKit/Generators/OfficeParts.cs`; IT vehicles carry them and its loot drops them).
 Code: `Source/Constructs/OfficeParts.cs` (the parts and their panels), `Source/Game/GameSandboxOffice.cs` (the server),
 `Source/Story/ItDesk.cs` (the words); data `Story/Office/IT.json` (checked by `--check-story`).
 

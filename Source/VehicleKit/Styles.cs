@@ -135,7 +135,7 @@ public static class Styles
             ["fender"] = ["Arch Fender"], // (phase 9a: slim arches, the skirt fairing does the rest)
             ["cab"] = ["Windscreen Frame", "Chop Top Cab", "Roll Cage", "Roll Bar"],
             ["heavyCab"] = ["Cab Over Shell", "Tin Roof Cab", "Chop Top Cab"],
-            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, tools/constructs/office_parts.py)
+            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, Source/PartKit/Generators/OfficeParts.cs)
             ["trophy"] = ["CRT Monitor", "Satellite Dish", "Network Switch", "Cable Reel", "CRT Monitor", "Office Plant", "Desk Fan", "Employee of the Month"],
             ["bunk"] = ["Crew Bench"],                                                   // (nobody sleeps here, officially)
             ["workbench"] = ["Scrap Workbench"],                                         // (the hot desk)
@@ -175,7 +175,7 @@ public static class Styles
     /// The Call Centre: the Scammers (docs/story/STORY.md, "The Scammers") on wheels. A parody of the scam call centre: cubicle grey and
     /// corporate teal, with WINNER yellow, hot pink and dollar green where bandits use war paint; desk phones, headsets on stands, GIFT CARDS
     /// signs and a prize wheel where bandits hang skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of cubicles
-    /// (a drawer of loot in each) round the water cooler (Constructs/Parts/CallCentre, tools/constructs/callcentre_parts.py). They run on
+    /// (a drawer of loot in each) round the water cooler (Constructs/Parts/CallCentre, Source/PartKit/Generators/CallCentreParts.cs). They run on
     /// other people's batteries, so that is what they carry (Constructs/Loot.json "scam"). Guns are named for the job.
     /// </summary>
     public static readonly FactionStyle Scam = new()
