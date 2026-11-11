@@ -98,6 +98,7 @@ public static partial class SelfTest
             slab.Frozen = true;
             slab.Vel = slab.AngVel = Vector3.Zero;
             slab.NetHistReset();
+            slab.Rebuild();
             var top = slab.ToWorld(new Vector3(0, slab.LocalMax.Y, 0));
             var offZ = FlagF("--onz", 0); // spawn this far along the slab's z (its edge is at LocalMax.Z / Min.Z)
             spawn = slab.ToWorld(new Vector3(0, slab.LocalMax.Y + 0.05f, offZ));
@@ -115,6 +116,7 @@ public static partial class SelfTest
             var low = float.MaxValue;
             for (var k = 0; k < c.LegCount; k++)
                 low = MathF.Min(low, c.ToWorld(c.Legs[k].Rest).Y);
+            Console.WriteLine($"walker placed at {c.Pos}, lowest rest foot {low}, legs {c.LegCount}");
             c.Pos += Vector3.UnitY * (spawn.Y - low + 0.05f);
             c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
             c.FeetSet = false;
@@ -161,6 +163,16 @@ public static partial class SelfTest
             {
                 w.DamagePart(c, c.Legs[2].Part, 1e12f, out _, raw: true);
                 Console.WriteLine("wrecked leg 2");
+                void Dump(string when)
+                {
+                    Console.WriteLine($"  {when}: legs {c.LegCount} groups {c.LegGroups} live {c.WalkLive} feetSet {c.FeetSet} pos {c.Pos}");
+                    for (var k = 0; k < c.LegCount; k++)
+                        Console.WriteLine($"    leg {k} part {c.Legs[k].Part} live {ConstructPhysics.LegLive(c, k)} grp {c.Legs[k].Group} sw {c.Legs[k].Swinging} gr {c.Legs[k].Grounded} hold {c.Legs[k].Hold} foot {c.Legs[k].Foot} to {c.Legs[k].To} hip {c.ToWorld(c.Legs[k].Hip)}");
+                }
+                Dump("before");
+                now += 0.05;
+                server.Update(now, 0.05);
+                Dump("after");
             }
             var start = c.Pos;
             var startYaw = Vector3.Transform(c.SeatForward(), c.Rot);
@@ -223,7 +235,7 @@ public static partial class SelfTest
                     Console.WriteLine(sb.ToString());
                 }
                 if (verbose && t % 30 == 0)
-                    Console.WriteLine($"    t {t / 60f:0.0} pos {c.Pos.X:0.0},{c.Pos.Y:0.0},{c.Pos.Z:0.0} v {v:0.00} top {c.WalkTop:0.00} base {c.WalkBase:0.00} swing {c.WalkSwing:0.000} edge {c.WalkEdgeCap:0.0} walk {c.Walking} prob '{c.WalkProblem}' groups {c.LegGroups} held {c.WalkPowerHeld} W {c.LegWatts / 1e6:0.000} MW chg {c.Charge:0}");
+                    Console.WriteLine($"    t {t / 60f:0.0} pos {c.Pos.X:0.0},{c.Pos.Y:0.0},{c.Pos.Z:0.0} v {v:0.00} vy {c.Vel.Y:0.00} wh {c.WalkHeight:0.0} top {c.WalkTop:0.00} base {c.WalkBase:0.00} swing {c.WalkSwing:0.000} edge {c.WalkEdgeCap:0.0} walk {c.Walking} prob '{c.WalkProblem}' groups {c.LegGroups} held {c.WalkPowerHeld} W {c.LegWatts / 1e6:0.000} MW chg {c.Charge:0}");
             }
             var moved = c.Pos - start;
             var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
@@ -231,7 +243,7 @@ public static partial class SelfTest
             var along = Vector3.Dot(moved, Vector3.Normalize(startYaw with { Y = 0 }));
             Console.WriteLine($"{name}: along {along:0.0} m, up {moved.Y:0.0}, turned {turned:0.0} deg, v late {(vn > 0 ? vsum / vn : 0):0.00} max {vmax:0.00} m/s, top {c.WalkTop:0.00} (base {c.WalkBase:0.00}, set {c.WalkSpeed * 100:0}%, held {c.WalkPowerHeld}), swing {c.WalkSwing:0.000} s, groups {c.LegGroups}, stretch max {maxStretch:0.00}, landings {landed}, legW {c.LegWatts / 1e3:0.0} kW, plift {c.WalkPowerLift:0.000}, chg {c.Charge:0}/{c.ChargeCapacity:0} kJ, walking {c.Walking} '{c.WalkProblem}'"
                 + (stopAt >= 0 ? $", stopped after {stopAt:0.00} s, {new Vector2(stopFrom.X, stopFrom.Z).Length():0.00} m" : "")
-                + (slab != null ? $", on slab z {slab.ToLocal(c.WorldCom).Z:0.0} (edge {slab.LocalMax.Z:0.0}/{slab.LocalMin.Z:0.0}), y {c.WorldCom.Y - slab.Pos.Y:0.0}" : ""));
+                + (slab != null ? $", on slab {slab.ToLocal(c.WorldCom)} (box {slab.LocalMin}..{slab.LocalMax}), y {c.WorldCom.Y - slab.Pos.Y:0.0}" : ""));
             if (args.Contains("--look"))
             {
                 var fw = Vector3.Normalize(Vector3.Transform(c.SeatForward(), c.Rot) with { Y = 0 });

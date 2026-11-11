@@ -873,6 +873,22 @@ public sealed partial class ConstructWorld
             c.TreeStale();
         ConstructRoutes.Remap(c, map[..oldCount], c); // (routed links: renumbered, or gone with an end; the wires are rebuilt from them)
         ConstructTracks.Remap(c, map[..oldCount], c); // (tracks: renumbered, each wheel that went out of its loop)
+        var legs = 0;
+        for (var k = 0; k < c.LegCount; k++)
+        {
+            // (walker legs: renumbered, so the next BuildLegs gives each its own foot back; a gone leg goes from the list)
+            var was = c.Legs[k].Part;
+            if (was >= oldCount || map[was] < 0)
+                continue;
+            c.Legs[legs] = c.Legs[k];
+            c.Legs[legs++].Part = (ushort)map[was];
+        }
+        if (legs != c.LegCount)
+        {
+            c.LegCount = legs;
+            c.WalkLive = -1;
+            c.WalkStepping = false;
+        }
         // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
         segMap[0] = 0;
