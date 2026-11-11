@@ -165,7 +165,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("rubber", 52.25f, -7.25f), former);
             var wheelRack = On("Piece Rack", 56.25f, -4.25f, Flow, "-y.0.0", Wheels);
             Convey(former, "Piece out", wheelRack, "Piece in", Wheels);
-            Sign(54.75f, Posts1, Wheels, "Narrow this conveyor with the linking tool's wheel: a refusal");
+            Sign(54.75f, Posts1, Wheels, "Narrow this conveyor (linking tool, wheel): a refusal");
 
             // ---- 7. Orders: a second Line Console on both Extruders and the Wheel Former, its bill already on it. ------------------
             var orders = On("Line Console", 24.25f, Posts1, Front, paint: Control);
