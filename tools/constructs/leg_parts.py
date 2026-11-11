@@ -62,8 +62,8 @@ CONFIG = [
     {"key": "walkProfile", "label": "Gait profile", "group": "Gait", "type": "choice", "options": ["Simple", "Basic", "Advanced"], "default": 0,
      "tooltip": "Simple: it just walks. Basic: the gait settings. Advanced: each leg's own tuning too. " + WHOLE},
     {"key": "walkSpeed", "label": "Walk speed", "group": "Gait", "unit": "%", "min": 0, "max": 200, "step": 5, "default": 100,
-     "tooltip": "The top speed at full throttle, a share of what the legs walk at: 200 is twice as fast, with quicker steps, "
-                "twice the power and a rougher ride. Every profile, Simple too. The walker follows its lead leg's, else any leg's changed one."},
+     "tooltip": "Top speed at full throttle, a share of the legs' own: 200 is twice as fast, with quicker steps, more power and a "
+                "rougher ride. Every profile, Simple too."},
     {"key": "stride", "label": "Stride", "group": "Gait", "unit": "%", "min": 50, "max": 150, "step": 5, "default": 100,
      "tooltip": "How far each step reaches: longer strides walk faster. Basic and Advanced. " + WHOLE},
     {"key": "stepLift", "label": "Step height", "group": "Gait", "unit": "%", "min": 50, "max": 250, "step": 5, "default": 100,

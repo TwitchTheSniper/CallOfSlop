@@ -78,7 +78,7 @@
       "max": 200,
       "step": 5,
       "default": 100,
-      "tooltip": "The top speed at full throttle, a share of what the legs walk at: 200 is twice as fast, with quicker steps, twice the power and a rougher ride. Every profile, Simple too. The walker follows its lead leg's, else any leg's changed one."
+      "tooltip": "Top speed at full throttle, a share of the legs' own: 200 is twice as fast, with quicker steps, more power and a rougher ride. Every profile, Simple too."
     },
     {
       "key": "stride",

@@ -378,12 +378,11 @@ public static partial class ConstructPhysics
                     leg.Grounded = true; // (it stepped onto a foothold that had ground when it lifted)
                 }
             }
-            if (s >= 1)
-            {
-                c.WalkStepping = false;
-                c.WalkLanded = true; // (the server thumps the body: ConstructWalkFeel.cs)
-            }
-            return;
+            if (s < 1)
+                return;
+            c.WalkStepping = false;
+            c.WalkLanded = true; // (the server thumps the body: ConstructWalkFeel.cs)
+            // (and the next group may lift on the same tick: at a brisk pace a tick's wait between steps is a tenth of a step)
         }
         // Down: lift the next group that needs a step, if the feet left down hold the body (with a margin). A group that needs a
         // step but can't lift yet is the one the body waits for (WalkBody shifts its weight over the other feet first).
@@ -402,7 +401,7 @@ public static partial class ConstructPhysics
             c.WalkWait = 255;
             c.WalkGroup = g;
             c.WalkStepping = true;
-            c.WalkClock = 0;
+            c.WalkClock = c.WalkLanded ? Math.Clamp(c.WalkClock - 1, 0, 0.5f) : 0; // (a step that landed this tick passes its overshoot on)
             for (var k = 0; k < c.LegCount; k++)
             {
                 ref var leg = ref c.Legs[k];
@@ -480,8 +479,7 @@ public static partial class ConstructPhysics
     /// </summary>
     private static bool HeldWithout(Construct c, Vector3 com, byte g, float margin = 0)
     {
-        var first = -1;
-        var prev = -1;
+        Span<Vector2> feet = stackalloc Vector2[Construct.MaxLegs];
         var down = 0;
         var m = 0f;
         for (var k = 0; k < c.LegCount; k++)
@@ -489,28 +487,64 @@ public static partial class ConstructPhysics
             if (!Supports(c, k, g))
                 continue;
             ref var leg = ref c.Legs[k];
-            down++;
+            feet[down++] = new Vector2(leg.Foot.X, leg.Foot.Z);
             m = MathF.Max(m, margin * leg.Reach);
-            if (prev >= 0 && !LeftOf(c.Legs[prev].Foot, leg.Foot, com, m))
-                return false;
-            if (first < 0)
-                first = k;
-            prev = k;
         }
-        return down >= 3 && LeftOf(c.Legs[prev].Foot, c.Legs[first].Foot, com, m);
+        return InsideFeet(feet[..down], new Vector2(com.X, com.Z), m);
     }
+
+    /// <summary>
+    /// Is <paramref name="p"/> inside the plan's convex hull of <paramref name="feet"/> (at least three), at least
+    /// <paramref name="margin"/> metres in from every edge? The hull, not the legs' order round the body: at a long stride a
+    /// middle foot passes behind the rear one beside it, and the feet in leg order cross. Sorts <paramref name="feet"/> in place.
+    /// </summary>
+    private static bool InsideFeet(Span<Vector2> feet, Vector2 p, float margin)
+    {
+        var n = feet.Length;
+        if (n < 3)
+            return false;
+        for (var i = 1; i < n; i++)
+        {
+            var f = feet[i];
+            var j = i - 1;
+            while (j >= 0 && (feet[j].X > f.X || feet[j].X == f.X && feet[j].Y > f.Y))
+            {
+                feet[j + 1] = feet[j];
+                j--;
+            }
+            feet[j + 1] = f;
+        }
+        Span<Vector2> hull = stackalloc Vector2[2 * Construct.MaxLegs + 1];
+        var h = 0;
+        for (var i = 0; i < n; i++)
+        {
+            while (h >= 2 && Cross(hull[h - 2], hull[h - 1], feet[i]) <= 0)
+                h--;
+            hull[h++] = feet[i];
+        }
+        for (int i = n - 2, low = h + 1; i >= 0; i--)
+        {
+            while (h >= low && Cross(hull[h - 2], hull[h - 1], feet[i]) <= 0)
+                h--;
+            hull[h++] = feet[i];
+        }
+        h--; // (the last point is the first again)
+        if (h < 3)
+            return false;
+        for (var i = 0; i < h; i++)
+        {
+            var a = hull[i];
+            var e = hull[i + 1] - a;
+            if (Cross(a, hull[i + 1], p) < margin * e.Length())
+                return false;
+        }
+        return true;
+    }
+
+    private static float Cross(Vector2 o, Vector2 a, Vector2 b) => (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
 
     /// <summary>Does leg <paramref name="k"/>'s foot hold the body with group <paramref name="g"/> in the air (255: none)?</summary>
     private static bool Supports(Construct c, int k, byte g) => c.Legs[k].Grounded && !Lifts(c, k, g) && LegLive(c, k);
-
-    /// <summary>Is <paramref name="p"/> on the inner side of the edge from <paramref name="a"/> to <paramref name="b"/> (the plan, counter-clockwise by angle), by at least <paramref name="margin"/> metres?</summary>
-    private static bool LeftOf(Vector3 a, Vector3 b, Vector3 p, float margin = 0)
-    {
-        var ex = b.X - a.X;
-        var ez = b.Z - a.Z;
-        var cross = ex * (p.Z - a.Z) - ez * (p.X - a.X);
-        return margin <= 0 ? cross >= 0 : cross >= margin * MathF.Sqrt(ex * ex + ez * ez);
-    }
 
     public const float FootSteep = 0.55f; // a foothold's ground normal must be at least this up (about 57 degrees of slope at most)
     public const float FootReach = 0.98f; // ... and within this share of the leg's reach from its hip
@@ -782,21 +816,12 @@ public static partial class ConstructPhysics
         {
             // The centre of mass over the feet that are down: if it is outside them, the body leans back over them.
             centre /= down;
-            var inside = true;
-            int first = -1, prev = -1;
-            for (var k = 0; k < c.LegCount && inside; k++)
-            {
-                if (c.Legs[k].Swinging || !c.Legs[k].Grounded || !LegLive(c, k))
-                    continue;
-                if (prev >= 0)
-                    inside = LeftOf(c.Legs[prev].Foot, c.Legs[k].Foot, com);
-                if (first < 0)
-                    first = k;
-                prev = k;
-            }
-            if (inside && prev >= 0)
-                inside = LeftOf(c.Legs[prev].Foot, c.Legs[first].Foot, com);
-            if (!inside)
+            Span<Vector2> feet = stackalloc Vector2[Construct.MaxLegs];
+            var nf = 0;
+            for (var k = 0; k < c.LegCount; k++)
+                if (!c.Legs[k].Swinging && c.Legs[k].Grounded && LegLive(c, k))
+                    feet[nf++] = new Vector2(c.Legs[k].Foot.X, c.Legs[k].Foot.Z);
+            if (!InsideFeet(feet[..nf], new Vector2(com.X, com.Z), 0))
             {
                 var back = new Vector3(centre.X - com.X, 0, centre.Z - com.Z);
                 if (back.LengthSquared() > 1e-4f)
