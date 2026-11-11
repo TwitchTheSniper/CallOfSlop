@@ -158,8 +158,8 @@ public static class ConstructConveyor
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
             return 1;
-        if (!d.IsExtrusion)
-            return 2;
+        if (d.Role == PartRole.Storage)
+            return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost)
         Size(d, out var across, out var up, out var along);
         var big = MathF.Max(across, up);
         var small = MathF.Min(across, up);
@@ -425,6 +425,51 @@ public static class ConstructConveyor
         WorldPose(c, route, rider, piece, out rider.LastPos, out rider.LastRot);
         Insert(c, rider);
         world.RemovePart(c, product);
+        c.Wake();
+        world.RidersChanged(c);
+        return true;
+    }
+
+    /// <summary>
+    /// Parts a Press or Die Lathe stamped onto the conveyor out of its Piece out, one behind another: true when all
+    /// <paramref name="count"/> went; else nothing went and <paramref name="why"/> says why (the press waits with its pieces untouched).
+    /// </summary>
+    public static bool PutMade(ConstructWorld world, Construct c, int route, ConstructPartDef d, int count, out ExtrudeStall why)
+    {
+        why = ExtrudeStall.None;
+        ref var r = ref c.Routes[route];
+        if (r.FirstCut <= r.Count)
+        {
+            why = ExtrudeStall.ConveyorCut;
+            return false;
+        }
+        Size(d, out var across, out var up, out var along);
+        if (across > r.ConvW / 100f + 0.005f || up > r.ConvH / 100f + 0.005f)
+        {
+            why = ExtrudeStall.ConveyorSmall;
+            return false;
+        }
+        var need = along * count + Gap * (count - 1); // (room at the start: the last rider on it has gone their lengths and gaps)
+        var last = -1;
+        for (var i = 0; i < c.ConveyedCount; i++)
+            if (c.Conveyed[i].Route == route)
+                last = i;
+        if (last >= 0)
+        {
+            Size(ConstructParts.Def(c.Conveyed[last].Def), out _, out _, out var lastAlong);
+            if (c.Conveyed[last].At - lastAlong - Gap < need)
+                why = ExtrudeStall.ConveyorFull;
+        }
+        if (c.ConveyedCount + count > Construct.MaxConveyed || need > Length(c, route) + 0.01f)
+            why = ExtrudeStall.ConveyorFull;
+        if (why != ExtrudeStall.None)
+            return false;
+        for (var n = 0; n < count; n++)
+        {
+            var rider = new CRider { Def = d.Id, Route = (byte)route, At = along + (count - 1 - n) * (along + Gap), Health = 255 };
+            WorldPose(c, route, rider, d, out rider.LastPos, out rider.LastRot);
+            Insert(c, rider);
+        }
         c.Wake();
         world.RidersChanged(c);
         return true;
@@ -805,7 +850,7 @@ public static class ConstructConveyor
         {
             ref var r = ref c.Conveyed[i];
             w.U8(r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U8(r.ViaPlus1);
-            Extrusion.Write(w, ConstructParts.Def(r.Def));
+            ConstructStorage.WriteDef(w, r.Def); // (a piece's key, or a press's part by its id: protocol 247)
         }
     }
 
@@ -829,9 +874,7 @@ public static class ConstructConveyor
             var via = r.U8();
             if (!float.IsFinite(at))
                 throw new MalformedPacketException("a rider nowhere");
-            if (r.U16() != Extrusion.WireMark)
-                throw new MalformedPacketException("a rider that isn't a piece");
-            var def = Extrusion.Read(ref r);
+            var def = ConstructStorage.ReadDef(ref r);
             if (c == null)
                 continue;
             // The same piece this copy has moved on a little past the server's word (which is a lag old): kept where it is, no step back.
@@ -889,7 +932,7 @@ public static class ConstructConveyor
             var paint = r.U32();
             var part = r.U16();
             var def = part < names.Parts.Length ? names.Parts[part] : ConstructParts.None;
-            if (def == ConstructParts.None || !float.IsFinite(at) || ConstructParts.Get(def) is not { IsExtrusion: true })
+            if (def == ConstructParts.None || !float.IsFinite(at) || ConstructParts.Get(def) is not { Role: not PartRole.Storage })
                 continue;
             saved.Riders.Add(new CRider { Def = def, Route = route, At = MathF.Max(0, at), Health = Math.Max((byte)1, hp), Paint = paint });
         }

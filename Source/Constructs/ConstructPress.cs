@@ -15,6 +15,9 @@ public enum PressStall : byte
     TooShort, // a piece has less left than a stroke takes
     TrayFull,
     Blocked, // something stands where a body leaves
+    ConveyorFull, // its Piece out conveyor has no room at its start (the stamped parts wait for it)
+    ConveyorSmall, // what it stamps is wider or taller than its Piece out conveyor
+    ConveyorCut, // its Piece out conveyor is cut
 }
 
 /// <summary>Why a bay turned a piece away. <see cref="CStore.Blocked"/> holds this times 4 plus the bay (3: the die slot), on the wire.</summary>
@@ -266,7 +269,16 @@ public static class ConstructPress
     private static bool Stroke(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressRow r)
     {
         var d = c.Parts[part].D;
-        if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body)
+        if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body && ConstructConveyor.Out(c, part) is var conveyor and >= 0)
+        {
+            // (a Piece out conveyor takes what no tray holds, whole strokes only; without one it drops in front as before)
+            if (!ConstructConveyor.PutMade(world, c, conveyor, r.Output, r.Count, out var full))
+            {
+                SetStall(world, st, full switch { ExtrudeStall.ConveyorSmall => PressStall.ConveyorSmall, ExtrudeStall.ConveyorCut => PressStall.ConveyorCut, _ => PressStall.ConveyorFull });
+                return false;
+            }
+        }
+        else if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body)
         {
             for (var n = 0; n < r.Count; n++)
             {
@@ -396,8 +408,8 @@ public static class ConstructPress
         var d = c.Parts[part].D;
         if (!d.IsPress || bay >= d.PressBays.Length || c.Parts[part].Broken || PieceIn(c, part, bay) >= 0 || world.StoreOf(c, part) is not { } st)
             return false;
-        if (pd.ExKey.Shape == ExShape.Wheel)
-            return false;
+        if (!pd.IsExtrusion || pd.ExKey.Shape == ExShape.Wheel)
+            return false; // (a stamped part riding into a bay waits: only pieces go in)
         var why = Refusal(PressTable.Current, c, part, bay, pd.ExKey);
         if (why == BayRefuse.None && !Room(world, query, c, part, bay, pd, null))
             why = BayRefuse.Room;
@@ -893,6 +905,9 @@ public static class ConstructPress
         PressStall.TooShort => "A piece is too short",
         PressStall.TrayFull => "Tray full",
         PressStall.Blocked => "Output blocked",
+        PressStall.ConveyorFull => "Output conveyor full",
+        PressStall.ConveyorSmall => "Too big for its conveyor",
+        PressStall.ConveyorCut => "Output conveyor cut",
         _ => "Ready",
     };
 

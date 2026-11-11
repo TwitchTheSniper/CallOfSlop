@@ -141,8 +141,19 @@ public static partial class ConstructParts
                 var open = Math.Max(0.1f, d.PressMaxCm / 100f);
                 list.Add(new NamedPort { Name = b == 0 ? "Piece in" : $"Piece in {b + 1}", Type = RouteType.Conveyor, In = true, At = s.At - new Vector3(0, 0.11f, 0), Face = s.Dir, Opening = new Vector2(open, open), Implicit = true });
             }
+        // And a Piece out after them (so the bays' port bytes stay as they were), where a stroke's body leaves (outAt, facing outDir) at the
+        // floor's line: what it stamps that no tray holds rides out on a conveyor to a rack (ConstructPress.Stroke), the machine's width across.
+        if (d.IsPress && d.PressBays.Length > 0 && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
+        {
+            byte face = 4;
+            for (byte f = 0; f < 6; f++)
+                if (Vector3.Dot(ConstructParts.DirVector(f), d.AsmOutDir) > 0.9f)
+                    face = f;
+            var across = MathF.Max(0.1f, MathF.Min(d.BoundsMax.X - d.BoundsMin.X, 4f));
+            list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = d.AsmOutAt with { Y = d.BoundsMin.Y + 0.1f }, Face = face, Opening = new Vector2(across, across), Implicit = true });
+        }
         // A part with conveyor ports both ways passes pieces on: a splitter or a join (ConstructConveyor.cs, "Junctions").
-        d.IsConveyorJunction = !d.IsExtruder && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
+        d.IsConveyorJunction = !d.IsExtruder && !d.IsPress && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];
         foreach (var np in list)

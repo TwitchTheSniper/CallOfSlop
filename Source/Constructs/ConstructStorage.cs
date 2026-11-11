@@ -799,7 +799,7 @@ public static class ConstructStorage
     }
 
     /// <summary>A stored part's id, or a run-time piece's key (its id is this machine's own: protocol 244).</summary>
-    private static void WriteDef(PacketWriter w, ushort def)
+    internal static void WriteDef(PacketWriter w, ushort def)
     {
         if (def != ConstructParts.None && Extrusion.IsRuntimeId(def) && ConstructParts.Get(def) is { } d)
             Extrusion.Write(w, d);
@@ -807,7 +807,7 @@ public static class ConstructStorage
             w.U16(def);
     }
 
-    private static ushort ReadDef(ref PacketReader r)
+    internal static ushort ReadDef(ref PacketReader r)
     {
         var def = r.U16();
         return def == Extrusion.WireMark ? Extrusion.Read(ref r) : def;

@@ -397,7 +397,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      it came through, plus one); the CActKind.Bin act is unchanged (the server takes the aim from the player's look).
     // 246: work orders (WorkOrders.cs): CBodyKind.Orders (at the end) carries a body's queues and bills (u16 part, u8 flags, u16 orders, u32 pieces
     //      left, a note, u8 head count, then up to three 22-byte orders); ExtrudeStall gains NoOrders and OrderMaterial.
-    // 247: a body's gear byte (pose and Full) carries in its top bit that its mains are off (ConstructPower.Mains: a wire into every battery, all off).
+    // 247: a body's gear byte (pose and Full) carries in its top bit that its mains are off (ConstructPower.Mains: a wire into every battery, all off);
+    //      a rider in CBodyKind.Riders is a store's def (a part id, or Extrusion.WireMark and a key: a press's stamped parts ride too); PressStall gains ConveyorFull, ConveyorSmall, ConveyorCut.
     public const ushort ProtocolVersion = 247;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
