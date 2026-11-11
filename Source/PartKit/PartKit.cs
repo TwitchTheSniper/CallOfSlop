@@ -57,6 +57,12 @@ public static class PartKit
         new Generators.PilotParts(),
         new Generators.CallCentreParts(),
         new Generators.OfficeParts(),
+        new Generators.BritishParts(),
+        new Generators.DoorParts(),
+        new Generators.StationParts(),
+        new Generators.ShelfParts(),
+        new Generators.LinearParts(),
+        new Generators.ScoopParts(),
     ];
 
     public static IPartGenerator? Find(string name) =>

@@ -296,7 +296,7 @@ public static class Styles
     /// double-yellow-line yellow. Union Flags, Belisha beacons and rain gauges on the roofs, teapots in cosies, traffic cones nobody will
     /// move and garden gnomes where bandits hang skulls, furled brollies down the flanks (it's that sort of day), queue posts on the beds,
     /// and rooms of pillar boxes and red telephone boxes (loot in each) round a tea urn (Constructs/Parts/British,
-    /// tools/constructs/british_parts.py). Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>).
+    /// Source/PartKit/Generators/BritishParts.cs). Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>).
     /// Guns are named the way the British complain: Terribly Sorry, Bit of Bother, a Strongly Worded Letter and Builder's Tea.
     /// </summary>
     public static readonly FactionStyle British = new()
@@ -323,7 +323,7 @@ public static class Styles
             ["fender"] = ["Arch Fender"], // (phase 9a: a bus's slim wheel arches)
             ["cab"] = ["Windscreen Frame", "Tin Roof Cab", "Chop Top Cab", "Roll Bar"],
             ["heavyCab"] = ["Tin Roof Cab", "Cab Over Shell", "Chop Top Cab"],
-            ["spike"] = ["Furled Brolly", "Furled Brolly", "Belisha Beacon"],                                  // (Constructs/Parts/British, tools/constructs/british_parts.py)
+            ["spike"] = ["Furled Brolly", "Furled Brolly", "Belisha Beacon"],                                  // (Constructs/Parts/British, Source/PartKit/Generators/BritishParts.cs)
             ["trophy"] = ["Teapot", "Traffic Cone", "Garden Gnome", "Teapot", "Rain Gauge", "Traffic Cone"],
             ["mast"] = ["Union Flag", "Belisha Beacon", "Rain Gauge", "Union Flag"],                           // (on the roofs: Vehicle.Kit)
             ["gear"] = ["Queue Post", "Queue Post", "Traffic Cone", "Garden Gnome"],                           // (on open beds and porches: a queue forms)
