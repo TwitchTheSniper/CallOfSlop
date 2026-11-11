@@ -18,11 +18,10 @@ already work. Whether it sounds good is for the user to judge ("Ask the user" ne
 | In a session, phase `Playing` | `Off` | Silence, plus the kill-frenzy layer if the local player is on a streak |
 
 **Sandbox has no music of its own.** `MoodFor` looks only at the phase, and no mode module has a music hook. A live
-Sandbox world is phase `Playing` and its module is `Endless`, so it is silent for as long as it runs. The one exception
-comes from `Program.Frenzy.cs`, which never checks for Sandbox: kills reach the frenzy meter from the normal kill message,
-so a Sandbox kill of a player or bot can start frenzy hardbass (from reading the code, not tried in play; whether that
-suits a building game is the user's call). The same goes for Zombies (zombie kills, worth 0.4 of a kill) and every
-other mode. See "Giving Sandbox music" below; that work has not been done.
+Sandbox world is phase `Playing` and its module is `Endless`, so it is silent for as long as it runs. Kill frenzy
+doesn't play there either: the server (`FrenzyAddKill`) and the client (`Program.Frenzy.cs`) both skip kills when the
+mode's `ArenaExtras` is false, as `SandboxModule` sets it. Zombies kills (worth 0.4 of a kill) and the arena modes
+still feed it. See "Giving Sandbox music" below; that work has not been done.
 
 Now-playing text shows on the main menu (`Lobby.cs`). Settings: `music_volume` (default 0.50), `music_style`
 (`Mixed` or `HardbassOnly`), `frenzy_music`, `frenzy_volume` (0.80).

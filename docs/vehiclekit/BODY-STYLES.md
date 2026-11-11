@@ -1,4 +1,4 @@
-# Body styles: a proposal (vehicle kit)
+# Body styles (vehicle kit)
 
 History (phase records): BODY-STYLES-HISTORY.md. Read it only when you need why something was built this way.
 
@@ -8,19 +8,104 @@ going to implement, I want this feature to be good on the toolkit before I move 
 "still too boxy overall, and rounding corners won't fix that", "few slopes and bends; the kit needs vehicle-appropriate contour and body pieces; make more parts if
 needed", "interiors too alike", "cabs too alike: no roll cages, just a flat wall".
 
-**Status (2026-11-08): phases 1 to 4 are built.** Phase 4 (section 10): each faction's exterior on its rooms and cabs (the user's note of 2026-11-07: "the
-enclosed section of the vehicles is still looking very similar between factions... I want factions to have more distinct visual looks"): trim cut for each bay's
-side (welded plates and cage bars, slat armour and stowage bins, a fairing and vents, signboards, clinker planks and a strake, a livery waistband and chrome),
-fittings on cabs and hoods (a roof sign, a destination board, a radome, a mascot and a chrome grille, a roof basket, jerry cans), capsule side glass, Militia's own
-dressing, and an exterior measure in `--body-report`. Phase 3 (section 9): cabs and hoods are lofted in the body's language, with six cab kinds weighed per
-faction, window panes as glass parts, and each faction's cab proportions as data (the user's note of 2026-11-07: "factions should look more distinct"). Phase 1 (section 6): kit 5 is the current kit, every committed faction vehicle was made again by it, the tools
-see sections, and the user's decisions are in section 5. Phase 2 (section 7): the fixed limits are data (scale classes), proportions, rooflines along the length, doors
-on either side or in the back, ride height bands, turret spots sized from the parts, paint by runs and rows; the committed vehicles were made again. Section 8 is how
-a later archetype is added as data. Sections 1 to 4 are the investigation as it was written, before the build.
+**Status (2026-11-11): phases 1 to 9b are built** (BODY-STYLES-HISTORY.md sections 6 to 20): kit 5 is current, with lofted rooms, cabs and hoods in each
+faction's body language, faction trim and fittings, new spaces, balconies, lopsided vehicles, interiors, and an archetype library with six extra shapes. "How it
+works" below is the current summary; sections 1 to 4 of the history are the investigation as it was written, before the build. Section 5 here holds the user's
+answers, section 8 how a later archetype is added as data.
 
-This file is the investigation: what the kit makes today (with numbers), every way found to break the sameness with what each costs, a working prototype of the first
-one (lofted hull bays in a body language per style, `--kit 5`), a recommended plan, and the questions the user should answer before the big build. Pictures for the
-decision are in `/home/claude/vk-bodies-sheets/` on the agent box (not committed): see "Pictures".
+## How it works
+
+The body layer of the vehicle kit as it stands (kit 5, `VehicleKitVersion.Current = Lofted` in `VehicleGrammar.cs`). Each subsection ends with the history
+section it was taken from; the numbers there (rates per style, measures) are as they were when that phase was built, and the data in the code is the truth.
+
+### Lofted parts (`HullLoft`)
+
+A room's bays, cabs, hoods, panes, trims, fittings, pods, stairs and balconies are run-time parts made from a key in their name (`Hull Loft (...)`), not part
+files: `Source/Constructs/HullLoft.cs` and its partial files (`.Cabs`, `.Trim`, `.Spaces`, `.Balcony`, `.Lining`). A bay is lofted between a front and a back
+section (half profiles of up to 16 points, floor edge first); blueprints, saves and the wire carry only the name, and the part is rebuilt from it. Any panel
+that is not exactly flat is split into two flat triangles (`ConvexHull.Of` drops near-duplicate faces); facets meeting at a point are mitred (`HullLoft.Mitres`).
+Every walk-in section keeps the room check's needs: at least 1.0 m of half width below 1.6 m (`Vehicle.BayHalf`) and 2.02 m at the centre. Lofted parts are welder
+parts (panes are wrench parts): salvage takes one off as itself, by its key, and the attach tool builds it onto anything; there is no Assembling recipe for them.
+History: sections 3 and 6 ("The part", "Salvage").
+
+### Body languages, scale classes and rooflines
+
+A **language** (`BodyLanguage`, `Source/VehicleKit/VehicleBodyLanguage.cs`) is a named section shape with its height range, brow and tail rake, and its low
+and narrow variants: the nine base languages are slab, ledge, pod, van, bus, coach, boat, cabin and armour, and the archetypes add their own
+(`VehicleArchetypes.cs`). Each style's row (`BodyStyleRule.ByStyle`) weighs its languages, sets its facets (smooth styles 8 to 12 a side, faceted ones as written),
+and whether it mixes languages along a vehicle (Bandit: cobbled from wrecks). The language is rolled on the body layer's own fork (`BodyLook.Roll`), so nothing else
+of a seed moves. A **scale class** (`BodyScale`: compact, standard, heavy, giant) holds the size limits (half width, height, bay lengths, overhang, ride bands),
+and a **roofline** (`Roofline`: plain, stepped, crowned, sagged, raked, sloped, kick-up, tapered, sheer, and the archetypes' fastback, wedge and level) bends the
+height and width along the room. The style's row also sets height, overhang share, brow and tail lengths, door sides and paint runs (`PaintRuns`: a room is
+painted in runs of bays, and rows toned by height). Turret, side-gun, pannier and roof-rack spots come from the bays as built (`BaySpots`), not from plan names.
+History: sections 6 ("Languages per faction", "Turret and gear spots") and 7.
+
+### Rooms: doors, spaces, balconies, lopsided vehicles
+
+- **Doors** stand on either side, or in the back of a last room 4.5 m or longer with a bare tail or a hitch (key flag `b`). History: section 7, "Doors".
+- **New spaces** (`HullLoft.Spaces.cs`, `Vehicle.Spaces.cs`, the grammar's `Spaces`, `PlanUpper`, `PlaceStair`): a caged bay (a frame of bars with the faction's
+  infill: welded, slatted or timber), an upper storey over a run of middle bays (an enclosed saloon or an open deck behind a bulwark) reached by a stair through a
+  hatch, and side pods on a bay's waist. The Double Decker is the grammar's (`ShapeRecipe.Upper`). The checks: `VehicleChecks` holds a player in a caged room or on
+  an open deck (`Contained`) and walks up the stair (`Climb`). History: section 11.
+- **Balconies** (`HullLoft.Balcony.cs`, `Vehicle.Balcony.cs`): a deck outside the side door with the faction's railing, the door's ladder hung at its open end;
+  refused where the wall stands out or a flared wall would meet a standing head. Checked by `VehicleChecks.Balcony`. **Lopsided vehicles**: `BodyStyleRule.Asym`
+  is the chance a vehicle leans to one side (`Lean`): its pods, thinned trim and spikes go on that side. History: section 12.
+
+### Cabs and hoods
+
+`Source/Constructs/HullLoft.Cabs.cs` (the parts) and `Source/VehicleKit/Vehicle.Cabs.cs` (`CabLook`, `LoftCab`, `MergeCab`, the hood). A cab is lofted in the
+body's language; kinds are `e` conventional, `w` crew, `g` cage, `a` armoured, `o` capsule (cab-over) and `m` merged (its back section is its room's brow's
+front, one mass like a bus front). A hood is lofted from the cowl to the nose (`f` flat, `w` wedge, `r` rounded, `g` grille) and keeps the fixed hoods'
+sockets. Panes are glass parts on the cab's `glass` sockets; a shot breaks the pane, not the cab. Each faction's kinds, noses and proportions are data
+(`BodyStyleRule.Cabs`, `Noses`), and each faction has two or three **cab sub-styles** (`CabStyle`, rolled on its own fork, laid over the rule after the
+archetype by `Vehicle.UseArchetype`). `VehicleChecks.View` looks from the seated eye through 14 rays: straight ahead must be clear. `--cab KIND` forces a kind,
+`--fixed-cabs` uses the old shells, `--no-cab-styles` leaves the sub-styles out. History: sections 9 and 19 ("Cab sub-styles").
+
+### Faction exterior: trim and fittings
+
+`HullLoft.Trim.cs` and `Vehicle.Trim.cs`. A **trim** is cut for one side of one lofted bay from the bay's own sections and stands on its waist socket, placed
+last: Bandit plates and cage bars, Militia slats and bins, IT fairings, Scam signboards, Highland clinker planks, British livery. A **fitting** is a single
+piece sized from the cab or hood: a roof sign, a destination board, a radome, a mascot, a chrome grille, a roof basket, Militia's jerry cans. Both go on with
+`clear: true` and are refused when they would draw into anything (`DrawnClash`). The style row's `Trims`, `TrimMix`, `TrimShare` and `Decos` choose them; the
+sets are the faction's sub-styles. `--no-trim` leaves them out. History: section 10 (and 19, "Fenders, rear doors, Militia", for Militia's current sets).
+
+### Archetypes
+
+An archetype (`BodyArchetype`, `VehicleArchetypes.cs`) is a row that lays its languages, cab kinds, noses, proportions, scale classes and ride bands over a
+faction's own rule (`Vehicle.Rule`): the archetype changes the silhouette, the faction keeps its paint, trim, fittings, lining, props and guns. A vehicle rolls one
+on its own fork ("archetype") at the shape's `BodyArchetype.Share`; the extra shapes (Car, Buggy, Monster Truck, Wagon, Concept, Giant Truck; `Generators/`,
+made by grammar recipes) always take one. Families: muscle cars, a supercar, European cars, vans and trucks, gun and scrap buggies, monster trucks, war wagons and
+carriages, bubble cars and streamliners, the giant hauler. A Car has a cabin, a hood, a boot lofted over the fuel tank (`TankSpot`) and a gun on a pedestal; an
+archetype may name its own body plans (`BodyArchetype.Bodies`). Militia builds none. Section 8 below is how to add one. `--archetype NAME` forces one,
+`--no-archetypes` leaves them out. History: sections 16 to 18 ("How it works") and 19 ("Faction car outlines").
+
+### Interiors: linings, furnishing, windows, lamps
+
+- **Linings** (`HullLoft.Lining.cs`): a ground-floor bay's key takes a last word `i` (kind, mode, window), and the bay draws the lining itself, so a room has no
+  more parts. Modes: `f` follows the hull's rows, or an inset lining with upright walls and a flat ceiling where that stays within 12 cm of the hull. Each
+  faction has its kind (Bandit's bare ribs and weld beads, Militia olive panels, IT pale panels, Scam purple and gold, Highland planks, British moquette and
+  panelling). Upper saloons and open decks are lined, closed ends too (`FollowEnd`); caged rooms, pods and balconies are not. History: sections 13 ("The lining")
+  and 15.
+- **Furnishing** (`Vehicle.Rooms.cs`: `Interior`, `Furnish`, `OnFurniture`; `Vehicle.Spaces.cs`: `FurnishUpper`): role gear first (ammo containers, bunks,
+  shelves and racks), then the layout, then the faction's props by the style's `Gear`, `Fill`, `Clutter` and `Props`; a prop with no floor stands on a piece of
+  furniture. The aisle and the stair's way are kept. History: sections 13 ("Furnishing") and 15 ("Props on furniture").
+- **Cabs** draw a dash (a console in capsule and merged cabs) and a steering wheel (`HullLoft.Cabs.cs`, `Dash`, `SteeringWheel`). History: section 15, "Cabs".
+- **Windows**: a lined bay may cut a window in each side wall (the style's `Window` and `WindowChance`), glazed with a pane that counts as closed for the room's
+  hole rays. **Lamps** are glowing boxes the lining hangs, and lights too: `ConstructLamps.AddLights` gives the frame's free dynamic lights (at most
+  `LightGrid.MaxDynamic`, four) to the lamps nearest the eye. History: section 14.
+- `--no-interiors` makes rooms without any of this (the same dice).
+
+### The `--body-report` measures
+
+`--body-report STYLE|all [--seeds N] [--from S]` (`BodyReportCli` in `VehicleBodyLanguage.cs`) generates seeds of each style and prints, per style: vehicles and
+those with rooms, distinct bay parts and sections, languages, facets a side, room heights and widest half width, the classes, lines, doors and bay length runs,
+the front profile's mean pair and generation time, and the interior's lamps and panes a vehicle; then the cab separation (within a style against between
+styles), the room exteriors' matrix with relief by band, trims and fittings a vehicle, and at the end the failures and the **coplanar pairs inside every
+lofted bay, cab, hood, pane, trim and fitting**. The `--no-...` switches (`--no-trim`,
+`--no-spaces`, `--no-cages`, `--no-uppers`, `--no-pods`, `--no-balconies`, `--no-asym`, `--no-archetypes`, `--no-interiors`, `--no-cab-styles`; `--no-sections`
+for the identity and diversity) make the same seeds without one layer, to measure against. The front profile (`FrontProfile`) also feeds `VehicleDiversity`'s
+front term and `VehicleIdentity`'s section term. "Measuring it again" below lists the runs used. History: sections 6 ("Tools see sections"), 10 and the
+"Measured" subsections.
 
 ## 5. Open questions for the user
 
