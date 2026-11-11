@@ -9,7 +9,7 @@ namespace CallOfSlop.Interiors;
 /// pads on the deck's capital sockets, Building slabs, walls, door corners and door walls with hung doors, stairs, bulkheads, and each
 /// room's things. What the rules refuse is listed, never forced; a stair the rules won't stand is welded on (a freeform step) and counted.
 /// </summary>
-public sealed class InteriorBuilder : BlueprintScript
+public sealed partial class InteriorBuilder : BlueprintScript
 {
     public readonly List<string> Refused = new(), Notes = new(), Missing = new();
     public int Placed, Welded, Doors, LootSpotsSet, Lifts, Wired;
@@ -464,6 +464,14 @@ public sealed class InteriorBuilder : BlueprintScript
         Time("dressing", () => Dress(rng)); // (phase 11: after the rooms' things, the feeds and the lights, so it never takes what they need; before the welds, which make every later step's rebuild ~4x slower)
         Time("welds", WeldLater);
         Time("power", Power);
+        _plansBuilt.Clear();
+        if (voidPlan != null)
+        {
+            _plansBuilt.Add((voidPlan.Rooms, VoidLevel));
+            _plansBuilt.Add((mezz, VoidLevel));
+        }
+        _plansBuilt.Add((plan.Rooms, 0));
+        Time("look", Look); // (phase 12: paint and finish by the faction's palette; last, so it sees every part)
     }
 
     /// <summary>One plan's decks, bottom up (the level base <see cref="_lv"/> set): slabs, walls, bulkheads, stairs, the next slabs, the rooms' things; then the mezzanine over its shafts, if any.</summary>

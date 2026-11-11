@@ -6,6 +6,7 @@
   "section": "Walls",
   "role": "frame",
   "tool": "welder",
+  "finish": "wall panelling",
   "mass": 7040.0,
   "health": 14140,
   "armour": 35,

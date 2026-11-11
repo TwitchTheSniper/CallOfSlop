@@ -866,6 +866,81 @@ walk's settle.
 **Left:** corridors have no dressing (they are not rooms); columns and overhead cranes across a hall's span (the jib is a wall piece; few
 fit: 4 a seed); section switching of the lamps (a wire per lamp still works, one wire per room or section does not exist); the build time.
 
+## Phase 12 record (branch `feat/interior-materials`)
+
+User feedback (2026-11-11) on the generated interiors: they work, but "look flat and samey" (the same steel everywhere), are "empty and
+cavernous" and have "nothing to do in rooms". Decisions: the look is per faction (materials and colour, the faction's own trim parts, later
+its own layouts: cramped Bandit, orderly Militia). Materials and textures come first; rooms, machines and the ore hauler come after.
+
+### Survey: what an interior part looked like
+
+- **Surfaces.** `Materials/Surfaces.json` had 29 rows and no rule for the Interior or Building folders, so every slab, wall, panel wall,
+  stair and most furniture and dressing fell through to the last rule, brushed `steel`: floor, wall, ceiling and trim were one material in
+  different greys. Only rubber, cloth and wood parts differed (by their `material`). No part file named a `"finish"` (a box's or a part's
+  own row), though the loader takes both.
+- **Colour.** The generators give each box a colour; the builder painted nothing. The Building shell (Steel Wall 4 m, Steel Floor 4x4 m and
+  the rest) is shared with players' bases, so its part files can't carry an interior look.
+- **Paint and finish in a blueprint.** A step may carry `"paint"` (a colour: `ConstructPaint.BoxColour`, the box's tone kept, and the box
+  swaps to its row's `"painted"` row) and `"finish"` (a material by name, the texture paint tool: every box of the part but glass and glow
+  takes it, paint then only tints). Both are valid in saves, blueprints and on the wire (a finish goes by name). The kit's
+  `BlueprintScript` wrote paint but had no finish.
+- **Wear.** A row's `wear` (edge rub-through) and `rust` (grows as a part is hurt) are per material; `rust` and `dirty steel` rows exist.
+  Constructs have no decals, so dirt, soot and stripes are surfaces or thin parts.
+- **Lamps.** Wall Light and Hall Floodlight are mains lamps with a `colour` setting (default `#ffed99`); the builder set none.
+- **Factions.** `FactionStyle.Palette` holds exterior colours by role (body, rust, frame, war); nothing for interiors.
+- **Trim.** Bay Marking and the Deck Sign's hazard band only: no skirting, door-edge stripes, lane markings or room names.
+
+### Plan
+
+1. Rows for what an interior is made of (deck plate, grating, wall panelling, worn and rusty paint, rubber matting, lagging, hazard paint,
+   soot), each with a `"painted"` row that keeps its pattern, so paint over them tints rather than flattening.
+2. Interior parts name their surfaces box by box in `interior_parts.py`; the shell (Building parts) gets its material as a step's
+   finish from the builder, by what each part is (floor, wall, stair, frame).
+3. A palette per faction style (`Constructs/Interiors/Palettes.json`): wall, floor, trim, accent and hazard colours, wear, lamp colour; room
+   types shift it (medical pale, engineering dark with hazard trim, quarters warm). The builder's last stage (`Look`) paints and finishes
+   through the step paint and finish, so nothing new reaches saves or the wire.
+4. Trim and wear as cheap parts (one link, no joints, no wires) and by wear level.
+
+### Done (phase 12)
+
+- **Surfaces** (`Materials/Surfaces.json`, rows 29 to 39, offered to the texture paint tool): deck plate and painted deck plate (tread),
+  grating and painted grating (a dark open weave), wall panelling (2 m panels), worn paint and rusty paint (edges rubbed through; rusty
+  leans brown), rubber matting, lagging, hazard paint, soot. Each painted kind keeps its pattern, so paint tints rather than flattens.
+- **Interior parts** (`interior_parts.py`) name their materials: panel walls wall panelling, floor panels and the lift car's floor deck
+  plate, lockers and cabinets painted steel, the medicine cabinet, medical station and fire point gloss paint, tables plastic tops, the
+  chart table and pegboards wood, the stove bare steel, boards matte paint with brass breakers, the repair station and wall ribs dirty
+  steel, the pipe bank one lagged, one painted and one bare pipe, the duct aluminium, cables rubber, signs, the jib and markings hazard
+  paint. Lamps' glow names none.
+- **Trim:** Kick Plate (a 3.6 m deck-plate skirting with a lip, on a wall's low face socket: every crew, work, plant and store kit, two or
+  more in halls) and Lane Marking (two edge lines and a worn lane, 3.6 m, in the hangar, storage and production halls). One link each.
+- **Palettes** (`Constructs/Interiors/Palettes.json`, refused with a reason when bad): one per style (default, Bandit, IT, Scam, Highland,
+  British, Militia): wall colours (Bandit's don't match), floor material and colour, crew and plant floors, frame, trim, accent, hazard,
+  wear and lamp colour. Room types shift it: medical pale, bridge and workshop dark, quarters, mess and lockers warm, engineering and fuel
+  dark with hazard trim, magazine, hangar and production hazard trim. Wear picks the walls' material (wall panelling, worn paint, rusty
+  paint), the frames' (steel, dirty steel, soot in plant rooms) and the kick plates' (rusty paint when worn).
+- **The look stage** (`InteriorBuilder.Look.cs`, last in `Build`): every part the builder fitted is placed in its room by its bounds and
+  given its finish (`BlueprintScript.Finish`, a step's `"finish"` by name) and paint by what it is: floors, walls and panels, door corners
+  (trim, hazard paint in hazard rooms), doors (accent), stairs, kick plates, ribs, bay markings; mains lamps get the lamp colour (their
+  `colour` setting). The vehicle's own parts keep theirs. `--gen-interior ... --style NAME`, else the base blueprint's group (a style's
+  Name or Group), else the default. Nothing new on the wire or in saves: paint, finish and settings are what a player's tools write.
+
+| Titan Walker, seed 1 | Phase 11 (main) | Phase 12 |
+| --- | --- | --- |
+| Parts / links (budget total) | 5,247 / 17,010 | 5,573 / 17,336 (307 Kick Plates, 19 Lane Markings) |
+| Dressing | 1,218 hung, 15 spots refused | 1,531 hung, 62 refused (low spots by doorways and stairs), 2 Jib Cranes (4 before) |
+| Build | 16.0 s (dressing 4.8 s) | 15.9 s (dressing 6.1 s, look 9 ms) |
+
+Bandit: walls rusty paint in five unmatched colours, deck plate floors everywhere, soot on plant rooms' ribs. IT: off-white wall
+panelling, rubber matting floors, teal trim, cool lamps. The same plan otherwise.
+
+**Tried by hand:** `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1 --style Bandit` and `--style IT` (0 refused, load back
+5,573 parts, drives from the bridge's helm); `--interior-walk` on the Bandit file passes; `--check-construct-parts` finishes.
+**Not tried:** any picture (whether rooms read as floor, wall and trim at a glance, the new rows' look on Low, Medium and High, the
+lamps' colours), seeds 2 and 3, the other four styles' runs, the in-game spawn of a fitted file.
+
+**Left:** room names stencilled (the Text Sign could carry them, but the kit has no step `"text"` yet); door-frame edge stripes as parts
+(door corners take the trim colour instead); faction trim parts of their own; layouts per faction; the dressing's extra time (kick plates).
+
 ### Next (phase 10 and on)
 
 Lamps that need no wire (or a higher link cap); the kit's batch rebuild; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics
