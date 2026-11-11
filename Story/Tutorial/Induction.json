@@ -60,15 +60,15 @@
   {
    "id": "hold",
    "title": "Pick up a part",
-   "text": "Pick up a loose part: look at it and press {Interact}. It goes into your hands. The warden has set two Frame Blocks down for you; the orange marker shows the nearest.",
+   "text": "Pick up a loose part: look at it and press {Interact}. It goes into your hands. The warden has set two Lamps down for you; the orange marker shows the nearest.",
    "warden": "Lift with the knees. The Ministry does not cover backs.",
    "cue": "hold",
    "target": "loose",
    "drops": [
-    "Frame Block",
-    "Frame Block"
+    "Lamp",
+    "Lamp"
    ],
-   "hint": "Walk up close to a Frame Block, aim the crosshair at it and press {Interact}. Lost them? The orange marker shows the nearest one."
+   "hint": "Walk up close to a Lamp, aim the crosshair at it and press {Interact}. Lost them? The orange marker shows the nearest one."
   },
   {
    "id": "backpack",
@@ -99,19 +99,19 @@
    "text": "With a part in your hands and the attach tool out, aim at a socket or the ground and hold {Fire} to fit it. Turn the ghost with {RotateLeft} {RotateRight} {RotateUp} {RotateDown}. {Aim} takes a part back off.",
    "warden": "Build something. Anything. The rehabilitation figures need a lift.",
    "cue": "place",
-   "hint": "Aim at the ground a few metres away, or at the other Frame Block. When the ghost shows, hold {Fire} until it is fitted."
+   "hint": "Aim at the ground a few metres away, or at the other Lamp. When the ghost shows, hold {Fire} until it is fitted."
   },
   {
    "id": "weld",
    "title": "Join two pieces",
-   "text": "The warden sets down one more block. Pick it up, set it down touching your build, then with the attach tool out aim at the seam and press {Interact} to join the two into one.",
+   "text": "The warden sets down one more Lamp. Pick it up, set it down touching your build, then with the attach tool out aim at the seam and press {Interact} to join the two into one.",
    "warden": "Two pieces become one. Rather like a merger, only less paperwork.",
    "cue": "weld",
    "target": "loose",
    "drops": [
-    "Frame Block"
+    "Lamp"
    ],
-   "hint": "The two pieces must touch. Set the block down right against your build (hold {Fire} on the ground beside it), then aim where they meet and press {Interact}."
+   "hint": "The two pieces must touch. Set the Lamp down right against your build (hold {Fire} on the ground beside it), then aim where they meet and press {Interact}."
   },
   {
    "id": "drill",
@@ -139,11 +139,14 @@
   {
    "id": "carry",
    "title": "Carry something",
-   "text": "Aim the physics gun at something loose, your Frame Blocks will do, and hold {Fire} to lift it. The mouse wheel brings it closer or pushes it away; let go of {Fire} to drop it, {Aim} to freeze it in the air.",
+   "text": "The warden has set a Frame Block down: structural parts are too heavy for your hands, so they go by physics gun. Aim at it and hold {Fire} to lift it. The mouse wheel brings it closer or pushes it away; let go of {Fire} to drop it, {Aim} to freeze it in the air.",
    "warden": "Gently. Ministry property includes the bits you drop it on.",
    "cue": "carry",
    "target": "loose",
-   "hint": "The beam takes hold of what is under the crosshair: aim at a block and keep {Fire} held down."
+   "drops": [
+    "Frame Block"
+   ],
+   "hint": "The beam takes hold of what is under the crosshair: aim at the Frame Block and keep {Fire} held down."
   },
   {
    "id": "bunk",
