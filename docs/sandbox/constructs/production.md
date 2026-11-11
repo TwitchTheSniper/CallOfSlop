@@ -207,7 +207,7 @@ Choices made (the developer may change them): depth as the diameter; the `wheels
 
 ## The Press
 
-The user's "complex parts made in the world, not in menus". A **Press** stamps parts out of extruded pieces; it sits beside the Extruder and the Wheel Former, and the [Assembler](#assembling) stays for everything no die covers yet. Code: `Source/Constructs/ConstructPress.cs`, `ConstructPressTable.cs` (`Constructs/Pressing.json`); the parts, the table and the Press Line blueprint come from `tools/constructs/press_parts.py`.
+The user's "complex parts made in the world, not in menus". A **Press** stamps parts out of extruded pieces; it sits beside the Extruder and the Wheel Former, and the [Assembler](#assembling) stays for everything no die covers yet. Code: `Source/Constructs/ConstructPress.cs`, `ConstructPressTable.cs` (`Constructs/Pressing.json`); the parts, the table and the Press Line blueprint come from the part kit's `--gen-parts press_parts`.
 
 - **Modular by size.** Press, Die Lathe and die each come in the four size classes, and a die fits a press of its own class (socket kind `pressdie`, the class of the socket). The Small press is 1.75 m wide with 2 bays and takes pieces to 0.45 m across; Medium, Large and Capital have 3 bays and take 1.8, 7.2 and 28.8 m, at speed x2, x4 and x8. Length sets count, so the player builds the smallest system for the job.
 
