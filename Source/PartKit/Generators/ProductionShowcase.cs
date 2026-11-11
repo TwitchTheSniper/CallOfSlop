@@ -129,9 +129,9 @@ public sealed class ProductionShowcase : IPartGenerator
             var split = On("Conveyor Splitter", 28.75f, -4.25f, Flow, "-y.0.0", LineA);
             Convey(exA, "Piece out", split, "Piece in", LineA);
             Sign(27.75f, Posts1, LineA, "Cut this conveyor to see pieces drop");
-            var press = On("Press", 29.75f, -9.25f, Back, "-y.0.0", PressBlue);
+            var press = On("Press", 30.25f, -9.25f, Back, "-y.0.0", PressBlue); // (its first bay under the splitter: a die's rows name one bay, so "Piece in 2" takes nothing from them)
             Onto(press, "dieslot", "Bracket Die", "mount");
-            Convey(split, "Piece out 2", press, "Piece in 2", LineA);
+            Convey(split, "Piece out 2", press, "Piece in", LineA);
             Sign(28.25f, Posts2, PressBlue, "Line A's angles go in here: the press stamps brackets");
             var join = On("Conveyor Join", 33.25f, -4.25f, Flow, "-y.0.0", LineA);
             Convey(split, "Piece out", join, "Piece in", LineA);
@@ -172,13 +172,20 @@ public sealed class ProductionShowcase : IPartGenerator
             Run(orders, former, V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(52.25f, 0, -2.0f));
             foreach (var (piece, n) in new[]
                      {
-                         ("Extrusion l-angle 10x10x150 metal", 2), ("Extrusion l-angle 15x15x150 metal", 2), ("Extrusion l-angle 20x20x150 metal", 2),
-                         ("Extrusion l-angle 25x25x200 metal", 2), ("Extrusion l-angle 30x30x200 metal", 1), ("Extrusion plate 30x30x150 metal", 1),
-                         ("Extrusion plate 45x45x200 metal", 1),
+                         ("Extrusion l-angle 10x10x50 metal", 2), ("Extrusion l-angle 15x15x60 metal", 2), ("Extrusion l-angle 20x20x75 metal", 2),
+                         ("Extrusion l-angle 25x25x100 metal", 2), ("Extrusion l-angle 30x30x125 metal", 1), ("Extrusion plate 30x30x100 metal", 1),
+                         ("Extrusion plate 45x45x150 metal", 1),
                          ("Extrusion solid 20x10x200 planks", 2), ("Extrusion i-beam 25x25x150 planks", 2),
                          ("Extrusion wheel 25x60x0 rubber", 2), ("Extrusion wheel 30x90x0 rubber", 2),
                      })
                 Bill(orders, piece, n);
+
+            // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------
+            Stripe(26.75f, Row1, true);
+            Stripe(36.75f, Row1, true);
+            Stripe(29.75f, -7.75f, false);
+            Stripe(39.75f, Row2, true);
+            Stripe(53.75f, Row1, true);
 
             // ---- The lamps: one on every sign post, wired from the main switch along the aisles' edges. -------------------------
             foreach (var lamp in _lamps)
@@ -197,6 +204,10 @@ public sealed class ProductionShowcase : IPartGenerator
             _lamps.Add(lamp);
             return post;
         }
+
+        /// <summary>A Lane Marking in hazard paint flat on the floor at (x, z), across a conveyor that runs along x (<paramref name="acrossX"/>) or along z.</summary>
+        private void Stripe(float x, float z, bool acrossX) =>
+            On("Lane Marking", x, z, new Orient(Vector3.UnitY, Vector3.UnitY, Vector3.UnitX, acrossX ? Vector3.UnitZ : Vector3.UnitX), "bottom", Hazard, "hazard paint");
 
         /// <summary>A Storage Volume of stock at (x, z): a low box on the floor, a quarter full in a creative world (no walls needed below a quarter: Sealed volumes).</summary>
         private VPart StockOf(string material, float x, float z)
