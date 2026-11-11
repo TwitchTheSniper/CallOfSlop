@@ -191,6 +191,8 @@ public static partial class SelfTest
                     server.Update(now, 0.05);
                 }
                 worstMs = Math.Max(worstMs, sw.Elapsed.TotalMilliseconds / 3);
+                if (sw.Elapsed.TotalMilliseconds / 3 > 8)
+                    Console.WriteLine($"    SLOW t {t / 60f:0.00} {sw.Elapsed.TotalMilliseconds / 3:0.0} ms/tick at {c.Pos.X:0.0},{c.Pos.Z:0.0} v {c.Vel.Length():0.0}");
                 t0 += 3;
                 var v = new Vector2(c.Vel.X, c.Vel.Z).Length();
                 vmax = MathF.Max(vmax, v);
@@ -230,6 +232,15 @@ public static partial class SelfTest
             Console.WriteLine($"{name}: along {along:0.0} m, up {moved.Y:0.0}, turned {turned:0.0} deg, v late {(vn > 0 ? vsum / vn : 0):0.00} max {vmax:0.00} m/s, top {c.WalkTop:0.00} (base {c.WalkBase:0.00}, set {c.WalkSpeed * 100:0}%, held {c.WalkPowerHeld}), swing {c.WalkSwing:0.000} s, groups {c.LegGroups}, stretch max {maxStretch:0.00}, landings {landed}, legW {c.LegWatts / 1e3:0.0} kW, plift {c.WalkPowerLift:0.000}, chg {c.Charge:0}/{c.ChargeCapacity:0} kJ, walking {c.Walking} '{c.WalkProblem}'"
                 + (stopAt >= 0 ? $", stopped after {stopAt:0.00} s, {new Vector2(stopFrom.X, stopFrom.Z).Length():0.00} m" : "")
                 + (slab != null ? $", on slab z {slab.ToLocal(c.WorldCom).Z:0.0} (edge {slab.LocalMax.Z:0.0}/{slab.LocalMin.Z:0.0}), y {c.WorldCom.Y - slab.Pos.Y:0.0}" : ""));
+            if (args.Contains("--look"))
+            {
+                var fw = Vector3.Normalize(Vector3.Transform(c.SeatForward(), c.Rot) with { Y = 0 });
+                for (var hgt = -2f; hgt <= 2f; hgt += 1f)
+                {
+                    var o = c.WorldCom + Vector3.UnitY * hgt * c.Legs[0].Reach * 0.4f;
+                    Console.WriteLine($"   look h {hgt}: ray {World.RaycastWorld(o, fw, 60):0.0} m, ground under +5 m {ConstructWorld.Ground(q, (o + fw * 5).X, (o + fw * 5).Z).Y - c.WorldCom.Y:0.0}, com {c.WorldCom}");
+                }
+            }
             if (client && clients[0].Constructs.Get(c.Id) is { } cc)
             {
                 var off = 0f;

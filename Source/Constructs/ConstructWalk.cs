@@ -795,6 +795,24 @@ public static partial class ConstructPhysics
         var target = fwd * (throttle * c.WalkTop) + right * (strafe * c.WalkTop * 0.6f);
         var radius = MathF.Max(1, c.Radius);
         var yaw = -turn * c.WalkTop / radius * 0.8f;
+        if (yaw != 0)
+        {
+            // (turning while walking: the feet on the outside of the turn go faster than the body; the fastest foot's rest point
+            // goes no faster than the legs walk, so a turn at full speed slows the walk instead of over-stretching the legs)
+            var far = 0f;
+            for (var k = 0; k < c.LegCount; k++)
+            {
+                var r = c.ToWorld(LegRest(c, k)) - com;
+                far = MathF.Max(far, MathF.Sqrt(r.X * r.X + r.Z * r.Z));
+            }
+            var fastest = target.Length() + MathF.Abs(yaw) * far;
+            if (fastest > c.WalkTop && fastest > 1e-3f)
+            {
+                var k2 = c.WalkTop / fastest;
+                target *= k2;
+                yaw *= k2;
+            }
+        }
         // The gait has its say: the body goes no faster than the feet can follow (GaitShare: a planted leg near its stretch,
         // with no foothold ahead or a group waiting to lift), and with a group waiting, it first shifts its weight over the
         // feet that stay down (a wave gait, a body with legs gone).
