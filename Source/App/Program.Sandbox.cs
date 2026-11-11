@@ -968,8 +968,8 @@ public static unsafe partial class Program
         var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0) ^ ((long)hit.Body.RouteCount << 48) ^ (hands ? 1L << 60 : 0);
         if (hit.Body.DefOf(hit.Part).IsVolumeStore)
             key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L ^ (long)hit.Body.Parts[hit.Part].SealedFaces << 8; // (its capacity moves with the construct's bounds, not the store)
-        if (hit.Body.DefOf(hit.Part) is { IsAssembler: true } ad)
-            key ^= (long)ConstructConfig.Get(hit.Body.Parts[hit.Part], ad, CfgKey.Recipe, 0) * 2654435761L; // (its recipe is a setting, not the store)
+        if (hit.Body.DefOf(hit.Part) is var ad && (ad.IsAssembler || ad.IsRefiner))
+            key ^= (long)ConstructConfig.Get(hit.Body.Parts[hit.Part], ad, CfgKey.Recipe, 0) * 2654435761L; // (its recipe is a setting, not the store; a refiner's set recipe too)
         if (hit.Body.DefOf(hit.Part).IsPress)
             key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
@@ -985,7 +985,7 @@ public static unsafe partial class Program
         if (cd.IsVolumeStore)
             return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
         if (cd.IsRefiner)
-            return _sbStoreText = ConstructRefining.Look(cd, st, near, inv);
+            return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
             return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), near, inv, held);
         if (cd.IsPress && hit.SlotPlus1 == 0)

@@ -125,7 +125,7 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 66 KB
 
-Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, build stations.
+Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, build stations, production lines.
 
 - Refining (decision 14)
 - Extrusion
@@ -135,6 +135,7 @@ Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, bui
 - Assembling
 - Build stations
 - Build stations: the Selector and the Blueprint Desk
+- Production lines
 
 ## [Storage and cargo](constructs/storage-and-cargo.md), 42 KB
 

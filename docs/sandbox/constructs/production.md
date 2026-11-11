@@ -476,3 +476,37 @@ Choices made (the developer may change them):
 - Nothing on the wheel: a tenth segment moves every tool on it.
 - Physics-only parts are paid in loose bodies near the player.
 - A stamped blueprint's fuel and charge are what fitting new tanks and batteries gives (full), as for any blueprint.
+
+## Production lines
+
+The first step of the ore loop (the user, 2026-11-11: rooms and bases felt empty): machines that a generator can place in a row and a player
+reads at a glance and runs from one place. Refiners first; the Assembler, Extruder and Recycler are to follow with the same pieces. Code:
+`Source/Constructs/ProductionLines.cs`; the parts come from `tools/constructs/machine_tiers.py` and `screens.py` (the lamp) and
+`control_parts.py` (the console).
+
+- **Line state** (`ProductionLines.Raw`, `Of`): Running, Stopped (held off: its console or any wire into Run), Starved (empty or short of a
+  batch), Blocked (output full or holding another material), Fault (an input it can't work) and No power. Worked out from the store and the
+  construct's power on either peer, so nothing new is on the wire. A new state shows once it has lasted 0.3 s (a store's bytes and its Busy
+  can come a packet apart), except the first look and Start.
+- **The status lamp.** A box marked `"status": true` (an opaque detail) is drawn unlit in the state's colour: green with a bright band
+  running along it (Running), dim white (Stopped), amber blinking 1 Hz (Starved), orange 3 Hz (Blocked), red 3 Hz (Fault), out (No power).
+  `screens.py mount(..., lamp=True)` grows the screen's plate by a band and stands the lamp in it, the screen's width and at least 0.1 m
+  high, so it reads from 20 m where the operator looks. Machines are drawn part by part (a part with a store is never merged), so it costs
+  one draw (six while running).
+- **A recipe on a refiner.** The `recipe` setting: Auto (what is in the input picks it, as before) or one recipe its tier makes
+  (`ConstructRefining.SetOf`, `RefineChoices`, filled as the parts load by `ConstructRefining.Attach`). A set recipe only filters what goes
+  in, at a chute and at F (`Feed`, `MixTakes`, `TipMaterial`): what is already in the input is worked as ever, so a change never strands a
+  load. The look line says "set to metal", and a refused chute "chute refused sand: set to metal".
+- **The Line Console** (`Constructs/Parts/Controls/LineConsole.json`): a desk with a screen, logically a Switch. Wire its output to each
+  machine's Run: those wires are the line (`ProductionLines.Machines` walks the construct's data routes from it). Its screen (panel source
+  `line`, 7 rows) shows "Line running 2/3" and a row a machine: kind and tier, state, recipe, a marker on the picked one; its buttons are
+  **Start/Stop** (flips the switch), **Next** (picks the next machine; the pick is the hidden `linePick` setting) and **Recipe** (steps the
+  picked machine's recipe). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
+  held until Start. On a flat battery it puts nothing out, and its machines say No power.
+- **Cost.** A stopped line costs what a held machine did (one store lookup a step); the console's list is walked only when its screen
+  fills (4 Hz, in view) or a button is pressed; nothing allocates.
+
+Proposed (the user's to confirm): the six states and their colours and blinks; the lamp over the screen rather than a beacon on top;
+membership by wire; four machines on the screen; Auto as the default recipe; a console starting stopped. Next: the lamp and console for the
+Assembler, Extruder and Recycler; a real moving part per machine family while it runs; a standard chute port height (1.0 m, in at the back
+left, out at the front right) so a base generator lays machines in a row.

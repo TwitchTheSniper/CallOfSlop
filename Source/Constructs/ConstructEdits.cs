@@ -883,7 +883,7 @@ public sealed partial class ConstructEdits
             return "nothing to put in";
         var inv = Inventory.Of(player);
         var names = RecyclingTable.Current;
-        if (d.IsRefiner && ConstructRefining.TipMaterial(inv, d, st) is var feed and not 0)
+        if (d.IsRefiner && ConstructRefining.TipMaterial(inv, d, st, ConstructRefining.SetOf(c.Parts[part], d)) is var feed and not 0)
         {
             var fed = world.Feed(c, part, inv.Materials[feed], feed);
             inv.TakeMaterial(feed, fed);

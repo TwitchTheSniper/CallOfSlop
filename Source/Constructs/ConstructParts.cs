@@ -304,6 +304,9 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>"use": true: this box is what a hand works (a lever's handle, a button's cap): the aim glow covers these and not the whole part (<see cref="ConstructPartDef.UseBoxes"/>).</summary>
     public bool Use { get; init; }
 
+    /// <summary>"status": true: a production machine's status lamp, drawn unlit in the colour of its line state (<see cref="ProductionLines"/>).</summary>
+    public bool Status { get; init; }
+
     /// <summary>How a suspension's box moves with its wheel (<see cref="BoxRig"/>, "rig" in the file; docs/sandbox/CONSTRUCTS.md "Suspension types"). Its points are in the part's frame.</summary>
     public BoxRig Rig { get; init; }
 
@@ -557,6 +560,7 @@ public sealed partial class ConstructPartDef
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
     public (Vector3 At, Vector3 Colour)[] Lamps = [];
+    public int StatusBox = -1; // the status lamp ("status" on a box; ProductionLines), or -1
     public int[] UseBoxes = []; // the boxes the aim glow covers ("use" in the file, an Analog Lever's handle); none: the part's use region, or all of it
     public float IdleRpm, PeakRpm, MaxRpm; // engine: idle, where the curve peaks, the limiter
     public EngineCurve Curve; // engine: the torque curve's shape
@@ -624,6 +628,8 @@ public sealed partial class ConstructPartDef
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
     public bool IsRefiner; // a production machine (ConstructRefining.cs): its bulk bin is the output, and it has an input bin of its own
     public string RefineMachine = ""; // a production machine: its name in Constructs/Refining.json
+    public RefineRecipe[] RefineChoices = [];
+    public string? LineName; // ...a Line Console's short name for it ("Smelter T3"; made when first shown: ProductionLines) // ...the recipes its "recipe" setting picks from (1 + an index; 0: Auto), its tier's, filled as the parts load (ConstructRefining.Attach)
     public int InCapacity; // a production machine: how much its input holds (a mixed input: of each material; an Assembler: its fill's scale)
     public bool RefineMix; // a production machine whose recipes take several materials (a Foundry): its input is CStore's mixed input
     public bool IsAssembler; // a machine that builds parts from a chosen recipe (ConstructAssembling.cs): its slots are its output tray, its input is mixed
@@ -868,7 +874,7 @@ public static partial class ConstructParts
     public const float DefaultGlass = 0.3f;
 
     private static readonly List<string> _refused = new();
-    private static readonly Lazy<ConstructPartDef[]> _all = new(() => WithSurfaces(PressTable.Attach(AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused)))), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => WithSurfaces(PressTable.Attach(ConstructRefining.Attach(AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused))))), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
 
@@ -1416,7 +1422,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1486,6 +1492,8 @@ public static partial class ConstructParts
                 throw new ConstructPartException($"{file}: {where}: only a detail box may \"roll\"");
             var made = new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, pump, turns, roll);
             made = made with { Use = Opt(b, "use") is { ValueKind: JsonValueKind.True } };
+            if (Opt(b, "status") is { ValueKind: JsonValueKind.True })
+                made = detail && glass == 0 ? made with { Status = true } : throw new ConstructPartException($"{file}: {where}: only an opaque detail box can be a \"status\" lamp");
             if (Opt(b, "finish") is { } boxFinish)
                 made = made with { Surface = SurfaceByName(boxFinish, file, where) };
             if (Opt(b, "key") is { } keyBox)
@@ -1503,6 +1511,7 @@ public static partial class ConstructParts
         ReadFlames(root, d, file);
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
+        d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);

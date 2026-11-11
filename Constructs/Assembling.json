@@ -1100,6 +1100,7 @@
     {"output": "Level Sensor", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.0, "minTier": 3},
     {"output": "Light Bank 4", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Light Bank 8", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
+    {"output": "Line Console", "materials": {"steel": 8, "copper": 13}, "parts": {"Circuit Board": 1}, "seconds": 3.2, "minTier": 3},
     {"output": "Math Block", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Medium Altimeter", "materials": {"steel": 6, "copper": 10}, "parts": {"Circuit Board": 1}, "seconds": 2.9, "minTier": 3},
     {"output": "Medium Analog Lever", "materials": {"steel": 12, "copper": 20}, "parts": {"Circuit Board": 1}, "seconds": 3.8, "minTier": 3},

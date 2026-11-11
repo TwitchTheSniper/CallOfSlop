@@ -191,6 +191,7 @@ public enum CfgKey : byte
     DoorOpen, // event door: where it last settled, open or shut (not on the panel; ConstructDoors.cs)
     DoorLocked, // event door: F can't work it (a wire into its Lock port locks it too)
     WalkSpeed, // walker leg, every profile: the top speed at full throttle, % of the legs' own (ConstructWalkProfile.cs)
+    LinePick, // Line Console: which of its machines its buttons work on (not on the panel; ProductionLines.cs)
     COUNT,
 }
 
@@ -701,7 +702,7 @@ public static class ConstructConfig
                 throw new ConstructPartException($"{file}: {where}: \"options\" (2 to 16 names) belong to a choice");
             c.Options = opts.EnumerateArray().Select(o => Text(o, file, where + ".options", 24)).ToArray();
         }
-        if (c.Type == CfgType.Choice && c.Options.Length == 0 && c.Id is not (CfgKey.Setting or CfgKey.Recipe)) // (a recipe's options are the Assembling table: AssemblingTable.Attach)
+        if (c.Type == CfgType.Choice && c.Options.Length == 0 && c.Id is not (CfgKey.Setting or CfgKey.Recipe)) // (a recipe's options are the Assembling or Refining table: AssemblingTable.Attach, ConstructRefining.Attach)
             throw new ConstructPartException($"{file}: {where}: a choice lists its \"options\"");
         if (c.Type == CfgType.Key && c.Id != CfgKey.Setting)
             throw new ConstructPartException($"{file}: {where}: a key binding is an input reader's \"setting\"");
@@ -787,7 +788,8 @@ public static class ConstructConfig
             var ok = e.Id switch
             {
                 CfgKey.Setting => true,
-                CfgKey.Recipe => d.IsAssembler || d.IsLathe,
+                CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner,
+                CfgKey.LinePick => ProductionLines.IsConsole(d),
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

@@ -319,6 +319,29 @@ def bundling():
     return out
 
 
+def line_console():
+    """The operator station of a production line (docs/sandbox/constructs/production.md "Production lines"): a desk with a screen. It is a
+    Switch: its output, wired to each machine's Run, is the line; the screen lists those machines, and its buttons start and stop the line,
+    pick a machine and step that machine's recipe (ProductionLines.cs)."""
+    p = Part("Line Console", SMALL, "Controls", "Runs a production line: wire its output to each machine's Run. Start, stop and pick recipes on its screen.",
+             role="logic", tool="welder", color=HOUSING, group="Logic")
+    p.add(box((-0.45, 0, -0.25), (0.45, 1.0, 0.25)))  # the desk
+    p.add(box((-0.43, 0.99, -0.24), (0.43, 1.62, -0.1)))  # the screen's housing, standing on the desk's back
+    p.add(box((-0.41, 1.0, 0.0), (0.41, 1.012, 0.21), BLOCK, detail=True))  # the desk's work top
+    p.sock("bottom", (0, 0, 0), "-y")
+    p.sock("back", (0, 0.75, -0.25), "-z")
+    p.stats(40, 120, 2, 3.0)
+    touch = [{"action": "line.run", "at": [0.02, 0.02, 0.32, 0.13], "label": "Start"},
+             {"action": "line.next", "at": [0.35, 0.02, 0.65, 0.13], "label": "Next"},
+             {"action": "line.recipe", "at": [0.68, 0.02, 0.98, 0.13], "label": "Recipe"}]
+    p.set(logic={"kind": "switch"},
+          config=[{"key": "startOn", "label": "Starts running", "group": "General", "default": False, "tooltip": "The line runs as soon as it is built."},
+                  {"key": "linePick", "label": "Machine", "group": "General", "min": 0, "max": 31, "step": 1, "default": 0, "hidden": True, "tooltip": "Which machine its buttons work on."},
+                  INK],
+          panels=[{"source": "line", "at": [0, 1.31, -0.097], "size": [0.82, 0.56], "face": "+z", "up": "+y", "rows": 7, "range": 12, "touch": touch}])
+    return "", p
+
+
 def controls():
     code = [{"key": "code", "label": "Code", "group": "General", "min": 0, "max": 999999, "step": 1, "default": 0, "tooltip": "The number that opens it. Only you can see or change it."},
             {"key": "hold", "label": "Stays open", "group": "General", "unit": "s", "min": 0, "max": 600, "step": 0.5, "default": 0, "tooltip": "0: until Clear."},
@@ -338,6 +361,7 @@ def controls():
         toggle("Medium Mushroom Button", "button", "mushroom", s=5, tool="welder", mass=30, cls=MEDIUM, health=180, armour=4, config=BUTTON),
         key_switch(),
         key_item(),
+        line_console(),
     ]
 
 
