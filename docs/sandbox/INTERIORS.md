@@ -901,6 +901,46 @@ its own layouts: cramped Bandit, orderly Militia). Materials and textures come f
    through the step paint and finish, so nothing new reaches saves or the wire.
 4. Trim and wear as cheap parts (one link, no joints, no wires) and by wear level.
 
+### Done (phase 12)
+
+- **Surfaces** (`Materials/Surfaces.json`, rows 29 to 39, offered to the texture paint tool): deck plate and painted deck plate (tread),
+  grating and painted grating (a dark open weave), wall panelling (2 m panels), worn paint and rusty paint (edges rubbed through; rusty
+  leans brown), rubber matting, lagging, hazard paint, soot. Each painted kind keeps its pattern, so paint tints rather than flattens.
+- **Interior parts** (`interior_parts.py`) name their materials: panel walls wall panelling, floor panels and the lift car's floor deck
+  plate, lockers and cabinets painted steel, the medicine cabinet, medical station and fire point gloss paint, tables plastic tops, the
+  chart table and pegboards wood, the stove bare steel, boards matte paint with brass breakers, the repair station and wall ribs dirty
+  steel, the pipe bank one lagged, one painted and one bare pipe, the duct aluminium, cables rubber, signs, the jib and markings hazard
+  paint. Lamps' glow names none.
+- **Trim:** Kick Plate (a 3.6 m deck-plate skirting with a lip, on a wall's low face socket: every crew, work, plant and store kit, two or
+  more in halls) and Lane Marking (two edge lines and a worn lane, 3.6 m, in the hangar, storage and production halls). One link each.
+- **Palettes** (`Constructs/Interiors/Palettes.json`, refused with a reason when bad): one per style (default, Bandit, IT, Scam, Highland,
+  British, Militia): wall colours (Bandit's don't match), floor material and colour, crew and plant floors, frame, trim, accent, hazard,
+  wear and lamp colour. Room types shift it: medical pale, bridge and workshop dark, quarters, mess and lockers warm, engineering and fuel
+  dark with hazard trim, magazine, hangar and production hazard trim. Wear picks the walls' material (wall panelling, worn paint, rusty
+  paint), the frames' (steel, dirty steel, soot in plant rooms) and the kick plates' (rusty paint when worn).
+- **The look stage** (`InteriorBuilder.Look.cs`, last in `Build`): every part the builder fitted is placed in its room by its bounds and
+  given its finish (`BlueprintScript.Finish`, a step's `"finish"` by name) and paint by what it is: floors, walls and panels, door corners
+  (trim, hazard paint in hazard rooms), doors (accent), stairs, kick plates, ribs, bay markings; mains lamps get the lamp colour (their
+  `colour` setting). The vehicle's own parts keep theirs. `--gen-interior ... --style NAME`, else the base blueprint's group (a style's
+  Name or Group), else the default. Nothing new on the wire or in saves: paint, finish and settings are what a player's tools write.
+
+| Titan Walker, seed 1 | Phase 11 (main) | Phase 12 |
+| --- | --- | --- |
+| Parts / links (budget total) | 5,247 / 17,010 | 5,573 / 17,336 (307 Kick Plates, 19 Lane Markings) |
+| Dressing | 1,218 hung, 15 spots refused | 1,531 hung, 62 refused (low spots by doorways and stairs), 2 Jib Cranes (4 before) |
+| Build | 16.0 s (dressing 4.8 s) | 15.9 s (dressing 6.1 s, look 9 ms) |
+
+Bandit: walls rusty paint in five unmatched colours, deck plate floors everywhere, soot on plant rooms' ribs. IT: off-white wall
+panelling, rubber matting floors, teal trim, cool lamps. The same plan otherwise.
+
+**Tried by hand:** `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1 --style Bandit` and `--style IT` (0 refused, load back
+5,573 parts, drives from the bridge's helm); `--interior-walk` on the Bandit file passes; `--check-construct-parts` finishes.
+**Not tried:** any picture (whether rooms read as floor, wall and trim at a glance, the new rows' look on Low, Medium and High, the
+lamps' colours), seeds 2 and 3, the other four styles' runs, the in-game spawn of a fitted file.
+
+**Left:** room names stencilled (the Text Sign could carry them, but the kit has no step `"text"` yet); door-frame edge stripes as parts
+(door corners take the trim colour instead); faction trim parts of their own; layouts per faction; the dressing's extra time (kick plates).
+
 ### Next (phase 10 and on)
 
 Lamps that need no wire (or a higher link cap); the kit's batch rebuild; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics

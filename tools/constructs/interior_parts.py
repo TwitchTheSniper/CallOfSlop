@@ -601,7 +601,7 @@ def lane_marking():
     for s in (-1, 1):
         z0, z1 = sorted((s * half, s * (half + w)))
         p.add(box((-a, 0.004, z0), (a, 0.014, z1), YELLOW))
-    p.add(box((-a + 0.01, 0.003, -half + 0.006), (a - 0.01, 0.009, half - 0.006), "#6a6e72", finish="worn paint"))  # the scuffed lane
+    p.add(box((-a + 0.01, 0.002, -half + 0.006), (a - 0.01, 0.0125, half - 0.006), "#6a6e72", finish="worn paint"))  # the scuffed lane
     p.stats(3, 30, 1, 1.0)
     return p
 
