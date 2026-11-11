@@ -119,6 +119,8 @@ public static unsafe partial class Program
             lines.AddRange(InteriorPlanner.Check(vplan, data, out var vf).Select(l => "void " + l));
             failures += vf;
         }
+        CallOfSlop.VehicleKit.KitProfile.Reset();
+        CallOfSlop.VehicleKit.KitProfile.On = true; // (phase 10: where the build's time goes, by the kit's stages)
         try
         {
             b.Build(plan, seed, vplan);
@@ -138,6 +140,9 @@ public static unsafe partial class Program
         foreach (var l in lines)
             Console.WriteLine("  " + l);
         Console.WriteLine($"  parts: {b.Placed} placed ({b.Welded} welded), {b.Doors} doors hung ({b.SwingDoors} swing, {b.SlideDoors} sliding, {b.DoubleDoors} double; {b.OpenDoorways} doorways open), {b.LootSpotsSet} loot containers, {b.Refused.Count} refused; plan {planMs:0} ms, build {buildMs:0} ms");
+        Console.WriteLine($"  build stages: {string.Join(", ", b.StageMs.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value} ms"))}");
+        CallOfSlop.VehicleKit.KitProfile.On = false;
+        Console.Write(CallOfSlop.VehicleKit.KitProfile.Report(1));
         foreach (var g in b.Refused.GroupBy(r => string.Join(' ', r.Split(' ').Take(2))).Where(g => g.Count() > 1).OrderByDescending(g => g.Count()))
             Console.WriteLine($"  refused {g.Count()} times: {g.Key} ...");
         foreach (var r in b.Refused.GroupBy(r => string.Join(' ', r.Split(' ').Take(2))).SelectMany(g => g.Take(3)).Take(40))

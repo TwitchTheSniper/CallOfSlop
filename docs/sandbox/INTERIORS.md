@@ -762,6 +762,63 @@ Columns under the wide spans aren't built (the Steel Column is a storey high).
 **For the coordinator:** regenerate `Constructs/Blueprints/TitanWalkerFitted.json` after merging
 (`--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1`).
 
+## Phase 10 record (branch `feat/interior-dress`)
+
+The brief: the stair railing fix, the build time, asymmetry (step 2), decoration in every room (step 3) and the dark lamps. Steps 1 to 3 of
+that list are done here; decoration and the dark lamps are not (see "Not done").
+
+**The stair railing (seed 1, level -3, 14 failures).** It was the walk-through, not the railing: the 14 failures were the 14 welded flights,
+whose place the walk read as the body's when it is in the weld's frame, so it tried every one at the body's origin (where a gallery railing
+happened to stand). `Program.InteriorWalk.cs` now takes a welded flight through `SegToWorld`. The builder also keeps railings off stair
+feet and heads for real: stairs go in before a storey's railings, each flight's foot and head as built (`KeepClear`, from its bounds) are kept
+1.3 m clear (`NearClear`; a 2 m piece on the clear half, or none), and a flight still to be welded keeps its box (`_reserved`). Walk-through on
+seeds 1 to 3: every stair flight up and down passes (40 a seed, the welded ones too), every door, doorway, corridor and lift car.
+
+**Build time (40 s to 10 s).** `--gen-interior` now prints the build's time by stage and the kit's `KitProfile` table. Rebuilds after each
+step were 26 of 40 s: a construct with freeform welds rebuilds about four times slower, and the halls' flights (no socket meets them) were
+welded on early in the chassis's lowest storey, so every one of the next ~3,900 parts paid for them. The flights the rules refuse are now
+welded last (`WeldLater`); meanwhile their box is kept from furniture and railings. Build 9.7 to 12 s on seeds 1 to 3 (was 41 to 52 s),
+rebuilds 4.3 s of it. The game's own rebuilds of the fitted walker (a player's edit) still pay the freeform cost: 14 welded flights.
+
+**Asymmetry** (`InteriorPlanner.Plan`, a second seeded stream from the seed and the hull's size, so a chassis void and the deck over it agree):
+- the spine moves a cell or two off the centreline, keeping each strip a row plus one deep;
+- each strip's inner row has its own depth (the class's, a cell either way; never the same both sides), so rooms either side differ in depth;
+- the stairs stand at seeded points in their halves of the hull and the lift between 35% and 65% of its length;
+- medical, production, armoury, workshop and gun station are now free rooms (`RoomTypes.json`): an L where a wing fits beside them;
+- a generated room the doors pass can't reach (behind a critical room and a hall's stair wall) becomes void, with a note.
+- **Anchored hulls** (`HullVolume.Anchored`): the hollow chassis's hatches are fixed in its part (`interior_parts.py` `HATCHES`), so its void and
+  the deck over it keep the centred spine, the class's north row and the classic shaft places (the first try moved them and 30 mezzanine
+  walls hit the chassis's top plate). On the Titan Walker that leaves the south row depth, the free rooms and the halls; any other hull gets
+  the lot. Moving the hatches off centre in the chassis generator would free the walker too.
+
+| Symmetry, deck / chassis | Seed 1 | Seed 2 | Seed 3 |
+| --- | --- | --- | --- |
+| Phase 9 | 6% / 15% | 7% / 14% | 10% / 18% |
+| Phase 10 | 4% / 10% | 7% / 11% | 9% / 16% |
+
+| Seed 1 | Phase 9 | Phase 10 |
+| --- | --- | --- |
+| Parts / links / joints / wires | 3,983 / 16,037 / 20 / 162 | 3,944 / 15,714 / 20 / 158 |
+| Walls / slabs / furniture (parts) | 1,265 / 948 / 1,177 | 1,235 / 948 / 1,175 |
+| Dark generated rooms | 26 to 42 a seed | 30 to 37 a seed |
+| Build | 41 to 52 s | 9.7 to 12 s |
+
+Seeds 2 and 3: 3,981 / 16,029 and 3,964 / 15,846 parts / links. Every seed drives from the bridge's helm; seed 3 refuses one Repair Station
+(an L-shaped workshop's last free spot).
+
+**Tried by hand:** `--gen-interior` and `--interior-walk` on seeds 1 to 3 (all pass, exit 0), `--check-construct-parts` (finishes; no part file
+changed). **Not tried:** drawing anything, the tick time of the fitted walker (no game code changed), a non-anchored hull on a real build (the
+spine offset and shaft moves were only planned through the walker's anchored hulls and the rule's arithmetic), a client.
+
+**Not done (left for phase 11):**
+- **Decoration in every room** (step 3 of the brief): pipe runs, ducts, cable trays, lamps, ribs and columns, floor markings, signs, crates,
+  barrels, tool boards, hoists, benches, bunk dressing, vents, handrails. Parts that exist and fit: Cable Tray 1/2 m and Medium/Large/Capital
+  trays, Cable Clamp, Crate Stack, Fuel Drum, Tanker Barrel, Steel Column 2.75 m, Medium/Large Column, Text Sign (Medium, Large), Vent
+  Panel 1 m, Catwalk 4/8 m, Crew Bench, Scrap Workbench, Bunk, Light Bank 4/8, Build Gantry. Wall pieces' sockets (`Mount`) and the next
+  slab's bottom sockets are where they would hang. Budget room: about 12,000 parts and 32,000 links.
+- **Dark lamps:** a lamp lights only from a wire and every wire is one of the construct's 254 routes, so daisy-chaining doesn't help; it wants a
+  lamp kind that lights from the power circuit (or a switch whose one wire feeds a room's lamps), which is game code.
+
 ### Next (phase 10 and on)
 
 Lamps that need no wire (or a higher link cap); the kit's batch rebuild; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics

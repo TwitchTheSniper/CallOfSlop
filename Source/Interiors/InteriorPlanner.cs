@@ -5,9 +5,10 @@ namespace CallOfSlop.Interiors;
 /// <summary>
 /// What the planner fits an interior into, in metres in the hull's own frame: x along the spine from 0, y up from the lowest floor, z across
 /// from 0. <see cref="KeepOuts"/> are boxes nothing may be built in (leg hips, turret rings, the drive). Nothing here is about vehicles, so a
-/// static base gives its plot the same way.
+/// static base gives its plot the same way. <see cref="Anchored"/> (phase 10): the shafts must stand where a part's hatches are (a hollow chassis
+/// and the deck over it), so the spine, the north row and the shafts keep their classic places there.
 /// </summary>
-public sealed record HullVolume(Vector3 Size, IReadOnlyList<(Vector3 Min, Vector3 Max)> KeepOuts, bool BowAtMinX);
+public sealed record HullVolume(Vector3 Size, IReadOnlyList<(Vector3 Min, Vector3 Max)> KeepOuts, bool BowAtMinX, bool Anchored = false);
 
 /// <summary>A seeded random stream that is the same on every machine (SplitMix64; never System.Random or hash codes).</summary>
 public sealed class InteriorRng(int seed)
@@ -78,9 +79,37 @@ public static class InteriorPlanner
                 for (var z = 0; z < p.D; z++)
                     if (p.Cells[k - 1][x, z] == InteriorPlan.KeepOut)
                         p.Cells[k][x, z] = InteriorPlan.KeepOut;
-        // the spine, down the middle on every deck
+        // the spine, on every deck: off the centreline by a seeded cell or two (phase 10: a mirrored plan feels wrong to move through), keeping
+        // each strip at least a row deep plus one. Drawn from the seed and the hull's size alone, so a chassis void and the deck above it,
+        // planned from one seed on one grid, put their spines, bands and shafts in the same cells.
+        var arng = new InteriorRng(seed * 7919 + p.D * 31 + p.W);
         p.SpineZ0 = (p.D - rules.Corridor) / 2;
+        {
+            var minStrip = rules.RowDepth + 1;
+            var offs = new List<int>();
+            foreach (var o in new[] { -2, -1, 1, 2 })
+            {
+                var z0 = p.SpineZ0 + o;
+                if (z0 >= minStrip && p.D - (z0 + rules.Corridor) >= minStrip + (rules.ReserveRoute ? 1 : 0))
+                    offs.Add(o);
+            }
+            if (offs.Count > 0 && p.D >= 8 && !hull.Anchored)
+                p.SpineZ0 += offs[(int)(arng.Next() * offs.Count) % offs.Count];
+        }
         p.SpineZ1 = p.SpineZ0 + rules.Corridor - 1;
+        // (phase 10) each strip's inner row its own depth, a cell either side of the class's, so the rooms either side differ in depth
+        p.RowNorth = Math.Max(2, rules.RowDepth + (int)(arng.Next() * 3) - 1);
+        p.RowSouth = Math.Max(2, rules.RowDepth + (int)(arng.Next() * 3) - 1);
+        if (hull.Anchored)
+            p.RowNorth = rules.RowDepth; // (the hatches are a class row deep)
+        if (p.RowSouth == p.RowNorth)
+            p.RowSouth = p.RowNorth == 2 ? 3 : p.RowNorth - 1;
+
+        // (phase 10) the shafts off their even spacing: the lift off the middle, the stairs at seeded points in their halves
+        var liftAt = 0.35f + (float)arng.Next() * 0.3f;
+        var stairAt = new[] { 0.15f + (float)arng.Next() * 0.15f, 0.65f + (float)arng.Next() * 0.2f };
+        if (hull.Anchored)
+            (liftAt, stairAt) = (0.5f, new[] { 0.25f, 0.75f }); // (the hollow chassis's hatches: tools/constructs/interior_parts.py HATCHES)
         for (var k = 0; k < p.Decks; k++)
             for (var x = 0; x < p.W; x++)
                 for (var z = p.SpineZ0; z <= p.SpineZ1; z++)
@@ -104,8 +133,8 @@ public static class InteriorPlanner
         {
             var stairCount = p.W >= 2 * rules.Section ? 2 : 1;
             for (var i = 0; i < stairCount; i++)
-                PlaceShaft(p, data.Rooms["stairs"], "stairs", rules.Stair.W, north, (int)(p.W * (stairCount == 1 ? 0.5f : i == 0 ? 0.25f : 0.75f)));
-            PlaceShaft(p, data.Rooms["elevator"], "elevator", rules.Elevator.W, north, p.W / 2);
+                PlaceShaft(p, data.Rooms["stairs"], "stairs", rules.Stair.W, north, (int)(p.W * (stairCount == 1 ? 0.5f : stairAt[i])));
+            PlaceShaft(p, data.Rooms["elevator"], "elevator", rules.Elevator.W, north, (int)(p.W * liftAt));
         }
 
         // phase 9: the halls first (big volumes through several storeys), then the people-sized rooms round them
@@ -228,17 +257,22 @@ public static class InteriorPlanner
             if (depth < 1)
                 return;
             list.Add(new Band(strip, "full", z0, z1));
-            if (depth - rules.RowDepth < 2)
+            var row = strip == 0 ? p.RowNorth : p.RowSouth; // (phase 10: each strip its own)
+            if (row <= 0)
+                row = rules.RowDepth;
+            if (depth - row < 2)
+                row = Math.Max(2, depth - 2); // (keep an outer band of two where the strip allows)
+            if (depth - row < 2)
                 return; // (an outer band of one cell would be all void: the strip stays one band)
             if (innerAtHigh)
             {
-                list.Add(new Band(strip, "inner", z1 - rules.RowDepth + 1, z1));
-                list.Add(new Band(strip, "outer", z0, z1 - rules.RowDepth));
+                list.Add(new Band(strip, "inner", z1 - row + 1, z1));
+                list.Add(new Band(strip, "outer", z0, z1 - row));
             }
             else
             {
-                list.Add(new Band(strip, "inner", z0, z0 + rules.RowDepth - 1));
-                list.Add(new Band(strip, "outer", z0 + rules.RowDepth, z1));
+                list.Add(new Band(strip, "inner", z0, z0 + row - 1));
+                list.Add(new Band(strip, "outer", z0 + row, z1));
             }
         }
         Strip(0, 0, p.SpineZ0 - 1, true);
@@ -633,6 +667,15 @@ public static class InteriorPlanner
                     p.Entries.Add(new PlanEntry(0, r.Rect.X0, north ? 0 : p.D - 1, $"{r.Name} outside door"));
                 }
             }
+        }
+        // (phase 10) a generated room still shut in (behind a critical room and a hall's stair wall, say) becomes void rather than a room nobody reaches
+        var still = Reached(p);
+        foreach (var r in p.Rooms.Where(r => r.Type != "dead" && r.Origin is "generated" or "leftover" && r.Shaft == null && !still.Contains(r.Id)))
+        {
+            p.Notes.Add($"the {r.Name} ({r.Rect} deck {r.Deck}) has no way in: void");
+            r.Type = "dead";
+            r.Name = data.Rooms["dead"].Name;
+            r.Set = null;
         }
     }
 
