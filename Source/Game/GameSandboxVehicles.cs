@@ -81,6 +81,7 @@ public sealed class VehicleSpawner(Game game)
         public ConvoyRun? Convoy; // a convoy's member: where it stands is worked out when it is ready, behind the one before
         public int Lane, Index; // its lane (0 the middle) and place in the convoy (0 the leader)
         public SpawnContext? Context; // where it is made for (phase 7: VehicleContext.cs; null or neutral: as before); kept through rerolls
+        public EngineKit.EngineRequest? Engine; // an engine on its own (GameSandboxEngines.cs): made by the Engine Kit, never rerolled or stood in for
     }
 
     /// <summary>A convoy being set down: its plan, where its leader stands and which way it heads, how far back each lane has reached.</summary>
@@ -338,6 +339,21 @@ public sealed class VehicleSpawner(Game game)
     }
 
     /// <summary>
+    /// Asks for an engine on its own (the creative "Make an engine": GameSandboxEngines.cs), made by the Engine Kit in the generation's slices and set down
+    /// as a vehicle is. A failed request is not rerolled: <paramref name="done"/> hears why. <see cref="EngineMade"/> holds the result while it is set down.
+    /// </summary>
+    public string? RequestEngine(EngineKit.EngineRequest r, Vector3 ground, float yaw, byte owner, byte frontOf, Finished done)
+    {
+        if (Full(owner) is { } full)
+            return full;
+        _queue.Enqueue(new Ask { Engine = r, Seed = r.Seed, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done });
+        return null;
+    }
+
+    /// <summary>The last engine made for <see cref="RequestEngine"/> (its numbers and note), kept until the next one: its finish callback reads it.</summary>
+    public EngineKit.EngineResult? EngineMade;
+
+    /// <summary>
     /// Off world (no air) a vehicle that burns fuel can't run: the kit gives every engine slot the Electric Motor there (VehicleContext.cs). With the host's committed
     /// seeds only, nothing can be made for it: refused with the reason, as a fallback to a committed file would be.
     /// </summary>
@@ -389,12 +405,19 @@ public sealed class VehicleSpawner(Game game)
             Generated++;
             Console.WriteLine($"[vehicles] generated {job.Name} (hash {job.Hash:x16}, kit {job.Kit}{(job.RoleNotes.Length + job.Modules.Length > 0 ? ": " + string.Join(", ", new[] { job.RoleNotes, job.Modules }.Where(x => x.Length > 0)) : "")}{(job.ContextNotes.Length > 0 ? $"; context {job.ContextNotes}{(_now.Context?.Read is { Length: > 0 } read ? $" (read: {read})" : "")}" : "")}) in {job.CpuMs:0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt}){(job.Brief is { } brief ? "; brief: " + brief.Summary : "; no brief")}");
             _placeBrief = job.Brief;
+            if (job.EngineMade != null)
+                EngineMade = job.EngineMade;
             Place(_now.Convoy != null ? Slot(_now, job.Front, job.Rear) : _now, bp, job.Tow, job.Name);
             return;
         }
         Failed++;
         if (++_failures <= 10 || _failures % 100 == 0)
             Console.WriteLine($"[vehicles] {job.Name} failed ({_failures} so far): {job.Error}");
+        if (_now.Engine != null)
+        {
+            Finish(_now, null, job.Name, job.Error); // (an engine is never rerolled: the same request makes the same refusal)
+            return;
+        }
         var next = _now;
         if (++next.Tries <= Rerolls && !job.Error.StartsWith("no yield"))
         {
@@ -414,6 +437,11 @@ public sealed class VehicleSpawner(Game game)
         if (a.Bp is { } bp)
         {
             Place(a, bp, null, bp.Name);
+            return;
+        }
+        if (a.Engine is { } engine)
+        {
+            _job = new VehicleGenJob(engine); // (engines have no committed files: always made)
             return;
         }
         if (Seeds == VehicleSeeds.Committed)

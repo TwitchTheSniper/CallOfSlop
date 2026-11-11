@@ -89,7 +89,24 @@ public sealed class VehicleGenJob
         Context = context is { Matters: true } ? context : null;
     }
 
-    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "") + (Context?.Suffix ?? "") + (Engine?.Suffix ?? "");
+    /// <summary>
+    /// An engine on its own (the creative "Make an engine": GameSandboxEngines.cs): the Engine Kit's request run in this job's slices instead of a
+    /// generator (<see cref="Generator"/> is null then). <see cref="EngineMade"/> holds what was made once done.
+    /// </summary>
+    public VehicleGenJob(EngineKit.EngineRequest engineAsk)
+    {
+        EngineAsk = engineAsk;
+        Generator = null!;
+        Seed = engineAsk.Seed;
+    }
+
+    /// <summary>The engine asked for (null: a vehicle generation).</summary>
+    public readonly EngineKit.EngineRequest? EngineAsk;
+
+    /// <summary>The engine made for <see cref="EngineAsk"/>, once done (null before, or when it failed).</summary>
+    public EngineKit.EngineResult? EngineMade;
+
+    public string Name => _made.Length > 0 ? _made : EngineAsk != null ? "an engine" : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "") + (Context?.Suffix ?? "") + (Engine?.Suffix ?? "");
 
     private string _made = ""; // (the vehicle's own name once made: a kit-1 shape's role may have taken a seed derived from the one asked)
 
@@ -292,6 +309,11 @@ public sealed class VehicleGenJob
 
     internal void Generate() // (on the kit's thread; the profile probe calls it straight)
     {
+        if (EngineAsk != null)
+        {
+            GenerateEngine(EngineAsk);
+            return;
+        }
         Vehicle v;
         using (EngineKit.EngineWish.Use(Engine))
             v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role, context: Context);
@@ -316,6 +338,22 @@ public sealed class VehicleGenJob
             _tow = ConstructBuild.ParseBlueprint(VehicleRegistry.Run(tg, towSeed, new VehicleLayers()), VehicleRegistry.FileName(tg, towSeed));
         }
         _brief = MakeBrief(v, text, bp);
+        _bp = bp;
+    }
+
+    /// <summary>An engine on its own: the Engine Kit's request (its pieces yield as they are placed), the blueprint read back as a vehicle's is.</summary>
+    private void GenerateEngine(EngineKit.EngineRequest ask)
+    {
+        var res = EngineKit.EngineKit.Request(ask);
+        Yield();
+        if (!res.Built)
+            throw new VehicleKitException(res.Note.Length > 0 ? res.Note : "no engine could be made");
+        _made = res.Name;
+        Hash = Fnv(res.Text);
+        RoleNotes = res.ToString();
+        Yield();
+        var bp = ConstructBuild.ParseBlueprint(res.Text, res.Name + ".json");
+        EngineMade = res;
         _bp = bp;
     }
 

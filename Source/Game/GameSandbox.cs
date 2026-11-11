@@ -85,6 +85,7 @@ public enum CActKind : byte
     GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 215; ConstructEditsUpgrades.cs)
     Aircraft, // u8 AirAsk, text style, text shape (Flying) or air role (Faction; empty: any), u32 seed (0: the server picks): an aircraft already flying with a bot pilot over the player (protocol 230; GameSandboxAircraft.cs)
     QuarrySkip, // nothing: skip the first Ministry duty, the quarry (protocol 236; GameQuarry.cs)
+    MakeEngine, // u16 kW, u8 tier, u8 EngineLayout, u8 EngineBoost, u8 size (255 any), 3 x u16 fit (cm; 0 any), u32 seed: creative, the Engine Kit makes an engine in front of the player (protocol 241; GameSandboxEngines.cs)
 }
 
 /// <summary>
@@ -846,6 +847,8 @@ public sealed partial class Game
                 return SandboxVehicleAct(p, ref r); // a faction vehicle made at spawn time (GameSandboxVehicles.cs)
             case CActKind.FactionVehicle:
                 return SandboxFactionVehicleAct(p, ref r); // by role and tier, or a convoy (GameSandboxVehicles.cs)
+            case CActKind.MakeEngine:
+                return SandboxMakeEngineAct(p, ref r); // the Engine Kit's engine in front of the player (GameSandboxEngines.cs)
             case CActKind.Aircraft:
                 return SandboxAircraftAct(p, ref r); // flying with a bot pilot, by shape or by air role (GameSandboxAircraft.cs)
             case CActKind.Sculpt:

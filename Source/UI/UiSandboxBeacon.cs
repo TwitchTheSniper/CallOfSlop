@@ -45,7 +45,7 @@ public sealed partial class Ui
             _sbNetVersion = net.Version;
             _sbFilterVersion++;
         }
-        if (net != null && _sbTab is SbTab.Blueprints or SbTab.Spawn or SbTab.Builds)
+        if (net != null && _sbTab is SbTab.Blueprints or SbTab.Spawn or SbTab.Builds or SbTab.Engine)
             SetSandboxInventoryTab(SbTab.Parts);
         else if (net == null && _sbTab == SbTab.Materials)
             SetSandboxInventoryTab(SbTab.Parts);
