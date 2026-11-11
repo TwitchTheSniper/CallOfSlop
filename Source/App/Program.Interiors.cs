@@ -6,7 +6,7 @@ namespace CallOfSlop;
 public static unsafe partial class Program
 {
     /// <summary>
-    /// <c>--gen-interior &lt;blueprint name or file&gt; [--seed S] [--out DIR] [--plan] [--chassis hollow|armoured]</c>: the interior planner and builder (docs/sandbox/INTERIORS.md).
+    /// <c>--gen-interior &lt;blueprint name or file&gt; [--seed S] [--out DIR] [--plan] [--chassis hollow|armoured] [--style NAME]</c>: the interior planner and builder (docs/sandbox/INTERIORS.md).
     /// Replays the blueprint through the build rules, plans an interior for its deck by its tonnage class, builds it and writes
     /// "&lt;Name&gt; Fitted" under DIR (default: the repository's Constructs/Blueprints), loads it back and prints the check. --plan prints the
     /// ASCII deck maps and the room list. --chassis swaps the blueprint's root for the Capital Hollow Chassis 128x64 m or the Capital Armoured
@@ -69,6 +69,15 @@ public static unsafe partial class Program
         try
         {
             b = InteriorBuilder.From(data, bp);
+            // phase 12: the faction's look (Constructs/Interiors/Palettes.json): --style NAME, else the base blueprint's group, else the default
+            var palettes = InteriorPalettes.Load(InteriorData.Folder);
+            if (palettes.For(Flag("--style"), bp.Group, out var noStyle) is not { } palette)
+            {
+                Console.WriteLine($"--style: {noStyle}");
+                return 1;
+            }
+            b.Palette = palette;
+            b.RoomLooks = palettes.Rooms;
             var top = b.Class!;
             if (args.Any(a => a.Equals("--no-halls", StringComparison.OrdinalIgnoreCase)))
                 top = top with { Halls = [] }; // (phase 9: the plan as before the halls, to compare)
@@ -89,6 +98,11 @@ public static unsafe partial class Program
         catch (VehicleKitException e)
         {
             Console.WriteLine($"{bp.Name}: FAIL {e.Message}");
+            return 1;
+        }
+        catch (InteriorDataException e)
+        {
+            Console.WriteLine($"interior data refused: {e.Message}");
             return 1;
         }
         var planMs = clock.Elapsed.TotalMilliseconds;
