@@ -10,6 +10,7 @@ public sealed class PanelTouchDef
     public PanelAction? Run;
     public Vector4 At; // x0, y0, x1, y1: shares of the panel, from its bottom left
     public string Label = "";
+    public int View => Action == "view.up" ? -1 : Action == "view.down" ? 1 : 0; // a list's Up or Down: this PC's own
 }
 
 /// <summary>What a button does, on the server. Null, or why not. It changes the part, and the caller sends the body on.</summary>
@@ -48,6 +49,8 @@ public static class PanelTouch
         ["orders.cancel"] = (w, c, part, player, tick) => WorkOrders.CancelHead(w, c, part),
         ["orders.clear"] = (w, c, part, player, tick) => WorkOrders.ClearHere(w, c, part),
         ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
+        ["view.up"] = (w, c, part, player, tick) => null, // (a list's Up and Down are this PC's own: Program.PointerFrame scrolls the panel and sends nothing)
+        ["view.down"] = (w, c, part, player, tick) => null,
     };
 
     /// <summary>A panel's "touch" list, and its "picture" rectangle.</summary>

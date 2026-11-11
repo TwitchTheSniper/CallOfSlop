@@ -20,7 +20,7 @@ public struct WorkOrder
 /// <summary>
 /// A machine's queue or a Line Console's bill: at most <see cref="WorkOrders.MaxOrders"/> orders, oldest first. Held on the part
 /// (<see cref="CPart.Orders"/>), so it moves with the part through renumbering, splits and cuts. The server holds every order; a
-/// client holds the head (up to <see cref="WorkOrders.Shown"/>) and the totals, which is all a screen shows.
+/// client holds the head (up to <see cref="WorkOrders.Sent"/>) and the totals, which is all a screen shows.
 /// </summary>
 public sealed class OrderList
 {
@@ -74,7 +74,7 @@ public static class WorkOrders
 {
     public const int MaxOrders = 255; // a queue's or a bill's orders
     public const int MaxCount = 999; // pieces an order asks for
-    public const int Shown = 3; // orders a client is sent (the screen's head)
+    public const int Sent = 32; // orders a client is sent (a screen's list scrolls through them; 3 before protocol 248)
     private const int OrderBytes = 22; // one order on the wire
 
     // ---- Accepting --------------------------------------------------------------------------------------------------------
@@ -375,7 +375,9 @@ public static class WorkOrders
     /// <summary>A line of the screen: "3/7 I-beam 0.25x0.25 4m metal", a marker first.</summary>
     public static void Row(PanelCard card, int line, char marker, in WorkOrder o)
     {
-        card.Add(line, marker).Add(line, o.Made).Add(line, '/').Add(line, o.Count).Add(line, ' ');
+        if (marker != '\0')
+            card.Add(line, marker);
+        card.Add(line, o.Made).Add(line, '/').Add(line, o.Count).Add(line, ' ');
         if (!o.IsPiece)
         {
             card.Add(line, ConstructParts.Def(o.Part).Name);
@@ -398,22 +400,42 @@ public static class WorkOrders
         card.Add(line, ' ').Add(line, RecyclingTable.Current.NameOf(k.Material));
     }
 
-    /// <summary>A machine's queue on its screen, from line <paramref name="from"/>: the totals, then the next three.</summary>
+    /// <summary>
+    /// A machine's queue on its screen, from line <paramref name="from"/>: the totals with the scroll mark, then as many orders as the screen's
+    /// rows hold, from the viewer's scroll (<see cref="PanelCard.Scroll"/>), each cut with ".." to the screen's width.
+    /// </summary>
     public static void FillQueue(in CPart p, PanelCard card, int from)
     {
         if (p.Orders is not { } q)
             return;
+        var cols = card.Cols;
         if (q.Total == 0)
         {
-            card.Add(from, "Orders: none, waiting");
+            card.Add(from, "Orders: none, waiting").Clip(from, cols);
             return;
         }
         card.Add(from, "Orders ").Add(from, q.Total).Add(from, ", ").Add(from, q.PiecesLeft).Add(from, " to make");
-        for (var k = 0; k < Math.Min(q.Count, Shown); k++)
-            Row(card, from + 1 + k, k == 0 ? '>' : ' ', q.Items[k]);
+        var fit = Math.Max(1, card.TextRows - from - 1);
+        var first = List(card, q.Count, fit);
+        var shown = Math.Min(fit, q.Count - first);
+        card.ScrollMark(from, first, shown, q.Total, cols).Clip(from, cols);
+        for (var k = 0; k < shown; k++)
+        {
+            var line = from + 1 + k;
+            Row(card, line, first + k == 0 ? '>' : ' ', q.Items[first + k]);
+            card.Clip(line, cols);
+        }
     }
 
-    /// <summary>A Line Console's bill page.</summary>
+    /// <summary>A list of <paramref name="count"/> entries on <paramref name="fit"/> rows: where it starts, from the viewer's scroll, clamped; sets how far it scrolls.</summary>
+    private static int List(PanelCard card, int count, int fit)
+    {
+        card.ScrollMax = Math.Max(0, count - fit);
+        card.Scroll = Math.Clamp(card.Scroll, 0, card.ScrollMax);
+        return card.Scroll;
+    }
+
+    /// <summary>A Line Console's bill page: the totals and the scroll mark, the line Add would put on, the bill's lines from the viewer's scroll, and the note under them.</summary>
     public static void FillBill(Construct c, int part, PanelCard card)
     {
         ref var p = ref c.Parts[part];
@@ -421,17 +443,36 @@ public static class WorkOrders
         card.TouchLabels[1] = "Send";
         card.TouchLabels[2] = "Clear";
         card.TouchLabels[3] = "Line";
+        var cols = card.Cols;
+        var rows = card.TextRows;
         var q = p.Orders;
         var total = q?.Total ?? 0;
         card.State = total == 0 ? PanelState.Idle : q!.Note.Length > 0 ? PanelState.Wants : PanelState.Ok;
         card.Add(0, "Bill: ").Add(0, total).Add(0, " lines, ").Add(0, q?.PiecesLeft ?? 0).Add(0, " pieces");
         if (FromSettings(c, part, out var next) is null)
+        {
             Row(card, 1, '+', next);
-        if (q != null)
-            for (var k = 0; k < Math.Min(q.Count, Shown); k++)
-                Row(card, 2 + k, ' ', q.Items[k]);
-        if (q is { Note.Length: > 0 })
-            card.Add(5, q.Note.Length > PanelCard.MaxChars ? q.Note[..PanelCard.MaxChars] : q.Note);
+            card.Clip(1, cols).Dim(1);
+        }
+        var noteRows = q is { Note.Length: > 0 } ? Math.Min(2, Math.Max(1, rows - 4)) : 0;
+        var fit = Math.Max(1, rows - 2 - noteRows);
+        var count = q?.Count ?? 0;
+        var first = List(card, count, fit);
+        var shown = Math.Min(fit, count - first);
+        card.ScrollMark(0, first, shown, total, cols).Clip(0, cols);
+        for (var k = 0; k < shown; k++)
+        {
+            Row(card, 2 + k, ' ', q!.Items[first + k]);
+            card.Clip(2 + k, cols);
+        }
+        if (noteRows > 0)
+        {
+            int at = 0, column = 0;
+            var top = rows - noteRows;
+            card.Wrap(q!.Note, cols, top, rows - 1, 0, ref at, ref column);
+            for (var l = top; l < rows; l++)
+                card.Tint(l, 0, PanelCard.MaxChars, new System.Numerics.Vector3(1f, 0.68f, 0.08f)); // (amber, as a Starved lamp: why a line stayed)
+        }
     }
 
     // ---- The wire (CBodyKind.Orders) ---------------------------------------------------------------------------------------
@@ -457,7 +498,7 @@ public static class WorkOrders
             if (c.Parts[i].Orders is not { } q)
                 continue;
             w.U16((ushort)i).U8((byte)(q.Bill ? 1 : 0)).U16((ushort)q.Total).U32((uint)q.PiecesLeft).Str(q.Note);
-            var shown = Math.Min(q.Count, Shown);
+            var shown = Math.Min(q.Count, Sent);
             w.U8((byte)shown);
             for (var k = 0; k < shown; k++)
                 WriteOrder(w, q.Items[k]);
@@ -488,7 +529,7 @@ public static class WorkOrders
             var left = r.U32();
             var note = r.Text(200);
             int shown = r.U8();
-            if (shown > Shown || total > MaxOrders || shown > total)
+            if (shown > Sent || total > MaxOrders || shown > total)
                 throw new MalformedPacketException($"an order list of {total}, {shown} shown");
             var q = new OrderList { Bill = (flags & 1) != 0, Note = note };
             for (var k = 0; k < shown; k++)

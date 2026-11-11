@@ -54,6 +54,7 @@ public sealed class PanelDef
     public PanelFill? Fill;
     public Vector4 Picture = new(0, 0, 1, 1); // where a page's picture sits: shares of the panel, from its bottom left
     public PanelTouchDef[] Touch = []; // its buttons (PanelTouch.cs)
+    public float TouchTop; // the top of the buttons along its bottom, a share of its height (text rows stay above it)
 }
 
 /// <summary>Fills a panel's card from the part as it is on this peer. Runs at <see cref="PanelRender.FillHz"/> for panels in range and in view; must not allocate in a steady state.</summary>
@@ -67,10 +68,23 @@ public delegate void PanelFill(ConstructWorld world, Construct c, int part, Pane
 /// </summary>
 public sealed class PanelCard
 {
-    public const int MaxLines = 8, MaxChars = 32;
+    public const int MaxLines = 16, MaxChars = 64; // (16 and 64 since the Text size setting: a small size shows more)
 
     private readonly char[] _text = new char[MaxLines * MaxChars];
     private readonly int[] _len = new int[MaxLines];
+    private readonly byte[] _tintFrom = new byte[MaxLines], _tintTo = new byte[MaxLines]; // a span drawn in its own colour (a state word)
+    private readonly Vector3[] _tint = new Vector3[MaxLines];
+    private readonly bool[] _dim = new bool[MaxLines]; // a line of detail, in a dimmer colour
+
+    // How it is laid out at the part's Text size (PanelRender sets these before a fill): a source that reflows reads them.
+    public int Rows = 4; // text rows the panel is laid out in
+    public int Cols = 32; // characters a full line holds
+    public int TextRows = 4; // rows from the top that no button along the bottom covers
+
+    // A list longer than the panel (the viewer's own, never on the wire): PanelRender keeps Scroll per panel on this PC.
+    public int Scroll; // in: the first entry the viewer asked for; out: as the source clamped it
+    public int ScrollMax; // out: the most Scroll can be (0: everything shows; the mouse wheel and Up/Down do nothing)
+    public int Follow = -1; // in and out: the source's own memory of what it keeps in view (the console's pick), so a new pick scrolls to it
 
     public PanelState State;
     public bool HasIcon;
@@ -102,6 +116,9 @@ public sealed class PanelCard
     public void Clear()
     {
         Array.Clear(_len);
+        Array.Clear(_tintTo);
+        Array.Clear(_dim);
+        ScrollMax = 0;
         State = PanelState.Off;
         HasIcon = false;
         IconColour = default;
@@ -126,6 +143,107 @@ public sealed class PanelCard
     }
 
     public ReadOnlySpan<char> Line(int i) => _text.AsSpan(i * MaxChars, _len[i]);
+
+    public int Length(int line) => line is >= 0 and < MaxLines ? _len[line] : 0;
+
+    /// <summary>Characters <paramref name="from"/> to <paramref name="to"/> of a line in their own colour (one span a line): a state word in its lamp's colour.</summary>
+    public PanelCard Tint(int line, int from, int to, Vector3 colour)
+    {
+        if (line is < 0 or >= MaxLines)
+            return this;
+        _tintFrom[line] = (byte)Math.Clamp(from, 0, MaxChars);
+        _tintTo[line] = (byte)Math.Clamp(to, 0, MaxChars);
+        _tint[line] = colour;
+        return this;
+    }
+
+    /// <summary>A line of detail under a row: drawn dimmer than the rest.</summary>
+    public PanelCard Dim(int line)
+    {
+        if (line is >= 0 and < MaxLines)
+            _dim[line] = true;
+        return this;
+    }
+
+    public bool IsDim(int line) => _dim[line];
+
+    /// <summary>The colour of character <paramref name="k"/> of a line, or false for the line's own.</summary>
+    public bool TintAt(int line, int k, out Vector3 colour)
+    {
+        colour = _tint[line];
+        return k >= _tintFrom[line] && k < _tintTo[line];
+    }
+
+    /// <summary>A line cut to <paramref name="cols"/> characters, ending in ".." when it was longer: nothing is cut off without a mark.</summary>
+    public PanelCard Clip(int line, int cols)
+    {
+        if (line is < 0 or >= MaxLines || cols < 3 || _len[line] <= cols)
+            return this;
+        _len[line] = cols;
+        _text[line * MaxChars + cols - 1] = '.';
+        _text[line * MaxChars + cols - 2] = '.';
+        return this;
+    }
+
+    /// <summary>Spaces up to column <paramref name="col"/>.</summary>
+    public PanelCard PadTo(int line, int col)
+    {
+        while (line is >= 0 and < MaxLines && _len[line] < Math.Min(col, MaxChars))
+            Add(line, ' ');
+        return this;
+    }
+
+    /// <summary>
+    /// <paramref name="s"/> in a column <paramref name="width"/> wide: whole when it fits; else, when <paramref name="marquee"/>, a window that slides
+    /// along it (two characters a second, a pause at each end) and otherwise cut, ending in "..". Allocates nothing.
+    /// </summary>
+    public PanelCard Field(int line, string s, int width, bool marquee, double now)
+    {
+        if (width <= 0)
+            return this;
+        if (s.Length <= width)
+        {
+            Add(line, s);
+            for (var k = s.Length; k < width; k++)
+                Add(line, ' ');
+            return this;
+        }
+        if (!marquee || width < 4)
+        {
+            for (var k = 0; k < width - 2; k++)
+                Add(line, s[k]);
+            return Add(line, "..");
+        }
+        var travel = s.Length - width;
+        var cycle = travel + 6; // (3 steps' pause at each end)
+        var step = (int)(now * 2) % (2 * cycle);
+        var at = step < cycle ? Math.Clamp(step - 3, 0, travel) : Math.Clamp(travel - (step - cycle - 3), 0, travel);
+        for (var k = 0; k < width; k++)
+            Add(line, s[at + k]);
+        return this;
+    }
+
+    /// <summary>The scroll mark at the right of a line: "3-8 of 14".</summary>
+    public PanelCard ScrollMark(int line, int first, int shown, int total, int cols)
+    {
+        if (shown >= total || total <= 0)
+            return this;
+        var width = 5 + Digits(first + 1) + Digits(first + shown) + Digits(total);
+        if (_len[line] + 1 + width > cols)
+            Clip(line, Math.Max(3, cols - width - 1));
+        PadTo(line, cols - width);
+        var from = _len[line];
+        Add(line, first + 1).Add(line, '-').Add(line, first + shown).Add(line, " of ").Add(line, total);
+        return Tint(line, from, _len[line], new Vector3(0.62f, 0.7f, 0.78f));
+    }
+
+    public static int Digits(int n)
+    {
+        var d = 1;
+        for (n = Math.Abs(n); n >= 10; n /= 10)
+            d++;
+        return d;
+    }
 
     public PanelCard Add(int line, string s)
     {
@@ -265,7 +383,12 @@ public sealed class PanelCard
             Mix((uint)_len[l]);
             for (var k = 0; k < _len[l]; k++)
                 Mix(_text[l * MaxChars + k]);
+            if (_tintTo[l] > _tintFrom[l])
+                Mix((uint)_tintFrom[l] | (uint)_tintTo[l] << 8 | (uint)(_tint[l].X * 255) << 16 ^ (uint)(_tint[l].Y * 255) << 4 ^ (uint)(_tint[l].Z * 255) << 24);
+            if (_dim[l])
+                Mix(0xD1Bu + (uint)l);
         }
+        Mix((uint)Rows | (uint)TextRows << 8 | (uint)Cols << 16);
         Mix((uint)State | (HasIcon ? 256u : 0));
         Mix((uint)(int)(Bar * 96) ^ (uint)Picture << 24);
         Mix((uint)Video);
@@ -377,8 +500,45 @@ public static class ConstructPanels
             p.Range = ConstructParts.Opt(e, "range") is { } g ? ConstructParts.Num(g, file, where + ".range") : Math.Clamp(row * 400, 12, 120);
             ConstructParts.Range(p.Range, 1, 400, file, where + ".range");
             PanelTouch.Parse(p, e, file, where);
+            foreach (var t in p.Touch)
+                if (t.At.Y < 0.25f)
+                    p.TouchTop = MathF.Max(p.TouchTop, t.At.W);
             made.Add(p);
         }
         d.Panels = made.ToArray();
+    }
+
+    /// <summary>Does a part show text on a panel (so it has the Text size setting)? A camera's picture doesn't, nor a media page.</summary>
+    public static bool HasText(ConstructPartDef d)
+    {
+        foreach (var p in d.Panels)
+            if (p.Source is not ("camera" or "media"))
+                return true;
+        return false;
+    }
+
+    public const int MinTextSize = 50, MaxTextSize = 150;
+
+    /// <summary>A panel's text rows at the part's Text size: more at a smaller size (100%: the part file's own).</summary>
+    public static int RowsAt(PanelDef panel, float percent)
+    {
+        if (percent is >= 99.5f and <= 100.5f || percent <= 0)
+            return panel.Rows;
+        return Math.Clamp((int)MathF.Round(panel.Rows * 100f / percent), 1, PanelCard.MaxLines);
+    }
+
+    /// <summary>Rows from the top whose bottom is clear of the buttons along a panel's bottom.</summary>
+    public static int FreeRows(PanelDef panel, int rows)
+    {
+        if (panel.TouchTop <= 0)
+            return rows;
+        var h = panel.Size.Y;
+        var pad = h * 0.055f;
+        var row = (h - 2 * pad) / rows;
+        var n = 0;
+        for (var l = 0; l < rows; l++)
+            if (-h * 0.5f + pad + (rows - 1 - l) * row >= -h * 0.5f + panel.TouchTop * h - row * 0.12f)
+                n++;
+        return Math.Max(1, n);
     }
 }

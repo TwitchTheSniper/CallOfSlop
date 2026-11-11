@@ -45,6 +45,8 @@ public static class MachineScreens
             Extruder(c, part, d, st, card);
         else if (d.IsRecycler)
             Recycler(world, c, part, d, st, card);
+        for (var l = 0; l < PanelCard.MaxLines; l++)
+            card.Clip(l, card.Cols); // (nothing cut off without a mark: a long line ends in "..")
     }
 
     private static void Say(PanelCard card, PanelState state, string text)

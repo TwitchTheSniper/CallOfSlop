@@ -30,7 +30,6 @@ public enum LineState : byte
 /// </summary>
 public static class ProductionLines
 {
-    public const int MaxShown = 4; // machines a console's screen lists
     private const int MaxListed = 32; // machines a console's buttons step through
     private const double Hold = 0.3; // seconds a new state must last before the lamp and console show it (a store's bytes and its Busy can come a packet apart)
 
@@ -193,7 +192,14 @@ public static class ProductionLines
 
     private static int Pick(in CPart p, ConstructPartDef d, int count) => count == 0 ? 0 : Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.LinePick, 0), 0, count - 1);
 
-    /// <summary>The console's screen: the line's state, then a row for each machine (a marker on the picked one), its state and recipe.</summary>
+    /// <summary>
+    /// The console's screen (the line page): the line's state and the scroll mark, then a row a machine: a marker on the picked one, its name
+    /// ("Extruder 2" when the line has two), its state in full in the lamp's colour, and a dimmer line of detail under it (why it waits, its
+    /// recipe or its orders) for every machine when the rows allow, else for the picked one. Laid out on the part's Text size
+    /// (<see cref="PanelCard.Cols"/>, <see cref="PanelCard.TextRows"/>); a name too long for its column slides along on the picked row and ends
+    /// in ".." on the others; a list longer than the screen scrolls by the viewer's wheel or Up and Down (<see cref="PanelCard.Scroll"/>),
+    /// and a new pick scrolls to itself.
+    /// </summary>
     public static void Fill(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
     {
         ref var p = ref c.Parts[part];
@@ -211,68 +217,177 @@ public static class ProductionLines
         card.TouchLabels[1] = "Next";
         card.TouchLabels[2] = "Recipe";
         card.TouchLabels[3] = "Bill";
+        var cols = card.Cols;
+        var rows = card.TextRows;
         if (n == 0)
         {
             card.State = PanelState.Idle;
             card.Add(0, "Line: no machines");
-            card.Add(2, "Wire its output to the");
-            card.Add(3, "Run of each machine.");
+            int at = 0, column = 0;
+            card.Wrap("Wire its output to the Run of each machine.", cols, 1, rows - 1, 0, ref at, ref column);
             return;
         }
+        Span<LineState> states = stackalloc LineState[MaxListed];
         var pick = Pick(p, d, n);
         var worst = PanelState.Working;
         var running = 0;
-        var first = Math.Clamp(pick - (MaxShown - 1), 0, Math.Max(0, n - MaxShown)); // (the picked machine stays on the screen)
+        var stateW = 0;
         for (var k = 0; k < n; k++)
         {
-            var md = c.DefOf(list[k]);
-            if (world.StoreOf(c, list[k]) is not { } st)
-                continue;
-            var s = Of(world, c, list[k], st, ConstructRender.Now);
+            states[k] = world.StoreOf(c, list[k]) is { } st ? Of(world, c, list[k], st, ConstructRender.Now) : LineState.Idle;
+            var s = states[k];
             if (s == LineState.Running)
                 running++;
             else if (s != LineState.Idle && Panel(s) > worst)
                 worst = Panel(s);
-            if (k < first || k >= first + MaxShown)
-                continue;
-            var line = 1 + k - first;
-            card.Add(line, k == pick ? '>' : ' ');
-            Pad(card, line, ShortName(md), 11);
-            card.Add(line, ' ');
-            Pad(card, line, Word(s), 8);
-            card.Add(line, ' ');
-            if (md.IsExtruder)
-                QueueWord(card, line, c.Parts[list[k]]);
-            else
-                Pad(card, line, ConstructRefining.SetOf(c.Parts[list[k]], md)?.OutputName ?? "auto", 11);
+            stateW = Math.Max(stateW, Word(s).Length);
         }
         card.State = !on ? PanelState.Idle : worst;
         card.Add(0, on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
-        if (n > MaxShown)
-            card.Add(5, "Machine ").Add(5, pick + 1).Add(5, " of ").Add(5, n);
+        // The name's column: what the state's leaves; on a narrow screen (a big Text size) the state goes on the detail line.
+        var nameW = cols - 2 - stateW;
+        var stateBelow = nameW < 6;
+        if (stateBelow)
+            nameW = cols - 1;
+        var room = Math.Max(1, rows - 1);
+        var every = stateBelow || 2 * n <= room; // (a detail line under every machine)
+        var fit = every ? Math.Max(1, room / 2) : n + 1 <= room ? n : Math.Max(1, room - 1); // (one row kept for the pick's detail)
+        card.ScrollMax = Math.Max(0, n - fit);
+        var first = card.Scroll;
+        if (card.Follow != pick)
+        {
+            // A new pick (Next, on any peer) comes into view.
+            if (pick < first)
+                first = pick;
+            else if (pick >= first + fit)
+                first = pick - fit + 1;
+            card.Follow = pick;
+        }
+        first = card.Scroll = Math.Clamp(first, 0, card.ScrollMax);
+        var shown = Math.Min(fit, n - first);
+        card.ScrollMark(0, first, shown, n, cols).Clip(0, cols);
+        var line = 1;
+        for (var k = first; k < first + shown && line < rows; k++)
+        {
+            var m = list[k];
+            var md = c.DefOf(m);
+            var s = states[k];
+            Look(s, out var colour, out _, out _);
+            if (s == LineState.NoPower)
+                colour = NoPowerGrey;
+            card.Add(line, k == pick ? '>' : ' ');
+            card.Field(line, NameOf(c, list[..n], k), nameW, k == pick, ConstructRender.Now);
+            if (!stateBelow)
+            {
+                card.Add(line, ' ');
+                var from = card.Length(line);
+                card.Add(line, Word(s)).Tint(line, from, card.Length(line), colour);
+            }
+            line++;
+            if ((every || k == pick) && line < rows)
+            {
+                card.Add(line, "  ");
+                if (stateBelow)
+                {
+                    card.Add(line, Word(s)).Tint(line, 2, card.Length(line), colour);
+                    card.Add(line, ' ');
+                }
+                Detail(world, c, m, md, s, card, line);
+                card.Clip(line, cols).Dim(line);
+                line++;
+            }
+        }
     }
 
-    /// <summary>An Extruder's column: its queue's pieces still to make, or "own" (its own settings).</summary>
-    private static void QueueWord(PanelCard card, int line, in CPart p)
+    private static readonly Vector3 NoPowerGrey = new(0.5f, 0.5f, 0.52f);
+
+    /// <summary>The detail under a machine's row: why it waits (when Starved, Blocked or at Fault), then its recipe or its orders.</summary>
+    private static void Detail(ConstructWorld world, Construct c, int m, ConstructPartDef md, LineState s, PanelCard card, int line)
     {
-        if (p.Orders is { } q)
-            card.Add(line, q.PiecesLeft).Add(line, " to go");
-        else
-            card.Add(line, "own");
+        ref var mp = ref c.Parts[m];
+        var why = s is LineState.Starved or LineState.Blocked or LineState.Fault;
+        if (md.IsExtruder)
+        {
+            if (why && world.StoreOf(c, m) is { } st)
+                card.Add(line, StallWord((ExtrudeStall)st.Refused)).Add(line, ", ");
+            if (mp.Orders is { } q)
+            {
+                if (q.Count == 0)
+                    card.Add(line, "no orders");
+                else
+                {
+                    card.Add(line, q.PiecesLeft).Add(line, " to go: ");
+                    WorkOrders.Row(card, line, '\0', q.Items[0]);
+                }
+            }
+            else
+                card.Add(line, "own settings");
+            return;
+        }
+        var set = ConstructRefining.SetOf(mp, md);
+        if (why && world.StoreOf(c, m) is { } rs)
+        {
+            var state = ConstructRefining.StateOf(RefiningTable.Current, md, rs, out var r);
+            card.Add(line, state switch
+            {
+                RefineState.Empty => "needs input",
+                RefineState.Short => "needs more",
+                RefineState.OutputFull => "output full",
+                RefineState.OutputMixed => "empty its output",
+                RefineState.NoRecipe => "wrong input",
+                RefineState.TierLow => "needs a higher tier",
+                _ => "",
+            });
+            if (state == RefineState.Short && r != null)
+                card.Add(line, " (").Add(line, r.UnitsIn).Add(line, ' ').Add(line, r.InputName).Add(line, ')');
+            card.Add(line, ", ");
+        }
+        card.Add(line, set != null ? "set: " : "recipe ").Add(line, set?.OutputName ?? "auto");
     }
 
-    /// <summary>"Industrial Smelter" -> "Smelter T3": the line's machines are told apart by kind and tier.</summary>
-    private static string ShortName(ConstructPartDef d) => d.LineName ??= d.IsExtruder ? Short(d.Name) : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
+    /// <summary>Why an Extruder or a Former waits, in a few words.</summary>
+    public static string StallWord(ExtrudeStall s) => s switch
+    {
+        ExtrudeStall.NoPower => "no power",
+        ExtrudeStall.NoMaterial => "needs material",
+        ExtrudeStall.BadMaterial => "wrong material",
+        ExtrudeStall.Mixed => "other material",
+        ExtrudeStall.BadShape => "bad section",
+        ExtrudeStall.AtCap => "at full size",
+        ExtrudeStall.Blocked => "path blocked",
+        ExtrudeStall.TooHeavy => "path too heavy",
+        ExtrudeStall.ChuteWaits => "chute waits",
+        ExtrudeStall.ConveyorSmall => "conveyor too small",
+        ExtrudeStall.ConveyorFull => "conveyor full",
+        ExtrudeStall.ConveyorCut => "conveyor cut",
+        ExtrudeStall.NoOrders => "waiting for orders",
+        ExtrudeStall.OrderMaterial => "order needs other stock",
+        _ => "waiting",
+    };
 
-    private static string Short(string name) => name.Replace("Capital ", "Cap ").Replace("Medium ", "Med ").Replace("Large ", "Lg ").Replace("Wheel Former", "Wheel F");
+    /// <summary>"Smelter T3", "Extruder", "Wheel Former": a machine's kind on a line, in full.</summary>
+    private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
+
+    /// <summary>A machine's name on its console: its kind, and its number among those of its kind on this line in wire order ("Extruder 2") when there are two or more. Cached per def.</summary>
+    private static string NameOf(Construct c, ReadOnlySpan<int> list, int k)
+    {
+        var kind = KindName(c.DefOf(list[k]));
+        int number = 0, same = 0;
+        for (var j = 0; j < list.Length; j++)
+            if (string.Equals(KindName(c.DefOf(list[j])), kind, StringComparison.Ordinal))
+            {
+                same++;
+                if (j <= k)
+                    number++;
+            }
+        if (same < 2)
+            return kind;
+        var d = c.DefOf(list[k]);
+        var cache = d.LineNumbered ??= new string?[MaxListed + 1];
+        return cache[number] ??= kind + " " + number;
+    }
 
     private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
-
-    private static void Pad(PanelCard card, int line, string s, int width)
-    {
-        for (var k = 0; k < width; k++)
-            card.Add(line, k < s.Length ? s[k] : ' ');
-    }
 
     /// <summary>Server: the first button: Start / Stop, or on the bill page Add.</summary>
     public static string? Button1(ConstructWorld world, Construct c, int part) => OnBill(c.Parts[part], c.DefOf(part)) ? WorkOrders.BillAdd(world, c, part) : Run(c, part);

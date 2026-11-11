@@ -196,6 +196,7 @@ public enum CfgKey : byte
     OrderKind, // Line Console: what its next bill line is (a piece or a wheel)
     OrderMaterial, // Line Console: its next bill line's material (by its option's name)
     LinePage, // Line Console: the line or the bill on its screen (not on the panel)
+    TextSize, // any part with a text panel: its text size, % of the part file's (DisplayPanel.cs, ConstructPanels.RowsAt)
     COUNT,
 }
 
@@ -527,6 +528,10 @@ public static class ConstructConfig
         if (d.Door != null)
             ConstructDoors.AddSettings(d, list);
         AddThrowSettings(d, list);
+        // Every part that shows text: its size (last, so a part file's own settings keep their slots).
+        if (ConstructPanels.HasText(d) && list.Count < MaxSlots && !list.Exists(e => e.Id == CfgKey.TextSize))
+            list.Add(new CConfigDef { Key = KeyName(CfgKey.TextSize), Id = CfgKey.TextSize, Type = CfgType.Number, Label = "Text size", Group = "Display", Unit = "%",
+                Min = ConstructPanels.MinTextSize, Max = ConstructPanels.MaxTextSize, Step = 25, Default = 100, Tooltip = "How big its screen's text is. Smaller shows more rows and longer lines." });
         Finish(d, list, file);
     }
 
@@ -794,6 +799,7 @@ public static class ConstructConfig
                 CfgKey.Setting => true,
                 CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner,
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage => ProductionLines.IsConsole(d),
+                CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,

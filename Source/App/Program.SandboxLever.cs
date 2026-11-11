@@ -50,6 +50,8 @@ public static partial class Program
     /// <summary>The wheel on the lever under the crosshair, or the one in the hand.</summary>
     private static bool LeverScroll(double y)
     {
+        if (_scrWheelKey >= 0 && !_lvHeld && PanelRender.Scroll(_scrWheelKey, y > 0 ? -1 : 1))
+            return true; // (a long list on the panel under the crosshair: Program.SandboxPointer.cs)
         if (_scrPage >= 0)
             y = PointerWheel(y);
         if (!_lvHeld && !_lvWheelOk)
@@ -61,6 +63,7 @@ public static partial class Program
     /// <summary>This PC's hold goes, with no word to the server (a recovered frame, the mode gone).</summary>
     private static void LeverReset()
     {
+        _scrWheelKey = -1;
         _lvHeld = false;
         _lvWheelOk = _lvAimed = false;
         _lvPart = -1;

@@ -389,10 +389,12 @@ public sealed class ControlParts : IPartGenerator
         p.Stats(40, 120, 2, 3.0);
         // (on the bill page the buttons are Add, Send, Clear and Line: the work orders, WorkOrders.cs)
         var touch = Py.L(
-            D(("action", "line.run"), ("at", Py.L(0.02, 0.02, 0.24, 0.13)), ("label", "Start")),
-            D(("action", "line.next"), ("at", Py.L(0.26, 0.02, 0.48, 0.13)), ("label", "Next")),
-            D(("action", "line.recipe"), ("at", Py.L(0.52, 0.02, 0.74, 0.13)), ("label", "Recipe")),
-            D(("action", "line.page"), ("at", Py.L(0.76, 0.02, 0.98, 0.13)), ("label", "Bill")));
+            D(("action", "line.run"), ("at", Py.L(0.02, 0.02, 0.18, 0.13)), ("label", "Start")),
+            D(("action", "line.next"), ("at", Py.L(0.19, 0.02, 0.35, 0.13)), ("label", "Next")),
+            D(("action", "line.recipe"), ("at", Py.L(0.36, 0.02, 0.52, 0.13)), ("label", "Recipe")),
+            D(("action", "line.page"), ("at", Py.L(0.53, 0.02, 0.69, 0.13)), ("label", "Bill")),
+            D(("action", "view.up"), ("at", Py.L(0.72, 0.02, 0.85, 0.13)), ("label", "Up")), // (Up and Down scroll this player's own view of a long list)
+            D(("action", "view.down"), ("at", Py.L(0.86, 0.02, 0.98, 0.13)), ("label", "Down")));
         p.Set(("logic", D(("kind", "switch"))),
             ("config", Py.L(
                 D(("key", "startOn"), ("label", "Starts running"), ("group", "General"), ("default", false), ("tooltip", "The line runs as soon as it is built.")),
@@ -408,7 +410,7 @@ public sealed class ControlParts : IPartGenerator
                     ("tooltip", "What it is made of. A machine takes an order only in the material it is fed: another material is another line.")),
                 D(("key", "orderCount"), ("label", "Count"), ("group", "Bill line"), ("min", 1), ("max", 999), ("step", 1), ("default", 1), ("tooltip", "How many of it.")),
                 Ink)),
-            ("panels", Py.L(D(("source", "line"), ("at", Py.L(0, 1.31, -0.097)), ("size", Py.L(0.82, 0.56)), ("face", "+z"), ("up", "+y"), ("rows", 7), ("range", 12), ("touch", touch)))));
+            ("panels", Py.L(D(("source", "line"), ("at", Py.L(0, 1.31, -0.097)), ("size", Py.L(0.82, 0.56)), ("face", "+z"), ("up", "+y"), ("rows", 10), ("range", 12), ("touch", touch)))));
         return ("", p);
     }
 

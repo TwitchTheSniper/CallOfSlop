@@ -86,9 +86,11 @@ public sealed class ExtrusionParts : IPartGenerator
             p.Boxes.Add(lamp);
         if (orders)
             panel["touch"] = Py.L(
-                Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.32, 0.12)), ("label", "Queue")),
-                Kw(("action", "orders.cancel"), ("at", Py.L(0.35, 0.02, 0.65, 0.12)), ("label", "Cancel")),
-                Kw(("action", "orders.clear"), ("at", Py.L(0.68, 0.02, 0.98, 0.12)), ("label", "Clear")));
+                Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.24, 0.12)), ("label", "Queue")),
+                Kw(("action", "orders.cancel"), ("at", Py.L(0.26, 0.02, 0.48, 0.12)), ("label", "Cancel")),
+                Kw(("action", "orders.clear"), ("at", Py.L(0.5, 0.02, 0.72, 0.12)), ("label", "Clear")),
+                Kw(("action", "view.up"), ("at", Py.L(0.75, 0.02, 0.86, 0.12)), ("label", "Up")), // (this player's own view of a long queue)
+                Kw(("action", "view.down"), ("at", Py.L(0.87, 0.02, 0.98, 0.12)), ("label", "Down")));
         var config = p.D.Get("config") is List<object?> cfg ? new List<object?>(cfg) : [];
         if (orders)
             config.Add(OrderCount);
