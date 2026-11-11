@@ -162,4 +162,30 @@ public sealed partial class ConstructEdits
         world.StructureDirty.Add(c.Id);
         return null;
     }
+
+    /// <summary>
+    /// Server: the recipe picker on Line Console <paramref name="console"/> sets its machine <paramref name="machine"/>'s recipe to
+    /// <paramref name="value"/> (CActKind.LineRecipe), under a finger on the console's button's rule: reach to the console, its power, who may.
+    /// </summary>
+    public string? LineRecipe(ConstructWorld world, byte player, Vector3 eye, ushort body, ushort console, ushort machine, int value, bool all, string? refusal)
+    {
+        if (world.Get(body) is not { } c || console >= c.PartCount)
+            return "that console is gone";
+        var d = c.DefOf(console);
+        if (!ConstructConfig.Has(d, CfgKey.LinePick))
+            return $"a {d.Name} runs no line";
+        if (Contested(c, player) is { } defended)
+            return defended;
+        if (refusal != null)
+            return refusal;
+        if (Vector3.Distance(eye, ReachPoint(c, console, eye)) > ConstructConfig.Reach)
+            return "too far away";
+        if (c.Parts[console].Broken || !ConstructPower.On(c, console))
+            return $"the {d.Name} has no power";
+        if (ProductionLines.SetRecipe(c, console, machine, value, all) is { } why)
+            return why;
+        world.StructureDirty.Add(c.Id);
+        Done.Add($"player {player}: recipe {value} on part {machine} of construct {c.Id}{(all ? " and its kind on the line" : "")}");
+        return null;
+    }
 }

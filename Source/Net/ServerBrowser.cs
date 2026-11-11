@@ -401,7 +401,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      a rider in CBodyKind.Riders is a store's def (a part id, or Extrusion.WireMark and a key: a press's stamped parts ride too); PressStall gains ConveyorFull, ConveyorSmall, ConveyorCut.
     // 248: a text panel's Text size setting (CfgKey.TextSize, the last setting of every part that shows text: its settings' slots change); CBodyKind.Orders
     //      sends up to 32 orders a list (WorkOrders.Sent), not 3, so a client's screen scrolls through a queue or a bill.
-    public const ushort ProtocolVersion = 248;
+    // 249: CActKind.LineRecipe (u16 body, u16 console, u16 machine, u16 recipe, u8 flags): the recipe picker sets a Line Console's machine's recipe.
+    public const ushort ProtocolVersion = 249;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

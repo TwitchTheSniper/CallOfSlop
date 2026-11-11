@@ -88,6 +88,7 @@ public static unsafe partial class Program
             Ui.CloseSandboxTexturePicker();
             Ui.CloseSandboxMaterialPicker();
             Ui.CloseOrdnanceBench(); // (it holds the mouse like the others: left open, every later click went nowhere)
+            Ui.CloseRecipePicker(); // (the recipe picker holds the mouse too: UiRecipePicker.cs)
             if (Ui.WorkbenchOpen)
                 Ui.CloseBench();
             ConstructRender.ClearAim();
@@ -114,6 +115,7 @@ public static unsafe partial class Program
             DrawSandboxConfigInMatch(now);
             DrawConnectorPanelInMatch();
             Ui.DrawOrdnanceBench();
+            DrawRecipePickerInMatch(now);
             DrawToolWheelEditorInMatch();
             DrawSandboxTrackInMatch();
             DrawSandboxPaintInMatch();
