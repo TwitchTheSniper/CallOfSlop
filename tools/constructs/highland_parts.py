@@ -5,7 +5,7 @@ The Pipe Box first: a Music Player for a Highland vehicle, a box with a small sc
 pipes by itself while someone drives (docs/sandbox/MEDIA.md, "Pipe Boxes"; the "pipes" flag of its "media" key). Then what the clan bolts on
 where bandits hang skulls: a Saltire on a pole for the roofs, thistles, a haggis on a post and a Highland coo's head as trophies, wee cabers
 down the flanks as spikes, a wee keg on the beds, and whisky casks in the rooms (loot inside). Dressing stands on one "base" socket and points
-up its own +y, so the kit turns it outward, as the bandit parts do (tools/constructs/bandit_parts.py); a cask stands on feet on the floor's
+up its own +y, so the kit turns it outward, as the bandit parts do (Source/PartKit/Generators/BanditParts.cs); a cask stands on feet on the floor's
 quarter grid, as tools/constructs/office_parts.py's Server Rack does. Faces that meet are kept a few millimetres apart (CLAUDE.md,
 "No coplanar faces"). Recipes come from tools/constructs/assembling.py; run it after this one.
 

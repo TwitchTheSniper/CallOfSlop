@@ -5,7 +5,7 @@ distance. A link needs the Windows game with its Browser folder. A game track ne
 
 ## The parts
 
-`tools/constructs/media_parts.py` writes `Constructs/Parts/Media`, then `tools/constructs/assembling.py` writes their recipes.
+The part kit's `--gen-parts media_parts` (docs/sandbox/PARTKIT.md) writes `Constructs/Parts/Media`, then `tools/constructs/assembling.py` writes their recipes.
 
 | Part | Picture | Seen to | Heard to | Full level to |
 | --- | --- | --- | --- | --- |

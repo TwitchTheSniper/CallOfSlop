@@ -298,7 +298,7 @@ So the way to debug a contraption: hold it and freeze it, then unfreeze the piec
 
 ## Free rotation
 
-Joints that turn with no motor, spring or power. Data: `Constructs/Parts/Free` (written by `tools/constructs/free_parts.py`, 12 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs` (`JointType.Swivel`). Inventory: Joints and Motion, section Free rotation.
+Joints that turn with no motor, spring or power. Data: `Constructs/Parts/Free` (written by the part kit, `--gen-parts free_parts`, 12 parts; `--check` compares: docs/sandbox/PARTKIT.md). Code: `Source/Constructs/ConstructLinear.cs` (`JointType.Swivel`). Inventory: Joints and Motion, section Free rotation.
 
 What was there before: a **Hinge** swings, but it springs to its latch and its leaf takes doors; **turntables, motor hinges and pistons** have motors and hold still without a signal; **flexible joints** spring back. Nothing turned freely.
 
