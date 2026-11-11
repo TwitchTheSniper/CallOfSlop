@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Piece Rack",
-  "description": "Takes whole pieces off a conveyor at its Piece in and holds them: up to 1 x 1 m, 6 m long, 40 of them. F takes one off.",
+  "description": "Takes whole pieces off a conveyor at its Piece in and holds them: up to 1 x 1 m and 6 m long, as many as fill it. F takes the one you look at.",
   "group": "Production",
   "section": "Extrusion",
   "role": "storage",
@@ -19,7 +19,19 @@
         1.0
       ],
       "length": 6.0,
-      "count": 40
+      "count": 2000,
+      "hold": [
+        [
+          -0.01,
+          0.008,
+          -0.051
+        ],
+        [
+          1.26,
+          0.865,
+          6.355
+        ]
+      ]
     }
   },
   "ports": [

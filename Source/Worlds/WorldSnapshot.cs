@@ -245,5 +245,6 @@ public static class WorldStores
             Array.Copy(from.KindDef!, to.KindDef, from.KindN);
             Array.Copy(from.KindCount!, to.KindCount, from.KindN);
         }
+        ConstructRackPack.Copy(from, to); // (a Piece Rack's columns: where its pieces lie)
     }
 }

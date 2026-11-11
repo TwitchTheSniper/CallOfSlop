@@ -500,10 +500,19 @@ the part kit's `control_parts` (the console).
   load. The look line says "set to metal", and a refused chute "chute refused sand: set to metal".
 - **The Line Console** (`Constructs/Parts/Controls/LineConsole.json`): a desk with a screen, logically a Switch. Wire its output to each
   machine's Run: those wires are the line (`ProductionLines.Machines` walks the construct's data routes from it). Its screen (panel source
-  `line`, 7 rows) shows "Line running 2/3" and a row a machine: kind and tier, state, recipe, a marker on the picked one; its buttons are
-  **Start/Stop** (flips the switch), **Next** (picks the next machine; the pick is the hidden `linePick` setting) and **Recipe** (steps the
-  picked machine's recipe). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
+  `line`, 10 rows) shows "Line running 2/3" and a row a machine: a marker on the picked one, its name in full ("Extruder 2" when the line has
+  two of a kind, numbered in wire order), its state as a whole word in the lamp's colour (in a column as wide as the longest; when a name
+  wouldn't fit beside it the state goes under the name), and a dimmer detail line: why it waits (Starved, Blocked, Fault), its recipe or its
+  pieces and orders to go; every machine gets one when the rows allow, else the pick. A name too long slides along on the picked row and
+  ends in ".." on the others. Its buttons are **Start/Stop** (flips the switch), **Next** (picks the next machine; the pick is the hidden
+  `linePick` setting, and a new pick scrolls into view), **Recipe** (steps the picked machine's recipe), and **Up** and **Down** (below). F on it flips it too. A new console starts stopped (the `startOn` setting changes that), so its machines are
   held until Start. On a flat battery it puts nothing out, and its machines say No power.
+- **Text size and long lists** (2026-11-11, the user: "scroll on long lists", "smaller text"). Every part that shows text has a **Text size**
+  setting (Display group, 50 to 150 %, default 100; `CfgKey.TextSize`, protocol 248): the screen is laid out in more rows and longer lines at a
+  smaller size. The console's line page, its bill page and a machine's queue scroll: **Up** and **Down** on the screen page by its rows, and
+  the mouse wheel scrolls while the crosshair is on the screen with empty hands. The place in the list is the viewer's own (`PanelRender`'s
+  slot, never on the wire), with "3-8 of 14" at the right of the title. An order too long for a line takes two (its length and material
+  under it); every other line too long ends in "..". A client is sent the first 32 orders of each list (`WorkOrders.Sent`).
 - **The mains** (2026-11-11, proposed). A Battery takes one wire, its isolator. When every working battery on a body has one and every one
   says off (`Construct.MainsOff`, `ConstructPower.Mains`, on the wire in the gear byte's top bit since protocol 247), the circuit gives
   machines nothing: `ConstructRecycler.Powered` is false for every production machine, recycler, gatherer and beacon it reaches, in creative
@@ -526,8 +535,8 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
 
 - **Ports.** A `"conveyor"` port names its clear `"opening"` ([across, up], metres). Every Extruder and Wheel Former has an
   implicit **Piece out** on its output face, at the base die's bottom edge (opening: its largest section; a Wheel Former's widest by
-  biggest across). The **Piece Rack** (1 x 1 m pieces, 6 m long, 40 of them) and **Long Piece Rack** (2 x 2 m, 12 m, 60) have a
-  **Piece in** at their -z end and a `storage.pieces` block (`section`, `length`, `count`). A Press or Die Lathe has an implicit
+  biggest across). The **Piece Rack** (pieces up to 1 x 1 m and 6 m long) and **Long Piece Rack** (2 x 2 m, 12 m) have a
+  **Piece in** at their -z end and a `storage.pieces` block (`section`, `length`, `count`, `hold`: the box they pack into). A Press or Die Lathe has an implicit
   **Piece in** at each bay's socket ("Piece in", "Piece in 2"...; the line 11 cm under it, opening its largest piece across): a piece
   that arrives goes into the bay by the rules a loose piece left in its mouth meets (`ConstructPress.TakeFromConveyor`), and waits on
   the conveyor while the bay is full or refuses it (the press's look line says why).
@@ -559,11 +568,25 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
 - **Off the link.** A cut or deleted conveyor drops every piece on it as a loose body where it was, moving as the body moved, and so
   does a construct that goes on the server with pieces riding (deleted, destroyed, cleared as a wreck, fallen out of the world:
   `ConstructWorld.Remove`); one that travels takes them in its world copy (`keepRiders`), and a client's removal is the server's
-  word. F on a rack drops the piece the player looks at (else the last in), loose, over the rack (a piece is physics-only: no
-  hands carry it). Pieces in a rack are kinds in its store, so a rack of 40 costs no part slots.
-- **The rack shows what it holds.** Up to 24 pieces drawn at true size on its slats inside its posts, side by side from its -z end
-  2 cm apart, a layer on the one below while a layer starts under its top (`ConstructConveyor.RackLayout`, drawn in the links'
-  batch from the store as heard; both sides lay it out alike, so F takes what is seen). Its look line lists each kind and count.
+  word. Pieces in a rack are kinds in its store, so a full rack costs no part slots.
+- **A rack holds by volume** (`ConstructRackPack.cs`, 2026-11-11). Its room is its hold box, not a count: pieces pack in
+  *columns*, one kind each, as long as the piece, laid along the rack; across a column stand *stacks* as many as the piece's width
+  lets (2 cm apart), each as high as the hold lets (5 mm between layers). A piece goes on the lowest stack of the first column of
+  its kind with room, else a new column opens in the first gap along the rack long enough for it (2 cm between columns); an emptied
+  column's gap is reused and the columns after it stay put. So a Piece Rack takes 276 L Brackets or 20 beams of 4 m (0.2 m square),
+  a Long Piece Rack 2,350 brackets or 216 such beams, or any mix. `count` stays a hard cap (2,000 and 6,000, above what the holds
+  take of the smallest pieces: bounded memory and wire); at most 192 columns and 32 stacks a column. A piece that doesn't fit waits
+  on the conveyor: "jammed: rack full", or "piece too long for this rack" / "too big across" (`ConstructConveyor.RackRefusal`).
+  The columns are the store's state and go on the wire after its kinds (protocol 249); a save keeps the kinds, and the places are
+  packed again on load. The look line and `ConstructConveyor.FillText` (for a console) say "62% full, 131 pieces, 4 kinds".
+- **By hand.** A look ray meets a rack's stacks (past its own bars) and its hold, and riding pieces (a look only: shots don't).
+  F takes the top piece of the stack looked at into the hands (`Give`: hands, backpack, else dropped; a physics-only piece lies
+  beside the rack on the player's side); Shift+F drops up to 40 of that kind loose beside it; the physics gun pulls the top piece
+  out where it lay and holds it. F on a riding piece takes it off its conveyor (the physics gun grabs it): the request names the
+  conveyor and where the piece's front was, and the server takes the one nearest that (within 1.5 m); the pieces behind close up.
+  A conveyor's look line, and its lead piece's, say why it waits ("jammed: rack full").
+- **The rack shows what it holds.** Every piece at its packed place at true size within 30 m (plus half the rack), one box a
+  column in its first box's colour further off (`RouteRender.DrawRacks`, the links' batch, from the store as heard).
 - **Collisions.** The conveyor is a drawn link: shots and blasts hit its segments (health 120); players and bodies pass through it
   as through every routed link, and through riding pieces.
 - **Network (protocol 244, riders 245).** A conveyor's size is 4 bytes after its link in a Full. `CBodyKind.Riders` sends a body's
@@ -621,7 +644,7 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
   counts, and its catalogue parts; `ToConsole` puts the pieces on a console's bill (the building station will call these).
   `--bill NAME` prints one. Of the shipped blueprints only Fabric Flyer and Sky Crane need pieces, and those are fans and wings.
 - **Network (protocol 246).** `CBodyKind.Orders`, per body when a queue or bill changes, after a Full and to a joiner: each list's
-  part, totals, note and its first three orders (22 fixed bytes each). A client holds only those: all a screen shows.
+  part, totals, note and its first 32 orders (22 fixed bytes each; three before protocol 248). A client holds only those: all a screen shows.
 - **Saves.** After a body's conveyors block (an empty one when it has none), its lists in full: materials and parts by the save's names.
   An older save ends before them. A blueprint carries no machine queues (a blueprint is a design, not a job); a Line Console's bill may ride
   in it: `"bill": [{"step": n, "piece": "Extrusion l-angle 20x20x75 metal", "count": 2}]`, put on that console as it is built
@@ -664,7 +687,7 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   purpose; set the wheel line's conveyor too small with the mouse wheel to see a refusal.
 - **What to expect.** The main switch is wired to the genset and to the battery, whose wire is the [mains](#production-lines): off, every
   machine shows No power (creative too) while the consoles stay lit, and the genset stops. Creative refiners take a load in a few seconds,
-  so their lamps show Running. The Press puts its brackets on a conveyor out of its Piece out to a Piece Rack behind it (40 parts: a full
+  so their lamps show Running. The Press puts its brackets on a conveyor out of its Piece out to a Piece Rack behind it (276 brackets: a full
   rack backs the press up, "Output conveyor full"); either bay takes line A's angles.
 - **Measured** (a throwaway probe, removed: host and client over RakNet on the Proving Ground, spawned through the parts menu's call,
   the refining console started and the bill sent, a cold process; 2026-11-11 after fix/showcase-bugs): racks equal by key on both peers;

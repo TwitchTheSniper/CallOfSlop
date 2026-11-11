@@ -597,6 +597,25 @@ public static partial class Program
         var c = hit.Body;
         var k = hit.RoutePlus1 - 1;
         ref var r = ref c.Routes[k];
+        var jam = r.Type == RouteType.Conveyor ? ConstructConveyor.Jam(g.Constructs, c, k) : 0;
+        if (hit.RiderPlus1 > 0 && hit.RiderPlus1 <= c.ConveyedCount && ConstructParts.Get(c.Conveyed[hit.RiderPlus1 - 1].Def) is { } piece)
+        {
+            // A piece riding the conveyor: F takes it off (the physics gun grabs it: Program.PhysicsGun.cs); the lead says why it waits.
+            var lead = true;
+            for (var i = 0; i < hit.RiderPlus1 - 1 && lead; i++)
+                lead = c.Conveyed[i].Route != k;
+            var near = hit.Distance <= ConstructBuild.UseReach;
+            var rkey = ((long)c.Id << 40) ^ ((long)piece.Id << 20) ^ ((long)(lead ? jam : 0) << 8) ^ (near ? 1L << 62 : 0) ^ ((long)h.Tool << 56) ^ (1L << 61);
+            if (rkey != _lkLookKey)
+            {
+                _lkLookKey = rkey;
+                var name = piece.IsExtrusion ? Extrusion.Label(piece.ExKey) : piece.Name;
+                _lkLook = SandboxKeys.Line(name, "on a conveyor", lead ? ConstructConveyor.JamText(c, k, jam) : null,
+                    !near ? null : h.Tool == ConstructTool.PhysicsGun ? $"hold {SandboxKeys.Fire}: grab it" : SandboxKeys.Do(SandboxKeys.Use, "take"));
+            }
+            g.SandboxLookText = _lkLook;
+            return;
+        }
         var repair = h.Tool == ConstructTool.Welder && h.Held == ConstructParts.None && !ConnectorModeOn(in h);
         if (h.Tool is ConstructTool.Linker or ConstructTool.Paint or ConstructTool.Remover || repair) // (hr01: a link is outlined only for a tool that acts on links)
         {
@@ -605,7 +624,7 @@ public static partial class Program
         }
         var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
-                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0) ^ ((long)r.ConvW << 44);
+                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0) ^ ((long)jam << 4) ^ ((long)r.ConvW << 44);
         if (key != _lkLookKey)
         {
             _lkLookKey = key;
@@ -617,6 +636,7 @@ public static partial class Program
             var damaged = hp < full || ConstructRoutes.SegmentHealth(c, k, r.Count) < full;
             _lkLook = $"{Cap(ConstructRoutes.Name(r.Type))}: {what}{share}{(hp < full ? $", {MathF.Max(0, hp):0}/{full:0} hp" : "")}{state}"
                       + (ConstructRoutes.EndNote(c, k) is { } note ? $" - {note}" : "")
+                      + (ConstructConveyor.JamText(c, k, jam) is { } jammed ? $" - {jammed}" : "")
                       + (repair && damaged ? $" - {SandboxKeys.Fire}: repair" : "");
         }
         g.SandboxLookText = _lkLook;

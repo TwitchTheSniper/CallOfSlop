@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Piece Rack: Constructs/Parts/PieceRacks (docs/sandbox/constructs/production.md, "Conveyors"). A low steel cradle on two
 /// runners, posts and an amber top rail down each side, that takes whole pieces off a conveyor at its Piece in (its -z end) and
 /// holds them by kind (<c>storage.pieces</c>: the largest section and length and how many). What it holds is drawn lying on its
-/// slats inside its posts (ConstructConveyor.RackLayout: keep its margins in step with the runners, posts, slats and sill here).
+/// slats inside its posts, packed by volume into its hold (<c>storage.pieces.hold</c>, written here from the frame: ConstructRackPack.cs).
 /// </summary>
 public sealed class PieceRackParts : IPartGenerator
 {
@@ -14,6 +14,8 @@ public sealed class PieceRackParts : IPartGenerator
 
     private const string Out = "Constructs/Parts/PieceRacks";
     private const string Frame = "#35556b", Bar = "#2c2e30", Rail = "#d9a21c", Slat = "#7d8388", Mark = "#e8e2d0";
+    // The hold: inside the posts and rails, 3 mm over the slats, past the sill and short of the far posts.
+    private const double Side = 0.115, Bed = 0.133, EndIn = 0.074, EndOut = 0.02, Top = 0.01;
 
     /// <summary>A rack nx by nz small cells (0.25 m) on the ground, ny high, holding pieces up to section by length, count of them.</summary>
     private static Part Rack(string name, int nx, int ny, int nz, double section, double length, int count, string desc)
@@ -50,7 +52,8 @@ public sealed class PieceRackParts : IPartGenerator
         var wide = nx * c.Cell;
         var deep = nz * c.Cell;
         p.Stats(wide * deep * 30, 400 + 40 * wide * deep, 4);
-        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, section)), ("length", length), ("count", count))))));
+        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, section)), ("length", length), ("count", count),
+            ("hold", Py.L(Py.L(Py.Round(x0 + Side, 3), Py.Round(y0 + Bed, 3), Py.Round(z0 + EndIn, 3)), Py.L(Py.Round(x1 - Side, 3), Py.Round(y1 - Top, 3), Py.Round(z1 - EndOut, 3)))))))));
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round((x0 + x1) / 2, 3), Py.Round(y0 + 0.05, 3), z0)), ("face", "-z"),
                 ("opening", Py.L(section, section))))));
@@ -59,7 +62,7 @@ public sealed class PieceRackParts : IPartGenerator
 
     public void Make(PartOutput o) => WriteParts(o, Out,
     [
-        ("", Rack("Piece Rack", 6, 4, 26, 1.0, 6.0, 40, "Takes whole pieces off a conveyor at its Piece in and holds them: up to 1 x 1 m, 6 m long, 40 of them. F takes one off.")),
-        ("", Rack("Long Piece Rack", 12, 6, 52, 2.0, 12.0, 60, "Takes whole pieces off a conveyor: up to 2 x 2 m, 12 m long, 60 of them. F takes one off.")),
+        ("", Rack("Piece Rack", 6, 4, 26, 1.0, 6.0, 2000, "Takes whole pieces off a conveyor at its Piece in and holds them: up to 1 x 1 m and 6 m long, as many as fill it. F takes the one you look at.")),
+        ("", Rack("Long Piece Rack", 12, 6, 52, 2.0, 12.0, 6000, "Takes whole pieces off a conveyor: up to 2 x 2 m and 12 m long, as many as fill it. F takes the one you look at.")),
     ]);
 }

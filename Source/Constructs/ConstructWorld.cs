@@ -14,6 +14,8 @@ public struct ConstructHit
     public ushort RouteSeg;
     public byte TrackPlus1; // a freeform track: the track hit (plus one; 0: none); Part is its first wheel
     public bool Glass; // the box hit is a glass pane: rounds go on through it (and break it)
+    public byte RackPlus1, RackLane; // a Piece Rack (a look): the column of the stack hit, plus one (0: none), and its stack (ConstructRackPack.cs)
+    public ushort RiderPlus1; // a piece riding a conveyor (a look): its index in the body's riders, plus one (0: none); Part is the conveyor's host
 }
 
 /// <summary>
@@ -1263,6 +1265,7 @@ public sealed partial class ConstructWorld
         hit = default;
         var best = maxDist;
         var found = false;
+        float markRack = -1, markRider = -1; // (where a rack's stack or a riding piece was hit: a nearer hit after it clears the mark)
         var blade = -1;
         var near = NearRay(origin, dir, maxDist, _rayNear); // (the broadphase: the bodies along the ray)
         for (var ni = 0; ni < near.Count; ni++)
@@ -1282,6 +1285,7 @@ public sealed partial class ConstructWorld
             for (var ci = 0; ci < candidates; ci++)
             {
                 var i = _partHits[ci];
+                var partBest = best; // (before this part: a Piece Rack's own bars never hide what it holds from a look)
                 if (c.Rides(i))
                     continue; // (on a leg segment: LegRay below)
                 ref var p = ref c.Parts[i];
@@ -1379,6 +1383,34 @@ public sealed partial class ConstructWorld
                         hit.Glass = false;
                     }
                 }
+                if (look && p.D.IsPieceRack && p.Store != 0 && StoreOf(c, i) is { ItemCount: > 0 } rst)
+                {
+                    // A Piece Rack (a look only): its stacks where they are packed, else its hold's box (its frame is open: a ray meets the pieces, not the bars).
+                    ConstructRackPack.Ensure(p.D, rst);
+                    var back = Quaternion.Conjugate(Rot24.Quat(p.Rot));
+                    var pl = Vector3.Transform(lo - p.Pos, back);
+                    var pd = Vector3.Transform(ld, back);
+                    var was = best;
+                    if (hit.Body == c && hit.Part == i && found)
+                        best = partBest; // (its bars were hit first: look past them)
+                    if (ConstructRackPack.Ray(p.D, rst, pl, pd, ref best, out var rs, out var rl) || ConstructRackPack.HoldRay(p.D, pl, pd, ref best))
+                    {
+                        found = true;
+                        hit.Body = c;
+                        hit.Part = i;
+                        hit.Distance = best;
+                        hit.Point = origin + dir * best;
+                        hit.Normal = -dir;
+                        hit.SlotPlus1 = 0;
+                        hit.RoutePlus1 = hit.TrackPlus1 = 0;
+                        hit.Glass = false;
+                        hit.RackPlus1 = (byte)(rs + 1);
+                        hit.RackLane = (byte)Math.Max(rl, 0);
+                        markRack = best;
+                    }
+                    else
+                        best = was;
+                }
             }
             // Routed links (cables, pipes, shafts, chutes on the outside): hit like parts, each segment on its own.
             if (c.RouteCount > 0 && ConstructRoutes.Ray(c, origin, dir, ref best, out var route, out var rseg, out var rp))
@@ -1393,6 +1425,23 @@ public sealed partial class ConstructWorld
                 hit.RoutePlus1 = (byte)(route + 1);
                 hit.RouteSeg = (ushort)rseg;
                 hit.TrackPlus1 = 0;
+            }
+            // Pieces riding its conveyors (a look only): each as drawn, near enough (ConstructConveyor.RiderRay).
+            if (look && c.ConveyedCount > 0 && ConstructConveyor.RiderRay(c, origin, dir, ref best) is var rider and >= 0)
+            {
+                found = true;
+                hit.Body = c;
+                hit.Part = c.Routes[c.Conveyed[rider].Route].To < c.PartCount ? c.Routes[c.Conveyed[rider].Route].To : 0;
+                hit.Distance = best;
+                hit.Point = origin + dir * best;
+                hit.Normal = -dir;
+                hit.SlotPlus1 = 0;
+                hit.RoutePlus1 = (byte)(c.Conveyed[rider].Route + 1);
+                hit.RouteSeg = 0;
+                hit.TrackPlus1 = 0;
+                hit.Glass = false;
+                hit.RiderPlus1 = (ushort)(rider + 1);
+                markRider = best;
             }
             // Walker legs: each segment and foot pad as it is posed now (ConstructWalkLegs.cs); the leg part takes the hit.
             if (c.LegCount > 0 && ConstructPhysics.LegRay(c, origin, dir, ref best, out _, out var legNormal) is var legPart and >= 0)
@@ -1422,6 +1471,10 @@ public sealed partial class ConstructWorld
                 hit.TrackPlus1 = (byte)(track + 1);
             }
         }
+        if (hit.Distance != markRack)
+            hit.RackPlus1 = hit.RackLane = 0;
+        if (hit.Distance != markRider)
+            hit.RiderPlus1 = 0;
         if (found && !look && hit.RoutePlus1 == 0 && hit.TrackPlus1 == 0 && hit.Body.DefOf(hit.Part).Rotor != null)
         {
             _rayRotor = (hit.Body.Id, hit.Part); // (which blade: the hit's damage comes in a moment, by part)

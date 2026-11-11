@@ -629,7 +629,7 @@ public sealed partial class ConstructPartDef
     public bool IsRefiner; // a production machine (ConstructRefining.cs): its bulk bin is the output, and it has an input bin of its own
     public string RefineMachine = ""; // a production machine: its name in Constructs/Refining.json
     public RefineRecipe[] RefineChoices = [];
-    public string? LineName; // ...a Line Console's short name for it ("Smelter T3"; made when first shown: ProductionLines) // ...the recipes its "recipe" setting picks from (1 + an index; 0: Auto), its tier's, filled as the parts load (ConstructRefining.Attach)
+    public string? LineName; public string?[]? LineNumbered; // ...a Line Console's short name for it ("Smelter T3"; made when first shown: ProductionLines) // ...the recipes its "recipe" setting picks from (1 + an index; 0: Auto), its tier's, filled as the parts load (ConstructRefining.Attach)
     public int InCapacity; // a production machine: how much its input holds (a mixed input: of each material; an Assembler: its fill's scale)
     public bool RefineMix; // a production machine whose recipes take several materials (a Foundry): its input is CStore's mixed input
     public bool IsAssembler; // a machine that builds parts from a chosen recipe (ConstructAssembling.cs): its slots are its output tray, its input is mixed
@@ -653,6 +653,7 @@ public sealed partial class ConstructPartDef
     public Vector2 RackSection;
     public float RackLength;
     public int RackCount;
+    public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file

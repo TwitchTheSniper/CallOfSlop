@@ -46,6 +46,7 @@ public static unsafe class PanelRender
         public Vector3 DrawnCentre, DrawnNormal, DrawnUp; // where it was drawn, from the render origin
         public int DrawnPass;
         public double Filled;
+        public int Scroll, ScrollMax, Follow = -1, Rows; // the viewer's own place in a long list (never on the wire), and the rows it was laid out in
     }
 
     private static readonly Dictionary<long, Slot> _slots = new(MaxSlots);
@@ -248,6 +249,8 @@ public static unsafe class PanelRender
         s.Key = key;
         s.Hash = 0;
         s.Filled = double.MinValue; // (a stale filling isn't kept across owners)
+        s.Scroll = s.ScrollMax = 0;
+        s.Follow = -1;
         return _slots[key] = s;
     }
 
@@ -259,13 +262,52 @@ public static unsafe class PanelRender
         s.Card.Clear();
         s.Card.Touch = panel.Touch;
         s.Card.Hover = s.Key == _pointerKey ? _pointerRegion : -1;
-        panel.Fill!(world, c, part, panel, s.Card);
-        var hash = s.Card.Hash();
-        if (hash == s.Hash && s.QuadCount > 0)
+        var d = c.DefOf(part);
+        var percent = ConstructConfig.Has(d, CfgKey.TextSize) ? ConstructConfig.Get(c.Parts[part], d, CfgKey.TextSize, 100) : 100;
+        var rows = ConstructPanels.RowsAt(panel, percent);
+        var card = s.Card;
+        card.Rows = rows;
+        card.Cols = Math.Min(PanelCard.MaxChars, Columns(panel.Size, rows));
+        card.TextRows = ConstructPanels.FreeRows(panel, rows);
+        card.Scroll = s.Scroll;
+        card.Follow = s.Follow;
+        panel.Fill!(world, c, part, panel, card);
+        s.Scroll = Math.Clamp(card.Scroll, 0, card.ScrollMax);
+        s.ScrollMax = card.ScrollMax;
+        s.Follow = card.Follow;
+        if (percent > 100.5f)
+        {
+            // Bigger text: fewer rows, but never fewer than a source that doesn't reflow has filled (its text gets no bigger than fits).
+            for (var l = PanelCard.MaxLines - 1; l >= rows; l--)
+                if (card.Length(l) > 0)
+                {
+                    rows = Math.Min(l + 1, panel.Rows);
+                    break;
+                }
+        }
+        var hash = card.Hash();
+        if (hash == s.Hash && s.QuadCount > 0 && rows == s.Rows)
             return;
         s.Hash = hash;
-        Layout(s, s.Card, panel.Size, panel.Rows);
+        s.Rows = rows;
+        Layout(s, card, panel.Size, rows);
     }
+
+    /// <summary>This PC's wheel or Up/Down on a panel's list: <paramref name="by"/> entries. False when the panel has no list longer than it shows.</summary>
+    public static bool Scroll(long key, int by)
+    {
+        if (!_slots.TryGetValue(key, out var s) || s.ScrollMax <= 0)
+            return false;
+        s.Scroll = Math.Clamp(s.Scroll + by, 0, s.ScrollMax);
+        s.Filled = double.MinValue; // (fill again this frame)
+        return true;
+    }
+
+    /// <summary>Does this panel show a list longer than it is (the wheel scrolls it)?</summary>
+    public static bool Scrollable(long key) => _slots.TryGetValue(key, out var s) && s.ScrollMax > 0;
+
+    /// <summary>How many rows a panel's list pages by: its text rows less the title.</summary>
+    public static int PageRows(long key) => _slots.TryGetValue(key, out var s) ? Math.Max(1, s.Card.TextRows - 2) : 1;
 
     /// <summary>How many characters a text line of a panel this size holds (no bar; a card's bar makes its rows a little smaller).</summary>
     public static int Columns(Vector2 size, int rows)
@@ -351,7 +393,7 @@ public static unsafe class PanelRender
                 Solid(s, -hw + pad * 0.6f, bottom + (rows - 1 - l) * row, hw - pad * 0.6f, bottom + (rows - l) * row, state * 0.32f, 1);
             var line = card.Line(l);
             var room = (int)((hw - pad - left) / glyphW + 0.2f);
-            var colour = l == 0 && !card.Plain ? title : bright;
+            var colour = l == 0 && !card.Plain ? title : card.IsDim(l) ? bright * 0.62f : bright;
             if (card.Fit)
             {
                 // A readout: as big as this line's length lets it be, in the middle of the panel.
@@ -365,7 +407,7 @@ public static unsafe class PanelRender
             }
             for (var k = 0; k < line.Length && k < room; k++)
                 if (line[k] > 32)
-                    Glyph(s, line[k], left + k * glyphW, y, glyphW, glyphH, colour);
+                    Glyph(s, line[k], left + k * glyphW, y, glyphW, glyphH, !card.HasInk && card.TintAt(l, k, out var tint) ? tint : colour);
         }
         if (card.Draw != PanelDraw.None)
             Shapes(s, card, size, pad, card.Draw is PanelDraw.Lamps or PanelDraw.Graph ? hh - pad : bottom + (rows - 1) * row, state);

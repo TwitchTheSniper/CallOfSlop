@@ -50,37 +50,108 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>
-    /// A piece off a Piece Rack, a loose body beside it, its middle over the rack's top: the one drawn where the player looks
-    /// (<paramref name="eye"/> along <paramref name="look"/>), else the last put in. Server; null when empty.
+    /// The stack of a Piece Rack the player looks at (<paramref name="eye"/> along <paramref name="look"/>), else the last
+    /// column's highest stack of the kind put in last. False when it is empty. Server and client alike (the same columns).
     /// </summary>
-    public ConstructPartDef? RackTake(Construct c, int part, Vector3 eye = default, Vector3 look = default)
+    public bool RackPick(Construct c, int part, CStore st, Vector3 eye, Vector3 look, out int slab, out int lane)
     {
-        if (StoreOf(c, part) is not { KindN: > 0 } st)
+        slab = lane = -1;
+        if (st.KindN == 0)
+            return false;
+        var rd = c.DefOf(part);
+        ConstructRackPack.Ensure(rd, st);
+        if (look != Vector3.Zero && ConstructConveyor.RackAimed(c, part, st, eye, look, out slab, out lane))
+            return true;
+        return ConstructRackPack.LastOf(st, st.KindDef![st.KindN - 1], out slab, out lane);
+    }
+
+    /// <summary>Server: the top piece off a rack's stack, out of its store (the caller gives it somewhere). Null when there is none.</summary>
+    public ConstructPartDef? RackTakeAt(Construct c, int part, int slab, int lane)
+    {
+        if (StoreOf(c, part) is not { } st)
             return null;
-        var def = st.KindDef![st.KindN - 1];
-        if (look != Vector3.Zero && ConstructConveyor.RackAimed(c, part, st, eye, look) is var aimed and > 0)
-            def = (ushort)aimed;
+        var def = ConstructRackPack.Take(st, slab, lane);
         if (ConstructParts.Get(def) is not { } d)
             return null;
-        c.PartBounds(part, out var mn, out var mx);
-        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
-        var top = new Vector3((mn.X + mx.X) * 0.5f, mx.Y + (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.1f, (mn.Z + mx.Z) * 0.5f);
-        var turn = q * Rot24.Quat(c.Parts[part].Rot);
-        if (ConstructEdits.DropLoose(this, d, t + Vector3.Transform(top, q), turn) is not { } body)
-            return null;
-        body.Owner = c.Owner;
         st.AddKind(d.Id, -1);
+        st.SlabSum = Math.Min(st.SlabSum, st.ItemCount);
         LoadChanged = true;
         Changed(st);
         c.Wake();
         return d;
     }
 
-    /// <summary>A piece into a Piece Rack, if it takes it. Server.</summary>
+    /// <summary>
+    /// Where piece <paramref name="k"/> off a rack goes loose: beside the rack on the side of <paramref name="eye"/>, just over
+    /// the rack's top, a row along the rack and then rows further out (a drop of many lies on the floor, not in the rack). World.
+    /// </summary>
+    public static void RackBeside(Construct c, int part, ConstructPartDef d, Vector3 eye, int k, out Vector3 at, out Quaternion turn)
+    {
+        ref var p = ref c.Parts[part];
+        var rd = c.DefOf(part);
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var r = Rot24.Quat(p.Rot);
+        turn = q * r;
+        var e = Vector3.Transform(eye - (t + Vector3.Transform(p.Pos, q)), Quaternion.Conjugate(turn)); // (the rack's own frame)
+        var mn = rd.BoundsMin;
+        var mx = rd.BoundsMax;
+        var s = d.BoundsMax - d.BoundsMin;
+        var side = e.X < (mn.X + mx.X) * 0.5f ? -1f : 1f;
+        var row = s.Z > 1 ? 1 : 8; // (long pieces side by side outwards; short ones in rows of eight along the rack)
+        var across = (k / row) * (s.X + 0.1f) + s.X * 0.5f + 0.15f;
+        var along = Math.Clamp(e.Z, mn.Z + s.Z * 0.5f, mx.Z - s.Z * 0.5f) + ((k % row) - row / 2) * (s.Z + 0.1f);
+        var centre = new Vector3(side > 0 ? mx.X + across : mn.X - across, mx.Y + s.Y * 0.5f + 0.05f, along);
+        var local = centre - (d.BoundsMin + d.BoundsMax) * 0.5f; // (its origin, so its middle is there)
+        at = t + Vector3.Transform(p.Pos + Vector3.Transform(local, r), q);
+    }
+
+    /// <summary>Where a stack's top piece is now (world): its centre and turn (the physics gun pulls it out from there).</summary>
+    public static void RackPieceAt(Construct c, int part, CStore st, int slab, int lane, out Vector3 at, out Quaternion turn)
+    {
+        ref var p = ref c.Parts[part];
+        var rd = c.DefOf(part);
+        var d = ConstructParts.Def(st.Slabs![slab].Def);
+        int n = st.SlabLanes![slab * ConstructRackPack.MaxLanes + lane];
+        var o = ConstructRackPack.Origin(rd, st.Slabs[slab], d, lane, Math.Max(0, n - 1)) + (d.BoundsMin + d.BoundsMax) * 0.5f;
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var r = Rot24.Quat(p.Rot);
+        at = t + Vector3.Transform(p.Pos + Vector3.Transform(o, r), q);
+        turn = q * r;
+    }
+
+    /// <summary>Server: every piece of a kind off a rack, loose bodies stacked over it, at most <paramref name="most"/> (a world of bodies costs). How many.</summary>
+    public int RackDropKind(Construct c, int part, ushort def, int most, Vector3 eye)
+    {
+        if (StoreOf(c, part) is not { } st || ConstructParts.Get(def) is not { } d)
+            return 0;
+        ConstructRackPack.Ensure(c.DefOf(part), st);
+        var n = 0;
+        while (n < most && ConstructRackPack.LastOf(st, def, out var slab, out var lane))
+        {
+            RackBeside(c, part, d, eye, n, out var at, out var turn);
+            if (ConstructEdits.DropLoose(this, d, at, turn) is not { } body)
+                break;
+            body.Owner = c.Owner;
+            ConstructRackPack.Take(st, slab, lane);
+            st.AddKind(def, -1);
+            n++;
+        }
+        st.SlabSum = Math.Min(st.SlabSum, st.ItemCount);
+        if (n > 0)
+        {
+            LoadChanged = true;
+            Changed(st);
+            c.Wake();
+        }
+        return n;
+    }
+
+    /// <summary>A piece into a Piece Rack, if it takes it: in the place packing gives it. Server.</summary>
     public bool RackPut(Construct c, int part, ConstructPartDef d)
     {
         if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d) != 0)
             return false;
+        ConstructRackPack.Place(c.DefOf(part), st, d, false, out _, out _);
         st.AddKind(d.Id, 1);
         LoadChanged = true;
         Changed(st);
@@ -161,7 +232,7 @@ public static class ConstructConveyor
 
     // ---- The rack ------------------------------------------------------------------------------------------------
 
-    /// <summary>Whether a Piece Rack takes <paramref name="d"/>: 0, or 1 not a rack, 2 not a piece, 3 too big, 4 full (no text: the step asks every time the lead piece waits).</summary>
+    /// <summary>Whether a Piece Rack takes <paramref name="d"/>: 0, or 1 not a rack, 2 not a piece, 3 too big for it, 4 full (no text: the step asks every time the lead piece waits; <see cref="RackRefusal"/> says it).</summary>
     public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d)
     {
         var rd = c.DefOf(part);
@@ -169,42 +240,66 @@ public static class ConstructConveyor
             return 1;
         if (d.Role == PartRole.Storage)
             return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost)
-        Size(d, out var across, out var up, out var along);
-        var big = MathF.Max(across, up);
-        var small = MathF.Min(across, up);
-        if (big > MathF.Max(rd.RackSection.X, rd.RackSection.Y) + 0.005f || small > MathF.Min(rd.RackSection.X, rd.RackSection.Y) + 0.005f || along > rd.RackLength + 0.005f)
-            return 3;
+        ConstructRackPack.Ensure(rd, st);
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)
             return 4;
-        return 0;
+        return ConstructRackPack.Place(rd, st, d, true, out _, out _);
     }
 
-    /// <summary>A Piece Rack's look line: how many it holds of how many, each kind and its count (the first few), and F. Either side, from the store as heard.</summary>
-    public static string Look(ConstructPartDef d, CStore st, bool near)
+    /// <summary>Why a rack refuses a piece, for a look line ("rack full", "piece too long for this rack"), or null.</summary>
+    public static string? RackRefusal(Construct c, int part, CStore st, ConstructPartDef d)
     {
-        var sb = new System.Text.StringBuilder($"{d.Name}: {st.ItemCount}/{d.RackCount} pieces");
-        const int listed = 4;
+        switch (RackCheck(c, part, st, d))
+        {
+            case 0:
+                return null;
+            case 2:
+                return "a rack takes pieces, not stores";
+            case 3:
+            {
+                ConstructRackPack.Hold(c.DefOf(part), out var lo, out var hi);
+                return d.BoundsMax.Z - d.BoundsMin.Z > hi.Z - lo.Z ? "piece too long for this rack" : "piece too big across for this rack";
+            }
+            case 4:
+                return "rack full";
+            default:
+                return "that isn't a rack";
+        }
+    }
+
+    /// <summary>"Piece Rack: 62% full, 131 pieces, 4 kinds: 120 x L Bracket, ..." and F. Either side, from the store as heard.</summary>
+    public static string Look(ConstructPartDef d, CStore st, bool near, ConstructPartDef? aimed = null)
+    {
+        ConstructRackPack.Ensure(d, st);
+        var sb = new System.Text.StringBuilder(d.Name).Append(": ");
+        if (st.ItemCount == 0)
+            sb.Append("empty");
+        else
+            sb.Append(FillText(d, st));
+        const int listed = 3;
         for (var k = 0; k < st.KindN && k < listed; k++)
             if (ConstructParts.Get(st.KindDef![k]) is { } kd)
                 sb.Append(k == 0 ? ": " : ", ").Append(st.KindCount![k]).Append(" x ").Append(kd.Name);
         if (st.KindN > listed)
             sb.Append($" and {st.KindN - listed} more kinds");
         if (st.KindN > 0 && near)
-            sb.Append($" - {SandboxKeys.Use}: take the one you look at off");
+        {
+            var name = aimed?.Name ?? "piece";
+            sb.Append($" - {SandboxKeys.Use}: take the {name} - Shift+{SandboxKeys.Use}: drop up to {DropMost} like it loose");
+        }
         return sb.ToString();
     }
 
-    // ---- What a rack holds, drawn (RouteRender.DrawRacks) and aimed at (F) ------------------------------------------------
-
-    public const int RackDrawn = 24; // the most pieces a rack draws (the rest are counted in its look line)
-    private const float RackSide = 0.115f, RackBed = 0.133f, RackEnd = 0.074f, RackGap = 0.02f, RackLayer = 0.005f; // (inside its posts, over its slats, past its sill: PieceRackParts.cs)
-
-    /// <summary>One piece as a rack shows it: its def and where its own origin sits in the rack part's frame (unturned).</summary>
-    public struct RackSlot
+    /// <summary>"62% full, 131 pieces, 4 kinds": what the look line and a console show of a rack.</summary>
+    public static string FillText(ConstructPartDef d, CStore st)
     {
-        public ushort Def;
-        public Vector3 Origin;
+        ConstructRackPack.Ensure(d, st);
+        var pct = (int)MathF.Round(ConstructRackPack.Fill(d, st) * 100);
+        return $"{pct}% full, {st.ItemCount} piece{(st.ItemCount == 1 ? "" : "s")}, {st.KindN} kind{(st.KindN == 1 ? "" : "s")}";
     }
+
+    public const int DropMost = 40; // the most pieces one held F drops loose (each is a body)
+    public const float RackDrawNear = 30f; // nearer than this a rack draws every piece; further, one box a column
 
     /// <summary>With the caches: a body's Piece Racks (they are special parts: they have stores).</summary>
     public static void BuildRacks(Construct c)
@@ -220,70 +315,149 @@ public static class ConstructConveyor
         }
     }
 
-    /// <summary>
-    /// Where a rack's pieces lie, in store order: side by side across its bed from the -z end, 2 cm apart, a layer on the
-    /// tallest of the one below (5 mm over it) while a layer starts below the rack's top; at most <paramref name="slots"/>'s
-    /// length. Both sides lay it out the same from the store, so F picks what the player sees. Returns how many.
-    /// </summary>
-    public static int RackLayout(ConstructPartDef rd, CStore st, Span<RackSlot> slots)
+    /// <summary>A world ray into a rack part's own frame (unturned), where its columns are boxes.</summary>
+    public static void IntoRack(Construct c, int part, Vector3 eye, Vector3 look, out Vector3 o, out Vector3 dir)
     {
-        float left = rd.BoundsMin.X + RackSide, right = rd.BoundsMax.X - RackSide, end = rd.BoundsMin.Z + RackEnd;
-        var x = left;
-        var y = rd.BoundsMin.Y + RackBed;
-        var top = y;
-        var n = 0;
-        for (var k = 0; k < st.KindN; k++)
-        {
-            if (ConstructParts.Get(st.KindDef![k]) is not { } d)
-                continue;
-            Size(d, out var across, out var up, out _);
-            for (var j = 0; j < st.KindCount![k]; j++)
-            {
-                if (n >= slots.Length)
-                    return n;
-                if (x > left && x + across > right + 1e-3f)
-                {
-                    x = left;
-                    y = top + RackLayer;
-                    if (y >= rd.BoundsMax.Y)
-                        return n;
-                }
-                slots[n++] = new RackSlot { Def = d.Id, Origin = new Vector3(x, y, end) - d.BoundsMin };
-                x += across + RackGap;
-                top = MathF.Max(top, y + up);
-            }
-        }
-        return n;
-    }
-
-    /// <summary>The def of the drawn piece a ray from <paramref name="eye"/> along <paramref name="look"/> meets first, or -1.</summary>
-    public static int RackAimed(Construct c, int part, CStore st, Vector3 eye, Vector3 look)
-    {
-        Span<RackSlot> slots = stackalloc RackSlot[RackDrawn];
-        var rd = c.DefOf(part);
-        var n = RackLayout(rd, st, slots);
-        if (n == 0)
-            return -1;
-        // Into the rack part's own frame (unturned), where the slots are boxes.
         ref var p = ref c.Parts[part];
         c.WorldFrame(p.Seg, out var q, out var t);
-        var turn = q * Rot24.Quat(p.Rot);
-        var inv = Quaternion.Conjugate(turn);
-        var o = Vector3.Transform(eye - (t + Vector3.Transform(p.Pos, q)), inv);
-        var dir = Vector3.Transform(look, inv);
-        var best = -1;
+        var inv = Quaternion.Conjugate(q * Rot24.Quat(p.Rot));
+        o = Vector3.Transform(eye - (t + Vector3.Transform(p.Pos, q)), inv);
+        dir = Vector3.Transform(look, inv);
+    }
+
+    /// <summary>The stack a ray from <paramref name="eye"/> along <paramref name="look"/> meets first within reach.</summary>
+    public static bool RackAimed(Construct c, int part, CStore st, Vector3 eye, Vector3 look, out int slab, out int lane)
+    {
+        IntoRack(c, part, eye, look, out var o, out var dir);
         var near = 6f;
-        for (var i = 0; i < n; i++)
+        return ConstructRackPack.Ray(c.DefOf(part), st, o, dir, ref near, out slab, out lane);
+    }
+
+    // ---- Taking a piece off a conveyor (F, the physics gun) --------------------------------------------------------
+
+    /// <summary>
+    /// The riding piece a ray (world) meets first before <paramref name="best"/>, as the frame draws it (moved on from its
+    /// last known front, RouteRender.DrawRiders); its index, or -1. A look only: nothing per rider runs otherwise.
+    /// </summary>
+    public static int RiderRay(Construct c, Vector3 origin, Vector3 dir, ref float best)
+    {
+        var elapsed = (float)Math.Clamp(Clock - c.ConveyedStamp, 0, 0.25);
+        Span<float> tail = stackalloc float[Construct.MaxRoutes];
+        Tails(c, tail);
+        var found = -1;
+        var prevRoute = -1;
+        var prevBack = 0f;
+        var routeLen = 0f;
+        for (var i = 0; i < c.ConveyedCount; i++)
         {
-            var d = ConstructParts.Def(slots[i].Def);
-            if (Geometry.RayAabb(slots[i].Origin + d.BoundsMin, slots[i].Origin + d.BoundsMax, o, dir, near) is { } hit && hit < near)
+            ref var r = ref c.Conveyed[i];
+            var k = r.Route;
+            if (k >= c.RouteCount || c.Routes[k].Type != RouteType.Conveyor || ConstructParts.Get(r.Def) is not { } d)
+                continue;
+            if (k != prevRoute)
+                routeLen = Length(c, k);
+            Size(d, out _, out _, out var along);
+            var limit = k != prevRoute ? routeLen - (tail[k] > 0 ? tail[k] + Gap : 0) : prevBack - Gap;
+            var front = MathF.Max(r.At, MathF.Min(r.At + Speed * elapsed, limit));
+            prevRoute = k;
+            prevBack = front - along;
+            Pose(c, k, front - along * 0.5f, d, out var o, out var rot, out var seg, r.ViaPlus1 - 1);
+            c.WorldFrame(seg, out var q, out var t);
+            var inv = Quaternion.Conjugate(q * rot);
+            var lo = Vector3.Transform(origin - (t + Vector3.Transform(o, q)), inv);
+            var ld = Vector3.Transform(dir, inv);
+            if (Geometry.RayAabb(d.BoundsMin, d.BoundsMax, lo, ld, best) is { } hit && hit < best)
             {
-                near = hit;
-                best = slots[i].Def;
+                best = hit;
+                found = i;
+            }
+        }
+        return found;
+    }
+
+    /// <summary>Server: the rider on conveyor <paramref name="route"/> whose front is nearest <paramref name="atCm"/> (it moved on since the player aimed), within 1.5 m; or -1.</summary>
+    public static int RiderNear(Construct c, int route, int atCm)
+    {
+        var best = -1;
+        var gap = 150f;
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            if (c.Conveyed[i].Route != route)
+                continue;
+            var g = MathF.Abs(c.Conveyed[i].At * 100 - atCm);
+            if (g <= gap)
+            {
+                gap = g;
+                best = i;
             }
         }
         return best;
     }
+
+    /// <summary>Server: rider <paramref name="i"/> off its conveyor: where it is in the world and its turn; the ones behind close up on their own.</summary>
+    public static ConstructPartDef? TakeRider(ConstructWorld world, Construct c, int i, out Vector3 centre, out Quaternion rot, out byte health, out uint paint)
+    {
+        centre = default;
+        rot = Quaternion.Identity;
+        health = 255;
+        paint = 0;
+        if ((uint)i >= (uint)c.ConveyedCount)
+            return null;
+        var r = c.Conveyed[i];
+        var d = ConstructParts.Get(r.Def);
+        if (d != null && r.Route < c.RouteCount && c.Routes[r.Route].Type == RouteType.Conveyor)
+            WorldPose(c, r.Route, r, d, out centre, out rot);
+        else
+            (centre, rot) = (r.LastPos, r.LastRot);
+        (health, paint) = (r.Health, r.Paint);
+        Remove(c, i);
+        world.RidersChanged(c);
+        c.Wake();
+        return d;
+    }
+
+    /// <summary>
+    /// Whether a conveyor's lead piece waits at its far end, and why: 0 it moves, 1 its end is gone, 2 to 5 the rack's
+    /// <see cref="RackCheck"/> (2 not a piece, 3 too big, 4 full; 5 too long), 6 a junction's way on is full, 7 a machine isn't
+    /// taking it. Either side, from what it heard; allocates nothing (a look line asks every frame).
+    /// </summary>
+    public static int Jam(ConstructWorld world, Construct c, int route)
+    {
+        if ((uint)route >= (uint)c.RouteCount || c.Routes[route].Type != RouteType.Conveyor)
+            return 0;
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            if (c.Conveyed[i].Route != route)
+                continue;
+            if (c.Conveyed[i].At < Length(c, route) - 0.02f || ConstructParts.Get(c.Conveyed[i].Def) is not { } d)
+                return 0;
+            var to = c.Routes[route].To;
+            if (to >= c.PartCount)
+                return 1;
+            var td = c.DefOf(to);
+            if (td.IsPieceRack && world.StoreOf(c, to) is { } st)
+            {
+                var why = RackCheck(c, to, st, d);
+                ConstructRackPack.Hold(td, out var lo, out var hi);
+                return why == 3 && d.BoundsMax.Z - d.BoundsMin.Z > hi.Z - lo.Z ? 5 : why is >= 2 and <= 4 ? why : 0;
+            }
+            return td.IsConveyorJunction ? 6 : 7;
+        }
+        return 0;
+    }
+
+    /// <summary>"jammed: rack full", for a <see cref="Jam"/> code (null for 0).</summary>
+    public static string? JamText(Construct c, int route, int jam) => jam switch
+    {
+        1 => "jammed: its end is gone",
+        2 => "jammed: a rack takes pieces, not stores",
+        3 => "jammed: piece too big across for this rack",
+        4 => "jammed: rack full",
+        5 => "jammed: piece too long for this rack",
+        6 => "jammed: the conveyor after the junction is full",
+        7 => $"jammed: the {(c.Routes[route].To < c.PartCount ? c.DefOf(c.Routes[route].To).Name : "machine")} isn't taking it",
+        _ => null,
+    };
 
     // ---- The link ------------------------------------------------------------------------------------------------
 
