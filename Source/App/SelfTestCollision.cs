@@ -599,7 +599,7 @@ public static partial class SelfTest
         }
         var sw = new Stopwatch();
         double sum = 0, worst = 0;
-        // Allocation as the least of three equal runs of ticks (HANDOFF.md, "How to write a new allocation probe"): a real
+        // Allocation as the least of three equal runs of ticks (SelfTestCpuRatio.SteadyAllocBytes says why): a real
         // per-tick allocation shows in every run, a one-off on this thread (JIT tier-up, a lazily made runtime structure)
         // in one at most. Summed over all the ticks, one such 7.7 KB jump failed the 16000-part hull at random on CI.
         Span<long> runBytes = stackalloc long[3];

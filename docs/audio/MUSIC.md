@@ -341,7 +341,7 @@ of louder tracks shifts frenzy loudness too.
 
 Ratios come from `CompareCpu` (`SelfTestCpuRatio.cs`): both sides on this thread's CPU clock, interleaved, after a
 warm-up, each side's quickest run, 1.5 s from `FirstDropBar`. Don't use a median of ratios: Windows runners gave 1.51x,
-1.38x and 1.07x for one commit that way (HANDOFF.md). Measured whole-track cost: 6-16 ms/s; the heaviest are the weird
+1.38x and 1.07x for one commit that way. Measured whole-track cost: 6-16 ms/s; the heaviest are the weird
 tracks and Babushka Bunker Buster. About 1% of a core on a PC (README).
 
 Two gaps: the check that held weird tracks to 1.5x went with the "Weird hardbass" section on 2026-11-03, so only the
@@ -363,8 +363,7 @@ means adding it to `Reset()`.
 pass, you try the change by hand in a throwaway run (the probe), and you report what you didn't verify. The sections
 above exist and CI runs them, so you still need to meet them. "Weird hardbass" and "Frenzy tempo" were deleted on
 2026-11-03: nothing automated checks weird timelines or frenzy tempo now. If the user asks, the command is
-`--selftest-only "Music, Frenzy music, Frenzy classes, Audio mixer"`; the `^Source/Audio/` rule in
-`tools/ci/sections_for.py` lists "Music" and "Frenzy music" but not "Frenzy classes".
+`--selftest-only "Music, Frenzy music, Frenzy classes, Audio mixer"`.
 
 ## Inspecting a track without ears
 
@@ -568,7 +567,7 @@ Not built, and whether to is a user decision. The code shows what would have to 
 - **A weird swerve restores what it changed** on leaving (`WeirdTiming`). `DrunkStep` changes lead vibrato; `LofiStep`
   changes pad cutoff.
 - **Threads.** `MusicPlayer` and `FrenzyLayer` setters use `Volatile`. Don't call into a renderer from the game thread.
-- **Open:** menu and lobby music can click once as a trim crosses 0 dB and the limiter switches on (HANDOFF.md).
+- **Open:** menu and lobby music can click once as a trim crosses 0 dB and the limiter switches on.
 
 ### What went wrong before
 
