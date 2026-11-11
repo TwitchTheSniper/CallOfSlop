@@ -219,12 +219,12 @@ public static partial class ProductionLines
 
     // ---- The monitor's card --------------------------------------------------------------------------------------------------
 
-    private const float RowMetres = 0.1f; // a monitor's row at Text size 100 %
+    private const float RowMetres = 0.06f; // a monitor's row at Text size 100 % (a 1 m Text Sign: 8 rows, a medium list)
     private const int MinCols = 18; // a list needs this many characters: a small panel takes smaller text
     private const int TinyRows = 2, SmallRows = 6, MediumRows = 14; // up to these rows: one line, a row a machine, two a machine; past them a board
     private const double ScrollStep = 2.0; // seconds a monitor's list rests before it moves on a row
 
-    /// <summary>A monitor's rows: its panel's height in 10 cm rows at its Text size (one line for a strip), smaller where a list wouldn't fit across.</summary>
+    /// <summary>A monitor's rows: its panel's height in 6 cm rows at its Text size (one line for a strip), smaller where a list wouldn't fit across.</summary>
     public static int MonitorRows(PanelDef panel, float percent, out int cols)
     {
         var rows = Math.Clamp((int)(panel.Size.Y / (RowMetres * Math.Max(percent, 10) / 100f) + 0.25f), 1, PanelCard.MaxLines);
