@@ -335,7 +335,7 @@
     {"type": "data", "from": 231, "to": 286, "nodes": [[0.25, 0.33, -0.85], [7.75, 0.33, -0.85], [15.25, 0.33, -0.85], [22.25, 0.33, -0.85], [22.25, 2.4, -0.85]], "laid": true, "paint": "#23272b"}
   ],
   "bill": [
-    {"step": 283, "piece": "Extrusion l-angle 10x10x50 metal", "count": 2},
+    {"step": 283, "piece": "Extrusion l-angle 10x10x45 metal", "count": 2},
     {"step": 283, "piece": "Extrusion l-angle 15x15x60 metal", "count": 2},
     {"step": 283, "piece": "Extrusion l-angle 20x20x75 metal", "count": 2},
     {"step": 283, "piece": "Extrusion l-angle 25x25x100 metal", "count": 2},

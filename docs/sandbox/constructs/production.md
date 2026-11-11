@@ -609,7 +609,10 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
 - **Network (protocol 246).** `CBodyKind.Orders`, per body when a queue or bill changes, after a Full and to a joiner: each list's
   part, totals, note and its first three orders (22 fixed bytes each). A client holds only those: all a screen shows.
 - **Saves.** After a body's conveyors block (an empty one when it has none), its lists in full: materials and parts by the save's names.
-  An older save ends before them. Blueprints carry no orders (a blueprint is a design, not a job).
+  An older save ends before them. A blueprint carries no machine queues (a blueprint is a design, not a job); a Line Console's bill may ride
+  in it: `"bill": [{"step": n, "piece": "Extrusion l-angle 20x20x75 metal", "count": 2}]`, put on that console as it is built
+  (`ConstructBill.ParseLine`, `FromLine`; the Production Showcase's). A bill holds orders, never material. Copies and player blueprints don't
+  write one yet.
 - **Cost.** An idle machine or an empty queue costs a null check (measured: the Extruder step 0.0005 ms, 0 bytes); a 200-order queue on
   two machines 0.03 ms median, 0.4 ms max a step on the 2-core box. A step allocates only what a working Extruder always did: a new
   piece def the first time a key is grown (about 2.5 KB) and the body or rider it cuts. The console's machines are walked only on Send.
@@ -619,3 +622,38 @@ a machine with a queue working orders only, Clear going back to its settings; an
 round robin rather than counts split across machines; the queue and bill bounds (255 orders, 999 a line); a cancelled head's piece cut
 off as it is; blueprints carrying no orders. Next: the Assembler taking catalogue-part orders, the Fan and Airframe Formers, and the
 building station issuing a blueprint's bill.
+
+## Production Showcase
+
+One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine
+that carries the production systems of 2026-11-11 on one 64 by 14 m floor of Foundations, stocked and wired, so the systems can be
+tried the moment it is spawned from the creative blueprint list. Made by the part kit's `--gen-parts production_showcase`
+(`Source/PartKit/Generators/ProductionShowcase.cs`), which builds it step by step through the game's own rules (`BlueprintScript`), so
+a step the rules refuse fails there with their reason. It reads the part files: run it after the part generators.
+
+- **The layout**, left to right as material flows, a 2 m walkway along the front and one behind the first row, every screen, status lamp
+  and sign facing a walkway: **power** (a Small Genset on two Fuel Tanks, a Battery, the main Switch with a Charge Gauge); **stock**
+  (Storage Volumes, each beside the machine it feeds); **refining** (Smelter on iron ore, Sawmill on wood, Foundry on metal and stone,
+  each chuted from stock into a Materials Bin, one Line Console on their Runs); **line A** (an Extruder fed metal, Piece out onto a
+  conveyor to a Conveyor Splitter: one branch to a Press with a Bracket Die on its first bay, the other through a Conveyor Join to a
+  Long Piece Rack); **line B** (an Extruder fed planks, its conveyor meeting line A's at the join); **the spur** (an Extruder making a
+  0.3 m bar onto a conveyor set to 0.10 m, on purpose, to a Piece Rack); **wheels** (a Wheel Former fed rubber, a conveyor, a Piece
+  Rack); **orders** (a second Line Console wired to both Extruders' and the Wheel Former's Runs, its bill already on it: seven sizes of
+  metal angle and plate, two of planks, two wheels; 19 pieces).
+- **Stock** is the Storage Volume's own creative-only Material and Fill settings (`ConstructBuild.SetConfig`): a creative world fills
+  each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
+  under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.
+- **The bill** rides in the blueprint's `"bill"` ([Work orders](#work-orders), "Saves").
+- **The signs** (one a test): MAIN SWITCH (off stops the genset and the station lamps); STOCK; press Start on the refining console;
+  Bill, then Send, then Line and Start on the orders console; cut line A's first conveyor to see pieces drop; take a piece off the long
+  rack with F; the press stamps brackets from line A's angles; line B meets line A at the join; the spur's conveyor is too small on
+  purpose; set the wheel line's conveyor too small with the mouse wheel to see a refusal.
+- **What to expect.** In a creative world machines need no power, so the main switch darkens the station lamps and stops the genset
+  (its smoke), and the battery then carries the consoles; the machines' No power state shows only in survival. Refiners in creative
+  finish a whole load at once (as Recyclers do), so their lamps go from Stopped to Starved without a lasting Running. The Press drops its
+  brackets behind it as loose bodies; take them away now and then, or the heap reaches the bay's mouth ("no room for it").
+- **Measured** (`--probe-showcase`, removed: host and client over RakNet on the Proving Ground, spawned through the parts menu's call,
+  the refining console started and the bill sent): every rack held the same pieces by key on both peers, the Press took line A's angles and
+  plates, the spur's Extruder stopped with "refused: the piece is too big for its conveyor (0.10 x 0.10 m)". The host's worst tick with
+  everything running, warm: 6.4 ms (p99 2.2 ms); in the first 25 s after the spawn, before the JIT has optimised the code, ticks
+  reach 21 ms.

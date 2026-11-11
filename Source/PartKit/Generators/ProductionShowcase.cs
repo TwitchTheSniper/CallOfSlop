@@ -172,7 +172,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Run(orders, former, V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(52.25f, 0, -2.0f));
             foreach (var (piece, n) in new[]
                      {
-                         ("Extrusion l-angle 10x10x50 metal", 2), ("Extrusion l-angle 15x15x60 metal", 2), ("Extrusion l-angle 20x20x75 metal", 2),
+                         ("Extrusion l-angle 10x10x45 metal", 2), ("Extrusion l-angle 15x15x60 metal", 2), ("Extrusion l-angle 20x20x75 metal", 2),
                          ("Extrusion l-angle 25x25x100 metal", 2), ("Extrusion l-angle 30x30x125 metal", 1), ("Extrusion plate 30x30x100 metal", 1),
                          ("Extrusion plate 45x45x150 metal", 1),
                          ("Extrusion solid 20x10x200 planks", 2), ("Extrusion i-beam 25x25x150 planks", 2),

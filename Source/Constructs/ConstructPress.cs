@@ -477,10 +477,7 @@ public static class ConstructPress
         var half = Vector3.Max((piece.BoundsMax - piece.BoundsMin) * 0.5f - new Vector3(0.02f), new Vector3(0.01f));
         var obb = new Obb(from + Vector3.Transform(mid, turn), half, turn);
         if (query.OverlapBox(obb, QueryFilter.All))
-        {
-            Console.WriteLine($"[probe-room] map query overlaps at {obb.Center} half {obb.Half}"); // PROBE
             return false;
-        }
         var near = world.Near(obb.Center, half.Length() + 0.5f, _near2);
         for (var k = 0; k < near.Count; k++)
         {
@@ -490,20 +487,7 @@ public static class ConstructPress
             if (o.Dirty)
                 o.Rebuild();
             if (ConstructExtruder.Hits(o, o == c ? part : -1, obb))
-            {
-                for (var pi = 0; pi < o.PartCount; pi++) // PROBE
-                {
-                    o.WorldFrame(o.Parts[pi].Seg, out var pq, out var pt);
-                    for (var bk = 0; bk < o.SolidCount(pi); bk++)
-                    {
-                        o.SolidBox(pi, bk, out var oc, out var oh);
-                        if ((o != c || pi != part) && Geometry.ObbOverlap(obb, new Obb(pt + Vector3.Transform(oc, pq), oh, pq)))
-                            Console.WriteLine($"[probe-room]   part {pi} {o.DefOf(pi).Name} box {bk} at {pt + Vector3.Transform(oc, pq)} half {oh}");
-                    }
-                }
-                Console.WriteLine($"[probe-room] construct {o.Id} ({o.PartCount} parts, first {o.DefOf(0).Name}) hits at {obb.Center} half {obb.Half}"); // PROBE
                 return false;
-            }
         }
         return true;
     }
