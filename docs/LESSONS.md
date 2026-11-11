@@ -41,7 +41,7 @@ Folded by theme on 2026-11-03 and 2026-11-09; the dated stories are in `git show
 - For a solver instability, print each body's position, tilt and speed by tick before changing a number, change one thing at a time, and read anything a contact needs from the tick's velocities before the first impulse.
 - When a physics change breaks a scene, first check whether the new result is what the shape should do; a scene puts a body where a real shape would move or fall.
 - Stack blasts when trying digging. A nav graph finished over dug ground is flagged and dropped when the ground goes back (`NavGraph.BuiltOnDugGround`, `ForgetDug`).
-- Measure a data-wide correction against the old shape before merging (`tools/props/zfight_moves.py`). Steps never grow with passes, the amount comes from the shared patch, and rotated boxes are not axis-aligned ones.
+- Measure a data-wide correction against the old shape before merging (`--zfight-moves`). Steps never grow with passes, the amount comes from the shared patch, and rotated boxes are not axis-aligned ones.
 
 **When a test is asked for**
 - An offline scene with bots spawns the local player through `SpawnLocalSafely`. A wall-clock loopback check waits for the state it needs with a deadline (`WaitFor`, `MatchWithin`), and frame loops never burst after a stall.
