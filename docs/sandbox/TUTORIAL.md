@@ -34,6 +34,20 @@ the file. The text is filled once per step and again only if a key it names is r
 | `stow`, `draw` | a part put in the backpack (Stow), or taken out of it (Draw) |
 | `carry` | the physics gun took hold of something (a Grab carried out) |
 | `bunk` | they lie in a Bunk (the seat loop, beside the checkpoint: `TutorialSee`) |
+| `ride` | they rode the crew bus (a stand-in, docs/story/DUTIES.md) from the step's `spot` stop (`colony` or `quarry`) to the other: `QuarryRideStep` |
+
+**The mine shift** (Karl, 2026-11-11: woken up, shouted onto the bus, taken to the mine, the hands there, supports on the mine
+wall, lamps; "show, don't tell"). The shipped induction is twelve short steps: `wake` (the warden shouts; look), `bus` (walk
+and run to the crew bus, ride to the quarry), then Foreman Grubb at the mine face: `jump`, `hold` (a Lamp), `backpack` (stow
+it), `physicsgun`, `carry` (a lump of Rubble comes off the face: shift it), `prop` (pick up a Pit Prop), `attach` (the tool),
+`support` (fit the prop on the face's footing), `lamp` (draw the Lamp, fit it on the prop), `done`. A step's `text` is one
+short line (the keys), the speaker's line carries the world, and the detail waits in the `hint`. The quarry duty follows on
+at the works, and ends with the bus home and the bunk. Per step: `speaker` (who says the line and hands things over: default
+the file's), `spot` (`colony`, `quarry`, `wall`: a marker the server places, sent in `Msg.Quarry`; a ride's marker moves to
+its bus), `dropNote` (the notice when the drops land). The Mine Face (with five `prop` sockets on its footing), the Pit Prop
+and the Rubble are parts in `Constructs/Parts/Story`; the face is part of the Ministry Quarry Works blueprint. A world saved
+part way through the older induction picks up at the step now at that number (at the colony: the markers show the way, or
+Esc skips).
 
 **About the person** (Karl, 2026-11-10). The induction teaches the person: moving, their hands, the backpack, their own tools
 (attach tool, ground drill, physics gun) and their bunk. Machines (power, the Assembler, smelting) are not in it: they are

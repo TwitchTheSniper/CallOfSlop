@@ -21,6 +21,7 @@ public sealed partial class Game
 {
     public const byte QuarryNone = 0, QuarryReport = 1, QuarryFirstStep = 2, QuarryDone = 255;
     public const float QuarryBoardReach = 6f; // m from the bus's stop to board
+    public const float QuarryAtWorks = 90f; // m from the quarry's stop: already at the quarry when the duty comes
     public const double QuarryRideSeconds = 10; // s from boarding to being set down
     public const double QuarryRideAway = 5, QuarryRideBlack = 1.5; // s of the scene: the bus leaving, then a moment of black
 
@@ -32,6 +33,8 @@ public sealed partial class Game
         public int RideTo; // the bus coming in at the other stop
         public uint Saw; // what they did this step (bit per QuarryCue)
         public double StepAt;
+        public QuarrySpotKind RideOff; // the stop the ride under way left from
+        public bool Rode; // the induction's ride step (TutorialCue.Ride) has been ridden
     }
 
     private readonly QuarryRun[] _qr = new QuarryRun[256];
@@ -124,11 +127,18 @@ public sealed partial class Game
             case QuarrySpotKind.Genset:
             case QuarrySpotKind.Bin:
             case QuarrySpotKind.Assembler:
+            case QuarrySpotKind.Wall:
                 if (QuarryWorks is not { } w)
                     return null;
                 for (var k = 0; k < w.PartCount; k++)
                 {
                     var d = w.DefOf(k);
+                    if (spot == QuarrySpotKind.Wall)
+                    {
+                        if (d.Name == "Mine Face")
+                            return w.SegToWorld(w.Parts[k].Seg, w.Parts[k].Pos + Vector3.Transform(new Vector3(0, 1.4f, -1.2f), Rot24.Quat(w.Parts[k].Rot))); // (in front of the face, chest high)
+                        continue;
+                    }
                     if (spot == QuarrySpotKind.Assembler ? d.IsAssembler : spot == QuarrySpotKind.Bin ? d.IsBin && !d.IsAssembler && !d.IsRefiner : d.Name.Contains("Genset", StringComparison.Ordinal))
                         return w.SegToWorld(w.Parts[k].Seg, w.Parts[k].Pos);
                 }
@@ -169,7 +179,11 @@ public sealed partial class Game
             if (run.State == QuarryNone)
             {
                 if (_tutState[p.Id] is TutorialState.Finished or TutorialState.Skipped && !OpeningHas(p.Id) && _dp[p.Id].State == DepotNone)
-                    QuarrySet(p, QuarryReport, now, QuarryScript.Current.Memo.Replace("{name}", p.Name));
+                {
+                    // The induction ends at the mine: there the duty starts at the works, with no report and no bus out.
+                    var there = steps.Length > 1 && steps[0].Cue == QuarryCue.Ride && Vector3.Distance(p.Position, _qrStop) < QuarryAtWorks;
+                    QuarrySet(p, there ? (byte)(QuarryFirstStep + 1) : QuarryReport, now, there ? null : QuarryScript.Current.Memo.Replace("{name}", p.Name));
+                }
                 continue;
             }
             if (run.State == QuarryDone || run.State != QuarryReport && run.State - QuarryFirstStep >= steps.Length)
@@ -203,7 +217,7 @@ public sealed partial class Game
             case QuarryCue.Ride:
                 if ((run.Saw & QuarryBit(QuarryCue.Ride)) != 0)
                     return true;
-                QuarryBusWait(p, ref run, step);
+                QuarryBusWait(p, ref run, step.Spot);
                 return false;
             default:
                 return (run.Saw & QuarryBit(step.Cue)) != 0;
@@ -213,12 +227,12 @@ public sealed partial class Game
     private static uint QuarryBit(QuarryCue c) => 1u << (int)c;
 
     /// <summary>Server, a ride step: their bus at the stop (called when the step starts, again if it went), and boarding once it has stopped and they are at it.</summary>
-    private void QuarryBusWait(Player p, ref QuarryRun run, QuarryStep step)
+    private void QuarryBusWait(Player p, ref QuarryRun run, QuarrySpotKind from)
     {
         var bus = StandInSlotOf(run.Bus);
         if (bus < 0)
         {
-            if (QuarrySpot(step.Spot) is not { } stop || QuarrySpot(step.Spot == QuarrySpotKind.Colony ? QuarrySpotKind.Quarry : QuarrySpotKind.Colony) is not { } other)
+            if (QuarrySpot(from) is not { } stop || QuarrySpot(from == QuarrySpotKind.Colony ? QuarrySpotKind.Quarry : QuarrySpotKind.Colony) is not { } other)
                 return;
             var way = StandInPath.Along(other - stop, stop);
             var i = StandInCall(StandInKind.Hauler, stop, way, 12, 600, StandInFor.Duty, p.Id, 0, jump: false);
@@ -230,16 +244,78 @@ public sealed partial class Game
         if (!c.Landed(ServerTick) || ServerTick >= c.LeavesAt || Vector3.Distance(p.Position, c.Land) > QuarryBoardReach)
             return;
         // Aboard: this bus pulls away, the other stop's comes in as the scene ends, and they are set down beside it.
-        if (QuarrySpot(step.Spot == QuarrySpotKind.Colony ? QuarrySpotKind.Quarry : QuarrySpotKind.Colony) is not { } to)
+        if (QuarrySpot(from == QuarrySpotKind.Colony ? QuarrySpotKind.Quarry : QuarrySpotKind.Colony) is not { } to)
             return;
         var wayOn = StandInPath.Along(to - c.Land, to);
         StandInLeave(bus, 0.1);
         var j = StandInCall(StandInKind.Hauler, to, wayOn, QuarryRideSeconds - 1, 6, StandInFor.Duty, p.Id, 1, jump: false);
         run.RideTo = j >= 0 ? StandIns[j].Id : 0;
         run.RideFrom = ServerTick;
+        run.RideOff = from;
         SandboxStand(p, teleport: false); // (out of any seat first)
         Log($"[quarry] {p.Name} boards the crew bus");
         QuarrySend(p);
+    }
+
+    /// <summary>
+    /// Server, the induction's ride step (TutorialCue.Ride, GameTutorial.cs): the same crew bus, from <paramref name="from"/>'s
+    /// stop to the other. True once they have been set down (or this world has no quarry to ride to).
+    /// </summary>
+    private bool QuarryRideStep(Player p, QuarrySpotKind from)
+    {
+        if (_qrWorks == 0)
+            return true;
+        if (_qrWho[p.Id] != p)
+        {
+            _qrWho[p.Id] = p;
+            _qr[p.Id] = default;
+        }
+        ref var run = ref _qr[p.Id];
+        if (run.Rode)
+        {
+            run.Rode = false;
+            return true;
+        }
+        if (run.RideFrom == 0 && p.Alive)
+            QuarryBusWait(p, ref run, from);
+        return false;
+    }
+
+    /// <summary>Server: the induction moved to another step: a bus called for the last one isn't this one's, and the marker may have moved.</summary>
+    private void QuarryTutorialStep(Player p)
+    {
+        if (_qrWorks == 0 || p.Id >= MaxPlayers || _qrWho[p.Id] != p)
+            return;
+        ref var run = ref _qr[p.Id];
+        run.Rode = false;
+        if (run.RideFrom == 0)
+            run.Bus = 0;
+        QuarrySend(p);
+    }
+
+    /// <summary>Server: something the duty counts happened for this person outside an action (a bunk lain in).</summary>
+    private void QuarrySee(byte id, QuarryCue cue)
+    {
+        if (id < MaxPlayers && _qr[id].State is >= QuarryFirstStep and < QuarryDone)
+            _qr[id].Saw |= QuarryBit(cue);
+    }
+
+    /// <summary>A Bunk in the colony for a marker: a free one when there is one.</summary>
+    private Vector3? QuarryBunk()
+    {
+        if (Constructs.Get(_opColony) is not { } c)
+            return null;
+        Vector3? any = null;
+        for (var k = 0; k < c.PartCount; k++)
+        {
+            ref var part = ref c.Parts[k];
+            if (!part.D.Bunk || part.Broken)
+                continue;
+            any = c.SegToWorld(part.Seg, part.Pos);
+            if (part.SitterPlus1 == 0)
+                break;
+        }
+        return any;
     }
 
     private int StandInSlotOf(int id)
@@ -255,9 +331,7 @@ public sealed partial class Game
     /// <summary>Server: the scene is over: set down beside the bus at the other stop, and the ride step is done.</summary>
     private void QuarryRideEnd(Player p, ref QuarryRun run, double now)
     {
-        var steps = QuarryScript.Current.Steps;
-        var k = run.State - QuarryFirstStep;
-        var to = k >= 0 && k < steps.Length && steps[k].Spot == QuarrySpotKind.Colony ? QuarrySpot(QuarrySpotKind.Quarry) : QuarrySpot(QuarrySpotKind.Colony);
+        var to = run.RideOff == QuarrySpotKind.Colony ? QuarrySpot(QuarrySpotKind.Quarry) : QuarrySpot(QuarrySpotKind.Colony);
         run.RideFrom = 0;
         run.Bus = 0;
         var bus = StandInSlotOf(run.RideTo);
@@ -270,7 +344,10 @@ public sealed partial class Game
             p.Teleport(feet);
             p.Yaw = MathF.Atan2(side.X, -side.Z); // (facing away from the bus; our yaw turns -Z towards +X)
         }
-        run.Saw |= QuarryBit(QuarryCue.Ride);
+        if (_tutState[p.Id] == TutorialState.Running)
+            run.Rode = true; // (the induction's ride: GameTutorial.cs)
+        else
+            run.Saw |= QuarryBit(QuarryCue.Ride);
         Log($"[quarry] {p.Name} set down by the crew bus");
         QuarrySend(p);
     }
@@ -372,6 +449,13 @@ public sealed partial class Game
     {
         ref var run = ref _qr[p.Id];
         var script = QuarryScript.Current;
+        if (_tutState[p.Id] == TutorialState.Running && _tutStep[p.Id] < Tutorial.Steps.Length)
+        {
+            var ts = Tutorial.Steps[_tutStep[p.Id]]; // (the induction's own marker: a ride's bus, or the step's spot)
+            if (ts.Cue == TutorialCue.Ride && StandInSlotOf(run.Bus) is var tb and >= 0)
+                return StandIns[tb].Land;
+            return ts.Spot == QuarrySpotKind.None ? null : QuarrySpot(ts.Spot);
+        }
         if (run.State == QuarryReport)
             return QuarrySpot(script.ReportSpot);
         if (run.State is < QuarryFirstStep or QuarryDone || run.State - QuarryFirstStep >= script.Steps.Length)
@@ -379,6 +463,8 @@ public sealed partial class Game
         var step = script.Steps[run.State - QuarryFirstStep];
         if (step.Cue == QuarryCue.Ride && StandInSlotOf(run.Bus) is var bus and >= 0)
             return StandIns[bus].Land; // (the bus itself, once it is called)
+        if (step.Cue == QuarryCue.Bunk)
+            return QuarryBunk();
         return step.Spot == QuarrySpotKind.None ? null : QuarrySpot(step.Spot);
     }
 
@@ -480,6 +566,7 @@ public enum QuarryCue : byte
     Power, // a power cable laid at the quarry's works
     Feed, // something tipped into (or used on) the works: its Materials Bin
     Recipe, // the works' Assembler's recipe set
+    Bunk, // lay in a Bunk (the day's end; the marker is the colony's nearest free one)
 }
 
 /// <summary>A place a duty step points at.</summary>
@@ -492,6 +579,7 @@ public enum QuarrySpotKind : byte
     Genset,
     Bin,
     Assembler,
+    Wall, // the mine face behind the works (the induction's supports and lamp)
 }
 
 public sealed class QuarryStep
