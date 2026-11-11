@@ -136,7 +136,7 @@ Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, bui
 - Assembling
 - Build stations
 - Build stations: the Selector and the Blueprint Desk
-- Production lines
+- Production lines (the Line Console, the recipe picker, resource icons)
 - Conveyors
 - Work orders
 - Production Showcase

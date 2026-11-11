@@ -220,6 +220,10 @@ public static partial class Program
         {
             if (def.Touch[region].View is var by and not 0)
                 PanelRender.Scroll(key, by * PanelRender.PageRows(key)); // (Up and Down: this PC's own view of the list, nothing sent)
+            else if (def.Touch[region].Action == "line.recipe" && LineRecipePicker(c, part))
+            {
+                // (the Recipe button opens the recipe picker on the line's picked machine: Program.SandboxRecipe.cs)
+            }
             else
                 g.SandboxPanelTouch(c.Id, part, n, region);
         }

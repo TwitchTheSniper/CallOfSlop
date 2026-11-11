@@ -86,8 +86,9 @@ public enum CActKind : byte
     Aircraft, // u8 AirAsk, text style, text shape (Flying) or air role (Faction; empty: any), u32 seed (0: the server picks): an aircraft already flying with a bot pilot over the player (protocol 230; GameSandboxAircraft.cs)
     QuarrySkip, // nothing: skip the first Ministry duty, the quarry (protocol 236; GameQuarry.cs)
     MakeEngine, // u16 kW, u8 tier, u8 EngineLayout, u8 EngineBoost, u8 size (255 any), 3 x u16 fit (cm; 0 any), u32 seed: creative, the Engine Kit makes an engine in front of the player (protocol 241; GameSandboxEngines.cs)
-    RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 248; ConstructEditsRack.cs)
-    Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 248; ConstructEditsRack.cs)
+    RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 249; ConstructEditsRack.cs)
+    Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 249; ConstructEditsRack.cs)
+    LineRecipe, // u16 body, u16 console, u16 machine, u16 recipe value, u8 flags (1: every machine of its kind on the line): the recipe picker (protocol 250; ProductionLines.SetRecipe)
 }
 
 /// <summary>
@@ -1059,6 +1060,15 @@ public sealed partial class Game
                 var region = r.U8();
                 return hands.PanelTouched(Constructs, p.Id, eye, body, part, panel, region, ServerTick, Constructs.Get(body) is { } tc2 ? SandboxConfigRefusal(tc2, p.Id) : null);
             }
+            case CActKind.LineRecipe:
+            {
+                var body = r.U16();
+                var console = r.U16();
+                var machine = r.U16();
+                var value = r.U16();
+                var flags = r.U8();
+                return hands.LineRecipe(Constructs, p.Id, eye, body, console, machine, value, (flags & 1) != 0, Constructs.Get(body) is { } lc ? SandboxConfigRefusal(lc, p.Id) : null);
+            }
             case CActKind.WebState:
             {
                 var body = r.U16();
@@ -1441,6 +1451,27 @@ public sealed partial class Game
             OfficeParts.Clicked(tc, part, region); // (an advert: this screen shows the scam: GameSandboxScams.cs)
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.PanelTouch).U16(body).U16((ushort)part).U8((byte)panel).U8((byte)region);
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxActGuarded(me, ref r) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>
+    /// Client (or the host itself): the recipe picker sets machine <paramref name="machine"/>'s recipe from Line Console <paramref name="console"/>
+    /// (<paramref name="all"/>: every machine of its kind on that line). The server checks it as a finger on the console's button.
+    /// </summary>
+    public void SandboxLineRecipe(ushort body, int console, int machine, int value, bool all)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.LineRecipe).U16(body).U16((ushort)console).U16((ushort)machine).U16((ushort)Math.Clamp(value, 0, ushort.MaxValue)).U8((byte)(all ? 1 : 0));
         if (IsServer)
         {
             if (Local is { } me)

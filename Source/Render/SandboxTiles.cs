@@ -47,12 +47,13 @@ public static unsafe class SandboxTiles
         Part,
         Blueprint,
         Tool,
+        Resource, // a loose resource by material id - 1 (ResourceIcons.cs): drawn first, before the parts
     }
 
     private static uint[] _pages = [];
     private static bool[] _ready = [];
-    private static int _key, _next, _count;
-    private static bool _wanted, _glReady, _glBroken;
+    private static int _key, _next, _count, _resNext;
+    private static bool _wanted, _wantedFew, _glReady, _glBroken;
     private static GlFramebuffer _tileFbo, _pageFbo;
     private static uint _tileTex;
     private static double _ms;
@@ -102,13 +103,20 @@ public static unsafe class SandboxTiles
     public static bool Complete => _count > 0 && _next >= _count && _key == Key();
 
     /// <summary>How many tiles there are: every part, blueprint and tool model.</summary>
-    public static int Count => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count;
+    public static int Count => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count + RecyclingTable.Current.Materials.Length;
+
+    /// <summary>The first loose resource's slot.</summary>
+    private static int ResourceBase => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count;
+
+    /// <summary>A loose resource's slot (material id, 1-based), or -1.</summary>
+    public static int ResourceSlot(byte material) => material >= 1 && material <= RecyclingTable.Current.Materials.Length ? ResourceBase + material - 1 : -1;
 
     /// <summary>The slot of a part (by id), a blueprint or a tool model (by index).</summary>
     public static int SlotOf(Kind kind, int index) => kind switch
     {
         Kind.Part => index,
         Kind.Blueprint => ConstructParts.All.Count + index,
+        Kind.Resource => ResourceBase + index,
         _ => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + index,
     };
 
@@ -125,7 +133,7 @@ public static unsafe class SandboxTiles
     public static int Key()
     {
         // (the parts' content hash builds strings: it is taken once per set of loaded files, not every frame)
-        var counts = HashCode.Combine(ConstructBuild.Blueprints.Count, ConstructTools.All.Count, ConstructParts.All.Count);
+        var counts = HashCode.Combine(ConstructBuild.Blueprints.Count, ConstructTools.All.Count, ConstructParts.All.Count, RecyclingTable.Current.Materials.Length);
         if (counts != _keyCounts || _keyHash == 0)
         {
             _keyCounts = counts;
@@ -135,6 +143,12 @@ public static unsafe class SandboxTiles
     }
 
     private static int _keyCounts, _keyHash;
+
+    /// <summary>
+    /// A list that shows a few tiles is open (the recipe picker, a material list): the loose resources and the tiles it asks for
+    /// (<see cref="Prefer"/>) are made, not the whole atlas (no blueprint is built for it).
+    /// </summary>
+    public static void WantFew() => _wantedFew = true;
 
     /// <summary>The window is open: make the atlas (over the next frames) if it isn't made yet.</summary>
     public static void Want()
@@ -149,6 +163,25 @@ public static unsafe class SandboxTiles
     {
         _progressAt = Environment.TickCount64;
         Why($"no tile pictures made for 10 s: {_next} of {_count} drawn, GL {(_glReady ? "ready" : "not ready")}, {_failures} failure(s), key {_key:X8}/{Key():X8}");
+    }
+
+    private static readonly int[] _prefer = new int[64];
+    private static int _preferN;
+
+    /// <summary>
+    /// A slot on screen without its picture yet (the recipe picker's tiles): drawn before the rest of the atlas, the latest asked first
+    /// (at most <c>64</c> waiting; nothing allocated).
+    /// </summary>
+    public static void Prefer(int slot)
+    {
+        if ((uint)slot >= (uint)_ready.Length || _ready[slot])
+            return;
+        for (var k = 0; k < _preferN; k++)
+            if (_prefer[k] == slot)
+                return;
+        if (_preferN == _prefer.Length)
+            Array.Copy(_prefer, 1, _prefer, 0, --_preferN); // (the oldest asked goes: it has scrolled away)
+        _prefer[_preferN++] = slot;
     }
 
     /// <summary>A slot's picture: the page's texture and its UVs (ImGui's: v from the top), or false while it isn't drawn yet.</summary>
@@ -223,6 +256,14 @@ public static unsafe class SandboxTiles
         {
             foreach (var b in tools[slot].Boxes)
                 boxes.Add(new TileBox(Matrix4x4.CreateScale(b.Size) * Matrix4x4.CreateTranslation(b.Center), b.Color));
+            return boxes.Count > 0;
+        }
+        slot -= tools.Count;
+        var names = RecyclingTable.Current;
+        if (slot < names.Materials.Length)
+        {
+            var id = (byte)(slot + 1);
+            ResourceIcons.Boxes(names.ShapeOf(id), names.ColourOf(id), slot, boxes);
             return boxes.Count > 0;
         }
         return false;
@@ -332,7 +373,7 @@ public static unsafe class SandboxTiles
         }
         _pages = [];
         _ready = [];
-        _next = _count = 0;
+        _next = _count = _resNext = _preferN = 0;
         _key = 0;
     }
 
@@ -341,15 +382,16 @@ public static unsafe class SandboxTiles
     {
         if (_regenerate)
             DoRegenerate();
-        if (!_wanted || _glBroken)
+        if (!_wanted && !_wantedFew || _glBroken)
             return;
-        _wanted = false;
+        var all = _wanted; // (the inventory: every tile; the recipe picker and the material lists: the loose resources and the tiles on screen)
+        _wanted = _wantedFew = false;
         if (_progressAt == 0)
             _progressAt = Environment.TickCount64;
         var key = Key();
         if (key != _key || _ready.Length != Count)
             Remake(key);
-        if (_next >= _count)
+        if (_next >= _count || !all && _preferN == 0 && _resNext >= _count - ResourceBase)
             return;
         if (_retryAt != 0)
         {
@@ -374,9 +416,15 @@ public static unsafe class SandboxTiles
             Why($"a GL error 0x{stale:X} was pending before the tiles (not theirs; ignored)");
         try
         {
-            while (_next < _count && n < PerFrame && (n == 0 || sw.Elapsed.TotalMilliseconds < BudgetMs))
+            var resources = _count - ResourceBase;
+            while ((_preferN > 0 || _resNext < resources || all && _next < _count) && n < PerFrame && (n == 0 || sw.Elapsed.TotalMilliseconds < BudgetMs))
             {
-                var slot = _next++;
+                // The loose resources first (a few small tiles the recipe picker and the material lists want at once), then every slot in order.
+                var slot = _preferN > 0 ? _prefer[--_preferN] : _resNext < resources ? ResourceBase + _resNext++ : _next++;
+                if ((uint)slot >= (uint)_count)
+                    continue;
+                if (_ready[slot])
+                    continue;
                 Place(slot, out var page, out var x, out var y);
                 EnsurePage(page);
                 Native.glBindFramebuffer(GL_FRAMEBUFFER, _tileFbo);
@@ -407,6 +455,8 @@ public static unsafe class SandboxTiles
             }
             for (var page = Math.Max(0, pageLo); page <= pageHi; page++)
             {
+                if (_pages[page] == 0)
+                    continue; // (a page between two drawn ones not made yet: the resources sit on the last page, drawn first)
                 Native.glBindTexture(GL_TEXTURE_2D, _pages[page]);
                 Native.glGenerateMipmap(GL_TEXTURE_2D);
             }

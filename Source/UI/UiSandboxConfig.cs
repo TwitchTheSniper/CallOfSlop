@@ -605,6 +605,16 @@ public sealed partial class Ui
             {
                 ImGui.SetNextItemWidth(fieldW);
                 var idx = (int)Math.Clamp(v, 0, Math.Max(0, e.Options.Length - 1));
+                if (e.Id == CfgKey.Recipe && RecipePickable(d) && e.Options.Length > 0)
+                {
+                    // A refiner's or an Assembler's recipe: the picker's tiles (UiRecipePicker.cs) in place of the list; it sets the
+                    // row through SandboxConfigSet, as the list would.
+                    if (ImGui.Button(e.Options[idx], new float2(fieldW, 0)) && !CfLocked(game, e))
+                        OpenRecipePickerConfig(_cfBody, _cfPart, d, s);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Pick a recipe from its picture, inputs and time."u8);
+                    break;
+                }
                 if (e.Options.Length > 0 && ImGui.BeginCombo(e.UiId, e.Options[idx], ImGuiComboFlags.None))
                 {
                     var longList = e.Options.Length > 16; // (an Assembler's recipes: a few hundred)

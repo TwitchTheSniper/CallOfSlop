@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-recycling/1",
-  "about": "The Recycler (docs/sandbox/CONSTRUCTS.md, 'Salvage haul'): what a wrecked part gives back by its mass and class. 'materials' are the bulk materials a bin can hold, in id order (the wire carries the index). A part's class is its role's entry in 'roles', else its 'material'. Units are whole numbers, at least 1 a part. 'kgPerUnit' is what a unit weighs in a bin: it counts in the construct's mass and centre of mass; a material not listed weighs 'defaultKgPerUnit'. A Storage Volume holds 'binUnitsPerCubicMetre' units of bulk a cubic metre of its box, or parts filling 'itemPackShare' of it.",
+  "about": "The Recycler (docs/sandbox/CONSTRUCTS.md, 'Salvage haul'): what a wrecked part gives back by its mass and class. 'materials' are the bulk materials a bin can hold, in id order (the wire carries the index). A part's class is its role's entry in 'roles', else its 'material'. Units are whole numbers, at least 1 a part. 'kgPerUnit' is what a unit weighs in a bin: it counts in the construct's mass and centre of mass; a material not listed weighs 'defaultKgPerUnit'. A Storage Volume holds 'binUnitsPerCubicMetre' units of bulk a cubic metre of its box, or parts filling 'itemPackShare' of it. 'shapes' draws each material's icon as one of a few families (ore, ingot, plank, log, heap, drum, gas, block, sheet, roll, board, crate, coil, beam, crystal; ResourceIcons.cs), in its colour; a material not listed gets ore for a name ending in ore, else heap.",
   "baseSeconds": 2.0,
   "secondsPerKg": 0.04,
   "maxSeconds": 15.0,
@@ -12,6 +12,10 @@
     "copper": "#c9794a", "gold": "#f0c842", "planks": "#c9a26a",
     "steel": "#6f7d8c", "bronze": "#a8763a", "concrete": "#a6a39a", "laminate": "#b58f5e"
   },
+  "shapes": { "metal": "ingot", "wood": "log", "rubber": "roll", "circuits": "board", "stone": "block", "glass": "sheet", "cloth": "roll",
+    "sand": "heap", "iron ore": "ore", "copper ore": "ore", "gold ore": "ore", "dirt": "heap", "copper": "coil", "gold": "ingot", "planks": "plank",
+    "steel": "beam", "bronze": "ingot", "concrete": "block", "laminate": "sheet", "ammo": "crate", "hydrogen": "gas", "helium": "gas",
+    "oxidiser": "drum", "levite ore": "ore", "levite": "crystal" },
   "defaultKgPerUnit": 2.0,
   "binUnitsPerCubicMetre": 400,
   "itemPackShare": 0.7,

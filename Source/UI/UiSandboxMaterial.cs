@@ -15,6 +15,7 @@ public sealed partial class Ui
     public bool SandboxMaterialPickerOpen { get; private set; }
 
     private string[] _mtIds = [], _mtNames = [], _mtStats = [], _mtPart = [];
+    private byte[] _mtMat = []; // each row's loose material (its icon), 0: none of that name
     private string _mtPartName = "";
 
     /// <summary>Opens the list; <paramref name="part"/> (the part last aimed at, or null) gets a line per material for what it would be.</summary>
@@ -28,11 +29,13 @@ public sealed partial class Ui
         _mtNames = new string[all.Length];
         _mtStats = new string[all.Length];
         _mtPart = new string[all.Length];
+        _mtMat = new byte[all.Length];
         var paintable = part != null && PartMaterials.Paintable(part);
         _mtPartName = paintable ? PartMaterials.BaseOf(part!).Name : "";
         for (var k = 0; k < all.Length; k++)
         {
             _mtIds[k] = $"##mt{k}";
+            _mtMat[k] = names.IdOf(all[k]);
             _mtNames[k] = char.ToUpperInvariant(all[k][0]) + all[k][1..];
             if (t.FindByName(all[k]) is { } row)
             {
@@ -87,7 +90,8 @@ public sealed partial class Ui
                     dl.AddRectFilled(at, p1, k == current ? SbCardSel : hot ? SbCardHot : SbCard, 5 * _scale);
                     var pad = 6 * _scale;
                     var sw = rowH - 2 * pad;
-                    dl.AddRectFilled(new float2(at.X + pad, at.Y + pad), new float2(at.X + pad + sw, at.Y + pad + sw), SandboxMaterialWheel.Swatch(k), 4 * _scale);
+                    if (_mtMat[k] == 0 || !ResourceIcon(dl, _mtMat[k], new float2(at.X + pad, at.Y + pad), new float2(at.X + pad + sw, at.Y + pad + sw)))
+                        dl.AddRectFilled(new float2(at.X + pad, at.Y + pad), new float2(at.X + pad + sw, at.Y + pad + sw), SandboxMaterialWheel.Swatch(k), 4 * _scale); // (its icon: ResourceIcons.cs; the swatch until it is made)
                     var clip = new float4(at.X, at.Y, p1.X - pad, p1.Y);
                     var tx = at.X + 2 * pad + sw;
                     DlText(dl, new float2(tx, at.Y + pad), SbText, _mtNames[k], clip);

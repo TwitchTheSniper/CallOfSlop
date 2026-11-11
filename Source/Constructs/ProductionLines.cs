@@ -431,6 +431,56 @@ public static class ProductionLines
         return null;
     }
 
+    /// <summary>The console's picked machine (a part index), or -1 with none on its line; <paramref name="same"/>: the machines of its kind on the line.</summary>
+    public static int Picked(Construct c, int console, out int same)
+    {
+        same = 0;
+        Span<int> list = stackalloc int[MaxListed];
+        var n = Machines(c, console, list);
+        if (n == 0)
+            return -1;
+        ref var p = ref c.Parts[console];
+        var m = list[Pick(p, p.D, n)];
+        for (var k = 0; k < n; k++)
+            if (c.Parts[list[k]].Def == c.Parts[m].Def)
+                same++;
+        return m;
+    }
+
+    /// <summary>
+    /// Server: the recipe picker (CActKind.LineRecipe): machine <paramref name="machine"/> on the console's line takes recipe
+    /// <paramref name="value"/> (its recipe setting's value: 0 Auto or None, then each recipe its tier makes), and with
+    /// <paramref name="all"/> every machine of its kind on the line. Null, or why not; a bad machine or value changes nothing.
+    /// </summary>
+    public static string? SetRecipe(Construct c, int console, int machine, int value, bool all)
+    {
+        Span<int> list = stackalloc int[MaxListed];
+        var n = Machines(c, console, list);
+        if (n == 0)
+            return "no machines on this line: wire the console's output to a machine's Run";
+        if (machine >= c.PartCount || !list[..n].Contains(machine))
+            return "that machine isn't on this line";
+        var md = c.Parts[machine].D;
+        if (!ConstructConfig.Has(md, CfgKey.Recipe) || md.CfgSlot[(int)CfgKey.Recipe] < 0)
+            return $"the {md.Name} has no recipe to pick";
+        var options = md.Config[md.CfgSlot[(int)CfgKey.Recipe]].Options.Length;
+        if (value < 0 || value >= options || md.IsRefiner && value > md.RefineChoices.Length)
+            return $"the {md.Name} has no such recipe";
+        if (md.IsAssembler && value >= 1 && AssemblingTable.Current.ByMachine[md.AsmMachine] is var asm && value <= asm.Length && asm[value - 1].MinTier > md.Tier)
+            return $"{asm[value - 1].Name} needs a tier {asm[value - 1].MinTier} assembler";
+        var def = c.Parts[machine].Def;
+        for (var k = 0; k < n; k++)
+        {
+            var m = list[k];
+            if (m != machine && (!all || c.Parts[m].Def != def))
+                continue;
+            ref var mp = ref c.Parts[m];
+            ConstructConfig.Put(ref mp, mp.D, CfgKey.Recipe, value);
+        }
+        c.Wake();
+        return null;
+    }
+
     /// <summary>Server: the picked machine's next recipe (Auto, then each its tier makes).</summary>
     public static string? Recipe(Construct c, int part)
     {
