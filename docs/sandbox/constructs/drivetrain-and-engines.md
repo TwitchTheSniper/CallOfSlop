@@ -245,7 +245,7 @@ note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in th
 
 ## Suspension types
 
-Data: `Constructs/Parts/Suspensions` (36 parts) and the demo buggies, written by `tools/constructs/suspension_parts.py` (its
+Data: `Constructs/Parts/Suspensions` (36 parts) and the demo buggies, written by `Source/PartKit/Generators/SuspensionParts.cs` (its
 tables at the top are the balance; `--check` compares; `MENU` there is the one place that names their menu group). Code:
 `Source/Constructs/ConstructSuspension.cs`, the rigged boxes in `ConstructRender.RigOf`.
 
@@ -525,7 +525,7 @@ one is free (a clip's cost is its parts). The look line shows the cost; short of
 What moves and powers big constructs, in the Medium, Large and Capital size classes (the small class has a Hub Motor, a
 Genset and two thruster sizes). The target is a traction city: a tall town on giant tracks, about 100,000 t and 300 m,
 with a mothership route in the air second. Data: `Constructs/Parts/BigDrive`, written by
-`tools/constructs/big_drive_parts.py` (its tables at the top are the balance: run it from the repo root; `--check`
+`Source/PartKit/Generators/BigDriveParts.cs` (its tables at the top are the balance: run it from the repo root; `--check`
 compares). Code: `Source/Constructs/ConstructPlant.cs` (plants, stacks, the pools), `ConstructThrust.cs` (hub motors,
 thrusters, the hover hold), the wheels in `ConstructPhysics.cs`. Self-test: "Large drive".
 
