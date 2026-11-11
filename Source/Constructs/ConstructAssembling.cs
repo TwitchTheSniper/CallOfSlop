@@ -352,11 +352,11 @@ public static class ConstructAssembling
                 _ => " - no power: needs a charged battery",
             };
         if (st.RefusedPart != ConstructParts.None && ConstructParts.Get(st.RefusedPart) is { } rp)
-            return $"{doing} - chute refused the {rp.Name}: {RefusedWhy(r)}";
-        return st.Refused != 0 ? $"{doing} - chute refused {names.NameOf(st.Refused)}: {RefusedWhy(r)}" : doing;
+            return $"{doing} - chute refused the {rp.Name}: {RefusedWhy(r, queued)}";
+        return st.Refused != 0 ? $"{doing} - chute refused {names.NameOf(st.Refused)}: {RefusedWhy(r, queued)}" : doing;
     }
 
-    private static string RefusedWhy(AssembleRecipe? r) => r == null ? "pick a recipe first" : $"takes {r.Batch}";
+    private static string RefusedWhy(AssembleRecipe? r, bool queued) => r == null ? queued ? "no order needs it" : "pick a recipe first" : $"takes {r.Batch}";
 
     /// <summary>Why a finished batch waits, for the look line.</summary>
     public static string BlockedWhy(CStore st) => (AsmBlock)st.Blocked switch

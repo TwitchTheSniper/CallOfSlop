@@ -360,7 +360,6 @@
     {"step": 290, "piece": "Extrusion wheel 30x90x0 rubber", "count": 2},
     {"step": 290, "part": "Gear Set", "count": 4},
     {"step": 290, "part": "Steel Plate", "count": 4},
-    {"step": 290, "part": "Servo Motor", "count": 2},
-    {"step": 290, "part": "Wheel", "count": 2}
+    {"step": 290, "part": "Gun Barrel", "count": 2}
   ]
 }
