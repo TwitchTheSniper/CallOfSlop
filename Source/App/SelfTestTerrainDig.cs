@@ -67,12 +67,12 @@ public static partial class SelfTest
         return m;
     }
 
-    /// <summary>A crater at the middle, a tunnel along +Z at x = -10 three metres down, and a scoop into the hill.</summary>
+    /// <summary>A crater at the middle, a tunnel along +Z at x = -10 nine metres down (under more than TerrainEdits.MinRoof), and a scoop into the hill.</summary>
     private static void DigLabOps(TerrainEdits e, float h0)
     {
         e.Apply(new DigOp(DigKind.Crater, new Vector3(0, h0, 0), 3f).Quantised);
         for (var z = -8f; z <= 8f; z += 0.6f)
-            e.Apply(new DigOp(DigKind.Scoop, new Vector3(-10, h0 - 3f, z), 1.2f).Quantised);
+            e.Apply(new DigOp(DigKind.Scoop, new Vector3(-10, h0 - 9f, z), 1.2f).Quantised);
         e.Apply(new DigOp(DigKind.Scoop, new Vector3(14, h0 + 1f, -18), 1.5f).Quantised);
     }
 
@@ -105,16 +105,16 @@ public static partial class SelfTest
 
         // The tunnel: roofed, its floor and ceiling where they should be, the surface over it untouched.
         float tx = -10.1f, tz = 0.3f;
-        var tFloor = t.GroundBelow(tx, tz, h0 - 3f);
-        var tCeil = t.CeilingAbove(tx, tz, h0 - 3f);
+        var tFloor = t.GroundBelow(tx, tz, h0 - 9f);
+        var tCeil = t.CeilingAbove(tx, tz, h0 - 9f);
         var tTop = t.Sample(tx, tz);
-        var inside = !t.SolidAt(tx, tz, h0 - 3f) && t.SolidAt(tx, tz, h0 - 1.2f) && t.SolidAt(tx, tz, h0 - 4.5f);
+        var inside = !t.SolidAt(tx, tz, h0 - 9f) && t.SolidAt(tx, tz, h0 - 7.2f) && t.SolidAt(tx, tz, h0 - 10.5f);
         DigLine($"tunnel: floor {tFloor - h0:0.00} m, ceiling {tCeil - h0:0.00} m, surface {tTop - h0:0.00} m");
-        if (!inside || MathF.Abs(tFloor - (h0 - 4.2f)) > 0.15f || MathF.Abs(tCeil - (h0 - 1.8f)) > 0.15f || MathF.Abs(tTop - h0) > 1e-3f)
+        if (!inside || MathF.Abs(tFloor - (h0 - 10.2f)) > 0.15f || MathF.Abs(tCeil - (h0 - 7.8f)) > 0.15f || MathF.Abs(tTop - h0) > 1e-3f)
             Fail("dig lab: the tunnel's floor, ceiling or roof is wrong");
-        var up = tc.Raycast(new Vector3(tx, h0 - 3f, tz), Vector3.UnitY, 10);
-        if (MathF.Abs(h0 - 3f + up - tCeil) > 0.06f || tc.HitNormal(new Vector3(tx, h0 - 3f + up, tz), Vector3.UnitY).Y > -0.9f)
-            Fail($"dig lab: a ray up in the tunnel met the roof at {h0 - 3f + up - h0:0.00} m (ceiling {tCeil - h0:0.00})");
+        var up = tc.Raycast(new Vector3(tx, h0 - 9f, tz), Vector3.UnitY, 10);
+        if (MathF.Abs(h0 - 9f + up - tCeil) > 0.06f || tc.HitNormal(new Vector3(tx, h0 - 9f + up, tz), Vector3.UnitY).Y > -0.9f)
+            Fail($"dig lab: a ray up in the tunnel met the roof at {h0 - 9f + up - h0:0.00} m (ceiling {tCeil - h0:0.00})");
 
         // Walking: along the tunnel, under its roof, to its end wall; jumping bumps the head.
         var walk = new MoveState { Position = new Vector3(tx, tFloor, -6f), Grounded = true };
@@ -125,7 +125,7 @@ public static partial class SelfTest
             highest = MathF.Max(highest, walk.Position.Y);
         }
         DigLine($"walk along the tunnel: ended at z {walk.Position.Z:0.00}, highest feet {highest - h0:0.00} m");
-        if (walk.Position.Z < 7.5f || walk.Position.Z > 9.5f || highest > h0 - 2.5f)
+        if (walk.Position.Z < 7.5f || walk.Position.Z > 9.5f || highest > h0 - 8.5f)
             Fail($"dig lab: walking along the tunnel ended at z {walk.Position.Z:0.00} (the end wall is near 9) with feet up to {highest - h0:0.00} m (popped onto the roof?)");
         var jump = new MoveState { Position = new Vector3(tx, tFloor, 0), Grounded = true };
         var peak = jump.Position.Y;

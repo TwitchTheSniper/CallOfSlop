@@ -23,7 +23,7 @@ overhangs, tunnels and caves above caves are all just spans.
   mesh per drawing block of 8 x 8 cells (`DigBlocks`, `TerrainRendererDug.cs`); see "What it costs".
 - **Smoothed rims (drawing only).** The renderer asks for `CellFaces(..., smooth: true)` (`TerrainEditsSmooth.cs`):
   marching squares on the columns. Where four columns meet and only one (or only three) of them is solid over a step at
-  least `MinSmoothStep` (1 m, `GroundTops.Near`) tall, the lone column's quarter loses its corner triangle (or the open one's gains one),
+  least `MinSmoothStep` (1 m) tall, the lone column's quarter loses its corner triangle (or the open one's gains one),
   legs half a column. A staircase outline becomes a line through its steps' middles, so a hole or a floating island
   reads as round. Only those rim columns take the slower path (the Streamed Terrain island: 410k triangles against
   368k as plain blocks); shorter steps (the island's 0.5 m terraces) and corners touching untouched ground keep their
@@ -45,10 +45,9 @@ out from the spans, the same on every peer.
 
 - **Corner heights.** At every corner where four columns meet, each dug column's top gets a height: the ground as built
   at the corner plus a weighted mean of how far the columns there have been dug or filled (top now less top as built).
-  A column whose change is within `Near` (4 m) of this one's weighs fully, so they share the height: one sloping
-  surface. At `Far` (8 m) apart it weighs nothing: a wall (a deep shaft, a cutting's side). In between the wall
-  shrinks. `Near` takes in the steepest step a blast leaves (the side of a crater made by several blasts, the rim of a
-  very big one): at 1 m and 2 m those sides were bars and blocks. Only columns whose
+  Columns side by side always share the height, however far apart their changes: a hole's side is a slope all the way
+  down, steep where the hole is deep. (Walls were kept past 2 m, then 8 m, and every deep hole's sides drew as bars.)
+  Only columns whose
   top spans stand side by side count (not a ledge over another's floor). Untouched ground at the corner pulls the top
   to its own surface, so a dug cell meets the map's ground with no wall and ground nobody changed is exactly the map's.
 - **A column's top** is two triangles between its four corners where its middle lies on their diagonal (ground as
@@ -134,11 +133,12 @@ A planetoid digs too, with radial columns instead of vertical ones (`Source/Plan
   gets the match's whole log. The ops use no trigonometry, so every peer ends with the same ground. Only ops that
   changed something are logged, up to `MaxOps` (65,536).
 - **Restore.** `Map.RestoreProps` (every match) fills the ground in again.
-- **Craters are open upwards; a drill's overhangs stay.** A crater takes its flattened ball and everything up to a
-  radius over the blast, and a roof left over that which is thinner than the radius falls in with it
-  (`TerrainEdits.CraterTop`). So a second blast lower in a crater leaves no lip hanging over the new hole (those lips
-  were the blocks and spikes round a crater made by several blasts); a roof thicker than the blast's radius stands. A
-  drill's scoop is a plain ball: tunnels and overhangs are dug with it, and they stay. A gap too low to stand in is a wall for a standing player (crouch to go in): the classic
+- **Thin roofs fall in.** A crater takes its flattened ball and everything up to a radius over the blast. Then, for
+  a crater and a drill's scoop alike, a roof left over the dig that is thinner than `TerrainEdits.MinRoof` (6 m; a
+  crater's radius if that is more) falls in with it (`RoofTop`, `CraterTop`). So a hole dug from the surface is open to
+  the sky and all of it is sloping tops: a player drills at an angle from beside the hole, which used to undercut the
+  far side and leave ledges that drew as blocks with dark sides. A tunnel wants 6 m of ground over it; ledges and the
+  floors under them are still level squares with walls. A gap too low to stand in is a wall for a standing player (crouch to go in): the classic
   mover checks the head over the whole footprint (`TerrainHeadroom.Over`) when walking, jumping and climbing, and
   `PhysicsWorld.OverlapBody` (room to stand, mantle targets) does too. Two blasts in one spot can leave a pit with walls
   taller than a mantle (1.7 m). "Terrain digging" (`DigCraterEscape`) checks no head ever goes into the ground with

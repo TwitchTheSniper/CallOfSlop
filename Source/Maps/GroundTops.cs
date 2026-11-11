@@ -10,35 +10,22 @@ namespace CallOfSlop;
 /// four corner heights.
 /// <para>
 /// The height is the ground as built at the corner plus a mean of how far the columns there have been dug or filled (top
-/// now less top as built), each weighed by how close its change is to the column's own (<see cref="Weight"/>). So ground
+/// now less top as built) where their top spans stand side by side. So ground
 /// nobody has changed is the map's own surface exactly, with no terraces in a cell a dig merely touched; a cut or a fill of
 /// even depth is a copy of the slope it was made on; and where a column meets a cell that is still the map's own ground it
 /// comes up (or down) to that ground's surface with no wall.
 /// </para>
 /// <para>
-/// Columns changed alike (within <see cref="Near"/>) weigh fully and share one height: a slope. Ones far apart
-/// (<see cref="Far"/>) don't weigh at all: a wall, as before. In between the wall shrinks as the tops lean towards each
-/// other, so nothing pops between slope and wall along a crater's rim. A column's middle stays at its span's top
-/// (<see cref="Fans"/>), so the ground is where the spans say there and a heap or a pit keeps its size. On filled ground
+/// Columns side by side always share one height at their corner, however far apart their changes: a hole's side is a
+/// slope all the way down, steep where the hole is deep. (Walls were kept past 2 m, then 8 m: every deep hole's sides
+/// drew as bars and blocks.) A wall is left only between a ledge and the floor under it. A column's middle is its
+/// span's top, held near its corners (<see cref="Middle"/>, <see cref="Fans"/>). On filled ground
 /// a step a player could walk up stays walkable (<see cref="Ease"/>). Everything is worked out from the spans, the same
 /// on every peer, and is the ground for drawing, movement, rays and physics alike.
 /// </para>
 /// </summary>
 public static class GroundTops
 {
-    /// <summary>
-    /// Columns whose changes differ by no more than this (metres) share one height at their corner: one sloping surface.
-    /// It takes in the steepest step a blast leaves (a crater's side after several blasts in one place, the rim of a very
-    /// big one): at 1 m those sides were bars and blocks.
-    /// </summary>
-    public const float Near = 4f;
-
-    /// <summary>Columns whose changes differ by this (metres) or more don't lean towards each other at all: a deep shaft, a cutting's side.</summary>
-    public const float Far = 8f;
-
-    /// <summary>How much a column whose change differs by <paramref name="d"/> (metres, not negative) counts in another's corner height: 1 one surface, 0 a wall.</summary>
-    public static float Weight(float d) => d <= Near ? 1f : d < Far ? (Far - d) / (Far - Near) : 0f;
-
     /// <summary>Half the step a player walks up (<see cref="World.StepHeight"/>): a corner this far off its column's own height stands for such a step.</summary>
     public const float HalfStep = 0.275f;
 
@@ -95,15 +82,14 @@ public static class GroundTops
                 if (kind[m] == Untouched)
                 {
                     if (lo[k] < baseAt - TerrainEdits.MinSpan)
-                        pin = MathF.Max(pin, Weight(MathF.Abs(delta[k])));
+                        pin = 1f;
                     continue;
                 }
                 // Two dug columns: their top spans side by side (not one's ledge hanging over the other's floor).
                 if (!(lo[k] < top[m] - TerrainEdits.MinSpan && lo[m] < top[k] - TerrainEdits.MinSpan))
                     continue;
-                var w = Weight(MathF.Abs(delta[m] - delta[k]));
-                sum += w * delta[m];
-                weights += w;
+                sum += delta[m];
+                weights += 1f;
             }
             var h = baseAt + sum / weights;
             h += (baseAt - h) * pin;
