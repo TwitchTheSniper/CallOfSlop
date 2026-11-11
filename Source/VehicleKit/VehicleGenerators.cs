@@ -148,9 +148,25 @@ public static class VehicleRegistry
                 mass += live.Parts[i].D.Mass;
             wish = wish with { DryMass = mass - (stock.Engine?.Def.Mass ?? 0) };
         }
-        Vehicle v;
-        using (EngineKit.EngineWish.Use(wish))
-            v = MakeThrough(g, seed, kit, layers, role, context);
+        Vehicle? v = null;
+        if (!wish.AllWheels && !wish.TwoWheels && wish.GripLimited(wish.DryMass + 250))
+        {
+            // The kit asks for all-wheel drive by itself: two driven tyres would hold the engine back (named so: "..., all-wheel drive]").
+            // A shape whose layout has no room for it (a tandem gun wagon's bed sill) keeps two-wheel drive rather than failing.
+            try
+            {
+                using (EngineKit.EngineWish.Use(wish with { AllWheels = true }))
+                    v = MakeThrough(g, seed, kit, layers, role, context);
+                wish = wish with { AllWheels = true };
+            }
+            catch (VehicleKitException)
+            {
+                v = null;
+            }
+        }
+        if (v == null)
+            using (EngineKit.EngineWish.Use(wish))
+                v = MakeThrough(g, seed, kit, layers, role, context);
         v.Name += wish.Suffix;
         v.DriveGate(Towed(g)); // (the spawn's drive check, as for any vehicle no file holds: one that fails rerolls in the spawner)
         return v;
@@ -230,7 +246,7 @@ public static class VehicleKitCli
         if (Flag(args, "--engine-tier") is { } et)
         {
             static float F(string? t) => float.TryParse(t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
-            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")), AllWheels = args.Any(a => a.Equals("--awd", StringComparison.OrdinalIgnoreCase)) };
+            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")), AllWheels = args.Any(a => a.Equals("--awd", StringComparison.OrdinalIgnoreCase)), TwoWheels = args.Any(a => a.Equals("--2wd", StringComparison.OrdinalIgnoreCase)) };
         }
         using var wishScope = EngineKit.EngineWish.Use(wish);
         foreach (var seed in seeds)

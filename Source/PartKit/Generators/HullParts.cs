@@ -356,7 +356,7 @@ public sealed class HullParts : IPartGenerator
         var p = P("Dually Wheel", "Wheels", "Twin 0.9 m tyres on one hub: a heavy axle's rear wheels.", "#1f2124", role: "wheel", tool: "wrench");
         foreach (var (x0, x1) in new[] { (-0.34, -0.03), (0.03, 0.34) })
         {
-            p.Add(Box([x0, -0.45, -0.45], [x1, 0.45, 0.45], "#1f2124", detail: true, shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x"))));
+            p.Add(Box([x0, -0.45, -0.45], [x1, 0.45, 0.45], "#1f2124", detail: true, shape: Kw(("shape", "cylinder"), ("segments", 24), ("front", "+x"))));
             Hide(p, [x0, -0.32, -0.32], [x1, 0.32, 0.32]);
         }
         p.Add(Box([-0.03, -0.2, -0.2], [0.03, 0.2, 0.2], "#55595c", detail: true, shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+x"))));

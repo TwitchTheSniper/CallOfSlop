@@ -161,6 +161,12 @@ public sealed class FactionStyle
     public string LootTable { get; init; } = "";
 
     /// <summary>
+    /// All-wheel drive by style (drivetrain-and-engines.md "All-wheel drive and round wheels"): 0, every shipped style, leaves it to the vehicle and the Engine Kit;
+    /// 1 drives every axle on every ground vehicle the style makes; N (2 to 5) only when an engine wish of tech tier N or more is current. Off for every shipped style.
+    /// </summary>
+    public int AllWheelDriveTier { get; init; }
+
+    /// <summary>
     /// Seeds that ship by shape ("Box Truck"), for a shape whose own seeds fail in this style: a seed's dice fall differently
     /// over another style's lists. A shape not named ships its own seeds.
     /// </summary>

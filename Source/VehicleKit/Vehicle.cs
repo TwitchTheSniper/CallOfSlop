@@ -140,16 +140,15 @@ public sealed partial class Vehicle : BlueprintScript
         var zs = frontAxleZ + Half;
         FrontAxleZ = frontAxleZ;
         FrontDiff = null;
-        if (AllWheels && tandem == 0)
+        if (AllWheels)
         {
             // All-wheel drive (drivetrain-and-engines.md "All-wheel drive"): a differential in place of the front cross beam, its back face where the
             // beam's was, so the rails and the engine's sill are where they always are; the wheels stand 12.5 cm ahead of the beam's axle line. Its input
             // port (its -z0 socket) faces forward and stays free: only the right nose rail goes on, and the shaft comes round into it from below.
-            if (frontWing is not (0 or 0.5f))
-                throw new VehicleKitException($"all-wheel drive: a front wing of {frontWing} m (0 and 0.5 m only)");
+            _awdJoints = AwdHalfAxle(frontWing);
             FrontAxleZ = frontAxleZ - Half;
             RailRun(LeftRail, -RailX, zs, railLength - 0.25f, null);
-            FrontDiff = Put(frontWing > 0 ? "Wide Differential" : "Differential", new Vector3(0, 0, FrontAxleZ), Orient.Forward, 0.03f, LeftRail[0], "+z0");
+            FrontDiff = Put(_awdJoints.Wide ? "Wide Differential" : "Differential", new Vector3(0, 0, FrontAxleZ), Orient.Forward, 0.03f, LeftRail[0], "+z0");
             RailRun(RightRail, RailX, zs, railLength, FrontDiff);
             FrontCross = null;
         }
@@ -195,7 +194,16 @@ public sealed partial class Vehicle : BlueprintScript
             // A CV Joint on each output: its output carries the steering pivot.
             // With the Wide Differential the wheels stand 4.5 cm further out than on a 0.5 m wing.
             foreach (var side in new[] { -1f, 1f })
-                _steerEnds.Add((Onto(FrontDiff, side < 0 ? "-x" : "+x", "CV Joint", "-x", 0), side));
+            {
+                var end = FrontDiff;
+                var socket = side < 0 ? "-x" : "+x";
+                for (var k = 0; k < _awdJoints.UJoints; k++) // (a wider front wing: U joints in line, each 10 cm, carry the drive out to where the wing's end was)
+                {
+                    end = Onto(end, socket, "U Joint", "-x", 0);
+                    socket = "+x";
+                }
+                _steerEnds.Add((Onto(end, socket, "CV Joint", "-x", 0), side));
+            }
             return this;
         }
         foreach (var side in new[] { -1f, 1f })
@@ -210,6 +218,32 @@ public sealed partial class Vehicle : BlueprintScript
             _steerEnds.Add((end, side));
         }
         return this;
+    }
+
+    private (bool Wide, int UJoints) _awdJoints;
+
+    /// <summary>
+    /// All-wheel drive's half axle for a front wing: the differential (plain, outputs at 0.55 m; Wide, 0.8 m), up to two U Joints (0.1 m each) and the
+    /// CV Joint (0.12 m), whose output carries the steering pivot where the wing's end (0.375 m + wing) was, within 6 cm. 0 and 0.5 m are phase 1's
+    /// (the plain and the Wide Differential, no U joint); 0.75 m is the Wide Differential and two U Joints (0.5 cm in).
+    /// </summary>
+    private static (bool Wide, int UJoints) AwdHalfAxle(float frontWing)
+    {
+        if (frontWing == 0)
+            return (false, 0);
+        var want = 0.375f + frontWing;
+        (bool, int) best = default;
+        float err = float.MaxValue, score = float.MaxValue;
+        foreach (var wide in new[] { false, true })
+            for (var u = 0; u <= 2; u++)
+            {
+                var e = MathF.Abs((wide ? 0.8f : 0.55f) + 0.1f * u + 0.12f - want);
+                if (e + 0.05f * u < score - 0.001f) // (each U joint counts as 5 cm off: fewer joints first)
+                    (best, err, score) = ((wide, u), e, e + 0.05f * u);
+            }
+        if (err > 0.06f)
+            throw new VehicleKitException($"all-wheel drive: a front wing of {frontWing} m (no half axle within 6 cm)");
+        return best;
     }
 
     public List<VPart> NoseL { get; } = new();
@@ -231,11 +265,12 @@ public sealed partial class Vehicle : BlueprintScript
 
     /// <summary>
     /// Ask for all-wheel drive before <see cref="Ladder"/> (or through <see cref="EngineWish.AllWheels"/>): the steered front axle is driven too, through a
-    /// differential, CV joints and a T Gearbox behind the gearbox. Off by default. Not on a tandem yet, nor with a front wing other than 0 or 0.5 m (refused).
+    /// differential, CV joints (U joints before them on a wide front wing) and a T Gearbox behind the gearbox (two on a tandem: every axle driven). Off by default.
     /// </summary>
     public bool AllWheelDrive;
 
-    private bool AllWheels => AllWheelDrive || EngineWish.Current?.AllWheels == true;
+    private bool AllWheels => AllWheelDrive || EngineWish.Current?.AllWheels == true
+        || Style.AllWheelDriveTier == 1 || Style.AllWheelDriveTier > 1 && EngineWish.Current is { } w && w.Tier >= Style.AllWheelDriveTier;
 
     /// <summary>
     /// A cross beam on top of the rails at <paramref name="z"/>, with <paramref name="wing"/> metres of beam out past it on each side. <paramref name="layers"/>: beams stacked, each 0.25 m;
@@ -340,6 +375,12 @@ public sealed partial class Vehicle : BlueprintScript
         if (Diff2 != null)
         {
             var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1); // (on its side: its branch would land on the seat's sill)
+            if (FrontDiff != null)
+            {
+                // All-wheel drive on a tandem: this T Gearbox's branch goes forward to the front differential, a second one behind it splits the rest.
+                FrontBranch(split);
+                split = Onto(split, "+z", "T Gearbox", "-z", 1);
+            }
             var back = CentreOf(Diff2).Z;
             Link("shaft", split, Diff!, "Output shaft", "Input shaft");
             var from = CentreOf(split).Z;
@@ -353,14 +394,20 @@ public sealed partial class Vehicle : BlueprintScript
             // All-wheel drive: the T Gearbox's branch runs down under the rails, forward past the front differential, and back into its input.
             var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1);
             Link("shaft", split, Diff!, "Output shaft", "Input shaft");
-            var from = CentreOf(split);
-            var into = FrontAxleZ - 0.5f;
-            Link("shaft", split, FrontDiff, "Branch shaft", "Input shaft", laid: true, nodes:
-                [new Vector3(0.45f, from.Y, from.Z), new Vector3(0.45f, -0.4f, from.Z), new Vector3(0.45f, -0.4f, into), new Vector3(0, -0.4f, into), new Vector3(0, 0, into)]);
+            FrontBranch(split);
         }
         else
             Link("shaft", Gearbox, Diff!, "Output shaft", "Input shaft");
         return this;
+    }
+
+    /// <summary>All-wheel drive: a T Gearbox's branch runs down under the rails, forward past the front differential, and back into its input.</summary>
+    private void FrontBranch(VPart split)
+    {
+        var from = CentreOf(split);
+        var into = FrontAxleZ - 0.5f;
+        Link("shaft", split, FrontDiff!, "Branch shaft", "Input shaft", laid: true, nodes:
+            [new Vector3(0.45f, from.Y, from.Z), new Vector3(0.45f, -0.4f, from.Z), new Vector3(0.45f, -0.4f, into), new Vector3(0, -0.4f, into), new Vector3(0, 0, into)]);
     }
 
     /// <summary>A fuel tank's pipe to the engine. <paramref name="nodes"/>: the way it runs; none: straight. A generator's pipe is laid: it may run through a hole in a plate, as a saved one may.</summary>
