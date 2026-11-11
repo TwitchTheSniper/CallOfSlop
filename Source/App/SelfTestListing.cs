@@ -94,7 +94,7 @@ public static partial class SelfTest
             Fail($"Join box: IPv6 wasn't refused clearly ({v6})");
         if (InviteCode.TryParseJoin("1.2.3.4:99999", 27015, out _, out _, out _, out var badPort) || !badPort.Contains("port"))
             Fail($"Join box: a bad port wasn't refused ({badPort})");
-        var other = InviteCode.Encode(sample with { Protocol = (byte)(ServerInfo.ProtocolVersion - 1) });
+        var other = InviteCode.Encode(sample with { Protocol = (ushort)(ServerInfo.ProtocolVersion - 1) });
         if (InviteCode.TryParseJoin(other, 27015, out _, out _, out _, out var verErr) || !verErr.Contains("different version"))
             Fail($"an invite from another build wasn't refused with the version ({verErr})");
         else
@@ -324,7 +324,7 @@ public static partial class SelfTest
         }
 
         // The browser's merge: one row per hosting, every source kept, other builds last but shown.
-        ServerBrowser.Entry E(string addr, uint inst, ServerSource src, int ping, byte ver = ServerInfo.ProtocolVersion) => new()
+        ServerBrowser.Entry E(string addr, uint inst, ServerSource src, int ping, ushort ver = ServerInfo.ProtocolVersion) => new()
         {
             Address = addr, Info = info with { InstanceId = inst, Version = ver }, PingMs = ping, Sources = src,
         };

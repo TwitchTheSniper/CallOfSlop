@@ -246,9 +246,9 @@ public static partial class SelfTest
             var plainBack = ServerInfo.Find(plain.Encode());
             if (plainBack is not { Rotation: "", Physics: PhysicsMode.Swept } || plainBack != plain)
                 Fail("server info without a rotation changed");
-            if (info.Encode().Length != plain.Encode().Length + 1 + MapPack.TrueRandomName.Length)
+            if (info.Encode().Length != plain.Encode().Length + MapPack.TrueRandomName.Length) // (the rotation's length byte is always there since protocol 243's 'V')
                 Fail("the rotation isn't just a trailing string (older builds would misread the info)");
-            Line($"server info: rotation \"{back?.Rotation}\" rides as {MapPack.TrueRandomName.Length + 1} trailing bytes; without one the info is unchanged");
+            Line($"server info: rotation \"{back?.Rotation}\" rides as {MapPack.TrueRandomName.Length} bytes after its length; without one the info is unchanged");
         }
 
         // ---- Thumbnail camera ---------------------------------------------------------------------

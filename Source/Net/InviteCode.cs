@@ -8,7 +8,10 @@ namespace CallOfSlop;
 /// What an invite code carries: the host's address and game port, the protocol version of the build that made it, and
 /// (optionally) the port of a server list running on the same address (the host's own list, see <see cref="HostListing"/>).
 /// </summary>
-public readonly record struct Invite(IPAddress Address, ushort Port, byte Protocol, ushort ListPort = 0);
+/// <remarks>The code has room for one byte of the protocol (protocol 243 made the version two bytes): it holds the low
+/// byte, and a decoded invite's <see cref="Protocol"/> is that byte. Two builds 256 versions apart look alike here; the
+/// handshake's full version still refuses them at the door.</remarks>
+public readonly record struct Invite(IPAddress Address, ushort Port, ushort Protocol, ushort ListPort = 0);
 
 /// <summary>
 /// Invite codes and links: a host's public IPv4 address, game port, protocol version and its server list's port packed
@@ -42,7 +45,7 @@ public static class InviteCode
         ip.CopyTo(raw);
         raw[4] = (byte)invite.Port;
         raw[5] = (byte)(invite.Port >> 8);
-        raw[6] = invite.Protocol;
+        raw[6] = (byte)invite.Protocol; // the low byte (see Invite)
         raw[7] = listSlot;
         Checksum(raw[..8], raw[8..]);
         // 80 bits -> 16 characters of 5 bits, most significant first.
@@ -167,7 +170,7 @@ public static class InviteCode
     }
 
     /// <summary>"This invite is for a different version..." when <paramref name="invite"/> came from another build, else "".</summary>
-    public static string VersionProblem(Invite invite) => invite.Protocol == ServerInfo.ProtocolVersion
+    public static string VersionProblem(Invite invite) => (byte)invite.Protocol == (byte)ServerInfo.ProtocolVersion
         ? ""
         : $"This invite is for a different version of Call of Slop (protocol {invite.Protocol}; yours is {ServerInfo.ProtocolVersion}). Everyone needs the same build.";
 
