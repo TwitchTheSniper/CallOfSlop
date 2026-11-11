@@ -167,6 +167,7 @@ public static class VehicleRegistry
         if (v == null)
             using (EngineKit.EngineWish.Use(wish))
                 v = MakeThrough(g, seed, kit, layers, role, context);
+        v.KitTanks(wish); // (fuel for the wish's endurance at full power: Vehicle.KitEngine.cs)
         v.Name += wish.Suffix;
         v.DriveGate(Towed(g)); // (the spawn's drive check, as for any vehicle no file holds: one that fails rerolls in the spawner)
         return v;
@@ -246,7 +247,7 @@ public static class VehicleKitCli
         if (Flag(args, "--engine-tier") is { } et)
         {
             static float F(string? t) => float.TryParse(t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
-            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")), AllWheels = args.Any(a => a.Equals("--awd", StringComparison.OrdinalIgnoreCase)), TwoWheels = args.Any(a => a.Equals("--2wd", StringComparison.OrdinalIgnoreCase)) };
+            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")), Endurance = F(Flag(args, "--endurance")), AllWheels = args.Any(a => a.Equals("--awd", StringComparison.OrdinalIgnoreCase)), TwoWheels = args.Any(a => a.Equals("--2wd", StringComparison.OrdinalIgnoreCase)) };
         }
         using var wishScope = EngineKit.EngineWish.Use(wish);
         foreach (var seed in seeds)

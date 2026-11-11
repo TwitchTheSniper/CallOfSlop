@@ -91,6 +91,9 @@ public sealed partial class Vehicle : BlueprintScript
     public float NoseZ { get; private set; }
     public float TailZ { get; private set; }
 
+    /// <summary>A socket row of the rails between the axles (their sockets every 0.25 m from it).</summary>
+    public float RailGrid { get; private set; }
+
     /// <summary>The tail rails' first socket row, behind the differential.</summary>
     public float TailGrid { get; private set; }
 
@@ -138,6 +141,7 @@ public sealed partial class Vehicle : BlueprintScript
         var diffName = differential ?? Style.Part(Dice.Fork("drive"), Slot("differential"));
         const float diffHalf = 0.25f; // (its -z and +z sockets)
         var zs = frontAxleZ + Half;
+        RailGrid = zs + Half;
         FrontAxleZ = frontAxleZ;
         FrontDiff = null;
         if (AllWheels)
