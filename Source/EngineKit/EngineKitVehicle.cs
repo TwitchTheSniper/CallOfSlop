@@ -18,12 +18,15 @@ public sealed record EngineWish
     public float DryMass { get; init; }
     public int Seed { get; init; }
 
+    /// <summary>Drive every axle (<see cref="Vehicle.AllWheelDrive"/>): past about 1.7 times a V8 two driven tyres limit the speed, not the engine.</summary>
+    public bool AllWheels { get; init; }
+
     /// <summary>The top speeds a tier's vehicles aim at when none is given (m/s; the slow-cars table's suggestion for a 1.5 t car).</summary>
     public static readonly float[] TierTop = [0, 25, 27, 30, 33, 36];
 
     public float Top => TopSpeed > 0 ? TopSpeed : TierTop[Math.Clamp(Tier, 1, 5)];
 
-    public string Suffix => string.Create(CultureInfo.InvariantCulture, $" [engine tier {Tier}, {Top:0} m/s{(Accel > 0 ? $", {Accel:0.#} m/s2" : "")}]");
+    public string Suffix => string.Create(CultureInfo.InvariantCulture, $" [engine tier {Tier}, {Top:0} m/s{(Accel > 0 ? $", {Accel:0.#} m/s2" : "")}{(AllWheels ? ", all-wheel drive" : "")}]");
 
     /// <summary>
     /// The engine power (kW) a vehicle of <paramref name="mass"/> kg needs: the arcade drag at the top speed (0.006 v^3 W a kilogram, <see cref="ConstructPhysics.AirDrag"/>)

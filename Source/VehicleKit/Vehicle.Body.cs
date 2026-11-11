@@ -249,7 +249,7 @@ public sealed partial class Vehicle
     /// <summary>A bumper on the nose, two posts on the nose rails at <paramref name="z"/> rising to <paramref name="top"/>, a bar across them (off centre by the grid's half step, a side the dice pick) and the style's spikes on the bar.</summary>
     public Vehicle RamBars(float top, float z, Dice d)
     {
-        var bumper = Onto(NoseL[^1], "-z", "Bumper", "back0", 0);
+        var bumper = NoseL.Count > 0 ? Onto(NoseL[^1], "-z", "Bumper", "back0", 0) : Onto(NoseR[^1], "-z", "Bumper", "back1", 0); // (all-wheel drive has the right nose rail only)
         var ram = PanelList("ram");
         ram.Add(bumper);
         var posts = new List<VPart>();

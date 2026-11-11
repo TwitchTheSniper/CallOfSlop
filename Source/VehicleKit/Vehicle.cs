@@ -139,9 +139,26 @@ public sealed partial class Vehicle : BlueprintScript
         const float diffHalf = 0.25f; // (its -z and +z sockets)
         var zs = frontAxleZ + Half;
         FrontAxleZ = frontAxleZ;
-        RailRun(LeftRail, -RailX, zs, railLength - 0.25f, null); // (stops short: a differential's input port shares its -z0 socket, so that socket stays free)
-        FrontCross = Put($"{Beam} 0.75 m", new Vector3(0, 0, frontAxleZ), Orient.Along(Vector3.UnitX), 0.03f, LeftRail[0]);
-        RailRun(RightRail, RailX, zs, railLength, FrontCross);
+        FrontDiff = null;
+        if (AllWheels && tandem == 0)
+        {
+            // All-wheel drive (drivetrain-and-engines.md "All-wheel drive"): a differential in place of the front cross beam, its back face where the
+            // beam's was, so the rails and the engine's sill are where they always are; the wheels stand 12.5 cm ahead of the beam's axle line. Its input
+            // port (its -z0 socket) faces forward and stays free: only the right nose rail goes on, and the shaft comes round into it from below.
+            if (frontWing is not (0 or 0.5f))
+                throw new VehicleKitException($"all-wheel drive: a front wing of {frontWing} m (0 and 0.5 m only)");
+            FrontAxleZ = frontAxleZ - Half;
+            RailRun(LeftRail, -RailX, zs, railLength - 0.25f, null);
+            FrontDiff = Put(frontWing > 0 ? "Wide Differential" : "Differential", new Vector3(0, 0, FrontAxleZ), Orient.Forward, 0.03f, LeftRail[0], "+z0");
+            RailRun(RightRail, RailX, zs, railLength, FrontDiff);
+            FrontCross = null;
+        }
+        else
+        {
+            RailRun(LeftRail, -RailX, zs, railLength - 0.25f, null); // (stops short: a differential's input port shares its -z0 socket, so that socket stays free)
+            FrontCross = Put($"{Beam} 0.75 m", new Vector3(0, 0, frontAxleZ), Orient.Along(Vector3.UnitX), 0.03f, LeftRail[0]);
+            RailRun(RightRail, RailX, zs, railLength, FrontCross);
+        }
         RearAxleZ = zs + railLength + diffHalf;
         Diff = Stand(diffName, new Vector3(RailX, 0, RearAxleZ - diffHalf), Orient.Forward, RightRail[^1], "-z1");
         if (tandem > 0) // (a second driven axle: the rails break for it as they do for the first, the left one short of its input port)
@@ -160,10 +177,27 @@ public sealed partial class Vehicle : BlueprintScript
             TailGrid = RearAxleZ + diffHalf + 0.125f;
         }
         TailZ = RearAxleZ + tail;
-        RailRun(NoseL, -RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
-        RailRun(NoseR, RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
-        NoseZ = frontAxleZ - nose;
+        if (FrontDiff != null)
+        {
+            var noseRun = MathF.Max(0.5f, MathF.Ceiling((nose - 0.375f) * 4 - 0.01f) / 4); // (the right rail only, from the differential's face: at least a 0.5 m beam)
+            RailRun(NoseR, RailX, FrontAxleZ - 0.25f, -noseRun, FrontDiff);
+            NoseZ = FrontAxleZ - 0.25f - noseRun;
+        }
+        else
+        {
+            RailRun(NoseL, -RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
+            RailRun(NoseR, RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
+            NoseZ = frontAxleZ - nose;
+        }
         _steerEnds.Clear();
+        if (FrontDiff != null)
+        {
+            // A CV Joint on each output: its output carries the steering pivot.
+            // With the Wide Differential the wheels stand 4.5 cm further out than on a 0.5 m wing.
+            foreach (var side in new[] { -1f, 1f })
+                _steerEnds.Add((Onto(FrontDiff, side < 0 ? "-x" : "+x", "CV Joint", "-x", 0), side));
+            return this;
+        }
         foreach (var side in new[] { -1f, 1f })
         {
             var end = FrontCross;
@@ -191,6 +225,17 @@ public sealed partial class Vehicle : BlueprintScript
 
     /// <summary>The rear differential.</summary>
     public VPart? Diff { get; private set; }
+
+    /// <summary>All-wheel drive's front differential (null: the front axle isn't driven).</summary>
+    public VPart? FrontDiff { get; private set; }
+
+    /// <summary>
+    /// Ask for all-wheel drive before <see cref="Ladder"/> (or through <see cref="EngineWish.AllWheels"/>): the steered front axle is driven too, through a
+    /// differential, CV joints and a T Gearbox behind the gearbox. Off by default. Not on a tandem yet, nor with a front wing other than 0 or 0.5 m (refused).
+    /// </summary>
+    public bool AllWheelDrive;
+
+    private bool AllWheels => AllWheelDrive || EngineWish.Current?.AllWheels == true;
 
     /// <summary>
     /// A cross beam on top of the rails at <paramref name="z"/>, with <paramref name="wing"/> metres of beam out past it on each side. <paramref name="layers"/>: beams stacked, each 0.25 m;
@@ -244,7 +289,7 @@ public sealed partial class Vehicle : BlueprintScript
         SpringName = spring ?? Style.Part(d, Slot("spring"));
         foreach (var (end, side) in _steerEnds)
         {
-            var socket = end == FrontCross ? (side < 0 ? "-z" : "+z") : FreeEnd(end);
+            var socket = end == FrontCross ? (side < 0 ? "-z" : "+z") : FrontDiff != null ? "+x" : FreeEnd(end); // (all-wheel drive: a CV Joint's output)
             var pivot = Onto(end, socket, "Steering Pivot", "base", 0);
             Corner(pivot, "leaf", SpringName, WheelName);
         }
@@ -284,6 +329,8 @@ public sealed partial class Vehicle : BlueprintScript
         var d = Dice.Fork("drive");
         var en = engine ?? Style.Part(d, Slot("engine"));
         var gb = gearbox ?? Style.Part(d, Slot("gearbox"));
+        if (FrontDiff != null)
+            z = MathF.Max(z, FrontAxleZ + 0.25f + Half); // (all-wheel drive: a sill never stands on the front differential)
         var sill = Sill(z);
         Engine = engine == null && EngineWish.Current is { } wish ? KitFlywheel(wish, sill, z) : Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y"); // (a kit engine only when one is asked for: Vehicle.KitEngine.cs)
         HoodOn = Engine;
@@ -300,6 +347,16 @@ public sealed partial class Vehicle : BlueprintScript
                 ? [new Vector3(0.45f, CentreOf(split).Y, from), new Vector3(0.45f, -0.4f, from), new Vector3(0.45f, -0.4f, (from + back - 0.5f) / 2), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)]
                 : [new Vector3(0.45f, CentreOf(split).Y, from), new Vector3(0.45f, -0.4f, from), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)];
             Link("shaft", split, Diff2, "Branch shaft", "Input shaft", laid: true, nodes: run);
+        }
+        else if (FrontDiff != null)
+        {
+            // All-wheel drive: the T Gearbox's branch runs down under the rails, forward past the front differential, and back into its input.
+            var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1);
+            Link("shaft", split, Diff!, "Output shaft", "Input shaft");
+            var from = CentreOf(split);
+            var into = FrontAxleZ - 0.5f;
+            Link("shaft", split, FrontDiff, "Branch shaft", "Input shaft", laid: true, nodes:
+                [new Vector3(0.45f, from.Y, from.Z), new Vector3(0.45f, -0.4f, from.Z), new Vector3(0.45f, -0.4f, into), new Vector3(0, -0.4f, into), new Vector3(0, 0, into)]);
         }
         else
             Link("shaft", Gearbox, Diff!, "Output shaft", "Input shaft");
@@ -328,7 +385,7 @@ public sealed partial class Vehicle : BlueprintScript
     {
         DriverSeat = Stand("Seat", at, Orient.Forward, null, "bottom");
         Seats.Add(DriverSeat);
-        DrivingModule = Diff2 != null ? Onto(DriverSeat, "-x", "Driving Module", "+x", 0) : Onto(DriverSeat, "+x", "Driving Module", "-x", 0); // (a 6x6's T Gearbox stands beside the seat)
+        DrivingModule = Diff2 != null || FrontDiff != null ? Onto(DriverSeat, "-x", "Driving Module", "+x", 0) : Onto(DriverSeat, "+x", "Driving Module", "-x", 0); // (a 6x6's T Gearbox stands beside the seat)
         Wire(DriverSeat, DrivingModule);
         Wire(DrivingModule, Engine!);
         return this;

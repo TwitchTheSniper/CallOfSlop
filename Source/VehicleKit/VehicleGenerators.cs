@@ -226,11 +226,11 @@ public static class VehicleKitCli
             seeds = [one];
         }
         var failed = 0;
-        EngineKit.EngineWish? wish = null; // (--engine-tier N [--top-speed V] [--accel A]: an Engine Kit engine sized for the vehicle, docs/vehiclekit/ENGINEKIT.md)
+        EngineKit.EngineWish? wish = null; // (--engine-tier N [--top-speed V] [--accel A] [--awd]: an Engine Kit engine sized for the vehicle, docs/vehiclekit/ENGINEKIT.md)
         if (Flag(args, "--engine-tier") is { } et)
         {
             static float F(string? t) => float.TryParse(t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
-            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")) };
+            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")), AllWheels = args.Any(a => a.Equals("--awd", StringComparison.OrdinalIgnoreCase)) };
         }
         using var wishScope = EngineKit.EngineWish.Use(wish);
         foreach (var seed in seeds)
