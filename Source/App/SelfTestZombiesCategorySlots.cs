@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Zombies category slots" (Source/Game/ZombiesSlots.cs, ZombiesSlotWin.cs; docs/zombies/ZOMBIES-MODE.md,
+/// Self-test section "Zombies category slots" (Source/Game/ZombiesSlots.cs, ZombiesSlotWin.cs; docs/archive/ZOMBIES-MODE.md,
 /// "Slot machines"): Zombies Test's Arcade and Blackmoor Asylum have a machine for every part category, each standing as
 /// its own cabinet (its own body shape, the classic footprint, the reel window clear); every machine pays only its own category (the nearest tier it has), the blade
 /// only on the melee categories, keeps its own heat, prices by category, wonder parts in jackpot rounds; a win shows to

@@ -117,7 +117,7 @@ public sealed class ZSlotMachine
 }
 
 /// <summary>
-/// Zombies slot machines (board item "Zombies slots", 2026-10-26; docs/zombies/ZOMBIES-MODE.md, "Slot machines"): gamble
+/// Zombies slot machines (board item "Zombies slots", 2026-10-26; docs/archive/ZOMBIES-MODE.md, "Slot machines"): gamble
 /// points for loose weapon-builder parts. Walk up, hold the interact key, pay; three reels spin and pay a part (into your
 /// loose parts, for the workbench; there is no cap on how many you bank), points back or, on a blank, a consolation part
 /// of the machine's own category (2026-10-27: no pull pays nothing; a consolation frees the machine at once: pull again).

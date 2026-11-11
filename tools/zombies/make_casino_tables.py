@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes Props/Zombies/Casino/*.json: the four Zombies casino tables (2026-10-27; docs/zombies/ZOMBIES-MODE.md, "Casino
+"""Writes Props/Zombies/Casino/*.json: the four Zombies casino tables (2026-10-27; docs/archive/ZOMBIES-MODE.md, "Casino
 tables"; the game: Source/Game/ZombiesCasino.cs).
 
 Run from the repository root:  python3 -I tools/zombies/make_casino_tables.py

@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The mass horde's crowd tier in the Zombies mode (docs/zombies/MASS-HORDE.md, the spike): only on maps whose section
+/// The mass horde's crowd tier in the Zombies mode (docs/sandbox/MASS-HORDE.md, the spike): only on maps whose section
 /// says <c>"crowd": N</c> (Dev/MassHordeTest.json). Each round is N zombies, seeded as crowd particles
 /// (<see cref="HordeCrowd"/>) out in the field; near the players the nearest are promoted to full zombies (the
 /// individual tier: AI, collision, hit boxes, animation and network as ever), a few a tick up to the individual cap;
@@ -20,7 +20,7 @@ public sealed partial class Zombie
     public double CrowdFarAt = -1;
 
     /// <summary>
-    /// Visual only, the seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"): the offset (m, flat) from where
+    /// Visual only, the seamless tier change (docs/sandbox/MASS-HORDE.md, "Wake waves"): the offset (m, flat) from where
     /// it is to where the crowd zombie it came out of was drawn, eased out over <see cref="CrowdOffDur"/> s
     /// (<see cref="CrowdOffLeft"/> left), and that one's yaw; <see cref="CrowdTook"/>: a client has looked for the drawn
     /// crowd zombie it came out of.
@@ -302,7 +302,7 @@ public sealed partial class Game
         }
     }
 
-    // ---- The seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves") ---------------------------------------
+    // ---- The seamless tier change (docs/sandbox/MASS-HORDE.md, "Wake waves") ---------------------------------------
 
     /// <summary>
     /// A frame of an individual on a crowd map (visual only). A client: one that has just appeared out of the crowd takes
@@ -342,7 +342,7 @@ public sealed partial class Game
         z.CrowdOffLeft = MathF.Max(0f, z.CrowdOffLeft - dt);
     }
 
-    // ---- Waking and sleeping by sight (docs/zombies/MASS-HORDE.md, "Waking and sleeping") ------------------------
+    // ---- Waking and sleeping by sight (docs/sandbox/MASS-HORDE.md, "Waking and sleeping") ------------------------
 
     private int _crowdSightViews = -1;
     private readonly int[] _crowdSleepIdx = new int[64];
@@ -431,7 +431,7 @@ public sealed partial class Game
             CrowdRoundKills++;
     }
 
-    // ---- Combat against the crowd (docs/zombies/MASS-HORDE.md, "Combat") --------------------------------------------
+    // ---- Combat against the crowd (docs/sandbox/MASS-HORDE.md, "Combat") --------------------------------------------
 
     private const int CrowdShotMax = 64;
     private readonly int[] _crowdShotIdx = new int[CrowdShotMax];

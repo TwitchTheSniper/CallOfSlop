@@ -2821,7 +2821,7 @@ so one bomb sets off the next. The Aerial Bomb and Small Nuke parts (Weapons > B
 ### Flame and harpoon
 
 Two fire types of the one modular weapon system (`Source/Constructs/ConstructHarpoon.cs`, `Source/Game/GameSandboxHarpoon.cs`; the
-builder's side is in docs/zombies/WEAPON-BUILDER.md, "Flame and harpoon"). They are weapon builder parts, so each is a handheld gun
+builder's side is in docs/sandbox/WEAPON-BUILDER.md, "Flame and harpoon"). They are weapon builder parts, so each is a handheld gun
 at the workbench and, generated like every builder part, a gun on a construct: bolt a barrel and a feed to the **Firebreather
 Receiver** or the **Whaler Receiver**, link a [Turret Module](#control-modules), and a seated gunner fires it. The hand-made
 Flamethrower heavy gun stays as it was. Numbers are in `Constructs/WeaponParts.json`.
@@ -2970,7 +2970,7 @@ The limit is shared with construct guns' explosive rounds, which dug without one
 ### Artillery
 
 Real shells on a real arc, in the same modular system (`Source/Constructs/ConstructShells.cs`, `Source/Game/GameSandboxShells.cs`; parts in
-docs/zombies/WEAPON-BUILDER.md, "Artillery"). Bolt a tube, a feed and a box to a **Field Gun Receiver** or **Howitzer Receiver**, put it on
+docs/sandbox/WEAPON-BUILDER.md, "Artillery"). Bolt a tube, a feed and a box to a **Field Gun Receiver** or **Howitzer Receiver**, put it on
 a Motor Hinge on a Turntable, link a seat through a [Turret Module](#control-modules) as for any gun, and fire. Merge them for more.
 They can't be held: the workbench refuses a receiver with the `mounted` flag ("too big to hold").
 

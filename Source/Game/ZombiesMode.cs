@@ -152,7 +152,7 @@ public sealed class ZDrop
 }
 
 /// <summary>
-/// The Zombies mode (docs/zombies/ZOMBIES-MODE.md): co-op for 1-4 players against rounds of zombies, World at War style,
+/// The Zombies mode (docs/archive/ZOMBIES-MODE.md): co-op for 1-4 players against rounds of zombies, World at War style,
 /// played on maps with a "zombies" section (<see cref="ZombiesMap"/>). Server-authoritative and deterministic (its own
 /// seeded random numbers): rounds and their curve (<see cref="ZombiesRules"/>), spawners in unlocked areas, windows with
 /// boards, the points economy, doors and debris that unlock areas, wall buys, the mystery box, perk machines, the

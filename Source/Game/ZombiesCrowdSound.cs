@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The crowd's roar on this PC (docs/zombies/MASS-HORDE.md, "Audio"; <see cref="CrowdRoar"/>): every frame on a crowd
+/// The crowd's roar on this PC (docs/sandbox/MASS-HORDE.md, "Audio"; <see cref="CrowdRoar"/>): every frame on a crowd
 /// map the crowd's cells (the surface's counts: the host's own, a client's picture) feed the roar director with the
 /// listener at the local player's ear. Off crowd maps the director never runs; when the crowd is gone the voices fade.
 /// </summary>

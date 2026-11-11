@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Drawing the Zombies slot machines (Source/Game/ZombiesSlots.cs; docs/zombies/ZOMBIES-MODE.md, "Slot machines"): on
+/// Drawing the Zombies slot machines (Source/Game/ZombiesSlots.cs; docs/archive/ZOMBIES-MODE.md, "Slot machines"): on
 /// the Reel Cabinet prop (or a plain cabinet without machine props) the three reels, which spin and stop one by one on
 /// the symbols the server rolled (a click as each one lands), the heat meter under them (it fills towards the next
 /// rarity step, then flashes red at the top), and the topper's chasing lights (faster as the machine warms up; gold and

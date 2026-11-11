@@ -17,7 +17,7 @@ other parts) and fragment "use" entries (Parts/_Fragments), and draws each part'
 sockets as coloured markers (labelled by socket name) and muzzles as red dots; contoured shapes (cylinder, tube, wedge,
 bevel, rounded, capsule, sphere, arc) are drawn with tools/parts/shapes.py. The rotation conventions match the game
 (PartDef.Rot: Z, then X, then Y turns as Rz*Rx*Ry). Exit code 1 if a file didn't resolve or --lint found problems.
-See docs/zombies/WEAPON-BUILDER.md, "Making parts".
+See docs/sandbox/WEAPON-BUILDER.md, "Making parts".
 """
 import glob
 import json

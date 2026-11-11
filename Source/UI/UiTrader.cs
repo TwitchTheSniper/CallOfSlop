@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The trader's shelf in a Zombies run (Source/Game/ZombiesTrader.cs; docs/zombies/ZOMBIES-MODE.md, "The trader"):
+/// The trader's shelf in a Zombies run (Source/Game/ZombiesTrader.cs; docs/archive/ZOMBIES-MODE.md, "The trader"):
 /// opened with the interact key at his counter, over the match (the world goes on: zombies keep coming and the HUD stays
 /// up). Each shelf item on a row: the part's name in its rarity colour (and how many you hold), its category, the price of
 /// one (red when you can't afford it) and x1 / x5 / x10 buttons (no purchase limit; a lot you can't pay for is greyed);

@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The crowd as ground (docs/zombies/MASS-HORDE.md, "Crowd physics"): on a crowd map the crowd's density is a height
+/// The crowd as ground (docs/sandbox/MASS-HORDE.md, "Crowd physics"): on a crowd map the crowd's density is a height
 /// surface (<see cref="CrowdSurface"/>) over the network grid's cells. After each tick of a player's movement (server,
 /// the client's prediction and its replay, through <see cref="ZBlockPlayer"/>, like zombie bodies) the surface pushes
 /// the player down its slope, towards thinner crowd; a player whose feet are near its top stands on it (the crowd carries

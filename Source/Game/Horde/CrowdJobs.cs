@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// A small fixed pool of worker threads for the crowd's per-frame work (docs/zombies/MASS-HORDE.md, "Rendering"):
+/// A small fixed pool of worker threads for the crowd's per-frame work (docs/sandbox/MASS-HORDE.md, "Rendering"):
 /// <see cref="Run"/> splits a job into <see cref="Stripes"/> stripes, runs stripe 0 on the calling thread and the
 /// others on the workers (stripe k always on worker k, so a stripe's own scratch arrays are only ever touched by one
 /// thread at a time), and returns when all are done. Nothing allocates per call: the body is a delegate the caller

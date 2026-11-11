@@ -49,7 +49,7 @@ public sealed class CartEntity
 }
 
 /// <summary>
-/// The Zombies preview systems that live in a match (docs/zombies/WEAPON-BUILDER.md), all used by the Workbench Range
+/// The Zombies preview systems that live in a match (docs/sandbox/WEAPON-BUILDER.md), all used by the Workbench Range
 /// today and by the Zombies mode later: the push cart as a real object (pushed, parked, manned as a gun emplacement),
 /// weapon slots 3 and 4 (the per-run slot upgrade), the built melee weapon on the melee key (damage, reach, cleave,
 /// stun), and the range's practice dummies. Everything is server-authoritative; standard matches never create any of it.

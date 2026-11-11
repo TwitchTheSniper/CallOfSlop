@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// A frame of the mass horde's crowd, ready to draw (docs/zombies/MASS-HORDE.md, "Rendering"): the host's particles as
+/// A frame of the mass horde's crowd, ready to draw (docs/sandbox/MASS-HORDE.md, "Rendering"): the host's particles as
 /// they are, and the far crowd (the host's mass cells, or everything in a client's picture) as persistent agents
 /// (<see cref="CrowdAgents"/>), into <see cref="Inst"/>. Also feeds the agents the tier changes they stand in for: the
 /// host's merges and releases (<see cref="HordeCrowd.Notes"/>), a client's individuals appearing out of the crowd and
@@ -140,7 +140,7 @@ public sealed class CrowdView
     public const float HandSpeed = 1.2f, HandMin = 0.2f, HandMax = 2f;
 
     /// <summary>
-    /// The host, the seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"): each particle the mass let out since
+    /// The host, the seamless tier change (docs/sandbox/MASS-HORDE.md, "Wake waves"): each particle the mass let out since
     /// the last frame takes over the agent nearest it (<see cref="CrowdAgents.TakeOver"/>): it is drawn from that agent's
     /// place, facing its way, at its point in the walk and with its look, the offset to where the particle really is eased
     /// out over a moment (<see cref="HordeCrowd.HandWeight"/>), and the agent stops drawing that frame. Before the agents'

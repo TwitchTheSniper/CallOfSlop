@@ -161,7 +161,7 @@ public sealed partial class WeaponDef
     /// </summary>
     public float BulletSpeed = 1f;
 
-    /// <summary>Set by the weapon builder from the "flame" flag: fire, not a bullet (a short tracer, no holes, the fire sound; docs/zombies/WEAPON-BUILDER.md, "Flame and harpoon").</summary>
+    /// <summary>Set by the weapon builder from the "flame" flag: fire, not a bullet (a short tracer, no holes, the fire sound; docs/sandbox/WEAPON-BUILDER.md, "Flame and harpoon").</summary>
     public bool Flame;
 
     /// <summary>Set by the weapon builder from the "harpoon" flag: its one round ties a rope in Sandbox (GameSandboxHarpoon.cs).</summary>

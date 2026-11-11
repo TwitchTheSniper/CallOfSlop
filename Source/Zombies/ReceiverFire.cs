@@ -2,7 +2,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// One receiver's own trigger on a built weapon whose receivers fire at their own rates (a volley build with several
-/// receivers: <see cref="WeaponDef.FireGroups"/>, docs/zombies/WEAPON-BUILDER.md "Independent fire rates"). Index = the
+/// receivers: <see cref="WeaponDef.FireGroups"/>, docs/sandbox/WEAPON-BUILDER.md "Independent fire rates"). Index = the
 /// receiver's barrel group (<see cref="BarrelPoint.Group"/>). Built by <see cref="BuildStats.ComputeUnchecked"/>; fired by
 /// <see cref="FireGroupState"/> (the local player, bots) and checked per receiver by the server's fire-rate budget.
 /// </summary>

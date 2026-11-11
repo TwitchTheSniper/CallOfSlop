@@ -4,7 +4,7 @@ using System.Text;
 namespace CallOfSlop;
 
 /// <summary>
-/// The parts a workbench can build with (docs/zombies/WEAPON-BUILDER.md, "The workbench"). The sandbox has every part
+/// The parts a workbench can build with (docs/sandbox/WEAPON-BUILDER.md, "The workbench"). The sandbox has every part
 /// (unlimited); a Zombies run has the loose parts you own plus the parts on the slot's current build (the server gives
 /// those back when the build is replaced). "Free" is what is left after the build being edited takes its share.
 /// </summary>
@@ -306,7 +306,7 @@ public struct BenchCamera
 }
 
 /// <summary>
-/// The workbench's editing model (docs/zombies/WEAPON-BUILDER.md, "The workbench"), with no UI in it so the self-test can
+/// The workbench's editing model (docs/sandbox/WEAPON-BUILDER.md, "The workbench"), with no UI in it so the self-test can
 /// drive it headless: the build being edited and its undo history, the parts you have (<see cref="BenchStock"/>), the
 /// build as a linear list, every socket on the 3D model, which sockets a dragged part snaps to (and the nearest one
 /// under the mouse ray), placing with swap semantics (a replaced part's parts move onto the new one where they fit),

@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// The zombies' own sounds (docs/zombies/ZOMBIES-MODE.md, "Sound"), synthesised like every other effect and played by
+/// The zombies' own sounds (docs/archive/ZOMBIES-MODE.md, "Sound"), synthesised like every other effect and played by
 /// <see cref="ZombieSounds"/>: a throat model (a buzzing glottal pulse with jitter, a period-doubling growl, a wet
 /// gurgle and breath noise) through three formant resonators gliding between vowels, then a little drive. Moans, growls,
 /// the swipe's snarl, hurt grunts, the headshot screech, death rattles; and shuffling, running and sprinting steps.

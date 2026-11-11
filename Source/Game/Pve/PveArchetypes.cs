@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>The kinds of enemy soldier in the co-op mode (docs/pve/DESIGN.md, "Archetypes"). One byte on the wire: append only.</summary>
+/// <summary>The kinds of enemy soldier in the co-op mode (docs/archive/PVE-DESIGN.md, "Archetypes"). One byte on the wire: append only.</summary>
 public enum PveArch : byte
 {
     Rifleman,
@@ -59,7 +59,7 @@ public sealed class PveArchDef
     public WeaponDef Def => _def ??= Weapons.Find(Weapon) ?? Weapons.DefaultPrimary;
 }
 
-/// <summary>The archetype table (tuned by hand; docs/pve/DESIGN.md has the intent of each).</summary>
+/// <summary>The archetype table (tuned by hand; docs/archive/PVE-DESIGN.md has the intent of each).</summary>
 public static class PveArchetypes
 {
     public static readonly PveArchDef[] All =
@@ -107,7 +107,7 @@ public static class PveArchetypes
     public const float OfficerAuraRadius = 15f;
 }
 
-/// <summary>The difficulty table (the lobby's Bot difficulty; docs/pve/DESIGN.md "Difficulty and player count").</summary>
+/// <summary>The difficulty table (the lobby's Bot difficulty; docs/archive/PVE-DESIGN.md "Difficulty and player count").</summary>
 public static class PveDifficulty
 {
     public static float Budget(BotDifficulty d) => d switch { BotDifficulty.Easy => 0.7f, BotDifficulty.Hard => 1.2f, BotDifficulty.Insane => 1.4f, _ => 1f };

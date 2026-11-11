@@ -215,7 +215,7 @@ public sealed class CasinoTable
 }
 
 /// <summary>
-/// Zombies casino tables (board item "Zombies: casino games to bet points", 2026-10-27; docs/zombies/ZOMBIES-MODE.md,
+/// Zombies casino tables (board item "Zombies: casino games to bet points", 2026-10-27; docs/archive/ZOMBIES-MODE.md,
 /// "Casino tables"): a map's "casino" tables take bets of POINTS only (the run's currency: no money, no progression).
 /// Four games, every one played in several steps at a panel opened with the interact key while the world goes on
 /// (zombies keep coming): <b>blackjack</b> (up to four seats against one dealer: hit, stand or double; the dealer draws

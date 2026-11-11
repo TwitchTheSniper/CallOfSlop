@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// What the players can see, for waking and sleeping the mass horde (docs/zombies/MASS-HORDE.md, "Waking and sleeping").
+/// What the players can see, for waking and sleeping the mass horde (docs/sandbox/MASS-HORDE.md, "Waking and sleeping").
 /// Server side, from each standing player's eye and look (yaw and pitch), never from a client's drawing: a point is seen
 /// by a player when it is inside their view (<see cref="CrowdTuning.SightHalfAngle"/> either side,
 /// <see cref="CrowdTuning.SightHalfAngleV"/> up and down, a body's width of slack) and its cell is not behind the ground

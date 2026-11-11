@@ -6,7 +6,7 @@ using Brutal.GlfwApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--stress-shots [size] [--stress-speed N]</c>: pictures of Horde Stress (docs/zombies/MASS-HORDE.md, "Horde Stress"),
+/// <c>--stress-shots [size] [--stress-speed N]</c>: pictures of Horde Stress (docs/sandbox/MASS-HORDE.md, "Horde Stress"),
 /// written next to the log as smoke_stress_&lt;view&gt;_&lt;moment&gt;.bmp, then the game quits. An offline Zombies game
 /// with a stress round of <c>size</c> (10,000 by default), the player on the Overlook (unhurt), the crowd walking
 /// <c>N</c> times as fast (3 by default, so a run takes a minute or two): pictures from above the Overlook and from the

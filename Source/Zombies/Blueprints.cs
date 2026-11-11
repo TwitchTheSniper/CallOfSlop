@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// The workbench's blueprint library (docs/zombies/WEAPON-BUILDER.md, "Blueprints"): any number of named builds (guns,
+/// The workbench's blueprint library (docs/sandbox/WEAPON-BUILDER.md, "Blueprints"): any number of named builds (guns,
 /// melee weapons and grenades) saved in blueprints.txt in the save folder, kept across sessions and updates. One line per
 /// blueprint, <c>bp=Name|style|Grip{...}</c> (the build text of <see cref="WeaponBuild.ToText"/>), in the library's order;
 /// a part that no longer exists loads with that part dropped, as workbench.txt does. The first time the library is opened
@@ -223,7 +223,7 @@ public static class BlueprintStore
 public readonly record struct BlueprintGap(string ParentPath, string Socket, PartDef Part, int Under);
 
 /// <summary>
-/// Loading a blueprint in a Zombies run (docs/zombies/WEAPON-BUILDER.md, "Blueprints"): the build is put together from
+/// Loading a blueprint in a Zombies run (docs/sandbox/WEAPON-BUILDER.md, "Blueprints"): the build is put together from
 /// the parts you own only (your loose parts plus the slot's current build: what the server accepts), in the build's order;
 /// a part you don't have leaves its socket empty (a <see cref="BlueprintGap"/>, drawn as a red ring on the gun and listed),
 /// and whatever was on that part is left off with it. It never makes a part you don't have.

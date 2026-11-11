@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Shots and blasts against the mass tier (docs/zombies/MASS-HORDE.md, "Combat"; board item dev-mass-points-mp01). A mass
+/// Shots and blasts against the mass tier (docs/sandbox/MASS-HORDE.md, "Combat"; board item dev-mass-points-mp01). A mass
 /// cell is only a count, so the server stands its zombies at fixed spots: the cell's zombie number k (0 to count - 1, its
 /// "slot") is a vertical capsule at <see cref="MassSpot"/> (a hash of the cell and the slot, kept off the cell's edges so
 /// a capsule never reaches into the next cell). A pure function of the counts: the same on every run, never the camera.

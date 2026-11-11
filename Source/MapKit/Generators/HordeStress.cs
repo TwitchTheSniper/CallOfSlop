@@ -2,7 +2,7 @@ namespace CallOfSlop.MapKit.Generators;
 
 /// <summary>
 /// Maps/Dev/HordeStress.json: "Horde Stress", the mass horde's stress map (developer request, 2026-10-28, board item
-/// dev-horde-stress-map-hs01; docs/zombies/MASS-HORDE.md, "Horde Stress"). A 460 x 400 m valley on terrain, built to
+/// dev-horde-stress-map-hs01; docs/sandbox/MASS-HORDE.md, "Horde Stress"). A 460 x 400 m valley on terrain, built to
 /// watch a horde of up to 100,000 come: the players start on the Overlook, a raised bench on the west side; the far
 /// (east) slope rises to a ridge with three staging pads along it, kept apart by low knolls; open ground between, so
 /// the whole horde is in view. Each round the hordes wait on the pads for a countdown, pour down the slope to the rally

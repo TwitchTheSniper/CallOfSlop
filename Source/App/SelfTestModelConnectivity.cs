@@ -6,7 +6,7 @@ public static partial class SelfTest
 {
     /// <summary>
     /// Intentional separated pieces in part models: the part's name and what joins them in a build. Every other part's
-    /// boxes must form one connected piece on their own (docs/zombies/WEAPON-BUILDER.md, "Model building").
+    /// boxes must form one connected piece on their own (docs/sandbox/WEAPON-BUILDER.md, "Model building").
     /// </summary>
     private static readonly Dictionary<string, string> AllowedSeparated = new(StringComparer.OrdinalIgnoreCase)
     {

@@ -16,7 +16,7 @@ public static class GameModeRegistry
         () => new CaptureTheFlagModule(),
         () => new GunGameModule(),
         () => new ZombiesModule(),
-        () => new CoopModule(), // co-op PvE missions (docs/pve/DESIGN.md)
+        () => new CoopModule(), // co-op PvE missions (docs/archive/PVE-DESIGN.md)
         () => new TestRangeModule(), // free-for-all with no win condition: the match never ends
         () => new LastManStandingModule(), // the template mode (Dev-only): Source/Game/Modes/README.md
         () => new SandboxModule(), // build and drive constructs (Dev-only, milestone 1): docs/sandbox/CONSTRUCTS.md

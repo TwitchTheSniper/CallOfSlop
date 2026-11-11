@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Zombies slot machine wins everyone can see (board item "a differently shaped slot machine for each part category, with
-/// a visible win your teammates can see", 2026-10-26; docs/zombies/ZOMBIES-MODE.md, "Slot machines"). When a machine pays
+/// a visible win your teammates can see", 2026-10-26; docs/archive/ZOMBIES-MODE.md, "Slot machines"). When a machine pays
 /// a part or a melee build the server sends <see cref="Msg.ZSlotWin"/> to everyone (protocol 55): every PC then shows the
 /// won part's own model turning over the machine in its rarity colour for <see cref="ZombiesRules.SlotWinSeconds"/> (a
 /// light pillar and sparks for legendary and wonder; Program.ZombiesSlots.cs), a label naming the winner and the part,

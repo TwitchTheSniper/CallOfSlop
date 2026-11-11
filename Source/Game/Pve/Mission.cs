@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>A co-op stage's objective type (docs/pve/DESIGN.md "Objective types"). One byte on the wire: append only.</summary>
+/// <summary>A co-op stage's objective type (docs/archive/PVE-DESIGN.md "Objective types"). One byte on the wire: append only.</summary>
 public enum StageKind : byte
 {
     Eliminate,
@@ -89,7 +89,7 @@ public sealed class MissionStage
 }
 
 /// <summary>
-/// A co-op mission (docs/pve/DESIGN.md "Data format"): a JSON file in a map pack's Missions folder
+/// A co-op mission (docs/archive/PVE-DESIGN.md "Data format"): a JSON file in a map pack's Missions folder
 /// (Maps/World/Missions/SiloBreach.json), naming its map. Loaded once at startup (<see cref="Missions.All"/>).
 /// </summary>
 public sealed class Mission
@@ -107,7 +107,7 @@ public sealed class Mission
     public readonly List<MissionPoint> Start = new();
     public readonly List<MissionStage> Stages = new();
 
-    /// <summary>The alive budget for this many players at this difficulty (docs/pve/DESIGN.md), capped at <see cref="Max"/> and the engine's pool.</summary>
+    /// <summary>The alive budget for this many players at this difficulty (docs/archive/PVE-DESIGN.md), capped at <see cref="Max"/> and the engine's pool.</summary>
     public int BudgetFor(int players, BotDifficulty d) =>
         Math.Clamp((int)MathF.Round((Budget + PerPlayer * Math.Max(0, players - 1)) * PveDifficulty.Budget(d)), 1, Math.Min(Max, Game.PveMaxAlive));
 

@@ -28,7 +28,7 @@ public struct GrenadeZone
 }
 
 /// <summary>
-/// Modular grenades in Zombies (docs/zombies/WEAPON-BUILDER.md, "Modular grenades"): the grenade a player built at a
+/// Modular grenades in Zombies (docs/sandbox/WEAPON-BUILDER.md, "Modular grenades"): the grenade a player built at a
 /// workbench (their <see cref="Player.GrenadeBuild"/>, the Zombies grenade slot) is a <see cref="ThrowableKind.Built"/>
 /// projectile. The server throws it with the build's speed and bounce, runs its fuse (timer, cookable, impact,
 /// proximity, remote), and sets off its payload (frag, fire, cryo, shock, gas, a lure, healing, ducks), its cluster's

@@ -18,7 +18,7 @@ public readonly record struct BarrelLeaf(BuildNode Barrel, int Muzzle, float Spl
 
 /// <summary>
 /// Turns a build (a tree of parts) into a <see cref="WeaponDef"/> the existing firing code uses. Deterministic: the same
-/// tree always gives the same numbers. The pipeline (docs/zombies/WEAPON-BUILDER.md, "Stat pipeline"):
+/// tree always gives the same numbers. The pipeline (docs/sandbox/WEAPON-BUILDER.md, "Stat pipeline"):
 /// <list type="number">
 /// <item>Each receiver on its own: its bore's calibre, its action and fire rate, then its parts in stages (receiver, ammo,
 /// feed, splitters), then each barrel path (barrel + muzzle device) on its own copy. Splitter rule: every output gets
@@ -452,7 +452,7 @@ public static class BuildStats
         return w;
     }
 
-    /// <summary>A "flame" or "harpoon" receiver's fire type on the gun it makes: what comes out and how far it goes at all (docs/zombies/WEAPON-BUILDER.md, "Flame and harpoon").</summary>
+    /// <summary>A "flame" or "harpoon" receiver's fire type on the gun it makes: what comes out and how far it goes at all (docs/sandbox/WEAPON-BUILDER.md, "Flame and harpoon").</summary>
     private static void ApplyFlameHarpoon(WeaponDef w, string[] flags)
     {
         w.Flame = flags.Contains("flame");
@@ -509,7 +509,7 @@ public static class BuildStats
     }
 
     /// <summary>
-    /// An ammo part on top of its receiver's calibre (docs/zombies/WEAPON-BUILDER.md, "Universal ammo"): ammo fits every
+    /// An ammo part on top of its receiver's calibre (docs/sandbox/WEAPON-BUILDER.md, "Universal ammo"): ammo fits every
     /// receiver and only changes the calibre's numbers relatively. Its "round" block first splits the round into N
     /// projectiles sharing the damage (buckshot on a rifle: eight pellets of an eighth; a slug in a shotgun: the eight
     /// pellets as one), then its stats apply (mul / add); a stat on the pellet count only counts where the bore lets
@@ -532,7 +532,7 @@ public static class BuildStats
     }
 
     /// <summary>
-    /// A barrel's modifiers on top of its receiver's calibre (docs/zombies/WEAPON-BUILDER.md, "Barrels and receivers"):
+    /// A barrel's modifiers on top of its receiver's calibre (docs/sandbox/WEAPON-BUILDER.md, "Barrels and receivers"):
     /// barrels only scale what the receiver and its ammo set (a Long Barrel's x1.4 range is x1.4 of a pistol's range on a
     /// pistol, of an autocannon's on an autocannon). The bore class's strength scales each relative change (x m becomes
     /// x (1 + (m - 1) k), + a becomes + a k; "set" is applied as written), and pellet changes count only where the class

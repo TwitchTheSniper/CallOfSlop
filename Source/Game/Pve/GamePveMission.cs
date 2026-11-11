@@ -91,7 +91,7 @@ public sealed class CoopObjective
 }
 
 /// <summary>
-/// The co-op mission runner (server; docs/pve/DESIGN.md "Mode structure"): stages in order, each objective type's rules,
+/// The co-op mission runner (server; docs/archive/PVE-DESIGN.md "Mode structure"): stages in order, each objective type's rules,
 /// checkpoints, wipes and retries, the director's squads, respawn timing, XP. The objective state lives in
 /// <see cref="Coop"/> for the HUD.
 /// </summary>
@@ -100,7 +100,7 @@ public sealed partial class Game
     /// <summary>The co-op objective state (both sides).</summary>
     public readonly CoopObjective Coop = new();
 
-    /// <summary>Co-op XP (docs/pve/DESIGN.md "Progression").</summary>
+    /// <summary>Co-op XP (docs/archive/PVE-DESIGN.md "Progression").</summary>
     public const int CoopKillXp = 20, CoopHeadshotXp = 10, CoopObjectiveXp = 150, CoopMissionXp = 1000;
 
     private int _coopRunMatch = -1;

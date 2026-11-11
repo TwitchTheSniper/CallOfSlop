@@ -22,7 +22,7 @@ public enum ZFxKind : byte
 public readonly record struct ZFxHit(Zombie Z, int Damage, bool Killed, (Vector3 O, Vector3 D, float Dist) Ray);
 
 /// <summary>
-/// Special ammo effects against zombies (milestone 3; docs/zombies/ZOMBIES-MODE.md, "Special ammo effects"): the flags
+/// Special ammo effects against zombies (milestone 3; docs/archive/ZOMBIES-MODE.md, "Special ammo effects"): the flags
 /// parts carry (Parts/*: "flags") come alive in Zombies. A build's flags are a set (two incendiary receivers are still
 /// one "incendiary"), and each effect goes off at most once per trigger pull or swing: effects on the zombie hit (a
 /// burn, a slow, a stun, a knockback) once per zombie hit, area effects (a splash, a chain, a pierce, a bounce) once per

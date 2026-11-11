@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Co-op enemy AI (server; docs/pve/DESIGN.md "AI"): a staggered think with level of detail (10 Hz near players, 3 Hz
+/// Co-op enemy AI (server; docs/archive/PVE-DESIGN.md "AI"): a staggered think with level of detail (10 Hz near players, 3 Hz
 /// mid range, 1 Hz far), nav-graph paths with a shared A* budget, cover on low-openness nodes, bursts of hitscan fire
 /// with spread at where players are now (no lag compensation: the shooter is on the server), grenades, an officer's aura,
 /// unsticking. Near players an enemy moves through the shared player physics; far away it slides along its path.

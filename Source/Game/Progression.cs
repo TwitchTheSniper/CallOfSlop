@@ -299,7 +299,7 @@ public sealed class Progress
     }
 
     /// <summary>
-    /// Co-op XP (docs/pve/DESIGN.md "Progression"): <paramref name="xp"/> account XP with a popup, and 40% of it as weapon
+    /// Co-op XP (docs/archive/PVE-DESIGN.md "Progression"): <paramref name="xp"/> account XP with a popup, and 40% of it as weapon
     /// XP for <paramref name="weaponId"/> (an enemy kill; 255: none). Returns the new level if it changed.
     /// </summary>
     public int? AwardCoop(int xp, string label, double now, byte weaponId = 255)

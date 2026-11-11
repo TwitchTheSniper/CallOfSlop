@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Terrain horizon culling for the crowd (docs/zombies/MASS-HORDE.md, "Rendering"): from the camera, the terrain's
+/// Terrain horizon culling for the crowd (docs/sandbox/MASS-HORDE.md, "Rendering"): from the camera, the terrain's
 /// horizon round the compass, as a profile per direction: for each of <see cref="Bins"/> directions and each of
 /// <see cref="Steps"/> distances, the steepest rise (height over distance) of the ground seen so far along that
 /// direction. A crowd cell is hidden when, in every direction it spans, the ground nearer than it rises above its top.

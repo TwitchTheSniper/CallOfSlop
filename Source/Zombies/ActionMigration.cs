@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// Builds from before the fire type became a part (docs/zombies/WEAPON-BUILDER.md, "Actions: the fire type is a part").
+/// Builds from before the fire type became a part (docs/sandbox/WEAPON-BUILDER.md, "Actions: the fire type is a part").
 /// Receivers used to carry their own action and fire rate; now each receiver has an "action" socket and the action part
 /// in it decides both. An old build has no action parts at all, so every receiver gets the action it used to fire like
 /// (its file's <c>"stockAction"</c>): the same fire type and nearly the same rate, so the gun feels the same.

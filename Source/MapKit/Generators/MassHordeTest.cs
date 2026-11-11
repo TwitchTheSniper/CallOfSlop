@@ -2,7 +2,7 @@ namespace CallOfSlop.MapKit.Generators;
 
 /// <summary>
 /// Maps/Dev/MassHordeTest.json: "Mass Horde Test", the mass horde spike's dev map (developer request, 2026-10-27;
-/// docs/zombies/MASS-HORDE.md). A 160 x 160 m open field with "crowd": 10000 in its Zombies section: each round is ten
+/// docs/sandbox/MASS-HORDE.md). A 160 x 160 m open field with "crowd": 10000 in its Zombies section: each round is ten
 /// thousand zombies, seeded as crowd particles out in the field (Source/Game/Horde/HordeCrowd.cs), that become full
 /// zombies within 22 m of a player and go back to the crowd beyond 34 m. On this map the host draws every particle
 /// (yellow; orange while held back by the individual cap) and a red marker over every individual zombie.

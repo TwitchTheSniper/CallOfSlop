@@ -61,7 +61,7 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
   took every grenade away on spawn while the client kept its loadout count, so a throw played its sound, counted down
   and was dropped by the server.
 - **Built grenades (modular grenades, 2026-10-27).** The workbench's **grenade slot** (slot 5, after the four gun slots
-  and the melee slot) takes a grenade built from a casing, a fuse, a payload and mods (docs/zombies/WEAPON-BUILDER.md,
+  and the melee slot) takes a grenade built from a casing, a fuse, a payload and mods (docs/sandbox/WEAPON-BUILDER.md,
   "Modular grenades"). With one in the slot your grenades are that build (`ThrowableKind.Built`) instead of the stock
   frag; the round's refill above gives the same count **plus the build's extras** (Pocket Clip +1, Bandolier Loop +2,
   Infinite Pockets +3, a Garden Gnome or Disco Ball casing +1). Applying, rebuilding or taking it apart keeps the grenades
@@ -367,7 +367,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
 
 - **Crowd** (`"crowd": 10000`, the mass horde's dev map: Mass Horde Test): each round is that many zombies in three
   tiers: full zombies near the players, particles behind them, per-cell counts far out; drawn on the GPU, a crowd
-  roar per cluster, and dense crowd is ground players stand on. Off on every other map. See [MASS-HORDE.md](MASS-HORDE.md).
+  roar per cluster, and dense crowd is ground players stand on. Off on every other map. See [MASS-HORDE.md](../sandbox/MASS-HORDE.md).
 
 - **Stress** (`"stress": {"staging": [[x, z], ...], "rally": [x, z], "countdown": 10, "gather": 0.75, "gatherSeconds": 300,
   "waveSeconds": 60}`, with `"crowd"`; the horde stress map: Horde Stress): each round's crowd (the host's lobby size,
@@ -1417,7 +1417,7 @@ mostly a crowd-control problem (explosives, penetration, the special ammo effect
 "An agent may need to be assigned to create a horde controller which dictates large groups of NPCs and how they
 respond to things." `Source/Game/Horde/` is that system, generic over the NPC (`IHordeAgent`: a horde record, the
 position, alive, the barrier it is working towards and whether it is at the front, an id); Zombies wires its zombies
-in (`Source/Game/ZombieHorde.cs`), the co-op enemies could later (docs/pve/DESIGN.md, "Horde controller"). The
+in (`Source/Game/ZombieHorde.cs`), the co-op enemies could later (docs/archive/PVE-DESIGN.md, "Horde controller"). The
 numbers are the rules file's **"horde"** section.
 
 - **Groups.** Fixed slots: one per **portal** (a window: members outside, queueing), one per **target** (a standing

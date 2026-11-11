@@ -4,7 +4,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The mass horde's crowd on the network (docs/zombies/MASS-HORDE.md, "Network"; <see cref="Msg.ZCrowd"/>, protocol 71).
+/// The mass horde's crowd on the network (docs/sandbox/MASS-HORDE.md, "Network"; <see cref="Msg.ZCrowd"/>, protocol 71).
 /// Every <see cref="CrowdTuning.NetEvery"/> ticks the server counts the crowd per network cell (count and mean heading)
 /// and sends each client the cells that changed since what it was last sent (reliable ordered, so the client's copy
 /// always matches the server's record of it); cells far from the client go only every

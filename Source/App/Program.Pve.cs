@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Drawing the co-op enemies (docs/pve/DESIGN.md): soldiers in their archetype's uniform with a helmet and their gun.
+/// Drawing the co-op enemies (docs/archive/PVE-DESIGN.md): soldiers in their archetype's uniform with a helmet and their gun.
 /// Level of detail keeps the cost flat with 80 alive: the full figure with the gun model and swinging legs for the
 /// nearest (within 35 m, at most <see cref="PveFullDetail"/>), a 4-box figure out to 160 m, nothing behind the camera
 /// or further. Dead ones tip over and sink. One line of stats in the log every 10 s (enemies drawn, boxes).

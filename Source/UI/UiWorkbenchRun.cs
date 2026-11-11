@@ -17,7 +17,7 @@ public sealed class ZBenchSession
 }
 
 /// <summary>
-/// The workbench in a Zombies run (docs/zombies/ZOMBIES-MODE.md, "Workbench"): the same editor, but only with the parts
+/// The workbench in a Zombies run (docs/archive/ZOMBIES-MODE.md, "Workbench"): the same editor, but only with the parts
 /// you own this run (your loose parts plus the ones on the slot's current build), your own slots instead of the saved
 /// builds, standard builds as plans (with what you'd be missing), and your loose parts (Zombies has no scrap since
 /// 2026-10-27: parts come from zombie drops, salvage piles, the slot machines and taking builds apart). Apply sends the build's text to the
@@ -163,7 +163,7 @@ public sealed partial class Ui
         return null;
     }
 
-    // ---- Disassemble: the slot's whole build into your loose parts (docs/zombies/ZOMBIES-MODE.md) ----------------
+    // ---- Disassemble: the slot's whole build into your loose parts (docs/archive/ZOMBIES-MODE.md) ----------------
 
     /// <summary>How long the first click (or D) on Disassemble stays armed waiting for the confirming second one.</summary>
     private const double DisarmSeconds = 4;
