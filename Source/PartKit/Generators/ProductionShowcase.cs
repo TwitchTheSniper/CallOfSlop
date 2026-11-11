@@ -130,7 +130,7 @@ public sealed class ProductionShowcase : IPartGenerator
             var split = On("Conveyor Splitter", 28.75f, -4.25f, Flow, "-y.0.0", LineA);
             Convey(exA, "Piece out", split, "Piece in", LineA);
             Sign(27.75f, Posts1, LineA, "Cut this conveyor to see pieces drop");
-            var press = On("Press", 30.25f, -9.25f, Back, "-y.0.0", PressBlue); // (its first bay under the splitter: a die's rows name one bay, so "Piece in 2" takes nothing from them)
+            var press = On("Press", 30.25f, -9.25f, Back, "-y.0.0", PressBlue); // (its first bay under the splitter; a one-bay die works either bay, so "Piece in 2" is free for a second feed)
             Onto(press, "dieslot", "Bracket Die", "mount");
             Convey(split, "Piece out 2", press, "Piece in", LineA);
             Sign(28.25f, Posts2, PressBlue, "Line A's angles go in here: the press stamps brackets");
