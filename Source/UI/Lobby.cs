@@ -44,6 +44,7 @@ public sealed partial class Ui
     private enum Page
     {
         Main,
+        Story, // the story: a survival world on the galaxy's home planetoid (UiWorlds.cs DrawStoryWorld)
         SinglePlayer,
         Multiplayer,
         Settings,
@@ -211,6 +212,10 @@ public sealed partial class Ui
                     }
                     ImGui.PopTextWrapPos();
                     LevelSummary(compact: true);
+                    if (BigButton("STORY"))
+                        _page = Page.Story;
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetItemTooltip("Crash-land on the Planetoid, wake in the Ministry's penal colony, and find the five sealed data centres across the five star systems."u8);
                     if (BigButton("SINGLE PLAYER"))
                         _page = Page.SinglePlayer;
                     if (BigButton("MULTIPLAYER"))
@@ -230,6 +235,28 @@ public sealed partial class Ui
                     ImGui.Spacing();
                     if (BigButton("QUIT"))
                         action = LobbyAction.Quit;
+                    break;
+
+                case Page.Story:
+                    Title("Story - five worlds in five star systems");
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+                    ImGui.TextColored(Dim, "You crash on the Planetoid in the Slopstar system and wake in the Ministry of Slop's penal colony. Cinder, Glacier, Caledon and Mille are each a Jump Drive away: each has a faction's home and a sealed data centre. One saved world holds them all."u8);
+                    ImGui.PopTextWrapPos();
+                    ImGui.Spacing();
+                    var storySaved = DrawStoryWorld(s); // (UiWorlds.cs)
+                    if (!storySaved)
+                        DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
+                    ImGui.Spacing();
+                    if (BigButton("START"))
+                    {
+                        StorySettings(s);
+                        s.Bots = 0;
+                        StoryWorldDefault(); // (a new world named Story when none was picked: the story is always saved)
+                        s.Save();
+                        action = LobbyAction.SinglePlayer;
+                    }
+                    if (BigButton("BACK"))
+                        _page = Page.Main;
                     break;
 
                 case Page.SinglePlayer:
@@ -280,7 +307,7 @@ public sealed partial class Ui
                     HostOpensWith(s);
                     if (BigButton("HOST STORY CO-OP"))
                     {
-                        StoryCoopSettings(s); // (Sandbox, Survival, a Sandbox map: friends crash, wake and go through the induction together)
+                        StorySettings(s); // (Sandbox, Survival, the story's planetoid: friends crash, wake and go through the induction together)
                         s.Save();
                         action = LobbyAction.Host;
                         break;
@@ -371,17 +398,17 @@ public sealed partial class Ui
     }
 
     /// <summary>Under HOST A GAME: what the lobby opens with (the last choices; all of them change in the lobby).</summary>
-    /// <summary>Multiplayer's story co-op: the host's lobby opens on Sandbox survival (the story's opening and induction), on a Sandbox map.</summary>
-    private static void StoryCoopSettings(Settings s)
+    /// <summary>
+    /// The story, alone or in co-op: Sandbox survival (the opening and the induction) on the story's home planetoid
+    /// (<see cref="Game.StoryHomeMap"/>, in the galaxy's first system: the other worlds are a jump away).
+    /// </summary>
+    private static void StorySettings(Settings s)
     {
         s.Mode = GameMode.Sandbox;
         s.SandboxSurvival = true;
-        if (s.MapRandom || Maps.Find(s.MapName) is not { Sandbox: not null })
-        {
-            if ((Maps.Find("Planetoid") is { Sandbox: not null } p ? p : Maps.All.FirstOrDefault(m => m.Sandbox != null)) is { } map) // (the story's planetoid, as the space plan has it)
-                s.MapName = map.Name;
-            s.MapRandom = false;
-        }
+        if ((Maps.Find(Game.StoryHomeMap) is { Sandbox: not null } home ? home : Maps.All.FirstOrDefault(m => m.Sandbox != null)) is { } map)
+            s.MapName = map.Name;
+        s.MapRandom = false;
     }
 
     private void HostOpensWith(Settings s)

@@ -25,8 +25,11 @@ Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the w
   (three bodies however many were found) and hear its lines, with a `"group": true` line ("And another!") said only when more
   than one came down. Everyone wakes in the cell block together, each to their own side, and starts the induction as a group
   (docs/sandbox/TUTORIAL.md, "Together"). Anyone arriving later has a crash of their own, then joins whoever is on their step.
-  Multiplayer on the main screen has **HOST STORY CO-OP**: the host's lobby opens on Sandbox survival (their Sandbox map, else
-  the Planetoid), where they pick or make the saved world; friends join from the server browser or the invite code.
+  **STORY** on the main screen starts it alone: Sandbox survival on the story's home planetoid (`Game.StoryHomeMap`, the
+  Planetoid in Slopstar), in a saved world (a new one named Story when none is picked), with no bots. Multiplayer has
+  **HOST STORY CO-OP**: the host's lobby opens on the same map and mode, where they pick or make the saved world; friends
+  join from the server browser or the invite code. The other four worlds are a Jump Drive away in the same saved world
+  (docs/planets/WORLDS.md).
 - **Skip**: the jump key, at any beat (for that person only; the rest of the group carries on). Skipping puts them in the cell block at once and starts the induction.
 
 ## The beats

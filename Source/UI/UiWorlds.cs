@@ -187,6 +187,25 @@ public sealed partial class Ui
         return false;
     }
 
+    /// <summary>The Story page: which world START plays (a new one or a saved one). True: a saved world, which brings its own death rules.</summary>
+    private bool DrawStoryWorld(Settings s) => DrawSinglePlayerWorld(s);
+
+    /// <summary>The Story page's START with no world picked: a new world named Story (Story 2, ...), so the story is saved.</summary>
+    private void StoryWorldDefault()
+    {
+        if (_spWorld != null || _spNewWorld.Length > 0)
+            return;
+        for (var n = 1; n < 100; n++)
+        {
+            var name = n == 1 ? "Story" : $"Story {n}";
+            if (WorldStore.NameRefusal(name) == null)
+            {
+                _spNewWorld = name;
+                return;
+            }
+        }
+    }
+
     /// <summary>The world the Single player page picked (a new one goes on <paramref name="map"/>), once. Null: none.</summary>
     public WorldSession? TakeSinglePlayerWorld(Map map, bool survival, byte death)
     {
