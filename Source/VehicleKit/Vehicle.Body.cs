@@ -289,6 +289,8 @@ public sealed partial class Vehicle
     {
         if (Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Cab Over Shell") == true || CabShape?.Kind is 'o' or 'm')
             return this; // (the cab is its own nose)
+        if (KitEngine != null)
+            return this; // (a kit engine stands open: its cylinders stand higher than any hood: Vehicle.KitEngine.cs)
         var d = Dice.Fork("hood");
         var kind = part ?? Style.Part(d, "hood");
         if (kind == "plates")

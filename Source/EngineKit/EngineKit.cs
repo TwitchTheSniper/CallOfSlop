@@ -39,6 +39,7 @@ public sealed record EngineRequest
     public EngineLayout Layout { get; init; }
     public EngineBoost Boost { get; init; }
     public int Size { get; init; } = -1; // -1 any, else 0 small to 3 capital
+    public bool Underside { get; init; } = true; // false: no bank points down (an engine standing on a vehicle's sill: a radial's lower bank would be in the ground)
     public bool Exhausts { get; init; } = true; // an outlet on every head without a fuel system (looks only)
     public string Paint { get; init; } = ""; // a colour for the crank and flywheel ("" the parts' own): a faction's
     public string Name { get; init; } = "";
@@ -158,6 +159,8 @@ public static class EngineKit
                 if (r.Layout != EngineLayout.Auto && r.Layout != layout)
                     continue;
                 var banks = BankSockets(layout);
+                if (!r.Underside && Array.IndexOf(banks, "-y") >= 0)
+                    continue;
                 foreach (var cyl in cyls)
                     foreach (var fuel in fuels)
                         foreach (var boost in boosts)
@@ -307,33 +310,7 @@ public static class EngineKit
         var s = new BlueprintScript(name) { Group = "Engine Kit", Description = $"Made by the Engine Kit for {r}." };
         try
         {
-            var banks = BankSockets(p.Layout);
-            var cranks = new VPart[p.Cranks];
-            cranks[0] = s.Root($"{sw} Crank Section", Vector3.Zero);
-            for (var i = 1; i < p.Cranks; i++)
-                cranks[i] = s.Onto(cranks[i - 1], "front", $"{sw} Crank Section", "back", 0);
-            for (var b = 0; b < banks.Length; b++)
-                for (var i = 0; i < p.Cranks; i++)
-                {
-                    var cyl = s.Onto(cranks[i], banks[b], p.Cylinder, "base", 0);
-                    if (i == 0)
-                    {
-                        var fuel = s.Onto(cyl, "head", p.FuelPart, "base", 0);
-                        if (p.BoostPart != null)
-                            s.Onto(fuel, "top", p.BoostPart, "base", 0);
-                    }
-                    else if (r.Exhausts)
-                        s.Onto(cyl, "head", $"{sw} Exhaust Outlet", "base", 0);
-                }
-            var fly = s.Onto(cranks[^1], "front", $"{sw} Flywheel", "crank", 0);
-            if (rules.NeedsStarter[p.Size])
-                Starter(s, sw, cranks, fly, banks);
-            if (r.Paint.Length > 0)
-            {
-                foreach (var c in cranks)
-                    s.Paint(c, r.Paint);
-                s.Paint(fly, r.Paint);
-            }
+            Assemble(s, r, p, null);
         }
         catch (VehicleKitException ex)
         {
@@ -381,6 +358,53 @@ public static class EngineKit
             return null;
         }
         return res;
+    }
+
+    /// <summary>
+    /// Puts plan <paramref name="p"/>'s pieces into <paramref name="s"/>: from a root crank at the origin with the flywheel on the last crank's front (<paramref name="fly"/>
+    /// null), or out from a flywheel already placed (a vehicle's: <see cref="EngineKitVehicle"/>), the cranks back from its "crank" socket. Throws
+    /// <see cref="VehicleKitException"/> when a piece is refused. Returns the flywheel.
+    /// </summary>
+    public static VPart Assemble(BlueprintScript s, EngineRequest r, EnginePlan p, VPart? fly)
+    {
+        var sw = SizeWords[p.Size];
+        var banks = BankSockets(p.Layout);
+        var cranks = new VPart[p.Cranks];
+        if (fly == null)
+        {
+            cranks[0] = s.Root($"{sw} Crank Section", Vector3.Zero);
+            for (var i = 1; i < p.Cranks; i++)
+                cranks[i] = s.Onto(cranks[i - 1], "front", $"{sw} Crank Section", "back", 0);
+        }
+        else
+        {
+            cranks[^1] = s.Onto(fly, "crank", $"{sw} Crank Section", "front", 0);
+            for (var i = p.Cranks - 2; i >= 0; i--)
+                cranks[i] = s.Onto(cranks[i + 1], "back", $"{sw} Crank Section", "front", 0);
+        }
+        for (var b = 0; b < banks.Length; b++)
+            for (var i = 0; i < p.Cranks; i++)
+            {
+                var cyl = s.Onto(cranks[i], banks[b], p.Cylinder, "base", 0);
+                if (i == 0)
+                {
+                    var fuel = s.Onto(cyl, "head", p.FuelPart, "base", 0);
+                    if (p.BoostPart != null)
+                        s.Onto(fuel, "top", p.BoostPart, "base", 0);
+                }
+                else if (r.Exhausts)
+                    s.Onto(cyl, "head", $"{sw} Exhaust Outlet", "base", 0);
+            }
+        fly ??= s.Onto(cranks[^1], "front", $"{sw} Flywheel", "crank", 0);
+        if (EngineRules.Current.NeedsStarter[p.Size])
+            Starter(s, sw, cranks, fly, banks);
+        if (r.Paint.Length > 0)
+        {
+            foreach (var c in cranks)
+                s.Paint(c, r.Paint);
+            s.Paint(fly, r.Paint);
+        }
+        return fly;
     }
 
     /// <summary>A starter on a crank side no bank uses, else on the flywheel's side.</summary>
