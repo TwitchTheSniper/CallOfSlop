@@ -211,29 +211,48 @@ public static class RouteRender
     }
 
     /// <summary>
-    /// What a body's Piece Racks hold: each piece at true size where <see cref="ConstructConveyor.RackLayout"/> lays it, at most
-    /// <see cref="ConstructConveyor.RackDrawn"/> a rack, from the store as heard. Allocates nothing; an empty rack costs a look at its store.
+    /// What a body's Piece Racks hold, where <see cref="ConstructRackPack"/> packed it, from the store as heard: near a rack
+    /// (<see cref="ConstructConveyor.RackDrawNear"/>) every piece at true size, further one box a column in its first box's
+    /// colour. Allocates nothing; an empty rack costs a look at its store.
     /// </summary>
     private static void DrawRacks(Renderer gfx, ConstructWorld world, Construct c)
     {
-        Span<ConstructConveyor.RackSlot> slots = stackalloc ConstructConveyor.RackSlot[ConstructConveyor.RackDrawn];
+        var eye = gfx.CameraPosition;
         for (var k = 0; k < c.PieceRackCount; k++)
         {
             int part = c.PieceRacks[k];
-            if (part >= c.PartCount || world.StoreOf(c, part) is not { KindN: > 0 } st)
+            if (part >= c.PartCount || world.StoreOf(c, part) is not { ItemCount: > 0 } st)
                 continue;
-            var n = ConstructConveyor.RackLayout(c.DefOf(part), st, slots);
+            var rd = c.DefOf(part);
+            ConstructRackPack.Ensure(rd, st);
             ref var p = ref c.Parts[part];
             var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];
-            for (var i = 0; i < n; i++)
+            var centre = Vector3.Transform((rd.BoundsMin + rd.BoundsMax) * 0.5f, frame);
+            var reach = ConstructConveyor.RackDrawNear + (rd.BoundsMax - rd.BoundsMin).Length() * 0.5f;
+            var near = Vector3.DistanceSquared(eye, centre) < reach * reach;
+            for (var s = 0; s < st.SlabN; s++)
             {
-                var d = ConstructParts.Def(slots[i].Def);
-                var m = Matrix4x4.CreateTranslation(slots[i].Origin) * frame;
-                for (var bx = 0; bx < d.Boxes.Length; bx++)
+                if (ConstructParts.Get(st.Slabs![s].Def) is not { } d || d.Boxes.Length == 0)
+                    continue;
+                if (!near)
                 {
-                    ref readonly var box = ref d.Boxes[bx];
-                    if (!box.Hidden)
-                        gfx.Draw(box.Model(0, box.Center) * m, box.Color, shape: box.Shape);
+                    ConstructRackPack.SlabBox(rd, st, s, d, out var mn, out var mx);
+                    gfx.Draw(Matrix4x4.CreateScale(mx - mn) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * frame, d.Boxes[0].Color);
+                    continue;
+                }
+                for (var l = 0; l < st.Slabs[s].Lanes; l++)
+                {
+                    int n = st.SlabLanes![s * ConstructRackPack.MaxLanes + l];
+                    for (var y = 0; y < n; y++)
+                    {
+                        var m = Matrix4x4.CreateTranslation(ConstructRackPack.Origin(rd, st.Slabs[s], d, l, y)) * frame;
+                        for (var bx = 0; bx < d.Boxes.Length; bx++)
+                        {
+                            ref readonly var box = ref d.Boxes[bx];
+                            if (!box.Hidden)
+                                gfx.Draw(box.Model(0, box.Center) * m, box.Color, shape: box.Shape);
+                        }
+                    }
                 }
             }
         }

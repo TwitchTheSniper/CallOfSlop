@@ -152,6 +152,46 @@ public static partial class Program
             _game.SandboxSnapLabel = null;
     }
 
+
+    private static long _pgStoredKey;
+    private static string _pgStoredText = "";
+
+    /// <summary>
+    /// The physics gun on a piece a Piece Rack holds or a conveyor carries (they aren't bodies: the look ray finds them): the
+    /// look line, and the beam's click asks the server to take it off and hand it to the beam (ConstructEditsRack.cs). True when it took the frame.
+    /// </summary>
+    private static bool PhysGunStoredPiece(Game g, Player me, in SandboxHand h, Vector3 eye, Vector3 dir, float reach, float range)
+    {
+        if (!g.Constructs.Raycast(eye, dir, reach, out var hit, look: true) || hit.RackPlus1 == 0 && hit.RiderPlus1 == 0)
+            return false;
+        var c = hit.Body;
+        ConstructPartDef? piece = null;
+        if (hit.RiderPlus1 > 0 && hit.RiderPlus1 <= c.ConveyedCount)
+            piece = ConstructParts.Get(c.Conveyed[hit.RiderPlus1 - 1].Def);
+        else if (g.Constructs.StoreOf(c, hit.Part) is { } st && hit.RackPlus1 <= st.SlabN)
+            piece = ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def);
+        if (piece == null)
+            return false;
+        var key = ((long)c.Id << 32) ^ ((long)piece.Id << 8) ^ (hit.RiderPlus1 > 0 ? 1 : 2);
+        if (key != _pgStoredKey)
+        {
+            _pgStoredKey = key;
+            _pgStoredText = SandboxKeys.Line(piece.IsExtrusion ? Extrusion.Label(piece.ExKey) : piece.Name, hit.RiderPlus1 > 0 ? "on a conveyor" : $"on the {c.DefOf(hit.Part).Name}", null, $"hold {SandboxKeys.Fire}: pull it off");
+        }
+        g.SandboxLookText = _pgStoredText;
+        if (!Pressed(GameAction.Fire) || _swallowClick)
+            return true;
+        _pgDist = Math.Clamp(hit.Distance, ConstructGrab.MinDist, range);
+        _pgRel = Quaternion.Identity;
+        _pgAccYaw = _pgAccPitch = 0;
+        PhysGunSnapEnd(g);
+        if (hit.RiderPlus1 > 0)
+            g.SandboxSend(CActKind.Rider, body: c.Id, part: (ushort)(hit.RoutePlus1 - 1), socket: (ushort)Math.Clamp((int)MathF.Round(c.Conveyed[hit.RiderPlus1 - 1].At * 100), 0, ushort.MaxValue), flags: 1);
+        else
+            g.SandboxGrab(c.Id, c.ToLocal(hit.Point), hit.Part); // (the server pulls the stack's top piece out and answers with it in the beam)
+        return true;
+    }
+
     /// <summary>The physics gun's keys and look text, every frame it is out (SandboxInput).</summary>
     private static void PhysGunInput(Game g, Player me, ref SandboxHand h, Vector3 eye, Vector3 dir, double now)
     {
@@ -159,6 +199,8 @@ public static partial class Program
         var range = g.SandboxHands.ReachOf(me.Id, creative); // (this player's, with their tool upgrades: ConstructEditsUpgrades.cs)
         var catchRange = g.SandboxHands.CatchOf(me.Id, creative); // (the tractor beam catches further and reels it in to the reach)
         var holding = h.GrabBody != 0 && g.Constructs.Get(h.GrabBody) != null;
+        if (!holding && PhysGunStoredPiece(g, me, in h, eye, dir, MathF.Min(World.RaycastWorld(eye, dir, catchRange), catchRange), range))
+            return; // (a piece stored on a Piece Rack or riding a conveyor: the beam pulls it off)
         if (!holding)
         {
             _pgScroll = 0;

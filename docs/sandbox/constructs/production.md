@@ -535,8 +535,8 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
 
 - **Ports.** A `"conveyor"` port names its clear `"opening"` ([across, up], metres). Every Extruder and Wheel Former has an
   implicit **Piece out** on its output face, at the base die's bottom edge (opening: its largest section; a Wheel Former's widest by
-  biggest across). The **Piece Rack** (1 x 1 m pieces, 6 m long, 40 of them) and **Long Piece Rack** (2 x 2 m, 12 m, 60) have a
-  **Piece in** at their -z end and a `storage.pieces` block (`section`, `length`, `count`). A Press or Die Lathe has an implicit
+  biggest across). The **Piece Rack** (pieces up to 1 x 1 m and 6 m long) and **Long Piece Rack** (2 x 2 m, 12 m) have a
+  **Piece in** at their -z end and a `storage.pieces` block (`section`, `length`, `count`, `hold`: the box they pack into). A Press or Die Lathe has an implicit
   **Piece in** at each bay's socket ("Piece in", "Piece in 2"...; the line 11 cm under it, opening its largest piece across): a piece
   that arrives goes into the bay by the rules a loose piece left in its mouth meets (`ConstructPress.TakeFromConveyor`), and waits on
   the conveyor while the bay is full or refuses it (the press's look line says why).
@@ -563,11 +563,25 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
 - **Off the link.** A cut or deleted conveyor drops every piece on it as a loose body where it was, moving as the body moved, and so
   does a construct that goes on the server with pieces riding (deleted, destroyed, cleared as a wreck, fallen out of the world:
   `ConstructWorld.Remove`); one that travels takes them in its world copy (`keepRiders`), and a client's removal is the server's
-  word. F on a rack drops the piece the player looks at (else the last in), loose, over the rack (a piece is physics-only: no
-  hands carry it). Pieces in a rack are kinds in its store, so a rack of 40 costs no part slots.
-- **The rack shows what it holds.** Up to 24 pieces drawn at true size on its slats inside its posts, side by side from its -z end
-  2 cm apart, a layer on the one below while a layer starts under its top (`ConstructConveyor.RackLayout`, drawn in the links'
-  batch from the store as heard; both sides lay it out alike, so F takes what is seen). Its look line lists each kind and count.
+  word. Pieces in a rack are kinds in its store, so a full rack costs no part slots.
+- **A rack holds by volume** (`ConstructRackPack.cs`, 2026-11-11). Its room is its hold box, not a count: pieces pack in
+  *columns*, one kind each, as long as the piece, laid along the rack; across a column stand *stacks* as many as the piece's width
+  lets (2 cm apart), each as high as the hold lets (5 mm between layers). A piece goes on the lowest stack of the first column of
+  its kind with room, else a new column opens in the first gap along the rack long enough for it (2 cm between columns); an emptied
+  column's gap is reused and the columns after it stay put. So a Piece Rack takes 276 L Brackets or 20 beams of 4 m (0.2 m square),
+  a Long Piece Rack 2,350 brackets or 216 such beams, or any mix. `count` stays a hard cap (2,000 and 6,000, above what the holds
+  take of the smallest pieces: bounded memory and wire); at most 192 columns and 32 stacks a column. A piece that doesn't fit waits
+  on the conveyor: "jammed: rack full", or "piece too long for this rack" / "too big across" (`ConstructConveyor.RackRefusal`).
+  The columns are the store's state and go on the wire after its kinds (protocol 249); a save keeps the kinds, and the places are
+  packed again on load. The look line and `ConstructConveyor.FillText` (for a console) say "62% full, 131 pieces, 4 kinds".
+- **By hand.** A look ray meets a rack's stacks (past its own bars) and its hold, and riding pieces (a look only: shots don't).
+  F takes the top piece of the stack looked at into the hands (`Give`: hands, backpack, else dropped; a physics-only piece lies
+  beside the rack on the player's side); Shift+F drops up to 40 of that kind loose beside it; the physics gun pulls the top piece
+  out where it lay and holds it. F on a riding piece takes it off its conveyor (the physics gun grabs it): the request names the
+  conveyor and where the piece's front was, and the server takes the one nearest that (within 1.5 m); the pieces behind close up.
+  A conveyor's look line, and its lead piece's, say why it waits ("jammed: rack full").
+- **The rack shows what it holds.** Every piece at its packed place at true size within 30 m (plus half the rack), one box a
+  column in its first box's colour further off (`RouteRender.DrawRacks`, the links' batch, from the store as heard).
 - **Collisions.** The conveyor is a drawn link: shots and blasts hit its segments (health 120); players and bodies pass through it
   as through every routed link, and through riding pieces.
 - **Network (protocol 244, riders 245).** A conveyor's size is 4 bytes after its link in a Full. `CBodyKind.Riders` sends a body's
@@ -668,7 +682,7 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   purpose; set the wheel line's conveyor too small with the mouse wheel to see a refusal.
 - **What to expect.** The main switch is wired to the genset and to the battery, whose wire is the [mains](#production-lines): off, every
   machine shows No power (creative too) while the consoles stay lit, and the genset stops. Creative refiners take a load in a few seconds,
-  so their lamps show Running. The Press puts its brackets on a conveyor out of its Piece out to a Piece Rack behind it (40 parts: a full
+  so their lamps show Running. The Press puts its brackets on a conveyor out of its Piece out to a Piece Rack behind it (276 brackets: a full
   rack backs the press up, "Output conveyor full"); either bay takes line A's angles.
 - **Measured** (a throwaway probe, removed: host and client over RakNet on the Proving Ground, spawned through the parts menu's call,
   the refining console started and the bill sent, a cold process; 2026-11-11 after fix/showcase-bugs): racks equal by key on both peers;
