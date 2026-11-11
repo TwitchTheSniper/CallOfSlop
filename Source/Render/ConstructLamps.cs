@@ -49,7 +49,7 @@ public static class ConstructLamps
                 var d = c.DefOf(i);
                 if (d.Logic == CLogic.Lamp)
                 {
-                    if (p.Out >= 0.5f)
+                    if (d.Mains ? MainsLit(c, i) : p.Out >= 0.5f)
                         Offer(c, i, (d.BoundsMin + d.BoundsMax) * 0.5f, new Vector3(1f, 0.93f, 0.6f), pos, rot, eye, keep, ref n);
                     continue;
                 }
@@ -92,10 +92,55 @@ public static class ConstructLamps
         n++;
     }
 
+    /// <summary>
+    /// Whether a lamp part is lit (interiors phase 11). A plain lamp: while its signal is on. A mains lamp (<see cref="ConstructPartDef.Mains"/>):
+    /// while the construct has a battery or plant, its power is on (the pose's flags) and the circuit reaches the lamp (<see cref="CPart.Powered"/>,
+    /// from the structure on every peer), and, when a wire switches it, while that wire's source is on (a switch's signal, which poses carry).
+    /// So a client needs nothing a lamp: mains lamps are left out of the poses' signals. No allocation but the feed list after a rebuild.
+    /// </summary>
+    public static bool Lit(Construct c, int i)
+    {
+        if (i < 0 || i >= c.PartCount)
+            return false;
+        var d = c.DefOf(i);
+        if (d.Logic != CLogic.Lamp || c.Parts[i].Broken)
+            return false;
+        return d.Mains ? MainsLit(c, i) : c.Parts[i].Out >= 0.5f;
+    }
+
+    private static bool MainsLit(Construct c, int i)
+    {
+        ref var p = ref c.Parts[i];
+        if (p.Broken || !c.HasBattery || !c.PowerOn || !p.Powered)
+            return false;
+        if (c.LampStamp != c.RebuildStamp)
+            Gather(c);
+        var f = i < c.MainsFeed.Length ? c.MainsFeed[i] : -1;
+        return f < 0 || f < c.PartCount && !c.Parts[f].Broken && c.Parts[f].Out >= 0.5f;
+    }
+
     /// <summary>A body's lamp parts, gathered again after a rebuild (the only allocation: a new list when the parts change).</summary>
     private static void Gather(Construct c)
     {
         c.LampStamp = c.RebuildStamp;
+        // (mains lamps' switch wires: the first wire into each, from a part of this body)
+        var mains = false;
+        for (var i = 0; i < c.PartCount && !mains; i++)
+            mains = c.DefOf(i).Mains;
+        if (!mains)
+            c.MainsFeed = [];
+        else
+        {
+            if (c.MainsFeed.Length < c.PartCount)
+                c.MainsFeed = new int[c.PartCount];
+            Array.Fill(c.MainsFeed, -1);
+            for (var k = 0; k < c.WireCount; k++)
+            {
+                ref var w = ref c.Wires[k];
+                if (w.To < c.PartCount && w.From < c.PartCount && w.ToPort == 0 && c.MainsFeed[w.To] < 0 && c.DefOf(w.To).Mains)
+                    c.MainsFeed[w.To] = w.From;
+            }
+        }
         var count = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i) is var d && (d.Lamps.Length > 0 || d.Logic == CLogic.Lamp))

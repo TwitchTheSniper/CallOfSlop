@@ -482,6 +482,7 @@ public sealed partial class ConstructPartDef
 
     // Logic (milestone 2)
     public CLogic Logic;
+    public bool Mains; // a lamp lit from the power circuit (logic "mains": true; interiors phase 11): on while a working battery or plant reaches it and has charge, unless a wire into it says off; needs no wire and sends nothing on its own
     public float[] Settings = []; // the values its setting cycles through (seconds, metres, a threshold, a factor; a reader's key bits)
     public string[] SettingLabels = []; // what the HUD shows for each
     public string SettingName = ""; // "period", "key"...
@@ -2110,12 +2111,18 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load", "rail", "station", "modular", "axes"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load", "rail", "station", "modular", "axes", "mains"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
             throw new ConstructPartException($"{file}: \"logic.kind\" is one of {string.Join(", ", LogicKinds)}, not \"{kind}\"");
         d.Logic = (CLogic)(ki + 1);
+        if (Opt(b, "mains") is { } mains)
+        {
+            if (d.Logic != CLogic.Lamp)
+                throw new ConstructPartException($"{file}: only a lamp may be \"logic.mains\"");
+            d.Mains = mains.ValueKind == JsonValueKind.True;
+        }
         var needs = d.Logic is CLogic.Reader or CLogic.Proximity or CLogic.Timer or CLogic.Delay or CLogic.Compare or CLogic.Scale or CLogic.Selector;
         if (d.Logic == CLogic.Reader)
         {

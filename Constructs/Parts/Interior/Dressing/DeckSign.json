@@ -1,0 +1,41 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Deck Sign",
+  "description": "A stencilled section board with a hazard band. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 30,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f4f6f",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        -0.18,
+        0.0
+      ],
+      "max": [
+        0.45,
+        0.18,
+        0.03
+      ],
+      "color": "#2f4f6f"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

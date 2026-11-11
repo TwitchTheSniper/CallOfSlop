@@ -1,0 +1,80 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bay Marking",
+  "description": "A painted floor bay: four yellow lines round a 3.4 m square. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 4.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#d9b23a",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -1.7,
+        0.004,
+        -1.7
+      ],
+      "max": [
+        1.7,
+        0.015,
+        -1.6
+      ],
+      "color": "#d9b23a"
+    },
+    {
+      "min": [
+        -1.7,
+        0.004,
+        1.6
+      ],
+      "max": [
+        1.7,
+        0.015,
+        1.7
+      ],
+      "color": "#d9b23a"
+    },
+    {
+      "min": [
+        -1.7,
+        0.004,
+        -1.595
+      ],
+      "max": [
+        -1.6,
+        0.015,
+        1.595
+      ],
+      "color": "#d9b23a"
+    },
+    {
+      "min": [
+        1.6,
+        0.004,
+        -1.595
+      ],
+      "max": [
+        1.7,
+        0.015,
+        1.595
+      ],
+      "color": "#d9b23a"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

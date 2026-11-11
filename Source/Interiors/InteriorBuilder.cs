@@ -461,6 +461,7 @@ public sealed class InteriorBuilder : BlueprintScript
             Notes.Add($"lights: {DarkRooms} generated rooms keep their lamps dark (no Switch): the construct's {Construct.MaxRoutes} links less the players' 64 went to the feeds and the other rooms' switches");
         if (_carry != null)
             Refused.Add($"the vehicle's {_carry.Value.Bp.Steps[_carry.Value.Helm].Part} had no bridge to go in: the fitted construct has no helm");
+        Time("dressing", () => Dress(rng)); // (phase 11: after the rooms' things, the feeds and the lights, so it never takes what they need; before the welds, which make every later step's rebuild ~4x slower)
         Time("welds", WeldLater);
         Time("power", Power);
     }
@@ -484,6 +485,8 @@ public sealed class InteriorBuilder : BlueprintScript
                 Time("slabs", () => Slabs(plan, k + 1));
             Time("furnish", () =>
             {
+                foreach (var r in plan.Rooms.Where(r => r.Deck == k))
+                    _dressRooms.Add((r, _lv));
                 foreach (var r in plan.Rooms.Where(r => r.Deck == k))
                     if (r.Origin == "generated")
                         _laterRooms.Add((plan, r, _lv));
@@ -1746,6 +1749,199 @@ public sealed class InteriorBuilder : BlueprintScript
             TryWire(gunner, director, $"{r.Name}: gunner's station to the Fire Director");
     }
 
+    private readonly List<(PlanRoom Room, int Lv)> _dressRooms = new(); // (phase 11) every room, for the dressing pass
+    private readonly HashSet<int> _dressParts = new(); // (phase 11) dressing parts placed (the budget's "dressing")
+    public int Dressed, DressRefused, Lit; // (phase 11) dressing parts hung, spots the rules refused, mains lamps hung
+    public readonly Dictionary<string, int> DressCount = new();
+
+    /// <summary>
+    /// The dressing pass (phase 11, ModuleSets.json "dressing"): each room's kit hung on the face sockets of its plain walls (wall pieces and panel
+    /// walls, never a door wall or a corner) that face into it, in a band (under the ceiling, chest height, at the floor), spread round the room,
+    /// kept within its wall piece (so nothing hangs over a doorway) and away from stairs (head room over a flight). A hall's kit reaches all its
+    /// storeys. Mains lamps light from the circuit, so nothing is wired. Runs last, while the class's parts and links last.
+    /// </summary>
+    private void Dress(InteriorRng rng)
+    {
+        if (_data.Dressing.Count == 0)
+            return;
+        var plain = new HashSet<string> { Shell("wall4"), Shell("wall2") };
+        plain.UnionWith(_data.Panels);
+        var byIndex = new Dictionary<int, VPart>();
+        foreach (var v in Parts)
+            byIndex[v.Index] = v;
+        var walls = new List<(int Index, Vector3 Lo, Vector3 Hi, int Level)>();
+        var stairs = new List<(Vector3 Lo, Vector3 Hi)>();
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            var n = C.DefOf(i).Name;
+            C.PartBounds(i, out var lo, out var hi);
+            if (plain.Contains(n) && byIndex.ContainsKey(i))
+                walls.Add((i, lo, hi, (int)MathF.Floor((lo.Y - _floorY + 0.5f) / 3)));
+            else if (n == Shell("stair") || n == Shell("stairFloor") || n.Contains("Stair"))
+                stairs.Add((lo, hi));
+        }
+        stairs.AddRange(_reserved);
+        var spots = new List<(VPart Wall, string Socket, Vector3 At, float Along0, float Along1, int Storey, string Band)>();
+        var uprightSpin = new Dictionary<(string, string, byte), int>();
+        var firstWhy = new Dictionary<string, string>();
+        foreach (var (r, lv) in _dressRooms)
+        {
+            if (SetOf(r) is not { } setId || r.Shaft != null || !_data.Sets.TryGetValue(setId, out var set) || !_data.Dressing.TryGetValue(set.Dress, out var kit) || kit.Count == 0)
+                continue;
+            if (C.PartCount + 40 > _budget.Parts || C.LinkCount + 40 > _budget.Links)
+            {
+                Notes.Add($"dressing: stopped at {r.Name} (level {r.Deck + lv}): the class's parts or links are spent");
+                break;
+            }
+            var cells = r.Cells().ToHashSet();
+            var lv0 = r.Deck + lv;
+            var lv1 = lv0 + Math.Max(1, r.Hall == r.Id ? r.Storeys : 1) - 1;
+            // the room's box, rest frame (a wall on its edge stands half outside it)
+            float x0 = _corner.X + cells.Min(c => c.X) * 4 - 0.5f, x1 = _corner.X + (cells.Max(c => c.X) + 1) * 4 + 0.5f;
+            float z0 = _corner.Z + cells.Min(c => c.Z) * 4 - 0.5f, z1 = _corner.Z + (cells.Max(c => c.Z) + 1) * 4 + 0.5f;
+            spots.Clear();
+            foreach (var w in walls)
+            {
+                if (w.Level < lv0 || w.Level > lv1 || w.Hi.X < x0 || w.Lo.X > x1 || w.Hi.Z < z0 || w.Lo.Z > z1)
+                    continue;
+                var def = C.DefOf(w.Index);
+                var floorTop = _floorY + w.Level * 3 + 0.125f;
+                for (var k = 0; k < C.SocketCount(w.Index) && k < def.Sockets.Length; k++)
+                {
+                    var name = def.Sockets[k].Name;
+                    if (name[0] is not ('f' or 'k') || C.SocketUsed(w.Index, k))
+                        continue;
+                    C.SocketAt(w.Index, k, out var at, out var dir);
+                    var inside = at + ConstructParts.DirVector(dir) * 0.6f;
+                    if (!cells.Contains(((int)MathF.Floor((inside.X - _corner.X) / 4), (int)MathF.Floor((inside.Z - _corner.Z) / 4))))
+                        continue;
+                    var rel = at.Y - floorTop;
+                    var band = MathF.Abs(rel - 2.625f) < 0.3f ? "top" : MathF.Abs(rel - 1.375f) < 0.3f ? "mid" : MathF.Abs(rel - 0.125f) < 0.3f ? "low" : null;
+                    if (band == null)
+                        continue;
+                    var sx = def.Sockets[k].At.X;
+                    spots.Add((byIndex[w.Index], name, at, sx - def.BoundsMin.X, def.BoundsMax.X - sx, w.Level - lv0, band));
+                }
+            }
+            if (spots.Count == 0)
+                continue;
+            // the solid boxes in and round the room (rest frame): a piece that would overlap one is skipped before the build rules are asked
+            var near = new List<(Vector3 Lo, Vector3 Hi)>();
+            {
+                var ylo = _floorY + lv0 * 3 - 0.5f;
+                var yhi = _floorY + (lv1 + 1) * 3 + 0.5f;
+                for (var i = 0; i < C.PartCount; i++)
+                {
+                    C.PartBounds(i, out var plo, out var phi);
+                    if (phi.X < x0 - 4 || plo.X > x1 + 4 || phi.Y < ylo || plo.Y > yhi || phi.Z < z0 - 4 || plo.Z > z1 + 4)
+                        continue;
+                    AddSolids(near, i);
+                }
+            }
+            var order = spots.Select(_ => rng.Next()).ToList();
+            foreach (var item in kit)
+            {
+                if (ConstructParts.Find(item.Part) is not { } idef)
+                {
+                    if (_noFit.Add("dress " + item.Part))
+                        Refused.Add($"dressing: no part \"{item.Part}\"");
+                    continue;
+                }
+                var half = MathF.Max(MathF.Abs(idef.BoundsMin.X), MathF.Abs(idef.BoundsMax.X)) - 0.01f;
+                var want = Math.Min(item.Max, item.PerCells > 0 ? Math.Max(item.Count, cells.Count * (r.Hall == r.Id ? Math.Max(1, r.Storeys) : 1) / item.PerCells) : item.Count);
+                var placed = new List<Vector3>();
+                var tries = 0;
+                while (placed.Count < want && tries < want * 3 + 4)
+                {
+                    // the free spot of the band farthest from this item's others (ties by the seeded order): spread round the room
+                    var best = -1;
+                    var bestScore = float.NegativeInfinity;
+                    for (var j = 0; j < spots.Count; j++)
+                    {
+                        var sp = spots[j];
+                        if (sp.Band != item.Band || item.High && sp.Storey < 1 || sp.Along0 < half || sp.Along1 < half)
+                            continue;
+                        var score = (float)order[j] * 0.5f + (placed.Count == 0 ? 0f : placed.Min(q => Vector3.Distance(q, sp.At)));
+                        if (score > bestScore)
+                            (best, bestScore) = (j, score);
+                    }
+                    if (best < 0)
+                        break;
+                    tries++;
+                    var spot = spots[best];
+                    spots.RemoveAt(best);
+                    order.RemoveAt(best);
+                    var si = Array.FindIndex(spot.Wall.Def.Sockets, x => x.Name == spot.Socket);
+                    if (C.SocketUsed(spot.Wall.Index, si) || NearStairs(stairs, spot.At, half + 0.6f))
+                        continue;
+                    // (where it would stand: x along the wall, y up, z out of the face; 2 cm in, so touching the wall is no overlap)
+                    {
+                        C.SocketAt(spot.Wall.Index, si, out _, out var sdir);
+                        var outv = ConstructParts.DirVector(sdir);
+                        var along = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, outv));
+                        var c0 = spot.At + Vector3.UnitY * idef.BoundsMin.Y + outv * idef.BoundsMin.Z;
+                        var c1 = spot.At + Vector3.UnitY * idef.BoundsMax.Y + outv * idef.BoundsMax.Z;
+                        var lo = Vector3.Min(c0, c1) - Vector3.Abs(along) * half + new Vector3(0.02f);
+                        var hi = Vector3.Max(c0, c1) + Vector3.Abs(along) * half - new Vector3(0.02f);
+                        var hit = false;
+                        foreach (var (nlo, nhi) in near)
+                            if (hi.X > nlo.X && lo.X < nhi.X && hi.Y > nlo.Y && lo.Y < nhi.Y && hi.Z > nlo.Z && lo.Z < nhi.Z)
+                            {
+                                hit = true;
+                                break;
+                            }
+                        if (hit)
+                            continue;
+                    }
+                    VPart? got = null;
+                    var spinKey = (spot.Wall.Def.Name, spot.Socket, C.Parts[spot.Wall.Index].Rot);
+                    var why = "";
+                    // (the spin that stands it upright, found once a wall turn and socket: a refused try costs a rebuild's worth)
+                    foreach (var spin in uprightSpin.TryGetValue(spinKey, out var known) ? [known] : new[] { 0, 1, 2, 3 })
+                    {
+                        try
+                        {
+                            got = Onto(spot.Wall, spot.Socket, item.Part, "back", spin, veto: (d, g) => Vector3.Dot(Rot24.Apply(g.Rot, Vector3.UnitY), Vector3.UnitY) > 0.9f ? null : "not upright");
+                            uprightSpin[spinKey] = spin;
+                            break;
+                        }
+                        catch (VehicleKitException e)
+                        {
+                            why = e.Message;
+                            if (!why.EndsWith("not upright"))
+                                break; // (in the way: no other spin of an upright piece helps)
+                        }
+                    }
+                    if (got == null)
+                    {
+                        DressRefused++;
+                        if (firstWhy.TryAdd(item.Part, why))
+                            Notes.Add($"dressing: first refusal of a {item.Part}: {why}");
+                        continue;
+                    }
+                    placed.Add(spot.At);
+                    AddSolids(near, got.Index);
+                    _dressParts.Add(got.Index);
+                    Placed++;
+                    Dressed++;
+                    if (idef.Mains)
+                        Lit++;
+                    DressCount[item.Part] = DressCount.GetValueOrDefault(item.Part) + 1;
+                }
+            }
+        }
+        Notes.Add($"dressing: {Dressed} parts hung ({string.Join(", ", DressCount.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Value} {kv.Key}"))}), {DressRefused} spots refused; {Lit} mains lamps (lit from the circuit, no wire)");
+    }
+
+    /// <summary>Whether a wall spot is within <paramref name="r"/> m (across, and a storey up or down) of a stair flight or a box kept for one.</summary>
+    private static bool NearStairs(List<(Vector3 Lo, Vector3 Hi)> stairs, Vector3 at, float r)
+    {
+        foreach (var (lo, hi) in stairs)
+            if (at.Y > lo.Y - 0.5f && at.Y < hi.Y + 3.2f && at.X > lo.X - r && at.X < hi.X + r && at.Z > lo.Z - r && at.Z < hi.Z + r)
+                return true;
+        return false;
+    }
+
     private readonly List<(PlanRoom Room, int Lv, string Role, VPart Part)> _roleParts = new(); // the rooms' things with a role, for the feeds (phase 8)
     private readonly HashSet<string> _noFit = new(); // (module items no part fits for this class: listed once)
 
@@ -1979,8 +2175,10 @@ public sealed class InteriorBuilder : BlueprintScript
             return "stairs";
         if (n is LiftRail or LiftCar or "Toggle" or "AND Gate" or "NOT Gate" or "Button")
             return "lift";
-        if (n is "Lamp" or "Switch")
+        if (n is "Lamp" or "Switch" || C.DefOf(i).Mains)
             return "lights";
+        if (_dressParts.Contains(i))
+            return "dressing";
         return "furniture";
     }
 

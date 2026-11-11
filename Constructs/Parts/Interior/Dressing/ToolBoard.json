@@ -1,0 +1,125 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tool Board",
+  "description": "A pegboard of hand tools. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 12.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#8c7a5a",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        -0.4,
+        0.0
+      ],
+      "max": [
+        0.6,
+        0.4,
+        0.03
+      ],
+      "color": "#8c7a5a"
+    },
+    {
+      "min": [
+        -0.47,
+        -0.25,
+        0.03
+      ],
+      "max": [
+        -0.43,
+        0.2,
+        0.07
+      ],
+      "color": "#3a3f45",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.315,
+        -0.3,
+        0.03
+      ],
+      "max": [
+        -0.285,
+        0.25,
+        0.07
+      ],
+      "color": "#b8352c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.145,
+        -0.2,
+        0.03
+      ],
+      "max": [
+        -0.095,
+        0.28,
+        0.07
+      ],
+      "color": "#3a3f45",
+      "detail": true
+    },
+    {
+      "min": [
+        0.05,
+        -0.32,
+        0.03
+      ],
+      "max": [
+        0.11,
+        0.1,
+        0.07
+      ],
+      "color": "#c9a21c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.28,
+        -0.25,
+        0.03
+      ],
+      "max": [
+        0.32,
+        0.25,
+        0.07
+      ],
+      "color": "#3a3f45",
+      "detail": true
+    },
+    {
+      "min": [
+        0.445,
+        -0.15,
+        0.03
+      ],
+      "max": [
+        0.475,
+        0.3,
+        0.07
+      ],
+      "color": "#6a737b",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}
