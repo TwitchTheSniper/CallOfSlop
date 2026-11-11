@@ -519,7 +519,7 @@ public static partial class SelfTest
             Line($"from a hostile host: roster \"{c.NameOf(1)}\", result \"{c.MatchResult}\", banner \"{c.ZBannerText}\"");
 
             // Server browser: a reply with a garbage name, map and rotation.
-            byte[] info = [.. "COS1"u8, ServerInfo.ProtocolVersion, 0, 1, 8, 0, 0, 0x87, 0x69, (byte)junk.Length, .. junk, (byte)junk.Length, .. junk, 0, (byte)junk.Length, .. junk];
+            byte[] info = [.. "COS1"u8, ServerInfo.VersionEscape, 0, 1, 8, 0, 0, 0x87, 0x69, (byte)junk.Length, .. junk, (byte)junk.Length, .. junk, 0, (byte)junk.Length, .. junk];
             if (ServerInfo.Find(info) is not { } found)
                 Fail("server browser: a reply with garbage names wasn't read at all");
             else if (!IsPrintableAscii(found.Name + found.MapName + found.Rotation) || found.Name.Length > 32 || found.MapName.Length > 40 || found.Rotation.Length > 24)

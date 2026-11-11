@@ -98,6 +98,19 @@ The master logic is tiny (addresses only, no game data) and already in the exe. 
   `stun` (on).
 - The browser now shows games from other builds greyed with their protocol instead of hiding them.
 
+### The version is two bytes (protocol 243)
+
+`ServerInfo.ProtocolVersion` is a `ushort` (a byte would have broken at 255).
+- The handshake already sent it as a u16 (end of `Msg.Welcome` and `Msg.Hello`, `GameHostBye.cs`): a byte-era
+  build is refused at the door with the usual "different version" line, both ways round.
+- `ServerInfo`: the old version byte (right after `COS1`) always holds `ServerInfo.VersionEscape` (255), the
+  rotation's length byte is always written, and the real version rides last as the tagged extension `'V'` + u16.
+  A byte-era browser reads 255, greys the game out as "your build is older" and stops at the unknown tag; a new
+  browser reads a byte-era host's version from the old byte (no `'V'`).
+- Invite codes have no room: they carry the version's low byte, compared as a byte. Builds 256 versions apart
+  look alike in a code; the handshake still refuses them.
+- Server lists store only addresses, Steam lobbies the version as decimal text, `update.json` an int: none changed.
+
 ## Privacy and safety
 
 - What anyone with a list's address can see: each listed game's IP and port plus the `ServerInfo` that LAN broadcasts

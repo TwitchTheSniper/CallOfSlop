@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// What a hosted game tells the world, answered automatically by RakNet to unconnected pings
 /// (the "offline ping response"). Starts with a magic tag so it can be found inside RakNet's pong.
 /// </summary>
-public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version,
+public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, ushort Version,
     GameMode Mode = GameMode.FreeForAll, PhysicsMode Physics = PhysicsMode.Classic, string Rotation = "",
     uint InstanceId = 0, string ListHost = "", ushort ListPort = 0, string Build = "", byte Gravity = 100)
 {
@@ -386,7 +386,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 240: STAND-IN: Msg.StandIn gains a vec from and a 3-byte tint (the ambient traffic's legs, ships and stations: Source/StandIns/GameTraffic.cs).
     // 241: a walker's pose block's flags byte gains bit 8, the plant and the bank hold it below its set speed (Construct.WalkPowerHeld; ConstructNetWalk.cs).
     // 242: CActKind.MakeEngine (at the end of CActKind): creative "Make an engine", the Engine Kit's request (kW, tier, layout, boost, size, fit, seed) built in front of the player (GameSandboxEngines.cs).
-    public const byte ProtocolVersion = 242;
+    // 243: the version is two bytes everywhere (it would have broken at 255). The handshake (Msg.Welcome, Msg.Hello) already
+    //      sent a u16; this server info sends VersionEscape in the old byte and the real version in the tagged extension 'V'
+    //      (a u16, last), so a byte-version build reads 255, sees another build and greys the game out; invite codes keep
+    //      the version's low byte (InviteCode.cs). No game message changed.
+    public const ushort ProtocolVersion = 243;
+
+    /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
+    public const byte VersionEscape = 255;
+
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
@@ -394,19 +402,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         var name = Encoding.ASCII.GetBytes(Name.Length > 32 ? Name[..32] : Name);
         var map = Encoding.UTF8.GetBytes(MapName.Length > 40 ? MapName[..40] : MapName);
         var b = new List<byte>(Magic);
-        b.AddRange([Version, (byte)Mode, Players, MaxPlayers, Bots, (byte)Phase, (byte)Port, (byte)(Port >> 8), (byte)name.Length]);
+        b.AddRange([VersionEscape, (byte)Mode, Players, MaxPlayers, Bots, (byte)Phase, (byte)Port, (byte)(Port >> 8), (byte)name.Length]);
         b.AddRange(name);
         b.Add((byte)map.Length);
         b.AddRange(map);
         b.Add((byte)Physics);
         var rotation = Encoding.ASCII.GetBytes(Rotation.Length > 24 ? Rotation[..24] : Rotation);
         var build = Encoding.ASCII.GetBytes(Build.Length > 23 ? Build[..23] : Build);
-        var extensions = InstanceId != 0 || ListPort != 0 || build.Length > 0 || Gravity != 100;
-        if (rotation.Length > 0 || extensions)
-        {
-            b.Add((byte)rotation.Length);
-            b.AddRange(rotation);
-        }
+        b.Add((byte)rotation.Length); // always: the 'V' extension below always follows it (protocol 243)
+        b.AddRange(rotation);
         // Optional tagged extensions after the rotation (discovery only, so no protocol bump: older builds stop
         // reading after the rotation). 'I': this hosting's random id, so the browser shows a game found on the LAN and
         // through a server list once. 'L': the server list this host is on (port, then the host name; an empty name
@@ -426,9 +430,12 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
             b.Add((byte)build.Length);
             b.AddRange(build);
         }
-        // 'G' (last: older builds stop at an unknown tag): the host's gravity setting in percent (GameGravity.cs), when not 100.
+        // 'G': the host's gravity setting in percent (GameGravity.cs), when not 100.
         if (Gravity != 100)
             b.AddRange([(byte)'G', Gravity]);
+        // 'V' (protocol 243; last, since older builds stop at an unknown tag and still read the tags before it): the
+        // protocol version as a u16. The old byte above holds VersionEscape.
+        b.AddRange([(byte)'V', (byte)Version, (byte)(Version >> 8)]);
         return b.ToArray();
     }
 
@@ -451,6 +458,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         var listHost = "";
         ushort listPort = 0;
         byte gravity = 100;
+        ushort version = d[0]; // a byte-version host (protocol 242 or older) sends its version here; newer ones send VersionEscape and 'V'
         if (rest.Length >= 1 && rest.Length >= 3 + rest[0])
         {
             var tail = rest[(2 + rest[0])..]; // after the map name and the physics byte
@@ -481,13 +489,18 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
                         gravity = ext[1] is >= Game.MinGravityPercent and <= Game.MaxGravityPercent ? ext[1] : (byte)100;
                         ext = ext[2..];
                     }
+                    else if (ext[0] == (byte)'V' && ext.Length >= 3)
+                    {
+                        version = (ushort)(ext[1] | (ext[2] << 8));
+                        ext = ext[3..];
+                    }
                     else
                         break; // an unknown (newer) or cut-off extension: stop here
                 }
             }
         }
         // Anyone can answer a ping: names are capped printable ASCII before the browser shows them.
-        return new ServerInfo(NetSafety.CleanText(name, 32), NetSafety.CleanText(map, 40), d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0],
+        return new ServerInfo(NetSafety.CleanText(name, 32), NetSafety.CleanText(map, 40), d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), version,
             (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24), instance, Settings.CleanAddress(NetSafety.CleanText(listHost, 64)), listPort, build, gravity);
     }
 }
@@ -504,7 +517,7 @@ public enum BuildCompat
 public static class BuildCompatText
 {
     /// <summary>Compares a game's protocol and release (<see cref="ServerInfo.Build"/>, "" when unknown) with ours.</summary>
-    public static BuildCompat Compare(byte protocol, string build, byte ourProtocol, Version? ourRelease)
+    public static BuildCompat Compare(ushort protocol, string build, ushort ourProtocol, Version? ourRelease)
     {
         var theirs = BuildInfo.ParseRelease(build);
         if (protocol != ourProtocol)

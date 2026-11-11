@@ -522,7 +522,7 @@ public static partial class SelfTest
             Fail($"updates: build in the server info didn't round-trip ({back?.Build} / {backRot?.Build}/{backRot?.Rotation})");
         // An older build reads the info up to the rotation: with a build and no rotation, the rotation reads as "".
         var bytes = info.Encode();
-        var rotationLengthAt = bytes.Length - (2 + UpVersion.Length) - 1;
+        var rotationLengthAt = bytes.Length - 3 - (2 + UpVersion.Length) - 1; // (the 'V' version, 3 bytes, comes last: protocol 243)
         if (bytes[rotationLengthAt] != 0 || bytes[rotationLengthAt + 1] != (byte)'B')
             Fail("updates: the build isn't after an empty rotation (older builds would misread it)");
         var junk = ServerInfo.Find([.. plain.Encode(), 0, (byte)'B', 200, 1, 2]);
@@ -530,15 +530,15 @@ public static partial class SelfTest
             Fail("updates: a truncated build tag was read");
         var ours = BuildInfo.ParseRelease("0.2026.1022.5");
         var p = ServerInfo.ProtocolVersion;
-        var cases = new (byte Proto, string Build, Version? Ours, BuildCompat Want)[]
+        var cases = new (ushort Proto, string Build, Version? Ours, BuildCompat Want)[]
         {
             (p, "", ours, BuildCompat.Same),
             (p, "0.2026.1022.5", ours, BuildCompat.Same),
             (p, "0.2026.1022.9", ours, BuildCompat.OtherBuild),
-            ((byte)(p + 1), "", ours, BuildCompat.ServerNewer),
-            ((byte)(p - 1), "", ours, BuildCompat.ServerOlder),
-            ((byte)(p + 1), "0.2026.1023.1", ours, BuildCompat.ServerNewer),
-            ((byte)(p - 1), "0.2026.1001.1", null, BuildCompat.ServerOlder),
+            ((ushort)(p + 1), "", ours, BuildCompat.ServerNewer),
+            ((ushort)(p - 1), "", ours, BuildCompat.ServerOlder),
+            ((ushort)(p + 1), "0.2026.1023.1", ours, BuildCompat.ServerNewer),
+            ((ushort)(p - 1), "0.2026.1001.1", null, BuildCompat.ServerOlder),
             (p, "0.2026.1022.9", null, BuildCompat.Same),
         };
         var wrong = cases.Where(c => BuildCompatText.Compare(c.Proto, c.Build, p, c.Ours) != c.Want).ToList();
