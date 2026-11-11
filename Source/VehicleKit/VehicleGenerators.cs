@@ -113,6 +113,13 @@ public static class VehicleRegistry
     /// </remarks>
     public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null, VehicleLayers? layers = null, RoleAsk? role = null, SpawnContext? context = null)
     {
+        if (EngineKit.EngineWish.Current is { } wish && g is not IAircraftShape)
+            return WithKitEngine(wish, g, seed, kit, layers, role, context);
+        return MakeThrough(g, seed, kit, layers, role, context);
+    }
+
+    private static Vehicle MakeThrough(IVehicleGenerator g, int seed, int? kit, VehicleLayers? layers, RoleAsk? role, SpawnContext? context)
+    {
         if (context == null || ReferenceEquals(context, SpawnContext.Current))
             return MakeHere(g, seed, kit, layers, role);
         using (SpawnContext.Use(context, kitOnly: role?.Model != null)) // (a family's model keeps its body and chassis: only the context's kit changes)
@@ -122,6 +129,31 @@ public static class VehicleRegistry
                 v.Name += c.Suffix; // (never a committed seed's name, nor the neutral vehicle's)
             return v;
         }
+    }
+
+    /// <summary>
+    /// A vehicle with an Engine Kit engine (docs/vehiclekit/ENGINEKIT.md, "In a vehicle"): with no dry mass in the wish, the vehicle is made once with its stock engine
+    /// to weigh it, then again with the kit engine sized for that mass less the stock engine's. Named with the wish's suffix: never a committed seed.
+    /// </summary>
+    private static Vehicle WithKitEngine(EngineKit.EngineWish wish, IVehicleGenerator g, int seed, int? kit, VehicleLayers? layers, RoleAsk? role, SpawnContext? context)
+    {
+        if (wish.DryMass <= 0)
+        {
+            Vehicle stock;
+            using (EngineKit.EngineWish.Use(null))
+                stock = MakeThrough(g, seed, kit, layers, role, context);
+            var live = stock.Live;
+            float mass = 0;
+            for (var i = 0; i < live.PartCount; i++)
+                mass += live.Parts[i].D.Mass;
+            wish = wish with { DryMass = mass - (stock.Engine?.Def.Mass ?? 0) };
+        }
+        Vehicle v;
+        using (EngineKit.EngineWish.Use(wish))
+            v = MakeThrough(g, seed, kit, layers, role, context);
+        v.Name += wish.Suffix;
+        v.DriveGate(Towed(g)); // (the spawn's drive check, as for any vehicle no file holds: one that fails rerolls in the spawner)
+        return v;
     }
 
     private static Vehicle MakeHere(IVehicleGenerator g, int seed, int? kit, VehicleLayers? layers, RoleAsk? role)
@@ -194,6 +226,13 @@ public static class VehicleKitCli
             seeds = [one];
         }
         var failed = 0;
+        EngineKit.EngineWish? wish = null; // (--engine-tier N [--top-speed V] [--accel A]: an Engine Kit engine sized for the vehicle, docs/vehiclekit/ENGINEKIT.md)
+        if (Flag(args, "--engine-tier") is { } et)
+        {
+            static float F(string? t) => float.TryParse(t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
+            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")) };
+        }
+        using var wishScope = EngineKit.EngineWish.Use(wish);
         foreach (var seed in seeds)
         {
             try

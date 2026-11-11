@@ -5,7 +5,8 @@ namespace CallOfSlop.EngineKit;
 /// <summary>
 /// <c>--speed-test FILE... [--seconds N]</c> (docs/vehiclekit/ENGINEKIT.md, "Why cars are slow"): a blueprint built on the drive check's flat floor and driven on
 /// full throttle for N seconds (default 40): its mass, engine, gearing, wheel and what tops it out, the top speed and the times to 10, 20 m/s and 95 % of its top.
-/// What limits it: <b>gearing</b> when its top gear reaches the limiter, else <b>power against drag</b> (the arcade air drag, <see cref="ConstructPhysics.AirDrag"/>,
+/// What limits it: <b>gearing</b> when its top gear reaches the limiter, <b>grip</b> when the engine asks more of the driven tyres at the top speed than they
+/// hold (their friction limits; a two-wheel drive on Off-Road Wheels tops out near 27 m/s whatever the engine), else <b>power against drag</b> (the arcade air drag, <see cref="ConstructPhysics.AirDrag"/>,
 /// takes the same share of speed squared from every body under <see cref="ConstructPhysics.DragMass"/>, so power a kilogram is what sets a top speed).
 /// </summary>
 public static class EngineKitSpeed
@@ -89,9 +90,15 @@ public static class EngineKitSpeed
         var lastRatio = tr is { Settings.Length: > 0 } ? tr.Settings[^1] : 1f;
         var gearTop = e == null || final <= 0 ? 0 : e.MaxRpm / ConstructDrive.RpmPerRadS / (lastRatio * final) * radius;
         var dragKw = ConstructPhysics.AirDragOf(c) * top * top * c.Mass * top / 1000f;
+        float grip = 0; // (what the driven tyres can push with, N: each one's friction limit this tick, an open differential's least-gripping wheel for all of its group)
+        for (var k = 0; k < c.WheelCount; k++)
+            if (c.Wheels[k].Driven && c.Wheels[k].Touching)
+                grip += c.Wheels[k].LastGrip / World.TickDt;
+        var push = radius > 0 ? c.DriveTorque * c.GearRatio * final / radius : 0; // (what the engine asks of the tyres at the top speed, N)
         var limit = e == null ? "no engine"
             : c.Gear >= topGear - 1 && c.Rpm >= e.MaxRpm * 0.97f ? "gearing (limiter in top gear)"
             : top < 1 ? "doesn't move"
+            : grip > 0 && push > grip ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"grip (the engine asks {push / 1000:0.0} kN of driven tyres that hold {grip / 1000:0.0} kN)")
             : "power against drag";
         return new Run(name, c.Mass, e?.Name ?? "-", peakKw, e?.EngineTorque ?? 0, e?.MaxRpm ?? 0, gears, final, radius, top, At(10), At(20), At(top * 0.95f),
             topGear, c.Gear, c.Rpm, gearTop, dragKw, limit, c.DriveProblem);
