@@ -200,8 +200,8 @@ public static partial class SelfTest
     /// that isn't here, or a stale number, still runs once. Add a section when a part's SLOWEST line shows it over ~30 s.</summary>
     internal static readonly (string Name, double Seconds)[] ShardHeavy =
     [
-        ("Sandbox full hands", 192), ("Interaction sweep", 113), ("Music", 80), ("Decals", 48), ("Joint chain network", 39),
-        ("Map packs", 23), ("Gathering network", 23), ("Maps", 22), ("Link tool online", 21), ("Wheel orders", 21),
+        ("Interaction sweep", 120), ("Sandbox full hands", 45), ("Joint chain network", 39), ("Ride frame", 37), ("Magazine sockets", 35),
+        ("Gathering network", 23), ("Link tool online", 21), ("Wheel orders", 21),
     ];
 
     /// <summary>
@@ -262,6 +262,18 @@ public static partial class SelfTest
         "Zombies category slots", "Zombies more perks", "Zombie hordes", "Zombies cathedral", "Mass horde", "Horde stress", "Co-op",
         // the older map packs and every-map sweeps of them
         "High Ground pack", "Cluttered pack", "Military props", "Map contract", "Map horizons", "Stairs", "Decal surfaces", "Pack decals",
+        // Karl, 2026-11-11 (cut down what GitHub runs): the arena maps and their content, the arena guns and combat feel,
+        // audio, and the platform plumbing nobody is changing. Sandbox, constructs, space, planetoids, digging, saves and
+        // the allocation and source checks stay.
+        "Maps", "Map files", "Map reload", "Map packs", "Big maps", "Box batches", "Pack assets", "Foliage", "Foliage no-go",
+        "Mantling", "Slopes", "Terrain holes", "Terrain sculpting", "Terrain sculpting network", "Movers", "Map logic",
+        "Mode switch reset", "Props", "Destruction", "Animated props", "Map shapes", "Baked lighting", "Light flicker",
+        "Light leaks", "Map bake", "Nav bake", "Map kit", "Decals", "Scene graph",
+        "Melee", "Recoil", "Gun models", "Gun mix", "Launchers", "Bullet penetration", "Ragdolls and knockback", "Blast push",
+        "Weapon files",
+        "Music", "Sound", "Audio mixer",
+        "Server browser", "Invite codes", "STUN", "Server lists", "Automatic server list", "Steam platform", "Steam transport",
+        "Updates", "Update cleanup", "Frame cap", "Perf window", "UI frame spikes", "HUD layout",
     };
 
     private static int _archivedSkipped;

@@ -47,7 +47,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     env:
-      SHARDS: 4 # parts a full suite is cut into, per system
+      SHARDS: 3 # parts a full suite is cut into, per system
     outputs:
       only: ${{ steps.pick.outputs.only }}
       shards: ${{ steps.pick.outputs.shards }}
@@ -179,7 +179,8 @@ jobs:
               echo "::error title=Self-test::main must run the full suite to the end, but this run was filtered or didn't finish"
               code=1
             fi
-            cat "$log"
+            # One line per section and the summary: the whole log (a thousand lines a part) is in the artifact below.
+            grep -E "^(-- |SHARD|ARCHIVED|STUCK SPOTS|SLOWEST|DONE)|FAIL:" "$log" || true
             grep "FAIL:" "$log" | sed 's/^/::error title=Self-test::/' || true
           else
             echo "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
@@ -258,7 +259,8 @@ jobs:
               Write-Output "::error title=Self-test::main must run the full suite to the end, but this run was filtered or didn't finish"
               $code = 1
             }
-            Get-Content $log
+            # One line per section and the summary: the whole log (a thousand lines a part) is in the artifact below.
+            Select-String -Path $log -Pattern "^(-- |SHARD|ARCHIVED|STUCK SPOTS|SLOWEST|DONE)|FAIL:" | ForEach-Object { $_.Line }
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
           } else {
             Write-Output "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
