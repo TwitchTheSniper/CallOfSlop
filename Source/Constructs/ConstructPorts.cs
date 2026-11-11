@@ -22,11 +22,19 @@ public sealed class NamedPort
     public bool NoEffect; // listed in the picker as "(no effect yet)": the simulation does nothing with it yet
     public byte Byte = 255; // the port byte in a link
     public bool Implicit; // made by the loader, not listed in the part file
+    public Vector2 Opening; // conveyor ports: the clear opening a piece passes (metres across, up): a conveyor is set within both ends' (ConstructConveyor.cs)
 }
 
 public static partial class ConstructParts
 {
-    private static readonly string[] PortTypes = ["shaft", "pipe", "power", "chute", "feed"];
+    private static readonly string[] PortTypes = ["shaft", "pipe", "power", "chute", "feed", "conveyor"];
+
+    private static Vector2 Vec2(JsonElement e, string file, string what)
+    {
+        if (e.ValueKind != JsonValueKind.Array || e.GetArrayLength() != 2)
+            throw new ConstructPartException($"{file}: {what} is [across, up] in metres");
+        return new Vector2(e[0].GetSingle(), e[1].GetSingle());
+    }
 
     private static void ParseNamedPorts(ConstructPartDef d, JsonElement root, string file)
     {
@@ -40,7 +48,7 @@ public static partial class ConstructParts
             foreach (var p in ps.EnumerateArray())
             {
                 var where = $"ports[{pi++}]";
-                Known(p, ["name", "type", "dir", "socket", "at", "face", "fluid", "noEffect"], $"{file}, {where}");
+                Known(p, ["name", "type", "dir", "socket", "at", "face", "fluid", "noEffect", "opening"], $"{file}, {where}");
                 var np = new NamedPort { Name = Str(Need(p, "name", $"{file}, {where}"), file, where + ".name") };
                 if (np.Name.Length == 0 || list.Any(x => string.Equals(x.Name, np.Name, StringComparison.OrdinalIgnoreCase)))
                     throw new ConstructPartException($"{file}: {where}: a port needs its own name (\"{np.Name}\")");
@@ -60,6 +68,15 @@ public static partial class ConstructParts
                 if (np.Fluid.Length > 0 && np.Type != RouteType.Pipe)
                     throw new ConstructPartException($"{file}: {where}: only a pipe port has a \"fluid\"");
                 np.NoEffect = Opt(p, "noEffect") is { ValueKind: JsonValueKind.True };
+                if (np.Type == RouteType.Conveyor)
+                {
+                    var op = Vec2(Need(p, "opening", $"{file}, {where}"), file, where + ".opening");
+                    if (op.X < 0.1f || op.Y < 0.1f || op.X > 32 || op.Y > 32)
+                        throw new ConstructPartException($"{file}: {where}.opening is 0.1 to 32 m each way");
+                    np.Opening = op;
+                }
+                else if (Opt(p, "opening") != null)
+                    throw new ConstructPartException($"{file}: {where}: only a conveyor port has an \"opening\"");
                 if (np.Type == RouteType.Shaft)
                 {
                     var sn = Str(Need(p, "socket", $"{file}, {where}"), file, where + ".socket");
@@ -107,6 +124,13 @@ public static partial class ConstructParts
         {
             var c = (d.BoundsMin + d.BoundsMax) * 0.5f;
             list.Add(new NamedPort { Name = "Ammo out", Type = RouteType.Feed, Out = true, At = new Vector3(c.X, d.BoundsMax.Y, c.Z), Face = 2, Implicit = true });
+        }
+        // An Extruder and a Wheel Former put pieces out onto a conveyor: below the die, at its own die's bottom edge, facing out of the output face.
+        if (d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
+        {
+            var die = d.IsWheelFormer ? new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.Y) : d.ExtMaxSection;
+            var y = d.IsWheelFormer ? d.BoundsMin.Y + 0.1f : MathF.Max(d.BoundsMin.Y + 0.05f, d.ExtDieAt.Y - d.ExtDie.Y * 0.5f);
+            list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = new Vector3(d.ExtDieAt.X, y, d.BoundsMax.Z), Face = 4, Opening = die, Implicit = true });
         }
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];

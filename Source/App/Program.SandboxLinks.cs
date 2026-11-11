@@ -170,6 +170,11 @@ public static partial class Program
     /// <summary>The mouse wheel: true while a node is being adjusted (LMB held): the wheel moves it, not the weapon or the wheels.</summary>
     private static bool LinkAdjustScroll(double y)
     {
+        if (_lkConvAim)
+        {
+            _lkConvScroll += y; // (aimed at a conveyor: the wheel sets its size)
+            return true;
+        }
         if (_lkAdj == LinkAdjust.None)
             return false;
         _lkScroll += y;
@@ -785,6 +790,8 @@ public static partial class Program
         }
         var w = _linkWheel;
         var onRoute = aimed && hit.RoutePlus1 > 0 && hit.RoutePlus1 <= hit.Body.RouteCount;
+        _lkConvAim = _lkBody == 0 && w.Mode == LinkMode.Link && onRoute && hit.Body.Routes[hit.RoutePlus1 - 1].Type == RouteType.Conveyor;
+        LinkConveyorFrame(g, _lkConvAim ? hit.Body : null, _lkConvAim ? hit.RoutePlus1 - 1 : -1);
         if (aimed && !onRoute && w.Mode == LinkMode.Link)
         {
             CrashLog.Detail = "port markers";
@@ -1095,9 +1102,74 @@ public static partial class Program
     private static string? _lkCheckWhy;
 
     /// <summary>The linking tool's HUD line (remade only when what it says changes).</summary>
+    // ---- A conveyor's size (ConstructConveyor.cs): aimed at one with the linking tool, the wheel sets its width, Ctrl+wheel its height ----
+
+    private static bool _lkConvAim;
+    private static double _lkConvScroll, _lkConvAt;
+    private static ushort _lkConvBody;
+    private static int _lkConvRoute = -1, _lkConvW, _lkConvH, _lkConvSentW, _lkConvSentH;
+    private static string _lkConvHud = "";
+    private static long _lkConvHudKey = -1;
+
+    /// <summary>A frame aimed at conveyor <paramref name="k"/> of <paramref name="c"/> (null: none): the wheel's steps, the HUD line, and the size sent once the wheel has rested 0.4 s.</summary>
+    private static void LinkConveyorFrame(Game g, Construct? c, int k)
+    {
+        var now = ConstructConveyor.Clock;
+        if (_lkConvRoute >= 0 && (c == null || c.Id != _lkConvBody || k != _lkConvRoute))
+        {
+            LinkConveyorSend(g);
+            _lkConvRoute = -1;
+        }
+        if (c == null)
+        {
+            _lkConvScroll = 0;
+            return;
+        }
+        ref var r = ref c.Routes[k];
+        if (_lkConvRoute < 0)
+        {
+            (_lkConvBody, _lkConvRoute, _lkConvW, _lkConvH) = (c.Id, k, r.ConvW, r.ConvH);
+            (_lkConvSentW, _lkConvSentH) = (_lkConvW, _lkConvH);
+        }
+        var steps = (int)_lkConvScroll;
+        _lkConvScroll -= steps;
+        ConstructConveyor.Limit(c, k, out var mw, out var mh);
+        if (steps != 0)
+        {
+            if (CtrlHeld)
+                _lkConvH = Math.Clamp(_lkConvH + steps * ConstructConveyor.StepCm, ConstructConveyor.MinSizeCm, mh);
+            else
+                _lkConvW = Math.Clamp(_lkConvW + steps * ConstructConveyor.StepCm, ConstructConveyor.MinSizeCm, mw);
+            _lkConvAt = now;
+        }
+        if (now - _lkConvAt > 0.4)
+            LinkConveyorSend(g);
+        var key = _lkConvW | (long)_lkConvH << 16 | (long)mw << 32 | (long)mh << 48;
+        if (key != _lkConvHudKey)
+        {
+            _lkConvHudKey = key;
+            _lkConvHud = $"Conveyor {_lkConvW / 100f:0.00} x {_lkConvH / 100f:0.00} m (its ends take up to {mw / 100f:0.00} x {mh / 100f:0.00}): scroll: width, Ctrl+scroll: height";
+        }
+    }
+
+    private static void LinkConveyorSend(Game g)
+    {
+        if (_lkConvRoute < 0 || _lkConvW == _lkConvSentW && _lkConvH == _lkConvSentH || g.Constructs.Get(_lkConvBody) is not { } c || _lkConvRoute >= c.RouteCount)
+            return;
+        ref var r = ref c.Routes[_lkConvRoute];
+        g.SandboxSendRouteEdit(c.Id, RouteEditOp.Size, _lkConvRoute, 0, r.Source, r.To, new Vector3(_lkConvW / 100f, _lkConvH / 100f, 0));
+        (_lkConvSentW, _lkConvSentH) = (_lkConvW, _lkConvH);
+    }
+
     private static void LinkHud(Game g)
     {
         var w = _linkWheel;
+        if (_lkConvAim)
+        {
+            g.SandboxWireFrom = _lkConvHud;
+            _lkHudKey = -1;
+            return;
+        }
         var key = (long)_lkType ^ ((long)w.Mode << 12) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkLabel) << 3) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
                   ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
                   ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0) ^ ((long)LoomHudKey << 4);

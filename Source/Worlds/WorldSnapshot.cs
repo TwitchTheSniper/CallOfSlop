@@ -14,6 +14,7 @@ public struct BodySnap
     public Vector3 Pos, Vel, AngVel, CarryPos;
     public Quaternion Rot, CarryRot;
     public int Parts, PartCount, Links, LinkCount, Joints, JointCount, Routes, RouteCount, Nodes, Tracks, TrackCount, TrackParts;
+    public CRider[]? Conveyed; // pieces riding its conveyors (ConstructConveyor.cs; written after the brief)
     public VehicleKit.VehicleBrief? Brief; // a generated faction vehicle's behaviour data (written after the tracks; the tick doesn't change a brief once it is on its construct)
 }
 

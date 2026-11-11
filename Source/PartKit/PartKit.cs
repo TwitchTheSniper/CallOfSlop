@@ -82,6 +82,7 @@ public static class PartKit
         new Generators.HydraulicsParts(),
         new Generators.PressParts(),
         new Generators.ExtrusionParts(),
+        new Generators.PieceRackParts(),
         new Generators.StructureParts(),
         new Generators.CapitalParts(),
         new Generators.LargeSystems(),

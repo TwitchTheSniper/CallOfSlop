@@ -16,6 +16,9 @@ public enum ExtrudeStall : byte
     Blocked, // the ground, a wall or something fixed is in the path
     TooHeavy, // something loose it can't push is in the path
     ChuteWaits, // the piece is done and waits for the chute to a press
+    ConveyorSmall, // the piece is wider or taller than its conveyor is set to (ConstructConveyor.cs)
+    ConveyorFull, // its conveyor has no room at its start: the pieces on it are backed up
+    ConveyorCut, // its conveyor is cut: mend it
 }
 
 /// <summary>
@@ -215,6 +218,17 @@ public static class ConstructExtruder
             asked = true; // (a Fan or an Airframe Former parts a piece off when it reaches the size asked)
         if (product >= 0 && !p.Broken && (asked || CutLengthCm(p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part))
         {
+            if (ConstructConveyor.Out(c, part) is var conveyor and >= 0)
+            {
+                // A conveyor out of its Piece out takes the piece whole (ConstructConveyor.cs): it waits on the die, the machine blocked, until it fits and there is room.
+                if (ConstructConveyor.HandOff(world, c, conveyor, product, out var stall))
+                    return true;
+                if (asked)
+                    p.State |= CutPending;
+                ConstructGatherer.SetBusy(world, st, false);
+                SetStall(world, st, stall);
+                return false;
+            }
             if (!d.IsWheelFormer && ConstructPress.ChutesToPress(world, c, part))
             {
                 // A chute into a press takes the piece whole (ConstructPress.Chute): it waits on the die until a bay will have it.
@@ -719,6 +733,9 @@ public static class ConstructExtruder
     /// <summary>The look line's key for the piece's size: changes when it grows (the store's version doesn't).</summary>
     public static int SizeKey(Construct c, int part) => ProductOf(c, part) is var k and >= 0 && c.Parts[k].D is { IsExtrusion: true } d ? d.ExKey.L + (d.ExKey.W * 257 ^ d.ExKey.H * 65537) : 0;
 
+    private static string ConveyorSize(Construct c, int part) =>
+        ConstructConveyor.Out(c, part) is var k and >= 0 ? $" ({c.Routes[k].ConvW / 100f:0.00} x {c.Routes[k].ConvH / 100f:0.00} m)" : "";
+
     /// <summary>What it is doing, or why not. Read by the look line on either side.</summary>
     public static string Status(Construct c, int part, CStore st)
     {
@@ -741,6 +758,9 @@ public static class ConstructExtruder
             ExtrudeStall.Blocked => wheel ? " - blocked: the wheel has no room to grow" : " - blocked: something fixed in the piece's path (a wall, the ground)",
             ExtrudeStall.TooHeavy => " - what is in the piece's path is too heavy to push",
             ExtrudeStall.ChuteWaits => " - the piece waits for its chute: the press's bay is full or won't take it",
+            ExtrudeStall.ConveyorSmall => $" - refused: the piece is too big for its conveyor{ConveyorSize(c, part)}: widen it or change the section",
+            ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
+            ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
             _ => st.Busy ? (wheel ? ", forming" : ", extruding") : ", waiting",
         };
     }

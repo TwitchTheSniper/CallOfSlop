@@ -8,6 +8,7 @@ public enum RouteEditOp : byte
     Delete, // the link and every branch off it
     MoveNode, // one node to a new place (the link re-checked)
     Repair, // every segment back to full health (the wrench or the welder)
+    Size, // a conveyor's width and height (the position's x and y, metres; protocol 244: ConstructConveyor.cs)
 }
 
 /// <summary>
@@ -125,6 +126,20 @@ public sealed partial class ConstructEdits
                 c.Rebuild();
                 Done.Add($"player {player}: repaired a {ConstructRoutes.Name(r.Type)} on construct {c.Id}");
                 return null;
+            case RouteEditOp.Size:
+            {
+                if (r.Type != RouteType.Conveyor)
+                    return "only a conveyor is set to a size";
+                var w = (int)MathF.Round(pos.X * 100 / ConstructConveyor.StepCm) * ConstructConveyor.StepCm;
+                var hh = (int)MathF.Round(pos.Y * 100 / ConstructConveyor.StepCm) * ConstructConveyor.StepCm;
+                if (ConstructConveyor.SizeRefusal(c, route, w, hh) is { } bad)
+                    return bad;
+                r.ConvW = (ushort)w;
+                r.ConvH = (ushort)hh;
+                world.StructureDirty.Add(c.Id);
+                Done.Add($"player {player}: conveyor on construct {c.Id} set to {w} x {hh} cm");
+                return null;
+            }
         }
         return "no such edit";
     }

@@ -457,6 +457,11 @@ public sealed partial class Game
                 Constructs.PatchBase[c.Id] = w.Span[2..].ToArray();
         }
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        if (c.ConveyedCount > 0)
+        {
+            ConstructConveyor.Write(w, c); // (after its structure: the riders name its links)
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
     }
 
     private void SandboxFlush()
@@ -479,8 +484,17 @@ public sealed partial class Game
                 if (c.Dirty)
                     c.Rebuild();
                 SandboxBroadcastBody(c);
+                if (c.ConveyedCount > 0)
+                    Constructs.RidersChanged(c); // (its links may have been renumbered)
             }
         Constructs.StructureDirty.Clear();
+        foreach (var id in Constructs.RidersDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                ConstructConveyor.Write(w, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.RidersDirty.Clear();
         foreach (var id in _sbLater)
             Constructs.StructureDirty.Add(id);
         _sbLater.Clear();
@@ -1174,7 +1188,7 @@ public sealed partial class Game
                 var to = r.U16();
                 var pos = ReadCm(ref r);
                 var host = r.U16();
-                return op > (byte)RouteEditOp.Repair ? "no such edit" : hands.RouteEdit(Constructs, p.Id, eye, body, (RouteEditOp)op, route, node, source, to, pos, host);
+                return op > (byte)RouteEditOp.Size ? "no such edit" : hands.RouteEdit(Constructs, p.Id, eye, body, (RouteEditOp)op, route, node, source, to, pos, host);
             }
             case CActKind.Loom:
             {
