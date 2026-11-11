@@ -92,7 +92,18 @@ public sealed record ModuleFeed(string Link, IReadOnlyList<string> From, string 
 public sealed record ModuleSet(string Id, IReadOnlyList<ModuleItem> Items, IReadOnlyList<string> Missing)
 {
     public IReadOnlyList<ModuleFeed> Feeds { get; init; } = [];
+
+    /// <summary>(phase 11) The dressing kit hung on the room's walls ("dress": a name in the file's "dressing"; "default" when it names none).</summary>
+    public string Dress { get; init; } = "default";
 }
+
+/// <summary>
+/// One piece of a dressing kit (phase 11, ModuleSets.json "dressing"): <paramref name="Part"/> hung on a plain wall's face socket in
+/// <paramref name="Band"/> (top: under the ceiling, mid: at chest height, low: at the floor), <paramref name="Count"/> at least and one more every
+/// <paramref name="PerCells"/> cells of floor, at most <paramref name="Max"/>, spread round the room. <paramref name="High"/>: only on a hall's
+/// storeys above its floor (a jib crane over people's heads). Looked-at things: one link each, no joints, no wires.
+/// </summary>
+public sealed record DressItem(string Part, string Band, int Count, int PerCells, int Max, bool High);
 
 /// <summary>
 /// The interior system's data (Constructs/Interiors, docs/sandbox/INTERIORS.md): size classes, room types, module sets, the shell's parts and
@@ -105,6 +116,7 @@ public sealed class InteriorData
     public readonly List<SizeClass> Classes = new();
     public readonly Dictionary<string, RoomType> Rooms = new(StringComparer.Ordinal);
     public readonly Dictionary<string, ModuleSet> Sets = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, IReadOnlyList<DressItem>> Dressing = new(StringComparer.Ordinal); // (phase 11) the dressing kits by name
     public readonly Dictionary<string, string> Shell = new(StringComparer.Ordinal);
     public readonly Dictionary<string, string?> LootHooks = new(StringComparer.Ordinal);
     public readonly List<string> Panels = new(); // (the shell's long walls, longest first: phase 5; none: 4 m pieces)
@@ -125,7 +137,9 @@ public sealed class InteriorData
         var d = new InteriorData();
         d.LoadClasses(Read(folder, "SizeClasses.json"));
         d.LoadRooms(Read(folder, "RoomTypes.json"));
-        d.LoadSets(Read(folder, "ModuleSets.json"));
+        var sets = Read(folder, "ModuleSets.json");
+        d.LoadSets(sets);
+        d.LoadDressing(sets.Root, sets.File);
         d.LoadLoot(Read(folder, "LootHooks.json"));
         d.Validate();
         return d;
@@ -266,9 +280,34 @@ public sealed class InteriorData
                         throw new InteriorDataException($"{fw}: \"link\" must be chute, pipe, power or data");
                     feeds.Add(new ModuleFeed(link, e.TryGetProperty("from", out var fv) && fv.ValueKind == JsonValueKind.Array ? Names(e, "from") : [Str(e, "from", fw)], Str(e, "fromRole", fw), OptStr(e, "fromPort"), Str(e, "toRole", fw), OptStr(e, "toPort"), NumF(e, "reach", fw, 4, 400)));
                 }
-            if (!Sets.TryAdd(id, new ModuleSet(id, items, Names(s, "missing")) { Feeds = feeds }))
+            if (!Sets.TryAdd(id, new ModuleSet(id, items, Names(s, "missing")) { Feeds = feeds, Dress = OptStr(s, "dress") ?? "default" }))
                 throw new InteriorDataException($"{where}: listed twice");
         }
+    }
+
+    private void LoadDressing(JsonElement root, string file)
+    {
+        if (!root.TryGetProperty("dressing", out var dr) || dr.ValueKind != JsonValueKind.Object)
+            return;
+        foreach (var kit in dr.EnumerateObject())
+        {
+            if (kit.Name == "about")
+                continue;
+            var where = $"{file} dressing \"{kit.Name}\"";
+            if (kit.Value.ValueKind != JsonValueKind.Array)
+                throw new InteriorDataException($"{where}: must be a list");
+            Dressing[kit.Name] = kit.Value.EnumerateArray().Select(i =>
+            {
+                var band = Str(i, "band", where);
+                if (band is not ("top" or "mid" or "low"))
+                    throw new InteriorDataException($"{where}: \"band\" must be top, mid or low, not \"{band}\"");
+                return new DressItem(Str(i, "part", where), band, Int(i, "count", where, 0, 64), i.TryGetProperty("perCells", out _) ? Int(i, "perCells", where, 1, 64) : 0,
+                    i.TryGetProperty("max", out _) ? Int(i, "max", where, 0, 256) : 256, Bool(i, "high"));
+            }).ToList();
+        }
+        foreach (var set in Sets.Values)
+            if (set.Dress != "default" && !Dressing.ContainsKey(set.Dress))
+                throw new InteriorDataException($"{file} set \"{set.Id}\": \"dress\" names no kit in \"dressing\" (\"{set.Dress}\")");
     }
 
     private void LoadLoot((JsonElement Root, string File) f)

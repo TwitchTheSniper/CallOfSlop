@@ -535,7 +535,7 @@ public static partial class ConstructRender
         var strain = 0f;
         if (d.Role == PartRole.Joint && !p.Broken && c.RailJointOf(i) is var oj and >= 0 && c.Joints[oj].Over > 1)
             strain = Math.Clamp(c.Joints[oj].Over - 1, 0, 1) * (0.75f + 0.25f * MathF.Sin((float)Now * 9f));
-        var lit = d.Logic == CLogic.Lamp && p.Out >= 0.5f && !p.Broken; // a lamp that is on glows (unlit, bright)
+        var lit = d.Logic == CLogic.Lamp && ConstructLamps.Lit(c, i); // a lamp that is on glows (a mains lamp: from the circuit, ConstructLamps.Lit) (unlit, bright)
         var glow = new Vector3(1f, 0.93f, 0.6f);
         if (d.Logic == CLogic.Lamp)
         {

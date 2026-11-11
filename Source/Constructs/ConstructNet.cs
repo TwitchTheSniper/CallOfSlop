@@ -1511,7 +1511,7 @@ public static partial class ConstructNet
         {
             var n = 0;
             for (var i = 0; i < c.PartCount; i++)
-                if (c.Parts[i].D.IsSignal)
+                if (c.Parts[i].D is { IsSignal: true, Mains: false }) // (a mains lamp's light comes from the circuit on every peer: ConstructLamps.Lit)
                 {
                     if (n == c.SigList.Length)
                         Array.Resize(ref c.SigList, Math.Max(16, n * 2));

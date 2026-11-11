@@ -378,7 +378,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 232: the Logbook's Paths (docs/story/STORY.md "Paths"): Msg.StoryPaths at the end of Msg. Joining a talk (docs/story/STORY.md "Talking to people"): Msg.TalkInvite after it, TalkAsk.Join.
     // 233: STAND-IN: Msg.StandIn at the end of Msg (Source/StandIns: the story's placeholder craft, until the vehicle and ship redo).
     // 234: Msg.Shot carries a kinds byte after the end count (Game.ShotKindBuildOnly): a hit on a build only gets its own hit-marker colour.
-    public const byte ProtocolVersion = 234;
+    // 235: mains lamps (logic "mains", docs/sandbox/INTERIORS.md phase 11) are left out of a pose's signals: every peer lights them from the circuit (ConstructLamps.Lit).
+    public const byte ProtocolVersion = 235;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

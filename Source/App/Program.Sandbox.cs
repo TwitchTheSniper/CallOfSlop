@@ -243,7 +243,7 @@ public static unsafe partial class Program
                 _sbLookKey = key;
                 var setting = d.Configurable && d.Settings.Length > 0 ? $"{d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))}" // (what the linking tool's reload key steps)
                     : d.Settings.Length > 0 && d.SettingLabels.Length > 0 ? $"{d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : "";
-                var signal = d.IsSignal ? d.HasReading ? LogicDisplays.Look(part, d) : d.Logic == CLogic.AnalogLever ? LeverValueText(part, d) : d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
+                var signal = d.IsSignal ? d.Mains ? ConstructLamps.Lit(hit.Body, hit.Part) ? "on" : "off" : d.HasReading ? LogicDisplays.Look(part, d) : d.Logic == CLogic.AnalogLever ? LeverValueText(part, d) : d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
                 var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
                 var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
                 var unpowered = hit.Body.Electrical && d.Electric && !ConstructPower.On(hit.Body, hit.Part) ? "no power" : "";

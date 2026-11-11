@@ -438,7 +438,7 @@ public static class ConstructLogic
                         next = p.SpawnAlive; // (how many it has alive: the game counts them, GameSandboxSpawns.cs)
                         break;
                     default: // lamp, horn, brake: on while the input is
-                        next = on ? 1 : 0;
+                        next = on || d.Mains && count[i] == 0 ? 1 : 0; // (a mains lamp with no wire in: on while the circuit reaches it, gated above; ConstructLamps.Lit)
                         break;
                 }
             }

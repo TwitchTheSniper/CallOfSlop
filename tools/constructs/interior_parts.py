@@ -422,11 +422,165 @@ def floor_panel(metres):
     return p.stats(kgm2 * area, 60 + hpm2 * area, arm, round(min(40.0, max(2.0, secs * area / 16 * 0.5)), 1))
 
 
+# ---- Dressing (INTERIORS.md "Phase 11") -----------------------------------------------------------------------------
+# Things only looked at, hung on a wall's face socket by their "back" socket (the part's origin, facing -z; the part stands
+# in +z, into the room) or stood on a floor socket by their "bottom". Up is +y. A wall's face sockets are 0.125, 1.375 and
+# 2.625 m over the floor and the storey's ceiling is 2.75 m up, so a top-band piece keeps under y = +0.11 and hangs below its
+# socket. One link each, no joints, no wires: the mains lamps light from the power circuit (logic "mains": the game's
+# ConstructLamps.Lit), so a room's lights need no switch.
+
+GLOW_PALE, YELLOW, HAZARD, RUST, PIPE_GREEN, GALV, CABLE, ORANGE = "#fff3b0", "#d9b23a", "#262626", "#7d6b4f", "#5f7d6a", "#a4abb0", "#2b2d30", "#c8692c"
+LAMP_CONFIG = [
+    {"key": "colour", "type": "colour", "label": "Colour", "group": "Light", "default": "#ffed99", "tooltip": "The colour it glows when lit."},
+    {"key": "brightness", "label": "Brightness", "group": "Light", "unit": "%", "min": 10, "max": 200, "step": 1, "default": 100, "tooltip": "How bright it glows."},
+    {"key": "blink", "label": "Blink", "group": "Light", "unit": "Hz", "min": 0, "max": 10, "step": 0.1, "default": 0, "tooltip": "Flashes this many times a second while lit (0: steady)."}]
+
+
+def hung(name, desc, role="frame", color=STEEL, mass=10, health=80, armour=2, seconds=1.0, tool="wrench"):
+    p = Part(name, SMALL, "Dressing", desc, role=role, tool=tool, color=color, group="Interior")
+    p.sock("back", (0, 0, 0), "-z")
+    p.stats(mass, health, armour, seconds)
+    return p
+
+
+def glow(mn, mx):
+    """A lamp's glowing face: lit while the lamp is (the game draws a lit lamp's unpaintable detail bright)."""
+    return box(mn, mx, GLOW_PALE, detail=True, paintable=False)
+
+
+def mains_lamp(p, watts):
+    p.set(logic={"kind": "lamp", "mains": True}, power=watts, config=LAMP_CONFIG)
+    return p
+
+
+def wall_light():
+    p = hung("Wall Light", "A lamp for a room's wall. Lights while the power circuit reaches it and has charge (no wire needed); a wire into it switches it.",
+             role="logic", color=DARKS, mass=4, health=40, armour=1)
+    p.add(box((-0.3, -0.07, 0.0), (0.3, 0.05, 0.12), DARKS))
+    p.add(glow((-0.27, -0.09, 0.02), (0.27, -0.07, 0.105)))
+    return mains_lamp(p, 20)
+
+
+def hall_floodlight():
+    p = hung("Hall Floodlight", "A big lamp on an arm for a hall's wall. Lights while the power circuit reaches it and has charge; a wire into it switches it.",
+             role="logic", color=DARKS, mass=18, health=80, armour=2)
+    p.add(box((-0.15, -0.3, 0.0), (0.15, 0.08, 0.04), DARKS))  # wall plate
+    p.add(box((-0.05, -0.12, 0.04), (0.05, 0.0, 0.42), STEEL))  # arm
+    p.add(box((-0.45, -0.3, 0.3), (0.45, -0.1, 0.62), DARKS))  # head
+    p.add(glow((-0.42, -0.32, 0.33), (0.42, -0.3, 0.59)))
+    return mains_lamp(p, 120)
+
+
+def pipe_bank():
+    p = hung("Pipe Bank", "Three pipes, 3.6 m, along a wall under the ceiling, on brackets. Dressing.", color=RUST, mass=60, health=200, armour=3)
+    for x in (-1.4, 0.0, 1.4):
+        p.add(box((x - 0.04, -0.52, 0.0), (x + 0.04, 0.06, 0.05), DARKS))  # bracket plate
+        p.add(box((x - 0.025, -0.5, 0.05), (x + 0.025, -0.47, 0.26), DARKS))  # bracket arm
+    for k, (y, col) in enumerate(((-0.12, RUST), (-0.27, PIPE_GREEN), (-0.42, STEEL))):
+        p.add(box((-1.78, y - 0.06, 0.08), (1.78, y + 0.06, 0.2), col))
+        for x in (-1.0, 1.0):
+            p.add(box((x - 0.03, y - 0.08, 0.06), (x + 0.03, y + 0.08, 0.22), col))  # flange
+    return p
+
+
+def duct_run():
+    p = hung("Duct Run", "A square air duct, 3.6 m, along a wall under the ceiling. Dressing.", color=GALV, mass=45, health=150, armour=2)
+    p.add(box((-1.78, -0.5, 0.06), (1.78, -0.05, 0.56), GALV))
+    for x in (-1.2, -0.4, 0.4, 1.2):
+        p.add(box((x - 0.03, -0.52, 0.045), (x + 0.03, -0.03, 0.575), "#8e959a"))  # seams
+    for x in (-1.0, 1.0):
+        p.add(box((x - 0.03, -0.53, 0.0), (x + 0.03, 0.06, 0.04), DARKS))  # hanger plates
+    return p
+
+
+def cable_tray():
+    p = hung("Cable Tray Run", "A ladder tray of cables, 3.6 m, along a wall under the ceiling. Dressing.", color=STEEL, mass=25, health=120, armour=2)
+    for z0 in (0.03, 0.38):
+        p.add(box((-1.78, -0.16, z0), (1.78, -0.08, z0 + 0.02), STEEL))  # side rails
+    for i in range(8):
+        x = -1.575 + i * 0.45
+        p.add(box((x - 0.015, -0.15, 0.05), (x + 0.015, -0.13, 0.38), STEEL))  # rungs
+    for x in (-1.1, 1.1):
+        p.add(box((x - 0.03, -0.2, 0.0), (x + 0.03, 0.06, 0.03), DARKS))  # brackets
+    for z0, z1, col in ((0.07, 0.15, CABLE), (0.17, 0.24, ORANGE), (0.26, 0.35, CABLE)):
+        p.add(box((-1.77, -0.13, z0), (1.77, -0.07, z1), col))
+    return p
+
+
+def wall_rib():
+    p = hung("Wall Rib", "A frame of the hull's structure standing along a wall, floor to ceiling. Dressing.", color=DARKS, mass=40, health=200, armour=4)
+    p.add(box((-0.15, -1.355, 0.0), (0.15, 1.355, 0.03), DARKS))
+    p.add(box((-0.03, -1.35, 0.03), (0.03, 1.35, 0.2), DARKS))
+    p.add(box((-0.11, -1.345, 0.2), (0.11, 1.345, 0.23), DARKS))
+    p.add(box((-0.02, 0.9, 0.23), (0.02, 1.33, 0.45), DARKS))  # knee under the ceiling
+    return p
+
+
+def wall_sign():
+    p = hung("Deck Sign", "A stencilled section board with a hazard band. Dressing.", color="#2f4f6f", mass=3, health=30, armour=1)
+    p.add(box((-0.45, -0.18, 0.0), (0.45, 0.18, 0.03), "#2f4f6f"))
+    p.add(box((-0.4, 0.04, 0.03), (0.4, 0.13, 0.036), "#e8e8e0", detail=True))  # the stencil band
+    for i in range(6):
+        x = -0.4 + i * 0.14
+        p.add(box((x, -0.13, 0.03), (x + 0.07, -0.03, 0.036), YELLOW if i % 2 == 0 else HAZARD, detail=True))
+    return p
+
+
+def tool_board():
+    p = hung("Tool Board", "A pegboard of hand tools. Dressing.", color="#8c7a5a", mass=12, health=60, armour=1)
+    p.add(box((-0.6, -0.4, 0.0), (0.6, 0.4, 0.03), "#8c7a5a"))
+    for x, y0, y1, w, col in ((-0.45, -0.25, 0.2, 0.04, DARKS), (-0.3, -0.3, 0.25, 0.03, "#b8352c"), (-0.12, -0.2, 0.28, 0.05, DARKS),
+                              (0.08, -0.32, 0.1, 0.06, "#c9a21c"), (0.3, -0.25, 0.25, 0.04, DARKS), (0.46, -0.15, 0.3, 0.03, STEEL)):
+        p.add(box((x - w / 2, y0, 0.03), (x + w / 2, y1, 0.07), col, detail=True))
+    return p
+
+
+def fire_point():
+    p = hung("Fire Point", "A red cabinet with an extinguisher and a hose reel. Dressing.", color=RED, mass=20, health=60, armour=1)
+    p.add(box((-0.22, -0.4, 0.0), (0.22, 0.4, 0.2), RED))
+    p.add(box((-0.18, -0.36, 0.2), (0.18, 0.1, 0.206), "#e8e8e0", detail=True))  # the window
+    p.add(box((-0.06, -0.3, 0.206), (0.06, 0.05, 0.26), "#9a1f1a", detail=True))  # the extinguisher behind it
+    return p
+
+
+def jib_crane():
+    p = hung("Jib Crane", "A wall jib with a trolley and a chain hoist, for a hall's upper wall. Dressing.", color=YELLOW, mass=420, health=900, armour=6, seconds=3.0)
+    p.add(box((-0.25, -1.0, 0.0), (0.25, 0.08, 0.08), DARKS))  # wall plate
+    p.add(box((-0.06, -0.25, 0.08), (0.06, -0.02, 3.6), YELLOW))  # the jib's web
+    p.add(box((-0.14, -0.29, 0.1), (0.14, -0.25, 3.58), YELLOW))  # its bottom flange
+    p.add(box((-0.14, -0.02, 0.1), (0.14, 0.02, 3.58), YELLOW))  # its top flange
+    p.add(box((-0.05, -0.95, 0.08), (0.05, -0.29, 0.75), YELLOW))  # the knee brace
+    p.add(box((-0.18, -0.42, 2.3), (0.18, -0.3, 2.7), DARKS))  # trolley
+    p.add(box((-0.12, -0.75, 2.38), (0.12, -0.42, 2.62), "#c9a21c"))  # hoist
+    p.add(box((-0.015, -1.4, 2.485), (0.015, -0.75, 2.515), CABLE))  # chain
+    p.add(box((-0.07, -1.55, 2.45), (0.07, -1.4, 2.55), DARKS))  # hook block
+    for x in (-0.2, 0.2):
+        p.add(box((x - 0.02, -0.4, 3.5), (x + 0.02, -0.29, 3.6), HAZARD))  # end stops
+    return p
+
+
+def bay_marking():
+    p = Part("Bay Marking", SMALL, "Dressing", "A painted floor bay: four yellow lines round a 3.4 m square. Dressing.", role="frame", tool="wrench", color=YELLOW, group="Interior")
+    p.sock("bottom", (0, 0, 0), "-y")
+    h0, h1, a, w = 0.004, 0.015, 1.7, 0.1
+    p.add(box((-a, h0, -a), (a, h1, -a + w), YELLOW))
+    p.add(box((-a, h0, a - w), (a, h1, a), YELLOW))
+    p.add(box((-a, h0, -a + w + 0.005), (-a + w, h1, a - w - 0.005), YELLOW))
+    p.add(box((a - w, h0, -a + w + 0.005), (a, h1, a - w - 0.005), YELLOW))
+    p.stats(4, 40, 1, 1.0)
+    return p
+
+
+def dressing_parts():
+    return [wall_light(), hall_floodlight(), pipe_bank(), duct_run(), cable_tray(), wall_rib(), wall_sign(), tool_board(), fire_point(), jib_crane(), bay_marking()]
+
+
 def main():
     panels = [("Walls", panel_wall(m)) for m in (4, 8, 12, 16)]
     furn = [("Furniture", f) for f in furniture_parts()]
     floors = [("Floors", floor_panel(m)) for m in (8, 16)]
-    return write_parts(OUT, [("", car()), ("Capital", hollow_chassis()), ("Capital", hollow_chassis(armoured=True))] + panels + furn + floors)
+    dress = [("Dressing", d) for d in dressing_parts()]
+    return write_parts(OUT, [("", car()), ("Capital", hollow_chassis()), ("Capital", hollow_chassis(armoured=True))] + panels + furn + floors + dress)
 
 
 if __name__ == "__main__":
