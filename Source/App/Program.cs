@@ -215,6 +215,8 @@ public static unsafe partial class Program
             return EngineKit.EngineKitCli.Cli(args); // the Engine Kit: a modular engine built for a request (docs/vehiclekit/ENGINEKIT.md)
         if (args.Any(a => a.Equals("--gen-engine-parts", StringComparison.OrdinalIgnoreCase)))
             return EngineKit.EngineKitParts.Cli(args); // the Engine Kit's own pieces (the tiers' cylinders), written by C# (--check: compare only)
+        if (args.Any(a => a.Equals("--gen-parts", StringComparison.OrdinalIgnoreCase)))
+            return PartKit.PartKit.Cli(args); // the part kit: the construct part generators that were Python (docs/sandbox/PARTKIT.md; --check: compare only)
         if (args.Any(a => a.Equals("--speed-test", StringComparison.OrdinalIgnoreCase)))
             return EngineKit.EngineKitSpeed.Cli(args); // blueprints driven flat out on the flat: top speed, times, and what limits them (docs/vehiclekit/ENGINEKIT.md)
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)

@@ -5,7 +5,7 @@ distance. A link needs the Windows game with its Browser folder. A game track ne
 
 ## The parts
 
-`tools/constructs/media_parts.py` writes `Constructs/Parts/Media`, then `tools/constructs/assembling.py` writes their recipes.
+The part kit's `--gen-parts media_parts` (docs/sandbox/PARTKIT.md) writes `Constructs/Parts/Media`, then `tools/constructs/assembling.py` writes their recipes.
 
 | Part | Picture | Seen to | Heard to | Full level to |
 | --- | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ The hops log to `callofslop.log`, each on a 5 s throttle while something plays; 
 
 ## Pipe Boxes
 
-The Clan MacSlop's Music Player (`tools/constructs/highland_parts.py`, `Constructs/Parts/Highland`): a box with the Music Player's small screen and
+The Clan MacSlop's Music Player (the part kit's `--gen-parts highland_parts`, `Constructs/Parts/Highland`): a box with the Music Player's small screen and
 a set of bagpipes on its lid, heard to 150 m (full level to 10 m), with Loop on by default and no power needed (it has lungs). Its part file's
 `"media"` key has `"pipes": true`, and that is all that differs: it plays links, game tracks and speakers as any Music Player does.
 

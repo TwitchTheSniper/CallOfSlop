@@ -65,4 +65,4 @@ world, in co-op, with the colony in sight below. Moving it to a real moon later 
 - The buildings: the `Remote Works` and `Orbital Depot` blueprints in `tools/constructs/building_parts.py`. The spots the
   steps use (apron, shell bay, deck edge, stores, hangar slots) are local points in `GameDepot.cs`: moving things in a
   blueprint means moving them there too.
-- The lander: `tools/constructs/shell_parts.py` writes `Constructs/Blueprints/DepotLander.json` from the Orbiter.
+- The lander: the part kit's `--gen-parts shell_parts` (docs/sandbox/PARTKIT.md) writes `Constructs/Blueprints/DepotLander.json` from the Orbiter.

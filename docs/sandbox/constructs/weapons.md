@@ -170,7 +170,7 @@ Wire: protocol 148 (a connector's two player bytes, `CActKind.Harpoon`: 0 cut, 1
 
 ### Ammo feeds
 
-Code: `Source/Constructs/ConstructAmmo.cs`; generator: `tools/constructs/ammo_parts.py`. A vehicle's ammo can sit in one armoured place, with feeds running
+Code: `Source/Constructs/ConstructAmmo.cs`; generator: the part kit's `--gen-parts ammo_parts` (Source/PartKit/Generators/AmmoParts.cs). A vehicle's ammo can sit in one armoured place, with feeds running
 out to its turrets.
 
 - **What sets a mounted gun's rounds.** What feeds it. No part on a mounted gun sets the type any more: Ammo parts on a gun (FMJ, AP, HE and Incendiary Rounds

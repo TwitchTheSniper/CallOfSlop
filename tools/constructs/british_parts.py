@@ -5,7 +5,7 @@ What a very British faction bolts on where bandits hang skulls, mostly understat
 beacon and a rain gauge beside it, a teapot in its cosy, a traffic cone nobody will move and a garden gnome as trophies, furled
 brollies down the flanks as spikes (it's that sort of day), queue posts on the beds (a queue forms behind them), and in the rooms a
 pillar box and a red telephone box (loot in each) round a tea urn. Dressing stands on one "base" socket and points up its own +y, so
-the kit turns it outward, as the bandit parts do (tools/constructs/bandit_parts.py); furniture stands on feet on the floor's quarter
+the kit turns it outward, as the bandit parts do (Source/PartKit/Generators/BanditParts.cs); furniture stands on feet on the floor's quarter
 grid, as tools/constructs/office_parts.py's Server Rack does. Faces that meet are kept a few millimetres apart (CLAUDE.md, "No
 coplanar faces"). Recipes come from tools/constructs/assembling.py; run it after this one.
 

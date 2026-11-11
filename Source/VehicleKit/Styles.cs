@@ -256,7 +256,7 @@ public static class Styles
             ["nose"] = ["Bull Bar", "Bar Grille", "Ram Plow", "none"],
             ["fender"] = ["Wide Arch Fender"], // (phase 9a: a long bonnet's broad flowing wings)
             ["cab"] = ["Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Windscreen Frame", "Roll Bar"],
-            ["spike"] = ["Wee Caber", "Wee Caber", "Iron Spike"],                                        // (Constructs/Parts/Highland, tools/constructs/highland_parts.py)
+            ["spike"] = ["Wee Caber", "Wee Caber", "Iron Spike"],                                        // (Constructs/Parts/Highland, --gen-parts highland_parts)
             ["trophy"] = ["Thistle", "Coo Heid", "Haggis on a Post", "Thistle", "Wee Keg", "Coo Heid"],
             ["mast"] = ["Saltire Flag", "Saltire Flag", "Thistle"],                                      // (on the roofs: Vehicle.Kit)
             ["gear"] = ["Wee Keg", "Wee Keg", "Coo Heid", "Saltire Flag"],                               // (on open beds and porches)
