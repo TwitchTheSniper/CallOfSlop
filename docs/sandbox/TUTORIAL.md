@@ -62,7 +62,7 @@ in a row two metres in front of the person as the step starts, theirs like a par
 drops two Lamps and `weld` one more, so the build steps never lack a part, and `carry` drops a Frame Block for the physics gun.
 A part the hands steps drop must be an item (not physics-only: welder-fitted, over 40 kg or bulky, which F can't pick up) and
 fit a backpack slot (the `backpack` step stows it); a Frame Block is structural, so it only suits the physics gun. The penal colony has two Bunks down the yard's
-west side (the open-air dormitory, tools/constructs/building_parts.py) for the `bunk` step.
+west side (the open-air dormitory, `--gen-parts building_parts`) for the `bunk` step.
 
 **Tools are issued as the steps need them** (Karl, 2026-11-08). While the induction runs the player has no gun and no tool but
 bare hands: a step's `"gives": ["attach"]` (tool names as for `tool`) hands those over at that step and for every later one

@@ -91,6 +91,7 @@ public static class PartKit
         new Generators.EngineParts(),
         new Generators.BuildingParts(),
         new Generators.InteriorParts(),
+        new Generators.MakeRv(),
         new Generators.Assembling(),
     ];
 

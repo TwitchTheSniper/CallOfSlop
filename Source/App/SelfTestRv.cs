@@ -5,7 +5,7 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     /// <summary>
-    /// "RV blueprint" (Constructs/Blueprints/RV.json, made by tools/constructs/make_rv.py): the motorhome builds from shipped parts with
+    /// "RV blueprint" (Constructs/Blueprints/RV.json, made by the part kit, --gen-parts make_rv): the motorhome builds from shipped parts with
     /// no refused step, within the construct limits and with no coplanar faces; it drives, steers, climbs the 10 degree hill and does
     /// not tip; a player stands and walks about inside, the door stops them shut and lets them through open; the lamps, the ceiling
     /// switch, the awning and the cargo bay work; a client's copy matches.
