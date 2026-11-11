@@ -40,9 +40,13 @@ public static class PanelTouch
         ["flight.altitude"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "altitude"),
         ["flight.heading"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "heading"),
         ["office.advert"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 0),
-        ["line.run"] = (w, c, part, player, tick) => ProductionLines.Run(c, part),
-        ["line.next"] = (w, c, part, player, tick) => ProductionLines.Next(c, part),
-        ["line.recipe"] = (w, c, part, player, tick) => ProductionLines.Recipe(c, part),
+        ["line.run"] = (w, c, part, player, tick) => ProductionLines.Button1(w, c, part), // (on the bill page: Add, Send, Clear: WorkOrders.cs)
+        ["line.next"] = (w, c, part, player, tick) => ProductionLines.Button2(w, c, part),
+        ["line.recipe"] = (w, c, part, player, tick) => ProductionLines.Button3(w, c, part),
+        ["line.page"] = (w, c, part, player, tick) => ProductionLines.Page(c, part),
+        ["orders.queue"] = (w, c, part, player, tick) => WorkOrders.QueueHere(w, c, part),
+        ["orders.cancel"] = (w, c, part, player, tick) => WorkOrders.CancelHead(w, c, part),
+        ["orders.clear"] = (w, c, part, player, tick) => WorkOrders.ClearHere(w, c, part),
         ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
     };
 

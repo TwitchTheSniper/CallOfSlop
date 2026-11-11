@@ -152,6 +152,11 @@ public static class MachineScreens
                 case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
                 case ExtrudeStall.TooHeavy: Say(card, PanelState.Wants, "Path too heavy"); break;
                 case ExtrudeStall.ChuteWaits: Say(card, PanelState.Wants, "Chute waits"); break;
+                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too small"); break;
+                case ExtrudeStall.ConveyorFull: Say(card, PanelState.Wants, "Conveyor full"); break;
+                case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
+                case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
+                case ExtrudeStall.OrderMaterial: Say(card, PanelState.Wants, "Order needs other stock"); break;
                 default:
                     if (st.Busy)
                         Say(card, PanelState.Working, wheel ? "Forming" : "Extruding");
@@ -159,6 +164,21 @@ public static class MachineScreens
                         Say(card, PanelState.Idle, "Waiting");
                     break;
             }
+        if (p.Orders != null)
+        {
+            // Work orders (WorkOrders.cs): stock, the piece so far, then the queue: its totals and the next three (the buttons under them).
+            Amount(card, 1, "Stock ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+            if (ConstructExtruder.ProductOf(c, part) is var piece and >= 0 && c.Parts[piece].D is { IsExtrusion: true } od)
+            {
+                if (wheel)
+                    card.Add(2, "Wheel ").AddFixed(2, od.ExKey.W / 100f, 2).Add(2, " x ").AddFixed(2, od.ExKey.H / 100f, 2).Add(2, " m");
+                else
+                    card.Add(2, "Piece ").AddFixed(2, od.ExKey.L / 100f, 2).Add(2, " m");
+            }
+            WorkOrders.FillQueue(p, card, 3);
+            card.Bar = -1;
+            return;
+        }
         if (d.IsFanFormer)
             card.Add(1, "Fan");
         else if (d.IsAirframeFormer)

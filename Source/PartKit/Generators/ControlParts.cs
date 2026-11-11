@@ -387,14 +387,26 @@ public sealed class ControlParts : IPartGenerator
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("back", [0, 0.75, -0.25], "-z");
         p.Stats(40, 120, 2, 3.0);
+        // (on the bill page the buttons are Add, Send, Clear and Line: the work orders, WorkOrders.cs)
         var touch = Py.L(
-            D(("action", "line.run"), ("at", Py.L(0.02, 0.02, 0.32, 0.13)), ("label", "Start")),
-            D(("action", "line.next"), ("at", Py.L(0.35, 0.02, 0.65, 0.13)), ("label", "Next")),
-            D(("action", "line.recipe"), ("at", Py.L(0.68, 0.02, 0.98, 0.13)), ("label", "Recipe")));
+            D(("action", "line.run"), ("at", Py.L(0.02, 0.02, 0.24, 0.13)), ("label", "Start")),
+            D(("action", "line.next"), ("at", Py.L(0.26, 0.02, 0.48, 0.13)), ("label", "Next")),
+            D(("action", "line.recipe"), ("at", Py.L(0.52, 0.02, 0.74, 0.13)), ("label", "Recipe")),
+            D(("action", "line.page"), ("at", Py.L(0.76, 0.02, 0.98, 0.13)), ("label", "Bill")));
         p.Set(("logic", D(("kind", "switch"))),
             ("config", Py.L(
                 D(("key", "startOn"), ("label", "Starts running"), ("group", "General"), ("default", false), ("tooltip", "The line runs as soon as it is built.")),
                 D(("key", "linePick"), ("label", "Machine"), ("group", "General"), ("min", 0), ("max", 31), ("step", 1), ("default", 0), ("hidden", true), ("tooltip", "Which machine its buttons work on.")),
+                D(("key", "linePage"), ("label", "Page"), ("group", "General"), ("options", Py.L("Line", "Bill")), ("default", 0), ("hidden", true), ("tooltip", "The line or the bill on its screen.")),
+                D(("key", "orderKind"), ("label", "Kind"), ("group", "Bill line"), ("options", Py.L("Piece", "Wheel")), ("default", 0), ("tooltip", "What Add puts on the bill: an Extruder's piece or a Wheel Former's wheel.")),
+                D(("key", "profile"), ("label", "Profile"), ("group", "Bill line"), ("options", ExtrusionParts.Profiles()), ("default", 4), ("tooltip", "A piece's section. Round and Pipe take their diameter from Width; Custom needs a machine's cell grid.")),
+                D(("key", "width"), ("label", "Width"), ("group", "Bill line"), ("unit", "m"), ("min", 0.1), ("max", 32), ("step", 0.05), ("default", 0.25), ("tooltip", "Across a piece's section, or a wheel's width.")),
+                D(("key", "height"), ("label", "Height"), ("group", "Bill line"), ("unit", "m"), ("min", 0.1), ("max", 48), ("step", 0.05), ("default", 0.25), ("tooltip", "Up a piece's section, or a wheel's diameter.")),
+                D(("key", "wall"), ("label", "Pipe wall"), ("group", "Bill line"), ("unit", "m"), ("min", 0.01), ("max", 2), ("step", 0.01), ("default", 0.03), ("tooltip", "A Pipe's wall.")),
+                D(("key", "cutLength"), ("label", "Length"), ("group", "Bill line"), ("unit", "m"), ("min", 0.05), ("max", 192), ("step", 0.05), ("default", 1), ("tooltip", "A piece's length.")),
+                D(("key", "orderMaterial"), ("label", "Material"), ("group", "Bill line"), ("options", Py.L("Metal", "Steel", "Bronze", "Laminate", "Copper", "Wood", "Planks", "Stone", "Concrete", "Glass", "Rubber")), ("default", 0),
+                    ("tooltip", "What it is made of. A machine takes an order only in the material it is fed: another material is another line.")),
+                D(("key", "orderCount"), ("label", "Count"), ("group", "Bill line"), ("min", 1), ("max", 999), ("step", 1), ("default", 1), ("tooltip", "How many of it.")),
                 Ink)),
             ("panels", Py.L(D(("source", "line"), ("at", Py.L(0, 1.31, -0.097)), ("size", Py.L(0.82, 0.56)), ("face", "+z"), ("up", "+y"), ("rows", 7), ("range", 12), ("touch", touch)))));
         return ("", p);

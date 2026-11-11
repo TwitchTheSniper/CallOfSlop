@@ -138,6 +138,16 @@
       "tooltip": "Cuts the piece off at the die by itself when it is this long. 0: only when a signal comes into Cut."
     },
     {
+      "key": "orderCount",
+      "label": "Order count",
+      "group": "Orders",
+      "min": 1,
+      "max": 999,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Pieces the Queue button on its screen asks for: one order of its settings as they stand."
+    },
+    {
       "key": "ink",
       "type": "colour",
       "label": "Screen colour",
@@ -150,8 +160,8 @@
     {
       "source": "machine",
       "at": [
-        -0.516,
-        0.868,
+        -0.526,
+        0.756,
         0.005
       ],
       "size": [
@@ -160,8 +170,40 @@
       ],
       "face": "-x",
       "up": "+y",
-      "rows": 4,
-      "range": 30
+      "rows": 8,
+      "range": 30,
+      "touch": [
+        {
+          "action": "orders.queue",
+          "at": [
+            0.02,
+            0.02,
+            0.32,
+            0.12
+          ],
+          "label": "Queue"
+        },
+        {
+          "action": "orders.cancel",
+          "at": [
+            0.35,
+            0.02,
+            0.65,
+            0.12
+          ],
+          "label": "Cancel"
+        },
+        {
+          "action": "orders.clear",
+          "at": [
+            0.68,
+            0.02,
+            0.98,
+            0.12
+          ],
+          "label": "Clear"
+        }
+      ]
     }
   ],
   "boxes": [
@@ -272,8 +314,8 @@
     },
     {
       "min": [
-        -0.512,
-        0.756,
+        -0.522,
+        0.644,
         -0.292
       ],
       "max": [
@@ -283,6 +325,22 @@
       ],
       "color": "#14181c",
       "detail": true
+    },
+    {
+      "min": [
+        -0.542,
+        0.868,
+        -0.28
+      ],
+      "max": [
+        -0.516,
+        0.968,
+        0.29
+      ],
+      "color": "#2b3036",
+      "detail": true,
+      "paintable": false,
+      "status": true
     }
   ],
   "sockets": [

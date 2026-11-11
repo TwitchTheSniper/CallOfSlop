@@ -192,6 +192,10 @@ public enum CfgKey : byte
     DoorLocked, // event door: F can't work it (a wire into its Lock port locks it too)
     WalkSpeed, // walker leg, every profile: the top speed at full throttle, % of the legs' own (ConstructWalkProfile.cs)
     LinePick, // Line Console: which of its machines its buttons work on (not on the panel; ProductionLines.cs)
+    OrderCount, // Extruder, Wheel Former, Line Console: pieces an order asks for (WorkOrders.cs)
+    OrderKind, // Line Console: what its next bill line is (a piece or a wheel)
+    OrderMaterial, // Line Console: its next bill line's material (by its option's name)
+    LinePage, // Line Console: the line or the bill on its screen (not on the panel)
     COUNT,
 }
 
@@ -789,7 +793,8 @@ public static class ConstructConfig
             {
                 CfgKey.Setting => true,
                 CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner,
-                CfgKey.LinePick => ProductionLines.IsConsole(d),
+                CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage => ProductionLines.IsConsole(d),
+                CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
@@ -809,7 +814,8 @@ public static class ConstructConfig
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
-                CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder,
+                CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder || ProductionLines.IsConsole(d), // (a console's: its next bill line)
+                CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder,
                 CfgKey.RunMode => d.IsWheelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
