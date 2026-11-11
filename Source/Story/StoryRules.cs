@@ -170,6 +170,7 @@ public sealed class StoryRules
         rules.Places = PlaceRules.Load(rules, folder);
         rules.Factions = FactionRules.Load(rules, folder);
         rules.Storylets = StoryletRules.Load(rules, folder, storyletQualities);
+        rules.Topics = TopicRules.Load(rules, folder);
         return rules;
     }
 
@@ -197,6 +198,9 @@ public sealed class StoryRules
 
     /// <summary>The storylets (Story/Storylets): authored beats that wait for the world to be ready. Empty when there are none.</summary>
     public StoryletRules Storylets = new();
+
+    /// <summary>What each person will talk about in the talk panel (Story/Topics). Empty when there are none.</summary>
+    public TopicRules Topics = new();
 
     private StoryRules WithStoryVerb()
     {

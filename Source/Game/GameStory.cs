@@ -81,6 +81,7 @@ public sealed partial class Game
         Array.Fill(_storyGroup, (-1, -1)); // (the groups: GameStoryFactions.cs)
         StoryJobsForget(); // (faction jobs: GameStoryJobs.cs)
         StoryletsForget(); // (GameStoryStorylets.cs)
+        StoryTopicsForget(); // (GameStoryTopics.cs)
     }
 
     /// <summary>Server, the end of a Sandbox tick: the story clock, who came and who sat down, and the constructs' notes.</summary>
@@ -118,6 +119,7 @@ public sealed partial class Game
         StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
         StandInsTick(s, now); // STAND-IN: craft for the people's trips (Source/StandIns)
         StoryletsTick(s, now); // (the storylets' hooks, spots and talk-panel answers: GameStoryStorylets.cs)
+        StoryTopicsTick(s, now); // (what each person will talk about in an open talk panel: GameStoryTopics.cs)
         StoryTalkJoinTick(); // (a joined talk that ended: GameStoryTalkJoin.cs)
         StoryPathsTick(s, now); // (each player's paths and standings for their Logbook: GameStoryPaths.cs)
         FragmentsTick(s, now); // (the data centres' terminals and what each player holds: GameStoryFragments.cs)

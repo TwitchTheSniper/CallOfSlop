@@ -829,7 +829,9 @@ public sealed partial class Game
             case CActKind.Talk:
             {
                 var person = r.U8();
-                return StoryTalkAct(p, person, (TalkAsk)r.U8()); // talking to the story's people (GameStoryChat.cs)
+                var ask = (TalkAsk)r.U8();
+                var topic = ask == TalkAsk.Topic && r.Has(2) ? r.U16() : (ushort)0;
+                return StoryTalkAct(p, person, ask, topic); // talking to the story's people (GameStoryChat.cs; a topic: GameStoryTopics.cs)
             }
             case CActKind.Track:
                 return SandboxTrackAct(p, ref r, eye);
@@ -1277,6 +1279,8 @@ public sealed partial class Game
                 break;
             case CActKind.Talk:
                 w.U8((byte)body).U8(flags);
+                if (flags == (byte)TalkAsk.Topic)
+                    w.U16(part); // (the topic's index: GameStoryTopics.cs)
                 break;
             case CActKind.AnalogLever:
                 w.U16(body).U16(part).U16(socket).U8(flags).U16(body2); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go; body2: a Joystick's Y)

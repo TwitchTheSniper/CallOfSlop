@@ -1,0 +1,7 @@
+{
+  // Talking to people (docs/story/STORY.md "Topics"): a topic is a Thing ("topic:ID"); a player holds Asked towards it,
+  // how many times they have asked it (of anyone). Saved with the story, like any relation.
+  "relations": [
+    { "name": "Asked", "about": "a player and a talk topic: how many times they asked it" }
+  ]
+}

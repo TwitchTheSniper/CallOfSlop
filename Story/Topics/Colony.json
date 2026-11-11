@@ -1,0 +1,171 @@
+{
+  // What the penal colony's staff will talk about (docs/story/STORY.md "Topics"). Each person has their own threads: a
+  // first question anyone may ask, and follow-ups that open once it is asked ("after") and only answer properly when
+  // they like the player enough (a brush-off with "keep" leaves the question waiting). Answers change with the
+  // player's story (Inducted, Rank, Suspicion, Course, a Lead) and with what has happened to the others (Dead). Show,
+  // don't tell: nobody explains the world; each thread ends on something the player may notice later. ?me is the
+  // person asked, ?them the player. A topic once asked is "topic ID" for an "if" ("?them Asked 'topic crumb-mine'").
+  "format": "call-of-slop-topics/1",
+  "about": "the penal colony's warden and guards, each with their own story",
+  "topics": [
+    // ==== Warden Pettigrew: the handbook, his mother's lighthouse, the memos, the building under headquarters ====
+    { "id": "pettigrew-handbook", "who": "Warden Pettigrew", "ask": "About this handbook of yours...", "priority": 5,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "The handbook has a section on you now. It is short and it is underlined." ] },
+        { "if": "not ?them Inducted", "keep": true, "say": [ "Later. Rule one is the bus. Rule two is also the bus." ] },
+        { "then": [ "?me Likes ?them +2" ],
+          "say": [ "Four hundred pages, {them.first}. Rule one: read the handbook. Rule two is on page two.",
+                   "My life's work. The Ministry printed eleven copies. Ten are propping up tables." ] } ] },
+    { "id": "pettigrew-page-two", "who": "Warden Pettigrew", "ask": "What's on page two?", "after": "pettigrew-handbook", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "That's between me and page two.", "Nobody reads page two. Let's keep it that way." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "A dedication. 'For my mother, who kept the light on.' She kept a lighthouse. A small one." ] } ] },
+    { "id": "pettigrew-lighthouse", "who": "Warden Pettigrew", "ask": "Your mother kept a lighthouse?", "after": "pettigrew-page-two", "priority": 9,
+      "answers": [
+        { "then": [ "?me Likes ?them +3" ], "say": [ "On the Brine Flats. Ships steered by her lamp, until everyone steered by the Light instead." ] } ] },
+    { "id": "pettigrew-light", "who": "Warden Pettigrew", "ask": "Steered by the Light?", "after": "pettigrew-lighthouse", "priority": 9,
+      "answers": [
+        { "then": [ "?me Likes ?them +2" ], "say": [ "The bright one, at night. She couldn't stand it. Said it never blinks. Lamps blink, she said." ] } ] },
+    { "id": "pettigrew-memos", "who": "Warden Pettigrew", "ask": "Who gives you your orders?", "if": "?them Inducted", "priority": 3,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Not you. That will do." ] },
+        { "say": [ "The Ministry. A memo every Thursday. I've never met who writes them. I'm not sure anybody does." ] } ] },
+    { "id": "pettigrew-memo-you", "who": "Warden Pettigrew", "ask": "Do the memos ever mention me?", "after": "pettigrew-memos", "again": true, "priority": 6,
+      "answers": [
+        { "if": "?them Suspicion >= 5", "say": [ "This week's did. Underlined twice. I would hate to see a third line, {them.first}." ] },
+        { "if": "?them Course 'Trustee'", "say": [ "'Trustee {them.first}: satisfactory.' In the Ministry that's practically a sonnet." ] },
+        { "if": "?them Rank >= 2", "say": [ "Last week's. 'Inmate shows promise.' I wrote it. They sent it back to me, approved." ] },
+        { "if": "?them Suspicion >= 2", "say": [ "In passing. A footnote. Footnotes grow, {them.first}. Mind yours." ] },
+        { "say": [ "Not yet. That's the kindest thing a memo can say about anyone." ] } ] },
+    { "id": "pettigrew-headquarters", "who": "Warden Pettigrew", "ask": "Where does the Ministry actually sit?", "after": "pettigrew-memos", "priority": 4,
+      "if": "?me Likes ?them >= 6",
+      "answers": [
+        { "say": [ "Headquarters. Built on top of an older building, from before the Ministry. The lift skips the basement." ] } ] },
+    { "id": "pettigrew-basement", "who": "Warden Pettigrew", "ask": "What's in the basement?", "after": "pettigrew-headquarters", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 15", "keep": true, "say": [ "Nothing. Officially. Unofficially, also nothing. Next question." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Chairs, I'm told. Rows of them, facing a board of little lamps nobody can light. Don't go looking." ] } ] },
+    { "id": "pettigrew-progress", "who": "Warden Pettigrew", "ask": "How am I doing, Warden?", "if": "?them Course 'Trustee'", "again": true, "priority": 5,
+      "answers": [
+        { "if": "?them Suspicion >= 3", "say": [ "You were doing well. Then you weren't. Trustees are boring, {them.first}. Be boring." ] },
+        { "if": "?them Rank >= 3", "say": [ "Splendidly. I've started a file on you that's all compliments. It's very thin. It's new." ] },
+        { "say": [ "Adequately. In the Ministry that's a medal." ] } ] },
+    { "id": "pettigrew-grief", "who": "Warden Pettigrew", "ask": "I'm sorry about the Sergeant.", "if": "'Sergeant Bellweather' Dead", "priority": 20,
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "say": [ "Are you. Are you really, {them.first}." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Twenty-two years. The form for it is four pages. I've filled in one line. His name." ] } ] },
+
+    // ==== Sergeant Bellweather: the exits, the eighth door, Edie Marsh, the old mine ====
+    { "id": "bellweather-exits", "who": "Sergeant Bellweather", "ask": "Why do you keep counting the exits?", "priority": 5,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "So I know where to stand when you try one." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Habit. Twenty-two years of it. Seven exits. There were eight, once." ] } ] },
+    { "id": "bellweather-eighth", "who": "Sergeant Bellweather", "ask": "What happened to the eighth?", "after": "bellweather-exits", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "Bricked up. Next question, {them.first}." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Bricked up, after somebody used it. Year three. North side. Dust storm." ] } ] },
+    { "id": "bellweather-who", "who": "Sergeant Bellweather", "ask": "Who used it?", "after": "bellweather-eighth", "priority": 9,
+      "answers": [
+        { "if": "?me Likes ?them < 15", "keep": true, "say": [ "Nobody gets out of this colony. Write that down. Nettles will." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Edie Marsh. Walked out into the storm towards the Light. Said she'd see what was under it." ] } ] },
+    { "id": "bellweather-edie-name", "who": "Sergeant Bellweather", "ask": "Who was Edie Marsh?", "after": "crumb-sergeant", "priority": 9,
+      "if": "not ?them Asked 'topic bellweather-who'",
+      "answers": [
+        { "if": "?me Likes ?them < 15", "keep": true, "then": [ "?me Likes 'Officer Crumb' -3" ],
+          "say": [ "Where did you hear that name? ...Crumb. Of course it was Crumb." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "An inmate. Year three. Walked out into a dust storm towards the Light. North door." ] } ] },
+    { "id": "bellweather-edie", "who": "Sergeant Bellweather", "ask": "Did she ever come back?", "after": [ "bellweather-who", "bellweather-edie-name" ], "priority": 9,
+      "answers": [
+        { "then": [ "?me Likes ?them +3" ], "say": [ "No. I still count, though. If a door's open some night, I want to know it was her." ] } ] },
+    { "id": "bellweather-watch", "who": "Sergeant Bellweather", "ask": "That's a fine watch, Sergeant.", "if": "?them Inducted", "priority": 1,
+      "answers": [
+        { "then": [ "?me Likes ?them +1" ], "say": [ "Twenty years' service. Engraved 'For Service'. Not my name. They did a batch. It runs slow." ] } ] },
+    { "id": "bellweather-trusty", "who": "Sergeant Bellweather", "ask": "How does anyone make Trusty?", "if": "?them Inducted", "again": true, "priority": 3,
+      "answers": [
+        { "if": "?them Course 'Trustee'", "say": [ "You did. Don't let it go to your head. Heads get counted." ] },
+        { "if": "?them Suspicion >= 3", "say": [ "Not the way you're going. Your file's got a smell to it." ] },
+        { "if": "?them Rank >= 1", "say": [ "Keep at it. Quota, no lip. The Warden notices. Slowly. Like a glacier with a clipboard." ] },
+        { "say": [ "Work. Every day. Twenty-two years ago I'd have told you it gets easier." ] } ] },
+    { "id": "bellweather-mine", "who": "Sergeant Bellweather", "ask": "What happened at the old mine?", "if": "?them Lead 'Old Mine'", "priority": 10,
+      "answers": [
+        { "then": [ "?them Suspicion +1" ], "say": [ "Cave-in, four years back. Sealed. Now who's been talking to you about the old mine?" ] } ] },
+    { "id": "bellweather-watching", "who": "Sergeant Bellweather", "ask": "Are you watching me, Sergeant?", "if": "?them Suspicion >= 4", "again": true, "priority": 7,
+      "answers": [
+        { "say": [ "Yes.", "Every day. It's my favourite part.", "I watch everyone. You're just more interesting this week." ] } ] },
+    { "id": "bellweather-grief", "who": "Sergeant Bellweather", "ask": "I'm sorry about Crumb.", "if": "'Officer Crumb' Dead", "priority": 20,
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "say": [ "Get out of my sight." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "He made tea nobody was allowed. I drank most of it. Leave me be a while, {them.first}." ] } ] },
+
+    // ==== Officer Crumb: the kettle, the rocket programme, the sky, gossip, the old mine ====
+    { "id": "crumb-kettle", "who": "Officer Crumb", "ask": "About that kettle...", "again": true, "priority": 4,
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "say": [ "What kettle? There's no kettle. Not for you." ] },
+        { "if": "?me Likes ?them >= 20", "say": [ "Here. One cup, two sugars. If anyone asks, it's boiled river water.", "Pot's warm. Sit. Five minutes. The Sergeant's at the gate." ] },
+        { "if": "?me Likes ?them >= 8", "say": [ "I can't give you tea. I can hold a cup near you. That's not giving." ] },
+        { "say": [ "Kettle? I don't know any kettles. ...Is it the steam? It's the steam, isn't it." ] } ] },
+    { "id": "crumb-rockets", "who": "Officer Crumb", "ask": "You were on the rocket programme?", "if": "?them Inducted", "priority": 3,
+      "answers": [
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Nearly! Failed the spin test. The centrifuge. I'd had soup. In fairness, everyone had soup." ] } ] },
+    { "id": "crumb-sky", "who": "Officer Crumb", "ask": "Do you still want to go up?", "after": "crumb-rockets", "priority": 7,
+      "answers": [
+        { "if": "?me Likes ?them < 10", "keep": true, "say": [ "Me? No. Well. No. Ask me when I know you better." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Every night. There's a little light up there that moves. The depot, they say. I wave at it." ] } ] },
+    { "id": "crumb-big-light", "who": "Officer Crumb", "ask": "And the big Light?", "after": "crumb-sky", "priority": 8,
+      "answers": [
+        { "then": [ "?me Likes ?them +1" ], "say": [ "Doesn't move. Never has. My nan said it was a hole with the lid on. Nans, eh." ] } ] },
+    { "id": "crumb-gossip", "who": "Officer Crumb", "ask": "Heard any gossip?", "again": true, "priority": 2,
+      "answers": [
+        { "if": "?them Suspicion >= 3", "say": [ "Only about you. The Sergeant's given you a page of your own. A page, {them.first}!" ] },
+        { "if": "'Officer Nettles' Dead", "say": [ "No. Not today. Ask me tomorrow." ] },
+        { "say": [ "Nettles is writing a novel about us. I'm the handsome one. Allegedly.",
+                   "The Warden talks to the plants. The plants have been audited. They passed.",
+                   "The Sergeant counts the exits at night. Seven. Then he waits, like there ought to be eight." ] } ] },
+    { "id": "crumb-sergeant", "who": "Officer Crumb", "ask": "What's the Sergeant's story?", "after": "crumb-gossip", "priority": 6,
+      "if": "not 'Sergeant Bellweather' Dead",
+      "answers": [
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "Ooh, no. Not for free. Bring me some sugar. Metaphorical sugar." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Ask him about Edie Marsh. Actually, don't. Actually, do. Just not from me." ] } ] },
+    { "id": "crumb-mine", "who": "Officer Crumb", "ask": "About the old mine...", "if": "?them Lead 'Old Mine'", "priority": 10,
+      "answers": [
+        { "if": "?them Asked 'topic bellweather-mine'", "then": [ "?me Likes ?them -3" ],
+          "say": [ "You asked HIM? Oh, {them.first}. He'll know it was me. He always knows." ] },
+        { "say": [ "Shh! Walls have ears, and the ears have a Sergeant. East of the fence. Take a lamp." ] } ] },
+    { "id": "crumb-grief", "who": "Officer Crumb", "ask": "Are you all right?", "if": "'Officer Nettles' Dead", "priority": 20,
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "say": [ "Don't. Just don't." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "No. Kid was going places. Only ever got as far as the yard. ...Kettle's on. For once." ] } ] },
+
+    // ==== Officer Nettles: the clipboard, the player's own file, a sister, the north wall ====
+    { "id": "nettles-clipboard", "who": "Officer Nettles", "ask": "What are you always writing?", "priority": 4,
+      "answers": [
+        { "then": [ "?me Likes ?them +1" ], "say": [ "Notes! Observations. Lunch, mostly. I put a star next to the good lunches." ] } ] },
+    { "id": "nettles-file", "who": "Officer Nettles", "ask": "What have you written about me?", "after": "nettles-clipboard", "again": true, "priority": 6,
+      "answers": [
+        { "if": "?me Likes ?them < 6", "keep": true, "say": [ "Absolutely not. Regulations. Well. Probably regulations." ] },
+        { "if": "?them Suspicion >= 5", "say": [ "'Inmate {them.first}: looks at the fence. Looks at the fence a LOT.' Sorry. It's true." ] },
+        { "if": "?them Course 'Trustee'", "say": [ "'Trustee {them.first}: reliable, polite, nodded at me once.' I underlined the nod." ] },
+        { "if": "?them Rank >= 2", "say": [ "'Good worker. Makes quota. Possibly a nice person.' I've crossed out 'possibly'." ] },
+        { "if": "?them Inducted", "say": [ "'Did the induction. Pressed the keys. Didn't fall off the bus.' It's early days." ] },
+        { "say": [ "'New inmate. Confused. Hair like a startled hedge.' I'll revise it. Probably." ] } ] },
+    { "id": "nettles-volunteer", "who": "Officer Nettles", "ask": "Why did you volunteer for this?", "priority": 3,
+      "answers": [
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Character-building, they said. I've got loads of character now. It's mostly worry." ] } ] },
+    { "id": "nettles-sister", "who": "Officer Nettles", "ask": "Who were you hoping would notice?", "after": "nettles-volunteer", "priority": 7,
+      "answers": [
+        { "if": "?me Likes ?them < 10", "keep": true, "say": [ "Nobody! Nobody in particular. Why would you ask that. Next." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "My sister flies Ministry couriers. Mum named her after the Light. I got named after an aunt." ] } ] },
+    { "id": "nettles-sergeant", "who": "Officer Nettles", "ask": "What do you make of the Sergeant?", "if": "?them Inducted", "priority": 2,
+      "answers": [
+        { "if": "'Sergeant Bellweather' Dead", "say": [ "He taught me to count the exits. I still do. I keep getting to seven and stopping." ] },
+        { "then": [ "?me Likes ?them +1" ], "say": [ "Brilliant. Terrifying. Brilliant. Knows every door in the place. I want to be him, minus the knee." ] } ] },
+    { "id": "nettles-report", "who": "Officer Nettles", "ask": "Did you put me on report?", "if": "?them Suspicion >= 3", "priority": 9,
+      "answers": [
+        { "if": "?me Likes ?them >= 15", "then": [ "?them Suspicion -1" ],
+          "say": [ "I had to! One line. I made the handwriting very, very small. Sorry, {them.first}." ] },
+        { "say": [ "I had to. Rules. I did spell your name wrong. Accidentally. Mostly." ] } ] },
+    { "id": "nettles-north-wall", "who": "Officer Nettles", "ask": "What's odd about the north wall?", "after": "nettles-clipboard", "priority": 1,
+      "answers": [
+        { "say": [ "There's a patch where the bricks are newer. Like a door was there. I'm not allowed to ask. I wrote it down." ] } ] }
+  ]
+}

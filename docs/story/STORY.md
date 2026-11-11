@@ -448,11 +448,10 @@ Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, 
   the player's hands and gives one from Loot.json's `trader` table worth at most 80% of it, among the best they can
   afford (worth at least half of the best); worth is the material units of a part's Assembler recipe plus its parts'
   worth, else its mass. Recorded as the player's Trade. `NotTrader`, `EmptyHands` and `LowOffer` say why not.
-- **More to ask** (protocol 237): three more buttons, "What's this place?", "What do you do here?" and "Any advice?"
-  (`TalkAsk.Place`, `Self`, `Advice`; occasions `AskPlace`, `AskSelf`, `AskAdvice`). `Story/Lines/Colony.json` writes the
-  penal colony's staff: lines per person (Pettigrew, Bellweather, Crumb, Nettles) for Greeted, Chatted, NoNews, the asks
-  and Bye; advice depends on whether the player has been Inducted or has Suspicion; "once" Chatted rules tell each
-  person's own story a piece at a time as the player comes back.
+- **Topics** (protocol 239; "Topics" below): under the storylet's answers, up to four buttons of things this person
+  will talk about with this player now, their own first. The stock questions ("What's this place?", "What do you do
+  here?", "Any advice?", `Story/Topics/General.json`) fill the panel when there is room, answered through the Lines
+  occasions `AskPlace`, `AskSelf` and `AskAdvice` (`Story/Lines/Colony.json` writes those per person).
 - **Facing**: a body stops and faces a player who is talking to it until the panel closes, they walk off or 20 s pass
   with nothing asked (one player at a time: another is told who they are talking to); a body that says something to
   someone faces them for 4 s (and stands still for a player within 6 m); a body beside whoever its step is with faces
@@ -467,6 +466,51 @@ Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, 
 
 Nothing allocates in a tick; asking does (a line, a dictionary entry). What was told to whom and the Chat clock aren't
 saved.
+
+### Topics
+
+What each person will talk about (`Source/Story/StoryTopics.cs` the engine, `Source/Game/GameStoryTopics.cs` the game's
+side; data `Story/Topics/*.json`, format `call-of-slop-topics/1`). Hades' hub talk, Disco Elysium's threads: every
+person has their own questions, a first one anybody may ask and follow-ups that open once it is asked, and how far a
+thread goes depends on how they feel about the player, how far the player's story has gone and what has happened to
+the people round them.
+
+```json
+{ "id": "bellweather-who", "who": "Sergeant Bellweather", "ask": "Who used it?", "after": "bellweather-eighth", "priority": 9,
+  "answers": [
+    { "if": "?me Likes ?them < 15", "keep": true, "say": [ "Nobody gets out of this colony. Write that down." ] },
+    { "then": [ "?me Likes ?them +3" ], "say": [ "Edie Marsh. Walked out into the storm towards the Light." ] } ] }
+```
+
+- **A topic**: `id`, `ask` (the button, 48 characters), `who` (the person who offers it; none: anybody), `if` (a query
+  over `?me`, the person, and `?them`, the player: `"?them Inducted"`, `"'Officer Crumb' Dead"`), `after` (a topic or a
+  list: on offer once the player has asked any one of them, of anyone), `again` (stays on offer once asked, drawn dim:
+  for questions whose answer changes, like "Do the memos ever mention me?"), `priority` (higher first; a follow-up
+  outranks the stock questions, a death outranks everything).
+- **answers**: the first whose `if` holds is given. `say` (lines filling `{me}`, `{them}`, `.first`, `{here}`; a
+  title is no first name, so `{me.first}` of Warden Pettigrew is Pettigrew) or `line` (a Lines occasion, so the
+  person's own response rules answer); `then` (effects, which may name things in quotes: `"?me Likes ?them +3"`,
+  `"?them Suspicion -1"`, `"?me Likes 'Officer Crumb' -3"`); `learn` (a fact the player learns, as a storylet's
+  end does: a Lead and a Learn event); `keep` (a brush-off: the topic isn't counted as asked and stays as it was, so it
+  can be asked again once they like the player more). A topic none of whose answers hold isn't offered.
+- **Kept** as the relation `Asked` (`Story/Relations/Talk.json`): a player towards the Thing "topic ID", how many times.
+  It saves with the world, and a query may read it: `"?them Asked 'topic crumb-sergeant'"` (one person's talk changing
+  another's).
+- **Sent**: twice a second, and straight after an answer, the host sends the player who talks to someone the topics
+  on offer (`Msg.TalkTopics`: u8 the body, u8 n, n u16 topic indices with the top bit for asked before). Every peer has
+  the texts. The button sends `TalkAsk.Topic` and the topic's index (a u16); the host checks it is still on offer.
+- **Trying it**: `--talk-sim [CAST] [--set Inducted=1,Suspicion=4] [--likes N] [--dead NAME]` has a player ask each
+  person of the cast (the Penal Colony by default) every new topic of theirs in turn and prints the threads, then which
+  topics never came up. `--check-story` lists the topics and warns of a `who` in no cast.
+
+Shipped: `Topics/Colony.json`, about 30 topics for the colony's staff. Warden Pettigrew: the handbook, page two, his
+mother's lighthouse, the Light; the Thursday memos (what they say about the player now), headquarters and the basement
+nobody visits. Sergeant Bellweather: the exits, the bricked-up eighth door, Edie Marsh who walked out towards the
+Light; how to make Trusty; the old mine (asking him raises Suspicion). Officer Crumb: the kettle (tea once he likes
+you), the rocket programme, the moving light and the big one; gossip, and the hint that sends you to Bellweather about
+Edie (asking him first costs Crumb). Officer Nettles: the clipboard and the player's own file as it reads now, a
+sister named after the Light, the north wall's newer bricks; the report Nettles put in (made smaller for a friend:
+Suspicion -1). Each has a line of grief when one of the others is dead. Foreman Grubb has no body yet, so no topics.
 
 ## Plays
 
