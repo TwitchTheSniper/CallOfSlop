@@ -49,13 +49,24 @@ it stays in Python and the reason goes in the list below.
 
 ## Ported and remaining
 
-Ported (Source/PartKit/Generators): `free_parts`, `bandit_parts`, `media_parts`, `ammo_parts`, `highland_parts`, `shell_parts`;
-the helpers `scale.py` (PartScale.cs) and `zfight.py` (PartZFight.cs; `zfight.py` itself stays while Python scripts import it).
+Ported (Source/PartKit/Generators): `free_parts`, `bandit_parts`, `media_parts`, `ammo_parts`, `highland_parts`, `shell_parts`
+(phase 1); `pilot_parts`, `callcentre_parts`, `office_parts`, `british_parts`, `door_parts`, `station_parts`, `shelf_parts`,
+`linear_parts`, `scoop_parts` (phase 2); `big_drive_parts`, `fluid_tank_parts`, `air_parts`, `boost_parts`, `suspension_parts`,
+`flight_parts`, `drone_parts`, `air_cargo`, `air_weapons_parts`, `ordnance_parts` (phase 3); the helpers `scale.py` (PartScale.cs)
+and `zfight.py` (PartZFight.cs; `zfight.py` itself stays while Python scripts import it). `BigDriveParts` keeps the shared drive
+helpers (`Health`, `Block`, `Faces`, `Bands`, the ports, `Mount`, `DriveIn`, `Springs`, `Tanks`) public for the generators on it, and
+`AirParts.Airship` is shared with `FlightParts`.
 
-Remaining in `tools/constructs/` (45 files): `actuator_parts`, `air_cargo`, `air_parts`, `air_weapons_parts`, `assembling`,
-`big_drive_parts`, `body_parts`, `boost_parts`, `british_parts`, `building_parts`, `callcentre_parts`, `capital_parts`,
-`control_parts`, `door_parts`, `drone_parts`, `engine_parts`, `extrusion_parts`, `flight_parts`, `fluid_tank_parts`, `hull_parts`,
-`hydraulics_parts`, `interior_parts`, `large_systems`, `leg_parts`, `linear_parts`, `machine_tiers`, `make_joint_sides`,
-`make_ports`, `make_rv`, `office_parts`, `ordnance_parts`, `pilot_parts`, `press_parts`, `scale`, `scoop_parts`, `screens`,
-`shelf_parts`, `stabiliser_parts`, `station_parts`, `structure_parts`, `suspension_parts`, `tier_style`, `upgrade_parts`,
-`wing_parts`, `zfight`. Scripts that import another generator (`air_parts` imports `big_drive_parts`) are ported after it.
+Some ports read committed files as inputs, as the Python did: `pilot_parts`, `air_weapons_parts` and `ordnance_parts` build on
+`Constructs/Blueprints/LightPlane.json` (written by `wing_parts`), `air_weapons_parts` also on `GunnerTurret.json` and
+`SmallHelicopter.json`, `suspension_parts` on `Buggy.json`, `big_drive_parts` on `Constructs/Parts/Differential.json` and
+`Drivetrain/DiffWide.json`. Run them again after changing those.
+
+Ported but still in Python: `air_weapons_parts.py` stays while `assembling.py` imports its `ORDNANCE_RACKS` (for the racks'
+recipes); until assembling is ported, a change goes in both, and `--gen-parts air_weapons_parts --check` shows whether they agree.
+
+Remaining in `tools/constructs/` (27 files): `actuator_parts`, `air_weapons_parts` (above), `assembling`, `body_parts`,
+`building_parts`, `capital_parts`, `control_parts`, `engine_parts`, `extrusion_parts`, `hull_parts`, `hydraulics_parts`,
+`interior_parts`, `large_systems`, `leg_parts`, `machine_tiers`, `make_joint_sides`, `make_ports`, `make_rv`, `press_parts`, `scale`,
+`screens`, `stabiliser_parts`, `structure_parts`, `tier_style`, `upgrade_parts`, `wing_parts`, `zfight`. A script that imports another
+generator is ported after it (`hydraulics_parts` after `control_parts`, `interior_parts` and `make_rv` after `building_parts`).

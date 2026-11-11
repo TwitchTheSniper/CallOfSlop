@@ -429,7 +429,7 @@ A body lock is steered for by every PC from its own copy of the body. A point is
 
 ### Massive blasts
 
-The user asked for "massive ordnance options" (2026-11-07): three warhead sections in the bench's Warheads group, each a big step up. They are arcade game items: the numbers are chosen to look and play big and are not modelled on anything (code `Source/Constructs/ConstructMegaBlast.cs`, `Game/GameSandboxMegaBlast.cs`, `Render/Fx/MegaBlastFx.cs`; parts from `ordnance_parts.py` `massive()`, recipes from `assembling.py`; costs in docs/perf/LIMITS.md, "Massive blasts").
+The user asked for "massive ordnance options" (2026-11-07): three warhead sections in the bench's Warheads group, each a big step up. They are arcade game items: the numbers are chosen to look and play big and are not modelled on anything (code `Source/Constructs/ConstructMegaBlast.cs`, `Game/GameSandboxMegaBlast.cs`, `Render/Fx/MegaBlastFx.cs`; parts from `Source/PartKit/Generators/OrdnanceParts.cs` `Massive()`, recipes from `assembling.py`; costs in docs/perf/LIMITS.md, "Massive blasts").
 
 | Section (own length, 25 cm) | Mass | Blast | Damage at the middle | Crater | Look | Survival recipe (tier 4 Assembler) |
 | --- | --- | --- | --- | --- | --- | --- |
