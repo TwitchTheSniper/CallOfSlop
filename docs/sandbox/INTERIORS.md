@@ -819,6 +819,53 @@ spine offset and shaft moves were only planned through the walker's anchored hul
 - **Dark lamps:** a lamp lights only from a wire and every wire is one of the construct's 254 routes, so daisy-chaining doesn't help; it wants a
   lamp kind that lights from the power circuit (or a switch whose one wire feeds a room's lamps), which is game code.
 
+## Phase 11 record (branch `feat/interior-decor`)
+
+User feedback (2026-11-10): the rooms "are lacking in decorations, pretty much all the rooms"; references: a carrier's hangar deck, a cargo
+ship's engine hall. Phase 10's dark lamps (30 to 37 generated rooms a seed) were the 254-route cap: every lamp needed a wire.
+
+**Mains lamps (game code).** A lamp part may be `"logic": {"kind": "lamp", "mains": true}` (`ConstructPartDef.Mains`). It lights while the
+construct has a battery or plant, its power is on and the circuit reaches it (`CPart.Powered`, the frame is the circuit); a wire into it
+switches it (on while its source is). It draws its `power` while lit, as any lamp. Cheap: no per-lamp tick work beyond the logic's existing
+part loop; `ConstructLamps.Lit` decides on every peer from what each already has (the pose's power flag, the structure, a switch's signal),
+so mains lamps are left out of the poses' signals (protocol 235) and a client gets no per-lamp traffic. The switch feed per lamp is gathered
+with the lamp list after a rebuild (the only allocation). The render, the light grid and the look text use `ConstructLamps.Lit`.
+
+**Dressing** (`ModuleSets.json` `"dressing"` kits, a set's `"dress"` names its kit; `InteriorBuilder.Dress`, the stage after the feeds and
+before the welds). Each kit item is a part hung on a plain wall's face socket (wall pieces and panel walls; never a door wall or corner) facing
+into the room, in a band (top under the ceiling, mid at chest height, low), at least `count`, one more every `perCells` cells (a hall's storeys
+count), at most `max`, spread round the room (farthest from its others first). A piece stays within its wall piece (nothing over a doorway),
+1 m plus its half length clear of stair flights (head room), and is skipped before the rules are asked when its box would meet a solid one
+(a refused try costs a rebuild). The upright spin is found once per wall turn and socket. `"high"`: only on a hall's upper storeys (the jib).
+Kits: crew (quarters, mess, medical, bridge, lockers, gunnery), work, plant, store, gallery, hall, plantHall, storeHall. Floor dressing is
+ordinary module items (Crate Stack, Fuel Drum, Scrap Workbench, Bay Marking) in the halls and stores; any room's things now take spots in
+front of a doorway last (a crate there made a doorway a climb on seed 3).
+
+New parts (`interior_parts.py` "Dressing", `Constructs/Parts/Interior/Dressing`, faces resolved by `zfight.resolve`): Wall Light and Hall
+Floodlight (mains lamps), Pipe Bank, Duct Run and Cable Tray Run (3.6 m, to fit a 4 m wall's middle socket), Wall Rib (floor to ceiling,
+with a knee), Deck Sign, Tool Board, Fire Point, Jib Crane (hall upper walls) and Bay Marking (floor). Every one: one link, no joint, no wire.
+Every room's floor Lamp went (the bridge keeps one wired Lamp: its Switch is where the bulkhead seal switches go).
+
+| Seed 1 | Phase 10 | Phase 11 |
+| --- | --- | --- |
+| Parts / links / joints / wires (budget table) | 3,944 / 15,714 / 20 / 158 | 5,247 / 17,010 / 20 / 98 |
+| Lights: parts / wires | 154 / 61 (30 rooms dark) | 574 / 1 (no room dark) |
+| Dressing parts | none | 1,218 hung (468 Wall Light, 205 Wall Rib, 107 Pipe Bank, 104 Hall Floodlight, 89 Cable Tray Run, 88 Deck Sign, 68 Fire Point, 50 Tool Board, 35 Duct Run, 4 Jib Crane), 15 spots refused |
+| Build | 10.7 s | 16.0 s (dressing 4.8 s) |
+
+Seeds 2 and 3: 5,313 / 17,353 and 5,314 / 17,189 parts / links, 579 and 585 mains lamps. Generation went from about 11 to 16 s: each of the
+~1,200 pieces pays the kit's rebuild after a step at ~5,000 parts (about 4 ms); the kit's batch rebuild would take most of it back.
+
+**Tried by hand:** `--gen-interior` seeds 1 to 3 (seed 3 still refuses phase 10's Repair Station), every seed drives from the bridge's helm;
+`--interior-walk --walk 4` seeds 1 to 3 pass (every door, doorway, stair flight, corridor and lift car; walked 11.6 m in 4 s, worst tick
+driven 1 to 2 ms, settling 10 to 11 ms on the first ticks); `--check-construct-parts` finishes.
+**Not tried:** drawing anything (no picture taken: whether rooms read as dressed, the glow and light of the mains lamps), a host and a
+client with mains lamps (protocol 235's signal list), a mains lamp wired to a switch, the tick time of a standing fitted walker beyond the
+walk's settle.
+
+**Left:** corridors have no dressing (they are not rooms); columns and overhead cranes across a hall's span (the jib is a wall piece; few
+fit: 4 a seed); section switching of the lamps (a wire per lamp still works, one wire per room or section does not exist); the build time.
+
 ### Next (phase 10 and on)
 
 Lamps that need no wire (or a higher link cap); the kit's batch rebuild; a wide event door for Garage Wall openings; a single lift car through all storeys; medical and food items; tier-4 room tables for the capital class; damage and fire kept within bulkhead sections (game code); the train lane joined to the logistics

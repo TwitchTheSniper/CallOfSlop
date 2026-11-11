@@ -104,6 +104,7 @@
         {"part": "Crew Station", "count": 1, "role": "engineer"},
         {"part": "Engineer's Panel", "count": 1, "role": "engineer"},
         {"part": "Chart Table", "count": 1, "loot": true},
+        {"part": "Lamp", "count": 1},
         {"part": "Chest", "count": 1, "loot": true} ],
       "dress": "crew",
       "missing": ["engineer's panel: a damage board (the panel reads the circuit's charge only)"] },
@@ -131,8 +132,7 @@
         {"part": "Assembler", "count": 1, "role": "machine"},
         {"part": "Battery", "count": 1, "role": "power"},
         {"part": "Materials Bin", "count": 2},
-        {"part": "Parts Shelf", "count": 1},
-        {"part": "Crate Stack", "count": 1} ],
+        {"part": "Parts Shelf", "count": 1} ],
       "dress": "work",
       "missing": [],
       "feeds": [{"link": "chute", "from": "storage", "fromRole": "stock", "toRole": "machine", "toPort": "Chute in", "reach": 64}] },
@@ -260,8 +260,7 @@
       "dress": "crew",
       "missing": [] },
     { "id": "fuel", "items": [
-        {"part": "Fuel Tank", "count": 1, "role": "fuel"},
-        {"part": "Fuel Drum", "count": 2} ],
+        {"part": "Fuel Tank", "count": 1, "role": "fuel"} ],
       "dress": "plant",
       "missing": [] }
   ]

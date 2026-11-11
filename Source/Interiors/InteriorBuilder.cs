@@ -1612,6 +1612,28 @@ public sealed class InteriorBuilder : BlueprintScript
                     spots.Add(((middle ? 0 : 100) + MathF.Abs(x - cx) + MathF.Abs(z - cz) + (float)rng.Next() * 0.3f, f, name, at));
                 }
             }
+        // (phase 11) spots in front of a doorway go last: a thing stood there makes the way through it a climb
+        {
+            var doorways = new List<Vector3>();
+            var rc0 = r.Cells().ToList();
+            var dlo = Slab(r.Deck, rc0.Min(c => c.X), rc0.Min(c => c.Z)) - new Vector3(1f, 0.5f, 1f);
+            var dhi = Slab(r.Deck, rc0.Max(c => c.X) + 1, rc0.Max(c => c.Z) + 1) + new Vector3(1f, 2.5f, 1f);
+            string[] ways = [Shell("doorWall"), Shell("doorCorner"), Shell("garageWall")];
+            for (var i = 0; i < C.PartCount; i++)
+                if (Array.IndexOf(ways, C.DefOf(i).Name) >= 0)
+                {
+                    C.PartBounds(i, out var plo, out var phi);
+                    if (phi.X >= dlo.X && plo.X <= dhi.X && phi.Y >= dlo.Y && plo.Y <= dhi.Y && phi.Z >= dlo.Z && plo.Z <= dhi.Z)
+                        doorways.Add((plo + phi) * 0.5f);
+                }
+            for (var k = 0; k < spots.Count; k++)
+                foreach (var dw in doorways)
+                    if (MathF.Abs(dw.Y - spots[k].At.Y) < 2f && new Vector2(dw.X - spots[k].At.X, dw.Z - spots[k].At.Z).Length() < 2.6f)
+                    {
+                        spots[k] = spots[k] with { Order = spots[k].Order + 1000 };
+                        break;
+                    }
+        }
         spots.Sort((a, b) => a.Order.CompareTo(b.Order));
         // the solid boxes standing in or round the room (rest frame), so a thing that would stand in one is skipped before the build rules are
         // asked (phase 8: a refused try costs a millisecond, and a big room's things made tens of thousands of them)
