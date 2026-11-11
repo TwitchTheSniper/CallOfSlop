@@ -110,6 +110,9 @@ public sealed partial class Game
         _storyMiddleOf = null; // (the people's middle is the colony's when there is one)
     }
 
+    /// <summary>The story's home planetoid: where a story game starts (the Ministry's colony), in the galaxy's first system (docs/planets/WORLDS.md).</summary>
+    public const string StoryHomeMap = "Planetoid";
+
     /// <summary>
     /// Server, a fresh survival world's start (from <see cref="SandboxStartKit"/>, before the kit): the colony on level
     /// ground near <paramref name="from"/>, the wreck out at the crash site, the staff into the story. Returns where the

@@ -2,7 +2,8 @@
 
 Five star systems, one faction home in each (Karl, 2026-11-10; the storyline has five systems that each solved a part
 of the fold, and a data centre in each). A world is a planetoid map in `Maps/Planetoids/`, named by a body's `"map"` in
-its system file. Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
+its system file. Together they are the story's map: STORY on the main screen (and HOST STORY CO-OP) starts on the
+Planetoid in Slopstar, and one saved world holds every world the group lands on (docs/story/OPENING.md). Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
 then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a world").
 
 | System | World | Radius, gravity | Ground | Faction home | Why go |
