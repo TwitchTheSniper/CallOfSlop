@@ -14,7 +14,24 @@ The story layer turns what happens in a world into stories that can be seen, kep
 ## Trying it
 
 - **The Story window**: **F4** in Sandbox (rebindable as *Story window*; also the *Story* button in the F7 toolbar). Host
-  only for now: a joined player sees a note. Eight tabs:
+  only for now: a joined player sees a note. It opens with four tabs, for seeing where the story is and steering it:
+  - **Story**: for a player, the storylet playing now, its cast and the ends it waits for (with *End* buttons); every
+    storylet and why it isn't playing now, clause by clause (*Start* plays one now if it can be cast, its needs
+    aside); their storylet qualities (with - and +) and facts; what ended lately. *Forget what they had* lets them all
+    come again ("Storylets" below).
+  - **People**: everyone with a mind of their own: where they are, what they are doing (with how far along) and the
+    goal it is for. Pick one for their needs as bars, traits and feelings, what they did lately (failures in red),
+    what they said lately (hover a line for the rule that said it) and, folded, what they know, most interesting
+    first, with who told them. *Add cast* puts a cast (Story/Casts) into the live world, its world place being this
+    map; *Skip 10 min* moves the story clock on; *Call craft* brings the placeholder craft in near you. A person with
+    a body is green (their page says where it is and where it is going), the dead are grey. A person under a stage
+    direction shows it in blue.
+  - **Factions**: each faction's wants, members, and its standing with every player and group it has dealings with.
+  - **Events**: every event kept, newest first (filter by verb, or stories only).
+- **The *Engine* box** at the top of the window (off each time the game starts) adds the engine's own views, for
+  working on the engine itself, and puts the counters, timings and on/off switches back on the four tabs above (the
+  *Storylets*, *Bodies*, *Craft* and *Talk* switches; each person's goal scores and plan tree; what the sifter did
+  beside the events):
   - **World**: the story world as a graph. Players orange, people cream, places green, constructs blue; each
     relationship an arrow from the one who holds it, coloured by relation (two-way ones a plain line), thicker when
     stronger. Click an entity for what it holds, who holds what towards it, its stories and its last events; drag one to
@@ -23,14 +40,6 @@ The story layer turns what happens in a world into stories that can be seen, kep
   - **Stories**: where each story is at. Each pattern with its counts and its stages, and under it every match in
     progress as a row: the stages done (green, with the event that did it), the one waited for (orange, with the time
     left) and those still to come (grey, with the names bound so far). Then the stories told, newest first.
-  - **People**: everyone with a mind of their own: where they are, what they are doing (with how far along) and the
-    goal it is for. Pick one for their needs as bars, traits and feelings, every goal's score best first (hover one for
-    each consideration's factor), the plan tree with the step under way, what they did lately (failures in red) and
-    what they know, most interesting first, with who told them, and what they said lately (hover a line for the rule
-    that said it). *Add cast* puts a cast (Story/Casts) into the live
-    world, its world place being this map; *Skip 10 min* moves the story clock on; *Bodies* turns the people's bodies
-    in this world on and off; *Talk* turns their words off and on. A person with a body is green (their page says where it is and where it is going), the
-    dead are grey. A person under a stage direction shows it in blue (and in their goals' tooltips).
   - **Drama**: the drama manager. Its stage directions (who is nudged to do what to whom, for which story, how hard,
     how long it has left, and whether they did it), the stories in progress as it ranked them (hover one for its score
     taken apart), why the rest got nothing (a player acts next, the verb waits for bodies, nobody knows, nobody would),
@@ -43,11 +52,6 @@ The story layer turns what happens in a world into stories that can be seen, kep
   - **Roster**: everyone the story has known, people and players, the living and the dead, by renown: how they are now
     (where, or who killed them where and when), what they did, the stories they are in, and their line. Hover a name for
     all their deeds and stories; click one for their page on the People tab.
-  - **Storylets**: for a player, every storylet and why it isn't playing now, clause by clause; the one under way, its
-    cast and the ends it waits for (with *End* buttons); what ended lately; their storylet qualities (with - and +) and
-    facts. *Start* plays one now if it can be cast, its needs aside; *Forget what they had* lets them all come again
-    ("Storylets" below).
-  - **Chronicle**: every event kept, newest first (filter by verb, or stories only), and what the sifter did.
   - **Data**: the scenarios (Play puts one into the live world), the patterns, the line rules by occasion (hover one
     for its lines), the verbs, relations and qualities loaded.
 - **`--story-sim FILE`**: plays a scenario headless on its own clock and prints the chronicle, what the sifter did after
@@ -703,7 +707,7 @@ with *A goodbye* from anyone who likes the player, who may be told or not; then 
 folded*: someone who likes the player asks if it is enough). What was done is the exclusive relation `Ending`
 (Last Round, Undone, Kept; `Story/Relations/Ending.json`, verbs `Story/Verbs/Ending.json`). Nobody speaks at the
 machine. Not built: the machine as a place, and what stopping does to the world, so nothing records the three events
-in play yet (the F4 Storylets tab's End buttons stand in).
+in play yet (the F4 Story tab's End buttons stand in).
 
 ## Fragments
 

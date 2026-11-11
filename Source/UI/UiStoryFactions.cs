@@ -16,7 +16,8 @@ public sealed partial class Ui
     private void DrawStoryFactions(StoryEngine s)
     {
         var fs = s.Factions;
-        DimWrapped($"{fs.Count} factions in the data (Story/Factions), {fs.Deeds} deeds counted this session. A deed is something a player does to a faction's own (a member, a construct it claims, the faction itself): it remembers it, and its standing with them and their group moves. Standing is its Likes or Grudge.");
+        if (StoryEngineTabs)
+            DimWrapped($"{fs.Count} factions in the data (Story/Factions), {fs.Deeds} deeds counted this session. A deed is something a player does to a faction's own (a member, a construct it claims, the faction itself): it remembers it, and its standing with them and their group moves. Standing is its Likes or Grudge.");
         if (fs.Count == 0)
             return;
         for (var f = 0; f < fs.Count; f++)

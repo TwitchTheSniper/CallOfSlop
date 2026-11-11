@@ -17,7 +17,7 @@ kit or the construct code is touched.
   down 6 m beside it just as the courier comes, and leaves once the crate is collected, sent back over the paperwork,
   short again or the job dropped.
 - Two craft due at one spot stand side by side (14 m apart).
-- **Story window (F4), People tab**: the "Craft" switch turns them off; "Call craft" brings one of each kind in near you
+- **Story window (F4), People tab**: the "Craft" switch (with the Engine box ticked) turns them off; "Call craft" brings one of each kind in near you
   for ten seconds, to see them without waiting for a trip. Log lines start with `[standin]`.
 
 ## How it works

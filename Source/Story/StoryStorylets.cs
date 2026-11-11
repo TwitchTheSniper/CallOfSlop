@@ -1283,7 +1283,7 @@ public sealed class StoryStorylets
     }
 
     /// <summary>
-    /// Why a storylet isn't playing for a player now (the Storylets tab, --check-story): under way, had, resting, the
+    /// Why a storylet isn't playing for a player now (the Story tab, --check-story): under way, had, resting, the
     /// first clause of its needs that fails (of the alternative that got furthest), or who can't be cast. Null: ready.
     /// </summary>
     public string? WhyNot(int player, int def, double now)
