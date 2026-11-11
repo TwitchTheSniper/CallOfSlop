@@ -161,6 +161,8 @@ public static partial class ConstructRoutes
             return "no room for another link";
         c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
         c.Routes[c.RouteCount - 1].Paint = s.Paint;
+        if (s.Type == RouteType.Conveyor)
+            ConstructConveyor.Limit(c, c.RouteCount - 1, out c.Routes[c.RouteCount - 1].ConvW, out c.Routes[c.RouteCount - 1].ConvH); // (a blueprint's link is data: its ends' limit as before, not the turns' cap a new link gets)
         if (s.Type == RouteType.Conveyor && s.SizeW > 0 && s.SizeH > 0)
         {
             // (as it was set, within what its ends take here: a part's opening may have changed since)

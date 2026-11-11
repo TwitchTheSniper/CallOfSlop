@@ -17,7 +17,7 @@ public static class RouteEndsProbe
 
     private struct Stats
     {
-        public int Asked, Found, Failed, Straight, Bad, ShortNear, TurnyNear, Turns;
+        public int Asked, Found, Failed, Straight, Bad, ShortNear, TurnyNear, Turns, Invalid, Tight, Narrowed;
         public double Ms, MaxMs;
     }
 
@@ -66,8 +66,17 @@ public static class RouteEndsProbe
             return r;
         }
 
-        void Measure(Construct c, RouteType t, Vector3 start, ReadOnlySpan<CRouteNode> pre, RouteSearch.Result r, int to, byte toPort, float width, ref Stats s, string label)
+        void Measure(Construct c, RouteType t, int from, byte fromPort, ReadOnlySpan<CRouteNode> pre, RouteSearch.Result r, int to, byte toPort, float width, ref Stats s, string label)
         {
+            var start = ConstructRoutes.PortPoint(c, from, fromPort, t);
+            var whole = new CRouteNode[pre.Length + r.Count];
+            pre.CopyTo(whole);
+            Array.Copy(r.Nodes, 0, whole, pre.Length, r.Count);
+            if (ConstructRoutes.Check(world, c, t, from, fromPort, 255, 0, default, whole, to, toPort, checkFrom: Math.Max(1, pre.Length)) is { } bad) // (as the tool checks it: the nodes laid before were checked as they were laid)
+            {
+                s.Invalid++;
+                detail.Append(label).Append(": INVALID: ").Append(bad).AppendLine();
+            }
             Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
             var n = 0;
             pts[n++] = start;
@@ -82,6 +91,10 @@ public static class RouteEndsProbe
             for (var i = 1; i < path.Length; i++)
                 total += Vector3.Distance(path[i - 1], path[i]);
             var min = MathF.Max(0.5f, width);
+            var tightMin = t == RouteType.Conveyor ? (r.Width > 0 ? r.Width / 100f : width) : MathF.Max(0.1f, ConstructRoutes.Radius(t) * 4f); // (what the type needs to turn in)
+            if (t == RouteType.Conveyor && r.Width > 0 && r.Width / 100f < width - 0.001f)
+                s.Narrowed++;
+            var tight = 0;
             int turns = 0, turnsS = 0, turnsE = 0, shortNear = 0;
             var along = 0f;
             for (var i = 1; i < path.Length; i++)
@@ -91,6 +104,8 @@ public static class RouteEndsProbe
                 along += len;
                 if (len < min && (a0 <= Near || total - along <= Near))
                     shortNear++;
+                if (len < (i == 1 || i == path.Length - 1 ? tightMin * 0.5f : tightMin) - 0.005f && (a0 <= Near || total - along <= Near))
+                    tight++;
                 if (i < path.Length - 1)
                 {
                     var d0 = Vector3.Normalize(path[i] - path[i - 1]);
@@ -109,6 +124,8 @@ public static class RouteEndsProbe
             var turny = turnsS > 2 || turnsE > 2;
             if (shortNear > 0)
                 s.ShortNear++;
+            if (tight > 0)
+                s.Tight++;
             if (turny)
                 s.TurnyNear++;
             if (shortNear > 0 || turny)
@@ -157,6 +174,13 @@ public static class RouteEndsProbe
                 s.Asked++;
                 var ask = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = 255, Nodes = nodes, Count = 0, To = to, ToPort = tb };
                 var r = Run(ask, ref s);
+                if (r.State != RouteSearchState.Found && Environment.GetEnvironmentVariable("ROUTE_DEBUG") == "1")
+                {
+                    RouteSearch.RouteDebug = true;
+                    Console.WriteLine($"[route-debug] {c.DefOf(from).Name}#{from} -> {c.DefOf(to).Name}#{to}");
+                    Run(ask, ref s);
+                    RouteSearch.RouteDebug = false;
+                }
                 if (r.State != RouteSearchState.Found)
                 {
                     s.Failed++;
@@ -164,7 +188,7 @@ public static class RouteEndsProbe
                     continue;
                 }
                 s.Found++;
-                Measure(c, t, ConstructRoutes.PortPoint(c, from, fb, t), [], r, to, tb, Width(t, from, fb, to, tb), ref s, $"{t} {c.DefOf(from).Name}#{from} -> {c.DefOf(to).Name}#{to}");
+                Measure(c, t, from, fb, [], r, to, tb, Width(t, from, fb, to, tb), ref s, $"{t} {c.DefOf(from).Name}#{from} -> {c.DefOf(to).Name}#{to}");
             }
             byType[t] = s;
         }
@@ -232,7 +256,9 @@ public static class RouteEndsProbe
                     detail.Append(label).AppendLine(": straight");
                     continue;
                 }
+                RouteSearch.RouteDebug = Environment.GetEnvironmentVariable("ROUTE_DEBUG") == "2" && label.StartsWith("Conveyor waypoint (2,-0.03,0) -> Press");
                 var r = Run(ask, ref waypointStats);
+                RouteSearch.RouteDebug = false;
                 if (r.State != RouteSearchState.Found)
                 {
                     waypointStats.Failed++;
@@ -240,13 +266,13 @@ public static class RouteEndsProbe
                     continue;
                 }
                 waypointStats.Found++;
-                Measure(c, t, ConstructRoutes.PortPoint(c, from, fb, t), pre, r, tp, ti.Byte, Width(t, from, fb, tp, ti.Byte), ref waypointStats, label);
+                Measure(c, t, from, fb, pre, r, tp, ti.Byte, Width(t, from, fb, tp, ti.Byte), ref waypointStats, label);
             }
         }
 
         var sb = new StringBuilder();
         void Line(string what, in Stats s) =>
-            sb.AppendLine($"[route-ends] {what,-22} asked {s.Asked,4}, found {s.Found,4}, failed {s.Failed,3}, straight {s.Straight,3} | bad ends {s.Bad,3} ({(s.Found > 0 ? 100.0 * s.Bad / s.Found : 0):0}%: {s.ShortNear} short, {s.TurnyNear} >2 turns) | mean turns {(s.Found > 0 ? (double)s.Turns / s.Found : 0):0.00} | search {(s.Asked > 0 ? s.Ms / s.Asked : 0):0.0} ms mean, {s.MaxMs:0} max");
+            sb.AppendLine($"[route-ends] {what,-22} asked {s.Asked,4}, found {s.Found,4}, failed {s.Failed,3}, invalid {s.Invalid}, straight {s.Straight,3} | bad ends {s.Bad,3} ({(s.Found > 0 ? 100.0 * s.Bad / s.Found : 0):0}%: {s.ShortNear} short, {s.TurnyNear} >2 turns) | tight for the type {s.Tight} | conveyors narrowed {s.Narrowed} | mean turns {(s.Found > 0 ? (double)s.Turns / s.Found : 0):0.00} | search {(s.Asked > 0 ? s.Ms / s.Asked : 0):0.0} ms mean, {s.MaxMs:0} max");
         var all = new Stats();
         foreach (var (t, s) in byType)
         {
@@ -254,6 +280,9 @@ public static class RouteEndsProbe
             all.Asked += s.Asked;
             all.Found += s.Found;
             all.Failed += s.Failed;
+            all.Invalid += s.Invalid;
+            all.Tight += s.Tight;
+            all.Narrowed += s.Narrowed;
             all.Bad += s.Bad;
             all.ShortNear += s.ShortNear;
             all.TurnyNear += s.TurnyNear;

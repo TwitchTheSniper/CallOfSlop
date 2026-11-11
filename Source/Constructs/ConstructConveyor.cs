@@ -142,7 +142,7 @@ public static class ConstructConveyor
     /// <summary>Why a conveyor can't be set to <paramref name="w"/> by <paramref name="h"/> cm, or null.</summary>
     public static string? SizeRefusal(Construct c, int route, int w, int h)
     {
-        Limit(c, route, out var mw, out var mh);
+        ConstructRoutes.ConveyorMax(c, route, out var mw, out var mh); // (no wider than its turns leave room for: ConstructRoutesEnds.cs)
         if (w < MinSizeCm || h < MinSizeCm)
             return $"a conveyor is at least {MinSizeCm} cm each way";
         if (w > mw || h > mh)

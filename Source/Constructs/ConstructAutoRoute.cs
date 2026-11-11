@@ -50,8 +50,10 @@ public sealed class RouteSearch
     private const int PerAxis = 400, MaxPath = 2048;
     private const int HashSize = 1 << 19, HashMask = HashSize - 1, HeapSize = 1 << 19;
     private const int BlockBit = 1, HugBit = 8, SoftBit = 64, TargetBit = 512, ReachBit = 1024, BesideBit = 2048;
-    private const float BendCost = 0.4f, HugFactor = 0.8f, BesideFactor = 0.5f, SoftFactor = 2.5f, HugGap = 0.03f, ShaftBendCost = 1.2f, SideCost = 0.6f;
+    // (a bend costs more than a surface or a neighbour saves: hugging and lying beside break ties between routes of the same turns, they never buy a turn; route-ends, 2026-11-11)
+    private const float BendCost = 0.8f, HugFactor = 0.95f, BesideFactor = 0.85f, SoftFactor = 2.5f, HugGap = 0.03f, ShaftBendCost = 1.2f, SideCost = 2.5f;
     private const float StubMin = 0.1f; // a run at least this long between bends
+    private const float BedCap = 0.5f; // the widest conveyor bed the 12 m looks plan turns for
 
     /// <summary>What a search came to: its state, the nodes it adds to the link and why it failed.</summary>
     public sealed class Result
@@ -62,6 +64,7 @@ public sealed class RouteSearch
         public readonly CRouteNode[] Nodes = new CRouteNode[Construct.MaxNodesPerRoute];
         public int Count;
         public float Length; // the whole link's length
+        public ushort Width; // a conveyor: the bed it will open to (cm), what its ends take and its turns leave room for
         internal long Age;
     }
 
@@ -118,6 +121,11 @@ public sealed class RouteSearch
     private int _bestState = -1, _bestTarget = -1;
     private float _bestCost;
     private string? _lastWhy;
+    public static bool RouteDebug;
+    private float _width; // a conveyor: the bed it opens to (m); else 0
+    private float _bed, _minRun, _endStub, _bend; // this stage: the shortest run between bends, the shortest stub out of a port, a bend's cost
+    private Vector3[] _alt = [], _best = [], _fwd = [], _roomPts = [];
+    private int[] _roomHosts = [];
 
     private static readonly int[,] Dir18 = MakeDirs();
     private static readonly float[] Dir18Len = new float[18];
@@ -189,6 +197,11 @@ public sealed class RouteSearch
         _lat = [new float[PerAxis], new float[PerAxis], new float[PerAxis]];
         _path = new Vector3[MaxPath];
         _chk = new CRouteNode[Construct.MaxNodesPerRoute * 2];
+        _alt = new Vector3[MaxPath];
+        _best = new Vector3[MaxPath];
+        _fwd = new Vector3[MaxPath];
+        _roomPts = new Vector3[Construct.MaxNodesPerRoute * 2 + 2];
+        _roomHosts = new int[Construct.MaxNodesPerRoute * 2 + 2];
     }
 
     /// <summary>Drops the search running (results stay until the construct changes).</summary>
@@ -246,7 +259,7 @@ public sealed class RouteSearch
         return _busy;
     }
 
-    private Result Done(RouteSearchState state, string? why, int count = 0, float length = 0f)
+    private Result Done(RouteSearchState state, string? why, int count = 0, float length = 0f, ushort width = 0)
     {
         _phase = Phase.Idle;
         var slot = _cache[0];
@@ -258,6 +271,7 @@ public sealed class RouteSearch
         slot.Why = why;
         slot.Count = count;
         slot.Length = length;
+        slot.Width = width;
         slot.Age = ++_age;
         for (var i = 0; i < count; i++)
             slot.Nodes[i] = _chk[_ask.Count + i];
@@ -275,6 +289,7 @@ public sealed class RouteSearch
         _closed = a.To >= 0;
         _flat = a.Type != RouteType.Shaft;
         _radius = ConstructRoutes.Radius(a.Type);
+        _width = a.Type == RouteType.Conveyor && a.Parent == 255 ? ConstructRoutes.ConveyorWidth(c, a.From, a.FromPort, a.To >= 0 ? a.To : -1, a.ToPort) : 0f;
         _startHost = a.Parent != 255 ? ConstructRoutes.HostOf(c, a.Parent, a.ParentSeg) : a.From;
         _goalHost = _closed ? a.To : a.OpenHost;
         _stage = 0;
@@ -369,7 +384,7 @@ public sealed class RouteSearch
         var c = _ask.C;
         var margin = _flat ? FlatStages[_stage].Margin : ShaftStages[_stage].Margin;
         _clear = _flat ? FlatStages[_stage].Clear * _radius : _radius + 0.01f;
-        _hFactor = c.RouteCount > 0 || c.TrayCount > 0 ? 0.6f : 0.92f;
+        _hFactor = c.RouteCount > 0 || c.TrayCount > 0 ? 0.82f : 0.92f;
         _min = ConstructWorld.Quantise(Vector3.Min(_s, _g) - new Vector3(margin)); // (on the 1 cm grid: so are the planes)
         _max = ConstructWorld.Quantise(Vector3.Max(_s, _g) + new Vector3(margin));
         _partAt = 0;
@@ -390,10 +405,22 @@ public sealed class RouteSearch
             Array.Clear(m);
         if (_flat)
         {
-            // The ends' own planes, and one a stub off each way, so a link can leave and arrive in open air.
+            // The ends' stubs and the runs between bends: a conveyor's at least its bed's width (it can't turn in less), the others a few
+            // of their widths, so a link leaves and arrives straight; only the last stage, for the narrow slots, lets the others in closer.
+            // (the wider looks plan a conveyor at most half a metre wide: it opens to what its turns leave room for, and a wider one is the wheel's)
+            var last = _stage == FlatStages.Length - 1;
+            _bed = _stage >= 2 ? MathF.Min(_width, BedCap) : _width;
+            _minRun = MathF.Max(MathF.Max(StubMin, _radius * 1.5f), _bed);
+            _endStub = _bed > 0f ? MathF.Max(StubMin, last ? _bed * 0.5f : _bed) : last ? StubMin : MathF.Max(StubMin, _radius * 4f);
+            _bend = BendCost + _bed;
+            // The ends' own planes, and a stub off each way, so a link can leave and arrive in open air.
             var stub = MathF.Max(StubMin * 1.5f, ConstructRoutes.Grace(_radius) * 0.9f);
             for (var a = 0; a < 3; a++)
             {
+                Mark(a, _s[a] - _endStub, 2);
+                Mark(a, _s[a] + _endStub, 2);
+                Mark(a, _g[a] - _endStub, 2);
+                Mark(a, _g[a] + _endStub, 2);
                 Mark(a, _s[a], 2);
                 Mark(a, _g[a], 2);
                 Mark(a, _s[a] - stub, 2);
@@ -588,6 +615,7 @@ public sealed class RouteSearch
     {
         // (a box round the whole construct already: a wider one holds nothing new)
         var c = _ask.C;
+        if (RouteDebug) Console.WriteLine($"[route-debug] stage {_stage} done: best {_bestState} tgt {_tgtN} expanded {_expanded} longWay {_longWay} gaveUp {_gaveUp} why {_lastWhy} width {_width} minRun {_minRun} endStub {_endStub} phase {_phase}");
         var pad = new Vector3(1f);
         if (_flat && _stage < FlatStages.Length - 2 && Vector3.Min(_min, c.LocalMin - pad) == _min && Vector3.Max(_max, c.LocalMax + pad) == _max)
             _stage = FlatStages.Length - 2;
@@ -933,9 +961,11 @@ public sealed class RouteSearch
                 {
                     at += sign * _stride[axis];
                     var t = MathF.Abs(_lat[axis][k] - _g[axis]);
-                    if (t > reach || _tgtN >= _tgtPoint.Length)
+                    if (t > MathF.Max(reach, _endStub * 1.5f) || _tgtN >= _tgtPoint.Length)
                         break;
-                    if (t < StubMin)
+                    if (t > reach && (_grid[sign > 0 ? at - _stride[axis] : at] & (BlockBit << axis)) != 0)
+                        break; // (past the grace a stub has to be clear)
+                    if (t < _endStub)
                         continue;
                     // (the way the link moves on arriving is against the way out of the port: d ^ 1)
                     _tgtPoint[_tgtN] = at;
@@ -1018,7 +1048,7 @@ public sealed class RouteSearch
                     continue;
                 legal = true;
                 if (bend > 1f)
-                    extra += BendCost;
+                    extra += _bend;
             }
             float reach;
             if (_hasPrev)
@@ -1029,13 +1059,18 @@ public sealed class RouteSearch
             var axis = d / 2;
             var sign = (d & 1) == 0 ? 1 : -1;
             var i = Index(axis, sp, _stride, _n);
+            var port = !_hasPrev && _ask.Parent == 255; // (out of a port: a stub at least _endStub, clear past the grace)
+            var far = port ? MathF.Max(reach, _endStub * 1.5f) : reach;
+            var least = port ? _endStub : MathF.Min(StubMin, reach * 0.5f);
             for (var k = i + sign; k >= 0 && k < _n[axis]; k += sign)
             {
                 at += sign * _stride[axis];
                 var t = MathF.Abs(_lat[axis][k] - _s[axis]);
-                if (t > reach)
+                if (t > far)
                     break;
-                if (t < MathF.Min(StubMin, reach * 0.5f) || (_grid[at] & ReachBit) == 0)
+                if (t > reach && (_grid[sign > 0 ? at - _stride[axis] : at] & (BlockBit << axis)) != 0)
+                    break;
+                if (t < least || (_grid[at] & ReachBit) == 0)
                     continue;
                 var key = at * 6 + d;
                 var st = StateOf(key, out var fresh);
@@ -1095,13 +1130,13 @@ public sealed class RouteSearch
         var dy = MathF.Abs(_lat[1][y] - _g.Y);
         var dz = MathF.Abs(_lat[2][z] - _g.Z);
         var bends = (dx > 0.01f ? 1 : 0) + (dy > 0.01f ? 1 : 0) + (dz > 0.01f ? 1 : 0) - 1;
-        return (dx + dy + dz) * _hFactor + MathF.Max(bends, 0) * BendCost;
+        return (dx + dy + dz) * _hFactor + MathF.Max(bends, 0) * _bend;
     }
 
     /// <summary>A slice of the square search: true found, false nothing there, null out of time.</summary>
     private bool? FlatSlice(long end)
     {
-        var minRun = MathF.Max(StubMin, _radius * 1.5f);
+        var minRun = _minRun;
         while (true)
         {
             if ((_expanded & 63) == 63 && Stopwatch.GetTimestamp() >= end)
@@ -1135,7 +1170,7 @@ public sealed class RouteSearch
                     var bend = _tgtDir[t] != dir;
                     if (bend && (_sRun[s] < minRun || _tgtDir[t] == (dir ^ 1)))
                         continue;
-                    var total = g + _tgtT[t] + (bend ? BendCost : 0f);
+                    var total = g + _tgtT[t] + (bend ? _bend : 0f);
                     if (total < _bestCost && _sLen[s] + _tgtT[t] <= _maxLen)
                     {
                         _bestCost = total;
@@ -1181,7 +1216,7 @@ public sealed class RouteSearch
                     continue;
                 }
                 var cost = len * ((bits & (SoftBit << axis)) != 0 ? SoftFactor : (bits & (BesideBit << axis)) != 0 ? BesideFactor : (bits & (HugBit << axis)) != 0 ? HugFactor : 1f);
-                var ng = g + cost + (turn ? BendCost : 0f);
+                var ng = g + cost + (turn ? _bend : 0f);
                 var st = StateOf(q * 6 + d, out var fresh);
                 if (st < 0)
                 {
@@ -1385,72 +1420,317 @@ public sealed class RouteSearch
             _path[n++] = PointAt(PointNear(_g));
         else
             _path[n++] = _g;
+        n = Collapse(_path, n);
+        // The ends, solved again by hand: the search's lattice turns where its planes are, so a few cm between the last run and a
+        // port (or a waypoint) came out as two or three short jogs. Each end is tried as "the path, at most two turns, the port".
+        if (_closed && _gDir != Vector3.Zero)
+            n = TidyEnd(n, false);
+        if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero))
+            n = TidyEnd(n, true);
         return Nodes(n, true);
     }
 
     /// <summary>The path's corners as nodes, on the parts they run past, checked with the server's rule.</summary>
     private bool Nodes(int n, bool final)
     {
-        // Corners only: straight on stays one segment (split where a segment would be longer than a link allows).
+        n = Collapse(_path, n);
+        var why = Build(_path, n, out var total, out var length);
+        if (why != null)
+            return final && Refuse(why);
+        Done(RouteSearchState.Found, null, total - _ask.Count, length, BedWidth(total));
+        return true;
+    }
+
+    /// <summary>A closed conveyor's bed as it will be laid (cm): what its ends take, no wider than its turns leave room for.</summary>
+    private ushort BedWidth(int total)
+    {
+        if (_ask.Type != RouteType.Conveyor || !_closed || _ask.Parent != 255)
+            return 0;
+        var c = _ask.C;
+        var m = 0;
+        _roomPts[m] = ConstructRoutes.PortPoint(c, _ask.From, _ask.FromPort, RouteType.Conveyor);
+        _roomHosts[m++] = _ask.From;
+        for (var i = 0; i < total; i++)
+        {
+            _roomPts[m] = _chk[i].Pos;
+            _roomHosts[m++] = _chk[i].Host;
+        }
+        _roomPts[m] = ConstructRoutes.PortPoint(c, _ask.To, _ask.ToPort, RouteType.Conveyor);
+        _roomHosts[m++] = _ask.To;
+        ConstructConveyor.Limit(c, _ask.From, _ask.FromPort, _ask.To, _ask.ToPort, out var w, out _);
+        return ConstructRoutes.TurnCap(w, ConstructRoutes.ConveyorRoom(c, _roomPts.AsSpan(0, m), _roomHosts.AsSpan(0, m)));
+    }
+
+    /// <summary>Corners only: straight on stays one segment, and points on top of each other go. Returns the new count.</summary>
+    private static int Collapse(Vector3[] path, int n)
+    {
         var w = 1;
         for (var i = 1; i < n; i++)
         {
             if (w >= 2)
             {
-                var a = Vector3.Normalize(_path[w - 1] - _path[w - 2]);
-                var d = _path[i] - _path[w - 1];
+                var a = Vector3.Normalize(path[w - 1] - path[w - 2]);
+                var d = path[i] - path[w - 1];
                 if (d.LengthSquared() < 1e-8f)
                     continue;
                 if (Vector3.Dot(a, Vector3.Normalize(d)) > 0.9999f)
                 {
-                    _path[w - 1] = _path[i];
+                    path[w - 1] = path[i];
                     continue;
                 }
             }
-            else if (Vector3.DistanceSquared(_path[0], _path[i]) < 1e-8f)
+            else if (Vector3.DistanceSquared(path[0], path[i]) < 1e-8f)
                 continue;
-            _path[w++] = _path[i];
+            path[w++] = path[i];
         }
-        n = w;
+        return w;
+    }
+
+    /// <summary>
+    /// A path's corners as nodes in <see cref="_chk"/> after the link's own (split where a segment would be longer than a link
+    /// allows), on their parts, checked with the server's rule. Null when it passes, else why not.
+    /// </summary>
+    private string? Build(Vector3[] path, int n, out int total, out float length)
+    {
         var have = _ask.Count;
         Array.Copy(_ask.Nodes, _chk, have);
-        var total = have;
-        var length = _alongSoFar;
+        total = have;
+        length = _alongSoFar;
         var lastIndex = _closed ? n - 1 : n; // (an open goal's last point is a node, a closed one's is the port)
         for (var i = 1; i < lastIndex + (_closed ? 1 : 0); i++)
         {
-            var seg = Vector3.Distance(_path[i - 1], _path[i]);
+            var seg = Vector3.Distance(path[i - 1], path[i]);
             length += seg;
             var pieces = (int)MathF.Ceiling(seg / (ConstructRoutes.MaxSegment - 0.01f));
             for (var k = 1; k < pieces; k++)
             {
                 if (total >= Construct.MaxNodesPerRoute)
-                    return Refuse($"it needs more than {Construct.MaxNodesPerRoute} nodes");
-                _chk[total++] = new CRouteNode { Pos = Vector3.Lerp(_path[i - 1], _path[i], k / (float)pieces) };
+                    return $"it needs more than {Construct.MaxNodesPerRoute} nodes";
+                _chk[total++] = new CRouteNode { Pos = Vector3.Lerp(path[i - 1], path[i], k / (float)pieces) };
             }
             if (i < lastIndex)
             {
                 if (total >= Construct.MaxNodesPerRoute)
-                    return Refuse($"it needs more than {Construct.MaxNodesPerRoute} nodes");
-                _chk[total++] = new CRouteNode { Pos = _path[i] };
+                    return $"it needs more than {Construct.MaxNodesPerRoute} nodes";
+                _chk[total++] = new CRouteNode { Pos = path[i] };
             }
         }
         if (_half && length > ConstructRoutes.HalfShaftReach(_ask.C.DefOf(_ask.To)))
-            return Refuse($"too far: half shaft reaches {ConstructRoutes.HalfShaftReach(_ask.C.DefOf(_ask.To)):0.#} m");
+            return $"too far: half shaft reaches {ConstructRoutes.HalfShaftReach(_ask.C.DefOf(_ask.To)):0.#} m";
         Hosts(have, total);
         var c = _ask.C;
-        string? why;
         if (_closed)
-            why = ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort, checkFrom: have); // (what the search added: the rest was checked as it was laid)
-        else
+            return ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort, checkFrom: have); // (what the search added: the rest was checked as it was laid)
+        var tail = _chk[total - 1];
+        return ConstructRoutes.OpenPath(c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total - 1), tail.Pos, tail.Host);
+    }
+
+    // ---- The ends, tidied (route-ends, 2026-11-11) ------------------------------------------------------------------
+
+    private const int TidyBack = 5; // corners back from an end that may be replaced
+    private const float SlopeDeg = 3f; // a leg may slope this much off square to take up a small offset (within every type's bend slack)
+
+    /// <summary>
+    /// One end of the path solved again: from each of the last few corners (the anchor), the ways to the end with at most two
+    /// turns (straight or sloped a little, an L, a Z, each axis in turn), kept when the whole path then has fewer turns or
+    /// short legs and passes the server's check. <paramref name="atStart"/>: the start end (worked on the path reversed).
+    /// Small offsets are taken up by moving or sloping a long leg, not by a jog. Nothing allocates.
+    /// </summary>
+    private int TidyEnd(int n, bool atStart)
+    {
+        if (n < 3)
+            return n;
+        var p = _path;
+        if (atStart)
+            Array.Reverse(p, 0, n);
+        // The end itself exactly (the lattice has it to the cm), and the way the link must move into it (zero: any way).
+        p[n - 1] = atStart ? _s : _g;
+        var into = atStart ? (_ask.Count == 0 ? -_sDir : Vector3.Zero) : -_gDir;
+        var bestScore = Score(p, n, into, atStart);
+        var bestN = n;
+        Array.Copy(p, _best, n);
+        // The way the link moves at the far end (p[0]): out of its port, or on from the last node laid (zero: free, a junction).
+        var port0 = atStart ? _closed : !_hasPrev && _ask.Parent == 255;
+        var din0 = atStart ? (_closed ? _gDir : Vector3.Zero) : port0 ? _sDir : _prevDir;
+        Span<Vector3> cand = stackalloc Vector3[3];
+        for (var k = n - 2; k >= 0; k--)
         {
-            var tail = _chk[total - 1];
-            why = ConstructRoutes.OpenPath(c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total - 1), tail.Pos, tail.Host);
+            if (k < n - 1 - TidyBack && k > 0)
+                continue; // (the last few corners, and the far end itself: the whole stretch in at most two turns)
+            var q = p[k];
+            var din = k > 0 ? Vector3.Normalize(p[k] - p[k - 1]) : din0;
+            if (k == 0 && din == Vector3.Zero)
+                continue;
+            var end = p[n - 1];
+            var dv = end - q;
+            for (var shape = 0; shape < 16; shape++)
+            {
+                var m = Shape(shape, q, din, end, into, dv, cand);
+                if (m < 0)
+                    continue;
+                // The trial: the path up to the anchor, the shape's corners, the end.
+                var t = 0;
+                for (var i = 0; i <= k; i++)
+                    _alt[t++] = p[i];
+                for (var i = 0; i < m; i++)
+                    _alt[t++] = cand[i];
+                _alt[t++] = end;
+                t = Collapse(_alt, t);
+                var score = Score(_alt, t, into, atStart);
+                if (score >= bestScore - 0.01f || !Legal(_alt, t, into, k, din0, port0))
+                    continue;
+                // (the server's rule, in the link's own order)
+                for (var i = 0; i < t; i++)
+                    _fwd[i] = atStart ? _alt[t - 1 - i] : _alt[i];
+                if (Build(_fwd, t, out _, out _) is { } bad)
+                {
+                    if (RouteDebug)
+                        Console.WriteLine($"[route-debug] tidy {(atStart ? "start" : "end")} k {k} shape {shape}: {bad}");
+                    continue;
+                }
+                bestScore = score;
+                bestN = t;
+                Array.Copy(_alt, _best, t);
+            }
         }
-        if (why != null)
-            return final && Refuse(why);
-        Done(RouteSearchState.Found, null, total - have, length);
-        return true;
+        Array.Copy(_best, p, bestN);
+        if (atStart)
+            Array.Reverse(p, 0, bestN);
+        return bestN;
+    }
+
+    /// <summary>
+    /// Shape <paramref name="shape"/> from anchor <paramref name="q"/> (arriving along <paramref name="din"/>) to the end
+    /// (<paramref name="dv"/> away, entered along <paramref name="into"/> or any way): its corners in <paramref name="c"/>, how
+    /// many, or -1 when it doesn't apply.
+    /// </summary>
+    private int Shape(int shape, Vector3 q, Vector3 din, Vector3 end, Vector3 into, Vector3 dv, Span<Vector3> c)
+    {
+        var stub = MathF.Max(_endStub, _bed);
+        switch (shape)
+        {
+            case 0: // straight on, or sloped a little
+                return 0;
+            case 1:
+            case 2:
+            case 3: // sloped to a stub straight out of the port
+            {
+                if (into == Vector3.Zero)
+                    return -1;
+                var ls = shape == 1 ? stub : shape == 2 ? stub * 2f : MathF.Max(stub, Vector3.Dot(dv, into) * 0.5f);
+                c[0] = end - into * ls;
+                return 1;
+            }
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9: // each axis in turn (one or two corners: an L, or three legs)
+            {
+                int a0 = shape - 4 < 2 ? 0 : shape - 4 < 4 ? 1 : 2;
+                int a1 = (a0 + ((shape & 1) == 0 ? 1 : 2)) % 3;
+                var a2 = 3 - a0 - a1;
+                var x = q;
+                var m = 0;
+                for (var j = 0; j < 2; j++)
+                {
+                    var ax = j == 0 ? a0 : a1;
+                    if (MathF.Abs(dv[ax]) < 0.003f)
+                        continue;
+                    x[ax] = end[ax];
+                    c[m++] = x;
+                }
+                if (MathF.Abs(dv[a2]) < 0.003f && m > 0)
+                    m--; // (the last corner would be the end itself)
+                return m;
+            }
+            case 10:
+            case 11:
+            case 12: // a Z on the way in: on along the anchor's way, across, on into the end
+            case 13: // ... or an L, across first
+            {
+                var along = Vector3.Dot(dv, din);
+                var side = dv - din * along;
+                if (along <= 0f || side.LengthSquared() < 1e-6f)
+                    return -1;
+                if (shape == 13)
+                {
+                    c[0] = q + side;
+                    return 1;
+                }
+                var t1 = shape == 10 ? _minRun : shape == 11 ? along * 0.5f : along - stub;
+                if (t1 <= 0.05f || t1 >= along - 0.05f)
+                    return -1;
+                c[0] = q + din * t1;
+                c[1] = c[0] + side;
+                return 2;
+            }
+            default:
+                return -1;
+        }
+    }
+
+    /// <summary>Every bend square or a slope within <see cref="SlopeDeg"/> (and on the type's steps), legs long enough, the end entered the right way.</summary>
+    private bool Legal(Vector3[] p, int n, Vector3 into, int from, Vector3 din0, bool port0)
+    {
+        var square = MathF.Cos(SlopeDeg * MathF.PI / 180f);
+        if (from == 0 && din0 != Vector3.Zero)
+        {
+            // (the first leg was replaced: out of a port along its face, on from a node by the bend rules)
+            var deg = Angle(din0, p[1] - p[0]);
+            if (port0 ? deg > SlopeDeg : deg > SlopeDeg && MathF.Abs(deg - 90f) > 1f || ConstructRoutes.BendRule(_ask.Type, deg) != null)
+                return false;
+        }
+        for (var i = 1; i < n; i++)
+        {
+            var d = p[i] - p[i - 1];
+            var len = d.Length();
+            if (len < ConstructRoutes.MinSegment + 0.005f)
+                return false;
+            var ad = Vector3.Abs(d) / len;
+            if (i > from && MathF.Max(ad.X, MathF.Max(ad.Y, ad.Z)) < square)
+                return false; // (a new leg runs along an axis, or slopes a little off one)
+            if (i + 1 < n)
+            {
+                var deg = Angle(d, p[i + 1] - p[i]);
+                if (deg > SlopeDeg && MathF.Abs(deg - 90f) > 1f || ConstructRoutes.BendRule(_ask.Type, deg) != null)
+                    return false; // (square, or a slope: no diagonals)
+            }
+        }
+        return into == Vector3.Zero || Angle(p[n - 1] - p[n - 2], into) <= SlopeDeg;
+    }
+
+    private static float Angle(Vector3 a, Vector3 b) => MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(a), Vector3.Normalize(b)), -1f, 1f)) * 180f / MathF.PI;
+
+    /// <summary>
+    /// How bad a path's ends look (lower is better): a turn 1, a slope a tenth, a leg between turns shorter than the run a turn
+    /// needs 1.5, an end leg shorter than its stub 1.5, a sideways arrival 2, and its length a little.
+    /// </summary>
+    private float Score(Vector3[] p, int n, Vector3 into, bool atStart)
+    {
+        var score = 0f;
+        var bentBefore = false;
+        for (var i = 1; i < n; i++)
+        {
+            var d = p[i] - p[i - 1];
+            var len = d.Length();
+            score += len * 0.02f;
+            var bentAfter = false;
+            if (i + 1 < n)
+            {
+                var deg = Angle(d, p[i + 1] - p[i]);
+                bentAfter = deg > ConstructRoutes.ConveyorBendDeg;
+                score += bentAfter ? 1f : deg > 0.5f ? 0.1f : 0f;
+            }
+            var endLeg = i == n - 1 || i == 1 && (atStart ? _closed : !_hasPrev && _ask.Parent == 255); // (p[0] is a port too)
+            if (bentBefore && bentAfter && len < _minRun - 0.005f || endLeg && (bentBefore || bentAfter) && len < _endStub - 0.005f)
+                score += 1.5f;
+            bentBefore = bentAfter;
+        }
+        if (into != Vector3.Zero && Angle(p[n - 1] - p[n - 2], into) > SlopeDeg)
+            score += 2f;
+        return score;
     }
 
     private bool Refuse(string why)

@@ -1133,7 +1133,7 @@ public static partial class Program
         }
         var steps = (int)_lkConvScroll;
         _lkConvScroll -= steps;
-        ConstructConveyor.Limit(c, k, out var mw, out var mh);
+        ConstructRoutes.ConveyorMax(c, k, out var mw, out var mh); // (no wider than its turns leave room for)
         if (steps != 0)
         {
             if (CtrlHeld)
