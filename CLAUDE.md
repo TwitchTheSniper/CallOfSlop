@@ -44,7 +44,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 Sandbox first:
 
 ```
-Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md, an index): ConstructParts (part files, Rot24), Construct (a body), LogicBlocks/LogicInputs/LogicDisplays/LogicText/ConstructRadio (logic parts, from tools/constructs/control_parts.py),
+Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md, an index): ConstructParts (part files, Rot24), Construct (a body), LogicBlocks/LogicInputs/LogicDisplays/LogicText/ConstructRadio (logic parts, from the part kit's control_parts),
                      ConstructPhysics, ConstructCollider/Narrow/PhysicsContacts (compound collision), ConstructWorld (wrecks,
                      damage, players), ConstructBuild (sockets, ghosts, blueprints), ConstructEdits* (tools, timed edits),
                      ConstructNet (CBody/CPose), ConstructScoops (buckets that dig and pour), ConstructDrive/Engine/Power/Logic/Links/Routes, Recycling/Refining/Assembling/

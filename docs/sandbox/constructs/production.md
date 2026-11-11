@@ -482,7 +482,7 @@ Choices made (the developer may change them):
 The first step of the ore loop (the user, 2026-11-11: rooms and bases felt empty): machines that a generator can place in a row and a player
 reads at a glance and runs from one place. Refiners first; the Assembler, Extruder and Recycler are to follow with the same pieces. Code:
 `Source/Constructs/ProductionLines.cs`; the parts come from `tools/constructs/machine_tiers.py` and `screens.py` (the lamp) and
-`control_parts.py` (the console).
+the part kit's `control_parts` (the console).
 
 - **Line state** (`ProductionLines.Raw`, `Of`): Running, Stopped (held off: its console or any wire into Run), Starved (empty or short of a
   batch), Blocked (output full or holding another material), Fault (an input it can't work) and No power. Worked out from the store and the

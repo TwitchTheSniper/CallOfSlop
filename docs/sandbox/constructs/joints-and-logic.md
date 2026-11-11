@@ -401,7 +401,7 @@ A seat controls nothing by itself: a car with a seat and no module doesn't go, a
 beside it. A seat has one output. One data link from it into a **module** carries the sitter's controls, and the module
 breaks them out. Old saves and player blueprints have no modules: they stop driving until they are rewired. The shipped
 blueprints have them. Code: `Source/Constructs/ConstructModules.cs`; parts: `Constructs/Parts/Controls` (written by
-`tools/constructs/control_parts.py`, in Seats and Logic > Controls).
+the part kit's `--gen-parts control_parts`, in Seats and Logic > Controls).
 
 **Driving Module.** Link the seat into it, and its `drive` output to any one part of the drivetrain: an engine, a
 gearbox, a steering pivot, a thruster or a hub motor (each has a `drive` port, which the picker offers alone for this
