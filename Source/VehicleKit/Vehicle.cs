@@ -313,7 +313,7 @@ public sealed partial class Vehicle : BlueprintScript
     private VPart Corner(VPart mount, string socket, string spring, string wheel)
     {
         var s = Onto(mount, socket, spring, BoltBy(Def(spring)));
-        var w = Onto(s, "axle", wheel, "axle");
+        var w = CornerWheel(s, wheel, Diff2 != null ? 6 : 4); // (a Wheel Former wheel when asked: Vehicle.FormedWheels.cs)
         Wheels.Add(w);
         return w;
     }
