@@ -148,7 +148,7 @@ own copy, and the host's construct with the host beside it is refused as defende
   them.
 - The panel's key field takes only keys a seat passes on to input readers (they are the only keys the server sees).
 - Not done: a pressure plate's "who triggers" and weight, a proximity sensor's targets and line of sight, a lamp's light
-  range (lamps cast no light yet), a seat's exposed keys, a lever's positions (the game has only players to detect, no
+  range (lamps light their surroundings now: look.md), a seat's exposed keys, a lever's positions (the game has only players to detect, no
   lamp lights, and seats pass on a fixed set of keys). Controller support waits for Steam Input.
 
 ## Fusing
@@ -694,7 +694,7 @@ cuts over the transport and the client's copy agrees on the pose; the attach too
 
 ### Choices made (the developer may change them)
 
-- The gap limit is 0.25 m and a construct takes 8 freeform attachments; attach strength is a normal attach's (the anchor and the
+- The gap limit is 0.25 m and a construct takes 192 freeform attachments (`ConstructFreeform.MaxPerConstruct`); attach strength is a normal attach's (the anchor and the
   attached-on part take the damage).
 - Cutting is the attach tool's aim on the join (RMB within 0.6 m of the bead), and it is instant (survival included);
   attaching is LMB.
@@ -751,7 +751,7 @@ like any aim ([Contraption space](self-tests-and-history.md#contraption-space)):
 body keeps the piece on the construct's Rot24 grid: the two merge as a join does, linked socket to socket, the parts
 on the centimetre grid. Any other angle, a face point, a socket of another kind, or a target on a joint's or a freeform
 piece's segment joins the piece as a fixed-pose rigid segment, exactly as a freeform attachment does
-(`JointType.Fixed`, `ConstructWorld.FreeformWeld`; at most 8 a construct, no wheels on such a piece). The attach tool cuts
+(`JointType.Fixed`, `ConstructWorld.FreeformWeld`; at most 192 a construct, no wheels on such a piece). The attach tool cuts
 either free again (a grid part with RMB held, a freeform join with RMB on its bead).
 
 **Wheels.** A wheel's axle onto a suspension's axle socket always goes on the grid, at any spin (a wheel turned about
