@@ -4,7 +4,7 @@ Covers doors and event doors, large systems (motherships, carriers), carrier wor
 
 ## Doors
 
-A door is whatever hangs on a hinge, not a kind of part. F on any part on a passive hinge's leaf, or a motor hinge no wire runs, opens or shuts it (`ConstructEdits.Use`), so a door can be any size and any material. `Source/Constructs/ConstructDoor.cs` holds what the player sees of that; the parts come from `tools/constructs/door_parts.py`.
+A door is whatever hangs on a hinge, not a kind of part. F on any part on a passive hinge's leaf, or a motor hinge no wire runs, opens or shuts it (`ConstructEdits.Use`), so a door can be any size and any material. `Source/Constructs/ConstructDoor.cs` holds what the player sees of that; the parts come from `Source/PartKit/Generators/DoorParts.cs`.
 
 - **Hanging anything.** A joint's leaf takes a door's `leaf` socket or a plain `struct` socket (`ConstructBuild.KindsMate`, used by the wrench's Place, the snap build, the socket weld and the vehicle kit), on a passive hinge as on a motor hinge. So a Panel, a plate or an Extruder piece goes on any hinge: an item with the wrench's path, a physics-only piece by a socket, point or freeform weld onto the leaf. An Extruder plate has edge sockets only at its stations (about every metre), so to hang one centred on its hinge use a length with a station at the middle (an odd number of metres) or a freeform weld.
 - **The Door Hinge** (0.5 m) and **Long Door Hinge** (2 m) fit in a door's 2 cm gap: base socket on one jamb, leaf socket facing the door. The pivot is on the door's outer face (2 cm off the hinge's middle, towards its own -z), so the door swings out past the jamb and only the knuckles, 1 cm proud, show outside. They open one way: limits 0 to 100 degrees, towards the hinge's -z; turn the hinge end over to swing the other way. A player walking into a shut door from that side swings it, and from the other side is held. The old **Hinge** stays for what is built on it: 20 cm wide and proud of a wall, it suits gates.
@@ -23,7 +23,7 @@ one and a physics segment every tick, so the Titan Walker's interiors ran out wi
 body frame as an ordinary part, shut or open, and changes only when a player or a wire works it. Code:
 `Source/Constructs/ConstructDoors.cs` (events, the step, settling, drawing, the wire) and `Construct.Doors.cs` (the list).
 
-- **The parts** (`tools/constructs/door_parts.py`, `Constructs/Parts/Doors/EventSteel` and `EventWood`). A door part with a
+- **The parts** (`Source/PartKit/Generators/DoorParts.cs`, `Constructs/Parts/Doors/EventSteel` and `EventWood`). A door part with a
   `"door"` block is an event door: `"kind"` `swing` (a whole number of quarter turns, `"angle"` about `"axis"` through
   `"pivot"`, in the part's frame) or `slide` (`"travel"` metres along `"axis"`), `"seconds"` to open or shut, and `"hang"`, the
   socket it goes on by. That socket is a plain one, so the wrench puts it straight on a jamb (a Door Wall's or Door Corner's
