@@ -7,7 +7,7 @@ it leans towards premise E (Convicts) in the project doc `planets/PREMISES.md`.
 
 Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the wire, the save), `Source/App/Program.Opening.cs`
 (the camera, the screen and the skip key). Data: `Story/Opening/Opening.json` (names, times, lines), `Story/Casts/PenalColony.json`
-(the staff), the `Penal Colony` blueprint (made by `tools/constructs/building_parts.py`, `blueprints()`).
+(the staff), the `Penal Colony` blueprint (made by the part kit's `BuildingParts.Blueprints`).
 
 ## When it runs
 
@@ -65,7 +65,7 @@ Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes
 - The attacker's induction ends (a skip, so the tutorial gives back what it held), the warden shouts at them, and a
   `[MINISTRY MEMO]` line tells everyone.
 - The siren (`Sfx.ColonyAlarm`, `Source/Audio/SynthAlarm.cs`) wails over the colony on every peer until it stands down.
-- The **Colony Barracks** (a blueprint from `tools/constructs/building_parts.py`, placed 16 to 60 m from the colony when
+- The **Colony Barracks** (a blueprint from the part kit's `BuildingParts`, placed 16 to 60 m from the colony when
   the colony is built, or when a world from before it is loaded) turns out six riot officers, one every half second,
   just outside it on the colony's side. They are hostile bots (Hard, SMGs and rifles) that fight only the wanted and walk
   to the nearest one until they see them.
@@ -92,7 +92,7 @@ Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes
 ## Changing it
 
 - Words and times: `Story/Opening/Opening.json` (ASCII, refused with a reason otherwise: then there is no opening).
-- The colony: the `Penal Colony` blueprint in `tools/constructs/building_parts.py` (run it to rewrite the file). The cell
+- The colony: the `Penal Colony` blueprint in `Source/PartKit/Generators/BuildingParts.cs` (`--gen-parts building_parts` rewrites the file). The cell
   block and the gate are found by their cells (`OpeningSpots`): moving them in the blueprint means moving them there too.
 - The staff: `Story/Casts/PenalColony.json` (the warden's name is also `"warden"` in Opening.json).
 

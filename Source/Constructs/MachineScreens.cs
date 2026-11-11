@@ -2,7 +2,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The built-in screens of the production machines (docs/sandbox/CONSTRUCTS.md, "Machine screens"): one panel source, "machine", on a
-/// plate tools/constructs/screens.py places on each model. Four lines at most of 18 characters: what it is doing on the top line in the
+/// plate the part kit's PartScreens places on each model. Four lines at most of 18 characters: what it is doing on the top line in the
 /// state's colour, then its recipe or setting, then what it holds or lacks, and a bar: the job's progress, or how far along the output
 /// or the piece is where a job is too short to watch (a batch of a Smelter is about a second).
 /// <para>

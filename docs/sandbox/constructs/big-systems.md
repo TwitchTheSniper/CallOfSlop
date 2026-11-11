@@ -70,7 +70,7 @@ solid at its old pose while it moves (no sweeping push); the bulkhead slides sid
 What makes a mothership work: a carrier of about 300 m launching planes of about 15 m, or a traction city (a tracked land
 mothership carrying a town) that lowers a drawbridge and sends its vehicles down it. The parts are written by
 `tools/constructs/large_systems.py` into `Constructs/Parts/Systems` (90 files; run it again after changing a table,
-`--check` compares), in the inventory's function categories, under the Medium, Large and Capital size filter (scale.py's size classes: a socket snaps only to
+`--check` compares), in the inventory's function categories, under the Medium, Large and Capital size filter (the part kit's size classes, `PartScale.cs`: a socket snaps only to
 its own class) and, for small-class controls, the small size. Code: `ConstructDeck.cs` (decks and conveyors),
 `ConstructLauncher.cs` (catapults and arrestors), `ConstructSystems.cs` (the file blocks), the dock rules in
 `ConstructCargo.cs`, the winch in `ConstructLinks.cs`, the fire director in `ConstructWeapons.cs`.

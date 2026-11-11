@@ -62,7 +62,7 @@ world, in co-op, with the colony in sight below. Moving it to a real moon later 
 
 - Words, the height and the cues: `Story/Depot/Depot.json` (ASCII; a bad file is refused with a reason and there is no
   depot).
-- The buildings: the `Remote Works` and `Orbital Depot` blueprints in `tools/constructs/building_parts.py`. The spots the
+- The buildings: the `Remote Works` and `Orbital Depot` blueprints in the part kit's `BuildingParts` (`--gen-parts building_parts`). The spots the
   steps use (apron, shell bay, deck edge, stores, hangar slots) are local points in `GameDepot.cs`: moving things in a
   blueprint means moving them there too.
 - The lander: the part kit's `--gen-parts shell_parts` (docs/sandbox/PARTKIT.md) writes `Constructs/Blueprints/DepotLander.json` from the Orbiter.

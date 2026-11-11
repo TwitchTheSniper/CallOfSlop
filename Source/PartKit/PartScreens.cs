@@ -2,7 +2,7 @@ namespace CallOfSlop.PartKit;
 
 /// <summary>
 /// A machine's built-in screen: a dark plate on the flattest free spot of its model, and the "panels" entry that draws on it. The port of
-/// tools/constructs/screens.py (docs/sandbox/CONSTRUCTS.md, "Machine screens"; the Python stays while machine_tiers.py imports it).
+/// tools/constructs/screens.py (docs/sandbox/constructs/joints-and-logic.md, "Machine screens"), now deleted.
 ///
 /// Tiers and sizes have different models, so a screen is placed by looking at each one, not by a table: <see cref="Mount"/> takes the drawn
 /// boxes as seen from each side, slides a screen-sized window over them, and picks the spot that is flattest, near the height a player reads

@@ -1,7 +1,7 @@
 namespace CallOfSlop.PartKit;
 
 /// <summary>
-/// The Sandbox's part size classes and what every part generator shares: the port of tools/constructs/scale.py
+/// The Sandbox's part size classes and what every part generator shares: the port of the deleted tools/constructs/scale.py
 /// (docs/sandbox/PARTKIT.md; the classes themselves are in docs/sandbox/CONSTRUCTS.md, "Size classes").
 ///
 ///     class    scale  cell   plate (kg/m2)  a frame member  what it builds

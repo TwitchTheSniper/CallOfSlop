@@ -857,7 +857,7 @@ public static partial class ConstructParts
     public const int MaxName = 32; // a part file's name (a sanity check: the inventory's tiles and lists show it whole)
     public const int MaxRuntimeName = 128; // a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a save's names are length-prefixed, a packet's text is at most 255 bytes)
 
-    // The size classes (docs/sandbox/CONSTRUCTS.md, "Size classes"; tools/constructs/scale.py): wire and file values of a socket's class.
+    // The size classes (docs/sandbox/CONSTRUCTS.md, "Size classes"; the part kit's PartScale.cs): wire and file values of a socket's class.
     public const byte Small = 0, Medium = 1, Large = 2, Capital = 3;
     public static readonly string[] ClassNames = ["small", "medium", "large", "capital"];
     public static readonly float[] ClassCell = [0.25f, 1f, 4f, 16f]; // each class's lattice step (m)

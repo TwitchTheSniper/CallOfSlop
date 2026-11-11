@@ -96,7 +96,7 @@ public sealed partial class Game
         Log($"[depot] the Remote Works is construct {w.Id}, the Orbital Depot construct {depot.Id}, {script.Height:0} m up");
     }
 
-    // The blueprints' places (tools/constructs/building_parts.py: cells of 0.25 m, the first pad's first cell at the origin; floors at 0.375 m).
+    // The blueprints' places (the part kit's BuildingParts: cells of 0.25 m, the first pad's first cell at the origin; floors at 0.375 m).
     private static readonly Vector3 ApronLocal = new(1.875f, 0.4f, -4.125f); // the Remote Works' apron's middle
     private static readonly Vector3 WorksDoorLocal = new(1.875f, 0.4f, 0.6f);
     private static readonly Vector3 DepotHangarLocal = new(7.875f, 0.4f, 3.875f); // the depot's hangar deck's middle
