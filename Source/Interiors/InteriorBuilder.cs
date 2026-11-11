@@ -647,7 +647,8 @@ public sealed class InteriorBuilder : BlueprintScript
             .Select(b => (b.Center - b.Half - corner, b.Center + b.Half - corner)).ToList();
         // (the storeys from the floor up to the last whole one under the roof; the deck's grid in plan)
         var storeys = (int)MathF.Floor((roofY - floorY) / 3f + 1e-4f);
-        return new HullVolume(new Vector3(_w * 4, storeys * 3, _d * 4), keep, Hull!.BowAtMinX);
+        Hull = Hull! with { Anchored = true }; // (phase 10: the deck's shafts meet the void's through the chassis's hatches)
+        return new HullVolume(new Vector3(_w * 4, storeys * 3, _d * 4), keep, Hull.BowAtMinX, Anchored: true);
     }
 
     /// <summary>

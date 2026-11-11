@@ -85,6 +85,7 @@ public sealed class InteriorPlan
     public bool Sealed; // no doors to the outside (a chassis void: InteriorPlanner.Plan)
     public bool BowAtMinX;
     public int SpineZ0, SpineZ1;
+    public int RowNorth, RowSouth; // (phase 10) each strip's inner row depth, in cells (0: the class's)
     public int[][,] Cells = []; // [deck][x, z]: a room id, or Corridor, Lane, KeepOut, Free
     public readonly List<PlanRoom> Rooms = new();
     public readonly List<PlanDoor> Doors = new();
