@@ -191,7 +191,7 @@ public sealed class ProductionShowcase : IPartGenerator
                 Bill(orders, piece, n);
             // (and the Assembler's catalogue parts: a Send deals them to it, the pieces to the Extruders and the Former)
             Run(orders, asm, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(34.25f, 0, -8.6f), V(41.75f, 0, -8.6f), V(49.25f, 0, -8.6f), V(52.25f, 0, -8.6f));
-            foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Servo Motor", 2), ("Wheel", 2) })
+            foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Gun Barrel", 2) }) // (steel only, tier 1: what its stock makes)
                 BillPart(orders, part, n);
 
             // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------

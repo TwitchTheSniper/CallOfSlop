@@ -380,12 +380,18 @@ public static class WorkOrders
         for (var i = 0; i < bill.Count;)
         {
             string? why = null;
+            var whyKind = false;
             var took = false;
             for (var t = 0; t < takers && !took; t++)
             {
                 var m = list[(cursor + t) % takers];
                 if (Queue(world, c, m, bill.Items[i]) is { } no)
-                    why ??= $"{c.DefOf(m).Name}: {no}";
+                {
+                    // (the reason that matters is the first from a machine of the order's kind: an Assembler's for a part, else an Extruder's or a Former's)
+                    var kind = c.DefOf(m).IsAssembler != bill.Items[i].IsPiece;
+                    if (why == null || kind && !whyKind)
+                        (why, whyKind) = ($"{c.DefOf(m).Name}: {no}", kind);
+                }
                 else
                 {
                     took = true;
