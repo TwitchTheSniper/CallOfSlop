@@ -570,14 +570,19 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   came to the way it goes as its middle crosses (`ConstructConveyor.LeadIn`, `CRider.ViaPlus1`); the piece behind stops short by
   as much of it as still lies on the input (`Tails`).
 - **The link** is `RouteType.Conveyor`: routed, auto-routed, damaged, mended, painted and deleted as every routed link is; bends
-  in 45 degree steps; it doesn't branch. A new conveyor opens to the smaller of its ends' openings (`CRoute.ConvW`, `ConvH`, cm).
-  Aimed at with the linking tool, the wheel sets its width and Ctrl+wheel its height, 5 cm a notch, from 10 cm up to that limit,
-  sent once the wheel rests (`RouteEditOp.Size`). It is drawn as a roller bed the set width: a dark under-plate, steel-blue side
+  in 45 degree steps; it doesn't branch. A conveyor has one size, its width (user, 2026-11-11): it is clear
+  above, so a piece fits when its section's larger side is no wider (`ConstructConveyor.Needs`). A new conveyor opens to the smaller of
+  its ends' opening widths, no wider than its turns leave room for (`CRoute.ConvW`, cm; [Auto-routing](power-and-links.md#routed-links-decision-20)).
+  `ConvH` stays in the wire, saves and blueprints and is ignored. Aimed at with the linking tool, the look line says
+  "Conveyor 0.30 m wide (max 1.00 m) - wheel: width, R: widest"; the wheel sets the width 5 cm a notch, drawn at once, sent once the
+  wheel rests, and the Reload key (R) sets it to the widest its ends and turns allow, sent at once (`RouteEditOp.Size`). The size
+  change wakes the body: the machine retries the piece on its die at its next step. It is drawn as a roller bed the set width: a dark under-plate, steel-blue side
   rails (the paint), steel rollers every 0.3 m and amber chevrons on the rails pointing the way the pieces go.
 - **Riding.** A cut at the die (the Cut input or Cut every) with a conveyor out of Piece out puts the finished piece on it whole:
   the part leaves the construct and becomes a rider (`CRider`: its def, link, front in metres, health share, paint). Riders move at
   0.5 m/s, front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
-  die, when the piece is wider or taller than the link ("refused: the piece is too big for its conveyor (0.10 x 0.10 m)"), when there
+  die, when the piece is too wide for the link ("conveyor too narrow: 0.10 m, piece needs 0.30 m - aim the linking tool at it: wheel
+  or R to widen"; the screen says "Conveyor too narrow"), when there
   is no room at the start ("blocked: its conveyor is full": a full rack backs the pieces up to the machine) or when the link is cut.
 - **Off the link.** A cut or deleted conveyor drops every piece on it as a loose body where it was, moving as the body moved, and so
   does a construct that goes on the server with pieces riding (deleted, destroyed, cleared as a wreck, fallen out of the world:

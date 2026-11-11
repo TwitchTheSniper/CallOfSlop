@@ -254,10 +254,24 @@ stands in the usual form: `Pipe to Engine: route found, 5 nodes, 6.2 m - LMB: co
 - **Cables, pipes and chutes** search a lattice of box faces: the planes one link radius off each box, the two ends' planes and a stub off
   them (a Hanan grid: the shortest square route round axis-aligned boxes lies on it), thinned to at least 5 cm apart. Edges a box
   touches are marked in a grid, which is what keeps A* cheap: looking up an edge costs one array read. A* runs over (point, direction),
-  charging 0.4 m a bend, 0.8 x the length along a surface or beside another link's run, and 2.5 x along another link's run. All
-  turns are 90 degrees, which suit the pipe's 15 and the chute's 45 degree steps, and a run is at least 10 cm between
-  bends (1.5 x the radius for a chute). A link leaves and arrives along a port's face (sideways costs 60 cm, backwards never), and the first and last
-  stretch may pass through what the clipping grace forgives. Four stages widen the look: 1 m round the ends, 4 m, 12 m,
+  charging 0.8 m a bend (plus a conveyor's width), 0.95 x the length along a surface, 0.85 x beside another link's run or in a tray lane,
+  and 2.5 x along another link's run: hugging and lying beside only break ties, they never buy a turn (route-ends, 2026-11-11). All
+  turns are 90 degrees, which suit the pipe's 15 and the chute's 45 degree steps, and a run between bends is at least 10 cm
+  (1.5 x the radius for a chute, a conveyor's width). A link leaves and arrives along a port's face, on a stub at least 4 link radii long (a
+  conveyor's width; sideways costs 2.5 m, backwards never), and the first and last stretch may pass through what the clipping grace forgives.
+- **The ends are solved again** (`TidyEnd`): the lattice turns where its planes are, so a few cm between the last run and a port or a
+  waypoint used to come out as two or three short jogs. From each of the last five corners, and from the far end, the router tries the
+  shapes with at most two turns into the port (straight, sloped up to 3 degrees, an L, a Z, each axis in turn), legs square or barely
+  sloped and long enough for their turns, and keeps the one that leaves fewest turns and short legs and passes `Check`. Small offsets are
+  taken up by sloping or moving a long leg. `--route-ends [BLUEPRINT]` measures it (`RouteEndsProbe.cs`): on the Production Showcase,
+  routes with a short leg (under 0.5 m) or more than two turns within 2 m of an end went from 77% to 29% (conveyors 95% to
+  19%), mean turns 4.0 to 2.8; from a waypoint in front of a port 90% to 35%, 2.7 turns to 1.2. A conveyor search takes longer (58 ms
+  mean over its frames, at most 0.4 s, at 2 ms a frame).
+- **A conveyor's turns** (`ConstructRoutesEnds.cs`): a bed can't turn in less room than its width, so a new conveyor opens to what both
+  ends take and its turns leave room for (`ConveyorMax`: between two bends its width, from a port to a bend half of it), and the wheel
+  can't widen it past that. One whose turns leave room for no conveyor (10 cm) is refused, in `Check` and in the preview alike. The 12 m
+  looks plan beds at most 0.5 m wide (`BedCap`). The ghost is the bed at the width it will be laid, and the look line says it.
+  Blueprints and saves keep their sizes: nothing here is applied to them. Four stages widen the look: 1 m round the ends, 4 m, 12 m,
   then 12 m on a 2 cm lattice with the clearance dropped to nothing, centreline on the surface, which `EmbedDepth` allows; that is for slots narrower than a link.
 - **A flood from the goal** first marks every lattice point that can reach it, whatever the bends, so a shut-in goal costs one pass of
   the lattice, and A* stays out of pockets with no way on.

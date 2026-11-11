@@ -27,6 +27,10 @@ public static class RouteRender
     public static RouteType PreviewType;
     public static int PreviewFrom; // the segments from this one on show the state too (0: only the last): an auto-route's whole run
     public static bool PreviewBusy; // an auto-route still being searched for: neither green nor red yet
+    public static float PreviewWidth; // a conveyor's ghost: the bed it will be laid at (m; 0: a line)
+    public static Construct? SizeBody; // a conveyor being sized with the wheel: drawn at the new width before the server hears it
+    public static int SizeRoute = -1;
+    public static float SizeW;
     public static bool Highlight; // every link bright and through the parts (the edit ring's "highlight all")
     public static Construct? AimBody; // the link under the crosshair (outlined)
     public static int AimRoute = -1;
@@ -71,10 +75,11 @@ public static class RouteRender
                         var cut = ConstructRoutes.SegmentHealth(c, k, i) <= 0;
                         if (r.Type == RouteType.Conveyor)
                         {
-                            Conveyor(gfx, a, b, z, len, r.ConvW / 100f, cut, r.Paint);
+                            var bed = c == SizeBody && k == SizeRoute ? SizeW : r.ConvW / 100f;
+                            Conveyor(gfx, a, b, z, len, bed, cut, r.Paint);
                             n++;
                             if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f)
-                                ConveyorElbow(gfx, a, dirPrev, z, r.ConvW / 100f, r.Paint);
+                                ConveyorElbow(gfx, a, dirPrev, z, bed, r.Paint);
                             dirPrev = z;
                             a = b;
                             continue;
@@ -165,11 +170,21 @@ public static class RouteRender
     /// <summary>A conveyor's bend: a turn plate under both beds, its top just under the rails'.</summary>
     private static void ConveyorElbow(Renderer gfx, Vector3 at, Vector3 from, Vector3 to, float width, uint paint)
     {
-        var mid = Vector3.Normalize(from + to);
-        var basis = Basis(mid.LengthSquared() > 1e-6f ? mid : from);
+        // A corner: the under-plate square with the way in, and the two outer rails closing it (route-ends: no diamond over the turn).
+        var rail = paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail;
+        var basis = Basis(from);
         var y = new Vector3(basis.M21, basis.M22, basis.M23);
-        var size = width + 0.13f;
-        gfx.Draw(Matrix4x4.CreateScale(size, 0.11f, size) * basis * Matrix4x4.CreateTranslation(at - y * 0.01f), (paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail) * 0.85f);
+        var side = width * 0.5f + 0.03f;
+        gfx.Draw(Matrix4x4.CreateScale(width + 0.06f, 0.03f, width + 0.06f) * basis * Matrix4x4.CreateTranslation(at - y * 0.075f), ConvPlate);
+        if (Vector3.Dot(from, to) > 0.7f)
+            return; // (a slight bend: the beds meet)
+        var across = to - from * Vector3.Dot(to, from);
+        if (across.LengthSquared() < 1e-6f)
+            return;
+        across = Vector3.Normalize(across);
+        var outer = Matrix4x4.CreateScale(0.06f, 0.14f, width + 0.12f);
+        gfx.Draw(outer * Basis(across) * Matrix4x4.CreateTranslation(at + from * side - y * 0.02f), rail); // (ahead of the way in)
+        gfx.Draw(outer * basis * Matrix4x4.CreateTranslation(at - across * side - y * 0.02f), rail); // (behind the way out)
     }
 
     /// <summary>
@@ -360,6 +375,17 @@ public static class RouteRender
                     continue; // (the gap between two links of a bundle)
                 var a = Vector3.Transform(PreviewPts[i - 1], SegFrames[Math.Min(PreviewSeg[i - 1], (byte)Construct.MaxJoints)]);
                 var b = Vector3.Transform(PreviewPts[i], SegFrames[Math.Min(PreviewSeg[i], (byte)Construct.MaxJoints)]);
+                if (PreviewType == RouteType.Conveyor && PreviewWidth > 0f && Vector3.DistanceSquared(a, b) > 1e-8f)
+                {
+                    // (a conveyor's ghost is its bed at the width it will be laid, with a square corner at each node)
+                    var len = Vector3.Distance(a, b);
+                    var basis = Basis((b - a) / len);
+                    var tint = state ? colour : new Vector3(0.9f, 0.9f, 0.4f);
+                    gfx.Draw(Matrix4x4.CreateScale(PreviewWidth, 0.03f, len) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), tint, 0.5f, mode: 2);
+                    if (i < PreviewCount - 1)
+                        gfx.Draw(Matrix4x4.CreateScale(PreviewWidth, 0.035f, PreviewWidth) * basis * Matrix4x4.CreateTranslation(b), tint, 0.5f, mode: 2);
+                    continue;
+                }
                 Line(gfx, a, b, state ? colour : new Vector3(0.9f, 0.9f, 0.4f), 0.75f, radius);
                 gfx.Draw(Matrix4x4.CreateScale(radius * 2.4f) * Matrix4x4.CreateTranslation(b), state ? colour : new Vector3(1f, 0.85f, 0.3f), 0.85f, mode: 2);
             }

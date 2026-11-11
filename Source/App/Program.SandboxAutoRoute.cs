@@ -67,6 +67,8 @@ public static partial class Program
             _ => "routing",
         };
         RouteRender.PreviewBusy = res.State == RouteSearchState.Busy;
+        if (res.State == RouteSearchState.Found && res.Width > 0)
+            RouteRender.PreviewWidth = res.Width / 100f; // (the bed it will be laid at: what its ends take and its turns leave room for)
         var n = LinkGhostNodes(c, res, n0);
         RouteRender.PreviewPts[n] = ConstructRoutes.LivePort(c, to, port, _lkType);
         RouteRender.PreviewSeg[n++] = c.Parts[to].Seg;
@@ -78,6 +80,8 @@ public static partial class Program
 
     private static void LinkGhostEnd(Construct c, int n0, int to, byte port)
     {
+        if (_lkType == RouteType.Conveyor && _lkParent == 255)
+            RouteRender.PreviewWidth = ConstructRoutes.ConveyorWidth(c, _lkFrom, _lkFromPort, to, port); // (a straight conveyor opens to what both ends take)
         RouteRender.PreviewPts[n0] = ConstructRoutes.LivePort(c, to, port, _lkType);
         RouteRender.PreviewSeg[n0++] = c.Parts[to].Seg;
         RouteRender.PreviewCount = n0;
@@ -190,7 +194,7 @@ public static partial class Program
             var name = $"{Cap(ConstructRoutes.Name(_lkType))} to {c.DefOf(to).Name}";
             _lkAutoLook = res.State switch
             {
-                RouteSearchState.Found => $"{name}: route found, {res.Count} node{(res.Count == 1 ? "" : "s")}, {res.Length:0.0} m - {SandboxKeys.Fire}: confirm",
+                RouteSearchState.Found => $"{name}: route found, {res.Count} node{(res.Count == 1 ? "" : "s")}, {res.Length:0.0} m{(res.Width > 0 ? $", {res.Width / 100f:0.00} m wide" : "")} - {SandboxKeys.Fire}: confirm",
                 RouteSearchState.Failed => $"{name}: no route - {res.Why} - {SandboxKeys.Fire} a surface: place a node",
                 _ => $"{name}: routing",
             };
