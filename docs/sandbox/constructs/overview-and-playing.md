@@ -1,5 +1,7 @@
 # Overview and playing
 
+This file's opening is the milestone-1 record (one test map, no world yet); the game is now a persistent survival world with factions (../CONSTRUCTS.md).
+
 Covers the milestones' summary, how to play it, what a construct is, Creative or Survival, factions. Part of the construct guide: index in ../CONSTRUCTS.md.
 
 The sandbox survival mode (board item dev-idea-constructs-cs01; the full design and the developer's 16 decisions are in

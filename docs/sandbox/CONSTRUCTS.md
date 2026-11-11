@@ -1,9 +1,15 @@
-# Constructs and the Sandbox mode: milestones 1 and 2
+# Constructs: the building system of Sandbox
 
-This is the index of the construct guide (the Sandbox mode's building system). The guide itself is split by system into
-the files under `constructs/`, each a few dozen KB. Read this index, then open only the one file that covers your task;
-never read all of them. The milestones' summary and how to play it are in
-[overview-and-playing](constructs/overview-and-playing.md).
+Sandbox is a persistent survival world with factions, played by a small group of friends: players gather, refine and
+build bases, vehicles and motherships from modular parts, and fight and trade beside the factions' own builds. This is the
+index of the construct guide, its building system. The guide is split by system into the files under `constructs/`, each
+a few dozen KB. Read this index, then open only the one file that covers your task; never read all of them. The
+milestone-1 record and how to play are in [overview-and-playing](constructs/overview-and-playing.md).
+
+## [How a build should look](constructs/look.md), 12 KB
+
+**Every agent that authors a blueprint, a generator or a building reads this first.** Valid is not finished: paint by
+section, finishes, lamps, detail, the authoring fields, a detail budget, and the `--look-report` baseline.
 
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
@@ -12,7 +18,7 @@ its system; a new `## ` section is also added to its list here.
 
 ## [Overview and playing](constructs/overview-and-playing.md), 84 KB
 
-The milestones' summary, how to play it, what a construct is, Creative or Survival, factions.
+The milestone-1 record, how to play it, what a construct is, Creative or Survival, factions.
 
 - Playing it
 - What a construct is

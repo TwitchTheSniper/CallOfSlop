@@ -81,6 +81,10 @@ before they write a file, so regenerate rather than hand-edit their output.
 A blueprint is a **build script**: each step fits a part onto a socket of an earlier step's part, through exactly the
 same rules a player builds by, so a blueprint that loads proves the rules can build it.
 
+**Looks.** Loading is not finished: paint (`"paint"`), finishes (`"finish"`), lamps switched on, signs' text and
+moving joints are in [How a build should look](look.md), with the Gate below dressed as the worked example.
+Check a set with `--look-report [FILE|DIR]`.
+
 ```json
 { "format": "call-of-slop-construct-blueprint/1", "name": "Gate", "steps": [
   { "part": "Foundation" },
