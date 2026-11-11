@@ -137,6 +137,7 @@ public static partial class Program
         var usable = aimed && (h.Seated ? hit.Body.StabCount > 0 && hit.Body.Id == h.SeatBody : h.Tool == ConstructTool.Hands && h.Held == ConstructParts.None) && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
             && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && hit.Body.DefOf(hit.Part).Panels.Length > 0 && !hit.Body.Parts[hit.Part].Broken;
         // On a panel already, what was drawn says whether it still is: a ray from this moment's poses can fall off a panel moving at speed, and the cursor would flicker.
+        if (_rsFire) Console.WriteLine($"[rshots] pointer: aimed {aimed}, part {hit.Part}, def {(aimed && hit.Part >= 0 ? hit.Body.DefOf(hit.Part).Name : "-")}, dist {hit.Distance:0.00} of {ConstructBuild.UseReach}, slot {hit.SlotPlus1}, route {hit.RoutePlus1}, usable {usable}"); // THROWAWAY
         var able = h.Seated ? g.Constructs.Get(_scrBody) is { StabCount: > 0 } && _scrBody == h.SeatBody : h.Tool == ConstructTool.Hands && h.Held == ConstructParts.None;
         Construct? c = null;
         var part = -1;

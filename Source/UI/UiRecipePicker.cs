@@ -237,12 +237,15 @@ public sealed partial class Ui
     {
         if (!RecipePickerOpen || _rcp is not { } set || _rcpDef is not { } d)
             return false;
-        SandboxTiles.Want(); // (the pictures, made over a few frames if they aren't yet)
+        SandboxTiles.WantFew(); // (the pictures, made over a few frames if they aren't yet)
         var open = true;
         var picked = -1;
         var vp = ImGui.GetMainViewport();
         var w = MathF.Min(940 * _scale, vp.WorkSize.X * 0.9f);
-        var h = MathF.Min(640 * _scale, vp.WorkSize.Y * 0.88f);
+        // As tall as its rows need (five tiles a row at this width), up to most of the screen: a Smelter's eight tiles make a short window.
+        var rows = (set.Tiles.Length + 4) / 5;
+        var head = (set.Groups.Length > 2 ? 110 : set.Tiles.Length > 12 ? 80 : 70) * _scale;
+        var h = MathF.Min(MathF.Min(head + rows * 182 * _scale, 640 * _scale), vp.WorkSize.Y * 0.88f);
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + (vp.WorkSize.X - w) * 0.5f, vp.WorkPos.Y + (vp.WorkSize.Y - h) * 0.5f), ImGuiCond.Appearing);
         ImGui.SetNextWindowSize(new float2(w, h), ImGuiCond.Appearing);
         ImGui.SetNextWindowBgAlpha(0.95f);
@@ -331,7 +334,7 @@ public sealed partial class Ui
         var cols = Math.Max(1, (int)((avail + gap) / (tw + gap)));
         tw = (avail - gap * (cols - 1)) / cols; // (the row filled)
         var icon = MathF.Min(tw * 0.62f, 96 * _scale);
-        var th = icon + 66 * _scale;
+        var th = icon + 74 * _scale;
         int pics = 0, tiles = 0;
         var rows = (_rcpVisibleCount + cols - 1) / cols;
         // Only the rows in view are drawn; the rest are space (the list scrolls as one).
@@ -384,7 +387,7 @@ public sealed partial class Ui
         var p1 = new float2(at.X + w, at.Y + h);
         var r = 5 * _scale;
         dl.AddRectFilled(at, p1, !usable ? RpDimCard : current ? SbCardSel : hot ? SbCardHot : SbCard, r);
-        var tint = usable ? new ImColor8(255, 255, 255, 255) : new ImColor8(120, 120, 130, 140);
+        var tint = usable ? new ImColor8(255, 255, 255, 255) : new ImColor8(150, 150, 160, 170);
         var i0 = new float2(at.X + (w - icon) * 0.5f, at.Y + 4 * _scale);
         var pic = Picture(dl, t.Slot, t.Swatch, i0, new float2(i0.X + icon, i0.Y + icon), tint, t.Slot < 0 ? t.Name : null);
         var clip = new float4(at.X + 4 * _scale, at.Y, p1.X - 4 * _scale, p1.Y);
@@ -398,17 +401,17 @@ public sealed partial class Ui
         // The inputs: a small icon each, its amount beside it.
         ImGui.PushFont(default, 14);
         var x = at.X + 6 * _scale;
-        var s = 22 * _scale;
+        var s = 28 * _scale;
         for (var k = 0; k < t.InSlot.Length; k++)
         {
             var tw = ImGui.CalcTextSize(t.InText[k]).X;
             if (x + s + tw + 2 * _scale > p1.X - 4 * _scale)
             {
-                DlText(dl, new float2(x, y + 4 * _scale), SbDim, "+"u8);
+                DlText(dl, new float2(x, y + 7 * _scale), SbDim, "+"u8);
                 break;
             }
             Picture(dl, t.InSlot[k], t.InSwatch[k], new float2(x, y), new float2(x + s, y + s), tint, null);
-            DlText(dl, new float2(x + s + 1 * _scale, y + 4 * _scale), usable ? SbText : SbDim, t.InText[k]);
+            DlText(dl, new float2(x + s + 1 * _scale, y + 7 * _scale), usable ? SbText : SbDim, t.InText[k]);
             x += s + tw + 7 * _scale;
         }
         if (t.Time.Length > 0)
@@ -434,6 +437,7 @@ public sealed partial class Ui
             dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)tex) }, p0, p1, new float2(uv0.X, uv0.Y), new float2(uv1.X, uv1.Y), tint);
             return true;
         }
+        SandboxTiles.Prefer(slot); // (on screen: drawn before the rest of the atlas)
         var inset = (p1.X - p0.X) * 0.22f;
         dl.AddRectFilled(new float2(p0.X + inset, p0.Y + inset), new float2(p1.X - inset, p1.Y - inset), swatch, 4 * _scale);
         if (letter != null)
@@ -449,7 +453,7 @@ public sealed partial class Ui
     /// <summary>A loose resource's icon (a material id) in a rectangle, for lists (a swatch until the atlas has it).</summary>
     internal bool ResourceIcon(ImDrawListPtr dl, byte material, float2 p0, float2 p1)
     {
-        SandboxTiles.Want();
+        SandboxTiles.WantFew();
         return Picture(dl, SandboxTiles.ResourceSlot(material), Col8(RecyclingTable.Current.ColourOf(material)), p0, p1, new ImColor8(255, 255, 255, 255), null);
     }
 }

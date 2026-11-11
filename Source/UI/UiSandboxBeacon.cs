@@ -90,9 +90,15 @@ public sealed partial class Ui
                 _sbMatSeen[m] = amount;
                 _sbMatLabel[m] = $"{names.NameOf((byte)m)}: {amount}";
             }
+            // Its icon (ResourceIcons.cs), then its name and amount.
+            var ih = ImGui.GetFrameHeight() * 1.3f;
+            var at = ImGui.GetCursorScreenPos();
+            ResourceIcon(ImGui.GetWindowDrawList(), (byte)m, at, new float2(at.X + ih, at.Y + ih));
+            ImGui.Dummy(new float2(ih, ih));
+            ImGui.SameLine();
             ImGui.AlignTextToFramePadding();
             ImGui.Text(_sbMatLabel[m]);
-            ImGui.SameLine(280 * _scale);
+            ImGui.SameLine(280 * _scale + ih);
             if (ImGui.Button(_sbMatButton[m]))
                 game.SandboxTakeMaterial((byte)m);
             if (ImGui.IsItemHovered())

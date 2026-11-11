@@ -39,7 +39,10 @@ public static partial class Program
         {
             var md = c!.DefOf(machine);
             var current = (int)ConstructConfig.Get(c.Parts[machine], md, CfgKey.Recipe, 0);
-            if (Ui.DrawRecipePicker(g!, current, now))
+            var a0 = GC.GetAllocatedBytesForCurrentThread(); // THROWAWAY
+            var stays = Ui.DrawRecipePicker(g!, current, now);
+            _rsPickerBytes += GC.GetAllocatedBytesForCurrentThread() - a0; // THROWAWAY
+            if (stays)
                 return;
         }
         Ui.CloseRecipePicker();

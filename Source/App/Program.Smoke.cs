@@ -90,6 +90,7 @@ public static unsafe partial class Program
             return;
         }
         var (label, mode, mapName, fallback, bots) = SmokeRuns[_smokeRun];
+        if (_recipeShots && label != "sandbox") { _smokeStep = SmokeStep.Lobby2; _smokeStepStart = now; return; } // THROWAWAY
         var map = Maps.Find(mapName) ?? (fallback.Length > 0 ? Maps.Find(fallback) : null);
         if (map == null)
         {
@@ -158,6 +159,7 @@ public static unsafe partial class Program
             return;
         }
         var label = SmokeRuns[_smokeRun].Label;
+        if (_recipeShots) { RecipeShotsPlay(g, now, t); return; } // THROWAWAY
         if (_smokeRun == 0)
         {
             switch (_smokeScript)
