@@ -75,6 +75,10 @@ public static class ProductionLines
         };
     }
 
+    /// <summary>Whether a machine is at work now, for the boxes that show it ("work" on a box: <see cref="BoxWork"/>): a line machine that shows Running, any other with a busy store and power.</summary>
+    public static bool Working(ConstructWorld world, Construct c, int part, CStore st, double now) =>
+        Raw(world, c, part, st) is null ? st.Busy && !st.Held && ConstructRecycler.Powered(world, c, part) : Of(world, c, part, st, now) == LineState.Running && st.Busy;
+
     /// <summary>The state shown: a new one once it has lasted <see cref="Hold"/>. Keeps its memory on the store (this peer's own, never sent).</summary>
     public static LineState Of(ConstructWorld world, Construct c, int part, CStore st, double now)
     {
