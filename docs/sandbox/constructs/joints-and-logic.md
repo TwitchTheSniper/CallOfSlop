@@ -189,7 +189,7 @@ tip still, ten joints travel to a client, no allocation, and the arm's tick cost
 ## Linear joints
 
 A rail and a carriage: what hangs on the carriage slides along the rail. Data: `Constructs/Parts/Linear` (written by
-`tools/constructs/linear_parts.py`, 42 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs`. Inventory: Joints and
+`Source/PartKit/Generators/LinearParts.cs`, 42 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs`. Inventory: Joints and
 Motion, section Linear; size is the window's filter. Existing Pistons stay as they are.
 
 | Kind | Joint | Runs on | Input | Unwired |

@@ -2,7 +2,7 @@
 """Writes the interior system's own parts (Constructs/Parts/Interior): the Freight Lift Car and the hollow capital chassis.
 
 docs/sandbox/INTERIORS.md, "Phase 2". The freight lift is a Linear Actuator 3x3 4 m (Constructs/Parts/Linear, written by
-linear_parts.py) stood on end against a shaft wall, with this car hung on its carriage. The car is a small-class part: a
+the part kit's linear_parts) stood on end against a shaft wall, with this car hung on its carriage. The car is a small-class part: a
 tread-plate floor a push cart or a small stack of crates fits on, a yoke that bolts to the carriage, two side rails and a
 socket for the car's call button. Riders and loose things ride it as they ride any deck on a joint (ConstructDeck).
 
