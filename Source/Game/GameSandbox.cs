@@ -84,6 +84,7 @@ public enum CActKind : byte
     ShellLeave, // nothing: leave the robot shell worn and wake in the chair (protocol 213; GameRobotShell.cs)
     GrabThrow, // nothing: with the throw upgrade, what the physics gun holds is thrown along the look (protocol 215; ConstructEditsUpgrades.cs)
     Aircraft, // u8 AirAsk, text style, text shape (Flying) or air role (Faction; empty: any), u32 seed (0: the server picks): an aircraft already flying with a bot pilot over the player (protocol 230; GameSandboxAircraft.cs)
+    QuarrySkip, // nothing: skip the first Ministry duty, the quarry (protocol 236; GameQuarry.cs)
 }
 
 /// <summary>
@@ -392,6 +393,7 @@ public sealed partial class Game
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
@@ -772,7 +774,11 @@ public sealed partial class Game
         var asked = r; // (a copy from the kind: the induction reads what was done once it worked, GameTutorial.cs)
         var why = SandboxActDo(p, ref r, now);
         if (why == null && SandboxOn)
+        {
+            var again = asked;
             TutorialSawAct(p, ref asked);
+            QuarrySawAct(p, ref again); // (the quarry duty's steps: GameQuarry.cs)
+        }
         return why;
     }
 
@@ -814,6 +820,9 @@ public sealed partial class Game
                 return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
             case CActKind.OpeningSkip:
                 return OpeningSkipAct(p); // the survival opening (GameSandboxOpening.cs)
+            case CActKind.QuarrySkip:
+                QuarrySkip(p); // the first Ministry duty (GameQuarry.cs)
+                return null;
             case CActKind.ShellLeave:
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
             case CActKind.Talk:

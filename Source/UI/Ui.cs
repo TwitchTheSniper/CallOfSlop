@@ -236,7 +236,8 @@ public sealed partial class Ui : IDisposable
         if (!arena)
         {
             DrawTutorial(game, pos, size, settings); // the warden's induction, top left (UiTutorial.cs)
-            DrawDepot(game, pos, size, settings); // the Orbital Depot's steps, there once the induction is over (UiDepot.cs)
+            DrawQuarry(game, pos, size, settings); // the first Ministry duty, the quarry, once the induction is over (UiQuarry.cs)
+            DrawDepot(game, pos, size, settings); // the Orbital Depot's steps, there once the quarry is done (UiDepot.cs)
         }
 
         // ---- Top-left: session info -------------------------------------------------
