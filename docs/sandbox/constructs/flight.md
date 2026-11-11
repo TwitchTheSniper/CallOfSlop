@@ -231,7 +231,7 @@ A Wheel Former whose piece is a wing or a control surface (`storage.wheel.airfra
 
 ## Flight in survival
 
-Flight parts in survival are looted or made on machines; they are not gated by materials. Creative keeps every part in the menu. Generators: `tools/constructs/assembling.py`, `machine_tiers.py`, `extrusion_parts.py`, `air_cargo.py`.
+Flight parts in survival are looted or made on machines; they are not gated by materials. Creative keeps every part in the menu. Generators: `tools/constructs/assembling.py`, `machine_tiers.py`, and the part kit's `extrusion_parts` and `air_cargo` (docs/sandbox/PARTKIT.md).
 
 | What | Where it comes from |
 | --- | --- |
