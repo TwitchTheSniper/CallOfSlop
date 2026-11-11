@@ -347,6 +347,20 @@ def long_tail(p):
             m["rubber"] = min(MAX_UNITS, round(mass / 40)) # (a tier 1 machine asks nothing a tier 1 machine can't make, so survival can start)
         if p["tier"] >= 3:
             extra["Control Unit"] = min(20, p["tier"] - 2)
+    if role == "enginePiece" and p.get("enginePiece", {}).get("kind") == "cylinder" and p.get("tier", 1) >= 3:
+        # The Engine Kit's tier cylinders (Bored 3, Performance 4, Racing 5: Source/EngineKit/EngineKitParts.cs) climb the tech tree:
+        # bronze bearing shells and Bearings from tier 3, copper and a Circuit Board from 4, gold and a Control Unit at 5 (six inputs at most).
+        t = p["tier"]
+        units = m[material]
+        pistons = extra.get("Piston Set", 1)
+        m["bronze"] = min(MAX_UNITS, max(1, units // 4))
+        extra["Bearing"] = min(20, max(1, pistons // 2))
+        if t == 4:
+            m["copper"] = min(MAX_UNITS, max(1, units // 6))
+            extra["Circuit Board"] = min(20, max(1, pistons // 4))
+        elif t >= 5:
+            m["gold"] = min(MAX_UNITS, max(1, units // 10))
+            extra["Control Unit"] = min(20, max(1, pistons // 4))
     if len(m) + len(extra) < 2 and mass >= 3:
         # Two chains at least: anything of steel has a little rubber or concrete in its fixings.
         m["bronze" if mass < 12 else "rubber" if role not in ("frame",) else "concrete"] = min(MAX_UNITS // 4, max(1, round(mass / 25))) # (fixings stay fixings on a 240 t crank)
