@@ -428,6 +428,16 @@ work and travel mutters, what they shout at a killing or a theft, words for play
 hurt, fighting back, running and coming to help) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
 it headless.
 
+**The murmur** (Karl, 2026-11-11): a line said aloud (`Say`) is also mumbled, in sung syllables at the speaker's mouth
+("ma", a nasal "nga", "ga", "na", "ba", "mo", "wa", "ne", "da", "ya": `Audio/SynthBabble.cs`, the `Babble` effect),
+and their jaw drops and their head nods with each syllable (`TalkMouth`, the body model's jaw and a dark mouth box
+inside it). Each person's voice comes from their name, so it is the same on every machine: a pitch (0.7 to 1.55 of a
+175 Hz note), a pace (9 to 14 syllables a second) and four to six favourite syllables, always with "ma" or "nga". The
+syllables follow the text: one per two or three letters, a pause at a comma and a longer one at a full stop, the note
+falling through a sentence, rising into a question, lifted by capitals and "!", at most 60 a line. Every machine does
+it from its own chat lines (`Game.StoryBabbleSounds`, each frame from the world pass; nothing on the wire). Heard to
+`StoryHearing`, on its own mixer row (F8, "People talking (murmur)") under the Effects volume. Radio lines don't murmur.
+
 ## Talking to people
 
 Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, `Source/App/Program.StoryTalk.cs` and

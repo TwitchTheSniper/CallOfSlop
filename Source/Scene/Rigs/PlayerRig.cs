@@ -22,6 +22,7 @@ public sealed class PlayerRig
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
     private readonly SceneNode[] _legBoxes = new SceneNode[LegAnimator.LegParts.Length * 2];
     private readonly SceneNode _health, _corpse;
+    private readonly SceneNode[] _heads = new SceneNode[3]; // per stance (posed as they talk: BodyModel.TalkPose)
     private readonly SceneNode[] _hats = new SceneNode[3]; // per stance, under the head (after its body model parts)
     private readonly Vector3[] _headSizes = new Vector3[3];
     private readonly BodyParts[] _torsoParts = new BodyParts[3], _headParts = new BodyParts[3];
@@ -91,7 +92,7 @@ public sealed class PlayerRig
         var torso = g.Add("torso");
         torso.SetLocalMatrix(s.TorsoFrame);
         torso.Custom = _torsoParts[stance] = new BodyParts();
-        var head = g.Add("head");
+        var head = _heads[stance] = g.Add("head");
         head.LocalPosition = s.HeadAt;
         head.Custom = _headParts[stance] = new BodyParts();
         _hats[stance] = head.Add("hat");
@@ -170,7 +171,10 @@ public sealed class PlayerRig
         for (var i = 0; i < 3; i++)
             _stances[i].Visible = i == stance;
         if (stance >= 0)
+        {
             _torsoParts[stance].ShowDetail = _headParts[stance].ShowDetail = BodyModel.WantsDetail(p.RenderPosition);
+            _heads[stance].SetLocalMatrix(BodyModel.TalkPose(_headParts[stance], stance, p.Id)); // the jaw and a nod as they talk
+        }
         if (!p.Alive)
             return;
 
