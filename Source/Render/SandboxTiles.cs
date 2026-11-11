@@ -47,11 +47,12 @@ public static unsafe class SandboxTiles
         Part,
         Blueprint,
         Tool,
+        Resource, // a loose resource by material id - 1 (ResourceIcons.cs): drawn first, before the parts
     }
 
     private static uint[] _pages = [];
     private static bool[] _ready = [];
-    private static int _key, _next, _count;
+    private static int _key, _next, _count, _resNext;
     private static bool _wanted, _glReady, _glBroken;
     private static GlFramebuffer _tileFbo, _pageFbo;
     private static uint _tileTex;
@@ -102,13 +103,20 @@ public static unsafe class SandboxTiles
     public static bool Complete => _count > 0 && _next >= _count && _key == Key();
 
     /// <summary>How many tiles there are: every part, blueprint and tool model.</summary>
-    public static int Count => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count;
+    public static int Count => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count + RecyclingTable.Current.Materials.Length;
+
+    /// <summary>The first loose resource's slot.</summary>
+    private static int ResourceBase => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count;
+
+    /// <summary>A loose resource's slot (material id, 1-based), or -1.</summary>
+    public static int ResourceSlot(byte material) => material >= 1 && material <= RecyclingTable.Current.Materials.Length ? ResourceBase + material - 1 : -1;
 
     /// <summary>The slot of a part (by id), a blueprint or a tool model (by index).</summary>
     public static int SlotOf(Kind kind, int index) => kind switch
     {
         Kind.Part => index,
         Kind.Blueprint => ConstructParts.All.Count + index,
+        Kind.Resource => ResourceBase + index,
         _ => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + index,
     };
 
@@ -125,7 +133,7 @@ public static unsafe class SandboxTiles
     public static int Key()
     {
         // (the parts' content hash builds strings: it is taken once per set of loaded files, not every frame)
-        var counts = HashCode.Combine(ConstructBuild.Blueprints.Count, ConstructTools.All.Count, ConstructParts.All.Count);
+        var counts = HashCode.Combine(ConstructBuild.Blueprints.Count, ConstructTools.All.Count, ConstructParts.All.Count, RecyclingTable.Current.Materials.Length);
         if (counts != _keyCounts || _keyHash == 0)
         {
             _keyCounts = counts;
@@ -223,6 +231,14 @@ public static unsafe class SandboxTiles
         {
             foreach (var b in tools[slot].Boxes)
                 boxes.Add(new TileBox(Matrix4x4.CreateScale(b.Size) * Matrix4x4.CreateTranslation(b.Center), b.Color));
+            return boxes.Count > 0;
+        }
+        slot -= tools.Count;
+        var names = RecyclingTable.Current;
+        if (slot < names.Materials.Length)
+        {
+            var id = (byte)(slot + 1);
+            ResourceIcons.Boxes(names.ShapeOf(id), names.ColourOf(id), slot, boxes);
             return boxes.Count > 0;
         }
         return false;
@@ -332,7 +348,7 @@ public static unsafe class SandboxTiles
         }
         _pages = [];
         _ready = [];
-        _next = _count = 0;
+        _next = _count = _resNext = 0;
         _key = 0;
     }
 
@@ -374,9 +390,13 @@ public static unsafe class SandboxTiles
             Why($"a GL error 0x{stale:X} was pending before the tiles (not theirs; ignored)");
         try
         {
-            while (_next < _count && n < PerFrame && (n == 0 || sw.Elapsed.TotalMilliseconds < BudgetMs))
+            var resources = _count - ResourceBase;
+            while ((_resNext < resources || _next < _count) && n < PerFrame && (n == 0 || sw.Elapsed.TotalMilliseconds < BudgetMs))
             {
-                var slot = _next++;
+                // The loose resources first (a few small tiles the recipe picker and the material lists want at once), then every slot in order.
+                var slot = _resNext < resources ? ResourceBase + _resNext++ : _next++;
+                if (_ready[slot])
+                    continue;
                 Place(slot, out var page, out var x, out var y);
                 EnsurePage(page);
                 Native.glBindFramebuffer(GL_FRAMEBUFFER, _tileFbo);

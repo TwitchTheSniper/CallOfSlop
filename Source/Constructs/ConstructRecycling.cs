@@ -18,6 +18,7 @@ public sealed class RecyclingTable
     public float BaseSeconds = 2f, SecondsPerKg = 0.04f, MaxSeconds = 15f;
     public string[] Materials = ["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand"];
     public Vector3[] Colours = [];
+    public ResourceShape[] Shapes = []; // by material id - 1: the family its icon is drawn as ("shapes", ResourceIcons.cs)
     public readonly Dictionary<string, (string Gives, float PerKg)> Classes = new()
     {
         ["steel"] = ("metal", 0.5f), ["armour"] = ("metal", 0.6f), ["scrap"] = ("metal", 0.5f), ["wood"] = ("wood", 0.5f), ["rubber"] = ("rubber", 0.5f),
@@ -60,6 +61,8 @@ public sealed class RecyclingTable
     {
         if (Colours.Length != Materials.Length)
             Colours = Materials.Select(_ => new Vector3(0.5f)).ToArray();
+        if (Shapes.Length != Materials.Length)
+            Shapes = Materials.Select(ResourceIcons.Default).ToArray();
         _weights = Materials.Select(m => KgPerUnit.TryGetValue(m, out var kg) ? kg : DefaultKgPerUnit).ToArray();
         return this;
     }
@@ -74,6 +77,7 @@ public sealed class RecyclingTable
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             var colours = new Dictionary<string, Vector3>();
+            var shapes = new Dictionary<string, ResourceShape>();
             var hasWeights = root.TryGetProperty("kgPerUnit", out _);
             foreach (var p in root.EnumerateObject())
                 switch (p.Name)
@@ -103,6 +107,12 @@ public sealed class RecyclingTable
                         foreach (var q in p.Value.EnumerateObject())
                             colours[q.Name] = Hex(q.Value.GetString() ?? "");
                         break;
+                    case "shapes":
+                        if (p.Value.ValueKind != JsonValueKind.Object)
+                            throw new FormatException("\"shapes\" gives each material's icon: {\"metal\": \"ingot\", ...}");
+                        foreach (var q in p.Value.EnumerateObject())
+                            shapes[q.Name] = ResourceIcons.Parse(q.Value.GetString() ?? "") ?? throw new FormatException($"shape \"{q.Value}\" of \"{q.Name}\" isn't one of {string.Join(", ", ResourceIcons.Names)}");
+                        break;
                     case "classes":
                         t.Classes.Clear();
                         foreach (var q in p.Value.EnumerateObject())
@@ -131,7 +141,11 @@ public sealed class RecyclingTable
                     throw new FormatException($"\"kgPerUnit\" names \"{name}\", which isn't in \"materials\"");
                 t.KgPerUnit.Remove(name); // (the built-in weights, of a file that lists fewer materials)
             }
+            foreach (var name in shapes.Keys)
+                if (Array.IndexOf(t.Materials, name) < 0)
+                    throw new FormatException($"\"shapes\" names \"{name}\", which isn't in \"materials\"");
             t.Colours = t.Materials.Select(m => colours.TryGetValue(m, out var c) ? c : new Vector3(0.5f)).ToArray();
+            t.Shapes = t.Materials.Select(m => shapes.TryGetValue(m, out var s) ? s : ResourceIcons.Default(m)).ToArray();
             return t.Finish();
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)
@@ -167,6 +181,9 @@ public sealed class RecyclingTable
     public float WeightOf(byte id) => id >= 1 && id <= _weights.Length ? _weights[id - 1] : DefaultKgPerUnit;
 
     public Vector3 ColourOf(byte id) => id >= 1 && id <= Colours.Length ? Colours[id - 1] : new Vector3(0.5f);
+
+    /// <summary>The family a material's icon is drawn as (ResourceIcons.cs).</summary>
+    public ResourceShape ShapeOf(byte id) => id >= 1 && id <= Shapes.Length ? Shapes[id - 1] : ResourceShape.Ore;
 
     /// <summary>What a wrecked part gives back: the material id and the units (at least 1), by its class and mass. 0 id: it gives nothing.</summary>
     public (byte Material, int Amount) YieldOf(in CPart p)
