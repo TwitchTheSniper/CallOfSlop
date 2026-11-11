@@ -371,11 +371,18 @@ public sealed partial class Game
     /// <summary>Server: a player left the match.</summary>
     private void OnModePlayerLeave(Player p) => Module.OnPlayerLeave(this, p);
 
+    /// <summary>
+    /// Does a spawn hand out the loadout's grenades? Not in Gun Game, and not in a survival Sandbox world, which is how story
+    /// mode plays (Karl, 2026-11-11: no grenades at the story start). Creative Sandbox keeps them. The same answer on every
+    /// peer, since the survival option travels in the Welcome. A grenade built at the bench is the mode's own hand-out.
+    /// </summary>
+    public bool ModeGivesThrowables => Module.UsesThrowables && !(SandboxOn && !SandboxInfiniteParts);
+
     /// <summary>The mode's part of a spawn: fixed perks, no throwables, then its own hand-outs (Gun Game's ladder gun, Zombies' start gear).</summary>
     private void ApplyModeLoadout(Player p)
     {
         var m = Module;
-        if (!m.UsesThrowables)
+        if (!ModeGivesThrowables)
         {
             p.Grenade = p.Equipment = ThrowableKind.None;
             p.GrenadesLeft = p.EquipmentLeft = 0;

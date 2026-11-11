@@ -561,8 +561,8 @@ public sealed partial class Game
     {
         LocalGrenade = ChosenGrenade;
         LocalEquipment = ChosenEquipment;
-        if (!Module.UsesThrowables)
-            LocalGrenade = LocalEquipment = ThrowableKind.None; // Gun Game: the gun and nothing else
+        if (!ModeGivesThrowables)
+            LocalGrenade = LocalEquipment = ThrowableKind.None; // Gun Game: the gun and nothing else; survival Sandbox (story): none to start
         if (!Module.UsesEquipment)
             LocalEquipment = ThrowableKind.None; // Sandbox: grenades only
         GrenadesLeft = Throwables.Get(LocalGrenade).PerLife;
