@@ -22,7 +22,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    public const int StandInMax = 24;
+    public const int StandInMax = 48; // (the people's craft, and the traffic's with its stations: GameTraffic.cs)
     public const double StandInShuttleRoad = 5; // story minutes: a road this long or longer is flown
     public const float StandInSide = 7f; // m: a craft stands this far to the side of the road's end
     public const double StandInStand = 8; // s an arrival stands before going
@@ -39,7 +39,7 @@ public sealed partial class Game
     private Map? _standInMap;
 
     // Server only: what each craft is for.
-    private enum StandInFor : byte { Arrival, Pickup, Courier, Test, Duty } // (Duty: the quarry's crew bus, GameQuarry.cs)
+    private enum StandInFor : byte { Arrival, Pickup, Courier, Test, Duty, Traffic, Pad } // (Duty: the quarry's crew bus, GameQuarry.cs)
     private readonly (StandInFor For, int Who, double Step)[] _standInWhy = new (StandInFor, int, double)[StandInMax]; // Who: the person, or a courier's key
     private ushort _standInNextId = 1;
     private double _standInSentAt, _standInAt;
@@ -56,6 +56,8 @@ public sealed partial class Game
     {
         StandInCount = 0;
         _standInMap = World.Map;
+        StandInPath.ForgetRoutes();
+        TrafficForget(); // (the ambient traffic: GameTraffic.cs)
     }
 
     private uint StandInTicks(double seconds) => (uint)Math.Max(1, Math.Round(seconds * World.TickRate));
@@ -70,8 +72,8 @@ public sealed partial class Game
             return -1;
         var (_, outs) = StandInCraft.Times(kind);
         way = StandInPath.Along(way, land);
-        for (var k = 0; k < StandInCount; k++)
-            if (Vector3.DistanceSquared(StandIns[k].Land, land) < StandInApart * StandInApart)
+        for (var k = 0; k < StandInCount && kind != StandInKind.Pad; k++)
+            if (StandIns[k].Kind != StandInKind.Pad && !StandIns[k].Over && Vector3.DistanceSquared(StandIns[k].Land, land) < StandInApart * StandInApart)
             {
                 land = StandInPath.Ground(land + way * StandInApart + StandInPath.Up(land) * 30f); // (two people on one road at once: side by side)
                 k = -1;
@@ -162,6 +164,7 @@ public sealed partial class Game
             return;
         _standInAt = now + StoryBodiesEvery;
         StandInCouriersLook();
+        TrafficTick(now); // (the ambient traffic: GameTraffic.cs)
         if (!StandInsOn || !StoryBodiesOn || Phase != MatchPhase.Playing || !StoryMiddle())
             return;
         var ag = s.Agents;
@@ -299,21 +302,22 @@ public sealed partial class Game
 
     // ---- The wire (Msg.StandIn) ---------------------------------------------------------------------------------------
 
-    /// <summary>Server: one craft to every client: u16 id, u8 kind, u8 flags, u32 start, u16 in, u16 wait, u16 out, vec land, vec way.</summary>
+    /// <summary>Server: one craft to every client: u16 id, u8 kind, u8 flags, u32 start, u16 in, u16 wait, u16 out, vec land, vec way, vec from, 3 x u8 tint.</summary>
     private void StandInSend(int i, bool resend)
     {
         if (Net.IsOffline)
             return;
         ref var c = ref StandIns[i];
-        var w = _standInW ??= new PacketWriter(48);
-        w.Begin(Msg.StandIn).U16(c.Id).U8((byte)c.Kind).U8(c.Flags).U32(c.Start).U16(c.In).U16(c.Wait).U16(c.Out).Vec(c.Land).Vec(c.Way);
+        var w = _standInW ??= new PacketWriter(72);
+        w.Begin(Msg.StandIn).U16(c.Id).U8((byte)c.Kind).U8(c.Flags).U32(c.Start).U16(c.In).U16(c.Wait).U16(c.Out).Vec(c.Land).Vec(c.Way).Vec(c.From)
+            .U8((byte)(c.Tint.X * 255f + 0.5f)).U8((byte)(c.Tint.Y * 255f + 0.5f)).U8((byte)(c.Tint.Z * 255f + 0.5f));
         Net.Broadcast(w.Span, resend ? PacketReliability.Unreliable : PacketReliability.ReliableOrdered);
     }
 
     /// <summary>Client: a <see cref="Msg.StandIn"/> (after its id): the craft is added, or replaced by its id.</summary>
     private void ReadStandIn(ref PacketReader r)
     {
-        if (!r.Has(38))
+        if (!r.Has(53))
             return;
         var c = new StandInCraft
         {
@@ -326,15 +330,19 @@ public sealed partial class Game
             Out = r.U16(),
             Land = r.Vec(),
             Way = r.Vec(),
+            From = r.Vec(),
         };
+        c.Tint = new Vector3(r.U8(), r.U8(), r.U8()) / 255f;
         if (_standInMap != World.Map)
             StandInsForget();
-        if (!float.IsFinite(c.Land.X + c.Land.Y + c.Land.Z) || !float.IsFinite(c.Way.X + c.Way.Y + c.Way.Z) || c.Way.LengthSquared() < 0.5f)
+        if (!float.IsFinite(c.Land.X + c.Land.Y + c.Land.Z) || !float.IsFinite(c.Way.X + c.Way.Y + c.Way.Z) || c.Way.LengthSquared() < 0.5f
+            || !float.IsFinite(c.From.X + c.From.Y + c.From.Z))
             return;
         for (var i = 0; i < StandInCount; i++)
             if (StandIns[i].Id == c.Id)
             {
-                c.Track = StandIns[i].Land == c.Land ? StandIns[i].Track : null;
+                c.Track = StandIns[i].Land == c.Land && StandIns[i].From == c.From ? StandIns[i].Track : null;
+                c.Boomed = StandIns[i].Start == c.Start ? StandIns[i].Boomed : (byte)0;
                 StandIns[i] = c;
                 return;
             }

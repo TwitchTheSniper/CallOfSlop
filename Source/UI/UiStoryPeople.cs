@@ -15,6 +15,7 @@ public sealed partial class Ui
     private int _stPerson = -1; // the entity picked
     private int _stCast;
     private string _stCastNote = "";
+    private readonly List<string> _stTraffic = new(); // STAND-IN: the traffic's lines for the switch's tooltip
 
     private static readonly float4 StoryFailed = new(0.85f, 0.4f, 0.4f, 1f), StoryPlain = new(0.9f, 0.9f, 0.92f, 1f), StoryBodied = new(0.55f, 0.85f, 0.55f, 1f);
 
@@ -80,6 +81,15 @@ public sealed partial class Ui
                 game.StandInsOn = craft;
             if (ImGui.IsItemHovered())
                 ImGuiSafe.SetItemTooltip($"Placeholder craft (yellow and black, only pictures) carry the people on their roads: a shuttle for a long road, a hover hauler for a short one, and a courier flyer comes for a sealed Requisition Crate. {game.StandInCount} about now, {game.StandInsMade} this session. They stand in for the real vehicles and ships until those are redone.");
+            ImGui.SameLine();
+            var traffic = game.TrafficOn;
+            if (ImGui.Checkbox("Traffic"u8, ref traffic))
+                game.TrafficOn = traffic;
+            if (ImGui.IsItemHovered())
+            {
+                game.TrafficDescribe(_stTraffic);
+                ImGuiSafe.SetItemTooltip($"The story world's ambient traffic (Story/Traffic/Traffic.json): placeholder craft on rounds between the colony, the quarry and placeholder stations, faction ships that land to trade, and ships passing overhead. {game.TrafficTrips} trips and {game.TrafficRadioLines} radio lines this session.\n\n{string.Join("\n", _stTraffic)}");
+            }
             ImGui.SameLine();
             var talk = s.Talk.On;
             if (ImGui.Checkbox("Talk"u8, ref talk))
