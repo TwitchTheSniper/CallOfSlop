@@ -538,6 +538,17 @@ public class BlueprintScript
         _bill.Add($"{{\"step\": {console.Step}, \"piece\": {Quote(piece)}, \"count\": {count}}}");
     }
 
+    /// <summary>A catalogue part's line on a Line Console's bill (an Assembler's order: WorkOrders.cs) by its name and how many.</summary>
+    public void BillPart(VPart console, string part, int count)
+    {
+        if (!ProductionLines.IsConsole(console.Def))
+            throw new VehicleKitException($"a bill goes on a Line Console, and a {console.Name} isn't one");
+        var d = ConstructParts.Find(part) ?? throw new VehicleKitException($"no part named \"{part}\"");
+        if (WorkOrders.AddToBill(World, C, console.Index, new WorkOrder { Part = (ushort)d.Id, Count = (ushort)count }) is { } why)
+            throw new VehicleKitException($"the bill: {why}");
+        _bill.Add($"{{\"step\": {console.Step}, \"part\": {Quote(d.Name)}, \"count\": {count}}}");
+    }
+
     /// <summary>A step's settings by key (the configure tool's): the values are written as JSON.</summary>
     public void Config(VPart p, params (string Key, object Value)[] values) =>
         _steps[p.Step].Config = "{" + string.Join(", ", values.Select(v => $"\"{v.Key}\": {JsonValue(v.Value)}")) + "}";

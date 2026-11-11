@@ -51,6 +51,12 @@ public sealed class MachineTiers : IPartGenerator
         ["key"] = "recipe", ["type"] = "choice", ["label"] = "Recipe", ["group"] = "Production", ["tooltip"] = "Auto: what is in the input picks it. Set: only its input goes in.",
     };
 
+    private static readonly PyDict AsmOrderCount = new()
+    {
+        ["key"] = "orderCount", ["label"] = "Order count", ["group"] = "Orders", ["min"] = 1, ["max"] = 999, ["step"] = 1, ["default"] = 1,
+        ["tooltip"] = "Parts the Queue button on its screen asks for: one order of its Recipe.",
+    };
+
     private static readonly PyDict Ink = new()
     {
         ["key"] = "ink", ["type"] = "colour", ["label"] = "Screen colour", ["group"] = "Display", ["default"] = "#000000", ["tooltip"] = "The colour of what its screen shows. Black: its own colours.",
@@ -319,8 +325,13 @@ public sealed class MachineTiers : IPartGenerator
             keepClear.AddRange((line.Ports ?? []).Select(p => (Scaled(D3(p["at"]), size), (string)p["face"]!)));
             if (line.Assemble is { } asm)
                 keepClear.Add((Scaled(asm.OutAt, size), asm.OutDir));
-            // (a refiner is a machine of a production line: a status lamp over its screen)
-            var (plate, pnl, lamp) = PartScreens.Mount(boxes, keepClear, lamp: line.Refine is not null);
+            // (a refiner or an Assembler is a machine of a production line: a status lamp over its screen; an Assembler takes work orders, so
+            // its queue goes on eight rows with the buttons under them: WorkOrders.cs)
+            var (plate, pnl, lamp) = line.Assemble is not null
+                ? PartScreens.Mount(boxes, keepClear, rows: 8, lamp: true)
+                : PartScreens.Mount(boxes, keepClear, lamp: line.Refine is not null);
+            if (line.Assemble is not null)
+                pnl["touch"] = ExtrusionParts.OrderButtons();
             panel = pnl;
             PartScreens.Fit(boxes, plate);
             if (lamp is not null)
@@ -359,6 +370,8 @@ public sealed class MachineTiers : IPartGenerator
             var config = new List<object?>(line.Config ?? []);
             if (line.Refine is not null)
                 config.Add(Recipe);
+            if (line.Assemble is not null)
+                config.Add(AsmOrderCount);
             config.Add(Ink);
             o["panels"] = new List<object?> { panel };
             o["config"] = config;
