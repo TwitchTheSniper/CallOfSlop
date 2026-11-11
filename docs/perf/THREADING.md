@@ -111,8 +111,8 @@ effects inline, for example `ImpactDecals.OnTracer` in the shot code and the `Au
 | the same, the client's update | 0.112 ms | | | | Client prediction ~0.08, Frame state ~0.03, Net receive ~0.005 |
 | Vuorikoski, 8 players, **while the live nav graph builds** (first ~17 s) | 2.86 ms (wall, loaded box) | 3.18 | 9.87 | 19.7 | Bots + nav 2.68 (the build slices) |
 
-The build's slices are capped at 3 ms a tick (`BotMove.BotNavBuildMs`), which is what the last row shows. HANDOFF.md
-also notes that the as-built physics copy (`PhysicsWorld.AsBuilt`) costs 60-110 ms in one tick on Paris, London and
+The build's slices are capped at 3 ms a tick (`BotMove.BotNavBuildMs`), which is what the last row shows. An older
+note says that the as-built physics copy (`PhysicsWorld.AsBuilt`) costs 60-110 ms in one tick on Paris, London and
 Vuorikoski, the tick after the map loads.
 
 Short bot matches on every shipped map (the Matches section, PC runner VM, 8 players, 90 s each) had a worst tick
@@ -383,7 +383,7 @@ The Windows job failed one check, and the failure is itself a data point. In "Ma
 run) reported "a server tick did 20.4 ms of work, JIT compiling left out (wall 57.6 ms, JIT 54.6 ms, 311
 methods) ... t=5.03 s, Playing match 1, nav ready, last feed line: GO!". That is the first tick of live play doing
 first-time work that the JIT filter does not fully remove. It is code on main, not this branch (docs only), and it
-is not yet listed in HANDOFF.md. It is the kind of spike stage 6 would hide from the frame. Warming those paths up
+is not listed anywhere else. It is the kind of spike stage 6 would hide from the frame. Warming those paths up
 at match start (or ReadyToRun, STREAMING.md 6.3) would remove it more cheaply.
 
 The Linux job of the same run passed all seven sections.
