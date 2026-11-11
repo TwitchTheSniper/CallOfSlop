@@ -120,6 +120,8 @@ public static unsafe partial class Program
             return Story.StoryCli.StoryletSim(args); // headless: a player in a cast's world, the storylets on the story's clock (docs/story/STORY.md "Storylets")
         if (args.Any(a => a.Equals("--talk-sim", StringComparison.OrdinalIgnoreCase)))
             return Story.StoryCli.TalkSim(args); // headless: a player asks a cast's people about their topics (docs/story/STORY.md "Topics")
+        if (args.Any(a => a.Equals("--story-map", StringComparison.OrdinalIgnoreCase)))
+            return Story.StoryMapPage.Cli(args); // the story map page from Story/Storylets (docs/story/STORY.md; was tools/story/story_map.py)
         if (args.Any(a => a.Equals("--check-story", StringComparison.OrdinalIgnoreCase)))
             return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))

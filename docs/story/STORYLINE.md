@@ -100,7 +100,7 @@ being hunted for using it.
 1. Karl says what should change, in words.
 2. Claude edits the data: beats in `Story/Storylets/*.json`, the records in `Story/Fragments/Fragments.json`, what
    people say in `Story/Lines/*.json`.
-3. `--check-story` must refuse nothing; then the story map is made again (`python3 tools/story/story_map.py OUT.html`)
+3. `--check-story` must refuse nothing; then the story map is made again (`--story-map OUT.html`)
    and published to the same link.
 
 How the engine works is [STORY.md](STORY.md); the data centres are [FRAGMENTS.md](FRAGMENTS.md).
