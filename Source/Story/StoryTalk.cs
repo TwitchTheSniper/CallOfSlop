@@ -43,7 +43,7 @@ public struct TalkLine
 }
 
 /// <summary>
-/// The people's words (docs/story/STORY.md "Lines"; box 5, Valve's response rules): on an occasion the most specific rule
+/// The people's words (docs/story/STORY.md "Lines", Valve's response rules): on an occasion the most specific rule
 /// whose criteria all hold says one of its lines, with the names filled in. The game asks when a step plays out between
 /// two bodies, a player comes up to someone or someone is hurt; the engine itself when a person sees something happen
 /// (<see cref="OnEvent"/>), when a rule's line wants a reply, and when a radio operator broadcasts. Everything said is

@@ -129,7 +129,7 @@ public sealed class CastDef
 }
 
 /// <summary>
-/// The people's rules (box 4 in the diagram): needs, actions over the shared verbs, compound tasks, goals, reactions to
+/// The people's rules: needs, actions over the shared verbs, compound tasks, goals, reactions to
 /// news, how interesting each verb is as news, and the casts. From Story/People/*.json and Story/Casts/*.json; a bad file
 /// is refused whole with a reason (in <see cref="StoryRules.Errors"/>). Empty when there are none.
 /// </summary>

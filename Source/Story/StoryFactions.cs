@@ -43,13 +43,6 @@ public sealed class FactionWant
 /// <summary>A faction's word for a party whose standing is below <see cref="Below"/> (the last tier has no top).</summary>
 public readonly record struct FactionTier(string Name, int Below);
 
-/// <summary>
-/// A verse of a faction's scripture (docs/story/STORY.md "The Thousand Layers"): what its believers say, the story fragment
-/// it is a retelling of (<see cref="Fragment"/>: frag.threat, frag.fold, frag.reading, frag.silence, frag.switch), and, for the writers, how the
-/// retelling bends that fragment (<see cref="Bends"/>; never shown to players).
-/// </summary>
-public readonly record struct FactionVerse(string Name, string Fragment, string Text, string Bends);
-
 /// <summary>A faction member, a story person (in F1 a name with traits; their bodies come with visits).</summary>
 public readonly record struct FactionMember(string Name, string About, (ushort Quality, int Value)[] Qualities);
 
@@ -82,7 +75,6 @@ public sealed class FactionDef
     public FactionSettlement? Settlement; // where its home stands on a world (Game/GameStorySettlements.cs)
     public string Courier = ""; // its line when its courier collects a crate
     public string[] Staff = []; // people from a cast (by name) who are its members whenever they are in the story
-    public FactionVerse[] Scripture = []; // what its believers say (a faith's verses), in order
     public (string Name, int Faction, int Percent)[] Rivals = []; // a rise in its standing takes this share of the rise off the rival's
 
     /// <summary>The tier a standing falls in (-1: the faction has none).</summary>
@@ -104,7 +96,6 @@ public sealed class FactionDef
 public sealed partial class FactionRules
 {
     public const int MaxFactions = 32, MaxDeeds = 64, MaxMembers = 64, MaxWants = 8, MaxTiers = 8, MaxStanding = 100;
-    public const int MaxVerses = 16, MaxVerseLength = 320;
     public const int MaxTeaches = 8, MaxTechParts = 32, MaxRivals = 8; // (8: a faction's learnt technologies are a byte on the wire)
     public const string Format = "call-of-slop-faction/1";
 
@@ -116,14 +107,13 @@ public sealed partial class FactionRules
 
     public FactionDef? Find(string name) => Array.Find(Factions, f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals", "jobs", "voice", "courier", "scripture", "settlement"];
+    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals", "jobs", "voice", "courier", "settlement"];
     private static readonly string[] SettlementKeys = ["map", "lat", "lon", "buildings"];
     private static readonly string[] BuildingKeys = ["blueprint", "east", "north", "yaw"];
     private static readonly string[] TechKeys = ["name", "about", "tier", "parts"];
     private static readonly string[] MemberKeys = ["name", "about", "qualities"];
     private static readonly string[] WantKeys = ["name", "about", "start", "perHour"];
     private static readonly string[] TierKeys = ["name", "below"];
-    private static readonly string[] VerseKeys = ["name", "fragment", "text", "bends"];
     private static readonly string[] DeedKeys = ["name", "about", "verb", "theirs", "whose", "words", "remember", "standing", "wants", "every"];
 
     public static FactionRules Load(StoryRules rules, string folder)
@@ -354,7 +344,6 @@ public sealed partial class FactionRules
         def.Jobs = ReadJobs(fr, rules, root, def, where);
         def.Voice = Voice(root, where);
         def.Courier = Line(root, "courier", where);
-        def.Scripture = ReadScripture(root, where);
 
         if (root.TryGetProperty("rivals", out var rv))
         {
@@ -366,34 +355,6 @@ public sealed partial class FactionRules
                 throw new StoryException($"{where}: {MaxRivals} rivals at most");
         }
         return def;
-    }
-
-    /// <summary>"scripture": verses like {"name": "The Rolling", "fragment": "fold", "text": "...", "bends": "..."}.</summary>
-    private static FactionVerse[] ReadScripture(JsonElement root, string where)
-    {
-        var verses = new List<FactionVerse>();
-        foreach (var v in StoryRules.List(root, "scripture", where))
-        {
-            var at = $"{where}: verse {verses.Count + 1}";
-            if (v.ValueKind != JsonValueKind.Object)
-                throw new StoryException($"{at}: like {{\"name\": \"The Rolling\", \"fragment\": \"fold\", \"text\": \"...\"}}");
-            StoryRules.Keys(v, VerseKeys, at);
-            var name = StoryRules.Str(v, "name", at, true);
-            Plain(name, at, 40);
-            at = $"{where}: {name}";
-            if (verses.Any(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-                throw new StoryException($"{at}: a verse called {name} already exists");
-            var fragment = StoryRules.Str(v, "fragment", at);
-            if (fragment.Length > 0)
-                Plain(fragment, $"{at}: fragment", 24);
-            var text = StoryRules.Str(v, "text", at, true);
-            if (text.Length > MaxVerseLength || text.Any(c => c < ' ' || c > '~'))
-                throw new StoryException($"{at}: \"text\" is up to {MaxVerseLength} printable ASCII characters");
-            verses.Add(new FactionVerse(name, fragment, text, StoryRules.Str(v, "bends", at)));
-        }
-        if (verses.Count > MaxVerses)
-            throw new StoryException($"{where}: {MaxVerses} verses at most");
-        return verses.ToArray();
     }
 
     private static FactionSettlement ReadSettlement(JsonElement e, string where)

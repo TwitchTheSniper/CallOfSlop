@@ -57,7 +57,7 @@ public struct SiftNote
 }
 
 /// <summary>
-/// The incremental story sifter (box 2): each new event advances the live partial matches waiting for its verb in place,
+/// The incremental story sifter: each new event advances the live partial matches waiting for its verb in place,
 /// ends those an <c>unless</c> event names, and starts new ones. A completed match is a story: its <c>then</c> effects
 /// apply and a Story event is recorded, which later patterns can build on. It runs only when an event arrives (and a sweep
 /// a second for time limits), touches at most the pool, and allocates nothing once its arrays are made.

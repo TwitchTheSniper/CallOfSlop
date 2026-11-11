@@ -8,7 +8,7 @@ public enum StoryEventFlags : byte
     Kept = 2, // part of a match or a story: never folded away
 }
 
-/// <summary>A narratable event: who did what to whom, where, when (box 1 to 2 in the diagram: the arrow). -1: an empty role.</summary>
+/// <summary>A narratable event: who did what to whom, where, when. -1: an empty role.</summary>
 public struct StoryEvent
 {
     public int Id;
