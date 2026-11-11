@@ -13,17 +13,20 @@
   "color": "#1f2124",
   "boxes": [
     {
-      "size": [0.216, 0.6, 0.252]
+      "size": [0.216, 0.6, 0.252], "hidden": true
     },
     {
-      "size": [0.216, 0.252, 0.6]
+      "size": [0.216, 0.252, 0.6], "hidden": true
     },
     {
       "size": [
         0.22,
         0.51,
         0.51
-      ]
+      ], "hidden": true
+    },
+    {
+      "size": [0.22, 0.6, 0.6], "at": [0.0, 0.0, 0.0], "shape": "cylinder", "segments": 24, "front": "+x", "detail": true
     },
     {
       "size": [
