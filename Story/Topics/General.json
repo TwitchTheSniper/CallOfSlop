@@ -1,0 +1,16 @@
+{
+  // What anyone will talk about when they have nothing of their own left to offer (docs/story/STORY.md "Topics"). Low
+  // priority, so a person's own topics (Colony.json and the rest) come first and these fill the panel only when there
+  // is room. Each answers through the Lines occasions AskPlace, AskSelf and AskAdvice (Story/Lines/Colony.json writes
+  // them per person), so even the stock questions sound like whoever is asked.
+  "format": "call-of-slop-topics/1",
+  "about": "the stock questions anyone can be asked",
+  "topics": [
+    { "id": "place", "ask": "What's this place?", "again": true, "priority": -50,
+      "answers": [ { "line": "AskPlace" } ] },
+    { "id": "self", "ask": "What do you do here?", "again": true, "priority": -50,
+      "answers": [ { "line": "AskSelf" } ] },
+    { "id": "advice", "ask": "Any advice?", "again": true, "priority": -40,
+      "answers": [ { "line": "AskAdvice" } ] }
+  ]
+}

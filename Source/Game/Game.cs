@@ -2330,6 +2330,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.TalkChoices when !IsServer:
                 ReadTalkChoices(ref r); // a storylet's answers in the talk panel (GameStoryStorylets.cs)
                 break;
+            case (byte)Msg.TalkTopics when !IsServer:
+                ReadTalkTopics(ref r); // what the person will talk about, in the talk panel (GameStoryTopics.cs)
+                break;
             case (byte)Msg.Factions:
                 ReadFactions(ref r); // Sandbox player factions (GameSandboxFactions.cs)
                 break;

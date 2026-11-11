@@ -16,6 +16,7 @@ public enum TalkAsk : byte
     Self = 7, // what do you do here?
     Advice = 8, // any advice?
     Choose = 9, // + the choice's index (below Game.TalkChoicesMax): an answer a storylet offers (GameStoryStorylets.cs)
+    Topic = 13, // a topic the person offers (GameStoryTopics.cs): a u16, the topic's index, follows on the wire
 }
 
 /// <summary>
@@ -54,7 +55,7 @@ public sealed partial class Game
     public int StoryTalkAsks, StoryNewsTold, StoryTrades;
 
     /// <summary>Client (or host): ask a person something from the talk panel.</summary>
-    public void StoryTalkAsk(byte bodyPlayer, TalkAsk ask) => SandboxSend(CActKind.Talk, body: bodyPlayer, flags: (byte)ask);
+    public void StoryTalkAsk(byte bodyPlayer, TalkAsk ask, ushort topic = 0) => SandboxSend(CActKind.Talk, body: bodyPlayer, part: topic, flags: (byte)ask);
 
     /// <summary>A loaded or fresh story: who was told what is forgotten (entity ids changed).</summary>
     private void StoryChatForget()
@@ -84,7 +85,7 @@ public sealed partial class Game
     // ---- What a player asks ---------------------------------------------------------------------------------------------
 
     /// <summary>Server: a player asks a person something (<see cref="CActKind.Talk"/>). Returns why not, or null.</summary>
-    private string? StoryTalkAct(Player p, byte bodyPlayer, TalkAsk ask)
+    private string? StoryTalkAct(Player p, byte bodyPlayer, TalkAsk ask, ushort topic = 0)
     {
         if (Story is not { } s || !Players.TryGetValue(bodyPlayer, out var body) || body.Team != SbPeopleTeam || !body.Alive
             || StoryBodyIndex(bodyPlayer) is not (var i and >= 0) || s.Agents.Of(_bodies[i].Entity) is not { Dead: false } a)
@@ -140,6 +141,8 @@ public sealed partial class Game
                 break;
             case TalkAsk.Trade:
                 return StoryTrade(s, a, p, who);
+            case TalkAsk.Topic:
+                return StoryTopicAct(s, a, p, who, topic);
             case >= TalkAsk.Choose and < TalkAsk.Choose + TalkChoicesMax:
                 return StoryletChoose(s, p, bodyPlayer, ask - TalkAsk.Choose);
         }

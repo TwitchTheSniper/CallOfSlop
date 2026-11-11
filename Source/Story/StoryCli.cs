@@ -15,6 +15,79 @@ public static class StoryCli
 
     public static int StoryletSim(string[] args) => Tee(() => StoryletSimBody(args));
 
+    public static int TalkSim(string[] args) => Tee(() => TalkSimBody(args));
+
+    /// <summary>
+    /// <c>--talk-sim [CAST] [--set Q=N,...] [--likes N] [--dead NAME]</c>: a player talks to each person of a cast
+    /// (Penal Colony by default) about their topics (docs/story/STORY.md "Topics"), asking the first new one of their own
+    /// offered, again and again (a brush-off, or nothing new, ends it), and prints each question and answer, then what is left
+    /// on offer. --set gives the player qualities (Inducted=1, Suspicion=4...), --likes how much each person likes them at
+    /// the start, --dead marks someone dead. Words only: no bodies, no clock. Exit code: topics that never came up.
+    /// </summary>
+    private static int TalkSimBody(string[] args)
+    {
+        var rules = StoryRules.LoadFolder();
+        foreach (var err in rules.Errors)
+            Console.WriteLine($"  refused: {err}");
+        var castName = Arg(args, "--talk-sim") ?? "Penal Colony";
+        if (rules.People.Cast(castName) is not { } cast)
+        {
+            Console.WriteLine($"No cast {castName}: {string.Join(", ", rules.People.Casts.Select(c => c.Name))}");
+            return 1;
+        }
+        var e = new StoryEngine(rules);
+        var world = e.World.Create(StoryKind.Place, cast.Places.FirstOrDefault(p => p.World)?.Name ?? "World", 1, 0);
+        e.Agents.AddCast(cast, world, scripted: false);
+        e.Factions.Ensure();
+        var me = e.World.Create(StoryKind.Player, "Tester Jones", 2, 0);
+        foreach (var kv in (Arg(args, "--set") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = kv.Split('=');
+            if (eq.Length == 2 && rules.Quality(eq[0].Trim()) is { } q && int.TryParse(eq[1], out var v))
+                e.World.SetQuality(me, q.Id, v);
+            else
+                Console.WriteLine($"  --set: \"{kv}\" isn't Quality=number");
+        }
+        var likes = rules.Relation("Likes")?.Id ?? -1;
+        var startLikes = int.TryParse(Arg(args, "--likes"), out var l) ? l : 0;
+        if (Arg(args, "--dead") is { } dead && rules.Quality("Dead") is { } dq && e.World.Find(dead) is var d and >= 0)
+            e.World.SetQuality(d, dq.Id, 1);
+        var topics = rules.Topics.Topics;
+        var seen = new bool[topics.Length];
+        var offer = new (ushort Topic, bool Asked)[TopicRules.Offered];
+        foreach (var person in cast.People)
+        {
+            var who = e.World.Find(person.Name);
+            if (who < 0)
+                continue;
+            if (likes >= 0 && startLikes != 0)
+                e.World.Set(who, likes, me, startLikes);
+            Console.WriteLine($"{person.Name}:");
+            for (var turn = 0; turn < 24; turn++)
+            {
+                var n = e.Topics.Offer(who, me, offer);
+                Console.WriteLine($"    offers: {(n == 0 ? "nothing" : string.Join(" | ", Enumerable.Range(0, n).Select(k => topics[offer[k].Topic].Ask + (offer[k].Asked ? " (asked)" : ""))))}");
+                var pick = Array.FindIndex(offer, 0, n, o => !o.Asked && topics[o.Topic].Who.Length > 0);
+                if (pick < 0)
+                    break;
+                var t = offer[pick].Topic;
+                seen[t] = true;
+                var a = e.Topics.Ask(who, me, t, out var line);
+                Console.WriteLine($"  > {topics[t].Ask}");
+                Console.WriteLine($"    {(line ?? (a is { Line: >= 0 } ? $"(answers on {rules.Lines.Concepts[a.Line]})" : "(not on offer)"))}{(a is { Keep: true } ? "   [kept: not counted as asked]" : "")}");
+                if (a is { Keep: true })
+                    break;
+            }
+            Console.WriteLine($"    {person.Name.Split(' ')[^1]} likes Tester {(likes >= 0 ? e.World.Get(who, likes, me) : 0)}");
+        }
+        foreach (var q in new[] { "Suspicion", "Rank" })
+            if (rules.Quality(q) is { } qd)
+                Console.WriteLine($"Tester's {q}: {e.World.Quality(me, qd.Id)}");
+        var never = topics.Where((t, i) => !seen[i] && t.Who.Length > 0).ToArray();
+        Console.WriteLine($"{never.Length} of {topics.Count(t => t.Who.Length > 0)} topics never came up{(never.Length > 0 ? $": {string.Join(", ", never.Select(t => t.Id))}" : "")}");
+        return never.Length;
+    }
+
     private static string? Arg(string[] args, string key) =>
         args.SkipWhile(a => !a.Equals(key, StringComparison.OrdinalIgnoreCase)).Skip(1).Take(1).FirstOrDefault(a => !a.StartsWith("--"));
 
@@ -583,6 +656,11 @@ public static class StoryCli
                 + (d.Play >= 0 ? $"; {rules.Plays.Plays[d.Play].Beats.Length} beats" : "")
                 + (d.JobText.Length > 0 ? $"; job {d.JobText}" : "") + (d.Hook.Length > 0 ? $"; hook {d.Hook}" : "")
                 + $"; ends {string.Join(", ", d.Ends.Select(e => $"{e.Id} ({e.Text})"))}");
+        foreach (var t in rules.Topics.Topics)
+            Console.WriteLine($"  topic {t.Id} ({t.File}): \"{t.Ask}\"{(t.Who.Length > 0 ? $" of {t.Who}" : "")}{(t.IfText.Length > 0 ? $" if {t.IfText}" : "")}{(t.AfterIds.Length > 0 ? $" after {string.Join(" or ", t.AfterIds)}" : "")}{(t.Again ? ", again" : "")}; {t.Answers.Length} answers");
+        foreach (var t in rules.Topics.Topics)
+            if (t.Who.Length > 0 && !rules.People.Casts.Any(c => c.People.Any(p => p.Name.Equals(t.Who, StringComparison.OrdinalIgnoreCase))))
+                Console.WriteLine($"  warning: topic {t.Id} ({t.File}): \"who\": {t.Who} is in no cast, so nobody offers it");
         var storyletWarnings = StoryletChecks.Check(rules);
         foreach (var w in storyletWarnings)
             Console.WriteLine($"  warning: {w}");
