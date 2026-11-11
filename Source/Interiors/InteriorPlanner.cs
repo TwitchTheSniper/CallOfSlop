@@ -109,7 +109,7 @@ public static class InteriorPlanner
         var liftAt = 0.35f + (float)arng.Next() * 0.3f;
         var stairAt = new[] { 0.15f + (float)arng.Next() * 0.15f, 0.65f + (float)arng.Next() * 0.2f };
         if (hull.Anchored)
-            (liftAt, stairAt) = (0.5f, new[] { 0.25f, 0.75f }); // (the hollow chassis's hatches: tools/constructs/interior_parts.py HATCHES)
+            (liftAt, stairAt) = (0.5f, new[] { 0.25f, 0.75f }); // (the hollow chassis's hatches: the part kit's InteriorParts.Hatches)
         for (var k = 0; k < p.Decks; k++)
             for (var x = 0; x < p.W; x++)
                 for (var z = p.SpineZ0; z <= p.SpineZ1; z++)

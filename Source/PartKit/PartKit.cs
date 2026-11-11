@@ -90,6 +90,7 @@ public static class PartKit
         new Generators.UpgradeParts(),
         new Generators.EngineParts(),
         new Generators.BuildingParts(),
+        new Generators.InteriorParts(),
         new Generators.Assembling(),
     ];
 

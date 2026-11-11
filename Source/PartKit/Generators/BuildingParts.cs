@@ -39,6 +39,9 @@ public sealed class BuildingParts : IPartGenerator
         public HashSet<string> Names = [];
         public readonly PyDict Extra = new();
 
+        /// <summary>interior_parts' Panel: a piece longer than the 4 m limit, with up to 255 sockets (the same output otherwise).</summary>
+        public bool Panel;
+
         public BPart(string name, string section, string desc, string role = "frame", string tool = "welder", string material = "steel", string color = "#7c838c")
         {
             D = new PyDict
@@ -154,9 +157,9 @@ public sealed class BuildingParts : IPartGenerator
         public PyDict Json()
         {
             var n = (string)D["name"]!;
-            if (Boxes.Count is 0 or > 16 || Sockets.Count is 0 or > 40 || n.Length > 32)
+            if (Boxes.Count is 0 or > 16 || Sockets.Count == 0 || Sockets.Count > (Panel ? 255 : 40) || n.Length > 32)
                 throw new InvalidOperationException($"building_parts: {n}: {Boxes.Count} boxes, {Sockets.Count} sockets");
-            foreach (var b in Boxes)
+            foreach (var b in Panel ? new List<PyDict>() : Boxes)
                 for (var a = 0; a < 3; a++)
                     if (Math.Max(Math.Abs(At(b, "min", a)), Math.Abs(At(b, "max", a))) > 4.0)
                         throw new InvalidOperationException($"building_parts: {n}: a box past 4 m");
