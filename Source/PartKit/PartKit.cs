@@ -53,6 +53,7 @@ public static class PartKit
         new Generators.MediaParts(),
         new Generators.AmmoParts(),
         new Generators.HighlandParts(),
+        new Generators.ShellParts(),
     ];
 
     public static IPartGenerator? Find(string name) =>
@@ -85,6 +86,8 @@ public static class PartKit
         var root = FindRoot();
         if (Arg("--roundtrip") is { } rt)
             return RoundTrip(Path.Combine(root, rt));
+        if (Arg("--settle-props") is { } propFile)
+            return SettleProps(propFile);
         var name = Arg("--gen-parts");
         if (name is null || name.StartsWith("--"))
         {
@@ -163,6 +166,36 @@ public static class PartKit
                 return $"  line {i + 1}:\n    committed: {x}\n    made:      {y}";
         }
         return "  (same lines, different bytes)";
+    }
+
+    /// <summary>
+    /// --gen-parts --settle-props FILE: a prop file's parts (or each prop's "parts" in a list) through <see cref="PartZFight.SettleProps"/>,
+    /// printed as json.dumps(indent=2); the same as zfight.settle_props in Python, for a port of the prop generators to check against.
+    /// </summary>
+    private static int SettleProps(string file)
+    {
+        var v = PyJson.Loads(System.IO.File.ReadAllText(file, Encoding.UTF8));
+        int changed = 0, left = 0;
+        void One(PyDict d)
+        {
+            if (d.Get("parts") is List<object?> parts)
+            {
+                var (c, l) = PartZFight.SettleProps([.. parts.OfType<PyDict>()]);
+                changed += c;
+                left += l;
+            }
+        }
+        if (v is PyDict o)
+        {
+            One(o);
+            foreach (var kv in o)
+                if (kv.Value is List<object?> list)
+                    foreach (var item in list.OfType<PyDict>())
+                        One(item);
+        }
+        Say(PyJson.Dumps(v, 2));
+        Say($"settled: {changed} parts changed, {left} hits left");
+        return left;
     }
 
     /// <summary>
