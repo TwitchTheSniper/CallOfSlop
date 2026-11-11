@@ -16,9 +16,12 @@ public static class ConstructRecycler
 {
     public const int ScanEvery = 6; // ticks between looks at the intakes (10 Hz)
 
-    /// <summary>Is the recycler part working (not wrecked, and powered unless creative)?</summary>
+    /// <summary>
+    /// Is the recycler part working (not wrecked, and powered)? Creative needs no power, except that a machine the circuit reaches has none
+    /// while its mains are off (<see cref="ConstructPower"/>'s Mains: a wire into every battery, all off), so a showcase's main switch shows No power.
+    /// </summary>
     public static bool Powered(ConstructWorld world, Construct c, int part) =>
-        !c.Parts[part].Broken && (world.CreativeRecycling || c.HasBattery && c.PowerOn && c.Parts[part].Powered);
+        !c.Parts[part].Broken && (world.CreativeRecycling ? !(c.MainsOff && c.Parts[part].Powered) : c.HasBattery && c.PowerOn && !c.MainsOff && c.Parts[part].Powered);
 
     /// <summary>Can this body be fed to a recycler (every part wrecked, one part, free)?</summary>
     public static bool Feedable(Construct b) =>

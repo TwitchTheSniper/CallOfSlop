@@ -602,6 +602,7 @@ public static class Extrusion
         d.FlatTyre = row.Flat;
         d.OnBreak = row.Flat ? PartBreak.Disable : PartBreak.Detach;
         d.WheelRadius = r;
+        d.ColliderBoxes = k.Growing; // (no hull while it grows: a new def each 5 cm, and a cylinder's hull took 6 ms and 60 KB a size; the hidden boxes stand for it on the die)
         d.Class = k.H < 200 ? ConstructParts.Small : k.H < 700 ? ConstructParts.Medium : k.H < 2400 ? ConstructParts.Large : ConstructParts.Capital;
         d.Sockets = [new CSocket("axle", Vector3.Zero, 1, k.Growing ? SocketKind.Die : SocketKind.Axle, d.Class)];
         // (the same settings for every size of a material: made once)

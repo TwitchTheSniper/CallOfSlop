@@ -15,6 +15,9 @@ public enum PressStall : byte
     TooShort, // a piece has less left than a stroke takes
     TrayFull,
     Blocked, // something stands where a body leaves
+    ConveyorFull, // its Piece out conveyor has no room at its start (the stamped parts wait for it)
+    ConveyorSmall, // what it stamps is wider or taller than its Piece out conveyor
+    ConveyorCut, // its Piece out conveyor is cut
 }
 
 /// <summary>Why a bay turned a piece away. <see cref="CStore.Blocked"/> holds this times 4 plus the bay (3: the die slot), on the wire.</summary>
@@ -152,6 +155,40 @@ public static class ConstructPress
         return die < 0 ? default : t.Rows.AsSpan(c.Parts[die].D.DieRows.First, c.Parts[die].D.DieRows.Count);
     }
 
+    /// <summary>
+    /// Which of the machine's bays row bay <paramref name="rb"/> works now. A row of several bays names them in order; a one-bay row (a
+    /// Bracket or Housing Die) is every bay's: each bay takes such pieces, and a stroke works the first bay whose piece is ready (one the
+    /// row takes, long enough), else the first whose piece the row takes, else the first holding anything, else bay 1. Allocates nothing.
+    /// </summary>
+    public static int BayOf(PressRow r, Construct c, int part, int rb)
+    {
+        if (r.Bays.Length != 1)
+            return rb;
+        var s = r.Bays[0];
+        var bays = c.Parts[part].D.PressBays.Length;
+        int takes = -1, any = -1;
+        for (var b = 0; b < bays; b++)
+        {
+            var i = PieceIn(c, part, b);
+            if (i < 0)
+                continue;
+            ref readonly var k = ref c.Parts[i].D.ExKey;
+            if (s.Takes(k))
+            {
+                if (k.L >= s.StrokeCm(k))
+                    return b;
+                if (takes < 0)
+                    takes = b;
+            }
+            if (any < 0)
+                any = b;
+        }
+        return takes >= 0 ? takes : any >= 0 ? any : 0;
+    }
+
+    /// <summary>What the machine's bay <paramref name="bay"/> takes under row <paramref name="r"/>, or null when the row doesn't use that bay.</summary>
+    private static PressBaySpec? SpecFor(PressRow r, int bay) => r.Bays.Length == 1 ? r.Bays[0] : bay < r.Bays.Length ? r.Bays[bay] : null;
+
     /// <summary>The row that its bays satisfy, else the first that what is in them doesn't rule out: what the panels ask for. Null: no rows.</summary>
     public static PressRow? RowFor(ReadOnlySpan<PressRow> rows, Construct c, int part)
     {
@@ -163,7 +200,7 @@ public static class ConstructPress
             var ok = true;
             for (var b = 0; b < r.Bays.Length; b++)
             {
-                var piece = PieceIn(c, part, b);
+                var piece = PieceIn(c, part, BayOf(r, c, part, b));
                 if (piece < 0)
                     continue;
                 if (r.Bays[b].Takes(c.Parts[piece].D.ExKey))
@@ -247,7 +284,7 @@ public static class ConstructPress
             return PressStall.WrongClass;
         for (var b = 0; b < row.Bays.Length; b++)
         {
-            var i = PieceIn(c, part, b);
+            var i = PieceIn(c, part, BayOf(row, c, part, b));
             if (i < 0 || !row.Bays[b].Takes(c.Parts[i].D.ExKey))
                 return PressStall.Wants;
             if (c.Parts[i].D.ExKey.L < row.Bays[b].StrokeCm(c.Parts[i].D.ExKey))
@@ -266,7 +303,16 @@ public static class ConstructPress
     private static bool Stroke(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressRow r)
     {
         var d = c.Parts[part].D;
-        if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body)
+        if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body && ConstructConveyor.Out(c, part) is var conveyor and >= 0)
+        {
+            // (a Piece out conveyor takes what no tray holds, whole strokes only; without one it drops in front as before)
+            if (!ConstructConveyor.PutMade(world, c, conveyor, r.Output, r.Count, out var full))
+            {
+                SetStall(world, st, full switch { ExtrudeStall.ConveyorSmall => PressStall.ConveyorSmall, ExtrudeStall.ConveyorCut => PressStall.ConveyorCut, _ => PressStall.ConveyorFull });
+                return false;
+            }
+        }
+        else if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body)
         {
             for (var n = 0; n < r.Count; n++)
             {
@@ -286,7 +332,7 @@ public static class ConstructPress
         Span<int> left = stackalloc int[PressTable.MaxBays];
         for (var b = 0; b < r.Bays.Length; b++)
         {
-            pieces[b] = PieceIn(c, part, b);
+            pieces[b] = PieceIn(c, part, BayOf(r, c, part, b));
             ref readonly var k = ref c.Parts[pieces[b]].D.ExKey;
             left[b] = k.L - r.Bays[b].StrokeCm(k);
         }
@@ -396,8 +442,8 @@ public static class ConstructPress
         var d = c.Parts[part].D;
         if (!d.IsPress || bay >= d.PressBays.Length || c.Parts[part].Broken || PieceIn(c, part, bay) >= 0 || world.StoreOf(c, part) is not { } st)
             return false;
-        if (pd.ExKey.Shape == ExShape.Wheel)
-            return false;
+        if (!pd.IsExtrusion || pd.ExKey.Shape == ExShape.Wheel)
+            return false; // (a stamped part riding into a bay waits: only pieces go in)
         var why = Refusal(PressTable.Current, c, part, bay, pd.ExKey);
         if (why == BayRefuse.None && !Room(world, query, c, part, bay, pd, null))
             why = BayRefuse.Room;
@@ -428,9 +474,8 @@ public static class ConstructPress
         var fits = false;
         foreach (var r in rows)
         {
-            if (bay >= r.Bays.Length)
-                continue;
-            var s = r.Bays[bay];
+            if (SpecFor(r, bay) is not { } s)
+                continue; // (a one-bay row is every bay's: BayOf)
             if (Array.IndexOf(s.Materials, key.Material) < 0)
                 continue;
             material = true;
@@ -764,14 +809,13 @@ public static class ConstructPress
             card.Add(2, d.IsLathe ? "Pick one: configure" : "Fit a die first");
             return;
         }
-        if (bay >= row.Bays.Length)
+        if (SpecFor(row, bay) is not { } spec)
         {
             card.State = PanelState.Idle;
             card.Add(1, "Not used");
             card.Add(2, "by this die");
             return;
         }
-        var spec = row.Bays[bay];
         card.Add(0, ": ").Add(0, spec.Label);
         // What the bay takes over all this die's rows, unless a piece has settled which row it is: the panel says what will do, not one line of the table.
         var one = piece >= 0 || rows.Length == 1;
@@ -788,9 +832,8 @@ public static class ConstructPress
         Span<int> shown = stackalloc int[2];
         foreach (var r in rows)
         {
-            if (bay >= r.Bays.Length || one && r != row)
+            if (one && r != row || SpecFor(r, bay) is not { } s)
                 continue;
-            var s = r.Bays[bay];
             lo = Math.Min(lo, s.MinCm);
             hi = Math.Max(hi, s.MaxCm);
             foreach (var m in s.Materials)
@@ -893,6 +936,9 @@ public static class ConstructPress
         PressStall.TooShort => "A piece is too short",
         PressStall.TrayFull => "Tray full",
         PressStall.Blocked => "Output blocked",
+        PressStall.ConveyorFull => "Output conveyor full",
+        PressStall.ConveyorSmall => "Too big for its conveyor",
+        PressStall.ConveyorCut => "Output conveyor cut",
         _ => "Ready",
     };
 
@@ -916,7 +962,7 @@ public static class ConstructPress
                 var s => StallText(s).ToLowerInvariant(),
             };
         if (RefusedAt(st, out var bay) is var why and not BayRefuse.None)
-            problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && bay < row.Bays.Length ? ", wants " + Spec(row.Bays[bay]) : "");
+            problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
         string? action = null;
         if (near)
         {
@@ -942,6 +988,8 @@ public static class ConstructPress
 
     private static string Wants(PressRow r, Construct c, int part)
     {
+        if (r.Bays.Length == 1)
+            return $"{Spec(r.Bays[0])} in a bay"; // (a one-bay row is every bay's: BayOf)
         for (var b = 0; b < r.Bays.Length; b++)
             if (PieceIn(c, part, b) < 0)
                 return $"{Spec(r.Bays[b])} in bay {b + 1}";

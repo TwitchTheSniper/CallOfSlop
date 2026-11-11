@@ -24,6 +24,7 @@ public static class ConstructPower
     public static void Rebuild(Construct c)
     {
         c.HasBattery = false;
+        c.MainsWired = false;
         c.ChargeCapacity = 0;
         c.AlternatorRate = 0;
         using var scratch = Scratch.Begin();
@@ -36,6 +37,8 @@ public static class ConstructPower
             if (p.D.Role is not (PartRole.Battery or PartRole.Generator))
                 continue;
             c.HasBattery = true;
+            if (p.D.Role == PartRole.Battery && c.RoutesInto(i, RouteType.Data) > 0)
+                c.MainsWired = true;
             if (p.Broken)
                 continue;
             c.ChargeCapacity += p.D.Role == PartRole.Generator ? p.D.PlantBuffer : p.D.BatteryCapacity; // (a plant holds a little: it feeds the circuit with no battery fitted)
@@ -130,6 +133,7 @@ public static class ConstructPower
     {
         if (c.Dirty)
             c.Rebuild();
+        Mains(c);
         var electrical = c.HasBattery || world.PowerRequired;
         var wants = c.Engine >= 0 && (c.Driver != 255 || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
         if (electrical != c.Electrical)
@@ -206,6 +210,37 @@ public static class ConstructPower
             c.PowerOn = on;
             c.Wake(); // (motors let go or take hold; the logic's outputs change)
             world.Events.Add($"construct {c.Id}: power {(on ? "back on" : "out: the battery is flat")}");
+        }
+    }
+
+    /// <summary>
+    /// The mains (docs/sandbox/constructs/production.md "Production lines"): a wire into a Battery is its isolator. When every working battery
+    /// has one and every one says off, <see cref="Construct.MainsOff"/>: production machines, recyclers, gatherers and beacons get no power
+    /// (in creative too), while logic, lamps and motors stay on the batteries, so the switch that opened it can close it. Server, each tick;
+    /// a body whose batteries have no wire costs one test.
+    /// </summary>
+    private static void Mains(Construct c)
+    {
+        var off = false;
+        if (c.MainsWired && c.HasBattery)
+        {
+            var on = false;
+            for (var i = 0; i < c.PartCount && !on; i++)
+            {
+                ref var p = ref c.Parts[i];
+                if (p.D.Role != PartRole.Battery || p.Broken)
+                    continue;
+                if (ConstructGatherer.HeldOff(c, i))
+                    off = true;
+                else
+                    on = true; // (an unwired battery, or one whose wire says on, keeps the mains on)
+            }
+            off &= !on;
+        }
+        if (off != c.MainsOff)
+        {
+            c.MainsOff = off;
+            c.Wake();
         }
     }
 

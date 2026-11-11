@@ -812,6 +812,7 @@ public sealed partial class ConstructPartDef
         PartRole.Differential => Diff is DiffKind.Lockable or DiffKind.Steering ? 1 : 0, // locks it; steers it (-1 to 1: 1 is right)
         PartRole.Suspension => MotorTorque > 0 ? 2 : ActiveSuspension ? 1 : 0, // its ride height; a hub motor's throttle and a Driving Module's drive link
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
+        PartRole.Battery => 1, // its mains: when every battery has a wire in and all say off, machines get no power, controls stay live (ConstructPower.Mains)
         PartRole.Seat => SeatEject ? 1 : 0, // an ejection seat's signal
         PartRole.Thruster => 4, // throttle, hold height
         PartRole.Rotor => 4, // throttle or collective, cyclic pitch and roll

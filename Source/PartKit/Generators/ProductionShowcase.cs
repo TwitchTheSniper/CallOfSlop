@@ -37,6 +37,7 @@ public sealed class ProductionShowcase : IPartGenerator
         private static readonly Orient Front = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ); // own +z to the front aisle
         private static readonly Orient Back = new(Vector3.UnitY, Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ); // own -z to the front (a refiner's screen)
         private static readonly Orient Flow = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitX); // own +z along the flow (an Extruder's die; its screen, own -x, then faces the front)
+        private static readonly Orient Toward = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitX); // own +z against the flow (a rack whose Piece in faces +x)
         private static readonly Orient Post = new(Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ); // a Frame Beam stood up, its y+ sockets to the front
 
         private readonly List<VPart> _lamps = new();
@@ -93,14 +94,14 @@ public sealed class ProductionShowcase : IPartGenerator
             var tank2 = Onto(tank, "-z", "Fuel Tank", "+z");
             Paint(tank2, Power);
             var battery = On("Battery", 3.75f, Row1, Front, "-y", Power);
-            var mainPost = Sign(1.25f, Posts1, Power, "MAIN SWITCH: off stops the genset and the station lamps");
+            var mainPost = Sign(1.25f, Posts1, Power, "MAIN SWITCH: off = machines No power, genset and lamps off");
             _switch = Onto(mainPost, "y+2", "Switch", "-z");
             Config(_switch, ("startOn", true));
             Paint(_switch, Control);
             var gauge = Onto(mainPost, "y+1", "Charge Gauge", "back");
             Paint(gauge, Board);
             Wire(_switch, genset);
-            _ = battery;
+            Wire(_switch, battery); // (a wire into the only battery is the mains: off, every machine has No power, creative too; ConstructPower.Mains)
 
             // ---- 2. Stock: Storage Volumes the creative world fills as the blueprint builds (their Material and Fill are creative-only). --
             Sign(5.25f, Posts1, Stock, "STOCK: creative fills these bins; survival builds them empty");
@@ -129,10 +130,12 @@ public sealed class ProductionShowcase : IPartGenerator
             var split = On("Conveyor Splitter", 28.75f, -4.25f, Flow, "-y.0.0", LineA);
             Convey(exA, "Piece out", split, "Piece in", LineA);
             Sign(27.75f, Posts1, LineA, "Cut this conveyor to see pieces drop");
-            var press = On("Press", 30.25f, -9.25f, Back, "-y.0.0", PressBlue); // (its first bay under the splitter: a die's rows name one bay, so "Piece in 2" takes nothing from them)
+            var press = On("Press", 30.25f, -9.25f, Back, "-y.0.0", PressBlue); // (its first bay under the splitter; a one-bay die works either bay, so "Piece in 2" is free for a second feed)
             Onto(press, "dieslot", "Bracket Die", "mount");
             Convey(split, "Piece out 2", press, "Piece in", LineA);
             Sign(28.25f, Posts2, PressBlue, "Line A's angles go in here: the press stamps brackets");
+            var bracketRack = On("Piece Rack", 27.75f, -12.75f, Toward, "-y.0.0", PressBlue);
+            Convey(press, "Piece out", bracketRack, "Piece in", PressBlue);
             var join = On("Conveyor Join", 33.25f, -4.25f, Flow, "-y.0.0", LineA);
             Convey(split, "Piece out", join, "Piece in", LineA);
             var longRack = On("Long Piece Rack", 37.75f, -3.25f, Flow, "-y.0.0", LineA);
