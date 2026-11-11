@@ -1487,6 +1487,8 @@
     {"output": "Router Antenna", "materials": {"steel": 1}, "seconds": 2.0},
     {"output": "Wi-Fi Mast", "materials": {"steel": 1}, "seconds": 2.0},
     {"output": "OR Gate", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
+    {"output": "Long Piece Rack", "materials": {"steel": 234, "rubber": 47}, "seconds": 37.1},
+    {"output": "Piece Rack", "materials": {"steel": 58, "rubber": 12}, "seconds": 10.8},
     {"output": "Capital Die Lathe", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Capital Press", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Die Lathe", "materials": {"steel": 62, "rubber": 12}, "seconds": 11.4},
