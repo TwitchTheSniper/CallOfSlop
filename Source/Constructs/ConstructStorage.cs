@@ -510,7 +510,25 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press"], bw);
+        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press", "pieces"], bw);
+        if (ConstructParts.Opt(b, "pieces") is { } pc)
+        {
+            // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
+            if (pc.ValueKind != JsonValueKind.Object)
+                throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
+            ConstructParts.Known(pc, ["section", "length", "count"], $"{bw}.pieces");
+            var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
+            if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
+                throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
+            d.RackSection = new Vector2(sec[0].GetSingle(), sec[1].GetSingle());
+            d.RackLength = ConstructParts.Num(ConstructParts.Need(pc, "length", $"{bw}.pieces"), file, "storage.pieces.length");
+            d.RackCount = (int)ConstructParts.Num(ConstructParts.Need(pc, "count", $"{bw}.pieces"), file, "storage.pieces.count");
+            ConstructParts.Range(d.RackSection.X, 0.1f, 32, file, "storage.pieces.section");
+            ConstructParts.Range(d.RackSection.Y, 0.1f, 32, file, "storage.pieces.section");
+            ConstructParts.Range(d.RackLength, 0.1f, 192, file, "storage.pieces.length");
+            ConstructParts.Range(d.RackCount, 1, CStore.MaxPerKind, file, "storage.pieces.count");
+            d.IsPieceRack = true;
+        }
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.IsOrdnanceBench = ConstructParts.Opt(b, "ordnanceBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
@@ -732,7 +750,10 @@ public static class ConstructStorage
     {
         w.U8(s.SlotCount);
         for (var k = 0; k < s.SlotCount; k++)
-            w.U16(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
+        {
+            WriteDef(w, s.Def[k]);
+            w.U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
+        }
         var input = s.InAmount > 0 || s.Refused != 0; // (a production machine's: only when it has something to say, so other stores cost no more)
         var machine = s.Blocked != 0 || s.RefusedPart != ConstructParts.None; // (an Assembler's look line)
         var beacon = s.BeaconStores > 0 || s.BeaconParts > 0; // (an Inventory Beacon's network, for the look line: others cost nothing)
@@ -760,7 +781,10 @@ public static class ConstructStorage
         {
             w.U16((ushort)s.KindN);
             for (var k = 0; k < s.KindN; k++)
-                w.U16(s.KindDef![k]).U16((ushort)s.KindCount![k]);
+            {
+                WriteDef(w, s.KindDef![k]);
+                w.U16((ushort)s.KindCount![k]);
+            }
         }
         if (mix)
         {
@@ -774,6 +798,21 @@ public static class ConstructStorage
             w.U16(s.PullId).U8((byte)(s.PullMaterial ? 1 : 0)).U8(s.PullWaiting).U8(s.PullSeconds);
     }
 
+    /// <summary>A stored part's id, or a run-time piece's key (its id is this machine's own: protocol 244).</summary>
+    private static void WriteDef(PacketWriter w, ushort def)
+    {
+        if (def != ConstructParts.None && Extrusion.IsRuntimeId(def) && ConstructParts.Get(def) is { } d)
+            Extrusion.Write(w, d);
+        else
+            w.U16(def);
+    }
+
+    private static ushort ReadDef(ref PacketReader r)
+    {
+        var def = r.U16();
+        return def == Extrusion.WireMark ? Extrusion.Read(ref r) : def;
+    }
+
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
     public static void Read(ref PacketReader r, CStore s)
     {
@@ -783,7 +822,7 @@ public static class ConstructStorage
         s.Reset(n);
         for (var k = 0; k < n; k++)
         {
-            var def = r.U16();
+            var def = ReadDef(ref r);
             var rot = r.U8();
             var count = r.U8();
             var hp = r.U8();
@@ -842,7 +881,7 @@ public static class ConstructStorage
             s.KindCount ??= new int[CStore.MaxKinds];
             for (var k = 0; k < kinds; k++)
             {
-                var def = r.U16();
+                var def = ReadDef(ref r);
                 int count = r.U16();
                 if (ConstructParts.Get(def) == null || count == 0 || count > CStore.MaxPerKind)
                     throw new MalformedPacketException($"store kind {k}: part {def}, {count} of them");

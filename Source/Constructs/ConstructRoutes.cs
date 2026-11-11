@@ -11,6 +11,7 @@ public enum RouteType : byte
     Shaft, // a solid drive shaft: torque from the engine and gearboxes to gearboxes, differentials and hubs
     Chute, // a square duct: items between storage parts
     Feed, // an ammo feed: rounds from boxes, crates and containers through Ammo Switches to guns. Loaded, it burns (ConstructAmmo.cs)
+    Conveyor, // a roller conveyor: whole pieces from an Extruder or a Former to a Piece Rack, set to a width and height (ConstructConveyor.cs)
     COUNT,
 }
 
@@ -54,6 +55,7 @@ public struct CRoute
     public ushort Count;
     public float EndHealth; // the last segment (last node -> the input)
     public uint Paint; // the paint tool's colour for its segments (0: the type's own; else 0x01000000 | 0xRRGGBB; ConstructPaint.cs)
+    public ushort ConvW, ConvH; // a conveyor: its set width and height (cm), within both ends' openings (ConstructConveyor.cs)
 
     // Rebuilt with the caches (Construct.Rebuild -> ConstructRoutes.Rebuild)
     public ushort Source; // the output part at the root of its tree
@@ -149,6 +151,7 @@ public static partial class ConstructRoutes
         RouteType.Pipe => 0.05f,
         RouteType.Shaft => 0.05f,
         RouteType.Feed => 0.06f,
+        RouteType.Conveyor => 0.1f, // (the routing's clearance; the bed drawn is the link's set width: ConstructConveyor)
         _ => 0.15f,
     };
 
@@ -160,14 +163,15 @@ public static partial class ConstructRoutes
         RouteType.Pipe => 80f,
         RouteType.Shaft => 250f,
         RouteType.Feed => 60f,
+        RouteType.Conveyor => 120f,
         _ => 80f,
     };
 
-    private static readonly string[] TypeNames = ["data cable", "power cable", "pipe", "drive shaft", "chute", "ammo feed"];
+    private static readonly string[] TypeNames = ["data cable", "power cable", "pipe", "drive shaft", "chute", "ammo feed", "conveyor"];
 
     public static string Name(RouteType t) => TypeNames[Math.Min((int)t, TypeNames.Length - 1)];
 
-    public static string TypeKey(RouteType t) => t switch { RouteType.Data => "data", RouteType.Power => "power", RouteType.Pipe => "pipe", RouteType.Shaft => "shaft", RouteType.Feed => "feed", _ => "chute" };
+    public static string TypeKey(RouteType t) => t switch { RouteType.Data => "data", RouteType.Power => "power", RouteType.Pipe => "pipe", RouteType.Shaft => "shaft", RouteType.Feed => "feed", RouteType.Conveyor => "conveyor", _ => "chute" };
 
     public static RouteType? TypeOf(string key) => key.ToLowerInvariant() switch
     {
@@ -177,6 +181,7 @@ public static partial class ConstructRoutes
         "shaft" => RouteType.Shaft,
         "chute" => RouteType.Chute,
         "feed" => RouteType.Feed,
+        "conveyor" => RouteType.Conveyor,
         _ => null,
     };
 
@@ -189,7 +194,7 @@ public static partial class ConstructRoutes
     public static bool IsOutput(ConstructPartDef d, RouteType t) => t switch
     {
         RouteType.Data => d.HasOutput,
-        RouteType.Power or RouteType.Pipe or RouteType.Shaft or RouteType.Feed => HasPort(d, t, input: false),
+        RouteType.Power or RouteType.Pipe or RouteType.Shaft or RouteType.Feed or RouteType.Conveyor => HasPort(d, t, input: false),
         _ => HasPort(d, t, input: false) || d.Role == PartRole.Storage && !HasPort(d, t, input: true), // (a part naming its chute ports means them: a Drill Module's is out only; a cargo hose's inlet: a chute carries on from it)
     };
 
@@ -197,7 +202,7 @@ public static partial class ConstructRoutes
     public static bool IsInput(ConstructPartDef d, RouteType t) => t switch
     {
         RouteType.Data => d.MaxInputs > 0,
-        RouteType.Power or RouteType.Pipe or RouteType.Shaft or RouteType.Feed => HasPort(d, t, input: true),
+        RouteType.Power or RouteType.Pipe or RouteType.Shaft or RouteType.Feed or RouteType.Conveyor => HasPort(d, t, input: true),
         _ => HasPort(d, t, input: true) || d.Role == PartRole.Storage && !HasPort(d, t, input: false), // (a cargo hose's reel: a chute feeds it)
     };
 
@@ -287,6 +292,7 @@ public static partial class ConstructRoutes
         RouteType.Pipe => "start a pipe at a tank",
         RouteType.Shaft => "start a drive shaft at an engine, a gearbox, a transfer part or a differential",
         RouteType.Feed => "start an ammo feed at an ammo box, a crate, a container or an Ammo Switch's output",
+        RouteType.Conveyor => "start a conveyor at an Extruder's or a Former's Piece out",
         _ => "start a chute at a storage part",
     };
 
@@ -297,6 +303,7 @@ public static partial class ConstructRoutes
         RouteType.Pipe => "end it at an engine",
         RouteType.Shaft => "end it at a gearbox, a transfer part, a differential, a suspension's Drive in or a drill",
         RouteType.Feed => "end it at a gun or an Ammo Switch's input",
+        RouteType.Conveyor => "end it at a Piece Rack's Piece in",
         _ => "end it at a storage part",
     };
 
@@ -603,7 +610,7 @@ public static partial class ConstructRoutes
             ConstructMerge.CentreSocket(c, c.Merges[c.MergeOf[part] - 1], mag, out var merged, out _); // (a merged receiver: the port is on its big magazine socket)
             return merged;
         }
-        if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed && PortOf(d, t.Value, port) is { } np)
+        if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor && PortOf(d, t.Value, port) is { } np)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         c.PartBounds(part, out var mn, out var mx);
         var mid = (mn + mx) * 0.5f;
@@ -618,7 +625,7 @@ public static partial class ConstructRoutes
         var d = c.DefOf(part);
         if (port == 255 || port >= d.Sockets.Length)
         {
-            if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed && PortOf(d, t.Value, port) is { } np)
+            if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor && PortOf(d, t.Value, port) is { } np)
                 return ConstructParts.DirVector(Rot24.ApplyDir(c.Parts[part].Rot, np.Face));
             return Vector3.Zero;
         }
@@ -857,6 +864,8 @@ public static partial class ConstructRoutes
     {
         if (CheckEnds(world, c, type, from, fromPort, parent, parentSeg, junction, nodes.Length, to, toPort) is { } why)
             return why;
+        if (type == RouteType.Conveyor && parent != 255)
+            return "a conveyor doesn't branch: a piece can't split";
         // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
         // client's preview uses too (PathRule).
         var count = nodes.Length + 2;
@@ -975,7 +984,7 @@ public static partial class ConstructRoutes
             if (!Contains(ports[..Ports(c, to, type, ports, input: true)], toPort))
                 return $"that port of the {td.Name} is taken or is not a shaft input";
         }
-        else if (type is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed)
+        else if (type is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor)
         {
             Span<byte> ports = stackalloc byte[16];
             if (parent == 255 && !Contains(ports[..Ports(c, from, type, ports, input: false)], fromPort))
@@ -1141,11 +1150,12 @@ public static partial class ConstructRoutes
         {
             case RouteType.Pipe:
             case RouteType.Chute:
+            case RouteType.Conveyor:
             {
                 var step = type == RouteType.Pipe ? PipeStepDeg : ChuteStepDeg;
                 var off = MathF.Abs(deg - MathF.Round(deg / step) * step);
                 if (off > AngleSlackDeg)
-                    return $"a {(type == RouteType.Pipe ? "pipe" : "chute")} bends in {step:0} degree steps ({deg:0} here)";
+                    return $"a {Name(type)} bends in {step:0} degree steps ({deg:0} here)";
                 return null;
             }
             case RouteType.Shaft:
@@ -1623,6 +1633,8 @@ public static partial class ConstructRoutes
             Share0 = 1f,
             Share = 1f,
         };
+        if (type == RouteType.Conveyor)
+            ConstructConveyor.Limit(c, from, fromPort, to, toPort, out c.Routes[k].ConvW, out c.Routes[k].ConvH); // (it opens to the most both ends take)
         for (var i = 0; i < nodes.Length; i++)
             c.RouteNodes[c.RouteNodeCount++] = new CRouteNode { Pos = ConstructWorld.Quantise(nodes[i].Pos), Host = nodes[i].Host, Health = Health(type) };
         Changed(world, c);
@@ -1735,6 +1747,8 @@ public static partial class ConstructRoutes
             map[k] = rn;
             c.Routes[rn++] = r;
         }
+        if (c.ConveyedCount > 0)
+            ConstructConveyor.Remap(c, map, c.RouteCount);
         c.RouteCount = rn;
         c.RouteNodeCount = nn;
         return removed;
@@ -1788,6 +1802,13 @@ public static partial class ConstructRoutes
             routeMap[k] = rn;
             dst.Routes[rn++] = r;
         }
+        if (src.ConveyedCount > 0)
+        {
+            if (same)
+                ConstructConveyor.Remap(src, routeMap, src.RouteCount);
+            else
+                ConstructConveyor.MoveTo(src, routeMap[..src.RouteCount], dst); // (src link k is dst link routeMap[k]: its riders go with it)
+        }
         dst.RouteCount = rn;
         dst.RouteNodeCount = nn;
         _ = first;
@@ -1820,6 +1841,8 @@ public static partial class ConstructRoutes
             r.To = (ushort)(r.To + off);
             a.Routes[a.RouteCount++] = r;
         }
+        if (b.ConveyedCount > 0)
+            ConstructConveyor.Merge(a, b, baseRoute);
     }
 
     /// <summary>Moves node <paramref name="node"/> of link <paramref name="route"/> (the edit mode's "move node"): the whole link is re-checked with it moved (<see cref="CheckMove"/>). Null, or why not.</summary>
@@ -2211,6 +2234,8 @@ public static partial class ConstructRoutes
                 w.U16(n.Host).CmVec(n.Pos).U8(HealthByte(n.Health, r.Type));
             }
             w.U8(HealthByte(r.EndHealth, r.Type));
+            if (r.Type == RouteType.Conveyor)
+                w.U16(r.ConvW).U16(r.ConvH); // (protocol 244)
         }
     }
 
@@ -2257,6 +2282,11 @@ public static partial class ConstructRoutes
                 c.RouteNodes[c.RouteNodeCount++] = new CRouteNode { Pos = pos, Host = host, Health = hp / 255f * full };
             }
             rt.EndHealth = r.U8() / 255f * full;
+            if (rt.Type == RouteType.Conveyor)
+            {
+                rt.ConvW = r.U16();
+                rt.ConvH = r.U16();
+            }
             c.Routes[c.RouteCount++] = rt;
         }
     }
