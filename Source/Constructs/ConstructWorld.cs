@@ -481,8 +481,19 @@ public sealed partial class ConstructWorld
         return c;
     }
 
-    public void Remove(Construct c)
+    /// <summary>
+    /// Takes a body out of the world. Server: pieces riding its conveyors drop as loose bodies where they are
+    /// (ConstructConveyor.cs), unless <paramref name="keepRiders"/> (it goes elsewhere whole: travel, where they went with its
+    /// copy). A client's removals are the server's word and clear its riders first (ConstructNet.cs).
+    /// </summary>
+    public void Remove(Construct c, bool keepRiders = false)
     {
+        if (c.ConveyedCount > 0)
+        {
+            if (!keepRiders)
+                ConstructConveyor.DropAll(this, c);
+            c.ConveyedCount = 0;
+        }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Store != 0)
                 FreeStore(ref c.Parts[i]); // (what a construct that goes holds goes with it; one being taken apart spills first)
@@ -2030,7 +2041,7 @@ public sealed partial class ConstructWorld
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
         ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
         ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
-        ConstructConveyor.Step(this); // (pieces ride their conveyors to the racks: only bodies with riders)
+        ConstructConveyor.Step(this, query); // (pieces ride their conveyors to the racks: only bodies with riders)
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         ConstructSeal.Step(this, query, ref _sealTicks, server: true);

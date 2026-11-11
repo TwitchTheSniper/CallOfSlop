@@ -648,6 +648,7 @@ public sealed partial class ConstructPartDef
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
+    public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public Vector2 RackSection;
     public float RackLength;

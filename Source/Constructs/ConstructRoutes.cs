@@ -292,7 +292,7 @@ public static partial class ConstructRoutes
         RouteType.Pipe => "start a pipe at a tank",
         RouteType.Shaft => "start a drive shaft at an engine, a gearbox, a transfer part or a differential",
         RouteType.Feed => "start an ammo feed at an ammo box, a crate, a container or an Ammo Switch's output",
-        RouteType.Conveyor => "start a conveyor at an Extruder's or a Former's Piece out",
+        RouteType.Conveyor => "start a conveyor at an Extruder's or a Former's Piece out, or a splitter's or join's",
         _ => "start a chute at a storage part",
     };
 
@@ -303,7 +303,7 @@ public static partial class ConstructRoutes
         RouteType.Pipe => "end it at an engine",
         RouteType.Shaft => "end it at a gearbox, a transfer part, a differential, a suspension's Drive in or a drill",
         RouteType.Feed => "end it at a gun or an Ammo Switch's input",
-        RouteType.Conveyor => "end it at a Piece Rack's Piece in",
+        RouteType.Conveyor => "end it at a Piece in: a Piece Rack, a splitter or a join",
         _ => "end it at a storage part",
     };
 

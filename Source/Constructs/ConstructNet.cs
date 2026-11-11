@@ -788,7 +788,7 @@ public static partial class ConstructNet
                 break;
             case CBodyKind.Gone:
                 if (world.Get(r.U16()) is { } gone)
-                    world.Remove(gone);
+                    world.Remove(gone, keepRiders: true); // (the server dropped its riders: they come as bodies of their own)
                 world.Removed.Clear();
                 break;
             case CBodyKind.Health:
@@ -1314,7 +1314,7 @@ public static partial class ConstructNet
             return;
         for (var i = world.Bodies.Count - 1; i >= 0; i--)
             if (world.Bodies[i].DigestRound != world.DigestRound)
-                world.Remove(world.Bodies[i]);
+                world.Remove(world.Bodies[i], keepRiders: true);
         world.Removed.Clear();
         world.ResyncReady = true;
     }

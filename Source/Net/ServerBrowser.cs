@@ -393,7 +393,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 244: conveyors (ConstructConveyor.cs): RouteType.Conveyor at the end of the link types, its width and height (u16 cm each) after a conveyor's bytes in a
     //      Full; CBodyKind.Riders (at the end) carries a body's riding pieces by key; RouteEditOp.Size (at the end) sets a conveyor's size; a store's slot and
     //      kind ids may be Extrusion.WireMark and a run-time piece's key; ExtrudeStall gains ConveyorSmall, ConveyorFull and ConveyorCut.
-    public const ushort ProtocolVersion = 244;
+    // 245: conveyors, phase 2: a rider in CBodyKind.Riders sends its front as an f32 (below 0 while it crosses a junction) and a u8 after its paint (the link
+    //      it came through, plus one); the CActKind.Bin act is unchanged (the server takes the aim from the player's look).
+    public const ushort ProtocolVersion = 245;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -835,6 +835,7 @@ public sealed partial class Construct
         ConstructBoost.Build(this);
         ConstructFlight.Build(this);
         ConstructOrdnance.Build(this);
+        ConstructConveyor.BuildRacks(this);
         ConstructHydraulics.Build(this);
         ConstructSeal.Build(this);
         BuildSegments();
