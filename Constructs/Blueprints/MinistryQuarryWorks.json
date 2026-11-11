@@ -1,7 +1,7 @@
 {
  "format": "call-of-slop-construct-blueprint/1",
  "name": "Ministry Quarry Works",
- "description": "The Ministry Quarry's works (the first Ministry duty, docs/story/DUTIES.md): an Assembler on a 4 m slab, fed by a Materials Bin and a Parts Shelf, filling a Chest, with a Small Genset on a Fuel Tank waiting for its cable. A copy of the Starter Assembler.",
+ "description": "The Ministry Quarry's works (docs/story/DUTIES.md): an Assembler on a 4 m slab, fed by a Materials Bin and a Parts Shelf, filling a Chest, with a Small Genset on a Fuel Tank waiting for its cable; behind them the Mine Face, which the induction has the inmate shore up with a pit prop and a lamp.",
  "steps": [
   {
    "part": "Concrete Foundation 4x4 m"
@@ -47,6 +47,24 @@
    "on": 6,
    "socket": "-z",
    "by": "+z"
+  },
+  {
+   "part": "Concrete Foundation 4x4 m",
+   "on": 0,
+   "socket": "k0",
+   "by": "f0"
+  },
+  {
+   "part": "Concrete Foundation 4x4 m",
+   "on": 2,
+   "socket": "k0",
+   "by": "f0"
+  },
+  {
+   "part": "Mine Face",
+   "on": 8,
+   "socket": "t15_15",
+   "by": "bottom"
   }
  ],
  "links": [

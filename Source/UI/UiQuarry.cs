@@ -16,13 +16,15 @@ public sealed partial class Ui
 
     private void DrawQuarry(Game game, float2 pos, float2 size, Settings settings)
     {
-        if (!game.SandboxOn || PauseOpen || MenuOpen || game.TutorialCurrent != null)
+        if (!game.SandboxOn || PauseOpen || MenuOpen)
             return;
         if (game.QuarryRiding)
         {
-            DrawQuarryRide(game);
+            DrawQuarryRide(game); // (the induction rides the same bus)
             return;
         }
+        if (game.TutorialCurrent != null)
+            return;
         var state = game.QuarryLocal;
         var since = Brutal.GlfwApi.Glfw.Time - game.QuarryChangedAt;
         if (state == Game.QuarryNone || state == Game.QuarryDone && since > 6)

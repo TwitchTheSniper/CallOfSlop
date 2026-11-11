@@ -184,6 +184,7 @@ public sealed partial class Game
             TutorialIssue(p, step, state);
             if (state == TutorialState.Running && step < Tutorial.Steps.Length && Tutorial.Steps[step].Drops.Length > 0 && p.Alive)
                 TutorialDrop(p, Tutorial.Steps[step]);
+            QuarryTutorialStep(p); // (the step's marker, and a bus called for the last step)
         }
         TutorialSend(id);
     }
@@ -208,7 +209,8 @@ public sealed partial class Game
             if (ConstructBuild.PlaceNew(Constructs, def, at, p.Yaw) is { } c)
                 c.Owner = p.Id;
         }
-        SandboxHands.Notices.Add((p.Id, step.Drops.Length == 1 ? $"{WardenName} sets a {step.Drops[0]} down in front of you" : $"{WardenName} sets some parts down in front of you"));
+        var who = step.Speaker.Length > 0 ? step.Speaker : WardenName;
+        SandboxHands.Notices.Add((p.Id, step.DropNote.Length > 0 ? step.DropNote : step.Drops.Length == 1 ? $"{who} sets a {step.Drops[0]} down in front of you" : $"{who} sets some parts down in front of you"));
     }
 
     /// <summary>Server: something the induction counts happened for this person outside an action (a bunk lain in).</summary>
@@ -232,11 +234,12 @@ public sealed partial class Game
             if (Tutorial.Gate(state, step, hand.Tool) != hand.Tool)
                 SandboxHands.SetTool(id, ConstructTool.Hands, Constructs, p.Eye, p.Yaw);
             var gives = Tutorial.Steps[step].Gives;
+            var who = Tutorial.Steps[step].Speaker.Length > 0 ? Tutorial.Steps[step].Speaker : WardenName;
             for (var t = 0; gives != 0 && t < 32; t++)
                 if ((gives & (1u << t)) != 0)
-                    SandboxHands.Notices.Add((id, $"{WardenName} issues you the {Tutorial.ToolName((ConstructTool)t)}"));
+                    SandboxHands.Notices.Add((id, $"{who} issues you the {Tutorial.ToolName((ConstructTool)t)}"));
             if (Tutorial.Steps[step].GivesPack && !SandboxHands.HasPack(id) && !SandboxInfiniteParts)
-                SandboxHands.Notices.Add((id, $"{WardenName} issues you a backpack"));
+                SandboxHands.Notices.Add((id, $"{who} issues you a backpack"));
         }
         else if (state is TutorialState.Finished or TutorialState.Skipped && (_tutWasRunning[id] || !SandboxHands.HasPack(id) && !SandboxInfiniteParts))
             SandboxHands.Notices.Add((id, !SandboxHands.HasPack(id) && !SandboxInfiniteParts
@@ -476,6 +479,8 @@ public sealed partial class Game
                 return hand.Held != ConstructParts.None;
             case TutorialCue.Tool:
                 return hand.Tool == step.Tool;
+            case TutorialCue.Ride:
+                return QuarryRideStep(p, step.Spot); // (the crew bus: GameQuarry.cs)
             default:
                 return (_tutSaw[id] & (1u << (int)step.Cue)) != 0;
         }

@@ -1,0 +1,89 @@
+{
+ "format": "call-of-slop-construct-part/1",
+ "name": "Pit Prop",
+ "description": "A timber prop that holds a mine's rock face up. Stand it on the footing under the face; a lamp fits on its side.",
+ "role": "frame",
+ "tool": "wrench",
+ "attachSeconds": 2,
+ "mass": 28,
+ "health": 300,
+ "armour": 2,
+ "material": "wood",
+ "color": "#7a5a38",
+ "boxes": [
+  {
+   "min": [
+    -0.09,
+    0.01,
+    -0.09
+   ],
+   "max": [
+    0.09,
+    2.5,
+    0.09
+   ]
+  },
+  {
+   "min": [
+    -0.2,
+    2.5,
+    -0.12
+   ],
+   "max": [
+    0.2,
+    2.62,
+    0.3
+   ]
+  },
+  {
+   "min": [
+    -0.14,
+    0,
+    -0.14
+   ],
+   "max": [
+    0.14,
+    0.1,
+    0.14
+   ]
+  }
+ ],
+ "sockets": [
+  {
+   "name": "bottom",
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "dir": "-y"
+  },
+  {
+   "name": "front",
+   "at": [
+    0,
+    1.7,
+    -0.09
+   ],
+   "dir": "-z"
+  },
+  {
+   "name": "left",
+   "at": [
+    -0.09,
+    1.7,
+    0
+   ],
+   "dir": "-x"
+  },
+  {
+   "name": "right",
+   "at": [
+    0.09,
+    1.7,
+    0
+   ],
+   "dir": "+x"
+  }
+ ]
+}
