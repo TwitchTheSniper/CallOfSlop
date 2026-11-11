@@ -8,7 +8,7 @@ templates to `extends` in `_Bases/`, socket types and bores in `_Registry.json`,
 
 Check a file with `CallOfSlop --check-part FILE` (it prints the boxes, triangles, sockets and where the part fits),
 the whole folder with `--check-parts`, and watch it live in the workbench with `--watch-parts`.
-`python3 tools/parts/viz.py` draws a contact sheet without the game and `python3 tools/parts/floaters.py` lists any
+`python3 tools/parts/viz.py` draws a contact sheet without the game and `--check-builder-parts [DIR]` lists any
 model piece that floats free of its part or build.
 
 ## Model boxes
@@ -49,7 +49,7 @@ triangles in all and a standard build 30000; `--check-part` prints the count. Ke
 
 **Connectivity.** Every part must be one connected piece, and a contoured shape only counts where it really is: a
 tube touches through its wall, an arc along its band, not anywhere in their boxes (the self-test "Model connectivity"
-and `tools/parts/floaters.py` use a few boxes inside each shape, `PartShapes.Proxies` / `tools/parts/shapes.py`).
+and `--check-builder-parts` use a few boxes inside each shape, `PartShapes.Proxies`).
 
 The generator is `Source/Zombies/PartShapes.cs`; `tools/parts/shapes.py` mirrors it for the Python tools (keep them in
 step).

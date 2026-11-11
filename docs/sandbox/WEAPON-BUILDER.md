@@ -401,7 +401,7 @@ saves and the network are unchanged (the action still plugs into the receiver's 
   drawn at that point of its socket, in that point's space (no point of that name, `"side"` or no placement: at `pos`).
   Every receiver's action socket has `pos` on its right side towards the back (as before) and
   `"points": {"under": [0, 0, 0.017], "front": [0, y, z]}`. `BuildModel`, the workbench's socket spots and
-  `tools/parts/floaters.py` all place parts this way.
+  `--check-builder-parts` all place parts this way.
 - **Under** (trigger groups and sears, 17 actions): Semi-Auto Trigger, Full-Auto Sear, Carbine Sear, Blowback SMG Sear,
   Buzzsaw Sear, Heavy Auto Sear, Overdrive Sear, Panic Button, Riot Trigger, Marksman Trigger, Hair Trigger, Lob
   Trigger, Revolver Hammer (a double-action trigger: it reads as the trigger mechanism), Three-Round Burst, Ratchet
@@ -967,7 +967,7 @@ you up instead.
   Frame plates (1.7 cm under the receivers; shelf bars under each upper row); hopper chutes and stock mounts on the
   frames whose hopper or stock socket hangs off them; the push cart's basket floor; small fixes to the Longbow screw,
   the Street Sweeper drum, the Shoulder Harness, the Frozen Fish (on a short line now) and the Whoopee Cushion.
-  Sockets, stats and sight heights are unchanged. `python3 tools/parts/floaters.py` lists floaters; the self-test
+  Sockets, stats and sight heights are unchanged. `--check-builder-parts` lists floaters; the self-test
   section **Model connectivity** fails on any, with an allow-list for intentional separate pieces (the cooling fins of
   the Bastille, Sawmill and Hammerfall receivers, which the barrel runs through; the Barbed Wire Wrap and Nail Ring on
   the hilt; the push cart's upper rows of receivers, piled in the basket).
@@ -984,7 +984,7 @@ you up instead.
   by the size so the box's own scale turns them right. Budgets: 6000 triangles per part (`PartFile.MaxTriangles`), 30000
   per standard build (the heaviest, the Gantry Sixteen, draws about 17000). Connectivity counts
   a shape only where it really is, through a few proxy boxes inside it (`PartShapes.Proxies`, mirrored in
-  `tools/parts/shapes.py` for `floaters.py` and `viz.py`). Every part category with part models was remodelled with
+  `tools/parts/shapes.py` for the `viz.py` contact sheet). Every part category with part models was remodelled with
   them (optics are drawn by `GunModel` and ammo has no model), keeping sockets, hand points, sizes and silhouettes; the
   old `rod` drew its 45-degree copy about Z whatever its long axis was, so the push cart's bar (long in X) drew as a
   cross; it is a cylinder now.
@@ -1104,9 +1104,10 @@ weapons and attachments.
 - `CallOfSlop.exe --export-parts DIR`: writes every part, fragment and base file normalised (keys in the standard order,
   one socket, box or stat per line; comments dropped), for tidy diffs. `--resolved` writes each part out in full instead
   (`extends` merged, fragments expanded into plain boxes).
-- `python3 tools/parts/floaters.py [Parts] [--receiver NAME]`: boxes floating free of their part, of an assembled grip
-  (empty, one receiver, every receiver, an optic, everything) or of a standard build, like the self-test's Model
-  connectivity section. Exit code 1 on any not on its allow-list.
+- `CallOfSlop.exe --check-builder-parts [Parts] [--receiver NAME] [--tol M]`: boxes floating free of their part, of an assembled grip
+  (empty, one receiver, every receiver, an optic, everything), of every receiver with every action, actions under or in front
+  cutting into the handle, a foregrip or a magazine, and of a standard build, like the self-test's Model connectivity section
+  (`BuilderPartsCheck.cs`, which was `tools/parts/floaters.py`). The exit code is the number of problems not on its allow-list.
 - `python3 tools/parts/viz.py [Parts] [out.png]`: a contact sheet of every part with its sockets (labelled, coloured by
   type), muzzles and hand points, without the game. `--fragments` draws the fragment library, `--templates` adds the
   examples, `--only NAME...`, `--category barrel`, `--lint` runs the set-wide checks only.

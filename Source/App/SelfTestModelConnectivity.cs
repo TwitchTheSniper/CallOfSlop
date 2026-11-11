@@ -4,27 +4,13 @@ namespace CallOfSlop;
 
 public static partial class SelfTest
 {
-    /// <summary>
-    /// Intentional separated pieces in part models: the part's name and what joins them in a build. Every other part's
-    /// boxes must form one connected piece on their own (docs/sandbox/WEAPON-BUILDER.md, "Model building").
-    /// </summary>
-    private static readonly Dictionary<string, string> AllowedSeparated = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Bastille LMG Receiver"] = "cooling fins round the barrel socket: the fitted barrel runs through them",
-        ["Sawmill Receiver"] = "cooling fins round the barrel socket: the fitted barrel runs through them",
-        ["Hammerfall Autocannon Receiver"] = "cooling fins round the barrel socket: the fitted barrel runs through them",
-        ["Barbed Wire Wrap"] = "two wraps of wire round the hilt's handle: the hilt joins them",
-        ["Nail Ring"] = "nails driven into the hilt's handle: the hilt joins them",
-    };
+    private static Dictionary<string, string> AllowedSeparated => BuilderPartsCheck.AllowedSeparated;
+    private static Dictionary<string, string> AllowedFreeRows => BuilderPartsCheck.AllowedFreeRows;
 
-    /// <summary>Grips whose upper receiver rows may hang free (part name and why).</summary>
-    private static readonly Dictionary<string, string> AllowedFreeRows = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Push Cart"] = "receivers piled in the basket in rows 11 cm apart; only the bottom row stands on the floor",
-    };
+    // The connectivity helpers are BuilderPartsCheck's (--check-builder-parts runs the same checks from the command line).
+    private static List<int> FloatingBoxes(IReadOnlyList<ModelBox> boxes, int anchor, ModelBox[]?[]? proxies = null) => BuilderPartsCheck.FloatingBoxes(boxes, anchor, proxies);
 
-    /// <summary>Two boxes touch when they overlap or are at most this far apart (1 cm, and 0.1 mm for rounding).</summary>
-    private const float ConnectTolerance = 0.0101f;
+    private static ModelBox[]?[] Proxies(IReadOnlyList<Matrix4x4> mats, IReadOnlyList<ushort> shapes) => BuilderPartsCheck.Proxies(mats, shapes);
 
     /// <summary>
     /// Model connectivity (the user, 2026-10-23: "remove the weird frame pieces that float above the grips"): no box of
@@ -32,7 +18,7 @@ public static partial class SelfTest
     /// assembled weapon: every root grip empty, with one receiver, with every receiver socket filled (a rifle receiver
     /// and a short pistol one), with an optic and with every other socket filled, and every standard build. The rules
     /// BuildModel draws by are checked too: a grip's iron sights only with a receiver fitted and no optic, "with:SOCKET"
-    /// boxes only while that socket holds a part. Same check as tools/parts/floaters.py.
+    /// boxes only while that socket holds a part. Same check as --check-builder-parts (BuilderPartsCheck.cs).
     /// </summary>
     private static void CheckModelConnectivity()
     {
@@ -227,111 +213,4 @@ public static partial class SelfTest
     }
 
     private static string FmtPos(Vector3 v) => $"({v.X:0.000}, {v.Y:0.000}, {v.Z:0.000})";
-
-    /// <summary>
-    /// The boxes outside the main connected piece: the piece holding box <paramref name="anchor"/>, or (-1) the piece
-    /// with the most volume.
-    /// </summary>
-    private static List<int> FloatingBoxes(IReadOnlyList<ModelBox> boxes, int anchor, ModelBox[]?[]? proxies = null)
-    {
-        // A contoured shape (a tube, an arc...) touches only where its proxy boxes do (PartShapes.Proxies), not anywhere in its box.
-        bool Touch(int i, int j)
-        {
-            if (!boxes[i].Touches(boxes[j], ConnectTolerance))
-                return false;
-            if (proxies?[i] is not { } pi)
-                return proxies?[j] is not { } pj0 || pj0.Any(y => y.Touches(boxes[i], ConnectTolerance));
-            if (proxies[j] is not { } pj)
-                return pi.Any(x => x.Touches(boxes[j], ConnectTolerance));
-            return pi.Any(x => pj.Any(y => x.Touches(y, ConnectTolerance)));
-        }
-        var n = boxes.Count;
-        var parent = new int[n];
-        for (var i = 0; i < n; i++)
-            parent[i] = i;
-        int Find(int i)
-        {
-            while (parent[i] != i)
-                i = parent[i] = parent[parent[i]];
-            return i;
-        }
-        for (var i = 0; i < n; i++)
-            for (var j = i + 1; j < n; j++)
-                if (Find(i) != Find(j) && Touch(i, j))
-                    parent[Find(i)] = Find(j);
-        if (n == 0)
-            return [];
-        int main;
-        if (anchor >= 0)
-            main = Find(anchor);
-        else
-        {
-            var volume = new Dictionary<int, float>();
-            for (var i = 0; i < n; i++)
-                volume[Find(i)] = volume.GetValueOrDefault(Find(i)) + boxes[i].H.X * boxes[i].H.Y * boxes[i].H.Z;
-            main = volume.MaxBy(kv => kv.Value).Key;
-        }
-        var list = new List<int>();
-        for (var i = 0; i < n; i++)
-            if (Find(i) != main)
-                list.Add(i);
-        return list;
-    }
-
-    /// <summary>The proxy boxes of each shaped piece (null for a plain box), from its world matrix and shape id.</summary>
-    private static ModelBox[]?[] Proxies(IReadOnlyList<Matrix4x4> mats, IReadOnlyList<ushort> shapes)
-    {
-        var r = new ModelBox[]?[mats.Count];
-        for (var i = 0; i < mats.Count; i++)
-            if (shapes[i] != 0)
-                r[i] = PartShapes.Proxies(shapes[i]).Select(p => ModelBox.Of(p * mats[i])).ToArray();
-        return r;
-    }
-
-    /// <summary>An oriented box: centre, unit axes and half extents (from a unit-cube world matrix).</summary>
-    private readonly record struct ModelBox(Vector3 C, Vector3 X, Vector3 Y, Vector3 Z, Vector3 H)
-    {
-        public static ModelBox Of(Matrix4x4 w)
-        {
-            var x = new Vector3(w.M11, w.M12, w.M13);
-            var y = new Vector3(w.M21, w.M22, w.M23);
-            var z = new Vector3(w.M31, w.M32, w.M33);
-            float lx = MathF.Max(x.Length(), 1e-9f), ly = MathF.Max(y.Length(), 1e-9f), lz = MathF.Max(z.Length(), 1e-9f);
-            return new ModelBox(w.Translation, x / lx, y / ly, z / lz, new Vector3(lx, ly, lz) * 0.5f);
-        }
-
-        /// <summary>The box's reach along Z (world): its smallest and largest z.</summary>
-        public float MinZ => C.Z - (H.X * MathF.Abs(X.Z) + H.Y * MathF.Abs(Y.Z) + H.Z * MathF.Abs(Z.Z));
-
-        /// <inheritdoc cref="MinZ"/>
-        public float MaxZ => C.Z + (H.X * MathF.Abs(X.Z) + H.Y * MathF.Abs(Y.Z) + H.Z * MathF.Abs(Z.Z));
-
-        /// <summary>Whether point <paramref name="p"/> is inside the box (on its surface counts).</summary>
-        public bool Contains(Vector3 p)
-        {
-            var d = p - C;
-            return MathF.Abs(Vector3.Dot(d, X)) <= H.X + 1e-5f && MathF.Abs(Vector3.Dot(d, Y)) <= H.Y + 1e-5f && MathF.Abs(Vector3.Dot(d, Z)) <= H.Z + 1e-5f;
-        }
-
-        /// <summary>Separating axes: no axis splits the two boxes by more than <paramref name="tol"/>.</summary>
-        public bool Touches(ModelBox o, float tol)
-        {
-            var t = o.C - C;
-            Span<Vector3> a = [X, Y, Z];
-            Span<Vector3> b = [o.X, o.Y, o.Z];
-            for (var k = 0; k < 15; k++)
-            {
-                var axis = k < 3 ? a[k] : k < 6 ? b[k - 3] : Vector3.Cross(a[(k - 6) / 3], b[(k - 6) % 3]);
-                var len = axis.Length();
-                if (len < 1e-6f)
-                    continue;
-                axis /= len;
-                var ra = H.X * MathF.Abs(Vector3.Dot(X, axis)) + H.Y * MathF.Abs(Vector3.Dot(Y, axis)) + H.Z * MathF.Abs(Vector3.Dot(Z, axis));
-                var rb = o.H.X * MathF.Abs(Vector3.Dot(o.X, axis)) + o.H.Y * MathF.Abs(Vector3.Dot(o.Y, axis)) + o.H.Z * MathF.Abs(Vector3.Dot(o.Z, axis));
-                if (MathF.Abs(Vector3.Dot(t, axis)) > ra + rb + tol)
-                    return false;
-            }
-            return true;
-        }
-    }
 }

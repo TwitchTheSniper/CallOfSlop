@@ -17,7 +17,7 @@ namespace CallOfSlop;
 ///
 /// Vertices are stored in unit-cube space (metres divided by the size) and normals as the true normal divided by the
 /// size, so the box's own scale turns them back into the right directions in the shader (mat3(model) * normal).
-/// tools/parts/shapes.py mirrors this file for the contact sheet and the connectivity checker.
+/// tools/parts/shapes.py mirrors this file for the contact sheet (tools/parts/viz.py).
 /// </summary>
 public static class PartShapes
 {
@@ -199,7 +199,7 @@ public static class PartShapes
 
     /// <summary>
     /// Boxes inside the shape (unit-cube space; multiply by the piece's world matrix) that stand for its volume when
-    /// checking that a model's pieces touch (the self-test "Model connectivity", tools/parts/floaters.py). The plain
+    /// checking that a model's pieces touch (the self-test "Model connectivity", --check-builder-parts). The plain
     /// cube for id 0.
     /// </summary>
     public static Matrix4x4[] Proxies(int id)
