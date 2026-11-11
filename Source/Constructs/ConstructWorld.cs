@@ -481,8 +481,19 @@ public sealed partial class ConstructWorld
         return c;
     }
 
-    public void Remove(Construct c)
+    /// <summary>
+    /// Takes a body out of the world. Server: pieces riding its conveyors drop as loose bodies where they are
+    /// (ConstructConveyor.cs), unless <paramref name="keepRiders"/> (it goes elsewhere whole: travel, where they went with its
+    /// copy). A client's removals are the server's word and clear its riders first (ConstructNet.cs).
+    /// </summary>
+    public void Remove(Construct c, bool keepRiders = false)
     {
+        if (c.ConveyedCount > 0)
+        {
+            if (!keepRiders)
+                ConstructConveyor.DropAll(this, c);
+            c.ConveyedCount = 0;
+        }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Store != 0)
                 FreeStore(ref c.Parts[i]); // (what a construct that goes holds goes with it; one being taken apart spills first)

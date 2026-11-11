@@ -27,9 +27,10 @@ public static partial class ConstructRoutes
         public uint Paint; // the paint tool's colour ("paint": "#rrggbb"; 0: the type's own)
         public bool Laid; // saved from a construct ("laid": true): it stands as it was laid, whatever has been built round it since; only its ends and lengths are checked
         public List<int> Hosts = new(); // "hosts": each node's step (empty: the nearest part's)
+        public ushort SizeW, SizeH; // a conveyor's set width and height ("size": [w, h], metres; 0: the most its ends take: ConstructConveyor.cs)
     }
 
-    private static readonly string[] LinkKeys = ["type", "style", "from", "to", "fromPort", "toPort", "nodes", "branch", "at", "paint", "laid", "hosts"];
+    private static readonly string[] LinkKeys = ["type", "style", "from", "to", "fromPort", "toPort", "nodes", "branch", "at", "paint", "laid", "hosts", "size"];
 
     public static LinkSpec ParseLink(JsonElement e, string file, int index)
     {
@@ -67,6 +68,13 @@ public static partial class ConstructRoutes
                 s.Nodes.Add(Vec3(n, where));
         if (s.Nodes.Count > Construct.MaxNodesPerRoute)
             throw new ConstructPartException($"{where}: at most {Construct.MaxNodesPerRoute} nodes");
+        if (e.TryGetProperty("size", out var sz))
+        {
+            if (s.Type != RouteType.Conveyor || sz.ValueKind != JsonValueKind.Array || sz.GetArrayLength() != 2)
+                throw new ConstructPartException($"{where}: \"size\" is a conveyor's [width, height] in metres");
+            s.SizeW = (ushort)Math.Clamp((int)MathF.Round(sz[0].GetSingle() * 100), 0, ushort.MaxValue);
+            s.SizeH = (ushort)Math.Clamp((int)MathF.Round(sz[1].GetSingle() * 100), 0, ushort.MaxValue);
+        }
         if (e.TryGetProperty("laid", out var ld))
             s.Laid = ld.ValueKind == JsonValueKind.True;
         if (e.TryGetProperty("hosts", out var hs))
@@ -153,6 +161,13 @@ public static partial class ConstructRoutes
             return "no room for another link";
         c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
         c.Routes[c.RouteCount - 1].Paint = s.Paint;
+        if (s.Type == RouteType.Conveyor && s.SizeW > 0 && s.SizeH > 0)
+        {
+            // (as it was set, within what its ends take here: a part's opening may have changed since)
+            ref var r = ref c.Routes[c.RouteCount - 1];
+            r.ConvW = (ushort)Math.Clamp(s.SizeW / ConstructConveyor.StepCm * ConstructConveyor.StepCm, ConstructConveyor.MinSizeCm, Math.Max((int)ConstructConveyor.MinSizeCm, (int)r.ConvW));
+            r.ConvH = (ushort)Math.Clamp(s.SizeH / ConstructConveyor.StepCm * ConstructConveyor.StepCm, ConstructConveyor.MinSizeCm, Math.Max((int)ConstructConveyor.MinSizeCm, (int)r.ConvH));
+        }
         return null;
     }
 
@@ -494,6 +509,8 @@ public static partial class ConstructRoutes
             }
             if (ConstructPaint.IsSet(r.Paint))
                 sb.Append(",\"paint\":\"").Append(ConstructPaint.ToHex(r.Paint)).Append('"');
+            if (r.Type == RouteType.Conveyor)
+                sb.Append(",\"size\":[").Append((r.ConvW / 100f).ToString("0.00", CultureInfo.InvariantCulture)).Append(',').Append((r.ConvH / 100f).ToString("0.00", CultureInfo.InvariantCulture)).Append(']');
             if (saved)
                 sb.Append(",\"laid\":true");
             sb.Append('}');

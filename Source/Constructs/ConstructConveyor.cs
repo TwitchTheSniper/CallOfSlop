@@ -407,7 +407,11 @@ public static class ConstructConveyor
     public static void DropAll(ConstructWorld world, Construct c)
     {
         while (c.ConveyedCount > 0)
-            Drop(world, c, c.ConveyedCount - 1, ConstructParts.Get(c.Conveyed[c.ConveyedCount - 1].Def), -1);
+        {
+            var k = c.Conveyed[c.ConveyedCount - 1].Route;
+            var live = !c.Dirty && c.PartCount > 0 && k < c.RouteCount && c.Routes[k].Type == RouteType.Conveyor ? k : -1; // (its link still whole: where it is now)
+            Drop(world, c, c.ConveyedCount - 1, ConstructParts.Get(c.Conveyed[c.ConveyedCount - 1].Def), live);
+        }
     }
 
     // ---- When links are renumbered ---------------------------------------------------------------------------------
