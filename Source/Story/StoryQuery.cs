@@ -236,7 +236,7 @@ public sealed class StoryQuery
     private int _limit = -1; // solve only this many clauses (FirstFailing), -1 all
 
     /// <summary>
-    /// Why not (the Storylets tab): the first clause, in the order solved, after which the clauses so far have no
+    /// Why not (the Story tab): the first clause, in the order solved, after which the clauses so far have no
     /// solution together; -1 when the whole query holds. <paramref name="binds"/> is left as it was.
     /// </summary>
     public int FirstFailing(StoryWorld w, ReadOnlySpan<int> binds)

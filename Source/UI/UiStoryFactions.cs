@@ -16,7 +16,8 @@ public sealed partial class Ui
     private void DrawStoryFactions(StoryEngine s)
     {
         var fs = s.Factions;
-        DimWrapped($"{fs.Count} factions in the data (Story/Factions), {fs.Deeds} deeds counted this session. A deed is something a player does to a faction's own (a member, a construct it claims, the faction itself): it remembers it, and its standing with them and their group moves. Standing is its Likes or Grudge.");
+        if (StoryEngineTabs)
+            DimWrapped($"{fs.Count} factions in the data (Story/Factions), {fs.Deeds} deeds counted this session. A deed is something a player does to a faction's own (a member, a construct it claims, the faction itself): it remembers it, and its standing with them and their group moves. Standing is its Likes or Grudge.");
         if (fs.Count == 0)
             return;
         for (var f = 0; f < fs.Count; f++)
@@ -39,9 +40,13 @@ public sealed partial class Ui
         var w = s.World;
         var fr = rules.Factions;
         ImGui.Indent();
-        DimWrapped($"{AsSentence(def.About)}Home: {(def.Home.Length > 0 ? def.Home : "none")}. Claims constructs named {(def.Claims.Length > 0 ? string.Join(", ", def.Claims.Select(c => $"\"{c}...\"")) : "nothing")}.");
+        var all = StoryEngineTabs;
+        DimWrapped($"{AsSentence(def.About)}Home: {(def.Home.Length > 0 ? def.Home : "none")}.{(all ? $" Claims constructs named {(def.Claims.Length > 0 ? string.Join(", ", def.Claims.Select(c => $"\"{c}...\"")) : "nothing")}." : "")}");
         if (def.Wants.Length == 0)
-            ImGuiSafe.TextColored(Dim, "Wants: none (its file has no \"wants\").");
+        {
+            if (all)
+                ImGuiSafe.TextColored(Dim, "Wants: none (its file has no \"wants\").");
+        }
         else
         {
             ImGuiSafe.TextColored(StoryPlain, "Wants: " + string.Join(", ", def.Wants.Select(x => $"{x.Name} {w.Quality(id, x.Quality)}")));
