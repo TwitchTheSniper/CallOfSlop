@@ -55,6 +55,7 @@ public sealed class CStore
     public bool Busy; // a Recycler or gathering module: working (on the wire; the look text and the lamp)
     public LineState LineRaw, LineShown; // a production machine's line state as this peer last worked it out, and as its lamp shows it (never sent: ProductionLines.Of)
     public double LineSince; // ...when the raw state last changed (ConstructRender.Now)
+    public bool LineSeen; // ...worked out at least once
     public bool Held; // a Recycler or gathering module: its Run wire is off (on the wire; the look text)
     public ShaftState Drive; // a drill with a drive shaft linked: how the shaft stands (on the wire; the look text); None: it runs on electric power
     public ushort DriveRpm; // ...the shaft's speed at the drill (rounded a little, on the wire)

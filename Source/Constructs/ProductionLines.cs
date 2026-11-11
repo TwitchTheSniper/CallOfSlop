@@ -34,11 +34,14 @@ public static class ProductionLines
     private const int MaxListed = 32; // machines a console's buttons step through
     private const double Hold = 0.3; // seconds a new state must last before the lamp and console show it (a store's bytes and its Busy can come a packet apart)
 
-    /// <summary>A machine's raw state, or null for a part that isn't a production machine of a line yet.</summary>
-    public static LineState? Raw(ConstructPartDef d, CStore st)
+    /// <summary>A machine's raw state, or null for a part that isn't a production machine of a line yet. Its power is the construct's (on the wire with its pose).</summary>
+    public static LineState? Raw(ConstructWorld world, Construct c, int part, CStore st)
     {
+        var d = c.DefOf(part);
         if (!d.IsRefiner)
             return null;
+        if (!ConstructRecycler.Powered(world, c, part))
+            return LineState.NoPower; // (before Held: a console on a flat battery puts nothing out, which holds its machines off too)
         if (st.Held)
             return LineState.Idle;
         if (st.Busy)
@@ -48,22 +51,23 @@ public static class ProductionLines
             RefineState.Empty or RefineState.Short => LineState.Starved,
             RefineState.OutputFull or RefineState.OutputMixed => LineState.Blocked,
             RefineState.NoRecipe or RefineState.TierLow => LineState.Fault,
-            _ => LineState.NoPower, // (ready, not held, not working: the step found no power)
+            _ => LineState.Running, // (ready and powered: it starts at its next step)
         };
     }
 
     /// <summary>The state shown: a new one once it has lasted <see cref="Hold"/>. Keeps its memory on the store (this peer's own, never sent).</summary>
-    public static LineState Of(ConstructPartDef d, CStore st, double now)
+    public static LineState Of(ConstructWorld world, Construct c, int part, CStore st, double now)
     {
-        if (Raw(d, st) is not { } raw)
+        if (Raw(world, c, part, st) is not { } raw)
             return LineState.Idle;
         if (raw != st.LineRaw)
         {
             st.LineRaw = raw;
             st.LineSince = now;
         }
-        if (raw != st.LineShown && (now - st.LineSince >= Hold || now < st.LineSince || raw == LineState.Running && st.LineShown == LineState.Idle))
-            st.LineShown = raw; // (pressing Start shows at once)
+        if (raw != st.LineShown && (!st.LineSeen || now - st.LineSince >= Hold || now < st.LineSince || raw == LineState.Running && st.LineShown == LineState.Idle))
+            st.LineShown = raw; // (the first look, and pressing Start, show at once)
+        st.LineSeen = true;
         return st.LineShown;
     }
 
@@ -110,9 +114,10 @@ public static class ProductionLines
     private const float ChaseSpeed = 1.5f; // cells... per second over the lamp's length: the band crosses it in 1/ChaseSpeed s
 
     /// <summary>Draws a machine's status lamp box (its part's <see cref="ConstructPartDef.StatusBox"/>); returns the draw calls.</summary>
-    public static int DrawLamp(Renderer gfx, ConstructPartDef d, CStore st, byte rot, in CPartBox box, Vector3 centre, in Matrix4x4 frame, float opacity, double now)
+    public static int DrawLamp(Renderer gfx, ConstructWorld world, Construct c, int part, CStore st, in CPartBox box, Vector3 centre, in Matrix4x4 frame, float opacity, double now)
     {
-        Look(Of(d, st, now), out var colour, out var blink, out var chase);
+        Look(Of(world, c, part, st, now), out var colour, out var blink, out var chase);
+        var rot = c.Parts[part].Rot;
         var size = Rot24.ApplyHalf(rot, box.Half) * 2;
         if (!chase)
         {
@@ -192,7 +197,7 @@ public static class ProductionLines
             var md = c.DefOf(list[k]);
             if (world.StoreOf(c, list[k]) is not { } st)
                 continue;
-            var s = Of(md, st, ConstructRender.Now);
+            var s = Of(world, c, list[k], st, ConstructRender.Now);
             if (s == LineState.Running)
                 running++;
             else if (s != LineState.Idle && Panel(s) > worst)
