@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 public static unsafe partial class Program
 {
-    /// <summary>The window's and taskbar's icon (tools/branding/make_icon.py). A platform that has none (macOS, Wayland) or a missing file only keeps the default.</summary>
+    /// <summary>The window's and taskbar's icon (tools/branding/make_icon.py (removed 2026-11-11, in git history)). A platform that has none (macOS, Wayland) or a missing file only keeps the default.</summary>
     private static void SetWindowIcon()
     {
         try

@@ -82,7 +82,7 @@ public static partial class SelfTest
     /// <summary>
     /// "Big maps": what loading costs, so it can't creep back up. Every shipped map loads the same in parallel as one by
     /// one (digests, ids, order); each stays under a load-time budget, a box-cell budget and the prop and decal limits;
-    /// the stress map (tools/perf/stress_grid.py, built here in memory) loads within its budget and scales linearly in
+    /// the stress map (tools/perf/stress_grid.py (removed 2026-11-11, in git history), built here in memory) loads within its budget and scales linearly in
     /// props; a breakdown of the biggest maps is printed.
     /// </summary>
     private static void CheckBigMaps()
@@ -242,7 +242,7 @@ public static partial class SelfTest
         return best;
     }
 
-    /// <summary>The stress map of tools/perf/stress_grid.py: a 2h x 2h yard, a grid of low walls, Clutter and DecalScatter
+    /// <summary>The stress map of tools/perf/stress_grid.py (removed 2026-11-11, in git history): a 2h x 2h yard, a grid of low walls, Clutter and DecalScatter
     /// ops, and <paramref name="placed"/> Prop ops (one prop each) at the lane crossings.</summary>
     internal static string StressGridJson(int props, int placed, int decals, int half, int walls)
     {

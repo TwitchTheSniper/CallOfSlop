@@ -17,7 +17,7 @@ namespace CallOfSlop;
 ///
 /// Vertices are stored in unit-cube space (metres divided by the size) and normals as the true normal divided by the
 /// size, so the box's own scale turns them back into the right directions in the shader (mat3(model) * normal).
-/// tools/parts/shapes.py mirrors this file for the contact sheet (tools/parts/viz.py).
+/// tools/parts/shapes.py (removed 2026-11-11, in git history) mirrors this file for the contact sheet (tools/parts/viz.py).
 /// </summary>
 public static class PartShapes
 {

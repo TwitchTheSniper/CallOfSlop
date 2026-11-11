@@ -8,7 +8,7 @@ Models that can be reused belong here. A model that only one map pack needs goes
 `Maps/<Pack>/Models`: a map in the pack finds `"Models/my_door.glb"` there first and here second, and
 `"global:Models/my_door.glb"` always means this folder. Pack models a map uses count towards its fingerprint. See
 [Maps/README.md](../Maps/README.md#where-assets-go); `Maps/Dev/Models/dev_beacon.glb` (written by
-`tools/models/make_pack_models.py`) is an example.
+`tools/models/make_pack_models.py (removed 2026-11-11, in git history)`) is an example.
 
 The game reads **glTF 2.0**, the open standard that Blender, Maya, 3ds Max, SketchUp (with a plugin), Substance and most
 online model stores export. Both kinds of glTF file work:
@@ -25,8 +25,8 @@ online model stores export. Both kinds of glTF file work:
 | `traffic_cone.glb` | An orange traffic cone with white bands, 0.72 m | An embedded PNG base colour texture with texture coordinates |
 | `lamp_post.gltf` | A green street lamp on an arm, 3.5 m | Text glTF with an embedded buffer; a five-node hierarchy using both TRS and a matrix |
 
-They are written by `tools/models/make_models.py` (plain Python 3, no Blender needed). Run
-`python3 tools/models/make_models.py` from the repository root to rebuild them; the output is byte-identical every time.
+They are written by `tools/models/make_models.py (removed 2026-11-11, in git history)` (plain Python 3, no Blender needed). Run
+The models are committed; the script is no longer in the tree.
 The **Mesh Test** map in the Dev pack shows all three.
 
 ## Adding a model

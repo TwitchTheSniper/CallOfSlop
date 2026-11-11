@@ -73,7 +73,7 @@ bundle)
     sed "s/@VERSION@/$version/g" tools/mac/Info.plist > "$app/Contents/Info.plist"
     plutil -lint "$app/Contents/Info.plist"
     printf 'APPL????' > "$app/Contents/PkgInfo"
-    # The icon: tools/mac/AppIcon.png (tools/mac/make_icon.py) at every size macOS wants.
+    # The icon: tools/mac/AppIcon.png (tools/mac/make_icon.py (removed 2026-11-11, in git history)) at every size macOS wants.
     iconset="$out/AppIcon.iconset"
     rm -rf "$iconset" && mkdir -p "$iconset"
     for s in 16 32 128 256 512; do
