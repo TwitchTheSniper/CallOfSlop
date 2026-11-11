@@ -623,7 +623,7 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
 - **A storylet**: `id` (letters, digits, `-`, `_`), `title`, `about`; `bucket` A (the main plot), B (the side plot) or
   `urgent`; once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"final"` marks an end of the road (the checks don't call
   it a dead end).
-- **needs**: a query over `?me`, the player: `"?me Rank >= 2, not ?me Course ?r"`.
+- **needs**: a query over `?me`, the player, or a list of them (any one holds): `"?me Rank >= 2, not ?me Course ?r"`.
 - **cast**: a query whose variables after `?me` are its roles. The **first leads**: a living person, free (in no play,
   no other player's storylet, idle or at a step with nobody else), where the player is; `"prefer"` casts the strongest
   first (`"?g Likes ?me"`, or a quality: `"?c Gossipy"`). If the guard is dead, someone else who fits plays the part;
