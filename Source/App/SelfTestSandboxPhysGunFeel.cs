@@ -225,8 +225,9 @@ public static partial class SelfTest
         var (t1, o1, r1, _) = FeelRun(1000, true, 60);
         var (t15, o15, r15, _) = FeelRun(15000, true, 60);
         var (tl, ol, rl, _) = FeelRun(100, false, 240);
-        var (th, oh, rh, _) = FeelRun(450, false, 240);
-        Line($"physics gun feel: creative 1 t piece reached the aim 3 m off in {t1 * 1000:0} ms (overshoot {o1 * 100:0.00} cm, residual {r1:0.000} m/s); 15 t truck {t15 * 1000:0} ms ({o15 * 100:0.00} cm, {r15:0.000}); survival 100 kg {tl * 1000:0} ms ({ol * 100:0.00} cm, {rl:0.000}), 450 kg {th * 1000:0} ms ({oh * 100:0.00} cm, {rh:0.000})");
+        var heavy = ConstructGrab.SurvivalMaxMass * 0.3f; // (450 kg against the old 1,500 kg limit: heavy enough that the beam, not the spring, sets the pace)
+        var (th, oh, rh, _) = FeelRun(heavy, false, 240);
+        Line($"physics gun feel: creative 1 t piece reached the aim 3 m off in {t1 * 1000:0} ms (overshoot {o1 * 100:0.00} cm, residual {r1:0.000} m/s); 15 t truck {t15 * 1000:0} ms ({o15 * 100:0.00} cm, {r15:0.000}); survival 100 kg {tl * 1000:0} ms ({ol * 100:0.00} cm, {rl:0.000}), {heavy:0} kg {th * 1000:0} ms ({oh * 100:0.00} cm, {rh:0.000})");
         // pr02: the spring of before pr01, stronger. Within 2 cm of an aim 3 m off: a 1 t piece in under 0.5 s, and the strength
         // check, a 15 t truck in under 0.6 s (the old 200 kN beam gave it 13 m/s2: a second or more for 3 m); the spring brakes
         // within what the beam can, so neither overshoots by more than 3 cm.

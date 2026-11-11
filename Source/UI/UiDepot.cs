@@ -15,7 +15,7 @@ public sealed partial class Ui
 
     private void DrawDepot(Game game, float2 pos, float2 size, Settings settings)
     {
-        if (!game.SandboxOn || PauseOpen || MenuOpen || game.TutorialCurrent != null)
+        if (!game.SandboxOn || PauseOpen || MenuOpen || game.TutorialCurrent != null || game.QuarryLocal is not (Game.QuarryNone or Game.QuarryDone))
             return;
         var state = game.DepotLocal;
         var since = Brutal.GlfwApi.Glfw.Time - game.DepotChangedAt;

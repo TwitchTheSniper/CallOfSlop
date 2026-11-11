@@ -2,7 +2,8 @@
 
 Five star systems, one faction home in each (Karl, 2026-11-10; the storyline has five systems that each solved a part
 of the fold, and a data centre in each). A world is a planetoid map in `Maps/Planetoids/`, named by a body's `"map"` in
-its system file. Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
+its system file. Together they are the story's map: STORY on the main screen (and HOST STORY CO-OP) starts on the
+Planetoid in Slopstar, and one saved world holds every world the group lands on (docs/story/OPENING.md). Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
 then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a world").
 
 | System | World | Radius, gravity | Ground | Faction home | Why go |
@@ -13,7 +14,7 @@ then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a worl
 | Ember | Cinder | 5 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Call Centre: the Call Floor | data centre on the night side |
 | Frostreach | Glacier | 8 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 9 km crevasse), the Mirror (a frozen lake), the Shelves | the IT Department: the Server Farm | data centre at the bottom of the Rent |
 | Glenmore | Caledon | 6 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
-| Hearth | Mille | 3 km, 8 | hollow: a golden crust stepped in layers, 220 m thick, round a glowing cavity | the Thousand Layers: the Bakehouse | data centre inside the cavity |
+| Hearth | Mille | 3 km, 8 | hollow: a golden crust stepped in layers, 220 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
 
 ## Places kept flat
 
@@ -50,7 +51,6 @@ the survey post stands.
 | The Call Centre | The Call Floor | Cinder | two huts facing each other, the manager's house, a control post, a store, a mast |
 | The IT Department | The Server Farm | Glacier | the office, a smart depot and a beacon depot, a hut, a lookout |
 | Clan MacSlop | The Glen | Caledon | the chief's hall and two houses, the smithy (a foundry), a lookout, the gate |
-| The Thousand Layers | The Bakehouse | Mille | the house, the ovens (a smelter), the store, a lookout |
 
 The Ministry's home is the penal colony on the Planetoid (the opening builds it). Nobody lives in the settlements yet:
 the factions' people are still met by radio and in their vehicles.

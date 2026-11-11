@@ -1,0 +1,52 @@
+{
+ "format": "call-of-slop-duty/1",
+ "about": "The first Ministry duty (docs/story/DUTIES.md, Game/GameQuarry.cs): after the warden's induction, the Ministry sends a new inmate by crew bus to the Ministry Quarry, where the machines are taught on the job (Karl, 2026-11-10: the induction is about the person; machines come in stages, working for the Ministry). Each step's cue is judged on the host. Cues: reach (stand within amount m of the spot), ride (board the crew bus at the spot's stop and ride it to the other: spot colony or quarry), power (lay a power cable at the quarry's machines), feed (tip what you carry into the quarry's Materials Bin), recipe (set the quarry Assembler's recipe), wait (seconds). Spots: stop (the colony's bus stop), quarry (the quarry's bus stop), genset, bin, assembler (the quarry's). Text is ASCII; {Action} is the player's own key. The bus is a STAND-IN (Source/StandIns) until the vehicle redo.",
+ "speaker": "Foreman Grubb",
+ "memo": "Inmate {name}: you are assigned to the Ministry Quarry. Report to the bus stop outside the colony gate. The crew bus will collect you.",
+ "report": {
+  "title": "Report to the bus stop",
+  "text": "Your first Ministry duty: the quarry. Go to the bus stop outside the colony gate (the orange marker) and wait for the crew bus.",
+  "spot": "stop"
+ },
+ "steps": [
+  {
+   "id": "bus", "cue": "ride", "spot": "colony",
+   "title": "The crew bus",
+   "text": "The crew bus is on its way. When it has stopped, walk up to it to board. Company-approved transport: do not touch anything.",
+   "say": "Bus is coming, inmate. Stand still and try to look employable."
+  },
+  {
+   "id": "power", "cue": "power", "spot": "genset",
+   "title": "Power the works",
+   "text": "The quarry's Assembler has a genset but no cable. Take out the linking tool ({Streak2}), press {Fire} on the genset's power port, then {Fire} on the Assembler's to run a power cable. {Aim} takes the last node off.",
+   "say": "Welcome to the quarry. I'm Foreman Grubb. First job: the works are dead. Run a cable from the genset to the Assembler.",
+   "hint": "Aim the linking tool at the genset (the orange marker) until it names its power port, press {Fire}, then do the same on the Assembler."
+  },
+  {
+   "id": "feed", "cue": "feed", "spot": "bin",
+   "title": "Your quota",
+   "text": "Dig some ground with the ground drill (hold {Fire} on bare ground), then aim at the quarry's Materials Bin and press {Interact} to tip in what you carry.",
+   "say": "Quota time. Dig, then tip it in the bin. The bin feeds the Assembler, the Assembler feeds the Ministry.",
+   "hint": "Ground drill out, hold {Fire} on the ground for a few seconds, then {Interact} on the Materials Bin (the orange marker)."
+  },
+  {
+   "id": "recipe", "cue": "recipe", "spot": "assembler",
+   "title": "The Assembler",
+   "text": "The Assembler makes parts from what its bin and shelf hold. Take out the configure tool and press {Fire} on the Assembler to pick a recipe. It shows what each one needs.",
+   "say": "Pick something to make. Most of it wants steel, and steel is the smelter's job. That's another duty, another day.",
+   "hint": "Configure tool out, aim at the Assembler (the orange marker) and press {Fire}, then pick any recipe."
+  },
+  {
+   "id": "home", "cue": "ride", "spot": "quarry",
+   "title": "Back to the colony",
+   "text": "That's the shift. Wait at the quarry's bus stop and board the crew bus back to the colony.",
+   "say": "Not bad, for a convict. Bus back is at the stop. Don't miss it: the next one is in a fortnight."
+  },
+  {
+   "id": "done", "cue": "wait", "seconds": 8,
+   "title": "Duty done",
+   "text": "First duty done: the quarry's works run on your cable. The Ministry will call you for the next one.",
+   "say": "Noted on your file. Favourably, which is rare. Don't let it go to your head."
+  }
+ ]
+}

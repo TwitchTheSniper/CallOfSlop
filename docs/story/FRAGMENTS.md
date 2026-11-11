@@ -1,9 +1,7 @@
 # Fragments and the data centres
 
-Karl, 2026-11-10: the main storyline is uncovered in pieces. Long ago something was going to swallow the five systems; the
-builders folded the space round the planets, the threat with it, and the fold rolled on to infinity and took the rest of the
-universe. Five abandoned, encrypted data centres each hold one record of it, found in any order. This is step 1 of that plan:
-what a fragment is, the Logbook, and the first data centre.
+The main storyline ([STORYLINE.md](STORYLINE.md)) is uncovered in pieces: five abandoned places each hold one record of the
+fold, found in any order. This page is how a fragment, the Logbook and a data centre work.
 
 Code: `Source/Story/StoryFragments.cs` (the file and the terminal's screen, every peer), `Source/Game/GameStoryFragments.cs`
 (the host: the sites, the decode, who holds what, the message), `Source/UI/UiLogbook.cs` and `Source/App/Program.Logbook.cs`
@@ -12,10 +10,9 @@ Code: `Source/Story/StoryFragments.cs` (the file and the terminal's screen, ever
 
 ## A fragment
 
-- **In the file**: `id` (stable: `frag.threat`, `frag.fold`, `frag.reading`, `frag.silence`, `frag.switch`; the Thousand Layers'
-  scripture and storylets name them), `title`, `kind` (the line about what the record is), `text` (paragraphs) and `hint` (what
-  the Logbook says while it is missing). The words are the first draft from the storyline talk
-  ([Fragments and scripture (draft)](https://claude.ai/artifact/N8XemUxW1d9rseLeDyTHxZ)); change them freely, keep the ids.
+- **In the file**: `id` (stable: `frag.threat`, `frag.fold`, `frag.reading`, `frag.silence`, `frag.switch`; storylets may name
+  them), `title`, `kind` (the line about what the record is), `text` (paragraphs) and `hint` (what
+  the Logbook says while it is missing). The words are a first draft: change them freely, keep the ids.
 - **In the story world**: a Thing named by the id. A player who has it holds the relation `Fragment` towards it, its value the
   source's entity plus one (the site, or a person who told it; -1 nobody), and the `Fragments` quality counts them. A `Recover`
   event (actor, item the fragment, target the source) goes in the chronicle. So it is saved with the story section of the world
@@ -72,5 +69,4 @@ where it was found, a `?` line with the hint for each one still missing, and the
 
 ## Not yet
 
-The other four data centres (step 5 of the plan), fragments told by people or broadcast on the radio (step 4), the colony roads
-that lead to the first one (step 3: Crumb's "Old Mine" lead already resolves when its fragment is found).
+The other four sites stand in the plain Sealed Data Centre for now; the places they will become are in STORYLINE.md.

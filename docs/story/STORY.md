@@ -1,25 +1,15 @@
 # The story layer
 
-The story layer turns what happens in a world into stories that can be seen, kept and, later, acted on. It is the
-architecture from Karl's paper *Architecting Purpose in Space Simulations* (the five boxes), built in our own C#:
+How the story engine works. What the story *is*, and how it is changed, is [STORYLINE.md](STORYLINE.md): read that
+first if you are writing story, and come here only for a format.
 
-1. **Relational world state**: who and what exists, and how they stand to each other (relationship pairs).
-2. **Incremental story sifter**: patterns of events matched as they happen (Winnow and Awash style partial matches).
-3. **Drama manager**: watches the stories in progress and gives stage directions (phase 3: it nudges the people).
-4. **NPC utility AI and HTN planner**: people who act on the world state with the same verbs as players (phase 2:
-   they live in the story world; phase 4: those in the host's world walk about it in bodies).
-5. **Presentation and milestones**: contextual dialogue and the radio (phase 5: the people speak), a library of plays,
-   a legacy roster.
+The story layer turns what happens in a world into stories that can be seen, kept and acted on. It has two halves:
 
-Phase 1 built boxes 1 and 2, the appraiser that feeds them from Sandbox play, the world save, and the Story window that
-shows it all in 2D. Phase 2 adds box 4: people with needs, goals and plans who act on the world state and learn what
-happens around them ("People" below). Phase 3 adds box 3: a drama manager that ranks the stories in progress and nudges
-the person who would act next towards what the story waits for ("Drama" below). Phase 4 gives the people in the host's
-world bodies that act out their steps, and makes a killed person dead for good ("Bodies" below). Phase 5 is box 5:
-the people speak by response rules, and a radio puts the news out to everyone ("Lines" below); short plays are cast
-from the world and acted out ("Plays"), places change with what happened in them ("Places"), and a roster remembers
-everyone the story has known ("Roster"). The plan, with the phases and the reasons for each choice, is the project doc
-"Story systems plan".
+- **The written story**: storylets (authored beats that wait for the world to be ready), the fragments and their data
+  centres, and the lines people say. This is where the storyline is written ("Storylets", "Fragments", "Lines").
+- **The people simulation**: a relational world state, a story sifter that matches patterns of events as they happen,
+  people with needs and plans, bodies for them, a drama manager that nudges them, plays, places and a roster. It runs
+  by itself from data and needs no writing for the storyline.
 
 ## Trying it
 
@@ -94,7 +84,7 @@ event arrives. Code: `Source/Story/` (the engine, no game types), `Source/Game/G
 `Source/Constructs/ConstructWorldNotes.cs` (what constructs tell it), `Source/UI/UiStory.cs` and
 `Source/App/Program.Story.cs` (the window). Data: `Story/` next to the game.
 
-## The world state (box 1)
+## The world state
 
 `StoryWorld` holds entities: a kind (Player, Person, Faction, Place, Construct, Thing: a resource, a part or a machine tier), a name, qualities (numbers such as
 Kills) and relationship pairs. A pair is (relation, target) packed in one `ulong` with a strength, kept sorted on the
@@ -127,7 +117,7 @@ A term is a variable (`?a`) or an entity by name (`Karl`, `'Glacier Station'`).
 
 ## The actions (verbs)
 
-`Story/Verbs.json`: one list for players and NPCs, so a player's real action and an NPC's planned one (phase 2) leave
+`Story/Verbs.json`: one list for players and NPCs, so a player's real action and an NPC's planned one leave
 the same trace. Each verb has roles (actor, target, owner, place, item), a sentence and effects:
 `"subject Relation object +n|-n|=n"` (`=0` removes; no amount sets 1) or `"subject Quality +n"`. An effect on an empty
 role, or from someone to themselves, does nothing. **Physical verbs never resolve abstractly**: a kill is recorded when
@@ -170,7 +160,7 @@ A construct with no owner (the map's, a test's) is nobody's work. Every mileston
 `Story/Patterns/Work.json` has two stories built on them (From the ground up, Scrap into parts), and the Workshop
 scenario plays both. A scenario event takes a `"value"` (the tonnes, the tier); sentences fill `{value}`.
 
-## Patterns and the sifter (box 2)
+## Patterns and the sifter
 
 `Story/Patterns/*.json` (any number of files). An example: the shipped Score settled, with an `unless` and a `then`
 added to show them:
@@ -209,7 +199,7 @@ count per verb.
 The six patterns in `Friends.json` come from what players already do: Score settled, Tit for tat, Vultures, Good turn
 returned, Bit the hand, Round trip.
 
-## People (box 4)
+## People
 
 People are `Person` entities with a mind of their own (`Source/Story/StoryAgents.cs`, the planner `StoryHtn.cs`, the
 rules `StoryPeopleRules.cs`; data `Story/People/*.json` and `Story/Casts/*.json`). They live in the story world, those in
@@ -262,7 +252,7 @@ killer leaves the place soon after; and the fights': Stood their ground, Came to
 fights back, Sol Reyes comes to his aid, Ada Quill runs, and Hugo kills the player ("Fights"). A scenario with a cast may name the cast's people in
 its events. Relations can have a `"max"` (feelings stop at 100).
 
-## Bodies (phase 4)
+## Bodies
 
 On the host in Sandbox, each person the story has in this world (`In` the map's place, which a cast's `"world"` place
 is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodies.cs`, team 12), named after them:
@@ -381,7 +371,7 @@ aim x1.5, slow, 2 minutes), **Desperate** (Wounded and Brave 60+: taken x0.7, wo
 Moods aren't saved (bodies aren't). Cost: a moment's queries when it happens; four times a second a look at each body's
 clock; nothing allocates.
 
-## Lines (phase 5)
+## Lines
 
 The people speak (`Source/Story/StoryLines.cs` the rules, `StoryTalk.cs` what is said, `Source/Game/GameStoryTalk.cs`
 when and who hears it; data `Story/Lines/*.json`). It is Valve's dialogue system (Ruskin's response rules): on an
@@ -469,10 +459,9 @@ Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, 
 Nothing allocates in a tick; asking does (a line, a dictionary entry). What was told to whom and the Chat clock aren't
 saved.
 
-## Plays (phase 5)
+## Plays
 
-Plays are short scenes cast from the world (`Source/Story/StoryPlays.cs`; data `Story/Plays/*.json`): the storylets of
-box 5. Where a pattern notices a story after it happened, a play makes a small one happen: two who hold grudges meet and
+Plays are short scenes cast from the world (`Source/Story/StoryPlays.cs`; data `Story/Plays/*.json`). Where a pattern notices a story after it happened, a play makes a small one happen: two who hold grudges meet and
 it comes out, someone owed money asks for it, a friend of the dead raises a glass.
 
 ```json
@@ -545,7 +534,7 @@ remembered, `?actor` their killer, `?place` where they died, `?here` their home 
 wins, the same line each time ("Killed by Karl at Landing. Not forgotten."). The roster is made when it is looked at
 (the window, five seconds of story time apart; `--roster`) from what the story already holds: nothing is kept for it.
 
-## Drama (box 3)
+## Drama
 
 The drama manager (`Source/Story/StoryDrama.cs`) is Awash's Influence Mode: it doesn't write stories, it helps the ones
 already under way finish. The sifter's live partial matches are its candidates; for each, the stage it waits for names
@@ -609,8 +598,8 @@ Authored beats that wait for the world to be ready, the CK3 recipe: a beat isn't
 so ("Morrow alive, a friend of yours, the colony not in lockdown"), casts whoever fits, and changes qualities that
 the rest of the story reads (`Source/Story/StoryStorylets.cs` the engine, `StoryletChecks.cs` the warnings,
 `Source/Game/GameStoryStorylets.cs` the game's side, `Source/UI/UiStoryStorylets.cs` the tab; data
-`Story/Storylets/*.json`, format `call-of-slop-storylets/1`). The storylet builder (https://claude.ai/artifact/9CmjXTzyB9wZoLZsjTe1yX) writes the same files;
-the game is the source of truth, and `--check-story` decides what is valid.
+`Story/Storylets/*.json`, format `call-of-slop-storylets/1`). The files are edited by hand; the game is
+the source of truth, `--check-story` decides what is valid, and the read-only story map below shows what is in them.
 
 ```json
 { "format": "call-of-slop-storylets/1",
@@ -632,8 +621,7 @@ the game is the source of truth, and `--check-story` decides what is valid.
   lines and goals can read them too. `"spots"` are places the game counts visits to: coming within `reach` m of the
   `near` person's body adds 1 to `?me Visited 'Kettle'` (walk out of twice the reach for the next).
 - **A storylet**: `id` (letters, digits, `-`, `_`), `title`, `about`; `bucket` A (the main plot), B (the side plot) or
-  `urgent`; once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"scope": "group"`
-  makes its ends change every player in the starter's group; `"final"` marks an end of the road (the checks don't call
+  `urgent`; once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"final"` marks an end of the road (the checks don't call
   it a dead end).
 - **needs**: a query over `?me`, the player, or a list of them (any one holds): `"?me Rank >= 2, not ?me Course ?r"`.
 - **cast**: a query whose variables after `?me` are its roles. The **first leads**: a living person, free (in no play,
@@ -652,7 +640,7 @@ the game is the source of truth, and `--check-story` decides what is valid.
   depend on how things are then. It changes things (`"then"`, effects that may name things in quotes: `"?me Course
   'Trustee'"`, the Thing made if nobody has the name), `"learn"`s a fact `"from"` someone (a Lead, and a Learn event, so
   the chronicle keeps where the player heard it), says one of its `"say"` lines (by `"by"`; a storylet with no cast sends
-  it to the player as a notice), starts a `"hook"`, and `"next"` names the storylet it leads to (for the builder and the
+  it to the player as a notice), starts a `"hook"`, and `"next"` names the storylet it leads to (for the story map and the
   checks: the next one still needs its needs). `"world"` is a list of plain sentences saying what physically happens (the story map shows
   them when an outcome is pressed; the game does nothing with them: they are the brief for whoever builds it).
 - **The runner**: per player, once a second: an urgent storylet that can play pauses the one under way (its events still
@@ -666,7 +654,7 @@ the game is the source of truth, and `--check-story` decides what is valid.
 - **Answers** (protocol 222): while a player's talk panel is open on someone a storylet waits for an answer from, the
   host sends them its choices (`Msg.TalkChoices`, when they change); the button sends `TalkAsk.Choose + n`, and the
   storylet ends, recorded as a Choose.
-- **Warnings** (`--check-story`; the builder shows the same): a storylet that can never play (nothing sets what it needs
+- **Warnings** (`--check-story`): a storylet that can never play (nothing sets what it needs
   among the storylets' own facts, or more than a quality's max), something it sets that no storylet reads, a dead end
   (nothing it changes opens another and it isn't final), roles nobody in any cast can fill (a clause on how someone
   stands to the player passes: that comes with play), a `"next"` that names no storylet, choices with no end by time,
@@ -676,8 +664,7 @@ Shipped: `Storylets/Colony.json`, the penal colony after the induction, as draft
 *Work detail* (A, a guard's job and inspection: Rank, or Suspicion), *Tea with Crumb* (B, two visits to the kettle: the
 lead "Old Mine"), *Bellweather's test* (A, a crate left unwatched), *Shakedown* (urgent, at Suspicion 3), *The Warden's
 offer* (A, the choice of Trustee or Escapee) and the first beat of each road (*First posting*: the depot; *The old
-mine*). Not yet: the Pilfer event from a marked crate (Bellweather's test ends "left" until it is), the old mine as a
-place.
+mine*). Bellweather's test ends "left" until a marked crate records a Pilfer.
 
 ### Paths
 
@@ -700,17 +687,16 @@ Trusted from 60).
 - **The story map** (https://claude.ai/artifact/JJLq8Be3fd21fRvtdS22EF) is a read-only page of every storylet as a
   flowchart with each beat spelt out, for reading what is in the game and saying what should change:
   `python3 tools/story/story_map.py OUT.html` makes it from `Story/Storylets`; publish it again after they change.
-- `--storylet-sim` prints the same path at its end ("The path"). The builder's Flowchart view draws a file the same
-  way while writing it, with the test player's path lit.
+- `--storylet-sim` prints the same path at its end ("The path").
 
 ### The ending
 
-`Storylets/Ending.json` (DRAFT words; Karl's premise of 2026-11-10): *The five records* (all five fragments held, the
+`Storylets/Ending.json` (DRAFT words; the storyline is STORYLINE.md): *The five records* (all five fragments held, the
 quality `Fragments`: the lead "The Machine"), then *The machine*, whose three ends wait for what the player does there:
 `SwitchOff` (the fold is undone: *The sky returns*), `Delay` (*The last round*: an hour to go round and see people,
-with *A goodbye* from anyone who likes the player, who may be told or not; then it stops) or `KeepFold` (*The oven
-door stays shut*: one of the Thousand Layers asks if it is enough). What was done is the exclusive relation `Ending`
-(Last Round, Unrolled, Kept; `Story/Relations/Ending.json`, verbs `Story/Verbs/Ending.json`). Nobody speaks at the
+with *A goodbye* from anyone who likes the player, who may be told or not; then it stops) or `KeepFold` (*It stays
+folded*: someone who likes the player asks if it is enough). What was done is the exclusive relation `Ending`
+(Last Round, Undone, Kept; `Story/Relations/Ending.json`, verbs `Story/Verbs/Ending.json`). Nobody speaks at the
 machine. Not built: the machine as a place, and what stopping does to the world, so nothing records the three events
 in play yet (the F4 Storylets tab's End buttons stand in).
 
@@ -785,8 +771,7 @@ A faction (living factions, F1; code `Source/Story/StoryFactions.cs`, the game's
 Story window's *Factions* tab `Source/UI/UiStoryFactions.cs`; data `Story/Factions/*.json`, relations in
 `Story/Relations/Factions.json`, verbs in `Story/Verbs/Factions.json`) is a Faction entity in the story world. The IT
 Department is the first (`Story/Factions/IT.json`); the Call Centre (`CallCentre.json`), Clan MacSlop (`MacSlop.json`) and the
-Ministry of Slop (`Ministry.json`) are data in the same shape, and so is the Thousand Layers (`ThousandLayers.json`), the faith
-("The Thousand Layers" below).
+Ministry of Slop (`Ministry.json`) are data in the same shape,.
 
 - **Where they live**: a `"settlement"` stands the home on a planetoid as buildings the faction claims (docs/planets/WORLDS.md
   "Settlements").
@@ -868,9 +853,6 @@ learnt. What ships:
 | Ministry of Slop | Trusty | Explosives Licence | Warhead Blast, Warhead Bunker, Aerial Bomb, Mine Dispenser |
 | Ministry of Slop | Contractor | Atomic Licence | Small Nuke, Fission Warhead, Fusion Warhead |
 | Ministry of Slop | Crown Servant | The Antimatter Bomb | Antimatter Warhead |
-| The Thousand Layers | Proved | The Weight of the Centre | Gravity Generator, Gravity Well |
-| The Thousand Layers | Laminated | The Lesser Fold | Jump Drive |
-| The Thousand Layers | Baker | The Rising | Anti-Grav Generator, all sizes |
 
 How standing is earned for now: IT as above; the Call Centre likes anyone who falls for one of its adverts (a Hooked
 event, +12) or wrecks a Ministry van (+6); Clan MacSlop likes wrecking (+10) and stripping (+3) Ministry vans; the
@@ -882,9 +864,6 @@ Karl keeps `Learnt` after wrecking the Ministry's own vans takes him to Enemy of
 
 Standing is also earned by **jobs** (below); each faction's first jobs say which technology its next tier brings, and
 when it teaches one it says so in its own voice too.
-
-Next (the living factions plan): F2 voices for the other factions (Call Centre scams that remember who fell for them,
-Ministry memos, MacSlop challenges on the radio), F3 visits on foot through the drama manager, F4 turf on planetoids.
 
 ## Jobs
 
@@ -924,7 +903,7 @@ factions": what each asks, what it pays, and why one can't be taken yet.
 - **Network (protocol 203)**: `Msg.Jobs` carries a take or a drop from a client, and to each player their window when it
   changes (checked once a second against a key of their party, the standings, the jobs held and their progress, and the minute).
 
-What ships (26 jobs; the Thousand Layers' five are in its own section): the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
+What ships: the IT Department's tickets (Printer on Fire, Cable Ducting in copper pipe, a Server Cupboard to build;
 for Registered users a Hardware Refresh and a Satellite Uplink), the Call Centre's dodgy errands (six Computers "for
 refurbishment", Prize Draw Logistics, a glass "Fibre Optic Upgrade"; for Valued Customers a Cubicle Farm and a Gift Card
 Run in gold), Clan MacSlop's Highland games (a wood caber, stones for the stone put, whisky for the ceilidh, a pipe band to
@@ -932,49 +911,6 @@ build; for Friends of the Clan "Something Enormous", a 6 m wheel for the cheese 
 Rocks, Number Plates and Tea for the Warden for inmates; Fit Out the Cell Block in steel I-beams and a Public Information
 Point for Trusties; Concrete for the New Wing for Contractors). Sabotage jobs (wreck a rival's things) and a courier who
 walks in as a body are for later.
-
-## The Thousand Layers
-
-The faith (storyline step 2, 2026-11-10; the storyline is the plan doc https://claude.ai/artifact/MawQPS11ypRiLZa7WjUu1q,
-the verses and fragments the draft https://claude.ai/artifact/N8XemUxW1d9rseLeDyTHxZ). Long ago the engineers of the five
-systems rolled the space around them over on itself to wrap the threat inside, and the roll never stopped. The same five
-records, told aloud for centuries, became scripture: the Five Bakers rolled the world from the middle out and the Hunger
-is folded under still. Its people are sincere and kind, its ritual is baking and its priests are Bakers: the joke is
-only ever in the pastry, the belief is played straight. Data only, in the shapes above:
-
-- **The faction** (`Story/Factions/ThousandLayers.json`): home The Bakehouse; members the Eldest Baker, Baker Hollis of the
-  ovens, Baker Anselm the copyist (who keeps finding the old copies differ), and Coyle the Unroller; wants Devotion and
-  Stillness; tiers Burnt Offering, Unleavened, Seeker, Proved (15), Laminated (40), Baker (70). Its deeds are the
-  Ministry's kind, towards its two people at the colony: a greeting (+2), a chat (+1, once in ten minutes), a trade (+3),
-  an offering (a Give, +4); mocking (-4), striking (-15) and killing (-40) cost. Rival of the Ministry (20%). Its voice is
-  `[THE THOUSAND LAYERS]`.
-- **Scripture** (`"scripture"`, any faction may have one: up to 16 verses, each a `"name"`, the `"fragment"` it retells, its
-  `"text"` up to 320 characters, and `"bends"`, a note for writers on how it bends the record, never shown to players; the
-  Story window's Factions tab lists them). Each verse bends one fragment, by the fragments' own ids: *The Hunger*
-  (`frag.threat`: the edge made a beast with an appetite), *The Rolling* (`frag.fold`: the engineers made Five Bakers and
-  the design a recipe), *The Long Night* (`frag.reading`: the missing stars a blessing, not a loss), *The Covered Bowl*
-  (`frag.silence`: the cover-up a holy rule, do not lift the cloth), *The Two Hands* (`frag.switch`: the release a
-  prophecy the faithful disagree about). Heard first, a verse is a riddle; heard after its fragment, a record you know.
-- **The Unrollers**: a sect inside the faith (people with the `Unroller` quality) who read the Two Hands as a promise and
-  wait for someone with keys. Most of the faithful hold to the Covered Bowl: leave it alone.
-- **People**: the penal colony's chaplain, Baker Marlow, and its laundress, Sister Wren (an Unroller), are in the Penal
-  Colony cast and are the faith's `"staff"`. Being in the colony, hurting either starts the lockdown too.
-- **Lines** (`Story/Lines/ThousandLayers.json`): the faithful greet and offer bread, quote the verses in pieces when they
-  chat, and the Unrollers whisper their reading; both have words when hurt and when they see a killing.
-- **Storylets** (`Story/Storylets/ThousandLayers.json`, bucket B): *The Baker's sermon* (after the induction, once the
-  player has been near the Baker: the first verses; Faith +1 and the lead "The Rolling"), *The morning laminate* (the
-  faith's first job, The Daily Laminate: 24 steel plates), *The Unrollers* (Sister Wren's hope; keep it quiet: Doubt +1
-  and the lead "The Unrollers"; tell the Baker: Faith +1 and her grudge). Faith and Doubt are for the fragments and the
-  ending to read: nothing reads them yet (`--check-story` warns so).
-- **Jobs**: The Daily Laminate (24 steel plates), Cloth for the Board (40 kg of cloth), A Wayside Shrine (build five Lamps
-  and two Seats on one construct), and for the Proved A Pin for the Chapel (a wooden round 2.5 m by 0.3 m), for the
-  Laminated Stone for the Oven (6 t of stone and 400 kg of wood).
-- **Technologies**: gravity at Proved, the Jump Drive at Laminated (the Bakers teach the small fold as a prayer and will not
-  say where they learnt it), anti-gravity at Baker. In survival the Jump Drive now needs the faith.
-
-Not yet: the Bakehouse as a place in the world, the faith's people with bodies outside the colony, radio sermons, and the
-faith's reaction to fragments found (step 4 of the plan; the fragments are `Fragment` relations towards the Things
-`frag.threat` and so on).
 
 ## The Scammers
 
@@ -997,21 +933,4 @@ The Scammers (The Call Centre) live in the Computer's adverts. Code: `Source/Sto
 - Nothing new goes on the wire. A client's screen shows the scam on the computer its own player clicked, with the messages it
   heard; a `[PC]` line ends it there.
 
-Its vehicles are the vehicle kit's Call Centre style (docs/vehiclekit/VEHICLEKIT.md, "The Call Centre style"). Next: scams
-that answer what the player says more closely, and a Call Centre that remembers who fell for it.
-
-## Next
-
-- **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions with minds of their own (factions themselves: "Factions").
-- **Phase 3** (done): the drama manager nudging the people, pacing them (quiet stretches between big stories) and
-  bringing strangers in to join stories in progress. Next for it: strangers who leave again, tension per place (today it
-  is one for the whole world), and casting plays for its stories.
-- **Phase 4** (done): bodies in the host's world, and death for good, and fights (a person hurt fights back or runs and
-  calls for help). People notice players by sight ("Sight"), and players talk to them, who face whoever they talk to
-  ("Talking to people"). Next for them: hearing gunfire and footsteps, people who start a fight of their own (a grudge
-  settled with a gun), drives and hauls as people's verbs, and more than one world place (other planetoids as places).
-- **Phase 5** (done): presentation. The people speak by response rules, and the radio (5a); plays, places that
-  change, the legacy roster (5b). Later: a radio part players build and tune (today every player hears the radio),
-  voices, memorials in the world for the dead, the drama manager casting plays for its stories, milestones from
-  mining and making as plays.
-- Clients don't see the story window: they hear the people and the radio (chat lines).
+Its vehicles are the vehicle kit's Call Centre style (docs/vehiclekit/VEHICLEKIT.md, "The Call Centre style").

@@ -16,7 +16,7 @@ public sealed class RosterEntry
 }
 
 /// <summary>
-/// The legacy roster (docs/story/STORY.md "Roster"; box 5): everyone the story has known, people and players, the living
+/// The legacy roster (docs/story/STORY.md "Roster"): everyone the story has known, people and players, the living
 /// and the dead, with their deeds (the chronicle's events they did), the stories told with them in (the sifter's), how
 /// they died, and a line to remember them by (the response rules' Remembered occasion: the most specific rule for them,
 /// the same line each time). Made when asked (the window, the CLI), from what the story already holds: nothing is kept

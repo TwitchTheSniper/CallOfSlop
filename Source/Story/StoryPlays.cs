@@ -18,7 +18,7 @@ public sealed class PlayBeat
 }
 
 /// <summary>
-/// A play (docs/story/STORY.md "Plays"; box 5's storylets): a short scene whose roles are cast from the world by a query,
+/// A play (docs/story/STORY.md "Plays"): a short scene whose roles are cast from the world by a query,
 /// acted out in beats of lines and actions. Its first role leads (a person); the play happens where they are.
 /// </summary>
 public sealed class PlayDef
@@ -245,7 +245,7 @@ public struct PlayDone
 }
 
 /// <summary>
-/// The plays (docs/story/STORY.md "Plays"; box 5): every <see cref="LookEvery"/> s of the story's clock the director
+/// The plays (docs/story/STORY.md "Plays"): every <see cref="LookEvery"/> s of the story's clock the director
 /// looks for a play it can cast (the people free, together in one place, its query holding) and starts one; a play under
 /// way says its beats in turn, holding its people (they finish the step they were on but start no other) until it is
 /// over. With bodies (<see cref="StoryAgents.Meet"/>) a beat between two waits until they are together, as a step does.

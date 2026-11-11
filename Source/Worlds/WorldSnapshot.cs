@@ -131,6 +131,7 @@ public sealed class WorldPlayer
     public TutorialState TutorialState; // the warden's induction (GameTutorial.cs): not started, running, finished or skipped, and at which step
     public byte TutorialStep;
     public byte DepotState; // the Orbital Depot's run (GameDepot.cs; saved in the Depot section): none, reported, a step, done
+    public byte QuarryState; // the first Ministry duty's run (GameQuarry.cs; saved in the Quarry section): none, reported, a step, done
     public ushort DepotLander; // ...and their lander's construct (stable in a save; 0: none)
     public bool Fallen; // dead for good in a permadeath world (GameSandboxDeath.cs; saved in the Fate section)
     public bool Died; // dead when last seen: their next spawn is a respawn, at their checkpoint
