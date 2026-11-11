@@ -24,6 +24,14 @@ public sealed record EngineWish
     /// <summary>Two-wheel drive whatever the power (<c>--2wd</c>): the kit doesn't ask for all wheels by itself (<see cref="GripLimited"/>).</summary>
     public bool TwoWheels { get; init; }
 
+    /// <summary>Minutes at full power the tankage must last (0: <see cref="DefaultEnduranceMinutes"/>; <c>--endurance MIN</c>). <see cref="Vehicle.KitTanks"/> adds tanks to reach it.</summary>
+    public float Endurance { get; init; }
+
+    /// <summary>Proposed (2026-11-11): a kit-engined vehicle carries fuel for 15 minutes flat out (a 960 kW engine burns 0.35 l/s: 315 l, against a stock 60 l drum).</summary>
+    public const float DefaultEnduranceMinutes = 15f;
+
+    public float EnduranceMinutes => Endurance > 0 ? Endurance : DefaultEnduranceMinutes;
+
     /// <summary>
     /// Proposed (2026-11-11): the power a tonne above which two driven tyres limit the speed, not the engine (kW a tonne). Measured with <c>--speed-test</c>:
     /// 136 kW/t (the stock Technical) and 124 (a tier 3 War Bus at 22 m/s) reached the kit's speed; 192 (a War Bus at 30 m/s) and 243 (a Technical at 30)

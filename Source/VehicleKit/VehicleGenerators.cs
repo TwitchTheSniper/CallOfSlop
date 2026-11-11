@@ -113,9 +113,34 @@ public static class VehicleRegistry
     /// </remarks>
     public static Vehicle Make(IVehicleGenerator g, int seed, int? kit = null, VehicleLayers? layers = null, RoleAsk? role = null, SpawnContext? context = null)
     {
+        if (Vehicle.FormedWheelWish is { } formed && g is not IAircraftShape)
+            return WithFormedWheels(formed, g, seed, kit, layers, role, context);
         if (EngineKit.EngineWish.Current is { } wish && g is not IAircraftShape)
             return WithKitEngine(wish, g, seed, kit, layers, role, context);
         return MakeThrough(g, seed, kit, layers, role, context);
+    }
+
+    /// <summary>
+    /// Wheel Former wheels (<see cref="Vehicle.FormedWheels"/>): with no mass given, the vehicle is made once with its catalogue wheels and weighed, then again with
+    /// formed wheels sized for that mass. Named " [formed wheels]": never a committed seed.
+    /// </summary>
+    private static Vehicle WithFormedWheels(float mass, IVehicleGenerator g, int seed, int? kit, VehicleLayers? layers, RoleAsk? role, SpawnContext? context)
+    {
+        if (mass <= 0)
+        {
+            Vehicle stock;
+            using (Vehicle.UseFormedWheels(null))
+                stock = Make(g, seed, kit, layers, role, context);
+            var live = stock.Live;
+            for (var i = 0; i < live.PartCount; i++)
+                mass += live.Parts[i].D.Mass;
+            mass /= Math.Max(1, stock.Wheels.Count); // (the load on each wheel)
+        }
+        Vehicle v;
+        using (Vehicle.UseFormedWheels(mass)) // (Make's own path from here, so this isn't asked again)
+            v = EngineKit.EngineWish.Current is { } wish ? WithKitEngine(wish, g, seed, kit, layers, role, context) : MakeThrough(g, seed, kit, layers, role, context);
+        v.Name += " [formed wheels]";
+        return v;
     }
 
     private static Vehicle MakeThrough(IVehicleGenerator g, int seed, int? kit, VehicleLayers? layers, RoleAsk? role, SpawnContext? context)
@@ -167,6 +192,7 @@ public static class VehicleRegistry
         if (v == null)
             using (EngineKit.EngineWish.Use(wish))
                 v = MakeThrough(g, seed, kit, layers, role, context);
+        v.KitTanks(wish); // (fuel for the wish's endurance at full power: Vehicle.KitEngine.cs)
         v.Name += wish.Suffix;
         v.DriveGate(Towed(g)); // (the spawn's drive check, as for any vehicle no file holds: one that fails rerolls in the spawner)
         return v;
@@ -246,9 +272,10 @@ public static class VehicleKitCli
         if (Flag(args, "--engine-tier") is { } et)
         {
             static float F(string? t) => float.TryParse(t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
-            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")), AllWheels = args.Any(a => a.Equals("--awd", StringComparison.OrdinalIgnoreCase)), TwoWheels = args.Any(a => a.Equals("--2wd", StringComparison.OrdinalIgnoreCase)) };
+            wish = new EngineKit.EngineWish { Tier = (int)F(et), TopSpeed = F(Flag(args, "--top-speed")), Accel = F(Flag(args, "--accel")), Endurance = F(Flag(args, "--endurance")), AllWheels = args.Any(a => a.Equals("--awd", StringComparison.OrdinalIgnoreCase)), TwoWheels = args.Any(a => a.Equals("--2wd", StringComparison.OrdinalIgnoreCase)) };
         }
         using var wishScope = EngineKit.EngineWish.Use(wish);
+        using var formedScope = Vehicle.UseFormedWheels(args.Any(a => a.Equals("--formed-wheels", StringComparison.OrdinalIgnoreCase)) ? 0f : null); // (--formed-wheels: Wheel Former wheels sized for the vehicle, Vehicle.FormedWheels.cs)
         foreach (var seed in seeds)
         {
             try

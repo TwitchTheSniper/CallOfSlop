@@ -193,11 +193,32 @@ gearing allows 39-42 m/s, so nothing there stops a kit engine. For the tier 4-5 
 (a front differential through steering pivots, or a driven tandem) or a grippier road tyre (Slick Wheel 1.4, but no off-road grip),
 and a bigger tank. That is the next step for the fast shapes; no shipped part was changed.
 
+### Fuel (2026-11-11, `Vehicle.KitTanks`)
+
+A kit engine burns much more than a V8: 960 kW is 0.35-0.41 l/s, so a stock 60 l drum lasts under three minutes. After a kit-engined vehicle is
+made, the kit adds tanks until the construct holds `EngineWish.EnduranceMinutes` at full power. That is 15 minutes, proposed
+(`DefaultEnduranceMinutes`); `--endurance MIN` changes it. Large Fuel Tanks (150 l) go on first; when 40 l or less is still missing, a Fuel Tank
+(40 l) goes on instead. There are at most 7 tanks. Every shape uses the same ordered places:
+
+1. Saddle tanks on a rail's outer face at axle height, between the axles. The middle of the wheelbase goes first, then left before right (the laid
+   branch shafts run on the right).
+2. The tail rails behind the last axle, under the bed or the boot.
+
+Each tank stands a wheel's radius plus 10 cm clear of every axle, below the floor, so it can't block a door or the driver's view. A place the build
+rules refuse (a hull skirt, a sill's wing, a step) is passed over. The construct's fuel is one pool, so only the shape's own tank is piped. The kit
+note says what was added. At tier 5 (36 m/s, all-wheel drive):
+
+| Vehicle | Burn l/s | Fuel l | Added | Full power |
+| --- | --- | --- | --- | --- |
+| Bandit Technical 1 | 0.324 | 360 | 2 behind | 18.5 min |
+| Bandit War Bus 1 | 0.406 | 400 | 3 behind (hull skirts between the axles) | 16.4 min |
+| Highland Giant Truck 8 | 0.406 | 400 | 2 between, 1 behind | 16.4 min |
+
 ## Next steps
 
 1. **Fast shapes.** All-wheel drive: the kit asks for it by itself over 200 kW a tonne (proposed; tiers 3-5 with no acceleration asked),
    keeping two-wheel drive where the layout refuses; `--awd` forces it, `--2wd` stops it (drivetrain-and-engines.md "All-wheel drive and
-   round wheels": 26.7-34.2 m/s at tier 5 against 23-26.8). Still to do: the bigger tank. A tier 3+ shape (or the wish) drives every axle and carries a bigger tank (above: grip is the limit past 1.7x the
+   round wheels": 26.7-34.2 m/s at tier 5 against 23-26.8). Done: the bigger tank ("Fuel" above). A tier 3+ shape (or the wish) drives every axle and carries a bigger tank (above: grip is the limit past 1.7x the
    V8); a game caller passes a wish (a faction's tier, a role's) to `VehicleGenJob`.
 2. **Player action, more.** Done for creative (above). Next: an option to come with a fuel tank and gearbox fitted, so it runs at
    once; survival gets nothing yet (its engines come from Assembled pieces).
