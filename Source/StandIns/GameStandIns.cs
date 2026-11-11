@@ -39,7 +39,7 @@ public sealed partial class Game
     private Map? _standInMap;
 
     // Server only: what each craft is for.
-    private enum StandInFor : byte { Arrival, Pickup, Courier, Test }
+    private enum StandInFor : byte { Arrival, Pickup, Courier, Test, Duty } // (Duty: the quarry's crew bus, GameQuarry.cs)
     private readonly (StandInFor For, int Who, double Step)[] _standInWhy = new (StandInFor, int, double)[StandInMax]; // Who: the person, or a courier's key
     private ushort _standInNextId = 1;
     private double _standInSentAt, _standInAt;

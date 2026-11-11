@@ -37,7 +37,7 @@ the file. The text is filled once per step and again only if a key it names is r
 
 **About the person** (Karl, 2026-11-10). The induction teaches the person: moving, their hands, the backpack, their own tools
 (attach tool, ground drill, physics gun) and their bunk. Machines (power, the Assembler, smelting) are not in it: they are
-taught later, in stages, on Ministry of Slop duties. The power and Assembler steps were taken out on 2026-11-10, so a world
+taught later, in stages, on Ministry of Slop duties (the first is the quarry: docs/story/DUTIES.md). The power and Assembler steps were taken out on 2026-11-10, so a world
 saved part way through an older induction picks up at the step now at that number.
 
 **Markers, hints and drops** (2026-11-10). `"target": "loose"` or `"bunk"` puts an orange marker over the nearest loose single

@@ -307,6 +307,7 @@ public sealed partial class Game
         DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
         ShellCatch(p, rec); // (in a robot shell: the body's place and things, GameRobotShell.cs)
         DepotCatch(p, rec); // (the Orbital Depot's run: GameDepot.cs)
+        QuarryCatch(p, rec); // (the first Ministry duty: GameQuarry.cs)
         UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
@@ -576,6 +577,9 @@ public sealed partial class Game
             case WorldSaveWriter.DepotTag:
                 WorldReadDepot(r, ws); // (the Orbital Depot: GameDepot.cs)
                 break;
+            case WorldSaveWriter.QuarryTag:
+                WorldReadQuarry(r, ws); // (the first Ministry duty: GameQuarry.cs)
+                break;
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
                 break;
@@ -611,6 +615,8 @@ public sealed partial class Game
                         sites.Add((r.Str(), r.U16()));
                     op.Sites = [.. sites]; // (a world from before the data centres has none: GameStoryFragments.cs builds them)
                 }
+                if (r.Has(2))
+                    op.Quarry = r.U16(); // (a world from before the quarry has none: GameQuarry.cs builds one)
                 if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
                     _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
                 break;
@@ -858,6 +864,7 @@ public sealed partial class Game
         TutorialArrive(p, rec); // (where they were in the induction: GameTutorial.cs)
         DeathArrive(p, rec); // (their checkpoint, and whether they are dead for good: GameSandboxDeath.cs)
         DepotArrive(p, rec); // (where they were on the Orbital Depot's run: GameDepot.cs)
+        QuarryArrive(p, rec); // (where they were on the first Ministry duty: GameQuarry.cs)
         UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
