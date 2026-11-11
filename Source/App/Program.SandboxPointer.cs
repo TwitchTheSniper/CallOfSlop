@@ -13,7 +13,7 @@ public static partial class Program
     private static ushort _scrBody;
     private static int _scrPart = -1, _scrPanel, _scrPage = -1, _scrSentX = -1, _scrSentY = -1, _scrOffPart = -1;
     private static ushort _scrOffBody;
-    private static long _scrStamp, _scrLookKey;
+    private static long _scrStamp, _scrLookKey, _scrWheelKey = -1; // (_scrWheelKey: a panel with a long list under the crosshair, which the wheel scrolls)
     private static bool _scrDown, _scrTook, _scrWeb;
     private static string _scrLook = "";
 
@@ -117,6 +117,7 @@ public static partial class Program
     /// <summary>One frame. True while the crosshair is a mouse or a finger: LMB and RMB are the screen's, and Hands don't pick up or drop with them. RMB, then LMB, picks up a loose screen that is playing.</summary>
     private static bool PointerFrame(Game g, Player me, in SandboxHand h, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit, double now)
     {
+        _scrWheelKey = -1;
         // A drag holds on past the panel's edge, until the button comes up or the part is gone.
         if (_scrDown && g.Constructs.Get(_scrBody) is { } held && _scrPart < held.PartCount && LinkStamp(held, _scrPart, 255, 0) == _scrStamp && h.Tool == ConstructTool.Hands)
         {
@@ -162,6 +163,7 @@ public static partial class Program
             return false;
         }
         var d = c.DefOf(part);
+        _scrWheelKey = PanelRender.Scrollable(PanelRender.Key(c.Id, part, n)) ? PanelRender.Key(c.Id, part, n) : -1; // (the wheel scrolls a long list under the crosshair)
         var def = d.Panels[n];
         var page = d.IsMedia ? MediaDirector.PageOf(c.Id, part) : -1;
         var region = PanelTouch.Region(def, spot);
@@ -215,7 +217,12 @@ public static partial class Program
         PanelRender.SetPointer(key, spot, region);
         PointerSay(g, d, null, $"LMB: {(region >= 0 ? def.Touch[region].Label : "")}");
         if (region >= 0 && Pressed(GameAction.Fire) && !_swallowClick)
-            g.SandboxPanelTouch(c.Id, part, n, region);
+        {
+            if (def.Touch[region].View is var by and not 0)
+                PanelRender.Scroll(key, by * PanelRender.PageRows(key)); // (Up and Down: this PC's own view of the list, nothing sent)
+            else
+                g.SandboxPanelTouch(c.Id, part, n, region);
+        }
         return true;
     }
 

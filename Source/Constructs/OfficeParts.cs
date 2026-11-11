@@ -94,7 +94,7 @@ public static class OfficeParts
         {
             foreach (var line in page)
             {
-                card.Wrap(line, PanelCard.MaxChars, 1, 5, 0, ref at, ref column);
+                card.Wrap(line, 32, 1, 5, 0, ref at, ref column);
                 if (column > 0)
                     (at, column) = (at + 1, 0);
             }
@@ -104,7 +104,7 @@ public static class OfficeParts
         {
             for (var k = 0; k < _heardCount; k++)
             {
-                card.Wrap(_heard[k], PanelCard.MaxChars, 1, 5, 0, ref at, ref column);
+                card.Wrap(_heard[k], 32, 1, 5, 0, ref at, ref column);
                 if (column > 0)
                     (at, column) = (at + 1, 0);
             }
