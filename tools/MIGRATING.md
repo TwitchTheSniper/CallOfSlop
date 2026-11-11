@@ -78,7 +78,7 @@ The **Classic**, **Collision Point** and **High Ground** map packs are now one p
 
 ### Workbench builds on removed receivers
 
-Three weapon-builder receivers that were only a fire rate are gone: the **Ratchet Burst SMG**, **Triad Burst** and **Buzzbox Machine Pistol** receivers (the burst or buzzsaw is the Action part now). A saved build in `workbench.txt` that uses one loads on the **Stampede**, **Workhorse** or **Plinker** receiver with the **Ratchet Burst Group**, **Three-Round Burst Group** or **Buzzsaw Sear** action, so it fires as before, and the file is saved back that way. Nothing else in your builds changes; receiver damage numbers did change with the late-game power curve (docs/zombies/WEAPON-BUILDER.md, "The power curve").
+Three weapon-builder receivers that were only a fire rate are gone: the **Ratchet Burst SMG**, **Triad Burst** and **Buzzbox Machine Pistol** receivers (the burst or buzzsaw is the Action part now). A saved build in `workbench.txt` that uses one loads on the **Stampede**, **Workhorse** or **Plinker** receiver with the **Ratchet Burst Group**, **Three-Round Burst Group** or **Buzzsaw Sear** action, so it fires as before, and the file is saved back that way. Nothing else in your builds changes; receiver damage numbers did change with the late-game power curve (docs/sandbox/WEAPON-BUILDER.md, "The power curve").
 
 ### Workbench blueprints
 

@@ -4,7 +4,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Co-op: a squad of 1-4 players (up to 6 with bots) plays a mission against waves of enemy soldiers (docs/pve/DESIGN.md).
+/// Co-op: a squad of 1-4 players (up to 6 with bots) plays a mission against waves of enemy soldiers (docs/archive/PVE-DESIGN.md).
 /// Only on maps with a mission (Maps/&lt;Pack&gt;/Missions). This module is the mode's front door: its flags and hooks
 /// route into the PvE subsystems (all <c>partial class Game</c>, Source/Game/Pve): the mission runner and objectives
 /// (GamePveMission.cs), the enemies (GamePve.cs, GamePveAi.cs), the spawn director (SpawnDirector.cs), the packets

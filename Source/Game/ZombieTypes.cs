@@ -37,7 +37,7 @@ public sealed partial class Zombie
 }
 
 /// <summary>
-/// Zombie types (docs/zombies/ZOMBIES-MODE.md, "Zombie types"; the rules' "types" section, Source/Zombies/ZombieTypes.cs):
+/// Zombie types (docs/archive/ZOMBIES-MODE.md, "Zombie types"; the rules' "types" section, Source/Zombies/ZombieTypes.cs):
 /// which type a spawn becomes (the round's weights, the first rounds, the caps, packs, the boss rounds), and what each
 /// special does on the server: the brute's knockback and shrugged-off stuns, the armoured one's plates that shots take
 /// off before the body, the grabber's hold (freed by any hit on it), the pouncer's leap (a melee lunge: it still has to

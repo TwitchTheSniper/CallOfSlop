@@ -19,7 +19,7 @@ public sealed class BuiltModel
 }
 
 /// <summary>
-/// Builds a weapon's 3D model from its parts (docs/zombies/WEAPON-BUILDER.md, "Model building"): each part's boxes sit
+/// Builds a weapon's 3D model from its parts (docs/sandbox/WEAPON-BUILDER.md, "Model building"): each part's boxes sit
 /// in its own space, placed at the socket it plugs into, as a <see cref="SceneNode"/> tree (grip at the root, sockets
 /// as socket nodes: receiver_N, optic_mount, mag_well, support, stock, muzzle_mount and one muzzle_N per barrel). The
 /// tree is then flattened into a <see cref="GunMesh"/>, so the existing gun drawing, scene graph rig, IK arms and
@@ -375,7 +375,7 @@ public static class BuildModel
         foreach (var s in p.Sockets)
         {
             // The part in the socket picks which of the socket's points it sits at (an action: under the receiver, on
-            // its side or at its front; docs/zombies/WEAPON-BUILDER.md, "Where actions sit"). Only the model moves.
+            // its side or at its front; docs/sandbox/WEAPON-BUILDER.md, "Where actions sit"). Only the model moves.
             var child = node.Child(s.Name);
             var at = s.PosFor(child?.Part);
             var sn = pn.AddSocket(SceneName(s), scaled ? at * scale : at, s.Rotation);
@@ -506,7 +506,7 @@ public sealed class AssembledWeapon
     public bool Ok => Def != null || Melee != null || Grenade != null;
 }
 
-/// <summary>Puts builds together: rules, stats, model, muzzle positions (docs/zombies/WEAPON-BUILDER.md).</summary>
+/// <summary>Puts builds together: rules, stats, model, muzzle positions (docs/sandbox/WEAPON-BUILDER.md).</summary>
 public static class WeaponBuilder
 {
     /// <summary>Checks, computes and models <paramref name="b"/> (<paramref name="tints"/>: see <see cref="BuildModel.Build"/>).</summary>

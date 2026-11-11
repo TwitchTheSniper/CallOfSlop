@@ -6,7 +6,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// <c>--stress-shots waves [size] [--waves-old]</c>: a strip of pictures of the mass horde waking at its edge
-/// (docs/zombies/MASS-HORDE.md, "Wake waves"), written next to the log as smoke_waves_&lt;soft|old&gt;_&lt;nn&gt;.bmp. An
+/// (docs/sandbox/MASS-HORDE.md, "Wake waves"), written next to the log as smoke_waves_&lt;soft|old&gt;_&lt;nn&gt;.bmp. An
 /// offline Zombies game on Horde Stress at round 10's pace: a blob of <c>size</c> zombies (20,000 by default) in the mass
 /// 60-150 m ahead of the player on the valley floor, coming on; from 2 s, every quarter second for 3 s, a picture from
 /// the player's eye zoomed on the blob's front as it crosses the wake edge (the host drawing every tick, so the agents

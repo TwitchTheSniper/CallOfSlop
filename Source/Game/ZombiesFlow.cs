@@ -4,7 +4,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Zombies round flow (user requests, 2026-10-23; docs/zombies/ZOMBIES-MODE.md "Between rounds"):
+/// The Zombies round flow (user requests, 2026-10-23; docs/archive/ZOMBIES-MODE.md "Between rounds"):
 /// <list type="bullet">
 /// <item>Players who bled out come back <b>when the round ends</b> (its last zombie dies), with the start gear, so they
 /// have the whole break at the workbench (<see cref="RespawnAtRoundEnd"/>).</item>

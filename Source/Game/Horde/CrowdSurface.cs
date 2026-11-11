@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// The crowd as a surface (docs/zombies/MASS-HORDE.md, "Crowd physics"): a height over the floor from how dense the
+/// The crowd as a surface (docs/sandbox/MASS-HORDE.md, "Crowd physics"): a height over the floor from how dense the
 /// crowd is in each network cell (<see cref="Msg.ZCrowd"/>'s grid, which the server counts every few ticks and a client
 /// has as its picture). A cell packed at <see cref="Packed"/> zombies a square metre is <see cref="Height"/> m high; a
 /// thinner one lower, in proportion. Between cell centres the height is bilinear, so the surface slopes and its slope

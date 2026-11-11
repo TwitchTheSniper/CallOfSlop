@@ -53,7 +53,7 @@ public struct CartBody
 }
 
 /// <summary>
-/// Push cart physics (docs/zombies/WEAPON-BUILDER.md, "The push cart"). Deterministic and server-authoritative: the cart
+/// Push cart physics (docs/sandbox/WEAPON-BUILDER.md, "The push cart"). Deterministic and server-authoritative: the cart
 /// rolls toward a point in front of the player, turns slower than the player can, collides with the world as a box,
 /// can't climb steps above <see cref="StepLimit"/> or slopes steeper than <see cref="MaxSlopeDeg"/>, and when it's
 /// stuck the player is held at the push bar (you can't walk through your own cart). Carts are slow to push because a

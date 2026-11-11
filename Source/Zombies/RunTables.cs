@@ -14,7 +14,7 @@ public sealed record RoundRow(int FromRound, float[] Weights, float Chance)
 
 /// <summary>
 /// The roguelite drop tables (Parts/Tables/DropTables.json, format "call-of-slop-drops/1"): proposed data for the
-/// Zombies mode, open for the user (docs/zombies/WEAPON-BUILDER.md, "Run progression"). A run starts with low-level gear;
+/// Zombies mode, open for the user (docs/sandbox/WEAPON-BUILDER.md, "Run progression"). A run starts with low-level gear;
 /// later rounds roll rarer parts and builds, so one run can climb from a wall rifle to a sixteen-receiver monster. Nothing
 /// in the game rolls these yet (the Zombies mode comes later); the self-test checks the curve's shape.
 /// </summary>

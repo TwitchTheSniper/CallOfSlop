@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The slug (docs/zombies/ZOMBIES-MODE.md, "Dismemberment"): a zombie with all four limbs gone (<see cref="Zombie.Slug"/>,
+/// The slug (docs/archive/ZOMBIES-MODE.md, "Dismemberment"): a zombie with all four limbs gone (<see cref="Zombie.Slug"/>,
 /// from the limb bits, so clients know it without a new field). The torso and head inch along the ground at the rules'
 /// slugSpeed (m/s, whatever its class), turning slowly, along the horde's flow field like any zombie inside; it never
 /// jumps, so a ledge or the bell pile stops it (it waits at the bottom), and stairs it takes slowly. It can't climb in

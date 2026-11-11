@@ -2,7 +2,7 @@
 //   {"use": "Picatinny Rail", "pos": [x, y, z], "rot": [x, y, z], "scale": 1 or [x, y, z], "color": "accent"}
 // Boxes are in the fragment's own space (metres, -Z forward, +Y up); "scale" stretches them along the fragment's axes,
 // "rot" turns them, "pos" moves them; "color", "alpha" and "tag" override every box it brings. Fragments may use
-// other fragments. See docs/zombies/WEAPON-BUILDER.md, "Making parts".
+// other fragments. See docs/sandbox/WEAPON-BUILDER.md, "Making parts".
 {
   "format": "call-of-slop-fragment/1",
   "name": "Picatinny Rail",

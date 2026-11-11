@@ -34,7 +34,7 @@ public sealed class ZombiePerkDef
     /// <summary>Solo only: being downed with this perk gets you back up on your own after a few seconds (the perk is used up).</summary>
     public bool SelfRevive;
 
-    // ---- The perks added 2026-10-27 (docs/zombies/ZOMBIES-MODE.md, "Perks"). Every field is neutral by default. ----
+    // ---- The perks added 2026-10-27 (docs/archive/ZOMBIES-MODE.md, "Perks"). Every field is neutral by default. ----
 
     /// <summary>Movement speed multiplier on foot (Fleetfoot Fizz: 1.2). The client's prediction and the server's speed check both use it.</summary>
     public float MoveSpeed = 1f;
@@ -91,7 +91,7 @@ public static class ZombiePerkIcons
 /// <summary>
 /// The Zombies mode's numbers (Parts/Tables/ZombiesRules.json, format "call-of-slop-zombies/1"): the round curve,
 /// the zombies, the points economy, downs and revives, perks, the mystery box and ammo. Proposed World at War style
-/// defaults, open for the user (docs/zombies/ZOMBIES-MODE.md). Everything here is data: the code only reads it.
+/// defaults, open for the user (docs/archive/ZOMBIES-MODE.md). Everything here is data: the code only reads it.
 /// </summary>
 public sealed class ZombiesRules
 {
@@ -130,7 +130,7 @@ public sealed class ZombiesRules
     public int MaxAlive = 600;
 
     /// <summary>
-    /// The alive cap by round (docs/zombies/ZOMBIES-MODE.md, "Hordes"): 24 early, 40 by round 5, 90 by round 10, 220 by
+    /// The alive cap by round (docs/archive/ZOMBIES-MODE.md, "Hordes"): 24 early, 40 by round 5, 90 by round 10, 220 by
     /// round 20, 400 by round 30, 600 by round 40 (straight lines between the points, flat past the ends), plus
     /// <see cref="MaxAlivePerExtraPlayer"/> of that per extra player (the player scaling, 2026-10-27).
     /// </summary>
@@ -177,7 +177,7 @@ public sealed class ZombiesRules
     /// <summary>The horde climbing a face (the "climb" section; Source/Game/ZombiesClimb.cs: the Cathedral's bell tower).</summary>
     public ClimbTuning Climb = new();
 
-    /// <summary>The mass horde's crowd tier (the "crowd" section; Source/Game/Horde/HordeCrowd.cs, docs/zombies/MASS-HORDE.md). Used only on maps with "crowd".</summary>
+    /// <summary>The mass horde's crowd tier (the "crowd" section; Source/Game/Horde/HordeCrowd.cs, docs/sandbox/MASS-HORDE.md). Used only on maps with "crowd".</summary>
     public CrowdTuning Crowd = new();
 
     /// <summary>The zombie types (the "types" section; Source/Zombies/ZombieTypes.cs, Source/Game/ZombieTypes.cs): type 0 is the walker.</summary>
@@ -445,7 +445,7 @@ public sealed class ZombiesRules
     /// <summary>Does a machine of <paramref name="category"/> (-1: classic) pay whole melee builds?</summary>
     public bool SlotPaysMelee(int category) => category != ZombiesMap.SlotCategoryGrenade && (category < 0 || category >= SlotCategoryMelee.Length || SlotCategoryMelee[category]);
 
-    // ---- Casino tables (ZombiesCasino.cs; docs/zombies/ZOMBIES-MODE.md, "Casino tables") ---------------------------
+    // ---- Casino tables (ZombiesCasino.cs; docs/archive/ZOMBIES-MODE.md, "Casino tables") ---------------------------
     /// <summary>Each game's smallest bet (index: <see cref="CasinoGame"/>), unless a map's table sets its own. There is no largest bet: a player may bet any amount up to the points they have.</summary>
     public int[] CasinoMin = [50, 10, 50, 50];
 
@@ -470,7 +470,7 @@ public sealed class ZombiesRules
     /// <summary>A win paying at least this many points over the bet is announced to everyone (the feed and a label over the table).</summary>
     public int CasinoAnnounceAt = 1000;
 
-    // ---- The trader (ZombiesTrader.cs; docs/zombies/ZOMBIES-MODE.md, "The trader") ---------------------------------
+    // ---- The trader (ZombiesTrader.cs; docs/archive/ZOMBIES-MODE.md, "The trader") ---------------------------------
     /// <summary>
     /// The trader comes at the start of every <see cref="TraderEveryRounds"/>th round (0: never) and stays
     /// <see cref="TraderStayRounds"/> rounds (each with the break after it), then leaves when the next round begins.
@@ -1600,7 +1600,7 @@ public sealed class ZombiesRules
 }
 
 /// <summary>
-/// The horde climbing a face (the rules file's "climb" section; Source/Game/ZombiesClimb.cs; docs/zombies/ZOMBIES-MODE.md,
+/// The horde climbing a face (the rules file's "climb" section; Source/Game/ZombiesClimb.cs; docs/archive/ZOMBIES-MODE.md,
 /// "The bell: a siege up the tower"): the living pyramid's shape, how fast the horde climbs and falls, the zombies a
 /// siege adds to the round and what surviving it pays.
 /// </summary>

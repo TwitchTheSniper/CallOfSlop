@@ -6,7 +6,7 @@ namespace CallOfSlop;
 public readonly record struct PFxHit(Player P, int Damage, bool Killed, Vector3 O, Vector3 D, float Dist);
 
 /// <summary>
-/// Special ammo effects against PLAYERS (developer answer, 2026-10-26; docs/zombies/ZOMBIES-MODE.md, "Special ammo
+/// Special ammo effects against PLAYERS (developer answer, 2026-10-26; docs/archive/ZOMBIES-MODE.md, "Special ammo
 /// effects"): a gun or melee build whose parts carry effect flags hurts players the way it hurts zombies, wherever it can
 /// be used against them (any mode where a build meets a player: the Workbench Range's targets today, PvP with builds
 /// later). The same numbers as against zombies (ZombiesRules.json "ammoEffects"), and friendly fire is respected: every

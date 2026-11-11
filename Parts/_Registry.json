@@ -1,4 +1,4 @@
-// The weapon builder's registry (format call-of-slop-part-registry/1; see docs/zombies/WEAPON-BUILDER.md, "Making parts").
+// The weapon builder's registry (format call-of-slop-part-registry/1; see docs/sandbox/WEAPON-BUILDER.md, "Making parts").
 // Socket types: what a part's "mount" and a socket's "type" may be. Add one here and it works in part files straight
 // away (a new utility rail, a bayonet lug...). The core types the rules in code use can't be removed.
 // Bores: the calibre classes receivers fire; feeds list the bores they hold. Barrels and ammo fit EVERY receiver: the

@@ -22,7 +22,7 @@ public static class CasinoGames
 }
 
 /// <summary>
-/// The casino games' maths (Source/Game/ZombiesCasino.cs; docs/zombies/ZOMBIES-MODE.md, "Casino tables"): cards,
+/// The casino games' maths (Source/Game/ZombiesCasino.cs; docs/archive/ZOMBIES-MODE.md, "Casino tables"): cards,
 /// blackjack totals and the dealer's rule, the roulette layout, its bets and payouts, high-low's prices and the dice
 /// pass line. Static and allocation-free, so the self-test can enumerate every outcome and check the house edges.
 /// </summary>

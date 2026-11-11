@@ -11,7 +11,7 @@ public enum BuildKind : byte
 }
 
 /// <summary>
-/// A built grenade's numbers (the Zombies grenade slot; docs/zombies/WEAPON-BUILDER.md, "Modular grenades"). Made from
+/// A built grenade's numbers (the Zombies grenade slot; docs/sandbox/WEAPON-BUILDER.md, "Modular grenades"). Made from
 /// a casing (the root: handling, bounce, how much it holds), a fuse (what sets it off), a payload (what it does) and up
 /// to three mods. The server throws and sets it off (<see cref="Game"/>, GameGrenades.cs); every client flies the same
 /// arc from the same numbers.

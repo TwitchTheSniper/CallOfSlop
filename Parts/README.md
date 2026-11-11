@@ -2,7 +2,7 @@
 
 One JSON file per part in `Parts/<Category>/` (Action, Ammo, Barrel, Feed, Grip, Head, Hilt, MeleeMod, Multiplier,
 Muzzle, Optic, Receiver, Splitter, Stock, Upgrade, Utility). The full format, the rules and the design decisions are in
-`docs/zombies/WEAPON-BUILDER.md` ("The part file format", "Model building", "Making parts"); the commented starting
+`docs/sandbox/WEAPON-BUILDER.md` ("The part file format", "Model building", "Making parts"); the commented starting
 point is `_Template/Template.json`. Shared model pieces live in `_Fragments/` (used with `{"use": "Name", ...}`),
 templates to `extends` in `_Bases/`, socket types and bores in `_Registry.json`, the 140 standard builds in `Builds/`.
 

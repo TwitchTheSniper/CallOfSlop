@@ -1,0 +1,478 @@
+# Production
+
+Covers refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, build stations. Part of the construct guide: index in ../CONSTRUCTS.md.
+
+## Refining (decision 14)
+
+The step after gathering: raw material goes into production machines, on a base or a big vehicle, and refined material comes
+out. Chutes move it between them. [Assembling](#assembling) uses the results. The chain has three steps: raw ore and wood; first tier
+materials (a Smelter's metal, copper, gold and glass, a Sawmill's planks and cloth, with stone and sand as they come out of the ground); second tier materials
+from a **Foundry**, which mixes two first tier ones.
+
+- **The machines** (`Constructs/Parts/Refining`, attach tool, physics-only; five tiers each, the numbers here are tier 1's, and what each looks like is tier 2's, the plainest: each tier has its own shape, [Machine tiers](#machine-tiers)). All are buildings. The **Smelter** (3.5 m, 5,145 kg, 3 kW): a brick furnace with
+  a chimney, a glowing mouth, a hopper on top (its input) and, across an aisle, a tray at the front (its output). The **Sawmill** (3 m, 2,160 kg, 1.8 kW): a blade
+  between a trough at the back (input) and a rack at the front (output). The **Foundry** (4 m, 7,680 kg, 3.5 kW): a double furnace with a hopper across its top and twin stacks, with a mixed input. Any part with `storage.refine` is a machine: its
+  `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
+  output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
+- **The table** (`Constructs/Refining.json`, format `call-of-slop-refining/1`; `RefiningTable`). Each recipe gives `machine`,
+  `input`, `unitsIn`, `output`, `unitsOut`, `seconds` and optionally `minTier`. A machine has one recipe per input material: what is in the input
+  picks it. Units are 1 to 100, seconds 0.1 to 600 (at speed 1; work left over from a step carries into the next batch), materials are the names in
+  `Recycling.json`. A bad file is refused with the reason (`--check-construct-parts` prints it, `RefiningTable.Problem`) and
+  the built-in recipes are used. A part naming a machine with no recipes is refused.
+
+| Machine | In | Out | Seconds a batch | Rate |
+| --- | --- | --- | --- | --- |
+| Smelter | 2 iron ore | 1 metal | 0.5 | 2 metal/s |
+| Smelter | 2 copper ore | 1 copper | 0.6 | 1.7 copper/s |
+| Smelter | 4 gold ore | 1 gold | 1.0 | 1 gold/s |
+| Smelter | 2 sand | 1 glass | 0.5 | 2 glass/s |
+| Sawmill | 1 wood | 2 planks | 0.5 | 4 planks/s |
+| Sawmill | 3 planks | 1 cloth | 1.0 | 1 cloth/s |
+
+  Iron ore gives the same `metal` as the Recycler. A Drill Module (10 a second) feeds several Smelters (4 ore a second each). A
+  chute moves 10 a second, more with a higher tier machine at either end.
+- **The Foundry's recipes** (machine `foundry`). A recipe lists `inputs`, 2 to 4 of `{"material", "units"}`, in place of `input` and `unitsIn`, and all of a machine's recipes
+  are one kind or the other: a mixed machine's `RefineMix` makes its input `CStore`'s mixed one. Same material twice, a repeat of the same set, or the two kinds on one machine are refused.
+
+| Second tier | In | Out | Seconds | From tier | Chains |
+| --- | --- | --- | --- | --- | --- |
+| steel | 2 metal + 1 stone | 2 | 1.0 | 1 | iron, stone |
+| concrete | 2 stone + 2 sand | 3 | 0.8 | 1 | stone, sand |
+| laminate | 2 planks + 1 glass | 2 | 1.0 | 1 | wood, sand |
+| rubber | 2 planks + 1 sand | 1 | 1.0 | 1 | wood, sand |
+| bronze | 2 copper + 1 metal | 3 | 1.0 | 2 | copper, iron |
+| circuits | 2 copper + 1 gold | 2 | 2.0 | 3 | copper, gold |
+
+- **A mixed input.** Each material keeps its own amount, up to the input's capacity (`CStore.MixMat`, `MixAmount`, at most 8 kinds). A material goes in only if some recipe of the machine's tier uses it and everything already there
+  (`ConstructRefining.MixTakes`), so what is in the input picks the recipe: metal alone waits for stone or copper, metal and stone makes steel, and sand then stays in its source ("no recipe mixes it with 3 metal"). Run one chute in for
+  each input: a port takes several. A pair runs until one side runs out; what is left of the other waits for its fellow.
+- **Materials.** `copper`, `gold` and `planks` are ids 13 to 15, and `steel`, `bronze`, `concrete` and `laminate` 16 to 19 (2.5, 3, 3 and 1 kg a unit; `rubber`, `circuits` and `cloth` were salvage only, and now have recipes). The ceiling is 63 materials
+  (`RecyclingTable.MaxMaterials`; the inventory has 64 slots): a material id is a byte on the wire, so only arrays grow. A Sawmill keeps its weight (1 wood to 2 planks); a Smelter's slag is lost.
+- **Two bins in one store.** `CStore.Amount` and `Material` are the output, so a chute out, F, a spill and the mass treat a
+  machine as any bin, and a machine's own `InAmount` and `InMaterial` are the input. Only `ConstructWorld.Feed` adds to the input,
+  and only the step takes from it (when a batch is done, so a batch in hand loses nothing if the power goes or the machine breaks).
+  A chute into a machine ends at `Feed`, a chute out starts at the output: there are no separate chute ports.
+- **F** tips what you carry into the input, if it takes it and has room, else takes a load of 100 from the output; the output is
+  never tipped into and the input never taken from.
+- **Refused and blocked.** A chute bringing what the machine has no recipe for, or another material than its input holds, moves
+  nothing: it stays in the source, and the look line says so for 4 s after the chute last tried (`CStore.Refused`). A
+  partial batch waits for more. An output that holds another material or has no room for a batch stops the machine until a chute or F
+  empties it. The look line: "Smelter: in 40/200 iron ore, out 12/400 metal - REFINING iron ore to metal - F: take 12 metal".
+  All but the refusal are worked out from the store on either side (`ConstructRefining.StateOf`, `Status`, `Look`).
+- **Power and Run.** As the Recycler (`ConstructRecycler.Powered`): in survival it needs a working battery whose links reach it,
+  with charge, and draws only while it works. A wire into **Run** holds it off (`ConstructGatherer.HeldOff`): it waits, keeping the
+  batch's progress, and draws nothing. The machine reads its own input and power, so it works on an anchored base with no seat.
+- **Creative** (`CreativeRecycling`, infinite parts on), as the Recycler: no power, and instant: each step refines all it can (as
+  many batches as the input holds and the output has room for), never busy. The Run wire still holds it, and a recipe's input still
+  counts: a wrong material is refused as ever. A logic part wired to Run has no power on a flat battery either, so it holds the machine off.
+- **Mass.** Both bins count (`Construct.LoadOf`: one load per part, the two weights added at their shared centre, in a box round
+  both), by the usual `LoadChanged` path. `LoadKey` also follows where a load sits, so a batch that keeps its weight still moves
+  the centre of mass.
+- **Spilling.** A broken machine spills up to six Material Bundles for each bin, of that bin's material.
+- **The Smelting Station** blueprint: a Smelter on a Concrete Foundation 4x4 m, and a second slab beside it with a Battery and two Materials Bins, chutes from the first bin into the
+  Smelter and from the Smelter to the second. Tip ore or sand into the first bin (or chute it in), take the product from the second.
+  A battery of 300 kJ runs a Smelter for 100 s of work: 200 metal. The **Foundry Works** blueprint is the same with a Foundry and two bins feeding it: tip metal into one and stone into the other.
+- **Chute ports.** The machines have named ports on their outside, `Chute in` and `Chute out`, both on the +x side, so a chute needn't reach a building's middle. A port takes any number of chutes.
+- **Network (protocol 114; 117 for the mixed input).** Bit 4 of a store's flags byte: a machine's input follows (u16 amount, u8 material, u8 refused
+  material), only when it holds something or a chute is refused, so other stores cost the same 5 bytes (plus their slots). Bit 64: a mixed input follows (u8 kinds, then u8 material and u16 amount). The job's
+  progress is server-only.
+- **Performance.** The step (`ConstructRefining.Step`) runs at 10 Hz and looks only at constructs with a machine
+  (`Construct.HasRefiner`). A recipe is an array lookup behind a dictionary; nothing allocates.
+
+Code: `Source/Constructs/ConstructRefining.cs` (the step, the look line), `ConstructRefiningTable.cs` (the table), `ConstructStorage.cs`
+(`Feed`, the fill box, the bytes). **Self-test**: "Refining" and "Refining network" (`Source/App/SelfTestRefining.cs`).
+
+Choices made (the developer may change them): the numbers above; the input can't be taken back out by hand (run it through, or break the
+machine); a machine takes one input material at a time, so a stray unit short of a batch waits for its fellows; a refusal shows on the
+machine's look line, not the source bin's; no named chute ports; pipes carry no bulk yet, only chutes do; the Sawmill has no blueprint of
+its own.
+
+## Extrusion
+
+The developer's mothership loop: a machine that makes long pieces to length, for building panels, frames and shapes. An
+**Extruder** pushes bulk material through a die; what comes out is a real, parametric piece; a signal into its **Cut** input, or
+its Cut every length, parts it off at the die. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), `ConstructExtruder.cs` (the machines),
+`ConstructExtrusionTable.cs` (`Constructs/Extrusion.json`). The parts and the Extruder Line blueprint come from `tools/constructs/extrusion_parts.py`.
+Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
+
+- **A piece** is a cross-section swept along a length: an 8 by 8 cell grid (a u64: bit y * 8 + x), a width and height (0.1 to 32 m),
+  a length (0.05 to 192 m, in 5 cm steps, so both the 0.1 m and 0.25 m lattices can be hit) and a material. That is all it is
+  (`ExtrusionKey`). The grid is meshed into at most 16 solid boxes, the same way on every machine; a solid bar is one box, an
+  I-beam three. Presets: Solid bar, Plate, Wall (a skin each side on three studs), Hollow box, I-beam, C-channel, L-angle, T-bar, Cross;
+  Custom is the panel's own grid. A section must be connected and mesh into 16 boxes; each refusal says why.
+- **Round and Pipe** (the Profile's last two choices). The key's `Shape` is `Round` or `Pipe`, with no grid: Width is the diameter (`W` and `H` both hold it,
+  and the die must take it both ways) and a Pipe's **Pipe wall** setting is `Wall`, in cm, 1 to 200, always leaving a 5 cm bore. Mass, health and material use follow the real
+  area. **Collision.** A finished Round is a convex hull of its drawn fourteen-sided prism over three hidden boxes; while it grows it is the boxes, since a hull is made once and
+  a growing piece is a new def four times a second. A Pipe is 32 hidden boxes round the bore, `ColliderBoxes` set so the tube's outer hull is not made: the bore is open to rays,
+  bodies and players, who can walk inside a big one. Boxes don't turn, so the ring is stepped: true on the axes, about 9 % of the radius proud of the circle and into the bore on the diagonals. **Sockets.**
+  `base` and `tip` in the middle of each end (a pipe's stand in the bore's air: a weld to them is a weld to the end), and the four faces at the same stations, at the compass points of the round.
+  **For later machines.** The key holds all a die needs to read a piece: `Shape`, `W`, `H`, `Wall`, `Mask`, `L`, `Material`.
+- **A piece is a real part.** `Extrusion.Def(key)` makes a `ConstructPartDef` the first time a key is asked for and keeps it: ids from
+  `Extrusion.RuntimeBase` (0x4000), resolved by `ConstructParts.Def`, never sent. So `Rebuild`, split, join, the renderer, rays, player
+  blocking, ghosts, joins, damage and paint read a piece's boxes, sockets, mass and health as they read any part's, with no second path.
+  `ConstructParts.All` doesn't list them, so menus, racks and part sweeps see only the files. Bounds are the real section's; collision
+  and hits are its solid boxes through `Construct.SolidCount/SolidBox`.
+- **Numbers.** `Constructs/Extrusion.json` by material: `unitsPerM3` (mass is that at the material's `kgPerUnit`, so a piece weighs what
+  went in), `healthPerM3`, `armourPerCm` of its thinnest wall up to `maxArmour`, and `class` (salvage, hits, burning). A row may name a
+  material Recycling.json doesn't have yet (steel, concrete): it is simply not usable until it does. Metal: 200 units/m3, 400 kg/m3.
+- **Sockets.** A finished piece has `base` and `tip`, and four faces (`+x0`, `-x0`, `+y0`, `-y0`...) at up to nine stations about 1 m
+  apart (further on a long piece), 38 at most, each on the outermost cell of that side nearest the middle. Point and freeform attachments reach everywhere else. A
+  piece is physics-only ("extruded"): attach tool, physics gun, cargo volumes.
+- **The Extruder** (`Constructs/Parts/Extrusion/Extruder.json`, `storage.extrude`): a bin (`any`, 400) with a die at its +z face, 0.2 m/s, 900 W
+  while it runs. Material comes by chute or F; Run and power as a [production machine](#refining-decision-14) (`ConstructGatherer.HeldOff`,
+  `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far, in metres.
+  Configure tool: Profile, Width, Height, Pipe wall, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and what is shown
+  becomes Custom; a Round or a Pipe shows on it too). A change of setting is for the next piece; the panel previews the section on the die.
+- **By size class.** The limits are part data.
+
+  | Machine | Die | Longest piece | Speed | Bin | Power |
+  | --- | --- | --- | --- | --- | --- |
+  | Extruder (Small) | 0.5 m, Die Frames to 6 x 6 m | 48 m | 0.2 m/s | 400 | 900 W |
+  | Medium Extruder | 8 x 8 m | 64 m | 0.4 m/s | 2,000 | 3.6 kW |
+  | Large Extruder | 16 x 16 m | 128 m | 0.8 m/s | 8,000 | 14.4 kW |
+  | Capital Extruder | 32 x 32 m | 192 m | 1.6 m/s | 32,000 | 57.6 kW |
+
+  The big machines are their die (a block of their class's cells, `sizeClass` sockets) and take no frames. 192 m keeps a piece inside `ConstructParts.MaxPartReach` (200 m). A piece's mass and health stop at `MaxPartMass`
+  and `MaxPartHealth` (50,000 t, 16,000,000): past those a huge solid piece still costs what went in, but weighs and takes hits as the limit does. The table holds 48,000 pieces.
+- **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The small Extruder starts with a 0.5 by 0.5 m die. Attach frames to it (and
+  to each other) on any side: the die reaches across every working frame joined to it, up to 6 by 6 m, and its centre moves with
+  them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
+- **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
+  at its base end, so it rides with the machine (a mothership included), counts in its mass and is solid. Everything is found from that link
+  (`ProductOf`), so nothing has to be kept in step through renumbering, splits or the wire. At 10 Hz the step adds up
+  growth; each 5 cm swaps the part's def for the longer one and calls `Construct.RefreshShape` (mass, bounds, contact points; no routes, power, drive line or
+  guns), and sends a 5-byte `CBodyKind.Extrude`. At 0.2 m/s that is 4 swaps a second. A shape is made once, so a line in steady work allocates only the bodies it cuts off.
+  A growing piece has one socket (the die's), so nothing can be fitted to it, and joins onto it are refused. A piece no longer linked
+  to a die (taken off, the machine gone) finishes at the next rebuild, with its full sockets.
+- **Its path.** Each step checks the new slab, box by box (an I-beam's notch stays a notch): the ground, walls, its own construct and anything
+  anchored stop it ("blocked"). A free body is pushed along the path (`pushForce`, 6 kN, at most 0.6 m/s) and growth waits for it to go, so
+  nothing is ever grown into; one that doesn't move in 1.5 s stops it ("too heavy to push").
+- **Why it stopped** is the store's `Refused` byte (`ExtrudeStall`, on the wire): no power, needs material, can't extrude that, the bin holds another
+  material than the piece, the section can't be made, at the cap, blocked, too heavy. The look line has the bin, the die, the section, the length so far, the
+  material use and the reason.
+- **The cut.** The machine's second input, **Cut**: a rising signal (caught at the logic's rate, so a one-tick pulse counts) parts the whole piece off at the die at its next step. It needs power; it works with Run held off.
+  **Cut every** (`cutLength`, metres, 0: off) does the same with no logic when the piece reaches that length, and growth stops there, so lengths are exact at any speed. The piece comes off as a body of its own where it stands,
+  moving as the machine moved, keeping its health share and paint, and the part leaves the machine's construct (a full rebuild of that construct, once a cut). The next piece starts from the settings as they stand. Until it has fallen or been taken away a cut piece is
+  in the next one's path: it is pushed along as any free body is. Without a cut a piece grows to the cap and stops.
+- **On the wire (protocol 143).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one, 10 with a round or a wheel and 12 with a pipe; ids
+  are each machine's own, so `StructureHash` mixes the key's hash. `CBodyKind.Extrude` carries width, height and length. A client out of table room (`Extrusion.MaxDefs`, 48,000 pieces in a run) shows a stand-in, and a server
+  there stalls with "too many different pieces".
+- **Blueprints and saves.** A piece names itself: `"part": "Extrusion i-beam 25x25x400 metal"` (or 16 hex digits for a custom section), `Extrusion round 50x50x400 metal`, `Extrusion pipe3 50x50x400 metal` (a 3 cm wall) or `Extrusion wheel 30x100x0 rubber`
+  (30 cm wide, 1 m across) in any step, map list or world save. `base`, `tip`, the face names and a wheel's `axle` are its sockets. **Extruder Line**: a Foundation, an Extruder, a Battery, a Materials Bin chuted into the hopper, and a Timer wired to the Extruder's Cut.
+- **The Cut-off Saws are gone** (2026-11-04). A saved world holding one loads without it: the world's log says "left out N x Cut-off Saw", and what only the saw joined to its construct splits off. A blueprint naming one is refused at that step with the part's name, as any unknown part. The saw's job is the Cut input and Cut every.
+
+Choices made (the developer may change them): the cut is at the die and takes the whole piece (a saw could stand anywhere along the path, and left the rest on the die); Cut every moved from the saw to the Extruder rather than going, so a line needs no logic; a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
+table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a u64, a simple panel; finer needs a second word); 5 cm steps; the piece on the machine's
+own construct, not a body of its own (so it uses one of the construct's 16,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the table of limits by class;
+one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data.
+
+### Run-time parts and their slots
+
+Every part made by key at run time (extrusions, lofted bays, cabs, hoods, panes, trims and fittings, ordnance designs, racks, parts of another material) takes a slot of
+`Extrusion.MaxDefs` (48,000 ids from `Extrusion.RuntimeBase`), and the shapes its boxes draw (a lofted part's hulls, its lamps) take slots of `PartShapes.Cap` (65,535: a
+ushort on every box, gun piece and scene node). A generated vehicle leaves about 9 parts and 165 shapes behind (the first spawns of a process about 30,000 shapes of warm-up),
+so a session spawning a couple of hundred, or a tool over every style, used to run out ("too many different part shapes"). `RuntimeParts` (RuntimeParts.cs) frees them:
+
+- **What is kept.** A sweep marks every part held by a construct, a storage slot or a hand (`Held`, `HeldGone`, `MagFor`) in every `ConstructWorld` and `ConstructEdits`
+  of the process (both register themselves), and every part made or asked for by its key in the last 2 minutes (`ConstructPartDef.Touched`, stamped under the key table's lock).
+  The rest leave their key tables (asked for again, they are made again, with a new id), their slots and their shapes go back.
+- **Shapes are counted.** `ConstructParts.Parse` counts the shapes it asks `PartShapes.For` for (`OwnShapes`); a shape asked for outside a parse (weapon parts, an
+  extrusion's unit lathes, the renderer's own) is pinned for good. A mesh nobody holds is dropped and the renderer re-uploads (its version goes up).
+- **A freed slot is taken again only once every slot has been used**, oldest first, and the old def stays behind its id until then; caches that know parts by id
+  (the mirror's partners, the ammo fit cache, the merged-mesh box counts) are emptied at each sweep. Ids never go on the wire or in a save (keys do), so each machine frees on its own.
+- **When.** The game sweeps between ticks (`RuntimeParts.Tick` in Program's loop) when either table is past half full, at most every 30 s (or at once past 90%), and logs
+  `[parts] swept in N ms`; past 80% one `[parts] warning` line a minute. Tools that make many vehicles sweep with no grace between them (`--body-report`). Nothing is
+  allocated on a frame without a sweep.
+- `--bench-parts [N] [--no-sweep] [--net K]` checks it: N generated vehicles built and taken out offline, then a host and a client over RakNet (120 ms, 3% loss) with both
+  limits lowered so slots are taken again, each client copy compared by part names, and a vehicle kept throughout.
+
+## The Wheel Former
+
+An [Extruder](#extrusion) with a hub for a die: it builds a wheel up on the hub, in place, fed with material the same way, and a Cut signal parts the finished wheel off. Code: `ConstructExtruder.GrowWheel`, `ConstructExtrusion.BuildWheel`; the numbers are the `wheels` rows of `Constructs/Extrusion.json`; the parts come from `tools/constructs/extrusion_parts.py` (`storage.wheel`). Self-test: the Extruder sections.
+
+- **Run modes.** **Width** builds along the axle, **Depth** builds the diameter (depth reads as how far the wheel stands out from its hub: both radii together, so a mode's step adds 5 cm to the diameter). The **Run mode** setting picks one; a wire into the **Mode** input decides instead (on: Depth). Each may be changed at any time; the wheel keeps what it has. The inputs are **Run**, **Cut** and **Mode**. The output wire is the wheel's size in the running mode, in metres, so a Compare wired from it to Run or Cut stops a wheel at a size. A wheel at a limit says so on the look line and waits. The first wheel is paid for in one go, so it fits in a bin.
+- **Limits.**
+
+  | Machine | Widest | Biggest across | First wheel | Speed | Bin | Power |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Wheel Former (Small) | 1.5 m | 3 m | 0.1 x 0.4 m | 0.1 m/s | 400 | 900 W |
+  | Medium Wheel Former | 6 m | 12 m | 0.5 x 2 m | 0.2 m/s | 2,000 | 3.6 kW |
+  | Large Wheel Former | 12 m | 24 m | 1 x 4 m | 0.4 m/s | 8,000 | 14.4 kW |
+  | Capital Wheel Former | 20 m | 48 m | 2 x 8 m | 0.8 m/s | 32,000 | 57.6 kW |
+
+  Each hub stands high enough for its biggest wheel over the machine's own floor. A wheel that meets the ground, something fixed or its own construct stops with "blocked"; a free body is pushed out from the hub.
+- **What it makes** is a run-time part as an extrusion is: key `Shape = Wheel`, `W` its width, `H` its diameter, `L` 0, in 5 cm steps. It is one def per size, at any material in `wheels`: rubber (grip 1.0, flat when broken, like a road tyre), metal, steel, wood, planks, stone, concrete. Mass is the cylinder's volume at the row's `unitsPerM3` (mostly air and rim: a rubber wheel 0.3 x 1 m is 39 kg), and the cost is what went in. A wheel's origin is on its axle face, so width grows away from the hub's plate and only the def changes. Off the machine it has an `axle` socket (the size class's by diameter: under 2 m small, under 7 m medium, under 24 m large), and all a wheel's numbers: `CWheel` reads its radius and width from the def and bounds, its cylinder collider follows, and it has the Tyre settings of every wheel. Loose, it collides as three hidden boxes (as every wheel does). It is physics-only: the socket weld puts it on a suspension's axle.
+
+Choices made (the developer may change them): depth as the diameter; the `wheels` rows; the limits above; the machines' size; a wheel as one solid material (no rim and tyre of two); no Interact to cut (a Button wired to Cut does it).
+
+## The Press
+
+The user's "complex parts made in the world, not in menus". A **Press** stamps parts out of extruded pieces; it sits beside the Extruder and the Wheel Former, and the [Assembler](#assembling) stays for everything no die covers yet. Code: `Source/Constructs/ConstructPress.cs`, `ConstructPressTable.cs` (`Constructs/Pressing.json`); the parts, the table and the Press Line blueprint come from `tools/constructs/press_parts.py`.
+
+- **Modular by size.** Press, Die Lathe and die each come in the four size classes, and a die fits a press of its own class (socket kind `pressdie`, the class of the socket). The Small press is 1.75 m wide with 2 bays and takes pieces to 0.45 m across; Medium, Large and Capital have 3 bays and take 1.8, 7.2 and 28.8 m, at speed x2, x4 and x8. Length sets count, so the player builds the smallest system for the job.
+
+  | Machine | Bays | Across | Stroke speed | Power |
+  | --- | --- | --- | --- | --- |
+  | Press | 2 | 0.45 m | x1 | 900 W |
+  | Medium Press | 3 | 1.8 m | x2 | 3.6 kW |
+  | Large Press | 3 | 7.2 m | x4 | 14.4 kW |
+  | Capital Press | 3 | 28.8 m | x8 | 57.6 kW |
+
+- **What is in it is a part.** A bay and the die slot are sockets, and a piece or a die in them is a part of the machine's own construct, linked to that socket, as a piece on an Extruder's die is. So it counts in the mass, is solid and drawn, and goes through the wire, world saves and blueprints with no second path; `ConstructPress.PieceIn` and `DieIn` find it from the link. A piece in a bay keeps its `Growing` key (no sockets; nothing welds to it) and stands out of the bay's mouth. It has to fit where it would stand.
+- **Fed by hand.** Let a loose piece go with an end in a bay's mouth (`bays[].min/max`, checked at 10 Hz) and it is drawn in. A die: F with it in your hands, in the same way the attach tool would fit it to the slot (the die in there comes back to your hands), or a physics-only die (Large, Capital) let go in the front of the machine. F empty-handed takes out what is nearest: a piece slides out of its mouth, and isn't taken in again for 3 s. Look line: `Press: Button Die - bay 1: wrong material, wants laminate plate - F: take the die out`.
+- **Stock always comes out.** What a press, a Die Lathe, an Extruder or a Wheel Former holds comes out in every state: too short, the wrong die or none, no power, held off, a stroke under way. Aim at it (the crosshair lands on the piece, not the machine: `ConstructPress.MachineOf`) and press F, or take it with the physics gun, which draws it out and holds it; on an anchored machine too. F on the machine takes the nearest. It comes back whole, at its length with its health and paint; a stroke takes length only when it ends, so one under way just stops and uses nothing. A piece shorter than a stroke is refused at the mouth ("too short") and stays out; the stub a run leaves stays in its bay until taken. A piece taken out isn't drawn back in until it has left the mouth or been picked up (`Construct.TakenFrom`).
+- **Fed by chute.** A chute from an Extruder to a press takes each finished piece whole: at Cut, or at Cut every, the piece waits on the die (`ExtrudeStall.ChuteWaits`) until a chute move finds a bay that will have it, then moves. A chute from a shelf or a Die Rack brings a die of the press's size to an empty slot. A chute of bulk is refused. The press doesn't name its ports: it picks the first free bay that takes the piece. What a stroke makes goes out of the tray by chute as any slots do.
+- **Pressing.json.** `rows` is flat: one row per die, material and size band. A row names `die`, `output`, `count`, `seconds` and its `bays`, each with `label`, `sections` (Extrusion presets, `round`, `pipe`), `materials`, `minAcross` and `maxAcross` (the piece's smaller side), and what a stroke takes: `use` (m), for parts of a fixed size, or `useAcross` (times its size across). The first row whose bays are all satisfied runs. Rows of a die stand together; a die has no list of its own, so 15 dies times materials times sizes is only more rows. `lathe` rows are chosen as a setting.
+- **What the die, the material and the piece do.** The die sets the family; choosing a recipe is swapping it. One die covers every material of its family. Fixed-size parts take their count from length: at `use` 0.1 a 2 m strip is 20 strokes, and a piece with less left than a stroke stops with "too short". Parts with no fixed size follow the section: the rows' bands pick the output, so a 0.15 m bar in a Housing Die makes Housing 0.25 m and a 0.3 m bar Housing 0.5 m.
+- **Stroke.** A row's `seconds` at the machine's speed. Power, Run wire and creative as a [production machine](#refining-decision-14); a body that can't leave waits with the pieces untouched. Output in the tray, 12 a slot, or as a body at the front (physics-only, or too big: brackets, housings, dies).
+- **The first set** (33 rows):
+
+  | Die | Bays | Makes | By |
+  | --- | --- | --- | --- |
+  | Button | laminate plate + copper round | Button | length: 10 cm + 5 cm a Button |
+  | Board | laminate plate (20 cm up) + copper round | Circuit Board | length |
+  | Bracket | metal, steel or bronze L-angle or plate | L Bracket, Corner Bracket, Gusset 0.25 m, Gusset 0.5 m | section |
+  | Gear | steel round | Gear Set | length |
+  | Piston | steel round + bronze bar | Piston Set | length |
+  | Housing (4 sizes) | metal, steel or bronze hollow box or bar | Housing 0.25 to 16 m, 7 sizes, a set in each material: 21 new parts | section, material |
+  | Cylinder (4 sizes) | steel pipe + steel plate | Small to Capital Cylinder | section |
+
+  The rest of the Assembler's list stays with the Assembler. **Substitutions:** the game has no plastic or aluminium, so plastic is laminate and aluminium is bronze; a strip, sheet or copper wire is a plate or a 10 cm round (`Extrusion.MinSectionCm`). Laminate and bronze got rows in `Extrusion.json`.
+- **Tiers.** Material sets the tier only where the game has a part per tier. Housings do, since they are new. Bracket, Gear Set, Piston Set, Button, Circuit Board and Cylinder have one part each, so those rows take the materials that suit and give that part.
+- **Dies.** Parts in `Constructs/Parts/Press/Dies`, `"pressDie": "Button"`, first socket the mount. Small and Medium are items (on a Die Rack or a shelf, in hands); Large and Capital are physics-only. Starter set, free with a survival start (`SurvivalStart.json`): Button, Bracket, Gear. All the rest come from a Die Lathe, not the Assembler.
+- **The Die Lathe** (`"press": {"lathe": true}`) is the press's code with one bay and no slot: a setting chooses the die (`"config": {"recipe": "Board Die"}`). It takes a solid bar: metal or steel for a starter, steel otherwise, at least the die's own size across (0.25, 1, 4, 8 m), and a stroke uses that length, so a 1 m block cuts four Small dies. A lathe cuts dies of its own size class ("Wrong size of lathe").
+- **Refusals.** A piece is turned away at the bay and stays where it is. The panel and the look line say why (`BayRefuse`: no die, wrong material, section, size, no room for its length, wrong die size, bulk). It rides in `CStore.Blocked` (reason x 4 + bay, 3 for the die slot) and clears after 5 s or when a die goes in.
+- **Performance.** `ConstructPress.Step` at 10 Hz looks only at constructs with `HasPress`; a bay's mouth is a `Near` query only while the bay is empty. Nothing allocates but the bodies it makes.
+- **Wire (protocol 144).** No new message. Parts and links carry what is in it, `CBodyKind.Extrude` a shorter piece; the stall is `Refused`, the refusal `Blocked`.
+
+Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); a press's ram doesn't move, as no part animates its work yet.
+
+## Machine tiers
+
+Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
+sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
+(Drill Module, Saw Module, Sawmill, Smelter, Foundry, Assembler); the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
+
+The gathering modules are vehicle-sized. The drill's bin is a small buffer ([The drill's buffer and shaft](gathering-and-salvage.md#the-drills-buffer-and-shaft)), so the Bin column is the Saw Module's:
+
+| Tier | Size | Solid body | Drill u/s | Saw u/s | Bin | Chute move | Power | Mass, health | Armour |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 Scrap | x1 | 1 m (drill 0.5 m) | 10 | 12 | 400 | 10 | 900 W | x1 | x1 |
+| 2 Workshop | x1.25 | 1.25 m (drill 0.63 m), 1.5 m at its pads (drill 1 m) | 20 | 24 | 800 | 20 | 1,620 W | x1.5 | x1.5 |
+| 3 Industrial | x1.5 | 1.5 m (drill 0.75 m, 1 m at its pads) | 40 | 48 | 1,400 | 40 | 2,880 W | x2.25 | x2 |
+| 4 Military | x2 | 2 m (drill 1 m) | 80 | 96 | 3,200 | 80 | 5,040 W | x4 | x3 |
+| 5 Plasma | x2.5 | 2.5 m (drill 1.25 m, 1.5 m at its pads) | 160 | 192 | 6,400 | 160 | 8,640 W | x6.25 | x4 |
+
+Everything else is a building, large and unwieldy at every tier: a truck can't sensibly carry one, so production wants a base, a dedicated heavy carrier or (several of them) a mothership.
+
+| Tier | Speed | Bin, input | Smelter | Sawmill | Foundry | Assembler |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 Scrap | x1 | 400, 200 | 3.5 m, 3.5 m tall, 5.1 t, 3 kW | 3 m, 3 m, 2.2 t, 1.8 kW | 4 m, 3.9 m, 7.7 t, 3.5 kW | 2 m, 2 m, 0.6 t, 1.5 kW |
+| 2 Workshop | x2 | 800, 400 | 4.5 m, 6.3 m, 8.5 t, 5.4 kW | 4 m, 4.5 m, 3.8 t, 3.2 kW | 5 m, 6.1 m, 12 t, 6.3 kW | 2.5 m, 2.4 m, 0.9 t, 2.7 kW |
+| 3 Industrial | x4 | 1,400, 700 | 6 m, 8.4 m, 15 t, 9.6 kW | 5 m, 5.6 m, 6 t, 5.8 kW | 6.5 m, 7.9 m, 20 t, 11 kW | 3.5 m, 3.9 m, 1.8 t, 4.8 kW |
+| 4 Military | x8 | 3,200, 1,600 | 8 m, 6.6 m, 27 t, 17 kW | 7 m, 6.4 m, 12 t, 10 kW | 8 m, 6.6 m, 31 t, 20 kW | 4.5 m, 3.6 m, 3 t, 8.4 kW |
+| 5 Plasma | x16 | 6,400, 3,200 | 10 m, 13 m, 42 t, 29 kW | 9 m, 9.9 m, 19 t, 17 kW | 10 m, 12 m, 48 t, 34 kW | 6 m, 5.8 m, 5.4 t, 14 kW |
+
+A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. A module's bin holds what its volume holds (size cubed, rounded), so
+it takes about 40 s to fill at every tier. A machine's mass and health go by its size squared: 420 kg (Smelter), 240 kg (Sawmill), 480 kg (Foundry) or 150 kg (Assembler) a square metre of width, and 800, 500, 900 or 500 health.
+Fitting time grows from x1 to x2.
+
+- **A building, not a brick.** Boxes are in units of the machine's width (`BIG_WIDTH`), so every socket lands on the 0.25 m grid and a building has no pads. Each has a floor plate you step onto (2% of its width), stepped solids and
+  open space: a Smelter or Foundry has an aisle across it, between the furnace and the tray, wide enough to walk through at every tier; a Sawmill is two open bays and a saw frame; an Assembler is an open frame with a low hopper at the back. Less than 55% of the bounds is solid.
+- **Reach.** A part wider than 3.2 m a side (`ConstructEdits.BigPartHalf`) is reached at the point of its bounds nearest the eye, not its centre (`ConstructEdits.ReachPoint`): the attach tool, paint, configure tool, F and the look ray agree, and you use a 10 m machine from beside it. A smaller part keeps the old rule.
+- **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap starts at 5,000 kg ([tool upgrades](../TOOL-UPGRADES.md) raise it to 80 t), so a heavy machine goes on by the attach tool or stays where it was built.
+
+- **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
+  a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
+  `tools/constructs/machine_tiers.py` writes all 30 files from one table per line and `tier_style.py`: fix them, not their
+  output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
+- **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
+  rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
+  length: the bit is thicker but still reaches 1.2 m under the part, so a tier 5 drill suits the ground clearance a tier 1 does, and a bit
+  still has to be within 25 cm of the ground. A hole is the same at every tier (radius 1.4 m, depth 1.5 m); `DrillShaft`
+  reads the bit's world height, so it needs no change. A saw's blade and work box grow in full, so it reaches further
+  (3.1 m round the work box's centre at tier 5).
+- **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. A tier 2 module's 1.25 m body falls between two grid lines, so its
+  side and back sockets stand on small solid mounting pads at 0.75 m (a drill's are at 0.5, 0.5, 0.5 and 0.75 m). Bottom sockets stay at the origin, side and back ones on the
+  outer faces. A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
+  frame. A building needs a 4 m slab at least, and a tier 3 or bigger overhangs that: its bins and battery go on further slabs, clear of it and within a chute segment (8 m) of its ports.
+- **The look and the shape.** Each tier of each line has its own solid body, proportions and details, written in `tools/constructs/tier_style.py`
+  (`PALETTE`, and `look(name, tier)`: `solid`, `detail`, and `hopper` when the body moves the input bin up or down); the numbers stay in `machine_tiers.py`. A line reads as itself at every tier, and a tier reads the same across lines:
+  - **Scrap**: lashed up. Rust in uneven tones, mismatched plates, timber, bolted-on drums. A timber derrick, a slatted crate, a trestle mill, a squat kiln, two odd kilns, a timber frame.
+  - **Workshop**: built by a craftsman. Blue paint on cast iron, cream trim, rivets. A pillar drill, a square bin with a motor, a cast mill frame with a flywheel, a brick-bodied furnace with one stack, a matched pair of towers, a machine-tool frame.
+  - **Industrial**: tall and busy. Concrete grey and safety yellow, pipes, valves, hazard stripes, ladders. A stepped tower with landings, a raised cab and twin arms, a full-width gantry, a blast furnace with a stepped ramp, a stepped tower pair and pipe bridge, a bridge crane.
+  - **Military**: low and hard. Olive armour on slopes, pale stencil bands, sandbags, cages, no bare pipework. A casemate with a thin mast, a hull with a wedge nose, a low blade housing, a bunker furnace, a long bunker with stub stacks, a low shelter.
+  - **Plasma**: clean curves. Dark rounded shells, glowing strips and rings, a violet core. A slim pod on a neck, booms with ring blades under a capsule roof, a standing ring round the blade, a ring chamber round the core, twin capsule pods, a slim frame with a ring for the arm.
+
+  Fixed at every tier: the rates, bins, power, mass, health, armour, widths, the bit's reach, every socket and port, the trays, and the aisle. A building's height is a range of its width (`TierHeights` in the self-test); a drill's top is always its shaft socket. A big shape is a solid box drawn as a detail shape, the box itself `"hidden"`, so the collider stays boxes. Every machine says `"collider": "boxes"`, so with the compound collider a wedge or cylinder detail stays a look.
+  **"Machine tier looks"** checks that tiers of a line differ pairwise in solid shape (cells of its own size) and in colour, that each keeps the line's signature, and that details stay clear of sockets, ports, bins, trays, aisles and the assembler's open front and near the machine.
+  `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 256 boxes (it was 32 while each box was a draw; static parts are merged meshes now, docs/render/MERGED-MESHES.md), and a box may reach 16 m from its origin
+  (`ConstructParts.MaxPartReach`), for the tier 5 stacks. No part animates its work yet: only wheels, joints, dials and pistons move.
+- **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
+  default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
+  line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
+  below it takes nothing: a chute's load stays in the source, F passes over that material, and the look line says why
+  ("chute refused: copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"; an empty one, "takes iron ore, sand (copper
+  ore needs tier 2, gold ore needs tier 3)"). A drill taps the strongest deposit under it with anything left, so one over iron
+  and gold where gold is stronger refuses, however much iron is there.
+- **Rates in a step.** The 10 Hz steps add up exactly: a module's units are thousandths, a machine's work is thousandths of a
+  tick, and a fast machine finishes several batches in a step. A step takes no more than the bin has room for, so nothing
+  tapped is lost.
+- **Chutes.** A move carries the larger `chuteLoad` of its two ends, so a chute keeps up with the machine it serves and two
+  plain bins still move 10 a second.
+- **The wire.** Nothing changed (protocol 114): a part's tier and the tables are data on every peer, and the refused material was already
+  on the wire, so a client works out the same look line.
+- **The inventory.** All 30 are in the **Production** category, sections Drills, Saws, Sawmills, Smelters, Foundries and Assemblers, in tier order, with the sub-components in Components.
+
+Not yet (choices made, the developer may change them): tiers cost what their recipe says in survival, but nothing unlocks them, since scanning isn't built;
+a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing
+stops a truck taking that on; a drill's hole digs faster at a higher tier but is the same size; the Recycler has no tiers. **Self-test**: `Source/App/SelfTestMachineTiers.cs`,
+run from "Gathering", "Gathering network", "Refining" and "Refining network".
+
+## Assembling
+
+The step after refining: an **Assembler** builds parts from what the chains make. Code: `Source/Constructs/ConstructAssembling.cs`, `ConstructAssemblingTable.cs`; generator: `tools/constructs/assembling.py`.
+
+- **The part** (`Constructs/Parts/Assembling`, attach tool, physics-only, five tiers: [Machine tiers](#machine-tiers)): an open gantry 2 to 6 m wide, with a low hopper at the back (its input), a tray at the front (its output) and an arm. `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers: 4 a tier), and `outAt`, `outDir`, where a body leaves. Its `slots` are the tray.
+- **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
+- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`).
+- **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
+- **Written and generated.** `tools/constructs/assembling.py` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
+
+| Example (by hand) | Takes | Seconds | From tier |
+| --- | --- | --- | --- |
+| Gear Set | 5 steel | 4 | 1 |
+| Tyre Carcass | 4 rubber + 2 cloth | 5 | 1 |
+| Wheel | 2 steel + 1 Tyre Carcass | 5 | 1 |
+| Transmission | 8 steel + 2 Gear Set | 12 | 1 |
+| Piston Set | 4 steel + 2 bronze | 8 | 2 |
+| Wiring Loom | 2 copper + 1 rubber | 3 | 2 |
+| Engine | 20 steel + 2 Piston Set + 1 Wiring Loom | 20 | 2 |
+| Circuit Board | 2 circuits + 1 laminate | 4 | 3 |
+| Battery | 4 copper + 2 circuits | 8 | 3 |
+
+  A tier 1 machine asks only what a tier 1 Assembler can make, so survival can start: a Smelter is 643 steel, 322 concrete, 129 rubber and 2 Gear Sets.
+- **Input.** Materials sit in the mixed input, parts in the store's kinds. Chutes bring both, as many at once as you run: a chute from a bin brings a load of a material the recipe uses; a chute from a shelf or a Storage Volume brings one part a second that the recipe wants, passing over others. What it can't use stays in the source, and the look line says so. Each input holds up to `batches` of what a batch asks. F, in order: the held part if the recipe wants it, the materials it wants from what you carry, a part off the tray, then its input back, which clears a machine whose recipe changed.
+- **Output.** An item lands on the tray, in a pile of 12 a slot, and a chute, F or a beacon takes it as from any slots; nothing can be set in. A physics-only part, or one too big for a slot, leaves as a body at the output point, its near side at the point, level, and owned as the machine is. If the world or a player is in the way (or there is no room for another construct) the batch waits with its inputs, draws nothing, looks again twice a second and says why.
+- **Same rules as the machines.** The batch's inputs go when it is done, so power cut or broken loses nothing. It needs power in survival (`ConstructRecycler.Powered`), draws only while it works, and takes a **Run** wire. In creative (`CreativeRecycling`) it builds a batch a step, unpowered. Its input counts in the mass (`LoadOf`), and a broken one spills its input and tray.
+- **Beacons.** A network reads the tray and can take from it. It never sees the input or fills the tray (`SlotCheck.OutputOnly`).
+- **The look line**: "Workshop Assembler (Engine): in 12 steel + 1 Piston Set, tray 0 - needs 20 steel (a batch: 20 steel + 2 Piston Set + 1 Wiring Loom) - F: tip in your 8 steel". Worked out from the store and the table on either side.
+- **The Assembly Bay** blueprint: a Workshop Assembler set to Engine, a slab of bins, shelf, Chest and Battery beside it, and chutes to and from its ports.
+- **Network (protocol 118).** The recipe is a setting; the mixed input is the Foundry's (bit 64), the parts input is a store's kinds (bit 16), and bit 128 of the flags byte adds u8 blocked and u16 refused part. The job is server-only, and a body is any other construct.
+- **Performance.** `ConstructAssembling.Step` runs at 10 Hz and looks only at constructs with `HasAssembler`; a recipe is an array index; nothing allocates except the body a batch makes.
+
+**In survival ([Creative or Survival](overview-and-playing.md#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Tier 1 machines ask only for what a tier 1 Assembler can make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun starts at 1,500 kg (a player's Lift Coils raise it), so a heavy built machine stays where it left until the attach tool fits it.
+
+**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, tier gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
+
+Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches a tier; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
+
+## Build stations
+
+The developer's intent: "encourage players to invest in a nice building area with connection to all their available parts". A build station is a
+machine you attach to a base, power and chute to your stores; in its range it gives one building aid. Survival needs the stations; away from the
+base you build by hand. Code: `Source/Constructs/BuildAids.cs` (the aids, the view, the one rule), `ConstructBeacons.cs` (states), `ConstructEditsAids.cs`
+(server: who has what, parts, the gantry's reach), `ConstructMirror.cs`, `ConstructLine.cs`, `ConstructReplace.cs`, `Source/Game/GameSandboxAids.cs`
+(view per player, `CActKind.BuildAid`), `Source/App/Program.SandboxAids.cs` (keys, modes, build bar), `Program.SandboxGantry.cs`, `Source/UI/UiBuildAids.cs` (the picker).
+
+- **A station is an Inventory Beacon with an aid.** Its `storage.beacon` id names the aid, so power, Run, wreck, chute network, owner and range are the beacon's rules
+  (`ConstructPartDef.Aid`), and in range it serves its network just as a beacon does: Tab opens on it, parts taken off go back to it. All stations on a build area share
+  one battery circuit and chute network. `Constructs/Parts/Stations` is written by `tools/constructs/station_parts.py` (mass, power, shapes; the last box is the lamp).
+  Ranges are in `Constructs/Beacons.json`. Recipes are in `tools/constructs/assembling.py` (tier 3). At most 256 beacons and stations, 64 networks.
+
+| Station | Aid (key) | Range | Mass, power |
+| --- | --- | --- | --- |
+| Mirror Table | Mirror (M) | 90 m | 160 kg, 150 W |
+| Line Layer | Line and fill (O) | 90 m | 180 kg, 150 W |
+| Replacer | Replace (P) | 90 m | 170 kg, 150 W |
+| Build Gantry | Gantry camera (U) | 120 m | 420 kg, 300 W |
+| Selector | Box select | 90 m | 140 kg, 120 W |
+| Blueprint Desk | Save and stamp | 90 m | 150 kg, 120 W |
+
+- **The one rule.** `BuildAids.Free(infiniteParts)`: creative needs no stations (decision below). The server's `ConstructEdits.AidWhy` and the client's `Game.SandboxAidLive` both ask it.
+- **Parts.** `ConstructEdits.TakeForAid`: creative makes them; survival takes from the inventory, then the network, then the hands. A physics-only piece (nearly all structure,
+  all capital parts) is never stored or carried (decision 21), so an aid takes it from **loose pieces within 60 m**, yours or nobody's: a stock yard beside the build.
+  Short: it places what it can and says how many are missing. Aiming MMB at a physics-only part with a mode on (or clicking one in the inventory) picks it for the aid; it needs the attach tool.
+- **Mirror (M: off, side to side, front to back, up and down; Page Up / Down: move it).** The plane is the table's `mirrorAxis` and `mirrorOffset` settings (the configure tool shows them too, and they save with
+  the part); in creative with no table it is the player's own. It is measured from the built-on construct's drive seat, else its root part, square to that part's axes, so one table serves every construct
+  in range. A fit or a removal also happens to the image, in the same server action; a part across the plane is its own image. The image's turn is found by shape (`ConstructMirror.TurnOf`, cached):
+  of the 24 turns of the part and of its Left / Right partner by name, the one whose boxes and sockets land on the reflected ones. A part with handedness and no partner takes the nearest turn and the HUD says so; a side with
+  no free socket says so. The image of a stroke is not mirrored again. freeform-attached pieces aren't mirrored, and neither are the attach tool's socket and point attachments: only the held-part fit, the Line Layer and removal.
+- **Line and fill (O).** Press on a ghost and drag: the run lies in the rest-frame plane square to the view at the press, along its two axes, so a straight drag is a row and a diagonal one a field (at most 400 cells).
+  The pitch is the next matching socket along the row if there are sockets to follow, else the part's own opposite sockets, else its size. Each cell goes through `ConstructAid.FindFit` (a pose to a free socket, by the rules of a click), in order, so a cell lands on an existing socket
+  or on the cell before it. Nothing is sent until the release, so a press with no drag is one part and a stroke never acts on what it made (the `SnapStroke` lesson); RMB cancels. One `BuildAidOp.Line` a stroke. The start part is stamped with its kind and place. The look line shows the run, what is short and the mass; the ghosts are made again only when the run changes.
+- **Replace (P).** Aim with a part in hand (or picked) and click; with none, a click opens the picker: every part of the size class that fits, with what you have. The part keeps its index, so joins, wires and links stay;
+  a link moves to the new part's matching socket, a routed link's port to the same name, else type and way. Its setting values carry over by key, its paint stays, its health stays as a share. `ConstructReplace.Plan` says why not: a connection that doesn't meet, something in the way, a store with something in it, a link with nowhere to go.
+  It refuses joints that carry something, merged or builder receivers, volumes, hoses, freeform attachments, couplings and world links: take those off and fit the new one. The old part goes back as a part taken off does; a physics-only one is set loose above its place.
+- **Build Gantry (U).** Aim at a construct (or nearest within range): the camera leaves the body, which stands parked with its inputs off. The mouse moves a cursor, **Left Alt** and the mouse orbits, the wheel zooms up to the range, the move keys slide the point. Every tool works along the cursor's ray.
+  Page Up / Down steps a build plane (0.5 m): a ray that meets nothing crosses it, and the nearest free socket to that point takes the part. The server's reach check passes anything within the gantry's range of the station (`ConstructEdits.GantryReach`), never of the body. It ends on the key, on damage, if the construct goes, or when the station fails or the player leaves its range.
+- **The build bar.** Bottom centre with a tool out: one icon per aid (green edge: on here; filled: in use; red edge: a station in reach but off; grey: none near), its key, and a line in the tooltip format for what is running. A refused key says why ("Line Layer: off - no chute network - link a chute to a store"), as does the look line on a station.
+- **Network.** `CActKind.BuildAid`, u8 `BuildAidOp`, then its fields. `CBodyKind.Aids`, to its player on a change: state, range and distance of each aid, the mirror plane, the gantry flag. The view is worked out at 4 Hz with the beacons' nodes; nothing allocates in a steady tick and ghosts are made again only on a change.
+- **World saves.** Stations are ordinary parts and the plane is a part setting, so a save needs nothing new. A player's own creative plane and the gantry aren't saved.
+
+Decisions (the developer may change them):
+
+- Creative needs no stations (`BuildAids.Free`, one line). The stations can still be built there.
+- A station also serves its network as an Inventory Beacon does, so a build area needs no separate beacon. The beacon stays the cheap way (60 m, no aid).
+- A mirrored, line or swapped part is instant, on top of the first fit's own time: the stations are what you paid for that speed.
+- Loose physics-only pieces are the aids' stock, within 60 m of the eye (`ConstructAid.StockReach`).
+- Line reach is the Line Layer's range from the eye, and in creative too. 400 cells a stroke.
+- The plane steps 0.125 m, the gantry's plane 0.5 m. Being hit ends the gantry; the body isn't made immune.
+- Keys: M, O, P, U, Page Up / Down, Left Alt (binds version 19).
+
+## Build stations: the Selector and the Blueprint Desk
+
+Two of the build stations (`Constructs/Parts/Stations`; the framework, ranges and rules for a station are the stations' own: a station is a beacon whose `storage.beacon` id names its aid, and
+creative needs none, `BuildAids.Free`). The **Selector** (aid `Select`) works on a group of parts of one construct; the **Blueprint Desk** (aid `Blueprint`) saves a group and stamps it elsewhere.
+Every action asks `ConstructEdits.AidWhy` on the server and `Game.SandboxAidLive` on the client; the reason shows on the look line.
+
+**The selector** is a tool like the others, held model `Constructs/Tools/SelectorTool.json`, `ConstructTool.Selector`. It has no slot on the tool wheel (the wheel's compass is muscle memory): the full stop
+(`SelectTool`, rebindable) takes it out or puts it away, the Tab inventory's Tools tab lists it, and stamping brings it out. Its reach is `ConstructEdits.AidReach`, 64 m from the eye.
+
+| Input | What it does |
+| --- | --- |
+| LMB | Picks the part under the crosshair. Shift: adds it, or takes it away if it is selected |
+| LMB, drag | A box in the construct's frame, corner to corner: every part it touches. Shift adds; Shift starting on a selected part takes away |
+| LMB, drag from open ground | A box on the world, from just under the drag to 48 m above it, for mass selection: a construct whose middle is in it comes whole, one that only reaches in comes with the parts whose middles are. Shift adds. The ground is never selected or saved. Only what the player may delete, within reach |
+| Double-click | The whole connected section: every part reached over links without crossing a joint |
+| RMB, drag | A rectangle on the screen from the crosshair; the view holds still. It takes the parts whose middles are in it. Shift as above |
+| RMB | Clears the selection |
+| M, O, P, U | Move, copy, paint (the paint tool's colour; Reset resets), attach. The stations' switches on these keys are off while the selector is out (`Keybinds.Overlap`) |
+| Delete, twice | Deletes the group |
+| Comma | Saves it as a blueprint (needs a live Desk) |
+
+**Placing** (move, copy, stamp): a ghost follows the crosshair and rests on what is aimed at, or floats at a distance (the wheel). R turns it, the arrows tip it (`GhostTurn`), LMB places, RMB or Esc stops. Aimed at a part
+with a free structural socket on the construct's body it snaps there: the clip mates by its own free sockets, outermost first (K: the next one; R: the next spin). A copy or stamp stays up to place again. What lands free is **frozen
+where it is** (`Construct.Frozen`, as the physics gun freezes), so a group doesn't fall as it lands; the physics gun lets it go. What lands on a socket is attached on (`ConstructPlace.FindJoin`, `ConstructWorld.Merge`). A selection in pieces
+lands as a body each.
+
+**Delete** in creative destroys the parts (containers spill). In survival they come back: through a station's chute network if it has room; else the hands, the backpack or the ground, for up to `MaxDrops` (16) parts. With more than that which can't
+go on a network (physics-only, wrecked, or no network), those stay together as one body where they were, not a heap of 2,000 bodies. A refund past a full network is counted on the player.
+
+**Paying** (survival, a paste or stamp): the ghost's line says how many parts are out of reach, and the server checks before it takes anything: the inventory, then the network (`TakeForAid`), and for a
+physics-only part, which storage never holds, loose bodies of that part within reach. Short: the refusal lists what is missing, and if another player got there first what was taken goes back. A move costs nothing.
+
+**The selection** (`PartSelection`) is a stamped list: each part with its type, place and turn, checked against the construct every frame. A part another peer renumbered is found again by its stamp; one that went drops out. The server gets it in chunks of
+`MaxChunk` u16 part indices, with a hash of those parts' places and turns (never ids: extrusions differ between machines); a hash that doesn't match refuses: "that construct has changed".
+
+**The clip** (`ConstructClip`) is a group held apart from the world: a construct in a `ConstructWorld` of its own, parts in the order a blueprint builds them, numbers in the rest frame they came from. `ConstructWorld.CopyPiece` makes one from a selection and puts one into the real world (a
+design only: settings, paint, links, joints, routed links; not health, rounds or contents). A move doesn't copy: `ConstructWorld.CutOut` takes the parts out as they are, contents and all, through `SplitOff`, and what that cuts off falls away as a wreck as any removal does. The same selection gives the same clip
+on server and client, so the ghost is what the server places.
+
+**Time.** Selecting and painting are instant. The one structural edit is one tick; checks, payment, refunds, joins and a blueprint's build run as jobs of `ConstructEdits.SelectTick`, 2 ms a tick over all players. A big group's join links through the part tree (`AutoLinkMany`), so joining stays linear. Warm on a
+7,921-part hull, 2,000 parts on the 2-core container under load: the request about 1 ms, the commit about 2 ms, the rebuild about 1.5 ms, `WriteFull` under 1 ms. A ghost draws its first `MaxGroupBoxes` boxes and a frame round the whole; the selection outlines its first `MaxOutlines` parts.
+
+**Blueprints** go in the save folder's `ConstructBlueprints` folder, one file each, named after the blueprint (letters, digits, spaces and `- _ ( ) . '`, at most 32; a name in use asks). A file is a real blueprint in the shipped format, and goes by part name, so it can be dropped in `Constructs/Blueprints`. `ConstructClip.ToBlueprint` writes it: a step per part in the clip's order, on the
+A saved blueprint records what is, not what the rules would make now. Each step has an `"at"` (the part's place, relative to step 0), so a part stands exactly there even if its socket link is 2 cm out or it overlaps a neighbour; its links are written out too (`"exactLinks": true`, and a step's `"also"`: `[step, their socket, its socket]` for each further link to an earlier step), and a file with `"exactLinks"` makes no others by parts landing on free sockets, because a clip's order isn't the order the parts went on and a free socket here could take one a later step needs; each link has `"laid": true` and `"hosts"` (each node's step), so only its ends and lengths are checked, never its route again, and a blueprint link can carry `"paint"`. A shipped blueprint needs none of these. All of a link's points are relative to step 0, because a selection doesn't start at the construct's origin. A link with an end outside the selection is left out, and the save window says how many; a refusal names what can't build.
+earliest step it hangs on, by the sockets they meet at; a freeform attachment is a `"weld"` step, and a piece no link joins to the rest has no `"socket"`: it just stands at its `"at"`, and lands as a body of its own. A save is built back from its own text before it is written, and must give every part. Save needs only the client's copy, so it is a client-side action; the Desk check there is the client's. All 46 shipped blueprints without cargo round-trip. Contents and merged receivers' gun parts don't go in a blueprint (the save says so).
+The Tab inventory's Blueprints tab lists them above the shipped ones, with a filter, Stamp and Delete (a survival inventory shows only these). A stamp goes up to the server as deflated text in `UploadChunk` pieces; the server parses it off the game thread, builds it step by step on a scratch world through the normal rules (`ConstructBuild.BuildSteps`), and refuses a part it doesn't have by name.
+
+**Wire**: `CActKind.BuildAid` with `BuildAidOp.Select`, then a `Game.SelOp` (`GameSandboxSelect.cs`). Server: `ConstructEditsSelect.cs`. Client: `SelectController.cs`, `Program.SandboxSelect.cs`, `ConstructRenderSelect.cs`, `UiSandboxBlueprints.cs`.
+
+Choices made (the developer may change them):
+
+- A selection is one construct, unless a box from open ground or Shift reaches others (at most 256). On several, paint, weld and delete go to each in turn; move, copy and save say they need one construct.
+- Free landings freeze; attached ones don't.
+- Nothing on the wheel: a tenth segment moves every tool on it.
+- Physics-only parts are paid in loose bodies near the player.
+- A stamped blueprint's fuel and charge are what fitting new tanks and batteries gives (full), as for any blueprint.

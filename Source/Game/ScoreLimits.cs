@@ -12,7 +12,7 @@ public enum ScoreLimitMode : byte
 /// bots). With Auto, a match with N players (people + bots) plays to
 ///   limit(N) = round(Base * (n / 8) ^ Exponent) to a multiple of Step, at least Min,  n = N clamped to 2..32,
 /// so the limit at 8 players is the classic one and it never goes down as N goes up. The exponents come from
-/// measured bot matches (docs/SCORE-SCALING.md; the self-test's "Score scaling" section measures them again).
+/// measured bot matches (docs/archive/SCORE-SCALING.md; the self-test's "Score scaling" section measures them again).
 /// </summary>
 public static class ScoreLimits
 {
@@ -22,7 +22,7 @@ public static class ScoreLimits
     /// <summary>One mode's rule: the classic limit, how fast it grows with players, its rounding step and floor.</summary>
     public readonly record struct Rule(int Base, double Exponent, int Step, int Min);
 
-    // Measured with bot matches on three maps (docs/SCORE-SCALING.md): the limit that takes as long at N players as the
+    // Measured with bot matches on three maps (docs/archive/SCORE-SCALING.md): the limit that takes as long at N players as the
     // classic one does at 8 grows about as (N/8)^0.85 in free-for-all (more targets around, and the leader is the best
     // of more players) and (N/8)^0.8 in Team Deathmatch. King of the Hill and Capture the Flag showed no clear trend
     // (bots rarely finish them inside 10 minutes), so they keep their classic limits. Each rule lives with its mode

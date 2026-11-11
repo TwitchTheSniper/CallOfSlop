@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Mass horde" (docs/zombies/MASS-HORDE.md, the spike): Mass Horde Test's crowd of 5,000, 10,000 and
+/// Self-test section "Mass horde" (docs/sandbox/MASS-HORDE.md, the spike): Mass Horde Test's crowd of 5,000, 10,000 and
 /// 20,000 zombies for 4 seconds each (short and seeded): the server tick's CPU mean and worst (Windows thread cycles:
 /// every count must stay under the 8 ms budget), the CPU a frame spends preparing the crowd's instances, allocations, memory, Msg.ZCrowd's bytes per client (per-cell
 /// counts and headings) read into a client, promotion and demotion (the player walks off: far individuals go back to the crowd, near particles

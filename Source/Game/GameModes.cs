@@ -17,7 +17,7 @@ public enum GameMode : byte
     GunGame, // everyone climbs the same weapon ladder; first kill with the last gun wins
     Zombies, // co-op (1-4) against rounds of zombies, World at War style; only on maps with a "zombies" section (ZombiesMode.cs)
     LastManStanding, // one life each (the template mode, Dev-only: Source/Game/Modes/README.md)
-    Coop, // co-op PvE missions against waves of enemy soldiers; only on maps with a mission (docs/pve/DESIGN.md)
+    Coop, // co-op PvE missions against waves of enemy soldiers; only on maps with a mission (docs/archive/PVE-DESIGN.md)
     TestRange, // free-for-all with no win condition: no score or time limit, the match never ends, the map stays
     Sandbox, // build and drive constructs from parts with tools in hand; only on maps with a "sandbox" section (docs/sandbox/CONSTRUCTS.md)
 }

@@ -5,7 +5,7 @@ using static Brutal.OpenGlApi.OpenGl;
 namespace CallOfSlop;
 
 /// <summary>
-/// The mass horde's crowd on the GPU (docs/zombies/MASS-HORDE.md, "Rendering"): one instanced draw per level of detail.
+/// The mass horde's crowd on the GPU (docs/sandbox/MASS-HORDE.md, "Rendering"): one instanced draw per level of detail.
 /// Each rig (<see cref="CrowdRig"/>) is its boxes' cubes in one vertex buffer (each vertex knows its box), and its walk
 /// cycle a float texture; per instance 16 bytes (<see cref="CrowdInstance"/>: position, yaw, walk phase, brightness,
 /// the debug tint, held). The vertex shader reads the box's transform for the frame (texelFetch) and places it; the

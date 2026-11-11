@@ -39,7 +39,7 @@ public sealed class PartRegistry
     /// <summary>
     /// The bore table the game ships (also in Parts/_Registry.json): how each bore adapts a barrel (pistol smaller, heavy
     /// bigger) and the calibre it fires (base damage, range, pellets, fall-off and headshot multiplier: what the receiver
-    /// gives a round before the ammo part's own modifiers; docs/zombies/WEAPON-BUILDER.md, "Universal ammo").
+    /// gives a round before the ammo part's own modifiers; docs/sandbox/WEAPON-BUILDER.md, "Universal ammo").
     /// </summary>
     public static readonly Dictionary<string, BoreClass> BuiltInClasses = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -225,7 +225,7 @@ public sealed class PartRegistry
 }
 
 /// <summary>
-/// How a calibre class adapts a barrel hung under a receiver of that bore (docs/zombies/WEAPON-BUILDER.md, "Barrels and
+/// How a calibre class adapts a barrel hung under a receiver of that bore (docs/sandbox/WEAPON-BUILDER.md, "Barrels and
 /// receivers"): <see cref="Scale"/> sizes the barrel's model (width, height, length; 1 = as drawn for a rifle),
 /// <see cref="Strength"/> scales the barrel's own stat modifiers (a x1.4 range barrel at strength 0.5 gives x1.2), and
 /// <see cref="Pellets"/> says whether barrels may change the pellet count (only shotguns: a choke on a rifle shouldn't
@@ -249,7 +249,7 @@ public readonly record struct BoreClass(Vector3 Scale, float Strength, bool Pell
 }
 
 /// <summary>
-/// What a bore's rounds do before the ammo part changes them (docs/zombies/WEAPON-BUILDER.md, "Universal ammo"): the
+/// What a bore's rounds do before the ammo part changes them (docs/sandbox/WEAPON-BUILDER.md, "Universal ammo"): the
 /// damage per projectile, full-damage range, projectiles per round (shells fire 8 pellets), damage left at long range
 /// and the headshot multiplier. A receiver's own stats apply on top (a revolver's headMult), then the ammo's relative
 /// modifiers.

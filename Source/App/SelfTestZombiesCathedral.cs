@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Zombies cathedral" (board item dev-zombies-cathedral-zc01; docs/zombies/ZOMBIES-MODE.md, "Ashgrave
+/// Self-test section "Zombies cathedral" (board item dev-zombies-cathedral-zc01; docs/archive/ZOMBIES-MODE.md, "Ashgrave
 /// Cathedral" and "The bell: a siege up the tower"): what the map's own "test" block can't say about Ashgrave Cathedral.
 /// <list type="bullet">
 /// <item>The layout: the Zombies pack, a full set (every perk, a slot machine for every part category and the classic one,

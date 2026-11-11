@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Horde stress" (docs/zombies/MASS-HORDE.md, "Horde Stress"; Dev/HordeStress.json). Short and
+/// Self-test section "Horde stress" (docs/sandbox/MASS-HORDE.md, "Horde Stress"; Dev/HordeStress.json). Short and
 /// seeded, at a small size (600, the crowd walking six times as fast so the whole descent fits in about a minute of
 /// game time, the zombies tick alone): the three hordes seeded on their staging pads and held through the countdown,
 /// descending, merging at the rally point, advancing on the player on the Overlook and coming out as full zombies

@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// A siege up a climbable face (map logic "zclimb"; docs/zombies/ZOMBIES-MODE.md, "The bell: a siege up the tower"; the
+/// A siege up a climbable face (map logic "zclimb"; docs/archive/ZOMBIES-MODE.md, "The bell: a siege up the tower"; the
 /// Cathedral's bell tower). Started, the horde outside leaves the windows and walks to the face's foot; there the
 /// zombies pile up against the wall in a living pyramid (each newcomer takes the next place: layer by layer, the
 /// middle columns first, the bottom layers two deep), and once the pyramid stands the next ones climb over it and up

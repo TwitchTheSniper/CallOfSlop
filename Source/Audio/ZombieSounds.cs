@@ -36,7 +36,7 @@ public sealed partial class Zombie
 }
 
 /// <summary>
-/// The zombies' voices and footsteps (docs/zombies/ZOMBIES-MODE.md, "Sound"), worked out on every PC from what it
+/// The zombies' voices and footsteps (docs/archive/ZOMBIES-MODE.md, "Sound"), worked out on every PC from what it
 /// already knows about each zombie: the walk cycle gives the footfalls (a shuffle, a run or a sprint by its speed class),
 /// a new swipe the snarl, a flinch a grunt (or a screech when the server's head-hit bit is on), dying a death rattle (a
 /// cut-off screech for a headshot kill), rising or climbing in a growl, and a per-zombie timer the groans, moans and

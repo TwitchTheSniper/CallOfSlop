@@ -27,7 +27,7 @@ public sealed partial class Zombie : IHordeAgent
 }
 
 /// <summary>
-/// The Zombies side of the horde controller (docs/zombies/ZOMBIES-MODE.md, "Hordes" and "Horde controller"): the
+/// The Zombies side of the horde controller (docs/archive/ZOMBIES-MODE.md, "Hordes" and "Horde controller"): the
 /// windows become portals with queue spots, the standing players targets, and the game's events stimuli (gunfire,
 /// blasts, downs, grabbed power-ups, hurt zombies). The alive cap by round and the host's horde cap.
 /// </summary>

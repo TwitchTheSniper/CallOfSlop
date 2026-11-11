@@ -2,7 +2,7 @@ namespace CallOfSlop.MapKit.Generators;
 
 /// <summary>
 /// Maps/Dev/HordeTest.json: "Horde Test", a Zombies dev map for seeing and testing big hordes quickly (developer request,
-/// 2026-10-27: "Getting a high round in zombies takes a lot of time"; docs/zombies/ZOMBIES-MODE.md, "Horde Test").
+/// 2026-10-27: "Getting a high round in zombies takes a lot of time"; docs/archive/ZOMBIES-MODE.md, "Horde Test").
 ///
 /// A 48 x 48 m walled arena (the start area) with fifteen boarded windows in its south, east and west walls and two
 /// annexes on its north side (the Power Annex behind a door, the Armoury behind debris) with three windows each: 21

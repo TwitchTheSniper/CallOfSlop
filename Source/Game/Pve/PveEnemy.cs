@@ -22,7 +22,7 @@ public enum PveState : byte
 }
 
 /// <summary>
-/// One co-op enemy soldier (docs/pve/DESIGN.md "Enemies"). Not a <see cref="Player"/>: a pooled server-side entity with its
+/// One co-op enemy soldier (docs/archive/PVE-DESIGN.md "Enemies"). Not a <see cref="Player"/>: a pooled server-side entity with its
 /// own compact replication (<see cref="Msg.PEnts"/>). Everything inside is allocated once with the pool, so the
 /// steady-state tick allocates nothing. Clients keep one too (filled from the packets) for drawing and hit prediction.
 /// </summary>

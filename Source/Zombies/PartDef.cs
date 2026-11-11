@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// What kind of weapon part a part file describes (Zombies weapon builder; see docs/zombies/WEAPON-BUILDER.md). The set
+/// What kind of weapon part a part file describes (Zombies weapon builder; see docs/sandbox/WEAPON-BUILDER.md). The set
 /// is fixed in code (stats, rules and the workbench treat each one differently); each one's default mount and display
 /// name come from Parts/_Registry.json (<see cref="PartRegistry"/>).
 /// </summary>
@@ -42,7 +42,7 @@ public enum PartCategory : byte
     /// </summary>
     Action,
 
-    // Modular grenades (2026-10-27; docs/zombies/WEAPON-BUILDER.md, "Modular grenades"): appended after Action so every
+    // Modular grenades (2026-10-27; docs/sandbox/WEAPON-BUILDER.md, "Modular grenades"): appended after Action so every
     // older part keeps its network id.
 
     /// <summary>Grenades only: the body a grenade is built on (the root of a grenade build): weight, throw, bounce, sticky.</summary>
@@ -102,7 +102,7 @@ public enum ActionKind : byte
 
 /// <summary>
 /// Action-only data (the "action" block of an action part): the fire type and the fire rate the receiver it sits on
-/// fires at. Receivers are calibre only (docs/zombies/WEAPON-BUILDER.md, "Actions: the fire type is a part").
+/// fires at. Receivers are calibre only (docs/sandbox/WEAPON-BUILDER.md, "Actions: the fire type is a part").
 /// </summary>
 public sealed class ActionInfo
 {
@@ -286,7 +286,7 @@ public enum FireStyle : byte
 public sealed class FrameInfo
 {
     /// <summary>
-    /// How the grip fires several receivers. Fixed by the grip (the user's call, docs/zombies/WEAPON-BUILDER.md): picking
+    /// How the grip fires several receivers. Fixed by the grip (the user's call, docs/sandbox/WEAPON-BUILDER.md): picking
     /// the grip picks the style; a build has no choice of its own.
     /// </summary>
     public FireStyle Style = FireStyle.Volley;
@@ -517,7 +517,7 @@ public sealed class SplitInfo
 
 /// <summary>
 /// One weapon part, loaded from a file in the Parts folder (format "call-of-slop-part/1"; see
-/// docs/zombies/WEAPON-BUILDER.md). Parts connect through sockets into a tree with a grip at the root (holding one or
+/// docs/sandbox/WEAPON-BUILDER.md). Parts connect through sockets into a tree with a grip at the root (holding one or
 /// more receivers, each with its own barrels, feed and ammo); the
 /// tree's stats become a <see cref="WeaponDef"/> (<see cref="BuildStats"/>) and its model a gun body (<see cref="BuildModel"/>).
 /// </summary>

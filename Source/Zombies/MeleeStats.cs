@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// A built melee weapon's numbers (the Zombies melee slot; see docs/zombies/WEAPON-BUILDER.md, "Melee slot"). Made from
+/// A built melee weapon's numbers (the Zombies melee slot; see docs/sandbox/WEAPON-BUILDER.md, "Melee slot"). Made from
 /// a hilt (the root: base damage, swing time, reach, cleave, stun), a head and up to two modifiers.
 /// </summary>
 public sealed class MeleeDef

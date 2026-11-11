@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// A client's picture of the mass horde's crowd (docs/zombies/MASS-HORDE.md, "Network"): per network cell, how many crowd
+/// A client's picture of the mass horde's crowd (docs/sandbox/MASS-HORDE.md, "Network"): per network cell, how many crowd
 /// zombies are in it and which way they are heading, from <see cref="Msg.ZCrowd"/> (protocol 71). The client never
 /// knows where each crowd zombie is: its persistent visual agents (<see cref="CrowdAgents"/>) stand in for each cell's
 /// zombies, walking its heading. The individual zombies near the players come in <see cref="Msg.ZEnts"/> as ever.

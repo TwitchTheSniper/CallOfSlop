@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Zombie bodies block players (Zombies mode; docs/zombies/ZOMBIES-MODE.md, "Zombie bodies"). Every zombie that isn't dead
+/// Zombie bodies block players (Zombies mode; docs/archive/ZOMBIES-MODE.md, "Zombie bodies"). Every zombie that isn't dead
 /// is an upright cylinder at its feet (<see cref="ZBlockRadius"/>, the standing height; a crawler is a low one,
 /// <see cref="ZBlockCrawlHeight"/>). After each tick of a player's movement (server, the client's prediction and its replay:
 /// the same function on both) the player's body is pushed out of every cylinder it overlaps and the part of its velocity

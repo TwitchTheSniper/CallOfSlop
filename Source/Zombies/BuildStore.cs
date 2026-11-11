@@ -176,7 +176,7 @@ public static class BuildStore
 }
 
 /// <summary>
-/// The example builds from the design doc (docs/zombies/WEAPON-BUILDER.md, "Example builds"), made from the starter part
+/// The example builds from the design doc (docs/sandbox/WEAPON-BUILDER.md, "Example builds"), made from the starter part
 /// set. The workbench starts with them, and the self-test checks they're legal and their numbers sane.
 /// </summary>
 public static class BuilderExamples

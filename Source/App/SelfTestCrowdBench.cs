@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--crowd-bench [sizes]</c> (docs/zombies/MASS-HORDE.md, "Measurements"): headless, the CPU cost of a frame's crowd
+/// <c>--crowd-bench [sizes]</c> (docs/sandbox/MASS-HORDE.md, "Measurements"): headless, the CPU cost of a frame's crowd
 /// preparation on Horde Stress, as the host and as a client, from the player's eye on the Overlook with the real view
 /// frustum and fog, at each size (25,000, 50,000 and 100,000 unless named): while the hordes stage on their pads (every
 /// zombie in the mass tier, the worst case for a client) and after a few seconds of the descent. Writes

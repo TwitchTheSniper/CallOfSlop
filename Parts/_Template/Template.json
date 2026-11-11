@@ -6,7 +6,7 @@
 //             and redraws the preview (and the guns in your hands in the Workbench Range).
 // Check one:  CallOfSlop.exe --check-part Parts/Barrel/MyBarrel.json   (errors, sockets, where it fits)
 // Check all:  CallOfSlop.exe --check-parts            Picture:  python3 tools/parts/viz.py Parts parts.png
-// Full guide: docs/zombies/WEAPON-BUILDER.md, "Making parts". Comments (//) and trailing commas are fine.
+// Full guide: docs/sandbox/WEAPON-BUILDER.md, "Making parts". Comments (//) and trailing commas are fine.
 //
 // Space: metres, -Z is forward (towards the muzzle), +Y up, +X right. The origin is where the part plugs into the
 // socket it mounts on.

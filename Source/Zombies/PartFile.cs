@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Reads and checks part files ("call-of-slop-part/1"). Every mistake throws a <see cref="WeaponFileException"/> naming
 /// the file and the problem, in the same style as weapon and attachment files (unknown keys are errors, comments and
-/// trailing commas are allowed). See docs/zombies/WEAPON-BUILDER.md for the format.
+/// trailing commas are allowed). See docs/sandbox/WEAPON-BUILDER.md for the format.
 /// </summary>
 public static class PartFile
 {

@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// The mass horde's pace by round (docs/zombies/MASS-HORDE.md, "Pace by round"): the crowd tiers move at the same speed
+/// The mass horde's pace by round (docs/sandbox/MASS-HORDE.md, "Pace by round"): the crowd tiers move at the same speed
 /// mix the round's individuals get (<see cref="ZombiesRules.SpeedMix"/>: the shares that walk, run and sprint, at the
 /// rules' speeds times the walker type's speed multiplier, as <see cref="Game.SpawnZombie"/> and Game.SpeedOf give them).
 /// Each crowd zombie carries a speed class (<see cref="ClassOf"/>: rolled from its own number, so the same zombie gets the

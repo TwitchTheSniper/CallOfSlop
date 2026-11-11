@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Co-op enemies on the server (docs/pve/DESIGN.md "Enemies"): the pool, spawning out of sight (the director's squads),
+/// Co-op enemies on the server (docs/archive/PVE-DESIGN.md "Enemies"): the pool, spawning out of sight (the director's squads),
 /// recycling, and every hit test and damage path against them (players' shots, melee, blasts). The AI is in
 /// GamePveAi.cs, the stages in GamePveMission.cs, the packets in GamePveNet.cs, the co-op bots in PveBots.cs.
 /// Nothing here runs outside the Co-op mode: every hook checks <see cref="Enemies"/> first.

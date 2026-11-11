@@ -54,7 +54,7 @@ public sealed partial class Zombie
 }
 
 /// <summary>
-/// Zombie animation sync (docs/zombies/ZOMBIES-MODE.md, "Animation"): the server's per-tick animation byte (the board
+/// Zombie animation sync (docs/archive/ZOMBIES-MODE.md, "Animation"): the server's per-tick animation byte (the board
 /// cycle while tearing, the climb's progress while climbing), the state / swipe / landing / hurt clocks kept in server
 /// ticks on both sides (the host from its own ticks, clients from the snapshot ticks in <see cref="Msg.ZEnts"/>), and the
 /// pose input for drawing. Clients see what the host sees: every clock is the server's, read at the interpolation tick.
