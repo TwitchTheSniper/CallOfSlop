@@ -151,13 +151,13 @@ public sealed class ProductionShowcase : IPartGenerator
             Convey(exB, "Piece out", join, "Piece in 2", LineB, null, V(bIn.X, bOut.Y, bOut.Z));
             Sign(33.25f, Posts2, LineB, "Line B (planks) meets line A at the join: one rack");
 
-            // ---- The spur: a conveyor set too small on purpose, so its Extruder refuses the piece with the reason. ----------------
+            // ---- The spur: a conveyor set too narrow on purpose, so its Extruder refuses the piece with the reason. ----------------
             var exS = On("Extruder", 38.25f, Row2, Flow, paint: Spur);
             Config(exS, ("profile", "Solid bar"), ("width", 0.3), ("height", 0.3), ("cutLength", 1.0));
             Feed(StockOf("metal", 36.25f, Row2), exS);
             var spurRack = On("Piece Rack", 42.25f, -10.75f, Flow, "-y.0.0", Spur);
             Convey(exS, "Piece out", spurRack, "Piece in", Spur, new Vector2(0.1f, 0.1f));
-            Sign(39.75f, Posts2, Spur, "Too small on purpose: see the Extruder refuse the piece");
+            Sign(39.75f, Posts2, Spur, "Too narrow on purpose: aim the linking tool, wheel to widen");
 
             // ---- 6. The wheel line: a Wheel Former, a conveyor, a Piece Rack. ----------------------------------------------------
             var former = On("Wheel Former", 52.25f, Row1, Flow, paint: Wheels);
@@ -165,7 +165,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("rubber", 52.25f, -7.25f), former);
             var wheelRack = On("Piece Rack", 56.25f, -4.25f, Flow, "-y.0.0", Wheels);
             Convey(former, "Piece out", wheelRack, "Piece in", Wheels);
-            Sign(54.75f, Posts1, Wheels, "Set this conveyor too small with the mouse wheel: a refusal");
+            Sign(54.75f, Posts1, Wheels, "Narrow this conveyor with the linking tool's wheel: a refusal");
 
             // ---- 7. Orders: a second Line Console on both Extruders and the Wheel Former, its bill already on it. ------------------
             var orders = On("Line Console", 24.25f, Posts1, Front, paint: Control);

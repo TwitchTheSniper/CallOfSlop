@@ -136,6 +136,7 @@ public sealed partial class ConstructEdits
                     return bad;
                 r.ConvW = (ushort)w;
                 r.ConvH = (ushort)hh;
+                c.Wake(); // (the machine at its start retries the piece waiting on its die at its next step: ConstructExtruder, ConstructPress)
                 world.StructureDirty.Add(c.Id);
                 Done.Add($"player {player}: conveyor on construct {c.Id} set to {w} x {hh} cm");
                 return null;

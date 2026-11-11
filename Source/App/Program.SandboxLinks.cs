@@ -30,6 +30,8 @@ public static partial class Program
     private static string _lkLabel = ""; // "Drive shaft from Engine: Drive out": the link being made, for the HUD
     private static long _lkMarkKey = long.MinValue;
     private static readonly string[] _lkMarkText = new string[ConstructRoutes.MaxLinkPorts];
+    private static readonly string?[] _lkMarkWhy = new string?[ConstructRoutes.MaxLinkPorts]; // "Name - why it can't": shown only on the port under the crosshair
+    private static int _lkMarkNear = -1; // (of this frame's markers: the one nearest the crosshair)
     private static readonly bool[] _lkMarkOk = new bool[ConstructRoutes.MaxLinkPorts];
     // The port markers to draw this frame: found in the input phase, drawn in the ImGui pass (DrawLinkMarkers). Input runs
     // before ImGui's NewFrame, when ImGui has no font, and text drawn there crashed the game natively (lc01, reopened).
@@ -163,8 +165,14 @@ public static partial class Program
         var n = _lkMarkN;
         _lkMarkN = 0;
         for (var i = 0; i < n; i++)
-            if (_lkMarkText[_lkMarkIdx[i]] is { Length: > 0 } text)
-                Hud.WorldLabel(_lkMarkAt[i], text, _lkMarkCol[i], 0.95f, 13f * Ui.Scale, 12f);
+        {
+            // (the reason a port can't take the link only on the port under the crosshair: the rest their names, those it can't use dimmed)
+            var k = _lkMarkIdx[i];
+            var ok = _lkMarkOk[k];
+            var text = i == _lkMarkNear && _lkMarkWhy[k] is { } why ? why : _lkMarkText[k];
+            if (text is { Length: > 0 })
+                Hud.WorldLabel(_lkMarkAt[i], text, _lkMarkCol[i], ok || i == _lkMarkNear ? 0.95f : 0.5f, 13f * Ui.Scale, 12f);
+        }
     }
 
     /// <summary>The mouse wheel: true while a node is being adjusted (LMB held): the wheel moves it, not the weapon or the wheels.</summary>
@@ -323,6 +331,7 @@ public static partial class Program
         // The preview.
         RouteRender.PreviewBody = c;
         RouteRender.PreviewType = type;
+        RouteRender.PreviewWidth = 0f;
         var hostSeg = (byte)c.Parts[Math.Min((int)_lkAdjHost, c.PartCount - 1)].Seg;
         switch (_lkAdj)
         {
@@ -410,13 +419,16 @@ public static partial class Program
             for (var i = 0; i < n; i++)
             {
                 var why = routing ? ConstructRoutes.EndWhy(c, hit.Part, _lkType, fluid, _lkAll[i]) : ConstructRoutes.StartWhy(_lkAll[i]);
-                _lkMarkText[i] = routing && why != null ? $"{_lkAll[i].Name} - {why}" : _lkAll[i].Name;
+                _lkMarkText[i] = _lkAll[i].Name;
+                _lkMarkWhy[i] = routing && why != null ? $"{_lkAll[i].Name} - {why}" : null;
                 _lkMarkOk[i] = routing ? why == null : _lkAll[i].FreeOut || _lkAll[i].FreeIn;
             }
         }
         c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
         var dataSeen = 0;
         var m = 0;
+        var nearD = float.MaxValue;
+        _lkMarkNear = -1;
         for (var i = 0; i < n; i++)
         {
             ref var p = ref _lkAll[i];
@@ -428,6 +440,11 @@ public static partial class Program
                 continue; // (a pose not received yet: nothing to place it at)
             _lkMarkIdx[m] = (byte)i; // (the text stays cached at index i)
             _lkMarkAt[m] = at;
+            if (Vector3.DistanceSquared(at, hit.Point) is var dd && dd < nearD)
+            {
+                nearD = dd;
+                _lkMarkNear = m;
+            }
             _lkMarkCol[m++] = ok && !p.NoEffect ? SandboxLinkWheel.TypeColour(p.Type) : new Vector3(0.6f, 0.6f, 0.6f);
         }
         _lkMarkN = m;
@@ -454,6 +471,7 @@ public static partial class Program
         var n = 0;
         RouteRender.PreviewBody = c;
         RouteRender.PreviewType = _lkType;
+        RouteRender.PreviewWidth = _lkType == RouteType.Conveyor && _lkParent == 255 ? ConstructRoutes.ConveyorWidth(c, _lkFrom, _lkFromPort) : 0f; // (a conveyor's ghost: the bed it opens to)
         RouteRender.PreviewPts[n] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(c, _lkFrom, _lkFromPort, _lkType);
         RouteRender.PreviewSeg[n++] = (byte)(_lkParent != 255 ? c.Parts[Math.Min(ConstructRoutes.HostOf(c, _lkParent, _lkParentSeg), c.PartCount - 1)].Seg : c.Parts[_lkFrom].Seg);
         for (var i = 0; i < _lkCount; i++)
@@ -587,13 +605,14 @@ public static partial class Program
         }
         var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
-                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0);
+                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0) ^ ((long)r.ConvW << 44);
         if (key != _lkLookKey)
         {
             _lkLookKey = key;
             var full = ConstructRoutes.Health(r.Type);
             var what = r.Source < c.PartCount && r.To < c.PartCount ? $"{c.DefOf(r.Source).Name} -> {c.DefOf(r.To).Name}" : "";
-            var share = r.Type != RouteType.Data && r.Share < 0.999f ? $", {r.Share * 100:0}% of flow" : "";
+            var share0 = r.Type != RouteType.Data && r.Share < 0.999f ? $", {r.Share * 100:0}% of flow" : "";
+            var share = r.Type == RouteType.Conveyor ? $", {r.ConvW / 100f:0.00} m wide" : share0;
             var state = hp <= 0 ? " - cut" : !r.FedEnd ? " - cut further back" : "";
             var damaged = hp < full || ConstructRoutes.SegmentHealth(c, k, r.Count) < full;
             _lkLook = $"{Cap(ConstructRoutes.Name(r.Type))}: {what}{share}{(hp < full ? $", {MathF.Max(0, hp):0}/{full:0} hp" : "")}{state}"
@@ -837,6 +856,7 @@ public static partial class Program
                     _lkWhy = _lkCheckWhy;
                     RouteRender.PreviewBody = mc;
                     RouteRender.PreviewType = mc.Routes[_lkMoveRoute].Type;
+                    RouteRender.PreviewWidth = 0f;
                     RouteRender.PreviewPts[0] = ConstructRoutes.Point(mc, _lkMoveRoute, _lkMoveNode - 1, out var s0);
                     RouteRender.PreviewSeg[0] = (byte)s0;
                     RouteRender.PreviewPts[1] = at;
@@ -1111,7 +1131,11 @@ public static partial class Program
     private static string _lkConvHud = "";
     private static long _lkConvHudKey = -1;
 
-    /// <summary>A frame aimed at conveyor <paramref name="k"/> of <paramref name="c"/> (null: none): the wheel's steps, the HUD line, and the size sent once the wheel has rested 0.4 s.</summary>
+    /// <summary>
+    /// A frame aimed at conveyor <paramref name="k"/> of <paramref name="c"/> (null: none): the wheel's steps (its width: a conveyor has
+    /// one size, user 2026-11-11), the fit key (the widest its ends and turns allow), the HUD line, the bed drawn at the new width at
+    /// once, and the size sent once the wheel has rested 0.4 s (the fit key sends it at once).
+    /// </summary>
     private static void LinkConveyorFrame(Game g, Construct? c, int k)
     {
         var now = ConstructConveyor.Clock;
@@ -1123,6 +1147,8 @@ public static partial class Program
         if (c == null)
         {
             _lkConvScroll = 0;
+            RouteRender.SizeBody = null;
+            RouteRender.SizeRoute = -1;
             return;
         }
         ref var r = ref c.Routes[k];
@@ -1131,33 +1157,40 @@ public static partial class Program
             (_lkConvBody, _lkConvRoute, _lkConvW, _lkConvH) = (c.Id, k, r.ConvW, r.ConvH);
             (_lkConvSentW, _lkConvSentH) = (_lkConvW, _lkConvH);
         }
+        else if (_lkConvW == _lkConvSentW && r.ConvW != _lkConvSentW && now - _lkConvAt > 1.0)
+            (_lkConvW, _lkConvSentW) = (r.ConvW, r.ConvW); // (another player's change, or the server's word)
         var steps = (int)_lkConvScroll;
         _lkConvScroll -= steps;
-        ConstructRoutes.ConveyorMax(c, k, out var mw, out var mh); // (no wider than its turns leave room for)
+        ConstructRoutes.ConveyorMax(c, k, out var mw, out _); // (no wider than its ends take and its turns leave room for)
         if (steps != 0)
         {
-            if (CtrlHeld)
-                _lkConvH = Math.Clamp(_lkConvH + steps * ConstructConveyor.StepCm, ConstructConveyor.MinSizeCm, mh);
-            else
-                _lkConvW = Math.Clamp(_lkConvW + steps * ConstructConveyor.StepCm, ConstructConveyor.MinSizeCm, mw);
+            _lkConvW = Math.Clamp(_lkConvW + steps * ConstructConveyor.StepCm, ConstructConveyor.MinSizeCm, mw);
             _lkConvAt = now;
+        }
+        if (Pressed(GameAction.Reload) && !_swallowClick)
+        {
+            _lkConvW = mw; // (fit: the widest it may be)
+            _lkConvAt = now - 1;
         }
         if (now - _lkConvAt > 0.4)
             LinkConveyorSend(g);
-        var key = _lkConvW | (long)_lkConvH << 16 | (long)mw << 32 | (long)mh << 48;
+        RouteRender.SizeBody = c;
+        RouteRender.SizeRoute = k;
+        RouteRender.SizeW = _lkConvW / 100f;
+        var key = _lkConvW | (long)mw << 16 | (long)SandboxKeys.Stamp << 32;
         if (key != _lkConvHudKey)
         {
             _lkConvHudKey = key;
-            _lkConvHud = $"Conveyor {_lkConvW / 100f:0.00} x {_lkConvH / 100f:0.00} m (its ends take up to {mw / 100f:0.00} x {mh / 100f:0.00}): scroll: width, Ctrl+scroll: height";
+            _lkConvHud = $"Conveyor {_lkConvW / 100f:0.00} m wide (max {mw / 100f:0.00} m) - wheel: width, {SandboxKeys.Reload}: widest";
         }
     }
 
     private static void LinkConveyorSend(Game g)
     {
-        if (_lkConvRoute < 0 || _lkConvW == _lkConvSentW && _lkConvH == _lkConvSentH || g.Constructs.Get(_lkConvBody) is not { } c || _lkConvRoute >= c.RouteCount)
+        if (_lkConvRoute < 0 || _lkConvW == _lkConvSentW || g.Constructs.Get(_lkConvBody) is not { } c || _lkConvRoute >= c.RouteCount)
             return;
         ref var r = ref c.Routes[_lkConvRoute];
-        g.SandboxSendRouteEdit(c.Id, RouteEditOp.Size, _lkConvRoute, 0, r.Source, r.To, new Vector3(_lkConvW / 100f, _lkConvH / 100f, 0));
+        g.SandboxSendRouteEdit(c.Id, RouteEditOp.Size, _lkConvRoute, 0, r.Source, r.To, new Vector3(_lkConvW / 100f, r.ConvH / 100f, 0)); // (the height is unused: sent as it is)
         (_lkConvSentW, _lkConvSentH) = (_lkConvW, _lkConvH);
     }
 

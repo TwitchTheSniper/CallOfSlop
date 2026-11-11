@@ -152,7 +152,7 @@ public static class MachineScreens
                 case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
                 case ExtrudeStall.TooHeavy: Say(card, PanelState.Wants, "Path too heavy"); break;
                 case ExtrudeStall.ChuteWaits: Say(card, PanelState.Wants, "Chute waits"); break;
-                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too small"); break;
+                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too narrow"); break;
                 case ExtrudeStall.ConveyorFull: Say(card, PanelState.Wants, "Conveyor full"); break;
                 case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
                 case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
