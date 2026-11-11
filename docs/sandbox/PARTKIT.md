@@ -95,9 +95,31 @@ Retired, not ported: `make_ports.py`, a one-off pass (board item np01) that adde
 drivetrain, tank, battery and alternator part files that had none. On 2026-11-11 it changed nothing (every part it knew had its ports;
 it stopped on the BigDrive axles and shafts, which `big_drive_parts` gives their own). New parts get their ports from their generator.
 
+## Other tools in C# (feat/toolkit-1)
+
+Other Sandbox helper scripts ported the same way (byte-identical output, the Python deleted in the same change):
+
+| Command | Was | What |
+| --- | --- | --- |
+| `--check-builder-parts [DIR] [--receiver NAME] [--tol M]` | `tools/parts/floaters.py` | weapon-builder parts form one connected piece, alone and assembled; actions under or in front clear the handle, foregrips and magazines (`Source/Zombies/BuilderPartsCheck.cs`, shared with the self-test's Model connectivity). Exit code: problems |
+| `--story-map [OUT.html]` | `tools/story/story_map.py` | the story map page from `Story/Storylets` and the template `tools/story/story_map.html` (`Source/Story/StoryMapPage.cs`) |
+| `--zfight-props FILE...` | `tools/props/zfight_props.py` | coplanar faces in prop files corrected in place; only the moved parts' `size` and `offset` are rewritten (`PropTools.cs`) |
+| `--zfight-moves OLD_REV [NEW_REV] [--paths ...] [--files LIST] [--worst N] [--csv FILE]` | `tools/props/zfight_moves.py` | how far the boxes of props, construct parts and weapon parts moved between two git versions |
+
+`PropWriter.cs` holds the prop library's two layouts (gen.py's `write_prop`, gen_animated's `dump`); `--gen-parts --roundtrip DIR`
+knows them (701 of 817 committed prop files come back byte for byte; the rest are hand-written).
+
 ## Python left elsewhere
 
-`tools/constructs/zfight.py` stays: the prop and map scripts of `tools/cluttered`, `tools/world`, `tools/space`, `tools/props`,
-`tools/propviz`, `tools/buildings` and `tools/zombies` import it (its C# twin is `PartZFight.cs`; `--gen-parts --settle-props FILE` runs
-it on a prop file). The other Python under `tools/` (space, planets, story, weapon-builder parts, props, audio, render, the map tooling)
-is surveyed for the next phases; map tooling belongs to another developer and archived modes' scripts are not ported.
+- `tools/constructs/zfight.py`: the prop and map scripts of `tools/cluttered`, `tools/world`, `tools/space`, `tools/props`,
+  `tools/propviz`, `tools/buildings` and `tools/zombies` import it (its C# twin is `PartZFight.cs`; `--gen-parts --settle-props FILE`
+  prints a prop file settled, `--zfight-props` corrects files in place).
+- `tools/propviz/gen*.py` (the general prop library): not ported. Each generator's output today differs from some committed props
+  (hand edits such as `gibs` and later z-fighting passes, a06b368d): `gen` 6 of 61 files, `gen_outdoor` 1 of 114, `gen_indoor` 12 of
+  123, `gen_military` 12, `gen_animated` 8 of 65; the gallery maps they write (`Maps/Dev`) are `tools/props/gallery.py`'s now. A port
+  needs either the committed props taken as they are (a generator that changes no byte of them) or the user's OK to regenerate them.
+- `tools/render/make_panel_font.py`: draws DejaVu Sans Mono Bold through FreeType (Pillow) and scipy's distance transform; nothing in
+  C# rasterises a font as FreeType does, so `Source/Render/PanelFontData.cs` stays its output (`--check` is clean).
+- `tools/parts/viz.py` and `shapes.py` (a PNG contact sheet), `tools/propviz/viz*.py` and the one-offs whose outputs are committed
+  (perf, skies, models, branding, mac) are listed for the user to delete. `tools/props/gothic_props.py` and `gallery.py` are not
+  surveyed for porting yet. Map tooling belongs to another developer and archived modes' scripts are not ported.
