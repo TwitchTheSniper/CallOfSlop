@@ -456,7 +456,7 @@ public static class ConstructBuild
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "bandit"}]; ConstructLoot.cs)
         public List<(int Step, int Slot, string Part, int Count)> Stored = new(); // parts set in a container's slot when it is spawned, before its loot ("stored": [{"step": n, "slot": k, "part": "Box Mag", "count": 2}]; ConstructLoot.Stow)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
-        public List<(int Step, ExtrusionKey Key, int Count)> Bill = new(); // lines on a Line Console's bill as it is built ("bill": [{"step": n, "piece": "Extrusion l-angle 20x20x150 metal", "count": 3}]; WorkOrders.cs): an order list, never material
+        public List<(int Step, WorkOrder Order)> Bill = new(); // lines on a Line Console's bill as it is built ("bill": [{"step": n, "piece": "Extrusion l-angle 20x20x150 metal", "count": 3}]; WorkOrders.cs): an order list, never material
     }
 
     private static readonly List<string> _refusedBlueprints = new();
