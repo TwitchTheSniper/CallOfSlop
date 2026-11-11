@@ -76,6 +76,8 @@ public static class PartKit
         new Generators.HullParts(),
         new Generators.BodyParts(),
         new Generators.WingParts(),
+        new Generators.ActuatorParts(),
+        new Generators.MakeJointSides(),
     ];
 
     public static IPartGenerator? Find(string name) =>

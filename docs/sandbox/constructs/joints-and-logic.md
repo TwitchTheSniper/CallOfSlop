@@ -106,7 +106,7 @@ the most force or torque it holds rigidly.
 
 ### The size families (`Constructs/Parts/Actuators`)
 
-Written by `tools/constructs/actuator_parts.py` (run it from the repo root; `--check` compares), as the structural
+Written by the part kit's `--gen-parts actuator_parts` (`--check` compares; docs/sandbox/PARTKIT.md), as the structural
 parts are: three widths (1x1, 2x2 and 3x3 cells of the 0.25 m frame step) times three lengths (short, medium, long), 27
 parts in the inventory's Joints and Motion category (sections Pistons, Motor hinges, Turntables).
 
@@ -319,7 +319,7 @@ Decisions made (the developer may change them): the names; the same drag as a Fr
 
 The user's request: "there needs to be a flexible joint connection for items", which turned out to mean both a joint part
 with free play (here) and a chute that survives one ([Flexible chutes](#flexible-chutes)). Code: `Source/Constructs/ConstructFlex.cs`.
-Data: `Constructs/Parts/Actuators/FlexJoints` (written by `tools/constructs/actuator_parts.py`, then `make_joint_sides.py`).
+Data: `Constructs/Parts/Actuators/FlexJoints` (written by the part kit's `--gen-parts actuator_parts`, which draws their sides too).
 
 A small passive part. What hangs on its leaf bends any way up to a cone and springs back; there is no motor and it draws no
 power. Six parts in the inventory's Joints and Motion category, section Flexible joints:
