@@ -92,6 +92,7 @@ public static class PartKit
         new Generators.BuildingParts(),
         new Generators.InteriorParts(),
         new Generators.MakeRv(),
+        new Generators.MachineTiers(),
         new Generators.Assembling(),
     ];
 
@@ -257,7 +258,8 @@ public static class PartKit
                 continue;
             }
             var body = text.EndsWith('\n') ? text[..^1] : text;
-            if (PyJson.Dumps(v, 2) == body || PyJson.Dumps(v, 1) == body || PyJson.Dumps(v) == body || PyJson.Dumps(v, 2, ensureAscii: false) == body)
+            if (PyJson.Dumps(v, 2) == body || PyJson.Dumps(v, 1) == body || PyJson.Dumps(v) == body || PyJson.Dumps(v, 2, ensureAscii: false) == body
+                || v is PyDict pd && Generators.MachineTiers.Layout(pd) == text)
                 same++;
             else
             {

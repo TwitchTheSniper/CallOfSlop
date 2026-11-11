@@ -22,7 +22,7 @@ public enum LineState : byte
 /// <list type="bullet">
 /// <item>the <b>line state</b> of a machine (<see cref="Of"/>), from its store, with a short hold so a state that lasts a packet doesn't flash;</item>
 /// <item>the <b>status lamp</b>: a part box marked <c>"status"</c>, drawn unlit in the state's colour and blink, with a band that runs along it while the
-/// machine works (<see cref="DrawLamp"/>; tools/constructs/screens.py puts it over the machine's screen);</item>
+/// machine works (<see cref="DrawLamp"/>; the part kit's PartScreens puts it over the machine's screen);</item>
 /// <item>the <b>Line Console</b>: a Switch whose output is wired to each machine's Run. The wires are the line: its screen (panel source <c>line</c>)
 /// lists the machines they reach, and its buttons start and stop the line (the switch), pick a machine and step that machine's recipe.</item>
 /// </list>

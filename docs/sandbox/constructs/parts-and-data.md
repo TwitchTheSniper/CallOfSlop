@@ -321,8 +321,8 @@ city (a tracked land mothership under a multi-storey town). Smelters reach 10 m 
 | Large | x16 | 4 m | 20 cm, 200 kg/m2 | 4 to 32 m | a hangar, a storey of a town, a big walker, a frigate |
 | Capital | x64 | 16 m | 50 cm, 500 kg/m2 | 16 to 128 m | a carrier's hull, a traction city's chassis |
 
-**One helper**: `tools/constructs/scale.py` holds the classes (`SMALL`, `MEDIUM`, `LARGE`, `CAPITAL`) and what every big part's
-generator shares: `Part`, `box`, `block_sockets`, `write_parts`. `tools/constructs/capital_parts.py` writes the structure
+**One helper**: the part kit's `PartScale.cs` holds the classes (`Small`, `Medium`, `Large`, `Capital`) and what every big part's
+generator shares: `Part`, `Box`, `BlockSockets`, `WriteParts`. The part kit's `capital_parts` writes the structure
 (`Constructs/Parts/Capital`, 441 files; `--check` compares). Part files say `"sizeClass": "capital"`; a socket takes its part's
 class unless it says `"class"`.
 

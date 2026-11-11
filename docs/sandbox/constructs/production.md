@@ -284,8 +284,8 @@ Fitting time grows from x1 to x2.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
   a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
-  `tools/constructs/machine_tiers.py` writes all 30 files from one table per line and `tier_style.py`: fix them, not their
-  output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
+  the part kit's `machine_tiers` (`Source/PartKit/Generators/MachineTiers.cs`, `--gen-parts machine_tiers`) writes all 40 files from one
+  table per line and `TierStyle.cs`: fix them, not their output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
 - **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
   rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
   length: the bit is thicker but still reaches 1.2 m under the part, so a tier 5 drill suits the ground clearance a tier 1 does, and a bit
@@ -296,8 +296,8 @@ Fitting time grows from x1 to x2.
   side and back sockets stand on small solid mounting pads at 0.75 m (a drill's are at 0.5, 0.5, 0.5 and 0.75 m). Bottom sockets stay at the origin, side and back ones on the
   outer faces. A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
   frame. A building needs a 4 m slab at least, and a tier 3 or bigger overhangs that: its bins and battery go on further slabs, clear of it and within a chute segment (8 m) of its ports.
-- **The look and the shape.** Each tier of each line has its own solid body, proportions and details, written in `tools/constructs/tier_style.py`
-  (`PALETTE`, and `look(name, tier)`: `solid`, `detail`, and `hopper` when the body moves the input bin up or down); the numbers stay in `machine_tiers.py`. A line reads as itself at every tier, and a tier reads the same across lines:
+- **The look and the shape.** Each tier of each line has its own solid body, proportions and details, written in the part kit's `TierStyle.cs`
+  (`Palette`, and `Look(name, tier)`: `solid`, `detail`, and `hopper` when the body moves the input bin up or down); the numbers stay in `MachineTiers.cs`. A line reads as itself at every tier, and a tier reads the same across lines:
   - **Scrap**: lashed up. Rust in uneven tones, mismatched plates, timber, bolted-on drums. A timber derrick, a slatted crate, a trestle mill, a squat kiln, two odd kilns, a timber frame.
   - **Workshop**: built by a craftsman. Blue paint on cast iron, cream trim, rivets. A pillar drill, a square bin with a motor, a cast mill frame with a flywheel, a brick-bodied furnace with one stack, a matched pair of towers, a machine-tool frame.
   - **Industrial**: tall and busy. Concrete grey and safety yellow, pipes, valves, hazard stripes, ladders. A stepped tower with landings, a raised cab and twin arms, a full-width gantry, a blast furnace with a stepped ramp, a stepped tower pair and pipe bridge, a bridge crane.
@@ -481,7 +481,7 @@ Choices made (the developer may change them):
 
 The first step of the ore loop (the user, 2026-11-11: rooms and bases felt empty): machines that a generator can place in a row and a player
 reads at a glance and runs from one place. Refiners first; the Assembler, Extruder and Recycler are to follow with the same pieces. Code:
-`Source/Constructs/ProductionLines.cs`; the parts come from `tools/constructs/machine_tiers.py` and `screens.py` (the lamp) and
+`Source/Constructs/ProductionLines.cs`; the parts come from the part kit's `MachineTiers` and `PartScreens` (the lamp) and
 the part kit's `control_parts` (the console).
 
 - **Line state** (`ProductionLines.Raw`, `Of`): Running, Stopped (held off: its console or any wire into Run), Starved (empty or short of a
@@ -490,7 +490,7 @@ the part kit's `control_parts` (the console).
   can come a packet apart), except the first look and Start.
 - **The status lamp.** A box marked `"status": true` (an opaque detail) is drawn unlit in the state's colour: green with a bright band
   running along it (Running), dim white (Stopped), amber blinking 1 Hz (Starved), orange 3 Hz (Blocked), red 3 Hz (Fault), out (No power).
-  `screens.py mount(..., lamp=True)` grows the screen's plate by a band and stands the lamp in it, the screen's width and at least 0.1 m
+  `PartScreens.Mount(..., lamp: true)` grows the screen's plate by a band and stands the lamp in it, the screen's width and at least 0.1 m
   high, so it reads from 20 m where the operator looks. Machines are drawn part by part (a part with a store is never merged), so it costs
   one draw (six while running).
 - **A recipe on a refiner.** The `recipe` setting: Auto (what is in the input picks it, as before) or one recipe its tier makes

@@ -186,7 +186,7 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 
 ### The drill's buffer and shaft
 
-The developer's request (2026-11-03): drills are more modular. A Drill Module is a compact rig (`machine_tiers.py`, `DRILL`): a 0.5 m housing with a
+The developer's request (2026-11-03): drills are more modular. A Drill Module is a compact rig (the part kit's `MachineTiers`, the drill line): a 0.5 m housing with a
 small hopper, a boom and a tower with a gearhead, its bit at the same place under the part as before, 200 kg at tier 1 (it was 320). It stays in the
 same sockets, and side and back sockets stand 0.25 m from its middle, on pads at tiers 2, 3 and 5. Saw Modules are as they were.
 

@@ -4,7 +4,7 @@ Covers actuators, linear and flexible joints, mechanisms, control modules, scree
 
 ## Machine screens
 
-Production machines have a screen on their own model, source `machine` (`Source/Constructs/MachineScreens.cs`): a dark plate that `tools/constructs/screens.py` places on each model, on the flattest free spot near reading height, clear of sockets, ports and dies, since tiers and sizes differ. Every tier of the Smelter, Sawmill, Foundry and Assembler; every size of the Extruder and Wheel Former; the Recycler (`Constructs/Parts/Storage/Recycler.json`, by hand). The Press and Die Lathe have their own bay screens; gathering modules have none: they work on arms out of sight, and the look line says enough.
+Production machines have a screen on their own model, source `machine` (`Source/Constructs/MachineScreens.cs`): a dark plate that the part kit's `PartScreens` places on each model, on the flattest free spot near reading height, clear of sockets, ports and dies, since tiers and sizes differ. Every tier of the Smelter, Sawmill, Foundry and Assembler; every size of the Extruder and Wheel Former; the Recycler (`Constructs/Parts/Storage/Recycler.json`, by hand). The Press and Die Lathe have their own bay screens; gathering modules have none: they work on arms out of sight, and the look line says enough.
 
 | Line | Refiner | Assembler | Extruder, Wheel Former | Recycler |
 | --- | --- | --- | --- | --- |
