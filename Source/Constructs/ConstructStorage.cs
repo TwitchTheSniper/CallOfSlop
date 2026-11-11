@@ -717,8 +717,8 @@ public static class ConstructStorage
             d.IsTerminal = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
-        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon)
-            throw new ConstructPartException($"{file}: a storage part needs \"slots\" or \"bulk\"");
+        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon && !d.IsPieceRack)
+            throw new ConstructPartException($"{file}: a storage part needs \"slots\", \"bulk\" or \"pieces\"");
         if (slots.Count > 0 && d.BulkCapacity > 0)
             throw new ConstructPartException($"{file}: a storage part has \"slots\" or \"bulk\", not both");
         for (var k = 0; k < slots.Count; k++)

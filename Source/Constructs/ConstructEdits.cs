@@ -862,6 +862,14 @@ public sealed partial class ConstructEdits
             return UseAssembler(world, player, eye, c, part);
         if (d.IsPress)
             return UsePress(world, player, eye, c, part);
+        if (d.IsPieceRack)
+        {
+            // A Piece Rack: the last piece in comes off whole, a loose body beside its rack (a piece is physics-only: no hands carry it).
+            if (world.RackTake(c, part) is not { } piece)
+                return "the rack is empty";
+            Done.Add($"player {player}: took {piece.Name} off the {d.Name} (construct {c.Id})");
+            return null;
+        }
         if (!d.IsBin)
             return "that isn't a bin";
         var st = world.StoreOf(c, part)!;

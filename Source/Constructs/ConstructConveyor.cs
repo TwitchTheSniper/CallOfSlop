@@ -45,6 +45,25 @@ public sealed partial class ConstructWorld
             RidersDirty.Add(c.Id);
     }
 
+    /// <summary>The last piece put in a Piece Rack comes off as a loose body beside it, its middle over the rack's top. Server; null when empty.</summary>
+    public ConstructPartDef? RackTake(Construct c, int part)
+    {
+        if (StoreOf(c, part) is not { KindN: > 0 } st || ConstructParts.Get(st.KindDef![st.KindN - 1]) is not { } d)
+            return null;
+        c.PartBounds(part, out var mn, out var mx);
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        var top = new Vector3((mn.X + mx.X) * 0.5f, mx.Y + (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.1f, (mn.Z + mx.Z) * 0.5f);
+        var turn = q * Rot24.Quat(c.Parts[part].Rot);
+        if (ConstructEdits.DropLoose(this, d, t + Vector3.Transform(top, q), turn) is not { } body)
+            return null;
+        body.Owner = c.Owner;
+        st.AddKind(d.Id, -1);
+        LoadChanged = true;
+        Changed(st);
+        c.Wake();
+        return d;
+    }
+
     /// <summary>A piece into a Piece Rack, if it takes it. Server.</summary>
     public bool RackPut(Construct c, int part, ConstructPartDef d)
     {
@@ -137,6 +156,14 @@ public static class ConstructConveyor
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)
             return $"the {rd.Name} is full ({rd.RackCount} pieces)";
         return null;
+    }
+
+    /// <summary>A Piece Rack's look line: how many it holds of how many, the last in, and F. Either side, from the store as heard.</summary>
+    public static string Look(ConstructPartDef d, CStore st, bool near)
+    {
+        var last = st.KindN > 0 && ConstructParts.Get(st.KindDef![st.KindN - 1]) is { } top ? $", last in: {top.Name}" : "";
+        var kinds = st.KindN > 1 ? $" of {st.KindN} kinds" : "";
+        return $"{d.Name}: {st.ItemCount}/{d.RackCount} pieces{kinds}{last}" + (st.KindN > 0 && near ? $" - {SandboxKeys.Use}: take one off" : "");
     }
 
     // ---- The link ------------------------------------------------------------------------------------------------

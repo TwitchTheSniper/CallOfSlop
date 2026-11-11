@@ -67,6 +67,16 @@ public static class RouteRender
                     {
                         var z = d / len;
                         var cut = ConstructRoutes.SegmentHealth(c, k, i) <= 0;
+                        if (r.Type == RouteType.Conveyor)
+                        {
+                            Conveyor(gfx, a, b, z, len, r.ConvW / 100f, cut, r.Paint);
+                            n++;
+                            if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f)
+                                ConveyorElbow(gfx, a, dirPrev, z, r.ConvW / 100f, r.Paint);
+                            dirPrev = z;
+                            a = b;
+                            continue;
+                        }
                         if (cut)
                         {
                             // Two stubs with a gap between them.
@@ -91,9 +101,109 @@ public static class RouteRender
                     a = b;
                 }
             }
+            if (c.ConveyedCount > 0)
+                DrawRiders(gfx, c);
         }
         gfx.EndBatch();
         LastSegments = n;
+    }
+
+    // ---- Conveyors (ConstructConveyor.cs): a roller bed the link's set width, and the pieces riding it -----------------
+
+    private static readonly Vector3 ConvRail = new(0.21f, 0.33f, 0.42f), ConvRoller = new(0.66f, 0.68f, 0.7f), ConvPlate = new(0.17f, 0.18f, 0.19f), ConvMark = new(0.95f, 0.66f, 0.1f);
+    private const float RollerPitch = 0.3f, MarkPitch = 1.5f;
+
+    /// <summary>
+    /// One conveyor segment from <paramref name="a"/> to <paramref name="b"/> (the line is the rollers' top less 5 mm): a dark
+    /// under-plate, a side rail each side in the paint (steel blue by default), steel rollers across between them every
+    /// 0.3 m and amber chevrons on the rails' tops pointing the way the pieces go. A cut segment draws two dim stubs.
+    /// </summary>
+    private static void Conveyor(Renderer gfx, Vector3 a, Vector3 b, Vector3 z, float len, float width, bool cut, uint paint)
+    {
+        var basis = Basis(z);
+        var x = new Vector3(basis.M11, basis.M12, basis.M13);
+        var y = new Vector3(basis.M21, basis.M22, basis.M23);
+        var dim = cut ? 0.5f : 1f;
+        var rail = (paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail) * dim;
+        if (cut)
+        {
+            var gap = MathF.Min(0.3f, len * 0.3f);
+            var half = (len - gap) * 0.5f;
+            Bed(gfx, basis, x, y, a + z * (half * 0.5f), half, width, rail, dim);
+            Bed(gfx, basis, x, y, b - z * (half * 0.5f), half, width, rail, dim);
+            return;
+        }
+        Bed(gfx, basis, x, y, (a + b) * 0.5f, len, width, rail, dim);
+        // Rollers across, from half a pitch in (they don't meet the next segment's at a node).
+        var roller = Matrix4x4.CreateScale(width - 0.01f, 0.05f, 0.05f) * basis;
+        for (var s = RollerPitch * 0.5f; s < len; s += RollerPitch)
+            gfx.Draw(roller * Matrix4x4.CreateTranslation(a + z * s + y * 0.03f), ConvRoller);
+        // Chevrons on each rail's top, the tip ahead.
+        var side = width * 0.5f + 0.03f;
+        var left = Matrix4x4.CreateScale(0.012f, 0.01f, 0.07f) * Matrix4x4.CreateRotationY(0.5f) * basis;
+        var right = Matrix4x4.CreateScale(0.012f, 0.01f, 0.07f) * Matrix4x4.CreateRotationY(-0.5f) * basis;
+        for (var s = MathF.Min(MarkPitch * 0.5f, len * 0.5f); s < len; s += MarkPitch)
+            for (var e = -1; e <= 1; e += 2)
+            {
+                var at = a + z * s + x * (side * e) + y * 0.0555f;
+                gfx.Draw(left * Matrix4x4.CreateTranslation(at - x * 0.0145f), ConvMark);
+                gfx.Draw(right * Matrix4x4.CreateTranslation(at + x * 0.0145f), ConvMark);
+            }
+    }
+
+    /// <summary>A conveyor's under-plate and side rails over <paramref name="len"/> about <paramref name="mid"/>.</summary>
+    private static void Bed(Renderer gfx, Matrix4x4 basis, Vector3 x, Vector3 y, Vector3 mid, float len, float width, Vector3 rail, float dim)
+    {
+        var side = width * 0.5f + 0.03f;
+        gfx.Draw(Matrix4x4.CreateScale(width + 0.06f, 0.03f, len) * basis * Matrix4x4.CreateTranslation(mid - y * 0.075f), ConvPlate * dim);
+        gfx.Draw(Matrix4x4.CreateScale(0.06f, 0.14f, len) * basis * Matrix4x4.CreateTranslation(mid + x * side - y * 0.02f), rail);
+        gfx.Draw(Matrix4x4.CreateScale(0.06f, 0.14f, len) * basis * Matrix4x4.CreateTranslation(mid - x * side - y * 0.02f), rail);
+    }
+
+    /// <summary>A conveyor's bend: a turn plate under both beds, its top just under the rails'.</summary>
+    private static void ConveyorElbow(Renderer gfx, Vector3 at, Vector3 from, Vector3 to, float width, uint paint)
+    {
+        var mid = Vector3.Normalize(from + to);
+        var basis = Basis(mid.LengthSquared() > 1e-6f ? mid : from);
+        var y = new Vector3(basis.M21, basis.M22, basis.M23);
+        var size = width + 0.13f;
+        gfx.Draw(Matrix4x4.CreateScale(size, 0.11f, size) * basis * Matrix4x4.CreateTranslation(at - y * 0.01f), (paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail) * 0.85f);
+    }
+
+    /// <summary>
+    /// The pieces riding a body's conveyors, at true size, each moved on from its last known front at the conveyor's speed
+    /// (no further than its link's end or the piece ahead), on the segment its middle is over. Allocates nothing.
+    /// </summary>
+    private static void DrawRiders(Renderer gfx, Construct c)
+    {
+        var elapsed = (float)Math.Clamp(ConstructConveyor.Clock - c.ConveyedStamp, 0, 1);
+        var prevRoute = -1;
+        var prevBack = 0f;
+        var routeLen = 0f;
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref var r = ref c.Conveyed[i];
+            var k = r.Route;
+            if (k >= c.RouteCount || c.Routes[k].Type != RouteType.Conveyor || ConstructParts.Get(r.Def) is not { } d)
+                continue;
+            if (k != prevRoute)
+                routeLen = ConstructConveyor.Length(c, k);
+            ConstructConveyor.Size(d, out _, out _, out var along);
+            var limit = k != prevRoute ? routeLen : prevBack - ConstructConveyor.Gap;
+            var front = MathF.Max(r.At, MathF.Min(r.At + ConstructConveyor.Speed * elapsed, limit));
+            prevRoute = k;
+            prevBack = front - along;
+            ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg);
+            var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin) * SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0];
+            var paint = r.Paint != 0 ? ConstructPaint.ToVector(r.Paint) : Vector3.Zero;
+            for (var bx = 0; bx < d.Boxes.Length; bx++)
+            {
+                ref readonly var box = ref d.Boxes[bx];
+                if (box.Hidden)
+                    continue;
+                gfx.Draw(box.Model(0, box.Center) * m, r.Paint != 0 && box.Paintable ? paint : box.Color, shape: box.Shape);
+            }
+        }
     }
 
     /// <summary>
@@ -232,6 +342,7 @@ public static class RouteRender
         RouteType.Pipe => new Vector3(0.62f, 0.64f, 0.68f), // one neutral pipe for every fluid (decision 28)
         RouteType.Shaft => new Vector3(0.5f, 0.52f, 0.55f),
         RouteType.Feed => new Vector3(0.42f, 0.38f, 0.14f),
+        RouteType.Conveyor => ConvRail,
         _ => new Vector3(0.45f, 0.47f, 0.42f),
     };
 
