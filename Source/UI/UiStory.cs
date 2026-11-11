@@ -6,23 +6,27 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Story window (F4 in Sandbox by default; docs/story/STORY.md, "The window"): the story layer's data in 2D, on the
-/// host.
+/// The Story window (F4 in Sandbox by default; docs/story/STORY.md, "Trying it"): the story on the host, for seeing
+/// where it is and steering it. Four tabs as it opens:
 /// <list type="bullet">
-/// <item>World: the story world as a graph: players, people, places and constructs, their relationships as arrows. Click
-/// one for what it holds, who holds what towards it and the stories it is in; drag to move it; a query box.</item>
-/// <item>Stories: where each story is at: every pattern's matches in progress as a row of its stages (done, waited for
-/// with the time left, still to come), and the stories told.</item>
-/// <item>People: everyone with a mind of their own: needs, goals scored, the plan, what they know (UiStoryPeople.cs).</item>
-/// <item>Chronicle: every event, newest first, and what the sifter did with each.</item>
-/// <item>Data: the relations, qualities, verbs and patterns loaded and their counts, and the scenarios to play.</item>
+/// <item>Story: for a player, the storylet playing now and its ends, every storylet and why it isn't playing, their
+/// qualities to nudge (UiStoryStorylets.cs).</item>
+/// <item>People: everyone with a mind of their own: where they are, what they are doing, how they feel, what they did
+/// and said (UiStoryPeople.cs).</item>
+/// <item>Factions: each faction's standing with the players (UiStoryFactions.cs).</item>
+/// <item>Events: everything that happened, newest first.</item>
 /// </list>
-/// Closed, it costs one bool check. Open, it lays the graph out a step a frame (the entities shown, at most
-/// <see cref="StoryGraphMax"/>).
+/// "Engine" (<see cref="StoryEngineTabs"/>, off as the game starts) adds the engine's own views: the World graph, the
+/// sifter's Stories, Drama, Scenes, Roster and Data, with the counters, timings and on/off switches on every tab.
+/// Closed, it costs one bool check. With the World tab open, it lays the graph out a step a frame (the entities shown,
+/// at most <see cref="StoryGraphMax"/>).
 /// </summary>
 public sealed partial class Ui
 {
     public bool StoryOpen;
+
+    /// <summary>The window's "Engine" box: the engine's own tabs, counters, timings and switches as well.</summary>
+    public bool StoryEngineTabs;
 
     public const int StoryGraphMax = 400;
 
@@ -112,15 +116,51 @@ public sealed partial class Ui
         var told = 0;
         foreach (var c in s.Sifter.Completed)
             told += c;
-        ImGuiSafe.TextColored(Orange, $"Story clock {StoryRules.Clock(s.Time)}    {s.World.Count} entities, {s.World.PairTotal} relationships, {s.Chronicle.Count} events{(s.Chronicle.FoldedTotal > 0 ? $" ({s.Chronicle.FoldedTotal} folded)" : "")}, {s.Sifter.LiveCount} stories in progress, {told} told");
-        ImGuiSafe.TextColored(Dim, $"Sifting: last event {s.LastSiftMs:0.000} ms, worst {s.WorstSiftMs:0.000} ms (with the stories it completed). {s.Recorded} events this session.");
+        var all = StoryEngineTabs;
+        ImGuiSafe.TextColored(Orange, all
+            ? $"Story clock {StoryRules.Clock(s.Time)}    {s.World.Count} entities, {s.World.PairTotal} relationships, {s.Chronicle.Count} events{(s.Chronicle.FoldedTotal > 0 ? $" ({s.Chronicle.FoldedTotal} folded)" : "")}, {s.Sifter.LiveCount} stories in progress, {told} told"
+            : $"Story clock {StoryRules.Clock(s.Time)}    {s.Agents.Count} people, {s.Storylets.Runs.Count} storylets playing");
         if (game.StoryPlaying is { } run)
         {
             ImGui.SameLine();
             ImGuiSafe.TextColored(Orange, $"  Playing {run.Scenario.Name}: {run.Next}/{run.Scenario.Steps.Length}");
         }
+        ImGui.SameLine();
+        ImGui.Checkbox("Engine"u8, ref StoryEngineTabs);
+        if (ImGui.IsItemHovered())
+            ImGui.SetItemTooltip("The engine's own views as well: the World graph, the sifter's Stories, Drama, Scenes, Roster and Data, and the counters, timings and on/off switches on every tab."u8);
+        if (all)
+            ImGuiSafe.TextColored(Dim, $"Sifting: last event {s.LastSiftMs:0.000} ms, worst {s.WorstSiftMs:0.000} ms (with the stories it completed). {s.Recorded} events this session.");
         if (!ImGui.BeginTabBar("##storytabs"u8))
             return;
+        if (ImGui.BeginTabItem("Story"u8))
+        {
+            DrawStoryStorylets(s); // (UiStoryStorylets.cs)
+            ImGui.EndTabItem();
+        }
+        if (ImGui.BeginTabItem("People"u8))
+        {
+            DrawStoryPeople(game, s); // (UiStoryPeople.cs)
+            ImGui.EndTabItem();
+        }
+        if (ImGui.BeginTabItem("Factions"u8))
+        {
+            DrawStoryFactions(s); // (UiStoryFactions.cs)
+            ImGui.EndTabItem();
+        }
+        if (ImGui.BeginTabItem("Events"u8))
+        {
+            DrawStoryChronicle(s);
+            ImGui.EndTabItem();
+        }
+        if (all)
+            DrawStoryEngineTabs(game, s);
+        ImGui.EndTabBar();
+    }
+
+    /// <summary>The engine's own tabs (the "Engine" box).</summary>
+    private void DrawStoryEngineTabs(Game game, StoryEngine s)
+    {
         if (ImGui.BeginTabItem("World"u8))
         {
             DrawStoryWorld(s);
@@ -129,11 +169,6 @@ public sealed partial class Ui
         if (ImGui.BeginTabItem("Stories"u8))
         {
             DrawStoryStories(s);
-            ImGui.EndTabItem();
-        }
-        if (ImGui.BeginTabItem("People"u8))
-        {
-            DrawStoryPeople(game, s); // (UiStoryPeople.cs)
             ImGui.EndTabItem();
         }
         if (ImGui.BeginTabItem("Drama"u8))
@@ -151,27 +186,11 @@ public sealed partial class Ui
             DrawStoryRoster(s); // (UiStoryScenes.cs)
             ImGui.EndTabItem();
         }
-        if (ImGui.BeginTabItem("Chronicle"u8))
-        {
-            DrawStoryChronicle(s);
-            ImGui.EndTabItem();
-        }
-        if (ImGui.BeginTabItem("Storylets"u8))
-        {
-            DrawStoryStorylets(s); // (UiStoryStorylets.cs)
-            ImGui.EndTabItem();
-        }
-        if (ImGui.BeginTabItem("Factions"u8))
-        {
-            DrawStoryFactions(s); // (UiStoryFactions.cs)
-            ImGui.EndTabItem();
-        }
         if (ImGui.BeginTabItem("Data"u8))
         {
             DrawStoryData(game, s);
             ImGui.EndTabItem();
         }
-        ImGui.EndTabBar();
     }
 
     // ---- World: the graph -------------------------------------------------------------------------------------------
@@ -765,10 +784,13 @@ public sealed partial class Ui
                     _stVerbFilter = v;
             ImGui.EndCombo();
         }
-        ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, $"{s.Chronicle.Count} events kept{(s.Chronicle.FoldedTotal > 0 ? $", {s.Chronicle.FoldedTotal} older plain ones folded into counts" : "")}; the newest 500 shown");
+        if (StoryEngineTabs)
+        {
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, $"{s.Chronicle.Count} events kept{(s.Chronicle.FoldedTotal > 0 ? $", {s.Chronicle.FoldedTotal} older plain ones folded into counts" : "")}; the newest 500 shown");
+        }
         var avail = ImGui.GetContentRegionAvail();
-        var left = avail.X * 0.58f;
+        var left = StoryEngineTabs ? avail.X * 0.58f : 0; // (the sifter's notes beside it only with Engine)
         if (ImGui.BeginChild("##storyevents"u8, new float2(left, avail.Y), ImGuiChildFlags.Borders))
         {
             var all = s.Chronicle.All;
@@ -791,6 +813,8 @@ public sealed partial class Ui
                 ImGui.TextColored(Dim, "Nothing yet."u8);
         }
         ImGui.EndChild();
+        if (!StoryEngineTabs)
+            return;
         ImGui.SameLine();
         if (ImGui.BeginChild("##storynotes"u8, new float2(0, avail.Y), ImGuiChildFlags.Borders))
         {

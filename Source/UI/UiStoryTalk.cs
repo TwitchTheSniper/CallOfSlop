@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The talk panel (Program.StoryTalk.cs; docs/story/STORY.md "Talking to people"): opened with the use key on one of the
 /// story's people, at the right of the screen over the world (it goes on, and so do they). It shows what they said to
-/// you lately and asks: hello, any news, what's this place, what do you do, any advice, trade what you hold (a trader takes it and gives you something of theirs),
+/// you lately and asks: hello, any news, the person's own topics (GameStoryTopics.cs), trade what you hold (a trader takes it and gives you something of theirs),
 /// goodbye. The host decides everything; their answers come back as their own words. Esc, Goodbye or walking off
 /// closes it. Every line is ASCII; nothing allocates in a steady frame.
 /// </summary>
@@ -35,13 +35,14 @@ public sealed partial class Ui
         ImGui.End();
     }
 
-    /// <summary>The panel for <paramref name="person"/>; returns what was asked this frame, or null. <paramref name="joined"/>: a line saying whose talk this is, when it was joined from afar.</summary>
-    public TalkAsk? DrawStoryTalk(Game game, Player person, ushort held, double now, string? joined = null)
+    /// <summary>The panel for <paramref name="person"/>; returns what was asked this frame, or null (<paramref name="topic"/>: the topic's index, for <see cref="TalkAsk.Topic"/>). <paramref name="joined"/>: a line saying whose talk this is, when it was joined from afar.</summary>
+    public TalkAsk? DrawStoryTalk(Game game, Player person, ushort held, double now, out ushort topic, string? joined = null)
     {
         TalkAsk? asked = null;
+        topic = 0;
         if (_talkTitleFor != person.Id || !_talkTitle.EndsWith(person.Name, StringComparison.Ordinal))
             (_talkTitleFor, _talkTitle) = (person.Id, person.Name.ToUpperInvariant());
-        if (held != _talkHeldFor)
+        if (held != _talkHeldFor || _talkTradeLabel.Length == 0)
         {
             _talkHeldFor = held;
             _talkTradeLabel = ConstructParts.Get(held) is { } d ? $"Trade your {d.Name}##talktrade" : "Trade (hold something to offer)##talktrade";
@@ -86,12 +87,17 @@ public sealed partial class Ui
                 asked = TalkAsk.Greet;
             if (ImGui.Button("Any news?##talknews"u8, w))
                 asked = TalkAsk.News;
-            if (ImGui.Button("What's this place?##talkplace"u8, w))
-                asked = TalkAsk.Place;
-            if (ImGui.Button("What do you do here?##talkself"u8, w))
-                asked = TalkAsk.Self;
-            if (ImGui.Button("Any advice?##talkadvice"u8, w))
-                asked = TalkAsk.Advice;
+            // What this person will talk about with you now (GameStoryTopics.cs): their own topics, new ones bright.
+            if (game.TalkTopicsBody == person.Id)
+                for (var k = 0; k < game.TalkTopicCount; k++)
+                {
+                    if (game.TalkTopicAsked[k])
+                        ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+                    if (ImGui.Button(game.TalkTopicLabels[k], w))
+                        (asked, topic) = (TalkAsk.Topic, game.TalkTopics[k]);
+                    if (game.TalkTopicAsked[k])
+                        ImGui.PopStyleColor();
+                }
             ImGui.BeginDisabled(held == ConstructParts.None || joined != null); // (a trade wants you there)
             if (ImGui.Button(_talkTradeLabel, w))
                 asked = TalkAsk.Trade;

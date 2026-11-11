@@ -38,6 +38,9 @@ public sealed class StoryEngine
     /// <summary>The storylets (docs/story/STORY.md "Storylets"): authored beats per player, cast from the world.</summary>
     public readonly StoryStorylets Storylets;
 
+    /// <summary>What people will talk about with a player (docs/story/STORY.md "Topics"), and what asking does.</summary>
+    public readonly StoryTopics Topics;
+
     /// <summary>Seconds of play in this world.</summary>
     public double Time;
 
@@ -58,6 +61,7 @@ public sealed class StoryEngine
         Places = new StoryPlaces(this);
         Factions = new StoryFactions(this);
         Storylets = new StoryStorylets(this);
+        Topics = new StoryTopics(this);
     }
 
     public void Clear()

@@ -134,12 +134,12 @@ public static partial class Program
             TalkClose();
             return;
         }
-        if (Ui.DrawStoryTalk(g, them, g.SandboxHands.Hand(g.LocalId).Held, now, _talkRemote ? _talkWithText : null) is { } ask)
+        if (Ui.DrawStoryTalk(g, them, g.SandboxHands.Hand(g.LocalId).Held, now, out var topic, _talkRemote ? _talkWithText : null) is { } ask)
         {
             if (ask == TalkAsk.Bye)
                 TalkClose();
             else
-                g.StoryTalkAsk(_talkTo, ask);
+                g.StoryTalkAsk(_talkTo, ask, topic);
         }
     }
 }

@@ -466,7 +466,7 @@ public sealed class StoryletRules
     private static string HookName(string hook, string where) =>
         hook.Length == 0 || Array.IndexOf(Hooks, hook) >= 0 ? hook : throw new StoryException($"{where}: \"hook\": \"{hook}\" isn't one the game knows ({string.Join(", ", Hooks)})");
 
-    private static int NamedSlot(string name, List<string> named, int castVars)
+    internal static int NamedSlot(string name, List<string> named, int castVars)
     {
         var i = named.FindIndex(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (i < 0)
@@ -478,7 +478,7 @@ public sealed class StoryletRules
     }
 
     /// <summary>An effect that may name things in quotes ("?me Lead 'Old Mine'"): each name becomes a slot of its own.</summary>
-    private static StoryEffect ParseNamed(StoryRules rules, string text, string where, List<string> named, int castVars, Func<string, int> slot)
+    internal static StoryEffect ParseNamed(StoryRules rules, string text, string where, List<string> named, int castVars, Func<string, int> slot)
     {
         var sb = new StringBuilder(text.Length);
         for (var i = 0; i < text.Length; i++)
@@ -1283,7 +1283,7 @@ public sealed class StoryStorylets
     }
 
     /// <summary>
-    /// Why a storylet isn't playing for a player now (the Storylets tab, --check-story): under way, had, resting, the
+    /// Why a storylet isn't playing for a player now (the Story tab, --check-story): under way, had, resting, the
     /// first clause of its needs that fails (of the alternative that got furthest), or who can't be cast. Null: ready.
     /// </summary>
     public string? WhyNot(int player, int def, double now)

@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Story window's Storylets tab (docs/story/STORY.md "Storylets"; host only): for a player, every storylet with why
+/// The Story window's Story tab (docs/story/STORY.md "Storylets"; host only): for a player, every storylet with why
 /// it isn't playing now, clause by clause, the one under way with its cast and the ends it waits for,
 /// what ended lately, and the storylet qualities and facts they hold. The buttons are for trying things: nudge a quality,
 /// start a storylet now (its needs aside), end one by any of its ends, or forget what a player has had.
@@ -21,11 +21,14 @@ public sealed partial class Ui
         var w = s.World;
         var now = s.Time;
         var on = sl.On;
-        if (ImGui.Checkbox("Storylets"u8, ref on))
+        if (StoryEngineTabs && ImGui.Checkbox("Storylets"u8, ref on))
             sl.On = on;
-        if (ImGui.IsItemHovered())
+        if (StoryEngineTabs && ImGui.IsItemHovered())
             ImGuiSafe.SetItemTooltip("Storylets are authored beats (Story/Storylets) that wait for the world to be ready. Per player: an urgent one first, then the A and B plots in turn, with a rest between. Off, none starts (one under way still ends).");
-        DimWrapped($"{sl.Started} begun, {sl.Ended} ended, {sl.Dropped} given up; {sr.Storylets.Length} storylets in the data. A rest of {StoryRules.Span(StoryStorylets.Rest)} after each.");
+        if (!on)
+            ImGuiSafe.TextColored(StoryFailed, StoryEngineTabs ? "Off: no storylet starts." : "Storylets are off: none starts (the switch is under Engine).");
+        if (StoryEngineTabs)
+            DimWrapped($"{sl.Started} begun, {sl.Ended} ended, {sl.Dropped} given up; {sr.Storylets.Length} storylets in the data. A rest of {StoryRules.Span(StoryStorylets.Rest)} after each.");
         if (sr.Storylets.Length == 0)
         {
             ImGuiSafe.TextWrapped("No storylets loaded (Story/Storylets/*.json).");
@@ -40,6 +43,7 @@ public sealed partial class Ui
                 if (w[i].Kind == StoryKind.Player && !w[i].Gone)
                     _stSlPlayer = i;
         }
+        ImGui.SetNextItemWidth(220 * _scale);
         if (ImGui.BeginCombo("Player##stslpl"u8, _stSlPlayer >= 0 ? w[_stSlPlayer].Name : "nobody"))
         {
             for (var i = 0; i < w.Count; i++)
@@ -64,28 +68,8 @@ public sealed partial class Ui
         if (_stSlNote.Length > 0)
             ImGuiSafe.TextColored(Orange, _stSlNote);
 
-        // Their qualities, to nudge.
-        if (ImGui.CollapsingHeader("Qualities and facts"u8, ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            foreach (var q in sr.Qualities)
-                QualityRow(s, me, q.Id, q.Name, q.Min, q.Max, q.Menace ? "menace" : "progress");
-            foreach (var name in (ReadOnlySpan<string>)["Inducted", "Contraband"])
-                if (s.Rules.Quality(name) is { } qd)
-                    QualityRow(s, me, qd.Id, qd.Name, 0, 1, "");
-            foreach (var name in (ReadOnlySpan<string>)["Course", "Lead", "Visited"])
-            {
-                if (s.Rules.Relation(name) is not { } rd)
-                    continue;
-                var (a, b) = w.Range(me, rd.Id);
-                var held = new List<string>();
-                for (var k = a; k < b; k++)
-                    held.Add(w[me].Pairs[k].Value == 1 ? w.NameOf(w[me].Pairs[k].Target) : $"{w.NameOf(w[me].Pairs[k].Target)} {w[me].Pairs[k].Value}");
-                ImGuiSafe.TextColored(held.Count > 0 ? StoryPlain : Dim, $"{name}: {(held.Count > 0 ? string.Join(", ", held) : "none")}");
-            }
-        }
-
         // Under way.
-        if (ImGui.CollapsingHeader("Under way"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Playing now"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
             var any = false;
             foreach (var r in sl.Runs)
@@ -116,9 +100,10 @@ public sealed partial class Ui
         }
 
         // Every storylet, and why not.
-        if (ImGui.CollapsingHeader("Every storylet"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Every storylet, and why it isn't playing"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
-            DimWrapped("Ready ones play in turn (urgent first, then A and B taking turns, the highest priority first). Hover one for what it needs; Start plays it now if it can be cast, its needs aside.");
+            DimWrapped(StoryEngineTabs ? "Ready ones play in turn (urgent first, then A and B taking turns, the highest priority first). Hover one for what it needs; Start plays it now if it can be cast, its needs aside."
+                : "Green is ready, red says what it waits for, grey has been. Hover one for what it needs; Start plays it now.");
             foreach (var d in sr.Storylets)
             {
                 var why = sl.WhyNot(me, d.Index, now);
@@ -132,7 +117,27 @@ public sealed partial class Ui
             }
         }
 
-        if (ImGui.CollapsingHeader("Lately"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        // Their qualities, to nudge.
+        if (ImGui.CollapsingHeader("Their qualities and facts (- and + change one)"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            foreach (var q in sr.Qualities)
+                QualityRow(s, me, q.Id, q.Name, q.Min, q.Max, q.Menace ? "menace" : "progress");
+            foreach (var name in (ReadOnlySpan<string>)["Inducted", "Contraband"])
+                if (s.Rules.Quality(name) is { } qd)
+                    QualityRow(s, me, qd.Id, qd.Name, 0, 1, "");
+            foreach (var name in (ReadOnlySpan<string>)["Course", "Lead", "Visited"])
+            {
+                if (s.Rules.Relation(name) is not { } rd)
+                    continue;
+                var (a, b) = w.Range(me, rd.Id);
+                var held = new List<string>();
+                for (var k = a; k < b; k++)
+                    held.Add(w[me].Pairs[k].Value == 1 ? w.NameOf(w[me].Pairs[k].Target) : $"{w.NameOf(w[me].Pairs[k].Target)} {w[me].Pairs[k].Value}");
+                ImGuiSafe.TextColored(held.Count > 0 ? StoryPlain : Dim, $"{name}: {(held.Count > 0 ? string.Join(", ", held) : "none")}");
+            }
+        }
+
+        if (ImGui.CollapsingHeader("Ended lately"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (sl.HistoryCount == 0)
                 ImGuiSafe.TextColored(Dim, "None ended yet.");

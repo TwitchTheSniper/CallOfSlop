@@ -26,10 +26,12 @@ public sealed partial class Ui
         var w = s.World;
         if (!p.Any)
         {
-            ImGuiSafe.TextWrapped("No people: Story/People has no goals or actions (or was refused: see Data).");
+            ImGuiSafe.TextWrapped("No people: Story/People has no goals or actions (or was refused: see Data, under Engine).");
             return;
         }
-        ImGuiSafe.TextColored(Dim, $"{ag.Count} people{(ag.Deaths > 0 ? $" ({ag.Deaths} died this session)" : "")}. {ag.Thinks} thinks, {ag.PlansMade} plans ({ag.PlanFails} found none), {ag.StepsDone} steps. A think takes {ag.ThinkMs / Math.Max(1, ag.Thinks) * 1000:0} us on average (last {ag.LastThinkMs * 1000:0} us, worst {ag.WorstThinkMs:0.00} ms); {ag.PerTick} may think a tick.");
+        var all = StoryEngineTabs;
+        if (all)
+            ImGuiSafe.TextColored(Dim, $"{ag.Count} people{(ag.Deaths > 0 ? $" ({ag.Deaths} died this session)" : "")}. {ag.Thinks} thinks, {ag.PlansMade} plans ({ag.PlanFails} found none), {ag.StepsDone} steps. A think takes {ag.ThinkMs / Math.Max(1, ag.Thinks) * 1000:0} us on average (last {ag.LastThinkMs * 1000:0} us, worst {ag.WorstThinkMs:0.00} ms); {ag.PerTick} may think a tick.");
         if (p.Casts.Length > 0)
         {
             _stCast = Math.Clamp(_stCast, 0, p.Casts.Length - 1);
@@ -58,40 +60,43 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGuiSafe.SetItemTooltip("Moves the story clock on ten minutes at once (the game's clock doesn't move).");
         ImGui.SameLine();
-        var bodies = game.StoryBodiesOn;
-        if (ImGui.Checkbox("Bodies"u8, ref bodies))
-            game.StoryBodiesOn = bodies;
-        if (ImGui.IsItemHovered())
-            ImGuiSafe.SetItemTooltip($"The people in this world walk about it ({game.StoryBodyCount} now, {Game.StoryBodiesMax} at most; {game.StoryBodiesMade} came and {game.StoryBodiesGone} went this session). They go where each step happens, a step with someone waits until they have met ({ag.MeetWaits} waits, {ag.Unreached} never met), and a body killed is the person killed, for good. Off: the story's clock alone.");
-        ImGui.SameLine();
-        // STAND-IN: the placeholder craft (Source/StandIns), until the vehicle and ship redo.
-        var craft = game.StandInsOn;
-        if (ImGui.Checkbox("Craft"u8, ref craft))
-            game.StandInsOn = craft;
-        if (ImGui.IsItemHovered())
-            ImGuiSafe.SetItemTooltip($"Placeholder craft (yellow and black, only pictures) carry the people on their roads: a shuttle for a long road, a hover hauler for a short one, and a courier flyer comes for a sealed Requisition Crate. {game.StandInCount} about now, {game.StandInsMade} this session. They stand in for the real vehicles and ships until those are redone.");
-        ImGui.SameLine();
-        var traffic = game.TrafficOn;
-        if (ImGui.Checkbox("Traffic"u8, ref traffic))
-            game.TrafficOn = traffic;
-        if (ImGui.IsItemHovered())
-        {
-            game.TrafficDescribe(_stTraffic);
-            ImGuiSafe.SetItemTooltip($"The story world's ambient traffic (Story/Traffic/Traffic.json): placeholder craft on rounds between the colony, the quarry and placeholder stations, faction ships that land to trade, and ships passing overhead. {game.TrafficTrips} trips and {game.TrafficRadioLines} radio lines this session.\n\n{string.Join("\n", _stTraffic)}");
-        }
-        ImGui.SameLine();
         ImGui.BeginDisabled(game.Local is not { Alive: true });
         if (ImGui.Button("Call craft"u8) && game.Local is { } me)
             game.StandInTest(me.Position);
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered())
             ImGuiSafe.SetItemTooltip("A placeholder shuttle, hover hauler and courier flyer come in near you, stand for ten seconds and go.");
-        ImGui.SameLine();
-        var talk = s.Talk.On;
-        if (ImGui.Checkbox("Talk"u8, ref talk))
-            s.Talk.On = talk;
-        if (ImGui.IsItemHovered())
-            ImGuiSafe.SetItemTooltip($"The people say things (Story/Lines, the response rules): {s.Talk.Lines} lines so far, {game.StoryLinesHeard} heard by players near the speaker, {game.StoryBroadcasts} radio broadcasts that every player heard, {s.Talk.Quiet} times a rule kept quiet. Off: nobody says anything (the radio still puts news about in the story).");
+        if (all)
+        {
+            ImGui.SameLine();
+            var bodies = game.StoryBodiesOn;
+            if (ImGui.Checkbox("Bodies"u8, ref bodies))
+                game.StoryBodiesOn = bodies;
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetItemTooltip($"The people in this world walk about it ({game.StoryBodyCount} now, {Game.StoryBodiesMax} at most; {game.StoryBodiesMade} came and {game.StoryBodiesGone} went this session). They go where each step happens, a step with someone waits until they have met ({ag.MeetWaits} waits, {ag.Unreached} never met), and a body killed is the person killed, for good. Off: the story's clock alone.");
+            ImGui.SameLine();
+            // STAND-IN: the placeholder craft (Source/StandIns), until the vehicle and ship redo.
+            var craft = game.StandInsOn;
+            if (ImGui.Checkbox("Craft"u8, ref craft))
+                game.StandInsOn = craft;
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetItemTooltip($"Placeholder craft (yellow and black, only pictures) carry the people on their roads: a shuttle for a long road, a hover hauler for a short one, and a courier flyer comes for a sealed Requisition Crate. {game.StandInCount} about now, {game.StandInsMade} this session. They stand in for the real vehicles and ships until those are redone.");
+            ImGui.SameLine();
+            var traffic = game.TrafficOn;
+            if (ImGui.Checkbox("Traffic"u8, ref traffic))
+                game.TrafficOn = traffic;
+            if (ImGui.IsItemHovered())
+            {
+                game.TrafficDescribe(_stTraffic);
+                ImGuiSafe.SetItemTooltip($"The story world's ambient traffic (Story/Traffic/Traffic.json): placeholder craft on rounds between the colony, the quarry and placeholder stations, faction ships that land to trade, and ships passing overhead. {game.TrafficTrips} trips and {game.TrafficRadioLines} radio lines this session.\n\n{string.Join("\n", _stTraffic)}");
+            }
+            ImGui.SameLine();
+            var talk = s.Talk.On;
+            if (ImGui.Checkbox("Talk"u8, ref talk))
+                s.Talk.On = talk;
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetItemTooltip($"The people say things (Story/Lines, the response rules): {s.Talk.Lines} lines so far, {game.StoryLinesHeard} heard by players near the speaker, {game.StoryBroadcasts} radio broadcasts that every player heard, {s.Talk.Quiet} times a rule kept quiet. Off: nobody says anything (the radio still puts news about in the story).");
+        }
         if (_stCastNote.Length > 0)
         {
             ImGui.SameLine();
@@ -99,7 +104,7 @@ public sealed partial class Ui
         }
         if (ag.Count == 0)
         {
-            ImGuiSafe.TextWrapped("Nobody yet. Add a cast (Story/Casts) or play a scenario with one (Data), like Frontier.");
+            ImGuiSafe.TextWrapped("Nobody yet. Add a cast (Story/Casts) or play a scenario with one (Data, under Engine), like Frontier.");
             return;
         }
         if (ag.Of(_stPerson) == null)
@@ -169,7 +174,8 @@ public sealed partial class Ui
         var here = ag.Where(a.Entity);
         ImGuiSafe.TextColored(Orange, e.Name);
         ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, $"  {WhereText(s, a)}; {a.Steps} steps ({a.StepFails} failed), {a.Plans} plans ({a.PlanFails} found none){(a.Scripted ? "; from a scenario" : "")}");
+        var all = StoryEngineTabs;
+        ImGuiSafe.TextColored(Dim, !all ? $"  {WhereText(s, a)}" : $"  {WhereText(s, a)}; {a.Steps} steps ({a.StepFails} failed), {a.Plans} plans ({a.PlanFails} found none){(a.Scripted ? "; from a scenario" : "")}");
         if (a.Dead)
             ImGuiSafe.TextColored(StoryFailed, $"{DoingText(s, a)}: they do nothing more, and nobody has them in mind.");
         else if (a.Busy)
@@ -185,9 +191,10 @@ public sealed partial class Ui
         {
             var to = game.StoryBodyGoalOf(a.Entity) ?? body.Position;
             var far = MathF.Sqrt((to.X - body.Position.X) * (to.X - body.Position.X) + (to.Z - body.Position.Z) * (to.Z - body.Position.Z));
-            ImGuiSafe.TextColored(StoryBodied, body.Alive
-                ? $"Body: player {body.Id} at {body.Position.X:0}, {body.Position.Z:0}{(far > 1.5f ? $", going to {to.X:0}, {to.Z:0} ({far:0} m)" : ", there")}"
-                : $"Body: player {body.Id}, lying dead");
+            if (all || !body.Alive || far > 1.5f)
+                ImGuiSafe.TextColored(StoryBodied, !body.Alive ? (all ? $"Body: player {body.Id}, lying dead" : "Their body lies dead.")
+                    : all ? $"Body: player {body.Id} at {body.Position.X:0}, {body.Position.Z:0}{(far > 1.5f ? $", going to {to.X:0}, {to.Z:0} ({far:0} m)" : ", there")}"
+                    : $"Walking there: {far:0} m to go.");
             if (body.Alive && game.StorySightOf(a.Entity) is { } react)
                 ImGuiSafe.TextColored(StoryBodied, $"Sight: {react}."); // (GameStorySight.cs)
             if (body.Alive && game.StoryMoodOf(a.Entity, Brutal.GlfwApi.Glfw.Time) is { } md)
@@ -200,7 +207,7 @@ public sealed partial class Ui
         }
         else if (!a.Dead)
             ImGuiSafe.TextColored(Dim, game.StoryBodiesOn ? "No body: not in this world now." : "No body: bodies are off.");
-        if (a.Why != AgentWhy.None)
+        if (a.Why != AgentWhy.None && (all || a.Why != AgentWhy.Idle))
             ImGuiSafe.TextColored(a.Why == AgentWhy.Idle ? Dim : StoryFailed, $"Last: {ag.WhyText(a)}");
         if (s.Drama.Of(a, now) is var di and >= 0)
         {
@@ -251,7 +258,7 @@ public sealed partial class Ui
             i = j;
         }
 
-        if (ImGui.CollapsingHeader("Goals: utility, best first"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        if (all && ImGui.CollapsingHeader("Goals: utility, best first"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
             Span<int> order = stackalloc int[p.Goals.Length];
             for (var g = 0; g < order.Length; g++)
@@ -286,7 +293,7 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, $"As of their last think. Each goal's score is its weight times every consideration (hover one); the one under way counts {StoryAgents.KeepBonus:0.#}x; below {StoryAgents.MinScore:0.##} nothing is worth doing.");
         }
 
-        if (ImGui.CollapsingHeader("Plan"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        if (all && ImGui.CollapsingHeader("Plan"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (a.TreeCount == 0 || a.Goal < 0)
                 ImGuiSafe.TextColored(Dim, "No plan.");
@@ -352,7 +359,7 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Dim, "Nothing lately. People speak when a step plays out with their body, a player comes up to them, they are hurt, or they see something happen; the radio goes out to everyone.");
         }
 
-        if (ImGui.CollapsingHeader("What they know, most interesting first"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("What they know, most interesting first"u8, all ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None))
         {
             Span<int> order = stackalloc int[a.KnownCount];
             for (var k = 0; k < order.Length; k++)

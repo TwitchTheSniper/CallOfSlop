@@ -46,13 +46,13 @@ runs in the story's survival world, round the penal colony, whenever "Craft" and
 - `--traffic-check [seconds]` (headless, about 100 s): a host and a client over the real transport; prints the
   stations, every leg the client heard, how far haulers ran from the ground and what the host's look costs
   (0.1 us a call, four calls a second, no allocation). At most 48 craft and pads at once (`StandInMax`).
-- **Story window (F4), People tab**: the "Craft" switch turns them off; "Call craft" brings one of each kind in near you
+- **Story window (F4), People tab**: the "Craft" switch (with the Engine box ticked) turns them off; "Call craft" brings one of each kind in near you
   for ten seconds, to see them without waiting for a trip. Log lines start with `[standin]`.
 
 ## How it works
 
 The host decides each craft's script (when it starts, how long it takes to come in, stand and go, where it lands, which
-way it travels) and sends it once in `Msg.StandIn` (protocol 233; a leg's start and the owner's colour since 239), again every 3 s for anyone who joined; every PC poses
+way it travels) and sends it once in `Msg.StandIn` (protocol 233; a leg's start and the owner's colour since 240), again every 3 s for anyone who joined; every PC poses
 it from the server tick (`Game.MoverRenderTick`), so nothing streams while it flies.
 
 | File | What |

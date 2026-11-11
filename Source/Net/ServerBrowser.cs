@@ -382,8 +382,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 236: the first Ministry duty (docs/story/DUTIES.md): Msg.Quarry at the end of Msg, CActKind.QuarrySkip at the end of CActKind; stand-in craft gain a Duty purpose (host only).
     // 237: the talk panel's topics: TalkAsk.Place, Self and Advice (6-8) and TalkAsk.Choose moves up to 9.
     // 238: dug ground's shape from the same ops again: a roof thinner than 6 m falls in with a scoop or a crater (TerrainEdits.MinRoof), and side-by-side tops always share their corner height (GroundTops). No message changed.
-    // 239: STAND-IN: Msg.StandIn gains a vec from and a 3-byte tint (the ambient traffic's legs, ships and stations: Source/StandIns/GameTraffic.cs).
-    public const byte ProtocolVersion = 239;
+    // 239: talk topics per person (docs/story/STORY.md "Topics"): Msg.TalkTopics at the end of Msg, TalkAsk.Topic (13) in CActKind.Talk followed by a u16 (the topic's index).
+    // 240: STAND-IN: Msg.StandIn gains a vec from and a 3-byte tint (the ambient traffic's legs, ships and stations: Source/StandIns/GameTraffic.cs).
+    public const byte ProtocolVersion = 240;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
