@@ -744,7 +744,7 @@ public static class ConstructConfig
     {
         CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised => "toggle",
         CfgKey.Profile => "choice",
-        CfgKey.RunMode => "choice",
+        CfgKey.RunMode or CfgKey.LinePage or CfgKey.OrderKind or CfgKey.OrderMaterial => "choice",
         CfgKey.SteerKind => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",

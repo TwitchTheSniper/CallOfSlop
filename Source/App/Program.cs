@@ -253,6 +253,8 @@ public static unsafe partial class Program
             return VehicleKit.BodyReportCli.Run(bodyStyle, args); // what a style's rooms are made of, and how their cross-sections differ (docs/vehiclekit/BODY-STYLES.md)
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
+        if (args.Any(a => a.Equals("--probe-orders", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.ProbeOrders(args); // TEMPORARY PROBE
         if (args.SkipWhile(a => !a.Equals("--bill", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } billOf)
             return ConstructBill.Cli(billOf); // a blueprint's bill: the pieces it needs by key with counts (WorkOrders.cs)
         if (args.Any(a => a.Equals("--bench-parts", StringComparison.OrdinalIgnoreCase)))
