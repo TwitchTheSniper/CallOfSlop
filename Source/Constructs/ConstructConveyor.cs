@@ -81,14 +81,28 @@ public sealed partial class ConstructWorld
         return d;
     }
 
-    /// <summary>Where a piece off a rack goes loose: over the rack's top, its middle over the rack's middle (world), and its turn.</summary>
-    public static void RackOver(Construct c, int part, ConstructPartDef d, int k, out Vector3 at, out Quaternion turn)
+    /// <summary>
+    /// Where piece <paramref name="k"/> off a rack goes loose: beside the rack on the side of <paramref name="eye"/>, just over
+    /// the rack's top, a row along the rack and then rows further out (a drop of many lies on the floor, not in the rack). World.
+    /// </summary>
+    public static void RackBeside(Construct c, int part, ConstructPartDef d, Vector3 eye, int k, out Vector3 at, out Quaternion turn)
     {
-        c.PartBounds(part, out var mn, out var mx);
-        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
-        var top = new Vector3((mn.X + mx.X) * 0.5f, mx.Y + (d.BoundsMax.Y - d.BoundsMin.Y) * (0.5f + 1.1f * k) + 0.1f, (mn.Z + mx.Z) * 0.5f);
-        at = t + Vector3.Transform(top, q);
-        turn = q * Rot24.Quat(c.Parts[part].Rot);
+        ref var p = ref c.Parts[part];
+        var rd = c.DefOf(part);
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var r = Rot24.Quat(p.Rot);
+        turn = q * r;
+        var e = Vector3.Transform(eye - (t + Vector3.Transform(p.Pos, q)), Quaternion.Conjugate(turn)); // (the rack's own frame)
+        var mn = rd.BoundsMin;
+        var mx = rd.BoundsMax;
+        var s = d.BoundsMax - d.BoundsMin;
+        var side = e.X < (mn.X + mx.X) * 0.5f ? -1f : 1f;
+        var row = s.Z > 1 ? 1 : 8; // (long pieces side by side outwards; short ones in rows of eight along the rack)
+        var across = (k / row) * (s.X + 0.1f) + s.X * 0.5f + 0.15f;
+        var along = Math.Clamp(e.Z, mn.Z + s.Z * 0.5f, mx.Z - s.Z * 0.5f) + ((k % row) - row / 2) * (s.Z + 0.1f);
+        var centre = new Vector3(side > 0 ? mx.X + across : mn.X - across, mx.Y + s.Y * 0.5f + 0.05f, along);
+        var local = centre - (d.BoundsMin + d.BoundsMax) * 0.5f; // (its origin, so its middle is there)
+        at = t + Vector3.Transform(p.Pos + Vector3.Transform(local, r), q);
     }
 
     /// <summary>Where a stack's top piece is now (world): its centre and turn (the physics gun pulls it out from there).</summary>
@@ -106,7 +120,7 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Server: every piece of a kind off a rack, loose bodies stacked over it, at most <paramref name="most"/> (a world of bodies costs). How many.</summary>
-    public int RackDropKind(Construct c, int part, ushort def, int most)
+    public int RackDropKind(Construct c, int part, ushort def, int most, Vector3 eye)
     {
         if (StoreOf(c, part) is not { } st || ConstructParts.Get(def) is not { } d)
             return 0;
@@ -114,7 +128,7 @@ public sealed partial class ConstructWorld
         var n = 0;
         while (n < most && ConstructRackPack.LastOf(st, def, out var slab, out var lane))
         {
-            RackOver(c, part, d, n, out var at, out var turn);
+            RackBeside(c, part, d, eye, n, out var at, out var turn);
             if (ConstructEdits.DropLoose(this, d, at, turn) is not { } body)
                 break;
             body.Owner = c.Owner;

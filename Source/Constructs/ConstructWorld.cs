@@ -1285,6 +1285,7 @@ public sealed partial class ConstructWorld
             for (var ci = 0; ci < candidates; ci++)
             {
                 var i = _partHits[ci];
+                var partBest = best; // (before this part: a Piece Rack's own bars never hide what it holds from a look)
                 if (c.Rides(i))
                     continue; // (on a leg segment: LegRay below)
                 ref var p = ref c.Parts[i];
@@ -1390,6 +1391,8 @@ public sealed partial class ConstructWorld
                     var pl = Vector3.Transform(lo - p.Pos, back);
                     var pd = Vector3.Transform(ld, back);
                     var was = best;
+                    if (hit.Body == c && hit.Part == i && found)
+                        best = partBest; // (its bars were hit first: look past them)
                     if (ConstructRackPack.Ray(p.D, rst, pl, pd, ref best, out var rs, out var rl) || ConstructRackPack.HoldRay(p.D, pl, pd, ref best))
                     {
                         found = true;

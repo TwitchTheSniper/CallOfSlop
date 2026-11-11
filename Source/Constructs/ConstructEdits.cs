@@ -867,7 +867,7 @@ public sealed partial class ConstructEdits
             // A Piece Rack: the top piece of the stack looked at (else the last in) comes off, into the hands (a physics-only piece: a body over the rack).
             if (!world.RackPick(c, part, world.StoreOf(c, part)!, eye, look, out var slab, out var lane) || world.RackTakeAt(c, part, slab, lane) is not { } piece)
                 return "the rack is empty";
-            ConstructWorld.RackOver(c, part, piece, 0, out var over, out var turn);
+            ConstructWorld.RackBeside(c, part, piece, eye, 0, out var over, out var turn);
             Give(world, player, piece, over, turn);
             Done.Add($"player {player}: took {piece.Name} off the {d.Name} (construct {c.Id})");
             return null;

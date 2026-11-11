@@ -22,7 +22,7 @@ public sealed partial class ConstructEdits
             return "the rack is empty";
         var def = st.Slabs![slab].Def;
         var name = ConstructParts.Get(def)?.Name ?? "piece";
-        var n = world.RackDropKind(c, part, def, ConstructConveyor.DropMost);
+        var n = world.RackDropKind(c, part, def, ConstructConveyor.DropMost, eye);
         if (n == 0)
             return "the world is full";
         Done.Add($"player {player}: dropped {n} {name} off the {d.Name} (construct {c.Id})");
