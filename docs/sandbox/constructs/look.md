@@ -89,12 +89,9 @@ From `Constructs/Categories.json` and the part files:
 
 ## A detail budget
 
-The guide gives no number for dressing; these are **proposed, user to confirm**:
+There is no fixed number for dressing or lamps (user, 2026-11-11): a build is judged by `--look-report` and by eye in the game. Dressing is not optional because it has no quota: every build gets some, and at least one lamp where it has a way in. Only the 4 lamps nearest within 16 m light anything at a time.
 
-- **Dressing is 5-15 % of a build's parts**, and at least 3 parts on any build over 20 parts (at least one lamp).
-- **Lamps**: one per way in plus one per 50 parts is plenty; only the 4 nearest within 16 m light anything at a time.
-
-What the numbers rest on: frames, beams, plates and wedges are **plain** parts; everything else is special
+What dressing costs: frames, beams, plates and wedges are **plain** parts; everything else is special
 ([Rebuilds](overview-and-playing.md#rebuilds)). On a body of 1,024 parts or more, edits to plain parts are journalled; a
 special part (a lamp, a sign, a stack) makes edits next to it a full rebuild, and any freeform weld on the body turns the
 journal off. [Fusing](building-and-tools.md#fusing) caches plain parts only. So keep dressing as separate, few, larger
