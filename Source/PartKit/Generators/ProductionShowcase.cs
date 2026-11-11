@@ -194,6 +194,9 @@ public sealed class ProductionShowcase : IPartGenerator
             foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Gun Barrel", 2) }) // (steel only, tier 1: what its stock makes)
                 BillPart(orders, part, n);
 
+            // ---- 8. The Crafting Terminal: on the orders console's machines, the Assembler's rack returning to its tray. ------------------
+            CraftingCorner(orders, partRack);
+
             // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------
             Stripe(26.75f, Row1, true);
             Stripe(36.75f, Row1, true);
@@ -204,6 +207,23 @@ public sealed class ProductionShowcase : IPartGenerator
             // ---- The lamps: one on every sign post, wired from the main switch along the aisles' edges. -------------------------
             foreach (var lamp in _lamps)
                 Lamp(lamp);
+        }
+
+        /// <summary>
+        /// The Crafting Terminal's corner (its own floor area: x 60 to 64, z -9.2 to -6.2, between the wheel rack and the part rack): the
+        /// terminal, the orders console's wire into its Orders port (so it sees that console's machines), a return conveyor from the
+        /// Assembler's Piece Rack to its tray, and its sign.
+        /// </summary>
+        private void CraftingCorner(VPart orders, VPart partRack)
+        {
+            var term = On("Crafting Terminal", 61.5f, -9.0f, Front, "-y.0.0");
+            var from = PortAt(partRack, "Piece out");
+            var to = PortAt(term, "Piece in");
+            Convey(partRack, "Piece out", term, "Piece in", Assembly, null, V(to.X, from.Y, from.Z));
+            Link("data", orders, term, null, "Orders", Control, true, null,
+                new[] { V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(54.25f, 0, -2.0f), V(60.5f, 0, -2.0f), V(60.5f, 0, -6.2f) }
+                    .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
+            Sign(60.5f, -6.4f, Assembly, "F on the screen: order a part. It arrives in the tray");
         }
 
         /// <summary>A sign post at (x, z): a Frame Beam stood up in the station's colour, a Text Sign facing the aisle, a lamp on top.</summary>
