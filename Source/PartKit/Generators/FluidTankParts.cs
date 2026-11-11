@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The Fluid Tanks: Constructs/Parts/FluidTanks (docs/sandbox/CONSTRUCTS.md, "Fluid tanks"). Was tools/constructs/fluid_tank_parts.py.
 /// One part kind in the fuel tanks' six sizes, with the same bodies and capacities: a tank that holds any one fluid, a pipe's input and
-/// output. And the Tank Volume, one block with a box the configure tool sizes. Recipes come from tools/constructs/assembling.py.
+/// output. And the Tank Volume, one block with a box the configure tool sizes. Recipes come from the part kit's assembling (--gen-parts assembling).
 /// </summary>
 public sealed class FluidTankParts : IPartGenerator
 {

@@ -100,7 +100,7 @@ The rules for every faction's vehicles. A vehicle body is a set of volumes, not 
 
 The check measures it: `MaxSideFill` (62%) and `MaxTopFill` (84%) are how much of its bounding box the body may fill from the side and from above, over the fixed parts (no wheels, no turrets), and the note gives how much the roofline wanders. Every room is also shot with rays through what's drawn, and any two that leave side by side are a hole. A new shape that fails these needs a different outline, not a tweak to the limit.
 
-New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's frame; the drawn shape is their convex hull) takes any facet at any angle; hidden boxes stand for it to the build rules, as with every shape. `tools/constructs/hull_parts.py` shows the idiom.
+New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's frame; the drawn shape is their convex hull) takes any facet at any angle; hidden boxes stand for it to the build rules, as with every shape. `Source/PartKit/Generators/HullParts.cs` (`--gen-parts hull_parts`) shows the idiom.
 
 ### Looking at one
 
@@ -247,7 +247,7 @@ cab-over, the Bandits' anything. `--diversity` lists the modules a seed chose as
 
 ### The Bandit style
 
-Rust and bare metal, one colour of frame, war paint on a few panels, plates that don't match and some that are missing. The part kit's `--gen-parts bandit_parts` (Source/PartKit/Generators/BanditParts.cs) writes what the game didn't have (`Constructs/Parts/Bandit`): the Fuel Drum, spikes, skulls and a hubcap. Run `tools/constructs/assembling.py` after it for their recipes.
+Rust and bare metal, one colour of frame, war paint on a few panels, plates that don't match and some that are missing. The part kit's `--gen-parts bandit_parts` (Source/PartKit/Generators/BanditParts.cs) writes what the game didn't have (`Constructs/Parts/Bandit`): the Fuel Drum, spikes, skulls and a hubcap. Run the part kit's `--gen-parts assembling` after it for their recipes.
 
 The designed weak points: the Fuel Drum (55 health, and on the technical the only fuel) stands in the open, its pipe under the floor; nothing covers the tyres; the driver sits in the open with no roof or glass. On the Scrap Tanker the big tanks stand in the open too. **Signature** (`VehicleIdentity.Signatures["Bandit"]`): marks, fuel in the open (seen from two sides) and spikes or trophies (Iron Spikes, skulls, a Hubcap Plate); characteristic parts those, the drum, a Ram Plow, mesh-guard and slit cabs; modules caged and armoured cabs, ram and plated noses, panniers. Weak points: the fuel, two tyres or more, the open driver on light vehicles, and a light vehicle's ammo crate when it has one. A technical's crates ride loose in a Cargo Volume under the bed, so they stay aboard until the volume breaks or someone lifts them out.
 

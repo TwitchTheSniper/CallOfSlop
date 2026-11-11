@@ -6,7 +6,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// A hull bay made at run time for a cross-section no part file has (docs/vehiclekit/BODY-STYLES.md, "Lofted hull bays"): a slice of walk-in body between two
-/// cross-sections, as tools/constructs/hull_parts.py makes its fixed bays, but with any section. A section is a half profile, floor edge first, up the side and over
+/// cross-sections, as the part kit's HullParts (Source/PartKit) makes its fixed bays, but with any section. A section is a half profile, floor edge first, up the side and over
 /// the roof to the centreline, in centimetres; the bay lofts from its front section to its back one, so a roof steps, a nose wedges or a tail boat-tails by the
 /// sections it is given. Like an Ordnance Rack's shapes, its name is its key: <c>Hull Loft (100fr 104,0/108,185/82,222/0,222 ...)</c> (length in cm; <c>d</c> a door in
 /// the +x side, <c>f</c> its front closed, <c>r</c> its back closed), so a blueprint or a save names it and any machine makes the same part from the name.
@@ -401,7 +401,7 @@ public static partial class HullLoft
 
         public void Sock(string name, Vector3 at, string dir) => Sockets.Add(new JsonObject { ["name"] = name, ["at"] = V(at.X, at.Y, at.Z), ["dir"] = dir });
 
-        /// <summary>A socket with a small hidden pad behind it (hull_parts.py's pad): something for the build rules to stand it on.</summary>
+        /// <summary>A socket with a small hidden pad behind it (HullParts.Pad in the part kit): something for the build rules to stand it on.</summary>
         public void Pad(string name, Vector3 at, string dir, float size = 0.03f)
         {
             var v = dir switch { "+x" => Vector3.UnitX, "-x" => -Vector3.UnitX, "+y" => Vector3.UnitY, "-y" => -Vector3.UnitY, "+z" => Vector3.UnitZ, _ => -Vector3.UnitZ };
@@ -577,7 +577,7 @@ public static partial class HullLoft
         }
         if (door)
         {
-            // The flat frame round the doorway (hull_parts.py's door bay), the door's plane at x = 1.
+            // The flat frame round the doorway (HullParts.DoorBay in the part kit), the door's plane at x = 1.
             foreach (var (fz0, fz1) in new[] { (z0 + 0.003f, z0 + 0.125f), (z1 - 0.125f, z1 - 0.003f) }) // (3 mm in from the ends: a roof row cut level under an upper storey runs down to the frame's top there, phase 5)
             {
                 p.Facet([new(DoorPlane, 0, fz0), new(DoorPlane, DoorTop, fz0), new(DoorPlane, DoorTop, fz1), new(DoorPlane, 0, fz1)], Vector3.UnitX, Rust, off: [Vector3.UnitX, Off(FrameTop(a), 1), Off(FrameTop(b), 1), Vector3.UnitX]);

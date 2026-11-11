@@ -14,7 +14,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// A door is named for its opening, not its slab: a Flush Door 1.5x2.25 m is Gap smaller at each edge, with the hinge in the gap on one side. Sizes are
 /// the openings the game has: 1.5x2.25 m a Door Wall, Door Corner or bunker; 0.7x1.8 m a Door Frame 1x2 m (its jamb is off the socket grid: weld the
 /// hinge on); 1.25x2.35 m a vehicle kit room; 1x2 m and 1.25x2 m for what players cut themselves. Its hang socket is at the middle of its edge, and a
-/// door's height is measured from the same middle, so a hinge at the opening's mid-height centres it. Recipes come from tools/constructs/assembling.py.
+/// door's height is measured from the same middle, so a hinge at the opening's mid-height centres it. Recipes come from the part kit's assembling (--gen-parts assembling).
 /// </summary>
 public sealed class DoorParts : IPartGenerator
 {

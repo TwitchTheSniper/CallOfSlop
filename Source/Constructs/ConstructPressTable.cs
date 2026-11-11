@@ -48,7 +48,7 @@ public sealed class PressRow
 }
 
 /// <summary>
-/// The stamping table (Constructs/Pressing.json, format call-of-slop-pressing/1, written by tools/constructs/press_parts.py;
+/// The stamping table (Constructs/Pressing.json, format call-of-slop-pressing/1, written by the part kit's press_parts;
 /// docs/sandbox/CONSTRUCTS.md "The Press"). <see cref="Rows"/> are a press's: flat, one line per die family, material and size
 /// band, so a die with a dozen lines is a dozen rows and the first that its bays satisfy runs. <see cref="Lathe"/> are a Die
 /// Lathe's, chosen as a setting. A file that is refused gives no recipes and <see cref="Problem"/>.

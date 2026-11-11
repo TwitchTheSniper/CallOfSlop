@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The sections of modular bombs and missiles, and the Ordnance Bench: Constructs/Parts/Ordnance (docs/sandbox/CONSTRUCTS.md, "Modular
 /// ordnance"). Was tools/constructs/ordnance_parts.py. A section is a real part (made in survival, stored, carried) whose "ordnance" block is
 /// what it adds to a design. Its boxes run along Z, nose to -z, at the reference diameter of 25 cm; the bench scales them. Recipes come from
-/// tools/constructs/assembling.py. The demo planes are built on Constructs/Blueprints/LightPlane.json: run this again if it changes.
+/// the part kit's assembling (--gen-parts assembling). The demo planes are built on Constructs/Blueprints/LightPlane.json: run this again if it changes.
 /// A section's ordnance numbers are given as (key, value) pairs in order, each value keeping its Python type (an int stays an int).
 /// </summary>
 public sealed class OrdnanceParts : IPartGenerator

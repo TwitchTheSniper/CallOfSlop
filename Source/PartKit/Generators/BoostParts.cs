@@ -5,7 +5,7 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// Jets, rockets, boosters, decouplers, repulsors and Anti-Grav: Constructs/Parts/Boost, and the demo craft (docs/sandbox/CONSTRUCTS.md,
-/// "Jets, rockets and repulsors"). Was tools/constructs/boost_parts.py. Recipes come from tools/constructs/assembling.py.
+/// "Jets, rockets and repulsors"). Was tools/constructs/boost_parts.py. Recipes come from the part kit's assembling (--gen-parts assembling).
 /// </summary>
 public sealed class BoostParts : IPartGenerator
 {

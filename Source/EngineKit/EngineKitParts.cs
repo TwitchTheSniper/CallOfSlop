@@ -8,7 +8,7 @@ namespace CallOfSlop.EngineKit;
 /// their size, in each of the modular engine's four sizes (Constructs/Parts/EngineKit). <c>--gen-engine-parts [--check]</c> writes them, or with --check only
 /// says which are out of date. Run it from the repo root.
 /// <para>
-/// A tier's cylinder is the plain cylinder (Constructs/Parts/ModularEngine, tools/constructs/engine_parts.py) with the same boxes and sockets, so the same
+/// A tier's cylinder is the plain cylinder (Constructs/Parts/ModularEngine, the part kit's engine_parts) with the same boxes and sockets, so the same
 /// geometry the z-fight corrector already settled, a head of the tier's colour (the head already differs in colour from every box it meets, so recolouring
 /// it adds no coplanar pair), its own power and thirst (<c>enginePiece.power</c>, <c>thirst</c>: <see cref="ConstructEngine"/> multiplies a cylinder's kW by
 /// them), a little more mass and toughness, and its <c>tier</c>.
@@ -32,7 +32,7 @@ public static class EngineKitParts
 
     public static readonly string[] Sizes = ["Small", "Medium", "Large", "Capital"];
 
-    /// <summary>The colour of the plain cylinder's head (engine_parts.py's RUST), the box recoloured.</summary>
+    /// <summary>The colour of the plain cylinder's head (the part kit's EngineParts.Rust), the box recoloured.</summary>
     private const string PlainHead = "#7c4a2e";
 
     /// <summary>The part's name for a size and grade ("Small Racing Cylinder"); the plain one for grade null.</summary>
@@ -97,7 +97,7 @@ public static class EngineKitParts
                 heads++;
             }
         if (heads != 1)
-            throw new InvalidOperationException($"{plain}: expected one head box of {PlainHead}, found {heads} (engine_parts.py changed: update EngineKitParts.PlainHead)");
+            throw new InvalidOperationException($"{plain}: expected one head box of {PlainHead}, found {heads} (EngineParts changed: update EngineKitParts.PlainHead)");
         o["boxes"] = boxes;
         o["sockets"] = root["sockets"]!.DeepClone();
         if (root["sizeClass"] is { } sc)

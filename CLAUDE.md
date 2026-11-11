@@ -44,7 +44,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 Sandbox first:
 
 ```
-Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md, an index): ConstructParts (part files, Rot24), Construct (a body), LogicBlocks/LogicInputs/LogicDisplays/LogicText/ConstructRadio (logic parts, from tools/constructs/control_parts.py),
+Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md, an index): ConstructParts (part files, Rot24), Construct (a body), LogicBlocks/LogicInputs/LogicDisplays/LogicText/ConstructRadio (logic parts, from the part kit's control_parts),
                      ConstructPhysics, ConstructCollider/Narrow/PhysicsContacts (compound collision), ConstructWorld (wrecks,
                      damage, players), ConstructBuild (sockets, ghosts, blueprints), ConstructEdits* (tools, timed edits),
                      ConstructNet (CBody/CPose), ConstructScoops (buckets that dig and pour), ConstructDrive/Engine/Power/Logic/Links/Routes, Recycling/Refining/Assembling/
@@ -72,8 +72,8 @@ Source/ also:        Maps/ MapKit/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cos
 
 Constructs/Parts/, Blueprints/, Tools/   parts, build scripts, the tools' held models; Constructs/Categories.json places parts in the Tab inventory (PartCategories.cs)
 Constructs/*.json    Resources, Recycling, Refining, Assembling, Extrusion, Beacons, SurvivalStart, ModularEngine, WeaponParts, Loot ...
-tools/constructs/    Python generators, moving to Source/PartKit (docs/sandbox/PARTKIT.md); much of Constructs/Parts
-                     and Assembling.json, ModularEngine.json are their output: change the generator
+Source/PartKit/      the part kit (docs/sandbox/PARTKIT.md): most of Constructs/Parts, Assembling.json and
+                     ModularEngine.json are its output (change the generator); tools/constructs/ keeps the last Python ones
 Systems/*.json       star systems (at most ten; five now, one faction home each)
 Parts/<Category>/    the weapon builder's parts, which Sandbox uses too; Parts/Builds, Parts/Tables, _Registry.json, _Bases, _Fragments
 Maps/ Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/ Weapons/ Attachments/   data next to the exe
@@ -87,8 +87,8 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 ## Conventions
 
 - **Data first.** Parts, maps, weapons, attachments, props, buildings and decals are JSON files loaded at start-up. Prefer adding data over code. Bad files are refused with a reason.
-- **Generators, not outputs.** A generated file is fixed in its generator (`tools/constructs/`, `tools/space/`, ...), never by editing the output. A generator caps every amount by the file's limits (one recipe over `MaxUnits` makes the whole Assembling table refuse).
-- **Helper scripts are C# (user, 2026-11-11).** Every new helper script or generator for Sandbox is written in C# and runs from the game itself (a `--gen-...` or `--check-...` command), never as a new Python file. The Python generators in `tools/constructs/` are being ported (project doc `claude/part-generators-csharp.md`): a port is accepted when its output is byte-identical to the committed files, and the Python file is deleted in the same change. Until a script is ported, fix it where it is.
+- **Generators, not outputs.** A generated file is fixed in its generator (`Source/PartKit/`, `tools/space/`, ...), never by editing the output. A generator caps every amount by the file's limits (one recipe over `MaxUnits` makes the whole Assembling table refuse).
+- **Helper scripts are C# (user, 2026-11-11).** Every new helper script or generator for Sandbox is written in C# and runs from the game itself (a `--gen-...` or `--check-...` command), never as a new Python file. The last Python generators in `tools/constructs/` are being ported (docs/sandbox/PARTKIT.md): a port is accepted when its output is byte-identical to the committed files, and the Python file is deleted in the same change. Until a script is ported, fix it where it is.
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.SandboxCargo.cs`, `GameSandboxSnap.cs`, ...). Follow that pattern.
 - **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
 - **Saves.** Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points. Every save file is listed in `SavePaths.SaveFiles` (a folder: `SaveFolders`), written atomically, and keeps a `.bak`. A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.

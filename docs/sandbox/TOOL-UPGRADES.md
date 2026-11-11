@@ -22,8 +22,8 @@ Creative ignores upgrades, since every tool is already at its best there.
 A higher Mk can be fitted over a lower one, skipping those between. A module at or under what the player has is refused
 with the reason, on the look line and on F.
 
-**Where the modules come from.** Recipes are in `Constructs/Assembling.json` (from `tools/constructs/upgrade_parts.py`
-through `assembling.py`): Mk 2 at a tier 1 or 2 Assembler from copper, steel, glass and bronze plus a component; Mk 4 and
+**Where the modules come from.** Recipes are in `Constructs/Assembling.json` (from the part kit's `--gen-parts upgrade_parts`
+through the part kit's `assembling`): Mk 2 at a tier 1 or 2 Assembler from copper, steel, glass and bronze plus a component; Mk 4 and
 Mk 5 at tier 4 with gold, levite and Field Coils. Factions teach the top ones (`teaches` in `Story/Factions`):
 
 - Ministry of Slop, Contractor: **Heavy Lifting Permit** (Lift Coil Mk 4 and Mk 5).
@@ -38,7 +38,7 @@ line adds "R: throw" while it holds something.
 
 ## The data and the code
 
-- `Constructs/ToolUpgrades.json` (format `call-of-slop-tool-upgrades/1`, written by `tools/constructs/upgrade_parts.py`
+- `Constructs/ToolUpgrades.json` (format `call-of-slop-tool-upgrades/1`, written by the part kit's `--gen-parts upgrade_parts`
   with the module parts in `Constructs/Parts/Upgrades`). Each stat: `stat` (one of `lift`, `reach`, `drillBit`,
   `drillMotor`, `fitter`, `tractor`, `throw`), `name`, `about`, `base`, `creative` and `levels` (`part`, `value`), each
   more than the last. A function is base 0 and one level of 1. Values are held to the code's limits (lift 50 kg to

@@ -200,7 +200,7 @@ real host with two clients: a client's stow reaches the server, its own copy, th
 
 ## Modular shelves
 
-The user's "a modular shelf so the player can stack and store loose parts". Parts: `Constructs/Parts/Shelves`, written by `Source/PartKit/Generators/ShelfParts.cs` (with the Smart Terminal and the **Smart Depot** blueprint). Recipes in `tools/constructs/assembling.py`, tier 1, planks and a little steel.
+The user's "a modular shelf so the player can stack and store loose parts". Parts: `Constructs/Parts/Shelves`, written by `Source/PartKit/Generators/ShelfParts.cs` (with the Smart Terminal and the **Smart Depot** blueprint). Recipes in the part kit's `--gen-parts assembling`, tier 1, planks and a little steel.
 
 - **The family.** A **Shelf Bay** is a steel cabinet (two sides, a back) with wooden boards at the bottom, the top and between its tiers, open at the front, on its class's lattice, with sockets on every face but the front, so bays stack up, run along and stand back to back, and bolt to any frame of their class.
 

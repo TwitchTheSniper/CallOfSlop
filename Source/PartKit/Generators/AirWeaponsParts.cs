@@ -4,8 +4,7 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The air weapons: Constructs/Parts/AirWeapons, and the demo craft (docs/sandbox/CONSTRUCTS.md, "Air weapons"). Ported from
-/// tools/constructs/air_weapons_parts.py, which stays until tools/constructs/assembling.py (it imports ORDNANCE_RACKS for the racks'
-/// recipes) is ported: change both until then; --gen-parts air_weapons_parts --check shows whether they still agree.
+/// tools/constructs/air_weapons_parts.py. <see cref="Assembling"/> prices the racks from <see cref="OrdnanceRacks"/>: run it after this.
 /// The blueprints are built on Constructs/Blueprints/LightPlane.json, GunnerTurret.json and SmallHelicopter.json: run this again if those change.
 /// </summary>
 public sealed class AirWeaponsParts : IPartGenerator

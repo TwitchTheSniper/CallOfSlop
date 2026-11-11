@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-modular-engine/1",
-  "about": "Written by tools/constructs/engine_parts.py. An engine's peak power is the sum over its cylinders of kW x the bank's fuel system x its booster.",
+  "about": "Written by the part kit (--gen-parts engine_parts). An engine's peak power is the sum over its cylinders of kW x the bank's fuel system x its booster.",
   "burnPerKw": 0.00044,
   "misfireBelow": 0.5,
   "misfirePower": 0.5,

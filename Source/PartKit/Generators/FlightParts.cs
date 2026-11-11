@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The flight control parts: Constructs/Parts/Flight, and the demo craft (docs/sandbox/CONSTRUCTS.md, "Flight control"). Was
 /// tools/constructs/flight_parts.py. Flight Stabilizers in four sizes (a seat's axes in, mixed channels out), Flight Panels (telemetry and
 /// autopilot buttons), and the Quadcopter and Stabilised Airship blueprints (the latter is AirParts.Airship's Scout Airship with a
-/// stabilizer). Recipes come from tools/constructs/assembling.py.
+/// stabilizer). Recipes come from the part kit's assembling (--gen-parts assembling).
 /// </summary>
 public sealed class FlightParts : IPartGenerator
 {

@@ -137,7 +137,7 @@ def hollow_chassis(armoured=False):
         a = 0.6
         for zf, zb in ((z0 - a, z0), (z1, z1 + a)):
             p.add(box((x0 + 2, y0 + 2, zf), (x1 - 2, y1 - 2, zb), ARMOUR, detail=True))
-    # the deck's own sockets, by the same names and in the same places (chassis_deck in capital_parts.py)
+    # the deck's own sockets, by the same names and in the same places (ChassisDeck in the part kit's CapitalParts.cs)
     for i in pick(NX, 4):
         for k in pick(NZ, 4):
             p.sock(f"under{i}.{k}", (i * c.cell, y0, k * c.cell), "-y")

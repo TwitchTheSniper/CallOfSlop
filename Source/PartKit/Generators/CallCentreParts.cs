@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// rooms: cubicle desks (a drawer of loot in each) and a water cooler. Furniture stands on feet on the floor's quarter grid and faces
 /// its own +z, into the room, as OfficeParts' does. Each trophy stands on one "base" socket and points up its own +y, its face to -z,
 /// so the kit turns it outward. Faces that meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces").
-/// Recipes come from tools/constructs/assembling.py; run it after this one.
+/// Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// </summary>
 public sealed class CallCentreParts : IPartGenerator
 {

@@ -44,7 +44,7 @@ The user: "a wireless seat connection. I want the player to be able to control d
 
 Karl's idea (2026-11-08): a body you can risk. Code: `Source/Constructs/ConstructShell.cs` (the part keys, which shell a chair
 reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the save); parts made by the part kit's `--gen-parts shell_parts`
-(`Constructs/Parts/Shells`), recipes in `tools/constructs/assembling.py`. The story's first use of them is the Orbital Depot
+(`Constructs/Parts/Shells`), recipes in the part kit's `--gen-parts assembling`. The story's first use of them is the Orbital Depot
 (docs/story/DEPOT.md).
 
 - **Robot Shell**: a standing robot, its own construct of one part (`"shell": {"body": true}`), with a channel. A shell fitted
@@ -106,7 +106,7 @@ the most force or torque it holds rigidly.
 
 ### The size families (`Constructs/Parts/Actuators`)
 
-Written by `tools/constructs/actuator_parts.py` (run it from the repo root; `--check` compares), as the structural
+Written by the part kit's `--gen-parts actuator_parts` (`--check` compares; docs/sandbox/PARTKIT.md), as the structural
 parts are: three widths (1x1, 2x2 and 3x3 cells of the 0.25 m frame step) times three lengths (short, medium, long), 27
 parts in the inventory's Joints and Motion category (sections Pistons, Motor hinges, Turntables).
 
@@ -319,7 +319,7 @@ Decisions made (the developer may change them): the names; the same drag as a Fr
 
 The user's request: "there needs to be a flexible joint connection for items", which turned out to mean both a joint part
 with free play (here) and a chute that survives one ([Flexible chutes](#flexible-chutes)). Code: `Source/Constructs/ConstructFlex.cs`.
-Data: `Constructs/Parts/Actuators/FlexJoints` (written by `tools/constructs/actuator_parts.py`, then `make_joint_sides.py`).
+Data: `Constructs/Parts/Actuators/FlexJoints` (written by the part kit's `--gen-parts actuator_parts`, which draws their sides too).
 
 A small passive part. What hangs on its leaf bends any way up to a cone and springs back; there is no motor and it draws no
 power. Six parts in the inventory's Joints and Motion category, section Flexible joints:
@@ -401,7 +401,7 @@ A seat controls nothing by itself: a car with a seat and no module doesn't go, a
 beside it. A seat has one output. One data link from it into a **module** carries the sitter's controls, and the module
 breaks them out. Old saves and player blueprints have no modules: they stop driving until they are rewired. The shipped
 blueprints have them. Code: `Source/Constructs/ConstructModules.cs`; parts: `Constructs/Parts/Controls` (written by
-`tools/constructs/control_parts.py`, in Seats and Logic > Controls).
+the part kit's `--gen-parts control_parts`, in Seats and Logic > Controls).
 
 **Driving Module.** Link the seat into it, and its `drive` output to any one part of the drivetrain: an engine, a
 gearbox, a steering pivot, a thruster or a hub motor (each has a `drive` port, which the picker offers alone for this

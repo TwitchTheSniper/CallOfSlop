@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The wireless seat link's and the cameras' parts (Constructs/Parts/Remote), and the Scout Drone and Control Post blueprints
 /// (docs/sandbox/CONSTRUCTS.md, "Drones" and "Cameras and screens"). Was tools/constructs/drone_parts.py.
 /// A Drone Receiver has the seat role with nobody in it, so a drone needs no seat. A Remote Console is a seat that sends; a Remote
-/// Transmitter lets any seat send. A Camera and a Camera Screen meet on a channel. Recipes come from tools/constructs/assembling.py.
+/// Transmitter lets any seat send. A Camera and a Camera Screen meet on a channel. Recipes come from the part kit's assembling (--gen-parts assembling).
 /// </summary>
 public sealed class DroneParts : IPartGenerator
 {

@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The air cargo parts and blueprints: Constructs/Parts/AirCargo, and the Sky Crane, its pods and the crashed aircraft a world is salvaged
 /// for (docs/sandbox/CONSTRUCTS.md, "Flight in survival"). Was tools/constructs/air_cargo.py.
 /// What a craft lifts is any body with a Tow Eye, on a Cargo Winch: the only new part. The rest are blueprints of parts that exist.
-/// The winch's recipe comes from tools/constructs/assembling.py.
+/// The winch's recipe comes from the part kit's assembling (--gen-parts assembling).
 /// </summary>
 public sealed class AirCargo : IPartGenerator
 {

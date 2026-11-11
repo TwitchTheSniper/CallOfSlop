@@ -73,6 +73,23 @@ public static class PartKit
         new Generators.AirCargo(),
         new Generators.AirWeaponsParts(),
         new Generators.OrdnanceParts(),
+        new Generators.HullParts(),
+        new Generators.BodyParts(),
+        new Generators.WingParts(),
+        new Generators.ActuatorParts(),
+        new Generators.MakeJointSides(),
+        new Generators.ControlParts(),
+        new Generators.HydraulicsParts(),
+        new Generators.PressParts(),
+        new Generators.ExtrusionParts(),
+        new Generators.StructureParts(),
+        new Generators.CapitalParts(),
+        new Generators.LargeSystems(),
+        new Generators.StabiliserParts(),
+        new Generators.LegParts(),
+        new Generators.UpgradeParts(),
+        new Generators.EngineParts(),
+        new Generators.Assembling(),
     ];
 
     public static IPartGenerator? Find(string name) =>

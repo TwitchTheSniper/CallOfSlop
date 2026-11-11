@@ -207,7 +207,7 @@ Choices made (the developer may change them): depth as the diameter; the `wheels
 
 ## The Press
 
-The user's "complex parts made in the world, not in menus". A **Press** stamps parts out of extruded pieces; it sits beside the Extruder and the Wheel Former, and the [Assembler](#assembling) stays for everything no die covers yet. Code: `Source/Constructs/ConstructPress.cs`, `ConstructPressTable.cs` (`Constructs/Pressing.json`); the parts, the table and the Press Line blueprint come from `tools/constructs/press_parts.py`.
+The user's "complex parts made in the world, not in menus". A **Press** stamps parts out of extruded pieces; it sits beside the Extruder and the Wheel Former, and the [Assembler](#assembling) stays for everything no die covers yet. Code: `Source/Constructs/ConstructPress.cs`, `ConstructPressTable.cs` (`Constructs/Pressing.json`); the parts, the table and the Press Line blueprint come from the part kit's `--gen-parts press_parts`.
 
 - **Modular by size.** Press, Die Lathe and die each come in the four size classes, and a die fits a press of its own class (socket kind `pressdie`, the class of the socket). The Small press is 1.75 m wide with 2 bays and takes pieces to 0.45 m across; Medium, Large and Capital have 3 bays and take 1.8, 7.2 and 28.8 m, at speed x2, x4 and x8. Length sets count, so the player builds the smallest system for the job.
 
@@ -331,13 +331,13 @@ run from "Gathering", "Gathering network", "Refining" and "Refining network".
 
 ## Assembling
 
-The step after refining: an **Assembler** builds parts from what the chains make. Code: `Source/Constructs/ConstructAssembling.cs`, `ConstructAssemblingTable.cs`; generator: `tools/constructs/assembling.py`.
+The step after refining: an **Assembler** builds parts from what the chains make. Code: `Source/Constructs/ConstructAssembling.cs`, `ConstructAssemblingTable.cs`; generator: the part kit's `--gen-parts assembling`.
 
 - **The part** (`Constructs/Parts/Assembling`, attach tool, physics-only, five tiers: [Machine tiers](#machine-tiers)): an open gantry 2 to 6 m wide, with a low hopper at the back (its input), a tray at the front (its output) and an arm. `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers: 4 a tier), and `outAt`, `outDir`, where a body leaves. Its `slots` are the tray.
 - **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
 - **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`).
 - **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
-- **Written and generated.** `tools/constructs/assembling.py` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
+- **Written and generated.** the part kit's `--gen-parts assembling` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
 
 | Example (by hand) | Takes | Seconds | From tier |
 | --- | --- | --- | --- |
@@ -378,7 +378,7 @@ base you build by hand. Code: `Source/Constructs/BuildAids.cs` (the aids, the vi
 - **A station is an Inventory Beacon with an aid.** Its `storage.beacon` id names the aid, so power, Run, wreck, chute network, owner and range are the beacon's rules
   (`ConstructPartDef.Aid`), and in range it serves its network just as a beacon does: Tab opens on it, parts taken off go back to it. All stations on a build area share
   one battery circuit and chute network. `Constructs/Parts/Stations` is written by `Source/PartKit/Generators/StationParts.cs` (mass, power, shapes; the last box is the lamp).
-  Ranges are in `Constructs/Beacons.json`. Recipes are in `tools/constructs/assembling.py` (tier 3). At most 256 beacons and stations, 64 networks.
+  Ranges are in `Constructs/Beacons.json`. Recipes are in the part kit's `--gen-parts assembling` (tier 3). At most 256 beacons and stations, 64 networks.
 
 | Station | Aid (key) | Range | Mass, power |
 | --- | --- | --- | --- |
@@ -482,7 +482,7 @@ Choices made (the developer may change them):
 The first step of the ore loop (the user, 2026-11-11: rooms and bases felt empty): machines that a generator can place in a row and a player
 reads at a glance and runs from one place. Refiners first; the Assembler, Extruder and Recycler are to follow with the same pieces. Code:
 `Source/Constructs/ProductionLines.cs`; the parts come from `tools/constructs/machine_tiers.py` and `screens.py` (the lamp) and
-`control_parts.py` (the console).
+the part kit's `control_parts` (the console).
 
 - **Line state** (`ProductionLines.Raw`, `Of`): Running, Stopped (held off: its console or any wire into Run), Starved (empty or short of a
   batch), Blocked (output full or holding another material), Fault (an input it can't work) and No power. Worked out from the store and the

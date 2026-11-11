@@ -285,7 +285,7 @@ input end). Wiring is instant (fitting a part is what takes time).
 
 ### Logic blocks
 
-The parts below are written by `tools/constructs/control_parts.py` (Constructs/Parts/Controls), in Seats and Logic: Controls, Sensors, Displays, Gauges, Logic gates, Memory, Wireless and bus. Their code is `LogicBlocks.cs`, `LogicInputs.cs`, `LogicDisplays.cs`, `LogicText.cs` and `ConstructRadio.cs`. Each takes one branch of the logic step and allocates nothing. What a block must keep is a setting (a Counter's or Memory Cell's `value`, so a blueprint, a world save and a joiner carry it) or its `State`, which a world save keeps. Named ports show in the linking tool's picker.
+The parts below are written by the part kit's `--gen-parts control_parts` (Constructs/Parts/Controls), in Seats and Logic: Controls, Sensors, Displays, Gauges, Logic gates, Memory, Wireless and bus. Their code is `LogicBlocks.cs`, `LogicInputs.cs`, `LogicDisplays.cs`, `LogicText.cs` and `ConstructRadio.cs`. Each takes one branch of the logic step and allocates nothing. What a block must keep is a setting (a Counter's or Memory Cell's `value`, so a blueprint, a world save and a joiner carry it) or its `State`, which a world save keeps. Named ports show in the linking tool's picker.
 
 | Part | Kind | Ports in; out | Puts out | Settings |
 | --- | --- | --- | --- | --- |
@@ -342,7 +342,7 @@ Each has a panel ([Display panels](joints-and-logic.md#display-panels)) whose `s
 ### The Analog Lever
 
 A number from 0 to 1 set by hand, for throttles and speed settings (`Source/Constructs/AnalogLever.cs`, the hand in
-`Source/App/Program.SandboxLever.cs`; `tools/constructs/control_parts.py` writes Analog Lever, Medium and Large, in
+`Source/App/Program.SandboxLever.cs`; the part kit's `--gen-parts control_parts` writes Analog Lever, Medium and Large, in
 Seats and Logic > Controls). Wire it into any data input: an engine's throttle port, a piston (0..1 of its travel).
 
 - **The hand.** Hold Use (F) on it and move the mouse: the view stands still, the handle goes the way the mouse goes on

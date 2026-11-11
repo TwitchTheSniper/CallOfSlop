@@ -45,7 +45,7 @@ Free constraints between any two points, tied with the **attach tool** (the old 
 
 ### Hydraulics
 
-`Source/Constructs/ConstructHydraulics.cs`, the ram row in `ConstructConnectors.cs`, parts from `tools/constructs/hydraulics_parts.py` (`Constructs/Parts/Hydraulics`).
+`Source/Constructs/ConstructHydraulics.cs`, the ram row in `ConstructConnectors.cs`, parts from the part kit's `--gen-parts hydraulics_parts` (`Constructs/Parts/Hydraulics`).
 
 - **Cylinder.** The attach tool's fifth ring option. Like the Spring: click two points; R cycles the size (electric S to XL, then hydraulic S to XL). A `ConnectorKind.Cylinder` pinned on ball ends, with a capped two-way row in the contact solve, so it drives hinges as a real linkage (the rope's one-body path across a joint). Its A end stands on a tool-made **head** part (`toolOnly`: never in the inventory or the Assemblers), freeform-welded at the first point, which carries the ports: that gives it hoses, health and a place in blueprints, saves and joins with no new format. `Stiffness` holds its shortest length, `Damping` its longest, `Rating` its most force, `Length` what it is told to be, `RowForce` the force this tick (0: limp, no row). Cost: 4 times a rope's a metre, through `BulkPay`.
 - **Electro-Hydraulic Cylinder.** The electric heads: self-contained, weak and slow. Power and a Set signal (0 to 1 of the stroke), nothing else.

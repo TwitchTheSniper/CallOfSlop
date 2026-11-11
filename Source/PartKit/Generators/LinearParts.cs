@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// details: the game moves them with what hangs on it, and shows one carriage on a stack.
 /// Kinds: Free Slider (a "slider" joint: no motor), Linear Actuator (a piston's motor and strength model, on the circuit), Shaft Linear
 /// Drive (the same motor turned by a drive shaft through a lead screw). Sizes: three gauges of small (1x1, 2x2, 3x3 cells of 0.25 m), and
-/// one of Medium, Large and Capital, a few travels each. tools/constructs/make_joint_sides.py leaves these alone: they draw their own sides.
+/// one of Medium, Large and Capital, a few travels each. The joint-sides pass (JointSides.cs) leaves these alone: they draw their own sides.
 /// </summary>
 public sealed class LinearParts : IPartGenerator
 {

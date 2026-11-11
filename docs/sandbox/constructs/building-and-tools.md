@@ -615,7 +615,7 @@ that hangs on it (it carries the joint's segment). The part files say which is w
 - **Model.** Boxes carry `"side": "base"` or `"leaf"`; the loader refuses a joint part that tags neither (`--check-construct-parts` prints
   the reason). Base: a dark body, a mounting flange and four bolts. Moving side: a safety-orange collar over the leaf half with a stepped
   arrow on it (one head and a tail tick for a turning joint, a head at each end for a piston). The orange boxes are details and not
-  paintable, so paint never hides the sides. `tools/constructs/make_joint_sides.py` writes them (idempotent; `--check`): fix the script,
+  paintable, so paint never hides the sides. The part kit draws them (`Source/PartKit/JointSides.cs`: `--gen-parts actuator_parts` for its own parts, `--gen-parts make_joint_sides` for the hand-written ones; idempotent, `--check`): fix the code,
   not the files.
 - **Markers and ghost.** With a part held, a joint's moving-side socket is an orange disc with a bar, its base sockets a steel-blue plate
   with four bolts (`SnapRender`); the held joint's ghost draws its moving-side boxes orange (dark red when it does not fit), and the HUD

@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-pressing/1",
- "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by tools/constructs/press_parts.py: fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting.",
+ "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting.",
  "rows": [
   {
    "die": "Button",
@@ -867,9 +867,9 @@
      "materials": [
       "steel"
      ],
-     "minAcross": 1,
+     "minAcross": 1.0,
      "maxAcross": 1.8,
-     "use": 1
+     "use": 1.0
     }
    ]
   },
@@ -885,9 +885,9 @@
      "materials": [
       "steel"
      ],
-     "minAcross": 4,
+     "minAcross": 4.0,
      "maxAcross": 7.2,
-     "use": 4
+     "use": 4.0
     }
    ]
   },
@@ -903,9 +903,9 @@
      "materials": [
       "steel"
      ],
-     "minAcross": 8,
+     "minAcross": 8.0,
      "maxAcross": 28.8,
-     "use": 8
+     "use": 8.0
     }
    ]
   },
@@ -939,9 +939,9 @@
      "materials": [
       "steel"
      ],
-     "minAcross": 1,
+     "minAcross": 1.0,
      "maxAcross": 1.8,
-     "use": 1
+     "use": 1.0
     }
    ]
   },
@@ -957,9 +957,9 @@
      "materials": [
       "steel"
      ],
-     "minAcross": 4,
+     "minAcross": 4.0,
      "maxAcross": 7.2,
-     "use": 4
+     "use": 4.0
     }
    ]
   },
@@ -975,9 +975,9 @@
      "materials": [
       "steel"
      ],
-     "minAcross": 8,
+     "minAcross": 8.0,
      "maxAcross": 28.8,
-     "use": 8
+     "use": 8.0
     }
    ]
   }

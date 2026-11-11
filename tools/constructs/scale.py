@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The Sandbox's part size classes, and what every generator of big parts shares.
 
-Import it from any generator in tools/constructs/ (capital_parts.py is the example):
+Import it from any generator in tools/constructs/ (the part kit ports it: Source/PartKit/PartScale.cs):
 
     from scale import SMALL, MEDIUM, LARGE, CAPITAL, CLASSES, Part, box, block_sockets, write_parts, fmt
 

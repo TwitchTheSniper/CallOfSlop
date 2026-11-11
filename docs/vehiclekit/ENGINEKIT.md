@@ -118,7 +118,7 @@ differs from every box it touches, so no coplanar pair appears), `"tier"`, more 
 `thirst`: a cylinder may now carry them (`ConstructDriveParts.ParseEnginePiece`), and `ConstructEngine.Build` multiplies its kW and
 burn by them (1 for every older cylinder, so nothing shipped changes).
 
-**Survival.** Each has an Assembling recipe by rule (`tools/constructs/assembling.py`, `long_tail`): the plain cylinder's steel and
+**Survival.** Each has an Assembling recipe by rule (the part kit's `--gen-parts assembling`, `long_tail`): the plain cylinder's steel and
 Piston Sets, plus bronze and Bearings (Bored, tier 3 Assembler), then copper and a Circuit Board (Performance, tier 4), or gold and a
 Control Unit (Racing, tier 5); Large and Capital ones need at least the size class's Assembler as every part does.
 
@@ -205,7 +205,5 @@ and a bigger tank. That is the next step for the fast shapes; no shipped part wa
 4. **Gearing for fast vehicles.** The Automatic Gearbox's top gear (1.7) with a 4.1-4.6 final drive allows 39-54 m/s; enough for
    35 m/s cars. Its upshift waits for 90% of the limiter, past the petrol peak: a kit car could set its own.
 5. **Faction flavour.** Only `Paint` today; a style could prefer layouts (a Bandit's exposed V, a Highland inline) by scoring.
-6. **Retiring engine_parts.py.** The Python still writes the 40 plain pieces and `ModularEngine.json`. Port its ten models and the
-   `SIZES` table into `EngineKitParts` (boxes, sockets, the z-fight resolve: a C# port of `zfight.resolve` is the larger part), then
-   compare every output byte for byte with `--check` before deleting it. The tier cylinders read the plain cylinder's file, so they
-   follow it until then.
+6. **engine_parts.py is retired.** The part kit's `--gen-parts engine_parts` (`Source/PartKit/Generators/EngineParts.cs`) writes the 40 plain
+   pieces and `ModularEngine.json`, byte for byte as the Python did. The tier cylinders read the plain cylinder's file, so they follow it.
