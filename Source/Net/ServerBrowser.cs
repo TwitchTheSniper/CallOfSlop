@@ -379,7 +379,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 233: STAND-IN: Msg.StandIn at the end of Msg (Source/StandIns: the story's placeholder craft, until the vehicle and ship redo).
     // 234: Msg.Shot carries a kinds byte after the end count (Game.ShotKindBuildOnly): a hit on a build only gets its own hit-marker colour.
     // 235: mains lamps (logic "mains", docs/sandbox/INTERIORS.md phase 11) are left out of a pose's signals: every peer lights them from the circuit (ConstructLamps.Lit).
-    public const byte ProtocolVersion = 235;
+    // 236: the talk panel's topics: TalkAsk.Place, Self and Advice (6-8) and TalkAsk.Choose moves up to 9.
+    public const byte ProtocolVersion = 236;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -12,7 +12,10 @@ public enum TalkAsk : byte
     Trade, // a trader takes the part in the player's hands and gives one of theirs for it
     Bye, // the panel closed: they go back to what they were doing
     Join, // join the talk another player is having with them, from anywhere (GameStoryTalkJoin.cs): hear it, and ask too
-    Choose = 8, // + the choice's index (below Game.TalkChoicesMax): an answer a storylet offers (GameStoryStorylets.cs)
+    Place = 6, // what's this place?
+    Self = 7, // what do you do here?
+    Advice = 8, // any advice?
+    Choose = 9, // + the choice's index (below Game.TalkChoicesMax): an answer a storylet offers (GameStoryStorylets.cs)
 }
 
 /// <summary>
@@ -44,6 +47,7 @@ public sealed partial class Game
     private readonly Dictionary<long, double> _storyChatAt = new(); // (person, player entity): when their last Chat was recorded
     private readonly HashSet<long> _storyTold = new(); // (player entity, event): news a player has had from somebody
     private int _vGreet = -2, _vChat, _vTell, _vTrade, _qTrader;
+    private int _cAskPlace, _cAskSelf, _cAskAdvice;
     private int _cGreeted, _cChatted, _cTraded, _cNoNews, _cNotTrader, _cEmptyHands, _cLowOffer, _cBye;
 
     /// <summary>Talks this session: asks answered, news told, trades made (the Story window).</summary>
@@ -73,6 +77,7 @@ public sealed partial class Game
         _qTrader = r.Quality("Trader")?.Id ?? -1;
         var l = r.Lines;
         (_cGreeted, _cChatted, _cTraded, _cNoNews) = (l.Concept("Greeted"), l.Concept("Chatted"), l.Concept("Traded"), l.Concept("NoNews"));
+        (_cAskPlace, _cAskSelf, _cAskAdvice) = (l.Concept("AskPlace"), l.Concept("AskSelf"), l.Concept("AskAdvice"));
         (_cNotTrader, _cEmptyHands, _cLowOffer, _cBye) = (l.Concept("NotTrader"), l.Concept("EmptyHands"), l.Concept("LowOffer"), l.Concept("Bye"));
     }
 
@@ -127,6 +132,11 @@ public sealed partial class Game
                 break;
             case TalkAsk.News:
                 StoryTellPlayer(s, a, who);
+                break;
+            case TalkAsk.Place:
+            case TalkAsk.Self:
+            case TalkAsk.Advice:
+                StoryAnswer(s, a, who, ask == TalkAsk.Place ? _cAskPlace : ask == TalkAsk.Self ? _cAskSelf : _cAskAdvice);
                 break;
             case TalkAsk.Trade:
                 return StoryTrade(s, a, p, who);

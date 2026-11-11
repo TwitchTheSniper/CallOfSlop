@@ -454,6 +454,11 @@ Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, 
   the player's hands and gives one from Loot.json's `trader` table worth at most 80% of it, among the best they can
   afford (worth at least half of the best); worth is the material units of a part's Assembler recipe plus its parts'
   worth, else its mass. Recorded as the player's Trade. `NotTrader`, `EmptyHands` and `LowOffer` say why not.
+- **More to ask** (protocol 236): three more buttons, "What's this place?", "What do you do here?" and "Any advice?"
+  (`TalkAsk.Place`, `Self`, `Advice`; occasions `AskPlace`, `AskSelf`, `AskAdvice`). `Story/Lines/Colony.json` writes the
+  penal colony's staff: lines per person (Pettigrew, Bellweather, Crumb, Nettles) for Greeted, Chatted, NoNews, the asks
+  and Bye; advice depends on whether the player has been Inducted or has Suspicion; "once" Chatted rules tell each
+  person's own story a piece at a time as the player comes back.
 - **Facing**: a body stops and faces a player who is talking to it until the panel closes, they walk off or 20 s pass
   with nothing asked (one player at a time: another is told who they are talking to); a body that says something to
   someone faces them for 4 s (and stands still for a player within 6 m); a body beside whoever its step is with faces
