@@ -52,21 +52,27 @@ it stays in Python and the reason goes in the list below.
 Ported (Source/PartKit/Generators): `free_parts`, `bandit_parts`, `media_parts`, `ammo_parts`, `highland_parts`, `shell_parts`
 (phase 1); `pilot_parts`, `callcentre_parts`, `office_parts`, `british_parts`, `door_parts`, `station_parts`, `shelf_parts`,
 `linear_parts`, `scoop_parts` (phase 2); `big_drive_parts`, `fluid_tank_parts`, `air_parts`, `boost_parts`, `suspension_parts`,
-`flight_parts`, `drone_parts`, `air_cargo`, `air_weapons_parts`, `ordnance_parts` (phase 3); the helpers `scale.py` (PartScale.cs)
-and `zfight.py` (PartZFight.cs; `zfight.py` itself stays while Python scripts import it). `BigDriveParts` keeps the shared drive
-helpers (`Health`, `Block`, `Faces`, `Bands`, the ports, `Mount`, `DriveIn`, `Springs`, `Tanks`) public for the generators on it, and
-`AirParts.Airship` is shared with `FlightParts`.
+`flight_parts`, `drone_parts`, `air_cargo`, `air_weapons_parts`, `ordnance_parts` (phase 3); `hull_parts`, `body_parts`, `wing_parts`,
+`actuator_parts`, `make_joint_sides`, `control_parts`, `hydraulics_parts`, `press_parts`, `extrusion_parts` (phase 4); `structure_parts`,
+`capital_parts`, `large_systems` (phase 5); `stabiliser_parts`, `leg_parts`, `upgrade_parts`, `engine_parts`, `assembling`. Helpers:
+`scale.py` (PartScale.cs), `zfight.py` (PartZFight.cs), `screens.py` (PartScreens.cs), the joint-sides pass (JointSides.cs); the
+Python `scale.py`, `zfight.py` and `screens.py` stay while Python scripts import them. `BigDriveParts` keeps the shared drive helpers
+(`Health`, `Block`, `Faces`, `Bands`, the ports, `Mount`, `DriveIn`, `Springs`, `Tanks`) public for the generators on it,
+`AirParts.Airship` is shared with `FlightParts`, `ControlParts.Lever`/`Config` with `HydraulicsParts`, and `Assembling` reads
+`UpgradeParts.Recipes` and `AirWeaponsParts.OrdnanceRacks`.
+
+Two layouts are not `json.dumps(indent=2)`, and have their own writers: `JointSides.Fmt` (a joint part's boxes one a line, separators
+`", "` and `": "`) and `Assembling.Layout` (one recipe a line; `ToolUpgrades.json` is written the same way by `UpgradeParts`).
+`actuator_parts` applies the joint-sides pass to its own files; `make_joint_sides` runs it over the hand-written joint parts (Hinge,
+Steering Pivot, Lid Hinge). The pass skips a part whose solid box has no `"size"`: the door hinges (`door_parts`) are min/max boxes that
+draw their own sides, which is what made the Python pass stop with `KeyError: 'size'` once door_parts wrote them.
 
 Some ports read committed files as inputs, as the Python did: `pilot_parts`, `air_weapons_parts` and `ordnance_parts` build on
 `Constructs/Blueprints/LightPlane.json` (written by `wing_parts`), `air_weapons_parts` also on `GunnerTurret.json` and
 `SmallHelicopter.json`, `suspension_parts` on `Buggy.json`, `big_drive_parts` on `Constructs/Parts/Differential.json` and
-`Drivetrain/DiffWide.json`. Run them again after changing those.
+`Drivetrain/DiffWide.json`, `make_joint_sides` on the hand-written joint parts, and `assembling` on every part file (run it after the
+generators that write parts). Run them again after changing those.
 
-Ported but still in Python: `air_weapons_parts.py` stays while `assembling.py` imports its `ORDNANCE_RACKS` (for the racks'
-recipes); until assembling is ported, a change goes in both, and `--gen-parts air_weapons_parts --check` shows whether they agree.
-
-Remaining in `tools/constructs/` (27 files): `actuator_parts`, `air_weapons_parts` (above), `assembling`, `body_parts`,
-`building_parts`, `capital_parts`, `control_parts`, `engine_parts`, `extrusion_parts`, `hull_parts`, `hydraulics_parts`,
-`interior_parts`, `large_systems`, `leg_parts`, `machine_tiers`, `make_joint_sides`, `make_ports`, `make_rv`, `press_parts`, `scale`,
-`screens`, `stabiliser_parts`, `structure_parts`, `tier_style`, `upgrade_parts`, `wing_parts`, `zfight`. A script that imports another
-generator is ported after it (`hydraulics_parts` after `control_parts`, `interior_parts` and `make_rv` after `building_parts`).
+Remaining in `tools/constructs/` (9 files): `building_parts`, `interior_parts`, `make_rv`, `machine_tiers`, `tier_style`, `make_ports`,
+and the helpers `scale`, `screens`, `zfight` (kept for those). `interior_parts` and `make_rv` import `building_parts`; `machine_tiers`
+imports `tier_style`, `screens` and `zfight`. `make_ports` is an idempotent one-off pass: retire it rather than port it.
