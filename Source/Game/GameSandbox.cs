@@ -331,6 +331,7 @@ public sealed partial class Game
             {
                 SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
                 TutorialSee(p.Id, TutorialCue.Bunk); // (the induction's bunk step: GameTutorial.cs)
+                QuarrySee(p.Id, QuarryCue.Bunk); // (the duty's last step: GameQuarry.cs)
             }
             if (c.Parts[seat].D.SeatHeal > 0)
                 SandboxSeatHeal(p, c.Parts[seat].D.SeatHeal); // (a medical station: GameSandboxDeath.cs)

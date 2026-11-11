@@ -27,6 +27,7 @@ public enum TutorialCue : byte
     Draw, // a part drawn from the backpack
     Carry, // the physics gun took hold of something
     Bunk, // lay in a Bunk (the checkpoint)
+    Ride, // rode the crew bus from the step's "spot" (colony or quarry) to the other stop (GameQuarry.cs)
     COUNT,
 }
 
@@ -51,6 +52,9 @@ public enum TutorialState : byte
 public sealed class TutorialStep
 {
     public string Id = "", Title = "", Text = "", Warden = "", Hint = "";
+    public string DropNote = ""; // what the notice says when the step's drops land ("dropNote"; empty: the speaker sets them down)
+    public string Speaker = ""; // who says this step's line and hands its things over ("speaker"; empty: the file's)
+    public QuarrySpotKind Spot; // a place the server marks for this step ("spot": the bus stops, the mine wall; a ride's bus once it is called)
     public TutorialCue Cue;
     public TutorialTarget Target;
     public float HintAfter; // the hint shows once the step has been up this long
@@ -141,6 +145,15 @@ public static class Tutorial
             var target = Str("target", false);
             if (target.Length > 0 && (!Enum.TryParse(target, true, out s.Target) || int.TryParse(target, out _) || s.Target == TutorialTarget.None))
                 throw new FormatException($"steps[{n}] ({s.Id}): no such target \"{target}\" (loose, bunk)");
+            s.Speaker = Str("speaker", false);
+            s.DropNote = Str("dropNote", false);
+            var spot = Str("spot", false);
+            if (spot.Length > 0 && (!Enum.TryParse(spot, true, out s.Spot) || int.TryParse(spot, out _) || s.Spot == QuarrySpotKind.None))
+                throw new FormatException($"steps[{n}] ({s.Id}): no such spot \"{spot}\" (colony, quarry, wall...)");
+            if (s.Cue == TutorialCue.Ride && s.Spot is not (QuarrySpotKind.Colony or QuarrySpotKind.Quarry))
+                throw new FormatException($"steps[{n}] ({s.Id}): a ride's spot is where the bus is boarded: colony or quarry");
+            if (s.Spot != QuarrySpotKind.None && s.Target != TutorialTarget.None)
+                throw new FormatException($"steps[{n}] ({s.Id}): a step has a spot or a target, not both");
             if (e.TryGetProperty("drops", out var drops))
             {
                 if (drops.ValueKind != JsonValueKind.Array || drops.GetArrayLength() > 4)

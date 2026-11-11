@@ -1,169 +1,151 @@
 {
  "format": "call-of-slop-tutorial/1",
- "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun, no tools but bare hands and no backpack while it runs: \"gives\" names the tools a step hands over (kept for every later step; \"backpack\" hands over the backpack), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings), stow (a part put in the backpack), draw (a part taken out of it), carry (the physics gun took hold of something), bunk (lay in a Bunk). Optional per step: \"target\" (loose: a loose single part, the step's drops first; bunk) shows an orange marker on the nearest one and how far it is; \"hint\" shows after \"hintAfter\" seconds on the step (default 35); \"drops\" (part names, at most 4) are set down in front of the player as the step starts. The induction is about the person (Karl, 2026-11-10): the machines are taught later, on Ministry duties. No inventory step: the induction runs in survival, where the Tab parts menu is off away from a beacon (SandboxInventoryAllowed).",
+ "about": "The warden's induction: the first tutorial, after the player wakes in the penal colony (docs/sandbox/TUTORIAL.md). Karl, 2026-11-11: woken up, shouted onto the crew bus, taken to the mine, the hand basics there, then the mine wall: shift a fallen rock with the physics gun, stand a Pit Prop on the face's footing with the attach tool, and fit a lamp on it. Show, don't tell (Karl): a step's text is one short line, the warden and the foreman carry the world, and the detail waits in the hint. One step at a time; each completes when the server sees its cue. {Action} in text shows the player's own key for that GameAction (Keybinds.cs). Text is ASCII. The player has no gun, no tools but bare hands and no backpack while it runs: \"gives\" names the tools a step hands over (kept for every later step; \"backpack\" hands over the backpack), and the end or a skip gives everything back. Cues: wait (seconds), look (radians turned, default 3), move (metres walked, default 6), sprint (seconds sprinting, default 1), jump, crouch, inventory, toolwheel, hold (a part in the hands), tool (that tool out: attach, linker, configure, grounddrill, physicsgun, hands...), place (a part fitted or set down), weld (two pieces joined with the attach tool), link (any routed link), power (a power cable), drill (the ground drill dug), assembler (an Assembler set or fed), configure (any part's settings), stow (a part put in the backpack), draw (a part taken out of it), carry (the physics gun took hold of something), bunk (lay in a Bunk), ride (the crew bus, a stand-in, from the \"spot\" stop to the other: colony or quarry; GameQuarry.cs). Optional per step: \"speaker\" (who says its line; default the file's), \"target\" (loose: a loose single part, the step's drops first; bunk) shows an orange marker on the nearest one and how far it is; \"spot\" (colony, quarry, wall: the mine face behind the quarry's works) marks a place the server knows instead; \"hint\" shows after \"hintAfter\" seconds on the step (default 35); \"dropNote\" (what the notice says when the drops land; default: the speaker sets them down), \"drops\" (part names, at most 4) are set down in front of the player as the step starts: a part for the hands must be an item (not physics-only). No inventory step: the Tab parts menu is off in survival away from a beacon. The machines, the bus home and the bunk are the quarry duty's (Story/Duties/Quarry.json), which follows on at the mine.",
  "speaker": "Warden Pettigrew",
  "steps": [
   {
-   "id": "welcome",
-   "title": "Induction",
-   "text": "Welcome to the colony, by order of the Ministry of Slop. This induction is compulsory, brief and largely unpaid.",
-   "warden": "Do try to keep up. The last intake didn't, and we're still filling in the forms.",
-   "cue": "wait",
-   "seconds": 7
-  },
-  {
-   "id": "look",
-   "title": "Look around",
-   "text": "Move the mouse to look around. Take in the facilities.",
-   "warden": "Yes, that's all of them.",
+   "id": "wake",
+   "title": "On your feet",
+   "text": "Look around with the mouse.",
+   "warden": "ON YOUR FEET, INMATE! Mine shift! The bus does not wait and neither do I!",
    "cue": "look",
-   "hint": "Just the mouse. Turn right round, all the way."
+   "amount": 2,
+   "hint": "Sweep the mouse left and right.",
+   "hintAfter": 15
   },
   {
-   "id": "move",
-   "title": "Walk",
-   "text": "Walk with {MoveForward} {MoveLeft} {MoveBack} {MoveRight}.",
-   "warden": "One foot in front of the other. We'll have you filing in no time.",
-   "cue": "move",
-   "hint": "Hold {MoveForward} and keep walking for a few metres."
-  },
-  {
-   "id": "sprint",
-   "title": "Run",
-   "text": "Hold {Sprint} while you walk to run.",
-   "warden": "Running in the corridors is permitted. Running away is a separate form.",
-   "cue": "sprint",
-   "hint": "Hold {Sprint} and {MoveForward} together, for a second or so."
+   "id": "bus",
+   "title": "Get on the bus",
+   "text": "{MoveForward} {MoveLeft} {MoveBack} {MoveRight} to walk, {Sprint} to run. Board the crew bus at the gate.",
+   "warden": "Out the gate and ON THE BUS! Sentence served is time worked, and you have worked none!",
+   "cue": "ride",
+   "spot": "colony",
+   "hint": "Follow the orange marker out of the gate. Stand next to the bus once it has stopped.",
+   "hintAfter": 15
   },
   {
    "id": "jump",
-   "title": "Jump",
-   "text": "Press {Jump} to jump.",
-   "warden": "Lovely. Very spirited. Noted on your file.",
+   "title": "The mine",
+   "speaker": "Foreman Grubb",
+   "text": "{Jump} to jump.",
+   "warden": "Foreman Grubb. This is the face: it comes down about once a week. Hop, so I know the legs work.",
    "cue": "jump"
   },
   {
-   "id": "crouch",
-   "title": "Crouch",
-   "text": "Press {CrouchToggle} to crouch, or tap {CrouchHold} (hold it to go prone).",
-   "warden": "Mind your head. The ceilings were budgeted for shorter convicts.",
-   "cue": "crouch"
-  },
-  {
-   "id": "toolwheel",
-   "title": "The tool wheel",
-   "text": "Hold {ToolWheel} for the tool wheel. Flick the mouse to a tool and let go to take it out; let go in the middle to cancel. Tools are issued as this induction needs them; your gun comes back at the end.",
-   "warden": "Prison issue. Sign for it and don't lick it.",
-   "cue": "toolwheel",
-   "hint": "Hold {ToolWheel} down until the wheel shows; you needn't pick anything."
-  },
-  {
    "id": "hold",
-   "title": "Pick up a part",
-   "text": "Pick up a loose part: look at it and press {Interact}. It goes into your hands. The warden has set two Lamps down for you; the orange marker shows the nearest.",
-   "warden": "Lift with the knees. The Ministry does not cover backs.",
+   "title": "Pick up a lamp",
+   "speaker": "Foreman Grubb",
+   "text": "Look at a Lamp and press {Interact}.",
+   "warden": "Last shift dug in the dark. There was an inquiry. Pick up a lamp.",
    "cue": "hold",
    "target": "loose",
    "drops": [
-    "Lamp",
     "Lamp"
    ],
-   "hint": "Walk up close to a Lamp, aim the crosshair at it and press {Interact}. Lost them? The orange marker shows the nearest one."
+   "hint": "Walk up close to a Lamp (the orange marker), aim the crosshair at it and press {Interact}.",
+   "hintAfter": 20
   },
   {
    "id": "backpack",
    "title": "Your backpack",
-   "text": "You've been issued a backpack. With a part in your hands, press {Stow} to put it in; its slots show at the bottom of the screen. Then press {DrawPack} to take it back out. A part too big or too heavy for a slot stays in your hands.",
-   "warden": "Your backpack, returned from the evidence locker. The contents were evidence. They still are.",
-   "cue": "draw",
+   "speaker": "Foreman Grubb",
+   "text": "{Stow} puts it in your pack.",
+   "warden": "Your pack. Whatever was in it is evidence now. Stow the lamp: you'll want your hands.",
+   "cue": "stow",
+   "hint": "Lamp in your hands, press {Stow}. Its slot shows at the bottom of the screen.",
    "gives": [
     "backpack"
    ],
-   "hint": "Part in your hands: {Stow} puts it in. Hands empty: {DrawPack} takes it out. Both count, in that order."
-  },
-  {
-   "id": "attach",
-   "title": "The attach tool",
-   "text": "Take out the attach tool from the tool wheel ({ToolWheel}), or press {Weapon3}.",
-   "warden": "The attach tool. Our most trusted inmate. Unlike you.",
-   "cue": "tool",
-   "tool": "attach",
-   "gives": [
-    "attach"
-   ],
-   "hint": "Hold {ToolWheel} and flick to the attach tool, or just press {Weapon3}."
-  },
-  {
-   "id": "place",
-   "title": "Build",
-   "text": "With a part in your hands and the attach tool out, aim at a socket or the ground and hold {Fire} to fit it. Turn the ghost with {RotateLeft} {RotateRight} {RotateUp} {RotateDown}. {Aim} takes a part back off.",
-   "warden": "Build something. Anything. The rehabilitation figures need a lift.",
-   "cue": "place",
-   "hint": "Aim at the ground a few metres away, or at the other Lamp. When the ghost shows, hold {Fire} until it is fitted."
-  },
-  {
-   "id": "weld",
-   "title": "Join two pieces",
-   "text": "The warden sets down one more Lamp. Pick it up, set it down touching your build, then with the attach tool out aim at the seam and press {Interact} to join the two into one.",
-   "warden": "Two pieces become one. Rather like a merger, only less paperwork.",
-   "cue": "weld",
-   "target": "loose",
-   "drops": [
-    "Lamp"
-   ],
-   "hint": "The two pieces must touch. Set the Lamp down right against your build (hold {Fire} on the ground beside it), then aim where they meet and press {Interact}."
-  },
-  {
-   "id": "drill",
-   "title": "Dig",
-   "text": "Take out the ground drill from the tool wheel and hold {Fire} on the ground to dig dirt, stone and sand. {Aim} puts it back.",
-   "warden": "Every convict digs. It builds character, and the character is cheap.",
-   "cue": "drill",
-   "gives": [
-    "grounddrill"
-   ],
-   "hint": "Aim at bare ground near your feet, not at a construct, and hold {Fire} for a moment."
+   "hintAfter": 20
   },
   {
    "id": "physicsgun",
    "title": "The physics gun",
-   "text": "Take out the physics gun from the tool wheel ({ToolWheel}). It moves what is too heavy for your hands.",
-   "warden": "Handle with care. It's lifted heavier convicts than you, and mostly put them down again.",
+   "speaker": "Foreman Grubb",
+   "text": "Hold {ToolWheel}, flick to the physics gun, let go.",
+   "warden": "Hear that creaking? That's the face thinking about it. Get the physics gun out. You'll want it.",
    "cue": "tool",
+   "hint": "Hold {ToolWheel} until the wheel shows, move the mouse to the physics gun and let go.",
    "tool": "physicsgun",
    "gives": [
     "physicsgun"
    ],
-   "hint": "Hold {ToolWheel} and flick to the physics gun."
+   "hintAfter": 20
   },
   {
    "id": "carry",
-   "title": "Carry something",
-   "text": "The warden has set a Frame Block down: structural parts are too heavy for your hands, so they go by physics gun. Aim at it and hold {Fire} to lift it. The mouse wheel brings it closer or pushes it away; let go of {Fire} to drop it, {Aim} to freeze it in the air.",
-   "warden": "Gently. Ministry property includes the bits you drop it on.",
+   "title": "Shift the rubble",
+   "speaker": "Foreman Grubb",
+   "text": "Aim at the rock and hold {Fire}.",
+   "warden": "There she goes. Out of the way with it. Too heavy for hands: that's what the gun is for.",
    "cue": "carry",
+   "hint": "Keep {Fire} held to carry it; let go to drop it. The mouse wheel brings it closer or pushes it away.",
    "target": "loose",
+   "hintAfter": 20,
    "drops": [
-    "Frame Block"
+    "Rubble"
    ],
-   "hint": "The beam takes hold of what is under the crosshair: aim at the Frame Block and keep {Fire} held down."
+   "dropNote": "A lump of the face comes down at your feet"
   },
   {
-   "id": "bunk",
-   "title": "Your bunk",
-   "text": "Lie in a Bunk: look at one and press {Interact}; {Interact} again gets you up. The last bunk you lay in is where you wake after a death. The colony's are by the yard's west fence; the orange marker shows the nearest.",
-   "warden": "The open-air dormitory. Fresh air is a privilege. So is a roof, which you haven't earned.",
-   "cue": "bunk",
-   "target": "bunk",
-   "hint": "Walk to the orange marker, aim at the Bunk and press {Interact}."
+   "id": "prop",
+   "title": "Pick up a pit prop",
+   "speaker": "Foreman Grubb",
+   "text": "Look at a Pit Prop and press {Interact}.",
+   "warden": "She'll come down again unless she's propped. Grab a prop.",
+   "cue": "hold",
+   "hint": "Put the physics gun away first: hold {ToolWheel} and let go on your hands. Then walk up to a Pit Prop (the orange marker), aim at it and press {Interact}.",
+   "target": "loose",
+   "drops": [
+    "Pit Prop",
+    "Pit Prop"
+   ],
+   "hintAfter": 20
+  },
+  {
+   "id": "attach",
+   "title": "The attach tool",
+   "speaker": "Foreman Grubb",
+   "text": "Take out the attach tool ({ToolWheel}).",
+   "warden": "Attach tool. It fixes what you're holding to what you're looking at.",
+   "cue": "tool",
+   "hint": "Hold {ToolWheel}, flick to the attach tool and let go. {Weapon3} does it too.",
+   "tool": "attach",
+   "gives": [
+    "attach"
+   ],
+   "hintAfter": 20
+  },
+  {
+   "id": "support",
+   "title": "Shore up the wall",
+   "speaker": "Foreman Grubb",
+   "text": "Aim at the foot of the rock face and hold {Fire}.",
+   "warden": "Foot of the face, on the footing. Hold it there till it's fixed.",
+   "cue": "place",
+   "hint": "Stand close to the mine wall (the orange marker) with the prop in your hands and aim at the low footing under the rock. When the ghost shows, hold {Fire} until it is fitted.",
+   "spot": "wall",
+   "hintAfter": 20
+  },
+  {
+   "id": "lamp",
+   "title": "Light the face",
+   "speaker": "Foreman Grubb",
+   "text": "{DrawPack} the lamp, then aim at the prop and hold {Fire}.",
+   "warden": "Now the lamp, so the next shift can see what's about to land on them.",
+   "cue": "place",
+   "hint": "{DrawPack} takes the Lamp out of your pack. Attach tool out, aim at the prop until the ghost shows, then hold {Fire}. {RotateLeft} {RotateRight} turn the ghost.",
+   "spot": "wall",
+   "hintAfter": 20
   },
   {
    "id": "done",
-   "title": "Induction complete",
-   "text": "That's the induction. You can move, carry and build, and you know where you'll wake. Ministry duties come next: the machines are taught on the job. The Esc menu replays this whenever you like.",
-   "warden": "Off you go. Report for duties when called. And do remember: we're all in this together. Some of us more than others.",
+   "title": "Wall's up",
+   "speaker": "Foreman Grubb",
+   "text": "You can move, carry and build. The Esc menu replays this.",
+   "warden": "It held, and nobody died. I'll put you down as skilled labour. Now, the works.",
    "cue": "wait",
-   "seconds": 9
+   "seconds": 7
   }
  ]
 }

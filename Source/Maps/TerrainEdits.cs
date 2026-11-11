@@ -146,16 +146,25 @@ public sealed partial class TerrainEdits : IDigGround
 
     /// <summary>
     /// A crater is open upwards. Over its flattened ball the ground up to a radius above the blast goes too, and a roof
-    /// left over that which is thinner than the radius falls in with it: the top <paramref name="hi"/> of what a crater of
-    /// radius <paramref name="r"/> cuts from a column of spans <paramref name="s"/>. So a blast on the floor of an earlier
-    /// crater, or at the foot of its side, leaves no lip of ground hanging over the new hole (blocks and spikes stood
-    /// round every crater made by several blasts). A thicker roof still stands, and a drill's scoop is a plain ball:
-    /// tunnels and overhangs are dug with it.
+    /// left over that which is thinner than the radius (or <see cref="MinRoof"/>) falls in with it: the top <paramref name="hi"/>
+    /// of what a crater of radius <paramref name="r"/> cuts from a column of spans <paramref name="s"/>. So a blast on the
+    /// floor of an earlier crater, or at the foot of its side, leaves no lip of ground hanging over the new hole (blocks
+    /// and spikes stood round every crater made by several blasts). A thicker roof still stands.
     /// </summary>
-    public static float CraterTop(ReadOnlySpan<float> s, float hi, float r)
+    public static float CraterTop(ReadOnlySpan<float> s, float hi, float r) => RoofTop(s, hi, MathF.Max(r, MinRoof));
+
+    /// <summary>
+    /// A roof of ground thinner than this (metres) over a hole falls in with the dig that made it, a drill's scoop as
+    /// much as a blast: the top of every open hole is then one sloping surface (<see cref="GroundTops"/>), where lips
+    /// and ledges hanging over it drew as blocks with dark sides. A tunnel wants this much ground over it.
+    /// </summary>
+    public const float MinRoof = 6f;
+
+    /// <summary>The top <paramref name="hi"/> of what a dig cuts from a column of spans <paramref name="s"/>, taken up through a roof thinner than <paramref name="roof"/>.</summary>
+    public static float RoofTop(ReadOnlySpan<float> s, float hi, float roof)
     {
         for (var k = 0; k + 1 < s.Length; k += 2)
-            if (s[k] < hi && s[k + 1] > hi && s[k + 1] - hi < r)
+            if (s[k] < hi && s[k + 1] > hi && s[k + 1] - hi < roof)
                 return s[k + 1];
         return hi;
     }
@@ -475,8 +484,8 @@ public sealed partial class TerrainEdits : IDigGround
                     continue;
                 col = Touch(ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
             }
-            if (op.Kind == DigKind.Crater)
-                hi = CraterTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, r);
+            hi = op.Kind == DigKind.Crater ? CraterTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, r)
+                : RoofTop(new ReadOnlySpan<float>(_spans[col], 0, _count[col] * 2), hi, MinRoof);
             if (Subtract(col, lo, hi))
             {
                 changed++;

@@ -13,6 +13,10 @@ the ride's camera `Source/App/Program.Quarry.cs`.
   Assembler's machines, an Assembler fed by a Materials Bin and a Parts Shelf, and a Small Genset on a Fuel Tank with no
   cable), 180 to 320 m from the colony (`from`, `to`), on level ground. Its bus stop is 14 m from it on the colony's side; the
   colony's is 8 m out from the gate. A world saved before the quarry gets one when it loads (the opening section's last u16).
+- **The mine face** (2026-11-11). Behind the works stands the Mine Face (two more slabs, a rock face with a footing): the
+  induction now rides the same bus out and has the inmate prop and light it (docs/sandbox/TUTORIAL.md, "The mine shift").
+  Someone within `QuarryAtWorks` (90 m) of the quarry's stop when the duty comes starts at its second step (`power`), with no
+  memo and no bus out; the last step before `done` is `bunk` (lie in a Bunk back at the colony; the marker is a free one).
 - **Who.** Once a person's induction is finished or skipped (and the opening is over, and they haven't started the Orbital
   Depot), the Ministry's memo sends them to the colony's bus stop. The depot (docs/story/DEPOT.md) waits until this duty is done.
 - **Steps.** `bus` (ride from the colony), `power` (a power cable laid on the works, or a world cable beside them), `feed`

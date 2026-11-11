@@ -23,8 +23,8 @@ public sealed partial class Ui
 
     private void DrawTutorial(Game game, float2 pos, float2 size, Settings settings)
     {
-        if (!game.SandboxOn || PauseOpen || MenuOpen)
-            return;
+        if (!game.SandboxOn || PauseOpen || MenuOpen || game.QuarryRiding)
+            return; // (the crew bus scene has the screen: UiQuarry.cs)
         var since = Brutal.GlfwApi.Glfw.Time - game.TutorialChangedAt;
         var step = game.TutorialCurrent;
         var finished = game.TutorialStateNow == TutorialState.Finished && since < 4;
@@ -91,6 +91,11 @@ public sealed partial class Ui
     private void TutorialLook(Game game, TutorialStep step)
     {
         var now = Brutal.GlfwApi.Glfw.Time;
+        if (step.Spot != QuarrySpotKind.None)
+        {
+            _tutTarget = game.QuarryHasTarget ? game.QuarryTarget : null; // (the server's: a bus stop, the bus, the mine wall)
+            return;
+        }
         if (step.Target == TutorialTarget.None || game.Local is not { } me)
         {
             _tutTarget = null;
@@ -176,7 +181,8 @@ public sealed partial class Ui
         _tutHint = step.Hint.Length == 0 ? "" : Tutorial.Fill(step.Hint, settings);
         _tutFarMetres = -1;
         _tutLookedAt = -1;
-        _tutWarden = step.Warden.Length == 0 ? "" : Tutorial.Speaker.Length > 0 ? $"{Tutorial.Speaker}: \"{step.Warden}\"" : $"\"{step.Warden}\"";
+        var who = step.Speaker.Length > 0 ? step.Speaker : Tutorial.Speaker;
+        _tutWarden = step.Warden.Length == 0 ? "" : who.Length > 0 ? $"{who}: \"{step.Warden}\"" : $"\"{step.Warden}\"";
     }
 
     /// <summary>The Esc menu's induction buttons (Sandbox): skip while it runs, resume a skipped one, replay from the start.</summary>
