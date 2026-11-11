@@ -9,7 +9,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// Employee of the Month plaque, a satellite dish, a network switch and a cable reel as trophies, and router antennas down the flanks as
 /// spikes. In its rooms: server racks (loot on their shelves), and the Computer and the Fax Machine, the only line to the IT Department
 /// (docs/story/STORY.md, "The IT Department's fax"). Furniture stands on feet on the floor's quarter grid and faces its own +z, into
-/// the room, as tools/constructs/body_parts.py's does. Each trophy stands on one "base" socket and points up its own +y, so the kit turns
+/// the room, as BodyParts' does. Each trophy stands on one "base" socket and points up its own +y, so the kit turns
 /// it outward, as the bandit parts do (BanditParts.cs). Leaves and soil aren't paintable; the rest takes the style's paint. Faces that
 /// meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces"). Recipes come from tools/constructs/assembling.py; run it after this one.
 /// </summary>
