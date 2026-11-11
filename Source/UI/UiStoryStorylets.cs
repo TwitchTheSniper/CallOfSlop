@@ -43,6 +43,7 @@ public sealed partial class Ui
                 if (w[i].Kind == StoryKind.Player && !w[i].Gone)
                     _stSlPlayer = i;
         }
+        ImGui.SetNextItemWidth(220 * _scale);
         if (ImGui.BeginCombo("Player##stslpl"u8, _stSlPlayer >= 0 ? w[_stSlPlayer].Name : "nobody"))
         {
             for (var i = 0; i < w.Count; i++)

@@ -181,9 +181,10 @@ public sealed partial class Ui
         {
             var to = game.StoryBodyGoalOf(a.Entity) ?? body.Position;
             var far = MathF.Sqrt((to.X - body.Position.X) * (to.X - body.Position.X) + (to.Z - body.Position.Z) * (to.Z - body.Position.Z));
-            ImGuiSafe.TextColored(StoryBodied, body.Alive
-                ? $"Body: player {body.Id} at {body.Position.X:0}, {body.Position.Z:0}{(far > 1.5f ? $", going to {to.X:0}, {to.Z:0} ({far:0} m)" : ", there")}"
-                : $"Body: player {body.Id}, lying dead");
+            if (all || !body.Alive || far > 1.5f)
+                ImGuiSafe.TextColored(StoryBodied, !body.Alive ? (all ? $"Body: player {body.Id}, lying dead" : "Their body lies dead.")
+                    : all ? $"Body: player {body.Id} at {body.Position.X:0}, {body.Position.Z:0}{(far > 1.5f ? $", going to {to.X:0}, {to.Z:0} ({far:0} m)" : ", there")}"
+                    : $"Walking there: {far:0} m to go.");
             if (body.Alive && game.StorySightOf(a.Entity) is { } react)
                 ImGuiSafe.TextColored(StoryBodied, $"Sight: {react}."); // (GameStorySight.cs)
             if (body.Alive && game.StoryMoodOf(a.Entity, Brutal.GlfwApi.Glfw.Time) is { } md)
@@ -196,7 +197,7 @@ public sealed partial class Ui
         }
         else if (!a.Dead)
             ImGuiSafe.TextColored(Dim, game.StoryBodiesOn ? "No body: not in this world now." : "No body: bodies are off.");
-        if (a.Why != AgentWhy.None)
+        if (a.Why != AgentWhy.None && (all || a.Why != AgentWhy.Idle))
             ImGuiSafe.TextColored(a.Why == AgentWhy.Idle ? Dim : StoryFailed, $"Last: {ag.WhyText(a)}");
         if (s.Drama.Of(a, now) is var di and >= 0)
         {

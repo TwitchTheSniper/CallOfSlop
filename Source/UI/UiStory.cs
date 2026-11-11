@@ -784,9 +784,11 @@ public sealed partial class Ui
                     _stVerbFilter = v;
             ImGui.EndCombo();
         }
-        ImGui.SameLine();
         if (StoryEngineTabs)
+        {
+            ImGui.SameLine();
             ImGuiSafe.TextColored(Dim, $"{s.Chronicle.Count} events kept{(s.Chronicle.FoldedTotal > 0 ? $", {s.Chronicle.FoldedTotal} older plain ones folded into counts" : "")}; the newest 500 shown");
+        }
         var avail = ImGui.GetContentRegionAvail();
         var left = StoryEngineTabs ? avail.X * 0.58f : 0; // (the sifter's notes beside it only with Engine)
         if (ImGui.BeginChild("##storyevents"u8, new float2(left, avail.Y), ImGuiChildFlags.Borders))
