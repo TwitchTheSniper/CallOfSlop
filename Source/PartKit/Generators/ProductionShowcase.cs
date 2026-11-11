@@ -32,7 +32,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         // Paint by section (look.md): a warm concrete floor, steel-blue walkways, one accent a station, yellow controls.
         private const string Floor = "#8c8576", Aisle = "#4f6578", Hazard = "#d8a020", Board = "#23272b", Control = "#e0b020";
-        private const string Power = "#b5452b", Stock = "#c9a24a", Refining = "#d17a22", LineA = "#3d7ab8", PressBlue = "#2f5f8f", LineB = "#4f8f45", Spur = "#b83a3a", Wheels = "#8050a8";
+        private const string Power = "#b5452b", Stock = "#c9a24a", Refining = "#d17a22", LineA = "#3d7ab8", PressBlue = "#2f5f8f", LineB = "#4f8f45", Spur = "#b83a3a", Wheels = "#8050a8", Assembly = "#2f8f8a";
 
         private static readonly Orient Front = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ); // own +z to the front aisle
         private static readonly Orient Back = new(Vector3.UnitY, Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ); // own -z to the front (a refiner's screen)
@@ -167,6 +167,13 @@ public sealed class ProductionShowcase : IPartGenerator
             Convey(former, "Piece out", wheelRack, "Piece in", Wheels);
             Sign(54.75f, Posts1, Wheels, "Set this conveyor too small with the mouse wheel: a refusal");
 
+            // ---- 6b. The assembling line: an Assembler fed steel, its Piece out onto a conveyor to a Piece Rack (catalogue parts). --
+            var asm = On("Assembler", 52.25f, Row2, Flow, paint: Assembly);
+            Feed(StockOf("steel", 52.25f, -13.25f), asm);
+            var partRack = On("Piece Rack", 55.25f, -10.75f, Flow, "-y.0.0", Assembly);
+            Convey(asm, "Piece out", partRack, "Piece in", Assembly);
+            Sign(50.25f, Posts2, Assembly, "Send the bill: the Assembler makes these parts");
+
             // ---- 7. Orders: a second Line Console on both Extruders and the Wheel Former, its bill already on it. ------------------
             var orders = On("Line Console", 24.25f, Posts1, Front, paint: Control);
             Sign(23.25f, Posts1, Control, "Bill, then Send: the orders go out. Then Line, Start");
@@ -182,6 +189,10 @@ public sealed class ProductionShowcase : IPartGenerator
                          ("Extrusion wheel 25x60x0 rubber", 2), ("Extrusion wheel 30x90x0 rubber", 2),
                      })
                 Bill(orders, piece, n);
+            // (and the Assembler's catalogue parts: a Send deals them to it, the pieces to the Extruders and the Former)
+            Run(orders, asm, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(34.25f, 0, -8.6f), V(41.75f, 0, -8.6f), V(49.25f, 0, -8.6f), V(52.25f, 0, -8.6f));
+            foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Servo Motor", 2), ("Wheel", 2) })
+                BillPart(orders, part, n);
 
             // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------
             Stripe(26.75f, Row1, true);

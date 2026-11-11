@@ -36,7 +36,8 @@
     {"min": [0.08, 0.68, -0.94], "max": [0.88, 0.8, -0.08], "color": "#8b857a", "detail": true},
     {"min": [0.14, 1.44, -0.16], "max": [0.4, 1.8, 0.1], "color": "#4e5a42", "detail": true, "shape": "cylinder", "front": "+y"},
     {"min": [0.14, 1.8, 0], "max": [0.4, 1.84, 0.1], "color": "#8b857a", "detail": true},
-    {"min": [0.1325, 0.4919, -1.012], "max": [0.9245, 0.7939, -0.902], "color": "#14181c", "detail": true}
+    {"min": [0.1325, 0.3329, -1.012], "max": [0.9245, 0.7509, -0.902], "color": "#14181c", "detail": true},
+    {"min": [0.1485, 0.6349, -1.032], "max": [0.9085, 0.7349, -1.006], "color": "#2b3036", "detail": true, "paintable": false, "status": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -48,9 +49,10 @@
     {"name": "Chute in", "type": "chute", "dir": "in", "at": [1, 0.5, -0.6], "face": "+x"},
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [1, 0.5, 0.6], "face": "+x"}
   ],
-  "panels": [{"source": "machine", "at": [0.5285, 0.6429, -1.016], "size": [0.76, 0.27], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "panels": [{"source": "machine", "at": [0.5285, 0.4839, -1.016], "size": [0.76, 0.27], "face": "-z", "up": "+y", "rows": 8, "range": 30, "touch": [{"action": "orders.queue", "at": [0.02, 0.02, 0.24, 0.12], "label": "Queue"}, {"action": "orders.cancel", "at": [0.26, 0.02, 0.48, 0.12], "label": "Cancel"}, {"action": "orders.clear", "at": [0.5, 0.02, 0.72, 0.12], "label": "Clear"}, {"action": "view.up", "at": [0.75, 0.02, 0.86, 0.12], "label": "Up"}, {"action": "view.down", "at": [0.87, 0.02, 0.98, 0.12], "label": "Down"}]}],
   "config": [
     {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."},
+    {"key": "orderCount", "label": "Order count", "group": "Orders", "min": 1, "max": 999, "step": 1, "default": 1, "tooltip": "Parts the Queue button on its screen asks for: one order of its Recipe."},
     {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
   ],
   "storage": {
