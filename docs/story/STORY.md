@@ -755,7 +755,7 @@ Trusted from 60).
   standings). Every peer has the storylets' texts, so only numbers and names travel. A player sees their own page only.
 - **The story map** (https://claude.ai/artifact/JJLq8Be3fd21fRvtdS22EF) is a read-only page of every storylet as a
   flowchart with each beat spelt out, for reading what is in the game and saying what should change:
-  `python3 tools/story/story_map.py OUT.html` makes it from `Story/Storylets`; publish it again after they change.
+  `CallOfSlop.exe --story-map OUT.html` makes it from `Story/Storylets` (the page template is `tools/story/story_map.html`); publish it again after they change.
 - `--storylet-sim` prints the same path at its end ("The path").
 
 ### The ending

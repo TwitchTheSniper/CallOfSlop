@@ -259,7 +259,8 @@ public static class PartKit
             }
             var body = text.EndsWith('\n') ? text[..^1] : text;
             if (PyJson.Dumps(v, 2) == body || PyJson.Dumps(v, 1) == body || PyJson.Dumps(v) == body || PyJson.Dumps(v, 2, ensureAscii: false) == body
-                || v is PyDict pd && Generators.MachineTiers.Layout(pd) == text)
+                || v is PyDict pd && (Generators.MachineTiers.Layout(pd) == text
+                    || (pd.Get("parts") ?? pd.Get("ops")) is List<object?> && (PropWriter.Lines(pd) == text || PropWriter.Head(pd) == text)))
                 same++;
             else
             {

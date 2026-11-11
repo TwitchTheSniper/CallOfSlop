@@ -7,7 +7,7 @@ capsule, sphere and arc (Parts/README.md, "Shapes"). Two things are made from a 
     proxies(b)  boxes inside the shape that stand for its volume when checking that pieces touch: [(centre, size, rot_x)]
 
 `b` is the box's dict as read from the part file (lower-case keys) plus its final "size". Used by viz.py (the contact
-sheet) and floaters.py (the connectivity checker).
+sheet).
 """
 import math
 
