@@ -52,6 +52,7 @@ public static class PartKit
         new Generators.BanditParts(),
         new Generators.MediaParts(),
         new Generators.AmmoParts(),
+        new Generators.HighlandParts(),
     ];
 
     public static IPartGenerator? Find(string name) =>
