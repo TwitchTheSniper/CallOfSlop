@@ -480,6 +480,7 @@ public static class ConstructBuild
     public static List<Blueprint> LoadBlueprints(string folder, List<string> refused, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<Blueprint>();
+        var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
         foreach (var df in Mods.Resolve(Mods.BaseFiles(folder, false), mods ?? [], "Constructs/Blueprints", false, refused, (t, f) =>
                  {
                      if (Build(new ConstructWorld(), ParseBlueprint(t, f), Vector3.Zero, Quaternion.Identity, out var why) == null)
@@ -490,9 +491,14 @@ public static class ConstructBuild
             {
                 var bp = ParseBlueprint(df.Text, df.File);
                 // Build it once on a scratch world: every step must fit.
-                var scratch = new ConstructWorld();
-                if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
-                    throw new ConstructPartException($"{bp.File}: {why}");
+                if (!remember || !BlueprintCheckCache.Passed(df.Text))
+                {
+                    var scratch = new ConstructWorld();
+                    if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
+                        throw new ConstructPartException($"{bp.File}: {why}");
+                    if (remember)
+                        BlueprintCheckCache.Add(df.Text);
+                }
                 list.Add(bp);
             }
             catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
@@ -501,6 +507,8 @@ public static class ConstructBuild
                 refused.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {why}" : why);
             }
         }
+        if (remember)
+            BlueprintCheckCache.Save();
         return list;
     }
 

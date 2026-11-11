@@ -45,7 +45,7 @@ public static partial class SelfTest
         {
             // (each case builds the whole blueprint again: a giant one, the 6587-part Titan Walker, gets a few dozen evenly spread take-offs, not every part)
             var n = ConstructBuild.Build(new ConstructWorld(), bp, Vector3.Zero, Quaternion.Identity, out _)?.PartCount ?? 0;
-            var stride = Math.Max(1, n * n / 200_000);
+            var stride = Math.Max(Math.Max(1, n / 12), n * n / 20_000); // (about a dozen evenly spread take-offs a blueprint, at most 20,000 part builds: every part of 327 blueprints took six minutes, a third of the suite)
             for (var i = 0; i < n; i += stride)
             {
                 var w = new ConstructWorld();
