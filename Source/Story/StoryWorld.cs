@@ -33,7 +33,7 @@ public sealed class StoryEntity
 }
 
 /// <summary>
-/// The relational world state (docs/story/STORY.md, box 1): entities, their qualities, and relationship pairs indexed both
+/// The relational world state (docs/story/STORY.md): entities, their qualities, and relationship pairs indexed both
 /// ways, so "whom does Karl hold a grudge against" and "who holds a grudge against Karl" are both a binary search. Story
 /// entities number in the hundreds or low thousands, so sorted arrays per entity are all it needs: no archetype tables.
 /// Changes happen only on events (rare), never per tick. Not thread-safe: the host's tick owns it.

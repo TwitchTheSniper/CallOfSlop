@@ -2,9 +2,8 @@
   // The story's fragments (docs/story/FRAGMENTS.md; Game/GameStoryFragments.cs): the five records of what happened when the
   // systems were folded, one in each sealed data centre. A player can find them in any order; each one found is recorded in
   // the story world (a Thing named by its id, the relation Fragment towards it, its value the source) and shows in their
-  // Logbook (F1). The words are the first draft from the storyline talk ("Fragments and scripture (draft)",
-  // https://claude.ai/artifact/N8XemUxW1d9rseLeDyTHxZ): change them freely, but keep the ids, which the Thousand Layers'
-  // scripture (Story/Factions) and storylets name. Text is ASCII; "text" is a list of paragraphs.
+  // Logbook (F1). The words are a first draft (the storyline is docs/story/STORYLINE.md): change them freely, but keep the
+  // ids, which storylets may name. Text is ASCII; "text" is a list of paragraphs.
   "format": "call-of-slop-fragments/1",
   "fragments": [
     { "id": "frag.threat", "title": "The Threat",
@@ -19,8 +18,8 @@
       "kind": "Design note, attached to a drawing nobody can open any more.",
       "text": [
         "You cannot outrun it and you cannot stop it, so we stopped asking how. The answer is to move the room and leave the fire where it is.",
-        "Take the space around the five systems and turn it over on itself from the centre outward, the way you roll dough. Whatever sits at the edge of the roll, the threat included, ends up wrapped on the inside, and we end up outside it.",
-        "The roll needs room to turn into. The models say it borrows a little empty space beyond the outermost orbit, and stops. Nobody lives out there."
+        "Take the space around the five systems and fold it over on itself from the centre outward. Whatever sits at the edge of the fold, the threat included, ends up wrapped on the inside, and we end up outside it.",
+        "The fold needs room to turn into. The models say it borrows a little empty space beyond the outermost orbit, and stops. Nobody lives out there."
       ],
       "hint": "What did the builders do about it?" },
     { "id": "frag.reading", "title": "What the Instruments Showed",
@@ -28,7 +27,7 @@
       "text": [
         "It worked. The edge is gone. I want that written down first, because of what comes next.",
         "We pointed the long array at the reference stars to check our position. There are no reference stars. I assumed a fault and woke the others. It is not a fault.",
-        "The roll did not stop at the outermost orbit. It did not stop anywhere. It kept turning until there was nothing left to turn into.",
+        "The fold did not stop at the outermost orbit. It did not stop anywhere. It kept turning until there was nothing left to turn into.",
         "Requesting guidance on what to tell the councils. Requesting guidance on what to tell anyone."
       ],
       "hint": "What happened on the first night after?" },
@@ -106,7 +105,7 @@
       "map": "Mille", "lat": 70, "lon": 40, "inside": true,
       "multiply": -2, "add": 9, "locks": 4, "every": 5,
       "source": "the data centre inside Mille, under the Proving Bowl",
-      "arrive": "A sealed building on the cavity's wall, lit from below by the core. The Layers say nobody built it.",
+      "arrive": "A sealed building on the cavity's wall, lit from below by the core. Nobody living says who built it.",
       "power": "The terminal hums awake. Its screen asks for an answer to its carrier.",
       "decoded": "The cipher gives. A set of instructions fills the screen: stand at it to copy what it holds.",
       "copied": "You copy the terminal's record into your Logbook (F1 by default)."

@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// A stage direction (box 3): one person is nudged towards the verb a story in progress waits for, against one target,
+/// A stage direction: one person is nudged towards the verb a story in progress waits for, against one target,
 /// until the story's next stage would run out. Their goals that can lead to that verb score (1 + Bonus) times as much, and
 /// news that fits it is more worth telling. A nudge, never an order: a goal its person wouldn't want stays at nothing.
 /// </summary>
@@ -67,7 +67,7 @@ public struct DramaCandidate
 }
 
 /// <summary>
-/// The drama manager (box 3; Awash's Influence Mode, docs/story/STORY.md "Drama"). It ranks the sifter's live partial
+/// The drama manager (Awash's Influence Mode, docs/story/STORY.md "Drama"). It ranks the sifter's live partial
 /// matches by how much they would add (the pattern's drama, how far along, how new, whether players are in it, how
 /// pressing) and gives the best few a stage direction: the person who would act next is nudged towards the verb the story
 /// waits for. It runs once a second at most, when an event came in or every half minute, never per tick, and allocates

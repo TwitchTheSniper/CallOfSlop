@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Story window's Storylets tab (docs/story/STORY.md "Storylets"; host only): for a player, every storylet with why
-/// it isn't playing now, clause by clause (the paper's whyNot), the one under way with its cast and the ends it waits for,
+/// it isn't playing now, clause by clause, the one under way with its cast and the ends it waits for,
 /// what ended lately, and the storylet qualities and facts they hold. The buttons are for trying things: nudge a quality,
 /// start a storylet now (its needs aside), end one by any of its ends, or forget what a player has had.
 /// </summary>

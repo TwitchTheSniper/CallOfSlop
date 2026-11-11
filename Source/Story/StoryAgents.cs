@@ -73,7 +73,7 @@ public struct AgentDone
     public bool Failed;
 }
 
-/// <summary>A person with a mind of their own (box 4): needs, a goal, a plan, what they're doing, what they know.</summary>
+/// <summary>A person with a mind of their own: needs, a goal, a plan, what they're doing, what they know.</summary>
 public sealed class StoryAgent
 {
     public const int MaxKnown = 32, MaxSteps = 16, MaxNodes = 40, HistorySize = 16, MaxRests = 8;
@@ -117,7 +117,7 @@ public sealed class StoryAgent
 }
 
 /// <summary>
-/// The people in the story world (docs/story/STORY.md "People"; box 4 in the diagram). Each one thinks only when their
+/// The people in the story world (docs/story/STORY.md "People"). Each one thinks only when their
 /// step under way ends or a wait runs out, a few per tick: needs fall with time, goals are scored by utility, the best is
 /// planned with the HTN planner (<see cref="StoryHtn"/>) over the same verbs players use, and its steps are acted out on
 /// the story clock, each recorded as an event (routine ones only change the world). What happens where they are, and what
