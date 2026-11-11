@@ -521,7 +521,17 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
 - **Ports.** A `"conveyor"` port names its clear `"opening"` ([across, up], metres). Every Extruder and Wheel Former has an
   implicit **Piece out** on its output face, at the base die's bottom edge (opening: its largest section; a Wheel Former's widest by
   biggest across). The **Piece Rack** (1 x 1 m pieces, 6 m long, 40 of them) and **Long Piece Rack** (2 x 2 m, 12 m, 60) have a
-  **Piece in** at their -z end and a `storage.pieces` block (`section`, `length`, `count`).
+  **Piece in** at their -z end and a `storage.pieces` block (`section`, `length`, `count`). A Press or Die Lathe has an implicit
+  **Piece in** at each bay's socket ("Piece in", "Piece in 2"...; the line 11 cm under it, opening its largest piece across): a piece
+  that arrives goes into the bay by the rules a loose piece left in its mouth meets (`ConstructPress.TakeFromConveyor`), and waits on
+  the conveyor while the bay is full or refuses it (the press's look line says why).
+- **Junctions** (the part kit's `conveyor_junction_parts`): the **Conveyor Splitter** (Piece in at -z; Piece out, 2, 3 at +z, +x,
+  -x) sends each piece to its linked outputs in turn, past one that is cut, too small for the piece or has no room at its start;
+  the **Conveyor Join** (Piece in, 2, 3 at -z, +x, -x; Piece out at +z) takes its inputs each in its turn. Large ones pass 2 x 2 m.
+  A piece never splits: it crosses whole. Its ports sit on the edges' middles at the deck's line; a piece rides its *lead-in*
+  (the input's end, the junction's middle, the output's start) with its front below 0 on the output and turns from the way it
+  came to the way it goes as its middle crosses (`ConstructConveyor.LeadIn`, `CRider.ViaPlus1`); the piece behind stops short by
+  as much of it as still lies on the input (`Tails`).
 - **The link** is `RouteType.Conveyor`: routed, auto-routed, damaged, mended, painted and deleted as every routed link is; bends
   in 45 degree steps; it doesn't branch. A new conveyor opens to the smaller of its ends' openings (`CRoute.ConvW`, `ConvH`, cm).
   Aimed at with the linking tool, the wheel sets its width and Ctrl+wheel its height, 5 cm a notch, from 10 cm up to that limit,
@@ -532,19 +542,31 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   0.5 m/s, front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
   die, when the piece is wider or taller than the link ("refused: the piece is too big for its conveyor (0.10 x 0.10 m)"), when there
   is no room at the start ("blocked: its conveyor is full": a full rack backs the pieces up to the machine) or when the link is cut.
-- **Off the link.** A cut or deleted conveyor drops every piece on it as a loose body where it was, moving as the body moved. F on a
-  rack drops its last piece in, loose, over the rack (a piece is physics-only: no hands carry it). Pieces in a rack are kinds in its
-  store, so a rack of 40 costs no part slots.
+- **Off the link.** A cut or deleted conveyor drops every piece on it as a loose body where it was, moving as the body moved, and so
+  does a construct that goes on the server with pieces riding (deleted, destroyed, cleared as a wreck, fallen out of the world:
+  `ConstructWorld.Remove`); one that travels takes them in its world copy (`keepRiders`), and a client's removal is the server's
+  word. F on a rack drops the piece the player looks at (else the last in), loose, over the rack (a piece is physics-only: no
+  hands carry it). Pieces in a rack are kinds in its store, so a rack of 40 costs no part slots.
+- **The rack shows what it holds.** Up to 24 pieces drawn at true size on its slats inside its posts, side by side from its -z end
+  2 cm apart, a layer on the one below while a layer starts under its top (`ConstructConveyor.RackLayout`, drawn in the links'
+  batch from the store as heard; both sides lay it out alike, so F takes what is seen). Its look line lists each kind and count.
 - **Collisions.** The conveyor is a drawn link: shots and blasts hit its segments (health 120); players and bodies pass through it
   as through every routed link, and through riding pieces.
-- **Network (protocol 244).** A conveyor's size is 4 bytes after its link in a Full. `CBodyKind.Riders` sends a body's riders, the
-  whole list, when one is added, arrives or drops (and after a structure change), each by its piece's key; clients move them on
-  themselves between messages. A store's slot or kind that is a run-time piece goes on the wire as `Extrusion.WireMark` and its key.
+- **Network (protocol 244, riders 245).** A conveyor's size is 4 bytes after its link in a Full. `CBodyKind.Riders` sends a body's
+  riders, the whole list, when one is added, arrives, crosses a junction or drops (and after a structure change), each by its
+  piece's key, its front as an f32 and the link it came through; clients step them on by the same rule ten times a second
+  (`ClientStep`: no arrivals or junctions, those are the server's word) and keep a piece's own front when the server's word is a
+  little behind it, so nothing steps back. Measured at 80 ms and 2 % loss: a piece's middle moves at most 2.2 cm in a frame across
+  a splitter. A store's slot or kind that is a run-time piece goes on the wire as `Extrusion.WireMark` and its key.
 - **Saves.** After a body's behaviour brief: its conveyors' sizes, then its riders (link, front, health, paint, part name). An older
-  save ends before them; blueprints don't carry the size yet (a blueprint's conveyor opens to its limit).
+  save ends before them. A piece saved inside a junction loads at its output's start. Blueprints, copies and player blueprints keep
+  a conveyor's size (`"size": [w, h]` in metres on a link, within what its ends take where it is built; without it, the limit).
 - **Cost.** Nothing per tick: a 10 Hz step walks only bodies with riders, a few float operations a rider and a link's length once
-  a step; nothing allocates in a steady line. Measured on the 2-core box: 200 riders on 20 links, 0.03 ms a step (max 0.06 ms).
+  a step; only a piece in a junction costs a look at its lead-in; nothing allocates in a steady line. Measured on the 2-core box:
+  200 riders on 20 links with 5 splitters, 0.05 ms a step (max 0.15 ms); a client's step 0.003 ms. Racks draw only when they hold
+  something (their list is made with the caches).
 
 Proposed (the user's to confirm): the wheel on the linking tool for the size (links have no configure panel); 0.5 m/s and a 10 cm
-gap; no branches; the rack storing pieces by kind rather than as fitted parts, and drawing nothing of what it holds yet; F dropping
-the piece loose by the rack; riders passing through players; a piece longer than its whole link refused.
+gap; junctions as parts rather than branches of a link; three ways at a junction; the rack storing pieces by kind rather than as
+fitted parts, drawing at most 24; F dropping the piece loose by the rack; riders passing through players (not reached: a piece as
+a solid box against a player near it is the next step); a piece longer than its whole link refused.

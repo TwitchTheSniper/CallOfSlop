@@ -33,7 +33,8 @@ public sealed class ConveyorJunctionParts : IPartGenerator
         for (var z = z0 + 0.15; z + 0.05 < z1 - 0.1; z += 0.25)
             p.Add(Box([x0 + 0.13, top + 0.015, z], [x1 - 0.13, top + 0.06, z + 0.05], Roller, detail: true));
         // Amber posts at the corners (clear of the widest conveyor at each edge's middle).
-        foreach (var (px, pz) in new[] { (x0, z0), (x1 - 0.12, z0), (x0, z1 - 0.12), (x1 - 0.12, z1 - 0.12) })
+        // (3 mm in from the frame's sides: where they overlap its top their faces would meet the frame's)
+        foreach (var (px, pz) in new[] { (x0 + 0.003, z0 + 0.003), (x1 - 0.123, z0 + 0.003), (x0 + 0.003, z1 - 0.123), (x1 - 0.123, z1 - 0.123) })
             p.Add(Box([px, top - 0.005, pz], [px + 0.12, y1, pz + 0.12], Post, detail: true));
         // The ways in and out: a mark on each side face under its port (pale out, amber in), 4 mm proud.
         var ports = new List<object?>();
