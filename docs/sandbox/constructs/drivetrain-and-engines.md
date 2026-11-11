@@ -623,3 +623,39 @@ the power flags gain 16 (the hover hold; the engine's load has the top three bit
 4. The hover holds a world height, not a height over the ground, unless its `height` wire is used.
 5. A Reactor burns nothing and doesn't explode: its cost is only its mass (and what it takes to build).
 6. Drive part mass, the table at the top of the generator: a capital diesel 2,400 t, a boiler 4,800 t, a bogie 2,000 t.
+
+## All-wheel drive and round wheels
+
+Wheels phase 1 (feat/wheels-1, 2026-11-11). The user's decisions: all-wheel drive for powerful generated vehicles, tyre settings the player
+can change, round wheels, and wheel sizes from the Wheel Former where possible.
+
+**Why.** Past about 1.7 times a V8's power, two driven tyres limit a vehicle, not its engine (docs/vehiclekit/ENGINEKIT.md "In a vehicle").
+
+**All-wheel drive in the vehicle kit** (`Vehicle.Ladder`, `SteeredAxle`, `Powertrain`). An option, off by default, so every shipped seed
+is made as before (`--gen-vehicles`: 238 identical). A generator sets `Vehicle.AllWheelDrive` before `Ladder`, or a wish asks for it
+(`EngineWish.AllWheels`; on the command line `--gen-vehicle NAME --engine-tier N --awd`, named "..., all-wheel drive]").
+
+- A differential stands in place of the front cross beam (the Wide Differential on a 0.5 m front wing, its wheels 4.5 cm further out;
+  the plain one with no wing), its back face where the beam's was, so the rails and the engine's sill don't move. The front wheels stand
+  12.5 cm ahead of the old axle line (`FrontAxleZ` says where).
+- A CV Joint on each output, the Steering Pivot on its output, then the spring and wheel as before (the 4x4 Truck's way).
+- The differential's input port (its `-z0` socket) faces forward and stays free, so only the right nose rail is fitted (at least 0.5 m),
+  and a bumper goes on that one.
+- A T Gearbox behind the gearbox splits the drive; its branch is a laid shaft under the rails, past the front differential and back into it.
+- Not yet: a tandem (it stays two driven axles), a front wing other than 0 or 0.5 m (refused, the spawner rerolls).
+
+Measured (`--speed-test`, tier 5 kit engine asking 36 m/s, Bandit Technical seeds 1, 6, 13): two-wheel drive 25.5, 29.2, 30.2 m/s, all
+grip-limited; all-wheel drive 34.2, 35.2, 32.5 m/s, limited by power against drag; 0-20 m/s in 2.6, 1.8, 1.8 s (was 6.7, 4.2, 4.0).
+Each passed the spawn drive check. Seed 6's tyres set by blueprint to a dry grip of 0.4 g and 1.6 g (two-wheel drive): 15.7 and 37.3 m/s.
+
+**Tyre settings** were already there ("The tyre's settings" above): dry, dirt and side grip, rolling drag and bounciness.
+
+**Round wheels.** The hand-made wheels (`Constructs/Parts/Wheel.json`, `Drivetrain/Wheel*.json`) draw a 24-sided cylinder over their
+three solid boxes, which are hidden and still collide as before (players, bullets, the physics gun, a loose wheel); sockets, ids and size
+are unchanged. A sprung wheel already meets the world as a cylinder ("Wheels: the rim and the cylinder"), so the drawing now matches the
+contact. Wheel Former wheels and the Dually Wheel were already round; the BigDrive tyres and drive wheels come from
+`tools/constructs/big_drive_parts.py` and are still three boxes.
+
+**Next (phase 2).** Round BigDrive wheels in their generator (or its C# port); all-wheel drive on a tandem and on other front wings
+(drive shafts between the differential and the CV joints); a faction or tier choosing it; the kit choosing a Wheel Former wheel by its key
+(diameter, width, material) instead of a named wheel, which needs an off-road `wheels` row.
