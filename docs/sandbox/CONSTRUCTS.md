@@ -4236,6 +4236,8 @@ piped into its fuel system or flywheel ("Fuel in" ports).
   its best booster. Torque is that power at the peak rpm (5000, 2800, 1400, 700; limiter 7000, 4000, 2000, 1000): big
   engines turn slowly. The curve is the petrol curve and the limiter is the soft limit. Fuel at full throttle is 0.00044 l/s
   a kW times the thirsts.
+- **A cylinder's own power**: a cylinder may carry `enginePiece.power` and `thirst` (1 if not); the Engine Kit's tier 3 to 5 cylinders
+  (Bored x1.3, Performance x1.6, Racing x2) do (docs/vehiclekit/ENGINEKIT.md). Its kW and burn are multiplied by them.
 - **One fuel piece a bank** is enough, on any cylinder of the bank. A bank with none gives nothing and the readout says which.
 
 ### The readout
