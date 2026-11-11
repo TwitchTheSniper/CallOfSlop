@@ -703,7 +703,7 @@ Capital size classes. Giant tracks and bogies on hub motors (each powered from t
 if it is to turn), big engines, gearboxes, shafts and axles, gas struts, leg pistons, jacks and landing struts; boilers,
 furnaces, gensets and reactors feeding the circuit, chimneys that smoke with them; bunkers, battery banks, fuel mains; jets and
 lift fans in five sizes, with Sprint holding a height for a flying mothership. A capital body of 100,000 t drives, turns,
-rides rough ground and hovers. There is no water in the game, so no ship parts. `tools/constructs/big_drive_parts.py` writes them.
+rides rough ground and hovers. There is no water in the game, so no ship parts. `Source/PartKit/Generators/BigDriveParts.cs` writes them.
 
 ### Cutting a release (for the maintainer)
 

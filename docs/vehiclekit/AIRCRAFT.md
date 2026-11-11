@@ -55,7 +55,7 @@ Flight in the construct game is much further along than "partly built". What a g
 | Control surfaces | **Work**, but only by wire: a stabilizer's `pitch`, `yaw`, `left aileron`, `right aileron`, `flaps` outputs (the Light Plane blueprint shows the wiring) | Wings |
 | Props, rotors, ducted fans | **Work.** Shaft-driven (an engine's Drive out) or electric (`motorKw`, off the circuit); hands; blade damage | `ConstructRotor.cs`; `Constructs/Parts/Rotors` |
 | Helicopter rotors (collective, cyclic), tail rotors | **Work** on a stabilizer's `lift`, `pitch`, `roll`, `yaw` wires | `ConstructRotor.cs` |
-| Electric drone rotors and pushers (thrusters) | **Work**; Drone Frame, Battery, Receiver | `Constructs/Parts/Remote`, `tools/constructs/drone_parts.py` |
+| Electric drone rotors and pushers (thrusters) | **Work**; Drone Frame, Battery, Receiver | `Constructs/Parts/Remote`, `Source/PartKit/Generators/DroneParts.cs` |
 | Jets, turbojets with afterburners, rockets, repulsors | **Work** | `ConstructBoost.cs`, `ConstructThrust.cs`; `Constructs/Parts/Boost` |
 | Balance markers, centre of lift and thrust sums | **Work** (`Construct.LiftCentre`, `ThrustCentre`) | `ConstructFlightPanel.cs` |
 | Lift cells, burners (balloons, airships) | **Work** | `ConstructLift.cs` |

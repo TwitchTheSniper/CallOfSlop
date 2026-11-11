@@ -254,7 +254,7 @@ By hand, the ground drill digs the ground itself into carried dirt, stone and sa
 
 ## Scoops
 
-A scoop is a bucket for an arm: a bin with a cutting edge. Push the edge into the ground and it digs out a chunk, and what it cut lands in the bucket as bulk material. Tip it and that runs out over its lowest rim, into a store underneath if there is one that takes it, else onto the world. Parts in `Constructs/Parts/Scoops`, written by `tools/constructs/scoop_parts.py`; code in `Source/Constructs/ConstructScoops.cs`, the game's side in `Source/Game/GameSandboxScoops.cs`.
+A scoop is a bucket for an arm: a bin with a cutting edge. Push the edge into the ground and it digs out a chunk, and what it cut lands in the bucket as bulk material. Tip it and that runs out over its lowest rim, into a store underneath if there is one that takes it, else onto the world. Parts in `Constructs/Parts/Scoops`, written by `Source/PartKit/Generators/ScoopParts.cs`; code in `Source/Constructs/ConstructScoops.cs`, the game's side in `Source/Game/GameSandboxScoops.cs`.
 
 **The styles.** Four, in the four size classes (16 parts; the inventory has them under Production, Scoops):
 

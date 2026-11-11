@@ -135,7 +135,7 @@ public static class Styles
             ["fender"] = ["Arch Fender"], // (phase 9a: slim arches, the skirt fairing does the rest)
             ["cab"] = ["Windscreen Frame", "Chop Top Cab", "Roll Cage", "Roll Bar"],
             ["heavyCab"] = ["Cab Over Shell", "Tin Roof Cab", "Chop Top Cab"],
-            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, tools/constructs/office_parts.py)
+            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, Source/PartKit/Generators/OfficeParts.cs)
             ["trophy"] = ["CRT Monitor", "Satellite Dish", "Network Switch", "Cable Reel", "CRT Monitor", "Office Plant", "Desk Fan", "Employee of the Month"],
             ["bunk"] = ["Crew Bench"],                                                   // (nobody sleeps here, officially)
             ["workbench"] = ["Scrap Workbench"],                                         // (the hot desk)
@@ -175,7 +175,7 @@ public static class Styles
     /// The Call Centre: the Scammers (docs/story/STORY.md, "The Scammers") on wheels. A parody of the scam call centre: cubicle grey and
     /// corporate teal, with WINNER yellow, hot pink and dollar green where bandits use war paint; desk phones, headsets on stands, GIFT CARDS
     /// signs and a prize wheel where bandits hang skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of cubicles
-    /// (a drawer of loot in each) round the water cooler (Constructs/Parts/CallCentre, tools/constructs/callcentre_parts.py). They run on
+    /// (a drawer of loot in each) round the water cooler (Constructs/Parts/CallCentre, Source/PartKit/Generators/CallCentreParts.cs). They run on
     /// other people's batteries, so that is what they carry (Constructs/Loot.json "scam"). Guns are named for the job.
     /// </summary>
     public static readonly FactionStyle Scam = new()
@@ -296,7 +296,7 @@ public static class Styles
     /// double-yellow-line yellow. Union Flags, Belisha beacons and rain gauges on the roofs, teapots in cosies, traffic cones nobody will
     /// move and garden gnomes where bandits hang skulls, furled brollies down the flanks (it's that sort of day), queue posts on the beds,
     /// and rooms of pillar boxes and red telephone boxes (loot in each) round a tea urn (Constructs/Parts/British,
-    /// tools/constructs/british_parts.py). Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>).
+    /// Source/PartKit/Generators/BritishParts.cs). Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>).
     /// Guns are named the way the British complain: Terribly Sorry, Bit of Bother, a Strongly Worded Letter and Builder's Tea.
     /// </summary>
     public static readonly FactionStyle British = new()
@@ -323,7 +323,7 @@ public static class Styles
             ["fender"] = ["Arch Fender"], // (phase 9a: a bus's slim wheel arches)
             ["cab"] = ["Windscreen Frame", "Tin Roof Cab", "Chop Top Cab", "Roll Bar"],
             ["heavyCab"] = ["Tin Roof Cab", "Cab Over Shell", "Chop Top Cab"],
-            ["spike"] = ["Furled Brolly", "Furled Brolly", "Belisha Beacon"],                                  // (Constructs/Parts/British, tools/constructs/british_parts.py)
+            ["spike"] = ["Furled Brolly", "Furled Brolly", "Belisha Beacon"],                                  // (Constructs/Parts/British, Source/PartKit/Generators/BritishParts.cs)
             ["trophy"] = ["Teapot", "Traffic Cone", "Garden Gnome", "Teapot", "Rain Gauge", "Traffic Cone"],
             ["mast"] = ["Union Flag", "Belisha Beacon", "Rain Gauge", "Union Flag"],                           // (on the roofs: Vehicle.Kit)
             ["gear"] = ["Queue Post", "Queue Post", "Traffic Cone", "Garden Gnome"],                           // (on open beds and porches: a queue forms)

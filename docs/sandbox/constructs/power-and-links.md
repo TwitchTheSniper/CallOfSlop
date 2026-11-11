@@ -344,7 +344,7 @@ tank's pipe into an engine's Coolant in does not feed it). A fuel tank's Fill ta
 
 ### Fluid tanks
 
-Six sizes in `Constructs/Parts/FluidTanks` (written by `tools/constructs/fluid_tank_parts.py`, the fuel tanks' bodies and
+Six sizes in `Constructs/Parts/FluidTanks` (written by `Source/PartKit/Generators/FluidTankParts.cs`, the fuel tanks' bodies and
 capacities): Small Fluid Tank (15 l), Fluid Tank (40 l), Large Fluid Tank (150 l), and Medium, Large and Capital Fluid Bunker
 (20 kl, 1 Ml, 4 Ml). Role `fluidtank`, code in `Source/Constructs/ConstructFluid.cs`.
 
@@ -390,7 +390,7 @@ drawn on the part; a Bunker of fuel has no Fill, so a pipe can't fill it (a worl
 
 ### Tank Volume
 
-One block (`Constructs/Parts/FluidTanks/TankVolume.json`, written by `tools/constructs/fluid_tank_parts.py`; wrench, 14 kg, 400 health) with a box of space you size yourself: a Fluid Tank in every other way (role `fluidtank`, `"fluidTank": {"volume": true, "flow": 5000}`), so everything in [Fluid tanks](#fluid-tanks) holds: one fluid, Fluid in and Fluid out on the block, mismatches, burners, world pipes, hoses, creative `fluid` and `fill`.
+One block (`Constructs/Parts/FluidTanks/TankVolume.json`, written by `Source/PartKit/Generators/FluidTankParts.cs`; wrench, 14 kg, 400 health) with a box of space you size yourself: a Fluid Tank in every other way (role `fluidtank`, `"fluidTank": {"volume": true, "flow": 5000}`), so everything in [Fluid tanks](#fluid-tanks) holds: one fluid, Fluid in and Fluid out on the block, mismatches, burners, world pipes, hoses, creative `fluid` and `fill`.
 
 - **Sizing: the Storage Volume's own tool.** The box is the same six settings (`sizeX/Y/Z` 0.2 to 40 m, `atX/Y/Z` up to 40 m from the block; 2 m cube above the block by default), so `ConstructCargo.HasBox` gives it the configure tool's face handles, R's corner-to-corner drawing, the panel, the reach to the box and blueprints with no new code or wire. While you drag, the look line says what that box would hold.
 - **Capacity.** 1,000 l a cubic metre of the box as sized (`ConstructFluid.Capacity`): 8 l to 64 Ml, 8 kl by default, less what its open faces cost ([Sealed volumes](#sealed-volumes)).

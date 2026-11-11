@@ -29,7 +29,7 @@ Flat lit surfaces on a part, and a small card API for what they show (the user: 
 
 ## Drones
 
-The user: "a wireless seat connection. I want the player to be able to control drones." A seated player flies or drives a construct with no seat on it. Code: `Source/Constructs/ConstructRemote.cs`, `Source/Game/GameSandboxRemote.cs`; parts and the Scout Drone and Control Post blueprints: `tools/constructs/drone_parts.py`.
+The user: "a wireless seat connection. I want the player to be able to control drones." A seated player flies or drives a construct with no seat on it. Code: `Source/Constructs/ConstructRemote.cs`, `Source/Game/GameSandboxRemote.cs`; parts and the Scout Drone and Control Post blueprints: `Source/PartKit/Generators/DroneParts.cs`.
 
 - **The receiver is the seat a drone doesn't have.** A **Drone Receiver** has the seat role with nobody in it (`"remote": {"receiver": true}`): link it into a Driving or Turret Module as any seat, and `DriveSeat`, the module's outputs, guns and the drive line read it as they read a seat. F passes over it. So there is no second control path.
 - **The sender.** A **Remote Console** is a seat with a transmitter and a screen, 800 m. A **Remote Transmitter** (800 m) or **Medium Remote Transmitter** (3 km), wired from any seat, lets that seat send. Range is the sender's (`"remote": {"range": 800}`), and needs power where the construct has a circuit. The **channel** is a setting, 1 to 99, the same key as the logic parts' Wireless pair.
@@ -189,7 +189,7 @@ tip still, ten joints travel to a client, no allocation, and the arm's tick cost
 ## Linear joints
 
 A rail and a carriage: what hangs on the carriage slides along the rail. Data: `Constructs/Parts/Linear` (written by
-`tools/constructs/linear_parts.py`, 42 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs`. Inventory: Joints and
+`Source/PartKit/Generators/LinearParts.cs`, 42 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs`. Inventory: Joints and
 Motion, section Linear; size is the window's filter. Existing Pistons stay as they are.
 
 | Kind | Joint | Runs on | Input | Unwired |

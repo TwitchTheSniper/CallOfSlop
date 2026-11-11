@@ -6,7 +6,7 @@ fold, found in any order. This page is how a fragment, the Logbook and a data ce
 Code: `Source/Story/StoryFragments.cs` (the file and the terminal's screen, every peer), `Source/Game/GameStoryFragments.cs`
 (the host: the sites, the decode, who holds what, the message), `Source/UI/UiLogbook.cs` and `Source/App/Program.Logbook.cs`
 (the window). Data: `Story/Fragments/Fragments.json`, `Story/Relations/Fragments.json`, `Story/Verbs/Fragments.json`. The part:
-`Data Centre Terminal` (`tools/constructs/office_parts.py`), the building: `Sealed Data Centre` (`tools/constructs/building_parts.py`).
+`Data Centre Terminal` (`Source/PartKit/Generators/OfficeParts.cs`), the building: `Sealed Data Centre` (`tools/constructs/building_parts.py`).
 
 ## A fragment
 

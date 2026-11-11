@@ -8,7 +8,7 @@ public static partial class SelfTest
 {
     /// <summary>
     /// "Large drive" (docs/sandbox/CONSTRUCTS.md, "Big drive"): what moves and powers big constructs, all of it driven. The
-    /// library (tools/constructs/big_drive_parts.py) and its refused blocks; the fuel and charge pools at scale; a 105,000 t
+    /// library (Source/PartKit/Generators/BigDriveParts.cs) and its refused blocks; the fuel and charge pools at scale; a 105,000 t
     /// body through a capital diesel, gearbox, shaft and axle; a traction city on four hub motor bogies (powered by a
     /// boiler, front pair on pivots, then skid steered, then tall over rough ground: no tipping, no shaking); thrusters
     /// holding that body up, wired, electric, out of fuel; plants and stacks; jacks, legs and landing struts; the wire

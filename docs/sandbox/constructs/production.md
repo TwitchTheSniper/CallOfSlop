@@ -377,7 +377,7 @@ base you build by hand. Code: `Source/Constructs/BuildAids.cs` (the aids, the vi
 
 - **A station is an Inventory Beacon with an aid.** Its `storage.beacon` id names the aid, so power, Run, wreck, chute network, owner and range are the beacon's rules
   (`ConstructPartDef.Aid`), and in range it serves its network just as a beacon does: Tab opens on it, parts taken off go back to it. All stations on a build area share
-  one battery circuit and chute network. `Constructs/Parts/Stations` is written by `tools/constructs/station_parts.py` (mass, power, shapes; the last box is the lamp).
+  one battery circuit and chute network. `Constructs/Parts/Stations` is written by `Source/PartKit/Generators/StationParts.cs` (mass, power, shapes; the last box is the lamp).
   Ranges are in `Constructs/Beacons.json`. Recipes are in `tools/constructs/assembling.py` (tier 3). At most 256 beacons and stations, 64 networks.
 
 | Station | Aid (key) | Range | Mass, power |
