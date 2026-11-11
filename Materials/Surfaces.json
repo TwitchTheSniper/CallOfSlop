@@ -30,7 +30,18 @@
     { "name": "matte paint", "category": "Painted", "rough": 0.85, "metal": 0.0, "pattern": "speckle", "scale": 14, "amount": 0.06, "wear": 0.5, "wearColour": "#8e9296", "rust": 1.0 },
     { "name": "gloss paint", "category": "Painted", "rough": 0.16, "metal": 0.0, "wear": 0.4, "wearColour": "#a6aaae", "rust": 1.0 },
     { "name": "chrome", "category": "Metal", "rough": 0.08, "metal": 1.0, "wear": 0.1, "wearColour": "#e8eaec", "rust": 0.3, "painted": "gloss paint" },
-    { "name": "carbon weave", "category": "Other", "rough": 0.3, "metal": 0.1, "tint": 0.25, "colour": "#202224", "pattern": "weave", "scale": 60, "amount": 0.35, "wear": 0.2, "wearColour": "#4a4c4e", "rust": 0.4 }
+    { "name": "carbon weave", "category": "Other", "rough": 0.3, "metal": 0.1, "tint": 0.25, "colour": "#202224", "pattern": "weave", "scale": 60, "amount": 0.35, "wear": 0.2, "wearColour": "#4a4c4e", "rust": 0.4 },
+    { "name": "deck plate", "category": "Metal", "rough": 0.55, "metal": 0.72, "pattern": "tread", "scale": 7, "amount": 0.3, "wear": 0.8, "wearColour": "#c8ccd0", "rust": 1.0, "painted": "painted deck plate" },
+    { "name": "painted deck plate", "category": "Painted", "rough": 0.5, "metal": 0.0, "pattern": "tread", "scale": 7, "amount": 0.22, "wear": 0.85, "wearColour": "#a6aaae", "rust": 1.0 },
+    { "name": "grating", "category": "Metal", "rough": 0.6, "metal": 0.65, "tint": 0.7, "colour": "#34373a", "pattern": "weave", "scale": 12, "amount": 0.7, "wear": 0.5, "wearColour": "#9a9ea2", "rust": 1.0, "painted": "painted grating" },
+    { "name": "painted grating", "category": "Painted", "rough": 0.55, "metal": 0.0, "tint": 0.8, "colour": "#2e3033", "pattern": "weave", "scale": 12, "amount": 0.6, "wear": 0.7, "wearColour": "#8e9296", "rust": 1.0 },
+    { "name": "wall panelling", "category": "Painted", "rough": 0.5, "metal": 0.0, "pattern": "panel", "scale": 0.5, "amount": 0.12, "wear": 0.35, "wearColour": "#a4a8ac", "rust": 1.0 },
+    { "name": "worn paint", "category": "Painted", "rough": 0.62, "metal": 0.1, "pattern": "speckle", "scale": 12, "amount": 0.14, "wear": 1.0, "wearColour": "#8f9294", "rust": 1.0 },
+    { "name": "rusty paint", "category": "Painted", "rough": 0.8, "metal": 0.15, "tint": 0.75, "colour": "#7a4a2c", "pattern": "speckle", "scale": 20, "amount": 0.32, "wear": 1.0, "wearColour": "#8c5a36", "rust": 1.0 },
+    { "name": "rubber matting", "category": "Other", "rough": 0.92, "tint": 0.35, "colour": "#2b2c2d", "pattern": "tread", "scale": 5, "amount": 0.3, "wear": 0.15, "wearColour": "#4a4a48", "rust": 0.4 },
+    { "name": "lagging", "category": "Other", "rough": 0.95, "tint": 0.6, "colour": "#cfc8b4", "pattern": "weave", "scale": 10, "amount": 0.35, "wear": 0.3, "wearColour": "#e0dccc", "rust": 0.6 },
+    { "name": "hazard paint", "category": "Painted", "rough": 0.45, "metal": 0.0, "pattern": "speckle", "scale": 10, "amount": 0.05, "wear": 0.9, "wearColour": "#6a6e72", "rust": 1.0 },
+    { "name": "soot", "category": "Other", "rough": 0.95, "metal": 0.1, "tint": 0.35, "colour": "#1d1c1b", "pattern": "speckle", "scale": 16, "amount": 0.4, "wear": 0.3, "wearColour": "#3a3836", "rust": 0.8 }
   ],
   "rules": [
     { "glass": true, "surface": "glass" },

@@ -38,13 +38,15 @@
     "default": [
       {"part": "Wall Light", "band": "top", "count": 1, "perCells": 2, "max": 6},
       {"part": "Cable Tray Run", "band": "top", "count": 1, "max": 2},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1}],
+      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1},
+      {"part": "Kick Plate", "band": "low", "count": 1, "perCells": 3, "max": 4}],
     "crew": [
       {"part": "Wall Light", "band": "top", "count": 1, "perCells": 2, "max": 6},
       {"part": "Duct Run", "band": "top", "count": 1, "max": 1},
       {"part": "Cable Tray Run", "band": "top", "count": 0, "perCells": 4, "max": 2},
       {"part": "Fire Point", "band": "mid", "count": 1, "max": 1},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1}],
+      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1},
+      {"part": "Kick Plate", "band": "low", "count": 1, "perCells": 3, "max": 4}],
     "work": [
       {"part": "Wall Light", "band": "top", "count": 1, "perCells": 2, "max": 8},
       {"part": "Pipe Bank", "band": "top", "count": 1, "perCells": 4, "max": 3},
@@ -52,19 +54,22 @@
       {"part": "Tool Board", "band": "mid", "count": 1, "max": 1},
       {"part": "Wall Rib", "band": "mid", "count": 0, "perCells": 4, "max": 2},
       {"part": "Fire Point", "band": "mid", "count": 1, "max": 1},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1}],
+      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1},
+      {"part": "Kick Plate", "band": "low", "count": 1, "perCells": 3, "max": 4}],
     "plant": [
       {"part": "Wall Light", "band": "top", "count": 1, "perCells": 2, "max": 8},
       {"part": "Pipe Bank", "band": "top", "count": 1, "perCells": 2, "max": 4},
       {"part": "Duct Run", "band": "top", "count": 1, "max": 2},
       {"part": "Wall Rib", "band": "mid", "count": 1, "perCells": 3, "max": 3},
       {"part": "Fire Point", "band": "mid", "count": 1, "max": 1},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1}],
+      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1},
+      {"part": "Kick Plate", "band": "low", "count": 1, "perCells": 3, "max": 4}],
     "store": [
       {"part": "Wall Light", "band": "top", "count": 1, "perCells": 3, "max": 6},
       {"part": "Cable Tray Run", "band": "top", "count": 1, "max": 2},
       {"part": "Wall Rib", "band": "mid", "count": 0, "perCells": 4, "max": 2},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1}],
+      {"part": "Deck Sign", "band": "mid", "count": 1, "max": 1},
+      {"part": "Kick Plate", "band": "low", "count": 1, "perCells": 3, "max": 4}],
     "gallery": [
       {"part": "Wall Light", "band": "top", "count": 1, "perCells": 3, "max": 6},
       {"part": "Cable Tray Run", "band": "top", "count": 1, "perCells": 6, "max": 3},
@@ -78,7 +83,8 @@
       {"part": "Wall Rib", "band": "mid", "count": 2, "perCells": 6, "max": 10},
       {"part": "Tool Board", "band": "mid", "count": 1, "perCells": 24, "max": 2},
       {"part": "Fire Point", "band": "mid", "count": 1, "perCells": 24, "max": 3},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "perCells": 24, "max": 3}],
+      {"part": "Deck Sign", "band": "mid", "count": 1, "perCells": 24, "max": 3},
+      {"part": "Kick Plate", "band": "low", "count": 2, "perCells": 12, "max": 8}],
     "plantHall": [
       {"part": "Hall Floodlight", "band": "top", "count": 2, "perCells": 4, "max": 16},
       {"part": "Pipe Bank", "band": "top", "count": 2, "perCells": 3, "max": 16},
@@ -87,14 +93,16 @@
       {"part": "Cable Tray Run", "band": "top", "count": 1, "perCells": 8, "max": 6},
       {"part": "Wall Rib", "band": "mid", "count": 2, "perCells": 4, "max": 12},
       {"part": "Fire Point", "band": "mid", "count": 1, "perCells": 24, "max": 3},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "perCells": 24, "max": 3}],
+      {"part": "Deck Sign", "band": "mid", "count": 1, "perCells": 24, "max": 3},
+      {"part": "Kick Plate", "band": "low", "count": 2, "perCells": 12, "max": 8}],
     "storeHall": [
       {"part": "Hall Floodlight", "band": "top", "count": 2, "perCells": 5, "max": 14},
       {"part": "Jib Crane", "band": "top", "count": 1, "perCells": 24, "max": 2, "high": true},
       {"part": "Cable Tray Run", "band": "top", "count": 1, "perCells": 8, "max": 6},
       {"part": "Duct Run", "band": "top", "count": 1, "perCells": 16, "max": 3, "high": true},
       {"part": "Wall Rib", "band": "mid", "count": 2, "perCells": 6, "max": 10},
-      {"part": "Deck Sign", "band": "mid", "count": 1, "perCells": 24, "max": 3}]
+      {"part": "Deck Sign", "band": "mid", "count": 1, "perCells": 24, "max": 3},
+      {"part": "Kick Plate", "band": "low", "count": 2, "perCells": 12, "max": 8}]
   },
   "sets": [
     { "id": "bridge", "items": [
@@ -153,7 +161,8 @@
         {"part": "Scrap Workbench", "count": 1},
         {"part": "Fuel Drum", "count": 2, "perCells": 24},
         {"part": "Crate Stack", "count": 1, "perCells": 24},
-        {"part": "Bay Marking", "count": 2, "perCells": 12} ],
+        {"part": "Bay Marking", "count": 2, "perCells": 12},
+        {"part": "Lane Marking", "count": 1, "perCells": 16} ],
       "dress": "hall",
       "missing": ["an overhead crane (no small-class gantry part)", "ramp on a motor hinge (the Garage Wall openings stay open; Ramp Deck Medium 8x5 needs a medium floor and hinge)"] },
     { "id": "engineeringHall", "items": [
@@ -176,7 +185,8 @@
         {"part": "Chest", "count": 1, "loot": true},
         {"part": "Crate Stack", "count": 2, "perCells": 8},
         {"part": "Fuel Drum", "count": 2, "perCells": 12},
-        {"part": "Bay Marking", "count": 1, "perCells": 16} ],
+        {"part": "Bay Marking", "count": 1, "perCells": 16},
+        {"part": "Lane Marking", "count": 1, "perCells": 16} ],
       "dress": "storeHall",
       "missing": ["pallet racking several storeys high (no rack part taller than a storey)"] },
     { "id": "productionHall", "items": [
@@ -189,7 +199,8 @@
         {"part": "Parts Shelf", "count": 1, "perCells": 12},
         {"part": "Crate Stack", "count": 2, "perCells": 16},
         {"part": "Scrap Workbench", "count": 1},
-        {"part": "Bay Marking", "count": 1, "perCells": 16} ],
+        {"part": "Bay Marking", "count": 1, "perCells": 16},
+        {"part": "Lane Marking", "count": 1, "perCells": 16} ],
       "dress": "hall",
       "missing": ["a conveyor between the machines"],
       "feeds": [{"link": "chute", "from": "storage", "fromRole": "stock", "toRole": "machine", "toPort": "Chute in", "reach": 64}] },

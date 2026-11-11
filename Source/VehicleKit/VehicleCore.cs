@@ -98,6 +98,7 @@ public class BlueprintScript
         public string Socket = "", By = "";
         public string? Weld, Config;
         public uint Paint;
+        public string? Finish; // (a material's name, Materials/Surfaces.json: the texture paint tool's; the interior builder's look, INTERIORS.md phase 12)
     }
 
     public BlueprintScript(string name)
@@ -496,6 +497,16 @@ public class BlueprintScript
         C.Parts[p.Index].Paint = paint;
     }
 
+    /// <summary>A step's texture (the texture paint tool's finish): a material of Materials/Surfaces.json by name, which every box of the part but glass and glow takes.</summary>
+    public void Finish(VPart p, string material)
+    {
+        var row = ConstructFinish.Of(material);
+        if (row == 0)
+            throw new VehicleKitException($"\"{material}\" isn't a material the texture paint tool offers (Materials/Surfaces.json)");
+        _steps[p.Step].Finish = material;
+        C.Parts[p.Index].Finish = row;
+    }
+
     /// <summary>A step's settings by key (the configure tool's): the values are written as JSON.</summary>
     public void Config(VPart p, params (string Key, object Value)[] values) =>
         _steps[p.Step].Config = "{" + string.Join(", ", values.Select(v => $"\"{v.Key}\": {JsonValue(v.Value)}")) + "}";
@@ -628,6 +639,8 @@ public class BlueprintScript
                 sb.Append(", \"config\": ").Append(s.Config);
             if (s.Paint != 0)
                 sb.Append(", \"paint\": ").Append(Quote(ConstructPaint.ToHex(s.Paint)));
+            if (s.Finish != null)
+                sb.Append(", \"finish\": ").Append(Quote(s.Finish));
             sb.Append(k + 1 < _steps.Count ? "},\n" : "}\n");
         }
         sb.Append("  ]");

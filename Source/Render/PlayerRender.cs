@@ -59,7 +59,7 @@ public static class PlayerRender
         BodyBloodRender.Bind(g);
         BodyModel.DrawImmediate(g, p, stance, up, hat != null);
         if (hat != null)
-            HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * Matrix4x4.CreateTranslation(s.HeadAt) * up);
+            HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * BodyModel.TalkHead(stance, p.Id) * up);
         DrawLegs(g, legs, body, color);
         var (gunAt, barY) = stance switch
         {
@@ -115,7 +115,7 @@ public static class PlayerRender
             BodyBloodRender.Reset();
             BodyModel.DrawImmediate(g, p, 0, up, hat != null, detail: true);
             if (hat != null)
-                HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * Matrix4x4.CreateTranslation(s.HeadAt) * up);
+                HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * BodyModel.TalkHead(0, p.Id) * up);
             DrawLegs(g, legs, body, p.Color);
             var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 1.3f, -0.25f) * up;
             DrawArmed(g, p, gunPose, up, time);

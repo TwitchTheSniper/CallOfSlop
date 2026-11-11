@@ -22,6 +22,9 @@ texture layers (`enum Material`), drawn the classic way, so a map box's `Materia
   carried by name), else the box's or part's own `"finish"`, an extrusion's bulk material (`"bulk"`), else the first
   of the file's `"rules"` that fits, on role, material, folder, name, glass, tyre, hue and brightness. No part file needs editing, and
   no generator has to know. Props go by their texture material (`"props"`); a pane or glowing part keeps the classic light.
+- **Interior rows** (2026-11-11, docs/sandbox/INTERIORS.md phase 12): deck plate, grating, wall panelling, worn and rusty paint, rubber
+  matting, lagging, hazard paint, soot, with painted kinds that keep their pattern. Interior parts name them; the interior builder gives
+  the Building shell its faction's by a step's `"finish"`.
 - **Paint is a tint over a material:** `ConstructPaint.BoxColour` as ever, and `Surfaces.OnPaint` swaps to the row's `"painted"` row, so
   painted steel stops being metal but keeps its panel seams and worn edges.
 

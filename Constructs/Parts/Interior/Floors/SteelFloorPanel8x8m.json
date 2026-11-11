@@ -6,6 +6,7 @@
   "section": "Floors",
   "role": "frame",
   "tool": "welder",
+  "finish": "deck plate",
   "mass": 5760.0,
   "health": 14140,
   "armour": 20,

@@ -6,6 +6,7 @@
   "section": "Furniture",
   "role": "storage",
   "tool": "wrench",
+  "finish": "steel",
   "mass": 90.0,
   "health": 260,
   "armour": 4,

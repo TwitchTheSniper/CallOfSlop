@@ -1,0 +1,35 @@
+{
+  "format": "call-of-slop-interiors/1",
+  "about": "Phase 12 (docs/sandbox/INTERIORS.md): an interior's look per faction style. The builder's last stage paints and finishes each part it fitted through a blueprint step's paint (a colour) and finish (a material of Materials/Surfaces.json by name), so nothing new reaches saves or the wire. style: the FactionStyle's Name or Group it is for (--gen-interior --style NAME, else the base blueprint's group; else 'default'). wall: colours a room's walls take (one per room, by its number: more than one when nothing matches); floor: the floors' material and floorColour; crewFloor: crew rooms' floor material; serviceFloor: plant rooms' (engineering, fuel); frame: stairs, ribs and frames; trim: kick plates and door frames; accent: doors; hazard: trim in hazard rooms; wear: 0 clean to 1 rusty (walls: wall panelling below 0.34, worn paint below 0.67, rusty paint above; frames: steel below 0.5, dirty steel above; kick plates rust and plant rooms' frames soot from 0.67 and 0.5); lamp: the mains lamps' colour. 'rooms' shifts a room type within the palette: tone pale (towards white), dark (towards black) or warm (towards tan), hazard: trim in the hazard colour.",
+  "default": "default",
+  "palettes": [
+    {"style": "default", "wall": ["#7d8388"], "floor": "deck plate", "floorColour": "#6c7176", "crewFloor": "rubber matting", "serviceFloor": "grating",
+     "frame": "#4a4f55", "trim": "#3e4349", "accent": "#5b6d7e", "hazard": "#d9b23a", "wear": 0.5, "lamp": "#ffe2a8"},
+    {"style": "Bandit", "wall": ["#7a6a58", "#6f7477", "#8a5a3a", "#5f6a55", "#8c8270"], "floor": "deck plate", "floorColour": "#5e5850", "crewFloor": "deck plate", "serviceFloor": "grating",
+     "frame": "#3a3330", "trim": "#46392f", "accent": "#a81c14", "hazard": "#c8a018", "wear": 0.9, "lamp": "#ffb766"},
+    {"style": "IT", "wall": ["#d6dbde"], "floor": "rubber matting", "floorColour": "#3c4044", "crewFloor": "rubber matting", "serviceFloor": "painted grating",
+     "frame": "#8a9399", "trim": "#1f7f86", "accent": "#2f8fd0", "hazard": "#e8c21c", "wear": 0.12, "lamp": "#e6f0ff"},
+    {"style": "Scam", "wall": ["#3f7c7f", "#d9d2bf"], "floor": "painted deck plate", "floorColour": "#5a5560", "crewFloor": "rubber matting", "serviceFloor": "grating",
+     "frame": "#2c3b3d", "trim": "#e0b81c", "accent": "#d8407f", "hazard": "#e0b81c", "wear": 0.4, "lamp": "#fff0c4"},
+    {"style": "Highland", "wall": ["#b9c2cc", "#8c96a3"], "floor": "wood", "floorColour": "#7a5a38", "crewFloor": "wood", "serviceFloor": "deck plate",
+     "frame": "#3d4652", "trim": "#1f4f9a", "accent": "#a81c24", "hazard": "#d8b020", "wear": 0.55, "lamp": "#ffd497"},
+    {"style": "British", "wall": ["#d6cdb2"], "floor": "painted deck plate", "floorColour": "#55594f", "crewFloor": "rubber matting", "serviceFloor": "grating",
+     "frame": "#1f3a2b", "trim": "#1f4a33", "accent": "#24345a", "hazard": "#d8b020", "wear": 0.3, "lamp": "#fff0d0"},
+    {"style": "Militia", "wall": ["#6f7a5e"], "floor": "deck plate", "floorColour": "#5a5e52", "crewFloor": "rubber matting", "serviceFloor": "grating",
+     "frame": "#3d4433", "trim": "#2f3528", "accent": "#55603f", "hazard": "#d9b23a", "wear": 0.35, "lamp": "#f4f0e0"}
+  ],
+  "rooms": {
+    "medical": {"tone": "pale"},
+    "bridge": {"tone": "dark"},
+    "quarters": {"tone": "warm"},
+    "mess": {"tone": "warm"},
+    "lockers": {"tone": "warm"},
+    "engineering": {"tone": "dark", "hazard": true},
+    "fuelbay": {"tone": "dark", "hazard": true},
+    "fuel": {"tone": "dark", "hazard": true},
+    "magazine": {"hazard": true},
+    "hangar": {"hazard": true},
+    "workshop": {"tone": "dark"},
+    "production": {"hazard": true}
+  }
+}

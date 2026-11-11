@@ -6,6 +6,7 @@
   "section": "Dressing",
   "role": "frame",
   "tool": "wrench",
+  "finish": "painted steel",
   "mass": 3.0,
   "health": 30,
   "armour": 1,

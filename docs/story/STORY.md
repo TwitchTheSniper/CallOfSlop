@@ -286,6 +286,12 @@ there for a craft to land before going; a long road (5 minutes or more) is a shu
 hauler. A sealed Requisition Crate gets the faction's courier flyer. They are pictures only, sent once per craft
 (`Msg.StandIn`); the Story window's People tab turns them off ("Craft") or calls one of each near you ("Call craft").
 
+**Traffic** (STAND-IN too: `Source/StandIns/README.md` "Traffic", data `Story/Traffic/Traffic.json`): the survival story
+world's ambient life round the colony. Placeholder stations stand where places will be; haulers and a courier go round
+them for ever (the ore run, the ration round, the fence patrol...), faction ships land to trade and jump away, and ships
+pass overhead; a ship from another world warps in with a flash, shock rings and a late boom. Every run has a reason, in
+the People tab's "Traffic" tooltip and now and then on the radio. Nothing is traded yet. `--traffic-check` tries it.
+
 ### Sight
 
 What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70
@@ -427,6 +433,16 @@ Wire: `ChatLine`'s flags gain `Say` (8) and `Radio` (16), protocol 145. Shipped:
 work and travel mutters, what they shout at a killing or a theft, words for players by how they feel about them, being
 hurt, fighting back, running and coming to help) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
 it headless.
+
+**The murmur** (Karl, 2026-11-11): a line said aloud (`Say`) is also mumbled, in sung syllables at the speaker's mouth
+("ma", a nasal "nga", "ga", "na", "ba", "mo", "wa", "ne", "da", "ya": `Audio/SynthBabble.cs`, the `Babble` effect),
+and their jaw drops and their head nods with each syllable (`TalkMouth`, the body model's jaw and a dark mouth box
+inside it). Each person's voice comes from their name, so it is the same on every machine: a pitch (0.7 to 1.55 of a
+175 Hz note), a pace (9 to 14 syllables a second) and four to six favourite syllables, always with "ma" or "nga". The
+syllables follow the text: one per two or three letters, a pause at a comma and a longer one at a full stop, the note
+falling through a sentence, rising into a question, lifted by capitals and "!", at most 60 a line. Every machine does
+it from its own chat lines (`Game.StoryBabbleSounds`, each frame from the world pass; nothing on the wire). Heard to
+`StoryHearing`, on its own mixer row (F8, "People talking (murmur)") under the Effects volume. Radio lines don't murmur.
 
 ## Talking to people
 

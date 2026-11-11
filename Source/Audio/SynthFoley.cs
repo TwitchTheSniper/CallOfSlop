@@ -21,6 +21,7 @@ public static partial class Synth
         Sfx.EngineLoop => EngineLoopVariants,
         Sfx.BuildPlace => BuildPlaceVariants,
         Sfx.BuildUnbolt or Sfx.BuildPop => 2,
+        Sfx.Babble => BabbleVariants,
         _ => 1,
     };
 

@@ -6,6 +6,7 @@
   "section": "Furniture",
   "role": "seat",
   "tool": "wrench",
+  "finish": "gloss paint",
   "mass": 120.0,
   "health": 240,
   "armour": 3,
@@ -45,7 +46,8 @@
         0.58,
         0.95
       ],
-      "color": "#5a8fa0"
+      "color": "#5a8fa0",
+      "finish": "plastic"
     },
     {
       "min": [
