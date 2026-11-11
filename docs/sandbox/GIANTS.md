@@ -76,8 +76,8 @@ a Driving Module to any leg is the walker's drive seat (`ConstructModules.Build`
 - **The body** (`WalkBody`): velocity-level, after gravity and before the contacts. W and S walk, A and D turn, the roll keys
   (Q and E) strafe, Sprint and Crouch raise and lower it; the hips are held at their standing height over their feet; the
   body tilts with half the ground's slope under its planted feet; if the centre of mass leaves the planted feet, it moves
-  back over them. Its top speed is `0.45 reach / (groups x step time)`, the step time stretched by load (`mass / load`
-  over 0.5 slows it, past 1.5 it can't stand) and by lost legs.
+  back over them. Its top speed is `stride x reach / ((groups - 1) x step time)` times the walk speed setting (see "Leg
+  speeds"), the step time stretched by load (`mass / load` over 0.5 slows it, past 1.5 it can't stand) and by lost legs.
 - **Collapse**: fewer than 3 working legs, more weight than 1.5 times what they carry, or the centre of mass outside every
   working foot: the controller lets go and the body falls as real physics (its hip housings are its contacts). The feet hang
   at their rest pose.
@@ -465,6 +465,74 @@ Found on the way, not fixed (other tracks' files):
 Not tried: a client driving (only the host drove; the client watched), strafing and raising as a client, other leg kinds,
 a walker that falls into a pit, drawing (no window run).
 
+## Leg speeds (branch `feat/leg-speed`, protocol 241)
+
+The user (2026-11-11): walker legs walk much faster, a speed setting starts in the middle of its band (0 to 200%), bigger
+walkers are faster (longer strides), and walkers stay slower than cars but take worse ground.
+
+- **The data** (`tools/constructs/leg_parts.py`): each tier names the top speed a six-legged electric walker walks at on the
+  default setting, and the generator works out its `stepTime` from it; a new leg field `stride` (0.95 for every leg: how far
+  the body goes while a foot is planted, a share of the reach; parts without it take 0.5). Top speed = `stride x reach /
+  ((groups - 1) x swing)`: a planted foot sweeps its stride while the other groups step, centred on its rest point (the
+  foothold leads by half its time down), so a mech leg stays within 0.84 of its reach at full speed and an insect's 0.89.
+- **The table** (six legs, unloaded, flat; measured matches the formula within 0.1 m/s):
+
+  | Tier (reach) | step time | electric (swing) | hydraulic | shaft | four legs (trot) |
+  | --- | --- | --- | --- | --- | --- |
+  | Small (1.6 m) | 0.122 s | 10 m/s (0.15 s) | 12.5 | 15 | the same as six |
+  | Medium (6 m) | 0.38 s | 12 (0.48 s) | 15 | 18 | |
+  | Large (20 m) | 1.086 s | 14 (1.36 s) | 17.5 | 21 | |
+  | Titan (48 m) | 2.28 s | 16 (2.85 s) | 20 | 24 | |
+
+  Hydraulic and shaft keep their strengths (1.0 and 1.2 against electric's 0.8), so their swings are shorter (a Small
+  shaft leg's 0.10 s). Load slows them as before: the bare Titan Walker (32,000 t) walks at 15.5, the fitted one at 14.6.
+- **The setting** (`walkSpeed`, every leg, "Walk speed", 0 to 200%, default 100; every profile, Simple too): the walker reads
+  its lead leg's, else the first leg whose setting was changed (`ConstructPhysics.WalkSpeedOf`, any peer). It scales the
+  commanded top speed, not the legs' strength: above half it quickens the steps (the stroke stays the same), below half the
+  steps shorten. Saved with blueprints and worlds and sent as any part setting. Walking costs `LegCarryCost` of the weight a
+  metre a second as before, so twice the speed draws twice the power, and the plant and the bank cap it (`PowerLift`): a
+  walker held below its set speed says so (`Construct.WalkPowerHeld`, a bit in the pose's walk flags, protocol 241). The HUD's
+  walk line: "Walk 200%: 31.1 m/s top", orange with ", all the power can feed" when held.
+- **Four legs trot** (`Trots`): Auto plans four working legs as two diagonal pairs; a pair lifts with two feet left down
+  (the controller holds the body's height and tilt) when the centre of mass is within a quarter reach of the line between
+  them. Five legs still wave (a third of a tripod's speed or less).
+- **Gait fixes the speed needed**: the support test is the convex hull of the planted feet (`InsideFeet`; at a long stride a
+  middle foot passes the rear one beside it and the feet in leg order crossed, so the walker dropped its feet every step);
+  the next group lifts on the tick the last one lands, with the overshoot carried (a tick's wait was a tenth of a Small step
+  and stretched the stroke past the reach); a turn while walking slows both so the fastest rest point goes no faster than
+  the legs walk (an arc stretched a foot to 1.56 of its reach). Stopping is three times quicker than starting (`WalkBrake`).
+  **The edge ahead** (`EdgeAhead`, one ray a tick): past the front feet by the stopping distance and a third of a reach, on
+  the plane of the planted feet; no footing there (or a drop of more than 0.6 reach) caps the speed so that it stops within a
+  quarter of `EdgeLag`, and the feet then stop it at the edge as before. The footfall thump, cargo pop and riders' shake scale
+  with the setting (`StepFeel`: 0.6 standing still, 1 at 100%, 1.4 at 200%). The foot push on bodies uses the step as it is.
+- **A leg that breaks off** no longer swaps the other feet: `ConstructWorld.Compact` renumbers the legs' parts (before, the
+  next `BuildLegs` matched old part numbers to new parts, so a foot 100 m off stayed planted and the walker stood still).
+
+Measured (a throwaway probe, removed; through the real seat path, host alone unless said; steady speed on flat ground):
+
+| | 50% | 100% | 200% | stop from full | other |
+| --- | --- | --- | --- | --- | --- |
+| Small six-legger (378 kg, Proving Ground drag strip) | 4.98 m/s | 9.96 | 19.91 | 1.6 m from 8.4 m/s, 3.0 m from 16.8 | turn in place 137 deg/s; arc stretch 0.85 |
+| Small four-legger (trot) | 4.98 | 9.96 | 19.9 | 1.6 m, 3.0 m | |
+| Medium six-legger (14.7 t) | | 12.0 | 24.0 | 1.9 m from 10.2 | |
+| Titan Walker (Streamed Terrain) | 7.8 | 15.5 (13.3 over rolling ground) | 31.0 | 4.8 m from 26 | one leg broken off: 3.7 m/s (a wave of five) |
+| Titan Walker Fitted (main's) | | 14.6 | 29.2 | 4.6 m from 25 | worst tick 4 ms |
+
+- Cliff: a Small walker at 200% off the end of a frozen 32 m deck 15 m up stopped with its centre 1 m from the edge; a Medium
+  at 200% on a 64 m deck 30 m up stopped 4 m from it. Neither fell.
+- Power, the bare Titan Walker: walking on the flat costs 142 MW at 15.5 m/s and 284 MW at 31 (plus the climbs: weight x rise).
+  Over rolling ground its 30 GJ bank went 0.51 GJ/s at 100% and 0.71 GJ/s at 200%: about a minute and 40 s from full before
+  the bank's share (`BankSeconds`) caps the speed. On 5% of its bank it walks 3.4 to 3.6 m/s, held by the power, and the
+  plant still charges the bank at that pace: the plant alone walks it at about 3.5 m/s.
+- A client over RakNet (60 ms lag, 2% loss): its copy is 2.4 m behind at 10 m/s and 4.8 m at 20 (its drawn delay), the feet
+  the same as the body's lag; stopped, body and feet within 1 cm; top speed and the power flag the same.
+- Worst ticks: 2 to 4 ms the Small and Medium, 4 to 8 ms the Titans, 11.9 ms once on the bare Titan's first ticks after a leg
+  broke off (the rebuild).
+
+Not tried: a Large walker; a ramp (the Proving Ground's hill-climb ramps and the streamed terrain's trees blocked the probe's
+straight runs, so hills were only rolling streamed ground); a Titan at a cliff (no deck big enough); a client driving; a
+window run (the drawn legs at a 0.08 s swing, the sound at 7 footfalls a second); hydraulic and shaft legs at speed.
+
 ### Next phases
 
 1. Terrain: crushing trees, cars, posts and small structures underfoot and under a hull that sits down (the pads' push is the
@@ -476,7 +544,7 @@ a walker that falls into a pit, drawing (no window run).
    legs of several parts.
 5. Power, rest: a walker that keeps standing with no driver on a shaft (the engine stops when nobody drives); a valve's
    signal as a throttle; shaft splitters for six shaft-fed legs.
-8. Walker fixes, rest: biped gaits and a trot for four legs (a dynamic balance the static support polygon can't give:
+8. Walker fixes, rest: biped gaits (a dynamic balance the static support polygon can't give:
    the capture point, wider feet and a lower stance at rest, a fall past recovery; for the mech suit); crushing what is underfoot; the power cap for shaft-fed legs and pumps
    on a shaft (the engine's torque); a walker that falls into a pit tried on a real map.
 6. Riders: a rider's mass at its posed place (the centre of mass), players blocked by riders, non-plain parts riding

@@ -124,7 +124,7 @@
         "Wave"
       ],
       "default": 0,
-      "tooltip": "Auto: a tripod with six or more legs in an even count, else a wave. Tripod: half the legs at a time. Wave: one leg at a time. The walker follows its leg with the highest profile."
+      "tooltip": "Auto: a tripod with six or more legs in an even count, a trot with four, else a wave. Tripod: half the legs at a time. Wave: one at a time. The walker follows its leg with the highest profile."
     },
     {
       "key": "legPace",

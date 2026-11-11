@@ -71,7 +71,7 @@ CONFIG = [
     {"key": "bodyHeight", "label": "Body height", "group": "Gait", "unit": "%", "min": 60, "max": 130, "step": 5, "default": 100,
      "tooltip": "How high it stands (still no higher than the legs reach). Basic and Advanced. " + WHOLE},
     {"key": "gait", "label": "Gait", "group": "Gait", "type": "choice", "options": ["Auto", "Tripod", "Wave"], "default": 0,
-     "tooltip": "Auto: a tripod with six or more legs in an even count, else a wave. Tripod: half the legs at a time. Wave: one leg at a time. " + WHOLE},
+     "tooltip": "Auto: a tripod with six or more legs in an even count, a trot with four, else a wave. Tripod: half the legs at a time. Wave: one at a time. " + WHOLE},
     {"key": "legPace", "label": "Leg pace", "group": "This leg", "unit": "%", "min": 50, "max": 150, "step": 5, "default": 100, "advanced": True,
      "tooltip": "This leg's step speed. Advanced profile only."},
     {"key": "legLift", "label": "Leg lift", "group": "This leg", "unit": "%", "min": 50, "max": 200, "step": 5, "default": 100, "advanced": True,
