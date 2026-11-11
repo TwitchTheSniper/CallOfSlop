@@ -126,16 +126,63 @@ burn by them (1 for every older cylinder, so nothing shipped changes). They have
   numbers and the note; `--plans N` lists the best plans, `--again` times a warm second request and checks it builds the same
   blueprint. The presets are 120, 300, 800 and 3000 kW. A first request in a process costs about 2 s of warm-up (JIT); a warm one 5
   to 10 ms.
-- **The vehicle kit / dynamic spawn**: not wired yet (next step). The request runs in a generation's slices already: every placing
-  yields (`VehicleGenJob.Yield`), as the vehicle kit's do.
+- **The vehicle kit / dynamic spawn**: an `EngineWish` (below, "In a vehicle"): `--gen-vehicle NAME --engine-tier N [--top-speed V]
+  [--accel A]`, `--slice-vehicle NAME --engine-tier N [--top-speed V]` (as the game's spawn makes it, in slices), and
+  `new VehicleGenJob(..., engine: wish)` in the game. Nothing in the game passes one yet.
 - **The player**: not wired yet (next step).
+
+## In a vehicle
+
+`EngineWish` (`Source/EngineKit/EngineKitVehicle.cs`): a tech tier, a top speed on the flat (0: the tier's, 25 / 27 / 30 / 33 / 36 m/s
+for tiers 1 to 5), an acceleration (m/s^2 at half the top speed; 0: none asked) and the vehicle's mass without its engine (0: measured).
+
+**How a generator opts in.** It doesn't change: a wish is made current around a generation (`using (EngineWish.Use(wish))`, as
+`VehicleGenJob` does with its `engine` argument and `--gen-vehicle` with `--engine-tier`), and `Vehicle.Powertrain` reads it. Any shape
+that calls `Powertrain` with no engine named gets a kit engine; aircraft are left alone. With no wish (every shipped seed, every spawn
+today) nothing changes: `--gen-vehicles` says all 238 identical.
+
+What happens (`VehicleRegistry.WithKitEngine`, `Vehicle.KitEngine.cs`):
+
+1. With no dry mass in the wish, the vehicle is made once with its stock engine and weighed; its engine's mass comes off.
+2. `EngineKitVehicle.Plan`: power = the larger of 1.5 x 0.006 v^3 W a kg (drag plus rolling and losses) and m a (v/2) / 0.85, for the
+   dry mass plus the engine's (two rounds: the engine's mass changes the power). Small pieces, no bank pointing down, in
+   `EngineKitVehicle.Bay` (3.0 m of crank ahead of the flywheel, 1.9 m wide, 1.75 m high); short of power, the note says so.
+3. The flywheel stands on the engine sill by its `-y` where the stock engine would (centre at the same height), the gearbox on its `+z`,
+   the cranks run forward, the fuel pipe goes to its "Fuel in" and the Driving Module's wire to it. No hood: the cylinders stand open.
+   A refused piece fails the generation (the spawner rerolls; the command line prints why).
+4. Named with the wish (`Bandit War Bus 1 [engine tier 4, 33 m/s]`, never a committed file), a kit line note, and the spawn's drive check
+   (`DriveGate`). The first request's warm-up is in `VehicleGenJob.Warm` (11-21 ms after the Technical, measured on a loaded box).
+
+### Measured (2026-11-11, `--speed-test`, 40 s on the drive check's hard floor)
+
+| Vehicle | Engine | kW (x V8) | Mass kg | Top m/s | 0-10 s | 0-20 s | Limit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bandit Technical 1 (stock) | V8 | 218 | 1598 | 23.9 | 1.4 | 4.9 | power against drag |
+| tier 3, 30 m/s | V8 bored | 416 (1.9x) | 1713 | 26.1 | 1.9 | 6.3 | grip |
+| tier 4, 33 m/s | V8 performance, injected | 614 (2.8x) | 1731 | 25.9 | 2.0 | 6.4 | grip |
+| tier 5, 36 m/s | V8 racing, injected | 768 (3.5x) | 1754 | 25.5 | 2.0 | 6.7 | grip |
+| tier 5, 45 m/s | | 960 (4.4x) | 1876 | 22.6 | 2.6 | 9.6 | grip |
+| Bandit War Bus 1 (stock) | V8 | 218 | 3448 | 17.5 | 2.5 | - | power against drag |
+| tier 3, 22 m/s | V6 bored, injected | 374 (1.7x) | 3021 | 21.9 | 1.9 | 5.6 | power against drag: as predicted |
+| tier 3, 30 m/s | V10 bored | 624 (2.9x) | 3244 | 26.8 | 1.8 | 5.2 | grip |
+| tier 4 / 5 | V10 | 768 / 960 (3.5x / 4.4x) | 3272 / 3300 | 26.8 | 1.8 | 5.2 | grip |
+
+Every one built, passed the drive check, started, and burnt fuel (960 kW: 0.35 l/s, so the bus's 60 l lasts three minutes flat out).
+There is no cooling to test: modular engines don't overheat (CONSTRUCTS.md "Modular engines", decision 5).
+
+**What a bigger engine needs downstream: grip, not gearboxes.** Up to about 1.7x the V8 the kit's prediction holds. Past it the
+two driven tyres are the limit: on Off-Road Wheels (grip 0.85) a two-wheel drive tops out at 26 to 27 m/s whatever the engine, and
+more power only spins them (0-10 m/s gets slower); the bay's long, front-heavy engine also takes weight off the driven rear axle (the
+45 m/s Technical is slower than the 30). `--speed-test` now names it: "grip (the engine asks 37.6 kN of driven tyres that hold
+21.7 kN)". No gearbox or differential part has a torque limit (`maxTorque` is unset on all of them), and the Automatic Gearbox's
+gearing allows 39-42 m/s, so nothing there stops a kit engine. For the tier 4-5 speeds a fast vehicle needs all its wheels driven
+(a front differential through steering pivots, or a driven tandem) or a grippier road tyre (Slick Wheel 1.4, but no off-road grip),
+and a bigger tank. That is the next step for the fast shapes; no shipped part was changed.
 
 ## Next steps
 
-1. **Vehicle kit caller.** A generator asks `EngineKit.Request` for an engine sized for its planned mass, role and tier (target top
-   speed from the table above: power = mass x 0.006 v^3 x 1.5), behind a flag, Car first, with the hood standing on a riser over the
-   engine's top. Today's styles keep their fixed engines, so every shipped seed stays identical; new tier 3+ shapes get kit engines.
-   A modular engine's flywheel is the drivetrain's engine (its `+z` takes the gearbox), its "Fuel in" takes the tank's pipe.
+1. **Fast shapes.** A tier 3+ shape (or the wish) drives every axle and carries a bigger tank (above: grip is the limit past 1.7x the
+   V8); a game caller passes a wish (a faction's tier, a role's) to `VehicleGenJob`.
 2. **Player action.** A creative "Make an engine" entry (preset, tier, layout, fuel) that sends a request to the host, which builds
    the result as a free construct in front of the player through the blueprint spawn path (a new `CActKind`, a protocol bump).
 3. **Bigger engines for mediums and giants.** Medium pieces are 4x linear, so a Medium engine is 3 to 16 m long and 6 to 10 m wide:

@@ -152,6 +152,7 @@ public static class VehicleRegistry
         using (EngineKit.EngineWish.Use(wish))
             v = MakeThrough(g, seed, kit, layers, role, context);
         v.Name += wish.Suffix;
+        v.DriveGate(Towed(g)); // (the spawn's drive check, as for any vehicle no file holds: one that fails rerolls in the spawner)
         return v;
     }
 

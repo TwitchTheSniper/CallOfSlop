@@ -76,8 +76,12 @@ public sealed class VehicleGenJob
     /// <summary>The spawn context's line, as in the blueprint ("desert, gravity 1.00, ...; changed ..."); "" in a neutral one.</summary>
     public string ContextNotes = "";
 
-    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default, RoleAsk? role = null, SpawnContext? context = null)
+    /// <summary>An Engine Kit engine sized for the vehicle (docs/vehiclekit/ENGINEKIT.md, "In a vehicle"); null: the style's own engine, as every vehicle before.</summary>
+    public readonly EngineKit.EngineWish? Engine;
+
+    public VehicleGenJob(IVehicleGenerator generator, int seed, VehicleLayers layers = default, RoleAsk? role = null, SpawnContext? context = null, EngineKit.EngineWish? engine = null)
     {
+        Engine = engine;
         Generator = generator;
         Seed = seed;
         Layers = layers;
@@ -85,7 +89,7 @@ public sealed class VehicleGenJob
         Context = context is { Matters: true } ? context : null;
     }
 
-    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "") + (Context?.Suffix ?? "");
+    public string Name => _made.Length > 0 ? _made : VehicleRegistry.BlueprintName(Generator, Seed) + Layers.Suffix + (Role?.Suffix ?? "") + (Context?.Suffix ?? "") + (Engine?.Suffix ?? "");
 
     private string _made = ""; // (the vehicle's own name once made: a kit-1 shape's role may have taken a seed derived from the one asked)
 
@@ -288,7 +292,9 @@ public sealed class VehicleGenJob
 
     internal void Generate() // (on the kit's thread; the profile probe calls it straight)
     {
-        var v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role, context: Context);
+        Vehicle v;
+        using (EngineKit.EngineWish.Use(Engine))
+            v = VehicleRegistry.Make(Generator, Seed, layers: Layers, role: Role, context: Context);
         Yield();
         var text = v.Text();
         ContextNotes = v.Context is { Matters: true } c ? $"{c.Detail}; {(v.ContextNotes.Count > 0 ? "changed " + string.Join(", ", v.ContextNotes) : "nothing to change")}" : "";
@@ -339,6 +345,9 @@ public sealed class VehicleGenJob
     /// <summary>What the warm-up cost (ms), once it has run.</summary>
     public static double WarmMs { get; private set; }
 
+    /// <summary>What warming the Engine Kit cost in <see cref="Warm"/> (ms).</summary>
+    public static double EngineMs { get; private set; }
+
     /// <summary>
     /// The first generation in a process pays for compiling the kit and the build code it calls: about a second, a few milliseconds at a time over its first
     /// ticks and up to 40 to 80 ms in one span (the first rebuild of a construct with guns). This runs a small one once, at once, on the calling thread: a Bandit Technical in a world
@@ -368,6 +377,9 @@ public sealed class VehicleGenJob
             if (VehicleRegistry.Find("Bandit Box Truck") is { } grammar)
                 ShapeGrammar.PlanOnly(grammar, 1); // (the shape grammar's planner: a plan, nothing built)
             kitMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+            var engine = Stopwatch.GetTimestamp();
+            _ = EngineKit.EngineKit.Request(new EngineKit.EngineRequest { PowerKw = 400, Tier = 3, Size = 0, Underside = false, Fit = EngineKit.EngineKitVehicle.Bay }); // (the Engine Kit's planner and builder compiled: a spawn that asks for an engine pays nothing for it)
+            EngineMs = (Stopwatch.GetTimestamp() - engine) * 1000.0 / Stopwatch.Frequency;
             VehicleGunsmith.WarmFits(); // (every gunsmith design and size fitted on its test stand once, here, rather than in a spawn's slices)
         }
         catch (Exception ex) // (only a warm-up: never a reason for a match not to start)
@@ -375,7 +387,7 @@ public sealed class VehicleGenJob
             Console.WriteLine($"[vehicles] warm-up failed: {ex.GetType().Name}: {ex.Message}");
         }
         WarmMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
-        Console.WriteLine($"[vehicles] warmed the kit in {WarmMs:0} ms ({kitMs:0} ms a Technical and a plan, {WarmMs - kitMs:0} ms after them; {VehicleGunsmith.FitCount} gunsmith test fits, {VehicleGunsmith.FitMs:0} ms in all)");
+        Console.WriteLine($"[vehicles] warmed the kit in {WarmMs:0} ms ({kitMs:0} ms a Technical and a plan, {WarmMs - kitMs:0} ms after them, {EngineMs:0} ms of it an Engine Kit engine; {VehicleGunsmith.FitCount} gunsmith test fits, {VehicleGunsmith.FitMs:0} ms in all)");
     }
 
     /// <summary>Spans by their two yields (<c>--slice-vehicle</c>): count, total and longest ms. Null (off) in the game.</summary>
@@ -400,7 +412,7 @@ public sealed class VehicleGenJob
     }
 
     /// <summary>
-    /// <c>--slice-vehicle NAME [--seeds N] [--first S] [--spans K]</c>: seeds made as the game's dynamic spawn makes them (2.5 ms slices on the kit's thread), each with its time,
+    /// <c>--slice-vehicle NAME [--seeds N] [--first S] [--spans K] [--engine-tier N [--top-speed V]]</c>: seeds made as the game's dynamic spawn makes them (2.5 ms slices on the kit's thread), each with its time,
     /// slices, longest slice and span and the text's hash, then the K longest spans by their yields. A probe for the kit's spans (VEHICLEKIT.md, "Short spans").
     /// </summary>
     public static int SliceReport(string name, string[] args)
@@ -422,10 +434,13 @@ public sealed class VehicleGenJob
             return ProfileReport(g, first, n);
         SpanTrace = new();
         var times = new List<double>();
+        EngineKit.EngineWish? wish = Flag("--engine-tier") is { } et && int.TryParse(et, out var tier) // (an Engine Kit engine, as a spawn that asks for one: ENGINEKIT.md)
+            ? new EngineKit.EngineWish { Tier = tier, TopSpeed = float.TryParse(Flag("--top-speed"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ts) ? ts : 0 }
+            : null;
         for (var seed = first; seed < first + n; seed++)
         {
             var clock = Stopwatch.StartNew();
-            var job = new VehicleGenJob(g, seed);
+            var job = new VehicleGenJob(g, seed, engine: wish);
             while (!job.Step(2.5))
             {
             }
