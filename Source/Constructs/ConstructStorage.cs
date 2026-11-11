@@ -95,6 +95,9 @@ public sealed class CStore
     public int KindN; // kinds held
     public int ItemCount; // parts held, all kinds
     public float ItemSpace, ItemKg; // what they take of the box (m3) and weigh: added up again on every change, so no error creeps in
+    public RackSlab[]? Slabs; // a Piece Rack: its columns of pieces along its length, in place order (ConstructRackPack.cs; made the first time one goes in)
+    public byte[]? SlabLanes; // ...each column's stacks: how many high, MaxLanes a column
+    public int SlabN, SlabSum; // ...columns, and the pieces in them (not ItemCount: the places are worked out again)
 
     public void Reset(int slots)
     {
@@ -127,6 +130,7 @@ public sealed class CStore
         PullMaterial = false;
         PullWaiting = PullSeconds = 0;
         KindN = ItemCount = 0;
+        SlabN = SlabSum = 0;
         ItemSpace = ItemKg = 0;
         Version++;
     }
@@ -516,7 +520,7 @@ public static class ConstructStorage
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
@@ -527,6 +531,16 @@ public static class ConstructStorage
             ConstructParts.Range(d.RackSection.Y, 0.1f, 32, file, "storage.pieces.section");
             ConstructParts.Range(d.RackLength, 0.1f, 192, file, "storage.pieces.length");
             ConstructParts.Range(d.RackCount, 1, CStore.MaxPerKind, file, "storage.pieces.count");
+            // Its hold: the box pieces pack into (the part kit writes it from the frame; else inside the bounds, as the first racks were).
+            if (ConstructParts.Opt(pc, "hold") is { } hb)
+            {
+                if (hb.ValueKind != JsonValueKind.Array || hb.GetArrayLength() != 2 || hb[0].GetArrayLength() != 3 || hb[1].GetArrayLength() != 3)
+                    throw new ConstructPartException($"{file}: storage.pieces.hold is [[x, y, z], [x, y, z]] in metres");
+                d.RackHoldMin = new Vector3(hb[0][0].GetSingle(), hb[0][1].GetSingle(), hb[0][2].GetSingle());
+                d.RackHoldMax = new Vector3(hb[1][0].GetSingle(), hb[1][1].GetSingle(), hb[1][2].GetSingle());
+                if (!(d.RackHoldMax.X - d.RackHoldMin.X >= 0.1f && d.RackHoldMax.Y - d.RackHoldMin.Y >= 0.1f && d.RackHoldMax.Z - d.RackHoldMin.Z >= 0.1f))
+                    throw new ConstructPartException($"{file}: storage.pieces.hold is at least 0.1 m each way");
+            }
             d.IsPieceRack = true;
         }
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
@@ -763,10 +777,11 @@ public static class ConstructStorage
         var drive = s.Drive != ShaftState.None;
         var pull = s.PullWaiting > 0; // (a Smart Terminal under way: its panel, on every peer)
         var progress = s.Progress > 0;
-        var more = drive || mix || machine || pull || progress; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
+        var slabs = s.SlabN > 0 && s.SlabSum == s.ItemCount; // (a Piece Rack's columns: ConstructRackPack.cs)
+        var more = drive || mix || machine || pull || progress || slabs; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
         w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (more ? 64 : 0)));
         if (more)
-            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0)));
+            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0) | (slabs ? 32 : 0)));
         if (drive)
             w.U8((byte)s.Drive).U16(s.DriveRpm).U8(s.DrivePct);
         if (progress)
@@ -796,6 +811,8 @@ public static class ConstructStorage
             w.U8(s.Blocked).U16(s.RefusedPart);
         if (pull)
             w.U16(s.PullId).U8((byte)(s.PullMaterial ? 1 : 0)).U8(s.PullWaiting).U8(s.PullSeconds);
+        if (slabs)
+            ConstructRackPack.Write(w, s);
     }
 
     /// <summary>A stored part's id, or a run-time piece's key (its id is this machine's own: protocol 244).</summary>
@@ -841,7 +858,7 @@ public static class ConstructStorage
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
         var more = (flags & 64) != 0 ? r.U8() : 0;
-        if (more >= 32)
+        if (more >= 64)
             throw new MalformedPacketException($"a store with more flags {more}");
         if ((more & 1) != 0)
         {
@@ -921,6 +938,12 @@ public static class ConstructStorage
             s.PullSeconds = r.U8();
             if (s.PullWaiting == 0 || s.PullWaiting > ConstructTerminals.MaxJobs || (s.PullMaterial ? s.PullId > RecyclingTable.Current.Materials.Length : ConstructParts.Get(s.PullId) == null))
                 throw new MalformedPacketException($"a terminal pulling {s.PullId}, {s.PullWaiting} waiting");
+        }
+        if ((more & 32) != 0)
+        {
+            ConstructRackPack.Read(ref r, s);
+            if (s.SlabSum != s.ItemCount)
+                throw new MalformedPacketException($"a rack of {s.ItemCount} pieces placed {s.SlabSum}");
         }
         s.Live = true;
         s.Version++;

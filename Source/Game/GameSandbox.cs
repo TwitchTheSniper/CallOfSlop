@@ -86,6 +86,8 @@ public enum CActKind : byte
     Aircraft, // u8 AirAsk, text style, text shape (Flying) or air role (Faction; empty: any), u32 seed (0: the server picks): an aircraft already flying with a bot pilot over the player (protocol 230; GameSandboxAircraft.cs)
     QuarrySkip, // nothing: skip the first Ministry duty, the quarry (protocol 236; GameQuarry.cs)
     MakeEngine, // u16 kW, u8 tier, u8 EngineLayout, u8 EngineBoost, u8 size (255 any), 3 x u16 fit (cm; 0 any), u32 seed: creative, the Engine Kit makes an engine in front of the player (protocol 241; GameSandboxEngines.cs)
+    RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 248; ConstructEditsRack.cs)
+    Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 248; ConstructEditsRack.cs)
 }
 
 /// <summary>
@@ -1170,6 +1172,18 @@ public sealed partial class Game
                 var body = r.U16();
                 return hands.UseBin(Constructs, p.Id, eye, body, r.U16(), GravityFrames.Forward(p.Position, p.Yaw, p.Pitch));
             }
+            case CActKind.RackDrop:
+            {
+                var body = r.U16();
+                return hands.RackDrop(Constructs, p.Id, eye, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch), body, r.U16());
+            }
+            case CActKind.Rider:
+            {
+                var body = r.U16();
+                var route = r.U8();
+                var at = r.U16();
+                return hands.TakeRider(Constructs, p.Id, eye, p.Yaw, body, route, at, r.U8() != 0);
+            }
             case CActKind.Route:
             {
                 var body = r.U16();
@@ -1271,6 +1285,12 @@ public sealed partial class Game
             case CActKind.Setting:
             case CActKind.Bin:
                 w.U16(body).U16(part);
+                break;
+            case CActKind.RackDrop:
+                w.U16(body).U16(part);
+                break;
+            case CActKind.Rider:
+                w.U16(body).U8((byte)part).U16(socket).U8(flags);
                 break;
             case CActKind.StoreIn:
             case CActKind.TakeStored:

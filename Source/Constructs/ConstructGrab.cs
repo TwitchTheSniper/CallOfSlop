@@ -578,6 +578,8 @@ public sealed partial class ConstructEdits
                 return why0;
             return piece == null ? null : Grab(world, player, eye, yaw, piece.Id, piece.Com);
         }
+        if (part >= 0 && h.Tool == ConstructTool.PhysicsGun && !h.Seated && world.Get(body) is { } shelf && part < shelf.PartCount && shelf.DefOf(part).IsPieceRack)
+            return GrabFromRack(world, player, eye, yaw, shelf, part, local); // (a Piece Rack: a piece off its stacks, in the beam)
         if (part >= 0 && h.Tool == ConstructTool.PhysicsGun && !h.Seated && world.Get(body) is { } hook && ConstructOrdnance.RackOf(hook, part) >= 0)
         {
             // A bomb on a hook: one pull and it is off, in the beam (ConstructOrdnance.cs).

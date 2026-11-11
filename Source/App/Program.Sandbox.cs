@@ -359,6 +359,10 @@ public static unsafe partial class Program
         }
         else if (Pressed(GameAction.Interact) && !magFill && inMachine && storeNear && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
+        else if (Pressed(GameAction.Interact) && !magFill && aimed && hit.RiderPlus1 > 0 && hit.RiderPlus1 <= hit.Body.ConveyedCount && hit.Distance <= ConstructBuild.UseReach && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
+            g.SandboxSend(CActKind.Rider, body: hit.Body.Id, part: (ushort)(hit.RoutePlus1 - 1), socket: (ushort)Math.Clamp((int)MathF.Round(hit.Body.Conveyed[hit.RiderPlus1 - 1].At * 100), 0, ushort.MaxValue)); // (a piece off a conveyor, into the hands: ConstructEditsRack.cs)
+        else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && hit.Body.DefOf(hit.Part).IsPieceRack && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
+            g.SandboxSend(ShiftHeld ? CActKind.RackDrop : CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (a Piece Rack: the piece looked at into the hands; Shift: that kind loose over the rack)
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
@@ -972,6 +976,8 @@ public static unsafe partial class Program
             key ^= (long)ConstructConfig.Get(hit.Body.Parts[hit.Part], ad, CfgKey.Recipe, 0) * 2654435761L; // (its recipe is a setting, not the store; a refiner's set recipe too)
         if (hit.Body.DefOf(hit.Part).IsPress)
             key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
+        if (hit.Body.DefOf(hit.Part).IsPieceRack)
+            key ^= ((long)hit.RackPlus1 << 8 | hit.RackLane) * 2654435761L; // (which stack is looked at: its kind names the piece F takes)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
             key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
         if (key == _sbStoreKey)
@@ -985,7 +991,7 @@ public static unsafe partial class Program
         if (cd.IsVolumeStore)
             return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
         if (cd.IsPieceRack)
-            return _sbStoreText = ConstructConveyor.Look(cd, st, near);
+            return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null);
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
