@@ -173,7 +173,7 @@ other; the key is Left Shift beside Sprint without a clash.
 
 ## Wings
 
-`ConstructAero.cs`, data in part files and `Constructs/Air.json`; generator `tools/constructs/wing_parts.py`. Every lifting surface runs through one place, reading `ConstructAir` for density and wind.
+`ConstructAero.cs`, data in part files and `Constructs/Air.json`; generator: the part kit's `--gen-parts wing_parts`. Every lifting surface runs through one place, reading `ConstructAir` for density and wind.
 
 A surface is any part with a `"surface"` block, so a new one is data: `area`, `at` (where it acts, the quarter chord on a wing), `lift` and `forward` (directions in the part), `aspect` and `sweep` (they set the lift slope and induced drag), `cl0`, `stall` (degrees), `cd0`, `tears` (cloth: lift goes with its health), and `control` for a surface with a hinge in the part.
 

@@ -5,7 +5,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// What a pilot wears and sits in: Constructs/Parts/Pilot, and the carrier demo blueprints (CarrierDeck, DeckPlane).
 /// docs/sandbox/CONSTRUCTS.md, "Carrier work", "Pilot safety". Was tools/constructs/pilot_parts.py. The Deck Plane is the Light Plane
-/// (Constructs/Blueprints/LightPlane.json, written by tools/constructs/wing_parts.py) with an ejection seat: run this after changing it.
+/// (Constructs/Blueprints/LightPlane.json, written by WingParts) with an ejection seat: run this after changing it.
 /// </summary>
 public sealed class PilotParts : IPartGenerator
 {
