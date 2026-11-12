@@ -32,8 +32,8 @@
         "The margins are thick with the Warden's corrections in red. Beside rule 212 he has written only 'Why?', and then, in a different pen, crossed it out." ],
       "noticed": { "by": "Warden Pettigrew", "reach": 14,
         "say": [ "That copy is annotated, {them.first}. Hands where the handbook can see them.", "Reading ahead? Rule 9: nobody reads ahead." ] } },
-    { "id": "memo-1144", "part": "Ministry In-Tray", "title": "The Warden's in-tray",
-      "in": "Penal Colony", "at": [6.6, 0.375, 5.3], "yaw": 180,
+    { "id": "memo-1144", "part": "Ministry In-Tray", "title": "An in-tray in the Records Office",
+      "in": "Ministry Records Office", "at": [3.2, 0.375, 2.0], "yaw": 180,
       "text": [
         "A wire in-tray on a filing cabinet, stacked with memos from the Ministry. Every one is dated a Thursday.",
         "The top one: 'MEMO 1,144. Staff will not discuss the night sky with inmates beyond what is printed in the almanac (attached).' Nothing is attached. The staple holes say something was.",
@@ -72,8 +72,8 @@
         "It has been pinned and unpinned so often that the corner is all holes." ],
       "noticed": { "by": "Officer Crumb", "reach": 14, "then": [ "?me Likes ?them +1" ],
         "say": [ "Oi! That's private. ...Go on, everyone reads it. Mind the corner.", "You've found my postcard. Don't laugh at the soup bit. Everyone laughs at the soup bit." ] } },
-    { "id": "eighth-hook", "part": "Colony Key Board", "title": "The key board by the door",
-      "in": "Colony Barracks", "at": [3.42, 0.375, 2.6], "yaw": 90,
+    { "id": "eighth-hook", "part": "Colony Key Board", "title": "The key board in the gatehouse",
+      "in": "Colony Gatehouse", "at": [3.2, 0.375, 2.0], "yaw": 90,
       "text": [
         "Brass hooks in a row, each with a key and a label in the Sergeant's square capitals: GATE. CELLS. OFFICE. BARRACKS. STORES. WORKS. DRAIN.",
         "There is an eighth hook at the end. No key, no label. The brass is worn bright, as if somebody touches it every time they pass." ],
