@@ -122,6 +122,24 @@ public sealed class PressParts : IPartGenerator
             p.Add(MachineLook.D([bx - h, wall - t, z0 - t * 0.4], [bx + h, wall, z0 + t], MachineLook.In));
             p.Add(MachineLook.D([bx - h, bse, z0 - t * 0.4], [bx + h, bse + t, z0 + t], MachineLook.Accent, "hazard paint"));
         }
+        // Where the conveyors meet it (ConstructPorts.cs: a Piece in 11 cm under each bay's socket on the back plane, the Piece out 10 cm
+        // above the underside, 0.2 cells out of the front): a steel feed table on two brackets in each mouth, its top at the conveyor's
+        // line, and a run-off lip out of the bed's front to the port. Looks only, inside the bounds; nothing proud of the back plane.
+        foreach (var bx in centres)
+        {
+            var top = y - 0.11 - 0.004;
+            var thick = Math.Max(0.02, k * 0.16);
+            if (top - thick < bse + t + 0.02)
+                continue; // (the mouth's own sill is there: a small Die Lathe)
+            double w = k * 0.85, deep = k * 0.6, br = Math.Max(0.012, k * 0.12);
+            p.Add(MachineLook.D([bx - w, top - thick, z0 + 0.004], [bx + w, top, z0 + deep], MachineLook.Steel, "steel"));
+            foreach (var ex in new[] { bx - w + 0.004, bx + w - 0.004 - br })
+                p.Add(MachineLook.D([ex, bse - 0.004, z0 + 0.008], [ex + br, top - thick + 0.003, z0 + deep - 0.004], MachineLook.Base));
+        }
+        {
+            var mid = (x0 + x1) / 2;
+            p.Add(MachineLook.D([mid - k * 1.2, y0 + 0.004, z1 - 0.004], [mid + k * 1.2, y0 + 0.1 - 0.004, z1 + k * 0.2 - 0.003], MachineLook.Steel, "steel"));
+        }
         return new Frame(x0, x1, y0, y1, z0, z1, bse, crown, wall, y, centres);
     }
 

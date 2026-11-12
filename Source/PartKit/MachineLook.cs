@@ -40,6 +40,37 @@ public static class MachineLook
         return b;
     }
 
+    /// <summary>
+    /// A port's fitting, the same on every machine: a dark spout that reaches back <paramref name="depth"/> from the port's
+    /// point into the body, and a rim round its mouth in the side's colour (white in, orange out). The port is at the middle
+    /// of the mouth's plane; nothing comes within 2.5 cm of it, so the link's end stays in view (the "Machine tier looks"
+    /// rule: no look box within 2 cm of a port). <paramref name="n"/>: the axis the port faces along, <paramref name="sg"/> its
+    /// sign; <paramref name="half"/>: half the spout's width. Looks only.
+    /// </summary>
+    public static List<PyDict> Mouth(double[] at, int n, int sg, double half, double depth, bool input)
+    {
+        const double clear = 0.026, lip = 0.012;
+        int u = (n + 1) % 3, v = (n + 2) % 3;
+        var list = new List<PyDict>();
+        void Add(double n0, double n1, double u0, double u1, double v0, double v1, string color)
+        {
+            double[] mn = new double[3], mx = new double[3];
+            (mn[n], mx[n]) = sg > 0 ? (at[n] - n1, at[n] - n0) : (at[n] + n0, at[n] + n1); // (n0, n1: how far behind the port's plane)
+            (mn[u], mx[u], mn[v], mx[v]) = (at[u] + u0, at[u] + u1, at[v] + v0, at[v] + v1);
+            if (D(mn, mx, color) is { } box)
+                list.Add(box);
+        }
+        if (depth >= clear + 0.014)
+            Add(clear, depth, -half, half, -half, half, Base);
+        var o = half + lip;
+        var rim = input ? In : Out;
+        Add(0.003, clear + 0.008, -o, o, clear, o, rim);
+        Add(0.003, clear + 0.008, -o, o, -o, -clear, rim);
+        Add(0.003, clear + 0.008, clear, o, -clear, clear, rim);
+        Add(0.003, clear + 0.008, -o, -clear, -clear, clear, rim);
+        return list;
+    }
+
     /// <summary>A box that shows work (the game's "work" tag): "spin" about <paramref name="axis"/>, "stroke" along it by <paramref name="travel"/>, "glow" or "smoke".</summary>
     public static PyDict? Work(PyDict? b, string kind, string? axis = null, double travel = 0)
     {

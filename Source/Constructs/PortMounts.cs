@@ -14,7 +14,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class PortMounts
 {
-    public const float Floating = 0.02f; // a port further than this from every drawn box hangs in the air
+    public const float Floating = 0.03f; // a port further than this from every drawn box hangs in the air (a spout's mouth keeps 2.6 cm clear of its port, so the link's end shows)
 
     public readonly record struct Row(string Part, string Port, string Type, Vector3 At, byte Face, float Near, float Back, string File);
 
