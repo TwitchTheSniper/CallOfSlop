@@ -37,14 +37,14 @@ public sealed class StationJob
     public ConstructBuild.Blueprint? Bp;
     public int[] PartOf = []; // each step's part on Body (-1: not fitted)
     public int LinkAt; // the next of its wires, then its links, in the blueprint's order
-    public float[] LinkLen = []; // each wire's and link's length as the game lays it (m), from the scratch build
+
     public IEnumerator<int>? Costing;
     public ConstructBuild.BuildRun? Run;
     public bool Resume; // costing after a load: PartOf, Body and LinkAt are the save's
     public Vector3 Pos; // Body's pose in the bay
     public Quaternion Rot = Quaternion.Identity;
     public Vector3 Size; // the blueprint's bounds
-    public int FitTicks, OrderTicks;
+    public int FitTicks, OrderTicks, NoteKey;
     public int Cursor; // every step before it is fitted
     public ushort[] KindDef = [], KindNeed = [], KindFit = [];
     public string?[] KindWhy = []; // why nothing linked holds or makes it (null: ordered or held)
@@ -108,6 +108,49 @@ public static class ConstructStation
         need.X <= bay.X + 0.005f && need.Y <= bay.Y + 0.005f && need.Z <= bay.Z + 0.005f
             ? null
             : $"doesn't fit the bay: it is {need.X:0.0} x {need.Z:0.0} m and {need.Y:0.0} m high, the bay {bay.X:0.0} x {bay.Z:0.0} m and {bay.Y:0.0} m high (the station's Bay settings)";
+
+    /// <summary>
+    /// What a body's parts take up, body frame, from the parts' own bounds (no rebuild: a 5,000-part scratch body is costed without one).
+    /// A wheel's travel isn't counted; the build is set down by physics when it is freed.
+    /// </summary>
+    public static void PartBounds(Construct b, out Vector3 lo, out Vector3 size)
+    {
+        lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        var inv = Quaternion.Conjugate(b.Rot);
+        for (var i = 0; i < b.PartCount; i++)
+        {
+            var d = b.DefOf(i);
+            Freeform.PartWorld(b, i, out var pos, out var rot);
+            var centre = Vector3.Transform(pos + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, rot) - b.Pos, inv);
+            var q = inv * rot;
+            var h = (d.BoundsMax - d.BoundsMin) * 0.5f;
+            var ax = Vector3.Abs(Vector3.Transform(Vector3.UnitX, q)) * h.X + Vector3.Abs(Vector3.Transform(Vector3.UnitY, q)) * h.Y + Vector3.Abs(Vector3.Transform(Vector3.UnitZ, q)) * h.Z;
+            lo = Vector3.Min(lo, centre - ax);
+            hi = Vector3.Max(hi, centre + ax);
+        }
+        if (b.PartCount == 0)
+            lo = hi = Vector3.Zero;
+        size = hi - lo;
+    }
+
+    /// <summary>About how long wire or link <paramref name="i"/> of a blueprint is (its wires first, then its links), on a body that has its end parts: m.</summary>
+    public static float LinkEstimate(ConstructBuild.Blueprint bp, Construct b, int[] partOf, int i)
+    {
+        int from, to;
+        if (i < bp.Wires.Count)
+            (from, to) = bp.Wires[i];
+        else
+        {
+            var s = bp.Links[i - bp.Wires.Count];
+            (from, to) = (s.Branch < 0 ? s.From : -1, s.To);
+        }
+        if (from < 0 || to < 0 || from >= partOf.Length || to >= partOf.Length || partOf[from] < 0 || partOf[to] < 0 || partOf[from] >= b.PartCount || partOf[to] >= b.PartCount)
+            return 2f;
+        Freeform.PartWorld(b, partOf[from], out var a, out _);
+        Freeform.PartWorld(b, partOf[to], out var z, out _);
+        return MathF.Max(0.5f, Vector3.Distance(a, z) * 1.3f);
+    }
 
     /// <summary>What a built body takes up, wheels' travel included: its low corner and its size, body frame.</summary>
     public static void Bounds(Construct b, out Vector3 lo, out Vector3 size)
@@ -292,12 +335,12 @@ public static class ConstructStation
             if (j.PartOf[s] < 0 && Ready(j, s))
                 j.KindReady[j.StepKind[s]]++;
         var placed = 0;
-        string? first = null;
-        var lacking = 0;
+        int firstKind = -1, firstOrder = -1, lacking = 0;
         for (var i = 0; i < j.KindN; i++)
         {
             var def = j.KindDef[i];
-            var lack = j.KindNeed[i] - j.KindFit[i] - ConstructCrafting.Holds(tray, def);
+            var held = ConstructCrafting.Holds(tray, def);
+            var lack = j.KindNeed[i] - j.KindFit[i] - held;
             if (lack <= 0)
             {
                 j.KindWhy[i] = null;
@@ -305,9 +348,8 @@ public static class ConstructStation
             }
             lacking += lack;
             var d = ConstructParts.Get(def);
-            var name = d?.Name ?? "a part this build doesn't have";
             var asked = Asked(c.Parts[t].Craft, def);
-            var want = Math.Clamp(j.KindReady[i] - ConstructCrafting.Holds(tray, def), 0, lack);
+            var want = Math.Clamp(j.KindReady[i] - held, 0, lack);
             if (want > asked && d != null && placed < OrdersAStep && (c.Parts[t].Craft?.Count ?? 0) < ConstructCrafting.MaxOrders)
             {
                 placed++;
@@ -315,27 +357,40 @@ public static class ConstructStation
             }
             else if (d == null)
                 j.KindWhy[i] = "no such part";
-            if (first == null)
+            if (firstKind < 0 && (j.KindReady[i] > 0 || j.KindWhy[i] != null))
             {
-                first = j.KindWhy[i] is { } why ? $"{name}: {why}" : $"{name}";
+                firstKind = i; // (the first kind a step is ready for: what the build waits on by name)
                 if (j.KindWhy[i] == null && c.Parts[t].Craft is { } cq)
-                    for (var k = 0; k < cq.Count; k++)
+                    for (var k = 0; k < cq.Count && firstOrder < 0; k++)
                         if (ConstructCrafting.KindOf(ref cq.Items[k]) == def)
-                        {
-                            // (a full hold empties as its parts are fitted: said as that, not as the terminal's "take parts out")
-                            first = cq.Items[k].State == CraftState.Held && tray.ItemCount > 0 && cq.Items[k].Note.Contains("full", StringComparison.Ordinal)
-                                ? $"{name} (next in: the hold is full until what it holds is fitted)"
-                                : $"{name} ({ConstructCrafting.StateText(c, cq.Items[k])})";
-                            break;
-                        }
+                            firstOrder = k;
             }
         }
-        var note = lacking == 0 ? "" : $"waits for {lacking} part{(lacking == 1 ? "" : "s")}: {first}";
-        if (j.Fitted >= j.Steps && j.LinksDone < j.Links)
-            note = j.Note.StartsWith("waits for", StringComparison.Ordinal) && j.Note.Contains("stock") ? j.Note : "";
+        if (j.Fitted >= j.Steps)
+            return; // (its links: NextLink's own note)
+        // The note is made again only when what it says changed (a look allocates nothing otherwise).
+        var oq = c.Parts[t].Craft;
+        var full = firstOrder >= 0 && oq!.Items[firstOrder].State == CraftState.Held && tray.ItemCount > 0 && oq.Items[firstOrder].Note.Contains("full", StringComparison.Ordinal);
+        var key = lacking * 1009 + (firstKind + 1) * 31 + (firstOrder < 0 ? 0 : ((int)oq!.Items[firstOrder].State + 1) * 7 + oq.Items[firstOrder].Where + (oq.Items[firstOrder].Note?.GetHashCode() ?? 0))
+            + (firstKind >= 0 ? j.KindWhy[firstKind]?.GetHashCode() ?? 0 : 0) + (full ? 3 : 0);
+        if (key == j.NoteKey)
+            return;
+        j.NoteKey = key;
+        var note = "";
+        if (lacking > 0)
+        {
+            var name = firstKind < 0 ? "a part whose parent isn't in place" : ConstructParts.Get(j.KindDef[firstKind])?.Name ?? "a part this build doesn't have";
+            // (a full hold empties as its parts are fitted: said as that, not as the terminal's "take parts out")
+            var first = firstKind >= 0 && j.KindWhy[firstKind] is { } why ? $"{name}: {why}"
+                : full ? $"{name} (next in: the hold is full until what it holds is fitted)"
+                : firstOrder >= 0 ? $"{name} ({ConstructCrafting.StateText(c, oq!.Items[firstOrder])})" : name;
+            note = $"waits for {lacking} part{(lacking == 1 ? "" : "s")}: {first}";
+            if (note.Length > 120)
+                note = note[..120];
+        }
         if (note != j.Note)
         {
-            j.Note = note.Length > 120 ? note[..120] : note;
+            j.Note = note;
             world.StationChanged(c);
         }
     }
@@ -419,7 +474,7 @@ public static class ConstructStation
     private static void BeginCosting(ConstructWorld world, StationJob j)
     {
         j.State = StationState.Costing;
-        j.Run = new ConstructBuild.BuildRun { KeepPartOf = true };
+        j.Run = new ConstructBuild.BuildRun { StepsOnly = true }; // (the steps only, a slice a tick: the finish of a big blueprint is one long call, and the bay needs the bounds alone)
         var scratch = new ConstructWorld { CreativeRecycling = world.CreativeRecycling };
         j.Costing = ConstructBuild.BuildSteps(scratch, j.Bp!, Vector3.Zero, Quaternion.Identity, j.Run).GetEnumerator();
         j.CostMs = j.WorstMs = 0;
@@ -652,7 +707,7 @@ public static class ConstructStation
         var i = j.LinkAt;
         var wire = i < bp.Wires.Count;
         var type = wire ? RouteType.Data : bp.Links[i - bp.Wires.Count].Type;
-        var metres = i < j.LinkLen.Length ? j.LinkLen[i] : 1f;
+        var metres = LinkEstimate(bp, b, j.PartOf, i);
         var units = Math.Max(1, (int)MathF.Ceiling(metres));
         var stock = type is RouteType.Data or RouteType.Power ? WireStock : PipeStock;
         var material = RecyclingTable.Current.IdOf(stock);
@@ -679,7 +734,7 @@ public static class ConstructStation
             bad = ConstructRoutes.BuildLink(world, b, bp.Links[i - bp.Wires.Count], j.PartOf.AsSpan(0, bp.Steps.Count));
         if (bad == null)
         {
-            var left = units;
+            var left = Math.Max(1, (int)MathF.Ceiling(ConstructConveyor.Length(b, b.RouteCount - 1))); // (paid by the length it was laid at)
             for (var s = 0; s < net.StoreN && left > 0; s++)
                 if (world.StoreOf(c, net.Stores[s]) is { Amount: > 0 } st && st.Material == material)
                     {
@@ -737,19 +792,16 @@ public static class ConstructStation
         j.Costing = null;
         var run = j.Run!;
         j.Run = null;
-        if (run.Built is not { } built)
+        if (run.Body is not { } built)
         {
             Fail(world, c, t, j, $"the blueprint doesn't build: {run.Why}");
             return;
         }
         var bp = j.Bp!;
-        Bounds(built, out var lo, out var size);
+        PartBounds(built, out var lo, out var size);
         j.Size = size;
         Bay(c, t, out var floor, out var rot, out var bay);
         j.Links = (ushort)Math.Min(None - 1, bp.Wires.Count + bp.Links.Count);
-        j.LinkLen = new float[j.Links];
-        for (var i = 0; i < j.Links; i++)
-            j.LinkLen[i] = i < built.RouteCount ? MathF.Max(0.1f, ConstructConveyor.Length(built, i)) : 1f;
         MakeKinds(j);
         Console.WriteLine($"[station] {j.Name}: costed in {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms; {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, {j.KindN} kinds");
         if (j.Resume)
@@ -900,6 +952,7 @@ public static class ConstructStation
                 j.LinkAt = j.Cursor = 0;
                 j.Fitted = j.LinksDone = 0;
                 j.LastPart = None;
+                j.NoteKey = 0;
                 j.Started = Stopwatch.GetTimestamp();
                 j.State = StationState.Building;
                 j.Note = "";
@@ -925,7 +978,7 @@ public static class ConstructStation
             if (k < 0)
                 return true;
             var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
-            if (!ConstructCrafting.TakeOne(world, c, t, tray, d))
+            if (!world.StationTake(c, t, tray, d))
                 return true;
             world.CraftChanged(c);
             FitOne(world, c, t, j, k);
@@ -1095,6 +1148,26 @@ public sealed partial class ConstructWorld
         if (!StationDirty.Contains(c.Id))
             StationDirty.Add(c.Id);
     }
+
+    /// <summary>
+    /// A Building Station takes one of a kind out of its hold for fitting. A piece the packing has a place for goes as from a rack;
+    /// one it holds but couldn't place (a save packs again by kind, and a cramped hold may not find the same places) goes by its kind,
+    /// and the hold is packed afresh. False when the hold has none.
+    /// </summary>
+    public bool StationTake(Construct c, int part, CStore st, ConstructPartDef d)
+    {
+        if (ConstructCrafting.TakeOne(this, c, part, st, d))
+            return true;
+        if (ConstructCrafting.Holds(st, (ushort)d.Id) <= 0 || st.KindIndex(d.Id) < 0)
+            return false;
+        st.AddKind(d.Id, -1);
+        st.SlabN = st.SlabSum = 0;
+        if (st.ItemCount > 0)
+            ConstructRackPack.Ensure(c.DefOf(part), st);
+        LoadChanged = true;
+        Changed(st);
+        return true;
+    }
 }
 
 public sealed partial class ConstructEdits
@@ -1173,6 +1246,7 @@ public sealed class StationPreview
     private ConstructBuild.BuildRun? _run;
     private IEnumerator<int>? _steps;
     private Construct? _built;
+    private int[]? _partOf;
 
     public void Begin(ConstructBuild.Blueprint bp)
     {
@@ -1180,7 +1254,7 @@ public sealed class StationPreview
         (_bp, Name, Ready, Why, _built) = (bp, bp.Name, false, "", null);
         Lines.Clear();
         CostMs = WorstMs = 0;
-        _run = new ConstructBuild.BuildRun { KeepPartOf = true };
+        _run = new ConstructBuild.BuildRun { StepsOnly = true };
         _steps = ConstructBuild.BuildSteps(new ConstructWorld(), bp, Vector3.Zero, Quaternion.Identity, _run).GetEnumerator();
     }
 
@@ -1202,11 +1276,12 @@ public sealed class StationPreview
         _steps.Dispose();
         _steps = null;
         Ready = true;
-        _built = _run!.Built;
+        _built = _run!.Body;
+        _partOf = _run.PartOf;
         if (_built == null)
             Why = _run.Why;
         else
-            ConstructStation.Bounds(_built, out _, out Size);
+            ConstructStation.PartBounds(_built, out _, out Size);
         _run = null;
         return true;
     }
@@ -1285,10 +1360,11 @@ public sealed class StationPreview
         // Link stock, by the metre.
         float wire = 0, pipe = 0;
         var links = 0;
-        for (var r = 0; r < _built.RouteCount; r++)
+        for (var r = 0; r < _bp.Wires.Count + _bp.Links.Count && _partOf != null; r++)
         {
-            var len = MathF.Ceiling(MathF.Max(0.1f, ConstructConveyor.Length(_built, r)));
-            if (_built.Routes[r].Type is RouteType.Data or RouteType.Power)
+            // (about: the ends as the crow flies and a share for the run; the build pays each link by the length it is laid at)
+            var len = MathF.Ceiling(ConstructStation.LinkEstimate(_bp, _built, _partOf, r));
+            if (r < _bp.Wires.Count || _bp.Links[r - _bp.Wires.Count].Type is RouteType.Data or RouteType.Power)
                 wire += len;
             else
                 pipe += len;

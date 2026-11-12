@@ -259,7 +259,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Link("data", orders, station, null, "Orders", Control, true, null,
                 new[] { V(24.25f, 0, -2.05f), V(31.75f, 0, -2.05f), V(39.25f, 0, -2.05f), V(46.75f, 0, -2.05f), V(54.25f, 0, -2.05f), V(60.5f, 0, -2.05f), V(64.6f, 0, -2.05f), V(64.6f, 0, -6.0f) }
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
-            Feed(StockOf("copper", 65.25f, -3.75f), station);
+            Feed(StockOf("copper", 65.25f, -3.25f), station);
             var kit = On("Long Piece Rack", 81.25f, -13.75f, Toward, "-y.0.0", Assembly); // (15 kinds, a column each along its 12 m)
             foreach (var (part, n) in new[]
                      {

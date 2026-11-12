@@ -570,7 +570,8 @@ public static unsafe partial class Program
                         WsSay("station: the built vehicle was dragged out of the bay");
                         break;
                     case "measure":
-                        StationProbe.On = Perf.On = true;
+                        StationProbe.On = true;
+                        Ui.PerfMode = PerfView.Overlay; // (the profiler times the server tick while its overlay is up)
                         WsSay("station: " + StationProbe.Cost());
                         {
                             var ticks = new List<float>();

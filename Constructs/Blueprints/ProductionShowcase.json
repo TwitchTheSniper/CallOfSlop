@@ -366,7 +366,7 @@
     {"part": "Foundation", "on": 350, "socket": "z-0", "by": "z+0", "paint": "#8c8576", "finish": "concrete"},
     {"part": "Foundation", "on": 351, "socket": "z-0", "by": "z+0", "paint": "#8c8576", "finish": "concrete"},
     {"part": "Building Station", "on": 334, "socket": "top21", "by": "-y.0.0", "config": {"bayWidth": 4, "bayDepth": 5, "bayHeight": 3}},
-    {"part": "Storage Volume", "on": 307, "socket": "top20", "by": "-y", "config": {"sizeX": 1.2, "sizeY": 1, "sizeZ": 1.2, "atY": 0.35, "material": "copper", "fill": 24}, "paint": "#c9a24a"},
+    {"part": "Storage Volume", "on": 307, "socket": "top21", "by": "-y", "config": {"sizeX": 1.2, "sizeY": 1, "sizeZ": 1.2, "atY": 0.35, "material": "copper", "fill": 24}, "paint": "#c9a24a"},
     {"part": "Long Piece Rack", "on": 360, "socket": "top20", "by": "-y.0.0", "spin": 2, "paint": "#2f8f8a"},
     {"part": "Frame Beam", "on": 309, "socket": "top13", "by": "end-", "spin": 3, "paint": "#2f8f8a", "finish": "painted plating"},
     {"part": "Text Sign", "on": 364, "socket": "y+3", "by": "back", "paint": "#23272b", "text": ["F on the station: pick Swing Arm Buggy, Start. Parts ride in"]},

@@ -20,7 +20,7 @@ public sealed class BuildStationParts : IPartGenerator
     private static Part Terminal()
     {
         var c = Small;
-        const int nx = 12, ny = 8, nz = 12; // 3.0 m wide, 2.0 m high, 3.0 m deep
+        const int nx = 12, ny = 8, nz = 20; // 3.0 m wide, 2.0 m high, 5.0 m deep (the hold packs a kind a column along it)
         var p = new Part("Building Station", c, "Extrusion", "Builds a blueprint in the bay beside it, part by part, from what its linked stores and machines send and what you bring by hand. Pick a blueprint on its screen. Needs power.",
             role: "storage", tool: "welder", color: Body, group: "Production");
         double x0 = c.Lo(), x1 = c.Hi(nx), y0 = c.Lo(), z0 = c.Lo(), z1 = c.Hi(nz);
@@ -82,7 +82,7 @@ public sealed class BuildStationParts : IPartGenerator
         p.Stats(420, 800, 3, seconds: 8.0);
         p.Set(("power", 150), ("onBreak", "disable"));
         p.Set(("panels", Py.L(Kw(("source", "station"), ("at", Py.L(Py.Round((x0 + xm) / 2, 3), Py.Round(y0 + MachineLook.EyeY, 3), Py.Round(dz0 + 0.171, 3))), ("size", Py.L(0.74, 0.5)), ("face", "+z"), ("up", "+y"), ("rows", 8), ("range", 12)))));
-        const double section = 1.8, length = 2.8;
+        const double section = 1.8, length = 4.8;
         static PyDict Bay(string key, string label, double def, string tip) => Kw(("key", key), ("label", label), ("group", "Bay"), ("min", 2), ("max", 64), ("step", 0.5), ("default", def), ("unit", "m"), ("tooltip", tip));
         p.Set(("config", Py.L(Bay("bayWidth", "Bay width", 6, "The bay's size across, away from the station."), Bay("bayDepth", "Bay depth", 8, "The bay's size along the station."), Bay("bayHeight", "Bay height", 4, "The bay's height. A blueprint is built only if it fits the bay."))));
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.25)), ("length", length), ("count", 400), ("crafting", true), ("station", true),
