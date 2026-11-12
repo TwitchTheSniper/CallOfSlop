@@ -200,8 +200,8 @@ public static class TierMachine
             (mx[along], mx[1], mx[n]) = (u1, v1, sg > 0 ? wall + d1 : wall - d0);
             return mx;
         }
-        void Flat(double u0, double u1, double v0, double v1, double proud, string color, string? finish = null) =>
-            s.Add(Box3(u0, u1, v0, v1, -0.004, proud), Box3x(u0, u1, v0, v1, -0.004, proud), color, finish);
+        void Flat(double u0, double u1, double v0, double v1, double proud, string color, string? finish = null, double from = -0.004) =>
+            s.Add(Box3(u0, u1, v0, v1, from, proud), Box3x(u0, u1, v0, v1, from, proud), color, finish);
         Flat(mid - half, mid + half, b0, b1, Thin, input ? MachineLook.In : MachineLook.Out);
         // The arrow: along the machine, back to front (+z on an x face).
         var dirn = along == 2 ? 1 : -1;
@@ -209,7 +209,7 @@ public static class TierMachine
         void Bar(double f0, double f1, double wide)
         {
             var (u0, u1) = dirn > 0 ? (mid + f0 * len, mid + f1 * len) : (mid - f1 * len, mid - f0 * len);
-            Flat(u0, u1, my - w * wide / 2, my + w * wide / 2, Thin + 0.006, MachineLook.Ink);
+            Flat(u0, u1, my - w * wide / 2, my + w * wide / 2, Thin + 0.008, MachineLook.Ink, from: 0.004); // (it stands in the band, its back inside it)
         }
         Bar(-0.5, 0.1, 0.34);
         Bar(0.1, 0.3, 1);

@@ -137,8 +137,9 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
 Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
 keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a
 face a Die Frame, a piece or a conveyor stands against is under 2 cm proud; faces sit a few mm apart by construction.
-Budget: about 40 look boxes at tier 1 or the small class, 80 at the top. Not done yet: the drill and saw modules, the
-Recycler, racks, junctions and storage, and a Press has no status lamp.
+Budget: about 40 look boxes at tier 1 or the small class, 80 at the top. Not done yet: the Recycler, racks, junctions
+and storage (the drill and saw modules only turn: steel flights on the bit, a mark across each blade), and a Press
+has no status lamp.
 
 **The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
 ([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is
