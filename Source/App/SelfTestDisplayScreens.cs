@@ -256,7 +256,7 @@ public static partial class SelfTest
         var ast = w.StoreOf(asm, 0)!;
         ref var ap = ref asm.Parts[0];
         var ad = asm.DefOf(0);
-        Says(asm, "Idle", "No recipe", "no recipe");
+        Says(asm, "Wants", "No recipe set", "no recipe");
         var gears = Array.FindIndex(AssemblingTable.Current.Recipes, r => r.Name == "Gear Set");
         ap.Cfg[ad.CfgSlot[(int)CfgKey.Recipe]] = gears + 1;
         Says(asm, "Wants", "Needs input", "nothing in it");
