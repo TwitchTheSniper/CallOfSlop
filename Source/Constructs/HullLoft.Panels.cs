@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static partial class HullLoft
 {
     public const string PanelPrefix = "Formed Panel (";
-    public const int PanelMaxAlong = 12, PanelMaxAcross = 8; // facets: at most 96 a panel
+    public const int PanelMaxAlong = 8, PanelMaxAcross = 6; // facets: at most 48 a panel (each a hull shape: a part's first make is 0.1 ms a facet)
     public const int PanelMinCm = 20, PanelMaxCm = 600, PanelStepCm = 5, PanelMaxCrownCm = 80, PanelMaxRakeCm = 200, PanelMinMm = 12, PanelMaxMm = 40;
 
     /// <summary>A preset: its key word, its name, and its default length, width, crown and rake (cm).</summary>
@@ -119,8 +119,8 @@ public static partial class HullLoft
     public static (int Along, int Across) PanelGrid(in PanelShape p)
     {
         var bent = p.Rake != 0 && p.Kind is not (4 or 6);
-        var along = bent ? Math.Clamp(p.L / 12, 6, PanelMaxAlong) : p.Kind == 2 ? 4 : 1;
-        var across = p.Crown > 0 || p.Kind == 4 && p.Rake != 0 ? Math.Clamp(p.W / 15, 4, PanelMaxAcross) : 1;
+        var along = bent ? Math.Clamp(p.L / 20, 5, PanelMaxAlong) : p.Kind == 2 ? 4 : 1;
+        var across = p.Crown > 0 || p.Kind == 4 && p.Rake != 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1;
         return (along, across);
     }
 

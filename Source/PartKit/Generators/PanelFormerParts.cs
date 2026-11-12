@@ -22,7 +22,7 @@ public sealed class PanelFormerParts : IPartGenerator
 
     private static readonly Row[] Rows =
     [
-        new(Small, 0.95, 3.0, 0.8, 2.05, 1.8, 2.5, 1, 600, 900, 520, 800),
+        new(Small, 0.95, 3.0, 0.8, 2.3, 1.8, 2.5, 1, 600, 900, 520, 800),
         new(Medium, 2.5, 7.0, 0.9, 3.6, 4.5, 6.0, 2, 4000, 3600, 6400, 4200),
     ];
 
@@ -123,16 +123,15 @@ public sealed class PanelFormerParts : IPartGenerator
             var x0 = sx > 0 ? hw - col - 0.012 : -hw - 0.012;
             MachineLook.Hazard(p, [x0, bed + 0.065 * s, -col - 0.012], [x0 + col + 0.024, bed + 0.065 * s + 0.14 * s, col + 0.012]);
         }
-        // The in end (white): a band across the bed's back face with an arrow in, and the hopper's rim and arrow down.
-        p.Add(L([-hw, bed - 0.14 * s, z0 - 0.014], [hw, bed - 0.02, z0], MachineLook.In));
-        MachineLook.Arrow(p, 2, z0 - 0.014, -1, 1, 1, 0, bed - 0.4 * s, 0.3 * s, 0.3 * s, MachineLook.In);
+        // The in end (white): a band across the bed's back face, and the hopper's rim and arrow down.
+        p.Add(L([-hw, bed - 0.26 * s, z0 - 0.014], [hw, bed - 0.02, z0], MachineLook.In));
         p.Add(L([hx0 - 0.004, hy + 0.15 * s, z0 - 0.006], [hx1 + 0.006, hy + 0.15 * s + 0.05 * s, z0 + rim], MachineLook.In));
         p.Add(L([hx1 - rim, hy + 0.15 * s, z0 + rim], [hx1 + 0.006, hy + 0.15 * s + 0.05 * s, hz1 + 0.006], MachineLook.In));
         p.Add(L([hx0 - 0.004, hy + 0.15 * s, hz1 - rim], [hx1 - rim, hy + 0.15 * s + 0.05 * s, hz1 + 0.006], MachineLook.In));
         MachineLook.Arrow(p, 0, hx1, 1, 1, -1, hy - 0.3 * s, (z0 + hz1) / 2, 0.3 * s, 0.25 * s, MachineLook.In);
         MachineLook.Hazard(p, [hx0 + 0.02, 0.02, hz1], [hx1 - 0.02, 0.14 * s, hz1 + 0.014]);
         // The out end (orange): a band across the bed's front face, an arrow on the out bed, hazard paint under the lip.
-        p.Add(L([-hw, bed - 0.14 * s, z1], [hw, bed - 0.02, z1 + 0.014], MachineLook.Out));
+        p.Add(L([-hw, bed - 0.26 * s, z1], [hw, bed - 0.02, z1 + 0.014], MachineLook.Out));
         MachineLook.Hazard(p, [-hw, 0.16 * Math.Sqrt(s), z1], [hw, 0.16 * Math.Sqrt(s) + 0.13 * s, z1 + 0.013]);
         MachineLook.Arrow(p, 1, bed + 0.014, 1, 2, 1, 0, z1 - 0.45 * s, 0.5 * s, 0.4 * s, MachineLook.Out);
         // The drive on the right, past the bridge: a dark gearbox and a pulley that turns.

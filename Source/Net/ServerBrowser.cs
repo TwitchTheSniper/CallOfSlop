@@ -408,7 +408,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      implicit Piece out conveyor port (its port bytes); AsmBlock gains ConveyorSmall, ConveyorFull and ConveyorCut (the store's Blocked byte).
     // 252: CBodyKind.Orders ends with the Line Consoles' Made counts (u8 n, each u16 part, u32 made); a Line Console gains the Stop after setting
     //      and the Data out, Alarm, Running and Made outputs (its settings' slots change); refiners, Assemblers, Presses and Piece Racks have a Data out.
-    public const ushort ProtocolVersion = 252;
+    // 253: the Panel Former (feat/panel-former-1). A work order may name a formed panel: its shape byte is 255 (WorkOrders.NamedShape), then u8 material,
+    //      u16 count, u16 made and the panel's name as text, in place of the 22 fixed bytes. A run-time part named "Formed Panel (...)" travels as a
+    //      lofted hull part does (HullLoft.WireKind and its name). Two new part files (Panel Former, Medium Panel Former) move part ids; a new touch
+    //      action, orders.preset.
+    public const ushort ProtocolVersion = 253;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
