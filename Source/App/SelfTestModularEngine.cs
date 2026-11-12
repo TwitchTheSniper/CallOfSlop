@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
+using EngineKitParts = CallOfSlop.EngineKit.EngineKitParts;
 
 namespace CallOfSlop;
 
@@ -90,8 +91,9 @@ public static partial class SelfTest
         var pieces = ConstructParts.All.Where(d => d.Piece != EnginePiece.None).ToList();
         var problem = EngineRules.Current.Problem;
         Line($"modular engine: {pieces.Count} pieces, rules \"{problem}\"");
-        if (pieces.Count != 40)
-            Fail($"modular engine: {pieces.Count} pieces load, not 40 (ten kinds in four sizes)");
+        var want = (10 + EngineKitParts.Grades.Length) * EngineKitParts.Sizes.Length; // (ten kinds, and the Engine Kit's tier cylinders, in four sizes)
+        if (pieces.Count != want)
+            Fail($"modular engine: {pieces.Count} pieces load, not {want} (ten kinds and {EngineKitParts.Grades.Length} tier cylinders in {EngineKitParts.Sizes.Length} sizes)");
         if (problem.Length > 0)
             Fail($"modular engine: the rules file is refused: {problem}");
         var bad = EngineRules.Parse("""{ "format": "call-of-slop-modular-engine/1", "sizes": [ { "name": "tiny" } ] }""");
@@ -106,7 +108,8 @@ public static partial class SelfTest
                      ("""{ "kind": "output", "size": "small" }""", "modular"),
                      ("""{ "kind": "fuel", "size": "huge" }""", "size"),
                      ("""{ "kind": "crank", "size": "small" }""", "crank"),
-                     ("""{ "kind": "cylinder", "size": "small", "power": 2 }""", "power"),
+                     ("""{ "kind": "cylinder", "size": "small", "power": 20 }""", "power"), // (a cylinder may have its own power since the tier cylinders: up to 10)
+                     ("""{ "kind": "starter", "size": "small", "power": 2 }""", "power"),
                      ("""{ "kind": "stack", "size": "small", "spool": 99 }""", "spool"),
                  })
         {
