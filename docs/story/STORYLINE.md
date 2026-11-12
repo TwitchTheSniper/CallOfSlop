@@ -73,6 +73,9 @@ can only be reached in a ship the player has built, so it is the endgame's own g
 
 ## The colony (act one)
 
+Things lying about the colony can be looked at closely (`Story/Lore/PenalColony.json`): each is somebody's, and
+noticing it opens a question with them; the schoolbook's missing chapter, "The Others", is the first hint of the empty sky.
+
 Settled: Rank and Suspicion are the colony's two numbers, and the Warden's offer is the one explicit choice between
 the Trustee and the Escapee road. The beats' words in `Story/Storylets/Colony.json` are still draft.
 

@@ -1310,6 +1310,8 @@ public static unsafe partial class Program
             return; // (Esc leaves a sign or a keypad's typing box: Program.SandboxControls.cs)
         if (_session != null && key == GlfwKey.Escape && TalkEsc())
             return; // (Esc closes the talk panel: Program.StoryTalk.cs)
+        if (_session != null && key == GlfwKey.Escape && LoreEsc())
+            return; // (Esc puts a lore item down: Program.StoryLore.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc() || BlueprintGhostEsc()))
@@ -1987,12 +1989,15 @@ public static unsafe partial class Program
             pilotView = PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
             _game.Audio.SetListener(eye, fwd);
         }
+        var talkView = TalkCamera(local, ref eye, ref fwd, ref fov); // (talking to someone: eases to a shot over your shoulder at them, Program.TalkCamera.cs)
+        if (_talkCamT > 0)
+            _game.Audio.SetListener(eye, fwd);
         var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: lying at the crash site, waking in the colony; Program.Opening.cs)
         openingView |= local != null && QuarryRideCamera(ref eye, ref fwd, ref camUp); // (the quarry duty's crew bus: Program.Quarry.cs)
         if (openingView)
             _game.Audio.SetListener(eye, fwd);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
-        RenderOrigin(local, tp || pilotView || openingView, eye, shake, out var origin, out var eyeFromOrigin);
+        RenderOrigin(local, tp || pilotView || openingView || talkView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);
         var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
@@ -2019,7 +2024,7 @@ public static unsafe partial class Program
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
-            if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView) // (third person, or looking through a drone: your whole body is drawn like anyone's)
+            if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView && !talkView) // (third person, the talk camera, or looking through a drone: your whole body is drawn like anyone's)
             {
                 if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
@@ -2166,7 +2171,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !_game.OpeningActive && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening)
+        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2417,7 +2422,7 @@ public static unsafe partial class Program
         if (local is { Alive: true })
         {
             // Aimed through an optic, its lens has the reticle (Source/Render/SightLens.cs); otherwise the crosshair.
-            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn) // (the gantry's camera draws its cursor: the build bar)
+            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && _talkCamT <= 0) // (the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();
