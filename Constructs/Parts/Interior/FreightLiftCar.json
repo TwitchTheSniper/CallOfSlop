@@ -146,6 +146,22 @@
         1.75
       ],
       "color": "#3b4046"
+    },
+    {
+      "min": [
+        3.05,
+        -0.465,
+        -1.69
+      ],
+      "max": [
+        3.195,
+        -0.449,
+        1.69
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
     }
   ],
   "sockets": [

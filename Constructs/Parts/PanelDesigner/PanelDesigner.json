@@ -154,6 +154,21 @@
     },
     {
       "min": [
+        0.015,
+        0.91,
+        2.075
+      ],
+      "max": [
+        0.615,
+        0.926,
+        2.185
+      ],
+      "color": "#dfe6ea",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
         -0.067,
         0.825,
         2.195
@@ -167,6 +182,21 @@
       "detail": true,
       "paintable": false,
       "finish": "steel"
+    },
+    {
+      "min": [
+        0.015,
+        0.84,
+        2.215
+      ],
+      "max": [
+        0.615,
+        0.856,
+        2.325
+      ],
+      "color": "#dfe6ea",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [
