@@ -17,10 +17,10 @@ public static partial class SelfTest
             if (MapHorizonCheck(m))
                 shaped++;
         if (shaped == 0)
-            Fail("no map has a boundary (the Cluttered pack should)");
-        var carousel = Maps.All.FirstOrDefault(x => x.Name == "Carousel");
-        if (carousel != null && (carousel.Size != MapSize.Small || !(carousel.FogEnd > carousel.FogStart)))
-            Fail("Carousel: a small circle map without fog over its far ground (the smoke run's black void below the horizon)");
+            Fail("no map has a boundary (Shape Test and Blackmoor Asylum should)");
+        var shape = Maps.All.FirstOrDefault(x => x.Name == "Shape Test"); // Carousel, the small circle map, until the Cluttered pack went (2026-11-12)
+        if (shape != null && !(shape.FogEnd > shape.FogStart))
+            Fail("Shape Test: a shaped map without fog over its far ground (the smoke run's black void below the horizon)");
         Line($"{shaped} shaped maps have ground and fog past the outline; maps without a boundary keep their fog");
     }
 

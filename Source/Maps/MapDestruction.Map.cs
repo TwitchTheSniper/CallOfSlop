@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Destructible buildings on a map (Buildings/README.md, "Destruction"; <see cref="MapDestruction"/>). Opt-in: the map's
-/// top-level "destructible" (or its pack's, Maps/World/pack.json) switches it on for every named Building op, and a
+/// top-level "destructible" (or its pack.json's) switches it on for every named Building op, and a
 /// Building op's own "destructible" overrides that. Maps without it build exactly as before (same boxes, same fingerprint).
 /// </summary>
 public sealed partial class Map

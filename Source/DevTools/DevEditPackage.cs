@@ -214,7 +214,7 @@ public static class DevEditPackage
         return problems;
     }
 
-    /// <summary>The pack folder of a map file path ("Maps/Space/x.json" is Maps/Space), or null.</summary>
+    /// <summary>The pack folder of a map file path ("Maps/Dev/x.json" is Maps/Dev), or null.</summary>
     private static string? PackDirOf(string? mapFile, string data)
     {
         if (mapFile == null || !mapFile.StartsWith("Maps/", StringComparison.Ordinal))

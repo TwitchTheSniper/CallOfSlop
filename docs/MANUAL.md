@@ -122,7 +122,7 @@ Hold **forward + jump** at a ledge up to 1.7 m high (crates, low walls, window s
 
 ### Slopes
 
-On terrain maps (the Legacy pack's High Ground maps, the Dev pack's Terrain Test) the ground's slope is measured over your footprint (a 0.4 m radius), not the single bump under your feet, so small noise in a hillside doesn't stop you or start a slide.
+On terrain maps (the Dev pack's Terrain Test, the Proving Ground) the ground's slope is measured over your footprint (a 0.4 m radius), not the single bump under your feet, so small noise in a hillside doesn't stop you or start a slide.
 - **Walkable up to 45 degrees.** Walking uphill is full speed up to 25 degrees, then gradually slower: about 92% at 30, 82% at 35, 72% at 40 and 60% straight up a 45 degree slope. Going across or down a slope is full speed.
 - **Grip:** while you move, a narrow steep patch (walkable ground within 0.45 m before and after it) that rises no more than a step (0.55 m) against the slope around it is crossed, so brief steep bumps don't stop you or kick you into a slide, and small terrain lips and edges are stepped over like stairs. Taller banks (up to 1.7 m) are mantled with forward + jump, as before.
 - **Stuck to the ground:** walking over a crest or down a slope (up to the 45 degree limit) keeps you on the ground; you don't bounce or go airborne.
@@ -184,7 +184,7 @@ A map is where a game takes place: its ground, buildings, props, sky and gravity
 - **Sandbox pack** (`Maps/Sandbox`): **Construct Yard**, a test yard with buggies, gates, a lift, turrets, guns, targets, a parts rack, loose parts and room to drive; **Proving Ground**, a 384 x 384 m vehicle test field with a drag strip, a banked oval and hill-climb ramps.
 - **Planetoids pack** (`Maps/Planetoids`): the story's worlds, whole planetoids a few km across, each with its own ground, sky, gravity and faction: **Redrock**, **Caledon**, **Cinder**, **Glacier** and **Mille**. Land on them by ship, or start a Sandbox on one (docs/planets/WORLDS.md). The Dev pack's **Planetoid** is a 10 km test world.
 
-The other packs (Legacy, Cluttered, World Tour, Space, Zombies) were made for the archived arena modes; they still load and can be picked. Their map lists are in [archive/MANUAL-ARENA.md](archive/MANUAL-ARENA.md#maps).
+The Zombies pack was made for the archived Zombies mode; it still loads and can be picked. The Legacy, Cluttered, World Tour and Space packs, made for the archived arena modes, were removed on 2026-11-12 (they are in git history, last in commit 7748ca82); Proto Box and Pocket Planet moved to the Dev pack. Their old map lists are in [archive/MANUAL-ARENA.md](archive/MANUAL-ARENA.md#maps).
 
 What a map can hold, in short (the file format and every op are in [Maps/README.md](../Maps/README.md), the map makers' guide):
 
@@ -311,7 +311,7 @@ Gibs bounce, slide to a stop, lie there for about 15 s and dither out; meat that
 
 ### Destructible buildings
 
-On the **World Tour** maps (and the Dev pack's **Destruction Test**) buildings can be blown apart. Every wall is made of panels about 1 x 1.25 m (door and window openings kept), every floor and roof of 2 x 2 m slabs, and each panel has health by its material (`Materials/destruction.json`):
+On the Dev pack's **Destruction Test** (and the World Tour maps, until that pack was removed on 2026-11-12) buildings can be blown apart. Every wall is made of panels about 1 x 1.25 m (door and window openings kept), every floor and roof of 2 x 2 m slabs, and each panel has health by its material (`Materials/destruction.json`):
 
 - **Explosives do the work.** Frag and impact grenades, launcher rockets, kill-streak strikes (mortars, strafe runs, napalm), exploding props (barrels, gas bottles, shell crates) and landmines break the panels in reach that the blast can see (a wall in front shields the one behind). A frag next to a plastered or wooden wall blows a hole in it; brick needs a rocket (or a few frags); concrete takes several rockets or a strike.
 - **Bullets** only chip the weak stuff: wood and plaster give way after a magazine or so, tiles barely notice, brick, concrete and metal don't care. **Melee** knocks through wood and plaster in a few blows.

@@ -590,7 +590,7 @@ public static partial class Maps
 
     /// <summary>
     /// Every map in the Maps folder, sorted by "order" then name, and the packs they belong to.
-    /// The shipped maps are ordinary map files too (in Maps/Legacy and the other pack folders).
+    /// The shipped maps are ordinary map files too (in Maps/Sandbox, Maps/Dev and the other pack folders).
     /// Ids are positions in this list (local only: the network refers to maps by name + fingerprint).
     /// </summary>
     private static Map[] LoadAll(bool reload = false)

@@ -1,4 +1,4 @@
-"""Writes Maps/Space/02-Planet.json ("Pocket Planet"): a small planet with point gravity.
+"""Writes Maps/Dev/PocketPlanet.json ("Pocket Planet"): a small planet with point gravity.
 
 Run from the repo root:  python tools/planet/make_pocket_planet.py
 Everything is placed by latitude/longitude (headings are degrees from geographic north, towards lat 90) with the planet ops (Planet, SurfaceBlock, SurfaceMesh, Crater,
@@ -164,7 +164,7 @@ planet = {
 }
 
 here = os.path.dirname(os.path.abspath(__file__))
-out = os.path.normpath(os.path.join(here, "..", "..", "Maps", "Space", "02-Planet.json"))
+out = os.path.normpath(os.path.join(here, "..", "..", "Maps", "Dev", "PocketPlanet.json"))
 with open(out, "w", newline="\n") as f:
     f.write(json.dumps(planet, indent=2) + "\n")
 print(f"wrote {out}: {len(ops)} ops")

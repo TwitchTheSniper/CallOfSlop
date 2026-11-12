@@ -109,8 +109,9 @@ public static partial class SelfTest
         // KotH / CTF again when the map Building op's floor slabs moved inside the walls (fix/building-clipping: same solid, other boxes).
         (GameMode.FreeForAll, 7, 0, 4101, 20, 0x3443E22BC1957A1D),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x6387879825A82FC6),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x1DC4EA95C97536F5),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x54CA9A155DACDFBF),
+        // KotH / CTF moved from map 1 (Courtyard) to map 0 (Proto Box) when the Legacy pack went (2026-11-12): map 1 is a planetoid now.
+        (GameMode.KingOfTheHill, 7, 0, 4103, 20, 0xE1AF8A4F4C56B6DA),
+        (GameMode.CaptureTheFlag, 7, 0, 4104, 20, 0x0853650894D79ECF),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x931D3A8B47203A68),
         // Zombies re-recorded for milestone 3: kills roll for power-ups (one more random draw each; ZombiesPowerUps.cs).
         (GameMode.Zombies, 2, 0, 4106, 20, 0x1979D2A8FD9FF9A0), // (re-recorded 2026-10-26: bots shop, the power-up schedule; 2026-10-27: the player scaling, 3 players send more; 2026-10-28: zombie types roll a type per spawn)
@@ -176,9 +177,16 @@ public static partial class SelfTest
                     Fail($"{m.Name}: non-ASCII text '{text}'");
         // Where modes show up: random map / a plain map -> the five PvP modes and Test Range; Zombies Test -> Zombies and the Dev template too.
         var plain = GameModes.ForMap(null);
-        var courtyard = GameModes.ForMap(Maps.All[0]);
+        // A plain map: one outside any pack (Courtyard, the first map, until the Legacy pack went on 2026-11-12; every
+        // shipped pack now stays out of True Random, which offers the Dev-only modes on its maps).
+        var plainMap = Validated(MapFile.Load("""
+            { "name": "Plain", "halfX": 20, "halfZ": 20, "ops": [
+              { "op": "Ground", "color": [0.4, 0.4, 0.4] },
+              { "op": "RingSpawns", "count": 8, "frac": 0.8 }, { "op": "AutoWaypoints", "spacing": 6 } ] }
+            """, "Plain"));
+        var courtyard = GameModes.ForMap(plainMap);
         var ztest = ZTestMap != null ? GameModes.ForMap(ZTestMap) : Array.Empty<GameMode>();
-        ModeNote($"random map: {string.Join(",", plain.Select(GameModes.Short))}; {Maps.All[0].Name}: {string.Join(",", courtyard.Select(GameModes.Short))}; Zombies Test: {string.Join(",", ztest.Select(GameModes.Short))}");
+        ModeNote($"random map: {string.Join(",", plain.Select(GameModes.Short))}; {plainMap.Name}: {string.Join(",", courtyard.Select(GameModes.Short))}; Zombies Test: {string.Join(",", ztest.Select(GameModes.Short))}");
         var plainWant = GameModes.All.Append(GameMode.TestRange).ToArray();
         if (!plain.SequenceEqual(plainWant) || !courtyard.SequenceEqual(plainWant))
             Fail("a plain map should offer exactly the five PvP modes and Test Range");
@@ -368,11 +376,6 @@ public static partial class SelfTest
             Game.SeedNextGame = 6100 + (int)mode * 17; // seeded: the same match every run (a flaky check is no check)
             if (zombies)
                 game = ZGame(2, ref now, hostIn: false);
-            else if (mode == GameMode.Coop && Maps.Find("Silo") is { } silo)
-            {
-                ClutteredLargeNav(silo); // co-op plays on a map with a mission (Silo Breach): 3 co-op bots against the director's squads
-                game = ModeGame(3, mode, silo.Id);
-            }
             else if (mode == GameMode.Sandbox && Maps.Find(ConstructYardMap) is { } yard)
                 game = ModeGame(3, mode, yard.Id); // Sandbox plays on a map with a "sandbox" section (Construct Yard): 3 bots among the constructs
             else
