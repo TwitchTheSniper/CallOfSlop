@@ -438,8 +438,7 @@ public sealed class PressParts : IPartGenerator
         var dies = Py.L(
             SizedDie("Bracket", ["l-angle", "plate", "solid"], metals, [10, 2880], [10, 800], [0.5, 8], 1, 0.02, bracket, bracketPatterns),
             SizedDie("Housing", ["hollow", "solid"], metals, [15, 2880], [15, 3200], [0.5, 8], 2, 0.01, housing, housingPatterns),
-            SizedDie("Plate", ["plate"], ["metal", "steel", "bronze", "copper", "laminate", "wood", "planks"], [10, 2880], [25, 6400], [1, 64], 1, 0.01, plate, platePatterns),
-);
+            SizedDie("Plate", ["plate"], ["metal", "steel", "bronze", "copper", "laminate", "wood", "planks"], [10, 2880], [25, 6400], [1, 64], 1, 0.01, plate, platePatterns));
         dies.AddRange(WorkingDies());
         return dies;
     }

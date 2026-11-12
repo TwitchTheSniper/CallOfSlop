@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Board Die",
-  "description": "Fits a press and makes it stamp board parts. Every material a board part comes in uses this die.",
+  "description": "Fits a press and makes it press a whole piece into one board part, sized by the piece. A standard piece gives the standard part.",
   "group": "Production",
   "section": "Dies",
   "role": "panel",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Button Die",
-  "description": "Fits a press and makes it stamp button parts. Every material a button part comes in uses this die.",
+  "description": "Fits a press and makes it press a whole piece into one button part, sized by the piece. A standard piece gives the standard part.",
   "group": "Production",
   "section": "Dies",
   "role": "panel",
