@@ -272,9 +272,9 @@ public static partial class SelfTest
         // the arena bots and their nav checks over every map
         "Bots", "Nav determinism", "Nav edge walks", "Bot stuck watch", "Bots and foliage",
         // Zombies and Co-op
-        "Zombies category slots", "Zombies more perks", "Zombie hordes", "Zombies cathedral", "Mass horde", "Horde stress", "Co-op",
+        "Zombies category slots", "Zombies more perks", "Zombie hordes", "Zombies cathedral", "Mass horde", "Horde stress",
         // the older map packs and every-map sweeps of them
-        "High Ground pack", "Cluttered pack", "Military props", "Map contract", "Map horizons", "Stairs", "Decal surfaces", "Pack decals",
+        "Military props", "Map contract", "Map horizons", "Stairs", "Decal surfaces", "Pack decals",
         // Karl, 2026-11-11 (cut down what GitHub runs): the arena maps and their content, the arena guns and combat feel,
         // audio, and the platform plumbing nobody is changing. Sandbox, constructs, space, planetoids, digging, saves and
         // the allocation and source checks stay.
@@ -323,7 +323,6 @@ public static partial class SelfTest
         Section("Big maps", CheckBigMaps);
         Section("Box batches", CheckBoxBatches); // SelfTestBigMaps.cs: the map's own boxes instanced by 24 m cell (BuildingRenderer.cs): each drawn box once, as drawn // SelfTestBigMaps.cs: load cost: parallel = one by one, per-map and stress-map budgets, linear in props
         Section("Pack assets", CheckPackAssets); // SelfTestPackAssets.cs: pack-local props, models and skies
-        Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
         Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
         Section("Foliage no-go", CheckFoliageNoGo); // SelfTest.FoliageNoGo.cs: indoor / pavement rules and zones
         Section("Mantling", CheckMantle);
@@ -485,7 +484,6 @@ public static partial class SelfTest
         Section("Map vote: humans only", CheckMapVoteHumansOnly); // SelfTestMapVote.cs: bots don't vote, ties, early end
         Section("Map vote: player fit", CheckMapVotePlayerFit); // SelfTestMapVote.cs: never a map too small for the humans here
         Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
-        Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
         Section("Map contract", CheckMapContract); // SelfTestMapContract.cs: every map against its file's "test" block (shape, dressing, objectives, symmetry, nav reach and fair walks, void links, probes, fall kill, a short bot match, horizon)
         Section("Server browser", CheckServerBrowser);
         Section("Invite codes", CheckInviteCodes); // SelfTestListing.cs: round trip, typos, versions, the Join box
@@ -533,7 +531,6 @@ public static partial class SelfTest
         Section("Zombies cathedral", CheckZombiesCathedral); // SelfTestZombiesCathedral.cs: Ashgrave Cathedral: the full set on six floors (areas with heights), windows and doors walked, the bell siege (the horde climbs the tower in a pyramid, falls when shot; the reward), a client copy, a replay
         Section("Mass horde", CheckMassHorde); // SelfTestMassHorde.cs: the mass horde spike: 5k/10k/20k crowds on Mass Horde Test (tick cost, allocations, memory, network sketch), promotion/demotion, counts adding up, determinism, off elsewhere
         Section("Horde stress", CheckHordeStress); // SelfTestHordeStress.cs: Horde Stress at 600: staging, descent, merge at the rally point, advance on terrain, endless wave, counts, no allocation
-        Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
         Section("Decals", CheckDecals); // SelfTestDecals.cs: decal files, atlas, Decal/DecalScatter baking, impact pool rules, costs, the Decal Test map
         Section("Decal surfaces", CheckDecalSurfaces); // SelfTestDecalSurfaces.cs: the surface and object decal set (loads, surfaces, bold detail, paint cost) and the Decal Surfaces map
         Section("Pack decals", CheckPackDecals); // SelfTestPackDecals.cs: pack-local decals (Maps/<Pack>/Decals), shadowing, scope, atlas budget
@@ -762,14 +759,13 @@ public static partial class SelfTest
     // ---- 1d. Map packs -------------------------------------------------------------------------
 
     /// <summary>
-    /// Pack folders: the shipped Legacy pack (Classic, Collision Point and High Ground together), pack.json never loading as a map, folders without pack.json, loose files
+    /// Pack folders: the shipped packs (Proto Box first), pack.json never loading as a map, folders without pack.json, loose files
     /// forming "Other", random picks and vote options staying inside the pack. Uses a throwaway folder in the temp
     /// directory (deleted afterwards), never the game's own Maps folder.
     /// </summary>
     private static void CheckMapPacks()
     {
         // The real Maps folder
-        var classic = Maps.FindPack("Legacy");
         if (Directory.Exists(Maps.Folder))
         {
             // The Sandbox pack (board sp01): Construct Yard lives there, not in Dev; the pack is a dev pack (out of True Random).
@@ -783,21 +779,12 @@ public static partial class SelfTest
                 Fail("Sandbox pack: needs a high order, trueRandom false, a description and only maps with a sandbox section");
             else if (!GameModes.ForMap(yardMap).Contains(GameMode.Sandbox) || Maps.All[0].Pack == sbPack)
                 Fail("Sandbox pack: Sandbox isn't offered on Construct Yard, or the pack leads the map list");
-            if (classic == null)
-                Fail("no Legacy pack (Maps/Legacy)");
-            else if (classic.Maps.Count != 36)
-                Fail($"Legacy has {classic.Maps.Count} maps (36: the 24 Classic, 6 Collision Point and 6 High Ground maps)");
-            else if (classic.Description.Length == 0 || classic.Order != 1)
-                Fail("Legacy/pack.json wasn't read (no description or order)");
-            else if (classic.Maps[0].Name != "Proto Box" || Maps.All[0] != classic.Maps[0])
-                Fail($"Legacy's first map is {classic.Maps[0].Name}, the list's {Maps.All[0].Name} (expected Proto Box: many tests use the first map)");
-            else if (Maps.Packs.Any(p => p.Folder is "Classic" or "CollisionPoint" or "HighGround"))
-                Fail("an old pack folder (Classic, CollisionPoint, HighGround) is still there: those maps moved to Maps/Legacy");
-            // The old relative order: Classic 1-24, then Collision Point, then High Ground.
-            var legacyOrder = classic?.Maps.Select(m => m.Name).ToArray() ?? [];
-            var wantAfterClassic = new[] { "Blueprint", "Galleria", "Floodgate", "Trefoil", "Citadel", "Confluence", "Gravel Pit", "Hillfort", "Riverbend", "Adobe Mesa", "Ridgeline", "Alpine Pass" };
-            if (legacyOrder.Length == 36 && (legacyOrder[23] != "Military Base" || !legacyOrder[24..].SequenceEqual(wantAfterClassic)))
-                Fail($"Legacy's map order changed: {string.Join(", ", legacyOrder)}");
+            // The first map in the list is Proto Box (Maps/Dev/ProtoBox.json, order 1): many tests use the first map. The
+            // Legacy, Cluttered, World Tour and Space packs were removed on 2026-11-12 (in git history before that day).
+            if (Maps.All[0].Name != "Proto Box")
+                Fail($"the list's first map is {Maps.All[0].Name} (expected Proto Box: many tests use the first map)");
+            else if (Maps.Packs.Any(p => p.Folder is "Classic" or "CollisionPoint" or "HighGround" or "Legacy" or "Cluttered" or "World" or "Space"))
+                Fail("a removed pack folder (Classic, CollisionPoint, HighGround, Legacy, Cluttered, World, Space) is still there");
         }
         if (Maps.All.Any(m => m.Pack == null || !m.Pack.Maps.Contains(m)))
             Fail("a loaded map has no pack");
@@ -1130,7 +1117,7 @@ public static partial class SelfTest
                 Fail($"{name}: nav graph took {ms:0} ms to build (limit {MaxNavBuildMs} ms x machine factor {machine:0.00}; {detail})");
 
         // Walk to a far goal: one bot alone, told where to go.
-        foreach (var name in new[] { "ProtoBox", "Courtyard", "Rooftops", "Harbor", "Downtown", "Galleria" })
+        foreach (var name in new[] { "ProtoBox", "Blackmoor Asylum", "Building Yard", "Destruction Test" }) // Courtyard, Rooftops, Harbor, Downtown and Galleria went with the Legacy pack (2026-11-12)
         {
             if (Maps.Find(name) is not { } m)
                 continue;
@@ -1367,8 +1354,14 @@ public static partial class SelfTest
 
     private static void CheckMantle()
     {
-        // Courtyard: house at (-20,-20) 14x12, north wall at z=-26..-25.7 with a window centred at x=-23.5 (sill 1.0, top 2.3).
-        World.SetMap(Maps.Find("Courtyard")!);
+        // Courtyard's house (the Legacy map, removed on 2026-11-12, rebuilt here with the same Building op): house at
+        // (-20,-20) 14x12, north wall at z=-26..-25.7 with a window centred at x=-23.5 (sill 1.0, top 2.3).
+        World.SetMap(Validated(MapFile.Load("""
+            { "name": "Mantle Test", "halfX": 32, "halfZ": 32, "ops": [
+              { "op": "Ground", "color": [0.5, 0.48, 0.44] },
+              { "op": "Building", "cx": -20, "cz": -20, "w": 14, "d": 12, "stories": 2, "wall": [0.82, 0.78, 0.68], "floor": [0.42, 0.42, 0.44], "doors": "SE", "roofAccess": true },
+              { "op": "Spawn", "x": 0, "z": 0 } ] }
+            """, "Mantle Test")));
         var s = new MoveState { Position = new Vector3(-23.5f, 0, -26.6f), Grounded = true };
         var yaw = MathF.PI; // facing +Z
         var mantled = false;

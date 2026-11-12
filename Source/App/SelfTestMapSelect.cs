@@ -77,7 +77,7 @@ public static partial class SelfTest
             var trips = 0;
             foreach (var (what, pi, entry) in cases)
             {
-                var s = new Settings { MapName = "Proto Box", MapRandom = false, MapPack = "Legacy" };
+                var s = new Settings { MapName = "Proto Box", MapRandom = false, MapPack = Settings.DefaultMapPack };
                 MapSelect.Apply(s, list[pi], entry);
                 s.Save(tmp);
                 var back = Settings.Load(tmp);
@@ -94,15 +94,19 @@ public static partial class SelfTest
                 Fail($"True Random saved as '{trLine}' (expected map_pack=*all with map_random=1)");
             Line($"{trips} choices saved to settings.txt and loaded back to the same tile and entry; True Random is stored as {trLine}");
 
-            // Old settings files (from before the map select screen, or ones that name a pack that's gone).
+            // Old settings files (from before the map select screen, or ones that name a pack that's gone). The Classic,
+            // Collision Point and High Ground packs became Legacy, and Legacy, Cluttered, World Tour and Space were removed
+            // on 2026-11-12: all of them now open the default pack (Sandbox); Proto Box lives in Dev.
             (string Text, string Pack, int Entry)[] old =
             [
-                ("name=Old\nmap=Proto Box\nmap_random=1\nmap_pack=Legacy\n", "Legacy", 0),
-                ("map=Proto Box\nmap_random=0\nmap_pack=Legacy\n", "Legacy", -1),
-                ("map=Proto Box\nmap_random=1\n", "Legacy", 0), // before packs: no map_pack line
-                ("map=Proto Box\nmap_random=1\nmap_pack=Classic\n", "Legacy", 0), // before the Legacy pack: Classic, Collision Point and High Ground became Legacy
-                ("map=Proto Box\nmap_random=0\nmap_pack=collision point\n", "Legacy", -1),
-                ("map_random=1\nmap_pack=High Ground\n", "Legacy", 0),
+                ("name=Old\nmap=Proto Box\nmap_random=1\nmap_pack=Legacy\n", Settings.DefaultMapPack, 0),
+                ("map=Proto Box\nmap_random=0\nmap_pack=Legacy\n", "Dev", -1),
+                ("map=Proto Box\nmap_random=1\n", Settings.DefaultMapPack, 0), // before packs: no map_pack line
+                ("map=Proto Box\nmap_random=1\nmap_pack=Classic\n", Settings.DefaultMapPack, 0),
+                ("map=Proto Box\nmap_random=0\nmap_pack=collision point\n", "Dev", -1),
+                ("map_random=1\nmap_pack=High Ground\n", Settings.DefaultMapPack, 0),
+                ("map_random=1\nmap_pack=World Tour\n", Settings.DefaultMapPack, 0),
+                ("map_random=1\nmap_pack=space\n", Settings.DefaultMapPack, 0),
                 ("map_random=1\nmap_pack=Gone Pack\n", "", 0), // a pack whose folder was removed: first tile, setting kept
                 ("map_random=1\nmap_pack=*ALL\n", "True Random", 0),
             ];
@@ -119,8 +123,8 @@ public static partial class SelfTest
                     Fail($"old settings '{text.Replace("\n", "; ")}' opened at tile {at.Pack} entry {at.Entry} (expected {wantPack}, {wantEntry})");
                 if (text.Contains("Gone Pack") && s.MapPack != "Gone Pack")
                     Fail("a missing pack's name wasn't kept in the settings");
-                if ((text.Contains("Classic") || text.Contains("collision point") || text.Contains("High Ground")) && s.MapPack != "Legacy")
-                    Fail($"an old pack name wasn't moved to Legacy: map_pack={s.MapPack} from '{text.Replace("\n", "; ")}'");
+                if (!text.Contains("Gone Pack") && !text.Contains("*ALL") && text.Contains("map_pack=") && s.MapPack != Settings.DefaultMapPack)
+                    Fail($"a removed pack name wasn't moved to {Settings.DefaultMapPack}: map_pack={s.MapPack} from '{text.Replace("\n", "; ")}'");
                 if (s.PickMap(Maps.Packs, Maps.All, new Random(3)) == null)
                     Fail("an old settings file picked no map");
             }

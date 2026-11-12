@@ -389,7 +389,7 @@ public static partial class SelfTest
     private static void PhysicsCosts()
     {
         var results = new List<string>();
-        foreach (var map in new[] { FindMap("Farmland", m => m.MaxPlayers == Game.MaxPeople), Maps.All.FirstOrDefault(m => m.HasTerrain), Maps.Find(PhysicsTestMap) })
+        foreach (var map in new[] { FindMap("Blackmoor Asylum", m => m.MaxPlayers == Game.MaxPeople), Maps.All.FirstOrDefault(m => m.HasTerrain), Maps.Find(PhysicsTestMap) })
         {
             if (map == null)
                 continue;
@@ -466,7 +466,7 @@ public static partial class SelfTest
         World.PhysicsMode = PhysicsMode.Swept;
         try
         {
-            foreach (var map in new[] { Maps.Find("Courtyard"), Maps.Find(PhysicsTestMap), HighGroundMaps().FirstOrDefault(m => m.HasTerrain) }) // a former High Ground terrain map, now in Legacy
+            foreach (var map in new[] { Maps.Find("Proto Box"), Maps.Find(PhysicsTestMap), Maps.Find("Terrain Test") }) // a small arena, the movers, terrain (Courtyard and a High Ground map until the Legacy pack went, 2026-11-12)
             {
                 if (map == null)
                     continue;

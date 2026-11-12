@@ -246,10 +246,10 @@ public static partial class SelfTest
             else
                 Fail("no Physics Test map with movers for the mover surface check");
 
-            // Terrain: grass and rock on a High Ground map, snow on the alpine one.
-            TerrainSurfaces("Ridgeline", TerrainMaterial.Grass, FootSurface.Grass, steep: false);
-            TerrainSurfaces("Ridgeline", TerrainMaterial.Rock, FootSurface.Rock, steep: true);
-            TerrainSurfaces("Alpine Pass", TerrainMaterial.Sand, FootSurface.Snow, steep: false);
+            // Terrain: grass and rock on the Terrain Test (Ridgeline and Alpine Pass until the Legacy pack went, 2026-11-12).
+            TerrainSurfaces("Terrain Test", TerrainMaterial.Grass, FootSurface.Grass, steep: false);
+            TerrainSurfaces("Terrain Test", TerrainMaterial.Rock, FootSurface.Rock, steep: true);
+            TerrainSurfaces("Terrain Test", TerrainMaterial.Sand, FootSurface.Snow, steep: false);
         }
         finally
         {

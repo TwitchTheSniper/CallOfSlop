@@ -5,7 +5,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// "Planet gravity" self-test: gravity frames (GravityFrames.cs) and the Pocket Planet map (Maps/Space/02-Planet.json).
+/// "Planet gravity" self-test: gravity frames (GravityFrames.cs) and the Pocket Planet map (Maps/Dev/PocketPlanet.json).
 /// Ordinary maps must be untouched (identity frames); on a bare test planet a player walks all the way round a great
 /// circle and comes back with no turn, jumps land where they started, a grenade arcs down onto the ground, replays are
 /// exact, a ragdoll settles on the curve and the horizon hides people; on Pocket Planet the bots' graph covers the
@@ -272,7 +272,7 @@ public static partial class SelfTest
         var map = Maps.All.FirstOrDefault(m => m.Name == "Pocket Planet");
         if (map == null)
         {
-            Fail("planet gravity: Maps/Space/02-Planet.json (Pocket Planet) didn't load");
+            Fail("planet gravity: Maps/Dev/PocketPlanet.json (Pocket Planet) didn't load");
             return;
         }
         var g = map.PointGravity;

@@ -119,7 +119,7 @@ public static partial class SelfTest
             if (n == 0)
                 Fail($"Map bake: no baked map with {kind} (the round trip should cover every kind)");
 
-        var map = live.FirstOrDefault(m => m.Name == "Rooftops") ?? live[0];
+        var map = live.FirstOrDefault(m => m.Name == "Blackmoor Asylum") ?? live[0];
         var rel = map.SourceFile!;
         var cacheFile = Path.Combine(cache, MapBake.FileName(rel));
         var good = File.ReadAllBytes(cacheFile);

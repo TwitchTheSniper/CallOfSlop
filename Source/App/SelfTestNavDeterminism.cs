@@ -15,7 +15,7 @@ public static partial class SelfTest
     private static void CheckNavDeterminism()
     {
         var sw = Stopwatch.StartNew();
-        foreach (var name in new[] { "Rooftops", "Slopview Mall", "Building Yard", "Destruction Test" })
+        foreach (var name in new[] { "Blackmoor Asylum", "Ashgrave Cathedral", "Building Yard", "Destruction Test" })
         {
             if (Maps.Find(name) is not { } map)
             {
@@ -104,7 +104,7 @@ public static partial class SelfTest
     /// </summary>
     private static void CheckWalkerSplit()
     {
-        if (Maps.Find("Rooftops") is not { } map)
+        if (Maps.Find("Blackmoor Asylum") is not { } map)
             return;
         World.SetMap(map);
         var g = NavGraph.Current is { Nodes.Length: > 0 } c ? c : NavGraph.Build(map);

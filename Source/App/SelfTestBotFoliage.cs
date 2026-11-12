@@ -142,7 +142,7 @@ public static partial class SelfTest
 
     private static void BotFoliageCosts()
     {
-        foreach (var name in new[] { "Vuorikoski", "Sprawl", "Bocage" })
+        foreach (var name in new[] { "Foliage Test", "Proving Ground", "Terrain Test" }) // Vuorikoski, Sprawl and Bocage until their packs went (2026-11-12)
         {
             if (Maps.Find(name) is not { } m || m.FoliageInstances.Length == 0)
             {
@@ -436,7 +436,7 @@ public static partial class SelfTest
 
     private static void BotFoliageCpu()
     {
-        foreach (var name in new[] { "Sprawl", "Vuorikoski" })
+        foreach (var name in new[] { "Foliage Test", "Proving Ground" }) // Sprawl and Vuorikoski until their packs went (2026-11-12)
         {
             var map = Maps.Find(name);
             if (map == null || map.FoliageInstances.Length == 0)
