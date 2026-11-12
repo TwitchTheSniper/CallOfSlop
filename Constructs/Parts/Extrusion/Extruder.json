@@ -824,6 +824,52 @@
     },
     {
       "min": [
+        -0.36,
+        1.0,
+        0.57
+      ],
+      "max": [
+        0.36,
+        1.09,
+        0.756
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        1.09,
+        0.61
+      ],
+      "max": [
+        -0.22,
+        1.13,
+        0.69
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.22,
+        1.09,
+        0.61
+      ],
+      "max": [
+        0.3,
+        1.13,
+        0.69
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
         0.396,
         0.998,
         -0.2

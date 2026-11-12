@@ -380,10 +380,27 @@ public sealed class ControlParts : IPartGenerator
     private static (string, Part) LineConsole()
     {
         var p = new Part("Line Console", Small, "Controls", "Runs a production line: wire its output to each machine's Run. Start, stop and pick recipes on its screen.",
-            role: "logic", tool: "welder", color: Housing, group: "Logic");
+            role: "logic", tool: "welder", color: "#e0b020", group: "Logic");
         p.Add(Box([-0.45, 0, -0.25], [0.45, 1.0, 0.25])); // the desk
         p.Add(Box([-0.43, 0.99, -0.24], [0.43, 1.62, -0.1])); // the screen's housing, standing on the desk's back
-        p.Add(Box([-0.41, 1.0, 0.0], [0.41, 1.012, 0.21], Block, detail: true)); // the desk's work top
+        // The look (look.md, "Machine look"): a desk, not a block. A dark plinth and knee recess leave the body colour as two pedestals and a
+        // top rail; a steel work top with the buttons a hand finds (accent, and a red stop); a dark hood and cheeks round the screen.
+        PyDict? L(double[] mn, double[] mx, string c, string? f, PyDict? shape = null) => MachineLook.D(mn, mx, c, f, shape: shape);
+        MachineLook.Skirt(p, -0.45, 0.45, -0.25, 0.25, 0, 0.1, 0.012);
+        p.Add(L([-0.3, 0.1, 0.25], [0.3, 0.82, 0.264], MachineLook.Base, null)); // the knee recess
+        p.Add(L([-0.3, 0.1, 0.262], [0.3, 0.13, 0.36], MachineLook.Base, "tread plate")); // a foot rest
+        p.Add(L([-0.47, 0.985, -0.04], [0.47, 1.03, 0.3], MachineLook.Steel, "steel")); // the work top, overhanging the front
+        p.Add(L([-0.47, 0.94, 0.286], [0.47, 0.985, 0.3], MachineLook.Base, null)); // its front lip
+        for (var i = 0; i < 4; i++)
+            p.Add(L([-0.36 + i * 0.13, 1.03, 0.1], [-0.27 + i * 0.13, 1.05, 0.19], MachineLook.Accent, null)); // buttons
+        p.Add(L([0.24, 1.03, 0.08], [0.36, 1.07, 0.2], MachineLook.Stop, null, shape: D(("shape", "cylinder"), ("segments", 10), ("front", "+y")))); // the stop
+        p.Add(L([-0.47, 1.0, -0.26], [-0.43, 1.66, -0.04], MachineLook.Base, null)); // the screen's cheeks and hood
+        p.Add(L([0.43, 1.0, -0.26], [0.47, 1.66, -0.04], MachineLook.Base, null));
+        p.Add(L([-0.47, 1.62, -0.26], [0.47, 1.67, 0.0], MachineLook.Base, null));
+        p.Add(L([-0.43, 1.0, -0.262], [0.43, 1.62, -0.24], MachineLook.Base, null)); // its back
+        p.Add(L([0.22, 0.1, -0.275], [0.4, 0.98, -0.25], MachineLook.Base, null)); // a cable trunk down the back, clear of the socket
+        p.Add(L([-0.462, 0.2, -0.15], [-0.45, 0.8, 0.15], MachineLook.Base, null)); // side vents
+        p.Add(L([0.45, 0.2, -0.15], [0.462, 0.8, 0.15], MachineLook.Base, null));
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("back", [0, 0.75, -0.25], "-z");
         p.Stats(40, 120, 2, 3.0);
