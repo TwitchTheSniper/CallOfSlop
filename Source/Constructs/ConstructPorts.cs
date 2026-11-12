@@ -156,12 +156,28 @@ public static partial class ConstructParts
             var across = MathF.Max(0.1f, MathF.Min(d.BoundsMax.X - d.BoundsMin.X, 4f));
             list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = d.AsmOutAt with { Y = d.BoundsMin.Y + 0.1f }, Face = face, Opening = new Vector2(across, across), Implicit = true });
         }
+        // An Assembler takes parts by conveyor too (smart logistics: a chained order's inputs ride in, ConstructLogisticsPlan.cs): a Piece in
+        // opposite its Piece out, after it (so the out port's byte stays as it was). Chutes into it keep working.
+        if (d.IsAssembler && list.Any(x => x.Type == RouteType.Conveyor && x.Out && x.Implicit) && !list.Any(x => x.Type == RouteType.Conveyor && x.In))
+        {
+            var outDir = d.AsmOutDir.LengthSquared() > 0.01f ? Vector3.Normalize(d.AsmOutDir) : Vector3.UnitZ;
+            byte face = 5;
+            for (byte f = 0; f < 6; f++)
+                if (Vector3.Dot(ConstructParts.DirVector(f), -outDir) > 0.9f)
+                    face = f;
+            var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+            var axis = face / 2;
+            var want = mid with { Y = d.BoundsMin.Y + 0.1f };
+            want[axis] = face % 2 == 0 ? d.BoundsMax[axis] : d.BoundsMin[axis];
+            var across = MathF.Max(0.1f, MathF.Min(d.BoundsMax.X - d.BoundsMin.X, 4f));
+            list.Add(new NamedPort { Name = "Piece in", Type = RouteType.Conveyor, In = true, At = PortMounts.Seat(d, want, face), Face = face, Opening = new Vector2(across, across), Implicit = true });
+        }
         // A Piece Rack sends pieces on too (a Crafting Terminal fetches from it: ConstructCrafting.cs): a Piece out at its far end, facing on.
         // After its Piece in, so that port's byte stays as it was. A Crafting Terminal's tray has none: it is the end of the line.
         if (d.IsPieceRack && !d.IsCraftTerminal && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
             list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMin.Y + 0.05f, d.BoundsMax.Z), Face = 4, Opening = d.RackSection, Implicit = true });
         // A part with conveyor ports both ways passes pieces on: a splitter or a join (ConstructConveyor.cs, "Junctions").
-        d.IsConveyorJunction = !d.IsExtruder && !d.IsPress && !d.IsPieceRack && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
+        d.IsConveyorJunction = !d.IsExtruder && !d.IsPress && !d.IsPieceRack && !d.IsAssembler && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];
         foreach (var np in list)

@@ -437,6 +437,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      Router's choice and the stuck state on clients).
     // 265: (planned as 261) a sized die (Bracket, Housing, Plate) presses a bay's whole piece into one part; BayRefuse.Bounds rides the press's Blocked byte;
     //      new die parts (Bracket and Plate in every class) move part ids.
+    // 266: smart logistics phase 2 (feat/smart-logistics-2): every Assembler gains an implicit conveyor "Piece in" (a chained order's inputs ride in),
+    //      so a conveyor link may end on a port an older build doesn't have. Chained orders themselves are server only (the order's note says it).
     // 267: the Press rework's phase 3: PressStall gains Bay2Short, BayRefuse gains Pattern, Hopper and Kit (both ride the press's store bytes);
     //      a press has a Pattern setting (its recipe key); bay 2 is a kit hopper (the store's mixed input and kinds); new die parts move part ids.
     public const ushort ProtocolVersion = 267;

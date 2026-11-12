@@ -1,0 +1,14 @@
+# Smart logistics network: the user's decisions (2026-11-12). Final; do not reopen.
+
+The user: "At some point, we're going to need a more advanced logistics system than the conveyors. Something that can do smart routing, where you can connect a bunch of machines onto a network and items will go to their intended destination. Otherwise, they'll go to a storage bin. The intent is the user doesn't have to get bogged down in the minutia of running a factory, and it's handled mostly through machines, but they still get the satisfaction of seeing a bunch of stuff moving around and being processed."
+
+1. Form: smart junctions on conveyors. Today's conveyors and chutes stay. A Router junction reads where each piece is wanted and sends it the right way. No separate carrier network, carts or drones.
+2. Set-up: automatic, with overrides. Lay conveyors, drop Routers at the joins, link machines and storage: the network learns its own map and routes every piece to whoever ordered it, or to storage. Optional rules: this storage takes only steel, this line has priority, this machine gets fed first.
+3. What drives it: (a) Orders pull everything: a station, terminal or console asks for an end product; the network works backwards and orders every piece and raw input it lacks, down to ore. (b) Stock targets: storage can be told "keep 20 steel beams, 200 ingots"; below that, the network orders more by itself. Not chosen: pushing from the raw end; idle machines announcing themselves.
+4. Seeing it: junctions show their choice (a Router visibly turns or lights the branch, and shows the piece's destination when looked at); a network board (a wall display through the monitor system) draws the network as a map: lines, what moves where, storage fill, the stuck spot marked.
+5. No destination, or destination full: the piece goes to storage on the network with room.
+
+Coordinator's notes (proposed): a rider gains a destination (the order or reservation it serves); a Router picks the branch from a map computed when links change and cached, never a search per piece per tick; chained orders one level at a time, each reserving what it will consume (ConstructReserve); stock targets are standing orders owned by a store; overrides are configure-tool settings; a piece that cannot reach its destination goes to overflow storage and its order says why; with no storage the piece is held at its source (machine shows Blocked). Cost target: nothing per tick for a piece between junctions; a junction decides once per piece.
+
+It supersedes: "splitters route by kind or material" and "stock levels drive upstream machines".
+Open (answer in the design, as questions for the user where they are real choices): how far a network reaches (one construct, linked constructs, a base); whether chutes (loose material) route like conveyors; priorities between competing orders; what the Router looks like and how it shows its choice.

@@ -3,7 +3,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The window tool's <c>logi</c> verbs (docs/sandbox/constructs/production.md "Smart logistics"): what the network did, as <c>[logi]</c>
 /// lines, so a run is judged without pictures. On the body spawned by <c>--blueprint</c>. Either peer: <c>riders</c>, <c>why PART#n</c>,
-/// <c>net PART#n</c>. Host: <c>order NAME [N]</c> (at the first Crafting Terminal), <c>cut PART#n WAY</c> (the conveyor out of a Router's
+/// <c>net PART#n</c>, <c>chain</c> (chained orders' links and the Assemblers' queues). Host: <c>remove PART</c>, <c>cancel ID</c> (a terminal order), <c>order NAME [N]</c> (at the first Crafting Terminal), <c>cut PART#n WAY</c> (the conveyor out of a Router's
 /// way 1 to 3), <c>fill PART#n[|NAME]</c> (a Piece Rack filled with a part), <c>spawn N</c> (pieces put on every whole conveyor until
 /// N ride). A part is also found by its index on that body: <c>Piece Rack@286</c>.
 /// </summary>
@@ -155,6 +155,37 @@ public static partial class Program
                 }
                 WsSay($"[logi] spawn: {c.ConveyedCount} riding");
                 _wsSpawnLeft = _wsSpawnTries = 0;
+                return;
+            }
+            case "chain":
+                WsSay($"[logi] chain: {w.ChainCount} link(s)");
+                for (var i = 0; i < w.ChainCount; i++)
+                {
+                    ref readonly var e = ref w.Chains[i];
+                    WsSay($"[logi]   #{e.Id} {ConstructParts.Get(e.Kind)?.Name} {e.Made}/{e.Asked} for {(e.Dest < c.PartCount ? c.DefOf(e.Dest).Name : "?")}#{e.Dest} by {(e.Maker < c.PartCount ? $"{c.DefOf(e.Maker).Name}#{e.Maker}" : "nobody")} (root {e.Root} order {e.RootId}) {e.Reason}");
+                }
+                for (var i = 0; i < c.PartCount; i++)
+                    if (c.Parts[i].Orders is { Bill: false, Count: > 0 } oq && c.DefOf(i).IsAssembler)
+                        for (var k = 0; k < oq.Count; k++)
+                            WsSay($"[logi]   queue {c.DefOf(i).Name}#{i}: {ConstructParts.Get(oq.Items[k].Part)?.Name} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain}");
+                return;
+            case "remove" when g.IsServer: // a part off the body (a maker gone): "logi remove PART@n"
+            {
+                var (fc, part) = LogiFind(g, rest);
+                if (fc == null)
+                {
+                    WsFail($"logi remove: \"{rest}\"");
+                    return;
+                }
+                var name = fc.DefOf(part).Name;
+                w.RemovePart(fc, part);
+                WsSay($"[logi] removed {name}#{part}");
+                return;
+            }
+            case "cancel" when g.IsServer: // "logi cancel ID": a terminal order cancelled
+            {
+                var (tc, t) = WsFind(g, "Crafting Terminal");
+                WsSay($"[logi] cancel {rest}: {(tc == null ? "no terminal" : ConstructCrafting.Cancel(w, tc, t, ushort.TryParse(rest, out var cid) ? cid : (ushort)1) ?? "cancelled")}");
                 return;
             }
         }

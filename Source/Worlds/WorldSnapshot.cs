@@ -17,6 +17,7 @@ public struct BodySnap
     public CRider[]? Conveyed; // pieces riding its conveyors (ConstructConveyor.cs; written after the brief)
     public (ushort Part, OrderList List)[]? Orders; // its work-order queues and bills, copied (WorkOrders.cs; written after the conveyors)
     public (ushort Part, CraftList List)[]? Craft; // its Crafting Terminals' open orders, copied (ConstructCrafting.cs; written after the work orders)
+    public ChainEntry[]? Chains; // its chained orders' links, copied (ConstructLogisticsPlan.cs; written in the LOGI block)
     public (ushort Part, StationJob Job)[]? Station; // its Building Stations' jobs, copied (ConstructStation.cs; written after the crafting orders)
     public VehicleKit.VehicleBrief? Brief; // a generated faction vehicle's behaviour data (written after the tracks; the tick doesn't change a brief once it is on its construct)
 }

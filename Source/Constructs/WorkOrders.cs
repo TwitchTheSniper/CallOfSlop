@@ -12,6 +12,7 @@ public struct WorkOrder
     public ExtrusionKey Key; // a piece: Growing false; a wheel's L is 0
     public ushort Part; // a catalogue part's id (a file part's, never a run-time one), or ConstructParts.None for a piece
     public ushort Count, Made;
+    public ushort Chain; // server: the chained order's link it serves (ConstructLogisticsPlan; 0: the player's own); saved in the LOGI block, never sent
     public string? Name; // a formed panel or a lofted hull part by its name, which is its key (HullLoft.Panels.cs): a Panel Former's order; Key holds its material only
 
     public readonly bool IsPiece => Part == ConstructParts.None && Name == null;
