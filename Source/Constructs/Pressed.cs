@@ -27,6 +27,7 @@ public static class Pressed
     public static readonly int[] PressMaxCm = [45, 180, 720, 2880];
 
     private static readonly string[] ClassWords = ["Small", "Medium", "Large", "Capital"];
+    private static readonly byte[] DieSocketClass = [ConstructParts.Small, ConstructParts.Medium, ConstructParts.Large, ConstructParts.Capital]; // (a die's mount socket class, by press class)
     private static readonly float[] PressSpeed = [1, 2, 4, 8];
     public static readonly string[] ScaledFields = ["maxTorque", "motorStrength", "motorSpeed", "sideLoad", "maxLoad", "fuelCapacity", "hoseLength"];
 
@@ -572,7 +573,7 @@ public static class Pressed
     private static int List(PressTable t)
     {
         var names = RecyclingTable.Current;
-        Console.WriteLine($"[press] {t.Dies.Length} dies, {t.PresetByKey.Count} presets ({PressTable.Format}; the press still strokes its {t.Rows.Length} old rows)");
+        Console.WriteLine($"[press] {t.Dies.Length} dies, {t.PresetByKey.Count} presets ({PressTable.Format}; a press with one of these dies presses a whole blank, the other dies stroke the {t.Rows.Length} old rows)");
         foreach (var d in t.Dies)
         {
             var classes = Enumerable.Range(0, 4).Where(c => (c == 0 ? Pressed.MinCm : PressMaxCm[c - 1] + 1) <= d.AcrossMax && d.AcrossMin <= PressMaxCm[c]).Select(ClassWord);
@@ -594,8 +595,25 @@ public static class Pressed
                 continue;
             var found = ConstructParts.Find(key);
             var ok = ReferenceEquals(found, part);
+            var why = ok ? "" : $": resolves to {found?.Name ?? "nothing"}";
+            // Where it is made: the least press class whose bay takes the blank and that has this family's die; and the press must pick this
+            // part from the blank alone (PressDie.PatternFor), or the preset never comes out of a press.
+            var press = "";
+            if (ok && TryParse(key, out var d, out _, out var blank, out _) && d != null)
+            {
+                var cls = PressClass(Across(blank));
+                while (cls >= 0 && cls < PressMaxCm.Length && !ConstructParts.All.Any(x => x.IsPressDie && x.DieFamily.Equals(d.Family, StringComparison.OrdinalIgnoreCase) && ConstructPress.DieClassOf(x) == DieSocketClass[cls]))
+                    cls++;
+                if (cls < 0 || cls >= PressMaxCm.Length)
+                    why = $": no press with a {d.Family} Die takes a blank {Across(blank) / 100f:0.00} m across";
+                else if (d.PatternFor(blank, out var picked) == null || !ReferenceEquals(picked, part))
+                    why = $": a press makes {picked?.Name ?? "a sized part"} of this blank";
+                else
+                    press = $" (a {ClassWord(cls)} Press)";
+                ok = why.Length == 0;
+            }
             bad += ok ? 0 : 1;
-            Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{(ok ? "" : $": resolves to {found?.Name ?? "nothing"}")}");
+            Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{press}{why}");
         }
         Console.WriteLine($"[press] presets: {bad} problems");
         return bad;
