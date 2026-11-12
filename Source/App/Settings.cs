@@ -151,19 +151,20 @@ public sealed class Settings
     public bool MapRandom = true; // default: a random map each time you start
     public string MapPack = DefaultMapPack; // the map pack "random" picks from (and the lobby lists); "*all" = True Random (MapPack.TrueRandomKey)
 
-    /// <summary>The pack a fresh settings file picks random maps from: Legacy (the shipped maps, Proto Box first).</summary>
-    public const string DefaultMapPack = "Legacy";
+    /// <summary>The pack a fresh settings file picks random maps from: Sandbox (the game; the Legacy pack, Proto Box's old home, was removed on 2026-11-12).</summary>
+    public const string DefaultMapPack = "Sandbox";
 
     /// <summary>
-    /// Packs that were folded into the Legacy pack: a settings.txt from before that still names one of them. Mapped to
-    /// Legacy on load (<see cref="MigrateMapPack"/>) unless a pack of that name is back (someone's own folder).
+    /// Packs that are gone: the Classic, Collision Point and High Ground packs (folded into Legacy), and Legacy, Cluttered,
+    /// World Tour and Space (removed on 2026-11-12). A settings.txt that still names one gets <see cref="DefaultMapPack"/>
+    /// on load (<see cref="MigrateMapPack"/>) unless a pack of that name is back (someone's own folder).
     /// </summary>
-    private static readonly string[] LegacyPackNames = ["Classic", "Collision Point", "High Ground"];
+    private static readonly string[] RemovedPackNames = ["Classic", "Collision Point", "High Ground", "Legacy", "Cluttered", "World Tour", "Space"];
 
-    /// <summary>The map_pack value to use for a saved one: an old pack name becomes Legacy, anything else is kept as it is.</summary>
+    /// <summary>The map_pack value to use for a saved one: a removed pack's name becomes the default, anything else is kept as it is.</summary>
     public static string MigrateMapPack(string saved, IReadOnlyList<MapPack> packs)
     {
-        if (!LegacyPackNames.Any(n => n.Equals(saved.Trim(), StringComparison.OrdinalIgnoreCase)))
+        if (!RemovedPackNames.Any(n => n.Equals(saved.Trim(), StringComparison.OrdinalIgnoreCase)))
             return saved;
         if (packs.Any(p => p.Name.Equals(saved.Trim(), StringComparison.OrdinalIgnoreCase)))
             return saved; // a pack of that name exists again: keep the choice
@@ -503,9 +504,9 @@ public sealed class Settings
                     case "map" when Maps.Find(v) != null: s.MapName = v; break;
                     case "map_random": s.MapRandom = v == "1"; break;
                     case "map_pack" when v.Length > 0: // kept even if the pack is missing now (it may come back)
-                        s.MapPack = MigrateMapPack(v, Maps.Packs); // the old Classic, Collision Point and High Ground packs became Legacy
+                        s.MapPack = MigrateMapPack(v, Maps.Packs); // a removed pack (Legacy, Cluttered, World Tour, Space and older) falls back to the default
                         if (s.MapPack != v)
-                            Console.WriteLine($"[settings] map pack '{v}' is now part of {s.MapPack}");
+                            Console.WriteLine($"[settings] map pack '{v}' was removed: using {s.MapPack}");
                         break;
                     case "advertise" when v == "1": s.ShareOnLists = true; break; // the old opt-in (before share_on_lists)
                     case "share_on_lists": s.ShareOnLists = v != "0"; break;

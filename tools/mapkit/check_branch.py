@@ -37,7 +37,6 @@ EXTRA_SECTIONS = [
     (r"^Props/Volatile/", ["Volatile props"]),
     (r"^Models/|^Maps/[^/]+/Models/", ["Pack assets"]),
     (r"^Maps/[^/]+/Skies/|^Maps/[^/]+/[^/]+\.png$", ["Skies"]),
-    (r"^Maps/Cluttered/", ["Cluttered pack"]),
     (r"^Maps/Sandbox/", ["Map packs", "Constructs", "Sandbox parts menu", "Mode modules", "Map bake"]),
 ]
 

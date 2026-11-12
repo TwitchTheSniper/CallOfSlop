@@ -6,8 +6,8 @@ namespace CallOfSlop;
 /// The "Slopes" self-test section: the terrain slope rules (<see cref="SlopeRules"/>) in both movers. Walk-up speed against
 /// slope angle (walk and sprint), no airborne ticks over crests and down 30 degree slopes, no stopping or sliding on noisy but
 /// walkable slopes, steep slopes still slide and cliffs still block, slides are capped and steerable, terrain lips are
-/// stepped over (taller banks need a mantle), determinism (replays are identical), a scripted walker along the bots' routes
-/// from both team spawns to every hill and the enemy flag on each High Ground map, and a bot match on each of them.
+/// stepped over (taller banks need a mantle), and determinism (replays are identical). (The routes and bot matches on
+/// the High Ground maps went with the Legacy pack, 2026-11-12.)
 /// </summary>
 public static partial class SelfTest
 {
@@ -25,8 +25,6 @@ public static partial class SelfTest
             SlopeSteep();
             SlopeLips();
             SlopeDeterminism();
-            SlopeRoutes();
-            SlopeBotMatches();
         }
         finally
         {
@@ -457,140 +455,5 @@ public static partial class SelfTest
         r.Time = ticks / (float)World.TickRate;
         r.End = s.Position;
         return r;
-    }
-
-    /// <summary>The team's spawn nearest the middle of its spawn cluster.</summary>
-    private static Vector3 SlopeTeamStart(List<Vector3> spawns)
-    {
-        var c = Vector3.Zero;
-        foreach (var p in spawns)
-            c += p;
-        c /= spawns.Count;
-        return spawns.MinBy(p => SlopeFlat(p - c));
-    }
-
-    private static List<Map> SlopeHighGroundMaps() => HighGroundMaps(); // the former High Ground pack, now in Legacy (SelfTestHighGround.cs)
-
-    private static void SlopeRoutes()
-    {
-        var search = new NavSearch();
-        var runs = new (IMover Mover, bool Sprint)[] { (ClassicMover.Instance, false), (ClassicMover.Instance, true), (SweptMover.Instance, true) };
-        foreach (var m in SlopeHighGroundMaps())
-        {
-            World.SetMap(m);
-            for (var wait = 0; wait < 4000 && NavGraph.Current == NavGraph.Empty; wait++)
-                NavGraph.Pump(50);
-            var nav = NavGraph.Current;
-            var o = m.Objectives;
-            var goals = new List<(string Name, Vector3 At)>();
-            for (var i = 0; i < o.Hills.Count; i++)
-                goals.Add(($"hill {i + 1}", o.Hills[i].Center));
-            var parts = new List<string>();
-            int total = 0, reached = 0;
-            foreach (var (mover, sprint) in runs)
-            {
-                World.Mover = mover;
-                var times = new List<string>();
-                for (var team = 0; team < 2; team++)
-                {
-                    var from = SlopeTeamStart(o.TeamSpawns[team]);
-                    foreach (var (name, at) in goals.Append(("enemy flag", o.Flags[1 - team])))
-                    {
-                        var r = SlopeFollow(nav, search, from, at, sprint);
-                        total++;
-                        var who = $"{(team == 0 ? "Blue" : "Red")} to {name}";
-                        if (r.Length < 0)
-                        {
-                            Fail($"{m.Name}: no route for {who}");
-                            continue;
-                        }
-                        if (r.Reached)
-                            reached++;
-                        times.Add(FormattableString.Invariant($"{(team == 0 ? "B" : "R")}>{name.Replace("hill ", "h").Replace("enemy flag", "flag")} {r.Length:0}m/{(r.Reached ? $"{r.Time:0.0}s" : $"STUCK@{r.End.X:0},{r.End.Y:0},{r.End.Z:0}")}{(r.Stalls > 0 ? $" {r.Stalls}st" : "")}{(r.Airborne > 30 ? $" {r.Airborne}air" : "")}"));
-                        if (!r.Reached)
-                            Fail($"{m.Name}: {mover.Mode} {(sprint ? "sprinting" : "walking")} {who} ({r.Length:0} m) didn't get there in {r.Limit:0} s: stopped at ({r.End.X:0.0}, {r.End.Y:0.0}, {r.End.Z:0.0}), {r.Stalls} stalled seconds");
-                    }
-                }
-                parts.Add($"  {mover.Mode,-7} {(sprint ? "sprint" : "walk  ")}: {string.Join("  ", times)}");
-            }
-            SlopeNote("routes", $"{m.Name}: scripted walks along the bots' routes, {reached}/{total} arrived");
-            foreach (var p in parts)
-                SlopeNote("routes", p);
-        }
-        World.Mover = ClassicMover.Instance;
-    }
-
-    // ---- High Ground bot matches ------------------------------------------------------------------------
-
-    private static void SlopeBotMatches()
-    {
-        World.Mover = ClassicMover.Instance;
-        foreach (var m in SlopeHighGroundMaps())
-        {
-            using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
-                bots: Game.ClassicPlayers - 1, botSkill: BotDifficulty.Normal, mapId: m.Id);
-            game.MapVoteEnabled = false;
-            var t = m.TerrainCollision!;
-            const double dt = 1.0 / World.TickRate;
-            var now = 0.0;
-            var travel = new Dictionary<byte, float>();
-            var last = new Dictionary<byte, Vector3>();
-            var unstick = new Dictionary<byte, int>();
-            var prevStuck = new Dictionary<byte, int>();
-            var cells = new HashSet<(int, int)>();
-            int slideTicks = 0, slopeSlow = 0, botSeconds = 0, bunched = 0, samples = 0;
-            for (var i = 0; i < 60 * World.TickRate; i++)
-            {
-                now += dt;
-                game.Update(now, dt);
-                foreach (var p in game.Players.Values)
-                {
-                    if (p.Bot is not { } brain || !p.Alive)
-                        continue;
-                    var st = brain.StuckCount;
-                    if (st > prevStuck.GetValueOrDefault(p.Id))
-                        unstick[p.Id] = unstick.GetValueOrDefault(p.Id) + 1;
-                    prevStuck[p.Id] = st;
-                    var gap = p.Position.Y - t.HeightAt(p.Position.X, p.Position.Z);
-                    if (!p.Sim.Grounded && p.Sim.MantleTicks == 0 && gap < 0.3f && !SlopeRules.Walkable(t, p.Position.X, p.Position.Z))
-                        slideTicks++;
-                }
-                if (i % 60 != 0)
-                    continue;
-                var alive = game.Players.Values.Where(p => p.Bot != null && p.Alive).ToList();
-                foreach (var p in alive)
-                {
-                    var moved = 0f;
-                    if (last.TryGetValue(p.Id, out var lp))
-                    {
-                        moved = Vector3.Distance(lp, p.Position);
-                        travel[p.Id] = travel.GetValueOrDefault(p.Id) + moved;
-                        botSeconds++;
-                        // A second on a slope (over 20 degrees) covering under 1 m.
-                        if (moved < 1f && t.NormalAt(p.Position.X, p.Position.Z).Y < 0.94f && p.Position.Y - t.HeightAt(p.Position.X, p.Position.Z) < 0.3f)
-                            slopeSlow++;
-                    }
-                    last[p.Id] = p.Position;
-                    cells.Add(((int)MathF.Floor(p.Position.X / 6f), (int)MathF.Floor(p.Position.Z / 6f)));
-                }
-                // Bunching: pairs of bots within 2.5 m of each other.
-                for (var a = 0; a < alive.Count; a++)
-                    for (var b = a + 1; b < alive.Count; b++)
-                        if (SlopeFlat(alive[a].Position - alive[b].Position) < 2.5f)
-                            bunched++;
-                samples++;
-            }
-            var lowTravel = travel.Count(kv => kv.Value < 15f);
-            var stuck = travel.Count(kv => kv.Value < 15f && unstick.GetValueOrDefault(kv.Key) >= 3);
-            var cover = cells.Count * 36f / (4 * m.HalfX * m.HalfZ) * 100f;
-            var stalls = game.Players.Values.Where(p => p.Bot != null).Sum(p => p.Bot!.SlopeStalls);
-            var kills = game.Players.Values.Sum(p => (int)p.Kills);
-            SlopeNote("bots", $"{m.Name,-12} bots 60 s: kills {kills}, avg travel {(travel.Count > 0 ? travel.Values.Average() : 0):0} m, stuck {stuck} (under 15 m: {lowTravel}), "
-                 + $"unstick tries {unstick.Values.Sum()}, slope re-plans {stalls}, sliding {slideTicks} bot-ticks, slow on slopes {slopeSlow}/{botSeconds} bot-seconds, "
-                 + $"map covered {cover:0}% (6 m cells), bunched pairs {bunched / (float)Math.Max(1, samples):0.00} per second");
-            if (stuck > 0)
-                Fail($"{m.Name}: {stuck} bot(s) stuck (under 15 m in 60 s and still trying to move)");
-        }
-        World.SetMap(Maps.All[0]);
     }
 }

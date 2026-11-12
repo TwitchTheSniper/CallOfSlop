@@ -13,26 +13,15 @@ public static partial class SelfTest
     /// <summary>Every shipped map's fingerprint on origin/main before pack-local assets (commit 431f4e0); maps whose stairs were rebuilt
     /// for 2.1 m headroom (fix/stair-headroom) carry their new Windows values, and the generated galleries (tools/props/gallery.py) the
     /// values from their last regeneration (the same on Linux and Windows: they place props at yaw 0). The maps with the walk-in
-    /// "Building" op were re-pinned on 2026-10-28 (fix/building-clipping: its floor slabs moved inside the walls).</summary>
+    /// "Building" op were re-pinned on 2026-10-28 (fix/building-clipping: its floor slabs moved inside the walls). The Legacy, Cluttered and World Tour pins went with those
+    /// packs on 2026-11-12; Proto Box keeps its pin in Maps/Dev.</summary>
     private static readonly (string File, uint Hash)[] PrePackAssetFingerprints =
     [
-        ("Legacy/01-ProtoBox.json", 0xa83dd7a5u), ("Legacy/02-Courtyard.json", 0xe3534311u), ("Legacy/03-Crossroads.json", 0x32d2876fu),
-        ("Legacy/04-Warehouse9.json", 0x51eb6525u), ("Legacy/05-LongShot.json", 0x5dc41fa0u), ("Legacy/06-Ziggurat.json", 0xd8b982f8u),
-        ("Legacy/07-Scrapyard.json", 0x607cf9a5u), ("Legacy/08-Rooftops.json", 0xc4389c57u), ("Legacy/09-Harbor.json", 0xc9c70729u),
-        ("Legacy/10-MarketStreet.json", 0x56bbf266u), ("Legacy/11-Quarry.json", 0xf2fbda89u), ("Legacy/12-Trenches.json", 0x58540d3bu) /* 2026-10-27: Waypoint ops out of the bunkers (bots had no way out; the look is unchanged) */,
-        ("Legacy/13-TrainYard.json", 0xd94dde9du), ("Legacy/14-OfficePark.json", 0xffd0db70u), ("Legacy/15-Ruins.json", 0xe93ec317u),
-        ("Legacy/16-Overpass.json", 0x34febd6au), ("Legacy/17-Farmland.json", 0x489200ccu), ("Legacy/18-Downtown.json", 0x399f96adu),
-        ("Legacy/19-Canyon.json", 0x3f65dd1au), ("Legacy/20-Airfield.json", 0xf8af7f9fu), ("Legacy/21-Village.json", 0xbbc0b471u),
-        ("Legacy/22-Industrial.json", 0x513f58bau), ("Legacy/23-Highlands.json", 0xe932e450u), ("Legacy/24-MilitaryBase.json", 0xb5deb887u),
-        ("Legacy/25-Blueprint.json", 0xde9e3279u), ("Legacy/26-Galleria.json", 0x429afd78u), ("Legacy/27-Floodgate.json", 0x4a22d535u),
-        ("Legacy/28-Trefoil.json", 0x22112141u), ("Legacy/29-Citadel.json", 0x1da8b2d5u), ("Legacy/30-Confluence.json", 0x01cc3073u),
-        ("Legacy/31-GravelPit.json", 0xa3ab6208u), ("Legacy/32-Hillfort.json", 0x4a3d71dbu), ("Legacy/33-Riverbend.json", 0x64c3d8beu),
-        ("Legacy/34-AdobeMesa.json", 0x3324c3e6u), ("Legacy/35-Ridgeline.json", 0x0f65a32fu), ("Legacy/36-AlpinePass.json", 0x8339571du),
-        ("Cluttered/01-Carousel.json", 0xc3e7b82au), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0xdc2d26dfu),
-        ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ea98f95u), ("Dev/PhysicsTest.json", 0x476984bcu),
-        ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0xabe63286u), ("Dev/PropGallery2.json", 0x6896b595u),
-        ("Dev/PropGallery3.json", 0xc429b7afu), ("Dev/AnimatedProps.json", 0x897cafb4u) /* 2026-11-02: the anemometer hub and barber pole fixes (PR #2) */, ("Dev/MeshTest.json", 0xb7a01a63u),
-        ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x1ba9e8d4u), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
+        ("Dev/ProtoBox.json", 0xa83dd7a5u), ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ea98f95u),
+        ("Dev/PhysicsTest.json", 0x476984bcu), ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0xabe63286u),
+        ("Dev/PropGallery2.json", 0x6896b595u), ("Dev/PropGallery3.json", 0xc429b7afu), ("Dev/AnimatedProps.json", 0x897cafb4u) /* 2026-11-02: the anemometer hub and barber pole fixes (PR #2) */,
+        ("Dev/MeshTest.json", 0xb7a01a63u), ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x1ba9e8d4u),
+        ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 
     private static void CheckPackAssets()
@@ -127,15 +116,15 @@ public static partial class SelfTest
         {
             try
             {
-                MapFile.Load(PackTestMap("Leak Test", op), "Legacy/LeakTest.json");
-                Fail($"a Legacy map could use {what} from the Dev pack");
+                MapFile.Load(PackTestMap("Leak Test", op), "Sandbox/LeakTest.json");
+                Fail($"a Sandbox map could use {what} from the Dev pack");
             }
             catch (MapFileException)
             {
             }
         }
         Line($"Dev pack example: {pack.Count} pack + {global.Count} global Apple Crates, {clutter.Count} pack clutter props, {beacons} pack models, "
-             + $"fingerprint {map.ContentHash:x8} (pack assets {map.PackAssetHash:x8}); Legacy maps can't see them");
+             + $"fingerprint {map.ContentHash:x8} (pack assets {map.PackAssetHash:x8}); Sandbox maps can't see them");
     }
 
     /// <summary>A loaded map validated like the map list does (spawns and waypoints snapped and fixed), so fingerprints compare.</summary>
@@ -290,7 +279,7 @@ public static partial class SelfTest
         var next = Try("Skies/sample.hdr", "Dev/SkyTest.json");
         var nested = Try("Skies/sample.hdr", "Dev/deeper/Nested.json"); // a map in a subfolder of its pack: the pack folder next
         var forced = Try("global:Skies/sample.hdr", "Dev/SkyTest.json"); // the Maps folder only: there's no Maps/Skies
-        var other = Try("Skies/sample.hdr", "Legacy/X.json");
+        var other = Try("Skies/sample.hdr", "Sandbox/X.json");
         if (next != "Dev/Skies/sample.hdr" || nested != "Dev/Skies/sample.hdr" || forced != "not found" || other != "not found")
             Fail($"sky images: next to the map {next}, nested map {nested}, global: {forced}, other pack {other}");
         else
@@ -300,7 +289,7 @@ public static partial class SelfTest
     private static void CheckPackAssetCost()
     {
         var dev = Path.Combine(Maps.Folder, "Dev");
-        var classic = Path.Combine(Maps.Folder, "Legacy");
+        var classic = Path.Combine(Maps.Folder, "Sandbox"); // a pack without a Props folder (Legacy until 2026-11-12)
         Props.ForgetPack(dev);
         Props.ForgetPack(classic);
         var sw = Stopwatch.StartNew();
@@ -319,7 +308,7 @@ public static partial class SelfTest
         Line($"cost: Dev pack props {scope.Local.Length} loaded in {cold:0.0} ms (cold), a pack without a Props folder {noFolder:0.00} ms, cached lookup {cachedUs:0.00} us; "
              + $"Pack Assets map loads in {loadMs:0.0} ms; {Props.LoadedPacks.Length} pack(s) with their own props loaded");
         if (!none.IsGlobalScope || scope.IsGlobalScope)
-            Fail("Legacy should use the global props, Dev its own scope");
+            Fail("Sandbox should use the global props, Dev its own scope");
         if (cold > 250 || noFolder > 20 || cachedUs > 20)
             Fail($"pack asset lookups too slow: cold {cold:0.0} ms (budget 250), no folder {noFolder:0.00} ms (20), cached {cachedUs:0.00} us (20)");
         if (map.ContentHash != Maps.Find("Pack Assets")?.ContentHash)
