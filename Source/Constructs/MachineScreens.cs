@@ -114,7 +114,7 @@ public static class MachineScreens
         else
             switch (state)
             {
-                case AsmState.NoRecipe: Say(card, PanelState.Wants, "No recipe set"); card.Add(2, "Press Recipe below"); line = 3; break; // (why it sits idle, plainly: the Recipe button opens the picker)
+                case AsmState.NoRecipe: Say(card, PanelState.Wants, "No recipe set"); break; // (why it sits idle, plainly; line 1 says how to set one)
                 case AsmState.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case AsmState.TierLow: card.State = PanelState.Refused; card.Add(0, "Needs tier ").Add(0, r!.MinTier); break;
                 case AsmState.Untaught: card.State = PanelState.Refused; card.Add(0, "Not taught"); card.Add(2, "A faction teaches it (F2)"); line = 3; break;
@@ -139,6 +139,8 @@ public static class MachineScreens
             }
         if (r != null)
             card.Add(1, r.Name);
+        else if (ConstructConfig.Get(p, d, CfgKey.Recipe, 0) < 0.5f)
+            card.Add(1, state == AsmState.NoRecipe && !st.Held ? "Press Recipe below" : "No recipe set"); // (held off or not, an unset recipe is said)
         if (d.IsPanelFormer)
         {
             // A Panel Former works orders only: its stock, the preset its Queue button orders, then the queue (or how to give it one).
