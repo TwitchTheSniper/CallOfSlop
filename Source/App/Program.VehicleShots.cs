@@ -55,6 +55,13 @@ public static unsafe partial class Program
                 ("rear", mid + new Vector3(-size * 0.8f, 2f, size * 0.8f), mid, 0.8f),
                 ("top", mid + new Vector3(0.01f, size * 1.3f, 0), mid, 0.8f),
             };
+            foreach (var from in args.Where(a => a.StartsWith("--from=", StringComparison.OrdinalIgnoreCase))) // (--from=NAME:dx,dy,dz[:lx,ly,lz]: one more view, from the middle plus this, looking at the middle plus that)
+            {
+                var bits = from[7..].Split(':');
+                Vector3 Vec(string s) => s.Split(',').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray() is { Length: 3 } f ? new Vector3(f[0], f[1], f[2]) : Vector3.Zero;
+                if (bits.Length >= 2)
+                    views.Add((bits[0], mid + Vec(bits[1]), mid + (bits.Length > 2 ? Vec(bits[2]) : Vector3.Zero), 0.8f));
+            }
             if (rooms.Length > 0)
             {
                 var inside = c.ToWorld(rooms[0].Middle + rooms[0].FloorRest + new Vector3(0, 1.5f, -1));

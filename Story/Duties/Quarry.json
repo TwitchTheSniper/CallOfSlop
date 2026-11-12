@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-duty/1",
- "about": "The first Ministry duty (docs/story/DUTIES.md, Game/GameQuarry.cs): the warden's induction ends at the Ministry Quarry's mine wall (Karl, 2026-11-11), and this duty follows on there with the works: someone already at the quarry starts at the second step, anyone else is sent by crew bus, where the machines are taught on the job (Karl, 2026-11-10: the induction is about the person; machines come in stages, working for the Ministry). Each step's cue is judged on the host. Cues: reach (stand within amount m of the spot), ride (board the crew bus at the spot's stop and ride it to the other: spot colony or quarry), power (lay a power cable at the quarry's machines), feed (tip what you carry into the quarry's Materials Bin), recipe (set the quarry Assembler's recipe), bunk (lie in a Bunk), wait (seconds). Spots: stop (the colony's bus stop), quarry (the quarry's bus stop), genset, bin, assembler (the quarry's). Text is ASCII; {Action} is the player's own key. The bus is a STAND-IN (Source/StandIns) until the vehicle redo.",
+ "about": "The first Ministry duty (docs/story/DUTIES.md, Game/GameQuarry.cs): the warden's induction ends at the Ministry Quarry's mine wall (Karl, 2026-11-11), and this duty follows on there with the works: someone already at the quarry starts at the second step, anyone else is sent by crew bus, where the machines are taught on the job (Karl, 2026-11-10: the induction is about the person; machines come in stages, working for the Ministry). Each step's cue is judged on the host. Cues: reach (stand within amount m of the spot), ride (board the crew bus at the spot's stop and ride it to the other: spot colony or quarry), power (lay a power cable at the quarry's machines), feed (tip what you carry into the quarry's Materials Bin), carry (they carry some of the step's \"material\": the metal out of the works), bunk (lie in a Bunk), wait (seconds). Spots: stop (the colony's bus stop), quarry (the quarry's bus stop), genset, bin, smelter, out (the bin the Smelter fills), wall (the quarry's). Text is ASCII; {Action} is the player's own key. The bus is a STAND-IN (Source/StandIns) until the vehicle redo. A step's \"give\" and \"giveUnits\" hand a material over as it starts (the ore). Karl, 2026-11-12: the first machine is a Smelter, not the Assembler.",
  "speaker": "Foreman Grubb",
  "memo": "Inmate {name}: you are assigned to the Ministry Quarry. Report to the bus stop outside the colony gate. The crew bus will collect you.",
  "report": {
@@ -22,27 +22,30 @@
    "cue": "power",
    "spot": "genset",
    "title": "Power the works",
-   "text": "Linking tool ({Streak2}): {Fire} on the genset's power port, then {Fire} on the Assembler's.",
-   "say": "Now the works. First job: they're dead. Run a cable from the genset to the Assembler.",
-   "hint": "Aim the linking tool at the genset (the orange marker) until it names its power port, press {Fire}, then do the same on the Assembler. {Aim} takes the last node off."
+   "text": "Linking tool ({Streak2}): {Fire} on the genset's power port, then {Fire} on the Smelter's.",
+   "say": "Now the works. The Smelter's cold: no cable. Run one from the genset.",
+   "hint": "Aim the linking tool at the genset (the orange marker) until it names its power port, press {Fire}, then do the same on the Smelter. {Aim} takes the last node off."
   },
   {
    "id": "feed",
    "cue": "feed",
    "spot": "bin",
-   "title": "Your quota",
-   "text": "Dig with the ground drill (hold {Fire}), then {Interact} on the Materials Bin.",
-   "say": "Quota time. Dig, then tip it in the bin. The bin feeds the Assembler, the Assembler feeds the Ministry.",
-   "hint": "Ground drill out, hold {Fire} on the ground for a few seconds, then {Interact} on the Materials Bin (the orange marker)."
+   "title": "Feed the Smelter",
+   "text": "{Interact} on the Materials Bin tips in the ore you carry.",
+   "say": "That's what came off your face this morning. In the bin with it. The bin feeds the Smelter, the Smelter feeds the Ministry.",
+   "hint": "Walk to the Materials Bin with the chute (the orange marker), aim at it and press {Interact}. Tipping straight into the Smelter works too.",
+   "give": "iron ore",
+   "giveUnits": 20
   },
   {
-   "id": "recipe",
-   "cue": "recipe",
-   "spot": "assembler",
-   "title": "The Assembler",
-   "text": "Configure tool: {Fire} on the Assembler and pick a recipe.",
-   "say": "Pick something to make. Most of it wants steel, and steel is the smelter's job. That's another duty, another day.",
-   "hint": "Configure tool out, aim at the Assembler (the orange marker) and press {Fire}, then pick any recipe."
+   "id": "metal",
+   "cue": "carry",
+   "material": "metal",
+   "spot": "out",
+   "title": "Take the metal",
+   "text": "{Interact} on the far bin takes the metal out.",
+   "say": "Hear her roar. Ore in, metal out, and none of it yours. Fetch it from the far bin.",
+   "hint": "The Smelter needs its power cable and a few seconds. The metal comes down the chute into the second bin (the orange marker): aim at it and press {Interact}."
   },
   {
    "id": "home",

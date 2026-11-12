@@ -6,7 +6,7 @@ index of the construct guide, its building system. The guide is split by system 
 a few dozen KB. Read this index, then open only the one file that covers your task; never read all of them. The
 milestone-1 record and how to play are in [overview-and-playing](constructs/overview-and-playing.md).
 
-## [How a build should look](constructs/look.md), 12 KB
+## [How a build should look](constructs/look.md), 15 KB
 
 **Every agent that authors a blueprint, a generator or a building reads this first.** Valid is not finished: paint by
 section, finishes, lamps, detail, the authoring fields, a detail budget, and the `--look-report` baseline.

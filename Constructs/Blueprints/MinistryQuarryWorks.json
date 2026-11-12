@@ -1,13 +1,13 @@
 {
  "format": "call-of-slop-construct-blueprint/1",
  "name": "Ministry Quarry Works",
- "description": "The Ministry Quarry's works (docs/story/DUTIES.md): an Assembler on a 4 m slab, fed by a Materials Bin and a Parts Shelf, filling a Chest, with a Small Genset on a Fuel Tank waiting for its cable; behind them the Mine Face, which the induction has the inmate shore up with a pit prop and a lamp.",
+ "description": "The Ministry Quarry's works (docs/story/DUTIES.md): a Smelter on a 4 m slab, fed from a Materials Bin and filling a second, with a Small Genset on a Fuel Tank waiting for its cable; behind them the Mine Face, which the induction has the inmate shore up with a pit prop and a lamp. The Starter Smelter's machines.",
  "steps": [
   {
    "part": "Concrete Foundation 4x4 m"
   },
   {
-   "part": "Assembler",
+   "part": "Smelter",
    "on": 0,
    "socket": "t7_7",
    "by": "bottom"
@@ -25,13 +25,7 @@
    "by": "bottom"
   },
   {
-   "part": "Parts Shelf",
-   "on": 2,
-   "socket": "t7_7",
-   "by": "bottom"
-  },
-  {
-   "part": "Chest",
+   "part": "Materials Bin",
    "on": 2,
    "socket": "t7_15",
    "by": "bottom"
@@ -44,7 +38,7 @@
   },
   {
    "part": "Fuel Tank",
-   "on": 6,
+   "on": 5,
    "socket": "-z",
    "by": "+z"
   },
@@ -62,7 +56,7 @@
   },
   {
    "part": "Mine Face",
-   "on": 8,
+   "on": 7,
    "socket": "t15_15",
    "by": "bottom"
   }
@@ -76,14 +70,8 @@
   },
   {
    "type": "chute",
-   "from": 4,
-   "to": 1,
-   "toPort": "Chute in"
-  },
-  {
-   "type": "chute",
    "from": 1,
-   "to": 5,
+   "to": 4,
    "fromPort": "Chute out"
   }
  ]

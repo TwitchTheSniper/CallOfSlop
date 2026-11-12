@@ -605,6 +605,7 @@ public static partial class ConstructRender
         var railShown = !d.IsRail || c.RailShowsCarriage(i);
         var leafMoves = d.IsRail || d.Role == PartRole.Joint && d.JointType == JointType.Swivel;
         var railSeg = leafMoves && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
+        var working = d.HasWork && !p.Broken && world.StoreOf(c, i) is { } workStore && ProductionLines.Working(world, c, i, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
@@ -647,6 +648,8 @@ public static partial class ConstructRender
                 model *= ControlMove(in box, in p, leverAxis, leverAngle);
             else if (box.Rig != BoxRig.None)
                 model = rig.Model(in box, in p, model);
+            if (working && box.Work != BoxWork.None)
+                WorkMove(gfx, c, in box, in p, centre, seg * body, ref model);
             if (d.HasEngineBoxes && c.EngineOf[i] != 0 && c.EngineOf[i] == c.ModActive + 1)
                 EngineFx.Animate(c, i, in box, centre, ref model);
             if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
@@ -661,6 +664,8 @@ public static partial class ConstructRender
             var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade; // (the paint tool: a painted part's paintable boxes, ConstructPaint.cs)
             if (lit)
                 gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
+            else if (box.Work == BoxWork.Glow && working)
+                gfx.Draw(model, WorkHot * (0.85f + 0.15f * MathF.Sin((float)Now * 5f + i)), opacity, mode: 2, shape: box.Shape); // (a hot die, bright while the machine runs; its own dull colour otherwise)
             else if (box.Glow)
                 gfx.Draw(model, box.Color * shade, opacity, mode: 2, shape: box.Shape); // (a box that always glows, "glow" in the part file)
             else if (box.IsGlass)
@@ -674,6 +679,30 @@ public static partial class ConstructRender
             drawn++;
         }
         return drawn;
+    }
+
+    private static readonly Vector3 WorkHot = new(1f, 0.5f, 0.12f);
+
+    /// <summary>A "work" box of a machine that runs (<see cref="BoxWork"/>): a spin about its own centre, a ram.s stroke, a stack.s puffs. <paramref name="model"/> is in the body frame.</summary>
+    private static void WorkMove(Renderer gfx, Construct c, in CPartBox box, in CPart p, Vector3 centre, in Matrix4x4 onBody, ref Matrix4x4 model)
+    {
+        var axis = Rot24.Apply(p.Rot, ConstructParts.DirVector(box.WorkAxis));
+        switch (box.Work)
+        {
+            case BoxWork.Spin:
+                model = model * Matrix4x4.CreateTranslation(-centre) * Matrix4x4.CreateFromAxisAngle(axis, (float)(Now * 2.4 % Math.Tau)) * Matrix4x4.CreateTranslation(centre);
+                break;
+            case BoxWork.Stroke:
+                var at = (float)(Now * 0.8 % 1.0); // (down fast, up slowly: a press.s stroke)
+                model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));
+                break;
+            case BoxWork.Smoke when Fx.On:
+                var size = MathF.Max(0.12f, MathF.Min(box.Half.X, box.Half.Z) * 1.6f);
+                var top = Vector3.Transform(centre + Rot24.Apply(p.Rot, Vector3.UnitY) * Rot24.ApplyHalf(p.Rot, box.Half).Y, onBody) + (gfx.Relative ? gfx.Origin : Vector3.Zero);
+                for (var k = Fx.Share(4f * MathF.Max(1f, size * 2f) * _fxDt); k > 0; k--)
+                    Fx.EngineSmoke(top, c.Vel * 0.6f + new Vector3(0.2f, size * 3.5f, 0.1f), size * 1.4f, 3.2f, 0.45f);
+                break;
+        }
     }
 
     /// <summary>A control surface's leaf: its turn about the hinge in the part.</summary>

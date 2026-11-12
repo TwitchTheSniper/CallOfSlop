@@ -11,7 +11,7 @@
   "health": 168000,
   "armour": 40,
   "material": "steel",
-  "color": "#39424b",
+  "color": "#2a6878",
   "attachSeconds": 15.0,
   "power": 57600,
   "config": [
@@ -125,7 +125,9 @@
         11.2,
         72.0
       ],
-      "color": "#2f363d"
+      "color": "#22262b",
+      "paintable": false,
+      "finish": "tread plate"
     },
     {
       "min": [
@@ -201,31 +203,193 @@
     },
     {
       "min": [
+        -8.03,
+        83.2,
+        -8.03
+      ],
+      "max": [
+        104.03,
+        87.36,
+        72.03
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        55.68,
+        71.68
+      ],
+      "max": [
+        96.0,
+        60.48,
+        72.03
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.0,
+        2.4,
+        72.0
+      ],
+      "max": [
+        96.0,
+        9.6,
+        72.03
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        46.272,
+        5.92,
+        72.03
+      ],
+      "max": [
+        49.728,
+        9.12,
+        72.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        43.2,
+        4.832,
+        72.03
+      ],
+      "max": [
+        52.8,
+        5.92,
+        72.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        44.832,
+        3.744,
+        72.03
+      ],
+      "max": [
+        51.168,
+        4.832,
+        72.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        46.464,
+        2.72,
+        72.03
+      ],
+      "max": [
+        49.536,
+        3.744,
+        72.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        2.4,
+        -8.03
+      ],
+      "max": [
+        96.0,
+        9.6,
+        -8.0
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.28,
+        11.2,
+        71.68
+      ],
+      "max": [
+        -2.72,
+        56.0,
+        73.92
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        98.72,
+        11.2,
+        71.68
+      ],
+      "max": [
+        101.28,
+        56.0,
+        73.92
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
         32.8,
         26.88,
-        -8.384
+        -8.768
       ],
       "max": [
         63.2,
         28.8,
         -6.08
       ],
-      "color": "#c8a13a",
-      "detail": true
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [
         32.8,
         11.2,
-        -8.384
+        -8.768
       ],
       "max": [
         63.2,
         13.12,
         -6.08
       ],
-      "color": "#c8a13a",
-      "detail": true
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
     },
     {
       "min": [
@@ -238,8 +402,44 @@
         31.2,
         24.0
       ],
-      "color": "#23272c",
-      "detail": true
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+z"
+    },
+    {
+      "min": [
+        30.4,
+        2.4,
+        24.0
+      ],
+      "max": [
+        65.6,
+        37.6,
+        26.88
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        40.0,
+        18.08,
+        5.6
+      ],
+      "max": [
+        56.0,
+        21.92,
+        8.0
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "work": "spin",
+      "axis": "+z"
     }
   ],
   "sockets": [
