@@ -818,6 +818,15 @@ panel); the part from the part kit's `crafting_terminal_parts`.
   the reserved counts and every order's state; a save taken mid-order loaded all 4 orders; a cancel took the order and its work order
   off the Assembler's queue. The step with 32 open orders on a terminal: 0.03 ms, 0 bytes; an idle world: under 0.5 microseconds a tick.
 
+- **After the first window run** (2026-11-11, `--window-shot` with its `click`, `esc` and `ui` actions). The part follows the
+  [machine look](look.md#machine-look): dark base, teal body, accent rails and keys, white at the ways in, orange at the tray's
+  front, the screen's middle at 1.5 m. It has a second conveyor input, **Piece in 2**, on the sorter's side (up to 0.5 m). Make has
+  a **Can make now** tick, on by default: only what can be made now or through a chain; unticked it adds what lacks inputs, dim.
+  A queued order says what its machine lacks ("queued at the Assembler: needs 4 rubber, 2 cloth"), looked at every fifth step.
+  The showcase's Long Piece Rack has a return conveyor along the back aisle to Piece in 2, so extruded pieces come back too.
+  Seen in the window: F opens it, twenty opens and Esc closes leave the mouse captured, a clicked tile, Order and Cancel work,
+  and the made part lands in the tray.
+
 Not yet: other constructs by world link; splitters on a return path (a splitter deals in turn, so it is no route); chutes of more
 than one hop; a Piece Rack as a bigger tray; press products; a custom size entry (the Line Console's bill makes those); reserving a
 machine's inputs for an order.
