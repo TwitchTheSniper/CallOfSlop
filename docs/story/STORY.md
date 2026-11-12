@@ -733,7 +733,12 @@ Shipped: `Storylets/Colony.json`, the penal colony after the induction, as draft
 *Work detail* (A, a guard's job and inspection: Rank, or Suspicion), *Tea with Crumb* (B, two visits to the kettle: the
 lead "Old Mine"), *Bellweather's test* (A, a crate left unwatched), *Shakedown* (urgent, at Suspicion 3), *The Warden's
 offer* (A, the choice of Trustee or Escapee) and the first beat of each road (*First posting*: the depot; *The old
-mine*). Bellweather's test ends "left" until a marked crate records a Pilfer.
+mine*). Bellweather's test ends "left" until a marked crate records a Pilfer. `Storylets/Ministry.json` carries the
+Trustee road on (quality `Grade`, 0 to 6): *The stores key*, *Head count*, *The parole board*, *The last cup* and *The
+gate* inside the colony, then memos up the ladder (*The in-tray*, *Licensed*, *New cells*, *Inspector of Works*, *The
+inspection*, *The new wing*, *The last word*, *The floor below*: the lead "Council Chamber"). A rung that hands a tiered
+job needs the technology of that tier learnt (`?me Learnt 'Explosives Licence'`, or the player's group's), so the job
+is never refused for standing.
 
 ### Paths
 
