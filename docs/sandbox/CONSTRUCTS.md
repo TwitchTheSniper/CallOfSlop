@@ -11,6 +11,11 @@ milestone-1 record and how to play are in [overview-and-playing](constructs/over
 **Every agent that authors a blueprint, a generator or a building reads this first.** Valid is not finished: paint by
 section, finishes, lamps, detail, the authoring fields, a detail budget, and the `--look-report` baseline.
 
+## [How a building should look](constructs/buildings.md), 9 KB
+
+Read before authoring a building: what every building needs (the job gives the shape, an outline that reads at 50 m, a
+marked way in), then each faction's style. The Ministry of Slop: Brutalism, cold-war fittings, the colony's street.
+
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
 `grep -n '^## ' docs/sandbox/constructs/FILE.md` and read the section you need. New text goes into the file that holds
@@ -127,7 +132,7 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 82 KB
 
-Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, work orders, the crafting terminal, reservations, the Production Showcase.
+Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, work orders, the crafting terminal, reservations, the building station, the Production Showcase.
 
 - Refining (decision 14)
 - Extrusion
@@ -144,6 +149,7 @@ Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tier
 - Work orders
 - Crafting terminal
 - Reservations
+- Building station
 - Production Showcase
 
 ## [Storage and cargo](constructs/storage-and-cargo.md), 42 KB

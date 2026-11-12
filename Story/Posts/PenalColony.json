@@ -1,0 +1,22 @@
+{
+  // The penal colony staff's posts (docs/story/STORY.md "Posts", Game/GameStoryPosts.cs): on a Work step at the colony
+  // each person goes to a post and keeps it for the shift, scripted and shown, never told. The furniture is the Colony
+  // Barracks blueprint's (the part kit's BuildingParts): moving it there moves the posts with it.
+  //   at     barracks (the guards' barracks), colony (the Penal Colony construct) or gate (just outside the colony's gate)
+  //   part   the part worked at, by name ("nth": which of them, from 0); at the gate there is none
+  //   do     sit (in that seat: every peer sees them sat there) or stand (in front of the part, facing it)
+  //   front  stand: how far in front of the part, along its own z (m, -3 to 3; negative for a part that faces -z)
+  //   who    who takes it first, in order of the file; a post naming nobody is anyone's when theirs are taken
+  "format": "call-of-slop-posts/1",
+  "posts": [
+    { "name": "Duty desk", "at": "barracks", "part": "Seat", "do": "sit",
+      "who": ["Warden Pettigrew", "Officer Nettles", "Sergeant Bellweather"],
+      "about": "sat at the computer doing the admin: rotas, incident forms, the inmate files" },
+    { "name": "Tea urn", "at": "barracks", "part": "Tea Urn", "front": -0.6,
+      "who": ["Officer Crumb"],
+      "about": "guarding the kettle, as ever" },
+    { "name": "Gate watch", "at": "gate",
+      "who": ["Sergeant Bellweather", "Officer Crumb"],
+      "about": "on watch outside the colony gate, looking out" }
+  ]
+}

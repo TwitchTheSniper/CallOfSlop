@@ -6,7 +6,7 @@ using Brutal.OpenGlApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--window-shot OUT.png|bmp [--map NAME] [--creative] [--blueprint NAME] [--at X,Y,Z] [--look-at X,Y,Z | --yaw D --pitch D] [--frames N] [--every N] [--do "a; b; ..."] [--size WxH]</c>:
+/// <c>--window-shot OUT.png|bmp [--map NAME] [--creative] [--blueprint NAME] [--at X,Y,Z] [--look-at X,Y,Z | --yaw D --pitch D] [--calm] [--frames N] [--every N] [--do "a; b; ..."] [--size WxH]</c>:
 /// pictures of the real game in its real window, for an agent's own checking (README.md "Testing without playing"). It starts an offline creative
 /// Sandbox world (default map Proving Ground: a big blueprint fits inside its arena) on a throwaway copy of the saves, optionally spawns a blueprint in front of the player through the
 /// parts menu's own call (CActKind.Blueprint), flies the player (noclip) to the camera, runs a short script of actions through the real input
@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool _windowShot;
+    private static bool _windowShot, _wsCalm;
     private static int _wsExit;
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
@@ -46,6 +46,7 @@ public static unsafe partial class Program
         _wsMap = Val("--map") ?? _wsMap;
         _wsBlueprint = Val("--blueprint") ?? "";
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
+        _wsCalm = args.Any(a => a.Equals("--calm", StringComparison.OrdinalIgnoreCase)); // (no cold storm: a site is seen whole)
         _wsLookAt = Val("--look-at") is { } la ? WsVec(la) : null;
         _wsSpawnAt = Val("--spawn-at") is { } sa ? WsVec(sa) : null;
         _wsNet = Val("--net") ?? "";
@@ -85,7 +86,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -214,6 +215,7 @@ public static unsafe partial class Program
                     _wsBody = made.Id;
                     WsSay($"{_wsBlueprint}: construct {made.Id}, {made.PartCount} parts, centre {made.WorldCom:0.0}, radius {made.Radius:0.0} m");
                 }
+                game.NoclipShot = _wsAt != null; // (a survival world's camera flies too when it is put somewhere)
                 p.NoclipWanted = game.NoclipAllowed(p); // (hover where the camera is put)
                 var spawned = WsSpawned(game);
                 if (_wsAt is { } at)
@@ -538,6 +540,105 @@ public static unsafe partial class Program
                     var loaded = w2.ReadBody(new SaveReader(body.Span.ToArray()), read, _ => 0);
                     WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s), {w2.StoreOf(loaded, cpart)?.ItemCount ?? -1} in the tray")}");
                 }
+                return;
+            }
+            case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)
+            {
+                var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var (sc, spart) = WsFind(g, "Building Station");
+                if (sc == null || !sc.DefOf(spart).IsBuildStation)
+                {
+                    WsFail($"no Building Station {arg}");
+                    return;
+                }
+                var sverb = words.Length > 0 ? words[0] : "";
+                var rest = words.Length > 1 ? words[1] : "";
+                switch (sverb)
+                {
+                    case "pick":
+                        WsSay($"station: pick {rest}: {(Ui.StationPick(rest) ? "ok" : "NO SUCH BLUEPRINT")}");
+                        break;
+                    case "start":
+                        g.SandboxStation(sc.Id, spart, StationOp.Start, (ushort)(int.TryParse(rest, out var times) ? Math.Max(0, times - 1) : 0), Ui.StationPicked);
+                        break;
+                    case "cancel":
+                        g.SandboxStation(sc.Id, spart, StationOp.Cancel);
+                        break;
+                    case "release":
+                        g.SandboxStation(sc.Id, spart, StationOp.Release);
+                        break;
+                    case "give":
+                        g.SandboxStation(sc.Id, spart, StationOp.Give);
+                        break;
+                    case "stock" when g.IsServer:
+                        WsSay($"station: stock: {StationProbe.Stock(g.Constructs, sc, spart)}");
+                        break;
+                    case "hold" when g.IsServer && ConstructParts.Find(rest) is { } hd:
+                        foreach (var pl in g.Players.Values)
+                            g.SandboxHands.Hands[pl.Id].Held = (ushort)hd.Id; // (every player: a client's give is tried with it)
+                        WsSay($"station: every player holds a {hd.Name}{(hd.PhysicsOnly ? " (PHYSICS-ONLY: real hands refuse it)" : "")}");
+                        break;
+                    case "reload" when g.IsServer: // the whole world through the real save and the real load, in place
+                        WsSay("station: reload: " + g.StationReloadProbe());
+                        (sc, spart) = WsFind(g, "Building Station");
+                        if (sc == null)
+                        {
+                            WsFail("no Building Station after the load");
+                            return;
+                        }
+                        break;
+                    case "drop" when g.IsServer && ConstructParts.Find(rest) is { } loose: // a loose part set down in the bay, as the physics gun would leave it
+                    {
+                        ConstructStation.Bay(sc, spart, out var bfloor, out var bturn, out var bsize);
+                        var made = ConstructBuild.PlaceNew(g.Constructs, loose, bfloor + System.Numerics.Vector3.Transform(new System.Numerics.Vector3(bsize.X * 0.3f, 0.3f, bsize.Z * 0.3f), bturn), 0);
+                        WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + ")");
+                        break;
+                    }
+                    case "repeat":
+                        g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
+                        break;
+                    case "clear" when g.IsServer && sc.Parts[spart].Station is { } cj && g.Constructs.Get(cj.Body) is { HeldBy: 0 } built: // the finished vehicle is dragged 14 m out of the bay
+                        ConstructStation.Bay(sc, spart, out _, out var brot, out _);
+                        built.Pos += System.Numerics.Vector3.Transform(new System.Numerics.Vector3(14, 0.3f, 0), brot);
+                        built.PrevPos = built.NetPos = built.NetFromPos = built.Pos;
+                        built.NetHistReset();
+                        built.Wake();
+                        WsSay("station: the built vehicle was dragged out of the bay");
+                        break;
+                    case "measure":
+                        StationProbe.On = true;
+                        Ui.PerfMode = PerfView.Overlay; // (the profiler times the server tick while its overlay is up)
+                        WsSay("station: " + StationProbe.Cost());
+                        {
+                            var ticks = new List<float>();
+                            for (var back = 0; back < Perf.History; back++)
+                                if (Perf.Ticks(back) > 0)
+                                    ticks.Add(Perf.TickWorstMs(back));
+                            ticks.Sort();
+                            WsSay(ticks.Count == 0 ? "station: no frames measured yet" : "station: server tick over the last " + ticks.Count + " frames: median " + ticks[ticks.Count / 2].ToString("0.00") + " ms, p99 " + ticks[(int)(ticks.Count * 0.99)].ToString("0.00") + " ms, worst " + ticks[^1].ToString("0.00") + " ms");
+                        }
+                        break;
+                    case "save" when g.IsServer:
+                    {
+                        var snap = new WorldSnapshot();
+                        g.Constructs.CaptureInto(snap);
+                        var names = new WorldNames();
+                        var body = new SaveWriter();
+                        ConstructWorld.WriteBody(body, snap, snap.Bodies.First(b => b.Id == sc.Id), names);
+                        var nameBytes = new SaveWriter();
+                        names.Write(nameBytes);
+                        var read = new WorldNamesRead();
+                        read.Read(new SaveReader(nameBytes.Span.ToArray()));
+                        var w2 = new ConstructWorld();
+                        var loaded = w2.ReadBody(new SaveReader(body.Span.ToArray()), read, _ => 0);
+                        WsSay($"station: saved ({body.Length} bytes) and loaded: {(loaded == null ? "NO BODY" : StationProbe.Text(w2, loaded, spart))}; fitted steps kept {loaded?.Parts[spart].Station?.PartOf.Count(p => p >= 0) ?? -1}");
+                        break;
+                    }
+                }
+                WsSay($"station: {StationProbe.Text(g.Constructs, sc, spart)}");
+                if (Ui.StationPreview is { Ready: true } pv && sverb == "pick")
+                    WsSay($"station: preview {pv.Name}: {pv.Parts} parts, cost {pv.CostMs:0.0} ms, worst slice {pv.WorstMs:0.00} ms");
+                _wsWait = 2;
                 return;
             }
             case "ui": // what is open and who has the mouse

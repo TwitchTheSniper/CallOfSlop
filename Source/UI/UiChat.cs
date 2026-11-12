@@ -161,7 +161,7 @@ public sealed partial class Ui
                 continue;
             _speechShown[c.From] = true;
             var alpha = (float)Math.Clamp((SpeechSeconds - age) / 1.5, 0, 1);
-            Hud.WorldLabel(GravityFrames.Above(p.Position, World.PlayerHeight + 0.75f), c.Text, SayChat, alpha, 15f * _scale, Game.StoryHearing);
+            Hud.WorldLabel(GravityFrames.Above(p.Position, World.PlayerHeight + 0.75f), c.Text, _subRgb, alpha, SubtitlePx(15f), Game.StoryHearing); // (the story text's size and colour: UiSubtitles.cs)
         }
     }
 

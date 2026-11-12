@@ -18,8 +18,8 @@ public static unsafe partial class Program
     private static void StormFrame(double now, Vector3 eye)
     {
         var map = World.Map;
-        if (map.Storm == null && ColdStorm.Settings == null)
-            return;
+        if (map.Storm == null && ColdStorm.Settings == null || _wsCalm)
+            return; // (no storm here, or a check picture asked for clear air: --calm)
         var dt = _stormSeen < 0 ? 0 : now - _stormSeen;
         _stormSeen = now;
         ColdStorm.Frame(map, dt, eye, map.Light, _game.SandboxOn ? _game.Constructs : null);

@@ -161,16 +161,16 @@ public static class ConstructLoot
             switch (f.Name)
             {
                 case "step": step = f.Value.GetInt32(); break;
-                case "slot": slot = f.Value.GetInt32(); break;
+                case "slot": slot = f.Value.GetInt32(); break; // (-1: a Piece Rack, which packs by volume and takes physics-only parts)
                 case "part": part = f.Value.GetString() ?? ""; break;
                 case "count": count = f.Value.GetInt32(); break;
                 default: throw new ConstructPartException($"{file}: stored[{k}]: unknown key \"{f.Name}\" (step, slot, part, count)");
             }
         if (ConstructParts.Find(part) is not { } d)
             throw new ConstructPartException($"{file}: stored[{k}]: no part named \"{part}\"");
-        if (d.PhysicsOnly)
+        if (d.PhysicsOnly && slot != -1)
             throw new ConstructPartException($"{file}: stored[{k}]: the {part} is physics-only, and slots hold items");
-        if (step < 0 || slot < 0 || slot >= CStore.MaxSlots || count < 1 || count > 48)
+        if (step < 0 || slot < -1 || slot >= CStore.MaxSlots || count < 1 || count > 48)
             throw new ConstructPartException($"{file}: stored[{k}]: a step, a slot 0 to {CStore.MaxSlots - 1} and a count 1 to 48");
         return (step, slot, part, count);
     }
@@ -188,6 +188,13 @@ public static class ConstructLoot
                 continue;
             var cd = c.DefOf(partOf[step]);
             var before = put;
+            if (cd.IsPieceRack)
+            {
+                // A Piece Rack (a kit of parts for a Building Station: the Production Showcase's): packed by volume, as if they had ridden in.
+                for (var n = 0; n < count && world.RackPut(c, partOf[step], d); n++)
+                    put++;
+                continue;
+            }
             for (var n = 0; n < count && ConstructStorage.Check(cd, st, slot, d, out var rot) == SlotCheck.Ok; n++)
             {
                 st.Def[slot] = d.Id;

@@ -1012,6 +1012,8 @@ public static unsafe partial class Program
             key ^= ((long)hit.RackPlus1 << 8 | hit.RackLane) * 2654435761L; // (which stack is looked at: its kind names the piece F takes)
         if (hit.Body.DefOf(hit.Part).IsCraftTerminal)
             key ^= (long)((hit.Body.Parts[hit.Part].Craft?.Count ?? 0) + 1 + hit.Body.RouteCount * 64) * 40503L; // (its orders and the body's links: what its line says)
+        if (hit.Body.DefOf(hit.Part).IsBuildStation)
+            key ^= RouteRender.BayLook(hit.Body, hit.Part) * 2654435761L; // (a Building Station: its bay is outlined while it is looked at, and its line follows its job)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
             key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
         if (hit.Body.DefOf(hit.Part) is { IsRecycler: true } or { IsGatherer: true })

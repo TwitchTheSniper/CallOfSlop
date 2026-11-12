@@ -69,7 +69,7 @@ public sealed partial class Game
             _ldDoor = _opGate;
             return;
         }
-        if (SandboxKitPiece("Colony Barracks", _opMiddle, 16, 60, level: 1f) is { } b)
+        if ((ColonySiteStand("Colony Barracks") ?? SandboxKitPiece("Colony Barracks", _opMiddle, 16, 60, level: 1f)) is { } b) // (its spot in the site plan, or level ground near)
         {
             _opBarracks = b.Id;
             Constructs.Events.Add($"opening: the Colony Barracks as construct {b.Id}");

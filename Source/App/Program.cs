@@ -779,6 +779,7 @@ public static unsafe partial class Program
             if (_settings.DisplayDirty)
                 ApplyDisplay();
             Ui.TextSize = _settings.TextSize;
+            Ui.Subtitles(_settings); // the story's words on screen: their size and colour (UiSubtitles.cs)
 
             if (_settings.VSync != _vsync)
             {
@@ -873,6 +874,8 @@ public static unsafe partial class Program
                     DrawStormFrost(); // frost at the edges while you are out in a cold storm (Program.Storm.cs)
                 if (!benchCovers && g.OpeningActive)
                     DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
+                else if (!benchCovers && g.QuarryRiding)
+                    Ui.DrawRideUi(g); // a story ride (the crew bus) is a cinematic: only its words, no HUD (UiQuarry.cs, Program.Quarry.cs)
                 else if (!benchCovers)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
@@ -2026,6 +2029,8 @@ public static unsafe partial class Program
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
+            if (p.Id == _game.LocalId && _game.QuarryRiding)
+                continue; // (on a ride you are on the bus, not standing at the stop the camera may be watching)
             if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView && !talkView) // (third person, the talk camera, or looking through a drone: your whole body is drawn like anyone's)
             {
                 if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
@@ -2173,7 +2178,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening)
+        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !_game.QuarryRiding && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2414,11 +2419,11 @@ public static unsafe partial class Program
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
         DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
-        if (_game.OpeningActive)
+        if (_game.OpeningActive || _game.QuarryRiding)
         {
             Gfx.SetBlend(false);
             Gfx.SetDepthTest(true);
-            return; // (the survival opening has the screen: no crosshair or bars, Program.Opening.cs)
+            return; // (the survival opening and a story ride have the screen: no crosshair or bars, Program.Opening.cs, Program.Quarry.cs)
         }
 
         if (local is { Alive: true })

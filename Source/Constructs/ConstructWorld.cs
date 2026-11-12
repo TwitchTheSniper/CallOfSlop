@@ -1582,6 +1582,7 @@ public sealed partial class ConstructWorld
             ConstructRide.AfterFrame(this, ref s, ride, rideVel, height, server, who);
             return s.Grounded ? ride : null;
         }
+        var feetUp = GravityFrames.UpAt(s.Position); // (a planet's up: tilted a little from +Y away from the pole)
         var feet0 = s.Position.Y; // (a step up is measured from where the feet were: one step's rise a tick at most)
         var near = Near(s.Position, World.PlayerRadius + height + 1f, _blockNear); // (the broadphase: the bodies round the player)
         for (var bi = 0; bi < near.Count; bi++)
@@ -1647,7 +1648,10 @@ public sealed partial class ConstructWorld
                     }
                     if (top is { } topY && MathF.Min(feet.Y, stepper || into ? feet0 : feet.Y) >= topY - rise && feet.Y <= topY + above && s.Velocity.Y <= 0.5f)
                     {
-                        s.Position.Y = topY;
+                        if (feetUp.Y > 0.9f && feetUp.Y < 1f)
+                            s.Position += feetUp * ((topY - s.Position.Y) / feetUp.Y); // (a planet: onto the top along its up, as the mover snapped them down it: straight up keeps the snap's sideways part, a drift on every floor)
+                        else
+                            s.Position.Y = topY;
                         var landing = MathF.Max(0, -s.Velocity.Y - (c.Vel.Y < 0 ? -c.Vel.Y : 0)); // (m/s coming down onto it)
                         if (s.Velocity.Y < 0)
                             s.Velocity.Y = 0;
@@ -2096,6 +2100,7 @@ public sealed partial class ConstructWorld
         ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
         ConstructConveyor.Step(this, query); // (pieces ride their conveyors to the racks: only bodies with riders)
         ConstructCrafting.Step(this); // (Crafting Terminals fetch and order: 2 Hz, only bodies with open orders)
+        ConstructStation.Step(this); // (Building Stations cost, order and fit: only bodies whose stations have a job)
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
         ProductionLines.Step(this); // (Line Consoles: their Alarm and Running outputs, a new Start, Stop after; 10 Hz)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)

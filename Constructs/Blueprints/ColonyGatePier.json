@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Gate Pier",
+  "description": "A pier at the way in to the penal colony.",
+  "steps": [
+    {
+      "part": "Concrete Gate Pier"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 0,
+      "socket": "sign",
+      "by": "back",
+      "text": [
+        "MINISTRY OF SLOP - PENAL COLONY 7"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 0,
+      "socket": "sign2",
+      "by": "back",
+      "text": [
+        "NO WAY OUT. NO WAY IN EITHER."
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "back",
+      "by": "-z",
+      "paint": "#4b5157"
+    }
+  ]
+}

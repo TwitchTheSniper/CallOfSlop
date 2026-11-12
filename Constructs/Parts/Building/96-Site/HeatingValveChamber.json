@@ -1,0 +1,112 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Heating Valve Chamber",
+  "description": "Where the heating mains turn or end: a valve under a concrete lid.",
+  "group": "Building",
+  "section": "Site works",
+  "role": "foundation",
+  "tool": "welder",
+  "mass": 2531.2,
+  "health": 1200,
+  "armour": 25,
+  "material": "concrete",
+  "color": "#858179",
+  "attachSeconds": 5.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        1.375,
+        1.125,
+        1.375
+      ]
+    },
+    {
+      "min": [
+        -0.165,
+        1.125,
+        -0.165
+      ],
+      "max": [
+        1.415,
+        1.185,
+        1.415
+      ],
+      "color": "#7f7c75",
+      "detail": true
+    },
+    {
+      "min": [
+        0.585,
+        1.185,
+        0.585
+      ],
+      "max": [
+        0.665,
+        1.345,
+        0.665
+      ],
+      "color": "#4b5157",
+      "detail": true
+    },
+    {
+      "min": [
+        0.405,
+        1.325,
+        0.405
+      ],
+      "max": [
+        0.845,
+        1.375,
+        0.845
+      ],
+      "color": "#8a2f25",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "f",
+      "at": [
+        0.625,
+        0.625,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "k",
+      "at": [
+        0.625,
+        0.625,
+        1.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "l",
+      "at": [
+        -0.125,
+        0.625,
+        0.625
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "r",
+      "at": [
+        1.375,
+        0.625,
+        0.625
+      ],
+      "dir": "+x"
+    }
+  ]
+}

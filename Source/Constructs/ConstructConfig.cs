@@ -198,6 +198,9 @@ public enum CfgKey : byte
     LinePage, // Line Console: the line or the bill on its screen (not on the panel)
     TextSize, // any part with a text panel: its text size, % of the part file's (DisplayPanel.cs, ConstructPanels.RowsAt)
     LineStopAfter, // Line Console: stops the line when its Made count reaches this (0: never; ProductionLines.Monitors.cs)
+    BayWidth, // Building Station: its bay across, away from the station, m (ConstructStation.cs)
+    BayDepth, // ...along the station
+    BayHeight, // ...and up
     COUNT,
 }
 
@@ -802,6 +805,7 @@ public static class ConstructConfig
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
+                CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight => d.IsBuildStation,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

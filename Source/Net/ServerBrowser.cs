@@ -418,9 +418,14 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      it as a pending spawn), SpawnPlace (u16 token, vec point, f32 yaw), SpawnCancel (u16 token) and SpawnGhost (server -> one client: u8 status,
     //      u16 token, text name; ready: vec min, vec max, f32 low, u16 n boxes, each 3 x f32 centre, 3 x half-float size, 4 x i16 turn, 3 x u8 colour,
     //      u8 alpha, u8 shape).
-    // 258: pressed parts (the Press rework, phase 1; 256 and 257 are other branches'): a run-time part named "Pressed Part (...)" travels as a
+    // 256: the Building Station (ConstructStation.cs): CActKind gains Station (at the end); CBodyKind.Station (at the end) carries a body's stations' jobs
+    //      (state, the blueprint's name, counts, the frozen body, the last part fitted, a note); a new part file (Building Station) moves part ids; three
+    //      new settings (bayWidth, bayDepth, bayHeight).
+    // 257: uniforms (Source/Cosmetics/Uniforms.cs). The roster gains a u8 uniform per player after the look (bots too), and the look
+    //      (PlayerLook.WireBytes) grows to 4 bytes: the fourth is the uniform choice (Issued Uniform or Own Clothes).
+    // 259: pressed parts (the Press rework, phase 1; 258 is the Panel Designer's): a run-time part named "Pressed Part (...)" travels as a
     //      formed panel does (HullLoft.WireKind and its name); a peer on an older protocol would refuse the name.
-    public const ushort ProtocolVersion = 258;
+    public const ushort ProtocolVersion = 259;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

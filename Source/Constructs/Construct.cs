@@ -58,6 +58,7 @@ public struct CPart
     public string? Text, Text2; // a sign's messages, a lamp bank's labels (LogicText.cs)
     public OrderList? Orders; // an Extruder's or a Wheel Former's queue of work orders, a Line Console's bill (WorkOrders.cs; null: none)
     public CraftList? Craft; // a Crafting Terminal's open requests (ConstructCrafting.cs; null: none)
+    public StationJob? Station; // a Building Station's job (ConstructStation.cs; null: none)
     public CMedia? Media; // a Video Screen's or Music Player's list and what it plays (ConstructMedia.cs)
     public System.Text.StringBuilder? MediaLoad; // a world file's list as its chunks come in (ConstructMedia.LoadChunk)
     public float[]? Trace; // a Graph Screen's last 30 s on this peer, oldest at TraceAt (LogicDisplays.cs)
@@ -277,6 +278,7 @@ public sealed partial class Construct
     public bool Anchored; // a working foundation holds it to the ground (or it is pinned)
     public bool Pinned; // set down "anchored to the ground" (creative's free placement toggle): held still without a foundation
     public bool Frozen; // the physics gun froze it where it is (ConstructGrab.cs): held still like an anchored one until grabbed or unfrozen
+    public ushort HeldBy; // server: the construct whose Building Station builds it, frozen in its bay (ConstructStation.cs; 0: nobody): no edits, no grab, no seat until released
     public byte FrozenBy = 255; // ...by this player (unfreeze-all frees only your own; 255: nobody's now)
     // The physics gun holding it (server; ConstructGrab.cs): the player, the grab point (body frame), where the beam wants
     // that point and the body's turn, and how hard it may pull. 255: nobody holds it (the physics then never looks further).

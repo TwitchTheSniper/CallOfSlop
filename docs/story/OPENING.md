@@ -82,21 +82,27 @@ Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes
 The colony doesn't stand alone: the Ministry of Slop's street is built with it on a fresh story world
 (`Game/GameColonyBuildings.cs`), before the barracks, the Remote Works and the quarry, so those find room round it.
 
-- **Across the street**, facing the gate: the **Colony Infirmary** (hospital white, a medical station, two bunks, the
-  medicine cabinet), the **Ministry Records Office** (cream concrete, a counter of three tables, lockers and a shelf of
-  files, the queue posts and pillar box on its forecourt, the Union Flag on the roof), the **Colony Canteen** (green
-  corrugated tin, mess tables, the tea urn and two stoves on the serving line) and the **Requisitions Store** (an open
-  bay, shelves and crates).
-- **By the gate**: the **Colony Gatehouse** (the gate clerk's terminal, a Belisha beacon and the phone box); **lamp posts**
-  down the street and the stock **Watchtowers** off the yard's back corners.
-- Every building has a battery (a fuse box high on a wall) so its mains Wall Lights are lit, a lamp over the door, and
-  signs in the Ministry's voice ("ESCAPEES ALSO REPORT HERE", "FORM 27B: NOTICE OF INTENT TO BE ILL").
+- **The style** is the Ministry's Brutalism (docs/sandbox/constructs/buildings.md): bare concrete, a heavy lid round
+  every flat roof, slots and high ribbons for windows, buttresses and fins, a canopy and steps at each door, amber
+  bulkhead lamps outside; inside, strip lights on round brown switches a player can work, radiators, filing cabinets,
+  a teleprinter, tape reels. Each building's shape comes from its job, and no two have the same outline.
+- **Across the street**, facing the gate: the **Colony Infirmary** (long, low and white: a blank buttressed wall to the
+  weather, a medical station at the door, two bunks, the medicine cabinet and the files at the far end), the **Ministry
+  Records Office** (the tallest: the archive is a slotted box over the hall, oversailing the forecourt on three columns
+  so the queue stands under it; a counter, the filing and a stair behind it; tape cabinets upstairs; the Union Flag on
+  the roof), the **Colony Canteen** (a hall two storeys high with a clerestory, a servery through to a low kitchen
+  behind, its back door and its stack) and the **Requisitions Store** (the roof out over a loading dock on two columns,
+  a counter in the opening, shelves behind, crates on the dock).
+- **By the gate**: the **Colony Gatehouse** (the gate clerk's post, its roof thrown 4 m towards the gate; a Belisha beacon
+  and the phone box); **lamp posts** down the street and the stock **Watchtowers** off the yard's back corners.
+- Every building has a battery (a fuse box high on a wall) so its mains lamps are lit, and signs in the Ministry's
+  voice ("ESCAPEES ALSO REPORT HERE", "FORM 27B: NOTICE OF INTENT TO BE ILL").
 - **Where**: `Story/Opening/ColonyBuildings.json`: each building's blueprint, where its middle stands in the colony's
   own frame (x along the front, the gate at x 6; negative z out in front of the gate), its turn and how level its ground
   must be. A spot that is taken or too steep moves the building to the nearest clear, level spot within `"slack"` metres
   (logged as `[colony] ... m off its spot`), or it isn't built.
 - **The blueprints** are the part kit's (`Source/PartKit/Generators/BuildingParts.Ministry.cs`, `--gen-parts
-  building_parts`), in the Ministry's palette (cream `#c9bf9f`, slate `#4b5157`, Ministry green `#2f5a3c`, navy signs).
+  building_parts`), in the Ministry's palette (concrete `#a29e94` and `#858179`, Ministry green `#2f5a3c` doors, navy signs).
 - **For other code** (the lore's items, the staff's posts): `Game.ColonyBuilding("Ministry Records Office")` is the
   server's construct of a building by its blueprint's name, or null (taken down, or none); "Penal Colony" and "Colony
   Barracks" answer too. A spot in it is its blueprint's metres through `ToWorld`.

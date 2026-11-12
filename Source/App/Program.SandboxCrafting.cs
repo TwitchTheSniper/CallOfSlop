@@ -12,6 +12,11 @@ public static partial class Program
     {
         if (MenusOpen)
             return;
+        if (c.DefOf(part).IsBuildStation && c.Parts[part].Station is { State: StationState.Building } && _game is { Local: { } me } sg && sg.SandboxHands.Hand(me.Id).Held != ConstructParts.None)
+        {
+            sg.SandboxStation(c.Id, part, StationOp.Give); // (a Building Station that is building, a part in the hands: it goes to the build)
+            return;
+        }
         Ui.OpenCrafting(c.Id, part);
         SetMouseCaptured(false);
     }

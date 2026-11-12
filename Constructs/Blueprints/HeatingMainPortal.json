@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Heating Main Portal",
+  "description": "The heating mains carried over a road on two risers.",
+  "steps": [
+    {
+      "part": "Heating Main Riser"
+    },
+    {
+      "part": "Heating Main Span 4 m",
+      "on": 0,
+      "socket": "ha",
+      "by": "la"
+    },
+    {
+      "part": "Heating Main Span 4 m",
+      "on": 1,
+      "socket": "ra",
+      "by": "la"
+    },
+    {
+      "part": "Heating Main Riser",
+      "on": 2,
+      "socket": "ra",
+      "by": "hb"
+    }
+  ]
+}

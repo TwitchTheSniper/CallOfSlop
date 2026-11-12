@@ -20,6 +20,8 @@ public sealed partial class Game
     private void ColonyBuildingsReset()
     {
         _cbBuilt.Clear();
+        _csBench = false;
+        _csLift = 0;
     }
 
     /// <summary>
@@ -51,8 +53,12 @@ public sealed partial class Game
         if (Constructs.Get(_opColony) is not { } colony)
             return;
         var n = 0;
+        var all = 0;
         foreach (var b in script.Buildings)
         {
+            if (b.Site || b.Elsewhere)
+                continue; // (the site's own pieces: ColonySiteFurnish; the barracks and the Remote Works: their own files, through ColonySiteStand)
+            all++;
             if (ColonyBuildingPlace(colony, b) is not { } c)
             {
                 Log($"[colony] no clear, level ground for the {b.Blueprint} within {script.Slack:0} m of its spot");
@@ -62,7 +68,7 @@ public sealed partial class Game
             Constructs.Events.Add($"opening: the {b.Blueprint} as construct {c.Id}");
             n++;
         }
-        Log($"[colony] {n} of {script.Buildings.Length} Ministry buildings round the colony");
+        Log($"[colony] {n} of {all} Ministry buildings round the colony");
     }
 
     /// <summary>One building: built turned as the file says, then stood on its spot or the nearest clear, level one (rings 2 m apart).</summary>
@@ -162,10 +168,22 @@ public sealed partial class Game
 public sealed class ColonyBuildingsScript
 {
     public const string Format = "call-of-slop-colony-buildings/1";
-    public const int MaxBuildings = 24;
+    public const int MaxBuildings = 64;
 
-    /// <summary>A building: its blueprint, where its middle stands in the colony's frame (x, z m), its turn (degrees) and how level its ground must be (m).</summary>
-    public readonly record struct Building(string Blueprint, Vector2 At, float Yaw, float Level);
+    /// <summary>A building: its blueprint, where its middle stands in the colony's frame (x, z m), its turn (degrees) and how level its ground must be (m).
+    /// <see cref="Site"/>: one of the site's own pieces, laid at exactly its spot in the colony's plane on a graded bench,
+    /// <see cref="Sink"/> m into it (Game/GameColonySite.cs). <see cref="Elsewhere"/>: a building another file builds, whose
+    /// spot the plan fixes (the Colony Barracks, the Remote Works).</summary>
+    public readonly record struct Building(string Blueprint, Vector2 At, float Yaw, float Level, bool Site = false, float Sink = 0, bool Elsewhere = false);
+
+    /// <summary>The bench: the rectangle of the colony's frame (x, z m) graded level on a fresh world; empty (max under min): none.</summary>
+    public Vector2 BenchMin, BenchMax;
+
+    /// <summary>The most the land may stand over or under the colony's level anywhere under the bench (m): past it nothing is graded.</summary>
+    public float BenchMost = 6;
+
+    /// <summary>The bench's ramps to the land: from a spot on its edge to one out on the land (x, z m in the colony's frame).</summary>
+    public (Vector2 From, Vector2 To)[] Ramps = [];
 
     public Building[] Buildings = [];
     public float Slack = 12;
@@ -201,11 +219,31 @@ public sealed class ColonyBuildingsScript
                     throw new FormatException($"{name}: \"at\" within 400 m of the colony");
                 var yaw = e.TryGetProperty("yaw", out var y) ? y.GetSingle() : 0;
                 var level = e.TryGetProperty("level", out var lv) ? Math.Clamp(lv.GetSingle(), 0.2f, 4f) : 1.2f;
-                list.Add(new Building(name, new Vector2(x, z), float.IsFinite(yaw) ? yaw : 0, level));
+                var site = e.TryGetProperty("site", out var st) && st.GetBoolean();
+                var sink = e.TryGetProperty("sink", out var sk) ? Math.Clamp(sk.GetSingle(), -2f, 2f) : 0;
+                var elsewhere = e.TryGetProperty("elsewhere", out var ew) && ew.GetBoolean();
+                list.Add(new Building(name, new Vector2(x, z), float.IsFinite(yaw) ? yaw : 0, level, site, sink, elsewhere));
             }
             if (list.Count > MaxBuildings)
                 throw new FormatException($"{list.Count} buildings (at most {MaxBuildings})");
             t.Buildings = [.. list];
+            if (root.TryGetProperty("bench", out var bench))
+            {
+                static Vector2 V(JsonElement a) => a.GetArrayLength() == 2 && float.IsFinite(a[0].GetSingle() + a[1].GetSingle()) && MathF.Abs(a[0].GetSingle()) <= 400 && MathF.Abs(a[1].GetSingle()) <= 400
+                    ? new Vector2(a[0].GetSingle(), a[1].GetSingle()) : throw new FormatException("a bench spot is [x, z] within 400 m of the colony");
+                t.BenchMin = V(bench.GetProperty("min"));
+                t.BenchMax = V(bench.GetProperty("max"));
+                if (t.BenchMax.X - t.BenchMin.X is < 16 or > 160 || t.BenchMax.Y - t.BenchMin.Y is < 16 or > 160)
+                    throw new FormatException("the bench is 16 to 160 m each way");
+                if (bench.TryGetProperty("most", out var most))
+                    t.BenchMost = Math.Clamp(most.GetSingle(), 0.5f, 10f);
+                if (bench.TryGetProperty("ramps", out var ramps))
+                {
+                    t.Ramps = [.. ramps.EnumerateArray().Select(r => (V(r.GetProperty("from")), V(r.GetProperty("to"))))];
+                    if (t.Ramps.Length > 8 || t.Ramps.Any(r => Vector2.Distance(r.From, r.To) > GroundShape.MaxLength))
+                        throw new FormatException($"at most 8 ramps, each {GroundShape.MaxLength:0} m long at most");
+                }
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)
         {

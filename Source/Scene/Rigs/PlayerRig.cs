@@ -32,6 +32,7 @@ public sealed class PlayerRig
     private Vector3 _bodyColor;
     private PlayerLook _bodyLook;
     private bool _bodyShell;
+    private UniformDef? _bodyUniform, _legUniform;
     private readonly SceneNode _corpseHat;
     private HatDef? _hat;
     private Vector3 _color = new(float.NaN);
@@ -104,13 +105,15 @@ public sealed class PlayerRig
     /// <summary>Rebuilds the three stances' torso and head parts when the look changes (colour, name, appearance, hat on or off).</summary>
     private void PoseBody(Player p, bool hat)
     {
-        if (_bodyBuilt && hat == _bodyHat && p.Color == _bodyColor && _id == p.Id && ReferenceEquals(_name, p.Name) && p.Look == _bodyLook && p.InShell == _bodyShell)
+        var uniform = BodyModel.UniformOf(p); // (Source/Cosmetics/Uniforms.cs)
+        if (_bodyBuilt && hat == _bodyHat && p.Color == _bodyColor && _id == p.Id && ReferenceEquals(_name, p.Name) && p.Look == _bodyLook && p.InShell == _bodyShell
+            && uniform == _bodyUniform)
             return;
-        (_bodyBuilt, _bodyHat, _bodyColor, _id, _name, _bodyLook, _bodyShell) = (true, hat, p.Color, p.Id, p.Name, p.Look, p.InShell);
+        (_bodyBuilt, _bodyHat, _bodyColor, _id, _name, _bodyLook, _bodyShell, _bodyUniform) = (true, hat, p.Color, p.Id, p.Name, p.Look, p.InShell, uniform);
         var v = BodyModel.VariantFor(p); // the name's look with the player's APPEARANCE picks on top (a robot in a shell)
         var c = BodyModel.ColorsFor(p, v);
         for (var i = 0; i < 3; i++)
-            BodyModel.Build(_torsoParts[i], _headParts[i], i, v, c, hat);
+            BodyModel.Build(_torsoParts[i], _headParts[i], i, v, c, hat, uniform);
     }
 
     /// <summary>The prestige hat: rebuilt only when it changes, posed on the visible stance's head (or by the corpse).</summary>
@@ -148,11 +151,13 @@ public sealed class PlayerRig
         var body = PlayerRender.BodyFrame(p); // (a planet: standing on its curve; Sandbox: seated in the seat's frame)
         Root.SetLocalMatrix(legsOnly ? Matrix4x4.CreateTranslation(0, 0, FirstPersonBack) * body : body);
         var color = p.Color;
-        if (color != _color)
+        var legUniform = BodyModel.UniformOf(p);
+        if (color != _color || legUniform != _legUniform)
         {
             _color = color;
+            _legUniform = legUniform;
             _corpse.Renderable.Color = color * 0.4f;
-            var lc = LegColors.For(color);
+            var lc = BodyModel.LegsFor(p); // (a uniform's trousers and boots)
             _pelvisBox.Renderable.Color = lc.Of(LegAnimator.PelvisPart.Paint);
             var parts = LegAnimator.LegParts;
             for (var i = 0; i < _legBoxes.Length; i++)

@@ -1,0 +1,40 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Heating Main 24 m",
+  "description": "A run of the colony's heating mains.",
+  "steps": [
+    {
+      "part": "Heating Main 4 m"
+    },
+    {
+      "part": "Heating Main 4 m",
+      "on": 0,
+      "socket": "ra",
+      "by": "la"
+    },
+    {
+      "part": "Heating Main 4 m",
+      "on": 1,
+      "socket": "ra",
+      "by": "la"
+    },
+    {
+      "part": "Heating Main 4 m",
+      "on": 2,
+      "socket": "ra",
+      "by": "la"
+    },
+    {
+      "part": "Heating Main 4 m",
+      "on": 3,
+      "socket": "ra",
+      "by": "la"
+    },
+    {
+      "part": "Heating Main 4 m",
+      "on": 4,
+      "socket": "ra",
+      "by": "la"
+    }
+  ]
+}

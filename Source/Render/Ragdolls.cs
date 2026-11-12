@@ -589,7 +589,7 @@ public static class Ragdolls
         var p = game.Players.GetValueOrDefault(owner);
         body.Hat = p != null ? HatRender.HatFor(p) : null;
         if (p != null)
-            BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look);
+            BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look, p.InShell ? (byte)0 : p.Uniform);
         else
             BuildSoldierLook(body, "Body", owner, new Vector3(0.45f, 0.45f, 0.42f));
     }
@@ -662,7 +662,7 @@ public static class Ragdolls
         body.Look = RagdollLook.Soldier;
         body.Owner = p.Id;
         body.Hat = HatRender.HatFor(p);
-        BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look);
+        BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look, p.InShell ? (byte)0 : p.Uniform);
         SetBlood(body, p.Id, p.Blood); // the body keeps its final blood marks (Source/Render/BodyBloodRender.cs)
         Spawn(body, d, now, PlayerLife);
     }
@@ -758,9 +758,9 @@ public static class Ragdolls
         if (Gibs.Mode == GoreMode.Off)
             return false;
         var v = BodyModel.VariantFor(p);
-        var bc = BodyColors.For(p.Color, v);
-        var lc = LegColors.For(p.Color);
-        var ac = ArmColors.For(p.Color * 0.75f);
+        var bc = BodyModel.ColorsFor(p, v);
+        var lc = BodyModel.LegsFor(p);
+        var ac = BodyModel.ArmsFor(p);
         var strength = d.BlastStrength > 0 ? d.BlastStrength : MathF.Max(Knockback.ForKill(kill.KillId).Strength, 9f);
         Gibs.SpawnBody(new GibBody
         {
@@ -770,19 +770,19 @@ public static class Ragdolls
         });
         GibbedBodies++;
         if (HatRender.HatFor(p) is { } hat)
-            SpawnHatGib(hat, d, now, p.Id, p.Name, p.Color, p.Look);
+            SpawnHatGib(hat, d, now, p.Id, p.Name, p.Color, p.Look, p.Uniform);
         return true;
     }
 
     /// <summary>A gibbed player's hat: a body slot that only draws the hat, knocked off by the blast (the ragdoll's hat physics).</summary>
-    public static RagdollBody SpawnHatGib(HatDef hat, in RagdollDeath d, double now, byte owner, string name, Vector3 color, PlayerLook look = default)
+    public static RagdollBody SpawnHatGib(HatDef hat, in RagdollDeath d, double now, byte owner, string name, Vector3 color, PlayerLook look = default, byte uniform = 0)
     {
         _now = now;
         var body = Alloc(false);
         body.Look = RagdollLook.Soldier;
         body.Owner = owner;
         body.Hat = hat;
-        BuildSoldierLook(body, name, owner, color, look);
+        BuildSoldierLook(body, name, owner, color, look, uniform);
         Spawn(body, d, now, PlayerLife);
         body.Gibbed = true;
         if (!body.HatOff)
@@ -826,13 +826,14 @@ public static class Ragdolls
     }
 
     /// <summary>The soldier's torso, head, leg and arm colours for a player (the same look as the living body).</summary>
-    public static void BuildSoldierLook(RagdollBody body, string name, byte id, Vector3 color, PlayerLook look = default)
+    public static void BuildSoldierLook(RagdollBody body, string name, byte id, Vector3 color, PlayerLook look = default, byte uniform = 0)
     {
         var v = BodyModel.VariantFor(name, id, look); // the player's APPEARANCE picks (Auto: the name's look)
-        BodyModel.Build(body.Torso, body.Head, 0, v, BodyColors.For(color, v), body.Hat != null);
+        var u = Uniforms.Get(uniform); // their uniform (Source/Cosmetics/Uniforms.cs)
+        BodyModel.Build(body.Torso, body.Head, 0, v, u?.Colors(v) ?? BodyColors.For(color, v), body.Hat != null, u);
         body.Torso.ShowDetail = body.Head.ShowDetail = true;
-        body.Legs = LegColors.For(color);
-        body.Arms = ArmColors.For(color * 0.75f);
+        body.Legs = u?.Legs ?? LegColors.For(color);
+        body.Arms = u?.Arms ?? ArmColors.For(color * 0.75f);
     }
 
     /// <summary>A free slot, or the oldest body (for a zombie past <see cref="MaxZombieBodies"/>: the oldest zombie).</summary>

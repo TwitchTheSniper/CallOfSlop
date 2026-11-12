@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Heating Main 2 m",
+  "description": "A run of the colony's heating mains.",
+  "steps": [
+    {
+      "part": "Heating Main 2 m"
+    }
+  ]
+}
