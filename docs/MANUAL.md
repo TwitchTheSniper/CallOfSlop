@@ -572,10 +572,15 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   sections); on the right a size filter (Small, Medium, Large, Capital) over a grid of 3D tiles (a tile size slider below
   the categories). Hover a tile for its tool, mass, health, armour and description;
   the badge is how many you have ("inf" while parts are endless). Click a part (or the arrow keys and Enter) and it is in
-  your hands, with its tool out, exactly as if you took it from the rack; a blueprint (Buggy, Gate, Lift, ...) is built
-  in front of you; a tool comes out. The recent row keeps your last picks. Spawning something into the world (a
-  blueprint, a faction vehicle, a physics-only part) or a build from the Builds tab leaves the window up, search and
-  scroll kept, so you can spawn things back to back; a green note says what came (red: the server's refusal). Taking a
+  your hands, with its tool out, exactly as if you took it from the rack; a tool comes out. A blueprint (Buggy, Gate,
+  Lift, ...), a faction vehicle on the ground and an engine from the Engine tab are placed with a ghost: the window
+  closes, the look line says "Preparing ..." while the host makes it ready, then the whole thing follows your
+  crosshair, translucent, green where it fits and red with the reason where it doesn't (another construct, a player,
+  too steep, too far). The mouse wheel turns it 15 degrees a notch (Shift + wheel: 1 degree), R faces it away from you
+  again, Fire puts it down, Aim or Esc drops it (so does opening a menu, changing tool, a seat or dying; a ghost not
+  placed in 5 minutes goes). Convoys and aircraft spawned flying are set down as before. The recent row keeps your
+  last picks. A physics-only part or a build from the Builds tab leaves the window up, search and scroll kept, so you
+  can spawn things back to back; a green note says what came (red: the server's refusal). Taking a
   part into your hands or a tool out closes it, back to building, unless "Keep open after picking" is ticked; Tab again
   or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
 - **Links** (the linking tool): on the tool wheel, point at the linking tool and flick further out onto its outer ring
