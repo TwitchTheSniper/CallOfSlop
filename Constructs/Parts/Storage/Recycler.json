@@ -151,7 +151,8 @@
       ],
       "color": "#14181c",
       "detail": true
-    }
+    },
+    {"min": [-0.37, 1.048, 0.462], "max": [0.37, 1.094, 0.483], "color": "#2b3036", "detail": true, "paintable": false, "status": true}
   ],
   "sockets": [
     {

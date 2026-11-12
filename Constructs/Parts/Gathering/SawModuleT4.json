@@ -32,7 +32,8 @@
     {"min": [-0.92, 1.32, -1], "max": [0.92, 1.5, -0.84], "color": "#9a8c62", "detail": true, "shape": "capsule", "front": "+x"},
     {"min": [-0.92, 1.32, 0.84], "max": [0.92, 1.5, 1], "color": "#9a8c62", "detail": true, "shape": "capsule", "front": "+x"},
     {"min": [-1, 0.4, 2.74], "max": [1, 0.62, 2.77], "color": "#1e211c", "detail": true},
-    {"min": [0.32, 0.68, 1.2], "max": [0.44, 0.8, 1.32], "color": "#ff3020", "detail": true, "glow": true, "paintable": false}
+    {"min": [0.32, 0.68, 1.2], "max": [0.44, 0.8, 1.32], "color": "#ff3020", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.7, 1.322, -0.997], "max": [0.7, 1.442, -0.883], "color": "#2b3036", "detail": true, "paintable": false, "status": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},

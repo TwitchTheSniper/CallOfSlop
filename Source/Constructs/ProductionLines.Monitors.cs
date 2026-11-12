@@ -45,7 +45,7 @@ public static partial class ProductionLines
             d.Monitor = MonitorKind.Machine;
             d.DataOut = ExtruderOut;
         }
-        else if (d.IsRefiner || d.IsAssembler || d.IsPress || d.IsLathe)
+        else if (d.IsRefiner || d.IsAssembler || d.IsPress || d.IsLathe || d.IsRecycler || d.IsGatherer)
         {
             d.Monitor = MonitorKind.Machine;
             d.DataOut = DataOutOnly; // (one name: the part itself, port 255, as a single output always was)
@@ -510,11 +510,14 @@ public static partial class ProductionLines
     {
         var own = md.Panels.Length > 0 ? md.Panels[0] : null;
         var tiny = card.Rows == 1;
-        if (own?.Fill != null)
+        if (own?.Fill != null || md.IsGatherer)
         {
             if (tiny)
                 card.Rows = card.TextRows = 4; // (filled as a screen, then its top line kept)
-            own.Fill(world, c, machine, own, card);
+            if (own?.Fill != null)
+                own.Fill(world, c, machine, own, card);
+            else
+                MachineScreens.Gatherer(world, c, machine, md, card); // (a module has no screen of its own: a monitor is its screen)
         }
         for (var t = 0; t < card.TouchLabels.Length; t++)
             card.TouchLabels[t] = null;
