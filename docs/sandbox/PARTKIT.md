@@ -64,7 +64,7 @@ Generators (`--gen-parts` lists them): `free_parts`, `bandit_parts`, `media_part
 `pilot_parts`, `callcentre_parts`, `office_parts`, `british_parts`, `door_parts`, `station_parts`, `shelf_parts`, `linear_parts`,
 `scoop_parts`, `big_drive_parts`, `fluid_tank_parts`, `air_parts`, `boost_parts`, `suspension_parts`, `flight_parts`, `drone_parts`,
 `air_cargo`, `air_weapons_parts`, `ordnance_parts`, `hull_parts`, `body_parts`, `wing_parts`, `actuator_parts`, `make_joint_sides`,
-`control_parts`, `hydraulics_parts`, `press_parts`, `extrusion_parts`, `panel_former_parts`, `structure_parts`, `capital_parts`, `large_systems`,
+`control_parts`, `hydraulics_parts`, `press_parts`, `extrusion_parts`, `panel_former_parts`, `recycler_parts` (one file in the hand-made Storage folder, by `o.File`), `structure_parts`, `capital_parts`, `large_systems`,
 `stabiliser_parts`, `leg_parts`, `upgrade_parts`, `engine_parts`, `building_parts` (the Building pieces and nine example blueprints),
 `interior_parts`, `make_rv` (RV.json), `machine_tiers` (with `TierStyle.cs` and `TierMachine.cs`, the machine look over each tier), `assembling`, `production_showcase` (the Production Showcase
 blueprint, built step by step through the game's rules on the vehicle kit's `BlueprintScript`: it reads the part files as the game loads them, so

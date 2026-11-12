@@ -38,15 +38,15 @@ public static class ModuleLook
         void Spin(PyDict? b) => MachineLook.Work(b, "spin", "+y");
 
         // A strip on a wall's outer face: side 0 = -x, 1 = +x, 2 = -z, 3 = +z; (a0, a1) along the wall, (y0, y1) up it, in unit metres; half is the body's half width.
-        PyDict? Strip(int side, double half, double a0, double a1, double y0, double y1, string color, string? finish = null, double extra = 0)
+        PyDict? Strip(int side, double half, double a0, double a1, double y0, double y1, string color, string? finish = null, double extra = 0, double grow = 0)
         {
             var sg = side % 2 == 0 ? -1 : 1;
-            double f0 = half * s - 0.004, f1 = half * s + p + extra;
+            double f0 = half * s - 0.004 - extra * 0.5, f1 = half * s + p + extra;
             double[] mn = new double[3], mx = new double[3];
             var ax = side < 2 ? 0 : 2;
             (mn[ax], mx[ax]) = sg > 0 ? (f0, f1) : (-f1, -f0);
-            (mn[2 - ax], mx[2 - ax]) = (a0 * s, a1 * s);
-            (mn[1], mx[1]) = (y0 * s, y1 * s);
+            (mn[2 - ax], mx[2 - ax]) = (a0 * s - grow, a1 * s + grow);
+            (mn[1], mx[1]) = (y0 == 0 ? 0.004 : y0 * s, y1 * s); // (a skirt stops short of the underside: no face on the body's own planes)
             return Put(mn, mx, color, finish);
         }
 
@@ -69,7 +69,7 @@ public static class ModuleLook
         {
             const double h = 0.25; // the block's half width; the hopper ring stands on it, the mast and bit in front
             for (var side = 0; side < 4; side++)
-                Strip(side, h, -h, h, 0.0, 0.07, MachineLook.Base);
+                Strip(side, h, -h, h, 0.0, 0.07, MachineLook.Base, grow: side < 2 ? 0.006 : -0.006);
             Strip(1, h, -0.2, 0.2, 0.37, 0.44, MachineLook.Out); // the way out: the chute leaves the hopper on this side
             Put([0.19 * s - 0.004, 0.462 * s, -0.15 * s], [0.19 * s + p, 0.5 * s, 0.15 * s], MachineLook.Accent, "hazard paint");
             Buttons(-0.245, -0.195, -0.19, 0.19);
@@ -89,8 +89,8 @@ public static class ModuleLook
             if (tier >= 4)
                 foreach (var side in new[] { 2, 3 })
                 {
-                    Strip(side, h, -0.25, -0.2, 0.09, 0.36, MachineLook.Steel, "steel", 0.002);
-                    Strip(side, h, 0.2, 0.25, 0.09, 0.36, MachineLook.Steel, "steel", 0.002);
+                    Strip(side, h, -0.244, -0.2, 0.09, 0.36, MachineLook.Steel, "steel", 0.002);
+                    Strip(side, h, 0.2, 0.244, 0.09, 0.36, MachineLook.Steel, "steel", 0.002);
                 }
             if (tier >= 5)
                 Spin(Put([-0.082 * s, -1.12 * s, 0.598 * s], [0.082 * s, -1.08 * s, 0.762 * s], MachineLook.Steel, "steel"));
@@ -100,13 +100,13 @@ public static class ModuleLook
         const double b0 = 0.5; // the bin's half width
         var wall = TopAt(-0.47, 0, 0.72) / s; // the walls' top (a slatted or a low bin is lower)
         for (var side = 0; side < 4; side++)
-            Strip(side, b0, -b0, b0, 0.0, 0.09, MachineLook.Base);
+            Strip(side, b0, -b0, b0, 0.0, 0.09, MachineLook.Base, grow: side < 2 ? 0.006 : -0.006);
         // The fill band: a steel strip up the bin's side with a mark at each quarter.
         if (Strip(1, b0, -0.36, -0.24, 0.1, wall - 0.04, MachineLook.Steel, "steel") is not null)
             for (var k = 1; k < 4; k++)
             {
                 var y = 0.1 + (wall - 0.14) * k / 4;
-                Strip(1, b0, -0.36, -0.24, y - 0.008, y + 0.008, MachineLook.Ink, extra: 0.003);
+                Strip(1, b0, -0.36, -0.24, y - 0.008, y + 0.008, MachineLook.Ink, extra: 0.003, grow: 0.004);
             }
         Strip(3, b0, 0.14, 0.45, wall - 0.13, wall - 0.05, MachineLook.In); // the wood comes in over the front wall, each side of the arm
         Strip(3, b0, -0.45, -0.14, wall - 0.13, wall - 0.05, MachineLook.In);
@@ -128,8 +128,8 @@ public static class ModuleLook
         if (tier >= 4)
             foreach (var side in new[] { 2, 3 })
             {
-                Strip(side, b0, -0.5, -0.43, 0.11, wall - 0.16, MachineLook.Steel, "steel", 0.002);
-                Strip(side, b0, 0.43, 0.5, 0.11, wall - 0.16, MachineLook.Steel, "steel", 0.002);
+                Strip(side, b0, -0.494, -0.43, 0.11, wall - 0.16, MachineLook.Steel, "steel", 0.002);
+                Strip(side, b0, 0.43, 0.494, 0.11, wall - 0.16, MachineLook.Steel, "steel", 0.002);
             }
         if (tier >= 5)
             Strip(2, b0, -0.4, 0.4, 0.2, 0.23, MachineLook.Steel, "steel", 0.002);
