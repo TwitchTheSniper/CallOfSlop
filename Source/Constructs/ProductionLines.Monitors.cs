@@ -337,11 +337,9 @@ public static partial class ProductionLines
             var fit = Math.Max(1, (rows - 1) / 2);
             var first = AutoFirst(n, fit, now);
             var line = 1;
-            for (var k = first; k < n && line + 1 < rows + 1 && line < rows; k++)
+            for (var k = first; k < n && k < first + fit && line + 1 < rows; k++)
             {
                 MachineRow(c, list[..n], k, states[k], card, line++, nameW, cols);
-                if (line >= rows)
-                    break;
                 card.Add(line, "  ");
                 Detail(world, c, list[k], c.DefOf(list[k]), states[k], card, line);
                 card.Clip(line, cols).Dim(line);
