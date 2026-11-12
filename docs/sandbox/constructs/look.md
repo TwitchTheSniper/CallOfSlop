@@ -137,9 +137,9 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
 Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
 keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a
 face a Die Frame, a piece or a conveyor stands against is under 2 cm proud; faces sit a few mm apart by construction.
-Budget: about 40 look boxes at tier 1 or the small class, 80 at the top. Not done yet: the Recycler, racks, junctions
-and storage (the drill and saw modules only turn: steel flights on the bit, a mark across each blade), and a Press
-has no status lamp.
+Budget: about 40 look boxes at tier 1 or the small class, 80 at the top; racks and junctions about 25. Not done yet:
+storage (Materials Bin, Storage Volume and Parts Shelf are hand-made files), tier by build on the Extruders, Formers,
+Press and Die Lathe, and a Press has no status lamp.
 
 **The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
 ([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is
@@ -161,6 +161,25 @@ keeps a dark stack and a steel blade.
   hazard strips at the blade and on an Assembler's front posts; tier 3 a pipe main with a valve wheel, a third plank,
   a cable run; tier 4 steel or tread-plate cladding; tier 5 a third collar. A stack's cap grows with the tier.
 - A box added with `clear: true` gives way to a detail the tier already has there, so a tier's own dressing wins.
+
+**Phase 3** (the Recycler, the gathering modules, racks and junctions).
+
+- **Recycler** (`recycler_parts`, body `#5f7a34`): an open hopper with a white rim and a hazard front edge, two toothed
+  shafts in the throat and a pulley on its side that `spin`, a steel discharge door under an orange band on the control
+  face. The throat stays open between the shafts, so the bin's fill shows.
+- **Drill and Saw Modules** (`ModuleLook.cs`, over the settled tier body): a dark skirt, an orange band at the way out,
+  white bands where wood comes in, a steel fill band with quarter marks up the saw's bin, an accent collar on the bit and
+  hub caps on the blades that `spin`, hazard paint on the cutting edge. A module has no screen: its buttons are a strip
+  on the rim's top beside the lamp. Tier 2 adds hazard strips, 3 a conduit with clamps, 4 steel corner plates, 5 a
+  second collar or a rim strip. A box gives way to the tier's own dressing.
+- **Racks**: the frame is the body, cross bars base, slats steel, top rails accent with a dark fill mark at each quarter
+  of the length, a white band and hazard sill at Piece in with a white arrow on each runner, a steel load plate on the
+  first posts. Nothing is added inside the hold, so stored pieces stay in view.
+- **Junctions**: steel rollers on a dark deck, hazard-painted corner posts, and at each way a band on the side and an
+  arrow on the deck between the rollers: white pointing in, orange pointing out. No cue for the branch in use: a
+  junction has no store for `"work"` to read.
+- A look box starts a few mm inside the wall it stands on and stops short of the body's own planes (a skirt 4 mm above
+  the underside, ends 6 mm in or out), or the "No z-fighting" check finds it.
 
 ## Off the axis
 

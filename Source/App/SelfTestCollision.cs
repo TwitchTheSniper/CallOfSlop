@@ -64,6 +64,7 @@ public static partial class SelfTest
     private static void CollisionHulls()
     {
         int wedges = 0, cylinders = 0, kept = 0;
+        var keptBy = new SortedSet<string>(StringComparer.Ordinal);
         foreach (var d in ConstructParts.All)
             for (var b = d.SolidBoxes; b < d.Boxes.Length; b++)
             {
@@ -72,8 +73,13 @@ public static partial class SelfTest
                     continue;
                 if (ConstructHulls.Of(d).Length == 0)
                 {
-                    if (d.Class == ConstructParts.Small && !d.ColliderBoxes)
+                    // (a wheel's drawn cylinder, 24 sides since 703bc1e8, has no hull: the collider gives every wheel its own
+                    // cylinder leaf, ConstructCollider.AddCylinder against ConstructHulls.WheelPrism, so it isn't on boxes)
+                    if (d.Class == ConstructParts.Small && !d.ColliderBoxes && d.WheelRadius <= 0)
+                    {
                         kept++; // (a big class's smooth pipes and drums, 40 corners, and "collider": "boxes" machines: their solid boxes stand for them)
+                        keptBy.Add(d.Name);
+                    }
                     continue;
                 }
                 if (kind == "wedge")
@@ -83,7 +89,7 @@ public static partial class SelfTest
             }
         Line($"compound collision: {wedges} wedge and {cylinders} cylinder boxes collide as their shape, {kept} kept their boxes");
         if (wedges < 40 || cylinders < 10 || kept > 6) // (kept: the Small Nuke's and a small engine piece's smooth cylinders, more than a hull's 32 corners)
-            Fail($"compound collision: shapes without a real collider: {wedges} wedges, {cylinders} cylinders, {kept} on boxes");
+            Fail($"compound collision: shapes without a real collider: {wedges} wedges, {cylinders} cylinders, {kept} on boxes ({string.Join(", ", keptBy)})");
         // A hull's ray and its bounds agree with a plain box's for a box-shaped hull.
         var points = new Vector3[8];
         for (var k = 0; k < 8; k++)

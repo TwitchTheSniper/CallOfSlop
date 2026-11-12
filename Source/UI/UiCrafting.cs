@@ -212,7 +212,10 @@ public sealed partial class Ui
                     ImGui.SetTooltip("Unticked: also what a linked machine could make with inputs it lacks (dim, with what is missing)."u8);
                 ImGui.SameLine();
             }
-            ImGui.TextColored(Dim, _crTab == 0 ? "What the linked machines make."u8 : _crTab == 1 ? "On linked shelves and racks, not reserved."u8 : "This terminal's requests."u8);
+            if (_crTab == 0) // (one literal per call: the printf scan in SelfTestText reads a single "?:" only)
+                ImGui.TextColored(Dim, "What the linked machines make."u8);
+            else
+                ImGui.TextColored(Dim, _crTab == 1 ? "On linked shelves and racks, not reserved."u8 : "This terminal's requests."u8);
             ImGui.Separator();
             var foot = ImGui.GetFrameHeightWithSpacing() * (_crTab < 2 ? 2 : 1) + 4 * _scale;
             if (ImGui.BeginChild("##crgrid"u8, new float2(0, -foot), ImGuiChildFlags.None))
@@ -245,7 +248,12 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(row.Stock > 0 || row.Make == 1 ? CrGood : CrWarn, _crSelText);
                 }
                 else if (_crVisibleCount == 0)
-                    ImGui.TextColored(Dim, _crTab == 0 ? _crMake > 0 ? "Nothing can be made now: untick Can make now to see what is missing."u8 : "Nothing to make: link machines to the terminal (conveyors, chutes, or a Line Console's wire into Orders)."u8 : "Nothing in linked stores."u8);
+                {
+                    if (_crTab != 0)
+                        ImGui.TextColored(Dim, "Nothing in linked stores."u8);
+                    else
+                        ImGui.TextColored(Dim, _crMake > 0 ? "Nothing can be made now: untick Can make now to see what is missing."u8 : "Nothing to make: link machines to the terminal (conveyors, chutes, or a Line Console's wire into Orders)."u8);
+                }
                 else
                     ImGui.TextColored(Dim, "Click a part, set how many, then Order. It arrives in the tray."u8);
             }
