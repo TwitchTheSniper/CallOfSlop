@@ -423,7 +423,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      new settings (bayWidth, bayDepth, bayHeight).
     // 257: uniforms (Source/Cosmetics/Uniforms.cs). The roster gains a u8 uniform per player after the look (bots too), and the look
     //      (PlayerLook.WireBytes) grows to 4 bytes: the fourth is the uniform choice (Issued Uniform or Own Clothes).
-    public const ushort ProtocolVersion = 257;
+    // 259: pressed parts (the Press rework, phase 1; 258 is the Panel Designer's): a run-time part named "Pressed Part (...)" travels as a
+    //      formed panel does (HullLoft.WireKind and its name); a peer on an older protocol would refuse the name.
+    public const ushort ProtocolVersion = 259;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

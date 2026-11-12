@@ -19,10 +19,12 @@ public sealed class PressParts : IPartGenerator
     private const string Out = "Constructs/Parts/Press";
     private const string Table = "Constructs/Pressing.json";
     private const string Blueprint = "Constructs/Blueprints/PressLine.json";
-    private const string Format = "call-of-slop-pressing/1";
+    private const string Format = "call-of-slop-pressing/2";
     private const string About = "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. "
         + "'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', "
-        + "'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting.";
+        + "'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting. "
+        + "'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); "
+        + "'presets' name the catalogue part that is a die's product of one standard blank. The press still strokes 'rows' until the rework's phase 2.";
     private const string Section = "Presses", Dies = "Dies";
     private const string BodyC = "#4d5a66", Trim = "#39424b", Dark = "#23272c", Gold = "#c8a13a", Bed = "#2f363d";
     private const string Blue = "#2f5f8f", LatheBlue = "#2a6878"; // the Press family's body colours (look.md, "Machine look")
@@ -307,6 +309,128 @@ public sealed class PressParts : IPartGenerator
         return r;
     }
 
+    // ---- Sized dies (the Press rework, phase 1: Pressed.cs). A feature's box is in the blank's unit frame (x its width, y its height, z its
+    // length); "proud" axes move a face outward off a shared plane, "clamp" axes hold its size to minCm..maxCm. Structure only: no bay 2.
+
+    private static PyDict Feature(string tag, double[] box, string look, string? proud = null, string? clamp = null, double? min = null, double? max = null, string[]? blanks = null)
+    {
+        var f = Kw(("tag", tag), ("box", box.Cast<object?>().ToList()));
+        if (proud != null)
+            f["proud"] = proud;
+        if (clamp != null)
+            f["clamp"] = clamp;
+        if (min != null)
+            f["minCm"] = min;
+        if (max != null)
+            f["maxCm"] = max;
+        f["look"] = look;
+        if (blanks != null)
+            f["blanks"] = blanks.Cast<object?>().ToList();
+        return f;
+    }
+
+    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null)
+    {
+        var p = Kw(("id", id), ("like", like), ("label", label), ("preset", preset));
+        if (blanks != null)
+            p["blanks"] = blanks.Cast<object?>().ToList();
+        if (features != null)
+            p["features"] = features;
+        return p;
+    }
+
+    private static PyDict SizedDie(string die, string[] blanks, string[] materials, int[] across, int[] length, double[] aspect, double secBase, double perKg, List<object?> features, List<object?> patterns) =>
+        Kw(("die", die), ("blanks", blanks.Cast<object?>().ToList()), ("materials", materials.Cast<object?>().ToList()), ("across", Py.L(across[0], across[1])),
+            ("length", Py.L(length[0], length[1])), ("aspect", Py.L(aspect[0], aspect[1])), ("seconds", Kw(("base", secBase), ("perKg", perKg))),
+            ("features", features), ("sockets", Py.L()), ("patterns", patterns));
+
+    private static List<object?> SizedDies()
+    {
+        string[] metals = ["metal", "steel", "bronze"];
+        // Bracket: a web in an angle's corner and bolt bosses on its legs; a plate's flanges along two edges; a bar's two bosses.
+        var bracket = Py.L(
+            Feature("web", [0.25, 0.25, 0.15, 0.42, 0.42, 0.85], "bare", proud: "xy", blanks: ["l-angle"]),
+            Feature("boss", [-0.04, 0.6, 0.14, 0.02, 0.72, 0.26], "dark", proud: "x", clamp: "x", min: 1, max: 6, blanks: ["l-angle"]),
+            Feature("boss", [-0.04, 0.6, 0.74, 0.02, 0.72, 0.86], "dark", proud: "x", clamp: "x", min: 1, max: 6, blanks: ["l-angle"]),
+            Feature("boss", [0.6, -0.04, 0.14, 0.72, 0.02, 0.26], "dark", proud: "y", clamp: "y", min: 1, max: 6, blanks: ["l-angle"]),
+            Feature("boss", [0.6, -0.04, 0.74, 0.72, 0.02, 0.86], "dark", proud: "y", clamp: "y", min: 1, max: 6, blanks: ["l-angle"]),
+            Feature("flange", [0, 0.3, 0, 0.08, 0.7, 1], "bare", proud: "y", clamp: "x", min: 1, max: 10, blanks: ["plate"]),
+            Feature("flange", [0.08, 0.3, 0, 1, 0.7, 0.08], "bare", proud: "y", clamp: "z", min: 1, max: 10, blanks: ["plate"]),
+            Feature("boss", [0.35, 0.98, 0.14, 0.65, 1.06, 0.26], "dark", proud: "y", blanks: ["solid"]),
+            Feature("boss", [0.35, 0.98, 0.74, 0.65, 1.06, 0.86], "dark", proud: "y", blanks: ["solid"]));
+        var bracketPatterns = Py.L(
+            Pattern("l", "L Bracket", "L bracket", "l-angle 25x25x25 steel", blanks: ["l-angle", "solid"]),
+            Pattern("corner", "Corner Bracket", "corner bracket", "l-angle 25x25x25 steel", blanks: ["l-angle"]),
+            Pattern("gusset", "Gusset 0.25 m", "gusset", "plate 25x10x25 steel", blanks: ["plate"]));
+        // Housing: a flange round each open end, a lid seam at 0.9 of its height on its sides, four bosses on its long edges.
+        var housing = new List<object?>();
+        foreach (var (z0, z1) in new[] { (0.0, 0.06), (0.94, 1.0) })
+        {
+            housing.Add(Feature("flange", [-0.04, 0.94, z0, 1.04, 1.04, z1], "bare", proud: "xy", clamp: "z", min: 1, max: 40));
+            housing.Add(Feature("flange", [-0.04, -0.04, z0, 1.04, 0.06, z1], "bare", proud: "xy", clamp: "z", min: 1, max: 40));
+            housing.Add(Feature("flange", [-0.04, 0.06, z0, 0.06, 0.94, z1], "bare", proud: "xy", clamp: "z", min: 1, max: 40));
+            housing.Add(Feature("flange", [0.94, 0.06, z0, 1.04, 0.94, z1], "bare", proud: "xy", clamp: "z", min: 1, max: 40));
+        }
+        housing.Add(Feature("seam", [-0.01, 0.89, 0.1, 0.03, 0.91, 0.9], "dark", proud: "x", clamp: "y", min: 1, max: 4));
+        housing.Add(Feature("seam", [0.97, 0.89, 0.1, 1.01, 0.91, 0.9], "dark", proud: "x", clamp: "y", min: 1, max: 4));
+        foreach (var (x0, y0) in new[] { (-0.03, -0.03), (0.94, -0.03), (-0.03, 0.94), (0.94, 0.94) })
+            housing.Add(Feature("boss", [x0, y0, 0.44, x0 + 0.09, y0 + 0.09, 0.56], "dark", proud: "xy"));
+        var housingPatterns = Py.L(Pattern("housing", "Housing 0.5 m", "housing", "hollow 50x50x50 metal"));
+        // Plate: a rolled lip round the rim (proud of both faces); per pattern a field of treads, rivets or ribs on its top face.
+        var plate = Py.L(
+            Feature("lip", [0, 0.3, 0, 0.04, 0.7, 1], "bare", proud: "y", clamp: "x", min: 1, max: 10),
+            Feature("lip", [0.96, 0.3, 0, 1, 0.7, 1], "bare", proud: "y", clamp: "x", min: 1, max: 10),
+            Feature("lip", [0.04, 0.3, 0, 0.96, 0.7, 0.04], "bare", proud: "y", clamp: "z", min: 1, max: 10),
+            Feature("lip", [0.04, 0.3, 0.96, 0.96, 0.7, 1], "bare", proud: "y", clamp: "z", min: 1, max: 10));
+        double[] field = [0.2, 0.4, 0.6, 0.8];
+        var treads = new List<object?>();
+        for (var i = 0; i < 4; i++)
+            for (var j = 0; j < 4; j++)
+            {
+                var (hx, hz) = (i + j) % 2 == 0 ? (0.06, 0.025) : (0.025, 0.06); // (the diamond plate's alternate bars)
+                treads.Add(Feature("tread", [field[i] - hx, 0.6, field[j] - hz, field[i] + hx, 0.66, field[j] + hz], "bare", proud: "y"));
+            }
+        var rivets = new List<object?>();
+        foreach (var x in new[] { 0.1, 0.9 })
+            foreach (var z in new[] { 0.1, 0.5, 0.9 })
+                rivets.Add(Feature("rivet", [x - 0.02, 0.6, z - 0.02, x + 0.02, 0.67, z + 0.02], "dark", proud: "y", clamp: "xz", min: 1, max: 8));
+        var ribs = new List<object?>();
+        foreach (var x in field)
+            ribs.Add(Feature("rib", [x - 0.015, 0.6, 0.08, x + 0.015, 0.68, 0.92], "dark", proud: "y", clamp: "x", min: 1, max: 6));
+        var platePatterns = Py.L(
+            Pattern("sheet", "Sheet Steel 1 m", "sheet", "plate 100x10x100 steel"),
+            Pattern("plate", "Plate Steel 1 m", "plate", "plate 100x10x100 steel"),
+            Pattern("steel", "Steel Plate", "steel plate", "plate 50x10x50 steel"),
+            Pattern("tread", "Tread Plate 1 m", "tread plate", "plate 100x10x100 steel", features: treads),
+            Pattern("armour", "Armour Plate 1 m", "armour plate", "plate 100x20x100 steel", features: rivets),
+            Pattern("grate", "Mesh Grate 1 m", "ribbed plate", "plate 100x10x100 steel", features: ribs));
+        return Py.L(
+            SizedDie("Bracket", ["l-angle", "plate", "solid"], metals, [10, 2880], [10, 800], [0.5, 8], 1, 0.02, bracket, bracketPatterns),
+            SizedDie("Housing", ["hollow", "solid"], metals, [15, 2880], [15, 3200], [0.5, 8], 2, 0.01, housing, housingPatterns),
+            SizedDie("Plate", ["plate"], ["metal", "steel", "bronze", "copper", "laminate", "wood", "planks"], [10, 2880], [25, 6400], [1, 64], 1, 0.01, plate, platePatterns));
+    }
+
+    /// <summary>The catalogue parts the sized dies' standard blanks give: the Bracket die's four (in every metal it works) and every Housing.</summary>
+    private static List<object?> Presets()
+    {
+        var r = new List<object?>();
+        void Add(string part, string die, string pattern, string blank) => r.Add(Kw(("part", part), ("die", die), ("pattern", pattern), ("blank", blank)));
+        foreach (var m in new[] { "steel", "metal", "bronze" })
+        {
+            Add("L Bracket", "bracket", "l", $"l-angle 25x25x25 {m}");
+            Add("Corner Bracket", "bracket", "corner", $"l-angle 25x25x25 {m}");
+            Add("Gusset 0.25 m", "bracket", "gusset", $"plate 25x10x25 {m}");
+            Add("Gusset 0.5 m", "bracket", "gusset", $"plate 50x10x50 {m}");
+        }
+        foreach (var (sideO, _, _) in Housings)
+        {
+            var cm = (int)Math.Round(Py.D(sideO) * 100);
+            foreach (var tier in MaterialTiers)
+                Add($"{tier.Prefix}Housing {Py.G(Py.D(sideO))} m", "housing", "housing", $"hollow {cm}x{cm}x{cm} {tier.Material}");
+        }
+        return r;
+    }
+
     private static List<object?> LatheRows()
     {
         var r = new List<object?>();
@@ -351,7 +475,8 @@ public sealed class PressParts : IPartGenerator
             foreach (var t in MaterialTiers)
                 parts.Add(("Housings", Housing(side, c, n, t)));
         WriteParts(o, Out, parts);
-        var table = Kw(("format", Format), ("about", About), ("rows", Rows()), ("lathe", LatheRows()));
+        var table = Kw(("format", Format), ("about", About), ("rows", Rows()), ("lathe", LatheRows()),
+            ("strength", Kw(("of", "healthPerM3"), ("ref", 5000))), ("dies", SizedDies()), ("presets", Presets()));
         o.File(Table, PyJson.Dumps(table, 1) + "\n");
         o.File(Blueprint, PyJson.Dumps(Line(), 2) + "\n");
     }

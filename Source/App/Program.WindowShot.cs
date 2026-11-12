@@ -31,7 +31,7 @@ public static unsafe partial class Program
     private static ushort _wsBody; // the spawned blueprint
     private static TextWriter? _wsStdout;
 
-    private const string WsActions = "aim PART[#n], near PART[#n] [m], from PART[#n] SIDE,UP,OUT, use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m]";
+    private const string WsActions = "aim PART[#n], near PART[#n] [m], from PART[#n] SIDE,UP,OUT, use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m], saveload";
 
     /// <summary>Reads the flags (before the window): the size and a throwaway save folder are set here.</summary>
     private static bool WindowShotArgs(string[] args)
@@ -86,7 +86,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -480,6 +480,33 @@ public static unsafe partial class Program
                     }
                 WsSay($"bring: {n} player(s) to {feet:0.0}");
                 _wsWait = 5;
+                return;
+            }
+            case "saveload": // host: the spawned body written as a world save writes it and read back into a fresh world; the parts' names before and after
+            {
+                if (WsSpawned(g) is not { } sb)
+                {
+                    WsFail("saveload: no spawned blueprint");
+                    return;
+                }
+                var snap = new WorldSnapshot();
+                g.Constructs.CaptureInto(snap);
+                var names = new WorldNames();
+                var body = new SaveWriter();
+                ConstructWorld.WriteBody(body, snap, snap.Bodies.First(b => b.Id == sb.Id), names);
+                var nameBytes = new SaveWriter();
+                names.Write(nameBytes);
+                var read = new WorldNamesRead();
+                read.Read(new SaveReader(nameBytes.Span.ToArray()));
+                var loaded = new ConstructWorld().ReadBody(new SaveReader(body.Span.ToArray()), read, _ => 0);
+                var same = loaded != null && loaded.PartCount == sb.PartCount;
+                for (var i = 0; i < sb.PartCount; i++)
+                {
+                    var after = loaded != null && i < loaded.PartCount ? loaded.DefOf(i).Name : "(missing)";
+                    same &= after == sb.DefOf(i).Name;
+                    WsSay($"saveload: part {i} {sb.DefOf(i).Name} -> {after}");
+                }
+                WsSay($"saveload: {(same ? "the same parts" : "DIFFERENT")} ({body.Span.Length} bytes)");
                 return;
             }
             case "craft": // a Crafting Terminal's orders, tray and reserved parts as this peer has them; on the host, also a save and load of its body

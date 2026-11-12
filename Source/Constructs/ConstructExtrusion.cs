@@ -74,7 +74,7 @@ public static class Extrusion
     private const int WheelSides = 24;
 
     /// <summary>A rectangle of cells.</summary>
-    private readonly record struct Rect(int X, int Y, int W, int H);
+    internal readonly record struct Rect(int X, int Y, int W, int H);
 
     public readonly record struct Preset(string Id, ulong Mask);
 
@@ -283,7 +283,7 @@ public static class Extrusion
     public static float Fill(ulong mask) => System.Numerics.BitOperations.PopCount(mask) / (float)(Grid * Grid);
 
     /// <summary>The section as rectangles: greedy, widest run first, the same on every machine. Returns how many.</summary>
-    private static int Mesh(ulong mask, Span<Rect> into)
+    internal static int Mesh(ulong mask, Span<Rect> into)
     {
         var left = mask;
         var n = 0;
@@ -826,7 +826,7 @@ public static class Extrusion
     /// piece: <see cref="MaxStations"/>), each on the outermost cell of its side nearest the middle, so an I-beam's flanges
     /// have them on their faces and its web has none in the air. Point and freeform welds reach everywhere else.
     /// </summary>
-    private static CSocket[] Sockets(in ExtrusionKey k, float w, float h, float len, Vector3 min, Vector3 max)
+    internal static CSocket[] Sockets(in ExtrusionKey k, float w, float h, float len, Vector3 min, Vector3 max)
     {
         var mask = k.Mask;
         var round = k.Shape != ExShape.Section;
