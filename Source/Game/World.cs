@@ -668,6 +668,7 @@ public sealed class Player
     public byte Prestige, Level; // as the player reported them in their Hello (untrusted, only shown and used to validate the hat); in the roster
     public HatId Hat; // the hat they wear (set from the loadout once Cosmetics.IsUnlocked(hat, Prestige) and human); in the roster
     public PlayerLook Look; // the look picked on the APPEARANCE screen (Source/Cosmetics/Appearance.cs; bots: Auto); in the roster
+    public byte Uniform; // the uniform the server dresses them in (Source/Cosmetics/Uniforms.cs; 0 none, bots too: staff by name); in the roster
     public ulong SteamId; // the Steam ID they reported (0: not on Steam); cosmetic (Steam name and avatar in the menus), never trusted (GameSteam.cs)
 
     // Throwables (server-authoritative counts, refilled on spawn)

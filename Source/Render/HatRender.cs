@@ -15,9 +15,11 @@ public static class HatRender
     /// <summary>The head width the hat models are made for (the standing head box).</summary>
     public const float ModelHeadWidth = 0.45f;
 
-    /// <summary>The hat to draw on <paramref name="p"/>: bots never wear one; people only a hat their prestige allows.</summary>
+    /// <summary>The hat to draw on <paramref name="p"/>: their uniform's (staff and bots too: Source/Cosmetics/Uniforms.cs), else bots never wear one; people only a hat their prestige allows.</summary>
     public static HatDef? HatFor(Player p)
     {
+        if (BodyModel.UniformOf(p)?.Hat is { } cap)
+            return cap;
         if (p.Bot != null || p.Hat == HatId.None || !Cosmetics.IsUnlocked(p.Hat, p.Prestige))
             return null;
         return Cosmetics.Get(p.Hat);

@@ -186,7 +186,7 @@ public static class Cosmetics
         return list;
     }
 
-    private static void ReadPart(JsonElement p, string where, List<HatBox> boxes)
+    internal static void ReadPart(JsonElement p, string where, List<HatBox> boxes)
     {
         var shape = p.TryGetProperty("shape"u8, out var s) ? s.GetString() ?? "box" : "box";
         var at = Vec(p, "at", where, Vector3.Zero);
@@ -215,7 +215,7 @@ public static class Cosmetics
         }
     }
 
-    private static void Measure(HatDef def)
+    internal static void Measure(HatDef def)
     {
         var min = new Vector3(float.MaxValue);
         var max = new Vector3(float.MinValue);
@@ -236,7 +236,7 @@ public static class Cosmetics
     private static float Num(JsonElement e, string name, string where) =>
         e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : throw new FormatException($"{where}: needs \"{name}\" (a number)");
 
-    private static Vector3 Vec(JsonElement e, string name, string where, Vector3? fallback)
+    internal static Vector3 Vec(JsonElement e, string name, string where, Vector3? fallback)
     {
         if (!e.TryGetProperty(name, out var v))
             return fallback ?? throw new FormatException($"{where}: needs \"{name}\": [x, y, z]");
@@ -245,7 +245,7 @@ public static class Cosmetics
         return new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle());
     }
 
-    private static Vector3 Color(JsonElement e, string where)
+    internal static Vector3 Color(JsonElement e, string where)
     {
         var text = e.TryGetProperty("color"u8, out var v) ? v.GetString() ?? "" : "";
         if (text.Length != 7 || text[0] != '#' || !int.TryParse(text.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var rgb))

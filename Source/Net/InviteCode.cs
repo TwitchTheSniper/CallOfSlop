@@ -170,7 +170,7 @@ public static class InviteCode
     }
 
     /// <summary>"This invite is for a different version..." when <paramref name="invite"/> came from another build, else "".</summary>
-    public static string VersionProblem(Invite invite) => (byte)invite.Protocol == (byte)ServerInfo.ProtocolVersion
+    public static string VersionProblem(Invite invite) => (byte)invite.Protocol == unchecked((byte)ServerInfo.ProtocolVersion)
         ? ""
         : $"This invite is for a different version of Call of Slop (protocol {invite.Protocol}; yours is {ServerInfo.ProtocolVersion}). Everyone needs the same build.";
 
