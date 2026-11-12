@@ -703,6 +703,80 @@ off as it is; blueprints carrying no orders; an Assembler's order counting parts
 batch riding it (a part too wide goes to the tray if it fits there). Next: the Fan and Airframe Formers, and the
 building station issuing a blueprint's bill.
 
+## Crafting terminal
+
+The user (2026-11-11): "a crafting terminal, which basically will give you a list of what you can possibly make with what's currently
+in the network. Similar to the creative spawn menu... if a player wants to make one or two of a piece to build freely within the
+world, it can be simple and easy to use." Code: `Source/Constructs/ConstructCrafting.cs` (the network, the list, orders, the wire,
+saves), `ConstructReserve.cs` ([Reservations](#reservations)), `Source/UI/UiCrafting.cs` and `Program.SandboxCrafting.cs` (the
+panel); the part from the part kit's `crafting_terminal_parts`.
+
+- **The part** (`Constructs/Parts/Crafting/CraftingTerminal.json`, 2 by 2.5 m, 80 W): a desk with a screen at standing height, a
+  sorter cabinet with a chute hopper behind it, and a low tray along its right. It is a Piece Rack with `storage.pieces.crafting`
+  (`IsCraftTerminal`): the tray is the rack's hold (0.8 x 0.8 m across, 2.3 m long), so it packs by volume, draws what it holds, and F on
+  a stack takes that part, by the rack's code. Ports: **Piece in** (conveyor, the tray's back), **Chute in** (the hopper) and
+  **Orders** (a data input). Its screen (panel source `craft`) shows what it sees, the tray and its first four orders.
+- **The network** (`ConstructCrafting.NetOf`), on the terminal's own construct: every part joined to it by intact conveyors and
+  chutes, either way round, through junctions, machines and stores; and the machines of every Line Console whose output is wired into
+  its **Orders** port (`ProductionLines.Machines`), with what those machines are joined to. The wire runs console to terminal, so
+  nothing new reaches a machine's Run. Machines are Assemblers, Extruders and Wheel Formers (64); stores are racks, shelves,
+  chests, volumes and bins (64); refiners are noted for chains (16). It is cached per terminal under a hash of the body's links and
+  part count, looked at when an order is placed or stepped, a panel is drawn or the look line is made: never per tick. The look
+  line: "Crafting Terminal: 4 machines, 8 stores, 1 console - tray empty".
+- **The list** (`Catalogue`, worked out on either peer from stores, links and queues: nothing of it is on the wire): every part in
+  linked stores that isn't reserved ("in stock 6"); every recipe a linked Assembler family makes at its tier; from each Extruder
+  four sections (solid bar, hollow box, I-beam, L-angle) at 0.1 and 0.2 m in 1, 2 and 4 m, in the material it is fed, where its die
+  takes them; each Wheel Former's first wheel. A row is **now** (a batch's inputs are in the machine or in linked stores), **chain**
+  (every missing input is itself made by a linked refiner or Assembler: one level) or **later** (the machine exists, inputs
+  missing: "needs 4 rubber, 2 cloth").
+- **The panel.** F on the terminal (not on a stack in its tray) opens it: tabs **Make**, **In stock** and **Orders**, a search box,
+  and the recipe picker's tiles (picture, name, inputs as resource icons, a badge line: "in stock 3, can make", "can make",
+  "can make: chain", or what is missing). A dim tile can't be ordered; its reason is on hover. A click selects; the bar below has
+  1, 5, a count box and **Order**. Orders lists each request with its state and **Cancel**. Esc closes; it closes on a local reset,
+  when the player walks off or dies.
+- **An order** (`CraftOrder`, at most 32 open a terminal; `CActKind.CraftOrder`, checked as a finger on a console: reach, power, who
+  may) is fulfilled by a 2 Hz step that walks only bodies with open orders (`ConstructCrafting.Step`):
+  1. **Stock first.** It reserves what is free in linked stores. A rack whose **Piece out** (an implicit port at every Piece Rack's
+     far end) has a conveyor to the terminal's Piece in, straight or through Joins, sends the pieces as riders, one a step. A store
+     with a chute into Chute in sends by that chute's own moves, and only what the terminal's orders reserved there
+     (`ChuteInto`). A store with neither: "no route from the Long Piece Rack: collect it there", the parts stay reserved for the
+     player, and taking them counts.
+  2. **The rest is made.** A work order goes to the first linked machine that accepts it (`WorkOrders.Queue`, so the machine's own
+     refusals apply). What it makes lands in the tray directly, or in a linked store, where the waiting order reserves and
+     fetches it.
+  3. A part that lands in the tray counts for the oldest open order of its kind. A full tray holds the store: "held: the tray is
+     full - take parts out". A finished order stays listed for 60 s.
+  States on either peer: waiting, fetching from X, queued at X, riding to the tray, in the tray, no route from X, held (why).
+  **Cancel** drops the order's reservations and takes its unstarted work order off the machine's queue.
+- **Network (protocol 252).** `CActKind.CraftOrder` (body, terminal, the order's 22 bytes) and `CraftCancel` (body, terminal, id);
+  `CBodyKind.Craft`, per body on a change, after a Full and to a joiner: each terminal's orders (the order, id, got, state, where, a
+  note) and each store's reserved kinds.
+- **Saves.** After a body's work orders (an empty block when it has none): each terminal's orders with got, asked and riding counts.
+  Reservations aren't written: the orders claim again at the first step after a load. An older save ends before the block.
+- **Cost.** A world without open orders: one list check a tick. A blueprint carries no orders.
+
+Not yet: other constructs by world link; splitters on a return path (a splitter deals in turn, so it is no route); chutes of more
+than one hop; a Piece Rack as a bigger tray; press products; a custom size entry (the Line Console's bill makes those); reserving a
+machine's inputs for an order.
+
+Proposed (the user's to confirm): the console-to-terminal wire as the order link; conveyors and chutes joining either way round;
+stock before making; 32 open orders; a done order shown 60 s; reservations worked out again on load; the tray's size.
+
+## Reservations
+
+Shared by the Crafting Terminal and, next, the blueprint building station (`Source/Constructs/ConstructReserve.cs`,
+`ConstructWorld.Reserve`). A reservation is a claim on stock: a store, a kind, a count, and its owner (a terminal's store handle and
+its order's id). **Available is held less reserved** (`ConstructCrafting.Available`): the list, another terminal's order and a
+station's build see only that. One table a world, at most 1,024 claims.
+
+- It dies with its owner (the terminal removed, the order cancelled or done), with its store, and shrinks as its parts leave for the
+  owner.
+- **By hand.** Taking a reserved part is allowed. At its owner's next step the claim is cut to what the store still holds and the
+  order asks again: it reserves elsewhere, or a work order is issued for the shortfall.
+- A rack's look line says "62% full, 12 pieces, 2 kinds (4 reserved)" (`CStore.Reserved`). Clients hear each store's reserved
+  kinds in `CBodyKind.Craft`, so their lists read the same.
+- Never saved: an order is the truth, a reservation its claim, made again after a load.
+
 ## Production Showcase
 
 One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine
@@ -721,7 +795,8 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   Rack); **orders** (a second Line Console wired to both Extruders' and the Wheel Former's Runs, its bill already on it: seven sizes of
   metal angle and plate, two of planks, two wheels; 19 pieces; and three catalogue lines, 4 Gear Sets, 4 Steel Plates, 2 Gun Barrels);
   **assembling** (an Assembler fed steel, its Piece out onto a conveyor to a Piece Rack, on the orders console: "Send the bill: the
-  Assembler makes these parts").
+  Assembler makes these parts"); **crafting** (a Crafting Terminal between the two end racks, the orders console wired into its Orders port, a
+  return conveyor from the Assembler's rack to its tray: "F on the screen: order a part. It arrives in the tray").
 - **Stock** is the Storage Volume's own creative-only Material and Fill settings (`ConstructBuild.SetConfig`): a creative world fills
   each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
   under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.

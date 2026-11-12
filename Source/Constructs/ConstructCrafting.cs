@@ -488,14 +488,14 @@ public static class ConstructCrafting
     /// <summary>An order's state in words, for the Orders tab (either peer).</summary>
     public static string StateText(Construct c, in CraftOrder o)
     {
-        var where = o.Where < c.PartCount ? c.DefOf(o.Where).Name : "the line";
+        var where = o.Where < c.PartCount ? "the " + c.DefOf(o.Where).Name : "a linked machine";
         return o.State switch
         {
-            CraftState.Fetching => $"fetching from the {where}",
-            CraftState.Queued => $"queued at the {where}",
+            CraftState.Fetching => $"fetching from {where}",
+            CraftState.Queued => $"queued at {where}",
             CraftState.Riding => "riding to the tray",
             CraftState.InTray => "in the tray",
-            CraftState.Collect => $"no route from the {where}: collect it there",
+            CraftState.Collect => $"no route from {where}: collect it there",
             CraftState.Held => string.IsNullOrEmpty(o.Note) ? "held" : o.Note,
             _ => "waiting",
         };
