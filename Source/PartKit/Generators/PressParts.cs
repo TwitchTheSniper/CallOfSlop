@@ -162,9 +162,13 @@ public sealed class PressParts : IPartGenerator
         var proud = 0.004 * Math.Max(1, Math.Pow(c.X, 0.5));
         var h = k * 1.25;
         var o = new List<object?>();
+        // Three bays share the wall, so a card is 1.9 cells wide, not the Small Press's 2.9: a lower card (smaller text, still larger in metres
+        // than a Small Press's) holds 31 characters a line, the longest a card writes ("Makes Limited-Slip Differential", "Sized small fluid tank").
+        if (f.Centres.Count >= 3)
+            h = k * 0.5;
         for (var i = 0; i < f.Centres.Count; i++)
             o.Add(Kw(("source", "press.bay"), ("slot", i), ("at", Py.L(f.Centres[i], R3((f.Wall + f.Crown) / 2), Py.Round(f.Z0 - proud, 4))), ("size", Py.L(R3(baysWidth), R3(h))), ("face", "-z"), ("up", "+y"), ("rows", 5)));
-        var die = Kw(("source", "press.die"), ("at", Py.L(R3((f.X0 + f.X1) / 2), R3((f.Crown + f.Y1) / 2), Py.Round(f.Z1 + proud, 4))), ("size", Py.L(R3(k * 5), R3(k * 1.5))), ("face", "+z"), ("up", "+y"), ("rows", 4));
+        var die = Kw(("source", "press.die"), ("at", Py.L(R3((f.X0 + f.X1) / 2), R3((f.Crown + f.Y1) / 2), Py.Round(f.Z1 + proud, 4))), ("size", Py.L(R3(k * 5.8), R3(k * 1.2))), ("face", "+z"), ("up", "+y"), ("rows", 4)); // (31 characters: "Auto: Limited-Slip Differential")
         if (pattern)
             die["touch"] = Py.L(Kw(("action", "press.pattern"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Pattern"))); // (the next of its die's patterns, then Auto)
         o.Add(die);
