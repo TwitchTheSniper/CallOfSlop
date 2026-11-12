@@ -91,7 +91,7 @@ public sealed partial class Game
             from = OpeningBuild(from); // (the penal colony first, the kit round it: GameSandboxOpening.cs)
         foreach (var name in kit)
         {
-            var c = SandboxKitPiece(name, from);
+            var c = ColonySiteKit(name) ?? SandboxKitPiece(name, from); // (the colony's works yard, inside its fence, when it has one: GameColonySite.cs)
             if (c == null)
             {
                 Log($"[sandbox] survival start: {name} could not be placed");

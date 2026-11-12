@@ -1,0 +1,115 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Heating Main 0.5 m",
+  "description": "A short make-up length of lagged heating pipe.",
+  "group": "Building",
+  "section": "Site works",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 60.0,
+  "health": 150,
+  "armour": 15,
+  "material": "steel",
+  "color": "#4b5157",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        0.705,
+        0.08
+      ],
+      "max": [
+        0.375,
+        1.045,
+        0.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        0.705,
+        0.08
+      ],
+      "max": [
+        0.375,
+        1.045,
+        0.42
+      ],
+      "color": "#c9c4b4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.125,
+        0.705,
+        0.58
+      ],
+      "max": [
+        0.375,
+        1.045,
+        0.92
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        0.705,
+        0.58
+      ],
+      "max": [
+        0.375,
+        1.045,
+        0.92
+      ],
+      "color": "#c9c4b4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "la",
+      "at": [
+        -0.125,
+        0.875,
+        0.25
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "ra",
+      "at": [
+        0.375,
+        0.875,
+        0.25
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lb",
+      "at": [
+        -0.125,
+        0.875,
+        0.75
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "rb",
+      "at": [
+        0.375,
+        0.875,
+        0.75
+      ],
+      "dir": "+x"
+    }
+  ]
+}
