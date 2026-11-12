@@ -286,6 +286,26 @@ public sealed class MachineTiers : IPartGenerator
         return o;
     }
 
+    /// <summary>A gathering module's status lamp: a bar on top of the highest box along its back (a hopper's or a bin's back wall), most of
+    /// its width and 6 cm high at tier 1 (scaled with the module), read from any side and from above where a module works on an arm.</summary>
+    private static PyDict ModuleLamp(List<PyDict> boxes, double size)
+    {
+        var solid = boxes.Where(b => !b.Has("detail")).Select(b => (Min: D3(b["min"]), Max: D3(b["max"]))).ToList();
+        var back = solid.Min(b => b.Min[2]);
+        var depth = solid.Max(b => b.Max[2]) - back;
+        var rim = solid.Where(b => b.Min[2] <= back + 0.15 * depth).OrderByDescending(b => b.Max[1]).First();
+        var w = (rim.Max[0] - rim.Min[0]) * 0.35;
+        var mx = (rim.Min[0] + rim.Max[0]) / 2;
+        var z0 = rim.Min[2] + 0.003;
+        var z1 = Math.Min(rim.Max[2] - 0.003, z0 + 0.06 * size);
+        var y = rim.Max[1] + 0.002;
+        return new PyDict
+        {
+            ["min"] = Vec([mx - w, y, z0]), ["max"] = Vec([mx + w, y + 0.06 * size, z1]),
+            ["color"] = "#2b3036", ["detail"] = true, ["paintable"] = false, ["status"] = true,
+        };
+    }
+
     private static PyDict Fill(Bin b, double size) => new() { ["min"] = Vec(Scaled(b.Min, size)), ["max"] = Vec(Scaled(b.Max, size)) };
 
     private static PyDict Part(Line line, int tier)
@@ -318,8 +338,10 @@ public sealed class MachineTiers : IPartGenerator
         boxes.AddRange(pads.Select(b => BuiltBox(tier, b, 0)));
         boxes.AddRange(drawn);
         boxes.AddRange(shape.Detail.Select(b => BuiltBox(tier, Grown(b), 0, true)));
+        if (!big && line.Gather is not null)
+            boxes.Add(ModuleLamp(boxes, size)); // (a gathering module has no screen: its status lamp stands on its back rim, ProductionLines)
         PyDict? panel = null;
-        if (big) // (a building has a screen; a gathering module's state is its look line, and it works out of sight on an arm)
+        if (big) //(a building has a screen; a gathering module's state is its look line, and it works out of sight on an arm)
         {
             var keepClear = sockets.Select(s => (D3(s["at"]), (string)s["dir"]!)).ToList();
             keepClear.AddRange((line.Ports ?? []).Select(p => (Scaled(D3(p["at"]), size), (string)p["face"]!)));

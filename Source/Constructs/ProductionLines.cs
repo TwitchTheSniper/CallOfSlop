@@ -41,6 +41,12 @@ public static partial class ProductionLines
             return ExtruderRaw(world, c, part, st);
         if (d.IsAssembler)
             return AssemblerRaw(world, c, part, d, st);
+        if (d.IsPress || d.IsLathe)
+            return PressRaw(world, c, part, st);
+        if (d.IsRecycler)
+            return ConstructRecycler.LineOf(world, c, part, st);
+        if (d.IsGatherer)
+            return ConstructGatherer.LineOf(world, c, part, st);
         if (!d.IsRefiner)
             return null;
         if (!ConstructRecycler.Powered(world, c, part))
@@ -80,6 +86,25 @@ public static partial class ProductionLines
     /// <summary>Whether a machine is at work now, for the boxes that show it ("work" on a box: <see cref="BoxWork"/>): a line machine that shows Running, any other with a busy store and power.</summary>
     public static bool Working(ConstructWorld world, Construct c, int part, CStore st, double now) =>
         Raw(world, c, part, st) is null ? st.Busy && !st.Held && ConstructRecycler.Powered(world, c, part) : Of(world, c, part, st, now) == LineState.Running && st.Busy;
+
+    /// <summary>A Press's or a Die Lathe's state, from its stall byte (ConstructPress.cs, on the wire): Running while it stamps, Starved waiting for a
+    /// piece or a die, Blocked with its tray, its path or its conveyor full, at Fault when what it makes can't leave or it is the wrong size.</summary>
+    private static LineState PressRaw(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        if (!ConstructRecycler.Powered(world, c, part) || (PressStall)st.Refused == PressStall.NoPower)
+            return LineState.NoPower;
+        if (st.Held)
+            return LineState.Idle;
+        if (st.Busy)
+            return LineState.Running;
+        return (PressStall)st.Refused switch
+        {
+            PressStall.Wants or PressStall.TooShort or PressStall.NoDie or PressStall.NoRecipe => LineState.Starved,
+            PressStall.TrayFull or PressStall.Blocked or PressStall.ConveyorFull or PressStall.ConveyorCut => LineState.Blocked,
+            PressStall.WrongClass or PressStall.ConveyorSmall => LineState.Fault,
+            _ => LineState.Idle, // (ready: nothing to say until a piece comes)
+        };
+    }
 
     /// <summary>An Assembler's state (ConstructAssembling.cs): no recipe or an empty queue is Stopped; a recipe it can't work is a Fault.</summary>
     private static LineState AssemblerRaw(ConstructWorld world, Construct c, int part, ConstructPartDef d, CStore st)
@@ -212,7 +237,7 @@ public static partial class ProductionLines
         return n;
     }
 
-    private static bool NotMachine(Construct c, int part) => c.DefOf(part) is { IsRefiner: false, IsExtruder: false, IsAssembler: false }; // (refiners, Extruders, Formers and Assemblers are the lines' machines so far)
+    private static bool NotMachine(Construct c, int part) => c.DefOf(part) is { IsRefiner: false, IsExtruder: false, IsAssembler: false, IsRecycler: false, IsGatherer: false, IsPress: false, IsLathe: false }; // (refiners, Extruders, Formers, Assemblers, Presses, Die Lathes, Recyclers and gathering modules are the lines' machines)
 
     private static bool OnBill(in CPart p, ConstructPartDef d) => ConstructConfig.Get(p, d, CfgKey.LinePage, 0) >= 0.5f;
 
@@ -294,7 +319,8 @@ public static partial class ProductionLines
         first = card.Scroll = Math.Clamp(first, 0, card.ScrollMax);
         var shown = Math.Min(fit, n - first);
         var brief = shown < n && cols < 24; // (the scroll mark needs the room: "Running 2/3")
-        card.Add(0, brief ? on ? "Running " : "Stopped " : on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
+        var tight = shown < n && cols < 19; // (a big Text size: "On 2/3  1-2/3", the count kept before the scroll mark)
+        card.Add(0, tight ? on ? "On " : "Off " : brief ? on ? "Running " : "Stopped " : on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
         card.ScrollMark(0, first, shown, n, cols).Clip(0, cols);
         var line = 1;
         for (var k = first; k < first + shown && line < rows; k++)
@@ -306,6 +332,8 @@ public static partial class ProductionLines
             if (s == LineState.NoPower)
                 colour = NoPowerGrey;
             card.Add(line, k == pick ? '>' : ' ');
+            if (k == pick)
+                card.Mark = line; // (the pick on a lit strip: which machine Recipe and Next act on)
             card.Field(line, NameOf(c, list[..n], k), nameW, k == pick, ConstructRender.Now);
             if (!stateBelow)
             {
@@ -336,6 +364,27 @@ public static partial class ProductionLines
     {
         ref var mp = ref c.Parts[m];
         var why = s is LineState.Starved or LineState.Blocked or LineState.Fault;
+        if (md.IsPress || md.IsLathe)
+        {
+            // Why it waits in its screen's words ("Bays need pieces"), else what it does.
+            if (world.StoreOf(c, m) is { } pst)
+                card.Add(line, s == LineState.Running ? md.IsLathe ? "cutting" : "stamping" : ConstructPress.StallText((PressStall)pst.Refused));
+            return;
+        }
+        if (md.IsRecycler || md.IsGatherer)
+        {
+            // What it holds, after why it waits: "bin full, 20 ore", "no wrecks in, 12 scrap".
+            if (world.StoreOf(c, m) is not { } gst)
+                return;
+            if (why)
+                card.Add(line, md.IsGatherer ? ConstructGatherer.StallWord(md, (GatherStall)gst.Blocked) : s == LineState.Blocked ? "output full" : "no wrecks in").Add(line, ", ");
+            else if (s == LineState.Running)
+                card.Add(line, md.IsRecycler ? "recycling, " : md.GatherSaw ? "cutting, " : "drilling, ");
+            card.Add(line, gst.Amount).Add(line, '/').Add(line, md.BulkCapacity);
+            if (gst.Amount > 0)
+                card.Add(line, ' ').Add(line, RecyclingTable.Current.NameOf(gst.Material));
+            return;
+        }
         if (md.IsExtruder)
         {
             if (why && world.StoreOf(c, m) is { } st)
@@ -398,10 +447,30 @@ public static partial class ProductionLines
             if (state == RefineState.Short && r != null)
                 card.Add(line, " (").Add(line, r.UnitsIn).Add(line, ' ').Add(line, r.InputName).Add(line, ')');
             card.Add(line, ", ");
-            card.Add(line, set != null ? "makes " : "auto").Add(line, set?.OutputName ?? "");
+            if (set != null)
+                card.Add(line, "makes ").Add(line, set.OutputName);
+            else
+                AutoNext(md, rs, r, card, line);
             return;
         }
-        card.Add(line, set != null ? "makes " : "auto recipe").Add(line, set?.OutputName ?? "");
+        if (set != null)
+            card.Add(line, "makes ").Add(line, set.OutputName);
+        else if (world.StoreOf(c, m) is { } ast2)
+        {
+            ConstructRefining.StateOf(RefiningTable.Current, md, ast2, out var next);
+            AutoNext(md, ast2, next, card, line);
+        }
+        else
+            card.Add(line, "auto recipe");
+    }
+
+    /// <summary>Auto's next batch: "auto: next metal" from what is in its input, or "auto: by its input" while it is empty.</summary>
+    private static void AutoNext(ConstructPartDef md, CStore st, RefineRecipe? next, PanelCard card, int line)
+    {
+        if (next != null)
+            card.Add(line, "auto: next ").Add(line, next.OutputName);
+        else
+            card.Add(line, st.InAmount > 0 || st.MixN > 0 ? "auto: no recipe" : "auto: by its input");
     }
 
     /// <summary>Why an Extruder or a Former waits, in a few words.</summary>
@@ -425,7 +494,7 @@ public static partial class ProductionLines
     };
 
     /// <summary>"Smelter T3", "Extruder", "Wheel Former": a machine's kind on a line, in full.</summary>
-    private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder || d.IsAssembler ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
+    private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder || d.IsAssembler || d.IsRecycler || d.IsGatherer || d.IsPress || d.IsLathe ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
 
     /// <summary>A machine's name on its console: its kind, and its number among those of its kind on this line in wire order ("Extruder 2") when there are two or more. Cached per def.</summary>
     internal static string NameOf(Construct c, ReadOnlySpan<int> list, int k)

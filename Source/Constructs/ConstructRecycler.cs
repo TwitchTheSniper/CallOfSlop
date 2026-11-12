@@ -94,7 +94,11 @@ public static class ConstructRecycler
         var put = world.Deposit(c, part, st.JobAmount, st.JobMaterial);
         st.JobAmount -= put;
         if (st.JobAmount > 0)
+        {
+            SetBlocked(world, st, true);
             return; // (the output is full: it waits until a chute or a player empties it)
+        }
+        SetBlocked(world, st, false);
         st.JobMaterial = 0;
         st.Busy = false;
         st.Progress = 0;
@@ -108,6 +112,7 @@ public static class ConstructRecycler
         var bodies = world.Bodies;
         var table = RecyclingTable.Current;
         var d = c.Parts[part].D;
+        var waiting = false; // (a wreck in the intake with no room for what it gives)
         for (var bi = 0; bi < bodies.Count; bi++)
         {
             var b = bodies[bi];
@@ -124,7 +129,10 @@ public static class ConstructRecycler
                 continue;
             }
             if (st.Amount > 0 && st.Material != mat || d.BulkCapacity - st.Amount < amount)
+            {
+                waiting = true;
                 continue; // (its output holds another material, or hasn't room: it stays in the intake until it does)
+            }
             var mass = b.Parts[0].D.Mass;
             var name = b.Parts[0].D.Name;
             world.Remove(b);
@@ -143,8 +151,33 @@ public static class ConstructRecycler
                 st.Version++;
                 world.Events.Add($"recycler {c.Id}: took in {name} ({mass:0} kg): {amount} {table.NameOf(mat)} in {st.JobTicks / (float)World.TickRate:0.0} s");
             }
+            SetBlocked(world, st, false);
             c.Wake();
             return; // (one part at a time)
         }
+        SetBlocked(world, st, waiting);
+    }
+
+    /// <summary>Its output can't take what it has (a finished wreck's material, or one waiting in the intake): the store's Blocked byte, sent and saved as it is.</summary>
+    private static void SetBlocked(ConstructWorld world, CStore st, bool blocked)
+    {
+        var v = blocked ? (byte)1 : (byte)0;
+        if (st.Blocked == v)
+            return;
+        st.Blocked = v;
+        st.Version++;
+        world.StoreDirty.Add(st.Handle);
+    }
+
+    /// <summary>A Recycler's line state (ProductionLines): power, Run, a full output, at work, else waiting for wrecks.</summary>
+    public static LineState LineOf(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        if (!Powered(world, c, part))
+            return LineState.NoPower;
+        if (st.Held)
+            return LineState.Idle;
+        if (st.Blocked != 0 || st.Amount >= c.DefOf(part).BulkCapacity)
+            return LineState.Blocked;
+        return st.Busy ? LineState.Running : LineState.Starved;
     }
 }

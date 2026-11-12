@@ -590,6 +590,22 @@
       "detail": true,
       "paintable": false,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        2.0,
+        28.804,
+        22.026
+      ],
+      "max": [
+        22.0,
+        29.836,
+        22.039
+      ],
+      "color": "#2b3036",
+      "detail": true,
+      "paintable": false,
+      "status": true
     }
   ],
   "sockets": [
