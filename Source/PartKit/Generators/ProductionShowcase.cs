@@ -232,7 +232,7 @@ public sealed class ProductionShowcase : IPartGenerator
                 new[] { V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(54.25f, 0, -2.0f), V(60.5f, 0, -2.0f), V(60.5f, 0, -6.2f) }
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
             // The Extruders' pieces come back too, and the Router's way to the tray: a Join before the terminal's side (Piece in 2) takes
-            // the Long Piece Rack's Piece out, down to the back aisle's edge and along it, and the Router's left way from the south.
+            // the Long Piece Rack's Piece out, down to the back aisle's edge and along it, and the Router's way 3 from the south.
             var join = On("Conveyor Join", 58.25f, -7.75f, Flow, "-y.0.0", Assembly);
             Convey(join, "Piece out", term, "Piece in 2", Assembly);
             var back = PortAt(longRack, "Piece out");
@@ -249,7 +249,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         /// <summary>
         /// Smart logistics (production.md "Smart logistics"): the Assembler's Piece out runs to a Conveyor Router; its way ahead goes to the
-        /// part rack (storage), its left way along the back of the rack to a Join before the Crafting Terminal's side (CraftingCorner). A
+        /// part rack (storage), its way 3 along the back of the rack to a Join before the Crafting Terminal's side (CraftingCorner). A
         /// part ordered at the terminal rides straight to its tray; a part nobody ordered (the bill's) goes to the rack. The Router.
         /// </summary>
         private VPart SmartCorner(VPart asm, VPart partRack)

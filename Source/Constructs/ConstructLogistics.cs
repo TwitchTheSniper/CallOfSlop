@@ -24,6 +24,7 @@ public sealed class LogiMap
     public const byte None = 255;
 
     public int Stamp = int.MinValue, SizeStamp, PartCount, RouteCount; // what it was built from
+    public ulong LinkHash; // ...and its links (ConstructLogistics.LinkHash): a rebuild that changed none keeps the map
     public short[] NodeOf = []; // part -> node, -1
     public readonly ushort[] NodePart = new ushort[MaxNodes];
     public readonly short[] NodeNet = new short[MaxNodes]; // its group (the smallest node index joined to it)
@@ -143,12 +144,54 @@ public static class ConstructLogistics
             m.NodeNet[Math.Max(a, b)] = (short)Math.Min(a, b);
     }
 
+    /// <summary>A hash of what the map follows from: each conveyor's and chute's ends (their parts' kinds and stores), width and cut.</summary>
+    private static ulong LinkHash(Construct c)
+    {
+        var h = 14695981039346656037UL ^ (ulong)c.RouteCount;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type is not (RouteType.Conveyor or RouteType.Chute))
+                continue;
+            int a = r.Type == RouteType.Chute ? r.Source : r.From, b = r.To;
+            h = (h ^ (ulong)k ^ (ulong)r.Type << 8 ^ (ulong)a << 16 ^ (ulong)b << 32) * 1099511628211UL;
+            h = (h ^ r.ConvW ^ (r.FirstCut > r.Count ? 1UL << 20 : 0) ^ (r.FedEnd ? 1UL << 21 : 0) ^ (ulong)r.Parent << 24) * 1099511628211UL;
+            if (a < c.PartCount && b < c.PartCount)
+                h = (h ^ c.Parts[a].Def ^ (ulong)c.Parts[b].Def << 16 ^ (ulong)c.Parts[a].Store << 32 ^ (ulong)c.Parts[b].Store << 48) * 1099511628211UL;
+        }
+        return h;
+    }
+
     private static void Build(Construct c, LogiMap m)
     {
         m.Stamp = c.RebuildStamp;
         m.SizeStamp = c.LogiStamp;
         m.PartCount = c.PartCount;
         m.RouteCount = c.RouteCount;
+        // A rebuild that changed no link (a machine's finished piece left the body, a part elsewhere was placed): the map, its columns
+        // and what the Routers show stay as they are.
+        var hash = LinkHash(c);
+        if (hash == m.LinkHash && m.NodeOf.Length >= c.PartCount)
+        {
+            for (var n = 0; n < m.NodeN; n++)
+                if (m.NodePart[n] >= c.PartCount)
+                    goto full;
+            return;
+        }
+        full:
+        m.LinkHash = hash;
+        // What each Router showed, by its part, carried over to the new slots (a Router whose index moved starts dark).
+        Span<ushort> wasPart = stackalloc ushort[LogiMap.MaxRouters];
+        var was = m.RouterN;
+        for (var s = 0; s < was; s++)
+            wasPart[s] = m.NodePart[m.Routers[s]];
+        Span<byte> wasWay = stackalloc byte[LogiMap.MaxRouters], wasState = stackalloc byte[LogiMap.MaxRouters];
+        Span<ushort> wasDef = stackalloc ushort[LogiMap.MaxRouters], wasDest = stackalloc ushort[LogiMap.MaxRouters], wasTag = stackalloc ushort[LogiMap.MaxRouters];
+        m.ShowWay.AsSpan(0, was).CopyTo(wasWay);
+        m.ShowState.AsSpan(0, was).CopyTo(wasState);
+        m.ShowDef.AsSpan(0, was).CopyTo(wasDef);
+        m.ShowDest.AsSpan(0, was).CopyTo(wasDest);
+        m.ShowTag.AsSpan(0, was).CopyTo(wasTag);
         if (m.NodeOf.Length < c.PartCount)
             m.NodeOf = new short[Math.Max(c.PartCount, m.NodeOf.Length * 2)];
         m.NodeOf.AsSpan(0, c.PartCount).Fill(-1);
@@ -198,6 +241,10 @@ public static class ConstructLogistics
         m.ShowWay.AsSpan().Clear();
         m.ShowState.AsSpan().Clear();
         m.ShowStuck.AsSpan().Clear();
+        for (var s = 0; s < m.RouterN; s++)
+            for (var o = 0; o < was; o++)
+                if (wasPart[o] == m.NodePart[m.Routers[s]])
+                    (m.ShowWay[s], m.ShowState[s], m.ShowDef[s], m.ShowDest[s], m.ShowTag[s]) = (wasWay[o], wasState[o], wasDef[o], wasDest[o], wasTag[o]);
         m.ShowVersion++;
     }
 

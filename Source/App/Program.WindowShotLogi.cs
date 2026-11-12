@@ -11,6 +11,15 @@ public static partial class Program
 {
     private static int _wsSpawnLeft, _wsSpawnTries;
 
+    /// <summary>A part by name ("Piece Rack#2": the second), or by its index on the spawned body ("Piece Rack@286").</summary>
+    private static (Construct? C, int Part) LogiFind(Game g, string spec)
+    {
+        var at = spec.LastIndexOf('@');
+        if (at > 0 && int.TryParse(spec[(at + 1)..], out var idx) && WsSpawned(g) is { } c && idx >= 0 && idx < c.PartCount)
+            return (c, idx);
+        return WsFind(g, spec);
+    }
+
     private static void WsLogi(Game g, string arg)
     {
         var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
@@ -38,7 +47,7 @@ public static partial class Program
                 return;
             case "why":
             {
-                var (fc, part) = WsFind(g, rest);
+                var (fc, part) = LogiFind(g, rest);
                 if (fc == null)
                 {
                     WsFail($"logi why: no part \"{rest}\"");
@@ -52,7 +61,7 @@ public static partial class Program
             }
             case "net":
             {
-                var (fc, part) = WsFind(g, rest);
+                var (fc, part) = LogiFind(g, rest);
                 if (fc == null)
                 {
                     WsFail($"logi net: no part \"{rest}\"");
@@ -84,7 +93,7 @@ public static partial class Program
             }
             case "order" when g.IsServer:
             {
-                var (tc, t) = WsFind(g, "Crafting Terminal");
+                var (tc, t) = LogiFind(g, "Crafting Terminal");
                 var cut = rest.LastIndexOf(' ');
                 var n = cut > 0 && ushort.TryParse(rest[(cut + 1)..], out var cn) ? cn : (ushort)1;
                 var name = cut > 0 && n > 0 && rest[(cut + 1)..] == n.ToString() ? rest[..cut] : rest;
@@ -100,7 +109,7 @@ public static partial class Program
             case "cut" when g.IsServer:
             {
                 var cut = rest.LastIndexOf(' ');
-                var (fc, part) = WsFind(g, cut > 0 ? rest[..cut] : rest);
+                var (fc, part) = LogiFind(g, cut > 0 ? rest[..cut] : rest);
                 var way = cut > 0 && int.TryParse(rest[(cut + 1)..], out var wn) ? wn : 1;
                 for (var k = 0; fc != null && k < fc.RouteCount; k++)
                     if (fc.Routes[k].Type == RouteType.Conveyor && fc.Routes[k].From == part && ConstructLogistics.WayOf(fc, k) == way)
@@ -115,7 +124,7 @@ public static partial class Program
             case "fill" when g.IsServer:
             {
                 var cut = rest.IndexOf(' ');
-                var (fc, part) = WsFind(g, cut > 0 ? rest[..cut] : rest);
+                var (fc, part) = LogiFind(g, cut > 0 ? rest[..cut] : rest);
                 var what = ConstructParts.Find(cut > 0 ? rest[(cut + 1)..] : "Steel Plate");
                 if (fc == null || what == null)
                 {
