@@ -49,6 +49,7 @@ public sealed class StationJob
     public ushort[] KindDef = [], KindNeed = [], KindFit = [];
     public string?[] KindWhy = []; // why nothing linked holds or makes it (null: ordered or held)
     public int KindN;
+    public int[] StepKind = [], KindReady = []; // each step's kind; how many unfitted steps of a kind have their parent in place (worked out at each look)
     public readonly List<(ushort Def, int Count, bool Loose)> Return = new(); // parts given back after a cancel or a release, a few a step
     public double CostMs, WorstMs;
     public long Started; // Stopwatch ticks at Start (the log's start-to-drivable time)
@@ -77,6 +78,7 @@ public static class ConstructStation
     public const int OrderEvery = 30; // ticks between looks at what to order (2 Hz)
     public const int OrdersAStep = 4; // craft orders placed in one look
     public const int ReturnAStep = 8; // parts given back in one look
+    public const int Ahead = 3; // kinds held or on order below which the kinds of later steps are asked for too
     public const float BayGap = 0.5f; // between the station's side and its bay
     public const string WireStock = "copper", PipeStock = "steel"; // link stock by the metre (proposed): wires and cables; pipes, chutes, shafts, feeds, conveyors
     public const string HeldText = "a Building Station is building it: Cancel or Release early at the station";
@@ -248,6 +250,10 @@ public static class ConstructStation
         j.KindFit = new ushort[defs.Count];
         j.KindWhy = new string?[defs.Count];
         j.KindN = defs.Count;
+        j.KindReady = new int[defs.Count];
+        j.StepKind = new int[bp.Steps.Count];
+        for (var s = 0; s < bp.Steps.Count; s++)
+            j.StepKind[s] = defs.IndexOf((ushort)(ConstructParts.Find(bp.Steps[s].Part)?.Id ?? ConstructParts.None));
     }
 
     /// <summary>What the station's open craft orders still ask for, of one kind.</summary>
@@ -275,6 +281,15 @@ public static class ConstructStation
                     q.RemoveAt(k);
                     world.CraftChanged(c);
                 }
+        // What can go on now: a kind is asked for when a step of it has its parent in place, so the hold never fills with parts that
+        // can't be fitted yet; while the hold is nearly empty the next kinds are asked for too (they wait in the hold).
+        Array.Clear(j.KindReady);
+        while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
+            j.Cursor++;
+        for (var s = j.Cursor; s < j.PartOf.Length; s++)
+            if (j.PartOf[s] < 0 && Ready(j, s))
+                j.KindReady[j.StepKind[s]]++;
+        var roomy = tray.KindN + (q?.Count ?? 0) < Ahead;
         var placed = 0;
         string? first = null;
         var lacking = 0;
@@ -291,10 +306,11 @@ public static class ConstructStation
             var d = ConstructParts.Get(def);
             var name = d?.Name ?? "a part this build doesn't have";
             var asked = Asked(c.Parts[t].Craft, def);
-            if (lack > asked && d != null && placed < OrdersAStep && (c.Parts[t].Craft?.Count ?? 0) < ConstructCrafting.MaxOrders)
+            var want = roomy ? lack : Math.Clamp(j.KindReady[i] - ConstructCrafting.Holds(tray, def), 0, lack);
+            if (want > asked && d != null && placed < OrdersAStep && (c.Parts[t].Craft?.Count ?? 0) < ConstructCrafting.MaxOrders)
             {
                 placed++;
-                j.KindWhy[i] = ConstructCrafting.Place(world, c, t, OrderFor(d, lack - asked));
+                j.KindWhy[i] = ConstructCrafting.Place(world, c, t, OrderFor(d, want - asked));
             }
             else if (d == null)
                 j.KindWhy[i] = "no such part";
@@ -527,7 +543,7 @@ public static class ConstructStation
         {
             if (j.PartOf[k] >= 0 || !Ready(j, k))
                 continue;
-            var def = (ushort)(ConstructParts.Find(bp.Steps[k].Part)?.Id ?? None);
+            var def = j.StepKind[k] >= 0 ? j.KindDef[j.StepKind[k]] : None;
             if (only != None)
             {
                 if (def == only)
