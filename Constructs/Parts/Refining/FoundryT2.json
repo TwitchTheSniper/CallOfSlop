@@ -103,7 +103,7 @@
     {"name": "Chute in", "type": "chute", "dir": "in", "at": [2.5, 2, -1.25], "face": "+x"},
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.9, 0.6, 1.9], "face": "+x"}
   ],
-  "panels": [{"source": "machine", "at": [-2.5247, 2.0997, -1.3448], "size": [1.93, 0.69], "face": "-x", "up": "+y", "rows": 4, "range": 30}],
+  "panels": [{"source": "machine", "at": [-2.5247, 2.0997, -1.3448], "size": [1.93, 0.69], "face": "-x", "up": "+y", "rows": 5, "range": 30, "touch": [{"action": "machine.recipe", "at": [0.02, 0.02, 0.36, 0.14], "label": "Recipe"}]}],
   "config": [
     {"key": "recipe", "type": "choice", "label": "Recipe", "group": "Production", "tooltip": "Auto: what is in the input picks it. Set: only its input goes in."},
     {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}

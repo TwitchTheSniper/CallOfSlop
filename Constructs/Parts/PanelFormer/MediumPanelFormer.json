@@ -143,7 +143,7 @@
           "label": "Clear"
         },
         {
-          "action": "orders.preset",
+          "action": "machine.recipe",
           "at": [
             0.57,
             0.02,

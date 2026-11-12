@@ -234,7 +234,8 @@ public sealed partial class ConstructEdits
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
-        if (d.CfgSlot[(int)CfgKey.Recipe] is var slot and < 0 || d.Config[slot].Options.Length == 0)
+        var slot = d.CfgSlot[(int)CfgKey.Recipe];
+        if (slot < 0 || d.Config[slot].Options.Length == 0)
             return $"the {d.Name} has no recipe to pick";
         var n = d.Config[slot].Options.Length;
         var v = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0);
