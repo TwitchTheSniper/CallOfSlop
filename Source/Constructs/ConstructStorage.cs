@@ -544,6 +544,7 @@ public static class ConstructStorage
             }
             d.IsPieceRack = true;
             d.IsCraftTerminal = ConstructParts.Opt(pc, "crafting") is { ValueKind: JsonValueKind.True };
+            d.IsBuildStation = d.IsCraftTerminal && ConstructParts.Opt(pc, "station") is { ValueKind: JsonValueKind.True };
             if (d.IsCraftTerminal)
                 d.DataIn = ["Orders"]; // (a Line Console's wire into it brings that console's machines: ConstructCrafting.cs)
         }
@@ -1078,6 +1079,8 @@ public sealed partial class ConstructWorld
         CraftNets.Clear();
         CraftOpen.Clear();
         CraftDirty.Clear();
+        StationOpen.Clear();
+        StationDirty.Clear();
         Beacons.Dirty = true;
     }
 

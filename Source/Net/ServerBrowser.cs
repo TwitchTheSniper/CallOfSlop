@@ -414,7 +414,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      action, orders.preset.
     // 254: the Crafting Terminal (ConstructCrafting.cs): CActKind gains CraftOrder and CraftCancel; CBodyKind.Craft (at the end) carries a body's
     //      terminals' orders and its stores' reserved parts; a Piece Rack gains an implicit Piece out conveyor port (after its Piece in).
-    public const ushort ProtocolVersion = 254;
+    // 255: the Building Station (ConstructStation.cs): CActKind gains Station (at the end); CBodyKind.Station (at the end) carries a body's stations' jobs
+    //      (state, the blueprint's name, counts, the frozen body, the last part fitted, a note); a new part file (Building Station) moves part ids; three
+    //      new settings (bayWidth, bayDepth, bayHeight).
+    public const ushort ProtocolVersion = 255;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

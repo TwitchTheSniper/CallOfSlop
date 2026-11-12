@@ -58,6 +58,8 @@ public static class RouteRender
             Frames(c, alpha, blendTicks);
             if (c.PieceRackCount > 0)
                 DrawRacks(gfx, world, c);
+            if (c.PieceRackCount > 0)
+                DrawBays(gfx, world, c);
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref var r = ref c.Routes[k];
@@ -230,6 +232,86 @@ public static class RouteRender
     /// (<see cref="ConstructConveyor.RackDrawNear"/>) every piece at true size, further one box a column in its first box's
     /// colour. Allocates nothing; an empty rack costs a look at its store.
     /// </summary>
+    public static ushort BayBody; // the Building Station looked at or with its panel open: its bay is outlined (Program sets it each frame)
+    public static int BayPart = -1;
+    public static bool BayBad; // ...in red: the blueprint picked doesn't fit
+    private static double _bayLookAt;
+
+    /// <summary>The station under the crosshair this frame: its bay is outlined for a moment. Returns a key of its job's state (for the look line's cache).</summary>
+    public static long BayLook(Construct c, int part)
+    {
+        (BayBody, BayPart, _bayLookAt) = (c.Id, part, ConstructConveyor.Clock);
+        return c.Parts[part].Station is { } j ? j.Fitted * 31L + j.LinksDone * 7L + (long)j.State * 1009L + j.Note.GetHashCode() : 0;
+    }
+
+    /// <summary>The station whose panel is open: outlined while it is (red when the picked blueprint doesn't fit).</summary>
+    public static void BayPanel(ushort body, int part, bool bad) => (BayBody, BayPart, BayBad, _bayLookAt) = (body, part, bad, ConstructConveyor.Clock);
+
+    /// <summary>
+    /// Building Stations (ConstructStation.cs): the bay's outline (its floor, four posts and its top) while the station is looked
+    /// at, its panel is open or a build is on; a flash round the part just fitted; a pulse along the link just laid.
+    /// </summary>
+    private static void DrawBays(Renderer gfx, ConstructWorld world, Construct c)
+    {
+        for (var k = 0; k < c.PieceRackCount; k++)
+        {
+            int part = c.PieceRacks[k];
+            if (part >= c.PartCount || !c.DefOf(part).IsBuildStation)
+                continue;
+            var j = c.Parts[part].Station;
+            var building = j is { State: StationState.Costing or StationState.Building };
+            var aimed = BayBody == c.Id && BayPart == part && ConstructConveyor.Clock - _bayLookAt < 0.3;
+            if (!building && !aimed)
+                continue;
+            ConstructStation.Bay(c, part, out var floor, out var rot, out var size);
+            var frame = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(floor);
+            var colour = aimed && BayBad || j is { State: StationState.Failed } ? new Vector3(1f, 0.25f, 0.2f) : building ? new Vector3(0.3f, 1f, 0.45f) : new Vector3(1f, 0.72f, 0.15f);
+            const float t = 0.04f;
+            for (var y = 0; y < 2; y++)
+            {
+                var h = y == 0 ? t * 0.5f + 0.01f : size.Y;
+                for (var s = -1; s <= 1; s += 2)
+                {
+                    gfx.Draw(Matrix4x4.CreateScale(size.X + t, t, t) * Matrix4x4.CreateTranslation(0, h, s * size.Z * 0.5f) * frame, colour, 0.8f);
+                    gfx.Draw(Matrix4x4.CreateScale(t, t, size.Z + t) * Matrix4x4.CreateTranslation(s * size.X * 0.5f, h, 0) * frame, colour, 0.8f);
+                }
+            }
+            for (var sx = -1; sx <= 1; sx += 2)
+                for (var sz = -1; sz <= 1; sz += 2)
+                    gfx.Draw(Matrix4x4.CreateScale(t, size.Y, t) * Matrix4x4.CreateTranslation(sx * size.X * 0.5f, size.Y * 0.5f, sz * size.Z * 0.5f) * frame, colour, 0.8f);
+            if (j == null || world.Get(j.Body) is not { } b)
+                continue;
+            var now = ConstructConveyor.Clock;
+            if (j.SeenFit != j.FitSeq)
+                (j.SeenFit, j.FitAt) = (j.FitSeq, now);
+            if (j.SeenLink != j.LinkSeq)
+                (j.SeenLink, j.LinkAt2) = (j.LinkSeq, now);
+            // The part just fitted: a bright shell that shrinks onto it for half a second.
+            var age = (float)(now - j.FitAt);
+            if (age < 0.5f && j.LastPart < b.PartCount)
+            {
+                var d = b.DefOf(j.LastPart);
+                Freeform.PartWorld(b, j.LastPart, out var pp, out var pr);
+                var grow = 1.25f - age * 0.5f;
+                gfx.Draw(Matrix4x4.CreateScale((d.BoundsMax - d.BoundsMin) * grow) * Matrix4x4.CreateTranslation((d.BoundsMin + d.BoundsMax) * 0.5f) * Matrix4x4.CreateFromQuaternion(pr) * Matrix4x4.CreateTranslation(pp), new Vector3(1f, 0.85f, 0.35f), 0.45f * (1 - age * 2));
+            }
+            // The link just laid: a blue pulse that runs its length in a second (a different effect from a part's).
+            age = (float)(now - j.LinkAt2);
+            if (age < ConstructStation.LinkSeconds && b.RouteCount > 0)
+            {
+                var route = b.RouteCount - 1;
+                Frames(b, 1f, false);
+                int n = b.Routes[route].Count;
+                var along = age / ConstructStation.LinkSeconds * (n + 1);
+                var i = Math.Clamp((int)along, 0, n);
+                var at = Vector3.Lerp(At(b, route, i - 1), At(b, route, i), along - i);
+                gfx.Draw(Matrix4x4.CreateScale(0.22f) * Matrix4x4.CreateTranslation(at), new Vector3(0.35f, 0.75f, 1f), 0.9f);
+                gfx.Draw(Matrix4x4.CreateScale(0.4f) * Matrix4x4.CreateTranslation(at), new Vector3(0.35f, 0.75f, 1f), 0.3f);
+                Frames(c, 1f, false);
+            }
+        }
+    }
+
     private static void DrawRacks(Renderer gfx, ConstructWorld world, Construct c)
     {
         var eye = gfx.CameraPosition;

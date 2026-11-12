@@ -91,6 +91,7 @@ public enum CActKind : byte
     LineRecipe, // u16 body, u16 console, u16 machine, u16 recipe value, u8 flags (1: every machine of its kind on the line): the recipe picker (protocol 250; ProductionLines.SetRecipe)
     CraftOrder, // u16 body, u16 terminal, the order (u8 shape, u64 mask, u16 w, h, l, wall, u8 material, u16 part, u16 count): a Crafting Terminal's order (protocol 254; ConstructCrafting.Place)
     CraftCancel, // u16 body, u16 terminal, u16 order id: cancels it (protocol 254; ConstructCrafting.Cancel)
+    Station, // u16 body, u16 station, u8 StationOp, u16 n, text: a Building Station's Start (the blueprint's name, n repeats), Cancel, Release, Repeat or Give (protocol 255; ConstructStation.cs)
 }
 
 /// <summary>
@@ -477,6 +478,11 @@ public sealed partial class Game
             ConstructCrafting.Write(w, Constructs, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        if (ConstructStation.Any(c))
+        {
+            ConstructStation.Write(w, c);
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
     }
 
     private void SandboxFlush()
@@ -505,6 +511,8 @@ public sealed partial class Game
                     Constructs.OrdersChanged(c); // (its parts may have been renumbered; a Full leaves a client's parts without them)
                 if (ConstructCrafting.Any(Constructs, c))
                     Constructs.CraftChanged(c); // (the same: its terminals' parts may have been renumbered)
+                if (ConstructStation.Any(c))
+                    Constructs.StationChanged(c);
             }
         Constructs.StructureDirty.Clear();
         foreach (var id in Constructs.RidersDirty)
@@ -528,6 +536,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.CraftDirty.Clear();
+        foreach (var id in Constructs.StationDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                ConstructStation.Write(w, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.StationDirty.Clear();
         foreach (var id in _sbLater)
             Constructs.StructureDirty.Add(id);
         _sbLater.Clear();
@@ -1110,6 +1125,8 @@ public sealed partial class Game
                 var oid = r.U16();
                 return hands.CraftOrder(Constructs, p.Id, eye, body, term, default, oid, Constructs.Get(body) is { } cc2 ? SandboxConfigRefusal(cc2, p.Id) : null);
             }
+            case CActKind.Station:
+                return SandboxStationAct(ref r, p, eye);
             case CActKind.WebState:
             {
                 var body = r.U16();

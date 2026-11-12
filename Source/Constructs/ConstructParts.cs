@@ -664,6 +664,7 @@ public sealed partial class ConstructPartDef
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)
+    public bool IsBuildStation; // a Building Station (ConstructStation.cs): a Crafting Terminal whose hold feeds a blueprint built in its bay (storage.pieces.station)
     public Vector2 RackSection;
     public float RackLength;
     public int RackCount;
