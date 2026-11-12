@@ -89,7 +89,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -434,6 +434,21 @@ public static unsafe partial class Program
                 else
                     took = ConstructPress.FeedKitMaterial(g.Constructs, kc, kpart, n, RecyclingTable.Current.IdOf(what));
                 WsSay($"kit: {took} of {n} {what} went into bay 2");
+                _wsWait = 2;
+                return;
+            }
+            case "poke": // host: a button pressed as F presses it on the server (ConstructEdits.Use: its hold time), for a check that needs no aim
+            {
+                var (pc, ppart) = g.IsServer ? WsFind(g, arg) : (null, 0);
+                if (pc == null || pc.DefOf(ppart).Logic != CLogic.Button)
+                {
+                    WsFail($"poke: no button \"{arg}\" (on the host or offline)");
+                    return;
+                }
+                ref var bp = ref pc.Parts[ppart];
+                bp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(bp, bp.D, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
+                pc.Wake();
+                WsSay($"poke: pressed the {pc.DefOf(ppart).Name}");
                 _wsWait = 2;
                 return;
             }
