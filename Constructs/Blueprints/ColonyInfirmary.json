@@ -212,8 +212,8 @@
     },
     {
       "part": "Concrete Buttress 2.75 m",
-      "on": 3,
-      "socket": "fa7_5",
+      "on": 7,
+      "socket": "f0_5",
       "by": "back5",
       "paint": "#858179",
       "finish": "concrete"
@@ -228,8 +228,8 @@
     },
     {
       "part": "Concrete Buttress 2.75 m",
-      "on": 4,
-      "socket": "fb7_5",
+      "on": 7,
+      "socket": "f15_5",
       "by": "back5",
       "paint": "#858179",
       "finish": "concrete"

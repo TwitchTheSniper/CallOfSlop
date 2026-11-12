@@ -288,7 +288,7 @@ public sealed partial class BuildingParts
         Door(bp, rc[0]);
         Porch(bp, rc[0], "INFIRMARY");
         Steps(bp, 0, 0);
-        Piers(bp, ButtressPart, (rc[1], "fa7_5"), (east, "f8_5"), (rc[2], "fb7_5"));
+        Piers(bp, ButtressPart, (east, "f0_5"), (east, "f8_5"), (east, "f15_5"));
         Piers(bp, FinPart, (west, "f0_5"), (west, "f8_5"));
         Sign(bp, east, "k15_5", "FORM 27B: NOTICE OF INTENT TO BE ILL");
         Look(bp, bp.Put("Medical Station", OnPad(0, 0, 2.0, 2.0), RY90), MinWhite);
@@ -348,7 +348,6 @@ public sealed partial class BuildingParts
         Lid(bp, -16, 0, 32, 16, Slab1);
         Door(bp, rc[0]);
         Steps(bp, 0, -16);
-        Piers(bp, ButtressPart, (rc[1], "fa7_5"), (rc[2], "fa7_5"));
         Sign(bp, rc[1], "fb7_5", "PENAL COLONY 7 - ALL VISITORS REPORT HERE");
         Sign(bp, rc[3], "fa7_5", "ESCAPEES ALSO REPORT HERE");
         Outside(bp, rc[0], "fa0_10");

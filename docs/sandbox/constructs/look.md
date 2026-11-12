@@ -196,7 +196,8 @@ piece snap to it on its own grid. Costs: a segment each, and a big body with any
   identity), `BODY-STYLES.md` (cabs, hulls, rooms, lamps in bays); the silhouette rules every faction follows are there.
 - Interiors of big vehicles and bases: `docs/sandbox/INTERIORS.md`.
 - Machines: per-tier palettes and signature shapes in [Machine tiers](production.md#machine-tiers).
-- **Buildings and bases have no style guide yet**: the user is deciding it. Use the rules above.
+- Buildings: [buildings.md](buildings.md): what every building needs and each faction's style (the Ministry of Slop:
+  Brutalism, cold-war fittings). Bases have no guide yet: use the rules above.
 
 ## Worked example: the Gate, dressed
 

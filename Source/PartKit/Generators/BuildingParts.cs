@@ -486,8 +486,9 @@ public sealed partial class BuildingParts : IPartGenerator
         var dark = Mats[key].Dark;
         if (key is "concrete" or "rc" && kind != "parapet")
         {
-            p.FBox(-0.015, 0, -0.015, 2.0, 0.15, 0, dark, detail: true);
-            p.FBox(-0.015, 0, 0, 0, 0.15, 2.0, dark, detail: true);
+            // (4 mm up: on an upper storey the band's underside is otherwise in the plane of a slab's that meets the wall outside)
+            p.FBox(-0.015, 0.004, -0.015, 2.0, 0.15, 0, dark, detail: true);
+            p.FBox(-0.015, 0.004, 0, 0, 0.15, 2.0, dark, detail: true);
         }
         else if (key == "tin")
         {

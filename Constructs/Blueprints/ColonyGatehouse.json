@@ -166,22 +166,6 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Buttress 2.75 m",
-      "on": 3,
-      "socket": "fa7_5",
-      "by": "back5",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Buttress 2.75 m",
-      "on": 4,
-      "socket": "fa7_5",
-      "by": "back5",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
       "part": "Text Sign",
       "on": 3,
       "socket": "fb7_5",
@@ -278,8 +262,8 @@
   ],
   "wires": [
     [
-      33,
-      32
+      31,
+      30
     ]
   ]
 }
