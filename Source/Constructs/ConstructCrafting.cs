@@ -726,6 +726,8 @@ public static class ConstructCrafting
         var d = c.DefOf(m);
         if (d.IsAssembler)
             return !what.IsPiece && AssemblingTable.Current.Of(what.Part) is { } r ? Missing(world, c, net, m, r, out _) : "";
+        if (d.IsExtruder && ConstructExtruder.RunHeld(c, m))
+            return "its line is stopped: press Start on its console";
         if (d.IsPanelFormer)
             return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? ConstructPanelFormer.Lacks(c, m, fst) : "";
         if (!d.IsExtruder || world.StoreOf(c, m) is not { } st || st.Amount > 0)
