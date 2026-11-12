@@ -16,14 +16,21 @@ public sealed class ConveyorJunctionParts : IPartGenerator
 
     private const string Out = "Constructs/Parts/ConveyorJunctions";
     private const string Frame = "#35556b"; // (the body: it takes paint; the rest is MachineLook's tones)
+    private const string Logistics = "#3f8f5a"; // (a Router's body: logistics green, no machine family's colour)
+    private const string Unlit = "#3a3328"; // (a Router's way lamp while that way isn't chosen: drawn lit in the choice's colour, ConstructLogistics)
 
     private static readonly (string Face, double Dx, double Dz)[] Sides = [("-z", 0, -1), ("+z", 0, 1), ("+x", 1, 0), ("-x", -1, 0)];
 
     /// <summary>A junction n by n small cells (0.25 m), two high, passing pieces up to section by section; <paramref name="split"/>: one in, three out (else three in, one out).</summary>
-    private static Part Junction(string name, int n, double section, bool split, string desc)
+    /// <para>
+    /// <paramref name="router"/>: a Conveyor Router (docs/sandbox/constructs/production.md "Smart logistics"): the Splitter's table, its ports and
+    /// bytes, in logistics green; its out arrows are lamps (<c>"way": 1..3</c>) lit in the colour of the way its last piece took, and a low steel
+    /// fence on the deck (<c>"fence": true</c>) swings toward that way. No post (user, 2026-11-12: deck lamps only).
+    /// </para>
+    private static Part Junction(string name, int n, double section, bool split, string desc, bool router = false)
     {
         var c = Small;
-        var p = new Part(name, c, "Extrusion", desc, tool: "welder", color: Frame, group: "Production");
+        var p = new Part(name, c, "Extrusion", desc, tool: "welder", color: router ? Logistics : Frame, group: "Production");
         double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), y1 = c.Hi(2), z0 = c.Lo(), z1 = c.Hi(n);
         var top = y1 - 0.12; // the frame's top; the conveyors' line is 5 mm over it (their rollers' tops 6 cm over the line, as the deck's are)
         double cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
@@ -49,13 +56,17 @@ public sealed class ConveyorJunctionParts : IPartGenerator
             p.Add(MachineLook.D(mn, mx, isIn ? MachineLook.In : MachineLook.Out));
             // An arrow on the deck at each way, between the rollers' lines, pointing the way a piece goes: a shaft and a stepped head (white in, orange out).
             var way = isIn ? -1 : 1;
-            var colour = isIn ? MachineLook.In : MachineLook.Out;
+            var lamp = router && !isIn ? outs + 1 : 0; // (a Router's out arrow is the lamp of its way: 1 ahead, 2 and 3 the sides, in port order)
+            var colour = isIn ? MachineLook.In : lamp > 0 ? Unlit : MachineLook.Out;
             double ay0 = top + 0.021, ay1 = top + 0.034, reach = (x1 - x0) / 2;
             void Mark(double a0, double a1, double w)
             {
                 double lo = Math.Min(a0, a1), hi = Math.Max(a0, a1);
-                p.Add(dz != 0 ? MachineLook.D([cx - w, ay0, cz + dz * lo - (dz < 0 ? hi - lo : 0)], [cx + w, ay1, cz + dz * lo + (dz > 0 ? hi - lo : 0)], colour)
-                    : MachineLook.D([cx + dx * lo - (dx < 0 ? hi - lo : 0), ay0, cz + 0.05 - w * 0.55], [cx + dx * lo + (dx > 0 ? hi - lo : 0), ay1, cz + 0.05 + w * 0.55], colour));
+                var b = dz != 0 ? MachineLook.D([cx - w, ay0, cz + dz * lo - (dz < 0 ? hi - lo : 0)], [cx + w, ay1, cz + dz * lo + (dz > 0 ? hi - lo : 0)], colour)
+                    : MachineLook.D([cx + dx * lo - (dx < 0 ? hi - lo : 0), ay0, cz + 0.05 - w * 0.55], [cx + dx * lo + (dx > 0 ? hi - lo : 0), ay1, cz + 0.05 + w * 0.55], colour);
+                if (b != null && lamp > 0)
+                    b["way"] = lamp;
+                p.Add(b);
             }
             double tail = reach * (way > 0 ? 0.42 : 0.86), tip = reach * (way > 0 ? 0.86 : 0.42), neck = tail + (tip - tail) * 0.6;
             Mark(tail, neck, 0.045);
@@ -65,10 +76,30 @@ public sealed class ConveyorJunctionParts : IPartGenerator
             ports.Add(Kw(("name", portName), ("type", "conveyor"), ("dir", isIn ? "in" : "out"), ("at", Py.L(Py.Round(ax, 3), Py.Round(top + 0.005, 3), Py.Round(az, 3))), ("face", face),
                 ("opening", Py.L(section, section))));
         }
+        if (router)
+        {
+            // The diverter: a low steel fence along the deck's middle, just over the rollers (a riding piece hides it as it crosses), its
+            // ends in hazard paint; drawn turned toward the way the last piece took (ConstructRender: "fence").
+            double fl = (x1 - x0) * 0.3, fy0 = top + 0.064, fy1 = top + 0.078;
+            var fence = MachineLook.D([cx - 0.02, fy0, cz - fl], [cx + 0.02, fy1, cz + fl], MachineLook.Steel, "steel");
+            if (fence != null)
+                fence["fence"] = true;
+            p.Add(fence);
+            foreach (var e in new[] { -1.0, 1.0 })
+            {
+                double za = cz + e * (fl - 0.06), zb = cz + e * (fl + 0.003); // (each end's last 6 cm, 3 to 4 mm proud of the fence all round)
+                var cap = MachineLook.D([cx - 0.024, fy0 - 0.003, Math.Min(za, zb)], [cx + 0.024, fy1 + 0.003, Math.Max(za, zb)], MachineLook.Accent, "hazard paint");
+                if (cap != null)
+                    cap["fence"] = true;
+                p.Add(cap);
+            }
+        }
         BlockSockets(p, n, 2, n, faces: "y", skip: ["+y"], limit: new() { ["-y"] = (3, 6) });
         var wide = n * c.Cell;
         p.Stats(wide * wide * 40, 300 + 40 * wide * wide, 4);
         p.Set(("ports", ports));
+        if (router)
+            p.Set(("router", true), ("power", n > 6 ? 40 : 20));
         return p;
     }
 
@@ -78,5 +109,7 @@ public sealed class ConveyorJunctionParts : IPartGenerator
         ("", Junction("Conveyor Join", 6, 1.0, split: false, "Takes pieces off up to three conveyors, each in its turn, and sends them on along one. Pieces up to 1 x 1 m.")),
         ("", Junction("Large Conveyor Splitter", 10, 2.0, split: true, "Takes pieces off one conveyor and sends them on to up to three, in turn, past any that is cut, too small or full. Pieces up to 2 x 2 m.")),
         ("", Junction("Large Conveyor Join", 10, 2.0, split: false, "Takes pieces off up to three conveyors, each in its turn, and sends them on along one. Pieces up to 2 x 2 m.")),
+        ("", Junction("Conveyor Router", 6, 1.0, split: true, "Sends each piece the way to where it is wanted (an order's tray), else to a Piece Rack on its network with room; holds it, red, when there is none. Unpowered, it deals in turn. Pieces up to 1 x 1 m.", router: true)),
+        ("", Junction("Large Conveyor Router", 10, 2.0, split: true, "Sends each piece the way to where it is wanted (an order's tray), else to a Piece Rack on its network with room; holds it, red, when there is none. Unpowered, it deals in turn. Pieces up to 2 x 2 m.", router: true)),
     ]);
 }

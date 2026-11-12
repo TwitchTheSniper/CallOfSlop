@@ -779,6 +779,46 @@ gap; junctions as parts rather than branches of a link; three ways at a junction
 fitted parts, drawing at most 24; F dropping the piece loose by the rack; riders passing through players (not reached: a piece as
 a solid box against a player near it is the next step); a piece longer than its whole link refused.
 
+## Smart logistics
+
+Phase 1 of the smart logistics network (design 2026-11-12, the user's decisions D1 to D5 and answers Q1 to Q7): **Routers send pieces
+where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogistics.cs`; the part from the part kit's
+`conveyor_junction_parts`; the window tool's `logi` verbs in `Source/App/Program.WindowShotLogi.cs`.
+
+- **The network** is one group of parts on one construct joined by intact conveyors and chutes, either way round (Q1: one construct).
+  Its map (`LogiMap`, on `Construct.Logi`) is built on either peer from the links when they change (`Construct.RebuildStamp`; a
+  conveyor's width bumps `Construct.LogiStamp`), never per tick: nodes, groups, Routers, destinations, each conveyor's length. Next
+  hops are columns, one a destination, made the first time a piece is sent there (a shortest way back from it over intact conveyors,
+  through Routers and Joins only: a Splitter deals in turn, so a way through it is no way), at most 4 a conveyor step. A way costs its
+  metres plus 2 m a junction.
+- **The Conveyor Router** (and the Large one): the Splitter's table, ports and port bytes, in logistics green, `"router": true`, 20 W
+  (40 W). Its out arrows are lamps (`"way": 1..3` boxes: ahead, then the two sides in port order) lit orange when its last piece went that way
+  to an order, white to storage, and all blinking red while the piece at its input is stuck; a low steel fence on the deck (`"fence"`
+  boxes) swings 45 degrees toward the way. Deck lamps only, no post (Q6). Outputs: **Alarm** (1 while a piece is stuck at it) and
+  **Moving** (pieces riding its network). Unpowered, it deals in turn like a Splitter and its lamps are out.
+- **A piece's destination** (`CRider.Dest`, a store handle; `Tag`, the order; `Flags`, `LogiFlags` with the reason in bits 4-7).
+  A machine's piece gets one as it leaves (`AtSource`) when its network has a Router: the oldest order at a terminal on the network
+  that asked this machine (else any) for its kind, while the order's Asked is more than what already rides to it. A terminal's fetch
+  from a store rides tagged for its order (and a store's way to the tray may now pass a Router: `RouteTo`). A piece with none gets one
+  at its first Router: an order that wants it, else the nearest plain Piece Rack on the network with room for it less what already
+  rides there (D5). Wants are read from the terminals' orders; no table is kept in phase 1.
+- **At a Router** (`ConstructLogistics.Pass`, once per lead piece a step): the destination's way is one array read and one `Takes`.
+  Its way cut or too narrow, its order closed or its tray full, it goes to storage as overflow (and is not offered to an order again);
+  its way full for 5 s, the same; 32 junctions crossed (a Splitter sending it round), the same. With no storage that has room it waits
+  at the Router, **stuck** (Q7): red lamps, Alarm 1, the conveyor's look line "held at the Router: no Piece Rack on the network has room
+  for it"; it looks again every 2 s. Nothing is dropped.
+- **Seeing it.** Aimed at a Router: "Conveyor Router: last piece Gear Set -> Crafting Terminal (order 1) - 3 ways out, 4 destinations
+  (2 for storage)", or "holding ... - stuck: ...". Aimed at a riding piece: its name "on a conveyor -> Crafting Terminal (order 1)" or
+  "-> storage: Piece Rack (its order closed)". A client knows the Router's choice from the riders it hears.
+- **Net and saves.** Protocol 264: each rider in `CBodyKind.Riders` gains u16 destination handle, u16 order and u8 flags. A save's body
+  gains a `LOGI` block after the stations' jobs (written only when a rider has a destination: per rider its destination part plus one,
+  order, flags); an older build skips it, an older save loads with no destinations (they get one at their first Router).
+- **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
+  `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
+  (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).
+- **Showcase:** the Assembler's Piece out runs to a Router; its way ahead to the part rack (storage), its way 3 to a Join before the
+  Crafting Terminal's side. Line A keeps its plain Splitter (the press is fed in turn until Press phase 2 gives it orders).
+
 ## Work orders
 
 The first step of automated vehicle building (the user, 2026-11-11: "every exact part to be built", a machine working through a queue
@@ -988,6 +1028,36 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
 - **Wire (protocol 260).** `CActKind.CraftNamed`, `PanelDesign`; `CBodyKind.Designs`; an order in `CBodyKind.Craft` may be named (shape
   255: material, count, the name, then id and state as before). A save's crafting order the same.
 
+- **Bent panels** (phase 2, feat/panel-designer-2; protocol 263). An eighth preset, `bend`: a flat sheet folded along a line across it.
+  Its key has three more words after the thickness: `Formed Panel (bend 200x100 c0 r0 t20 a45 p100 b10 steel)`: `a` the fold's angle in
+  degrees (-90 to 90, up positive), `p` where the fold's middle lies along the sheet (cm from its back edge, within the length), `b`
+  its inside radius (2 to 100 cm; the fold no longer than the sheet). Its rake is 0 and its crown still works. Length is the sheet's own
+  (what was cut), so the folded panel's bounds are shorter. Rows follow the fold (`HullLoft.PanelRowS`: back edge, fold start, a row
+  every 22.5 degrees, fold end, nose: at most 7 facets along); its collision strips follow the rows; a leg folded past 45 degrees has its
+  `n` sockets on its end's top (or bottom) face. Every other kind's key, floats and hash are as they were (hood `d6421922`). The designer
+  shows Fold angle, Fold at and Fold radius in place of the rake; `--form-panel bend [angle=] [at=] [radius=]`. An older build refuses
+  the name ("not a panel"), hence the protocol.
+- **The plinth** shows the world's newest design: `storage.pieces.plinth` `[x, y, z, size]` in the part file (the generator's), the
+  design's part found by key once a change of the list (`PanelDesigns.Newest`), drawn scaled into the cube on the plinth's top within
+  25 m (`RouteRender.DrawPlinths`), look-only. A design saved again becomes the newest.
+- **Too big for the tray**: a panel the tray can't hold (a fold taller than 0.6 m) stays claimed at its rack: "too big for the tray:
+  collect it at the Long Piece Rack" (it said "the tray is full").
+- **A blocked blueprint step names the part**: "step 3: Formed Panel (...) on Formed Panel (...) "n0": the Deck Plate (step 0) is in the
+  way" (`ConstructBuild.BlockerOf`). Phase 1's "two panels of different crown can't be welded edge to edge" was wrong: six pairings of
+  different crowns, sizes and kinds weld by `n`/`s` and `e`/`w` sockets; the big panel had hung into the frame under the first.
+- **Seen (2026-11-12, phase 2).** Sliders dragged by the mouse in the window (the tool's `drag X1,Y1 X2,Y2`: button down, twelve moves,
+  up, through ImGui's queue): Length 200 to 60 cm with 13 panels previewed on the way, Fold angle 45 to 90. Host and a joined client:
+  the client folded a panel to 90 degrees by mouse, saved it as "Flange" and ordered it; the host held it racked with hash `7f0cfbd5`,
+  the client's preview the same hash; the design on both and through the host's save and load.
+- **Loft: the plan** (not built). A lofted panel is two edge profiles (the back edge and the nose edge, each up to 8 heights across the
+  width, cm) and the sheet between them, ruled or eased. It will not fit a readable key under 128 characters with every range, so:
+  `Formed Panel (#HASH)` with the design (kind, sizes, the two profiles, material) stored once per world beside the named designs
+  (`ConstructWorld.Designs` gains a body; section `DSGN` a second list) and sent before any body that names it; `HullLoft.Parse` asks
+  the world's store for the hash, so every peer makes the same floats. The designer gets a profile editor: eight drag handles an edge
+  in a side view, mirrored by default. Geometry is `PanelPoint` with the height read from the two profiles (Catmull-Rom across, lerp or
+  smoothstep along); rows and strips as today. Open: a blueprint file must carry the design's body (a `"designs"` block), and a hash
+  with no body on a peer is a refused part, not a guess.
+
 - **Seen and measured** (2026-11-12, `--window-shot` on the showcase; the 2-core box at a load average of 11 to 24, so times are upper
   bounds). *Host alone:* every preset in the preview (its hash the same as `--form-panel` gives: hood `d6421922`); a design saved, ordered,
   formed, racked and brought to the tray by the return conveyor; twenty opens and Esc closes, the mouse captured after each. *Host and a
@@ -1003,8 +1073,7 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   welded edge to edge were refused ("something is in the way": their hidden boxes overlap at the seam).
 
 Proposed (the user's to confirm): the designer being a Crafting Terminal; panels collected at the former's rack unless a conveyor returns
-them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Not built: the plinth's model of the
-last design; a drag action in the window tool (sliders were set through `design length N`). Next: bend along a path, loft between
+them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Next: loft between
 outlines (a `Formed Panel (#HASH)` key with the design stored per world), player-added sockets, cut-outs with the Laser Cutter.
 
 ## Reservations

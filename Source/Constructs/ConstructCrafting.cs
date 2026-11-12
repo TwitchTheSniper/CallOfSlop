@@ -206,6 +206,11 @@ public static class ConstructCrafting
             int to = r.To;
             for (var hop = 0; hop < 8 && to != t; hop++)
             {
+                if (to < c.PartCount && c.DefOf(to).IsRouter && ConstructLogistics.Reaches(c, to, t))
+                {
+                    to = t; // (a Router sends a fetched piece on to its tray: ConstructLogistics)
+                    break;
+                }
                 // Through a join (one conveyor out); a splitter sends pieces in turn, so it is no route.
                 var next = -1;
                 var outs = 0;
@@ -529,7 +534,7 @@ public static class ConstructCrafting
             CraftState.Queued => string.IsNullOrEmpty(o.Note) ? $"queued at {where}" : $"queued at {where}: {o.Note}",
             CraftState.Riding => string.IsNullOrEmpty(o.Note) ? "riding to the tray" : o.Note,
             CraftState.InTray => string.IsNullOrEmpty(o.Note) ? "in the tray" : o.Note,
-            CraftState.Collect => $"no route from {where}: collect it there",
+            CraftState.Collect => string.IsNullOrEmpty(o.Note) ? $"no route from {where}: collect it there" : o.Note,
             CraftState.Held => string.IsNullOrEmpty(o.Note) ? "held" : o.Note,
             _ => "waiting",
         };
@@ -871,7 +876,15 @@ public static class ConstructCrafting
                     continue;
                 }
                 state = CraftState.Fetching;
-                if (ConstructConveyor.RackCheck(c, t, tray, d) != 0)
+                var fits = ConstructConveyor.RackCheck(c, t, tray, d);
+                if (fits == 3)
+                {
+                    // (a panel folded taller than the tray: it stays claimed at its rack for the player, as with no route)
+                    state = CraftState.Collect;
+                    note = $"too big for the tray: collect it at the {c.DefOf(net.Stores[s]).Name}";
+                    continue;
+                }
+                if (fits != 0)
                 {
                     state = CraftState.Held;
                     note = "held: the tray is full - take parts out";
@@ -879,7 +892,7 @@ public static class ConstructCrafting
                 }
                 if (via < 0 || via >= c.RouteCount || world.StoreOf(c, net.Stores[s]) is not { } st)
                     continue;
-                if (ConstructConveyor.PutMade(world, c, via, d, 1, out var why))
+                if (ConstructConveyor.PutMade(world, c, via, d, 1, out var why, owner, o.Id)) // (it rides for this order: a Router on the way sends it to the tray)
                 {
                     if (TakeOne(world, c, net.Stores[s], st, d))
                     {

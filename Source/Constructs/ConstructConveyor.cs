@@ -17,6 +17,12 @@ public struct CRider
     public byte ViaPlus1; // the conveyor it came off through a junction, plus one, while its back is still in the junction (0: none): its pose there follows the junction's lead-in
     public Vector3 LastPos; // server: its centre and turn in the world at the last step (where it drops if its link goes)
     public Quaternion LastRot;
+    // Smart logistics (ConstructLogistics.cs): where it is going, on either peer as the server last said.
+    public ushort Dest; // the destination's store handle (a tray or a Piece Rack; 0: none yet)
+    public ushort Tag; // the order it serves there (a terminal's CraftOrder.Id; 0: storage)
+    public byte Flags; // LogiFlags: storage, overflow, stuck, fetched; bits 4-7 the reason (LogiReason)
+    public byte Hops; // server: junctions crossed (the loop guard)
+    public byte Wait; // server: conveyor steps its Router has held it
 }
 
 /// <summary>The pieces riding a construct's conveyors (fixed arrays; grown once, never per tick).</summary>
@@ -441,6 +447,8 @@ public static class ConstructConveyor
                 ConstructRackPack.Hold(td, out var lo, out var hi);
                 return why == 3 && d.BoundsMax.Z - d.BoundsMin.Z > hi.Z - lo.Z ? 5 : why is >= 2 and <= 4 ? why : 0;
             }
+            if (td.IsRouter && ((LogiFlags)c.Conveyed[i].Flags & LogiFlags.Stuck) != 0)
+                return 8;
             return td.IsConveyorJunction ? 6 : 7;
         }
         return 0;
@@ -456,8 +464,17 @@ public static class ConstructConveyor
         5 => "jammed: piece too long for this rack",
         6 => "jammed: the conveyor after the junction is full",
         7 => $"jammed: the {(c.Routes[route].To < c.PartCount ? c.DefOf(c.Routes[route].To).Name : "machine")} isn't taking it",
+        8 => "held at the Router: " + StuckWhy(c, route),
         _ => null,
     };
+
+    private static string StuckWhy(Construct c, int route)
+    {
+        for (var i = 0; i < c.ConveyedCount; i++)
+            if (c.Conveyed[i].Route == route)
+                return ConstructLogistics.ReasonText(ConstructLogistics.ReasonOf(c.Conveyed[i]));
+        return "";
+    }
 
     // ---- The link ------------------------------------------------------------------------------------------------
 
@@ -606,6 +623,7 @@ public static class ConstructConveyor
             Paint = pp.Paint,
         };
         WorldPose(c, route, rider, piece, out rider.LastPos, out rider.LastRot);
+        ConstructLogistics.AtSource(world, c, r.From, ref rider, piece); // (an order that asked this machine for it: its tray, when a Router is on the way)
         Insert(c, rider);
         world.RemovePart(c, product);
         c.Wake();
@@ -617,7 +635,7 @@ public static class ConstructConveyor
     /// Parts a Press or Die Lathe stamped onto the conveyor out of its Piece out, one behind another: true when all
     /// <paramref name="count"/> went; else nothing went and <paramref name="why"/> says why (the press waits with its pieces untouched).
     /// </summary>
-    public static bool PutMade(ConstructWorld world, Construct c, int route, ConstructPartDef d, int count, out ExtrudeStall why)
+    public static bool PutMade(ConstructWorld world, Construct c, int route, ConstructPartDef d, int count, out ExtrudeStall why, ushort dest = 0, ushort tag = 0)
     {
         why = ExtrudeStall.None;
         ref var r = ref c.Routes[route];
@@ -651,6 +669,10 @@ public static class ConstructConveyor
         {
             var rider = new CRider { Def = d.Id, Route = (byte)route, At = along + (count - 1 - n) * (along + Gap), Health = 255 };
             WorldPose(c, route, rider, d, out rider.LastPos, out rider.LastRot);
+            if (dest != 0)
+                (rider.Dest, rider.Tag, rider.Flags) = (dest, tag, (byte)LogiFlags.Fetched); // (a terminal's fetch: it knows where)
+            else
+                ConstructLogistics.AtSource(world, c, r.From, ref rider, d);
             Insert(c, rider);
         }
         c.Wake();
@@ -755,9 +777,11 @@ public static class ConstructConveyor
     /// The lead piece of conveyor <paramref name="k"/> through the junction it ends at onto one of its outputs: round robin
     /// from where the last went (the input's <see cref="CRoute.Cursor"/>), past any that is cut, too small or full. True when it went.
     /// </summary>
-    private static bool Pass(Construct c, int k, int lead)
+    private static bool Pass(ConstructWorld world, Construct c, int k, int lead, ref bool changed)
     {
         int j = c.Routes[k].To;
+        if (c.DefOf(j).IsRouter && ConstructRecycler.Powered(world, c, j) && ConstructLogistics.Map(c) is var m && m.RouterSlot(j) is var s and >= 0)
+            return ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
         Span<byte> outs = stackalloc byte[8];
         var n = 0;
@@ -776,6 +800,8 @@ public static class ConstructConveyor
             r.Route = (byte)o;
             r.At = -lead0;
             r.ViaPlus1 = (byte)(k + 1);
+            if (r.Hops < 255)
+                r.Hops++; // (a Router further on knows a piece a Splitter keeps sending round)
             Insert(c, r);
             c.Routes[k].Cursor = (byte)((pick + 1) % n);
             for (var u = 0; u < n; u++)
@@ -785,6 +811,28 @@ public static class ConstructConveyor
         return false;
     }
 
+    /// <summary>A Router's choice: the lead piece of conveyor <paramref name="k"/> onto its output <paramref name="o"/> if that takes it now. True when it went.</summary>
+    public static bool PassTo(Construct c, int k, int lead, int o)
+    {
+        var d = ConstructParts.Def(c.Conveyed[lead].Def);
+        var lead0 = LeadIn(c, o, k, out _, out _, out _);
+        if (!Takes(c, o, d, -lead0))
+            return false;
+        var r = c.Conveyed[lead];
+        Remove(c, lead);
+        r.Route = (byte)o;
+        r.At = -lead0;
+        r.ViaPlus1 = (byte)(k + 1);
+        r.Hops = (byte)Math.Min(255, r.Hops + 1);
+        r.Wait = 0;
+        r.Flags &= unchecked((byte)~LogiFlags.Stuck);
+        Insert(c, r);
+        for (var u = 0; u < c.RouteCount; u++)
+            if (c.Routes[u].Type == RouteType.Conveyor && c.Routes[u].Parent == 255 && c.Routes[u].From == c.Routes[k].To)
+                c.Routes[u].Timer = k + 1; // (as a join's: the input served last waits behind the others)
+        return true;
+    }
+
     // ---- Each step (server) ----------------------------------------------------------------------------------------
 
     public static void Step(ConstructWorld world, IWorldQuery query)
@@ -792,18 +840,31 @@ public static class ConstructConveyor
         if (++world.ConveyorTicks < Every)
             return;
         world.ConveyorTicks = 0;
+        StepAll(world, query);
+    }
+
+    private static void StepAll(ConstructWorld world, IWorldQuery query)
+    {
         const float dt = Every / (float)World.TickRate;
         var now = Clock;
+        ConstructLogistics.NewStep();
         var bodies = world.Bodies;
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
             if (c.ConveyedCount == 0)
+            {
+                if (c.Logi is { AnyOut: true } && !c.Dirty)
+                    ConstructLogistics.Refresh(c, server: true); // (the last piece taken off by hand: its Router's Alarm and Moving go to 0)
                 continue;
+            }
             if (c.Dirty)
                 c.Rebuild();
             if (StepBody(world, query, c, dt, server: true))
+            {
                 world.RidersChanged(c);
+                ConstructLogistics.Refresh(c, server: true);
+            }
             c.ConveyedStamp = now;
         }
     }
@@ -898,7 +959,7 @@ public static class ConstructConveyor
             for (var lead = 0; lead < c.ConveyedCount; lead++)
                 if (c.Conveyed[lead].Route == waiting[w])
                 {
-                    if (Pass(c, waiting[w], lead))
+                    if (Pass(world, c, waiting[w], lead, ref changed))
                         changed = true;
                     break;
                 }
@@ -1033,14 +1094,14 @@ public static class ConstructConveyor
 
     // ---- The wire (protocol 244: CBodyKind.Riders) -------------------------------------------------------------------
 
-    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u8 link, f32 front (m: before a junction's output starts, below 0), u8 health, u32 paint, u8 the link it came through plus one, then the piece's key (protocol 245).</summary>
+    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u8 link, f32 front (m: before a junction's output starts, below 0), u8 health, u32 paint, u8 the link it came through plus one, u16 destination store handle, u16 order, u8 LogiFlags (protocol 264), then the piece's key (protocol 245).</summary>
     public static void Write(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Riders).U16(c.Id).U16((ushort)c.ConveyedCount);
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref var r = ref c.Conveyed[i];
-            w.U8(r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U8(r.ViaPlus1);
+            w.U8(r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U8(r.ViaPlus1).U16(r.Dest).U16(r.Tag).U8(r.Flags);
             ConstructStorage.WriteDef(w, r.Def); // (a piece's key, or a press's part by its id: protocol 247)
         }
     }
@@ -1063,6 +1124,9 @@ public static class ConstructConveyor
             var hp = r.U8();
             var paint = r.U32();
             var via = r.U8();
+            var dest = r.U16();
+            var tag = r.U16();
+            var flags = r.U8();
             if (!float.IsFinite(at))
                 throw new MalformedPacketException("a rider nowhere");
             var def = ConstructStorage.ReadDef(ref r);
@@ -1071,10 +1135,14 @@ public static class ConstructConveyor
             // The same piece this copy has moved on a little past the server's word (which is a lag old): kept where it is, no step back.
             if (i < had && c.Conveyed[i].Route == route && c.Conveyed[i].Def == def && c.Conveyed[i].At > at && c.Conveyed[i].At - at < 0.5f)
                 at = c.Conveyed[i].At;
-            c.Conveyed[c.ConveyedCount++] = new CRider { Def = def, Route = route, At = at, Health = hp, Paint = paint, ViaPlus1 = via };
+            c.Conveyed[c.ConveyedCount++] = new CRider { Def = def, Route = route, At = at, Health = hp, Paint = paint, ViaPlus1 = via, Dest = dest, Tag = tag, Flags = flags };
         }
         if (c != null)
+        {
             c.ConveyedStamp = Clock;
+            if (!c.Dirty)
+                ConstructLogistics.Refresh(c, server: false); // (a Router's lit way and stuck lamp, from the riders as heard)
+        }
     }
 
     // ---- Saves (after a body's behaviour brief: an older save ends before them) ------------------------------------------
@@ -1099,6 +1167,7 @@ public static class ConstructConveyor
     {
         public readonly List<(byte Route, ushort W, ushort H)> Sizes = new();
         public readonly List<CRider> Riders = new();
+        public readonly List<int> Index = new(); // each kept rider's place in the save's list (the LOGI block is in that order)
     }
 
     /// <summary>Reads <see cref="WriteSave"/>'s bytes, or null when the save ends before them (a rider whose piece this build can't make is left out).</summary>
@@ -1126,6 +1195,7 @@ public static class ConstructConveyor
             if (def == ConstructParts.None || !float.IsFinite(at) || ConstructParts.Get(def) is not { Role: not PartRole.Storage })
                 continue;
             saved.Riders.Add(new CRider { Def = def, Route = route, At = MathF.Max(0, at), Health = Math.Max((byte)1, hp), Paint = paint });
+            saved.Index.Add(i);
         }
         return saved;
     }

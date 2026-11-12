@@ -132,7 +132,7 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 82 KB
 
-Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, work orders, the crafting terminal, the Panel Designer, reservations, the building station, the Production Showcase.
+Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, smart logistics, work orders, the crafting terminal, the Panel Designer, reservations, the building station, the Production Showcase.
 
 - Refining (decision 14)
 - Extrusion
@@ -146,6 +146,7 @@ Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tier
 - Production lines (the Line Console, the recipe picker, resource icons)
 - Production monitors (Data out to any display; Alarm, Running, Made, Stop after)
 - Conveyors
+- Smart logistics (Conveyor Routers send pieces where they are wanted, else to storage)
 - Work orders
 - Crafting terminal
 - Panel Designer (presets with sliders, the preview, saved and shared designs)

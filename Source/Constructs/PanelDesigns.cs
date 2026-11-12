@@ -38,7 +38,8 @@ public static class PanelDesigns
             {
                 if (list[i].Key == key && list[i].Name == name)
                     return null;
-                list[i] = new PanelDesign(name, key);
+                list.RemoveAt(i); // (replaced: it is the newest again, so the plinths show it)
+                list.Add(new PanelDesign(name, key));
                 world.DesignsChanged();
                 return null;
             }
@@ -108,6 +109,22 @@ public static class PanelDesigns
         world.DesignStamp++;
     }
 
+    /// <summary>
+    /// The world's newest design as a part, for a Panel Designer's plinth (look-only; either peer). Found by its key when the list changes or
+    /// the part was freed (RuntimeParts.cs), so a frame costs two compares. Null: none, or a key this build can't make.
+    /// </summary>
+    public static ConstructPartDef? Newest(ConstructWorld world)
+    {
+        if (world.Designs.Count == 0)
+            return null;
+        if (world.NewestStamp != world.DesignStamp || world.NewestDef is { Reclaimed: true })
+        {
+            world.NewestStamp = world.DesignStamp;
+            world.NewestDef = ConstructParts.Find(world.Designs[^1].Key);
+        }
+        return world.NewestDef;
+    }
+
     // ---- The player's library (this PC) ---------------------------------------------------------------------------------
 
     /// <summary>The player's own designs, by name: one <c>name TAB key</c> line each. A line this build can't read is left out.</summary>
@@ -154,6 +171,8 @@ public sealed partial class ConstructWorld
     /// <summary>Server: the list changed and goes to everyone at the next flush. Either peer: <see cref="DesignStamp"/> counts changes (a panel's list key).</summary>
     public bool DesignsDirty;
     public int DesignStamp;
+    internal ConstructPartDef? NewestDef; // (PanelDesigns.Newest)
+    internal int NewestStamp = -1;
 
     public void DesignsChanged()
     {

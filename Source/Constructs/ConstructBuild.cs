@@ -175,6 +175,24 @@ public static class ConstructBuild
 
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;
 
+    /// <summary>The first part a part there would overlap (the same boxes and slack as <see cref="Blocked"/>, every part looked at: a reason's, never per frame), or -1.</summary>
+    public static int BlockerOf(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f)
+    {
+        for (var b = 0; b < def.SolidBoxes; b++)
+        {
+            var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
+            var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);
+            for (var i = 0; i < c.PartCount; i++)
+                for (var k = 0; k < c.DefOf(i).SolidBoxes; k++)
+                {
+                    c.BoxOf(i, k, out var oc, out var oh);
+                    if (MathF.Abs(bc.X - oc.X) < bh.X + oh.X && MathF.Abs(bc.Y - oc.Y) < bh.Y + oh.Y && MathF.Abs(bc.Z - oc.Z) < bh.Z + oh.Z)
+                        return i;
+                }
+        }
+        return -1;
+    }
+
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
     public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1)
     {
@@ -815,7 +833,9 @@ public static class ConstructBuild
             spin = Math.Max(0, SmartRotation.BestSpin(c, target, ts, def, ds)); // (a step whose turn is "auto")
         if (Place(c, target, ts, def, ds, spin, out var g) is { } bad && !(laidAt != null && bad == InTheWay))
         {
-            return $"step {k}: {def.Name} on {td.Name} \"{sock}\": {bad}";
+            // (which part: "something is in the way" sent a designer looking at the seam when it was the frame under the first panel)
+            var what = bad == InTheWay && BlockerOf(c, def, g.Pos, g.Rot, g.Scale) is var bi and >= 0 ? $"the {c.DefOf(bi).Name} (step {Array.IndexOf(partOf, bi)}) is in the way" : bad;
+            return $"step {k}: {def.Name} on {td.Name} \"{sock}\": {what}";
         }
         if (laidAt is { } stands)
             g.Pos = ConstructWorld.Quantise(stands);
