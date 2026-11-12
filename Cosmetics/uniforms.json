@@ -1,0 +1,312 @@
+{
+  "format": "call-of-slop-uniforms/1",
+  "//": "Uniforms (docs/sandbox/UNIFORMS.md, Source/Cosmetics/Uniforms.cs). The number on the wire is the order here: add new ones at the END and never reorder. A uniform keeps the shirt's abdomen, chest, shoulders, collar and neck (in the coat colours) and puts its torso boxes where the plate carrier was. Torso boxes are in the standing torso's frame: its centre at 0, x +-0.4 at the shoulders, y +-0.25 (top at the neck), -z is the front (the chest's face at z -0.21, the coat body's at -0.215, the back's at +0.21). The hat is hat parts as in hats.json (y = 0 the top of the head, -z the face). No two boxes that touch share a face plane (2 to 5 mm apart). wornBy: story people whose name starts so; tiers: players standing so with the faction are issued it.",
+  "uniforms": [
+    {
+      "id": "ministry_inmate", "name": "Ministry Issue Boiler Suit", "faction": "Ministry of Slop", "rank": "Inmate", "tiers": [ "Inmate" ],
+      "about": "Grade 3, wash at 40. Do not escape in it.",
+      "colors": { "coat": "#857b58", "coatDark": "#686046", "sleeve": "#81774f", "collar": "#6c6447", "trim": "#e3ddcc",
+        "trousers": "#7f7553", "hips": "#857b58", "boots": "#2a241d", "gloves": "#6b5a43", "cuff": "#686046" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#857b58" },
+        { "at": [0, -0.07, 0.005], "size": [0.65, 0.05, 0.45], "color": "#686046" },
+        { "at": [0, 0.0, -0.2155], "size": [0.025, 0.46, 0.008], "color": "#4e4835" },
+        { "at": [0.17, 0.13, -0.214], "size": [0.14, 0.1, 0.01], "color": "#7a7150" },
+        { "at": [-0.17, 0.15, -0.2135], "size": [0.16, 0.07, 0.008], "color": "#e3ddcc" },
+        { "at": [-0.215, 0.15, -0.2185], "size": [0.018, 0.04, 0.004], "color": "#1c1b19", "detail": true },
+        { "at": [-0.17, 0.15, -0.2185], "size": [0.018, 0.04, 0.004], "color": "#1c1b19", "detail": true },
+        { "at": [-0.125, 0.15, -0.2185], "size": [0.018, 0.04, 0.004], "color": "#1c1b19", "detail": true },
+        { "at": [0, 0.15, 0.2145], "size": [0.36, 0.05, 0.008], "color": "#e3ddcc" },
+        { "at": [0, 0.255, 0.02], "size": [0.36, 0.055, 0.32], "color": "#6c6447" }
+      ],
+      "hat": [
+        { "shape": "box", "at": [0, 0.04, 0], "size": [0.47, 0.12, 0.47], "color": "#4f5348" },
+        { "shape": "box", "at": [0, -0.03, 0], "size": [0.485, 0.06, 0.485], "color": "#42463c" },
+        { "shape": "box", "at": [0, 0.105, 0], "size": [0.38, 0.03, 0.38], "color": "#4f5348" }
+      ]
+    },
+    {
+      "id": "ministry_high_vis", "name": "High-Visibility Boiler Suit", "faction": "Ministry of Slop", "rank": "Person of Interest", "tiers": [ "Person of Interest" ],
+      "about": "Issued for your own visibility. Mostly for ours.",
+      "colors": { "coat": "#b5561e", "coatDark": "#8c4117", "sleeve": "#b0531c", "collar": "#8c4117", "trim": "#d9d8cf",
+        "trousers": "#a94f1b", "hips": "#b5561e", "boots": "#2a241d", "gloves": "#6b5a43", "cuff": "#8c4117" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#b5561e" },
+        { "at": [0, -0.07, 0.005], "size": [0.65, 0.05, 0.45], "color": "#8c4117" },
+        { "at": [0, 0.0, -0.2155], "size": [0.025, 0.46, 0.008], "color": "#5e2c10" },
+        { "at": [0, 0.08, 0], "size": [0.73, 0.04, 0.43], "color": "#d9d8cf" },
+        { "at": [0, -0.16, 0.005], "size": [0.65, 0.04, 0.45], "color": "#d9d8cf" },
+        { "at": [-0.17, 0.17, -0.2135], "size": [0.16, 0.06, 0.008], "color": "#e3ddcc" },
+        { "at": [0, 0.17, 0.2145], "size": [0.4, 0.07, 0.008], "color": "#1c1b19" },
+        { "at": [0, 0.255, 0.02], "size": [0.36, 0.055, 0.32], "color": "#8c4117" }
+      ],
+      "hat": [
+        { "shape": "box", "at": [0, 0.04, 0], "size": [0.47, 0.12, 0.47], "color": "#c9661f" },
+        { "shape": "box", "at": [0, -0.03, 0], "size": [0.485, 0.06, 0.485], "color": "#a8531a" }
+      ]
+    },
+    {
+      "id": "ministry_trusty", "name": "Trusty's Boiler Suit and Flat Cap", "faction": "Ministry of Slop", "rank": "Trusty", "tiers": [ "Trusty" ],
+      "about": "The armband entitles the wearer to carry one (1) clipboard.",
+      "colors": { "coat": "#857b58", "coatDark": "#686046", "sleeve": "#81774f", "collar": "#6c6447", "trim": "#8e2424",
+        "trousers": "#7f7553", "hips": "#857b58", "boots": "#2a241d", "gloves": "#6b5a43", "cuff": "#686046" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#857b58" },
+        { "at": [0, -0.07, 0.005], "size": [0.65, 0.05, 0.45], "color": "#4a3a2a" },
+        { "at": [0, -0.07, -0.226], "size": [0.06, 0.04, 0.012], "color": "#9a9a92" },
+        { "at": [0, 0.0, -0.2155], "size": [0.025, 0.46, 0.008], "color": "#4e4835" },
+        { "at": [0.17, 0.13, -0.214], "size": [0.14, 0.1, 0.01], "color": "#7a7150" },
+        { "at": [0.2, 0.165, -0.2205], "size": [0.012, 0.09, 0.006], "color": "#c8c4b8", "detail": true },
+        { "at": [-0.17, 0.15, -0.2135], "size": [0.16, 0.07, 0.008], "color": "#e3ddcc" },
+        { "at": [-0.385, 0.19, 0.03], "size": [0.06, 0.07, 0.32], "color": "#8e2424" },
+        { "at": [-0.419, 0.19, 0.03], "size": [0.01, 0.025, 0.2], "color": "#e3ddcc" },
+        { "at": [0, 0.15, 0.2145], "size": [0.36, 0.05, 0.008], "color": "#e3ddcc" },
+        { "at": [0, 0.255, 0.02], "size": [0.36, 0.055, 0.32], "color": "#6c6447" }
+      ],
+      "hat": [
+        { "shape": "box", "at": [0, 0.03, 0.01], "size": [0.48, 0.07, 0.5], "color": "#5a4c3a" },
+        { "shape": "box", "at": [0, 0.06, -0.16], "size": [0.46, 0.04, 0.2], "color": "#5f5140", "tiltX": 14 },
+        { "shape": "box", "at": [0, 0.005, -0.29], "size": [0.38, 0.02, 0.11], "color": "#4d4132", "tiltX": -5 },
+        { "shape": "box", "at": [0, 0.075, 0.06], "size": [0.4, 0.015, 0.3], "color": "#665645" }
+      ]
+    },
+    {
+      "id": "ministry_contractor", "name": "Ministry Contractor's Donkey Jacket", "faction": "Ministry of Slop", "rank": "Contractor", "tiers": [ "Contractor" ],
+      "about": "The hard hat is to be worn at all times, including in bed.",
+      "colors": { "coat": "#1f2430", "coatDark": "#161a22", "sleeve": "#1d222d", "collar": "#14171d", "trim": "#2d2f33",
+        "trousers": "#3b3a35", "hips": "#1f2430", "boots": "#3a2a1c", "gloves": "#5e4a32", "cuff": "#161a22" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#1f2430" },
+        { "at": [0, 0.24, 0.03], "size": [0.81, 0.09, 0.32], "color": "#2d2f33" },
+        { "at": [0, 0.15, 0.2165], "size": [0.66, 0.12, 0.012], "color": "#2d2f33" },
+        { "at": [-0.18, -0.17, -0.2205], "size": [0.16, 0.07, 0.012], "color": "#171b24" },
+        { "at": [0.18, -0.17, -0.2205], "size": [0.16, 0.07, 0.012], "color": "#171b24" },
+        { "at": [0, 0.1, -0.2155], "size": [0.035, 0.035, 0.012], "color": "#0e0f12", "detail": true },
+        { "at": [0, 0.02, -0.2185], "size": [0.035, 0.035, 0.012], "color": "#0e0f12", "detail": true },
+        { "at": [0, -0.08, -0.2205], "size": [0.035, 0.035, 0.012], "color": "#0e0f12", "detail": true },
+        { "at": [-0.2, 0.15, -0.2155], "size": [0.08, 0.06, 0.012], "color": "#a88a3c" },
+        { "at": [-0.2, 0.15, -0.2225], "size": [0.05, 0.03, 0.004], "color": "#7a1f22", "detail": true },
+        { "at": [0, 0.25, 0.03], "size": [0.4, 0.07, 0.34], "color": "#14171d" }
+      ],
+      "hat": [
+        { "shape": "round", "sides": 4, "at": [0, 0.065, 0.005], "size": [0.48, 0.13, 0.48], "color": "#dcd9d0" },
+        { "shape": "round", "sides": 4, "at": [0, 0.005, 0.0], "size": [0.56, 0.02, 0.58], "color": "#cfccc3" },
+        { "shape": "box", "at": [0, 0.14, 0.005], "size": [0.06, 0.03, 0.4], "color": "#e6e3da" },
+        { "shape": "box", "at": [0, 0.07, -0.33], "size": [0.09, 0.07, 0.06], "color": "#a88a3c" }
+      ]
+    },
+    {
+      "id": "ministry_crown_servant", "name": "Crown Servant's Overcoat and Bowler", "faction": "Ministry of Slop", "rank": "Crown Servant", "tiers": [ "Crown Servant" ],
+      "about": "Congratulations. Your pension begins in forty years.",
+      "colors": { "coat": "#3b3d41", "coatDark": "#2b2d30", "sleeve": "#383a3e", "collar": "#161618", "trim": "#a88a3c",
+        "trousers": "#2a2c30", "hips": "#3b3d41", "boots": "#0f0e0d", "gloves": "#2a2420", "cuff": "#2b2d30" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#3b3d41" },
+        { "at": [0, 0.17, -0.2115], "size": [0.12, 0.14, 0.008], "color": "#e8e6e0" },
+        { "at": [0, 0.15, -0.2185], "size": [0.04, 0.13, 0.006], "color": "#5e1c24" },
+        { "at": [-0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#2b2d30", "tiltZ": -14 },
+        { "at": [0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#2b2d30", "tiltZ": 14 },
+        { "at": [0, -0.06, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#141416", "detail": true },
+        { "at": [0, -0.16, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#141416", "detail": true },
+        { "at": [-0.21, 0.15, -0.2145], "size": [0.05, 0.03, 0.01], "color": "#e8e6e0", "detail": true },
+        { "at": [-0.1, 0.19, -0.2225], "size": [0.03, 0.03, 0.008], "color": "#a88a3c", "detail": true },
+        { "at": [0, 0.25, 0.03], "size": [0.42, 0.065, 0.36], "color": "#161618" }
+      ],
+      "hat": [
+        { "shape": "round", "sides": 4, "at": [0, 0.005, 0.0], "size": [0.6, 0.02, 0.6], "color": "#141416", "tiltX": -3 },
+        { "shape": "round", "sides": 4, "at": [0, 0.08, 0.0], "size": [0.44, 0.16, 0.44], "color": "#18181b" },
+        { "shape": "round", "sides": 4, "at": [0, 0.03, 0.0], "size": [0.45, 0.03, 0.45], "color": "#0c0c0d" },
+        { "shape": "round", "sides": 4, "at": [0, 0.17, 0.0], "size": [0.36, 0.04, 0.36], "color": "#1c1c20" }
+      ]
+    },
+    {
+      "id": "ministry_officer", "name": "Colony Officer's Greatcoat", "faction": "Ministry of Slop", "rank": "Officer", "wornBy": [ "Officer " ],
+      "about": "Regulation winter order, one pip, one whistle (lost).",
+      "colors": { "coat": "#4a5560", "coatDark": "#343c45", "sleeve": "#46515c", "collar": "#2b3138", "trim": "#8a2a2a",
+        "trousers": "#2e343b", "hips": "#4a5560", "boots": "#141210", "gloves": "#1e1b18", "cuff": "#343c45" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#4a5560" },
+        { "at": [0, -0.07, 0.005], "size": [0.65, 0.055, 0.45], "color": "#1a1714" },
+        { "at": [0, -0.07, -0.226], "size": [0.07, 0.045, 0.012], "color": "#a88a3c" },
+        { "at": [-0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#343c45", "tiltZ": -14 },
+        { "at": [0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#343c45", "tiltZ": 14 },
+        { "at": [-0.075, 0.04, -0.2155], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [0.075, 0.04, -0.2155], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [-0.075, -0.15, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [0.075, -0.15, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [0.03, 0.07, -0.2185], "size": [0.045, 0.42, 0.012], "color": "#1a1714", "tiltZ": 30 },
+        { "at": [-0.3375, 0.279, 0.03], "size": [0.13, 0.02, 0.2], "color": "#343c45" },
+        { "at": [0.3375, 0.279, 0.03], "size": [0.13, 0.02, 0.2], "color": "#343c45" },
+        { "at": [-0.34, 0.292, 0.0], "size": [0.035, 0.012, 0.035], "color": "#a88a3c", "detail": true },
+        { "at": [0.34, 0.292, 0.0], "size": [0.035, 0.012, 0.035], "color": "#a88a3c", "detail": true },
+        { "at": [-0.22, 0.17, -0.2165], "size": [0.07, 0.08, 0.013], "color": "#a88a3c" },
+        { "at": [-0.22, 0.17, -0.2245], "size": [0.04, 0.05, 0.004], "color": "#7a1f22", "detail": true },
+        { "at": [0, 0.255, 0.03], "size": [0.42, 0.075, 0.36], "color": "#2b3138" }
+      ],
+      "hat": [
+        { "shape": "box", "at": [0, 0.065, 0.0], "size": [0.5, 0.15, 0.5], "color": "#5b5650" },
+        { "shape": "box", "at": [0, 0.145, 0.0], "size": [0.4, 0.02, 0.4], "color": "#3a4049" },
+        { "shape": "box", "at": [0.265, -0.09, 0.02], "size": [0.05, 0.24, 0.46], "color": "#5b5650" },
+        { "shape": "box", "at": [-0.265, -0.09, 0.02], "size": [0.05, 0.24, 0.46], "color": "#5b5650" },
+        { "shape": "box", "at": [0, -0.05, 0.265], "size": [0.49, 0.14, 0.05], "color": "#5b5650" },
+        { "shape": "box", "at": [0, 0.06, -0.265], "size": [0.52, 0.09, 0.05], "color": "#4d4943" },
+        { "shape": "box", "at": [0, 0.06, -0.294], "size": [0.06, 0.06, 0.012], "color": "#a88a3c" }
+      ]
+    },
+    {
+      "id": "ministry_sergeant", "name": "Colony Sergeant's Greatcoat", "faction": "Ministry of Slop", "rank": "Sergeant", "wornBy": [ "Sergeant " ],
+      "about": "Two stripes, both earned, neither forgotten.",
+      "colors": { "coat": "#4a5560", "coatDark": "#343c45", "sleeve": "#46515c", "collar": "#2b3138", "trim": "#8a2a2a",
+        "trousers": "#2e343b", "hips": "#4a5560", "boots": "#141210", "gloves": "#1e1b18", "cuff": "#343c45" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#4a5560" },
+        { "at": [0, -0.07, 0.005], "size": [0.65, 0.055, 0.45], "color": "#1a1714" },
+        { "at": [0, -0.07, -0.226], "size": [0.07, 0.045, 0.012], "color": "#a88a3c" },
+        { "at": [-0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#343c45", "tiltZ": -14 },
+        { "at": [0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#343c45", "tiltZ": 14 },
+        { "at": [-0.075, 0.04, -0.2155], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [0.075, 0.04, -0.2155], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [-0.075, -0.15, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [0.075, -0.15, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#a88a3c", "detail": true },
+        { "at": [0.03, 0.07, -0.2185], "size": [0.045, 0.42, 0.012], "color": "#1a1714", "tiltZ": 30 },
+        { "at": [-0.3375, 0.279, 0.03], "size": [0.13, 0.02, 0.2], "color": "#343c45" },
+        { "at": [0.3375, 0.279, 0.03], "size": [0.13, 0.02, 0.2], "color": "#343c45" },
+        { "at": [0.409, 0.176, 0.067], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": -35 },
+        { "at": [0.409, 0.176, -0.007], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": 35 },
+        { "at": [0.409, 0.216, 0.067], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": -35 },
+        { "at": [0.409, 0.216, -0.007], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": 35 },
+        { "at": [-0.409, 0.176, 0.067], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": -35 },
+        { "at": [-0.409, 0.176, -0.007], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": 35 },
+        { "at": [-0.409, 0.216, 0.067], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": -35 },
+        { "at": [-0.409, 0.216, -0.007], "size": [0.012, 0.025, 0.09], "color": "#d6d2c4", "tiltX": 35 },
+        { "at": [-0.22, 0.17, -0.2165], "size": [0.07, 0.08, 0.013], "color": "#a88a3c" },
+        { "at": [-0.22, 0.17, -0.2245], "size": [0.04, 0.05, 0.004], "color": "#7a1f22", "detail": true },
+        { "at": [0.22, 0.175, -0.2165], "size": [0.12, 0.028, 0.012], "color": "#2d4f7a", "detail": true },
+        { "at": [0, 0.255, 0.03], "size": [0.42, 0.075, 0.36], "color": "#2b3138" }
+      ],
+      "hat": [
+        { "shape": "box", "at": [0, 0.065, 0.0], "size": [0.5, 0.15, 0.5], "color": "#4f4a44" },
+        { "shape": "box", "at": [0, 0.145, 0.0], "size": [0.4, 0.02, 0.4], "color": "#3a4049" },
+        { "shape": "box", "at": [0.265, -0.09, 0.02], "size": [0.05, 0.24, 0.46], "color": "#4f4a44" },
+        { "shape": "box", "at": [-0.265, -0.09, 0.02], "size": [0.05, 0.24, 0.46], "color": "#4f4a44" },
+        { "shape": "box", "at": [0, -0.05, 0.265], "size": [0.49, 0.14, 0.05], "color": "#4f4a44" },
+        { "shape": "box", "at": [0, 0.06, -0.265], "size": [0.52, 0.09, 0.05], "color": "#433f3a" },
+        { "shape": "box", "at": [0, 0.06, -0.294], "size": [0.06, 0.06, 0.012], "color": "#a88a3c" }
+      ]
+    },
+    {
+      "id": "ministry_warden", "name": "Warden's Greatcoat", "faction": "Ministry of Slop", "rank": "Warden", "wornBy": [ "Warden " ],
+      "about": "Astrakhan collar, gold braid and the authority of a form signed in triplicate.",
+      "colors": { "coat": "#25282d", "coatDark": "#17191c", "sleeve": "#23262b", "collar": "#3d3732", "trim": "#b8913a",
+        "trousers": "#1d1f23", "hips": "#25282d", "boots": "#0d0c0b", "gloves": "#16130f", "cuff": "#3d3732" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#25282d" },
+        { "at": [0, -0.07, 0.005], "size": [0.65, 0.055, 0.45], "color": "#100f0e" },
+        { "at": [0, -0.07, -0.226], "size": [0.07, 0.045, 0.012], "color": "#b8913a" },
+        { "at": [-0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#17191c", "tiltZ": -14 },
+        { "at": [0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#17191c", "tiltZ": 14 },
+        { "at": [-0.075, 0.04, -0.2155], "size": [0.03, 0.03, 0.012], "color": "#b8913a", "detail": true },
+        { "at": [0.075, 0.04, -0.2155], "size": [0.03, 0.03, 0.012], "color": "#b8913a", "detail": true },
+        { "at": [-0.075, -0.15, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#b8913a", "detail": true },
+        { "at": [0.075, -0.15, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#b8913a", "detail": true },
+        { "at": [-0.3375, 0.279, 0.03], "size": [0.13, 0.02, 0.2], "color": "#b8913a" },
+        { "at": [0.3375, 0.279, 0.03], "size": [0.13, 0.02, 0.2], "color": "#b8913a" },
+        { "at": [-0.34, 0.292, -0.03], "size": [0.035, 0.012, 0.035], "color": "#d9d6cc", "detail": true },
+        { "at": [-0.34, 0.292, 0.04], "size": [0.035, 0.012, 0.035], "color": "#d9d6cc", "detail": true },
+        { "at": [0.34, 0.292, -0.03], "size": [0.035, 0.012, 0.035], "color": "#d9d6cc", "detail": true },
+        { "at": [0.34, 0.292, 0.04], "size": [0.035, 0.012, 0.035], "color": "#d9d6cc", "detail": true },
+        { "at": [-0.22, 0.17, -0.2165], "size": [0.07, 0.08, 0.013], "color": "#b8913a" },
+        { "at": [-0.22, 0.17, -0.2245], "size": [0.04, 0.05, 0.004], "color": "#7a1f22", "detail": true },
+        { "at": [0.23, 0.18, -0.2165], "size": [0.13, 0.028, 0.012], "color": "#8a2a2a", "detail": true },
+        { "at": [0.23, 0.145, -0.2165], "size": [0.13, 0.028, 0.012], "color": "#2f5a3a", "detail": true },
+        { "at": [0, 0.255, 0.03], "size": [0.46, 0.09, 0.38], "color": "#3d3732" },
+        { "at": [-0.13, 0.27, -0.1665], "size": [0.06, 0.04, 0.012], "color": "#8a2a2a", "detail": true },
+        { "at": [0.13, 0.27, -0.1665], "size": [0.06, 0.04, 0.012], "color": "#8a2a2a", "detail": true }
+      ],
+      "hat": [
+        { "shape": "box", "at": [0, 0.065, 0.0], "size": [0.48, 0.11, 0.48], "color": "#1c1e22" },
+        { "shape": "box", "at": [0, 0.025, 0.0], "size": [0.495, 0.07, 0.495], "color": "#7a1f22" },
+        { "shape": "box", "at": [0, 0.135, 0.01], "size": [0.56, 0.05, 0.58], "color": "#212328" },
+        { "shape": "box", "at": [0, -0.005, -0.3], "size": [0.38, 0.022, 0.13], "color": "#0b0b0c", "tiltX": -12 },
+        { "shape": "box", "at": [0, 0.012, -0.252], "size": [0.4, 0.02, 0.012], "color": "#b8913a" },
+        { "shape": "box", "at": [0, 0.07, -0.2535], "size": [0.08, 0.08, 0.012], "color": "#b8913a" }
+      ]
+    },
+    {
+      "id": "ministry_riot", "name": "Riot Officer's Kit", "faction": "Ministry of Slop", "rank": "Riot Officer", "wornBy": [ "Riot Officer " ],
+      "about": "Padded, numbered and not, under any circumstances, to be hugged.",
+      "colors": { "coat": "#1c1e21", "coatDark": "#111214", "sleeve": "#1a1c1f", "collar": "#111214", "trim": "#c9c9c0",
+        "trousers": "#18191b", "hips": "#1c1e21", "boots": "#0b0b0b", "gloves": "#111111", "cuff": "#26282b" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#1c1e21" },
+        { "at": [0, -0.07, 0.005], "size": [0.65, 0.06, 0.45], "color": "#2a2b2a" },
+        { "at": [0, 0.13, -0.227], "size": [0.6, 0.2, 0.05], "color": "#25272a" },
+        { "at": [0, 0.13, 0.227], "size": [0.6, 0.2, 0.05], "color": "#25272a" },
+        { "at": [0, 0.17, 0.2565], "size": [0.4, 0.05, 0.012], "color": "#c9c9c0" },
+        { "at": [-0.33, 0.27, 0.03], "size": [0.16, 0.06, 0.24], "color": "#2c2e31" },
+        { "at": [0.33, 0.27, 0.03], "size": [0.16, 0.06, 0.24], "color": "#2c2e31" },
+        { "at": [0.2, -0.01, -0.24], "size": [0.08, 0.1, 0.05], "color": "#151618", "detail": true },
+        { "at": [-0.17, 0.18, -0.2545], "size": [0.1, 0.035, 0.006], "color": "#c9c9c0", "detail": true },
+        { "at": [0, 0.255, 0.03], "size": [0.4, 0.075, 0.34], "color": "#111214" }
+      ],
+      "hat": [
+        { "shape": "box", "at": [0, 0.06, 0.01], "size": [0.52, 0.17, 0.54], "color": "#16171a" },
+        { "shape": "box", "at": [0, -0.02, 0.01], "size": [0.54, 0.03, 0.56], "color": "#0e0f11" },
+        { "shape": "box", "at": [0, -0.1, -0.29], "size": [0.46, 0.15, 0.03], "color": "#2e3a44" },
+        { "shape": "box", "at": [0, -0.11, 0.28], "size": [0.46, 0.12, 0.04], "color": "#16171a" },
+        { "shape": "box", "at": [0, 0.07, 0.2815], "size": [0.3, 0.04, 0.012], "color": "#c9c9c0" }
+      ]
+    },
+    {
+      "id": "ministry_foreman", "name": "Foreman's Donkey Jacket", "faction": "Ministry of Slop", "rank": "Foreman", "wornBy": [ "Foreman " ],
+      "about": "High-visibility yoke, low-visibility tea breaks.",
+      "colors": { "coat": "#22252a", "coatDark": "#17191d", "sleeve": "#202328", "collar": "#14161a", "trim": "#c8612a",
+        "trousers": "#3b3a35", "hips": "#22252a", "boots": "#3a2a1c", "gloves": "#7a5d36", "cuff": "#17191d" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#22252a" },
+        { "at": [0, 0.24, 0.03], "size": [0.81, 0.09, 0.32], "color": "#c8612a" },
+        { "at": [0, 0.15, 0.2165], "size": [0.66, 0.12, 0.012], "color": "#c8612a" },
+        { "at": [0, -0.16, 0.2255], "size": [0.6, 0.035, 0.008], "color": "#dcdcd0" },
+        { "at": [-0.18, -0.17, -0.2205], "size": [0.16, 0.07, 0.012], "color": "#191c20" },
+        { "at": [0.18, -0.17, -0.2205], "size": [0.16, 0.07, 0.012], "color": "#191c20" },
+        { "at": [0, 0.1, -0.2155], "size": [0.035, 0.035, 0.012], "color": "#0e0f12", "detail": true },
+        { "at": [0, 0.02, -0.2185], "size": [0.035, 0.035, 0.012], "color": "#0e0f12", "detail": true },
+        { "at": [0, -0.08, -0.2205], "size": [0.035, 0.035, 0.012], "color": "#0e0f12", "detail": true },
+        { "at": [0.2, 0.15, -0.2165], "size": [0.03, 0.12, 0.012], "color": "#b03a2a", "detail": true },
+        { "at": [0, 0.25, 0.03], "size": [0.4, 0.07, 0.34], "color": "#14161a" }
+      ],
+      "hat": [
+        { "shape": "round", "sides": 4, "at": [0, 0.065, 0.005], "size": [0.48, 0.13, 0.48], "color": "#d9b21f" },
+        { "shape": "round", "sides": 4, "at": [0, 0.005, 0.0], "size": [0.56, 0.02, 0.58], "color": "#c9a31b" },
+        { "shape": "box", "at": [0, 0.14, 0.005], "size": [0.06, 0.03, 0.4], "color": "#e3bf2c" },
+        { "shape": "box", "at": [0, 0.07, -0.33], "size": [0.09, 0.07, 0.06], "color": "#2a2a2a" },
+        { "shape": "box", "at": [0, 0.07, -0.362], "size": [0.065, 0.045, 0.01], "color": "#f2ecc8" }
+      ]
+    },
+    {
+      "id": "ministry_civil_service", "name": "Senior Civil Service Suit", "faction": "Ministry of Slop", "rank": "Senior Civil Servant",
+      "wornBy": [ "Permanent Secretary ", "Licensing Officer " ],
+      "about": "Pinstripes, a watch chain and a bowler that has seen eleven ministers off.",
+      "colors": { "coat": "#1f2433", "coatDark": "#161a25", "sleeve": "#1d2230", "collar": "#161a25", "trim": "#b8913a",
+        "trousers": "#1d2230", "hips": "#1f2433", "boots": "#0d0c0b", "gloves": "#d9c0a8", "cuff": "#e8e6e0" },
+      "torso": [
+        { "at": [0, -0.11, 0.005], "size": [0.64, 0.28, 0.44], "color": "#1f2433" },
+        { "at": [0, 0.17, -0.2115], "size": [0.12, 0.14, 0.008], "color": "#e8e6e0" },
+        { "at": [0, 0.15, -0.2185], "size": [0.04, 0.13, 0.006], "color": "#3a4a7a" },
+        { "at": [-0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#161a25", "tiltZ": -14 },
+        { "at": [0.1, 0.16, -0.2135], "size": [0.1, 0.17, 0.012], "color": "#161a25", "tiltZ": 14 },
+        { "at": [0, -0.06, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#0f1118", "detail": true },
+        { "at": [0, -0.16, -0.2205], "size": [0.03, 0.03, 0.012], "color": "#0f1118", "detail": true },
+        { "at": [0.09, -0.11, -0.221], "size": [0.13, 0.008, 0.008], "color": "#b8913a", "detail": true },
+        { "at": [-0.21, 0.15, -0.2145], "size": [0.05, 0.03, 0.01], "color": "#e8e6e0", "detail": true },
+        { "at": [0, 0.25, 0.03], "size": [0.4, 0.06, 0.34], "color": "#161a25" }
+      ],
+      "hat": [
+        { "shape": "round", "sides": 4, "at": [0, 0.005, 0.0], "size": [0.6, 0.02, 0.6], "color": "#141416", "tiltX": -3 },
+        { "shape": "round", "sides": 4, "at": [0, 0.08, 0.0], "size": [0.44, 0.16, 0.44], "color": "#18181b" },
+        { "shape": "round", "sides": 4, "at": [0, 0.03, 0.0], "size": [0.45, 0.03, 0.45], "color": "#0c0c0d" },
+        { "shape": "round", "sides": 4, "at": [0, 0.17, 0.0], "size": [0.36, 0.04, 0.36], "color": "#1c1c20" }
+      ]
+    }
+  ]
+}

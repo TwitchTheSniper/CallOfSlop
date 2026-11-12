@@ -92,7 +92,7 @@ public struct BodyColors
 /// </summary>
 public sealed class BodyParts : IRenderable
 {
-    public const int Capacity = 12;
+    public const int Capacity = 40; // (a torso in uniform: 5 shirt parts + up to Uniforms.MaxTorsoBoxes)
     public readonly Matrix4x4[] Local = new Matrix4x4[Capacity];
     public readonly Renderable[] Draws = new Renderable[Capacity];
     public readonly bool[] Detail = new bool[Capacity];
@@ -116,6 +116,19 @@ public sealed class BodyParts : IRenderable
         Detail[Count] = part.Detail;
         Paint[Count] = part.Paint;
         OnJaw[Count] = onJaw;
+        Count++;
+    }
+
+    /// <summary>Appends a uniform's box (<see cref="UniformBox"/>, torso reference frame) scaled per axis by <paramref name="scale"/>.</summary>
+    public void Add(in UniformBox box, Vector3 scale)
+    {
+        if (Count == Capacity)
+            return;
+        Local[Count] = box.Local * Matrix4x4.CreateScale(scale);
+        Draws[Count] = Renderable.Box(box.Color);
+        Detail[Count] = box.Detail;
+        Paint[Count] = BodyPaint.Accent;
+        OnJaw[Count] = false;
         Count++;
     }
 
@@ -355,8 +368,21 @@ public static class BodyModel
     /// <summary>A robot shell's head: a helmet for the dome, no beard (Game/GameRobotShell.cs).</summary>
     public static readonly BodyVariant RobotVariant = new(0, 0, Headwear.Helmet, false, 0);
 
-    /// <summary>The colours a player is drawn in: their own, or a robot's while they wear a shell.</summary>
-    public static BodyColors ColorsFor(Player p, in BodyVariant v) => p.InShell ? BodyColors.Robot(p.Color) : BodyColors.For(p.Color, v);
+    /// <summary>The colours a player is drawn in: their own, a robot's while they wear a shell, or their uniform's (Source/Cosmetics/Uniforms.cs).</summary>
+    public static BodyColors ColorsFor(Player p, in BodyVariant v) =>
+        p.InShell ? BodyColors.Robot(p.Color) : UniformOf(p) is { } u ? u.Colors(v) : BodyColors.For(p.Color, v);
+
+    /// <summary>The uniform a player is drawn in (the server's pick, in the roster), or null: none, or in a robot shell.</summary>
+    public static UniformDef? UniformOf(Player p) => p.InShell ? null : Uniforms.Get(p.Uniform);
+
+    /// <summary>A player's leg colours: their uniform's trousers and boots, or the player colour's.</summary>
+    public static LegColors LegsFor(Player p) => UniformOf(p) is { } u ? u.Legs : LegColors.For(p.Color);
+
+    /// <summary>A player's arm colours: their uniform's sleeves and gloves, or the player colour's.</summary>
+    public static ArmColors ArmsFor(Player p) => UniformOf(p) is { } u ? u.Arms : ArmColors.For(p.Color * 0.75f);
+
+    /// <summary>The torso parts a uniform keeps (abdomen, chest, shoulders, collar, neck: the coat's body); the plate carrier goes.</summary>
+    private static readonly int[] UniformBase = [0, 1, 2, 8, 9];
 
     /// <summary>The name's look with a picked <paramref name="look"/> on top (Auto axes keep the name's).</summary>
     public static BodyVariant VariantFor(string name, byte id, in PlayerLook look) => look.Apply(VariantFor(name, id));
@@ -370,15 +396,24 @@ public static class BodyModel
 
     /// <summary>
     /// Fills <paramref name="torso"/> (torso frame) and <paramref name="head"/> (head node frame) for a stance. With a prestige
-    /// hat on (<paramref name="hat"/>) the headwear is left off (hair keeps only its back part, under the hat).
+    /// hat on (<paramref name="hat"/>) the headwear is left off (hair keeps only its back part, under the hat). In a
+    /// <paramref name="uniform"/> the plate carrier gives way to the uniform's own boxes (its hat is the hat).
     /// </summary>
-    public static void Build(BodyParts torso, BodyParts head, int stance, in BodyVariant v, in BodyColors c, bool hat)
+    public static void Build(BodyParts torso, BodyParts head, int stance, in BodyVariant v, in BodyColors c, bool hat, UniformDef? uniform = null)
     {
         var s = Stances[stance];
         var ts = s.TorsoScale;
         torso.Clear();
-        foreach (var p in TorsoParts)
-            torso.Add(p, ts, c);
+        if (uniform == null)
+            foreach (var p in TorsoParts)
+                torso.Add(p, ts, c);
+        else
+        {
+            foreach (var i in UniformBase)
+                torso.Add(TorsoParts[i], ts, c);
+            foreach (var b in uniform.Torso)
+                torso.Add(b, ts);
+        }
         var hs = s.HeadScale;
         head.Clear();
         for (var i = 0; i < HeadParts.Length; i++)
@@ -415,7 +450,7 @@ public static class BodyModel
         !hat ? HeadwearParts[(int)v.Headwear].Length : v.Headwear == Headwear.Hair ? 1 : 0;
 
     /// <summary>Most parts a torso / head can have (the vertex budget's worst case).</summary>
-    public static int MaxParts => TorsoParts.Length + HeadParts.Length + HeadwearParts.Max(h => h.Length) + 1;
+    public static int MaxParts => Math.Max(TorsoParts.Length, UniformBase.Length + Uniforms.MaxTorsoBoxes) + HeadParts.Length + HeadwearParts.Max(h => h.Length) + 1;
 
     private static readonly BodyParts ScratchTorso = new(), ScratchHead = new();
 
@@ -427,7 +462,7 @@ public static class BodyModel
     {
         var v = VariantFor(p);
         var c = ColorsFor(p, v);
-        Build(ScratchTorso, ScratchHead, stance, v, c, hat);
+        Build(ScratchTorso, ScratchHead, stance, v, c, hat, UniformOf(p));
         ScratchTorso.ShowDetail = ScratchHead.ShowDetail = detail ?? WantsDetail(p.RenderPosition);
         var s = Stances[stance];
         ScratchTorso.DrawImmediate(g, s.TorsoFrame * up);

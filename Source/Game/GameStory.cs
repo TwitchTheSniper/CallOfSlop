@@ -115,6 +115,7 @@ public sealed partial class Game
         notes.Clear();
         StoryWorkTick();
         StoryGroupsTick(); // (the players' groups: GameStoryFactions.cs)
+        UniformsTick(now); // (who wears what: GameUniforms.cs)
         StoryJobsTick(s, now); // (faction jobs: crates, builds, couriers, the window: GameStoryJobs.cs)
         StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
         StandInsTick(s, now); // STAND-IN: craft for the people's trips (Source/StandIns)

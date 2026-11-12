@@ -6,6 +6,8 @@ namespace CallOfSlop;
 public enum LookAxis : byte
 {
     Skin, Hair, Headwear, Beard, Gear, Outfit,
+    /// <summary>Whether you wear the uniform a faction issues you (Source/Cosmetics/Uniforms.cs): Auto and Issue wear it, Own Clothes never.</summary>
+    Uniform,
 }
 
 /// <summary>
@@ -17,10 +19,10 @@ public enum LookAxis : byte
 /// On the network it's 3 bytes (<see cref="Pack"/>): a nibble per axis. A value this build doesn't know (a removed variant,
 /// a newer build, a hostile packet) falls back to Auto for that axis (<see cref="Sanitized"/>).
 /// </summary>
-public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Headwear = 0, byte Beard = 0, byte Gear = 0, byte Outfit = 0)
+public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Headwear = 0, byte Beard = 0, byte Gear = 0, byte Outfit = 0, byte Uniform = 0)
 {
     /// <summary>Bytes on the wire (<see cref="Pack"/>).</summary>
-    public const int WireBytes = 3;
+    public const int WireBytes = 4; // (protocol 257: the fourth carries the uniform choice)
 
     /// <summary>All Auto: the name-based look (what bots and players who never opened the screen wear).</summary>
     public static PlayerLook Auto => default;
@@ -33,13 +35,18 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         LookAxis.Headwear => BodyModel.HeadwearParts.Length,
         LookAxis.Beard => 2,
         LookAxis.Gear => BodyModel.GearColors.Length,
+        LookAxis.Uniform => 2,
         _ => Player.Palette.Length,
     };
+
+    /// <summary>Wears what a faction issues (Auto or "Issued Uniform"); false: "Own Clothes".</summary>
+    public bool WearsUniform => Uniform != 2;
 
     /// <summary>The value on an axis (0 Auto, 1.. an option).</summary>
     public byte Get(LookAxis axis) => axis switch
     {
-        LookAxis.Skin => Skin, LookAxis.Hair => Hair, LookAxis.Headwear => Headwear, LookAxis.Beard => Beard, LookAxis.Gear => Gear, _ => Outfit,
+        LookAxis.Skin => Skin, LookAxis.Hair => Hair, LookAxis.Headwear => Headwear, LookAxis.Beard => Beard, LookAxis.Gear => Gear,
+        LookAxis.Uniform => Uniform, _ => Outfit,
     };
 
     /// <summary>A copy with one axis set (0 Auto, 1.. an option).</summary>
@@ -53,6 +60,7 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
             LookAxis.Headwear => this with { Headwear = v },
             LookAxis.Beard => this with { Beard = v },
             LookAxis.Gear => this with { Gear = v },
+            LookAxis.Uniform => this with { Uniform = v },
             _ => this with { Outfit = v },
         };
     }
@@ -66,7 +74,7 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         // No allocations: this runs when bodies are (re)built.
         static byte Ok(byte v, int options) => v <= options ? v : (byte)0;
         return new PlayerLook(Ok(Skin, Options(LookAxis.Skin)), Ok(Hair, Options(LookAxis.Hair)), Ok(Headwear, Options(LookAxis.Headwear)),
-            Ok(Beard, Options(LookAxis.Beard)), Ok(Gear, Options(LookAxis.Gear)), Ok(Outfit, Options(LookAxis.Outfit)));
+            Ok(Beard, Options(LookAxis.Beard)), Ok(Gear, Options(LookAxis.Gear)), Ok(Outfit, Options(LookAxis.Outfit)), Ok(Uniform, Options(LookAxis.Uniform)));
     }
 
     /// <summary>
@@ -91,9 +99,10 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         return o > 0 && o <= Player.Palette.Length ? Player.Palette[o - 1] : auto;
     }
 
-    /// <summary>The 3 wire bytes: skin | hair &lt;&lt; 4, headwear | gear &lt;&lt; 4, beard | outfit &lt;&lt; 4.</summary>
+    /// <summary>The 4 wire bytes: skin | hair &lt;&lt; 4, headwear | gear &lt;&lt; 4, beard | outfit &lt;&lt; 4, uniform (the high nibble spare).</summary>
     public void Pack(PacketWriter w) =>
-        w.U8((byte)((Skin & 15) | (Hair & 15) << 4)).U8((byte)((Headwear & 15) | (Gear & 15) << 4)).U8((byte)((Beard & 15) | (Outfit & 15) << 4));
+        w.U8((byte)((Skin & 15) | (Hair & 15) << 4)).U8((byte)((Headwear & 15) | (Gear & 15) << 4)).U8((byte)((Beard & 15) | (Outfit & 15) << 4))
+            .U8((byte)(Uniform & 15));
 
     /// <summary>Reads <see cref="WireBytes"/> written by <see cref="Pack"/> (sanitised). Missing bytes: Auto.</summary>
     public static PlayerLook Unpack(ref PacketReader r)
@@ -103,8 +112,9 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         var a = r.U8();
         var b = r.U8();
         var c = r.U8();
+        var d = r.U8();
         return new PlayerLook(Skin: (byte)(a & 15), Hair: (byte)(a >> 4), Headwear: (byte)(b & 15), Gear: (byte)(b >> 4), Beard: (byte)(c & 15),
-            Outfit: (byte)(c >> 4)).Sanitized();
+            Outfit: (byte)(c >> 4), Uniform: (byte)(d & 15)).Sanitized();
     }
 
     /// <summary>A random concrete option on every axis (the screen's Random button).</summary>
@@ -112,7 +122,8 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
     {
         var l = default(PlayerLook);
         foreach (var axis in Enum.GetValues<LookAxis>())
-            l = l.With(axis, 1 + rng.Next(Options(axis)));
+            if (axis != LookAxis.Uniform) // (a choice about wearing, not a look: Random leaves it as it was)
+                l = l.With(axis, 1 + rng.Next(Options(axis)));
         return l;
     }
 
@@ -124,6 +135,7 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
     private static readonly string[] BeardNames = ["Clean-Shaven", "Beard"];
     private static readonly string[] GearNames = ["Olive", "Tan", "Black", "Grey-Green"];
     private static readonly string[] OutfitNames = ["Blue", "Red", "Green", "Yellow", "Purple", "Cyan", "Orange", "White"];
+    private static readonly string[] UniformNames = ["Issued Uniform", "Own Clothes"];
 
     /// <summary>The heading of an axis on the screen.</summary>
     public static string AxisName(LookAxis axis) => axis switch
@@ -133,6 +145,7 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         LookAxis.Headwear => "Headwear",
         LookAxis.Beard => "Beard",
         LookAxis.Gear => "Helmet / Cap Colour",
+        LookAxis.Uniform => "Faction Uniform (Story)",
         _ => "Outfit Colour",
     };
 
@@ -147,7 +160,7 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         var names = axis switch
         {
             LookAxis.Skin => SkinNames, LookAxis.Hair => HairNames, LookAxis.Headwear => HeadwearNames, LookAxis.Beard => BeardNames,
-            LookAxis.Gear => GearNames, _ => OutfitNames,
+            LookAxis.Gear => GearNames, LookAxis.Uniform => UniformNames, _ => OutfitNames,
         };
         return value - 1 < names.Length ? names[value - 1] : $"Option {value}";
     }
@@ -193,6 +206,7 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         LookAxis.Headwear => (int)auto.Headwear + 1,
         LookAxis.Beard => auto.Beard ? 2 : 1,
         LookAxis.Gear => auto.Gear % BodyModel.GearColors.Length + 1,
+        LookAxis.Uniform => 1,
         _ => id % Player.Palette.Length + 1,
     };
 

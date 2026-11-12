@@ -148,7 +148,7 @@ public static class ThirdPersonArms
         Left.Root = lr;
         Right.Solve(right, body, Vector3.Zero);
         Left.Solve(left, body, Vector3.Zero);
-        _colors = ArmColors.For(p.Color * 0.75f);
+        _colors = BodyModel.ArmsFor(p); // (a uniform's sleeves and gloves)
         st.GunPose = pose;
         st.GunAt = now;
         st.GunDef = def;
@@ -171,7 +171,7 @@ public static class ThirdPersonArms
         Left.Root = lr;
         Right.Solve(right, body, Vector3.Zero);
         Left.Solve(left, body, Vector3.Zero);
-        _colors = ArmColors.For(p.Color * 0.75f);
+        _colors = BodyModel.ArmsFor(p); // (a uniform's sleeves and gloves)
     }
 
     /// <summary>

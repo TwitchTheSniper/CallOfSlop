@@ -421,7 +421,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 256: the Building Station (ConstructStation.cs): CActKind gains Station (at the end); CBodyKind.Station (at the end) carries a body's stations' jobs
     //      (state, the blueprint's name, counts, the frozen body, the last part fitted, a note); a new part file (Building Station) moves part ids; three
     //      new settings (bayWidth, bayDepth, bayHeight).
-    public const ushort ProtocolVersion = 256;
+    // 257: uniforms (Source/Cosmetics/Uniforms.cs). The roster gains a u8 uniform per player after the look (bots too), and the look
+    //      (PlayerLook.WireBytes) grows to 4 bytes: the fourth is the uniform choice (Issued Uniform or Own Clothes).
+    public const ushort ProtocolVersion = 257;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
