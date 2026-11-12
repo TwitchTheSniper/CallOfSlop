@@ -10,14 +10,15 @@ namespace CallOfSlop;
 /// parts menu's own call (CActKind.Blueprint), flies the player (noclip) to the camera, runs a short script of actions through the real input
 /// paths, waits <c>--frames</c> frames and saves the frame (with <c>--every N</c> a numbered series over those frames), prints the paths and quits.
 /// Exit code: 0, or 1 when the window, the world or an action failed (the reason is printed).
-/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME].
+/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL.
 /// </summary>
 public static unsafe partial class Program
 {
     private static bool _windowShot;
     private static int _wsExit;
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
-    private static Vector3? _wsAt, _wsLookAt;
+    private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
+    private static string _wsNet = "";
     private static float? _wsYaw, _wsPitch;
     private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
     private static double _wsStart;
@@ -28,7 +29,7 @@ public static unsafe partial class Program
     private static ushort _wsBody; // the spawned blueprint
     private static TextWriter? _wsStdout;
 
-    private const string WsActions = "aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME]";
+    private const string WsActions = "aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL";
 
     /// <summary>Reads the flags (before the window): the size and a throwaway save folder are set here.</summary>
     private static bool WindowShotArgs(string[] args)
@@ -44,6 +45,10 @@ public static unsafe partial class Program
         _wsBlueprint = Val("--blueprint") ?? "";
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
         _wsLookAt = Val("--look-at") is { } la ? WsVec(la) : null;
+        _wsSpawnAt = Val("--spawn-at") is { } sa ? WsVec(sa) : null;
+        _wsNet = Val("--net") ?? "";
+        if (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase))
+            _wsBlueprint = ""; // (a client finds the host's constructs by their parts' names)
         _wsYaw = float.TryParse(Val("--yaw"), System.Globalization.CultureInfo.InvariantCulture, out var y) ? y * MathF.PI / 180 : null;
         _wsPitch = float.TryParse(Val("--pitch"), System.Globalization.CultureInfo.InvariantCulture, out var p) ? p * MathF.PI / 180 : null;
         _wsFrames = int.TryParse(Val("--frames"), out var f) ? Math.Max(1, f) : _wsFrames;
@@ -78,7 +83,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot";
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill";
 
     private static void WsSay(string s)
     {
@@ -112,7 +117,23 @@ public static unsafe partial class Program
                     return;
                 }
                 _settings.MapName = map.Name;
-                StartSession(LobbyAction.SinglePlayer);
+                if (_wsNet.StartsWith("host", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (_wsNet.Split(':') is [_, var hp] && ushort.TryParse(hp, out var hport))
+                        _settings.Port = hport;
+                    _settings.HostBots = 0;
+                    StartSession(LobbyAction.Host); // (the real transport: a client joins with --net join:IP[:PORT])
+                }
+                else if (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = _wsNet.Split(':');
+                    _settings.JoinAddress = parts[1];
+                    if (parts.Length > 2 && ushort.TryParse(parts[2], out var jport))
+                        _settings.Port = jport;
+                    StartSession(LobbyAction.Join);
+                }
+                else
+                    StartSession(LobbyAction.SinglePlayer);
                 if (_session == null)
                 {
                     WsFail("the session didn't start");
@@ -127,6 +148,8 @@ public static unsafe partial class Program
                     WsFail("the session ended");
                     return;
                 }
+                if (g.InLobby && g.IsServer)
+                    g.LobbyStart(force: true, now); // (a host: START at once)
                 if (g.Phase == MatchPhase.Warmup)
                 {
                     g.SetReady(true);
@@ -157,6 +180,8 @@ public static unsafe partial class Program
                             WsFail($"no blueprint \"{_wsBlueprint}\"");
                             return;
                         }
+                        if (_wsSpawnAt is { } sp)
+                            me.Teleport(new Vector3(sp.X, World.Map.GroundHeight(sp.X, sp.Z), sp.Z)); // (the blueprint goes down in front of here)
                         _wsBody = (ushort)(g.Constructs.Bodies.Count > 0 ? g.Constructs.Bodies.Max(b => b.Id) : 0);
                         g.SandboxSend(CActKind.Blueprint, part: (ushort)index); // (the parts menu's own call: UiSandboxParts.cs)
                     }
@@ -246,7 +271,7 @@ public static unsafe partial class Program
     {
         var feet = eye - (p.Eye - p.Position);
         if (Vector3.DistanceSquared(World.ClampToArena(feet), feet) > 0.01f)
-            WsSay($"note: {feet:0.0} is outside {World.Map.Name}'s arena: the player stops at its edge (a bigger map: --map)");
+            WsSay($"note: {feet:0.0} is outside {World.Map.Name}'s arena or under its ground: the player stops at the edge (a bigger map: --map)");
         p.Teleport(feet);
     }
 
@@ -319,7 +344,7 @@ public static unsafe partial class Program
                 {
                     var dist = spec.Length < arg.Length ? float.Parse(arg[(spec.Length + 1)..], System.Globalization.CultureInfo.InvariantCulture) : 1.6f;
                     var away = normal != Vector3.Zero ? normal : Vector3.Normalize(new Vector3(me.Eye.X - spot.X, 0, me.Eye.Z - spot.Z) + new Vector3(1e-4f, 0, 0));
-                    WsEyeTo(g, me, spot + away * dist);
+                    WsEyeTo(g, me, spot + away * dist + (normal == Vector3.Zero ? new Vector3(0, dist * 0.6f + 0.5f, 0) : Vector3.Zero)); // (no screen: from above and aside)
                 }
                 if (verb == "panel")
                 {
@@ -381,8 +406,60 @@ public static unsafe partial class Program
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");
                 _wsWait = 1;
                 return;
+            case "fill": // a store's bin set on the server (a test state: a full output, another material), sent as any change is
+            {
+                var bits = arg.Split(' ');
+                if (bits.Length < 3 || !int.TryParse(bits[^2], out var amount) || !g.IsServer)
+                {
+                    WsFail("fill PART[#n] N MATERIAL (on the host or offline)");
+                    return;
+                }
+                var (c, part) = WsFind(g, string.Join(' ', bits[..^2]));
+                var mat = RecyclingTable.Current.IdOf(bits[^1]);
+                if (c == null || g.Constructs.StoreOf(c, part) is not { } st || mat == 0)
+                {
+                    WsFail($"fill: no store or material in \"{arg}\"");
+                    return;
+                }
+                st.Amount = Math.Clamp(amount, 0, c.DefOf(part).BulkCapacity);
+                st.Material = st.Amount > 0 ? mat : (byte)0;
+                st.Version++;
+                g.Constructs.StoreDirty.Add(st.Handle);
+                _wsWait = 2;
+                return;
+            }
+            case "deposit": // the nearest ground a drill of this tier taps (rings out from the player, 4 m apart): for --spawn-at
+            {
+                var tier = int.TryParse(arg, out var t) ? t : 1;
+                if (World.Map.Resources is not { } field)
+                {
+                    WsSay("deposit: this map has no resources");
+                    return;
+                }
+                for (var r = 0f; r <= 600; r += 4)
+                    for (var a = 0f; a < MathF.Tau; a += r > 0 ? 4 / r : MathF.Tau)
+                    {
+                        float x = me.Position.X + r * MathF.Cos(a), z = me.Position.Z + r * MathF.Sin(a);
+                        if (field.TappableAt(x, z) is { } kind && kind.MinTier <= tier && WsDeep(field, x, z, kind))
+                        {
+                            WsSay($"deposit: {kind.Name} at {x:0},{field.Ground(x, z):0.0},{z:0} ({r:0} m away)");
+                            return;
+                        }
+                    }
+                WsSay("deposit: none within 600 m");
+                return;
+            }
         }
         WsFail($"unknown action \"{action}\"; actions: {WsActions}");
+    }
+
+    /// <summary>Well inside a deposit: the same kind 12 m out every way (a blueprint spawned near it lands on it).</summary>
+    private static bool WsDeep(ResourceField field, float x, float z, ResourceKind kind)
+    {
+        for (var k = 0; k < 8; k++)
+            if (field.TappableAt(x + 12 * MathF.Cos(k * MathF.Tau / 8), z + 12 * MathF.Sin(k * MathF.Tau / 8)) != kind)
+                return false;
+        return true;
     }
 
     /// <summary>A finger on a screen's button by its label, through the crosshair: Hands out, the eye in front of it, the view on it, then LMB.</summary>
@@ -462,6 +539,16 @@ public static unsafe partial class Program
     {
         var d = c.DefOf(part);
         WsSay($"panel: {d.Name} (part {part} of construct {c.Id}) at {WsPartSpot(c, part, out _):0.00}, {d.Panels.Length} screen(s); eye {g.Local?.Eye:0.00}, look {g.LookDir(g.LookYaw, g.LookPitch):0.00}; open:recipe picker {Ui.RecipePickerOpen}, configure {Ui.SandboxConfigOpen}, pause {Ui.PauseOpen}, menus {MenusOpen}");
+        if (g.Constructs.StoreOf(c, part) is { } st)
+            WsSay($"  store: line state {(ProductionLines.Raw(g.Constructs, c, part, st) is { } s ? ProductionLines.Word(s) : "-")}, busy {st.Busy}, held {st.Held}, blocked {st.Blocked}, {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}, {st.ItemCount} items, mains off {c.MainsOff}");
+        if (d.Monitor != MonitorKind.None && d.Panels.Length == 0 && d.IsGatherer)
+        {
+            var card = new PanelCard { Rows = 4, TextRows = 4, Cols = 24 };
+            MachineScreens.Gatherer(g.Constructs, c, part, d, card);
+            for (var l = 0; l < 4; l++)
+                if (card.Length(l) > 0)
+                    WsSay($"  monitor {l}| {card.Line(l)}");
+        }
         for (var n = 0; n < d.Panels.Length; n++)
         {
             var card = WsFill(g, c, part, d.Panels[n]);

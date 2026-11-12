@@ -231,7 +231,7 @@ public static class MachineScreens
         card.Add(1, s switch
         {
             LineState.Running => "Breaking a wreck",
-            LineState.Blocked => "Output full: empty it",
+            LineState.Blocked => "Empty its output",
             LineState.Idle => "Run wire is off",
             LineState.NoPower => "Needs power",
             _ => "Drop wrecks in",

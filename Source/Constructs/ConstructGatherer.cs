@@ -178,7 +178,7 @@ public static class ConstructGatherer
     public static string StallWord(ConstructPartDef d, GatherStall s) => s switch
     {
         GatherStall.BinFull => "bin full",
-        GatherStall.OtherMaterial => "bin holds other material",
+        GatherStall.OtherMaterial => "bin: other material",
         GatherStall.TierLow => "needs a higher tier",
         _ => d.GatherSaw ? "no tree in reach" : "no deposit",
     };
