@@ -146,6 +146,20 @@ public static class RuntimeParts
         ConstructRender.ForgetRuntime();
     }
 
+    /// <summary>
+    /// A run-time part's drawn boxes were swapped for others in place (a formed panel's facets for its slabs: HullLoft.PumpPanels); its solid
+    /// boxes, bounds and mass are as they were. Every body's drawn batch is made again and the caches that count a part's boxes are emptied. Rare.
+    /// </summary>
+    internal static void Redrawn()
+    {
+        Forgotten();
+        lock (TrackGate)
+            foreach (var r in Worlds)
+                if (r.TryGetTarget(out var w))
+                    foreach (var c in w.Bodies)
+                        c.RebuildStamp++;
+    }
+
     private static void MarkRoots()
     {
         lock (TrackGate)

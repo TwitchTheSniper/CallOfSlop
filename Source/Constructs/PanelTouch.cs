@@ -48,6 +48,7 @@ public static class PanelTouch
         ["orders.queue"] = (w, c, part, player, tick) => WorkOrders.QueueHere(w, c, part),
         ["orders.cancel"] = (w, c, part, player, tick) => WorkOrders.CancelHead(w, c, part),
         ["orders.clear"] = (w, c, part, player, tick) => WorkOrders.ClearHere(w, c, part),
+        ["orders.preset"] = (w, c, part, player, tick) => ConstructPanelFormer.NextPreset(w, c, part), // (a Panel Former's fourth button)
         ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
         ["view.up"] = (w, c, part, player, tick) => null, // (a list's Up and Down are this PC's own: Program.PointerFrame scrolls the panel and sends nothing)
         ["view.down"] = (w, c, part, player, tick) => null,

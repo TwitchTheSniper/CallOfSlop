@@ -129,6 +129,8 @@ public static partial class ConstructParts
         if (d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
         {
             var die = d.IsWheelFormer ? new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.Y) : d.ExtMaxSection;
+            if (d.IsPanelFormer)
+                die = new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.X); // (a panel rides flat: its bed's width)
             var y = d.IsWheelFormer ? d.BoundsMin.Y + 0.1f : MathF.Max(d.BoundsMin.Y + 0.05f, d.ExtDieAt.Y - d.ExtDie.Y * 0.5f);
             list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = new Vector3(d.ExtDieAt.X, y, d.BoundsMax.Z), Face = 4, Opening = die, Implicit = true });
         }

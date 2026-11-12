@@ -248,6 +248,99 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 
 Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); the ram strokes while it stamps (a "work" box, drawn only: [Machine look](look.md#machine-look)).
 
+## The Panel Former
+
+Bodywork made by a machine (the user, 2026-11-11: a factory builds whole vehicles, every exact part; "larger panels ... large curves or
+S-bends, or maybe even hood pieces"). A **Panel Former** forms a named panel from the material in its bin, by work order: a preset panel
+(`Formed Panel (...)`), or one of the vehicle kit's lofted hull parts (`Hull Loft (...)`: bays, cabs, hoods, panes, trims), which had no
+recipe. Code: `Source/Constructs/HullLoft.Panels.cs` (the panels, the presets, `--form-panel`), `ConstructPanelFormer.cs` (the machine);
+the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (feat/panel-former-1): no designer window yet.
+
+- **A formed panel's key is its name**, as a lofted hull part's is ([Run-time parts](#run-time-parts-and-their-slots)): the part is made
+  from the name the first time it is asked for (`HullLoft.Parse`, one door for both), so blueprints, saves, the wire, racks and conveyors
+  carry it with no second path, and its id is each machine's own. `Formed Panel (KIND LxW cC rR tT MATERIAL)`:
+
+  | Word | What | Range |
+  | --- | --- | --- |
+  | `KIND` | the preset: `curve`, `sbend`, `hood`, `fender`, `door`, `roofbow`, `cowl` | |
+  | `LxW` | length and width, cm | 20 to 600, 5 cm steps |
+  | `c` | crown: how far the middle stands proud across the width, cm | 0 to 80, at most half the width |
+  | `r` | rake, the kind's second number, cm: a curve's or a roof bow's arch along its length, an S-bend's step, a hood's nose drop, a fender's arch height, a door's turn-in at the top, a cowl's rise | -200 to 200, within its length |
+  | `t` | thickness, mm | 12 to 40 |
+  | `MATERIAL` | a row of `Extrusion.json` | |
+
+  A key past a range, or spelt another way than a machine writes it, is refused ("not a panel"), never clamped: every peer makes the same
+  part or none. Example: `Formed Panel (hood 160x150 c14 r18 t20 steel)`.
+- **The part.** A grid of flat facets (hull shapes, as a loft's), at most 8 along by 6 across (48), neighbours sharing each corner's
+  offset so the seams close; up to four hidden boxes along its length are its collision (a riding or loose panel collides by boxes, never
+  a hull). **Edge sockets** about every half metre: `e0..` and `w0..` along its sides, `s0..` and `n0..` across its ends, each on a hidden
+  box's face at the surface's height (whole centimetres), and `back` under its middle, at most 25. A welder part, never in the menus
+  (`"stage"`). Mass is area by thickness at the material's `unitsPerM3` and weight; health and armour from its row.
+- **Presets** (`HullLoft.PanelPresets`, defaults in cm): Curved panel 150x100 c10; S-bend 200x100 r30; Hood 160x150 c14 r18 (narrower at
+  the nose); Fender 140x45 c6 r45; Door skin 110x120 c6 r8; Roof bow 200x180 c22 r6; Cowl 60x150 c30 r12.
+  `--form-panel PRESET [length=cm] [width=cm] [crown=cm] [rake=cm] [thick=mm] [material=NAME]` (or a whole name in quotes; `list` for the
+  presets) prints the key, facets, boxes, sockets, mass, cost, the former that takes it, a hash of its geometry and the time its first
+  make took, and makes it a second time as a running game does (a first part, then its facets in slices), which must give the same part;
+  output in `callofslop.log`.
+- **The machines** (`storage.panel`: `speed`, `at` the out bed's middle, `maxWidth`, `maxLength`, on an `any` bin; `IsPanelFormer`, a
+  member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the Extruder's):
+
+  | Machine | Largest panel (its bounds' longest side x the next) | Speed | Bin | Power |
+  | --- | --- | --- | --- | --- |
+  | Panel Former | 2.5 x 1.8 m | x1 | 600 | 900 W |
+  | Medium Panel Former | 6 x 4.5 m (every part the vehicle kit lofts) | x2 | 4,000 | 3.6 kW |
+
+  The look ([Machine look](look.md#machine-look)): a wide flat bed with a dark bridge over its middle; a roller bank at the white in end
+  (the rollers turn), a bare steel forming head with a hazard edge under the bridge (it strokes), the out bed with an orange band and
+  arrow, a hopper tower on its right for loose stock, the control board on its left (screen, lamp, Queue, Cancel, Clear, Preset, Up,
+  Down), body `#5d7f3c`. Recipes are the Assembling generator's.
+- **Stock** is its bin, fed two ways: loose material by chute or F, as an Extruder's hopper; and **extruded sheet by conveyor** into its
+  **Piece in**: an arriving extruded section no thicker than 10 cm (the thinnest a die makes) is taken whole and counted into the bin at
+  what it holds (its mass at the material's weight); a thicker piece, another material than the bin's or more than its room waits on
+  the conveyor. A panel costs its mass in units of its material, taken whole when its stroke starts; the kit's lofts are steel.
+- **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
+  ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size, in what its bin holds (steel when
+  empty), Order count times; the Preset button steps the setting. Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
+  catalogue part or a name nothing makes), "panel too large for this former: 3.98 x 2.98 m, the Panel Former takes 2.5 x 1.8 m", more
+  than its bin holds, another material than its bin's ("another line"), a full queue. An Extruder or an Assembler refuses a panel ("a
+  Panel Former's order"). Starved says what it lacks: "needs 26 steel sheet for its panel, holds 10".
+- **Forming is a timed stroke** this phase: 4 s and 2 s a square metre of the panel's largest face, over the machine's speed; the
+  finished panel then rides out of **Piece out** on a conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut),
+  or with none linked drops on the out bed as a loose part. The panel is not drawn bending on the bed yet.
+- **A blueprint's bill.** `ConstructBill.FromBlueprint` lists every `Hull Loft (` and `Formed Panel (` step in `Bill.Panels`;
+  `ToConsole` and a console's Send deal them to its Panel Formers; a blueprint's bill line is
+  `{"step": n, "panel": "Formed Panel (hood 160x150 c14 r18 t20 steel)", "count": 2}` (`BlueprintScript.BillPanel`). `--bill NAME` prints
+  them under "Formed panels" with the smallest former that takes each, its cost and seconds. Ten vehicles, kinds without a recipe before
+  and after: Swing Arm Buggy 0, 0; Bandit Plane 7 8, 8; Highland Monster Truck 2 8, 4; IT Technical 5 9, 5; British Wagon 2 18, 4;
+  Highland Flatbed Fort 9 18, 6; IT Helicopter 8 3, 3; Highland Giant Truck 5 38, 12; IT War Bus 1 33, 4; Titan Walker Fitted 0, 0.
+  What is left: the weapon builder's gun parts and the flight surfaces and rotors.
+- **Wire (protocol 253) and saves.** A named order's shape byte is 255 (`WorkOrders.NamedShape`): then its material, count, made and
+  the name as text (a save: count, made, name). A panel in a Full, a rack's kinds or a conveyor's riders goes as a lofted part does
+  (`Extrusion.WireMark`, `HullLoft.WireKind`, its name); a store saves it by name.
+- **A new key costs little in its tick** (`HullLoft.PumpPanels`, from `Game.Update`). Making a panel whole took 4 to 8 ms (the largest,
+  3.4 MB of garbage), on the server at Queue and on a client at the first packet naming it. So in a running game a key seen for the first
+  time gets its part at once with what racks, riders, colliders and welds need (the hidden boxes, sockets, bounds, mass) and a plain slab
+  drawn over each box; its facets are made 6 at a time in the following updates, 2 ms an update less what the new keys' first parts cost
+  since the last one (every key of one packet shares it), then swapped in for the slabs in place (`RuntimeParts.Redrawn`: bodies' drawn
+  batches are made again; nothing solid changes). A tool, with no game pumping, makes every panel whole; `HullLoft.PanelSync` forces that.
+  The floats and their order are the same either way, so a part made in slices equals one made whole.
+- **Measured** (a throwaway probe, removed; 2026-11-11, the busy 2-core box). *Twenty different largest panels (6 x 4.5 m) in one tick*,
+  made whole and deferred: the worst server update 138 ms and 8.2 ms (host and client in one process; twenty first parts are about 6 ms
+  of it, which nothing spreads); the worst client update, the client in its own process, 102 ms and 6.1 ms; all twenty finished 0.13 s
+  later. *Host and client in separate processes*, the showcase in a creative world: the rack equal by name, geometry hash and box count
+  on both (two hoods, two fenders, the kit hood), each process having made the parts from the names alone; the same hashes as
+  `--form-panel` gives making them whole. *One process, a client at 80 ms and 2 % loss and a late client*: the bill formed in order and
+  racked, the too-large line kept on the console with its reason on the client, a save and a load with a hood racked, a hood riding, two
+  orders queued and a stroke under way the same, the late client's rack and console the same. *The Medium Panel Former*, standing alone
+  and fed 400 steel: a kit room bay the small former refuses ("too large") formed in 7.3 s and the largest roof bow in 36 s, each dropped
+  on its out bed, the same parts on the client. Earlier, 200 orders queued: the former's step median 0.0003 ms, worst 0.02 ms; server
+  updates median 0.009 ms, worst 2.2 ms, 0 bytes in 6,802 of 6,845.
+
+Proposed (the user's to confirm): the seven presets and their ranges; cost by mass; sheet counted into the bin rather than kept as a
+part on the bed; the two tiers' sizes; a timed stroke; the kit's lofts formed in steel only; for the designer's free shapes, a key
+`Formed Panel (#HASH)` with the design stored once per world and sent once per connection. Next: the designer window, the Laser Cutter
+(cut-outs), a panel drawn bending on the bed, a cheaper first part for a new key (0.3 ms each today), the kit's own lofts made in slices too, a Large former.
+
 ## Machine tiers
 
 Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
@@ -778,7 +871,9 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   Rack); **orders** (a second Line Console wired to both Extruders' and the Wheel Former's Runs, its bill already on it: seven sizes of
   metal angle and plate, two of planks, two wheels; 19 pieces; and three catalogue lines, 4 Gear Sets, 4 Steel Plates, 2 Gun Barrels);
   **assembling** (an Assembler fed steel, its Piece out onto a conveyor to a Piece Rack, on the orders console: "Send the bill: the
-  Assembler makes these parts").
+  Assembler makes these parts"); **panels** (on its own strip of floor behind the second row, x 22 to 50, z -14 to -20: an Extruder making
+  steel sheet 0.5 x 0.1 x 1 m, a conveyor into a [Panel Former](#the-panel-former)'s Piece in, its Piece out onto a conveyor to a Long
+  Piece Rack; on the orders console, whose bill gains two Hoods, two Fenders and one of the vehicle kit's lofted hoods).
 - **Stock** is the Storage Volume's own creative-only Material and Fill settings (`ConstructBuild.SetConfig`): a creative world fills
   each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
   under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.
