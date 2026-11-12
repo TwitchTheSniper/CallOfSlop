@@ -31,7 +31,7 @@ data centre's site each have a 4 m survey post (yellow for the home, blue for th
 | Mille | the pole, height 9 | 55, 300: a terrace, 90 m | 70, 40: the Proving Bowl, where the crust is thinnest (about 150 m): the site itself is inside, under the bowl |
 
 The story's data centres stand on the data sites of Cinder, Glacier, Caledon and Mille (the first is by the penal colony
-on the Planetoid; Redrock's site is spare): `Story/Fragments/Fragments.json` names each world and the place, and the
+on Glacier, the story's home, so Glacier has two; Redrock's site is spare): `Story/Fragments/Fragments.json` names each world and the place, and the
 host builds the Sealed Data Centre there the first time a story game plays the world (docs/story/FRAGMENTS.md "On
 another world"). Mille's stands on the cavity's wall under the Proving Bowl.
 
@@ -52,7 +52,8 @@ the survey post stands.
 | The IT Department | The Server Farm | Glacier | the office, a smart depot and a beacon depot, a hut, a lookout |
 | Clan MacSlop | The Glen | Caledon | the chief's hall and two houses, the smithy (a foundry), a lookout, the gate |
 
-The Ministry's home is the penal colony on the Planetoid (the opening builds it). Nobody lives in the settlements yet:
+The Ministry's home is the penal colony on Glacier, near the pole where a story game starts (the opening builds it; it
+was on the Planetoid until 2026-11-12). Nobody lives in the settlements yet:
 the factions' people are still met by radio and in their vehicles.
 
 Cinder turns once an orbit, so its sun stays over latitude 0, longitude 220 (`--check-planetoid` prints it): the day
