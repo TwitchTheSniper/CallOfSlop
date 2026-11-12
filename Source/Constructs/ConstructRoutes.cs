@@ -612,6 +612,8 @@ public static partial class ConstructRoutes
         }
         if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor && PortOf(d, t.Value, port) is { } np)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
+        if (t == RouteType.Data && DataSeat(d) is { } seat)
+            return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, seat * c.ScaleOf(part)); // (its middle is in the air: the link ends on the body)
         c.PartBounds(part, out var mn, out var mx);
         var mid = (mn + mx) * 0.5f;
         if (t == RouteType.Data && mx.Y - mn.Y > 2 * MaxSegment * 0.9f)
@@ -629,6 +631,20 @@ public static partial class ConstructRoutes
         if (d.BoundsMax.Y - d.BoundsMin.Y > 2 * MaxSegment * 0.9f)
             mid.Y = d.BoundsMax.Y;
         return mid;
+    }
+
+    /// <summary>
+    /// A data link's end on a part whose middle is in the air (<see cref="PortMounts.SeatData"/>), in the part's own frame
+    /// and unscaled; null for the rest. Worked out once per def, from its boxes alone, so every peer has the same point.
+    /// </summary>
+    public static Vector3? DataSeat(ConstructPartDef d)
+    {
+        if (!d.DataSeatKnown)
+        {
+            d.DataSeatAt = PortMounts.SeatData(d, DataPortAt(d));
+            d.DataSeatKnown = true;
+        }
+        return d.DataSeatAt;
     }
 
     /// <summary>The direction a port faces (outward), or zero for a part's centre.</summary>
