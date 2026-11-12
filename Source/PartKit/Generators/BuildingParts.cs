@@ -13,7 +13,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// 2 m and 4 m; a room's corners are L pieces with 2 m legs, so four corners close a 4 by 4 m room. The blueprints' socket steps are
 /// worked out by a mirror of the game's Rot24 turns and fitting order (<see cref="Blueprint"/>), which interior_parts and make_rv share.
 /// </summary>
-public sealed class BuildingParts : IPartGenerator
+public sealed partial class BuildingParts : IPartGenerator
 {
     public string Name => "building_parts";
 
@@ -1937,6 +1937,7 @@ public sealed class BuildingParts : IPartGenerator
         bp.Put("Tower Platform 2x2 m", Cell(ox + 8, 2 + WallH, oz + 8), R0);
         bp.Put("Ship Ladder 3 m", Cell(ox + 10, 2, oz), R0);
         o.Add(bp);
+        o.AddRange(MinistryBlueprints(defs)); // (the Ministry's buildings round the penal colony: BuildingParts.Ministry.cs)
         return o;
     }
 

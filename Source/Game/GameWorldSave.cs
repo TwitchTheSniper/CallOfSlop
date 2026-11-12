@@ -617,6 +617,13 @@ public sealed partial class Game
                 }
                 if (r.Has(2))
                     op.Quarry = r.U16(); // (a world from before the quarry has none: GameQuarry.cs builds one)
+                if (r.Has(1))
+                {
+                    var built = new List<(string, ushort)>();
+                    for (int k = 0, bn = r.U8(); k < bn; k++)
+                        built.Add((r.Str(), r.U16()));
+                    (op.Buildings, op.BuildingsListed) = ([.. built], true); // (a world from before the buildings: GameColonyBuildings.cs builds them)
+                }
                 if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
                     _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
                 break;

@@ -1,0 +1,167 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Infirmary",
+  "description": "The penal colony's infirmary: a medical station, two bunks and the medicine cabinet.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#d6dad3",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#d6dad3",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#d6dad3",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#d6dad3",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1,
+      "paint": "#d6dad3",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 0,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2,
+      "paint": "#d6dad3",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#4b5157",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 4,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#4b5157",
+      "finish": "concrete"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 2,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Flush Door 1.5x2.25 m",
+      "on": 10,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#2f5a3c",
+      "finish": "painted wood"
+    },
+    {
+      "part": "Text Sign",
+      "on": 3,
+      "socket": "fb7_10",
+      "by": "back",
+      "text": [
+        "INFIRMARY - AILMENTS BY APPOINTMENT"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 7,
+      "socket": "k15_5",
+      "by": "back",
+      "text": [
+        "FORM 27B: NOTICE OF INTENT TO BE ILL"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Medical Station",
+      "on": 0,
+      "socket": "t8_8",
+      "by": "bottom",
+      "spin": 1,
+      "paint": "#d6dad3"
+    },
+    {
+      "part": "Bunk",
+      "on": 1,
+      "socket": "t8_0",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Bunk",
+      "on": 1,
+      "socket": "t8_7",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Medicine Cabinet",
+      "on": 7,
+      "socket": "k8_5",
+      "by": "back",
+      "paint": "#d6dad3"
+    },
+    {
+      "part": "Battery",
+      "on": 7,
+      "socket": "k0_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Wall Light",
+      "on": 2,
+      "socket": "fa0_10",
+      "by": "back"
+    },
+    {
+      "part": "Wall Light",
+      "on": 6,
+      "socket": "k8_10",
+      "by": "back"
+    }
+  ]
+}
