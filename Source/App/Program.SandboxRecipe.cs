@@ -3,7 +3,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Sandbox: the recipe picker in the match (UiRecipePicker.cs; docs/sandbox/constructs/production.md "The recipe picker"). A Line Console's
 /// Recipe button opens it on the line's picked machine (a refiner with recipes to choose; any other machine keeps the button's old step);
-/// the configure panel's recipe row opens it too. It holds the mouse while open and closes when its machine or console goes, the player
+/// the configure panel's recipe row opens it too, and so does a machine's own Recipe button (<see cref="MachineRecipePicker"/>). It holds the mouse while open and closes when its machine or console goes, the player
 /// dies or walks off, or the configure panel it came from closes.
 /// </summary>
 public static partial class Program
@@ -22,6 +22,24 @@ public static partial class Program
         return true;
     }
 
+    /// <summary>
+    /// A machine's own Recipe button (touch action "machine.recipe" on its screen): opens the recipe picker on that machine, as the console's
+    /// Recipe button does on its line's pick. True when it opened; false leaves the click to the server's touch (its refusal, or the step
+    /// through the recipes on a machine the picker doesn't serve). Any machine with a recipe setting and a list in the picker
+    /// (<see cref="Ui.RecipePickable"/>) takes it with one call: put the button on its screen and call this.
+    /// </summary>
+    internal static bool MachineRecipePicker(Construct c, int machine)
+    {
+        if (MenusOpen || machine < 0 || machine >= c.PartCount)
+            return false;
+        var d = c.DefOf(machine);
+        if (!Ui.RecipePickable(d) || c.Parts[machine].Broken || !ConstructPower.On(c, machine))
+            return false; // (no power: the server's touch says so)
+        Ui.OpenRecipePickerMachine(c.Id, machine, d);
+        SetMouseCaptured(false);
+        return true;
+    }
+
     /// <summary>The picker over the match (the Sandbox ImGui pass); it closes (the mouse goes back to aiming) when it should.</summary>
     private static void DrawRecipePickerInMatch(double now)
     {
@@ -33,7 +51,7 @@ public static partial class Program
         var c = g?.Constructs.Get(body);
         var gone = _session == null || g is not { SandboxOn: true } || me is not { Alive: true } || g.Phase != MatchPhase.Playing || c == null
             || machine < 0 || machine >= c.PartCount || !Ui.RecipePickable(c.DefOf(machine))
-            || (Ui.RecipePickerFromConfig ? !Ui.SandboxConfigOpen : _mouseCaptured || console < 0 || console >= c.PartCount || !ConstructConfig.Has(c.DefOf(console), CfgKey.LinePick)
+            || (Ui.RecipePickerFromConfig ? !Ui.SandboxConfigOpen : _mouseCaptured || console < 0 || console >= c.PartCount || console != machine && !ConstructConfig.Has(c.DefOf(console), CfgKey.LinePick)
                 || System.Numerics.Vector3.Distance(me!.Position, c.WorldCom) > c.Radius + ConstructConfig.Reach + 4);
         if (!gone)
         {

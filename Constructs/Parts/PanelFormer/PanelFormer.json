@@ -55,7 +55,7 @@
         "Bent panel"
       ],
       "default": 0,
-      "tooltip": "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen steps through them."
+      "tooltip": "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen opens a picker of them."
     },
     {
       "key": "orderCount",
@@ -142,7 +142,7 @@
           "label": "Clear"
         },
         {
-          "action": "orders.preset",
+          "action": "machine.recipe",
           "at": [
             0.57,
             0.02,

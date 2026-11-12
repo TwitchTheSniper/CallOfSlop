@@ -585,14 +585,8 @@ public static partial class ProductionLines
             return "no machines on this line: wire the console's output to a machine's Run";
         if (machine >= c.PartCount || !list[..n].Contains(machine))
             return "that machine isn't on this line";
-        var md = c.Parts[machine].D;
-        if (!ConstructConfig.Has(md, CfgKey.Recipe) || md.CfgSlot[(int)CfgKey.Recipe] < 0)
-            return $"the {md.Name} has no recipe to pick";
-        var options = md.Config[md.CfgSlot[(int)CfgKey.Recipe]].Options.Length;
-        if (value < 0 || value >= options || md.IsRefiner && value > md.RefineChoices.Length)
-            return $"the {md.Name} has no such recipe";
-        if (md.IsAssembler && value >= 1 && AssemblingTable.Current.ByMachine[md.AsmMachine] is var asm && value <= asm.Length && asm[value - 1].MinTier > md.Tier)
-            return $"{asm[value - 1].Name} needs a tier {asm[value - 1].MinTier} assembler";
+        if (RecipeRefusal(c.Parts[machine].D, value) is { } refused)
+            return refused;
         var def = c.Parts[machine].Def;
         for (var k = 0; k < n; k++)
         {
@@ -603,6 +597,22 @@ public static partial class ProductionLines
             ConstructConfig.Put(ref mp, mp.D, CfgKey.Recipe, value);
         }
         c.Wake();
+        return null;
+    }
+
+    /// <summary>
+    /// Why machine kind <paramref name="md"/> can't take recipe value <paramref name="value"/> from the recipe picker (its recipe setting's value: 0 Auto
+    /// or None, then each recipe; a Panel Former's preset), or null. The console's pick and a machine's own Recipe button share it.
+    /// </summary>
+    public static string? RecipeRefusal(ConstructPartDef md, int value)
+    {
+        if (!ConstructConfig.Has(md, CfgKey.Recipe) || md.CfgSlot[(int)CfgKey.Recipe] < 0)
+            return $"the {md.Name} has no recipe to pick";
+        var options = md.Config[md.CfgSlot[(int)CfgKey.Recipe]].Options.Length;
+        if (value < 0 || value >= options || md.IsRefiner && value > md.RefineChoices.Length)
+            return $"the {md.Name} has no such recipe";
+        if (md.IsAssembler && value >= 1 && AssemblingTable.Current.ByMachine[md.AsmMachine] is var asm && value <= asm.Length && asm[value - 1].MinTier > md.Tier)
+            return $"{asm[value - 1].Name} needs a tier {asm[value - 1].MinTier} assembler";
         return null;
     }
 

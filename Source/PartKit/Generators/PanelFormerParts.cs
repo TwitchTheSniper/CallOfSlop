@@ -30,7 +30,7 @@ public sealed class PanelFormerParts : IPartGenerator
         Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.2, 0.12)), ("label", "Queue")),
         Kw(("action", "orders.cancel"), ("at", Py.L(0.21, 0.02, 0.39, 0.12)), ("label", "Cancel")),
         Kw(("action", "orders.clear"), ("at", Py.L(0.4, 0.02, 0.56, 0.12)), ("label", "Clear")),
-        Kw(("action", "orders.preset"), ("at", Py.L(0.57, 0.02, 0.75, 0.12)), ("label", "Preset")), // (the next preset its Queue orders)
+        Kw(("action", "machine.recipe"), ("at", Py.L(0.57, 0.02, 0.75, 0.12)), ("label", "Preset")), // (the preset its Queue orders, from the recipe picker)
         Kw(("action", "view.up"), ("at", Py.L(0.76, 0.02, 0.87, 0.12)), ("label", "Up")),
         Kw(("action", "view.down"), ("at", Py.L(0.88, 0.02, 0.98, 0.12)), ("label", "Down")));
 
@@ -70,7 +70,7 @@ public sealed class PanelFormerParts : IPartGenerator
                 ("panel", Kw(("speed", r.Speed), ("at", Py.L(0, R(bed + 0.03), R(z1 - (z1 - col) / 2))), ("maxWidth", r.MaxW), ("maxLength", r.MaxL))))),
             ("config", Py.L(
                 Kw(("key", "recipe"), ("label", "Preset"), ("group", "Orders"), ("options", Py.L([.. HullLoft.PanelPresets.Select(x => (object?)x.Label)])), ("default", 0),
-                    ("tooltip", "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen steps through them.")),
+                    ("tooltip", "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen opens a picker of them.")),
                 ExtrusionParts.OrderCount,
                 Kw(("key", "ink"), ("type", "colour"), ("label", "Screen colour"), ("group", "Display"), ("default", "#000000"), ("tooltip", "The colour of what its screen shows. Black: its own colours.")))),
             ("ports", Py.L(

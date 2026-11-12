@@ -50,6 +50,7 @@ public static class PanelTouch
         ["orders.clear"] = (w, c, part, player, tick) => WorkOrders.ClearHere(w, c, part),
         ["orders.preset"] = (w, c, part, player, tick) => ConstructPanelFormer.NextPreset(w, c, part), // (a Panel Former's fourth button)
         ["press.pattern"] = (w, c, part, player, tick) => ConstructPress.NextPattern(w, c, part), // (a press's die screen: the next pattern of its die)
+        ["machine.recipe"] = (w, c, part, player, tick) => ConstructEdits.NextRecipe(c, part), // (a machine's Recipe button: the picker opens on this PC, Program.MachineRecipePicker; this step only where it can't)
         ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
         ["view.up"] = (w, c, part, player, tick) => null, // (a list's Up and Down are this PC's own: Program.PointerFrame scrolls the panel and sends nothing)
         ["view.down"] = (w, c, part, player, tick) => null,
@@ -174,6 +175,8 @@ public sealed partial class ConstructEdits
         if (world.Get(body) is not { } c || console >= c.PartCount)
             return "that console is gone";
         var d = c.DefOf(console);
+        if (console == machine)
+            return OwnRecipe(c, machine, player, eye, value, refusal); // (the machine's own Recipe button: same bytes, its own screen for the console)
         if (!ConstructConfig.Has(d, CfgKey.LinePick))
             return $"a {d.Name} runs no line";
         if (Contested(c, player) is { } defended)
@@ -189,6 +192,62 @@ public sealed partial class ConstructEdits
         world.StructureDirty.Add(c.Id);
         Done.Add($"player {player}: recipe {value} on part {machine} of construct {c.Id}{(all ? " and its kind on the line" : "")}");
         return null;
+    }
+
+    /// <summary>A part has a Recipe button on one of its screens (touch action "machine.recipe").</summary>
+    public static bool HasRecipeButton(ConstructPartDef d)
+    {
+        foreach (var panel in d.Panels)
+            foreach (var t in panel.Touch)
+                if (t.Action == "machine.recipe")
+                    return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Server: the recipe picker opened from a machine's own Recipe button (CActKind.LineRecipe with the machine as its console) sets that
+    /// machine's recipe, under a finger on that button's rule (reach, power, who may) and the console's checks of the value (its tier).
+    /// </summary>
+    private string? OwnRecipe(Construct c, ushort machine, byte player, Vector3 eye, int value, string? refusal)
+    {
+        ref var p = ref c.Parts[machine];
+        var d = p.D;
+        if (!HasRecipeButton(d))
+            return $"a {d.Name} has no recipe button";
+        if (Contested(c, player) is { } defended)
+            return defended;
+        if (refusal != null)
+            return refusal;
+        if (Vector3.Distance(eye, ReachPoint(c, machine, eye)) > ConstructConfig.Reach)
+            return "too far away";
+        if (p.Broken || !ConstructPower.On(c, machine))
+            return $"the {d.Name} has no power";
+        if (ProductionLines.RecipeRefusal(d, value) is { } why)
+            return why;
+        ConstructConfig.Put(ref p, d, CfgKey.Recipe, value);
+        c.Wake();
+        Done.Add($"player {player}: recipe {value} on part {machine} of construct {c.Id} (its own button)");
+        return null;
+    }
+
+    /// <summary>Touch "machine.recipe" (where this PC couldn't open the picker): the next recipe or preset this machine's tier takes.</summary>
+    internal static string? NextRecipe(Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        var slot = d.CfgSlot[(int)CfgKey.Recipe];
+        if (slot < 0 || d.Config[slot].Options.Length == 0)
+            return $"the {d.Name} has no recipe to pick";
+        var n = d.Config[slot].Options.Length;
+        var v = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0);
+        for (var k = 1; k <= n; k++)
+            if (ProductionLines.RecipeRefusal(d, (v + k) % n) == null)
+            {
+                ConstructConfig.Put(ref p, d, CfgKey.Recipe, (v + k) % n);
+                c.Wake();
+                return null;
+            }
+        return $"the {d.Name} has no other recipe";
     }
 
     /// <summary>

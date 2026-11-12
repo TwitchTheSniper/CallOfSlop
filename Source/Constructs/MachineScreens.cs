@@ -38,7 +38,7 @@ public static class MachineScreens
             return;
         }
         if (d.IsRefiner)
-            Refiner(d, st, card);
+            Refiner(p, d, st, card);
         else if (d.IsAssembler)
             Assembler(p, d, st, card);
         else if (d.IsExtruder)
@@ -64,7 +64,7 @@ public static class MachineScreens
             card.Add(line, amount).Add(line, ' ').Add(line, material);
     }
 
-    private static void Refiner(ConstructPartDef d, CStore st, PanelCard card)
+    private static void Refiner(in CPart p, ConstructPartDef d, CStore st, PanelCard card)
     {
         var names = RecyclingTable.Current;
         var state = ConstructRefining.StateOf(RefiningTable.Current, d, st, out var r);
@@ -83,10 +83,16 @@ public static class MachineScreens
                 case RefineState.OutputFull: Say(card, PanelState.Wants, "Output full"); break;
                 default: Say(card, PanelState.Fault, "No power"); break;
             }
-        if (state == RefineState.Short && !st.Busy && r!.Mix.Length == 0)
+        // The recipe line: the one set (the Recipe button under the lines picks it), else Auto and what the input makes.
+        var set = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0);
+        if (set > 0 && set <= d.RefineChoices.Length)
+            card.Add(1, "Recipe ").Add(1, d.RefineChoices[set - 1].OutputName);
+        else if (state == RefineState.Short && !st.Busy && r!.Mix.Length == 0)
             card.Add(1, "Batch ").Add(1, r.UnitsIn).Add(1, ' ').Add(1, r.InputName);
         else if (r != null)
-            card.Add(1, "Makes ").Add(1, r.OutputName);
+            card.Add(1, "Auto: ").Add(1, r.OutputName);
+        else
+            card.Add(1, "Recipe Auto");
         if (d.RefineMix)
         {
             Amount(card, 2, "In ", st.MixN > 0 ? st.MixAmount![0] : 0, st.MixN > 0 ? names.NameOf(st.MixMat![0]) : "");
@@ -112,7 +118,7 @@ public static class MachineScreens
         else
             switch (state)
             {
-                case AsmState.NoRecipe: Say(card, PanelState.Idle, "No recipe"); card.Add(2, "Configure it"); line = 3; break;
+                case AsmState.NoRecipe: Say(card, PanelState.Wants, "No recipe set"); break; // (why it sits idle, plainly; line 1 says how to set one)
                 case AsmState.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case AsmState.TierLow: card.State = PanelState.Refused; card.Add(0, "Needs tier ").Add(0, r!.MinTier); break;
                 case AsmState.Untaught: card.State = PanelState.Refused; card.Add(0, "Not taught"); card.Add(2, "A faction teaches it (F2)"); line = 3; break;
@@ -137,6 +143,8 @@ public static class MachineScreens
             }
         if (r != null)
             card.Add(1, r.Name);
+        else if (ConstructConfig.Get(p, d, CfgKey.Recipe, 0) < 0.5f)
+            card.Add(1, state == AsmState.NoRecipe && !st.Held ? "Press Recipe below" : "No recipe set"); // (held off or not, an unset recipe is said)
         if (d.IsPanelFormer)
         {
             // A Panel Former works orders only: its stock, the preset its Queue button orders, then the queue (or how to give it one).
@@ -195,19 +203,26 @@ public static class MachineScreens
             // Work orders (WorkOrders.cs): stock, the piece so far, then the queue: its totals and the next three (the buttons under them).
             Amount(card, 1, "Stock ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
             var from = 2;
+            if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var pss && d.Config[pss].Options.Length > 0)
+            {
+                card.Add(from, "Preset ").Add(from, d.Config[pss].Options[Math.Clamp((int)p.Cfg[pss], 0, d.Config[pss].Options.Length - 1)]); // (what its Queue orders; the Preset button picks it)
+                from++;
+            }
             if (ConstructExtruder.ProductOf(c, part) is var piece and >= 0 && c.Parts[piece].D is { IsExtrusion: true } od)
             {
-                from = 3;
+                var l = from++;
                 if (wheel)
-                    card.Add(2, "Wheel ").AddFixed(2, od.ExKey.W / 100f, 2).Add(2, " x ").AddFixed(2, od.ExKey.H / 100f, 2).Add(2, " m");
+                    card.Add(l, "Wheel ").AddFixed(l, od.ExKey.W / 100f, 2).Add(l, " x ").AddFixed(l, od.ExKey.H / 100f, 2).Add(l, " m");
                 else
-                    card.Add(2, "Piece ").AddFixed(2, od.ExKey.L / 100f, 2).Add(2, " m");
+                    card.Add(l, "Piece ").AddFixed(l, od.ExKey.L / 100f, 2).Add(l, " m");
             }
             WorkOrders.FillQueue(p, card, from); // (the queue straight under the stock when nothing is on the die)
             card.Bar = -1;
             return;
         }
-        if (d.IsFanFormer)
+        if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var ps && d.Config[ps].Options.Length > 0)
+            card.Add(1, "Preset ").Add(1, d.Config[ps].Options[Math.Clamp((int)p.Cfg[ps], 0, d.Config[ps].Options.Length - 1)]);
+        else if (d.IsFanFormer)
             card.Add(1, "Fan");
         else if (d.IsAirframeFormer)
             card.Add(1, Extrusion.AirframeOf((ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0))?.Label ?? "Wing");

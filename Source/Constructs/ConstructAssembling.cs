@@ -343,7 +343,7 @@ public static class ConstructAssembling
             : st.Busy && st.Blocked == 0 ? ", building"
             : (queued && r == null ? AsmState.NoOrders : StateOf(d, st, r)) switch
             {
-                AsmState.NoRecipe => " - no recipe: pick one with the configure tool",
+                AsmState.NoRecipe => " - no recipe set: Recipe on its screen picks one",
                 AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
                 AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",

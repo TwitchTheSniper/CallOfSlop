@@ -351,9 +351,11 @@ public sealed class MachineTiers : IPartGenerator
             // its queue goes on eight rows with the buttons under them: WorkOrders.cs)
             var (plate, pnl, lamp) = line.Assemble is not null
                 ? PartScreens.Mount(boxes, keepClear, rows: 8, lamp: true)
-                : PartScreens.Mount(boxes, keepClear, lamp: line.Refine is not null);
+                : PartScreens.Mount(boxes, keepClear, rows: line.Refine is not null ? 5 : 4, lamp: line.Refine is not null);
             if (line.Assemble is not null)
-                pnl["touch"] = ExtrusionParts.OrderButtons();
+                pnl["touch"] = ExtrusionParts.OrderButtons(recipe: true);
+            else if (line.Refine is not null) // (a refiner's Recipe button under its four lines: the recipe picker, Program.MachineRecipePicker)
+                pnl["touch"] = Py.L(PartKitMath.Kw(("action", "machine.recipe"), ("at", Py.L(0.02, 0.02, 0.36, 0.14)), ("label", "Recipe")));
             panel = pnl;
             PartScreens.Fit(boxes, plate);
             if (lamp is not null)

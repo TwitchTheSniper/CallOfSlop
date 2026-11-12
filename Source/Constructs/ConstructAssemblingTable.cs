@@ -96,7 +96,7 @@ public sealed class AssemblingTable
     private static void Fill(IReadOnlyList<ConstructPartDef> parts, AssemblingTable t)
     {
         foreach (var d in parts)
-            if (d.CfgSlot[(int)CfgKey.Recipe] >= 0)
+            if (d.CfgSlot[(int)CfgKey.Recipe] >= 0 && !d.IsPanelFormer) // (a Panel Former's recipe setting is its preset list, from its file)
                 d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options = t.ChoicesBy[d.AsmMachine];
     }
 

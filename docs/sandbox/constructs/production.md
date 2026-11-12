@@ -300,7 +300,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   the conveyor. A panel costs its mass in units of its material, taken whole when its stroke starts; the kit's lofts are steel.
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
   ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size, in what its bin holds (steel when
-  empty), Order count times; the Preset button steps the setting. Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
+  empty), Order count times; the Preset button opens the recipe picker on its presets (below). Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
   catalogue part or a name nothing makes), "panel too large for this former: 3.98 x 2.98 m, the Panel Former takes 2.5 x 1.8 m", more
   than its bin holds, another material than its bin's ("another line"), a full queue. An Extruder or an Assembler refuses a panel ("a
   Panel Former's order"). Starved says what it lacks: "needs 26 steel sheet for its panel, holds 10".
@@ -620,6 +620,18 @@ the part kit's `control_parts` (the console).
   finger on the console's button (reach to the console, its power, who may) and against the line (the machine wired to it, a value
   its recipe setting has, an Assembler's tier); from the configure panel it is the configure tool's own request. The tiles' texts are
   made once per machine kind; drawing it allocates nothing of its own.
+- **A machine's own Recipe button** (2026-11-12, the user: "a select for the recipe so the user doesn't have to pull out the configuration
+  tool"). Every Assembler (Thruster Assembler and Tailor too, all tiers) has **Recipe** among its screen's buttons, every refiner
+  (Smelter, Sawmill, Foundry; its screen five rows, four of text) a Recipe button under its lines, and the Panel Former's **Preset** button
+  does the same: a finger on it (Hands out) opens the recipe picker on that machine; a click on a tile sets it, Esc leaves it
+  (`Program.MachineRecipePicker`, touch action `machine.recipe`). The pick is `CActKind.LineRecipe` with the machine as its own console
+  (no new bytes): the server checks a finger on that machine's button (reach, power, who may) and the console's checks of the value (a
+  tier too low is refused; `ProductionLines.RecipeRefusal`, `ConstructEdits.OwnRecipe`); a refusal comes back as a notice. Where this PC
+  can't open the picker the touch steps to the next recipe. The screens say the recipe: an Assembler's second line its recipe, or
+  "No recipe set" (the top line too when that is why it waits: "Press Recipe below"); a refiner's "Recipe glass", or "Auto: metal" (what
+  the input makes) or "Recipe Auto"; a Panel Former's "Preset Hood". Another machine adopts it with one data line, a `machine.recipe`
+  button on its screen, and its list in the picker (`Ui.RecipePickable`, `MakeRecipeSet`). The Assembler table no longer writes its
+  recipe names over a Panel Former's preset list (`AssemblingTable.Fill`), which had left its Preset at the first preset.
 - **Resource icons** (`Source/Render/ResourceIcons.cs`). Every loose material has an icon: a small 3D stack of its family's shape in
   its colour, drawn from boxes and part shapes into the inventory's tile atlas (`SandboxTiles`, slots of `Kind.Resource`, made first
   and in a few frames; no image files). The family is `Recycling.json`'s `"shapes"` (ore, ingot, plank, log, heap, drum, gas, block,
