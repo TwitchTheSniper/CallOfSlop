@@ -4,7 +4,7 @@ namespace CallOfSlop;
 /// The window tool's <c>logi</c> verbs (docs/sandbox/constructs/production.md "Smart logistics"): what the network did, as <c>[logi]</c>
 /// lines, so a run is judged without pictures. On the body spawned by <c>--blueprint</c>. Either peer: <c>riders</c>, <c>why PART#n</c>,
 /// <c>net PART#n</c>. Host: <c>order NAME [N]</c> (at the first Crafting Terminal), <c>cut PART#n WAY</c> (the conveyor out of a Router's
-/// way 1 to 3), <c>fill PART#n [NAME]</c> (a Piece Rack filled with a part), <c>spawn N</c> (pieces put on every whole conveyor until N ride),
+/// way 1 to 3), <c>fill PART#n[|NAME]</c> (a Piece Rack filled with a part), <c>spawn N</c> (pieces put on every whole conveyor until N ride),
 /// <c>perf</c> (the conveyor step's times since the last <c>perf</c>).
 /// </summary>
 public static partial class Program
@@ -123,7 +123,7 @@ public static partial class Program
             }
             case "fill" when g.IsServer:
             {
-                var cut = rest.IndexOf(' ');
+                var cut = rest.IndexOf('|');
                 var (fc, part) = LogiFind(g, cut > 0 ? rest[..cut] : rest);
                 var what = ConstructParts.Find(cut > 0 ? rest[(cut + 1)..] : "Steel Plate");
                 if (fc == null || what == null)
@@ -159,6 +159,6 @@ public static partial class Program
                 WsSay("[logi] perf: " + ConstructConveyor.ProbeReport());
                 return;
         }
-        WsFail($"logi {arg}: riders, why PART, net PART; host: order NAME N, cut PART WAY, fill PART [NAME], spawn N, perf");
+        WsFail($"logi {arg}: riders, why PART, net PART; host: order NAME N, cut PART WAY, fill PART[|NAME], spawn N, perf");
     }
 }
