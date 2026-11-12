@@ -328,6 +328,46 @@ the limit is 12 constructs a player; joining is instant (the attachment, no time
 foundation is creative-only; the core is a frame-role part with a flag rather than a new role; placing on top of another
 construct's surface without a socket isn't offered (only map surfaces).
 
+## Spawning with a ghost
+
+The user's request (2026-11-12): the parts menu's Spawn makes the thing ready, then a ghost of it is placed and turned
+by the player. Nothing exists in the world until it is placed (`Source/Game/GameSandboxBlueprintGhost.cs`,
+`Source/App/Program.SandboxBlueprintGhost.cs`, `Source/Render/ConstructRenderBlueprintGhost.cs`; protocol 255).
+
+- **What takes it**: the Blueprints tab's shipped blueprints, the vehicle tab's faction vehicles by shape or by role
+  (aircraft on the ground too) and the Engine tab's Make engine. Convoys and aircraft spawned flying with a bot pilot keep
+  their direct path, as do stand-ins, the story, bots and the map. A player's own blueprint keeps the Blueprint Desk's paste
+  (it has its own ghost). Tools and tests that want something at once in front of the player still send
+  `CActKind.Blueprint` (`--window-shot --blueprint`, most self-tests): `SandboxSpawnBlueprint` is unchanged for them.
+- **Preparing, on the host**: the client wraps the spawn act it always sent in `CActKind.SpawnPrepare` (u8 inner kind, then
+  that act's fields). The host runs the act with the `VehicleSpawner`'s `HoldFor` set, so its ask is **held**: generated
+  (a vehicle, an engine) in the spawner's slices as before, then built into a scratch world a slice a tick
+  (`ConstructBuild.GroundJob`, which every held spawn takes, even a small one) and not joined. On a tick of its own its
+  shape is measured (`ConstructBuild.LowOf`: the lowest point `SetDown` stands it on; its bounds) and it becomes the player's
+  pending spawn (`VehicleSpawner.Held`): one a player (a new prepare replaces it, by a token), dropped by a cancel, death,
+  leaving, a new world or 5 minutes (`Game.HeldSeconds`). The log says `[sandbox] pending spawn` and `dropped` with the count.
+- **The ghost on the wire**: generated vehicles exist only on the host ("clients never generate"), so every ghost is sent
+  the same way: `CActKind.SpawnGhost` (server to one client: status, token, name; ready: bounds, lowest point and up to
+  `Game.GhostMaxBoxes` (2048) boxes, the biggest first, 31 bytes a box: centre, half-float size, turn, colour, alpha,
+  shape). Past 2048 boxes the bounds' frame shows the whole. The ghost is exactly the body that will be joined.
+- **Carrying**: on the surface under the crosshair (terrain or a construct), its footprint's middle over the point (it
+  turns about its own middle), its lowest point 2 cm in (`Game.BlueprintGhostPose`, the direct spawn's `GroundRot`
+  frame: up is gravity's up there). Nearer than its radius + 1.5 m it is pushed out; on nothing it sits on the ground at
+  its carry distance (radius + 3 m, 5 to 120 m). It may be placed up to radius x 1.5 + 20 m from the eye (a 100 m walker:
+  about 110 m). Green-washed in its own colours when free; solid red with the reason on the look line when not:
+  `Game.BlueprintGhostRefusal` (out of the world, too far, ground over 35 degrees under the footprint, its bounds 3 cm in
+  and 5 cm off its base overlapping a construct's bounds or a player). No allocation while carrying (measured: 0 bytes
+  over 900 steady frames; the look line is made again only when its reason or angle changes).
+- **Keys**: the wheel turns it 15 degrees a notch about the up, Shift + wheel 1 degree, R (Reload) faces it away from the
+  player again, Fire places it, Aim or Esc drops it; a menu opening, another tool, a seat or death drops it too. The
+  click that places it never reaches the gun. No height nudge (Q and E are bound elsewhere).
+- **Placing**: `CActKind.SpawnPlace` (u16 token, vec point, f32 yaw). The host re-runs `BlueprintGhostRefusal` with the
+  same pose and the player's eye, then `GroundJob.Join` at that pose (the set-down every spawn uses): owner, behaviour
+  brief, the story and the "is down" notice as before. A refusal comes back as a notice and the ghost stays.
+  `CActKind.SpawnCancel` (u16 token, 0: whatever is being made) frees it.
+- **Window-shot actions** (`Program.WindowShotGhost.cs`): `ghost NAME`, `ghostveh STYLE|SHAPE`, `waitghost`,
+  `look YAW PITCH`, `swheel N`, `esc`, `ghostinfo`.
+
 ## The paint tool (board item pp01)
 
 Decision 29. A spray can on the tool wheel's north-west segment (it took the hand drill's place: the wheel keeps eight

@@ -89,6 +89,13 @@ public enum CActKind : byte
     RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 249; ConstructEditsRack.cs)
     Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 249; ConstructEditsRack.cs)
     LineRecipe, // u16 body, u16 console, u16 machine, u16 recipe value, u8 flags (1: every machine of its kind on the line): the recipe picker (protocol 250; ProductionLines.SetRecipe)
+    CraftOrder, // u16 body, u16 terminal, the order (u8 shape, u64 mask, u16 w, h, l, wall, u8 material, u16 part, u16 count): a Crafting Terminal's order (protocol 254; ConstructCrafting.Place)
+    CraftCancel, // u16 body, u16 terminal, u16 order id: cancels it (protocol 254; ConstructCrafting.Cancel)
+    SpawnPrepare, // u8 inner kind (Blueprint, Vehicle, FactionVehicle, MakeEngine), then that act's fields: made ready as a pending spawn, placed with a ghost (protocol 255; GameSandboxBlueprintGhost.cs)
+    SpawnPlace, // u16 token, vec point, f32 yaw: the pending spawn goes down there (protocol 255)
+    SpawnCancel, // u16 token: the pending spawn is dropped (protocol 255)
+    SpawnGhost, // server -> one client: u8 status (0 ready, 1 placed, 2 gone), u16 token, text name; ready: the ghost's shape and boxes (protocol 255)
+    Station, // u16 body, u16 station, u8 StationOp, u16 n, text: a Building Station's Start (the blueprint's name, n repeats), Cancel, Release, Repeat or Give (protocol 256; ConstructStation.cs)
 }
 
 /// <summary>
@@ -160,6 +167,7 @@ public sealed partial class Game
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
+        SpawnHeldReset();
         _pilots.Clear(); // (no bot pilots: GameSandboxAircraft.cs)
         _airPending = 0;
         _airEscortAt = 0;
@@ -392,6 +400,7 @@ public sealed partial class Game
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
+        SpawnHeldTick(); // pending spawns of the dead, the gone and the forgotten go (GameSandboxBlueprintGhost.cs)
         SandboxPilotsTick(); // bot pilots of AI aircraft (GameSandboxAircraft.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
@@ -470,6 +479,16 @@ public sealed partial class Game
             WorkOrders.Write(w, c); // (after its structure: a Full leaves the parts without them)
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        if (ConstructCrafting.Any(Constructs, c))
+        {
+            ConstructCrafting.Write(w, Constructs, c);
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
+        if (ConstructStation.Any(c))
+        {
+            ConstructStation.Write(w, c);
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
     }
 
     private void SandboxFlush()
@@ -496,6 +515,10 @@ public sealed partial class Game
                     Constructs.RidersChanged(c); // (its links may have been renumbered)
                 if (WorkOrders.Any(c))
                     Constructs.OrdersChanged(c); // (its parts may have been renumbered; a Full leaves a client's parts without them)
+                if (ConstructCrafting.Any(Constructs, c))
+                    Constructs.CraftChanged(c); // (the same: its terminals' parts may have been renumbered)
+                if (ConstructStation.Any(c))
+                    Constructs.StationChanged(c);
             }
         Constructs.StructureDirty.Clear();
         foreach (var id in Constructs.RidersDirty)
@@ -512,6 +535,20 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.OrdersDirty.Clear();
+        foreach (var id in Constructs.CraftDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                ConstructCrafting.Write(w, Constructs, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.CraftDirty.Clear();
+        foreach (var id in Constructs.StationDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                ConstructStation.Write(w, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.StationDirty.Clear();
         foreach (var id in _sbLater)
             Constructs.StructureDirty.Add(id);
         _sbLater.Clear();
@@ -751,7 +788,10 @@ public sealed partial class Game
                 }
                 break;
             case (byte)Msg.CAct when !IsServer:
-                if (r.U8() == (byte)CActKind.Notice)
+                var actKind = r.U8();
+                if (actKind == (byte)CActKind.SpawnGhost)
+                    SpawnGhostRead(ref r); // (GameSandboxBlueprintGhost.cs)
+                else if (actKind == (byte)CActKind.Notice)
                 {
                     SandboxSay(r.Text(120));
                     BuildSounds.Play(BuildSound.Refuse, default);
@@ -1025,6 +1065,8 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var part = r.U16();
+                if (LoreUse(p, body, part, eye))
+                    return null; // (a lore item: looked at, GameStoryLore.cs)
                 if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part, hands.InfiniteParts) is { } filled)
                     return filled; // (a magazine in hand at a store: filled from it, or swapped for a fitted one, ConstructAmmo.cs)
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
@@ -1069,6 +1111,33 @@ public sealed partial class Game
                 var flags = r.U8();
                 return hands.LineRecipe(Constructs, p.Id, eye, body, console, machine, value, (flags & 1) != 0, Constructs.Get(body) is { } lc ? SandboxConfigRefusal(lc, p.Id) : null);
             }
+            case CActKind.CraftOrder:
+            {
+                var body = r.U16();
+                var term = r.U16();
+                var shape = r.U8();
+                var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
+                var kw = r.U16();
+                var kh = r.U16();
+                var kl = r.U16();
+                var wall = r.U16();
+                var mat = r.U8();
+                var part = r.U16();
+                var count = r.U16();
+                if (shape > (byte)ExShape.Wing || mat > RecyclingTable.Current.Materials.Length)
+                    return "a bad order";
+                var what = new WorkOrder { Key = new ExtrusionKey(mask, kw, kh, kl, mat, false, (ExShape)shape, wall), Part = part, Count = count };
+                return hands.CraftOrder(Constructs, p.Id, eye, body, term, what, 0, Constructs.Get(body) is { } cc ? SandboxConfigRefusal(cc, p.Id) : null);
+            }
+            case CActKind.CraftCancel:
+            {
+                var body = r.U16();
+                var term = r.U16();
+                var oid = r.U16();
+                return hands.CraftOrder(Constructs, p.Id, eye, body, term, default, oid, Constructs.Get(body) is { } cc2 ? SandboxConfigRefusal(cc2, p.Id) : null);
+            }
+            case CActKind.Station:
+                return SandboxStationAct(ref r, p, eye);
             case CActKind.WebState:
             {
                 var body = r.U16();
@@ -1118,6 +1187,16 @@ public sealed partial class Game
             }
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U16()); // (protocol 227: two bytes, past 255 blueprints)
+            case CActKind.SpawnPrepare:
+                return SandboxSpawnPrepareAct(p, ref r, now); // (GameSandboxBlueprintGhost.cs)
+            case CActKind.SpawnPlace:
+            {
+                var token = r.U16();
+                var at = r.Vec();
+                return SandboxSpawnPlaceAct(p, token, at, r.F32());
+            }
+            case CActKind.SpawnCancel:
+                return SandboxSpawnCancelAct(p, r.U16());
             case CActKind.Drop:
                 if (Constructs.HoseLetGo(p.Id))
                     return null; // (the hose's receiver first: it reels back)
@@ -1485,6 +1564,39 @@ public sealed partial class Game
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
     }
 
+    /// <summary>Client (or the host itself): an order at a Crafting Terminal (ConstructCrafting.cs). The server checks reach, power and the network, and says why not.</summary>
+    public void SandboxCraftOrder(ushort body, int terminal, in WorkOrder what)
+    {
+        var w = SbW;
+        var k = what.Key;
+        w.Begin(Msg.CAct).U8((byte)CActKind.CraftOrder).U16(body).U16((ushort)terminal);
+        w.U8((byte)k.Shape).U32((uint)k.Mask).U32((uint)(k.Mask >> 32)).U16(k.W).U16(k.H).U16(k.L).U16(k.Wall).U8(k.Material).U16(what.Part).U16(what.Count);
+        SandboxCraftSend(w);
+    }
+
+    /// <summary>Client (or the host itself): cancels one of a Crafting Terminal's orders.</summary>
+    public void SandboxCraftCancel(ushort body, int terminal, ushort id)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.CraftCancel).U16(body).U16((ushort)terminal).U16(id);
+        SandboxCraftSend(w);
+    }
+
+    private void SandboxCraftSend(PacketWriter w)
+    {
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxActGuarded(me, ref r) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
     /// <summary>Client (or the host itself): a Video Screen's or Music Player's list or transport. The server checks it as the configure tool's.</summary>
     public void SandboxMedia(ushort body, int part, MediaOp op, int line = 0, uint seq = 0, string entry = "")
     {
@@ -1602,13 +1714,15 @@ public sealed partial class Game
         if (index < 0 || index >= all.Count)
             return "no such blueprint";
         var bp = all[index];
-        if (!VehicleSpawner.AtOnce(bp, null))
+        var held = VehicleSpawn.HoldFor == p.Id; // (a ghost's: made ready in slices and held, GameSandboxBlueprintGhost.cs)
+        if (!VehicleSpawner.AtOnce(bp, null) || held)
         {
             // Too big for one tick (a faction vehicle's file, the RV): set down a slice a tick, in front of them when it is ready.
             var ground = ConstructWorld.Ground(World.Query, p.Position + GravityFrames.FlatForward(p.Position, p.Yaw) * 6f);
             if (VehicleSpawn.RequestBlueprint(bp, ground, p.Yaw, p.Id, p.Id, _blueprintSpawned ??= BlueprintSpawned) is { } busy)
                 return busy;
-            SandboxHands.Notices.Add((p.Id, VehicleSpawn.Pending > 1 ? $"placing the {bp.Name} ({VehicleSpawn.Pending - 1} ahead of it)" : $"placing the {bp.Name}"));
+            if (!held)
+                SandboxHands.Notices.Add((p.Id, VehicleSpawn.Pending > 1 ? $"placing the {bp.Name} ({VehicleSpawn.Pending - 1} ahead of it)" : $"placing the {bp.Name}"));
             return null;
         }
         if (SandboxBuildInFront(p, bp, null, out var why) is not { } c)

@@ -29,6 +29,9 @@ public sealed class ProductionShowcase : IPartGenerator
         private const int TilesX = 32, TilesZ = 7; // 2 m Foundations: 64 by 14 m
         private const float Row1 = -4.75f, Row2 = -11.25f; // the two rows of machines; the front aisle is z 0 to -2, the back one z -7 to -8.5
         private const float Posts1 = -2.25f, Posts2 = -8.75f; // the sign posts and consoles of each row, at its aisle
+        private const float Row3 = -17.25f, Posts3 = -15.25f; // the panel line's own floor behind the second row: z -14 to -20, x 22 to 50
+        private const int PanelTile0 = 11, PanelTiles = 14;
+        private const string Panels = "#5d7f3c";
 
         // Paint by section (look.md): a warm concrete floor, steel-blue walkways, one accent a station, yellow controls.
         private const string Floor = "#8c8576", Aisle = "#4f6578", Hazard = "#d8a020", Board = "#23272b", Control = "#e0b020";
@@ -194,6 +197,13 @@ public sealed class ProductionShowcase : IPartGenerator
             foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Gun Barrel", 2) }) // (steel only, tier 1: what its stock makes)
                 BillPart(orders, part, n);
 
+            // ---- 8. The Crafting Terminal: on the orders console's machines, the Assembler's rack returning to its tray. ------------------
+            CraftingCorner(orders, partRack, longRack);
+            StationBay(orders);
+            PanelLine(orders);
+
+            Monitors(refine, orders);
+
             // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------
             Stripe(26.75f, Row1, true);
             Stripe(36.75f, Row1, true);
@@ -204,6 +214,138 @@ public sealed class ProductionShowcase : IPartGenerator
             // ---- The lamps: one on every sign post, wired from the main switch along the aisles' edges. -------------------------
             foreach (var lamp in _lamps)
                 Lamp(lamp);
+        }
+
+        /// <summary>
+        /// The Crafting Terminal's corner (its own floor area: x 60 to 64, z -9.2 to -6.2, between the wheel rack and the part rack): the
+        /// terminal, the orders console's wire into its Orders port (so it sees that console's machines), a return conveyor from the
+        /// Assembler's Piece Rack to its tray, and its sign.
+        /// </summary>
+        private void CraftingCorner(VPart orders, VPart partRack, VPart longRack)
+        {
+            var term = On("Crafting Terminal", 61.25f, -9.25f, Front, "-y.0.0");
+            var from = PortAt(partRack, "Piece out");
+            var to = PortAt(term, "Piece in");
+            Convey(partRack, "Piece out", term, "Piece in", Assembly, null, V(to.X, from.Y, from.Z));
+            Link("data", orders, term, null, "Orders", Control, true, null,
+                new[] { V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(54.25f, 0, -2.0f), V(60.5f, 0, -2.0f), V(60.5f, 0, -6.2f) }
+                    .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
+            // The Extruders' pieces come back too: the Long Piece Rack's Piece out, down to the back aisle's edge and along it to the sorter's side.
+            var back = PortAt(longRack, "Piece out");
+            var side = PortAt(term, "Piece in 2");
+            var path = new List<Vector3> { V(back.X + 0.6f, back.Y, back.Z), V(back.X + 0.6f, back.Y, side.Z) };
+            for (var x = back.X + 0.6f + 7f; x < side.X - 1f; x += 7f) // (a segment reaches at most 8 m)
+                path.Add(V(x, back.Y, side.Z));
+            Convey(longRack, "Piece out", term, "Piece in 2", LineA, new Vector2(0.5f, 0.5f), path.ToArray());
+            Sign(60.25f, -6.75f, Assembly, "F on the screen: order a part. It arrives in the tray");
+        }
+
+        /// <summary>
+        /// The Building Station (production.md "Building station"), on its own floor past the end (x 64 to 82): the station with its bay
+        /// on its far side, the orders console's wire into its Orders port, a kit rack behind the bay holding every part of the Swing Arm
+        /// Buggy with a conveyor into the station's Piece in, and copper for its wires chuted to it (steel is the Assembler's stock).
+        /// </summary>
+        private void StationBay(VPart orders)
+        {
+            for (var j = 0; j < TilesZ; j++)
+                for (var i = TilesX; i < TilesX + 9; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == 0 ? Aisle : Floor);
+                    Finish(t, j == 0 ? "painted deck plate" : "concrete");
+                }
+            var station = On("Building Station", 65.25f, -9.25f, Front, "-y.0.0");
+            Config(station, ("bayWidth", 4.0), ("bayDepth", 5.0), ("bayHeight", 3.0));
+            Link("data", orders, station, null, "Orders", Control, true, null,
+                new[] { V(24.25f, 0, -2.05f), V(31.75f, 0, -2.05f), V(39.25f, 0, -2.05f), V(46.75f, 0, -2.05f), V(54.25f, 0, -2.05f), V(60.5f, 0, -2.05f), V(64.6f, 0, -2.05f), V(64.6f, 0, -6.0f) }
+                    .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
+            Feed(StockOf("copper", 65.25f, -3.25f), station);
+            var kit = On("Long Piece Rack", 81.25f, -13.75f, Toward, "-y.0.0", Assembly); // (15 kinds, a column each along its 12 m)
+            foreach (var (part, n) in new[]
+                     {
+                         ("Differential", 1), ("Engine", 1), ("Transmission", 1), ("Tow Hitch", 1), ("Fuel Tank", 1), ("Driving Module", 1), ("Seat", 1),
+                         ("Wedge 1:1 0.25 m", 3), ("Square Beam 0.5 m", 2), ("Square Beam 2 m", 2), ("Plate Steel 1 m", 1), ("Square Beam 0.75 m", 1),
+                         ("Swing Arm", 4), ("Wheel", 4), ("Steering Pivot", 2),
+                     })
+                Store(kit, -1, part, n); // (the Swing Arm Buggy's 26 parts: the station reserves them here and they ride in)
+            var from = PortAt(kit, "Piece out");
+            var to = PortAt(station, "Piece in");
+            Convey(kit, "Piece out", station, "Piece in", Assembly, null, V(to.X, from.Y, from.Z)); // (out of the rack's end, then straight up to the hold's back)
+            Sign(68.75f, Posts1, Assembly, "F on the station: pick Swing Arm Buggy, Start. Parts ride in");
+        }
+
+        /// <summary>
+        /// The panel line (production.md "The Panel Former"), on its own strip of floor behind the second row: an Extruder making steel sheet,
+        /// a conveyor into a Panel Former's Piece in, the former's Piece out onto a conveyor to a Long Piece Rack; on the orders console,
+        /// whose bill gains two preset panels and one of the vehicle kit's lofted hoods.
+        /// </summary>
+        private void PanelLine(VPart orders)
+        {
+            for (var j = TilesZ; j < TilesZ + 3; j++)
+                for (var i = PanelTile0; i < PanelTile0 + PanelTiles; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == TilesZ ? Aisle : Floor);
+                    Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
+                }
+            var sheet = On("Extruder", 25.25f, Row3, Flow, paint: Panels);
+            Config(sheet, ("profile", "Solid bar"), ("width", 0.5), ("height", 0.1), ("cutLength", 1.0)); // (sheet: 10 cm is the thinnest a die makes)
+            Feed(StockOf("steel", 23.25f, Row3), sheet);
+            var former = On("Panel Former", 30.25f, Row3, Flow, paint: Panels);
+            Convey(sheet, "Piece out", former, "Piece in", Panels);
+            var rack = On("Long Piece Rack", 34.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
+            Convey(former, "Piece out", rack, "Piece in", Panels);
+            Sign(28.75f, Posts3, Panels, "PANELS: sheet in at the white end, panels out at the orange");
+            Sign(31.25f, Posts3, Panels, "Send the bill: a hood, a fender and a kit hood are formed");
+            Run(orders, former, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.6f), V(29.25f, 0, -14.6f));
+            BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(2)), 2); // a hood
+            BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(3)), 2); // a fender
+            BillPanel(orders, "Hull Loft (hoodg UOV2WyWjXYXYVd ~7O07WW7Gn5v1014)", 1); // one of the vehicle kit's lofted hoods (an IT truck's)
+            Stripe(27.25f, Row3, true);
+            Stripe(33.25f, Row3, true);
+        }
+
+        /// <summary>
+        /// Production monitors (production.md "Production monitors"), all on the front aisle's post line, x 19 to 22 and 57 to 63.5:
+        /// a small one by the refining console (a Number Readout on its Data out), a medium one by the orders console (a Text Sign),
+        /// and the orders line's board at the right-hand end (a Text Sign at Text size 50 %: no adapter takes a medium display onto
+        /// the small floor), a red lamp on a mast beside it on the console's Alarm output.
+        /// </summary>
+        private void Monitors(VPart refine, VPart orders)
+        {
+            // Small: a row a machine, by the refining console.
+            var smallPost = Sign(19.25f, Posts1, Refining, "MONITOR: the console's Data out wired to a display");
+            var small = Onto(smallPost, "y+1", "Number Readout", "back");
+            Paint(small, Board);
+            Link("data", refine, small, "Data out", null);
+
+            // Medium: two lines a machine, by the orders console.
+            var mediumPost = Sign(21.75f, Posts1, Control, "MONITOR: any display works; it lays itself out");
+            var medium = Onto(mediumPost, "y+1", "Text Sign", "back");
+            Paint(medium, Board);
+            Link("data", orders, medium, "Data out", null);
+
+            // Large: the orders line's board at the right-hand end, its Alarm on a red lamp on a mast beside it.
+            Sign(57.25f, Posts1, Control, "ORDERS BOARD: red lamp = Alarm (a machine waits or is out)");
+            var boardPost = On("Frame Beam", 60.75f, Posts1, Post, "end-", Control, "painted plating");
+            var board = Onto(boardPost, "y+3", "Text Sign", "back");
+            Paint(board, Board);
+            Config(board, ("textSize", 50));
+            var mast = On("Frame Beam", 62.75f, Posts1, Post, "end-", Control, "painted plating");
+            var mast2 = Onto(mast, "end+", "Frame Beam", "end-");
+            Paint(mast2, Control);
+            var alarm = Onto(mast2, "end+", "Lamp", "-y");
+            Config(alarm, ("colour", "#ff2a1a"), ("brightness", 160));
+            var cable = new List<Vector3>();
+            for (var x = 24.25f; x < 60.75f; x += 7.5f)
+                cable.Add(V(x, FloorY + 0.03f, -1.95f));
+            cable.Add(V(60.75f, FloorY + 0.03f, -1.95f));
+            Link("data", orders, board, "Data out", null, Control, true, cable.ToArray());
+            for (var k = 0; k < cable.Count; k++)
+                cable[k] = cable[k] with { Z = -1.9f };
+            cable.Add(V(62.75f, FloorY + 0.03f, -1.9f));
+            cable.Add(V(62.75f, FromRest(Live.Parts[alarm.Index].Pos).Y, -1.9f)); // (up the mast)
+            Link("data", orders, alarm, "Alarm", null, Spur, true, cable.ToArray());
         }
 
         /// <summary>A sign post at (x, z): a Frame Beam stood up in the station's colour, a Text Sign facing the aisle, a lamp on top.</summary>

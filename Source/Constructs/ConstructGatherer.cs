@@ -10,6 +10,16 @@ namespace CallOfSlop;
 /// (<see cref="ConstructRecycler.Powered"/>), and draw power only while they work; a drill with a drive shaft linked runs from
 /// the shaft instead (<see cref="ConstructDrillDrive"/>). Server, at 10 Hz; nothing allocates in the step except a part-cut tree's first entry.
 /// </summary>
+/// <summary>Why a gathering module isn't working (on its store's Blocked byte; ConstructGatherer.Stall).</summary>
+public enum GatherStall : byte
+{
+    None,
+    NoDeposit, // a drill not on a deposit (or it ran dry), a saw with no tree in reach
+    TierLow, // the deposit or the trees need a higher tier
+    BinFull,
+    OtherMaterial, // its bin holds another material
+}
+
 public static class ConstructGatherer
 {
     public const int Every = 6; // ticks between steps (10 Hz)
@@ -79,6 +89,10 @@ public static class ConstructGatherer
                     var shaft = ConstructDrillDrive.Update(world, c, i, st); // (a drill with a drive shaft linked: the share of its rate; else -1)
                     var can = shaft < 0 ? ConstructRecycler.Powered(world, c, i) : shaft > 0 && !c.Parts[i].Broken;
                     var busy = !held && world.Resources is { } field && can && Work(world, field, c, i, st, shaft < 0 ? 1f : shaft);
+                    if (busy || held || !can)
+                        SetStall(world, st, GatherStall.None); // (Work names why it isn't working: Stall)
+                    else if (world.Resources == null)
+                        SetStall(world, st, GatherStall.NoDeposit);
                     SetBusy(world, st, busy);
                     if (busy && shaft > 0)
                         load += ConstructDrillDrive.Load(c, i);
@@ -126,6 +140,49 @@ public static class ConstructGatherer
         return false;
     }
 
+    /// <summary>Work's "not now", with why (on the store's Blocked byte: sent and saved as it is, so every peer's lamp and look agree).</summary>
+    private static bool Stall(ConstructWorld world, CStore st, GatherStall why)
+    {
+        SetStall(world, st, why);
+        return false;
+    }
+
+    internal static void SetStall(ConstructWorld world, CStore st, GatherStall why)
+    {
+        if (st.Blocked == (byte)why)
+            return;
+        st.Blocked = (byte)why;
+        st.Version++;
+        world.StoreDirty.Add(st.Handle);
+    }
+
+    /// <summary>A gathering module's line state (ProductionLines): its power (a shaft's turning), Run, work, then why it waits.</summary>
+    public static LineState LineOf(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        var powered = st.Drive == ShaftState.None ? ConstructRecycler.Powered(world, c, part) : st.Drive == ShaftState.Turning && !c.Parts[part].Broken;
+        if (!powered)
+            return LineState.NoPower;
+        if (st.Held)
+            return LineState.Idle;
+        if (st.Busy)
+            return LineState.Running;
+        return (GatherStall)st.Blocked switch
+        {
+            GatherStall.BinFull or GatherStall.OtherMaterial => LineState.Blocked,
+            GatherStall.TierLow => LineState.Fault,
+            _ => LineState.Starved, // (no deposit or no tree under it)
+        };
+    }
+
+    /// <summary>Why a module waits, in a few words (the console's detail line and a monitor).</summary>
+    public static string StallWord(ConstructPartDef d, GatherStall s) => s switch
+    {
+        GatherStall.BinFull => "bin full",
+        GatherStall.OtherMaterial => "bin: other material",
+        GatherStall.TierLow => "needs a higher tier",
+        _ => d.GatherSaw ? "no tree in reach" : "no deposit",
+    };
+
     internal static void SetBusy(ConstructWorld world, CStore st, bool busy)
     {
         if (st.Busy == busy)
@@ -139,7 +196,7 @@ public static class ConstructGatherer
     {
         var d = c.Parts[part].D;
         if (st.Amount >= d.BulkCapacity)
-            return false;
+            return Stall(world, st, GatherStall.BinFull);
         if (field.Planet is { } round)
             return WorkRound(world, field, round, c, part, st, share);
         WorkBox(c, part, out var at, out var bottom, out var reach);
@@ -147,11 +204,13 @@ public static class ConstructGatherer
         var units = 0;
         if (d.GatherSaw)
         {
-            if (d.Tier < field.WoodMinTier || MathF.Abs(bottom - ground) > ResourceField.SawHeight || !field.NearestTree(at, reach, out var tree))
-                return false;
+            if (d.Tier < field.WoodMinTier)
+                return Stall(world, st, GatherStall.TierLow);
+            if (MathF.Abs(bottom - ground) > ResourceField.SawHeight || !field.NearestTree(at, reach, out var tree))
+                return Stall(world, st, GatherStall.NoDeposit);
             var wood = RecyclingTable.Current.IdOf(field.WoodMaterial);
             if (st.Amount > 0 && st.Material != wood)
-                return false;
+                return Stall(world, st, GatherStall.OtherMaterial);
             units = Math.Min(Accrue(st, d.GatherRate * share), d.BulkCapacity - st.Amount); // (a fast saw's step never takes more than the bin has room for)
             if (units == 0)
                 return true;
@@ -161,11 +220,13 @@ public static class ConstructGatherer
             world.Yield(CYieldKind.Gathered, c, wood, world.Deposit(c, part, got, wood));
             return true;
         }
-        if (!DrillShaft.Touches(field, at, bottom) || field.TappableAt(at.X, at.Z) is not { } kind || d.Tier < kind.MinTier)
-            return false;
+        if (!DrillShaft.Touches(field, at, bottom) || field.TappableAt(at.X, at.Z) is not { } kind)
+            return Stall(world, st, GatherStall.NoDeposit);
+        if (d.Tier < kind.MinTier)
+            return Stall(world, st, GatherStall.TierLow);
         var want = RecyclingTable.Current.IdOf(kind.Material);
         if (st.Amount > 0 && st.Material != want)
-            return false;
+            return Stall(world, st, GatherStall.OtherMaterial);
         units = Math.Min(Accrue(st, d.GatherRate * share), d.BulkCapacity - st.Amount); // (a fast drill's step never takes more than the bin has room for)
         if (units == 0)
             return true;
@@ -176,7 +237,7 @@ public static class ConstructGatherer
         }
         var tapped = field.Tap(at.X, at.Z, units, out var material);
         if (tapped == 0)
-            return false;
+            return Stall(world, st, GatherStall.NoDeposit);
         world.Yield(CYieldKind.Gathered, c, material, world.Deposit(c, part, tapped, material));
         DrillShaft.Dig(world, field, c, st, at, tapped);
         return true;
@@ -201,13 +262,15 @@ public static class ConstructGatherer
     {
         var d = c.Parts[part].D;
         if (d.GatherSaw)
-            return false;
+            return Stall(world, st, GatherStall.NoDeposit);
         WorkTip(c, part, pl, out var at, out var tip);
-        if (!DrillShaft.Touches(pl, tip) || field.TappableAt(at) is not { } kind || d.Tier < kind.MinTier)
-            return false;
+        if (!DrillShaft.Touches(pl, tip) || field.TappableAt(at) is not { } kind)
+            return Stall(world, st, GatherStall.NoDeposit);
+        if (d.Tier < kind.MinTier)
+            return Stall(world, st, GatherStall.TierLow);
         var want = RecyclingTable.Current.IdOf(kind.Material);
         if (st.Amount > 0 && st.Material != want)
-            return false;
+            return Stall(world, st, GatherStall.OtherMaterial);
         var units = Math.Min(Accrue(st, d.GatherRate * share), d.BulkCapacity - st.Amount);
         if (units == 0)
             return true;
@@ -218,7 +281,7 @@ public static class ConstructGatherer
         }
         var tapped = field.Tap(at, units, out var material);
         if (tapped == 0)
-            return false;
+            return Stall(world, st, GatherStall.NoDeposit);
         world.Yield(CYieldKind.Gathered, c, material, world.Deposit(c, part, tapped, material));
         DrillShaft.Dig(world, pl, c, st, at, tapped);
         return true;

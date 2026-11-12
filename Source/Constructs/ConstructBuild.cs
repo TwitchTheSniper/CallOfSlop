@@ -746,6 +746,96 @@ public static class ConstructBuild
         return null;
     }
 
+    /// <summary>
+    /// One step of a blueprint onto <paramref name="c"/> by the game's own rules (its socket, turn, "at", weld, "also" links, setting
+    /// and config): <see cref="BuildSteps"/>' step, and the Building Station's, which fits steps in any order once a step's parent
+    /// (and the steps its "also" names) are in <paramref name="partOf"/> (ConstructStation.cs). The reason it refuses, or null.
+    /// </summary>
+    public static string? FitStep(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf)
+    {
+        var (name, on, sock, own, spin) = bp.Steps[k];
+        if (ConstructParts.Find(name) is not { } def)
+        {
+            return $"step {k}: no part named \"{name}\"";
+        }
+        if (k == 0)
+        {
+            partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(Math.Max(spin, 0) % Rot24.Count));
+            SetSetting(c, partOf[0], def, bp.StepSettings[0]);
+            SetConfig(world, c, partOf[0], def, bp, 0);
+            return null;
+        }
+        var target = partOf[on];
+        var td = c.DefOf(target);
+        var laidAt = k < bp.StepAt.Count ? bp.StepAt[k] : null;
+        if (sock.Length == 0 && laidAt is { } alone && !(k < bp.StepWeld.Count && bp.StepWeld[k] != null))
+        {
+            // Saved with no socket to go by (a piece the selection doesn't join to the rest): it stands there, welded by whatever sockets it meets.
+            partOf[k] = world.AddPart(c, def, ConstructWorld.Quantise(alone), (byte)(Math.Max(spin, 0) % Rot24.Count));
+            if (partOf[k] < 0)
+            {
+                return $"step {k}: too many parts";
+            }
+            if (!bp.ExactLinks)
+                AutoLink(world, c, partOf[k]);
+            if (LinkAlso(world, c, bp, k, partOf) is { } lost)
+            {
+                return lost;
+            }
+            SetSetting(c, partOf[k], def, bp.StepSettings[k]);
+            SetConfig(world, c, partOf[k], def, bp, k);
+            return null;
+        }
+        if (k < bp.StepWeld.Count && bp.StepWeld[k] is { } weld)
+        {
+            // A freeform weld (board item fw01): the part on a new rigid segment at its stored pose.
+            partOf[k] = world.AddFreeform(c, target, def, weld.Pos, weld.Rot);
+            if (partOf[k] < 0)
+            {
+                return $"step {k}: too many parts or freeform welds";
+            }
+            if (LinkAlso(world, c, bp, k, partOf) is { } lost)
+            {
+                return lost;
+            }
+            SetSetting(c, partOf[k], def, bp.StepSettings[k]);
+            SetConfig(world, c, partOf[k], def, bp, k);
+            c.Rebuild(); // (the next step may fit a part onto the new segment: frames are cached by the rebuild, board item fd01)
+            return null;
+        }
+        if (def.Role == PartRole.GunPart)
+            ConstructMerge.Refresh(c); // (a gun part's place scales with a merged receiver or a scaled part under it: found as the rebuild would)
+        var ts = ConstructMerge.SocketIndex(c, target, sock);
+        var ds = Array.FindIndex(def.Sockets, s => s.Name == own);
+        if (ts < 0 || ds < 0)
+        {
+            return $"step {k}: {(ts < 0 ? $"{td.Name} has no socket \"{sock}\"" : $"{def.Name} has no socket \"{own}\"")}";
+        }
+        if (spin < 0)
+            spin = Math.Max(0, SmartRotation.BestSpin(c, target, ts, def, ds)); // (a step whose turn is "auto")
+        if (Place(c, target, ts, def, ds, spin, out var g) is { } bad && !(laidAt != null && bad == InTheWay))
+        {
+            return $"step {k}: {def.Name} on {td.Name} \"{sock}\": {bad}";
+        }
+        if (laidAt is { } stands)
+            g.Pos = ConstructWorld.Quantise(stands);
+        partOf[k] = Attach(world, c, def, g, !bp.ExactLinks);
+        if (partOf[k] < 0)
+        {
+            return $"step {k}: too many parts";
+        }
+        if (LinkAlso(world, c, bp, k, partOf) is { } missing)
+        {
+            return missing;
+        }
+        if (!SetSetting(c, partOf[k], def, bp.StepSettings[k]))
+        {
+            return $"step {k}: a {def.Name} has no setting {bp.StepSettings[k]}";
+        }
+        SetConfig(world, c, partOf[k], def, bp, k);
+        return null;
+    }
+
     /// <summary>What <see cref="BuildSteps"/> came to: the construct, or the reason a step refused.</summary>
     public sealed class BuildRun
     {
@@ -772,109 +862,12 @@ public static class ConstructBuild
         var partOf = new int[Math.Max(1, bp.Steps.Count)];
         for (var k = 0; k < bp.Steps.Count; k++)
         {
-            var (name, on, sock, own, spin) = bp.Steps[k];
-            if (ConstructParts.Find(name) is not { } def)
+            if (FitStep(world, c, bp, k, partOf) is { } refused)
             {
-                run.Why = $"step {k}: no part named \"{name}\"";
+                run.Why = refused;
                 world.Remove(c);
                 yield break;
             }
-            if (k == 0)
-            {
-                partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(Math.Max(spin, 0) % Rot24.Count));
-                SetSetting(c, partOf[0], def, bp.StepSettings[0]);
-                SetConfig(world, c, partOf[0], def, bp, 0);
-                yield return k;
-                continue;
-            }
-            var target = partOf[on];
-            var td = c.DefOf(target);
-            var laidAt = k < bp.StepAt.Count ? bp.StepAt[k] : null;
-            if (sock.Length == 0 && laidAt is { } alone && !(k < bp.StepWeld.Count && bp.StepWeld[k] != null))
-            {
-                // Saved with no socket to go by (a piece the selection doesn't join to the rest): it stands there, welded by whatever sockets it meets.
-                partOf[k] = world.AddPart(c, def, ConstructWorld.Quantise(alone), (byte)(Math.Max(spin, 0) % Rot24.Count));
-                if (partOf[k] < 0)
-                {
-                    run.Why = $"step {k}: too many parts";
-                    world.Remove(c);
-                    yield break;
-                }
-                if (!bp.ExactLinks)
-                    AutoLink(world, c, partOf[k]);
-                if (LinkAlso(world, c, bp, k, partOf) is { } lost)
-                {
-                    run.Why = lost;
-                    world.Remove(c);
-                    yield break;
-                }
-                SetSetting(c, partOf[k], def, bp.StepSettings[k]);
-                SetConfig(world, c, partOf[k], def, bp, k);
-                yield return k;
-                continue;
-            }
-            if (k < bp.StepWeld.Count && bp.StepWeld[k] is { } weld)
-            {
-                // A freeform weld (board item fw01): the part on a new rigid segment at its stored pose.
-                partOf[k] = world.AddFreeform(c, target, def, weld.Pos, weld.Rot);
-                if (partOf[k] < 0)
-                {
-                    run.Why = $"step {k}: too many parts or freeform welds";
-                    world.Remove(c);
-                    yield break;
-                }
-                if (LinkAlso(world, c, bp, k, partOf) is { } lost)
-                {
-                    run.Why = lost;
-                    world.Remove(c);
-                    yield break;
-                }
-                SetSetting(c, partOf[k], def, bp.StepSettings[k]);
-                SetConfig(world, c, partOf[k], def, bp, k);
-                c.Rebuild(); // (the next step may fit a part onto the new segment: frames are cached by the rebuild, board item fd01)
-                yield return k;
-                continue;
-            }
-            if (def.Role == PartRole.GunPart)
-                ConstructMerge.Refresh(c); // (a gun part's place scales with a merged receiver or a scaled part under it: found as the rebuild would)
-            var ts = ConstructMerge.SocketIndex(c, target, sock);
-            var ds = Array.FindIndex(def.Sockets, s => s.Name == own);
-            if (ts < 0 || ds < 0)
-            {
-                run.Why = $"step {k}: {(ts < 0 ? $"{td.Name} has no socket \"{sock}\"" : $"{def.Name} has no socket \"{own}\"")}";
-                world.Remove(c);
-                yield break;
-            }
-            if (spin < 0)
-                spin = Math.Max(0, SmartRotation.BestSpin(c, target, ts, def, ds)); // (a step whose turn is "auto")
-            if (Place(c, target, ts, def, ds, spin, out var g) is { } bad && !(laidAt != null && bad == InTheWay))
-            {
-                run.Why = $"step {k}: {def.Name} on {td.Name} \"{sock}\": {bad}";
-                world.Remove(c);
-                yield break;
-            }
-            if (laidAt is { } stands)
-                g.Pos = ConstructWorld.Quantise(stands);
-            partOf[k] = Attach(world, c, def, g, !bp.ExactLinks);
-            if (partOf[k] < 0)
-            {
-                run.Why = $"step {k}: too many parts";
-                world.Remove(c);
-                yield break;
-            }
-            if (LinkAlso(world, c, bp, k, partOf) is { } missing)
-            {
-                run.Why = missing;
-                world.Remove(c);
-                yield break;
-            }
-            if (!SetSetting(c, partOf[k], def, bp.StepSettings[k]))
-            {
-                run.Why = $"step {k}: a {def.Name} has no setting {bp.StepSettings[k]}";
-                world.Remove(c);
-                yield break;
-            }
-            SetConfig(world, c, partOf[k], def, bp, k);
             yield return k;
         }
         if (run.StepsOnly)
@@ -891,7 +884,7 @@ public static class ConstructBuild
     /// cargo): in the world the construct stays in, all at once. <see cref="BuildRun.Built"/> is set when it built; on a refusal
     /// the construct (and any cargo made) goes.
     /// </summary>
-    public static void FinishBuild(ConstructWorld world, Construct c, Blueprint bp, int[] partOf, BuildRun run)
+    public static void FinishBuild(ConstructWorld world, Construct c, Blueprint bp, int[] partOf, BuildRun run, bool linked = false)
     {
         for (var k = 0; k < bp.Steps.Count && k < bp.StepPaint.Count; k++)
             if (bp.StepPaint[k] != 0)
@@ -909,6 +902,7 @@ public static class ConstructBuild
         // The wires, through the linking tool's rules.
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)
+        if (!linked) // (a Building Station laid the wires and links itself, one by one: ConstructStation.cs)
         foreach (var (from, to) in bp.Wires)
         {
             if (from < 0 || from >= bp.Steps.Count || to < 0 || to >= bp.Steps.Count)
@@ -928,7 +922,7 @@ public static class ConstructBuild
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild();
         // The routed links, through the linking tool's rules.
-        for (var k = 0; k < bp.Links.Count; k++)
+        for (var k = 0; k < bp.Links.Count && !linked; k++)
             if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
             {
                 run.Why = $"links[{k}]: {bad}";
@@ -990,7 +984,7 @@ public static class ConstructBuild
                 return;
             }
         for (var k = 0; k < bp.Stored.Count; k++)
-            if (bp.Stored[k].Step < 0 || bp.Stored[k].Step >= bp.Steps.Count || bp.Stored[k].Slot >= c.DefOf(partOf[bp.Stored[k].Step]).Slots.Length)
+            if (bp.Stored[k].Step < 0 || bp.Stored[k].Step >= bp.Steps.Count || (bp.Stored[k].Slot < 0 || bp.Stored[k].Slot >= c.DefOf(partOf[bp.Stored[k].Step]).Slots.Length) && !c.DefOf(partOf[bp.Stored[k].Step]).IsPieceRack)
             {
                 run.Why = $"stored[{k}]: step {bp.Stored[k].Step} has no slot {bp.Stored[k].Slot}";
                 world.Remove(c);
@@ -1060,8 +1054,25 @@ public static class ConstructBuild
     }
 
     /// <summary>Upright on the ground there, turned by <paramref name="yaw"/> about its up.</summary>
-    private static Quaternion GroundRot(Vector3 ground, float yaw) =>
+    internal static Quaternion GroundRot(Vector3 ground, float yaw) =>
         Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationY(-yaw) * GravityFrames.Basis(ground)));
+
+    /// <summary>
+    /// A built construct's lowest point in its own frame (rebuilt first if it must be): its parts' bounds, or the wheels' bottoms, or a
+    /// walker's resting feet when enough fed legs hold it. <see cref="SetDown"/> stands it there; the blueprint ghost rests on it too.
+    /// </summary>
+    internal static float LowOf(ConstructWorld world, Construct c)
+    {
+        if (c.Dirty)
+            c.Rebuild(); // (its bounds, wheels and legs as built: the first tick would rebuild it anyway)
+        var low = c.LocalMin.Y;
+        for (var k = 0; k < c.WheelCount; k++)
+            low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
+        if (c.LegCount > 0 && ConstructPhysics.PowerLegs(world, c, false) >= ConstructPhysics.MinWalkLegs)
+            for (var k = 0; k < c.LegCount; k++)
+                low = MathF.Min(low, c.Legs[k].Rest.Y);
+        return low;
+    }
 
     /// <summary>A built construct's loot rolled and its lowest point stood on the ground (its cargo moves with it).</summary>
     private static void SetDown(ConstructWorld world, Construct c, Blueprint bp, int[]? partOf, Vector3 ground, Quaternion rot)
@@ -1073,14 +1084,7 @@ public static class ConstructBuild
         // Lowest point: the parts' bounds, or the wheels' bottoms, or a walker's resting feet (docs/sandbox/GIANTS.md, "Walking
         // on real maps"): one with enough fed legs to hold it is set down standing, its hull clear of the ground and of what
         // stands on it, so it walks from the first tick instead of standing up from its hips.
-        if (c.Dirty)
-            c.Rebuild(); // (its bounds, wheels and legs as built: the first tick would rebuild it anyway)
-        var low = c.LocalMin.Y;
-        for (var k = 0; k < c.WheelCount; k++)
-            low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
-        if (c.LegCount > 0 && ConstructPhysics.PowerLegs(world, c, false) >= ConstructPhysics.MinWalkLegs)
-            for (var k = 0; k < c.LegCount; k++)
-                low = MathF.Min(low, c.Legs[k].Rest.Y);
+        var low = LowOf(world, c);
         c.Pos = ground - Vector3.Transform(new Vector3(0, low - 0.02f, 0), rot);
         c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
         c.NetHistReset();
@@ -1131,6 +1135,12 @@ public static class ConstructBuild
 
         /// <summary>Its steps (and its tow's) are done: <see cref="Join"/> may be called.</summary>
         public bool Ready => _ready;
+
+        /// <summary>The body its steps built, in its scratch world (once ready; null when they refused): the blueprint ghost measures it.</summary>
+        public Construct? Body => _ready ? _run.Body : null;
+
+        /// <summary>The scratch world it was built in (its body's legs are fed there).</summary>
+        public ConstructWorld Scratch => _scratch;
 
         /// <summary>Why its steps refused (once <see cref="Step"/> is true), or "".</summary>
         public string Why = "";

@@ -255,6 +255,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
         if (args.Any(a => a.Equals("--route-ends", StringComparison.OrdinalIgnoreCase)))
             return RouteEndsProbe.Cli(args); // how auto-routed links leave and arrive at their ports: turns and short legs by the ends (RouteEndsProbe.cs)
+        if (args.Any(a => a.Equals("--form-panel", StringComparison.OrdinalIgnoreCase)))
+            return HullLoft.PanelCli([.. args.SkipWhile(a => !a.Equals("--form-panel", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal))]); // a formed panel from a preset: its key, counts and checks (HullLoft.Panels.cs)
         if (args.SkipWhile(a => !a.Equals("--bill", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } billOf)
             return ConstructBill.Cli(billOf); // a blueprint's bill: the pieces it needs by key with counts (WorkOrders.cs)
         if (args.Any(a => a.Equals("--bench-parts", StringComparison.OrdinalIgnoreCase)))
@@ -340,11 +342,14 @@ public static unsafe partial class Program
         _vehicleSheet = args.Any(a => a.Equals("--vehicle-sheet", StringComparison.OrdinalIgnoreCase)); // (Program.VehicleSheet.cs)
         _shotTool |= _stressShots | _ragdollShots | _vehicleShots | _vehicleSheet;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
-        if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        var windowShot = WindowShotArgs(args); // --window-shot: pictures of the real window for an agent's own checking (Program.WindowShot.cs)
+        if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)) || windowShot)
             SavePaths.UseSmokeSandbox(args);
         else
             SavePaths.Init(args);
         _settings = Settings.Load();
+        if (_windowShot)
+            WindowShotSettings(args);
         // Steam, when this run asks for it (a Steam build, steam_appid.txt, --steam; Program.Steam.cs). A Steam build
         // started outside Steam hands over to Steam here and quits.
         if (InitSteam(args))
@@ -369,7 +374,7 @@ public static unsafe partial class Program
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _freeTravel = args.Any(a => a.Equals("--free-travel", StringComparison.OrdinalIgnoreCase)); // (dev, free travel step 2: GameTravel.cs)
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        _frameCapOff = _smoke || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
+        _frameCapOff = _smoke || _windowShot || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
@@ -397,7 +402,7 @@ public static unsafe partial class Program
                 _settings.MediaOthersWeb = MediaDirector.OthersWeb;
                 _settings.Save();
             };
-            MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
+            MediaBrowser.Allowed = !_smoke && !_shotTool && !_windowShot; // (a test run never starts a browser)
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
             LoadAudioMix(); // audio_mix.json from the Audio mixer window, if there is one (Program.AudioMixer.cs)
@@ -451,6 +456,8 @@ public static unsafe partial class Program
         {
             CrashLog.Report("main loop exception", ex);
             Console.WriteLine($"FATAL: {ex}");
+            if (_windowShot)
+                WsSay($"FAILED: {ex.Message} (the window or GL context could not start, or the run crashed: callofslop.log)");
             return 1;
         }
         finally
@@ -463,13 +470,13 @@ public static unsafe partial class Program
             MediaDirector.Shutdown(AudioSystem);
             AudioSystem.Dispose();
             Glfw.Terminate();
-            if (!_smoke && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the smoke test borrows settings temporarily; never save them
+            if (!_smoke && !_windowShot && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the smoke test borrows settings temporarily; never save them
             {
                 _settings.Save();
                 _progress.Save();
             }
         }
-        return 0;
+        return _wsExit;
     }
 
     /// <summary>The game runs without a console window, so console output goes to callofslop.log (serverlist.log for --master, which can run beside the game).</summary>
@@ -762,6 +769,8 @@ public static unsafe partial class Program
             var now = Glfw.Time;
             if (_smoke)
                 SmokeTick(now);
+            else if (_windowShot)
+                WindowShotTick(now); // (Program.WindowShot.cs)
             FrameDt = Math.Min(now - last, 0.1);
             last = now;
 
@@ -841,6 +850,7 @@ public static unsafe partial class Program
             perf.Dispose();
 
             CrashLog.Phase = "ui";
+            StormIdle(now); // (no world drawn lately: the storm's wind stops; Program.Storm.cs)
             perf = Perf.Measure(PerfArea.Ui);
             using (Perf.Measure(PerfArea.UiNewFrame)) // (the UI's sub-areas: which part of a slow UI frame was slow)
                 Ui.BeginFrame();
@@ -857,6 +867,8 @@ public static unsafe partial class Program
                 var benchCovers = Ui.WorkbenchOpen;
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiHud);
+                if (!benchCovers)
+                    DrawStormFrost(); // frost at the edges while you are out in a cold storm (Program.Storm.cs)
                 if (!benchCovers && g.OpeningActive)
                     DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
                 else if (!benchCovers)
@@ -973,6 +985,8 @@ public static unsafe partial class Program
                 SaveScreenshot(_shotName);
                 _shotName = null;
             }
+            if (_windowShot)
+                WindowShotSave(); // (--window-shot: Program.WindowShot.cs)
             Perf.Gpu?.EndFrame();
             CrashLog.Phase = "swap";
             using (Perf.Measure(PerfArea.Swap))
@@ -1077,7 +1091,7 @@ public static unsafe partial class Program
             SpaceSky.UpdateAway(map, away.awaySpace, away.awaySys, away.awayPose, away.awayGalaxy, away.awayBody, spaceT, Gfx.CameraPosition);
         else
             SpaceSky.Update(map, _session?.Space, spaceT, Gfx.CameraPosition); // a map in a star system: the real sun and moon (Source/Render/Sky/SpaceSky.cs)
-        SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
+        Lighting.Use(StormLight(map)); // this map's sun, ambient and sky-coloured fog in every scene shader, under its storm if it has one (no-op if unchanged; Program.Storm.cs)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
         // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs).
@@ -1128,6 +1142,7 @@ public static unsafe partial class Program
             WeatherFrame(Glfw.Time, Gfx.CameraPosition); // maps with weather: its time, and the sky's clouds from it (Program.Weather.cs)
         using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
             SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
+        SnowRenderer.DrawVeil(Gfx); // a cold storm's whiteout over the sky (nothing without one; Source/Render/SnowRenderer.cs)
         BenchPass(7);
     }
 
@@ -1135,7 +1150,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1196,6 +1211,13 @@ public static unsafe partial class Program
         {
             Ui.CloseInventory(); // Esc closes the Zombies parts inventory (back to the fight), not the match (Program.Zombies.cs)
             SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.CraftingOpen)
+        {
+            Ui.CloseCrafting(); // Esc closes the Crafting Terminal's panel (back to the terminal)
+            if (!MenusOpen)
+                SetMouseCaptured(true);
             return;
         }
         if (key == GlfwKey.Escape && Ui.RecipePickerOpen)
@@ -1288,9 +1310,11 @@ public static unsafe partial class Program
             return; // (Esc leaves a sign or a keypad's typing box: Program.SandboxControls.cs)
         if (_session != null && key == GlfwKey.Escape && TalkEsc())
             return; // (Esc closes the talk panel: Program.StoryTalk.cs)
+        if (_session != null && key == GlfwKey.Escape && LoreEsc())
+            return; // (Esc puts a lore item down: Program.StoryLore.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
-        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc()))
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc() || BlueprintGhostEsc()))
             return; // (Esc cancels the remover's delete question, not the match: Program.SandboxRemover.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SocketWeldEsc())
             return; // (Esc cancels the socket weld being set up, not the match: Program.SandboxSocketWeld.cs)
@@ -1360,6 +1384,8 @@ public static unsafe partial class Program
     private static void ScrollInput(double y)
     {
         var offset = new double2(0, y);
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && BlueprintGhostScroll(offset.Y))
+            return; // (a blueprint ghost out: the wheel turns it; Program.SandboxBlueprintGhost.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && TerminalScroll(offset.Y))
             return; // (a Smart Terminal under the crosshair: the wheel picks an item; Program.SandboxTerminal.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))
@@ -1452,6 +1478,8 @@ public static unsafe partial class Program
             _slotDown[i] = !blocked && binds[i] != Keybinds.Unbound && Keybinds.IsDown(_window, binds[i]);
         Keybinds.Resolve(binds, _session != null && _game is { SandboxOn: true }, _slotDown, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
         Keybinds.Collapse(_slotDown, _down); // (an action is down while any of its bindings is: pressed with the first, released with the last)
+        if (_windowShot)
+            WindowShotKeys(_down); // (--window-shot's script: Program.WindowShot.cs)
     }
 
     private static void UpdateLocalPlayer(double now)
@@ -1961,17 +1989,21 @@ public static unsafe partial class Program
             pilotView = PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
             _game.Audio.SetListener(eye, fwd);
         }
+        var talkView = TalkCamera(local, ref eye, ref fwd, ref fov); // (talking to someone: eases to a shot over your shoulder at them, Program.TalkCamera.cs)
+        if (_talkCamT > 0)
+            _game.Audio.SetListener(eye, fwd);
         var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: lying at the crash site, waking in the colony; Program.Opening.cs)
         openingView |= local != null && QuarryRideCamera(ref eye, ref fwd, ref camUp); // (the quarry duty's crew bus: Program.Quarry.cs)
         if (openingView)
             _game.Audio.SetListener(eye, fwd);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
-        RenderOrigin(local, tp || pilotView || openingView, eye, shake, out var origin, out var eyeFromOrigin);
+        RenderOrigin(local, tp || pilotView || openingView || talkView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);
         var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
         _worldEye = eye; // the first-person gun samples the baked light here (LightGrid.BeginViewModel)
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
+        StormFrame(now, eye); // a cold storm: its whiteout fog, wind and frost (nothing without one; Program.Storm.cs)
         UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)
         DevToolsFrame(eye, fwd, view * proj); // the look-at inspector's ray, while it's open (Program.DevTools.cs)
 
@@ -1992,7 +2024,7 @@ public static unsafe partial class Program
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
-            if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView) // (third person, or looking through a drone: your whole body is drawn like anyone's)
+            if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView && !talkView) // (third person, the talk camera, or looking through a drone: your whole body is drawn like anyone's)
             {
                 if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
@@ -2139,7 +2171,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !_game.OpeningActive && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening)
+        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2390,7 +2422,7 @@ public static unsafe partial class Program
         if (local is { Alive: true })
         {
             // Aimed through an optic, its lens has the reticle (Source/Render/SightLens.cs); otherwise the crosshair.
-            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn) // (the gantry's camera draws its cursor: the build bar)
+            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && _talkCamT <= 0) // (the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();

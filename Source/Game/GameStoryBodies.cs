@@ -143,7 +143,7 @@ public sealed partial class Game
 
         // Players of the people's side that no body names (a load, a reset): put away.
         foreach (var p in Players.Values)
-            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0 && !OpeningRescuerId(p.Id)) // (the opening's recovery team is its own)
+            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0)
             {
                 StoryBodyRemove(p);
                 removed = true;

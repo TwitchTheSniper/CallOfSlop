@@ -335,6 +335,17 @@ public sealed class PanelCard
         return this;
     }
 
+    /// <summary>A size with no trailing zeros: 0.3, 0.25, 1 (up to two decimals; a bill's or a queue's sizes).</summary>
+    public PanelCard AddShort(int line, float value)
+    {
+        var v = (int)MathF.Round(Math.Clamp(value, 0, 9e6f) * 100);
+        Add(line, v / 100);
+        if (v % 100 == 0)
+            return this;
+        Add(line, '.').Add(line, (char)('0' + v / 10 % 10));
+        return v % 10 == 0 ? this : Add(line, (char)('0' + v % 10));
+    }
+
     /// <summary>A list's row on <paramref name="cols"/> characters: a marker, the name cut to fit, the count at the right edge.</summary>
     public PanelCard AddRow(int line, char marker, string name, int count, int cols)
     {
@@ -466,6 +477,8 @@ public static class PanelSources
         ["terminal"] = ConstructTerminals.FillPanel,
         ["machine"] = MachineScreens.Fill,
         ["line"] = ProductionLines.Fill,
+        ["craft"] = ConstructCrafting.FillPanel,
+        ["station"] = ConstructStation.FillPanel,
         ["logic.readout"] = LogicDisplays.Readout,
         ["logic.bar"] = LogicDisplays.BarH,
         ["logic.barv"] = LogicDisplays.BarV,

@@ -215,7 +215,7 @@ public sealed partial class Ui
                     if (BigButton("STORY"))
                         _page = Page.Story;
                     if (ImGui.IsItemHovered())
-                        ImGui.SetItemTooltip("Crash-land on the Planetoid, wake in the Ministry's penal colony, and find the five sealed data centres across the five star systems."u8);
+                        ImGui.SetItemTooltip("Crash-land on Glacier, the ice world, wake in the Ministry's penal colony, and find the five sealed data centres across the five star systems."u8);
                     if (BigButton("SINGLE PLAYER"))
                         _page = Page.SinglePlayer;
                     if (BigButton("MULTIPLAYER"))
@@ -240,7 +240,7 @@ public sealed partial class Ui
                 case Page.Story:
                     Title("Story - five worlds in five star systems");
                     ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
-                    ImGui.TextColored(Dim, "You crash on the Planetoid in the Slopstar system and wake in the Ministry of Slop's penal colony. Cinder, Glacier, Caledon and Mille are each a Jump Drive away: each has a faction's home and a sealed data centre. One saved world holds them all."u8);
+                    ImGui.TextColored(Dim, "You crash on Glacier, the ice world of the Frostreach system, and wake in the Ministry of Slop's penal colony. The Planetoid, Cinder, Caledon and Mille are each a Jump Drive away: each has a faction's home and a sealed data centre. One saved world holds them all."u8);
                     ImGui.PopTextWrapPos();
                     ImGui.Spacing();
                     var storySaved = DrawStoryWorld(s); // (UiWorlds.cs)
@@ -400,7 +400,7 @@ public sealed partial class Ui
     /// <summary>Under HOST A GAME: what the lobby opens with (the last choices; all of them change in the lobby).</summary>
     /// <summary>
     /// The story, alone or in co-op: Sandbox survival (the opening and the induction) on the story's home planetoid
-    /// (<see cref="Game.StoryHomeMap"/>, in the galaxy's first system: the other worlds are a jump away).
+    /// (<see cref="Game.StoryHomeMap"/>, Glacier in Frostreach: the other systems' worlds are a jump away).
     /// </summary>
     private static void StorySettings(Settings s)
     {

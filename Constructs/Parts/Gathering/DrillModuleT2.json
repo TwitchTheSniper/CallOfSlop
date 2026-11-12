@@ -40,7 +40,19 @@
     {"min": [-0.2937, 0.775, 0.25], "max": [-0.25, 0.975, 0.2937], "color": "#3a3f46", "detail": true},
     {"min": [0.25, 0.775, 0.25], "max": [0.2937, 0.975, 0.2937], "color": "#3a3f46", "detail": true},
     {"min": [-0.14, 0.96, 1.065], "max": [-0.11, 0.99, 1.095], "color": "#d8c690", "detail": true, "shape": "sphere"},
-    {"min": [0.11, 0.96, 1.065], "max": [0.14, 0.99, 1.095], "color": "#d8c690", "detail": true, "shape": "sphere"}
+    {"min": [0.11, 0.96, 1.065], "max": [0.14, 0.99, 1.095], "color": "#d8c690", "detail": true, "shape": "sphere"},
+    {"min": [-0.2188, 0.577, -0.3095], "max": [0.2188, 0.652, -0.2345], "color": "#2b3036", "detail": true, "paintable": false, "status": true},
+    {"min": [-0.1575, -1.11, 0.8325], "max": [0.1575, -1.075, 0.8675], "color": "#98a1a9", "detail": true, "paintable": false, "finish": "steel", "work": "spin", "axis": "+y"},
+    {"min": [-0.0175, -0.876, 0.6925], "max": [0.0175, -0.841, 1.0075], "color": "#98a1a9", "detail": true, "paintable": false, "finish": "steel", "work": "spin", "axis": "+y"},
+    {"min": [-0.1575, -0.642, 0.8325], "max": [0.1575, -0.607, 0.8675], "color": "#98a1a9", "detail": true, "paintable": false, "finish": "steel", "work": "spin", "axis": "+y"},
+    {"min": [-0.0175, -0.444, 0.6925], "max": [0.0175, -0.409, 1.0075], "color": "#98a1a9", "detail": true, "paintable": false, "finish": "steel", "work": "spin", "axis": "+y"},
+    {"min": [0.2335, 0.5775, -0.1875], "max": [0.2512, 0.625, 0.1875], "color": "#f2b01e", "detail": true, "paintable": false, "finish": "hazard paint"},
+    {"min": [-0.3063, 0.576, -0.2375], "max": [-0.2438, 0.591, 0.2375], "color": "#22262b", "detail": true, "paintable": false},
+    {"min": [-0.2938, 0.591, -0.2042], "max": [-0.2563, 0.606, -0.1377], "color": "#f2b01e", "detail": true, "paintable": false},
+    {"min": [-0.2938, 0.591, -0.0902], "max": [-0.2563, 0.606, -0.0237], "color": "#f2b01e", "detail": true, "paintable": false},
+    {"min": [-0.2938, 0.591, 0.0237], "max": [-0.2563, 0.606, 0.0902], "color": "#f2b01e", "detail": true, "paintable": false},
+    {"min": [-0.2938, 0.591, 0.1377], "max": [-0.2563, 0.6135, 0.2042], "color": "#d02a1e", "detail": true, "paintable": false},
+    {"min": [-0.11, -0.352, 0.74], "max": [0.11, -0.303, 0.96], "color": "#f2b01e", "detail": true, "paintable": false, "work": "spin", "axis": "+y"}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},

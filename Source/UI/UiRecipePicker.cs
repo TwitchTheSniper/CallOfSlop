@@ -381,7 +381,7 @@ public sealed partial class Ui
     private static readonly ImColor8 RpDimCard = new(20, 22, 26, 220), RpTime = new(150, 200, 235, 255), RpCurrent = new(120, 220, 140, 255);
 
     /// <summary>One tile: its card, the output's picture, its name, the inputs as small icons with amounts, and the time a batch. True when the picture was drawn.</summary>
-    private bool RecipeTile(ImDrawListPtr dl, RpTile t, float2 at, float w, float h, float icon, bool current, bool hot)
+    private bool RecipeTile(ImDrawListPtr dl, RpTile t, float2 at, float w, float h, float icon, bool current, bool hot, bool setMark = true)
     {
         var usable = t.Value >= 0;
         var p1 = new float2(at.X + w, at.Y + h);
@@ -416,7 +416,7 @@ public sealed partial class Ui
         }
         if (t.Time.Length > 0)
             DlText(dl, new float2(at.X + 7 * _scale, y + s + 3 * _scale), usable ? RpTime : SbDim, t.Time);
-        if (current)
+        if (current && setMark) // (the Crafting Terminal's selected tile is outlined only)
             DlText(dl, new float2(p1.X - 7 * _scale - ImGui.CalcTextSize("set"u8).X, y + s + 3 * _scale), RpCurrent, "set"u8);
         ImGui.PopFont();
         if (current)

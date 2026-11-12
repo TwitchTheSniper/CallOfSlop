@@ -1,0 +1,432 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Colony Key Board",
+  "description": "Seven brass hooks with keys and labels, and an eighth with neither, worn bright.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 6.0,
+  "health": 25,
+  "armour": 0,
+  "material": "steel",
+  "color": "#6b4a2e",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.475,
+        1.25,
+        -0.015
+      ],
+      "max": [
+        0.475,
+        1.55,
+        0.015
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -0.415,
+        0.05,
+        -0.05
+      ],
+      "max": [
+        -0.375,
+        1.37,
+        -0.016
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        -0.445,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.345,
+        0.05,
+        0.12
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        0.375,
+        0.05,
+        -0.05
+      ],
+      "max": [
+        0.415,
+        1.37,
+        -0.016
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        0.345,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.445,
+        0.05,
+        0.12
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        -0.42,
+        1.42,
+        0.007
+      ],
+      "max": [
+        -0.39,
+        1.45,
+        0.055
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.415,
+        1.33,
+        0.025
+      ],
+      "max": [
+        -0.395,
+        1.43,
+        0.045
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        1.27,
+        0.003
+      ],
+      "max": [
+        -0.37,
+        1.31,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        1.42,
+        0.007
+      ],
+      "max": [
+        -0.27,
+        1.45,
+        0.055
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.295,
+        1.33,
+        0.025
+      ],
+      "max": [
+        -0.275,
+        1.43,
+        0.045
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.32,
+        1.27,
+        0.003
+      ],
+      "max": [
+        -0.25,
+        1.31,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        1.42,
+        0.007
+      ],
+      "max": [
+        -0.15,
+        1.45,
+        0.055
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.175,
+        1.33,
+        0.025
+      ],
+      "max": [
+        -0.155,
+        1.43,
+        0.045
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        1.27,
+        0.003
+      ],
+      "max": [
+        -0.13,
+        1.31,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        1.42,
+        0.007
+      ],
+      "max": [
+        -0.03,
+        1.45,
+        0.055
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.055,
+        1.33,
+        0.025
+      ],
+      "max": [
+        -0.035,
+        1.43,
+        0.045
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.08,
+        1.27,
+        0.003
+      ],
+      "max": [
+        -0.01,
+        1.31,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.06,
+        1.42,
+        0.007
+      ],
+      "max": [
+        0.09,
+        1.45,
+        0.055
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.065,
+        1.33,
+        0.025
+      ],
+      "max": [
+        0.085,
+        1.43,
+        0.045
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        1.27,
+        0.003
+      ],
+      "max": [
+        0.11,
+        1.31,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.18,
+        1.42,
+        0.007
+      ],
+      "max": [
+        0.21,
+        1.45,
+        0.055
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.185,
+        1.33,
+        0.025
+      ],
+      "max": [
+        0.205,
+        1.43,
+        0.045
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.16,
+        1.27,
+        0.003
+      ],
+      "max": [
+        0.23,
+        1.31,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3,
+        1.42,
+        0.007
+      ],
+      "max": [
+        0.33,
+        1.45,
+        0.055
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.305,
+        1.33,
+        0.025
+      ],
+      "max": [
+        0.325,
+        1.43,
+        0.045
+      ],
+      "color": "#c8a04a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.28,
+        1.27,
+        0.003
+      ],
+      "max": [
+        0.35,
+        1.31,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        1.42,
+        0.007
+      ],
+      "max": [
+        0.45,
+        1.45,
+        0.055
+      ],
+      "color": "#efd27a",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot0",
+      "at": [
+        -0.395,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot1",
+      "at": [
+        0.395,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

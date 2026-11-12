@@ -55,31 +55,39 @@
       "by": "l0"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 0,
       "socket": "t0_0",
-      "by": "b0_0"
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 6,
       "socket": "t8_0",
       "by": "b0_7",
-      "spin": 2
+      "spin": 2,
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 8,
       "socket": "t8_15",
       "by": "b7_0",
-      "spin": 3
+      "spin": 3,
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 2,
       "socket": "t0_8",
       "by": "b7_0",
-      "spin": 1
+      "spin": 1,
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
       "part": "Wire Fence 4 m",
@@ -142,94 +150,458 @@
       "by": "hang"
     },
     {
-      "part": "Corrugated Door Corner",
-      "on": 1,
-      "socket": "t8_8",
-      "by": "b0_0"
+      "part": "Bulkhead Light",
+      "on": 9,
+      "socket": "ka7_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Bulkhead Light",
+      "on": 10,
+      "socket": "ka7_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 11,
+      "socket": "ka7_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 12,
+      "socket": "ka7_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 1,
+      "socket": "t8_8",
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
       "on": 4,
       "socket": "t0_8",
       "by": "b0_7",
-      "spin": 2
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 5,
       "socket": "t0_7",
       "by": "b7_0",
-      "spin": 3
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 2,
       "socket": "t8_0",
       "by": "b7_0",
-      "spin": 1
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Roof Slope 4x4 m",
-      "on": 23,
+      "part": "Concrete Wall Corner",
+      "on": 27,
       "socket": "t0_0",
-      "by": "b0_0"
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Window Corner",
+      "on": 28,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 29,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 30,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 31,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 35,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 35,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 35,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 35,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 36,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 36,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 37,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 37,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
       "part": "Door Hinge",
-      "on": 23,
+      "on": 27,
       "socket": "hinge",
       "by": "base"
     },
     {
       "part": "Steel Flush Door 1.5x2.25 m",
-      "on": 28,
+      "on": 44,
       "socket": "leaf",
-      "by": "hang"
+      "by": "hang",
+      "paint": "#4b5157",
+      "finish": "worn paint"
     },
     {
-      "part": "Concrete Wall Corner",
+      "part": "Text Sign",
+      "on": 32,
+      "socket": "fb7_5",
+      "by": "back",
+      "text": [
+        "CELL BLOCK A - THERE IS NO CELL BLOCK B"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Strip Light",
+      "on": 34,
+      "socket": "ka7_0",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 28,
+      "socket": "fb7_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Concrete Window Corner",
       "on": 3,
       "socket": "t8_8",
-      "by": "b0_0"
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
       "part": "Concrete Door Corner",
       "on": 6,
       "socket": "t0_8",
       "by": "b0_7",
-      "spin": 2
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
       "on": 7,
       "socket": "t0_7",
       "by": "b7_0",
-      "spin": 3
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
       "on": 4,
       "socket": "t8_0",
       "by": "b7_0",
-      "spin": 1
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
       "part": "Concrete Floor 4x4 m",
-      "on": 30,
+      "on": 49,
       "socket": "t0_0",
-      "by": "b0_0"
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 31,
+      "socket": "fa0_0",
+      "by": "k0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 54,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 53,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 54,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 53,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 55,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 56,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 53,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 58,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
       "part": "Door Hinge",
-      "on": 31,
+      "on": 50,
       "socket": "hinge",
       "by": "base"
     },
     {
       "part": "Wood Flush Door 1.5x2.25 m",
-      "on": 35,
+      "on": 63,
       "socket": "leaf",
-      "by": "hang"
+      "by": "hang",
+      "paint": "#2f5a3c",
+      "finish": "painted wood"
+    },
+    {
+      "part": "Concrete Canopy 2 m",
+      "on": 50,
+      "socket": "fa7_10",
+      "by": "back7",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 65,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 65,
+      "socket": "sign",
+      "by": "back",
+      "text": [
+        "WARDEN"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 49,
+      "socket": "fb7_5",
+      "by": "back",
+      "text": [
+        "ROLL CALL 05:00. AND 05:10. AND 05:20."
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 49,
+      "socket": "fb0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 52,
+      "socket": "fa7_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Computer",
+      "on": 3,
+      "socket": "t15_15",
+      "by": "foot10",
+      "spin": 1
+    },
+    {
+      "part": "Filing Cabinet",
+      "on": 52,
+      "socket": "kb7_0",
+      "by": "wall"
+    },
+    {
+      "part": "Cast Iron Radiator",
+      "on": 49,
+      "socket": "ka7_0",
+      "by": "back"
+    },
+    {
+      "part": "Wall Clock",
+      "on": 49,
+      "socket": "kb7_5",
+      "by": "back"
+    },
+    {
+      "part": "Strip Light",
+      "on": 52,
+      "socket": "ka7_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 50,
+      "socket": "kb7_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Battery",
+      "on": 51,
+      "socket": "kb7_10",
+      "by": "-z",
+      "paint": "#4b5157"
     },
     {
       "part": "Bunk",
@@ -243,5 +615,15 @@
       "socket": "t7_0",
       "by": "bottom"
     }
+  ],
+  "wires": [
+    [
+      48,
+      47
+    ],
+    [
+      76,
+      75
+    ]
   ]
 }

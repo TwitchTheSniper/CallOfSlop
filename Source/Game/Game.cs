@@ -265,6 +265,7 @@ public sealed partial class Game : IDisposable
     {
         World.Enter(Place); // (free when it is the only Game: WorldContext.cs)
         OpeningNow = now; // (the survival opening's beats are timed on this: GameSandboxOpening.cs)
+        HullLoft.PumpPanels(); // formed panels seen for the first time: their facets, a slice a tick (HullLoft.Panels.cs)
         AllocProfile.Mark("poll");
         if (!Net.IsOffline)
         {

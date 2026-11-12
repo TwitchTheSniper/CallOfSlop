@@ -177,7 +177,9 @@ public static partial class SelfTest
             if (all != ConstructParts.All.Count(d => d.Offered) || wheels < 1 || wheels >= all || none != 0 || !picked)
                 Fail("parts menu: the window doesn't list, search or pick parts right");
 
-            SandboxInventoryTabs(g, ui, Frames);
+            var t = now;
+            SandboxInventoryTabs(g, ui, Frames, s => Run(g, ref t, s));
+            now = t;
 
             // Open, steady frames: nothing allocated (least of three 60-frame rounds after a warm-up), with the badges
             // showing "inf" (no count source) and with counts from a source.
@@ -240,7 +242,7 @@ public static partial class SelfTest
     /// narrows within a node, the Blueprints tab lists every blueprint and taking one builds it in front of the player,
     /// the Tools tab lists every tool model and taking one takes it out.
     /// </summary>
-    private static void SandboxInventoryTabs(Game g, Ui ui, Action<int> frames)
+    private static void SandboxInventoryTabs(Game g, Ui ui, Action<int> frames, Action<double> advance)
     {
         var me = g.Local!;
         ui.SandboxPartsKeepOpen = true;
@@ -291,7 +293,7 @@ public static partial class SelfTest
 
         SandboxInventorySearch(g, ui, frames);
 
-        // Blueprints: every one listed; taking the highlighted one builds it in front of the player.
+        // Blueprints: every one listed; taking the highlighted one makes it ready on the host and hands out its ghost (the window closes), placed in front of the player.
         ui.SetSandboxInventoryTab(Ui.SbTab.Blueprints);
         frames(2);
         var bpListed = ui.SandboxPartsListed;
@@ -301,9 +303,18 @@ public static partial class SelfTest
         var bpPick = ui.SandboxInventoryHighlight;
         var before = g.Constructs.Bodies.Count;
         var took = ui.SandboxInventoryTake(g);
-        var built = g.Constructs.Bodies.Count == before + 1;
+        for (var k = 0; k < 60 && g.GhostState == BlueprintGhostState.Preparing; k++)
+            advance(1.0 / 30); // (GameSandboxBlueprintGhost.cs: made in the spawner's slices)
+        var ghost = g.GhostState == BlueprintGhostState.Carrying;
+        var fwd = GravityFrames.FlatForward(me.Position, me.Yaw);
+        var radius = Game.GhostRadius(g.GhostMin, g.GhostMax);
+        for (var k = 0; k < 6 && ghost && g.GhostState == BlueprintGhostState.Carrying; k++)
+            g.SpawnPlaceSend(ConstructWorld.Ground(World.Query, me.Position + fwd * (radius + 3f + 4f * k)), me.Yaw); // (further out while something stands there)
+        var built = ghost && g.Constructs.Bodies.Count == before + 1;
+        ui.OpenSandboxParts(focusSearch: false); // (the Spawn closed it)
+        frames(1);
         ui.SetSandboxPartsSearch("");
-        Line($"inventory blueprints: {bpListed} of {ConstructBuild.Blueprints.Count} listed, \"buggy\" {bpSearch}; taking the {(bpPick >= 0 ? ConstructBuild.Blueprints[bpPick].Name : "?")} built it {built}");
+        Line($"inventory blueprints: {bpListed} of {ConstructBuild.Blueprints.Count} listed, \"buggy\" {bpSearch}; taking the {(bpPick >= 0 ? ConstructBuild.Blueprints[bpPick].Name : "?")} gave a ghost {ghost}, placed and built {built}");
         if (bpListed != ConstructBuild.Blueprints.Count || bpSearch < 1 || bpSearch >= bpListed || !took || !built)
             Fail("inventory: the Blueprints tab doesn't list or build the blueprints");
 

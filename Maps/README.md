@@ -1,6 +1,6 @@
 # Making maps for Call of Slop
 
-Every map is a single `.json` file, kept in a **map pack**: a folder in this `Maps` folder. The maps that ship with the game are ordinary map files in packs such as `Legacy` (`Maps/Legacy`: the 24 Classic maps, the six Collision Point maps and the six High Ground terrain maps). Open any of them to see how a real map is put together.
+Every map is a single `.json` file, kept in a **map pack**: a folder in this `Maps` folder. The maps that ship with the game are ordinary map files in packs: `Sandbox`, `Planetoids`, `Zombies` and `Dev` (test maps, Proto Box and Pocket Planet among them). Open any of them to see how a real map is put together. The Legacy, Cluttered, World Tour and Space packs were removed on 2026-11-12 (the game is Sandbox now); they are in git history, last in commit 7748ca82 (`git show 7748ca82:Maps/Legacy/02-Courtyard.json`).
 
 To add a map, drop its file into a pack folder, for example your own `Maps/MyPack/Bunker.json`, then click **Refresh maps** in the lobby. You don't need to restart or recompile. See [Map packs](#map-packs) below.
 
@@ -315,7 +315,7 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 - Keep slopes where people fight below about 25° (full speed), so movement feels smooth.
 - `CallOfSlop.exe --check-map` prints the terrain size, height range and how much of it is rock.
 
-**Lessons from the High Ground maps** (`Maps/Legacy` 31-36, see `DESIGN-HighGround.md` there):
+**Lessons from the High Ground maps** (`Maps/Legacy` 31-36 and `DESIGN-HighGround.md`, removed 2026-11-12: in git history at 7748ca82):
 
 - **Fair terrain:** build one half and turn it 180 degrees about the centre for the other team (negate every x and z, swap N/S and E/W doors, flip stair and ramp `dir`). A cliff's `side` stays the same when you turn it. Keep `noise` small (under about 1 m) so it doesn't tip the balance.
 - **Hill zones need level ground.** Players count as on a hill from 1 m below its centre to 3 m above it, so put a `flatten` pad (radius a little over the zone) under a hill on uneven ground. Hand-place `hills` on the line where both teams have the same walk.
@@ -741,7 +741,7 @@ The outline is generated in single precision from the spec, deterministically (s
 A map can float in the air: give it a top-level `"fallKill"` height and leave out the `Ground` op. With no ground there is
 nothing under the decks, and anyone whose feet drop below `fallKill` dies: the server kills them like the pause menu's
 "Kill yourself" (a death, no kill for anyone, "Suicide" in the feed, the usual respawn). The Space pack's **Stratos
-Station** (`Maps/Space/01-SkyStation.json`, written by `tools/space/skystation.py`) is the example.
+Station** (`Maps/Space/01-SkyStation.json`, written by `tools/space/skystation.py`; the pack was removed on 2026-11-12, in git history at 7748ca82) was the example.
 
 - **Decks:** round platforms are cosmetic `Mesh` cylinders over hidden `Collider` strips just inside them (collision only,
   never drawn, so they cost no draw calls: map boxes are drawn one by one). Put the mesh's top 2 cm above the colliders.
@@ -870,7 +870,7 @@ Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (
 
 A map can be a small world you walk all the way round: give it a `"gravity"` field that pulls towards a point, put a
 `Planet` op there, and place everything else by **latitude and longitude** with the Surface ops. The **Pocket Planet**
-map in the Space pack (`Maps/Space/02-Planet.json`, written by `tools/planet/make_pocket_planet.py`) is the example.
+map in the Dev pack (`Maps/Dev/PocketPlanet.json`, written by `tools/planet/make_pocket_planet.py`) is the example.
 
 ```json
   "halfX": 90, "halfZ": 90,
@@ -928,8 +928,8 @@ like a prop's yaw. Every surface shape stands upright on the ground where it is.
 One map can hold **several gravity regions**: a normal deck, a low-gravity hall, a wall or ceiling you fight on, and a
 rock with a pull of its own you walk all the way round. Give `"gravity"` the type `zones`: the field at any position is
 the **first zone in the list that contains it**, else the `default`. The field is worked out from the position and the
-map file on every PC, so nothing new goes over the network. The Space pack's **Keelhaul Yard** (`03-KeelhaulYard.json`) and **Twin Shard** (`04-TwinShard.json`)
-are full maps.
+map file on every PC, so nothing new goes over the network. The Space pack's **Keelhaul Yard** (`03-KeelhaulYard.json`) and **Twin Shard** (`04-TwinShard.json`; removed 2026-11-12, in git history at 7748ca82)
+were full maps.
 
 ```json
   "gravity": { "type": "zones",
@@ -1160,7 +1160,7 @@ Each folder directly inside `Maps` is a pack. In the lobby, players first pick a
 ```
 Maps/
   README.md            this guide
-  Legacy/              the shipped pack (Classic, Collision Point and High Ground maps)
+  Sandbox/             a shipped pack (Planetoids, Zombies and Dev are the others)
     pack.json
     01-ProtoBox.json
     ...
@@ -1189,9 +1189,9 @@ Maps/
 | `name` | Shown in the lobby's pack list. Without it (or without a pack.json at all) the folder name is used. |
 | `description` | One line, shown under the pack's map count. Plain ASCII only, like map descriptions. |
 | `author` | Shown as "(by ...)". |
-| `order` | Sort position in the pack list (Legacy is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
+| `order` | Sort position in the pack list (Zombies is 8, Sandbox 910, Dev 920). Ties sort by name. Default 1000. The "Other" pack always comes last. |
 | `trueRandom` | `false` keeps the pack out of **True Random** (random from every pack), like the Dev test maps. Its maps can still be picked directly. Default `true`. Packs with `false` are listed last. |
-| `destructible` | `true`: the pack's maps have destructible buildings unless a map says `"destructible": false` (the World Tour). Default `false`. See [Buildings/README.md](../Buildings/README.md#destruction). |
+| `destructible` | `true`: the pack's maps have destructible buildings unless a map says `"destructible": false` (the World Tour had it; removed 2026-11-12). Default `false`. See [Buildings/README.md](../Buildings/README.md#destruction). |
 
 Map names must still be unique across **all** packs, because that's how servers and clients find a map. Packs only change how the lobby groups maps, and which [pack-local assets](#where-assets-go) a map can use.
 
@@ -1315,6 +1315,30 @@ grow into hurricanes, move and die over land. The sky's clouds come from it (it 
 
 Check a section without starting the game: `CallOfSlop --weather-sim --seed 7 --days 10` prints every storm every 12
 hours into `callofslop.log` (`--png out{day}.png` writes a picture of the region each day).
+
+## Storm
+
+A `storm` section gives a cold world its weather at ground level (docs/weather/WEATHER.md, "Cold storm"): snow
+driven sideways round you, a whiteout that closes the view in (the fog and the sky go to the storm's colour), frost
+creeping in at the edges of the screen and the wind howling while you are out in it. Under a roof, in a cabin or down
+a mine the snow and frost stop and the wind goes dull. It rises and falls through lulls and gusts, and thins out
+high above the ground. Looks and sound only, worked out on each PC: not part of the map's fingerprint.
+
+```
+"storm": { "visibility": 45, "clear": 220 },
+```
+
+`true` gives the defaults. Keys (all optional):
+
+| Key | Default | What it does |
+|---|---|---|
+| `visibility` | 45 | Metres you see at the height of the storm (10 to 2000). |
+| `clear` | 220 | Metres you see in its calmest lull (10 to 5000, at least `visibility`). |
+| `strength` | 1 | How hard it blows at its worst, 0 to 1: the snow, the wind and the whiteout together. |
+| `cycle` | 300 | Seconds from one lull to the next (20 to 7200). |
+| `wind` | 16 | The wind at its height, m/s (0 to 60): how fast the snow goes past. |
+| `color` | [0.8, 0.85, 0.9] | The whiteout in full daylight; the day's light dims it at dusk and night. |
+| `ceiling` | 700 | Metres above the ground where it is gone (it thins from half of that), so a ship climbing out leaves it. |
 
 ## Testing a map
 

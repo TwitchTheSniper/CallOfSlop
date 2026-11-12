@@ -13,7 +13,7 @@ public sealed class PieceRackParts : IPartGenerator
     public string Name => "piece_rack_parts";
 
     private const string Out = "Constructs/Parts/PieceRacks";
-    private const string Frame = "#35556b", Bar = "#2c2e30", Rail = "#d9a21c", Slat = "#7d8388", Mark = "#e8e2d0";
+    private const string Frame = "#35556b", Bar = MachineLook.Base; // (the family's body colour takes paint; the rest is MachineLook's tones)
     // The hold: inside the posts and rails, 3 mm over the slats, past the sill and short of the far posts.
     private const double Side = 0.115, Bed = 0.133, EndIn = 0.074, EndOut = 0.02, Top = 0.01;
 
@@ -40,14 +40,28 @@ public sealed class PieceRackParts : IPartGenerator
         for (var k = 1; k < 4; k++)
         {
             var x = x0 + runner + (x1 - x0 - 2 * runner) * k / 4;
-            p.Add(Box([x - 0.03, y0 + 0.105, z0 + 0.04], [x + 0.03, y0 + 0.13, z1 - 0.04], Slat, detail: true));
+            p.Add(MachineLook.D([x - 0.03, y0 + 0.105, z0 + 0.04], [x + 0.03, y0 + 0.13, z1 - 0.04], MachineLook.Steel, "steel"));
         }
         // The amber top rails: what bites a shin in a factory.
-        p.Add(Box([x0 + 0.01, y1 - rail, z0 + 0.02], [x0 + 0.03 + post, y1, z1 - 0.02], Rail, detail: true));
-        p.Add(Box([x1 - 0.03 - post, y1 - rail, z0 + 0.02], [x1 - 0.01, y1, z1 - 0.02], Rail, detail: true));
+        p.Add(MachineLook.D([x0 + 0.01, y1 - rail, z0 + 0.02], [x0 + 0.03 + post, y1, z1 - 0.02], MachineLook.Accent));
+        p.Add(MachineLook.D([x1 - 0.03 - post, y1 - rail, z0 + 0.02], [x1 - 0.01, y1, z1 - 0.02], MachineLook.Accent));
+        // Fill marks along its length: a dark mark across each rail at every quarter, and a steel load plate on the first post each side.
+        for (var k = 1; k < 4; k++)
+        {
+            var z = z0 + (z1 - z0) * k / 4;
+            p.Add(MachineLook.D([x0 + 0.004, y1 - rail - 0.004, z - 0.02], [x0 + 0.032 + post, y1 + 0.004, z + 0.02], MachineLook.Ink));
+            p.Add(MachineLook.D([x1 - 0.032 - post, y1 - rail - 0.004, z - 0.02], [x1 - 0.004, y1 + 0.004, z + 0.02], MachineLook.Ink));
+        }
+        var plateY = y0 + high + (y1 - rail - y0 - high) * 0.55;
+        p.Add(MachineLook.D([x0 + 0.006, plateY, z0 + 0.045], [x0 + 0.022, plateY + 0.14, z0 + 0.155], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([x1 - 0.022, plateY, z0 + 0.045], [x1 - 0.006, plateY + 0.14, z0 + 0.155], MachineLook.Steel, "steel"));
         // The way in: an end sill at -z with a pale mark where the conveyor meets it.
         p.Add(Box([x0 + runner - 0.005, y0 + 0.005, z0], [x1 - runner + 0.005, y0 + 0.1, z0 + 0.05], Bar));
-        p.Add(Box([-0.2 + (x0 + x1) / 2, y0 + 0.02, z0 - 0.004], [0.2 + (x0 + x1) / 2, y0 + 0.08, z0 + 0.01], Mark, detail: true));
+        // (the in side's white band across the sill, hazard paint over it: look.md "Machine look")
+        p.Add(MachineLook.D([x0 + runner + 0.01, y0 + 0.02, z0 - 0.006], [x1 - runner - 0.01, y0 + 0.078, z0 + 0.008], MachineLook.In));
+        MachineLook.Hazard(p, [x0 + runner + 0.01, y0 + 0.082, z0 - 0.006], [x1 - runner - 0.01, y0 + 0.098, z0 + 0.008]);
+        MachineLook.Arrow(p, 1, y0 + high - 0.002, 1, 2, 1, z0 + 0.3, x0 + runner / 2, 0.3, runner * 0.46, MachineLook.In);
+        MachineLook.Arrow(p, 1, y0 + high - 0.002, 1, 2, 1, z0 + 0.3, x1 - runner / 2, 0.3, runner * 0.46, MachineLook.In);
         BlockSockets(p, nx, ny, nz, faces: "y", skip: ["+y"], limit: new() { ["-y"] = (3, 6) });
         var wide = nx * c.Cell;
         var deep = nz * c.Cell;

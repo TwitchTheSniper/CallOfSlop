@@ -681,6 +681,7 @@ public sealed partial class Audio : IDisposable
         DisposeEfx();
         DisposeZombieSources();
         DisposeCrowdSources();
+        DisposeStorm(); // Audio.Storm.cs
         DisposeEngineSources();
         DisposeBuildSources();
         Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());

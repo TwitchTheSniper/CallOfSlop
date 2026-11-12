@@ -20,7 +20,7 @@
       "answers": [
         { "if": "?me Likes ?them < 8", "keep": true, "say": [ "That's between me and page two.", "Nobody reads page two. Let's keep it that way." ] },
         { "then": [ "?me Likes ?them +3" ], "say": [ "A dedication. 'For my mother, who kept the light on.' She kept a lighthouse. A small one." ] } ] },
-    { "id": "pettigrew-lighthouse", "who": "Warden Pettigrew", "ask": "Your mother kept a lighthouse?", "after": "pettigrew-page-two", "priority": 9,
+    { "id": "pettigrew-lighthouse", "who": "Warden Pettigrew", "ask": "Your mother kept a lighthouse?", "after": [ "pettigrew-page-two", "pettigrew-lantern" ], "priority": 9,
       "answers": [
         { "then": [ "?me Likes ?them +3" ], "say": [ "On the Brine Flats. Ships steered by her lamp, until everyone steered by the Light instead." ] } ] },
     { "id": "pettigrew-light", "who": "Warden Pettigrew", "ask": "Steered by the Light?", "after": "pettigrew-lighthouse", "priority": 9,
@@ -60,20 +60,20 @@
       "answers": [
         { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "So I know where to stand when you try one." ] },
         { "then": [ "?me Likes ?them +2" ], "say": [ "Habit. Twenty-two years of it. Seven exits. There were eight, once." ] } ] },
-    { "id": "bellweather-eighth", "who": "Sergeant Bellweather", "ask": "What happened to the eighth?", "after": "bellweather-exits", "priority": 8,
+    { "id": "bellweather-eighth", "who": "Sergeant Bellweather", "ask": "What happened to the eighth?", "after": [ "bellweather-exits", "bellweather-hook" ], "priority": 8,
       "answers": [
         { "if": "?me Likes ?them < 8", "keep": true, "say": [ "Bricked up. Next question, {them.first}." ] },
-        { "then": [ "?me Likes ?them +2" ], "say": [ "Bricked up, after somebody used it. Year three. North side. Dust storm." ] } ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Bricked up, after somebody used it. Year three. North side. A white-out." ] } ] },
     { "id": "bellweather-who", "who": "Sergeant Bellweather", "ask": "Who used it?", "after": "bellweather-eighth", "priority": 9,
       "answers": [
         { "if": "?me Likes ?them < 15", "keep": true, "say": [ "Nobody gets out of this colony. Write that down. Nettles will." ] },
         { "then": [ "?me Likes ?them +3" ], "say": [ "Edie Marsh. Walked out into the storm towards the Light. Said she'd see what was under it." ] } ] },
-    { "id": "bellweather-edie-name", "who": "Sergeant Bellweather", "ask": "Who was Edie Marsh?", "after": "crumb-sergeant", "priority": 9,
+    { "id": "bellweather-edie-name", "who": "Sergeant Bellweather", "ask": "Who was Edie Marsh?", "after": [ "crumb-sergeant", "crumb-photo-gap" ], "priority": 9,
       "if": "not ?them Asked 'topic bellweather-who'",
       "answers": [
         { "if": "?me Likes ?them < 15", "keep": true, "then": [ "?me Likes 'Officer Crumb' -3" ],
           "say": [ "Where did you hear that name? ...Crumb. Of course it was Crumb." ] },
-        { "then": [ "?me Likes ?them +3" ], "say": [ "An inmate. Year three. Walked out into a dust storm towards the Light. North door." ] } ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "An inmate. Year three. Walked out into a blizzard towards the Light. North door." ] } ] },
     { "id": "bellweather-edie", "who": "Sergeant Bellweather", "ask": "Did she ever come back?", "after": [ "bellweather-who", "bellweather-edie-name" ], "priority": 9,
       "answers": [
         { "then": [ "?me Likes ?them +3" ], "say": [ "No. I still count, though. If a door's open some night, I want to know it was her." ] } ] },
@@ -164,8 +164,64 @@
         { "if": "?me Likes ?them >= 15", "then": [ "?them Suspicion -1" ],
           "say": [ "I had to! One line. I made the handwriting very, very small. Sorry, {them.first}." ] },
         { "say": [ "I had to. Rules. I did spell your name wrong. Accidentally. Mostly." ] } ] },
-    { "id": "nettles-north-wall", "who": "Officer Nettles", "ask": "What's odd about the north wall?", "after": "nettles-clipboard", "priority": 1,
+    { "id": "nettles-north-wall", "who": "Officer Nettles", "ask": "What's odd about the north wall?", "after": [ "nettles-clipboard", "nettles-margin" ], "priority": 1,
       "answers": [
-        { "say": [ "There's a patch where the bricks are newer. Like a door was there. I'm not allowed to ask. I wrote it down." ] } ] }
+        { "say": [ "There's a patch where the bricks are newer. Like a door was there. I'm not allowed to ask. I wrote it down." ] } ] },
+
+    // ==== What the player has looked at closely (Story/Lore/PenalColony.json): each thing is somebody's ====
+    { "id": "pettigrew-rule-212", "who": "Warden Pettigrew", "ask": "What's rule 212 for?", "if": "?them Inspected 'lore rule-212'", "priority": 7,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "For inmates who ask about rule 212." ] },
+        { "if": "?me Likes ?them < 6", "keep": true, "say": [ "It is for following, {them.first}. Rules are not for being for." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Head office sent it down in year one, no reason attached. I asked for one. I was found a task." ] } ] },
+    { "id": "pettigrew-memo-1144", "who": "Warden Pettigrew", "ask": "Which almanac did memo 1,144 mean?", "if": "?them Inspected 'lore memo-1144'", "priority": 6,
+      "answers": [
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "The in-tray is for staff, {them.first}. You are not staff.", "Memos are read by their addressee. You are not their addressee." ] },
+        { "then": [ "?me Likes ?them +1" ], "say": [ "I never found out. I asked twice. The second time they sent me a memo about asking." ] } ] },
+    { "id": "pettigrew-lantern", "who": "Warden Pettigrew", "ask": "That brass lantern in your office...", "if": "?them Inspected 'lore brine-lantern'", "priority": 7,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Is not for you." ] },
+        { "if": "?me Likes ?them < 5", "keep": true, "say": [ "It is a lantern. It is on a stool. Both are regulation." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "The last lamp off the Brine Flats. I trim it every Sunday. Rule 40 says no flames indoors. I wrote rule 40." ] } ] },
+    { "id": "bellweather-tally", "who": "Sergeant Bellweather", "ask": "Whose tally is that in the cell block?", "if": "?them Inspected 'lore edie-tally'", "priority": 7,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Yours, soon, if you keep asking." ] },
+        { "if": "?me Likes ?them < 5", "keep": true, "say": [ "Some inmate's. Every cell block has one. Leave it be." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Year three. Same bunk as yours. I put the tick under it the night she went. Habit." ] } ] },
+    { "id": "bellweather-hook", "who": "Sergeant Bellweather", "ask": "The eighth hook on your key board...", "if": "?them Inspected 'lore eighth-hook'", "priority": 7,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Leave my board be, {them.first}." ] },
+        { "if": "?me Likes ?them < 10", "keep": true, "say": [ "Is a hook. Hooks hang. Next question." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "The north door's. Bricked up, so no key. I touch it on my rounds. Twenty-two years. Don't make it a thing." ] } ] },
+    { "id": "bellweather-marker", "who": "Sergeant Bellweather", "ask": "What was past marker nine?", "if": "?them Inspected 'lore marker-nine'", "priority": 6,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Me, if you go looking." ] },
+        { "then": [ "?them Suspicion +1" ], "say": [ "Rock. Nothing past marker nine but rock, {them.first}. Rock, and people asking about it." ] } ] },
+    { "id": "crumb-photo-gap", "who": "Officer Crumb", "ask": "Who's missing from year three's photos?", "if": "?them Inspected 'lore photo-gap'", "priority": 7,
+      "answers": [
+        { "if": "?me Likes ?them < 5", "keep": true, "say": [ "Missing? Nobody's missing. They're just... not on the board." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Edie Marsh. Lovely laugh. The Sergeant took her photo down himself, the morning after. Don't say I said." ] } ] },
+    { "id": "crumb-barnaby", "who": "Officer Crumb", "ask": "Barnaby?", "if": "?them Inspected 'lore crumb-postcard'", "priority": 7,
+      "answers": [
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Nobody calls me that. Mum did. She kept a jar for my rocket. It's the tea money now." ] } ] },
+    { "id": "crumb-grubb", "who": "Officer Crumb", "ask": "Who's Foreman Grubb?", "if": "?them Inspected 'lore marker-nine'", "priority": 6,
+      "answers": [
+        { "if": "?me Likes ?them < 5", "keep": true, "say": [ "A foreman. Big hands, small words. Why?" ] },
+        { "learn": "Old Mine", "then": [ "?me Likes ?them +1" ],
+          "say": [ "Ran the old mine till it shut. Let nobody past marker nine. East of the fence, it was. Not from me." ] } ] },
+    { "id": "nettles-margin", "who": "Officer Nettles", "ask": "You left your clipboard on a crate.", "if": "?them Inspected 'lore lunch-log'", "priority": 7,
+      "answers": [
+        { "then": [ "?me Likes ?them +2" ], "say": [ "I did? I never do that. ...Did you read the margin? Don't tell the Sergeant about the margin." ] } ] },
+    { "id": "nettles-list", "who": "Officer Nettles", "ask": "Am I on your list yet?", "after": "nettles-margin", "again": true, "priority": 4,
+      "answers": [
+        { "if": "?me Likes ?them >= 20", "say": [ "You are! Third. Under Crumb and a dog I met once." ] },
+        { "if": "?me Likes ?them >= 8", "say": [ "Pencilled in. Pencil is very nearly pen." ] },
+        { "say": [ "Not yet. It's a high bar. Well. It's a bar." ] } ] },
+    { "id": "nettles-page-nine", "who": "Officer Nettles", "ask": "Your old schoolbook's missing chapter nine.", "if": "?them Inspected 'lore page-nine'", "priority": 7,
+      "answers": [
+        { "then": [ "?me Likes ?them +1" ], "say": [ "Everyone's is! It's a misprint. Miss Abernathy said so. Every copy, the same misprint. Isn't that funny?" ] } ] },
+    { "id": "nettles-the-others", "who": "Officer Nettles", "ask": "What were 'The Others'?", "after": "nettles-page-nine", "priority": 8,
+      "answers": [
+        { "say": [ "Other lights, I suppose? But there's only the one. Why would anyone print a whole chapter about nothing?" ] } ] }
   ]
 }

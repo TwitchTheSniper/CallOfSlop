@@ -98,6 +98,89 @@ journal off. [Fusing](building-and-tools.md#fusing) caches plain parts only. So 
 parts on big bodies, put it on the body's own segment, and prefer a **finish or paint** (free: no parts, no rebuild cost)
 over a part wherever a finish does the job. A construct holds 16,000 parts ([Performance and caps](parts-and-data.md#performance-and-caps)).
 
+## Machine look
+
+Production machinery reads as machinery, not as a painted box with a screen (the user, 2026-11-11). Every machine a generator
+makes (the Extruder and Formers, the Press and Die Lathe, the Line Console today; a Panel Former, a Laser Cutter, a building
+station, arms and cranes to come) follows seven points. The shared pieces are `Source/PartKit/MachineLook.cs`.
+
+1. **Shape says function.** A silhouette that reads at 50 m and differs from its neighbours': the Extruder is long and low
+   with a hopper at the back and a die head at the front; the Press a tall open frame with a ram; a Former a headstock
+   with a big bare hub; the console a desk. A new machine picks a shape no other has.
+2. **Work is visible and moves, and stops when the machine stops.** A detail box may carry `"work"`: `"spin"` (about
+   `"axis"`, through its own centre), `"stroke"` (`"travel"` metres along `"axis"` and back: a ram), `"glow"` (hot orange,
+   its own dull colour at rest: a die) or `"smoke"` (puffs from its top). Drawn only while `ProductionLines.Working` says
+   the machine runs, from the store each peer already has: nothing on the server or the wire. The status lamp's band and
+   the bin's fill are the game's own.
+3. **Flow reads one way.** The in side has a white band and arrow, the out side an orange band and arrow, and every port
+   where something moves has `hazard paint`.
+4. **Three tones**, never one colour: a dark structural base, the family's body colour, a bright accent only on what a
+   hand works or what moves. Base, steel, accent and markings are `"paintable": false`, so a machine painted whole (a
+   station's colour in a blueprint) keeps its three tones; only the body takes the paint.
+5. **Tier by build**: more guarding, cladding and piping at a higher tier, the same silhouette
+   ([Machine tiers](production.md#machine-tiers)).
+6. **One control face** on the aisle side: the screen's middle about 1.5 m above the machine's floor, the status lamp
+   over it (`PartScreens.Mount(..., lamp: true)`), and under the plate a shelf of three accent buttons and a red stop at
+   about 1.3 m (`MachineLook.Buttons`). A machine lower than that stands its screen on a board (the small Extruder's).
+7. **Real finishes**, by name on the box (`"finish"`): `tread plate` on tops that are walked on, `steel` on working
+   parts, `hazard paint` on strips; the body keeps its paint.
+
+| Tone | Colour | On |
+| --- | --- | --- |
+| Base | `#22262b` | skirts, beds, frames, guards, housings, the control board |
+| Steel | `#98a1a9`, finish `steel` | dies, collars, rams, hubs, chucks' plates, work tops |
+| Accent | `#f2b01e` | buttons, pulleys, chucks, a ram's hazard edge |
+| In / Out | `#ecebe4` / `#f07818` | the band and arrow of each side |
+| Stop | `#d02a1e` | the stop button |
+| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020` | cladding; takes paint |
+
+Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
+keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a
+face a Die Frame, a piece or a conveyor stands against is under 2 cm proud; faces sit a few mm apart by construction.
+Budget: about 40 look boxes at tier 1 or the small class, 80 at the top; racks and junctions about 25. Not done yet:
+storage (Materials Bin, Storage Volume and Parts Shelf are hand-made files), tier by build on the Extruders, Formers,
+Press and Die Lathe, and a Press has no status lamp.
+
+**The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
+([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is
+mounted and the faces are settled: no solid box, socket, port or screen moves. `Site.Add` leaves out a box that would
+cover a port, a socket, a bin, a tray, the screen, the aisle or an Assembler's open front (the "Machine tier looks"
+rules, by construction). What `TierStyle` draws as `dark`, `edge` or `pipe` stops taking paint, so a painted machine
+keeps a dark stack and a steel blade.
+
+- **A line's cues are the same at every tier.** Smelter: a white-rimmed hopper, a dark charge door with two slots and
+  a tap hole that glow over a steel spout, a collared stack that smokes. Foundry: the mouth glows, a steel crucible on a
+  trunnion pours into three moulds, both stacks smoke. Sawmill: steel rails through the frame, a carriage and log that
+  feed (`stroke`), the blade turns (`spin`), planks over the out bed. Assembler family: the bit, an accent collar and
+  a steel platen stroke over the trays; a Thruster Assembler's nozzle glows, a Tailor's bolt turns. Tier 5 keeps
+  its lit core instead of a mouth.
+- **Flow**: a band over or under each chute port (white in, orange out) with a black arrow pointing back to front,
+  hazard paint on the port's other side; tread plate and hazard ends on a furnace's aisle; an orange strip on the
+  tray or the trays' lip.
+- **Tier by build** adds, never reshapes: tier 2 a guard rail round the hopper, a second stack collar, a door frame,
+  hazard strips at the blade and on an Assembler's front posts; tier 3 a pipe main with a valve wheel, a third plank,
+  a cable run; tier 4 steel or tread-plate cladding; tier 5 a third collar. A stack's cap grows with the tier.
+- A box added with `clear: true` gives way to a detail the tier already has there, so a tier's own dressing wins.
+
+**Phase 3** (the Recycler, the gathering modules, racks and junctions).
+
+- **Recycler** (`recycler_parts`, body `#5f7a34`): an open hopper with a white rim and a hazard front edge, two toothed
+  shafts in the throat and a pulley on its side that `spin`, a steel discharge door under an orange band on the control
+  face. The throat stays open between the shafts, so the bin's fill shows.
+- **Drill and Saw Modules** (`ModuleLook.cs`, over the settled tier body): a dark skirt, an orange band at the way out,
+  white bands where wood comes in, a steel fill band with quarter marks up the saw's bin, an accent collar on the bit and
+  hub caps on the blades that `spin`, hazard paint on the cutting edge. A module has no screen: its buttons are a strip
+  on the rim's top beside the lamp. Tier 2 adds hazard strips, 3 a conduit with clamps, 4 steel corner plates, 5 a
+  second collar or a rim strip. A box gives way to the tier's own dressing.
+- **Racks**: the frame is the body, cross bars base, slats steel, top rails accent with a dark fill mark at each quarter
+  of the length, a white band and hazard sill at Piece in with a white arrow on each runner, a steel load plate on the
+  first posts. Nothing is added inside the hold, so stored pieces stay in view.
+- **Junctions**: steel rollers on a dark deck, hazard-painted corner posts, and at each way a band on the side and an
+  arrow on the deck between the rollers: white pointing in, orange pointing out. No cue for the branch in use: a
+  junction has no store for `"work"` to read.
+- A look box starts a few mm inside the wall it stands on and stops short of the body's own planes (a skirt 4 mm above
+  the underside, ends 6 mm in or out), or the "No z-fighting" check finds it.
+
 ## Off the axis
 
 A blueprint step may be a **freeform weld** instead of a socket step: `{"part": "Panel", "weld": {"on": 3, "pos": [x, y, z],
@@ -113,7 +196,8 @@ piece snap to it on its own grid. Costs: a segment each, and a big body with any
   identity), `BODY-STYLES.md` (cabs, hulls, rooms, lamps in bays); the silhouette rules every faction follows are there.
 - Interiors of big vehicles and bases: `docs/sandbox/INTERIORS.md`.
 - Machines: per-tier palettes and signature shapes in [Machine tiers](production.md#machine-tiers).
-- **Buildings and bases have no style guide yet**: the user is deciding it. Use the rules above.
+- Buildings: [buildings.md](buildings.md): what every building needs and each faction's style (the Ministry of Slop:
+  Brutalism, cold-war fittings). Bases have no guide yet: use the rules above.
 
 ## Worked example: the Gate, dressed
 

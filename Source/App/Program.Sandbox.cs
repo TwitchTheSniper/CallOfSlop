@@ -36,7 +36,7 @@ public static unsafe partial class Program
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
-        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
+        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.GhostState == BlueprintGhostState.Carrying || _bgEat || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     private static bool _sbMenuKeyEaten;
@@ -115,6 +115,7 @@ public static unsafe partial class Program
         SandboxSelectTick(g, g.Local is { Alive: true } sp && g.SandboxHands.Hand(sp.Id).Tool == ConstructTool.Selector); // (Program.SandboxSelect.cs)
         SandboxTrackTick(g.Local is { Alive: true } tp && g.SandboxHands.Hand(tp.Id).Tool == ConstructTool.Tracks); // (Program.SandboxTracks.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
+        BlueprintGhostWatch(g); // (a menu, death, a seat or another tool drops the blueprint ghost: Program.SandboxBlueprintGhost.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
             _sbFiring = _sbRemoving = false;
@@ -169,6 +170,8 @@ public static unsafe partial class Program
         }
         if (SandboxSpawnInput(g, me))
             return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
+        if (SandboxBlueprintGhostInput(g, me))
+            return true; // a blueprint ghost out: Fire places it, the wheel turns it (Program.SandboxBlueprintGhost.cs)
         if (Pressed(GameAction.SandboxDrop) && (h.Held != ConstructParts.None || g.Constructs.HoseHeldBy(me.Id) >= 0))
             g.SandboxSend(CActKind.Drop); // (a held hose's receiver first: it reels back)
         // The backpack (H: stow what you hold; J: draw the next part out).
@@ -346,6 +349,7 @@ public static unsafe partial class Program
         _scrTook = PointerFrame(g, me, in h, eye, dir, aimed, hit, now); // (Hands on a screen: a mouse on a page, a finger on a panel's buttons: Program.SandboxPointer.cs)
         ConstructRender.AimOnPage = _scrTook;
         var talkTook = TalkFrame(g, me, eye, dir, aimed, aimed ? hit.Distance : float.MaxValue); // (one of the story's people under the crosshair: Program.StoryTalk.cs)
+        talkTook = talkTook || LoreFrame(g, aimed, hit); // (a lore item under the crosshair, when no person is in front of it: Program.StoryLore.cs)
         var magFill = !talkTook && aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && (ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) || ConstructAmmo.IsMagazine(hit.Body.DefOf(hit.Part)));
         if (magFill)
         {
@@ -361,6 +365,8 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
         else if (Pressed(GameAction.Interact) && !magFill && aimed && hit.RiderPlus1 > 0 && hit.RiderPlus1 <= hit.Body.ConveyedCount && hit.Distance <= ConstructBuild.UseReach && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Rider, body: hit.Body.Id, part: (ushort)(hit.RoutePlus1 - 1), socket: (ushort)Math.Clamp((int)MathF.Round(hit.Body.Conveyed[hit.RiderPlus1 - 1].At * 100), 0, ushort.MaxValue)); // (a piece off a conveyor, into the hands: ConstructEditsRack.cs)
+        else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && hit.Body.DefOf(hit.Part).IsCraftTerminal && hit.RackPlus1 == 0 && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
+            OpenCraftingTerminal(hit.Body, hit.Part); // (a Crafting Terminal's desk: its panel; a stack in its tray is taken as from a rack, below)
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && hit.Body.DefOf(hit.Part).IsPieceRack && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(ShiftHeld ? CActKind.RackDrop : CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (a Piece Rack: the piece looked at into the hands; Shift: that kind loose over the rack)
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
@@ -927,7 +933,27 @@ public static unsafe partial class Program
 
     private static long _sbStoreKey = -1;
     /// <summary>What a gathering module is doing, or where it should go (ConstructGatherer.cs).</summary>
-    internal static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit)
+    internal static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit, Game? g = null)
+    {
+        if (g == null || hit.Body == null)
+            return GathererWhy(d, st, hit, null); // (a check with no game: the reason alone)
+        // The line state's word first (as its lamp and a console show it), then the reason.
+        var s = ConstructGatherer.LineOf(g.Constructs, hit.Body, hit.Part, st);
+        var why = GathererWhy(d, st, hit, g).Replace(" - stopped: ", " - ", StringComparison.Ordinal);
+        return s == LineState.Running ? why : $" - {ProductionLines.Word(s)}{(why.StartsWith(" - ", StringComparison.Ordinal) ? ": " + why[3..] : why)}";
+    }
+
+    /// <summary>A Recycler's look line: its line state, then the reason.</summary>
+    private static string RecyclerLook(Game g, ConstructPartDef d, CStore st, in ConstructHit hit) => ConstructRecycler.LineOf(g.Constructs, hit.Body, hit.Part, st) switch
+    {
+        LineState.Running => ", recycling",
+        LineState.Idle => " - Stopped:" + HeldLook[2..],
+        LineState.Blocked => " - Blocked: output full, empty it (chute or F)",
+        LineState.NoPower => " - No power",
+        _ => " - Starved: feed it wrecked parts",
+    };
+
+    private static string GathererWhy(ConstructPartDef d, CStore st, in ConstructHit hit, Game? g)
     {
         if (st.Held)
             return HeldLook;
@@ -935,6 +961,12 @@ public static unsafe partial class Program
             return d.GatherSaw ? ", cutting" : ConstructDrillDrive.BusyLook(d, st);
         if (ConstructDrillDrive.StopLook(hit.Body, hit.Part, d, st) is { Length: > 0 } stopped)
             return stopped;
+        if ((GatherStall)st.Blocked == GatherStall.BinFull || st.Amount >= d.BulkCapacity)
+            return " - bin full: empty it (chute or F)";
+        if ((GatherStall)st.Blocked == GatherStall.OtherMaterial)
+            return $" - its bin holds {RecyclingTable.Current.NameOf(st.Material)}: empty it";
+        if (g != null && hit.Body != null && st.Drive == ShaftState.None && !ConstructRecycler.Powered(g.Constructs, hit.Body, hit.Part))
+            return " - needs power (a battery its circuit reaches)";
         if (World.Map.Resources is not { } field)
             return " - bring its blade to a forest";
         if (d.GatherSaw)
@@ -978,8 +1010,14 @@ public static unsafe partial class Program
             key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
         if (hit.Body.DefOf(hit.Part).IsPieceRack)
             key ^= ((long)hit.RackPlus1 << 8 | hit.RackLane) * 2654435761L; // (which stack is looked at: its kind names the piece F takes)
+        if (hit.Body.DefOf(hit.Part).IsCraftTerminal)
+            key ^= (long)((hit.Body.Parts[hit.Part].Craft?.Count ?? 0) + 1 + hit.Body.RouteCount * 64) * 40503L; // (its orders and the body's links: what its line says)
+        if (hit.Body.DefOf(hit.Part).IsBuildStation)
+            key ^= RouteRender.BayLook(hit.Body, hit.Part) * 2654435761L; // (a Building Station: its bay is outlined while it is looked at, and its line follows its job)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
             key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
+        if (hit.Body.DefOf(hit.Part) is { IsRecycler: true } or { IsGatherer: true })
+            key ^= (long)(ProductionLines.Raw(g.Constructs, hit.Body, hit.Part, st) ?? 0) * 0x9E3779B97F4AL; // (its line state: the mains or a shaft change it, not the store)
         if (key == _sbStoreKey)
             return _sbStoreText;
         _sbStoreKey = key;
@@ -990,6 +1028,8 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructTerminals.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
         if (cd.IsVolumeStore)
             return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
+        if (cd.IsCraftTerminal && hit.RackPlus1 == 0 && _game is { } cg)
+            return _sbStoreText = ConstructCrafting.Look(cg.Constructs, hit.Body, hit.Part, st, near);
         if (cd.IsPieceRack)
             return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null);
         if (cd.IsRefiner)
@@ -1013,8 +1053,8 @@ public static unsafe partial class Program
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
             var act = !near ? "" : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
             var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
-            var rec = cd.IsRecycler ? st.Held ? HeldLook : st.Busy ? ", recycling" : " - feed it wrecked parts"
-                : cd.IsGatherer ? GathererLook(cd, st, hit) : "";
+            var rec = cd.IsRecycler ? RecyclerLook(g, cd, st, hit)
+                : cd.IsGatherer ? GathererLook(cd, st, hit, g) : "";
             return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity}{holds}{rec}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)

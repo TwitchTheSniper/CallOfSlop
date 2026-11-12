@@ -50,11 +50,15 @@ public struct CPart
     public CfgValues Cfg;
     public byte SealedFaces; // a Tank or Storage Volume: bit f, face f of its box is closed by the construct's solids (ConstructSeal.cs; worked out, not saved)
     public float FluidOwed; // a Fluid Tank: litres its percentage can't register yet (ConstructFluid.cs)
+    public int LineMade; // a Line Console: pieces its line made since Start (the server's; clients hear it with the orders, ProductionLines.Monitors.cs)
+    public byte LineBits; // a Line Console: its Alarm and Running outputs and whether it ran last step (server; ProductionLines.Monitors.cs)
     public float Reading, ReadingSent; // a display's number, a Numpad's entry (the server's; clients hear it exactly: LogicDisplays.cs), and what clients last heard
     public float Mem; // what a logic block keeps from tick to tick (never saved: a Code Lock's entry, a Damage Sensor's last health)
     public ushort Watch; // a Level or Damage Sensor: the part its watch link ends at, plus one (rebuilt with the links)
     public string? Text, Text2; // a sign's messages, a lamp bank's labels (LogicText.cs)
     public OrderList? Orders; // an Extruder's or a Wheel Former's queue of work orders, a Line Console's bill (WorkOrders.cs; null: none)
+    public CraftList? Craft; // a Crafting Terminal's open requests (ConstructCrafting.cs; null: none)
+    public StationJob? Station; // a Building Station's job (ConstructStation.cs; null: none)
     public CMedia? Media; // a Video Screen's or Music Player's list and what it plays (ConstructMedia.cs)
     public System.Text.StringBuilder? MediaLoad; // a world file's list as its chunks come in (ConstructMedia.LoadChunk)
     public float[]? Trace; // a Graph Screen's last 30 s on this peer, oldest at TraceAt (LogicDisplays.cs)
@@ -274,6 +278,7 @@ public sealed partial class Construct
     public bool Anchored; // a working foundation holds it to the ground (or it is pinned)
     public bool Pinned; // set down "anchored to the ground" (creative's free placement toggle): held still without a foundation
     public bool Frozen; // the physics gun froze it where it is (ConstructGrab.cs): held still like an anchored one until grabbed or unfrozen
+    public ushort HeldBy; // server: the construct whose Building Station builds it, frozen in its bay (ConstructStation.cs; 0: nobody): no edits, no grab, no seat until released
     public byte FrozenBy = 255; // ...by this player (unfreeze-all frees only your own; 255: nobody's now)
     // The physics gun holding it (server; ConstructGrab.cs): the player, the grab point (body frame), where the beam wants
     // that point and the body's turn, and how hard it may pull. 255: nobody holds it (the physics then never looks further).
@@ -359,6 +364,7 @@ public sealed partial class Construct
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
     public bool HasAssembler; // an Assembler: the assembling step looks at it (ConstructAssembling.cs)
     public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
+    public bool HasLineConsole; // a Line Console: the line step works out its Alarm and Running outputs (ProductionLines.Monitors.cs)
     public bool HasPress; // a Press or Die Lathe: its step looks at this body (ConstructPress.cs)
     public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
     public ushort[] CameraParts = []; // cameras (ConstructRemote.cs)
@@ -1503,6 +1509,7 @@ public sealed partial class Construct
         HasAssembler = false;
         HasExtruder = false;
         HasPress = false;
+        HasLineConsole = false;
         var panels = 0;
         var cameras = 0;
         Receiver = -1;
@@ -1527,6 +1534,8 @@ public sealed partial class Construct
                 HasExtruder = true;
             if (d.IsPress)
                 HasPress = true;
+            if (d.Monitor == MonitorKind.Console)
+                HasLineConsole = true;
             if (d.Panels.Length > 0)
                 panels++;
             if (d.IsCamera)

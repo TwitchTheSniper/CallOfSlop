@@ -18,11 +18,11 @@ public static class StoryCli
     public static int TalkSim(string[] args) => Tee(() => TalkSimBody(args));
 
     /// <summary>
-    /// <c>--talk-sim [CAST] [--set Q=N,...] [--likes N] [--dead NAME]</c>: a player talks to each person of a cast
+    /// <c>--talk-sim [CAST] [--set Q=N,...] [--likes N] [--dead NAME] [--inspected ID,...]</c>: a player talks to each person of a cast
     /// (Penal Colony by default) about their topics (docs/story/STORY.md "Topics"), asking the first new one of their own
     /// offered, again and again (a brush-off, or nothing new, ends it), and prints each question and answer, then what is left
     /// on offer. --set gives the player qualities (Inducted=1, Suspicion=4...), --likes how much each person likes them at
-    /// the start, --dead marks someone dead. Words only: no bodies, no clock. Exit code: topics that never came up.
+    /// the start, --dead marks someone dead, --inspected has them look at lore items first (Story/Lore). Words only: no bodies, no clock. Exit code: topics that never came up.
     /// </summary>
     private static int TalkSimBody(string[] args)
     {
@@ -52,6 +52,11 @@ public static class StoryCli
         var startLikes = int.TryParse(Arg(args, "--likes"), out var l) ? l : 0;
         if (Arg(args, "--dead") is { } dead && rules.Quality("Dead") is { } dq && e.World.Find(dead) is var d and >= 0)
             e.World.SetQuality(d, dq.Id, 1);
+        foreach (var id in (Arg(args, "--inspected") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            if (rules.Lore.Find(id) is { } item)
+                e.Lore.Inspect(me, item.Index);
+            else
+                Console.WriteLine($"  --inspected: no lore item {id}");
         var topics = rules.Topics.Topics;
         var seen = new bool[topics.Length];
         var offer = new (ushort Topic, bool Asked)[TopicRules.Offered];
@@ -661,6 +666,15 @@ public static class StoryCli
         foreach (var t in rules.Topics.Topics)
             if (t.Who.Length > 0 && !rules.People.Casts.Any(c => c.People.Any(p => p.Name.Equals(t.Who, StringComparison.OrdinalIgnoreCase))))
                 Console.WriteLine($"  warning: topic {t.Id} ({t.File}): \"who\": {t.Who} is in no cast, so nobody offers it");
+        foreach (var t in rules.Lore.Items)
+            Console.WriteLine($"  lore {t.Id} ({t.File}): the {t.Part}{(t.At.Length == 3 ? $" in the {t.In}" : ", not placed")}; {t.Text.Length} paragraphs{(t.NoticedBy.Length > 0 ? $"; noticed by {t.NoticedBy}" : "")}");
+        foreach (var t in rules.Lore.Items)
+        {
+            if (t.NoticedBy.Length > 0 && !rules.People.Casts.Any(c => c.People.Any(p => p.Name.Equals(t.NoticedBy, StringComparison.OrdinalIgnoreCase))))
+                Console.WriteLine($"  warning: lore {t.Id} ({t.File}): \"noticed\": {t.NoticedBy} is in no cast, so nobody notices");
+            if (!rules.Topics.Topics.Any(o => o.IfText.Contains($"'lore {t.Id}'", StringComparison.OrdinalIgnoreCase)))
+                Console.WriteLine($"  warning: lore {t.Id} ({t.File}): no topic asks for it (\"?them Inspected 'lore {t.Id}'\"), so looking opens nothing");
+        }
         var storyletWarnings = StoryletChecks.Check(rules);
         foreach (var w in storyletWarnings)
             Console.WriteLine($"  warning: {w}");

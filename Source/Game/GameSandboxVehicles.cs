@@ -65,7 +65,7 @@ public sealed class VehicleSpawner(Game game)
     /// <summary>What a finished request came to: the construct (null: none, with the reason), the blueprint's name.</summary>
     public delegate void Finished(Construct? built, string name, string why, byte owner);
 
-    private struct Ask
+    internal struct Ask
     {
         public IVehicleGenerator Gen;
         public int Seed, Tries;
@@ -82,6 +82,8 @@ public sealed class VehicleSpawner(Game game)
         public int Lane, Index; // its lane (0 the middle) and place in the convoy (0 the leader)
         public SpawnContext? Context; // where it is made for (phase 7: VehicleContext.cs; null or neutral: as before); kept through rerolls
         public EngineKit.EngineRequest? Engine; // an engine on its own (GameSandboxEngines.cs): made by the Engine Kit, never rerolled or stood in for
+        public bool Hold; // made ready and held for its owner to place with a ghost (GameSandboxBlueprintGhost.cs), not set down
+        public ushort Token; // ...the owner's prepare it answers
     }
 
     /// <summary>A convoy being set down: its plan, where its leader stands and which way it heads, how far back each lane has reached.</summary>
@@ -142,7 +144,7 @@ public sealed class VehicleSpawner(Game game)
             return ShapeGrammar.RecipeOf(g) == null ? $"the {g.Name} has no layers" : "a layer's seed is 1 or more";
         if (Full(owner) is { } full)
             return full;
-        _queue.Enqueue(new Ask
+        Enqueue(new Ask
         {
             Gen = g,
             Seed = seed ?? VehicleSpawnKit.Next(ref _seedState),
@@ -193,7 +195,7 @@ public sealed class VehicleSpawner(Game game)
             return ShapeGrammar.RecipeOf(g) == null ? $"the {g.Name} has no layers" : "a layer's seed is 1 or more";
         if (Full(owner) is { } full)
             return full;
-        _queue.Enqueue(new Ask
+        Enqueue(new Ask
         {
             Gen = g,
             Seed = s,
@@ -232,7 +234,7 @@ public sealed class VehicleSpawner(Game game)
         ask.Front = frontOf;
         ask.Done = done;
         ask.Context = context;
-        _queue.Enqueue(ask);
+        Enqueue(ask);
         return null;
     }
 
@@ -334,7 +336,7 @@ public sealed class VehicleSpawner(Game game)
     {
         if (Full(owner) is { } full)
             return full;
-        _queue.Enqueue(new Ask { Bp = bp, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done });
+        Enqueue(new Ask { Bp = bp, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done });
         return null;
     }
 
@@ -346,8 +348,54 @@ public sealed class VehicleSpawner(Game game)
     {
         if (Full(owner) is { } full)
             return full;
-        _queue.Enqueue(new Ask { Engine = r, Seed = r.Seed, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done });
+        Enqueue(new Ask { Engine = r, Seed = r.Seed, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done });
         return null;
+    }
+
+    /// <summary>Set by the game around a ghost spawn's request (GameSandboxBlueprintGhost.cs): that player's ask is held for a ghost, under this token.</summary>
+    public byte HoldFor = 255;
+    public ushort HoldToken;
+
+    private void Enqueue(Ask a)
+    {
+        if (HoldFor != 255 && a.Convoy == null && a.Owner == HoldFor)
+            (a.Hold, a.Token) = (true, HoldToken);
+        _queue.Enqueue(a);
+    }
+
+    /// <summary>
+    /// A held spawn (CActKind.SpawnPrepare): made and built in its scratch world, waiting for its owner to place it. Its shape is measured
+    /// once (the game: <see cref="Game"/>'s SpawnHeld). <see cref="PlaceHeld"/> joins it to the world.
+    /// </summary>
+    public sealed class Held
+    {
+        internal Ask Ask;
+        public required ConstructBuild.GroundJob Job;
+        public string Name = "";
+        internal VehicleBrief? Brief;
+        internal EngineKit.EngineResult? Engine;
+        public Vector3 Min, Max;
+        public float Low;
+        public double Since;
+        public byte Owner => Ask.Owner;
+        public ushort Token => Ask.Token;
+    }
+
+    /// <summary>A held spawn joins the world standing at <paramref name="ground"/> facing <paramref name="yaw"/> (as a set-down: owner, brief, the asker told). Null and why when it can't.</summary>
+    public Construct? PlaceHeld(Held h, Vector3 ground, float yaw, out string why)
+    {
+        var c = game.SandboxVehicleBuild(255, ground, yaw, h.Job.Bp, null, h.Job, out why);
+        if (c != null && h.Ask.Owner != 255)
+            c.Owner = h.Ask.Owner;
+        _placeBrief = h.Brief;
+        Brief(h.Ask, c, h.Name);
+        if (h.Engine != null)
+            EngineMade = h.Engine; // (its callback reads it)
+        Console.WriteLine($"[vehicles] placed held {h.Name}{(c == null ? $" (refused: {why})" : $" as construct {c.Id}")}");
+        var a = h.Ask;
+        a.Hold = false; // (the asker hears it as any set-down)
+        Finish(a, c, h.Name, why);
+        return c;
     }
 
     /// <summary>The last engine made for <see cref="RequestEngine"/> (its numbers and note), kept until the next one: its finish callback reads it.</summary>
@@ -508,7 +556,7 @@ public sealed class VehicleSpawner(Game game)
     /// <summary>Sets a blueprint down: at once when it is small (<see cref="AtOnce"/>), else its steps start, a slice a tick from the next.</summary>
     private void Place(in Ask a, ConstructBuild.Blueprint bp, ConstructBuild.Blueprint? tow, string name)
     {
-        if (!AtOnce(bp, tow))
+        if (!AtOnce(bp, tow) || a.Hold) // (a held one always: its shape is measured on the scratch build)
         {
             _now = a;
             _place = new ConstructBuild.GroundJob(game.Constructs, bp, tow);
@@ -532,6 +580,15 @@ public sealed class VehicleSpawner(Game game)
             return; // (its join waits for the next tick: a slice and a join together could pass the budget)
         }
         _place = null;
+        if (_now.Hold)
+        {
+            // Held for a ghost: not joined. Its shape is measured on this tick of its own (a rebuild of its scratch body), and the game keeps it.
+            var held = new Held { Ask = _now, Job = job, Name = _placeName, Brief = _placeBrief, Engine = _now.Engine != null ? EngineMade : null };
+            _placeBrief = null;
+            Console.WriteLine($"[vehicles] prepared {_placeName} for player {_now.Owner}: steps {job.CpuMs:0.0} ms over {job.Slices} ticks, longest slice {job.WorstSliceMs:0.0} ms");
+            game.SpawnHeld(held);
+            return;
+        }
         var start = Stopwatch.GetTimestamp();
         var c = game.SandboxVehicleBuild(_now.Front, _now.Ground, _now.Yaw, job.Bp, null, job, out var why);
         if (c != null && _now.Owner != 255)
@@ -568,8 +625,13 @@ public sealed class VehicleSpawner(Game game)
             Console.WriteLine($"[vehicles] {name}: its behaviour brief doesn't fit the body that was built ({why}): left off");
     }
 
-    private static void Finish(in Ask a, Construct? c, string name, string why)
+    private void Finish(in Ask a, Construct? c, string name, string why)
     {
+        if (a.Hold)
+        {
+            game.SpawnHeldFailed(a.Owner, a.Token, name, why); // (made for a ghost and failed: the asker's preparing ends)
+            return;
+        }
         a.Done?.Invoke(c, name, why, a.Owner);
         if (a.Convoy is { } run)
             ConvoyMemberDone(run, c, name, why);
@@ -608,10 +670,15 @@ public sealed partial class Game
     private VehicleSpawner? _vehicleSpawn;
 
     /// <summary>Client (or the host): ask for a faction vehicle by style and shape, made for a seed (0: the server picks one), in front of you.</summary>
-    public void SandboxSpawnVehicle(string style, string shape, int seed)
+    public void SandboxSpawnVehicle(string style, string shape, int seed, bool ghost = false)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.Vehicle).Str(style).Str(shape).U32((uint)Math.Max(0, seed));
+        if (ghost)
+        {
+            SpawnPrepareSend(w, $"{style} {shape}"); // (placed with a ghost: GameSandboxBlueprintGhost.cs)
+            return;
+        }
         if (IsServer)
         {
             if (Local is { } me)
@@ -651,11 +718,16 @@ public sealed partial class Game
     /// Client (or the host): ask for a faction vehicle by role and tier (<paramref name="convoy"/> false; <paramref name="role"/> empty: one the style fields), or a
     /// convoy of <paramref name="count"/> in front of you (docs/vehiclekit/VEHICLEKIT.md, "Families and convoys"). <paramref name="seed"/> 0: the server picks.
     /// </summary>
-    public void SandboxSpawnFaction(bool convoy, string style, string role, int tier, int count, int seed)
+    public void SandboxSpawnFaction(bool convoy, string style, string role, int tier, int count, int seed, bool ghost = false)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.FactionVehicle).U8((byte)(convoy ? 1 : 0)).Str(style).Str(role).U8((byte)Math.Clamp(tier, 1, VehicleRoles.MaxTier))
             .U8((byte)Math.Clamp(count, 0, VehicleConvoys.MaxCount)).U32((uint)Math.Max(0, seed));
+        if (ghost && !convoy)
+        {
+            SpawnPrepareSend(w, $"{style} {(role.Length > 0 ? role : "vehicle")}"); // (placed with a ghost: GameSandboxBlueprintGhost.cs)
+            return;
+        }
         if (IsServer)
         {
             if (Local is { } me)

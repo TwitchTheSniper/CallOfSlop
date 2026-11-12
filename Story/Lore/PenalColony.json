@@ -1,0 +1,89 @@
+{
+  // Things in the penal colony a player can look at closely (docs/story/STORY.md "Lore"). Each is a part of its own (the
+  // part kit's lore parts, Constructs/Parts/Lore) that the host stands where it belongs ("in" a building, "at" a spot in
+  // its own frame, metres; "yaw" in degrees turns the part's front, its +z, towards the building's -x at 90). The use key
+  // shows its "text". Show, don't tell: nobody explains anything here; each one is somebody's, and noticing it opens a
+  // question with them (Story/Topics/Colony.json reads "?them Inspected 'lore ID'"). "noticed": whoever is named says a
+  // line when their body is within "reach" of the player on the first look ({me} them, {them} the player; "then" with
+  // ?me the person and ?them the player). "then" on the item itself is the first look's, with ?me the player.
+  "format": "call-of-slop-lore/1",
+  "about": "the penal colony: what the staff and the inmates before you left lying about",
+  "items": [
+    // ==== The cell block: where everyone wakes ====
+    { "id": "edie-tally", "part": "Scratched Tally Board", "title": "A board in the cell block",
+      "in": "Penal Colony", "at": [2.7, 0.375, 9.38], "yaw": 180,
+      "text": [
+        "An old bed board, propped against the wall. Someone has scratched days into it in fives, row after row, neatly at first.",
+        "The rows get untidier further down. The last row is three strokes, and then, cut deep enough to splinter, an arrow pointing north.",
+        "Under the arrow, small: 'to see what is under it'. Under that, in pencil and a different, squarer hand, a date and a tick." ] },
+    { "id": "photo-gap", "part": "Inmate Photo Board", "title": "Inmate photographs, by year",
+      "in": "Penal Colony", "at": [4.9, 0.375, 9.38], "yaw": 180,
+      "text": [
+        "Rows of inmate photographs, pinned up one row a year, every face squinting into the same flash.",
+        "Year three has a gap. The pin is still in, holding a torn white corner, and the cork round it is a paler square than the rest.",
+        "Beside the gap somebody has drawn a small arrow in biro. It points up. Or north." ] },
+
+    // ==== The Warden's office ====
+    { "id": "rule-212", "part": "Warden's Handbook", "title": "The Penal Colony Handbook",
+      "in": "Penal Colony", "at": [8.9, 0.375, 4.9], "yaw": 180,
+      "text": [
+        "THE PENAL COLONY HANDBOOK, fourth revision. Four hundred pages, and a lectern of its own. It is open in the middle, where the spine has given up.",
+        "Rule 212: 'An inmate found looking at the Light for longer than a slow count of ten is to be found a task.'",
+        "The margins are thick with the Warden's corrections in red. Beside rule 212 he has written only 'Why?', and then, in a different pen, crossed it out." ],
+      "noticed": { "by": "Warden Pettigrew", "reach": 14,
+        "say": [ "That copy is annotated, {them.first}. Hands where the handbook can see them.", "Reading ahead? Rule 9: nobody reads ahead." ] } },
+    { "id": "memo-1144", "part": "Ministry In-Tray", "title": "An in-tray in the Records Office",
+      "in": "Ministry Records Office", "at": [2.2, 0.375, 5.0], "yaw": 180,
+      "text": [
+        "A wire in-tray on a filing cabinet, stacked with memos from the Ministry. Every one is dated a Thursday.",
+        "The top one: 'MEMO 1,144. Staff will not discuss the night sky with inmates beyond what is printed in the almanac (attached).' Nothing is attached. The staple holes say something was.",
+        "Underneath, a carbon of the Warden's reply: 'Received. Which almanac?' Stamped across it in purple: NO FURTHER ACTION." ] },
+    { "id": "brine-lantern", "part": "Brass Storm Lantern", "title": "A brass storm lantern",
+      "in": "Penal Colony", "at": [9.2, 0.375, 2.6], "yaw": 0,
+      "text": [
+        "A brass storm lantern on a stool in the corner, polished until the brass has gone soft at the edges. The wick is trimmed square. It has never been lit.",
+        "Stamped on the base: BRINE FLATS LIGHT. Under it, on a paper label in tidy capitals: KEEP TRIMMED.",
+        "Beside it, a tobacco tin full of wick trimmings. Somebody has been saving them for years." ],
+      "noticed": { "by": "Warden Pettigrew", "reach": 14, "then": [ "?me Likes ?them +1" ],
+        "say": [ "Careful with that. It's older than the Ministry.", "Don't breathe on the glass, {them.first}. It's just been done." ] } },
+
+    // ==== The yard ====
+    { "id": "lunch-log", "part": "Officer Nettles' Clipboard", "title": "A clipboard on a crate",
+      "in": "Penal Colony", "at": [9.4, 0.375, 0.95], "yaw": 0,
+      "text": [
+        "A clipboard left on a crate, which Officer Nettles would never do. The top sheet is a lunch log: stew, stew, stew (star), stew but warmer (star).",
+        "In the margin, very small: 'North wall. Bricks newer? Ask Sgt.' And under it: 'DON'T ask Sgt.', underlined three times.",
+        "Under the lunch log, a list headed INMATES WHO HAVE BEEN NICE TO ME. It is short. There is plenty of room." ],
+      "noticed": { "by": "Officer Nettles", "reach": 16,
+        "say": [ "That's confidential! It's mostly lunches. Give it - no, put it down. Thank you.", "Oh no. Oh no. Did you read the margin? Don't read the margin." ] } },
+    { "id": "marker-nine", "part": "Mine Shift Board", "title": "The old mine's shift board",
+      "in": "Penal Colony", "at": [10.8, 0.375, 8.0], "yaw": 90,
+      "text": [
+        "A chalkboard on legs: the old mine's shift board, dragged here when the mine shut. Names in three columns, DAYS, NIGHTS and SICK. Nobody ever wiped the last shift off.",
+        "Across the bottom, in capitals gone pale with weather: HOLD AT MARKER 9. NOBODY PAST MARKER 9. SIGNED, FOREMAN GRUBB.",
+        "The 9 has been rubbed out and chalked in again. Several times, by more than one hand." ] },
+
+    // ==== The guards' barracks ====
+    { "id": "crumb-postcard", "part": "Barracks Noticeboard", "title": "The barracks noticeboard",
+      "in": "Colony Barracks", "at": [1.2, 0.375, 7.42], "yaw": 180,
+      "text": [
+        "A corkboard of duty rotas. Every week Officer Crumb is down for kettle duty, always in somebody else's handwriting.",
+        "Pinned in the corner, a postcard: GREETINGS FROM THE CENTRIFUGE. On the back: 'Mum. Failed the spin test. It was the soup. Back to guarding. Still going up one day. Love, Barnaby.'",
+        "It has been pinned and unpinned so often that the corner is all holes." ],
+      "noticed": { "by": "Officer Crumb", "reach": 14, "then": [ "?me Likes ?them +1" ],
+        "say": [ "Oi! That's private. ...Go on, everyone reads it. Mind the corner.", "You've found my postcard. Don't laugh at the soup bit. Everyone laughs at the soup bit." ] } },
+    { "id": "eighth-hook", "part": "Colony Key Board", "title": "The key board in the gatehouse",
+      "in": "Colony Gatehouse", "at": [3.2, 0.375, 2.0], "yaw": 90,
+      "text": [
+        "Brass hooks in a row, each with a key and a label in the Sergeant's square capitals: GATE. CELLS. OFFICE. BARRACKS. STORES. WORKS. DRAIN.",
+        "There is an eighth hook at the end. No key, no label. The brass is worn bright, as if somebody touches it every time they pass." ],
+      "noticed": { "by": "Sergeant Bellweather", "reach": 12, "if": "not ?me Grudge ?them >= 30",
+        "say": [ "Counting keys, {them.first}? There are seven. I'd know.", "Hands off the board. That's not a suggestion." ] } },
+    { "id": "page-nine", "part": "Box of Schoolbooks", "title": "A crate of old schoolbooks",
+      "in": "Colony Barracks", "at": [0.6, 0.375, 4.4], "yaw": 270,
+      "text": [
+        "A crate of books nobody has signed out in years. On top, a schoolbook: THE NIGHT SKY FOR YOUNG READERS.",
+        "Every page is the Light. The Light at dusk. The Light over the sea. Finding north by the Light. The contents list eleven chapters. Chapter nine, 'The Others', has been taken out, neatly, along a ruler.",
+        "Inside the cover, in a child's round hand: 'Property of V. Nettles. HANDS OFF.'" ] }
+  ]
+}

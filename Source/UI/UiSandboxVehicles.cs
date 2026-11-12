@@ -153,14 +153,17 @@ public sealed partial class Ui
             }
             if (g is IAircraftShape)
             {
-                game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed); // (on the ground: by role and convoys are ground vehicles)
+                game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed, ghost: true); // (on the ground: by role and convoys are ground vehicles)
+                CloseSandboxParts(); // (placed with a ghost: GameSandboxBlueprintGhost.cs)
                 return;
             }
             if (SandboxVehicleBy == 0 || !game.VehicleSpawn.RolesAndConvoys && game.IsServer)
-                game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed);
+                game.SandboxSpawnVehicle(style, shape, SandboxVehicleSeed, ghost: true);
             else
                 game.SandboxSpawnFaction(SandboxVehicleBy == 2, style, SandboxVehicleBy == 1 && SandboxVehicleRole > 0 && SandboxVehicleRole <= VehicleRoles.All.Length ? VehicleRoles.All[SandboxVehicleRole - 1].Name : "",
-                    SandboxVehicleTier, SandboxConvoyCount, SandboxVehicleSeed);
+                    SandboxVehicleTier, SandboxConvoyCount, SandboxVehicleSeed, ghost: SandboxVehicleBy != 2);
+            if (SandboxVehicleBy != 2)
+                CloseSandboxParts(); // (placed with a ghost; a convoy is set down as it is)
             return;
         }
         SandboxPartsSpawn(game, index);

@@ -73,8 +73,19 @@ can only be reached in a ship the player has built, so it is the endgame's own g
 
 ## The colony (act one)
 
+Things lying about the colony can be looked at closely (`Story/Lore/PenalColony.json`): each is somebody's, and
+noticing it opens a question with them; the schoolbook's missing chapter, "The Others", is the first hint of the empty sky.
+
 Settled: Rank and Suspicion are the colony's two numbers, and the Warden's offer is the one explicit choice between
 the Trustee and the Escapee road. The beats' words in `Story/Storylets/Colony.json` are still draft.
+
+The Trustee road goes on in `Story/Storylets/Ministry.json` (Karl, 2026-11-12: the Ministry builds up enough trust to
+move the player out, then a story per rung; draft words). Inside the colony: the stores key, a head count one short
+(a guard asleep), then the parole board lets the player out on licence, a last cup with Crumb, and the gate. Outside,
+the Ministry speaks by memo and each rung waits for the faction's own tier (the licence it teaches): Clerk, Executive
+Officer, Inspector of Works (whose first inspection is the colony and its warden), Under-Secretary and Crown Servant,
+whose keys include a floor that is not on the plans: the council chamber of `frag.silence`. Not built: the ride out
+of the gate and somewhere for the released player to live; the end says so in its `world` lines.
 
 ## Open
 
@@ -92,8 +103,7 @@ the Trustee and the Escapee road. The beats' words in `Story/Storylets/Colony.js
 ## Parked
 
 Said once, not in the current story, not to be built until Karl brings them back: voter stations so the inhabitants
-choose; climbing the Ministry's ranks to the antimatter bomb and
-being hunted for using it.
+choose; using the antimatter bomb that a Crown Servant is given, and being hunted for it.
 
 ## How the story is changed
 

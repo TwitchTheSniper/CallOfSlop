@@ -172,6 +172,8 @@ public static class ConstructModules
     public static float Output(Construct c, int part, int port)
     {
         ref var p = ref c.Parts[part];
+        if (p.D.Monitor == MonitorKind.Console)
+            return ProductionLines.PortValue(p, port); // (a Line Console's Alarm, Running and Made)
         if (p.D.WidePorts)
             return LogicBlocks.OutPort(c, part, port); // (a Data Bus's breakout)
         var seat = p.Count - 1;

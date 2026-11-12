@@ -137,6 +137,18 @@ public static class MachineScreens
             }
         if (r != null)
             card.Add(1, r.Name);
+        if (d.IsPanelFormer)
+        {
+            // A Panel Former works orders only: its stock, the preset its Queue button orders, then the queue (or how to give it one).
+            Amount(card, 1, "Stock ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+            card.Add(2, "Preset: ").Add(2, HullLoft.PanelPresets[Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0), 0, HullLoft.PanelPresets.Length - 1)].Label);
+            if (p.Orders != null)
+                WorkOrders.FillQueue(p, card, 3);
+            else
+                card.Add(3, "No orders: Queue, or a bill");
+            card.Bar = st.Busy ? st.Progress / 100f : -1;
+            return;
+        }
         if (p.Orders != null)
         {
             // Work orders (WorkOrders.cs): what it builds and what it lacks, then the queue: its totals and the next orders (the buttons under them).
@@ -158,10 +170,10 @@ public static class MachineScreens
             switch ((ExtrudeStall)st.Refused)
             {
                 case ExtrudeStall.NoPower: Say(card, PanelState.Fault, "No power"); break;
-                case ExtrudeStall.NoMaterial: Say(card, PanelState.Wants, "Needs material"); break;
+                case ExtrudeStall.NoMaterial: Say(card, PanelState.Wants, d.IsPanelFormer ? "Needs sheet" : "Needs material"); break;
                 case ExtrudeStall.BadMaterial: Say(card, PanelState.Refused, "Wrong material"); break;
                 case ExtrudeStall.Mixed: Say(card, PanelState.Wants, "Other material"); break;
-                case ExtrudeStall.BadShape: Say(card, PanelState.Refused, "Bad section"); break;
+                case ExtrudeStall.BadShape: Say(card, PanelState.Refused, d.IsPanelFormer ? "Not a panel" : "Bad section"); break;
                 case ExtrudeStall.AtCap: Say(card, PanelState.Wants, "At full size"); break;
                 case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
                 case ExtrudeStall.TooHeavy: Say(card, PanelState.Wants, "Path too heavy"); break;
@@ -225,19 +237,41 @@ public static class MachineScreens
 
     private static void Recycler(ConstructWorld world, Construct c, int part, ConstructPartDef d, CStore st, PanelCard card)
     {
-        var powered = ConstructRecycler.Powered(world, c, part);
-        if (st.Held)
-            Say(card, PanelState.Idle, "Held off");
-        else if (st.Amount >= d.BulkCapacity)
-            Say(card, PanelState.Wants, "Output full");
-        else if (!powered)
-            Say(card, PanelState.Fault, "No power");
-        else if (st.Busy)
-            Say(card, PanelState.Working, "Recycling");
-        else
-            Say(card, PanelState.Idle, "Waiting");
-        card.Add(1, st.Busy ? "Breaking a wreck" : "Drop wrecks in");
+        // The line's state word (as its lamp and a console say it), then the reason in plain words.
+        var s = ProductionLines.Of(world, c, part, st, ConstructRender.Now);
+        Say(card, ProductionLines.Panel(s), s == LineState.Running ? "Recycling" : ProductionLines.Word(s));
+        card.Add(1, s switch
+        {
+            LineState.Running => "Breaking a wreck",
+            LineState.Blocked => "Empty its output",
+            LineState.Idle => "Run wire is off",
+            LineState.NoPower => "Needs power",
+            _ => "Drop wrecks in",
+        });
         Amount(card, 2, "Out ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
         card.Bar = st.Busy ? st.Progress / 100f : 0;
+    }
+
+    /// <summary>A gathering module's card: it has no screen, so this is what a monitor on its Data out shows (its state, why, its bin).</summary>
+    public static void Gatherer(ConstructWorld world, Construct c, int part, ConstructPartDef d, PanelCard card)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+        {
+            card.State = PanelState.Off;
+            return;
+        }
+        var s = ProductionLines.Of(world, c, part, st, ConstructRender.Now);
+        Say(card, ProductionLines.Panel(s), s == LineState.Running ? d.GatherSaw ? "Cutting" : "Drilling" : ProductionLines.Word(s));
+        card.Add(1, s switch
+        {
+            LineState.Running => d.Name,
+            LineState.Idle => "Run wire is off",
+            LineState.NoPower => st.Drive is ShaftState.None or ShaftState.Turning ? "Needs power" : "Shaft not turning",
+            _ => ConstructGatherer.StallWord(d, (GatherStall)st.Blocked),
+        });
+        Amount(card, 2, "Bin ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+        card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, d.BulkCapacity), 0, 1);
+        for (var l = 0; l < PanelCard.MaxLines; l++)
+            card.Clip(l, card.Cols);
     }
 }

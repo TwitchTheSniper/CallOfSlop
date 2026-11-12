@@ -286,6 +286,26 @@ public sealed class MachineTiers : IPartGenerator
         return o;
     }
 
+    /// <summary>A gathering module's status lamp: a bar on top of the highest box along its back (a hopper's or a bin's back wall), most of
+    /// its width and 6 cm high at tier 1 (scaled with the module), read from any side and from above where a module works on an arm.</summary>
+    private static PyDict ModuleLamp(List<PyDict> boxes, double size)
+    {
+        var solid = boxes.Where(b => !b.Has("detail")).Select(b => (Min: D3(b["min"]), Max: D3(b["max"]))).ToList();
+        var back = solid.Min(b => b.Min[2]);
+        var depth = solid.Max(b => b.Max[2]) - back;
+        var rim = solid.Where(b => b.Min[2] <= back + 0.15 * depth).OrderByDescending(b => b.Max[1]).First();
+        var w = (rim.Max[0] - rim.Min[0]) * 0.35;
+        var mx = (rim.Min[0] + rim.Max[0]) / 2;
+        var z0 = rim.Min[2] + 0.003;
+        var z1 = Math.Min(rim.Max[2] - 0.003, z0 + 0.06 * size);
+        var y = rim.Max[1] + 0.002;
+        return new PyDict
+        {
+            ["min"] = Vec([mx - w, y, z0]), ["max"] = Vec([mx + w, y + 0.06 * size, z1]),
+            ["color"] = "#2b3036", ["detail"] = true, ["paintable"] = false, ["status"] = true,
+        };
+    }
+
     private static PyDict Fill(Bin b, double size) => new() { ["min"] = Vec(Scaled(b.Min, size)), ["max"] = Vec(Scaled(b.Max, size)) };
 
     private static PyDict Part(Line line, int tier)
@@ -318,8 +338,10 @@ public sealed class MachineTiers : IPartGenerator
         boxes.AddRange(pads.Select(b => BuiltBox(tier, b, 0)));
         boxes.AddRange(drawn);
         boxes.AddRange(shape.Detail.Select(b => BuiltBox(tier, Grown(b), 0, true)));
+        if (!big && line.Gather is not null)
+            boxes.Add(ModuleLamp(boxes, size)); // (a gathering module has no screen: its status lamp stands on its back rim, ProductionLines)
         PyDict? panel = null;
-        if (big) // (a building has a screen; a gathering module's state is its look line, and it works out of sight on an arm)
+        if (big) //(a building has a screen; a gathering module's state is its look line, and it works out of sight on an arm)
         {
             var keepClear = sockets.Select(s => (D3(s["at"]), (string)s["dir"]!)).ToList();
             keepClear.AddRange((line.Ports ?? []).Select(p => (Scaled(D3(p["at"]), size), (string)p["face"]!)));
@@ -339,6 +361,77 @@ public sealed class MachineTiers : IPartGenerator
         }
         PartZFight.Resolve(boxes, sockets);
         boxes = [.. boxes.Select(b => new PyDict(b) { ["min"] = Vec(D3(b["min"])), ["max"] = Vec(D3(b["max"])) })];
+        if (!big && line.Gather is not null) // (a gathering module shows its work too: the bit's flights and the blades turn while it gathers)
+        {
+            PyDict? BuiltOf(TB t, bool detail)
+            {
+                double[] mn = Scaled(t.Min, size), mx = Scaled(t.Max, size);
+                return boxes.FirstOrDefault(b => Py.Truthy(b.Get("detail")) == detail && !Py.Truthy(b.Get("status")) && Enumerable.Range(0, 3).All(a => Math.Abs(D3(b["min"])[a] - mn[a]) < 0.03 && Math.Abs(D3(b["max"])[a] - mx[a]) < 0.03));
+            }
+            void Turning(double[] mn, double[] mx, string color)
+            {
+                if (MachineLook.Work(MachineLook.D(mn, mx, color, color == MachineLook.Steel ? "steel" : null), "spin", "+y") is { } b)
+                    boxes.Add(b);
+            }
+            if (line.Gather.Value.Kind == "drill" && shape.Solid.FirstOrDefault(b => b.Min[1] <= -1.19) is { } bitBox && BuiltOf(bitBox, false) is { } bit)
+            {
+                double[] lo = D3(bit["min"]), hi = D3(bit["max"]);
+                double cx = (lo[0] + hi[0]) / 2, cz = (lo[2] + hi[2]) / 2, reach = (hi[0] - lo[0]) * 0.9, thin = Math.Max(0.012, (hi[0] - lo[0]) * 0.1);
+                var k = 0;
+                foreach (var f in new[] { 0.1, 0.36, 0.62, 0.84 })
+                {
+                    var y = lo[1] + (hi[1] - lo[1]) * f;
+                    if (k++ % 2 == 0)
+                        Turning([cx - reach, y, cz - thin], [cx + reach, y + 0.035, cz + thin], MachineLook.Steel);
+                    else
+                        Turning([cx - thin, y, cz - reach], [cx + thin, y + 0.035, cz + reach], MachineLook.Steel);
+                }
+            }
+            if (line.Gather.Value.Kind == "saw")
+                foreach (var disc in shape.Detail.Where(b => (string?)b.Keys.Get("shape") is "cylinder" or "tube" && b.Min[2] > 0.9 && b.Max[1] - b.Min[1] < 0.06))
+                    if (BuiltOf(disc, true) is { } blade)
+                    {
+                        double[] lo = D3(blade["min"]), hi = D3(blade["max"]);
+                        blade["work"] = "spin";
+                        blade["axis"] = "+y";
+                        double cx = (lo[0] + hi[0]) / 2, cz = (lo[2] + hi[2]) / 2, r = (hi[0] - lo[0]) * 0.45;
+                        Turning([cx - r, hi[1] - 0.004, cz - r * 0.14], [cx + r, hi[1] + 0.012, cz + r * 0.14], MachineLook.Ink); // (a mark across it, so the turn shows)
+                        if ((string?)disc.Keys.Get("shape") == "cylinder")
+                            Turning([cx - r * 0.24, hi[1] + 0.0125, cz - r * 0.24], [cx + r * 0.24, hi[1] + 0.027, cz + r * 0.24], MachineLook.Accent); // (a hub cap)
+                    }
+            ModuleLook.Dress(boxes, line.Gather.Value.Kind == "drill", tier, size); // (the machine look over the settled module: look boxes only)
+            boxes = [.. boxes.Select(b => new PyDict(b) { ["min"] = Vec(D3(b["min"])), ["max"] = Vec(D3(b["max"])) })];
+        }
+        if (big) // (the machine look, over the settled body: look boxes only, so nothing above moves)
+        {
+            var rooms = new List<(double[], double[])>();
+            (double[], double[])? input = null;
+            void Room(Bin b) => rooms.Add((Scaled(b.Min, size), Scaled(b.Max, size)));
+            if (line.Bulk is not null)
+                Room(line.Bulk);
+            foreach (var sl in line.Slots ?? [])
+                Room(sl.Box);
+            if (line.Assemble is { } asmRoom)
+                Room(asmRoom.Box);
+            if (line.Refine is { } rf)
+            {
+                var rb = shape.Hopper is { } hp ? B([rf.Box.Min[0], hp.Y0, rf.Box.Min[2]], [rf.Box.Max[0], hp.Y1, rf.Box.Max[2]]) : rf.Box;
+                Room(rb);
+                input = rooms[^1];
+            }
+            var site = new TierMachine.Site
+            {
+                Name = line.Name, Tier = tier, Size = size, Shape = shape, Boxes = boxes, Face = (string)panel!["face"]!,
+                Plate = boxes.First(b => (string?)b.Get("color") == "#14181c" && Py.Truthy(b.Get("detail"))), Lamp = boxes.FirstOrDefault(b => Py.Truthy(b.Get("status"))),
+                Ports = [.. (line.Ports ?? []).Select(p => (Scaled(D3(p["at"]), size), (string)p["face"]!, (string)p["dir"]! == "in"))],
+                Sockets = [.. sockets.Where(k => (string)k["name"]! != "bottom").Select(k => (D3(k["at"]), (string)k["dir"]!))],
+                Rooms = rooms, Input = input,
+            };
+            TierMachine.Dress(site);
+            boxes = [.. boxes.Select(b => new PyDict(b) { ["min"] = Vec(D3(b["min"])), ["max"] = Vec(D3(b["max"])) })];
+            if (Environment.GetEnvironmentVariable("COS_LOOK_DEBUG") is not null)
+                Console.Error.WriteLine($"[look] {Prefix[tier]}{line.Name}: {boxes.Count(b => Py.Truthy(b.Get("detail")))} look boxes, {site.Left} left out");
+        }
         var head = $"{Tiers[tier]}, tier {tier} of 5. ";
         if (line.Gated is { } gated && tier < 3)
             head += gated[tier] + " ";
@@ -456,7 +549,7 @@ public sealed class MachineTiers : IPartGenerator
                     if (Math.Min(mx[0] - mn[0], Math.Min(mx[1] - mn[1], mx[2] - mn[2])) < 0.0105)
                         throw new InvalidOperationException($"machine_tiers: a box thinner than 1 cm in {p["name"]}");
                 }
-                if (boxes.Count > 33) // (32 and a refiner's status lamp: the game takes 256 since parts are merged meshes)
+                if (boxes.Count > 150) // (the game takes 256 since parts are merged meshes; a top tier.s look budget is about 80)
                     throw new InvalidOperationException($"machine_tiers: too many boxes: {p["name"]}");
                 o.File(PathOf(line, tier), Layout(p));
             }

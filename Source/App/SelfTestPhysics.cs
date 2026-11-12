@@ -365,7 +365,7 @@ public static partial class SelfTest
         var shuffledDiff = 0;
         var shuffledNormalDiff = 0;
         var total = 0;
-        foreach (var name in new[] { "Proto Box", "Downtown", "Physics Test", "Galleria" }.Concat(Maps.All.Where(m => m.HasTerrain).Take(2).Select(m => m.Name)))
+        foreach (var name in new[] { "Proto Box", "Blackmoor Asylum", "Physics Test", "Building Yard" }.Concat(Maps.All.Where(m => m.HasTerrain).Take(2).Select(m => m.Name)))
         {
             if (Maps.Find(name) is not { } m)
                 continue;
@@ -404,7 +404,7 @@ public static partial class SelfTest
 
         // Movement: 32 bodies x 600 ticks of input on two maps, twice (the second time on a rebuilt world), both movers.
         var lines = new List<string>();
-        foreach (var name in new[] { "Downtown", "Physics Test" }.Concat(Maps.All.Where(m => m.HasTerrain).Take(1).Select(m => m.Name)))
+        foreach (var name in new[] { "Blackmoor Asylum", "Physics Test" }.Concat(Maps.All.Where(m => m.HasTerrain).Take(1).Select(m => m.Name)))
         {
             if (Maps.Find(name) is not { } m)
                 continue;

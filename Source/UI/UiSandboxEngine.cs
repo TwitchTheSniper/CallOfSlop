@@ -118,6 +118,8 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(new float4(1f, 0.85f, 0.5f, 1f), notice);
         if (make) // (noted in the drawing, sent after it)
             game.SandboxMakeEngine(SandboxEngineKw, SandboxEngineTier, SandboxEngineLayout, SandboxEngineBoost, SandboxEngineSize,
-                SandboxEngineFits ? SandboxEngineBay : Vector3.Zero, SandboxEngineSeed);
+                SandboxEngineFits ? SandboxEngineBay : Vector3.Zero, SandboxEngineSeed, ghost: true);
+        if (make)
+            CloseSandboxParts(); // (placed with a ghost: GameSandboxBlueprintGhost.cs)
     }
 }

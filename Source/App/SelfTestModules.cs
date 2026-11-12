@@ -337,7 +337,9 @@ public static partial class SelfTest
         {
             var d = ConstructParts.Need(name);
             Want(d.MaxInputs == 1 && d.DataIn is [ConstructGatherer.RunPort], $"the {name}'s data input ({d.MaxInputs}, {string.Join("/", d.DataIn)})");
-            Want(ConstructRoutes.IsInput(d, RouteType.Data) && !ConstructRoutes.IsOutput(d, RouteType.Data), $"the {name} isn't a data input only");
+            // (its one data output is the production monitor's Data out, ProductionLines.MonitorPorts: nothing else drives a wire)
+            Want(ConstructRoutes.IsInput(d, RouteType.Data) && (!ConstructRoutes.IsOutput(d, RouteType.Data) || d.Monitor == MonitorKind.Machine && d.DataOut.Length == 1),
+                $"the {name} isn't a data input with only a monitor's Data out ({d.Monitor}, {string.Join("/", d.DataOut)})");
             Want(ConstructParts.PortProblems(d).Count == 0, $"the {name}'s ports: {string.Join("; ", ConstructParts.PortProblems(d))}");
         }
         Want(ConstructParts.Need("Materials Bin").MaxInputs == 0, "a plain bin takes a wire");

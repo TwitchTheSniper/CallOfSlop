@@ -90,7 +90,7 @@ public sealed class MissionStage
 
 /// <summary>
 /// A co-op mission (docs/archive/PVE-DESIGN.md "Data format"): a JSON file in a map pack's Missions folder
-/// (Maps/World/Missions/SiloBreach.json), naming its map. Loaded once at startup (<see cref="Missions.All"/>).
+/// (the only one, Maps/World/Missions/SiloBreach.json, went with the World Tour pack on 2026-11-12), naming its map. Loaded once at startup (<see cref="Missions.All"/>).
 /// </summary>
 public sealed class Mission
 {

@@ -304,6 +304,11 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>"use": true: this box is what a hand works (a lever's handle, a button's cap): the aim glow covers these and not the whole part (<see cref="ConstructPartDef.UseBoxes"/>).</summary>
     public bool Use { get; init; }
 
+    /// <summary>"work": how a detail box shows its machine working (<see cref="BoxWork"/>; docs/sandbox/constructs/look.md "Machine look"): only while the machine runs, drawn only, nothing on the server.</summary>
+    public BoxWork Work { get; init; }
+    /// <summary>"axis": the axis a "spin" box turns about or a "stroke" box slides along (a direction, 0..5); its travel is <see cref="RigTravel"/>.</summary>
+    public byte WorkAxis { get; init; }
+
     /// <summary>"status": true: a production machine's status lamp, drawn unlit in the colour of its line state (<see cref="ProductionLines"/>).</summary>
     public bool Status { get; init; }
 
@@ -390,6 +395,13 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 /// turns about its pivot by the arm's angle, <see cref="Leg"/> is drawn stretched between a fixed point and one that moves (a damper).
 /// </summary>
 public enum BoxRig : byte { None, Hub, Arm, Leg, Lever, Knob, Slide, Flip, Press, Stick } // (Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value; Stick: a Joystick's, tilted both ways by its X and Y: AnalogLever.cs)
+
+/// <summary>
+/// How a detail box shows its machine working ("work" in the file), while the machine runs and never otherwise: <see cref="Spin"/> turns about its
+/// "axis" through its own centre, <see cref="Stroke"/> slides "travel" metres along its "axis" and back (a ram), <see cref="Glow"/> is drawn unlit and
+/// bright (a hot die), <see cref="Smoke"/> puffs from its top (a stack). Drawn from the store as this peer has it (ConstructRender): nothing on the server or the wire.
+/// </summary>
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke }
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -557,6 +569,7 @@ public sealed partial class ConstructPartDef
     public float PiecePower = 1f, PieceThirst = 1f, PieceSpool; // a fuel system's or booster's multipliers, a turbo's lag
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
+    public bool HasWork; // a box that shows the machine working ("work" on a box)
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
     public (Vector3 At, Vector3 Colour)[] Lamps = [];
@@ -650,10 +663,13 @@ public sealed partial class ConstructPartDef
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
+    public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)
+    public bool IsBuildStation; // a Building Station (ConstructStation.cs): a Crafting Terminal whose hold feeds a blueprint built in its bay (storage.pieces.station)
     public Vector2 RackSection;
     public float RackLength;
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
+    public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
@@ -777,7 +793,8 @@ public sealed partial class ConstructPartDef
     public string DieFamily = ""; // a die: its rows in Pressing.json
     public (int First, int Count) DieRows;
 
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsMedia || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
+    public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsMedia || Monitor != MonitorKind.None || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
@@ -820,7 +837,7 @@ public sealed partial class ConstructPartDef
         PartRole.FluidTank => IsEnvelope ? 1 : 0, // a lift cell's vent
         PartRole.Burner => 2, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal || IsCraftTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -1158,7 +1175,7 @@ public static partial class ConstructParts
             return Ordnance.Parse(name); // (a design names itself, as a piece does)
         if (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
-        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
+        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name))
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)
@@ -1304,7 +1321,7 @@ public static partial class ConstructParts
         }
     }
 
-    private static ConstructPartDef ParseBody(string json, string file)
+    internal static ConstructPartDef ParseBody(string json, string file)
     {
         using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
         var root = doc.RootElement;
@@ -1429,7 +1446,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1503,6 +1520,17 @@ public static partial class ConstructParts
                 made = detail && glass == 0 ? made with { Status = true } : throw new ConstructPartException($"{file}: {where}: only an opaque detail box can be a \"status\" lamp");
             if (Opt(b, "finish") is { } boxFinish)
                 made = made with { Surface = SurfaceByName(boxFinish, file, where) };
+            if (Opt(b, "work") is { } wk)
+            {
+                var kind = Str(wk, file, where + ".work") switch
+                {
+                    "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke,
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\" or \"smoke\""),
+                };
+                if (!detail || glass != 0)
+                    throw new ConstructPartException($"{file}: {where}: only an opaque detail box can show \"work\" (a moving box adds no collision)");
+                made = made with { Work = kind, WorkAxis = Opt(b, "axis") is { } wa ? DirOf(Str(wa, file, where + ".axis"), file, where + ".axis") : (byte)2, RigTravel = Opt(b, "travel") is { } wt ? Num(wt, file, where + ".travel") : 0f };
+            }
             if (Opt(b, "key") is { } keyBox)
                 made = made with { Key = Str(keyBox, file, where + ".key") is { Length: 1 } one ? one[0] : throw new ConstructPartException($"{file}: {where}.key is one character") };
             list.Add(Opt(b, "rig") is { } rg ? ParseRig(made, b, rg, file, where) : made);
@@ -1518,6 +1546,7 @@ public static partial class ConstructParts
         ReadFlames(root, d, file);
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
+        d.HasWork = list.Any(x => x.Work != BoxWork.None);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
@@ -1806,6 +1835,7 @@ public static partial class ConstructParts
         ConstructPhysics.ParseStabiliser(d, root, file); // (a walker stabiliser: ConstructWalkFeel.cs)
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
+        ProductionLines.MonitorPorts(d); // (after the panels and the machines: a console's, a machine's or a rack's Data out)
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))
             throw new ConstructPartException($"{file}: a terminal names two chute ports: \"{ConstructTerminals.NetworkPort}\" (both ways) and \"{ConstructTerminals.OutPort}\" (out only)");
         ParseSystems(d, root, file); // (docks, catapults, conveyors: ConstructSystems.cs)

@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// machines are taught later, on the job, working for the Ministry of Slop. Once the induction is over (finished or skipped)
 /// the Ministry sends the inmate to the <b>Ministry Quarry</b> a few hundred metres out: a crew bus collects them at the stop
 /// outside the colony gate, and at the quarry Foreman Grubb has them power the works (a power cable), dig a quota into its
-/// Materials Bin and set its Assembler's recipe, then the bus takes them home. The steps are Story/Duties/Quarry.json, judged
+/// Smelter and take the metal out (Karl, 2026-11-12: the first machine is a Smelter, not the Assembler), then the bus takes them home. The steps are Story/Duties/Quarry.json, judged
 /// here on the host ten times a second; the Orbital Depot (GameDepot.cs) waits until this duty is done.
 /// <para>The crew bus is a STAND-IN (Source/StandIns): a picture on a scripted path, no construct. Riding it is a short
 /// scene: the player walks up to it once it has stopped, the camera follows it away (Program.Quarry.cs), and when the bus at
@@ -128,8 +128,17 @@ public sealed partial class Game
             case QuarrySpotKind.Bin:
             case QuarrySpotKind.Assembler:
             case QuarrySpotKind.Wall:
+            case QuarrySpotKind.Smelter:
+            case QuarrySpotKind.Out:
                 if (QuarryWorks is not { } w)
                     return null;
+                if (spot == QuarrySpotKind.Out)
+                {
+                    for (var k = w.PartCount - 1; k >= 0; k--)
+                        if (w.DefOf(k) is { IsBin: true, IsAssembler: false, IsRefiner: false })
+                            return w.SegToWorld(w.Parts[k].Seg, w.Parts[k].Pos);
+                    return w.WorldCom;
+                }
                 for (var k = 0; k < w.PartCount; k++)
                 {
                     var d = w.DefOf(k);
@@ -139,7 +148,7 @@ public sealed partial class Game
                             return w.SegToWorld(w.Parts[k].Seg, w.Parts[k].Pos + Vector3.Transform(new Vector3(0, 1.4f, -1.2f), Rot24.Quat(w.Parts[k].Rot))); // (in front of the face, chest high)
                         continue;
                     }
-                    if (spot == QuarrySpotKind.Assembler ? d.IsAssembler : spot == QuarrySpotKind.Bin ? d.IsBin && !d.IsAssembler && !d.IsRefiner : d.Name.Contains("Genset", StringComparison.Ordinal))
+                    if (spot == QuarrySpotKind.Smelter ? d.IsRefiner : spot == QuarrySpotKind.Assembler ? d.IsAssembler : spot == QuarrySpotKind.Bin ? d.IsBin && !d.IsAssembler && !d.IsRefiner : d.Name.Contains("Genset", StringComparison.Ordinal))
                         return w.SegToWorld(w.Parts[k].Seg, w.Parts[k].Pos);
                 }
                 return w.WorldCom;
@@ -219,12 +228,25 @@ public sealed partial class Game
                     return true;
                 QuarryBusWait(p, ref run, step.Spot);
                 return false;
+            case QuarryCue.Carry:
+                return RecyclingTable.Current.IdOf(step.Material) is var m and not 0 && SandboxInventory(p.Id).Materials[m] > 0
+                    || !QuarryHasMachine(); // (a works from before the Smelter can't make it)
             default:
                 return (run.Saw & QuarryBit(step.Cue)) != 0;
         }
     }
 
     private static uint QuarryBit(QuarryCue c) => 1u << (int)c;
+
+    private bool QuarryHasMachine()
+    {
+        if (QuarryWorks is not { } w)
+            return false;
+        for (var k = 0; k < w.PartCount; k++)
+            if (w.DefOf(k).IsRefiner)
+                return true;
+        return false;
+    }
 
     /// <summary>Server, a ride step: their bus at the stop (called when the step starts, again if it went), and boarding once it has stopped and they are at it.</summary>
     private void QuarryBusWait(Player p, ref QuarryRun run, QuarrySpotKind from)
@@ -406,6 +428,11 @@ public sealed partial class Game
             var step = QuarryScript.Current.Steps[state - QuarryFirstStep];
             if (step.Say.Length > 0)
                 OpeningSay(p, null, QuarryScript.Current.Speaker, step.Say, now);
+            if (step.Give.Length > 0 && RecyclingTable.Current.IdOf(step.Give) is var give and not 0 && SandboxInventory(p.Id).Materials[give] < step.GiveUnits)
+            {
+                SandboxInventory(p.Id).AddMaterial(give, step.GiveUnits - SandboxInventory(p.Id).Materials[give]);
+                SandboxHands.Notices.Add((p.Id, $"{QuarryScript.Current.Speaker} shovels {step.GiveUnits} {step.Give} into your pack"));
+            }
             Log($"[quarry] {p.Name}: step {state - QuarryFirstStep + 1}, {step.Id}");
         }
         QuarrySend(p);
@@ -567,6 +594,7 @@ public enum QuarryCue : byte
     Feed, // something tipped into (or used on) the works: its Materials Bin
     Recipe, // the works' Assembler's recipe set
     Bunk, // lay in a Bunk (the day's end; the marker is the colony's nearest free one)
+    Carry, // they carry some of the step's "material" (the metal, taken from the works)
 }
 
 /// <summary>A place a duty step points at.</summary>
@@ -580,6 +608,8 @@ public enum QuarrySpotKind : byte
     Bin,
     Assembler,
     Wall, // the mine face behind the works (the induction's supports and lamp)
+    Smelter, // the works' Smelter (any production machine)
+    Out, // the bin the Smelter fills (the works' last plain bin)
 }
 
 public sealed class QuarryStep
@@ -588,6 +618,8 @@ public sealed class QuarryStep
     public QuarryCue Cue;
     public QuarrySpotKind Spot;
     public float Seconds = 6, Amount = 6, HintAfter = 40;
+    public string Give = "", Material = ""; // a material handed over as the step starts ("give", "giveUnits"), and the one a carry step looks for ("material")
+    public int GiveUnits = 20;
 }
 
 /// <summary>Story/Duties/Quarry.json (format call-of-slop-duty/1): the first Ministry duty. A bad file is refused with a reason (Problem) and there is no quarry.</summary>
@@ -634,7 +666,7 @@ public sealed class QuarryScript
         }
         static QuarrySpotKind Spot(string name, string where) => name.Length == 0 ? QuarrySpotKind.None
             : Enum.TryParse<QuarrySpotKind>(name, true, out var k) && !int.TryParse(name, out _) && k != QuarrySpotKind.None ? k
-            : throw new FormatException($"{where}: no such spot \"{name}\" (stop, colony, quarry, genset, bin, assembler)");
+            : throw new FormatException($"{where}: no such spot \"{name}\" (stop, colony, quarry, genset, bin, smelter, out, wall)");
         s.Speaker = Str(root, "speaker", "file") is { Length: > 0 } sp ? sp : s.Speaker;
         s.Memo = Str(root, "memo", "file");
         s.Works = Str(root, "works", "file") is { Length: > 0 } wk ? wk : s.Works;
@@ -665,6 +697,12 @@ public sealed class QuarryScript
             st.Spot = Spot(Str(e, "spot", where), $"{where} ({st.Id})");
             if (st.Cue == QuarryCue.Ride && st.Spot is not (QuarrySpotKind.Colony or QuarrySpotKind.Quarry))
                 throw new FormatException($"{where} ({st.Id}): a ride's spot is colony or quarry (where the bus is boarded)");
+            st.Give = Str(e, "give", where);
+            st.Material = Str(e, "material", where);
+            if (e.TryGetProperty("giveUnits", out var gu) && gu.ValueKind == JsonValueKind.Number)
+                st.GiveUnits = Math.Clamp(gu.GetInt32(), 1, 200);
+            if (st.Cue == QuarryCue.Carry && st.Material.Length == 0)
+                throw new FormatException($"{where} ({st.Id}): a carry needs a material");
             if (st.Cue == QuarryCue.Reach && st.Spot == QuarrySpotKind.None)
                 throw new FormatException($"{where} ({st.Id}): a reach needs a spot");
             if (e.TryGetProperty("seconds", out var sec) && sec.ValueKind == JsonValueKind.Number)

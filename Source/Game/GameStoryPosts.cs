@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The staff's posts (docs/story/STORY.md "Bodies", "Posts"; data Story/Posts/PenalColony.json): a person on a Work step
 /// in the colony doesn't stand about at the work spot but goes to a post and keeps it for the shift: sat at the duty desk
-/// in the guards' barracks doing the admin, at the fax, at the tea urn, on watch at the gate. Each post names who takes
+/// in the guards' barracks doing the admin, at the tea urn, on watch at the gate. Each post names who takes
 /// it first; a post another body holds is passed over, and with nothing free the person works at the work spot as
 /// before. Scripted and shown, never told: nothing is said about it. A sitting post is the real seat (the same Use a
 /// player has, so every peer sees them sat there); anything else the body does (a reaction, a fight, a talk with
@@ -226,7 +226,10 @@ public sealed partial class Game
                 if (stuck)
                     p.Teleport(stand); // (held up by a corner of the doorway: in they go)
                 if (SandboxHands.Use(Constructs, p.Id, p.Eye, chair.Id, seatPart) == null)
+                {
                     b.PostSat = true;
+                    Console.WriteLine($"[story] {p.Name}: sat at the post \"{post.Name}\"");
+                }
                 else if (stuck)
                     b.PostStuck = now; // (somebody's in it: wait, then try again)
             }

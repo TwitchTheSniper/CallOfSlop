@@ -41,6 +41,9 @@ public sealed class StoryEngine
     /// <summary>What people will talk about with a player (docs/story/STORY.md "Topics"), and what asking does.</summary>
     public readonly StoryTopics Topics;
 
+    /// <summary>Things players look at closely (docs/story/STORY.md "Lore").</summary>
+    public readonly StoryLore Lore;
+
     /// <summary>Seconds of play in this world.</summary>
     public double Time;
 
@@ -62,6 +65,7 @@ public sealed class StoryEngine
         Factions = new StoryFactions(this);
         Storylets = new StoryStorylets(this);
         Topics = new StoryTopics(this);
+        Lore = new StoryLore(this);
     }
 
     public void Clear()

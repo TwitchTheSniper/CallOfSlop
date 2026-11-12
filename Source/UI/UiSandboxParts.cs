@@ -467,12 +467,15 @@ public sealed partial class Ui
             CloseSandboxParts();
     }
 
-    /// <summary>A blueprint tile (or the self-test): the server builds it in front of you; the window stays open for the next.</summary>
+    /// <summary>
+    /// A blueprint tile: the host makes it ready and its ghost comes out to be placed by aiming (GameSandboxBlueprintGhost.cs), so the window
+    /// closes. (Tools and tests that want it at once in front of the player send CActKind.Blueprint.)
+    /// </summary>
     public void SandboxPartsSpawn(Game game, int blueprint)
     {
-        var all = ConstructBuild.Blueprints;
-        SbSpawned(game, blueprint >= 0 && blueprint < all.Count ? all[blueprint].Name : "blueprint");
-        game.SandboxSend(CActKind.Blueprint, part: (ushort)blueprint);
+        game.SandboxSay(""); // (an older refusal mustn't read as this spawn's)
+        game.SandboxPrepareBlueprint(blueprint);
+        CloseSandboxParts();
     }
 
     /// <summary>A tool tile: that tool comes out (again: put away).</summary>

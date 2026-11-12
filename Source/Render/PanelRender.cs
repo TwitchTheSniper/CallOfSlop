@@ -264,18 +264,32 @@ public static unsafe class PanelRender
         s.Card.Hover = s.Key == _pointerKey ? _pointerRegion : -1;
         var d = c.DefOf(part);
         var percent = ConstructConfig.Has(d, CfgKey.TextSize) ? ConstructConfig.Get(c.Parts[part], d, CfgKey.TextSize, 100) : 100;
-        var rows = ConstructPanels.RowsAt(panel, percent);
         var card = s.Card;
-        card.Rows = rows;
-        card.Cols = Math.Min(PanelCard.MaxChars, Columns(panel.Size, rows));
-        card.TextRows = ConstructPanels.FreeRows(panel, rows);
-        card.Scroll = s.Scroll;
-        card.Follow = s.Follow;
-        panel.Fill!(world, c, part, panel, card);
+        // A display whose input is a console's, a machine's or a rack's Data out is a production monitor (ProductionLines.Monitors.cs).
+        var source = panel == d.Panels[0] ? ProductionLines.MonitorSource(c, part) : -1;
+        int rows;
+        if (source >= 0)
+        {
+            rows = ProductionLines.MonitorRows(panel, percent, out var cols);
+            card.Rows = card.TextRows = rows;
+            card.Cols = cols;
+            ProductionLines.FillMonitor(world, c, source, card);
+            rows = card.Rows;
+        }
+        else
+        {
+            rows = ConstructPanels.RowsAt(panel, percent);
+            card.Rows = rows;
+            card.Cols = Math.Min(PanelCard.MaxChars, Columns(panel.Size, rows));
+            card.TextRows = ConstructPanels.FreeRows(panel, rows);
+            card.Scroll = s.Scroll;
+            card.Follow = s.Follow;
+            panel.Fill!(world, c, part, panel, card);
+        }
         s.Scroll = Math.Clamp(card.Scroll, 0, card.ScrollMax);
         s.ScrollMax = card.ScrollMax;
         s.Follow = card.Follow;
-        if (percent > 100.5f)
+        if (percent > 100.5f && source < 0)
         {
             // Bigger text: fewer rows, but never fewer than a source that doesn't reflow has filled (its text gets no bigger than fits).
             for (var l = PanelCard.MaxLines - 1; l >= rows; l--)

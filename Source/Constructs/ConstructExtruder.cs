@@ -192,7 +192,7 @@ public static class ConstructExtruder
             | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskC, 0) << 32 | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskD, 0) << 48;
     }
 
-    private static void SetStall(ConstructWorld world, CStore st, ExtrudeStall s)
+    internal static void SetStall(ConstructWorld world, CStore st, ExtrudeStall s)
     {
         if (st.Refused == (byte)s)
             return;
@@ -206,6 +206,11 @@ public static class ConstructExtruder
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
+        if (d.IsPanelFormer)
+        {
+            ConstructPanelFormer.Work(world, c, part, st); // (a panel is made whole, by order: ConstructPanelFormer.cs)
+            return false;
+        }
         var product = ProductOf(c, part);
         if (product >= 0 && !c.Parts[product].D.IsExtrusion)
             product = -1; // (a bad link: nothing it can grow)
@@ -245,6 +250,7 @@ public static class ConstructExtruder
                 {
                     if (forOrder)
                         WorkOrders.Made(world, c, queue);
+                    ProductionLines.Made(world, c, part, 1); // (its console's Made count)
                     return true;
                 }
                 if (asked)
@@ -265,6 +271,7 @@ public static class ConstructExtruder
             {
                 if (forOrder)
                     WorkOrders.Made(world, c, queue);
+                ProductionLines.Made(world, c, part, 1);
                 return true;
             }
         }
@@ -296,7 +303,7 @@ public static class ConstructExtruder
         p.Orders is { Bill: false } q ? (q.Count > 0 && !d.IsWheelFormer ? q.Head.Key.L : 0) : CutLengthCm(p, d);
 
     /// <summary>Does the Run wire hold the machine off? Its other inputs don't count.</summary>
-    private static bool RunHeld(Construct c, int part)
+    internal static bool RunHeld(Construct c, int part)
     {
         ref var p = ref c.Parts[part];
         return p.InCount > 0 ? p.In < 0.5f : c.RoutesInto(part, RouteType.Data, 255) > 0;
@@ -802,6 +809,20 @@ public static class ConstructExtruder
         if (st.Held)
             return Program.HeldLook;
         var d = c.Parts[part].D;
+        if (d.IsPanelFormer)
+            return (ExtrudeStall)st.Refused switch
+            {
+                ExtrudeStall.NoPower => " - no power: needs a charged battery",
+                ExtrudeStall.NoMaterial => " - " + ConstructPanelFormer.Lacks(c, part, st),
+                ExtrudeStall.OrderMaterial => $" - needs {(c.Parts[part].Orders is { Count: > 0 } pq ? RecyclingTable.Current.NameOf(pq.Head.Key.Material) : "another material")} for its order, holds {RecyclingTable.Current.NameOf(st.Material)}",
+                ExtrudeStall.BadShape => " - not a panel: nothing makes its order (Cancel it)",
+                ExtrudeStall.Blocked => " - blocked: no room on its out bed",
+                ExtrudeStall.ConveyorSmall => $" - conveyor too narrow for the panel - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
+                ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
+                ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
+                ExtrudeStall.NoOrders => ", waiting for orders (Queue on its screen, or a Line Console's bill)",
+                _ => st.Busy ? ", forming" : ", waiting",
+            };
         var wheel = d.IsWheelFormer;
         var takes = d.IsAirframeFormer ? ExtrusionTable.Current.TakesWings() : d.IsFanFormer ? ExtrusionTable.Current.TakesFans() : wheel ? ExtrusionTable.Current.TakesWheels() : ExtrusionTable.Current.Takes();
         var round = Extrusion.ShapeOf((int)ConstructConfig.Get(c.Parts[part], d, CfgKey.Profile, 0)) != ExShape.Section;
@@ -835,7 +856,13 @@ public static class ConstructExtruder
         var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.BulkCapacity);
         if (st.Amount > 0)
             sb.Append(' ').Append(names.NameOf(st.Material));
-        if (d.IsWheelFormer)
+        if (d.IsPanelFormer)
+        {
+            if (WorkOrders.HeadOf(p, out var ph) && ph.Name != null)
+                sb.Append(", ").Append(ph.Name);
+            sb.Append(Status(c, part, st));
+        }
+        else if (d.IsWheelFormer)
         {
             if (d.IsFanFormer)
                 sb.Append($", to {TargetCm(p, d) / 100f:0.##} m");

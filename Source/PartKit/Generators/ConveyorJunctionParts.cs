@@ -15,7 +15,7 @@ public sealed class ConveyorJunctionParts : IPartGenerator
     public string Name => "conveyor_junction_parts";
 
     private const string Out = "Constructs/Parts/ConveyorJunctions";
-    private const string Frame = "#35556b", Plate = "#2c2e30", Roller = "#9aa0a6", Post = "#d9a21c", Mark = "#e8e2d0";
+    private const string Frame = "#35556b"; // (the body: it takes paint; the rest is MachineLook's tones)
 
     private static readonly (string Face, double Dx, double Dz)[] Sides = [("-z", 0, -1), ("+z", 0, 1), ("+x", 1, 0), ("-x", -1, 0)];
 
@@ -29,13 +29,13 @@ public sealed class ConveyorJunctionParts : IPartGenerator
         double cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
         p.Add(Box([x0, y0, z0], [x1, top, z1]));
         // The deck: a dark plate, and light rollers across it every 0.25 m (their tops 6 cm over the line, a piece's underside 5 mm over them).
-        p.Add(Box([x0 + 0.06, top - 0.005, z0 + 0.06], [x1 - 0.06, top + 0.02, z1 - 0.06], Plate, detail: true));
+        p.Add(MachineLook.D([x0 + 0.06, top - 0.005, z0 + 0.06], [x1 - 0.06, top + 0.02, z1 - 0.06], MachineLook.Base));
         for (var z = z0 + 0.15; z + 0.05 < z1 - 0.1; z += 0.25)
-            p.Add(Box([x0 + 0.13, top + 0.015, z], [x1 - 0.13, top + 0.06, z + 0.05], Roller, detail: true));
+            p.Add(MachineLook.D([x0 + 0.13, top + 0.015, z], [x1 - 0.13, top + 0.06, z + 0.05], MachineLook.Steel, "steel"));
         // Amber posts at the corners (clear of the widest conveyor at each edge's middle).
         // (3 mm in from the frame's sides: where they overlap its top their faces would meet the frame's)
         foreach (var (px, pz) in new[] { (x0 + 0.003, z0 + 0.003), (x1 - 0.123, z0 + 0.003), (x0 + 0.003, z1 - 0.123), (x1 - 0.123, z1 - 0.123) })
-            p.Add(Box([px, top - 0.005, pz], [px + 0.12, y1, pz + 0.12], Post, detail: true));
+            p.Add(MachineLook.D([px, top - 0.005, pz], [px + 0.12, y1, pz + 0.12], MachineLook.Accent, "hazard paint")); // (the guard posts: what a shin finds)
         // The ways in and out: a mark on each side face under its port (pale out, amber in), 4 mm proud.
         var ports = new List<object?>();
         var outs = 0;
@@ -46,7 +46,21 @@ public sealed class ConveyorJunctionParts : IPartGenerator
             double ax = cx + dx * (x1 - x0) / 2, az = cz + dz * (z1 - z0) / 2;
             double[] mn = dz != 0 ? [cx - 0.2, top - 0.09, az - (dz > 0 ? 0.01 : 0.004)] : [ax - (dx > 0 ? 0.01 : 0.004), top - 0.09, cz - 0.2];
             double[] mx = dz != 0 ? [cx + 0.2, top - 0.03, az + (dz > 0 ? 0.004 : 0.01)] : [ax + (dx > 0 ? 0.004 : 0.01), top - 0.03, cz + 0.2];
-            p.Add(Box(mn, mx, isIn ? Post : Mark, detail: true));
+            p.Add(MachineLook.D(mn, mx, isIn ? MachineLook.In : MachineLook.Out));
+            // An arrow on the deck at each way, between the rollers' lines, pointing the way a piece goes: a shaft and a stepped head (white in, orange out).
+            var way = isIn ? -1 : 1;
+            var colour = isIn ? MachineLook.In : MachineLook.Out;
+            double ay0 = top + 0.021, ay1 = top + 0.034, reach = (x1 - x0) / 2;
+            void Mark(double a0, double a1, double w)
+            {
+                double lo = Math.Min(a0, a1), hi = Math.Max(a0, a1);
+                p.Add(dz != 0 ? MachineLook.D([cx - w, ay0, cz + dz * lo - (dz < 0 ? hi - lo : 0)], [cx + w, ay1, cz + dz * lo + (dz > 0 ? hi - lo : 0)], colour)
+                    : MachineLook.D([cx + dx * lo - (dx < 0 ? hi - lo : 0), ay0, cz + 0.05 - w * 0.55], [cx + dx * lo + (dx > 0 ? hi - lo : 0), ay1, cz + 0.05 + w * 0.55], colour));
+            }
+            double tail = reach * (way > 0 ? 0.42 : 0.86), tip = reach * (way > 0 ? 0.86 : 0.42), neck = tail + (tip - tail) * 0.6;
+            Mark(tail, neck, 0.045);
+            Mark(neck, (neck + tip) / 2, 0.1);
+            Mark((neck + tip) / 2, tip, 0.05);
             var portName = isIn ? (++ins == 1 ? "Piece in" : $"Piece in {ins}") : (++outs == 1 ? "Piece out" : $"Piece out {outs}");
             ports.Add(Kw(("name", portName), ("type", "conveyor"), ("dir", isIn ? "in" : "out"), ("at", Py.L(Py.Round(ax, 3), Py.Round(top + 0.005, 3), Py.Round(az, 3))), ("face", face),
                 ("opening", Py.L(section, section))));

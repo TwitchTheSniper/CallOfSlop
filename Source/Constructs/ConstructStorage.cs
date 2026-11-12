@@ -90,6 +90,7 @@ public sealed class CStore
     }
 
     public int Version; // goes up on every change (the look text rebuilds only then)
+    public ushort Reserved; // parts here claimed for orders (ConstructReserve.cs; a client: as CBodyKind.Craft said): the look line's "(4 reserved)"
     public ushort[]? KindDef; // a Storage Volume's parts by kind, last put in last (made the first time one goes in, kept with the pooled store)
     public int[]? KindCount;
     public int KindN; // kinds held
@@ -514,13 +515,13 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press", "pieces"], bw);
+        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "beacon", "scoop", "terminal", "press", "pieces"], bw);
         if (ConstructParts.Opt(b, "pieces") is { } pc)
         {
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count", "hold"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
@@ -542,6 +543,10 @@ public static class ConstructStorage
                     throw new ConstructPartException($"{file}: storage.pieces.hold is at least 0.1 m each way");
             }
             d.IsPieceRack = true;
+            d.IsCraftTerminal = ConstructParts.Opt(pc, "crafting") is { ValueKind: JsonValueKind.True };
+            d.IsBuildStation = d.IsCraftTerminal && ConstructParts.Opt(pc, "station") is { ValueKind: JsonValueKind.True };
+            if (d.IsCraftTerminal)
+                d.DataIn = ["Orders"]; // (a Line Console's wire into it brings that console's machines: ConstructCrafting.cs)
         }
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.IsOrdnanceBench = ConstructParts.Opt(b, "ordnanceBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
@@ -711,6 +716,8 @@ public static class ConstructStorage
             ConstructExtruderParts.Parse(d, ex, file, bw);
         if (ConstructParts.Opt(b, "wheel") is { } wh)
             ConstructExtruderParts.ParseWheel(d, wh, file, bw);
+        if (ConstructParts.Opt(b, "panel") is { } pf)
+            ConstructPanelFormer.Parse(d, pf, file, bw);
         if (ConstructParts.Opt(b, "press") is { } pr)
             ConstructPress.Parse(d, pr, file, slots.Count);
         if (ConstructParts.Opt(b, "beacon") is { } bc)
@@ -1049,6 +1056,9 @@ public sealed partial class ConstructWorld
         if (p.Store != 0 && p.Store <= MaxStores)
         {
             Beacons.Dirty = true;
+            Reserve.Freed(this, p.Store);
+            CraftNets.Remove(p.Store);
+            Stores[p.Store].Reserved = 0;
             Stores[p.Store].Live = false;
             Stores[p.Store].Reset(0);
             StoreDirty.Remove(p.Store);
@@ -1061,9 +1071,16 @@ public sealed partial class ConstructWorld
         for (var k = 1; k <= MaxStores; k++)
         {
             Stores[k].Live = false;
+            Stores[k].Reserved = 0;
             Stores[k].Reset(0);
         }
         StoreDirty.Clear();
+        Reserve.Clear();
+        CraftNets.Clear();
+        CraftOpen.Clear();
+        CraftDirty.Clear();
+        StationOpen.Clear();
+        StationDirty.Clear();
         Beacons.Dirty = true;
     }
 

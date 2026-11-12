@@ -295,7 +295,7 @@ public static class ConstructConveyor
     {
         ConstructRackPack.Ensure(d, st);
         var pct = (int)MathF.Round(ConstructRackPack.Fill(d, st) * 100);
-        return $"{pct}% full, {st.ItemCount} piece{(st.ItemCount == 1 ? "" : "s")}, {st.KindN} kind{(st.KindN == 1 ? "" : "s")}";
+        return $"{pct}% full, {st.ItemCount} piece{(st.ItemCount == 1 ? "" : "s")}, {st.KindN} kind{(st.KindN == 1 ? "" : "s")}" + (st.Reserved > 0 ? $" ({st.Reserved} reserved)" : "");
     }
 
     public const int DropMost = 40; // the most pieces one held F drops loose (each is a body)
@@ -923,7 +923,15 @@ public static class ConstructConveyor
             return false;
         var td = c.DefOf(to);
         if (td.IsPieceRack)
-            return world.RackPut(c, to, d);
+        {
+            if (!world.RackPut(c, to, d))
+                return false;
+            if (td.IsCraftTerminal)
+                ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
+            return true;
+        }
+        if (td.IsPanelFormer)
+            return ConstructPanelFormer.TakeFromConveyor(world, c, to, d); // (extruded sheet into its bin)
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)

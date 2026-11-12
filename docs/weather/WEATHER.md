@@ -81,3 +81,32 @@ only grows over warm sea with low shear.
 2. Sync: the server owns the weather time and sends it with the seed, so every player sees the same storm at once.
 3. Terrain coupling: orographic lift and rain shadows from the streamed heights, sea and land from the planet.
 4. A volumetric cloud pass (ray-marched, after Nubis) fed by the same fields, on the GL 4.6 path first.
+
+## Cold storm (2026-11-12)
+
+Weather at ground level for a cold world, separate from the regional simulation above: a map's `storm` section
+(Maps/README.md, "Storm"; `StormSettings`). Looks and sound only, worked out on each PC from its own clock, so
+players see the same kind of storm but not the same gusts. Nothing goes on the wire and the simulation never sees it.
+
+- `Source/Weather/ColdStorm.cs`: the state. The level swells and falls over `cycle` seconds (two sines), gusts on
+  top, thinned by the height over a planetoid's ground (`RoughAltitude`, gone at `ceiling`). The wind runs along the
+  ground (up is `GravityFrames.UpAt`), its heading wandering. Ten times a second five rays go up from the eye (one
+  straight up, 30 m; four leaning, 14 m) through `World.RaycastWorld` (map, props, the planetoid's ground, so a mine's
+  ceiling counts) and the constructs: the open share, eased, is `Outside`. Frost builds over about 45 s outside and
+  melts in 12 s. The light (`ColdStorm.Light`) spreads most of the sun into the ambient, pulls the sky colours to the
+  whiteout and turns the fog flat and full (`FogMax` 1); it moves in steps of 1/40 so `Lighting.Use` re-sends it to
+  the scene shaders a few times a minute, not every frame. The fog runs from the eye to the visibility.
+- `Source/Render/SnowRenderer.cs`: the snow is one instanced draw of streaks with no vertex buffer: a flake's place in
+  a 28 m box round the camera is a hash of its number plus the storm's drift (kept in doubles on the CPU, wrapped),
+  wrapped in the vertex shader; streaks stretch along the flake's speed, fade near the eye, at the box's edge and into
+  the fog. 3,000 / 6,000 / 10,000 flakes at the Particles setting, fewer as the storm or `Outside` drops. The veil is
+  one triangle on the far plane after the sky, so the sky goes to the same white as the fogged ground.
+- `Source/Audio/SynthWind.cs` and `Audio.Storm.cs`: a 12 s stereo loop (a low roar, a howl through a narrow band whose
+  note climbs with the gusts, a second whistle in the strongest, the hiss of snow; whole cycles over the loop and a
+  crossfaded seam), made off the main thread the first time a storm is heard, on one source of its own on the
+  mixer's "Storm wind" row (`MixBus.Weather`). Under a roof it drops to about a fifth and the EFX low-pass dulls it.
+- `Source/App/Program.Storm.cs`: the frame's glue (after the map's fog is set), the frost drawn at the screen's edges
+  under the HUD, and the stop when no world has been drawn for 0.3 s (the menus).
+
+Cost: about ten rays a second and a few dozen uniforms a frame on the CPU, no allocations per frame; on the GPU one
+small instanced draw (10,000 thin quads at High) and one full-screen triangle where the sky shows.

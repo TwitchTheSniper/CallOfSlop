@@ -6,10 +6,15 @@ index of the construct guide, its building system. The guide is split by system 
 a few dozen KB. Read this index, then open only the one file that covers your task; never read all of them. The
 milestone-1 record and how to play are in [overview-and-playing](constructs/overview-and-playing.md).
 
-## [How a build should look](constructs/look.md), 12 KB
+## [How a build should look](constructs/look.md), 15 KB
 
 **Every agent that authors a blueprint, a generator or a building reads this first.** Valid is not finished: paint by
 section, finishes, lamps, detail, the authoring fields, a detail budget, and the `--look-report` baseline.
+
+## [How a building should look](constructs/buildings.md), 9 KB
+
+Read before authoring a building: what every building needs (the job gives the shape, an outline that reads at 50 m, a
+marked way in), then each faction's style. The Ministry of Slop: Brutalism, cold-war fittings, the colony's street.
 
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
@@ -32,6 +37,7 @@ The configure tool, fusing, free placement, painting, the remover, snappy/socket
 - The configure tool
 - Fusing
 - New constructs (free placement)
+- Spawning with a ghost
 - The paint tool (board item pp01)
 - The texture paint tool
 - The material painter
@@ -126,19 +132,24 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 82 KB
 
-Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, build stations, production lines, conveyors, work orders, the Production Showcase.
+Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, work orders, the crafting terminal, reservations, the building station, the Production Showcase.
 
 - Refining (decision 14)
 - Extrusion
 - The Wheel Former
 - The Press
+- The Panel Former (formed panels by name, presets, `--form-panel`, lofted hull parts get a recipe)
 - Machine tiers
 - Assembling
 - Build stations
 - Build stations: the Selector and the Blueprint Desk
 - Production lines (the Line Console, the recipe picker, resource icons)
+- Production monitors (Data out to any display; Alarm, Running, Made, Stop after)
 - Conveyors
 - Work orders
+- Crafting terminal
+- Reservations
+- Building station
 - Production Showcase
 
 ## [Storage and cargo](constructs/storage-and-cargo.md), 42 KB

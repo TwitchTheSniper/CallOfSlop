@@ -171,6 +171,7 @@ public sealed class StoryRules
         rules.Factions = FactionRules.Load(rules, folder);
         rules.Storylets = StoryletRules.Load(rules, folder, storyletQualities);
         rules.Topics = TopicRules.Load(rules, folder);
+        rules.Lore = LoreRules.Load(rules, folder);
         return rules;
     }
 
@@ -201,6 +202,9 @@ public sealed class StoryRules
 
     /// <summary>What each person will talk about in the talk panel (Story/Topics). Empty when there are none.</summary>
     public TopicRules Topics = new();
+
+    /// <summary>The things players can look at closely (Story/Lore). Empty when there are none.</summary>
+    public LoreRules Lore = new();
 
     private StoryRules WithStoryVerb()
     {
