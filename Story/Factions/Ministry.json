@@ -54,6 +54,7 @@
   ],
   "rivals": { "Clan MacSlop": 50, "The Call Centre": 50 },
   "voice": "MINISTRY MEMO",
+  "stranger": "inmate",
   "courier": "A clerk in a grey coat collects the crate, stamps it twice, and leaves without a word.",
   "jobs": [
     { "name": "Breaking Rocks",

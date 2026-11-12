@@ -406,7 +406,9 @@ drawn at random. A rule:
   (no `?them` for a Hurt by nobody known) isn't said.
 - **say**: up to 24 lines (printable ASCII, 110 characters), never the same twice running. They fill `{me} {them}
   {actor} {target} {place} {here} {owner}`, a first name with `.first` (`{them.first}`), and `{news}` (the event as a
-  sentence).
+  sentence). Nobody knows a name they haven't been told: until the speaker Knows the one they talk to (a player's Hello
+  introduces them), `{them}` and `{them.first}` say what the speaker's faction calls a stranger (its `"stranger"`,
+  the Ministry's "inmate"), or "friend" (`StoryTalk.Address`; topics and lore lines too).
 - **chance** (said this often when it wins: it still wins, so it doesn't fall back to a vaguer rule), **every** (one
   speaker says it at most this often), **once** (once per speaker and listener this session).
 
@@ -1014,6 +1016,8 @@ factions": what each asks, what it pays, and why one can't be taken yet.
 - **Pay**: `"standing"` (1 to 100) and `"wants"`, as a deed's: the faction remembers it (`JobsDone`), rivals cool, a new tier
   is rated, and technologies are taught. A Job event goes on the record (the radio has lines for it), and the IT desk can fax
   a notice named after a job.
+- **Stranger**: the faction's `"stranger"` (a few lower-case words) is what its people call someone they haven't met,
+  in place of `{them}` in a line ("Next question, inmate.").
 - **Voice**: the faction's `"voice"` is the tag its lines go out under to the party's players (`[MINISTRY MEMO] ...`):
   `"taken"` when a job is taken (after its `"ticket"`, if it has one), `"courier"` (the faction's) when a crate is collected,
   `"done"` when it is signed off. A long line goes as several chat lines.

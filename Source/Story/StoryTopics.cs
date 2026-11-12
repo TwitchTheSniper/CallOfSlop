@@ -388,6 +388,12 @@ public sealed class StoryTopics
             if (first)
                 name = name[..^6];
             var who = name.SequenceEqual("me") ? person : name.SequenceEqual("them") ? player : _e.Agents.Where(person);
+            if (who == player && _e.Talk.Address(person, player) is { } stranger)
+            {
+                StoryTalk.AppendAddress(sb, stranger); // (they haven't met: "inmate", not a name)
+                i = end;
+                continue;
+            }
             var text = W.NameOf(who);
             sb.Append(first && text.IndexOf(' ') is var sp and > 0 ? text[(sp + 1)..] is { } rest && IsTitle(text[..sp]) ? rest : text[..sp] : text);
             i = end;
