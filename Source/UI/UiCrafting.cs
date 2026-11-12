@@ -226,8 +226,6 @@ public sealed partial class Ui
                 if (_crSel >= 0 && _crSel < _crRows.Count)
                 {
                     var row = _crRows[_crSel];
-                    ImGuiSafe.TextColored(row.Stock > 0 || row.Make == 1 ? CrGood : CrWarn, _crSelText);
-                    ImGui.SameLine();
                     if (ImGui.Button("1"u8, new float2(34 * _scale, 0)))
                         _crCount = 1;
                     ImGui.SameLine();
@@ -241,6 +239,8 @@ public sealed partial class Ui
                     ImGui.PushStyleColor(ImGuiCol.Button, CrTabOn);
                     order = ImGui.Button("Order"u8, new float2(120 * _scale, 0));
                     ImGui.PopStyleColor();
+                    ImGui.SameLine(); // (the name last: the buttons stay where they are whatever is picked)
+                    ImGuiSafe.TextColored(row.Stock > 0 || row.Make == 1 ? CrGood : CrWarn, _crSelText);
                 }
                 else if (_crVisibleCount == 0)
                     ImGui.TextColored(Dim, _crTab == 0 ? _crMake > 0 ? "Nothing can be made now: untick Can make now to see what is missing."u8 : "Nothing to make: link machines to the terminal (conveyors, chutes, or a Line Console's wire into Orders)."u8 : "Nothing in linked stores."u8);

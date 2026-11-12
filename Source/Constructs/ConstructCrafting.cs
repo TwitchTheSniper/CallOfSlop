@@ -347,6 +347,8 @@ public static class ConstructCrafting
             {
                 if (ConstructParts.Get(def) is not { } d)
                     return;
+                if (Extrusion.IsRuntimeId(def) && d.ExKey.W == 0)
+                    return; // (a formed panel or a lofted part: named, not keyed; the terminal doesn't list those yet)
                 var what = Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def };
                 var row = Row(what, d);
                 row.Def ??= d;
