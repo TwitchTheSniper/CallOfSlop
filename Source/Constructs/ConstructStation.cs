@@ -152,15 +152,22 @@ public static class ConstructStation
         return MathF.Max(0.5f, Vector3.Distance(a, z) * 1.3f);
     }
 
+    private static (float, float, float) Sorted(Vector3 v)
+    {
+        var hi = MathF.Max(v.X, MathF.Max(v.Y, v.Z));
+        var lo = MathF.Min(v.X, MathF.Min(v.Y, v.Z));
+        return (hi, v.X + v.Y + v.Z - hi - lo, lo);
+    }
+
     /// <summary>
     /// Why a blueprint can't fit a bay, from its parts alone and without building it (a walk of its steps: 5,573 steps in about a
-    /// millisecond), or null when only a build can tell: a part longer than the bay's longest side, or parts whose boxes add up to more
+    /// millisecond), or null when only a build can tell: a part that no turn puts inside the bay, or parts whose boxes add up to more
     /// than one and a half times the bay's volume. Asked before any costing, on either peer.
     /// </summary>
     public static string? QuickRefusal(ConstructBuild.Blueprint bp, Vector3 bay)
     {
         var room = bay.X * bay.Y * bay.Z;
-        var longest = MathF.Max(bay.X, MathF.Max(bay.Y, bay.Z));
+
         double volume = 0;
         string last = "";
         ConstructPartDef? d = null;
@@ -171,7 +178,10 @@ public static class ConstructStation
             if (d == null)
                 continue;
             var s = d.BoundsMax - d.BoundsMin;
-            if (MathF.Min(s.X, MathF.Min(s.Y, s.Z)) > longest + 0.01f)
+            // (a part fits when its sides, longest first, are no longer than the bay's, longest first)
+            var (p0, p1, p2) = Sorted(s);
+            var (b0, b1, b2) = Sorted(bay);
+            if (p0 > b0 + 0.01f || p1 > b1 + 0.01f || p2 > b2 + 0.01f)
                 return $"doesn't fit the bay: its {d.Name} alone is {s.X:0.0} x {s.Y:0.0} x {s.Z:0.0} m, the bay {bay.X:0.0} x {bay.Z:0.0} m and {bay.Y:0.0} m high (the station's Bay settings)";
             volume += s.X * s.Y * s.Z;
         }
@@ -1494,5 +1504,60 @@ public static class StationProbe
         var j = c.Parts[t].Station;
         var b = j == null ? null : world.Get(j.Body);
         return (ConstructRecycler.Powered(world, c, t) ? "" : "NO POWER ") + (j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}{(b.Anchored ? " anchored" : "")}{(b.Asleep ? " asleep" : " awake")}, wheels {b.WheelCount}, at {b.Pos.X:0.0},{b.Pos.Y:0.00},{b.Pos.Z:0.0}")}) reserved {Reserved(world, c, t)} hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"");
+    }
+}
+
+public static class StationCostProbe
+{
+    /// <summary>
+    /// The window tool: the shipped blueprints with the most steps that a bay of <paramref name="bay"/> doesn't refuse from their
+    /// parts alone, each costed as a station costs it (the steps only, a slice of <see cref="ConstructStation.CostBudgetMs"/> at a time):
+    /// its steps, its size, whether it fits, the time in all and the longest slice.
+    /// </summary>
+    public static List<string> CostTop(Vector3 bay, int top)
+    {
+        var lines = new List<string>();
+        var list = ConstructBuild.Blueprints.Where(b => ConstructStation.QuickRefusal(b, bay) == null).OrderByDescending(b => b.Steps.Count).Take(top);
+        foreach (var bp in list)
+        {
+            // (as ConstructStation.Cost does it: the steps only, a slice at a time)
+            var run = new ConstructBuild.BuildRun { StepsOnly = true };
+            using var steps = ConstructBuild.BuildSteps(new ConstructWorld(), bp, Vector3.Zero, Quaternion.Identity, run).GetEnumerator();
+            double total = 0, worst = 0;
+            var slices = 0;
+            for (var more = true; more;)
+            {
+                var t0 = Stopwatch.GetTimestamp();
+                var until = t0 + (long)(ConstructStation.CostBudgetMs * Stopwatch.Frequency / 1000);
+                while (more && Stopwatch.GetTimestamp() < until)
+                    more = steps.MoveNext();
+                var ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+                total += ms;
+                worst = Math.Max(worst, ms);
+                slices++;
+            }
+            var size = Vector3.Zero;
+            if (run.Body != null)
+                ConstructStation.PartBounds(run.Body, out _, out size);
+            lines.Add(run.Body == null ? $"{bp.Name}: {bp.Steps.Count} steps: doesn't build: {run.Why}"
+                : $"{bp.Name}: {bp.Steps.Count} steps, {size.X:0.0} x {size.Y:0.0} x {size.Z:0.0} m, {(ConstructStation.FitRefusal(size, bay) == null ? "fits" : "doesn't fit")}: {total:0.0} ms in {slices} slices, worst {worst:0.00} ms");
+        }
+        return lines;
+    }
+}
+
+public static class StationPowerProbe
+{
+    /// <summary>The window tool: a body's mains as they stand (its batteries' inputs, its switches), for a floor that has no power.</summary>
+    public static string Text(Construct c)
+    {
+        var sb = new System.Text.StringBuilder($"mains {(c.MainsOff ? "OFF" : "on")}, wired {c.MainsWired}, battery {c.HasBattery}, power on {c.PowerOn}, asleep {c.Asleep}, dirty {c.Dirty}:");
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            if (p.D.Name is "Battery" or "Switch" or "Small Genset")
+                sb.Append($" [{p.D.Name} #{i} in {p.In:0.0}/{p.InCount} out {p.Out:0.0} state {p.State} powered {p.Powered} broken {p.Broken}]");
+        }
+        return sb.ToString();
     }
 }

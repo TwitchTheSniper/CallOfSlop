@@ -545,6 +545,8 @@ public static unsafe partial class Program
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)
             {
                 var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                if (g.IsServer && arg.StartsWith("loadworld ", StringComparison.Ordinal))
+                    WsSay("station: " + g.StationLoadProbe(arg[10..])); // (first: the station is in the world it loads)
                 var (sc, spart) = WsFind(g, "Building Station");
                 if (sc == null || !sc.DefOf(spart).IsBuildStation)
                 {
@@ -594,6 +596,22 @@ public static unsafe partial class Program
                         WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + ")");
                         break;
                     }
+                    case "costtop": // the biggest shipped blueprints a 64 m bay doesn't refuse from their parts, costed as a station does
+                        foreach (var line in StationCostProbe.CostTop(new System.Numerics.Vector3(64, 64, 64), int.TryParse(rest, out var topN) ? topN : 6))
+                            WsSay("station: cost: " + line);
+                        break;
+                    case "saveworld" when g.IsServer:
+                        WsSay("station: " + g.StationSaveProbe(rest));
+                        break;
+                    case "loadworld" when g.IsServer:
+                        // (loaded above, before the station was looked for)
+                        (sc, spart) = WsFind(g, "Building Station");
+                        if (sc == null)
+                        {
+                            WsFail("no Building Station after the load");
+                            return;
+                        }
+                        break;
                     case "repeat":
                         g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
                         break;
@@ -636,6 +654,8 @@ public static unsafe partial class Program
                     }
                 }
                 WsSay($"station: {StationProbe.Text(g.Constructs, sc, spart)}");
+                if (!ConstructRecycler.Powered(g.Constructs, sc, spart))
+                    WsSay("station: " + StationPowerProbe.Text(sc));
                 if (Ui.StationPreview is { Ready: true } pv && sverb == "pick")
                     WsSay($"station: preview {pv.Name}: {pv.Parts} parts, cost {pv.CostMs:0.0} ms, worst slice {pv.WorstMs:0.00} ms");
                 _wsWait = 2;
