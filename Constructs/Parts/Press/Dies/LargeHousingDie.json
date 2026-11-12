@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Housing Die",
-  "description": "Fits a large press and makes it stamp housing parts. Every material a housing part comes in uses this die.",
+  "description": "Fits a large press and makes it press a whole piece into one housing part, sized by the piece. A standard piece gives the standard part.",
   "group": "Production",
   "section": "Dies",
   "role": "panel",

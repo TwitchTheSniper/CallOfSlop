@@ -1139,7 +1139,8 @@ public static class ConstructPress
                 PressStall.Wants when row != null => "needs " + Wants(row, c, part),
                 var s => StallText(s).ToLowerInvariant(),
             };
-        if (RefusedAt(st, out var bay) is var why and not BayRefuse.None && sized != null && bay != 3)
+        var why = RefusedAt(st, out var bay);
+        if (why != BayRefuse.None && sized != null && bay != 3)
             problem = $"bay {bay + 1}: {SizedWhy(why, d)}";
         else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
