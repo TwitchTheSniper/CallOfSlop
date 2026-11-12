@@ -61,7 +61,7 @@ public sealed partial class InteriorParts
     private static Part Radiator()
     {
         var p = Hung("Cast Iron Radiator", "A column radiator. Lukewarm since the Ministry was founded.", color: OldCream, mass: 60, health: 200, armour: 4, finish: "worn paint");
-        p.Add(B([-0.5, -0.05, 0.03], [0.5, 0.55, 0.17], OldCream));
+        p.Add(B([-0.5, -0.05, 0.0], [0.5, 0.55, 0.17], OldCream));
         for (var k = 0; k < 9; k++) // (the gaps between the columns)
         {
             var x = -0.4 + k * 0.1;
@@ -77,15 +77,15 @@ public sealed partial class InteriorParts
     {
         double w = 0.47, h = 1.32, d = 0.62;
         var p = Furniture("Filing Cabinet", "Four drawers of files. Everything is in here somewhere, under something else.", "storage", w, h, d, FileGreen, mass: 50, health: 220, finish: "worn paint");
-        p.Add(B([-w / 2, 0, -d / 2], [w / 2, h, d / 2 - 0.02], FileGreen));
+        Cabinet(p, w, h, d, FileGreen, [0.35, 0.67, 0.99]);
         var slots = new List<PyDict>();
         for (var k = 0; k < 4; k++)
         {
             var y = 0.03 + k * 0.32;
-            p.Add(B([-w / 2 + 0.015, y, d / 2 - 0.02], [w / 2 - 0.015, y + 0.3, d / 2], FileGreen)); // a drawer's front
-            p.Add(B([-0.07, y + 0.2, d / 2], [0.07, y + 0.225, d / 2 + 0.02], "#b9bcbd", true, ("paintable", false), ("finish", "steel"))); // its handle
-            p.Add(B([-0.05, y + 0.1, d / 2 + 0.001], [0.05, y + 0.15, d / 2 + 0.004], Enamel, true, ("paintable", false))); // its label
-            slots.Add(Slot([-0.2, y + 0.01, -0.27], [0.2, y + 0.29, 0.27], "files", 4));
+            p.Add(B([-w / 2 + 0.035, y + 0.02, d / 2 - 0.02], [w / 2 - 0.035, y + 0.28, d / 2 + 0.004], FileGreen, true)); // a drawer's front
+            p.Add(B([-0.07, y + 0.2, d / 2 + 0.004], [0.07, y + 0.225, d / 2 + 0.024], "#b9bcbd", true, ("paintable", false), ("finish", "steel"))); // its handle
+            p.Add(B([-0.05, y + 0.09, d / 2 + 0.004], [0.05, y + 0.15, d / 2 + 0.016], Enamel, true, ("paintable", false))); // its label
+            slots.Add(Slot([-0.19, y + 0.03, -0.26], [0.19, y + 0.27, 0.27], "files", 4));
         }
         p.Set(("storage", Storage([.. slots])));
         return p;
@@ -127,14 +127,14 @@ public sealed partial class InteriorParts
         foreach (var x in new[] { -0.22, 0.22 })
         {
             p.Add(Cyl([x - 0.17, 1.38, d / 2 + 0.012], [x + 0.17, 1.72, d / 2 + 0.03], TapeBrown, "+z", false, 16));
-            p.Add(Cyl([x - 0.05, 1.5, d / 2 + 0.03], [x + 0.05, 1.6, d / 2 + 0.04], "#b9bcbd", "+z", false));
+            p.Add(Cyl([x - 0.05, 1.5, d / 2 + 0.03], [x + 0.05, 1.6, d / 2 + 0.05], "#b9bcbd", "+z", false));
         }
         p.Add(B([-0.14, 1.02, d / 2 + 0.012], [0.14, 1.2, d / 2 + 0.035], CastIron, true, ("paintable", false))); // the tape head
-        p.Add(B([-w / 2 + 0.05, 0.5, d / 2], [w / 2 - 0.05, 0.85, d / 2 + 0.01], CastIron, true, ("paintable", false))); // the lamp panel
+        p.Add(B([-w / 2 + 0.05, 0.5, d / 2], [w / 2 - 0.05, 0.85, d / 2 + 0.012], CastIron, true, ("paintable", false))); // the lamp panel
         string[] lamps = ["#f0a020", "#3fd04a", "#f0a020", "#d02a1e", "#3fd04a", "#f0a020"];
         for (var k = 0; k < lamps.Length; k++)
-            p.Add(LitBox([-0.36 + k * 0.13, 0.7, d / 2 + 0.01], [-0.3 + k * 0.13, 0.76, d / 2 + 0.022], lamps[k]));
-        p.Add(B([-w / 2 + 0.08, 0.1, d / 2], [w / 2 - 0.08, 0.4, d / 2 + 0.008], "#b9a98a", true)); // the louvre
+            p.Add(LitBox([-0.36 + k * 0.13, 0.7, d / 2 + 0.012], [-0.3 + k * 0.13, 0.76, d / 2 + 0.026], lamps[k]));
+        p.Add(B([-w / 2 + 0.08, 0.1, d / 2], [w / 2 - 0.08, 0.4, d / 2 + 0.012], "#b9a98a", true)); // the louvre
         return p.Set(("power", 200));
     }
 

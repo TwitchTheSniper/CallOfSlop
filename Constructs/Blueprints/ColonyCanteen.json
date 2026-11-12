@@ -637,18 +637,10 @@
     },
     {
       "part": "Tea Urn",
-      "on": 2,
+      "on": 4,
       "socket": "t7_8",
       "by": "foot10",
       "spin": 3
-    },
-    {
-      "part": "Galley Stove",
-      "on": 4,
-      "socket": "t8_8",
-      "by": "bottom",
-      "spin": 3,
-      "paint": "#4b5157"
     },
     {
       "part": "Galley Stove",
@@ -742,8 +734,8 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 6,
-      "socket": "kb7_5",
+      "on": 10,
+      "socket": "k8_5",
       "by": "back",
       "config": {
         "startOn": true
@@ -777,24 +769,24 @@
   ],
   "wires": [
     [
-      92,
+      91,
+      87
+    ],
+    [
+      91,
       88
     ],
     [
-      92,
+      91,
       89
     ],
     [
-      92,
+      91,
       90
     ],
     [
-      92,
-      91
-    ],
-    [
-      94,
-      93
+      93,
+      92
     ]
   ]
 }

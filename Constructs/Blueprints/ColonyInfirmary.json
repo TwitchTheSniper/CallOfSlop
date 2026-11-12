@@ -304,8 +304,8 @@
     },
     {
       "part": "Wall Clock",
-      "on": 7,
-      "socket": "k7_5",
+      "on": 6,
+      "socket": "k8_5",
       "by": "back"
     },
     {

@@ -254,8 +254,8 @@
     },
     {
       "part": "Text Sign",
-      "on": 8,
-      "socket": "f8_10",
+      "on": 16,
+      "socket": "f15",
       "by": "back",
       "text": [
         "REQUISITIONS"
@@ -371,7 +371,7 @@
     {
       "part": "Battery",
       "on": 9,
-      "socket": "k7_10",
+      "socket": "k0_10",
       "by": "-z",
       "paint": "#4b5157"
     }

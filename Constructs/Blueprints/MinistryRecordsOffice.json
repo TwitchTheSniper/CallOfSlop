@@ -583,13 +583,13 @@
     {
       "part": "Cast Iron Radiator",
       "on": 13,
-      "socket": "k8_0",
+      "socket": "k0_0",
       "by": "back"
     },
     {
       "part": "Wall Clock",
-      "on": 12,
-      "socket": "k8_5",
+      "on": 10,
+      "socket": "k0_5",
       "by": "back"
     },
     {
@@ -672,26 +672,26 @@
     },
     {
       "part": "Filing Cabinet",
-      "on": 31,
+      "on": 33,
       "socket": "k0_0",
       "by": "wall"
     },
     {
       "part": "Filing Cabinet",
-      "on": 31,
-      "socket": "k15_0",
+      "on": 33,
+      "socket": "k8_0",
       "by": "wall"
     },
     {
       "part": "Filing Cabinet",
-      "on": 32,
+      "on": 34,
       "socket": "k0_0",
       "by": "wall"
     },
     {
       "part": "Filing Cabinet",
-      "on": 32,
-      "socket": "k15_0",
+      "on": 34,
+      "socket": "k8_0",
       "by": "wall"
     },
     {

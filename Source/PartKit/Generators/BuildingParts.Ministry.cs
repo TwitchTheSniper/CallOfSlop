@@ -91,7 +91,7 @@ public sealed partial class BuildingParts
 
     /// <summary>The lid: fascias round a roof of 4 m slabs (cells x0.., z0.., nx by nz, the slabs' row y), and the corners where two
     /// sides meet. <paramref name="front"/> false leaves the -z side off (where a taller part of the building stands).</summary>
-    private static void Lid(Blueprint bp, int x0, int z0, int nx, int nz, int y, bool front = true)
+    private static List<int> Lid(Blueprint bp, int x0, int z0, int nx, int nz, int y, bool front = true)
     {
         const string Band = "Concrete Fascia 4 m", Corner = "Concrete Fascia Corner";
         var o = new List<int>();
@@ -114,6 +114,7 @@ public sealed partial class BuildingParts
         o.Add(bp.Put(Corner, Cell(x0 + nx + 1, y, z0 + nz + 1), RY180));
         o.Add(bp.Put(Corner, Cell(x0 - 2, y, z0 + nz + 1), RY90));
         Concrete(bp, o, MinWeathered);
+        return o;
     }
 
     /// <summary>A door on a doorway's hinge socket.</summary>
@@ -189,19 +190,19 @@ public sealed partial class BuildingParts
         foreach (var s in new[] { "k0_0", "k7_0", "k15_0" })
             bp.Hang("Filing Cabinet", back, s, "wall");
         bp.Hang("Teleprinter", east, "k8_0", "wall");
-        bp.Hang("Cast Iron Radiator", west, "k8_0", "back");
-        bp.Hang("Wall Clock", back, "k8_5", "back");
+        bp.Hang("Cast Iron Radiator", west, "k0_0", "back");
+        bp.Hang("Wall Clock", doorWall, "k0_5", "back");
         bp.Put("Office Plant", OnPad(1, 0, 1.75, 1.75), R0);
         var hall = new[] { Strip(bp, west, "k8_10"), Strip(bp, east, "k8_10"), Strip(bp, back, "k8_10") };
         Switch(bp, doorWall, "k7_5", hall);
         foreach (var x in new[] { 1.75, 3.75, 4.0 }) // the queue posts along the forecourt, under the overhang
             bp.Put("Queue Post", OnPad(0, -1, x, 1.75), R0);
         bp.Put("Pillar Box", OnPad(1, -1, 2.125, 1.75), R0);
-        // The archive: tape cabinets against the back wall, filing down the west side, strip lights and their switch.
+        // The archive: tape cabinets against the back wall, filing down the east side, strip lights and their switch.
         foreach (var s in new[] { "k7_0", "k15_0" })
             bp.Hang("Tape Cabinet", uBack, s, "wall");
-        foreach (var w in uWest)
-            foreach (var s in new[] { "k0_0", "k15_0" })
+        foreach (var w in uEast) // (the west side is the stairwell's)
+            foreach (var s in new[] { "k0_0", "k8_0" })
                 bp.Hang("Filing Cabinet", w, s, "wall");
         var archive = new[] { Strip(bp, uEast[0], "k8_10"), Strip(bp, uEast[1], "k8_10") };
         Switch(bp, uBack, "k0_5", archive);
@@ -258,8 +259,8 @@ public sealed partial class BuildingParts
             bp.Put("Seat", [4.0, 0.375, z], RY90);
         }
         Look(bp, bp.Put("Mess Table", [4.0, 0.375, 7.75], RY180), MinSlate, "steel"); // the servery's counter, in the opening
-        bp.Put("Tea Urn", OnPad(0, 1, 1.875, 2.0), RY180);
-        foreach (var x in new[] { 2.0, 4.0, 6.0 })
+        bp.Put("Tea Urn", OnPad(0, 2, 1.875, 2.0), RY180); // (in the kitchen, at the end of the range)
+        foreach (var x in new[] { 4.0, 6.0 })
             Look(bp, bp.Put("Galley Stove", [x, 0.375, 10.0], RY180), MinSlate);
         Sign(bp, servery, "k8_10", "GRUEL 12:00 TO 12:05");
         Sign(bp, west, "k8_5", "SECOND HELPINGS BY WRITTEN REQUEST ONLY");
@@ -267,7 +268,7 @@ public sealed partial class BuildingParts
         bp.Hang("Cast Iron Radiator", east, "k8_0", "back");
         bp.Hang("Wall Clock", servery, "k0_5", "back");
         var lights = new[] { Strip(bp, clere[2], "k0_0"), Strip(bp, clere[2], "k15_0"), Strip(bp, clere[3], "k0_0"), Strip(bp, clere[3], "k15_0") };
-        Switch(bp, rc[0], "kb7_5", lights);
+        Switch(bp, front, "k8_5", lights);
         Switch(bp, kBack, "k15_5", Strip(bp, kBack, "k8_10"));
         Look(bp, bp.Hang("Battery", east, "k0_10", "-z"), MinSlate);
         o.Add(bp);
@@ -296,7 +297,7 @@ public sealed partial class BuildingParts
         Look(bp, bp.Hang("Medicine Cabinet", east, "k8_5", "back"), MinWhite);
         Look(bp, bp.Hang("Filing Cabinet", east, "k0_0", "wall"), MinWhite);
         bp.Hang("Cast Iron Radiator", west, "k8_0", "back");
-        bp.Hang("Wall Clock", east, "k7_5", "back");
+        bp.Hang("Wall Clock", west, "k8_5", "back");
         Switch(bp, rc[0], "kb7_5", Strip(bp, west, "k0_10"), Strip(bp, west, "k15_10"));
         Look(bp, bp.Hang("Battery", east, "k0_10", "-z"), MinSlate);
         o.Add(bp);
@@ -314,10 +315,10 @@ public sealed partial class BuildingParts
         cols = new[] { 0, 30 }.Select(x => bp.Put("Concrete Column 2.75 m", Cell(x, G, -16), R0)).ToList();
         Concrete(bp, cols, MinWeathered);
         Roof(bp, 0, -16, 32, 32, Slab1);
-        Lid(bp, 0, -16, 32, 32, Slab1);
+        var lid = Lid(bp, 0, -16, 32, 32, Slab1);
         Steps(bp, 8, -16);
         Piers(bp, ButtressPart, (back, "f0_5"), (back, "f8_5"), (back, "f15_5"));
-        Sign(bp, front, "f8_10", "REQUISITIONS");
+        Sign(bp, lid[0], "f15", "REQUISITIONS"); // (on the lid's front, over the dock's middle)
         Sign(bp, back, "k8_5", "ALL ISSUES ON FORM R-12, IN TRIPLICATE");
         Outside(bp, front, "f0_10");
         Outside(bp, front, "f15_10");
@@ -331,7 +332,7 @@ public sealed partial class BuildingParts
         bp.Hang("Requisition Crate", crate, "+x", "-x");
         bp.Hang("Requisition Crate", crate, "-z", "+z");
         Switch(bp, rc[0], "kb7_5", Strip(bp, back, "k8_10"));
-        Look(bp, bp.Hang("Battery", back, "k7_10", "-z"), MinSlate);
+        Look(bp, bp.Hang("Battery", back, "k0_10", "-z"), MinSlate);
         o.Add(bp);
 
         // Colony Gatehouse: a 4 by 4 m concrete post on a pad with its step in front, and its roof thrown 4 m out towards
