@@ -98,6 +98,48 @@ journal off. [Fusing](building-and-tools.md#fusing) caches plain parts only. So 
 parts on big bodies, put it on the body's own segment, and prefer a **finish or paint** (free: no parts, no rebuild cost)
 over a part wherever a finish does the job. A construct holds 16,000 parts ([Performance and caps](parts-and-data.md#performance-and-caps)).
 
+## Machine look
+
+Production machinery reads as machinery, not as a painted box with a screen (the user, 2026-11-11). Every machine a generator
+makes (the Extruder and Formers, the Press and Die Lathe, the Line Console today; a Panel Former, a Laser Cutter, a building
+station, arms and cranes to come) follows seven points. The shared pieces are `Source/PartKit/MachineLook.cs`.
+
+1. **Shape says function.** A silhouette that reads at 50 m and differs from its neighbours': the Extruder is long and low
+   with a hopper at the back and a die head at the front; the Press a tall open frame with a ram; a Former a headstock
+   with a big bare hub; the console a desk. A new machine picks a shape no other has.
+2. **Work is visible and moves, and stops when the machine stops.** A detail box may carry `"work"`: `"spin"` (about
+   `"axis"`, through its own centre), `"stroke"` (`"travel"` metres along `"axis"` and back: a ram), `"glow"` (hot orange,
+   its own dull colour at rest: a die) or `"smoke"` (puffs from its top). Drawn only while `ProductionLines.Working` says
+   the machine runs, from the store each peer already has: nothing on the server or the wire. The status lamp's band and
+   the bin's fill are the game's own.
+3. **Flow reads one way.** The in side has a white band and arrow, the out side an orange band and arrow, and every port
+   where something moves has `hazard paint`.
+4. **Three tones**, never one colour: a dark structural base, the family's body colour, a bright accent only on what a
+   hand works or what moves. Base, steel, accent and markings are `"paintable": false`, so a machine painted whole (a
+   station's colour in a blueprint) keeps its three tones; only the body takes the paint.
+5. **Tier by build**: more guarding, cladding and piping at a higher tier, the same silhouette
+   ([Machine tiers](production.md#machine-tiers)).
+6. **One control face** on the aisle side: the screen's middle about 1.5 m above the machine's floor, the status lamp
+   over it (`PartScreens.Mount(..., lamp: true)`), and under the plate a shelf of three accent buttons and a red stop at
+   about 1.3 m (`MachineLook.Buttons`). A machine lower than that stands its screen on a board (the small Extruder's).
+7. **Real finishes**, by name on the box (`"finish"`): `tread plate` on tops that are walked on, `steel` on working
+   parts, `hazard paint` on strips; the body keeps its paint.
+
+| Tone | Colour | On |
+| --- | --- | --- |
+| Base | `#22262b` | skirts, beds, frames, guards, housings, the control board |
+| Steel | `#98a1a9`, finish `steel` | dies, collars, rams, hubs, chucks' plates, work tops |
+| Accent | `#f2b01e` | buttons, pulleys, chucks, a ram's hazard edge |
+| In / Out | `#ecebe4` / `#f07818` | the band and arrow of each side |
+| Stop | `#d02a1e` | the stop button |
+| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020` | cladding; takes paint |
+
+Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
+keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a
+face a Die Frame, a piece or a conveyor stands against is under 2 cm proud; faces sit a few mm apart by construction.
+Budget: about 40 look boxes at tier 1 or the small class, 80 at the top. Not done yet: the refiners, the Assembler,
+racks and junctions (their tiers have palettes and shapes, not this language), and a Press has no status lamp.
+
 ## Off the axis
 
 A blueprint step may be a **freeform weld** instead of a socket step: `{"part": "Panel", "weld": {"on": 3, "pos": [x, y, z],

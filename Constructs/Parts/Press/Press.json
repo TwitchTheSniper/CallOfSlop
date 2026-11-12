@@ -10,7 +10,7 @@
   "health": 800,
   "armour": 20,
   "material": "steel",
-  "color": "#4d5a66",
+  "color": "#2f5f8f",
   "attachSeconds": 4,
   "power": 900,
   "storage": {
@@ -157,7 +157,9 @@
         0.175,
         1.375
       ],
-      "color": "#2f363d"
+      "color": "#22262b",
+      "paintable": false,
+      "finish": "tread plate"
     },
     {
       "min": [
@@ -233,75 +235,300 @@
     },
     {
       "min": [
-        0.55,
-        1.15,
-        0.425
+        0.475,
+        1.25,
+        0.35
       ],
       "max": [
-        0.95,
-        1.375,
-        0.825
+        1.025,
+        1.38,
+        0.9
       ],
-      "color": "#23272c",
+      "color": "#22262b",
       "detail": true,
       "shape": "cylinder",
-      "segments": 12
+      "segments": 12,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.575,
+        0.975,
+        0.45
+      ],
+      "max": [
+        0.925,
+        1.3625,
+        0.8
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "paintable": false,
+      "finish": "steel",
+      "work": "stroke",
+      "axis": "-y",
+      "travel": 0.325
+    },
+    {
+      "min": [
+        0.375,
+        0.8875,
+        0.325
+      ],
+      "max": [
+        1.125,
+        0.975,
+        0.925
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "work": "stroke",
+      "axis": "-y",
+      "travel": 0.325
+    },
+    {
+      "min": [
+        0.37,
+        0.9,
+        0.32
+      ],
+      "max": [
+        1.13,
+        0.955,
+        0.93
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint",
+      "work": "stroke",
+      "axis": "-y",
+      "travel": 0.325
+    },
+    {
+      "min": [
+        -0.14,
+        1.8,
+        -0.14
+      ],
+      "max": [
+        1.64,
+        1.865,
+        1.39
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        1.37,
+        1.37
+      ],
+      "max": [
+        1.5,
+        1.445,
+        1.39
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.0,
+        0.0375,
+        1.375
+      ],
+      "max": [
+        1.5,
+        0.15,
+        1.39
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.723,
+        0.0925,
+        1.39
+      ],
+      "max": [
+        0.777,
+        0.1425,
+        1.405
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.675,
+        0.0755,
+        1.39
+      ],
+      "max": [
+        0.825,
+        0.0925,
+        1.405
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.7005,
+        0.0585,
+        1.39
+      ],
+      "max": [
+        0.7995,
+        0.0755,
+        1.405
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.726,
+        0.0425,
+        1.39
+      ],
+      "max": [
+        0.774,
+        0.0585,
+        1.405
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        0.0375,
+        -0.14
+      ],
+      "max": [
+        1.5,
+        0.15,
+        -0.125
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.0825,
+        0.175,
+        1.37
+      ],
+      "max": [
+        -0.0425,
+        1.375,
+        1.405
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.5425,
+        0.175,
+        1.37
+      ],
+      "max": [
+        1.5825,
+        1.375,
+        1.405
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
     },
     {
       "min": [
         0.8875,
         0.92,
-        -0.131
+        -0.137
       ],
       "max": [
         1.3625,
         0.95,
         -0.095
       ],
-      "color": "#c8a13a",
-      "detail": true
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [
         0.8875,
         0.175,
-        -0.131
+        -0.137
       ],
       "max": [
         1.3625,
         0.205,
         -0.095
       ],
-      "color": "#c8a13a",
-      "detail": true
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
     },
     {
       "min": [
         0.1375,
         0.92,
-        -0.131
+        -0.137
       ],
       "max": [
         0.6125,
         0.95,
         -0.095
       ],
-      "color": "#c8a13a",
-      "detail": true
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [
         0.1375,
         0.175,
-        -0.131
+        -0.137
       ],
       "max": [
         0.6125,
         0.205,
         -0.095
       ],
-      "color": "#c8a13a",
-      "detail": true
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
     }
   ],
   "sockets": [

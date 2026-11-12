@@ -77,6 +77,10 @@ public static partial class ProductionLines
         };
     }
 
+    /// <summary>Whether a machine is at work now, for the boxes that show it ("work" on a box: <see cref="BoxWork"/>): a line machine that shows Running, any other with a busy store and power.</summary>
+    public static bool Working(ConstructWorld world, Construct c, int part, CStore st, double now) =>
+        Raw(world, c, part, st) is null ? st.Busy && !st.Held && ConstructRecycler.Powered(world, c, part) : Of(world, c, part, st, now) == LineState.Running && st.Busy;
+
     /// <summary>An Assembler's state (ConstructAssembling.cs): no recipe or an empty queue is Stopped; a recipe it can't work is a Fault.</summary>
     private static LineState AssemblerRaw(ConstructWorld world, Construct c, int part, ConstructPartDef d, CStore st)
     {
