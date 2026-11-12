@@ -211,6 +211,11 @@ public static partial class ConstructRender
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         var n = 0;
+        if (!CameraFeeds.InPass) // (the seconds this frame's particles emit for: a burning part's flames, a working stack's smoke; nothing set it, so neither showed)
+        {
+            _fxDt = (float)Math.Clamp(Now - _fxLast, 0, 0.1);
+            _fxLast = Now;
+        }
         _leverEase = 1 - MathF.Exp(-Math.Clamp((float)(Now - _leverDrawnAt), 0, 0.25f) * AnalogLever.ShownRate);
         _leverDrawnAt = Now;
         LogicDisplays.Sample(world, Now);
