@@ -619,6 +619,18 @@ public static partial class ConstructRoutes
         return mid;
     }
 
+    /// <summary>
+    /// Where a data link meets a part, in the part's own frame and unscaled: the middle of its bounds, or the top of a
+    /// capital part (as <see cref="PortPoint"/> has it; <c>--check-ports</c> measures it).
+    /// </summary>
+    public static Vector3 DataPortAt(ConstructPartDef d)
+    {
+        var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+        if (d.BoundsMax.Y - d.BoundsMin.Y > 2 * MaxSegment * 0.9f)
+            mid.Y = d.BoundsMax.Y;
+        return mid;
+    }
+
     /// <summary>The direction a port faces (outward), or zero for a part's centre.</summary>
     public static Vector3 PortDir(Construct c, int part, byte port, RouteType? t = null)
     {
