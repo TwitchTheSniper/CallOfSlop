@@ -21,7 +21,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// one end socket each side at mid height; face sockets every 2 m link to nothing unless something is fitted). Furniture and floor
 /// panels (phase 8), dressing (phase 11) and trim (phase 12) follow. Boxes go through zfight (CLAUDE.md, "No coplanar faces").
 /// </summary>
-public sealed class InteriorParts : IPartGenerator
+public sealed partial class InteriorParts : IPartGenerator
 {
     public string Name => "interior_parts";
 
@@ -673,11 +673,11 @@ public sealed class InteriorParts : IPartGenerator
         };
         foreach (var m in new[] { 4, 8, 12, 16 })
             all.Add(("Walls", PanelWall(m).Json));
-        foreach (var f in FurnitureParts())
+        foreach (var f in FurnitureParts().Concat(ColdWarFurniture()))
             all.Add(("Furniture", f.Json));
         foreach (var m in new[] { 8, 16 })
             all.Add(("Floors", FloorPanel(m).Json));
-        foreach (var d in DressingParts())
+        foreach (var d in DressingParts().Concat(ColdWarDressing())) // (the Ministry's old fittings: InteriorParts.ColdWar.cs)
             all.Add(("Dressing", d.Json));
         // scale.write_parts over both kinds of part (a scale Part and a Building piece)
         o.Own(Out);
