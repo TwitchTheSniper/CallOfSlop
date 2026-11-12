@@ -539,17 +539,18 @@ public sealed class PressParts : IPartGenerator
     {
         string[] metals = ["steel", "metal", "bronze"];
         // Shaft: a yoke flange at each end, 0.08 of the length; Bearings by length; torque as d^3 and strength (the Drive die's law).
+        // (Auto picks by the blank's section: 15 cm a U joint, 20 a drive shaft, 25 a CV joint, 30 and up a stub axle; the Pattern setting the rest.)
         var shaft = Py.L(
             Feature("flange", [-0.2, -0.2, 0, 1.2, 1.2, 0.08], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40),
             Feature("flange", [-0.2, -0.2, 0.92, 1.2, 1.2, 1], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40));
         var bearings = Kit("Bearing", true, 2, 0.5, "length", 12);
         var shaftTorque = Py.L(Scale("maxTorque", "across", 3, true, 900));
         yield return SizedDie("Shaft", ["round", "pipe"], metals, [10, 180], [25, 3200], [1, 64], 2, 0.02, shaft, Py.L(
-            Pattern("shaft", "Drive Shaft 1 m", "drive shaft", "round 15x15x100 steel", bay2: bearings, scale: shaftTorque, along: "z"),
+            Pattern("shaft", "Drive Shaft 1 m", "drive shaft", "round 20x20x100 steel", bay2: bearings, scale: shaftTorque, along: "z"),
             Pattern("ujoint", "U Joint", "U joint", "round 15x15x25 steel", bay2: bearings, scale: shaftTorque, along: "x"),
-            Pattern("cv", "CV Joint", "CV joint", "round 20x20x25 steel", bay2: bearings, scale: shaftTorque, along: "x"),
-            Pattern("stub", "Stub Axle", "stub axle", "round 20x20x35 steel", bay2: bearings, along: "z"),
-            Pattern("hub", "Wheel Hub", "wheel hub", "round 20x20x35 steel", bay2: bearings, scale: shaftTorque, along: "z")));
+            Pattern("cv", "CV Joint", "CV joint", "round 25x25x25 steel", bay2: bearings, scale: shaftTorque, along: "x"),
+            Pattern("stub", "Stub Axle", "stub axle", "round 30x30x35 steel", bay2: bearings, along: "z"),
+            Pattern("hub", "Wheel Hub", "wheel hub", "round 30x30x35 steel", bay2: bearings, scale: shaftTorque, along: "z")));
         // Actuator: a gland collar on the barrel and an eye under its base; Servo Motors by mass (powered) or Bearings by size (free).
         var actuator = Py.L(
             Feature("gland", [-0.05, -0.05, 0.3, 1.05, 1.05, 0.34], "dark", proud: "xy", clamp: "z", min: 0.5, max: 20),

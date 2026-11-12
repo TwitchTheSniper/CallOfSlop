@@ -2775,7 +2775,7 @@
      "id": "shaft",
      "like": "Drive Shaft 1 m",
      "label": "drive shaft",
-     "preset": "round 15x15x100 steel",
+     "preset": "round 20x20x100 steel",
      "body": "like",
      "along": "z",
      "bay2": {
@@ -2823,7 +2823,7 @@
      "id": "cv",
      "like": "CV Joint",
      "label": "CV joint",
-     "preset": "round 20x20x25 steel",
+     "preset": "round 25x25x25 steel",
      "body": "like",
      "along": "x",
      "bay2": {
@@ -2847,7 +2847,7 @@
      "id": "stub",
      "like": "Stub Axle",
      "label": "stub axle",
-     "preset": "round 20x20x35 steel",
+     "preset": "round 30x30x35 steel",
      "body": "like",
      "along": "z",
      "bay2": {
@@ -2862,7 +2862,7 @@
      "id": "hub",
      "like": "Wheel Hub",
      "label": "wheel hub",
-     "preset": "round 20x20x35 steel",
+     "preset": "round 30x30x35 steel",
      "body": "like",
      "along": "z",
      "bay2": {
