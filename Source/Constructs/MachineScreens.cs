@@ -87,7 +87,9 @@ public static class MachineScreens
             card.Add(1, "Batch ").Add(1, r.UnitsIn).Add(1, ' ').Add(1, r.InputName);
         else if (r != null)
             card.Add(1, "Makes ").Add(1, r.OutputName);
-        else if (ConstructConfig.Get(p, d, CfgKey.Recipe, 0) < 0.5f)
+        else if ((int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) is var set and > 0 && set <= d.RefineChoices.Length)
+            card.Add(1, "Makes ").Add(1, d.RefineChoices[set - 1].OutputName); // (the recipe set, before anything has come in)
+        else
             card.Add(1, "Recipe Auto"); // (what comes in picks it; the Recipe button under the lines sets one)
         if (d.RefineMix)
         {
@@ -199,9 +201,9 @@ public static class MachineScreens
             // Work orders (WorkOrders.cs): stock, the piece so far, then the queue: its totals and the next three (the buttons under them).
             Amount(card, 1, "Stock ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
             var from = 2;
-            if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var ps && d.Config[ps].Options.Length > 0)
+            if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var pss && d.Config[pss].Options.Length > 0)
             {
-                card.Add(from, "Preset ").Add(from, d.Config[ps].Options[Math.Clamp((int)p.Cfg[ps], 0, d.Config[ps].Options.Length - 1)]); // (what its Queue orders; the Preset button picks it)
+                card.Add(from, "Preset ").Add(from, d.Config[pss].Options[Math.Clamp((int)p.Cfg[pss], 0, d.Config[pss].Options.Length - 1)]); // (what its Queue orders; the Preset button picks it)
                 from++;
             }
             if (ConstructExtruder.ProductOf(c, part) is var piece and >= 0 && c.Parts[piece].D is { IsExtrusion: true } od)
@@ -216,7 +218,9 @@ public static class MachineScreens
             card.Bar = -1;
             return;
         }
-        if (d.IsFanFormer)
+        if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var ps && d.Config[ps].Options.Length > 0)
+            card.Add(1, "Preset ").Add(1, d.Config[ps].Options[Math.Clamp((int)p.Cfg[ps], 0, d.Config[ps].Options.Length - 1)]);
+        else if (d.IsFanFormer)
             card.Add(1, "Fan");
         else if (d.IsAirframeFormer)
             card.Add(1, Extrusion.AirframeOf((ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0))?.Label ?? "Wing");
