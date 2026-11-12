@@ -5,6 +5,7 @@
  "steps": [
   {
    "id": "wake",
+   "area": "colony",
    "title": "On your feet",
    "text": "Look around with the mouse.",
    "warden": "ON YOUR FEET, INMATE! Mine shift! The bus does not wait and neither do I!",
@@ -15,6 +16,7 @@
   },
   {
    "id": "bus",
+   "area": "colony",
    "title": "Get on the bus",
    "text": "{MoveForward} {MoveLeft} {MoveBack} {MoveRight} to walk, {Sprint} to run. Board the crew bus at the gate.",
    "warden": "Out the gate and ON THE BUS! Sentence served is time worked, and you have worked none!",
@@ -25,6 +27,7 @@
   },
   {
    "id": "jump",
+   "area": "quarry",
    "title": "The mine",
    "speaker": "Foreman Grubb",
    "text": "{Jump} to jump.",
@@ -33,6 +36,7 @@
   },
   {
    "id": "hold",
+   "area": "quarry",
    "title": "Pick up a lamp",
    "speaker": "Foreman Grubb",
    "text": "Look at a Lamp and press {Interact}.",
@@ -47,6 +51,7 @@
   },
   {
    "id": "backpack",
+   "area": "quarry",
    "title": "Your backpack",
    "speaker": "Foreman Grubb",
    "text": "{Stow} puts it in your pack.",
@@ -60,6 +65,7 @@
   },
   {
    "id": "physicsgun",
+   "area": "quarry",
    "title": "The physics gun",
    "speaker": "Foreman Grubb",
    "text": "Hold {ToolWheel}, flick to the physics gun, let go.",
@@ -74,6 +80,7 @@
   },
   {
    "id": "carry",
+   "area": "quarry",
    "title": "Shift the rubble",
    "speaker": "Foreman Grubb",
    "text": "Aim at the rock and hold {Fire}.",
@@ -89,6 +96,7 @@
   },
   {
    "id": "prop",
+   "area": "quarry",
    "title": "Pick up a pit prop",
    "speaker": "Foreman Grubb",
    "text": "Look at a Pit Prop and press {Interact}.",
@@ -104,6 +112,7 @@
   },
   {
    "id": "attach",
+   "area": "quarry",
    "title": "The attach tool",
    "speaker": "Foreman Grubb",
    "text": "Take out the attach tool ({ToolWheel}).",
@@ -118,6 +127,7 @@
   },
   {
    "id": "support",
+   "area": "quarry",
    "title": "Shore up the wall",
    "speaker": "Foreman Grubb",
    "text": "Aim at the foot of the rock face and hold {Fire}.",
@@ -129,6 +139,7 @@
   },
   {
    "id": "lamp",
+   "area": "quarry",
    "title": "Light the face",
    "speaker": "Foreman Grubb",
    "text": "{DrawPack} the lamp, then aim at the prop and hold {Fire}.",
@@ -140,6 +151,7 @@
   },
   {
    "id": "done",
+   "area": "quarry",
    "title": "Wall's up",
    "speaker": "Foreman Grubb",
    "text": "You can move, carry and build. The Esc menu replays this.",

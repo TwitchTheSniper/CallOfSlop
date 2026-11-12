@@ -62,6 +62,11 @@ public sealed partial class Ui
                 ImGui.Spacing();
                 ImGuiSafe.TextColored(Orange, _qyHint);
             }
+            if (game.PlayAreaOutLocal && step != null)
+            {
+                ImGui.Spacing();
+                ImGuiSafe.TextColored(Red, PlayAreaLine(step.Area));
+            }
             ImGui.PopTextWrapPos();
             if (game.QuarryHasTarget && game.Local is { } me)
             {

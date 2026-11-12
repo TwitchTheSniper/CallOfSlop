@@ -26,6 +26,8 @@ the ride's camera `Source/App/Program.Quarry.cs`.
   the older works (an Assembler) passes the `metal` step at once. Foreman Grubb says each step's line. Every step has an
   orange marker (the stop, the bus once it is called, the genset, the bins) with its distance, and a hint after
   `hintAfter` seconds (default 40). Cues come from the actions the server carried out (`QuarrySawAct`, beside the induction's).
+- **Play areas** (2026-11-12). Each step names its `area` (the colony or the quarry); out of it the step waits and the
+  Ministry's tannoy calls them back (docs/sandbox/TUTORIAL.md "Play areas", Story/Tutorial/Bounds.json).
 - **Skip.** The Esc menu's "Skip this Ministry duty" counts it as done (not while riding).
 - **Co-op.** Each person has their own run and their own bus; the works are shared, so a friend's cable counts only for the
   one who laid it.
@@ -43,7 +45,7 @@ real vehicles carry players, a real crew bus driven by Ministry staff replaces t
 ## Wire and save (protocol 236)
 
 `Msg.Quarry`, server to one client: u8 state (0 none, 1 report, 2 + step, 255 done), u8 has a target, vec the target, u32 the
-tick they boarded (0: not riding), u16 the leaving bus, u16 the arriving bus. `CActKind.QuarrySkip` from a client. Each
+tick they boarded (0: not riding), u16 the leaving bus, u16 the arriving bus, u8 outside the step's play area (protocol 258). `CActKind.QuarrySkip` from a client. Each
 person's state is saved in the world's `QuarryTag` section (`WorldPlayer.QuarryState`); a ride under way resumes its step.
 
 ## Next

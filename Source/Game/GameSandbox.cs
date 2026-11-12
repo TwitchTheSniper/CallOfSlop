@@ -407,6 +407,7 @@ public sealed partial class Game
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
