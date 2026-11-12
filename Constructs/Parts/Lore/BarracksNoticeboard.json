@@ -1,0 +1,237 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Barracks Noticeboard",
+  "description": "Rotas, a lost-glove notice, and a postcard from the centrifuge pinned in the corner.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5.0,
+  "health": 25,
+  "armour": 0,
+  "material": "steel",
+  "color": "#b08350",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.55,
+        0.75,
+        -0.015
+      ],
+      "max": [
+        0.55,
+        1.5,
+        0.015
+      ],
+      "color": "#b08350"
+    },
+    {
+      "min": [
+        -0.49,
+        0.05,
+        -0.05
+      ],
+      "max": [
+        -0.45,
+        0.87,
+        -0.016
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        -0.52,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.42,
+        0.05,
+        0.12
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        0.45,
+        0.05,
+        -0.05
+      ],
+      "max": [
+        0.49,
+        0.87,
+        -0.016
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        0.42,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.52,
+        0.05,
+        0.12
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        -0.5,
+        1.12,
+        0.009
+      ],
+      "max": [
+        -0.22,
+        1.44,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        1.1,
+        0.009
+      ],
+      "max": [
+        0.1,
+        1.44,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.48,
+        0.8,
+        0.009
+      ],
+      "max": [
+        -0.24,
+        1.05,
+        0.019
+      ],
+      "color": "#e2d6b8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1,
+        0.82,
+        0.009
+      ],
+      "max": [
+        0.2,
+        1.04,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.26,
+        1.18,
+        0.009
+      ],
+      "max": [
+        0.5,
+        1.4,
+        0.019
+      ],
+      "color": "#3a86b8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.27,
+        1.38,
+        0.015
+      ],
+      "max": [
+        0.285,
+        1.395,
+        0.035
+      ],
+      "color": "#c03030",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.48,
+        1.38,
+        0.015
+      ],
+      "max": [
+        0.495,
+        1.395,
+        0.035
+      ],
+      "color": "#c03030",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        1.42,
+        0.015
+      ],
+      "max": [
+        -0.345,
+        1.435,
+        0.035
+      ],
+      "color": "#c03030",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.04,
+        1.42,
+        0.015
+      ],
+      "max": [
+        -0.025,
+        1.435,
+        0.035
+      ],
+      "color": "#c03030",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot0",
+      "at": [
+        -0.47,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot1",
+      "at": [
+        0.47,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

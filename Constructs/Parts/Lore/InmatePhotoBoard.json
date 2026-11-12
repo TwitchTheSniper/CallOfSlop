@@ -1,0 +1,357 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Inmate Photo Board",
+  "description": "A cork board of inmates' photographs, one row a year. Year three has a gap.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5.0,
+  "health": 25,
+  "armour": 0,
+  "material": "steel",
+  "color": "#b08350",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        0.8,
+        -0.015
+      ],
+      "max": [
+        0.5,
+        1.5,
+        0.015
+      ],
+      "color": "#b08350"
+    },
+    {
+      "min": [
+        -0.44,
+        0.05,
+        -0.05
+      ],
+      "max": [
+        -0.4,
+        0.92,
+        -0.016
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        -0.47,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.37,
+        0.05,
+        0.12
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        0.4,
+        0.05,
+        -0.05
+      ],
+      "max": [
+        0.44,
+        0.92,
+        -0.016
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        0.37,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.47,
+        0.05,
+        0.12
+      ],
+      "color": "#4a3220"
+    },
+    {
+      "min": [
+        -0.44,
+        1.32,
+        0.009
+      ],
+      "max": [
+        -0.31,
+        1.48,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.26,
+        1.32,
+        0.009
+      ],
+      "max": [
+        -0.13,
+        1.48,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.08,
+        1.32,
+        0.009
+      ],
+      "max": [
+        0.05,
+        1.48,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1,
+        1.32,
+        0.009
+      ],
+      "max": [
+        0.23,
+        1.48,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.28,
+        1.32,
+        0.009
+      ],
+      "max": [
+        0.41,
+        1.48,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        1.1,
+        0.009
+      ],
+      "max": [
+        -0.31,
+        1.26,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.26,
+        1.1,
+        0.009
+      ],
+      "max": [
+        -0.13,
+        1.26,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.08,
+        1.1,
+        0.009
+      ],
+      "max": [
+        0.05,
+        1.26,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1,
+        1.1,
+        0.009
+      ],
+      "max": [
+        0.23,
+        1.26,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.28,
+        1.1,
+        0.009
+      ],
+      "max": [
+        0.41,
+        1.26,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.88,
+        0.009
+      ],
+      "max": [
+        -0.31,
+        1.04,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.26,
+        0.88,
+        0.009
+      ],
+      "max": [
+        -0.13,
+        1.04,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.08,
+        0.88,
+        0.009
+      ],
+      "max": [
+        0.05,
+        1.04,
+        0.019
+      ],
+      "color": "#c9a271",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.02,
+        1.01,
+        0.013
+      ],
+      "max": [
+        0.045,
+        1.035,
+        0.024
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.025,
+        1.015,
+        0.015
+      ],
+      "max": [
+        0.04,
+        1.03,
+        0.031
+      ],
+      "color": "#c03030",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1,
+        0.88,
+        0.009
+      ],
+      "max": [
+        0.23,
+        1.04,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.28,
+        0.88,
+        0.009
+      ],
+      "max": [
+        0.41,
+        1.04,
+        0.019
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot0",
+      "at": [
+        -0.42,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot1",
+      "at": [
+        0.42,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
