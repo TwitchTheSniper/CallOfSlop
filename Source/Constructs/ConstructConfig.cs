@@ -197,6 +197,7 @@ public enum CfgKey : byte
     OrderMaterial, // Line Console: its next bill line's material (by its option's name)
     LinePage, // Line Console: the line or the bill on its screen (not on the panel)
     TextSize, // any part with a text panel: its text size, % of the part file's (DisplayPanel.cs, ConstructPanels.RowsAt)
+    LineStopAfter, // Line Console: stops the line when its Made count reaches this (0: never; ProductionLines.Monitors.cs)
     COUNT,
 }
 
@@ -798,7 +799,7 @@ public static class ConstructConfig
             {
                 CfgKey.Setting => true,
                 CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner,
-                CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage => ProductionLines.IsConsole(d),
+                CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,

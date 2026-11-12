@@ -18,7 +18,7 @@ public sealed partial class Ui
     private ushort _crBody;
     private int _crPart = -1, _crTab, _crSel = -1, _crCount = 1, _crStamp, _crOrdersKey;
     private double _crBuiltAt;
-    private bool _crBuilt;
+    private bool _crBuilt, _crNowOnly = true; // (Make shows what can be made now unless unticked: most recipes of a big table lack an input)
     private readonly List<CraftRow> _crRows = new(128);
     private RpTile[] _crTiles = [];
     private int[] _crVisible = [];
@@ -127,7 +127,7 @@ public sealed partial class Ui
         var words = _crSearch.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         for (var i = 0; i < _crTiles.Length && i < _crRows.Count; i++)
         {
-            if (_crTab == 0 ? _crRows[i].Make == 0 : _crRows[i].Stock == 0)
+            if (_crTab == 0 ? _crRows[i].Make == 0 || _crNowOnly && _crRows[i].Make == 3 : _crRows[i].Stock == 0)
                 continue;
             var match = true;
             foreach (var w in words)
@@ -170,6 +170,7 @@ public sealed partial class Ui
         var order = false;
         var cancel = 0;
         var tab = _crTab;
+        var nowOnly = _crNowOnly;
         var vp = ImGui.GetMainViewport();
         var w = MathF.Min(940 * _scale, vp.WorkSize.X * 0.9f);
         var h = MathF.Min(640 * _scale, vp.WorkSize.Y * 0.88f);
@@ -202,7 +203,14 @@ public sealed partial class Ui
                 }
                 ImGui.SameLine();
             }
-            ImGui.TextColored(Dim, _crTab == 0 ? "What the linked machines make. Dim: inputs missing."u8 : _crTab == 1 ? "On linked shelves and racks, not reserved."u8 : "This terminal's requests."u8);
+            if (_crTab == 0)
+            {
+                ImGui.Checkbox("Can make now"u8, ref nowOnly);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Unticked: also what a linked machine could make with inputs it lacks (dim, with what is missing)."u8);
+                ImGui.SameLine();
+            }
+            ImGui.TextColored(Dim, _crTab == 0 ? "What the linked machines make."u8 : _crTab == 1 ? "On linked shelves and racks, not reserved."u8 : "This terminal's requests."u8);
             ImGui.Separator();
             var foot = ImGui.GetFrameHeightWithSpacing() * (_crTab < 2 ? 2 : 1) + 4 * _scale;
             if (ImGui.BeginChild("##crgrid"u8, new float2(0, -foot), ImGuiChildFlags.None))
@@ -235,7 +243,7 @@ public sealed partial class Ui
                     ImGui.PopStyleColor();
                 }
                 else if (_crVisibleCount == 0)
-                    ImGui.TextColored(Dim, _crTab == 0 ? "Nothing to make: link machines to the terminal (conveyors, chutes, or a Line Console's wire into Orders)."u8 : "Nothing in linked stores."u8);
+                    ImGui.TextColored(Dim, _crTab == 0 ? _crMake > 0 ? "Nothing can be made now: untick Can make now to see what is missing."u8 : "Nothing to make: link machines to the terminal (conveyors, chutes, or a Line Console's wire into Orders)."u8 : "Nothing in linked stores."u8);
                 else
                     ImGui.TextColored(Dim, "Click a part, set how many, then Order. It arrives in the tray."u8);
             }
@@ -244,9 +252,10 @@ public sealed partial class Ui
         }
         ImGui.End();
         // After the drawing: the tab, the order, the cancel.
-        if (tab != _crTab)
+        if (tab != _crTab || nowOnly != _crNowOnly)
         {
             _crTab = tab;
+            _crNowOnly = nowOnly;
             CraftingFilter();
         }
         if (order && _crSel >= 0 && _crSel < _crRows.Count)

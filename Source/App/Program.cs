@@ -340,11 +340,14 @@ public static unsafe partial class Program
         _vehicleSheet = args.Any(a => a.Equals("--vehicle-sheet", StringComparison.OrdinalIgnoreCase)); // (Program.VehicleSheet.cs)
         _shotTool |= _stressShots | _ragdollShots | _vehicleShots | _vehicleSheet;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
-        if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        var windowShot = WindowShotArgs(args); // --window-shot: pictures of the real window for an agent's own checking (Program.WindowShot.cs)
+        if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)) || windowShot)
             SavePaths.UseSmokeSandbox(args);
         else
             SavePaths.Init(args);
         _settings = Settings.Load();
+        if (_windowShot)
+            WindowShotSettings(args);
         // Steam, when this run asks for it (a Steam build, steam_appid.txt, --steam; Program.Steam.cs). A Steam build
         // started outside Steam hands over to Steam here and quits.
         if (InitSteam(args))
@@ -369,7 +372,7 @@ public static unsafe partial class Program
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _freeTravel = args.Any(a => a.Equals("--free-travel", StringComparison.OrdinalIgnoreCase)); // (dev, free travel step 2: GameTravel.cs)
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        _frameCapOff = _smoke || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
+        _frameCapOff = _smoke || _windowShot || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
@@ -397,7 +400,7 @@ public static unsafe partial class Program
                 _settings.MediaOthersWeb = MediaDirector.OthersWeb;
                 _settings.Save();
             };
-            MediaBrowser.Allowed = !_smoke && !_shotTool; // (a test run never starts a browser)
+            MediaBrowser.Allowed = !_smoke && !_shotTool && !_windowShot; // (a test run never starts a browser)
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
             LoadAudioMix(); // audio_mix.json from the Audio mixer window, if there is one (Program.AudioMixer.cs)
@@ -451,6 +454,8 @@ public static unsafe partial class Program
         {
             CrashLog.Report("main loop exception", ex);
             Console.WriteLine($"FATAL: {ex}");
+            if (_windowShot)
+                WsSay($"FAILED: {ex.Message} (the window or GL context could not start, or the run crashed: callofslop.log)");
             return 1;
         }
         finally
@@ -463,13 +468,13 @@ public static unsafe partial class Program
             MediaDirector.Shutdown(AudioSystem);
             AudioSystem.Dispose();
             Glfw.Terminate();
-            if (!_smoke && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the smoke test borrows settings temporarily; never save them
+            if (!_smoke && !_windowShot && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the smoke test borrows settings temporarily; never save them
             {
                 _settings.Save();
                 _progress.Save();
             }
         }
-        return 0;
+        return _wsExit;
     }
 
     /// <summary>The game runs without a console window, so console output goes to callofslop.log (serverlist.log for --master, which can run beside the game).</summary>
@@ -762,6 +767,8 @@ public static unsafe partial class Program
             var now = Glfw.Time;
             if (_smoke)
                 SmokeTick(now);
+            else if (_windowShot)
+                WindowShotTick(now); // (Program.WindowShot.cs)
             FrameDt = Math.Min(now - last, 0.1);
             last = now;
 
@@ -973,6 +980,8 @@ public static unsafe partial class Program
                 SaveScreenshot(_shotName);
                 _shotName = null;
             }
+            if (_windowShot)
+                WindowShotSave(); // (--window-shot: Program.WindowShot.cs)
             Perf.Gpu?.EndFrame();
             CrashLog.Phase = "swap";
             using (Perf.Measure(PerfArea.Swap))
@@ -1459,6 +1468,8 @@ public static unsafe partial class Program
             _slotDown[i] = !blocked && binds[i] != Keybinds.Unbound && Keybinds.IsDown(_window, binds[i]);
         Keybinds.Resolve(binds, _session != null && _game is { SandboxOn: true }, _slotDown, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
         Keybinds.Collapse(_slotDown, _down); // (an action is down while any of its bindings is: pressed with the first, released with the last)
+        if (_windowShot)
+            WindowShotKeys(_down); // (--window-shot's script: Program.WindowShot.cs)
     }
 
     private static void UpdateLocalPlayer(double now)

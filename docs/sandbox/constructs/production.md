@@ -246,7 +246,7 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 - **Performance.** `ConstructPress.Step` at 10 Hz looks only at constructs with `HasPress`; a bay's mouth is a `Near` query only while the bay is empty. Nothing allocates but the bodies it makes.
 - **Wire (protocol 144).** No new message. Parts and links carry what is in it, `CBodyKind.Extrude` a shorter piece; the stall is `Refused`, the refusal `Blocked`.
 
-Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); a press's ram doesn't move, as no part animates its work yet.
+Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); the ram strokes while it stamps (a "work" box, drawn only: [Machine look](look.md#machine-look)).
 
 ## Machine tiers
 
@@ -308,7 +308,7 @@ Fitting time grows from x1 to x2.
   Fixed at every tier: the rates, bins, power, mass, health, armour, widths, the bit's reach, every socket and port, the trays, and the aisle. A building's height is a range of its width (`TierHeights` in the self-test); a drill's top is always its shaft socket. A big shape is a solid box drawn as a detail shape, the box itself `"hidden"`, so the collider stays boxes. Every machine says `"collider": "boxes"`, so with the compound collider a wedge or cylinder detail stays a look.
   **"Machine tier looks"** checks that tiers of a line differ pairwise in solid shape (cells of its own size) and in colour, that each keeps the line's signature, and that details stay clear of sockets, ports, bins, trays, aisles and the assembler's open front and near the machine.
   `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 256 boxes (it was 32 while each box was a draw; static parts are merged meshes now, docs/render/MERGED-MESHES.md), and a box may reach 16 m from its origin
-  (`ConstructParts.MaxPartReach`), for the tier 5 stacks. No part animates its work yet: only wheels, joints, dials and pistons move.
+  (`ConstructParts.MaxPartReach`), for the tier 5 stacks. A box may show its machine working (`"work"`: spin, stroke, glow, smoke; [Machine look](look.md#machine-look)); the tiers here do not use it yet.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
   default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
   line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
@@ -534,6 +534,20 @@ the part kit's `control_parts` (the console).
   dim grey of its hue so its shape reads. They show in the recipe picker, the material painter's list and a beacon's Materials tab. A
   window that shows only a few tiles (`SandboxTiles.WantFew`, `Prefer`) has the resources and its own tiles drawn first, not the whole
   atlas.
+- **Recycler and gathering modules** (2026-11-11, the user: "quality of life for some of these machines"). Both are line machines: the
+  same six states, a status lamp, a row on a console wired to their Run, and a Data out (a gathering module has no screen, so a monitor
+  on its Data out is its screen: `MachineScreens.Gatherer`). A Recycler is Starved with nothing in its intake, Blocked when its output is
+  full or a wreck waits for room, Running while it breaks one. A Drill or Saw Module is Starved off a deposit or with no tree in reach,
+  Blocked with a full bin or one holding another material, at Fault when the deposit or the trees need a higher tier, No power when a
+  shaft drill's shaft isn't turning. Why it waits rides the store's `Blocked` byte (`GatherStall`; a Recycler's 1 = output full), sent
+  and saved as it was, so no wire change. The look line starts with the state word ("Drill Module: 0/20 - Starved: nothing below;
+  nearest deposit ..."). Lamps: the Recycler's over its screen (its part file), a module's on its hopper's or bin's back rim (`MachineTiers.ModuleLamp`).
+- **Press and Die Lathe** on lines (2026-11-11): Running while it stamps or cuts, Starved waiting for a piece or a die, Blocked with its tray,
+  its path or its Piece out conveyor full or cut, at Fault with a conveyor too narrow or the wrong size of lathe; from its stall byte
+  (`ProductionLines.PressRaw`). Its lamp is a bar on the front of the crown's dark cap, over its die screen (`PressParts.StatusLamp`).
+- **Console reading** (2026-11-11): the picked machine sits on a lit strip as well as its ">"; Auto reads "auto: next metal" from what is
+  in the input ("auto: by its input" while empty); bill and queue sizes drop trailing zeros (0.25x0.25, 1m); at a big Text size the title
+  keeps its count before the scroll mark ("On 2/3  1-2/3").
 - **The mains** (2026-11-11, proposed). A Battery takes one wire, its isolator. When every working battery on a body has one and every one
   says off (`Construct.MainsOff`, `ConstructPower.Mains`, on the wire in the gear byte's top bit since protocol 247), the circuit gives
   machines nothing: `ConstructRecycler.Powered` is false for every production machine, recycler, gatherer and beacon it reaches, in creative
@@ -546,6 +560,49 @@ Proposed (the user's to confirm): the six states and their colours and blinks; t
 membership by wire; four machines on the screen; Auto as the default recipe; a console starting stopped. Next: the lamp and console for the
 Assembler, Extruder and Recycler; a real moving part per machine family while it runs; a standard chute port height (1.0 m, in at the back
 left, out at the front right) so a base generator lays machines in a row.
+
+## Production monitors
+
+Quality of life for the lines (the user, 2026-11-11: "when you connect the data out of the line console to a display, it will show its
+queues and line status, but in different size displays"). No monitor part: any display shows a line. Code:
+`Source/Constructs/ProductionLines.Monitors.cs`; the hook in `PanelRender.Fill`.
+
+- **Data out.** A Line Console's outputs are **Run** (its switch: the line's wires, as before; an old wire is still Run), **Data out**,
+  **Alarm**, **Running** and **Made**. Every refiner, Extruder, Wheel Former, Assembler, Press, Die Lathe and Piece Rack has a **Data
+  out** too (an Extruder's first output stays its Length). A data link from a Data out to any logic Display part (readouts, signs,
+  gauges, graphs, lamp banks; `ProductionLines.CanMonitor`) makes that display a monitor of its source: its own page is set aside
+  while the link is intact. Several displays may hang off one source. The link is an ordinary data wire carrying nothing, so saves,
+  blueprints, copies and joiners keep it. Recyclers, Drill and Saw Modules and every store (Materials Bin, Storage Volume, Parts Shelf,
+  shelves, chests: `StoreMonitor.cs`) have one as well: a store's monitor shows its fill ("300/528 metal, 57%" and a bar, or a shelf's
+  slots and each kind with its count, moving on by itself); tiny: "Storage Volume 57% metal".
+- **Size.** A monitor's rows are its panel's height in 6 cm rows at its Text size, up to 16; a panel 2 rows or less shows one line as
+  big as fits; a list that would be under 18 characters across takes smaller text (`MonitorRows`). So a Number Readout is small, a Text
+  Sign medium, a Text Sign at 50 % or a Medium Number Readout and anything bigger a board.
+  - **Tiny** (one line): "Line 2/3 running - 14 to go" (or "- 6 made"), in the worst state's colour.
+  - **Small** (3 to 6 rows): a row a machine, its name (numbered as on the console, ".." when cut) and its state in full in its lamp's
+    colour; a title when every machine fits under it.
+  - **Medium** (7 to 14): the title with what it made, then two lines a machine: name and state, then why it waits, its recipe or its orders.
+  - **Large** (15 up): "Production line - running n/m", "Made 6   To go 13   Stops at 6", a table (Machine, State, Queue: the head
+    order's made/count and the orders after it, Doing: the detail line), then the Piece Racks the line's conveyors end at (through
+    junctions and presses) with their fill, when there is room.
+  - A list longer than its rows moves on a row every 2 s by itself and rests at each end (a monitor has no buttons).
+  - A machine's monitor is its own screen laid out for the display (tiny: "Extruder: Extruding - 8 to go"); a rack's is its fill
+    ("62% full, 131 pieces, 4 kinds"), a bar, and its kinds with counts.
+- **Outputs.** Alarm is 1 while any machine on the line is Starved, Blocked, Fault or No power; Running while any runs; Made is the pieces
+  (a refiner's batches, an Assembler's parts) made since Start, a number for counters, compares and readouts. Worked out on the server
+  at 10 Hz (`ProductionLines.Step`); a wire carries them to lamps as any signal. **Stop after** (General, 0 to 9999, 0 off;
+  `CfgKey.LineStopAfter`) turns the console off when Made reaches it; Start counts from 0 again.
+- **Network (protocol 253).** Made rides at the end of `CBodyKind.Orders` (u8 n, then u16 part and u32 made per console whose count isn't
+  0), sent when it changes. Everything else a monitor shows is what the console's own screen reads on either peer. Made isn't saved: a
+  loaded world counts from 0.
+- **Cost.** A monitor fills with the panels (4 Hz, in view) and lays out only when its card changes; finding its source is one walk of
+  the body's links. Measured (a throwaway host and client over RakNet at 80 ms and 2 % loss, removed): 240 fills of the 16-row board
+  (a minute at 4 Hz) 0 bytes, 0.054 ms each; every monitor's text equal on both peers, with the line running and with the mains off;
+  the Alarm lamp 1 on both peers with the mains off; Stop after 6 stopped the orders line at 6 on both. The server step walks only
+  bodies with a console.
+
+Proposed (the user's to confirm): Data out as a port on the source rather than a monitor part; 6 cm rows and the four bands; the list
+moving every 2 s; Made counting a refiner's batches; Made not saved. Not done: a monitor on another body (a world link); a line name.
 
 ## Conveyors
 
@@ -748,7 +805,7 @@ panel); the part from the part kit's `crafting_terminal_parts`.
      full - take parts out". A finished order stays listed for 60 s.
   States on either peer: waiting, fetching from X, queued at X, riding to the tray, in the tray, no route from X, held (why).
   **Cancel** drops the order's reservations and takes its unstarted work order off the machine's queue.
-- **Network (protocol 252).** `CActKind.CraftOrder` (body, terminal, the order's 22 bytes) and `CraftCancel` (body, terminal, id);
+- **Network (protocol 253).** `CActKind.CraftOrder` (body, terminal, the order's 22 bytes) and `CraftCancel` (body, terminal, id);
   `CBodyKind.Craft`, per body on a change, after a Full and to a joiner: each terminal's orders (the order, id, got, state, where, a
   note) and each store's reserved kinds.
 - **Saves.** After a body's work orders (an empty block when it has none): each terminal's orders with got, asked and riding counts.
@@ -811,6 +868,10 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   Bill, then Send, then Line and Start on the orders console; cut line A's first conveyor to see pieces drop; take a piece off the long
   rack with F; the press stamps brackets from line A's angles; line B meets line A at the join; the spur's conveyor is too small on
   purpose; set the wheel line's conveyor too small with the mouse wheel to see a refusal.
+- **Monitors** ([Production monitors](#production-monitors); `Monitors()`, the front post line at x 19 to 22 and 57 to 63.5): a Number
+  Readout on the refining console's Data out (small), a Text Sign on the orders console's (medium), and the orders board at the
+  right-hand end, a Text Sign at Text size 50 % (no adapter takes a medium display onto the small floor), with a red Lamp on a mast
+  beside it on the orders console's Alarm; a sign each.
 - **What to expect.** The main switch is wired to the genset and to the battery, whose wire is the [mains](#production-lines): off, every
   machine shows No power (creative too) while the consoles stay lit, and the genset stops. Creative refiners take a load in a few seconds,
   so their lamps show Running. The Press puts its brackets on a conveyor out of its Piece out to a Piece Rack behind it (276 brackets: a full

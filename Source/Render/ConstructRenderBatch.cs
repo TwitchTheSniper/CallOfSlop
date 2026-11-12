@@ -106,7 +106,7 @@ public static partial class ConstructRender
             return n;
         n = 0;
         if (d.Role == PartRole.Joint || d.IsRail || d.HasRig || d.HasGlass || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner || d.IsOrdnance
-            || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever or CLogic.Lamp || d.Surface is { Control: > 0 })
+            || d.HasWork || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever or CLogic.Lamp || d.Surface is { Control: > 0 })
             n = -1;
         else
             foreach (var box in d.Boxes.AsSpan())

@@ -929,7 +929,27 @@ public static unsafe partial class Program
 
     private static long _sbStoreKey = -1;
     /// <summary>What a gathering module is doing, or where it should go (ConstructGatherer.cs).</summary>
-    internal static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit)
+    internal static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit, Game? g = null)
+    {
+        if (g == null || hit.Body == null)
+            return GathererWhy(d, st, hit, null); // (a check with no game: the reason alone)
+        // The line state's word first (as its lamp and a console show it), then the reason.
+        var s = ConstructGatherer.LineOf(g.Constructs, hit.Body, hit.Part, st);
+        var why = GathererWhy(d, st, hit, g).Replace(" - stopped: ", " - ", StringComparison.Ordinal);
+        return s == LineState.Running ? why : $" - {ProductionLines.Word(s)}{(why.StartsWith(" - ", StringComparison.Ordinal) ? ": " + why[3..] : why)}";
+    }
+
+    /// <summary>A Recycler's look line: its line state, then the reason.</summary>
+    private static string RecyclerLook(Game g, ConstructPartDef d, CStore st, in ConstructHit hit) => ConstructRecycler.LineOf(g.Constructs, hit.Body, hit.Part, st) switch
+    {
+        LineState.Running => ", recycling",
+        LineState.Idle => " - Stopped:" + HeldLook[2..],
+        LineState.Blocked => " - Blocked: output full, empty it (chute or F)",
+        LineState.NoPower => " - No power",
+        _ => " - Starved: feed it wrecked parts",
+    };
+
+    private static string GathererWhy(ConstructPartDef d, CStore st, in ConstructHit hit, Game? g)
     {
         if (st.Held)
             return HeldLook;
@@ -937,6 +957,12 @@ public static unsafe partial class Program
             return d.GatherSaw ? ", cutting" : ConstructDrillDrive.BusyLook(d, st);
         if (ConstructDrillDrive.StopLook(hit.Body, hit.Part, d, st) is { Length: > 0 } stopped)
             return stopped;
+        if ((GatherStall)st.Blocked == GatherStall.BinFull || st.Amount >= d.BulkCapacity)
+            return " - bin full: empty it (chute or F)";
+        if ((GatherStall)st.Blocked == GatherStall.OtherMaterial)
+            return $" - its bin holds {RecyclingTable.Current.NameOf(st.Material)}: empty it";
+        if (g != null && hit.Body != null && st.Drive == ShaftState.None && !ConstructRecycler.Powered(g.Constructs, hit.Body, hit.Part))
+            return " - needs power (a battery its circuit reaches)";
         if (World.Map.Resources is not { } field)
             return " - bring its blade to a forest";
         if (d.GatherSaw)
@@ -984,6 +1010,8 @@ public static unsafe partial class Program
             key ^= (long)((hit.Body.Parts[hit.Part].Craft?.Count ?? 0) + 1 + hit.Body.RouteCount * 64) * 40503L; // (its orders and the body's links: what its line says)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
             key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
+        if (hit.Body.DefOf(hit.Part) is { IsRecycler: true } or { IsGatherer: true })
+            key ^= (long)(ProductionLines.Raw(g.Constructs, hit.Body, hit.Part, st) ?? 0) * 0x9E3779B97F4AL; // (its line state: the mains or a shaft change it, not the store)
         if (key == _sbStoreKey)
             return _sbStoreText;
         _sbStoreKey = key;
@@ -1019,8 +1047,8 @@ public static unsafe partial class Program
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
             var act = !near ? "" : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
             var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
-            var rec = cd.IsRecycler ? st.Held ? HeldLook : st.Busy ? ", recycling" : " - feed it wrecked parts"
-                : cd.IsGatherer ? GathererLook(cd, st, hit) : "";
+            var rec = cd.IsRecycler ? RecyclerLook(g, cd, st, hit)
+                : cd.IsGatherer ? GathererLook(cd, st, hit, g) : "";
             return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity}{holds}{rec}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)

@@ -2097,6 +2097,7 @@ public sealed partial class ConstructWorld
         ConstructConveyor.Step(this, query); // (pieces ride their conveyors to the racks: only bodies with riders)
         ConstructCrafting.Step(this); // (Crafting Terminals fetch and order: 2 Hz, only bodies with open orders)
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
+        ProductionLines.Step(this); // (Line Consoles: their Alarm and Running outputs, a new Start, Stop after; 10 Hz)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         ConstructSeal.Step(this, query, ref _sealTicks, server: true);
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)

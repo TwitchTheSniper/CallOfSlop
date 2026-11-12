@@ -96,12 +96,13 @@
       ]
     },
     {
-      "id": "first-posting", "title": "First posting", "bucket": "A", "final": true,
-      "about": "the new trustee is posted to the Orbital Depot (the robot shell beat)",
+      "id": "first-posting", "title": "First posting", "bucket": "A",
+      "about": "the new trustee is posted to the Orbital Depot (the robot shell beat); the Ministry ladder goes on in Storylets/Ministry.json",
       "needs": "?me Course 'Trustee'",
       "hook": "depot",
       "ends": [
-        { "id": "posted", "after": "5s", "say": [ "[MINISTRY MEMO] Trustee posting: Orbital Depot. Report to the control chair." ] }
+        { "id": "posted", "after": "5s", "then": [ "?me Rank +1" ],
+          "say": [ "[MINISTRY MEMO] Trustee posting: Orbital Depot. Report to the control chair." ], "next": "stores-key" }
       ]
     },
     {

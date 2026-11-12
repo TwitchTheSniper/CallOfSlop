@@ -1,4 +1,5 @@
 using static CallOfSlop.PartKit.PartKitMath;
+using static CallOfSlop.PartKit.MachineLookShort;
 
 namespace CallOfSlop.PartKit.Generators;
 
@@ -83,13 +84,15 @@ public sealed class ExtrusionParts : IPartGenerator
     private static double At(PyDict s, int k) => Py.D(((List<object?>)s["at"]!)[k]);
 
     /// <summary>The part's screen: a side of its block (PartScreens), never the die's.</summary>
-    private static Part WithScreen(Part p, bool orders = false)
+    private static Part WithScreen(Part p, bool orders = false, string[]? faces = null, double? width = null)
     {
         var keepClear = p.Sockets.Select(s => (new[] { At(s, 0), At(s, 1), At(s, 2) }, (string)s["dir"]!)).ToList();
         // A machine that takes work orders (WorkOrders.cs) is a machine of a production line: a status lamp over its screen, its queue on
         // eight rows and three buttons under it.
-        var (plate, panel, lamp) = PartScreens.Mount(p.Boxes, keepClear, faces: ["-x", "+x", "-z"], rows: orders ? 8 : 4, lamp: orders);
-        PartScreens.Fit(p.Boxes, plate);
+        var (plate, panel, lamp) = PartScreens.Mount(p.Boxes, keepClear, faces: faces ?? ["-x", "+x", "-z"], rows: orders ? 8 : 4, width: width, lamp: orders);
+        PartScreens.Fit(p.Boxes, plate, most: 200);
+        if (orders)
+            MachineLook.Buttons(p, plate, (string)panel["face"]!); // (the control face: screen, lamp over it, buttons under it)
         if (lamp is not null)
             p.Boxes.Add(lamp);
         if (orders)
@@ -131,17 +134,21 @@ public sealed class ExtrusionParts : IPartGenerator
         Kw(("key", "height"), ("label", "Order diameter"), ("group", "Orders"), ("unit", "m"), ("min", d0), ("max", across), ("step", 0.05), ("default", d0),
             ("tooltip", "The wheel's diameter when Queue on its screen orders one.")));
 
+    private const string Red = "#b5452b"; // the Extruder family's body colour
+    private const string Violet = "#8050a8"; // the Formers'
+
     private static Part ExtruderSmall()
     {
-        var p = new Part("Extruder", Small, Section, "Pushes bulk material through a die as one long piece. Cut it with a signal or by length. Needs power.", role: "storage", group: "Production", color: BodyC);
+        var p = new Part("Extruder", Small, Section, "Pushes bulk material through a die as one long piece. Cut it with a signal or by length. Needs power.", role: "storage", group: "Production", color: Red);
         p.Add(Box([-0.5, 0, -0.75], [0.5, 0.85, 0.75]));
-        p.Add(Box([-0.5, 0.85, -0.05], [0.5, 1, 0.75]));
+        p.Add(Box([-0.5, 0.85, -0.05], [0.5, 1, 0.75])!.Update(("finish", "tread plate")));
         p.Add(Box([-0.5, 0.85, -0.75], [-0.46, 1, -0.05], Trim));
         p.Add(Box([0.46, 0.85, -0.75], [0.5, 1, -0.05], Trim));
         p.Add(Box([-0.46, 0.85, -0.75], [0.46, 1, -0.71], Trim));
-        p.Add(Box([-0.27, 0.23, 0.74], [0.27, 0.77, 0.76], Dark, detail: true));
-        p.Add(Box([-0.51, 0.1, -0.5], [-0.49, 0.7, 0.5], Gold, detail: true));
-        p.Add(Box([0.49, 0.1, -0.5], [0.51, 0.7, 0.5], Gold, detail: true));
+        // The control board (look.md, "Machine look"): it stands on the hopper's left wall, on the aisle side, so the screen is at a standing eye.
+        p.Add(MachineLook.D([-0.56, 0.2, -0.7], [-0.5, 1.0, -0.62], MachineLook.Base));
+        p.Add(MachineLook.D([-0.56, 0.2, 0.12], [-0.5, 1.0, 0.2], MachineLook.Base));
+        p.Add(MachineLook.D([-0.57, 1.0, -0.74], [-0.5, 1.86, 0.24], MachineLook.Base));
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+x", [0.5, 0.5, 0.35], "+x");
         p.Sock("-x", [-0.5, 0.5, 0.35], "-x");
@@ -153,7 +160,40 @@ public sealed class ExtrusionParts : IPartGenerator
                 ("bulk", Kw(("material", "any"), ("capacity", 400), ("min", Py.L(-0.455, 0.855, -0.705)), ("max", Py.L(0.455, 0.995, -0.055)))),
                 ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(6, 6)), ("maxLength", 48), ("pushForce", 6000))))),
             ("config", ExtruderConfig(0.5, 6, 48)));
-        return WithScreen(p, orders: true);
+        WithScreen(p, orders: true, faces: ["-x"], width: 0.84);
+        MachineLook.Skirt(p, -0.5, 0.5, -0.75, 0.75, 0, 0.14, 0.012);
+        // The hopper, at the back: taller than the body, a white rim (the in side) and an arrow down each open side.
+        p.Add(L([0.455, 1.0, -0.755], [0.505, 1.24, -0.045], MachineLook.Base));
+        p.Add(L([-0.505, 1.0, -0.755], [0.455, 1.24, -0.705], MachineLook.Base));
+        p.Add(L([-0.5, 1.0, -0.095], [0.455, 1.24, -0.045], MachineLook.Base));
+        p.Add(L([0.45, 1.24, -0.76], [0.51, 1.3, -0.04], MachineLook.In));
+        p.Add(L([-0.51, 1.24, -0.76], [0.45, 1.3, -0.7], MachineLook.In));
+        p.Add(L([-0.5, 1.24, -0.1], [0.45, 1.3, -0.04], MachineLook.In));
+        MachineLook.Arrow(p, 0, 0.505, 1, 1, -1, 1.1, -0.4, 0.2, 0.2, MachineLook.In);
+        MachineLook.Arrow(p, 2, -0.755, -1, 1, -1, 1.1, 0, 0.2, 0.2, MachineLook.In);
+        // The die head, at the front: a bare steel collar round the die, the die plate dull until it works, hazard paint under the mouth,
+        // an orange band and arrow over it (the out side). Thin: Die Frames and the piece stand against this face.
+        p.Add(L([-0.31, 0.19, 0.75], [-0.25, 0.81, 0.766], MachineLook.Steel, "steel"));
+        p.Add(L([0.25, 0.19, 0.75], [0.31, 0.81, 0.766], MachineLook.Steel, "steel"));
+        p.Add(L([-0.25, 0.75, 0.75], [0.25, 0.81, 0.766], MachineLook.Steel, "steel"));
+        p.Add(L([-0.25, 0.19, 0.75], [0.25, 0.25, 0.766], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.Work(L([-0.25, 0.25, 0.74], [0.25, 0.75, 0.758], MachineLook.Hot), "glow"));
+        MachineLook.Hazard(p, [-0.5, 0.02, 0.75], [0.5, 0.15, 0.764]);
+        p.Add(L([-0.5, 0.86, 0.75], [0.5, 0.99, 0.764], MachineLook.Out));
+        p.Add(L([-0.36, 1.0, 0.57], [0.36, 1.09, 0.756], MachineLook.Steel, "steel")); // (the head clamp over the die: the front end reads as a head from the side)
+        p.Add(L([-0.3, 1.09, 0.61], [-0.22, 1.13, 0.69], MachineLook.Base));
+        p.Add(L([0.22, 1.09, 0.61], [0.3, 1.13, 0.69], MachineLook.Base));
+        MachineLook.Arrow(p, 1, 1.0, 1, 2, 1, 0, 0.45, 0.4, 0.3, MachineLook.Out);
+        // The drive, on the right of the hopper end: a dark gearbox, a guard, and a pulley that turns while it runs.
+        p.Add(L([0.5, 0.2, -0.68], [0.6, 0.62, -0.2], MachineLook.Base));
+        p.Add(L([0.5, 0.62, -0.6], [0.57, 0.8, -0.28], MachineLook.Base));
+        p.Add(MachineLook.Work(L([0.6, 0.25, -0.6], [0.64, 0.57, -0.28], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))), "spin", "+x"));
+        p.Add(MachineLook.Work(L([0.64, 0.38, -0.56], [0.655, 0.44, -0.32], MachineLook.Ink), "spin", "+x"));
+        // Cladding seams on the body's sides (the body's own tone, so they take its paint).
+        foreach (var z in new[] { -0.05, 0.38 })
+            p.Add(L([0.5, 0.16, z - 0.012], [0.514, 0.84, z + 0.012], Trim, paintable: true));
+        p.Add(L([-0.514, 0.16, 0.36], [-0.5, 0.84, 0.384], Trim, paintable: true));
+        return p;
     }
 
     private sealed record Head(double X0, double X1, double Y, double Y1, double Z0, double Z, double Z1, double T);
@@ -172,8 +212,17 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Add(Box([x0, y, z0], [x0 + t, y1, z], Trim));
         p.Add(Box([x1 - t, y, z0], [x1, y1, z], Trim));
         p.Add(Box([x0 + t, y, z0], [x1 - t, y1, z0 + t], Trim));
-        p.Add(Box([x0 - t * 0.2, y0 + t, z0 + t], [x0, y - t, z1 - t], Gold, detail: true));
-        p.Add(Box([x1, y0 + t, z0 + t], [x1 + t * 0.2, y - t, z1 - t], Gold, detail: true));
+        // The shared look (look.md, "Machine look"): a dark skirt and side panels, the hopper's rim banded white (in), the die's face banded orange (out) over hazard paint.
+        var m = Math.Min(t * 0.2, 0.03); // (how far a marking stands off its face)
+        p.Add(MachineLook.D([x0 - m, y0 + t * 3, z0 + t], [x0, y - t, z1 - t], MachineLook.Base));
+        p.Add(MachineLook.D([x1, y0 + t * 3, z0 + t], [x1 + m, y - t, z1 - t], MachineLook.Base));
+        MachineLook.Skirt(p, x0, x1, z0, z1, y0, y0 + t * 2, m * 1.5);
+        p.Add(MachineLook.D([x0 - m, y1 - t * 1.6, z0 - m], [x1 + m, y1 - t * 0.4, z0], MachineLook.In));
+        p.Add(MachineLook.D([x0 - m, y1 - t * 1.6, z0], [x0, y1 - t * 0.4, z - t * 0.2], MachineLook.In));
+        p.Add(MachineLook.D([x1, y1 - t * 1.6, z0], [x1 + m, y1 - t * 0.4, z - t * 0.2], MachineLook.In));
+        MachineLook.Arrow(p, 2, z0 - m, -1, 1, -1, (x0 + x1) / 2, y1 - t * 3.6, t * 3, t * 3, MachineLook.In, m);
+        p.Add(MachineLook.D([x0, y1 - t * 1.6, z1], [x1, y1 - t * 0.4, z1 + m], MachineLook.Out));
+        MachineLook.Hazard(p, [x0, y0 + t * 0.2, z1], [x1, y0 + t * 1.6, z1 + m]);
         return new Head(x0, x1, y, y1, z0, z, z1, t);
     }
 
@@ -195,7 +244,12 @@ public sealed class ExtrusionParts : IPartGenerator
         int nx = cells[0], ny = cells[1], nz = cells[2];
         var hd = MakeHead(p, cells);
         double cx = (nx - 1) / 2.0 * c.Cell, cy = (ny - 1) / 2.0 * c.Cell;
-        p.Add(Box([cx - die / 2.0, cy - die / 2.0, hd.Z1 - hd.T * 0.1], [cx + die / 2.0, cy + die / 2.0, hd.Z1 + hd.T * 0.1], Dark, detail: true));
+        var (dh, cw, cm) = (die / 2.0, hd.T * 0.6, Math.Min(hd.T * 0.16, 0.04));
+        p.Add(MachineLook.Work(MachineLook.D([cx - dh, cy - dh, hd.Z1 - hd.T * 0.1], [cx + dh, cy + dh, hd.Z1 + cm * 0.6], MachineLook.Hot), "glow"));
+        p.Add(MachineLook.D([cx - dh - cw, cy - dh - cw, hd.Z1], [cx - dh, cy + dh + cw, hd.Z1 + cm], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([cx + dh, cy - dh - cw, hd.Z1], [cx + dh + cw, cy + dh + cw, hd.Z1 + cm], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([cx - dh, cy + dh, hd.Z1], [cx + dh, cy + dh + cw, hd.Z1 + cm], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([cx - dh, cy - dh - cw, hd.Z1], [cx + dh, cy - dh, hd.Z1 + cm], MachineLook.Steel, "steel"));
         BlockSockets(p, nx, ny, nz, limit: Lim5(), skip: ["+z"]);
         p.Sock("die", [cx, cy, hd.Z1], "+z", kind: "die");
         p.Stats(mass, health, c.Armour);
@@ -252,7 +306,7 @@ public sealed class ExtrusionParts : IPartGenerator
             (push, units, power, mass, health, cells, hubRow) = (I(row[6]), I(row[7]), I(row[8]), I(row[9]), I(row[10]), (int[]?)row[11], row[12] is int h ? h : 0);
             desc = $"Builds a wheel up on its hub: wider, or bigger across, up to {Py.G(Py.D(width))} m wide and {Py.G(Py.D(across))} m across. A Cut signal parts it off. Needs power.";
         }
-        var p = new Part(NameOf(c, air ? "Airframe Former" : fan ? "Fan Former" : "Wheel Former"), c, Section, desc, role: "storage", group: "Production", color: BodyC);
+        var p = new Part(NameOf(c, air ? "Airframe Former" : fan ? "Fan Former" : "Wheel Former"), c, Section, desc, role: "storage", group: "Production", color: Violet);
         List<object?> hub;
         PyDict bulk;
         if (c == Small)
@@ -262,11 +316,9 @@ public sealed class ExtrusionParts : IPartGenerator
             p.Add(Box([-0.6, 2.05, -0.75], [-0.56, 2.2, -0.05], Trim));
             p.Add(Box([0.56, 2.05, -0.75], [0.6, 2.2, -0.05], Trim));
             p.Add(Box([-0.56, 2.05, -0.75], [0.56, 2.2, -0.71], Trim));
-            p.Add(Box([-0.61, 0.2, -0.5], [-0.59, 1.9, 0.5], Gold, detail: true));
-            p.Add(Box([0.59, 0.2, -0.5], [0.61, 1.9, 0.5], Gold, detail: true));
             hub = Py.L(0, 1.6, 0.75);
             bulk = Kw(("material", "any"), ("capacity", units), ("min", Py.L(-0.555, 2.055, -0.705)), ("max", Py.L(0.555, 2.195, -0.055)));
-            p.Add(Box([-0.2, 1.4, 0.74], [0.2, 1.8, 0.77], Dark, detail: true, shape: Kw(("shape", "cylinder"), ("segments", 16))));
+            SmallFormerLook(p, air || fan);
             p.Sock("bottom", [0, 0, 0], "-y");
             p.Sock("+x", [0.6, 0.75, 0], "+x");
             p.Sock("-x", [-0.6, 0.75, 0], "-x");
@@ -283,7 +335,11 @@ public sealed class ExtrusionParts : IPartGenerator
             hub = Py.L(hx, hy, hd.Z1);
             bulk = BinOf(units, hd);
             var r = c.Cell * 0.4;
-            p.Add(Box([hx - r, hy - r, hd.Z1 - hd.T * 0.1], [hx + r, hy + r, hd.Z1 + hd.T * 0.2], Dark, detail: true, shape: Kw(("shape", "cylinder"), ("segments", 16))));
+            var hm = Math.Min(hd.T * 0.2, 0.05);
+            p.Add(MachineLook.D([hx - r * 1.6, hy - r * 1.6, hd.Z1 - hd.T * 0.1], [hx + r * 1.6, hy + r * 1.6, hd.Z1 + hm], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 20))));
+            p.Add(MachineLook.Work(MachineLook.D([hx - r, hy - r * 0.16, hd.Z1 + hm * 0.5], [hx + r, hy + r * 0.16, hd.Z1 + hm * 1.6], MachineLook.Accent), "spin", "+z"));
+            p.Add(MachineLook.Work(MachineLook.D([hx - r * 0.16, hy - r, hd.Z1 + hm * 0.5], [hx + r * 0.16, hy + r, hd.Z1 + hm * 1.7], MachineLook.Accent), "spin", "+z"));
+            p.Add(MachineLook.D([hx - r * 0.3, hy - r * 0.3, hd.Z1 + hm * 0.4], [hx + r * 0.3, hy + r * 0.3, hd.Z1 + hm * 2], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12))));
             BlockSockets(p, nx, ny, nz, limit: Lim5(), skip: ["+z"]);
             p.Sock("die", [hx, hy, hd.Z1], "+z", kind: "die");
             p.Stats(mass, health, c.Armour);
@@ -297,6 +353,34 @@ public sealed class ExtrusionParts : IPartGenerator
             ("config", air ? AirframeConfig(across, width, d0, w0) : fan ? FanConfig(across, d0) : FormerConfig(across, width, d0, w0)),
             ("collider", "boxes")); // (the hub is a look: its cylinder must never become a hull)
         return WithScreen(p, orders: !fan && !air);
+    }
+
+    /// <summary>The small Formers' look: a headstock on a dark column, a big bare hub with a chuck that turns, the hopper banded white, hazard paint round the hub.</summary>
+    private static void SmallFormerLook(Part p, bool plain)
+    {
+        MachineLook.Skirt(p, -0.6, 0.6, -0.75, 0.75, 0, 0.16, 0.012);
+        // Dark columns up the front corners and a dark apron under the hub: the body colour is left as a headstock round it.
+        p.Add(L([-0.612, 0.16, 0.5], [-0.42, 2.04, 0.762], MachineLook.Base));
+        p.Add(L([0.42, 0.16, 0.5], [0.612, 2.04, 0.762], MachineLook.Base));
+        p.Add(L([-0.42, 0.16, 0.75], [0.42, 0.95, 0.763], MachineLook.Base));
+        MachineLook.Hazard(p, [-0.42, 0.95, 0.75], [0.42, 1.07, 0.764]);
+        p.Add(L([-0.42, 2.07, 0.75], [0.42, 2.19, 0.764], MachineLook.Out));
+        // The hub: a bare steel face plate, a boss, and a yellow chuck that turns while it runs.
+        p.Add(L([-0.4, 1.2, 0.74], [0.4, 2.0, 0.768], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 20))));
+        p.Add(MachineLook.Work(L([-0.3, 1.56, 0.76], [0.3, 1.64, 0.782], MachineLook.Accent), "spin", "+z"));
+        p.Add(MachineLook.Work(L([-0.04, 1.3, 0.76], [0.04, 1.9, 0.784], MachineLook.Accent), "spin", "+z"));
+        p.Add(L([-0.1, 1.5, 0.75], [0.1, 1.7, 0.79], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12))));
+        // The hopper's rim, white: the in side.
+        p.Add(L([-0.612, 2.08, -0.762], [0.612, 2.19, -0.75], MachineLook.In));
+        p.Add(L([0.6, 2.08, -0.75], [0.612, 2.19, -0.05], MachineLook.In));
+        p.Add(L([-0.612, 2.08, -0.75], [-0.6, 2.19, -0.05], MachineLook.In));
+        MachineLook.Arrow(p, 2, -0.75, -1, 1, -1, 0, 1.8, 0.3, 0.3, MachineLook.In);
+        // The drive on the right: a dark motor and a guard.
+        p.Add(L([0.6, 1.3, -0.6], [0.72, 1.9, -0.1], MachineLook.Base));
+        p.Add(L([0.6, 0.2, -0.36], [0.63, 1.3, -0.3], MachineLook.Base));
+        if (plain)
+            return;
+        p.Add(MachineLook.Work(L([0.72, 1.44, -0.51], [0.76, 1.76, -0.19], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))), "spin", "+x"));
     }
 
     private static Part DieFrame(string name, double halfX, double halfY, string desc, int mass, int health, int armour, int seconds, double gold)

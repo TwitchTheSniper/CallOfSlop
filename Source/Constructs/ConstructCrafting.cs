@@ -492,7 +492,7 @@ public static class ConstructCrafting
         return o.State switch
         {
             CraftState.Fetching => $"fetching from {where}",
-            CraftState.Queued => $"queued at {where}",
+            CraftState.Queued => string.IsNullOrEmpty(o.Note) ? $"queued at {where}" : $"queued at {where}: {o.Note}",
             CraftState.Riding => "riding to the tray",
             CraftState.InTray => "in the tray",
             CraftState.Collect => $"no route from {where}: collect it there",
@@ -641,6 +641,17 @@ public static class ConstructCrafting
         if (o.Def == 0 || o.Def == ConstructParts.None)
             o.Def = (ushort)(DefOf(o.What)?.Id ?? ConstructParts.None);
         return o.Def;
+    }
+
+    /// <summary>What machine <paramref name="m"/> lacks for an order ("needs 4 rubber, 2 cloth"), or empty.</summary>
+    private static string Starved(ConstructWorld world, Construct c, CraftNet net, int m, in WorkOrder what)
+    {
+        var d = c.DefOf(m);
+        if (d.IsAssembler)
+            return !what.IsPiece && AssemblingTable.Current.Of(what.Part) is { } r ? Missing(world, c, net, m, r, out _) : "";
+        if (!d.IsExtruder || world.StoreOf(c, m) is not { } st || st.Amount > 0)
+            return "";
+        return "needs " + RecyclingTable.Current.NameOf(what.Key.Material);
     }
 
     /// <summary>Server: a chute's move into a terminal: one part its orders have claimed in the chute's source, into the tray. True when one moved.</summary>
@@ -830,6 +841,15 @@ public static class ConstructCrafting
             }
             if (state == CraftState.Waiting && o.Sent > 0)
                 state = CraftState.Riding;
+            if (state == CraftState.Queued)
+            {
+                // Why a queued order waits (its machine lacks an input), looked at every fifth step: the note is made only then.
+                note = o.Note ?? "";
+                if (o.State != CraftState.Queued || o.Age++ % 5 == 0)
+                    note = where < c.PartCount ? Starved(world, c, net, where, o.What) : "";
+                if (note != (o.Note ?? ""))
+                    changed = true;
+            }
             o.State = state;
             o.Where = where;
             o.Note = note;
