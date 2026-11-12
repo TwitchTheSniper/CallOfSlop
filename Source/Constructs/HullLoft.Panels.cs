@@ -314,11 +314,13 @@ public static partial class HullLoft
             }
             name = PanelKey(s);
         }
+        var made0 = System.Diagnostics.Stopwatch.GetTimestamp();
         if (Parse(name) is not { } d)
         {
             Console.WriteLine($"refused: \"{name}\" is not a panel any machine makes");
             return 1;
         }
+        var madeMs = System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds;
         var bad = 0;
         var mat = FormedMaterial(name);
         int facets = 0, hidden = 0;
@@ -334,16 +336,18 @@ public static partial class HullLoft
         Console.WriteLine($"  facets {facets}, collision boxes {hidden}, sockets {d.Sockets.Length} ({string.Join(' ', d.Sockets.Select(s => s.Name))})");
         Console.WriteLine($"  bounds {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, mass {d.Mass:0.#} kg, health {d.Health:0}, armour {d.Armour:0}");
         Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
-        Console.WriteLine($"  hash {PanelHash(d):x8} (boxes, sockets, mass and health: the same on every peer)");
+        Console.WriteLine($"  hash {PanelHash(d):x8} (boxes, sockets, mass and health: the same on every peer); first make {madeMs:0.0} ms (the first part a process makes also pays the JIT)");
         // A second make from the name alone (the table forgotten) gives the same part.
         var first = PanelHash(d);
         lock (Interned)
             Interned.Remove(name);
+        made0 = System.Diagnostics.Stopwatch.GetTimestamp();
         if (Parse(name) is not { } again || PanelHash(again) != first)
         {
             Console.WriteLine("  PROBLEM: a second make from the name differs");
             bad++;
         }
+        Console.WriteLine($"  a second make from the name: {System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds:0.0} ms, the same part");
         if (IsPanelName(name) && facets > PanelMaxAlong * PanelMaxAcross)
         {
             Console.WriteLine($"  PROBLEM: {facets} facets, over {PanelMaxAlong * PanelMaxAcross}");
